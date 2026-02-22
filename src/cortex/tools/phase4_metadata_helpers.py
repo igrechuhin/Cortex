@@ -136,25 +136,20 @@ def extract_sections_from_metadata(
 
     sections: list[SectionSummary] = []
     if isinstance(sections_list, list):
-        for section_item in sections_list:  # type: ignore[reportUnknownVariableType]
-            if isinstance(section_item, dict):
-                section_dict = cast(ModelDict, section_item)
-                heading_raw: JsonValue = section_dict.get("heading", "")
-                heading = str(heading_raw) if heading_raw else ""
+        typed_sections: list[ModelDict] = cast(list[ModelDict], sections_list)
+        for section_item in typed_sections:
+            heading_raw: JsonValue = section_item.get("heading", "")
+            heading = str(heading_raw) if heading_raw else ""
 
-                token_count_raw: JsonValue = section_dict.get("token_count", 0)
-                tokens = (
-                    int(token_count_raw)
-                    if isinstance(token_count_raw, (int, str))
-                    else 0
-                )
+            token_count_raw: JsonValue = section_item.get("token_count", 0)
+            tokens = (
+                int(token_count_raw) if isinstance(token_count_raw, (int, str)) else 0
+            )
 
-                level_raw: JsonValue = section_dict.get("level", 2)
-                level = int(level_raw) if isinstance(level_raw, (int, str)) else 2
+            level_raw: JsonValue = section_item.get("level", 2)
+            level = int(level_raw) if isinstance(level_raw, (int, str)) else 2
 
-                sections.append(
-                    SectionSummary(heading=heading, tokens=tokens, level=level)
-                )
+            sections.append(SectionSummary(heading=heading, tokens=tokens, level=level))
     return sections
 
 
@@ -178,8 +173,7 @@ def build_file_entry(
     token_count_raw = metadata.get("token_count", 0)
     file_tokens = int(token_count_raw) if isinstance(token_count_raw, (int, str)) else 0
 
-    relevance_score_raw = relevance_scores.get(file_name, 0.0)
-    relevance_score = float(relevance_score_raw)  # type: ignore[arg-type]
+    relevance_score: float = relevance_scores.get(file_name, 0.0)
 
     last_modified_raw = metadata.get("last_modified", "")
     last_modified = str(last_modified_raw) if last_modified_raw else ""

@@ -229,9 +229,7 @@ class MetadataIndex:
 
         return all(key in data for key in required_keys)
 
-    async def _recover_from_corruption(
-        self, reason: str
-    ) -> dict[str, object]:  # noqa: ARG002
+    async def _recover_from_corruption(self, reason: str) -> dict[str, object]:  # noqa: ARG002
         """
         Recover from corrupted index by rebuilding from markdown files.
 

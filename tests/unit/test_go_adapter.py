@@ -226,9 +226,7 @@ class TestGoAdapter:
         """_extract_test_counts parses go test result lines."""
         adapter = GoAdapter()
         output = "--- PASS: TestFoo (0.00s)\n--- PASS: TestBar (0.00s)\n--- FAIL: TestBaz (0.00s)"
-        passed, failed = adapter._extract_test_counts(
-            output
-        )  # pyright: ignore[reportPrivateUsage]
+        passed, failed = adapter._extract_test_counts(output)  # pyright: ignore[reportPrivateUsage]
         assert passed == 2
         assert failed == 1
 

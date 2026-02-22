@@ -7,11 +7,10 @@ migrated from dataclass definitions for better validation and IDE support.
 
 from datetime import datetime
 from enum import Enum
-from typing import Literal
 
 from pydantic import ConfigDict, Field
 
-from cortex.core.models import DictLikeModel, ModelDict, OperationStatus
+from cortex.core.models import DictLikeModel, ModelDict, OperationStatus, RiskLevel
 
 # ============================================================================
 # Base Model
@@ -91,6 +90,74 @@ class RefactoringSuggestionType(str, Enum):
     REORGANIZATION = "reorganization"
 
 
+class FeedbackRecordStatus(str, Enum):
+    """Status of a feedback record operation."""
+
+    RECORDED = "recorded"
+    ERROR = "error"
+
+
+class RejectStatus(str, Enum):
+    """Status of a reject operation."""
+
+    REJECTED = "rejected"
+    ERROR = "error"
+
+
+class RollbackStatus(str, Enum):
+    """Status of a rollback operation."""
+
+    ROLLED_BACK = "rolled_back"
+    ERROR = "error"
+    NOT_FOUND = "not_found"
+
+
+class RollbackHistoryStatus(str, Enum):
+    """Status of a rollback history entry."""
+
+    COMPLETED = "completed"
+    FAILED = "failed"
+    PARTIAL = "partial"
+
+
+class MarkAppliedStatus(str, Enum):
+    """Status of marking an approval as applied."""
+
+    APPLIED = "applied"
+    ERROR = "error"
+
+
+class PreferenceStatus(str, Enum):
+    """Status of a preference operation."""
+
+    SUCCESS = "success"
+    NOT_FOUND = "not_found"
+    ERROR = "error"
+
+
+class RollbackRefactoringStatus(str, Enum):
+    """Status of a rollback refactoring result."""
+
+    SUCCESS = "success"
+    FAILED = "failed"
+
+
+class ExecutionStatus(str, Enum):
+    """Status of a refactoring execution."""
+
+    SUCCESS = "success"
+    FAILED = "failed"
+    VALIDATION_FAILED = "validation_failed"
+
+
+class LearningRate(str, Enum):
+    """Learning rate setting."""
+
+    AGGRESSIVE = "aggressive"
+    MODERATE = "moderate"
+    CONSERVATIVE = "conservative"
+
+
 # ============================================================================
 # Common Metric Models
 # ============================================================================
@@ -115,9 +182,7 @@ class RefactoringImpactMetrics(RefactoringBaseModel):
         le=1.0,
         description="Complexity reduction factor (negative means increase)",
     )
-    risk_level: Literal["low", "medium", "high"] = Field(
-        default="low", description="Risk level"
-    )
+    risk_level: RiskLevel = Field(default=RiskLevel.LOW, description="Risk level")
     maintainability_improvement: float = Field(
         default=0.0,
         ge=0.0,
@@ -305,7 +370,7 @@ class ConsolidationImpactModel(RefactoringBaseModel):
     )
     transclusion_count: int = Field(..., ge=0, description="Number of transclusions")
     similarity_score: float = Field(..., ge=0.0, le=1.0, description="Similarity score")
-    risk_level: Literal["low", "medium", "high"] = Field(..., description="Risk level")
+    risk_level: RiskLevel = Field(..., description="Risk level")
     benefits: list[str] = Field(default_factory=list, description="List of benefits")
     risks: list[str] = Field(default_factory=list, description="List of risks")
 
@@ -812,9 +877,7 @@ class ReorganizationImpactModel(RefactoringBaseModel):
     navigation_improvement: float = Field(
         ..., ge=0.0, le=1.0, description="Navigation improvement factor"
     )
-    estimated_effort: Literal["low", "medium", "high"] = Field(
-        ..., description="Estimated effort level"
-    )
+    estimated_effort: RiskLevel = Field(..., description="Estimated effort level")
 
 
 class ReorganizationPlanModel(RefactoringBaseModel):
@@ -923,9 +986,7 @@ class ApproveResult(RefactoringBaseModel):
 class RollbackResult(RefactoringBaseModel):
     """Result of a rollback operation."""
 
-    status: Literal["rolled_back", "error", "not_found"] = Field(
-        ..., description="Rollback status"
-    )
+    status: RollbackStatus = Field(..., description="Rollback status")
     execution_id: str = Field(..., description="Execution ID that was rolled back")
     files_restored: int = Field(default=0, ge=0, description="Number of files restored")
     files_list: list[str] = Field(
@@ -942,9 +1003,7 @@ class RollbackHistoryEntry(RefactoringBaseModel):
     execution_id: str = Field(..., description="Associated execution ID")
     files: list[str] = Field(default_factory=list, description="Files restored")
     timestamp: str = Field(..., description="ISO timestamp of rollback")
-    status: Literal["completed", "failed", "partial"] = Field(
-        ..., description="Rollback status"
-    )
+    status: RollbackHistoryStatus = Field(..., description="Rollback status")
 
 
 # ============================================================================
@@ -957,7 +1016,7 @@ class FeedbackRecordResult(RefactoringBaseModel):
 
     model_config = ConfigDict(extra="allow", validate_assignment=True)
 
-    status: Literal["recorded", "error"] = Field(..., description="Record status")
+    status: FeedbackRecordStatus = Field(..., description="Record status")
     feedback_id: str | None = Field(default=None, description="Feedback ID if recorded")
     learning_enabled: bool = Field(
         default=True, description="Whether learning is enabled"
@@ -1025,7 +1084,7 @@ class LearningInsights(RefactoringBaseModel):
 class RejectResult(RefactoringBaseModel):
     """Result of rejecting a refactoring suggestion."""
 
-    status: Literal["rejected", "error"] = Field(..., description="Rejection status")
+    status: RejectStatus = Field(..., description="Rejection status")
     approval_id: str | None = Field(default=None, description="Approval ID")
     suggestion_id: str = Field(..., description="Suggestion ID")
     message: str = Field(..., description="Status message")
@@ -1034,7 +1093,7 @@ class RejectResult(RefactoringBaseModel):
 class MarkAppliedResult(RefactoringBaseModel):
     """Result of marking an approval as applied."""
 
-    status: Literal["applied", "error"] = Field(..., description="Mark status")
+    status: MarkAppliedStatus = Field(..., description="Mark status")
     approval_id: str = Field(..., description="Approval ID")
     execution_id: str | None = Field(default=None, description="Execution ID")
     message: str = Field(..., description="Status message")
@@ -1043,9 +1102,7 @@ class MarkAppliedResult(RefactoringBaseModel):
 class PreferenceResult(RefactoringBaseModel):
     """Result of adding/removing a preference."""
 
-    status: Literal["success", "not_found", "error"] = Field(
-        ..., description="Operation status"
-    )
+    status: PreferenceStatus = Field(..., description="Operation status")
     pattern_type: str = Field(..., description="Pattern type")
     auto_approve: bool | None = Field(default=None, description="Auto-approve setting")
     message: str = Field(..., description="Status message")
@@ -1105,7 +1162,7 @@ class CleanupExpiredResult(RefactoringBaseModel):
 class RollbackRefactoringResult(RefactoringBaseModel):
     """Result of rolling back a refactoring execution."""
 
-    status: Literal["success", "failed"] = Field(..., description="Rollback status")
+    status: RollbackRefactoringStatus = Field(..., description="Rollback status")
     rollback_id: str = Field(..., description="Rollback ID")
     execution_id: str | None = Field(default=None, description="Execution ID")
     files_restored: int = Field(default=0, ge=0, description="Number of files restored")
@@ -1267,9 +1324,7 @@ class ExtractedInsightData(RefactoringBaseModel):
 class ExecutionResult(RefactoringBaseModel):
     """Result of executing a refactoring."""
 
-    status: Literal["success", "failed", "validation_failed"] = Field(
-        ..., description="Execution status"
-    )
+    status: ExecutionStatus = Field(..., description="Execution status")
     execution_id: str = Field(..., description="Execution ID")
     suggestion_id: str | None = Field(default=None, description="Suggestion ID")
     approval_id: str | None = Field(default=None, description="Approval ID")
@@ -1680,8 +1735,8 @@ class LearningConfigModel(RefactoringBaseModel):
     """Learning configuration settings."""
 
     enabled: bool = Field(default=True, description="Whether learning is enabled")
-    learning_rate: Literal["aggressive", "moderate", "conservative"] = Field(
-        default="conservative", description="Learning rate setting"
+    learning_rate: LearningRate = Field(
+        default=LearningRate.CONSERVATIVE, description="Learning rate setting"
     )
     remember_rejections: bool = Field(
         default=True, description="Remember rejected suggestions"

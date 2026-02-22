@@ -62,9 +62,7 @@ class RollbackProcessingData(BaseModel):
 
 
 @mcp.tool(  # pyright: ignore[reportUntypedFunctionDecorator]
-    annotations=destructive_annotations(
-        "Rollback File Version"
-    ),  # pyright: ignore[reportCallIssue]
+    annotations=destructive_annotations("Rollback File Version"),  # pyright: ignore[reportCallIssue]
 )
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_MEDIUM)

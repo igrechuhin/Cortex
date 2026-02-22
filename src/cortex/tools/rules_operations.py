@@ -9,7 +9,6 @@ Total: 1 tool
 
 import json
 from pathlib import Path
-from typing import Literal
 from urllib.parse import unquote
 
 from cortex.core.constants import MCP_TOOL_TIMEOUT_MEDIUM
@@ -39,8 +38,8 @@ from cortex.tools.rules_operation_helpers import (
     resolve_config_defaults,
 )
 
-# Valid operation values for rules() (must match RulesOperation enum).
-RulesOperationName = Literal["index", "get_relevant"]
+# Type alias for operation names (must match RulesOperation enum).
+RulesOperationName = RulesOperation
 
 
 async def check_rules_enabled(

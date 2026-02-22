@@ -8,19 +8,16 @@ This module handles:
 - Memory bank file validation
 """
 
-from typing import Literal, cast
+from typing import cast
 
 from cortex.core.models import ModelDict
-from cortex.structure.models import HealthCheckResult
+from cortex.structure.models import HealthCheckResult, HealthGrade, HealthStatus
 from cortex.structure.structure_config import StructureConfig
 
 
 def _determine_health_grade_and_status(
     score: int,
-) -> tuple[
-    Literal["A", "B", "C", "D", "F"],
-    Literal["healthy", "good", "fair", "warning", "critical"],
-]:
+) -> tuple[HealthGrade, HealthStatus]:
     """Determine grade and status from health score.
 
     Args:
@@ -31,14 +28,14 @@ def _determine_health_grade_and_status(
     """
     # Use early returns to reduce nesting
     if score >= 90:
-        return "A", "healthy"
+        return HealthGrade.A, HealthStatus.HEALTHY
     if score >= 75:
-        return "B", "good"
+        return HealthGrade.B, HealthStatus.GOOD
     if score >= 60:
-        return "C", "fair"
+        return HealthGrade.C, HealthStatus.FAIR
     if score >= 50:
-        return "D", "warning"
-    return "F", "critical"
+        return HealthGrade.D, HealthStatus.WARNING
+    return HealthGrade.F, HealthStatus.CRITICAL
 
 
 class StructureHealthChecker:

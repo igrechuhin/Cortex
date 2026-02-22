@@ -785,22 +785,22 @@ When the only action in the session is running the Analyze (End of Session) prom
 - No action required. Report the manual summary (e.g. files used from Pre-Analysis Checklist) in the Context Effectiveness Analysis section.
 - **Optional**: To record one call for metrics, run `session_start()` or `load_context(task_description="end-of-session analysis", token_budget=5000)` before running the analysis steps.
 
-#### Issue: load_context zero-budget or zero-files (configuration error)
+#### Issue: load_context zero-budget, omitted budget, or zero-files (configuration error)
 
 **Symptoms**:
 
-- `load_context` returns a validation error when `token_budget=0` is passed for a non-trivial task
+- `load_context` returns a validation error when `token_budget` is **omitted** or set to `0` for a non-trivial task
 - Context-effectiveness analysis reports `token_budget=0` or `files_selected=0` for refactor/fix/debug/implement tasks in `learned_patterns` or recommendations
 
 **Cause**:
 
-For non-trivial tasks (refactor, fix, debug, implement), zero token budget or zero files selected is a **configuration/usage error**. The implement, commit, and analyze prompts require non-zero `token_budget` for these task types (e.g. 10k–15k for fix/debug, 20k–30k for implement/add). Passing `token_budget=0` or ending up with zero files selected indicates the caller did not request adequate context.
+For non-trivial tasks (refactor, fix, debug, implement), an **explicit non-zero** `token_budget` is required. Omitting `token_budget` or passing `token_budget=0` returns a validation error. Zero files selected indicates the caller did not request adequate context.
 
 **Solution**:
 
-1. Use an explicit non-zero `token_budget` when calling `load_context` for non-trivial work: e.g. `load_context(task_description="...", token_budget=10000)` or `token_budget=15000` for fix/debug, `token_budget=20000` or higher for implement/add.
-2. Do not pass `token_budget=0` for refactor/fix/debug/implement; the tool may return a validation error for non-trivial tasks.
-3. If context-effectiveness reporting flags zero-budget or zero-files in historical sessions, treat it as a configuration error and document the recommendation to use task-appropriate budgets in future runs.
+1. **Always pass an explicit** `token_budget` for non-trivial work: e.g. `load_context(task_description="...", token_budget=10000)` or `token_budget=15000` for fix/debug, `token_budget=20000` or higher for implement/add.
+2. Do not omit `token_budget` or pass `token_budget=0` for refactor/fix/debug/implement; the tool returns a validation error for non-trivial tasks.
+3. If context-effectiveness reporting flags zero-budget or zero-files in historical sessions, treat it as a configuration error and document the recommendation to use task-appropriate explicit budgets in future runs.
 
 #### Issue: Rules indexing returns no rules (get_relevant)
 

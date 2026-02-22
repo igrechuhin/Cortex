@@ -17,6 +17,7 @@ from cortex.core.models import ModelDict, OperationStatus
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.refactoring.models import (
     FeedbackRecordResult,
+    FeedbackRecordStatus,
     LearningInsights,
     ResetLearningResult,
 )
@@ -192,7 +193,7 @@ class LearningEngine:
         from cortex.refactoring.models import FeedbackRecordResult
 
         return FeedbackRecordResult(
-            status="recorded",
+            status=FeedbackRecordStatus.RECORDED,
             feedback_id=feedback_id,
             learning_enabled=bool(self.config.get("enabled", True)),
             message="Feedback recorded and learning updated",

@@ -19,6 +19,7 @@ from cortex.core.version_manager import VersionManager
 
 from .models import (
     RefactoringStatus,
+    RollbackRefactoringStatus,
     RollbackHistoryResult,
     RollbackManagerConfig,
     RollbackRecordModel,
@@ -159,7 +160,7 @@ class RollbackManager:
     ) -> RollbackRefactoringResult:
         """Build failed rollback response."""
         return RollbackRefactoringResult(
-            status="failed",
+            status=RollbackRefactoringStatus.FAILED,
             rollback_id=rollback_id,
             execution_id=rollback_record.execution_id,
             error=rollback_record.error or "No snapshot ID found for execution",
@@ -207,7 +208,7 @@ class RollbackManager:
         self.rollbacks[rollback_id] = rollback_record
         await self.save_rollbacks()
         return RollbackRefactoringResult(
-            status="success",
+            status=RollbackRefactoringStatus.SUCCESS,
             rollback_id=rollback_id,
             execution_id=execution_id,
             files_restored=(len(rollback_record.files_restored)),
@@ -226,7 +227,7 @@ class RollbackManager:
         self.rollbacks[rollback_id] = rollback_record
         await self.save_rollbacks()
         return RollbackRefactoringResult(
-            status="failed",
+            status=RollbackRefactoringStatus.FAILED,
             rollback_id=rollback_id,
             execution_id=rollback_record.execution_id,
             error=str(error),

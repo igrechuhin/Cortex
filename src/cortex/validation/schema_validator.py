@@ -12,7 +12,12 @@ from typing import cast
 
 from cortex.core.constants import MemoryBankFile
 from cortex.core.models import JsonValue
-from cortex.validation.models import FileSchemaModel, ValidationError, ValidationResult
+from cortex.validation.models import (
+    FileSchemaModel,
+    ValidationError,
+    ValidationResult,
+    ValidationSeverity,
+)
 
 # Default schemas for Memory Bank files
 SchemaDict = dict[str, list[str] | int]
@@ -235,7 +240,7 @@ class SchemaValidator:
                 errors.append(
                     ValidationError(
                         type="missing_section",
-                        severity="error",
+                        severity=ValidationSeverity.ERROR,
                         message=f"Required section '{req_section}' not found",
                         suggestion=f"Add '## {req_section}' section to the file",
                     )
@@ -263,7 +268,7 @@ class SchemaValidator:
                 warnings.append(
                     ValidationError(
                         type="missing_recommended_section",
-                        severity="warning",
+                        severity=ValidationSeverity.WARNING,
                         message=f"Recommended section '{rec_section}' not found",
                         suggestion=f"Consider adding '## {rec_section}' section",
                     )
@@ -315,7 +320,7 @@ class SchemaValidator:
             errors.append(
                 ValidationError(
                     type="heading_level_skip",
-                    severity="error",
+                    severity=ValidationSeverity.ERROR,
                     message=(
                         f"Line {line_num}: Heading level skip detected "
                         f"(level {prev_level} -> {level})"
@@ -340,7 +345,7 @@ class SchemaValidator:
             errors.append(
                 ValidationError(
                     type="heading_too_deep",
-                    severity="warning",
+                    severity=ValidationSeverity.WARNING,
                     message=(
                         f"Line {line_num}: Heading '{heading_text}' is "
                         f"too deeply nested (level {level})"
@@ -399,7 +404,7 @@ def _handle_no_schema(file_name: str) -> ValidationResult:
         warnings=[
             ValidationError(
                 type="no_schema",
-                severity="info",
+                severity=ValidationSeverity.INFO,
                 message=f"No validation schema defined for '{file_name}'",
                 suggestion=None,
             )

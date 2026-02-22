@@ -24,6 +24,7 @@ from .execution_validator import ExecutionValidator
 from .models import (
     ExecutionHistoryResult,
     ExecutionResult,
+    ExecutionStatus,
     RefactoringExecutionModel,
     RefactoringExecutorConfig,
     RefactoringImpactMetrics,
@@ -31,6 +32,7 @@ from .models import (
     RefactoringStatus,
     RefactoringSuggestionModel,
     RefactoringValidationResult,
+    RiskLevel,
 )
 
 
@@ -272,7 +274,7 @@ class RefactoringExecutor:
             token_savings=0,  # Will be calculated during execution
             files_affected=validation_results.operations_count,
             complexity_reduction=0,
-            risk_level="low",
+            risk_level=RiskLevel.LOW,
         )
 
         if not validation_results.valid:
@@ -283,7 +285,7 @@ class RefactoringExecutor:
             self.executions[execution.execution_id] = execution
             await self._save_history()
             return ExecutionResult(
-                status="failed",
+                status=ExecutionStatus.FAILED,
                 execution_id=execution.execution_id,
                 suggestion_id=execution.suggestion_id,
                 approval_id=execution.approval_id,
@@ -342,7 +344,7 @@ class RefactoringExecutor:
         )
 
         return ExecutionResult(
-            status="success",
+            status=ExecutionStatus.SUCCESS,
             execution_id=execution.execution_id,
             suggestion_id=execution.suggestion_id,
             approval_id=execution.approval_id,
@@ -369,7 +371,7 @@ class RefactoringExecutor:
         await self._save_history()
 
         return ExecutionResult(
-            status="failed",
+            status=ExecutionStatus.FAILED,
             execution_id=execution.execution_id,
             suggestion_id=execution.suggestion_id,
             approval_id=execution.approval_id,

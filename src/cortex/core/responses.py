@@ -68,7 +68,7 @@ def error_response(
           "context": {"provided_value": -1000}
         }'
     """
-    from cortex.core.models import ErrorResponseModel
+    from cortex.core.models import ErrorResponseModel, ResponseStatus
 
     context_model: JsonDict | None = None
     if context:
@@ -81,7 +81,7 @@ def error_response(
             context_model = JsonDict.from_dict(context.to_dict())
 
     response_data = ErrorResponseModel(
-        status="error",
+        status=ResponseStatus.ERROR,
         error=str(error),
         error_type=type(error).__name__,
         action_required=action_required,

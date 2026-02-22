@@ -4,15 +4,21 @@
 """Icon helper utilities for creating emoji-based MCP icons."""
 
 import base64
-from typing import Literal
+from enum import Enum
 
 from mcp.types import Icon
+
+
+class IconMimeType(str, Enum):
+    """MIME type for icon image."""
+
+    SVG = "image/svg+xml"
 
 
 def create_emoji_icon(
     emoji: str,
     size: int = 24,
-    mime_type: Literal["image/svg+xml"] = "image/svg+xml",
+    mime_type: IconMimeType | str = IconMimeType.SVG,
 ) -> Icon:
     """Create an Icon from an emoji using SVG data URI.
 
@@ -33,10 +39,11 @@ def create_emoji_icon(
     )
     svg_bytes = svg_content.encode("utf-8")
     base64_svg = base64.b64encode(svg_bytes).decode("utf-8")
-    data_uri = f"data:{mime_type};base64,{base64_svg}"
+    mime_str = mime_type.value if isinstance(mime_type, IconMimeType) else mime_type
+    data_uri = f"data:{mime_str};base64,{base64_svg}"
     return Icon(
         src=data_uri,
-        mimeType=mime_type,
+        mimeType=mime_str,
         sizes=[f"{size}x{size}"],
     )
 

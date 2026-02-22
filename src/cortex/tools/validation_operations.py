@@ -8,7 +8,7 @@ Total: 1 tool
 """
 
 import json
-from typing import Literal, cast
+from typing import cast
 
 from cortex.core.constants import MCP_TOOL_TIMEOUT_COMPLEX, MemoryBankFile
 from cortex.core.context_logging import MCPContext, log_client
@@ -33,15 +33,8 @@ from cortex.tools.validation_helpers import (
     parse_validation_check_type,
 )
 
-# Valid check_type values for validate() (must match ValidationCheckType enum).
-ValidateCheckTypeName = Literal[
-    "schema",
-    "duplications",
-    "quality",
-    "infrastructure",
-    "timestamps",
-    "roadmap_sync",
-]
+# Type alias for check_type (must match ValidationCheckType enum).
+ValidateCheckTypeName = ValidationCheckType
 
 VALIDATE_INPUT_EXAMPLES: list[dict[str, object]] = [
     {"check_type": "schema", "file_name": MemoryBankFile.PROJECT_BRIEF},

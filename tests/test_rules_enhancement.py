@@ -348,9 +348,9 @@ class TestRulesIntegration:
             local_rules + generic_rules + language_rules
         )
         # Assert at least one rule is returned when rules are indexed and threshold is low
-        assert (
-            len(all_rules) > 0
-        ), "rules() should return at least one rule for commit pipeline tasks when rules are indexed and min_relevance_score is low"
+        assert len(all_rules) > 0, (
+            "rules() should return at least one rule for commit pipeline tasks when rules are indexed and min_relevance_score is low"
+        )
 
         # Test analyze task description with low threshold
         analyze_result = await rules_manager.get_relevant_rules(
@@ -373,9 +373,9 @@ class TestRulesIntegration:
             analyze_local + analyze_generic + analyze_language
         )
         # Assert at least one rule is returned when rules are indexed and threshold is low
-        assert (
-            len(analyze_all) > 0
-        ), "rules() should return at least one rule for analyze tasks when rules are indexed and min_relevance_score is low"
+        assert len(analyze_all) > 0, (
+            "rules() should return at least one rule for analyze tasks when rules are indexed and min_relevance_score is low"
+        )
 
 
 def run_tests():

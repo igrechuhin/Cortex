@@ -5,7 +5,7 @@ This module contains Pydantic models for rules operations,
 including context detection, git operations, and synapse management.
 """
 
-from typing import Literal
+from enum import Enum
 
 from pydantic import ConfigDict, Field
 
@@ -24,6 +24,27 @@ class RulesBaseModel(DictLikeModel):
         validate_assignment=True,
         validate_default=True,
     )
+
+
+class RuleSource(str, Enum):
+    """Source of a rule (local workspace or shared synapse)."""
+
+    LOCAL = "local"
+    SHARED = "shared"
+
+
+class PromptSource(str, Enum):
+    """Source of a prompt."""
+
+    SYNAPSE = "synapse"
+
+
+class SynapseInitStatus(str, Enum):
+    """Status of Synapse initialization."""
+
+    SUCCESS = "success"
+    ERROR = "error"
+    ALREADY_INITIALIZED = "already_initialized"
 
 
 # ============================================================================
@@ -141,9 +162,7 @@ class RuleFileInfo(RulesBaseModel):
     content: str = Field(description="File content")
     tokens: int = Field(default=0, ge=0, description="Token count")
     category: str | None = Field(default=None, description="Rule category")
-    source: Literal["local", "shared"] = Field(
-        default="local", description="Rule source"
-    )
+    source: RuleSource = Field(default=RuleSource.LOCAL, description="Rule source")
     priority: int = Field(default=50, ge=0, description="Rule priority")
     relevance_score: float = Field(
         default=0.0, ge=0.0, le=1.0, description="Relevance score"
@@ -196,9 +215,7 @@ class LoadedRule(RulesBaseModel):
     content: str = Field(description="Rule content")
     priority: int = Field(default=50, ge=0, description="Rule priority")
     keywords: list[str] = Field(default_factory=list, description="Rule keywords")
-    source: Literal["local", "shared"] = Field(
-        default="shared", description="Rule source"
-    )
+    source: RuleSource = Field(default=RuleSource.SHARED, description="Rule source")
 
 
 # ============================================================================
@@ -250,7 +267,9 @@ class LoadedPrompt(RulesBaseModel):
     keywords: list[str] = Field(default_factory=list, description="Keywords for search")
     content: str = Field(description="Prompt content")
     path: str = Field(description="Full path to prompt file")
-    source: Literal["synapse"] = Field(default="synapse", description="Prompt source")
+    source: PromptSource = Field(
+        default=PromptSource.SYNAPSE, description="Prompt source"
+    )
 
 
 # ============================================================================
@@ -261,9 +280,7 @@ class LoadedPrompt(RulesBaseModel):
 class SynapseInitResult(RulesBaseModel):
     """Result of Synapse initialization."""
 
-    status: Literal["success", "error", "already_initialized"] = Field(
-        description="Operation status"
-    )
+    status: SynapseInitStatus = Field(description="Operation status")
     action: str | None = Field(default=None, description="Action performed")
     repo_url: str | None = Field(default=None, description="Repository URL")
     local_path: str | None = Field(default=None, description="Local path")

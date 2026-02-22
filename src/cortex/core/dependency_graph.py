@@ -96,9 +96,9 @@ class DependencyGraph:
         # Dynamic dependencies will be added in Phase 2 (from markdown links)
         self.dynamic_deps: dict[str, list[str]] = {}
         # Track link types (reference vs transclusion)
-        self.link_types: dict[str, dict[str, str]] = (
-            {}
-        )  # {from_file: {to_file: "reference"|"transclusion"}}
+        self.link_types: dict[
+            str, dict[str, str]
+        ] = {}  # {from_file: {to_file: "reference"|"transclusion"}}
 
     def compute_loading_order(self, files: list[str] | None = None) -> list[str]:
         """

@@ -5,7 +5,8 @@ These models are used by validation/* modules to return structured data.
 They are separate from tools/models.py which defines MCP tool return types.
 """
 
-from typing import Literal, cast
+from enum import Enum
+from typing import cast
 
 from pydantic import BaseModel, ConfigDict, Field, StrictBool
 
@@ -19,7 +20,47 @@ from cortex.core.constants import (
     QUALITY_WEIGHT_STRUCTURE,
     SIMILARITY_THRESHOLD_DUPLICATE,
 )
-from cortex.core.models import DictLikeModel, JsonValue, ModelDict, OperationStatus
+from cortex.core.models import (
+    DictLikeModel,
+    JsonValue,
+    ModelDict,
+    OperationStatus,
+    RiskLevel,
+)
+from cortex.structure.models import HealthGrade
+
+# ============================================================================
+# Validation Enums
+# ============================================================================
+
+
+class ValidationSeverity(str, Enum):
+    """Validation error severity."""
+
+    ERROR = "error"
+    WARNING = "warning"
+    INFO = "info"
+
+
+class QualityHealthStatus(str, Enum):
+    """Quality score health status."""
+
+    HEALTHY = "healthy"
+    WARNING = "warning"
+    CRITICAL = "critical"
+
+
+class CheckTypeInfrastructure(str, Enum):
+    """Check type for infrastructure validation."""
+
+    INFRASTRUCTURE = "infrastructure"
+
+
+class CheckTypeTimestamps(str, Enum):
+    """Check type for timestamp validation."""
+
+    TIMESTAMPS = "timestamps"
+
 
 # ============================================================================
 # Validation Config Models (from validation_config.py)
@@ -353,9 +394,7 @@ class ValidationError(BaseModel):
     model_config = ConfigDict(extra="forbid", validate_assignment=True)
 
     type: str = Field(description="Error type identifier")
-    severity: Literal["error", "warning", "info"] = Field(
-        description="Error severity level"
-    )
+    severity: ValidationSeverity = Field(description="Error severity level")
     message: str = Field(description="Error message")
     suggestion: str | None = Field(default=None, description="Suggested fix")
 
@@ -425,10 +464,8 @@ class QualityScoreResult(BaseModel):
 
     overall_score: int = Field(ge=0, le=100, description="Overall quality score")
     breakdown: CategoryBreakdown = Field(description="Score breakdown by category")
-    grade: Literal["A", "B", "C", "D", "F"] = Field(description="Letter grade")
-    status: Literal["healthy", "warning", "critical"] = Field(
-        description="Health status"
-    )
+    grade: HealthGrade = Field(description="Letter grade")
+    status: QualityHealthStatus = Field(description="Health status")
     issues: list[str] = Field(default_factory=list, description="Identified issues")
     recommendations: list[str] = Field(
         default_factory=list, description="Actionable recommendations"
@@ -442,7 +479,7 @@ class FileQualityScore(BaseModel):
 
     file_name: str = Field(description="File name")
     score: int = Field(ge=0, le=100, description="File quality score")
-    grade: Literal["A", "B", "C", "D", "F"] = Field(description="Letter grade")
+    grade: HealthGrade = Field(description="Letter grade")
     validation: ValidationResult = Field(description="Validation results")
     freshness: int = Field(ge=0, le=100, description="Freshness score")
     structure: int = Field(ge=0, le=100, description="Structure score")
@@ -503,7 +540,7 @@ class InfrastructureIssueModel(BaseModel):
     model_config = ConfigDict(extra="forbid", validate_assignment=True)
 
     type: str = Field(description="Issue type")
-    severity: Literal["high", "medium", "low"] = Field(description="Issue severity")
+    severity: RiskLevel = Field(description="Issue severity")
     description: str = Field(description="Issue description")
     location: str = Field(description="Issue location")
     suggestion: str = Field(description="Suggested fix")
@@ -517,7 +554,7 @@ class InfrastructureValidationResultModel(BaseModel):
     model_config = ConfigDict(extra="forbid", validate_assignment=True)
 
     status: OperationStatus = Field(description="Validation status")
-    check_type: Literal["infrastructure"] = Field(description="Type of check")
+    check_type: CheckTypeInfrastructure = Field(description="Type of check")
     checks_performed: dict[str, bool] = Field(
         default_factory=lambda: dict[str, bool](),
         description="Checks performed and results",
@@ -590,8 +627,8 @@ class SingleFileTimestampResult(BaseModel):
     model_config = ConfigDict(extra="forbid", validate_assignment=True)
 
     status: OperationStatus = Field(..., description="Operation status")
-    check_type: Literal["timestamps"] = Field(
-        default="timestamps", description="Type of check"
+    check_type: CheckTypeTimestamps = Field(
+        default=CheckTypeTimestamps.TIMESTAMPS, description="Type of check"
     )
     file_name: str | None = Field(default=None, description="File name validated")
     valid_count: int = Field(default=0, ge=0, description="Number of valid timestamps")
@@ -614,11 +651,11 @@ class AllFilesTimestampResult(BaseModel):
 
     model_config = ConfigDict(extra="forbid", validate_assignment=True)
 
-    status: Literal["success"] = Field(
-        default="success", description="Operation status"
+    status: OperationStatus = Field(
+        default=OperationStatus.SUCCESS, description="Operation status"
     )
-    check_type: Literal["timestamps"] = Field(
-        default="timestamps", description="Type of check"
+    check_type: CheckTypeTimestamps = Field(
+        default=CheckTypeTimestamps.TIMESTAMPS, description="Type of check"
     )
     total_valid: int = Field(..., ge=0, description="Total valid timestamps")
     total_invalid_format: int = Field(

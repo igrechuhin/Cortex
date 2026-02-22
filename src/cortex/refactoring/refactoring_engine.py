@@ -18,6 +18,7 @@ from cortex.refactoring.models import (
     RefactoringPriority,
     RefactoringSuggestionModel,
     RefactoringType,
+    RiskLevel,
 )
 
 InsightDict = ModelDict
@@ -415,7 +416,7 @@ def _build_estimated_impact(
         files_affected=len(affected_files),
         complexity_reduction=impact_score * 0.5,
         maintainability_improvement=impact_score * 0.7,
-        risk_level="low",
+        risk_level=RiskLevel.LOW,
     )
 
 

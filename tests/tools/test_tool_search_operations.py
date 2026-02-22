@@ -101,9 +101,9 @@ async def test_tool_search_discovery_returns_only_deferred_tools() -> None:
     assert data["status"] == "success"
     returned_names = {t["name"] for t in data["tools"]}
     assert returned_names <= deferred, "search_tools must return only deferred tools"
-    assert returned_names.isdisjoint(
-        always
-    ), "search_tools must not return always_loaded"
+    assert returned_names.isdisjoint(always), (
+        "search_tools must not return always_loaded"
+    )
 
 
 def test_search_tools_is_always_loaded() -> None:

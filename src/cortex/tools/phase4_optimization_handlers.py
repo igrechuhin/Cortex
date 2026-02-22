@@ -61,53 +61,60 @@ def _determine_agent_role(role: str | None, task_description: str) -> AgentRole:
     return explicit_role or detect_agent_role(task_description)
 
 
-def _validate_zero_budget_for_non_trivial(
+def _validate_explicit_budget_for_non_trivial(
     task_description: str, token_budget: int | None
 ) -> str | None:
-    """Validate token_budget=0 is not used for non-trivial tasks.
+    """Require explicit non-zero token_budget for non-trivial tasks.
+
+    For implement/refactor/fix/debug and similar flows, token_budget must be
+    explicitly provided (not omitted and not 0). Returns a validation error
+    when the task is non-trivial and token_budget is None or 0.
 
     Args:
         task_description: Task description
-        token_budget: Token budget
+        token_budget: Token budget (None = omitted)
 
     Returns:
         Error JSON string if validation fails, None otherwise
     """
-    if token_budget == 0 and is_non_trivial_task(task_description):
-        return json.dumps(
-            {
-                "status": "error",
-                "error": (
-                    "token_budget=0 is not allowed for non-trivial tasks "
-                    "(implement/add, fix/debug, refactor, test, optimize). "
-                    "Use a non-zero budget (e.g., 10000 for implement/add, "
-                    "15000 for fix/debug) or ensure the task is truly trivial."
-                ),
-                "error_type": "ValueError",
-                "task_description": task_description,
-                "suggestion": (
-                    "For non-trivial tasks, use appropriate token budgets: "
-                    "10000 for implement/add/update/modify, "
-                    "15000 for fix/debug/other, "
-                    "20000-30000 for small features, "
-                    "15000 for optimization, "
-                    "7000-8000 for narrow review/documentation."
-                ),
-            },
-            indent=2,
-        )
-    return None
+    if not is_non_trivial_task(task_description):
+        return None
+    if token_budget is not None and token_budget != 0:
+        return None
+    return json.dumps(
+        {
+            "status": "error",
+            "error": (
+                "Explicit non-zero token_budget is required for non-trivial tasks "
+                "(implement/add, fix/debug, refactor, test, optimize). "
+                "Omitted or zero token_budget is not allowed. "
+                "Use e.g. token_budget=10000 for implement/add, 15000 for fix/debug."
+            ),
+            "error_type": "ValueError",
+            "task_description": task_description,
+            "action_required": "Pass an explicit positive token_budget (e.g. 10000 or 15000).",
+            "suggestion": (
+                "For non-trivial tasks, use appropriate token budgets: "
+                "10000 for implement/add/update/modify, "
+                "15000 for fix/debug/other, "
+                "20000-30000 for small features, "
+                "15000 for optimization, "
+                "7000-8000 for narrow review/documentation."
+            ),
+        },
+        indent=2,
+    )
 
 
 def _resolve_load_context_budget(
     task_description: str, token_budget: int | None
 ) -> tuple[int | None, str | None]:
-    """Validate zero budget for non-trivial tasks and resolve effective budget.
+    """Validate explicit budget for non-trivial tasks and resolve effective budget.
 
     Returns:
         (effective_budget, error_json_or_none). If error is non-None, caller should return it.
     """
-    validation_error = _validate_zero_budget_for_non_trivial(
+    validation_error = _validate_explicit_budget_for_non_trivial(
         task_description, token_budget
     )
     if validation_error:
@@ -302,7 +309,7 @@ async def _validate_and_initialize_context_loading(
     Returns:
         Tuple of (root, managers, error) where error is None if successful
     """
-    validation_error = _validate_zero_budget_for_non_trivial(
+    validation_error = _validate_explicit_budget_for_non_trivial(
         task_description, token_budget
     )
     if validation_error:
@@ -688,6 +695,10 @@ async def get_relevance_scores(
 # Phase 43: Optimization resources (read-only, default params)
 
 
+# Default token budget for load_context_resource (no param in URI); ensures explicit budget for validation.
+_LOAD_CONTEXT_RESOURCE_DEFAULT_BUDGET = 10000
+
+
 @mcp.resource(uri="cortex://optimization/load-context/{task_description}")
 @ensure_usage_context
 @mcp_resource_wrapper(timeout=MCP_TOOL_TIMEOUT_COMPLEX)
@@ -696,7 +707,7 @@ async def load_context_resource(task_description: str) -> str:
     decoded = unquote(task_description)
     return await load_context(
         task_description=decoded,
-        token_budget=None,
+        token_budget=_LOAD_CONTEXT_RESOURCE_DEFAULT_BUDGET,
         strategy="dependency_aware",
     )
 

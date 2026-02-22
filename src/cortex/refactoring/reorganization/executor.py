@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import cast
 
 from cortex.core.models import ModelDict
-from cortex.refactoring.models import ReorganizationImpactModel
+from cortex.refactoring.models import ReorganizationImpactModel, RiskLevel
 
 
 @dataclass
@@ -97,7 +97,7 @@ class ReorganizationExecutor:
             complexity_reduction=0.4,
             maintainability_improvement=0.6,
             navigation_improvement=0.7,
-            estimated_effort="medium" if len(actions) > 10 else "low",
+            estimated_effort=RiskLevel.MEDIUM if len(actions) > 10 else RiskLevel.LOW,
         )
 
     def identify_risks(

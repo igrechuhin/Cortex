@@ -35,14 +35,20 @@ class TestContextLoggingIntegration:
         _ = test_file.write_text("# Test\n\nContent")
 
         resolve_mock = AsyncMock(return_value=temp_project_root)
+        mock_log = AsyncMock()
         with (
             patch(
-                "cortex.tools.file_operations.get_or_resolve_project_root",
+                "cortex.tools.file_manage_file_helpers.get_or_resolve_project_root",
                 resolve_mock,
             ),
             patch(
-                "cortex.tools.file_operations.log_client", new_callable=AsyncMock
-            ) as mock_log,
+                "cortex.tools.file_crud_operations.log_client",
+                mock_log,
+            ),
+            patch(
+                "cortex.tools.file_manage_file_helpers.log_client",
+                mock_log,
+            ),
         ):
             # Act
             result_str = await manage_file(
@@ -126,14 +132,20 @@ class TestContextLoggingIntegration:
         memory_bank_dir.mkdir(parents=True, exist_ok=True)
 
         resolve_mock = AsyncMock(return_value=temp_project_root)
+        mock_log = AsyncMock()
         with (
             patch(
-                "cortex.tools.file_operations.get_or_resolve_project_root",
+                "cortex.tools.file_manage_file_helpers.get_or_resolve_project_root",
                 resolve_mock,
             ),
             patch(
-                "cortex.tools.file_operations.log_client", new_callable=AsyncMock
-            ) as mock_log,
+                "cortex.tools.file_crud_operations.log_client",
+                mock_log,
+            ),
+            patch(
+                "cortex.tools.file_manage_file_helpers.log_client",
+                mock_log,
+            ),
         ):
             # Act - Try to read non-existent file
             result_str = await manage_file(

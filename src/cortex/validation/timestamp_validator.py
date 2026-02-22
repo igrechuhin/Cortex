@@ -16,6 +16,7 @@ from cortex.core.models import OperationStatus
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.validation.models import (
     AllFilesTimestampResult,
+    CheckTypeTimestamps,
     FileTimestampResultModel,
     SingleFileTimestampResult,
     TimestampScanResult,
@@ -263,7 +264,7 @@ async def validate_timestamps_single_file(
 
     result = SingleFileTimestampResult(
         status=OperationStatus.SUCCESS,
-        check_type="timestamps",
+        check_type=CheckTypeTimestamps.TIMESTAMPS,
         file_name=file_name,
         valid_count=scan_result.valid_count,
         invalid_format_count=scan_result.invalid_format_count,
@@ -359,8 +360,8 @@ def _build_timestamps_result(
     has_any_blocking_violations = total_invalid_format > 0
 
     return AllFilesTimestampResult(
-        status="success",
-        check_type="timestamps",
+        status=OperationStatus.SUCCESS,
+        check_type=CheckTypeTimestamps.TIMESTAMPS,
         total_valid=total_valid,
         total_invalid_format=total_invalid_format,
         total_invalid_with_time=total_invalid_with_time,

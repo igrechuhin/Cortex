@@ -11,8 +11,9 @@ Total: 1 tool
 
 import json
 from collections.abc import Awaitable, Callable
+from enum import Enum
 from pathlib import Path
-from typing import Literal, Protocol, cast
+from typing import Protocol, cast
 
 from cortex.core.constants import MCP_TOOL_TIMEOUT_MEDIUM
 from cortex.core.context_logging import MCPContext, log_client
@@ -68,13 +69,13 @@ ComponentHandler = Callable[
 
 
 async def get_managers(root: Path) -> ManagersDict:
-    """Runtime indirection for test patching.
+    """Resolve managers for project root.
 
-    Consolidated-tool tests patch `cortex.tools.file_operations.get_managers`.
+    Consolidated-tool tests patch `cortex.managers.initialization.get_managers`.
     """
-    from cortex.tools import file_operations
+    from cortex.managers.initialization import get_managers as _get_managers_impl
 
-    return await file_operations.get_managers(root)
+    return await _get_managers_impl(root)
 
 
 def get_component_handler(component: str) -> ComponentHandler | None:
@@ -95,16 +96,28 @@ def get_component_handler(component: str) -> ComponentHandler | None:
 
 
 # Valid component/action values for configure() (component handlers; ConfigAction).
-ConfigureComponentName = Literal["validation", "optimization", "learning"]
-ConfigureActionName = Literal["view", "update", "reset"]
+class ConfigureComponentName(str, Enum):
+    """Configuration component name."""
+
+    VALIDATION = "validation"
+    OPTIMIZATION = "optimization"
+    LEARNING = "learning"
+
+
+class ConfigureActionName(str, Enum):
+    """Configuration action name."""
+
+    VIEW = "view"
+    UPDATE = "update"
+    RESET = "reset"
 
 
 @mcp.tool(annotations=safe_write_annotations("Configure Memory Bank"))
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_MEDIUM)
 async def configure(
-    component: ConfigureComponentName,
-    action: ConfigureActionName = "view",
+    component: ConfigureComponentName | str,
+    action: ConfigureActionName | str = ConfigureActionName.VIEW,
     settings: dict[str, JsonValue] | None = None,
     key: str | None = None,
     value: JsonValue | None = None,
@@ -255,23 +268,27 @@ async def configure(
           and take effect immediately.
     """
     await log_client(ctx, "info", "configure: starting", logger_name=__name__)
-    parsed_action = parse_config_action(action)
+    component_str = (
+        component.value if isinstance(component, ConfigureComponentName) else component
+    )
+    action_str = action.value if isinstance(action, ConfigureActionName) else action
+    parsed_action = parse_config_action(action_str)
     if parsed_action is None:
         await log_client(ctx, "warning", "configure: invalid action")
-        return create_invalid_action_error(action or "null")
+        return create_invalid_action_error(action_str or "null")
     try:
         root = await resolve_project_root_async(None, ctx)
         mgrs = await get_managers(root)
-        handler = get_component_handler(component)
+        handler = get_component_handler(component_str)
         if not handler:
             await log_client(ctx, "warning", "configure: invalid component")
-            return create_invalid_component_error(component)
+            return create_invalid_component_error(component_str)
         result = await handler(mgrs, parsed_action, settings, key, value)
         await log_client(ctx, "info", "configure: completed", logger_name=__name__)
         return result
     except Exception as e:
         await log_client(ctx, "error", f"configure: failed: {e}", logger_name=__name__)
-        return create_configuration_exception_error(e, component, action)
+        return create_configuration_exception_error(e, component_str, action_str)
 
 
 def create_invalid_component_error(component: str) -> str:
@@ -656,7 +673,9 @@ def create_error_response(error: str, **extra_fields: JsonValue) -> str:
     context_dict: dict[str, JsonValue] | None = (
         context
         if isinstance(context, dict)
-        else {"context": context} if context else None
+        else {"context": context}
+        if context
+        else None
     )
     example = _build_error_example(error, available_options)
 

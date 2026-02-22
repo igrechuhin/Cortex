@@ -10,11 +10,14 @@ import pytest
 from cortex.analysis.models import (
     AntiPatternInfo,
     ComplexityAnalysisResult,
+    ComplexityAnalysisStatus,
     ComplexityMetrics,
     InsightsResult,
+    SeverityLevel,
     SummaryModel,
+    SummaryStatus,
 )
-from cortex.core.models import DependencyGraphDict, FileOrganizationResult
+from cortex.core.models import DependencyGraphDict, FileOrganizationResult, RiskLevel
 from cortex.refactoring.consolidation_detector import (
     ConsolidationOpportunity,
 )
@@ -103,12 +106,14 @@ class TestAnalyzeStructure:
         # Arrange
         mock_analyzer = MagicMock()
         mock_analyzer.analyze_file_organization = AsyncMock(
-            return_value=FileOrganizationResult(status="analyzed", file_count=10)
+            return_value=FileOrganizationResult(
+                status=ComplexityAnalysisStatus.ANALYZED, file_count=10
+            )
         )
         mock_analyzer.detect_anti_patterns = AsyncMock(return_value=[])
         mock_analyzer.measure_complexity_metrics = AsyncMock(
             return_value=ComplexityAnalysisResult(
-                status="analyzed",
+                status=ComplexityAnalysisStatus.ANALYZED,
                 metrics=ComplexityMetrics(max_dependency_depth=2),
             )
         )
@@ -145,7 +150,7 @@ class TestAnalyzeInsights:
             low_impact_count=0,
             estimated_total_token_savings=0,
             insights=[],
-            summary=SummaryModel(status="success"),
+            summary=SummaryModel(status=SummaryStatus.SUCCESS),
         )
         mock_engine.generate_insights = AsyncMock(return_value=mock_insights)
 
@@ -172,7 +177,7 @@ class TestAnalyzeInsights:
             low_impact_count=0,
             estimated_total_token_savings=0,
             insights=[],
-            summary=SummaryModel(status="success"),
+            summary=SummaryModel(status=SummaryStatus.SUCCESS),
         )
         mock_engine.generate_insights = AsyncMock(return_value=mock_insights)
         mock_engine.export_insights = AsyncMock(return_value="# Markdown Report")
@@ -203,7 +208,7 @@ class TestAnalyzeInsights:
             low_impact_count=0,
             estimated_total_token_savings=0,
             insights=[],
-            summary=SummaryModel(status="success"),
+            summary=SummaryModel(status=SummaryStatus.SUCCESS),
         )
         mock_engine.generate_insights = AsyncMock(return_value=mock_insights)
         mock_engine.export_insights = AsyncMock(return_value="Text Report")
@@ -294,11 +299,15 @@ class TestAnalyzeHandler:
         ) as mock_get_managers:
             mock_structure_analyzer = MagicMock()
             mock_structure_analyzer.analyze_file_organization = AsyncMock(
-                return_value=FileOrganizationResult(status="analyzed", file_count=5)
+                return_value=FileOrganizationResult(
+                    status=ComplexityAnalysisStatus.ANALYZED, file_count=5
+                )
             )
             mock_structure_analyzer.detect_anti_patterns = AsyncMock(return_value=[])
             mock_structure_analyzer.measure_complexity_metrics = AsyncMock(
-                return_value=ComplexityAnalysisResult(status="analyzed")
+                return_value=ComplexityAnalysisResult(
+                    status=ComplexityAnalysisStatus.ANALYZED
+                )
             )
             mock_get_managers.return_value = make_test_managers(
                 pattern_analyzer=MagicMock(),
@@ -331,7 +340,7 @@ class TestAnalyzeHandler:
                     low_impact_count=0,
                     estimated_total_token_savings=0,
                     insights=[],
-                    summary=SummaryModel(status="success"),
+                    summary=SummaryModel(status=SummaryStatus.SUCCESS),
                 )
             )
             mock_get_managers.return_value = make_test_managers(
@@ -384,11 +393,15 @@ class TestAnalyzeContextLogging:
         mock_ctx = AsyncMock()
         mock_structure_analyzer = MagicMock()
         mock_structure_analyzer.analyze_file_organization = AsyncMock(
-            return_value=FileOrganizationResult(status="analyzed", file_count=5)
+            return_value=FileOrganizationResult(
+                status=ComplexityAnalysisStatus.ANALYZED, file_count=5
+            )
         )
         mock_structure_analyzer.detect_anti_patterns = AsyncMock(return_value=[])
         mock_structure_analyzer.measure_complexity_metrics = AsyncMock(
-            return_value=ComplexityAnalysisResult(status="analyzed")
+            return_value=ComplexityAnalysisResult(
+                status=ComplexityAnalysisStatus.ANALYZED
+            )
         )
         with (
             patch(
@@ -511,11 +524,15 @@ class TestDispatchAnalysisTarget:
         # Arrange
         mock_structure_analyzer = MagicMock()
         mock_structure_analyzer.analyze_file_organization = AsyncMock(
-            return_value=FileOrganizationResult(status="analyzed", file_count=1)
+            return_value=FileOrganizationResult(
+                status=ComplexityAnalysisStatus.ANALYZED, file_count=1
+            )
         )
         mock_structure_analyzer.detect_anti_patterns = AsyncMock(return_value=[])
         mock_structure_analyzer.measure_complexity_metrics = AsyncMock(
-            return_value=ComplexityAnalysisResult(status="analyzed")
+            return_value=ComplexityAnalysisResult(
+                status=ComplexityAnalysisStatus.ANALYZED
+            )
         )
 
         analyzers = (MagicMock(), mock_structure_analyzer, MagicMock())
@@ -543,7 +560,7 @@ class TestDispatchAnalysisTarget:
                 low_impact_count=0,
                 estimated_total_token_savings=0,
                 insights=[],
-                summary=SummaryModel(status="success"),
+                summary=SummaryModel(status=SummaryStatus.SUCCESS),
             )
         )
 
@@ -924,20 +941,22 @@ class TestGetStructureData:
         # Arrange
         mock_structure_analyzer = MagicMock()
         mock_structure_analyzer.analyze_file_organization = AsyncMock(
-            return_value=FileOrganizationResult(status="analyzed", file_count=10)
+            return_value=FileOrganizationResult(
+                status=ComplexityAnalysisStatus.ANALYZED, file_count=10
+            )
         )
         mock_structure_analyzer.detect_anti_patterns = AsyncMock(
             return_value=[
                 AntiPatternInfo(
                     type="naming_inconsistency",
-                    severity="low",
+                    severity=SeverityLevel.LOW,
                     description="Naming inconsistency",
                 )
             ]
         )
         mock_structure_analyzer.measure_complexity_metrics = AsyncMock(
             return_value=ComplexityAnalysisResult(
-                status="analyzed",
+                status=ComplexityAnalysisStatus.ANALYZED,
                 metrics=ComplexityMetrics(max_dependency_depth=2),
             )
         )
@@ -977,18 +996,22 @@ class TestSuggestReorganization:
                     complexity_reduction=0.0,
                     maintainability_improvement=0.0,
                     navigation_improvement=0.0,
-                    estimated_effort="low",
+                    estimated_effort=RiskLevel.LOW,
                 ),
             )
         )
 
         mock_structure_analyzer = MagicMock()
         mock_structure_analyzer.analyze_file_organization = AsyncMock(
-            return_value=FileOrganizationResult(status="analyzed", file_count=1)
+            return_value=FileOrganizationResult(
+                status=ComplexityAnalysisStatus.ANALYZED, file_count=1
+            )
         )
         mock_structure_analyzer.detect_anti_patterns = AsyncMock(return_value=[])
         mock_structure_analyzer.measure_complexity_metrics = AsyncMock(
-            return_value=ComplexityAnalysisResult(status="analyzed")
+            return_value=ComplexityAnalysisResult(
+                status=ComplexityAnalysisStatus.ANALYZED
+            )
         )
 
         mock_graph = MagicMock()
@@ -1024,18 +1047,22 @@ class TestSuggestReorganization:
                     complexity_reduction=0.0,
                     maintainability_improvement=0.0,
                     navigation_improvement=0.0,
-                    estimated_effort="low",
+                    estimated_effort=RiskLevel.LOW,
                 ),
             )
         )
 
         mock_structure_analyzer = MagicMock()
         mock_structure_analyzer.analyze_file_organization = AsyncMock(
-            return_value=FileOrganizationResult(status="analyzed", file_count=1)
+            return_value=FileOrganizationResult(
+                status=ComplexityAnalysisStatus.ANALYZED, file_count=1
+            )
         )
         mock_structure_analyzer.detect_anti_patterns = AsyncMock(return_value=[])
         mock_structure_analyzer.measure_complexity_metrics = AsyncMock(
-            return_value=ComplexityAnalysisResult(status="analyzed")
+            return_value=ComplexityAnalysisResult(
+                status=ComplexityAnalysisStatus.ANALYZED
+            )
         )
 
         mock_graph = MagicMock()
@@ -1159,20 +1186,24 @@ class TestProcessRefactoringRequest:
                             complexity_reduction=0.0,
                             maintainability_improvement=0.0,
                             navigation_improvement=0.0,
-                            estimated_effort="low",
+                            estimated_effort=RiskLevel.LOW,
                         ),
                     )
                 )
 
                 mock_structure_analyzer = MagicMock()
                 mock_structure_analyzer.analyze_file_organization = AsyncMock(
-                    return_value=FileOrganizationResult(status="analyzed", file_count=0)
+                    return_value=FileOrganizationResult(
+                        status=ComplexityAnalysisStatus.ANALYZED, file_count=0
+                    )
                 )
                 mock_structure_analyzer.detect_anti_patterns = AsyncMock(
                     return_value=[]
                 )
                 mock_structure_analyzer.measure_complexity_metrics = AsyncMock(
-                    return_value=ComplexityAnalysisResult(status="analyzed")
+                    return_value=ComplexityAnalysisResult(
+                        status=ComplexityAnalysisStatus.ANALYZED
+                    )
                 )
 
                 mock_graph = MagicMock()

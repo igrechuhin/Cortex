@@ -5,7 +5,7 @@ This module contains Pydantic models for link parsing, transclusion,
 and link validation operations.
 """
 
-from typing import Literal
+from enum import Enum
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -22,6 +22,13 @@ class LinkingBaseModel(BaseModel):
         validate_assignment=True,
         validate_default=True,
     )
+
+
+class LinkType(str, Enum):
+    """Type of link (markdown or transclusion)."""
+
+    MARKDOWN = "markdown"
+    TRANSCLUSION = "transclusion"
 
 
 # ============================================================================
@@ -80,7 +87,7 @@ class UnifiedLinkModel(LinkingBaseModel):
 
     target: str = Field(..., description="Link target path")
     line: int = Field(..., ge=1, description="Line number in source file")
-    type: Literal["markdown", "transclusion"] = Field(..., description="Link type")
+    type: LinkType = Field(..., description="Link type")
     section: str | None = Field(default=None, description="Target section if specified")
     text: str | None = Field(
         default=None, description="Link text (markdown links only)"
@@ -98,7 +105,7 @@ class BrokenLinkDetail(LinkingBaseModel):
     line: int = Field(..., ge=1, description="Line number")
     target: str = Field(..., description="Link target")
     section: str | None = Field(default=None, description="Section if specified")
-    type: Literal["markdown", "transclusion"] = Field(..., description="Link type")
+    type: LinkType = Field(..., description="Link type")
     error: str = Field(..., description="Error message")
     suggestion: str = Field(..., description="Suggested fix")
 
@@ -109,7 +116,7 @@ class LinkWarningDetail(LinkingBaseModel):
     line: int = Field(..., ge=1, description="Line number")
     target: str = Field(..., description="Link target")
     section: str = Field(..., description="Missing section")
-    type: Literal["markdown", "transclusion"] = Field(..., description="Link type")
+    type: LinkType = Field(..., description="Link type")
     warning: str = Field(..., description="Warning message")
     available_sections: list[str] = Field(
         default_factory=list, description="Available sections in target file"
@@ -214,9 +221,7 @@ class BrokenLinkInfo(LinkingBaseModel):
 
     target: str = Field(..., description="Link target")
     line_number: int = Field(..., ge=1, description="Line number")
-    link_type: Literal["markdown", "transclusion"] = Field(
-        ..., description="Type of link"
-    )
+    link_type: LinkType = Field(..., description="Type of link")
     error: str = Field(..., description="Error description")
     suggestion: str | None = Field(default=None, description="Suggested fix")
 

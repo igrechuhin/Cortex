@@ -16,13 +16,12 @@ this initial implementation.
 
 from __future__ import annotations
 
-# pyright: reportUnknownVariableType=false
 import json
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from enum import Enum
 from pathlib import Path
-from typing import Literal, cast
+from typing import cast
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -34,6 +33,7 @@ from cortex.core.mcp_stability import (
     ensure_usage_context,
     mcp_tool_wrapper,
 )
+from cortex.core.models import OperationStatus
 from cortex.core.path_resolver import (
     CortexResourceType,
     get_cache_path,
@@ -285,7 +285,7 @@ class RunToolEvaluationPayload(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    status: Literal["success"] = "success"
+    status: OperationStatus = OperationStatus.SUCCESS
     project_root: str = Field(description="Project root path")
     tasks_loaded: int = Field(ge=0, description="Number of tasks loaded")
     generated_at: str = Field(description="Suite generation timestamp")
@@ -672,7 +672,7 @@ def _build_evaluation_payload(
     """Build JSON-serializable payload for run_tool_evaluation."""
     cache_path = get_cache_path(root, "evals") / "last_suite.json"
     return RunToolEvaluationPayload(
-        status="success",
+        status=OperationStatus.SUCCESS,
         project_root=str(root),
         tasks_loaded=len(tasks),
         generated_at=suite.generated_at,
@@ -714,16 +714,16 @@ async def load_optimization_history(
     raw = await read_cache_json(root, _OPTIMIZATION_HISTORY_KEY)
     if not raw or not isinstance(raw, dict) or "runs" not in raw:
         return []
-    runs = raw.get("runs")
-    if not isinstance(runs, list):
+    runs_raw = raw.get("runs")
+    if not isinstance(runs_raw, list):
         return []
+    runs: list[dict[str, object]] = cast(list[dict[str, object]], runs_raw)
     records: list[OptimizationRunRecord] = []
     for item in runs:
-        if isinstance(item, dict):
-            try:
-                records.append(OptimizationRunRecord.model_validate(item))
-            except Exception:
-                continue
+        try:
+            records.append(OptimizationRunRecord.model_validate(item))
+        except Exception:
+            continue
     return records
 
 

@@ -49,9 +49,9 @@ class UsageOrganizationInsights:
         Returns:
             Insight dictionary or None if no unused files found
         """
-        unused_files: list[UnusedFileEntry] = (
-            await self.pattern_analyzer.get_unused_files(time_range_days=60)
-        )
+        unused_files: list[
+            UnusedFileEntry
+        ] = await self.pattern_analyzer.get_unused_files(time_range_days=60)
 
         if len(unused_files) < 3:
             return None
@@ -132,9 +132,9 @@ class UsageOrganizationInsights:
         Returns:
             Insight dictionary or None if no patterns found
         """
-        co_access: list[CoAccessPattern] = (
-            await self.pattern_analyzer.get_co_access_patterns(min_co_access_count=5)
-        )
+        co_access: list[
+            CoAccessPattern
+        ] = await self.pattern_analyzer.get_co_access_patterns(min_co_access_count=5)
 
         if len(co_access) < 3:
             return None

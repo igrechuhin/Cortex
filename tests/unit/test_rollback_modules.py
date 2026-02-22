@@ -19,7 +19,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from cortex.core.models import VersionMetadata
+from cortex.core.models import ChangeType, VersionMetadata
 from cortex.refactoring.models import RefactoringStatus, RollbackRecordModel
 
 
@@ -369,7 +369,7 @@ class TestVersionSnapshots:
             content_hash="hash",
             size_bytes=0,
             token_count=0,
-            change_type="created",
+            change_type=ChangeType.CREATED,
             snapshot_path=f".cortex/history/snapshots/v{version}.md",
             changed_sections=[],
             change_description=change_description,

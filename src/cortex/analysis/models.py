@@ -5,7 +5,7 @@ This module contains Pydantic models for pattern analysis and insight types,
 migrated from legacy dict-based shapes for better validation and IDE support.
 """
 
-from typing import Literal
+from enum import Enum
 
 from pydantic import ConfigDict, Field
 
@@ -35,6 +35,37 @@ class AnalysisBaseModel(DictLikeModel):
 # ============================================================================
 # Pattern Types (from pattern_types.py)
 # ============================================================================
+
+
+class UnusedFileStatus(str, Enum):
+    """Status of a file in unused-file analysis."""
+
+    STALE = "stale"
+    NEVER_ACCESSED = "never_accessed"
+
+
+class SeverityLevel(str, Enum):
+    """Severity or priority level."""
+
+    HIGH = "high"
+    MEDIUM = "medium"
+    LOW = "low"
+
+
+class SummaryStatus(str, Enum):
+    """Status of a summary or result."""
+
+    SUCCESS = "success"
+    ERROR = "error"
+    WARNING = "warning"
+
+
+class ComplexityAnalysisStatus(str, Enum):
+    """Status of a complexity analysis result."""
+
+    ANALYZED = "analyzed"
+    NO_FILES = "no_files"
+    ERROR = "error"
 
 
 class AccessRecord(AnalysisBaseModel):
@@ -85,7 +116,7 @@ class UnusedFileEntry(AnalysisBaseModel):
         None, ge=0, description="Days since last access"
     )
     total_accesses: int = Field(..., ge=0, description="Total access count")
-    status: Literal["stale", "never_accessed"] = Field(..., description="File status")
+    status: UnusedFileStatus = Field(..., description="File status")
 
 
 class TaskPatternResult(AnalysisBaseModel):
@@ -207,9 +238,7 @@ class InsightModel(AnalysisBaseModel):
     impact_score: float | None = Field(
         default=None, ge=0.0, le=1.0, description="Impact score 0-1"
     )
-    severity: Literal["high", "medium", "low"] | None = Field(
-        default=None, description="Severity level"
-    )
+    severity: SeverityLevel | None = Field(default=None, description="Severity level")
     evidence: InsightEvidence | None = Field(
         default=None, description="Supporting evidence"
     )
@@ -227,8 +256,8 @@ class RecommendationEntry(AnalysisBaseModel):
 
     title: str = Field(..., description="Recommendation title")
     description: str = Field(..., description="Recommendation description")
-    priority: Literal["high", "medium", "low"] = Field(
-        default="medium", description="Priority level"
+    priority: SeverityLevel = Field(
+        default=SeverityLevel.MEDIUM, description="Priority level"
     )
     estimated_impact: float = Field(
         default=0.0, ge=0.0, le=1.0, description="Estimated impact 0-1"
@@ -243,9 +272,7 @@ class SummaryModel(AnalysisBaseModel):
         validate_assignment=True,
     )
 
-    status: Literal["success", "error", "warning"] | None = Field(
-        default=None, description="Summary status"
-    )
+    status: SummaryStatus | None = Field(default=None, description="Summary status")
     message: str | None = Field(default=None, description="Summary message")
     high_severity_count: int | None = Field(
         default=None, ge=0, description="High severity count"
@@ -366,9 +393,7 @@ class UnusedFileInfo(AnalysisBaseModel):
     recommendation: str | None = Field(
         default=None, description="Recommendation for the file"
     )
-    status: Literal["stale", "never_accessed"] | None = Field(
-        default=None, description="File status"
-    )
+    status: UnusedFileStatus | None = Field(default=None, description="File status")
 
 
 # ============================================================================
@@ -399,9 +424,7 @@ class AntiPatternInfo(AnalysisBaseModel):
     type: str = Field(..., description="Anti-pattern type")
     file: str | None = Field(default=None, description="Affected file")
     files: list[str] = Field(default_factory=list, description="Affected files")
-    severity: Literal["high", "medium", "low"] = Field(
-        ..., description="Severity level"
-    )
+    severity: SeverityLevel = Field(..., description="Severity level")
     description: str = Field(..., description="Description of the anti-pattern")
     dependency_count: int | None = Field(
         default=None, ge=0, description="Dependency count (when applicable)"
@@ -459,9 +482,7 @@ class ComplexityHotspot(AnalysisBaseModel):
 class ComplexityAnalysisResult(AnalysisBaseModel):
     """Result of complexity analysis."""
 
-    status: Literal["analyzed", "no_files", "error"] = Field(
-        ..., description="Analysis status"
-    )
+    status: ComplexityAnalysisStatus = Field(..., description="Analysis status")
     metrics: ComplexityMetrics = Field(
         default_factory=ComplexityMetrics, description="Complexity metrics"
     )
@@ -529,6 +550,8 @@ class StructureAnalysisData(AnalysisBaseModel):
         description="Detected anti-patterns",
     )
     complexity_metrics: ComplexityAnalysisResult = Field(
-        default_factory=lambda: ComplexityAnalysisResult(status="no_files"),
+        default_factory=lambda: ComplexityAnalysisResult(
+            status=ComplexityAnalysisStatus.NO_FILES
+        ),
         description="Complexity analysis result",
     )

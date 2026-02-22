@@ -12,7 +12,10 @@ from cortex.core.constants import MCP_TOOL_TIMEOUT_FAST
 from cortex.core.mcp_annotations import read_only_annotations
 from cortex.core.mcp_stability import ensure_usage_context, mcp_tool_wrapper
 from cortex.server import mcp
-from cortex.tools.tool_categories import search_deferred_tools
+from cortex.tools.tool_categories import (
+    ToolCategoryName,
+    search_deferred_tools,
+)
 
 
 @mcp.tool(  # pyright: ignore[reportUntypedFunctionDecorator]
@@ -49,7 +52,11 @@ async def search_tools(
         limit = 1
     if limit > 50:
         limit = 50
-    cat = category if category in ("deferred_medium", "deferred_low") else None
+    cat: ToolCategoryName | None = (
+        ToolCategoryName(category)
+        if category in ("deferred_medium", "deferred_low")
+        else None
+    )
     matches = search_deferred_tools(query, category=cat, limit=limit)
     return json.dumps(
         {

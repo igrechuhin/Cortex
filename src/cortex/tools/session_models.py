@@ -122,6 +122,7 @@ class SessionBrief(StrictBaseModel):
         None,
         description="Last session handoff from compact_session (if available)",
     )
+    # Pyright reports reportUnknownVariableType for list[ConcurrentSession] in Field (known limitation)
     concurrent_sessions: list[ConcurrentSession] = Field(  # type: ignore[reportUnknownVariableType]
         default_factory=list,
         description="List of concurrent agent sessions (excluding current session)",
@@ -200,6 +201,7 @@ class ListActiveTasksResult(StrictBaseModel):
     """Result of listing active task locks."""
 
     status: OperationStatus = Field(default=OperationStatus.SUCCESS)
+    # Pyright reports reportUnknownVariableType for list[TaskLock] in Field (known limitation)
     locks: list[TaskLock] = Field(  # type: ignore[reportUnknownVariableType]
         default_factory=list, description="List of active task locks"
     )

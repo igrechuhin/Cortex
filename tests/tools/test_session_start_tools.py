@@ -21,15 +21,19 @@ from cortex.tools.models import (
     SessionStartErrorResult,
     SessionStartResult,
 )
-from cortex.tools.session_models import TokenBudgetStatus
-from cortex.tools.session_start_tools import (
-    _calculate_health_summary,  # type: ignore[reportPrivateUsage]
+from cortex.tools.session_brief import (
     _extract_current_focus,  # type: ignore[reportPrivateUsage]
-    _extract_next_work_item,  # type: ignore[reportPrivateUsage]
     _extract_recent_completed,  # type: ignore[reportPrivateUsage]
     _generate_session_suggestions,  # type: ignore[reportPrivateUsage]
+)
+from cortex.tools.session_health import (
+    calculate_health_summary,
+    parse_mcp_health,
+)
+from cortex.tools.session_models import TokenBudgetStatus
+from cortex.tools.session_start_tools import (
+    _extract_next_work_item,  # type: ignore[reportPrivateUsage]
     _get_git_status,  # type: ignore[reportPrivateUsage]
-    _parse_mcp_health,  # type: ignore[reportPrivateUsage]
     _parse_roadmap_sections,  # type: ignore[reportPrivateUsage]
     _run_git_command,  # type: ignore[reportPrivateUsage]
     _session_start_impl,  # type: ignore[reportPrivateUsage]
@@ -423,7 +427,7 @@ class TestCalculateHealthSummary:
 
         managers = make_test_managers(fs=fs_manager, index=metadata_index)
 
-        health = await _calculate_health_summary(
+        health = await calculate_health_summary(
             managers,
             tmp_path,  # type: ignore[arg-type]
         )
@@ -448,7 +452,7 @@ class TestCalculateHealthSummary:
 
         managers = make_test_managers(fs=fs_manager, index=metadata_index)
 
-        health = await _calculate_health_summary(
+        health = await calculate_health_summary(
             managers,
             tmp_path,  # type: ignore[arg-type]
         )
@@ -481,7 +485,7 @@ class TestCalculateHealthSummary:
 
         managers = make_test_managers(fs=fs_manager, index=metadata_index)
 
-        health = await _calculate_health_summary(
+        health = await calculate_health_summary(
             managers,
             tmp_path,  # type: ignore[arg-type]
         )
@@ -571,26 +575,26 @@ class TestParseMCPHealth:
 
     def test_parse_mcp_health_success_healthy(self) -> None:
         """Parse successful healthy response."""
-        ok, msg = _parse_mcp_health(_mcp_health_json(healthy=True))
+        ok, msg = parse_mcp_health(_mcp_health_json(healthy=True))
         assert ok is True
         assert msg is None
 
     def test_parse_mcp_health_success_unhealthy(self) -> None:
         """Parse successful but unhealthy response."""
-        ok, msg = _parse_mcp_health(_mcp_health_json(healthy=False))
+        ok, msg = parse_mcp_health(_mcp_health_json(healthy=False))
         assert ok is False
         assert msg == "MCP connection unhealthy"
 
     def test_parse_mcp_health_error_status(self) -> None:
         """Parse error status response."""
         err = json.dumps({"status": "error", "error": "Connection failed"})
-        ok, msg = _parse_mcp_health(err)
+        ok, msg = parse_mcp_health(err)
         assert ok is False
         assert "Connection failed" in (msg or "")
 
     def test_parse_mcp_health_invalid_json(self) -> None:
         """Parse invalid JSON returns unhealthy."""
-        ok, msg = _parse_mcp_health("not json")
+        ok, msg = parse_mcp_health("not json")
         assert ok is False
         assert msg is not None
 
@@ -940,7 +944,7 @@ Test.
             _ = await tool_fn(summary="Lifecycle integration test", ctx=None)
 
         with patch(
-            "cortex.tools.session_start_tools.check_mcp_connection_health",
+            "cortex.tools.session_health.check_mcp_connection_health",
             new_callable=AsyncMock,
             return_value=_mcp_health_json(healthy=True),
         ):
@@ -998,7 +1002,7 @@ Test.
             fs=fs_manager, index=metadata_index, tokens=TokenCounter()
         )
         with patch(
-            "cortex.tools.session_start_tools.check_mcp_connection_health",
+            "cortex.tools.session_health.check_mcp_connection_health",
             new_callable=AsyncMock,
             return_value=_mcp_health_json(healthy=False),
         ):

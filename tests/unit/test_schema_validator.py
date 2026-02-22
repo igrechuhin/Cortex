@@ -15,7 +15,11 @@ from pathlib import Path
 
 import pytest
 
-from cortex.validation.models import FileSchemaModel, ValidationError
+from cortex.validation.models import (
+    FileSchemaModel,
+    ValidationError,
+    ValidationSeverity,
+)
 from cortex.validation.schema_validator import DEFAULT_SCHEMAS, SchemaValidator
 from tests.helpers.schema_fixtures import MINIMAL_VALID_PROJECT_BRIEF_CONTENT
 
@@ -585,10 +589,16 @@ class TestCalculateScore:
         validator = SchemaValidator()
         errors = [
             ValidationError(
-                type="error1", severity="error", message="first", suggestion=None
+                type="error1",
+                severity=ValidationSeverity.ERROR,
+                message="first",
+                suggestion=None,
             ),
             ValidationError(
-                type="error2", severity="error", message="second", suggestion=None
+                type="error2",
+                severity=ValidationSeverity.ERROR,
+                message="second",
+                suggestion=None,
             ),
         ]
         warnings: list[ValidationError] = []
@@ -607,10 +617,16 @@ class TestCalculateScore:
         errors: list[ValidationError] = []
         warnings = [
             ValidationError(
-                type="warning1", severity="warning", message="first", suggestion=None
+                type="warning1",
+                severity=ValidationSeverity.WARNING,
+                message="first",
+                suggestion=None,
             ),
             ValidationError(
-                type="warning2", severity="warning", message="second", suggestion=None
+                type="warning2",
+                severity=ValidationSeverity.WARNING,
+                message="second",
+                suggestion=None,
             ),
         ]
         schema = FileSchemaModel()
@@ -627,15 +643,24 @@ class TestCalculateScore:
         validator = SchemaValidator()
         errors = [
             ValidationError(
-                type="error1", severity="error", message="err", suggestion=None
+                type="error1",
+                severity=ValidationSeverity.ERROR,
+                message="err",
+                suggestion=None,
             )
         ]
         warnings = [
             ValidationError(
-                type="warning1", severity="warning", message="first", suggestion=None
+                type="warning1",
+                severity=ValidationSeverity.WARNING,
+                message="first",
+                suggestion=None,
             ),
             ValidationError(
-                type="warning2", severity="warning", message="second", suggestion=None
+                type="warning2",
+                severity=ValidationSeverity.WARNING,
+                message="second",
+                suggestion=None,
             ),
         ]
         schema = FileSchemaModel()
@@ -653,7 +678,7 @@ class TestCalculateScore:
         errors = [
             ValidationError(
                 type=f"error{i}",
-                severity="error",
+                severity=ValidationSeverity.ERROR,
                 message=f"err {i}",
                 suggestion=None,
             )
@@ -662,7 +687,7 @@ class TestCalculateScore:
         warnings = [
             ValidationError(
                 type=f"warning{i}",
-                severity="warning",
+                severity=ValidationSeverity.WARNING,
                 message=f"warn {i}",
                 suggestion=None,
             )
@@ -771,9 +796,9 @@ class TestMemoryBankSchemaAlignment:
             "roadmap.md",
         )
         for file_name in core_files:
-            assert (
-                file_name in DEFAULT_SCHEMAS
-            ), f"Missing default schema for core memory bank file: {file_name}"
+            assert file_name in DEFAULT_SCHEMAS, (
+                f"Missing default schema for core memory bank file: {file_name}"
+            )
 
     def test_roadmap_schema_required_sections_match_expected_headings(self) -> None:
         """roadmap.md schema must match the canonical section headings."""

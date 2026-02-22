@@ -6,9 +6,8 @@ including oversized files, orphaned files, excessive dependencies, etc.
 """
 
 from pathlib import Path
-from typing import Literal
 
-from cortex.analysis.models import AntiPatternInfo
+from cortex.analysis.models import AntiPatternInfo, SeverityLevel
 
 
 def detect_oversized_files(all_files: list[Path]) -> list[AntiPatternInfo]:
@@ -28,7 +27,7 @@ def detect_oversized_files(all_files: list[Path]) -> list[AntiPatternInfo]:
             if size > 100000:  # > 100KB
                 return AntiPatternInfo(
                     type="oversized_file",
-                    severity="high",
+                    severity=SeverityLevel.HIGH,
                     file=file_path.name,
                     files=[],
                     description=f"File is very large ({round(size / 1024, 2)}KB)",
@@ -60,7 +59,7 @@ def detect_orphaned_files(
     patterns: list[AntiPatternInfo] = [
         AntiPatternInfo(
             type="orphaned_file",
-            severity="medium",
+            severity=SeverityLevel.MEDIUM,
             file=file_path.name,
             files=[],
             description="File has no dependencies or dependents",
@@ -93,7 +92,7 @@ def detect_excessive_dependencies(
     return [
         AntiPatternInfo(
             type="excessive_dependencies",
-            severity="medium",
+            severity=SeverityLevel.MEDIUM,
             file=file_name,
             files=[],
             dependency_count=dep_count,
@@ -119,7 +118,7 @@ def detect_excessive_dependents(
     return [
         AntiPatternInfo(
             type="excessive_dependents",
-            severity="low",
+            severity=SeverityLevel.LOW,
             file=file_name,
             files=[],
             dependent_count=dependent_count,
@@ -167,7 +166,7 @@ def detect_similar_filenames(all_files: list[Path]) -> list[AntiPatternInfo]:
     return [
         AntiPatternInfo(
             type="similar_filenames",
-            severity="low",
+            severity=SeverityLevel.LOW,
             file=None,
             files=[f"{name1}.md", f"{name2}.md"],
             description="Files have similar names",
@@ -188,10 +187,10 @@ def sort_patterns_by_severity(
     Returns:
         Sorted list of anti-patterns
     """
-    severity_order: dict[Literal["high", "medium", "low"], int] = {
-        "high": 0,
-        "medium": 1,
-        "low": 2,
+    severity_order: dict[SeverityLevel, int] = {
+        SeverityLevel.HIGH: 0,
+        SeverityLevel.MEDIUM: 1,
+        SeverityLevel.LOW: 2,
     }
 
     sorted_patterns = patterns.copy()

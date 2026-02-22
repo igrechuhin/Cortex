@@ -2,7 +2,7 @@
 
 import json
 
-from cortex.core.models import JsonDict, JsonValue
+from cortex.core.models import JsonDict, JsonValue, ResponseStatus
 from cortex.tools.tool_error_formatters import (
     ToolErrorResponse,
     format_configuration_error,
@@ -21,7 +21,7 @@ class TestToolErrorResponse:
     def test_basic_error_response(self) -> None:
         """Test basic error response creation."""
         response = ToolErrorResponse(
-            status="error",
+            status=ResponseStatus.ERROR,
             error="Test error",
             error_type="ValueError",
         )
@@ -35,7 +35,7 @@ class TestToolErrorResponse:
     def test_full_error_response(self) -> None:
         """Test error response with all fields."""
         response = ToolErrorResponse(
-            status="error",
+            status=ResponseStatus.ERROR,
             error="Test error",
             error_type="ValueError",
             suggestion="Do something else",
@@ -50,7 +50,7 @@ class TestToolErrorResponse:
     def test_to_json(self) -> None:
         """Test JSON serialization."""
         response = ToolErrorResponse(
-            status="error",
+            status=ResponseStatus.ERROR,
             error="Test error",
             error_type="ValueError",
             suggestion="Test suggestion",
@@ -66,7 +66,7 @@ class TestToolErrorResponse:
     def test_exclude_none_fields(self) -> None:
         """Test that None fields are excluded from JSON."""
         response = ToolErrorResponse(
-            status="error",
+            status=ResponseStatus.ERROR,
             error="Test error",
             error_type="ValueError",
         )

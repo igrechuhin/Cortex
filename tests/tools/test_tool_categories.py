@@ -19,7 +19,6 @@ from cortex.tools.tool_categories import (
     ToolCategory,
     ToolCategoryConfig,
     ToolCategoryEntry,
-    ToolCategoryName,
     ToolSearchResult,
     build_category_config,
     get_always_loaded_tool_names,
@@ -134,9 +133,9 @@ class TestToolCategoriesMapping:
     def test_no_duplicate_names(self) -> None:
         """Every tool name appears exactly once."""
         names = [e.name for e in TOOL_CATEGORIES]
-        assert len(names) == len(
-            set(names)
-        ), f"Duplicates found: {[n for n in names if names.count(n) > 1]}"
+        assert len(names) == len(set(names)), (
+            f"Duplicates found: {[n for n in names if names.count(n) > 1]}"
+        )
 
     def test_every_entry_has_nonempty_rationale(self) -> None:
         """Every entry must document its categorization rationale."""
@@ -179,17 +178,17 @@ class TestToolCategoriesMapping:
         }
         for name in core_tools:
             cat = get_tool_category(name)
-            assert (
-                cat == ToolCategory.ALWAYS_LOADED
-            ), f"Core tool {name!r} should be ALWAYS_LOADED, got {cat}"
+            assert cat == ToolCategory.ALWAYS_LOADED, (
+                f"Core tool {name!r} should be ALWAYS_LOADED, got {cat}"
+            )
 
     def test_analytics_tools_are_deferred_low(self) -> None:
         """Usage analytics consolidated tool should be deferred_low (Phase 50)."""
         analytics_tool = "query_usage"
         cat = get_tool_category(analytics_tool)
-        assert (
-            cat == ToolCategory.DEFERRED_LOW
-        ), f"Analytics tool {analytics_tool!r} should be DEFERRED_LOW, got {cat}"
+        assert cat == ToolCategory.DEFERRED_LOW, (
+            f"Analytics tool {analytics_tool!r} should be DEFERRED_LOW, got {cat}"
+        )
 
 
 @pytest.mark.timeout(5)
@@ -382,11 +381,10 @@ class TestToolCategoryNameLiteral:
     """Tests for ToolCategoryName type alias."""
 
     def test_literal_values_match_enum(self) -> None:
-        """Literal values match ToolCategory enum values."""
-        # ToolCategoryName is Literal["always_loaded", "deferred_medium",
-        # "deferred_low"].  Verify the enum values match.
+        """ToolCategoryName (ToolCategory enum) values match expected strings."""
+        # ToolCategoryName is type alias for ToolCategory. Verify enum values.
         enum_values = {cat.value for cat in ToolCategory}
-        expected: set[ToolCategoryName] = {
+        expected: set[str] = {
             "always_loaded",
             "deferred_medium",
             "deferred_low",
@@ -456,12 +454,16 @@ class TestSearchDeferredTools:
 
     def test_category_filter_medium(self) -> None:
         """Filtering by deferred_medium returns only medium tools."""
-        results = search_deferred_tools("tool", category="deferred_medium", limit=50)
+        results = search_deferred_tools(
+            "tool", category=ToolCategory.DEFERRED_MEDIUM, limit=50
+        )
         assert all(r.category == ToolCategory.DEFERRED_MEDIUM for r in results)
 
     def test_category_filter_low(self) -> None:
         """Filtering by deferred_low returns only low tools."""
-        results = search_deferred_tools("usage", category="deferred_low", limit=50)
+        results = search_deferred_tools(
+            "usage", category=ToolCategory.DEFERRED_LOW, limit=50
+        )
         assert all(r.category == ToolCategory.DEFERRED_LOW for r in results)
 
     def test_limit_caps_results(self) -> None:
@@ -489,13 +491,15 @@ class TestSearchDeferredTools:
         """Category filter works even when no matches found."""
         # Search for something that won't match, but with category filter
         results = search_deferred_tools(
-            "xyznonexistent123", category="deferred_medium", limit=10
+            "xyznonexistent123", category=ToolCategory.DEFERRED_MEDIUM, limit=10
         )
         assert results == []
 
     def test_search_with_deferred_low_category_filter(self) -> None:
         """Search with deferred_low category filter returns only low-priority tools."""
-        results = search_deferred_tools("usage", category="deferred_low", limit=10)
+        results = search_deferred_tools(
+            "usage", category=ToolCategory.DEFERRED_LOW, limit=10
+        )
         assert all(r.category == ToolCategory.DEFERRED_LOW for r in results)
         assert len(results) > 0
 

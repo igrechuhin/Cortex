@@ -17,6 +17,7 @@ from .models import (
     PromptCategoryInfo,
     PromptMetadataEntry,
     PromptsManifestModel,
+    PromptSource,
 )
 
 
@@ -178,7 +179,7 @@ class PromptsLoader:
                 description=prompt_info.description,
                 keywords=prompt_info.keywords,
                 path=str(prompt_file),
-                source="synapse",
+                source=PromptSource.SYNAPSE,
             )
         except Exception as e:
             from cortex.core.logging_config import logger

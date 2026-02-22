@@ -16,6 +16,14 @@
 
 - ✅ **Code quality remediation Step 4** - COMPLETE (2026-02-22) - Replaced dict[str, object] with Pydantic/typed models in session_start_tools, phase4_context_operations, phase4_metadata_helpers, refactoring_operations (and helper), health_check_operations. Added FileMapEntry, SectionSummary, ConciseRefactoringSuggestionEntry, SuggestRefactoringConcisePayload, HealthCheckReportPayload. Quality gate and tests pass.
 
+- ✅ **Session optimization: load_context explicit budget for implement/refactor** - COMPLETE (2026-02-22) - Require explicit non-zero token_budget in implement/refactor flows. Validation rejects token_budget omitted or 0 for non-trivial tasks. Updated implement prompt, tools.md, troubleshooting.md. load_context_resource passes default budget. Tests added/updated.
+
+- ✅ **Code quality remediation Step 5: Resolve type-ignore comments** - COMPLETE (2026-02-22) - Resolved type-ignore in phase1_foundation_stats (assignment), phase4_metadata_helpers (sections loop and relevance_score), removed file-level pyright disable in phase5_evaluation and fixed load_optimization_history item typing; kept two type: ignore in session_models with documented justification (Pyright reportUnknownVariableType for list in Field). All type checks and quality gate pass.
+
+- ✅ **Code quality remediation Step 6: file_operations split** - COMPLETE (2026-02-22) - Split file_operations.py (1,110 lines) into file_section_operations, file_metadata_operations, file_crud_flow, file_manage_file_helpers, file_crud_operations; file_operations is re-export facade. All modules ≤400 lines. configuration_operations uses get_managers from cortex.managers.initialization. Tests and quality gate pass.
+
+- ✅ **Code quality remediation Step 6: split session_start_tools** - COMPLETE (2026-02-22) - Split session_start_tools.py into main (323 lines), session_health.py (130), session_brief.py (361). All modules ≤400 lines. Helper extraction for function-length compliance. Tests and plan updated.
+
 ## Completed Work (2026-02-21)
 
 - **Summary (2026-02-21)** - 1 entries archived.

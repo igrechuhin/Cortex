@@ -21,20 +21,21 @@ from __future__ import annotations
 
 import re
 from enum import Enum
-from typing import Literal
 
 from pydantic import BaseModel, ConfigDict
 
+
 # Type alias for category names used in function signatures.
-ToolCategoryName = Literal["always_loaded", "deferred_medium", "deferred_low"]
-
-
 class ToolCategory(str, Enum):
     """Loading priority tier for an MCP tool."""
 
     ALWAYS_LOADED = "always_loaded"
     DEFERRED_MEDIUM = "deferred_medium"
     DEFERRED_LOW = "deferred_low"
+
+
+# Type alias for backward compatibility.
+ToolCategoryName = ToolCategory
 
 
 class ToolCategoryEntry(BaseModel):

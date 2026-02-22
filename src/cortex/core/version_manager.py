@@ -2,9 +2,10 @@
 
 from datetime import datetime
 from pathlib import Path
-from typing import Literal, cast
+from typing import cast
 
 from cortex.core.models import (
+    ChangeType,
     DiskUsageInfo,
     FormattedVersionMetadata,
     ModelDict,
@@ -57,9 +58,7 @@ class VersionManager:
         size_bytes: int,
         token_count: int,
         content_hash: str,
-        change_type: Literal[
-            "created", "modified", "rollback", "manual_backup"
-        ] = "modified",
+        change_type: ChangeType | str = "modified",
         changed_sections: list[str] | None = None,
         change_description: str | None = None,
     ) -> VersionMetadata:
@@ -117,7 +116,7 @@ class VersionManager:
         content_hash: str,
         size_bytes: int,
         token_count: int,
-        change_type: Literal["created", "modified", "rollback", "manual_backup"],
+        change_type: ChangeType | str,
         snapshot_path: Path,
         changed_sections: list[str] | None,
         change_description: str | None,
@@ -125,13 +124,18 @@ class VersionManager:
         """Build version metadata model."""
         from cortex.core.models import VersionMetadata
 
+        resolved_change_type = (
+            change_type
+            if isinstance(change_type, ChangeType)
+            else ChangeType(change_type)
+        )
         return VersionMetadata(
             version=version,
             timestamp=datetime.now().isoformat(),
             content_hash=content_hash,
             size_bytes=size_bytes,
             token_count=token_count,
-            change_type=change_type,
+            change_type=resolved_change_type,
             snapshot_path=str(snapshot_path.relative_to(self.project_root)),
             changed_sections=changed_sections or [],
             change_description=change_description,

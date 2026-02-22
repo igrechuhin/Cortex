@@ -1,7 +1,7 @@
 """Insight Summary - Generate summary of insights."""
 
 from .insight_types import InsightDict, SummaryDict
-from .models import RecommendationEntry
+from .models import RecommendationEntry, SeverityLevel
 
 
 class InsightSummaryGenerator:
@@ -106,13 +106,15 @@ class InsightSummaryGenerator:
             priority = (
                 "high"
                 if insight.impact_score >= 0.8
-                else "medium" if insight.impact_score >= 0.5 else "low"
+                else "medium"
+                if insight.impact_score >= 0.5
+                else "low"
             )
             recommendations.append(
                 RecommendationEntry(
                     title=insight.title,
                     description=primary,
-                    priority=priority,
+                    priority=SeverityLevel(priority),
                     estimated_impact=insight.impact_score,
                 )
             )

@@ -3,6 +3,7 @@
 from pathlib import Path
 
 from cortex.script_detection.models import (
+    PromotionStatus,
     ScriptCaptureRecord,
     make_timestamp_utc,
 )
@@ -49,7 +50,7 @@ async def capture_script(
         script_type=script_type,
         purpose=purpose,
         usage_context=usage_context,
-        promotion_status="pending",
+        promotion_status=PromotionStatus.PENDING,
         agent_session=agent_session,
         dependencies=dependencies or [],
     )

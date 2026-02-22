@@ -696,9 +696,9 @@ async def _run_with_retry_and_record[T](
         )
     )
 
-    async def _execute_and_finalize() -> (
-        tuple[T, bool, str | None, bool, int | None, str | None]
-    ):
+    async def _execute_and_finalize() -> tuple[
+        T, bool, str | None, bool, int | None, str | None
+    ]:
         return await _execute_with_error_handling(
             func, semaphore, effective_timeout, args, kwargs_model, ctx, progress_task
         )

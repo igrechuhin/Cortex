@@ -9,6 +9,7 @@ import pytest
 
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.managers.lazy_manager import LazyManager
+from cortex.structure.models import HealthGrade
 from cortex.tools.analysis_operations import analyze
 from cortex.tools.configuration_operations import configure
 from cortex.tools.file_operations import manage_file
@@ -19,6 +20,7 @@ from cortex.validation.models import (
     CategoryBreakdown,
     DuplicateEntry,
     DuplicationScanResult,
+    QualityHealthStatus,
     QualityScoreResult,
 )
 from tests.helpers.managers import make_test_managers
@@ -63,7 +65,7 @@ class TestManageFile:
         }
 
         with patch(
-            "cortex.tools.file_operations.get_managers",
+            "cortex.tools.file_manage_file_helpers.get_managers",
             return_value=make_test_managers(**mock_managers_dict),
         ):
             with patch(
@@ -121,12 +123,12 @@ class TestManageFile:
                 return_value=None,
             ),
             patch(
-                "cortex.tools.file_operations.get_or_resolve_project_root",
+                "cortex.tools.file_manage_file_helpers.get_or_resolve_project_root",
                 new_callable=AsyncMock,
                 return_value=test_root,
             ),
             patch(
-                "cortex.tools.file_operations.get_managers",
+                "cortex.tools.file_manage_file_helpers.get_managers",
                 new_callable=AsyncMock,
                 return_value=make_test_managers(**mock_managers_dict),
             ),
@@ -164,7 +166,7 @@ class TestManageFile:
         }
 
         with patch(
-            "cortex.tools.file_operations.get_managers",
+            "cortex.tools.file_manage_file_helpers.get_managers",
             return_value=make_test_managers(**mock_managers_dict),
         ):
             with patch(
@@ -235,7 +237,7 @@ class TestManageFile:
         test_root = temp_memory_bank.parent.parent.parent
         with (
             patch(
-                "cortex.tools.file_operations._resolve_schema_validator",
+                "cortex.tools.file_manage_file_helpers._resolve_schema_validator",
                 new_callable=AsyncMock,
                 return_value=mock_schema_validator,
             ),
@@ -248,12 +250,12 @@ class TestManageFile:
                 return_value=None,
             ),
             patch(
-                "cortex.tools.file_operations.get_managers",
+                "cortex.tools.file_manage_file_helpers.get_managers",
                 new_callable=AsyncMock,
                 return_value=make_test_managers(**mock_managers_dict),
             ),
             patch(
-                "cortex.tools.file_operations.get_or_resolve_project_root",
+                "cortex.tools.file_manage_file_helpers.get_or_resolve_project_root",
                 new_callable=AsyncMock,
                 return_value=test_root,
             ),
@@ -293,7 +295,7 @@ class TestManageFile:
         }
 
         with patch(
-            "cortex.tools.file_operations.get_managers",
+            "cortex.tools.file_manage_file_helpers.get_managers",
             return_value=make_test_managers(**mock_managers_dict),
         ):
             with patch(
@@ -351,12 +353,12 @@ class TestManageFile:
                 return_value=None,
             ),
             patch(
-                "cortex.tools.file_operations.get_managers",
+                "cortex.tools.file_manage_file_helpers.get_managers",
                 new_callable=AsyncMock,
                 return_value=make_test_managers(**mock_managers_dict),
             ),
             patch(
-                "cortex.tools.file_operations.get_or_resolve_project_root",
+                "cortex.tools.file_manage_file_helpers.get_or_resolve_project_root",
                 new_callable=AsyncMock,
                 return_value=Path("/tmp/test"),
             ),
@@ -393,7 +395,7 @@ class TestManageFile:
         }
 
         with patch(
-            "cortex.tools.file_operations.get_managers",
+            "cortex.tools.file_manage_file_helpers.get_managers",
             return_value=make_test_managers(**mock_managers_dict),
         ):
             with patch(
@@ -599,8 +601,8 @@ class TestValidate:
                     structure=85,
                     token_efficiency=80,
                 ),
-                grade="B",
-                status="healthy",
+                grade=HealthGrade.B,
+                status=QualityHealthStatus.HEALTHY,
                 issues=[],
                 recommendations=[],
             )
@@ -716,7 +718,7 @@ class TestAnalyze:
                 return_value=Path("/tmp/test"),
             ),
             patch(
-                "cortex.tools.file_operations.get_managers",
+                "cortex.tools.file_manage_file_helpers.get_managers",
                 return_value=make_test_managers(**mock_managers_dict),
             ),
             patch(
@@ -888,7 +890,7 @@ class TestAnalyze:
                 return_value=Path("/tmp/test"),
             ),
             patch(
-                "cortex.tools.file_operations.get_managers",
+                "cortex.tools.file_manage_file_helpers.get_managers",
                 return_value=make_test_managers(**mock_managers_dict),
             ),
             patch(
@@ -1140,7 +1142,7 @@ class TestSuggestRefactoring:
                 return_value=Path("/tmp/test"),
             ),
             patch(
-                "cortex.tools.file_operations.get_managers",
+                "cortex.tools.file_manage_file_helpers.get_managers",
                 return_value=make_test_managers(**mock_managers_dict),
             ),
             patch(
@@ -1182,7 +1184,7 @@ class TestConfigure:
                 return_value=Path("/tmp/test"),
             ),
             patch(
-                "cortex.tools.file_operations.get_managers",
+                "cortex.managers.initialization.get_managers",
                 return_value=make_test_managers(**mock_managers_dict),
             ),
             patch(
@@ -1218,7 +1220,7 @@ class TestConfigure:
                 return_value=Path("/tmp/test"),
             ),
             patch(
-                "cortex.tools.file_operations.get_managers",
+                "cortex.managers.initialization.get_managers",
                 return_value=make_test_managers(**mock_managers_dict),
             ),
             patch(
@@ -1256,7 +1258,7 @@ class TestConfigure:
                 return_value=Path("/tmp/test"),
             ),
             patch(
-                "cortex.tools.file_operations.get_managers",
+                "cortex.managers.initialization.get_managers",
                 return_value=make_test_managers(**mock_managers_dict),
             ),
             patch(
@@ -1293,7 +1295,7 @@ class TestConfigure:
                 return_value=Path("/tmp/test"),
             ),
             patch(
-                "cortex.tools.file_operations.get_managers",
+                "cortex.managers.initialization.get_managers",
                 return_value=make_test_managers(**mock_managers_dict),
             ),
             patch(
@@ -1328,7 +1330,7 @@ class TestConfigure:
                 return_value=Path("/tmp/test"),
             ),
             patch(
-                "cortex.tools.file_operations.get_managers",
+                "cortex.managers.initialization.get_managers",
                 return_value=make_test_managers(**mock_managers_dict),
             ),
             patch(
@@ -1375,7 +1377,7 @@ class TestConfigure:
                 return_value=Path("/tmp/test"),
             ),
             patch(
-                "cortex.tools.file_operations.get_managers",
+                "cortex.managers.initialization.get_managers",
                 return_value=make_test_managers(**mock_managers_dict),
             ),
             patch(
@@ -1414,7 +1416,7 @@ class TestConfigure:
                 return_value=Path("/tmp/test"),
             ),
             patch(
-                "cortex.tools.file_operations.get_managers",
+                "cortex.managers.initialization.get_managers",
                 return_value=make_test_managers(**mock_managers_dict),
             ),
             patch(
@@ -1462,7 +1464,7 @@ class TestConfigure:
                 return_value=Path("/tmp/test"),
             ),
             patch(
-                "cortex.tools.file_operations.get_managers",
+                "cortex.managers.initialization.get_managers",
                 return_value=make_test_managers(**mock_managers_dict),
             ),
             patch(
@@ -1498,7 +1500,7 @@ class TestConfigure:
                 return_value=Path("/tmp/test"),
             ),
             patch(
-                "cortex.tools.file_operations.get_managers",
+                "cortex.managers.initialization.get_managers",
                 return_value=make_test_managers(**mock_managers_dict),  # type: ignore[arg-type] - empty dict is valid
             ),
             patch(
@@ -1524,7 +1526,7 @@ class TestConfigure:
                 return_value=Path("/tmp/test"),
             ),
             patch(
-                "cortex.tools.file_operations.get_managers",
+                "cortex.managers.initialization.get_managers",
                 return_value=make_test_managers(**mock_managers_dict),
             ),
             patch(
@@ -1554,7 +1556,7 @@ class TestConfigure:
                 return_value=Path("/tmp/test"),
             ),
             patch(
-                "cortex.tools.file_operations.get_managers",
+                "cortex.managers.initialization.get_managers",
                 return_value=make_test_managers(**mock_managers_dict),
             ),
             patch(

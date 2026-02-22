@@ -7,7 +7,7 @@ comprehensive Memory Bank statistics and analytics.
 
 import json
 from pathlib import Path
-from typing import Literal, cast
+from typing import cast
 
 from cortex.core.constants import MCP_TOOL_TIMEOUT_MEDIUM
 from cortex.core.context_logging import MCPContext, log_client
@@ -26,6 +26,7 @@ from cortex.managers.lazy_manager import LazyManager
 from cortex.managers.manager_utils import get_manager
 from cortex.managers.types import ManagersDict
 from cortex.server import mcp
+from cortex.tools.session_models import TokenBudgetStatus
 
 
 # Tool consolidated into query_memory_bank (Phase 50); kept as callable for dispatch.
@@ -159,9 +160,9 @@ def format_memory_bank_stats_response(
 ) -> str:
     """Format get_memory_bank_stats response based on response_format."""
     if response_format == ResponseFormat.CONCISE:
-        summary_raw: JsonValue | None = result_dict.get("summary")  # type: ignore[assignment]
+        summary_raw: JsonValue | None = result_dict.get("summary")
         summary: ModelDict = summary_raw if isinstance(summary_raw, dict) else {}
-        token_budget_raw: JsonValue | None = result_dict.get("token_budget")  # type: ignore[assignment]
+        token_budget_raw: JsonValue | None = result_dict.get("token_budget")
         token_budget: ModelDict = (
             token_budget_raw if isinstance(token_budget_raw, dict) else {}
         )
@@ -283,14 +284,14 @@ def build_summary_dict(
 
 def calculate_token_status(
     total_tokens: int, max_tokens: int, warn_threshold: float
-) -> Literal["healthy", "warning", "over_budget"]:
+) -> TokenBudgetStatus:
     """Calculate token budget status based on usage."""
     warn_threshold_tokens = int(max_tokens * (warn_threshold / 100))
     if total_tokens >= max_tokens:
-        return "over_budget"
+        return TokenBudgetStatus.OVER_BUDGET
     if total_tokens >= warn_threshold_tokens:
-        return "warning"
-    return "healthy"
+        return TokenBudgetStatus.WARNING
+    return TokenBudgetStatus.HEALTHY
 
 
 async def _build_token_budget_dict(root: Path, total_tokens: int) -> ModelDict:

@@ -12,7 +12,13 @@ from typing import cast
 from cortex.core.async_file_utils import open_async_text_file
 from cortex.core.models import ModelDict
 
-from .models import CategoryInfo, LoadedRule, RuleMetadataEntry, RulesManifestModel
+from .models import (
+    CategoryInfo,
+    LoadedRule,
+    RuleMetadataEntry,
+    RulesManifestModel,
+    RuleSource,
+)
 
 
 class RulesLoader:
@@ -168,7 +174,7 @@ class RulesLoader:
                 content=content,
                 priority=rule_info.priority,
                 keywords=rule_info.keywords,
-                source="shared",
+                source=RuleSource.SHARED,
             )
         except Exception as e:
             from cortex.core.logging_config import logger

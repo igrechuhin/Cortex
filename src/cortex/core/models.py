@@ -7,7 +7,6 @@ Used by: version_manager, dependency_graph, metadata_index, migration
 
 from collections.abc import ItemsView, KeysView, ValuesView
 from enum import Enum
-from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -48,6 +47,46 @@ class HandlerKind(str, Enum):
 
     TOOL = "tool"
     RESOURCE = "resource"
+
+
+class ChangeType(str, Enum):
+    """Type of version/snapshot change."""
+
+    CREATED = "created"
+    MODIFIED = "modified"
+    ROLLBACK = "rollback"
+    MANUAL_BACKUP = "manual_backup"
+
+
+class MigrationResultStatus(str, Enum):
+    """Migration execution result status."""
+
+    SUCCESS = "success"
+    FAILURE = "failure"
+
+
+class FileCategory(str, Enum):
+    """Context file category in dependency graph."""
+
+    META = "meta"
+    FOUNDATION = "foundation"
+    CONTEXT = "context"
+    ACTIVE = "active"
+    STATUS = "status"
+
+
+class RiskLevel(str, Enum):
+    """Risk level for consolidation/refactoring."""
+
+    LOW = "low"
+    MEDIUM = "medium"
+    HIGH = "high"
+
+
+class ResponseStatus(str, Enum):
+    """Status value for error response model."""
+
+    ERROR = "error"
 
 
 # ============================================================================
@@ -171,9 +210,7 @@ class VersionMetadata(DictLikeModel):
     content_hash: str = Field(description="SHA-256 hash of content")
     size_bytes: int = Field(ge=0, description="Size in bytes")
     token_count: int = Field(ge=0, description="Token count")
-    change_type: Literal["created", "modified", "rollback", "manual_backup"] = Field(
-        description="Type of change"
-    )
+    change_type: ChangeType = Field(description="Type of change")
     snapshot_path: str = Field(description="Path to snapshot file")
     changed_sections: list[str] = Field(
         default_factory=lambda: list[str](),
@@ -521,9 +558,7 @@ class FormattedVersionMetadata(BaseModel):
 
     version: int = Field(ge=1, description="Version number")
     timestamp: str = Field(description="ISO format timestamp")
-    change_type: Literal["created", "modified", "rollback", "manual_backup"] = Field(
-        description="Type of change"
-    )
+    change_type: ChangeType = Field(description="Type of change")
     size_bytes: int = Field(ge=0, description="Size in bytes")
     token_count: int = Field(ge=0, description="Token count")
     content_hash: str = Field(description="Abbreviated content hash")
@@ -584,7 +619,7 @@ class MigrationResult(BaseModel):
 
     model_config = ConfigDict(extra="forbid", validate_assignment=True)
 
-    status: Literal["success", "failure"] = Field(description="Migration status")
+    status: MigrationResultStatus = Field(description="Migration status")
     files_migrated: int = Field(ge=0, description="Number of files migrated")
     backup_location: str | None = Field(
         default=None, description="Backup directory location"
@@ -674,9 +709,7 @@ class StaticDependencyInfo(BaseModel):
         default_factory=list, description="List of files this file depends on"
     )
     priority: int = Field(ge=0, description="Loading priority (0 = highest)")
-    category: Literal["meta", "foundation", "context", "active", "status"] = Field(
-        description="File category"
-    )
+    category: FileCategory = Field(description="File category")
 
 
 # ============================================================================
@@ -706,9 +739,7 @@ class VersionHistoryEntryModel(BaseModel):
     snapshot_id: str = Field(..., description="Snapshot identifier")
     timestamp: str = Field(..., description="ISO timestamp of snapshot")
     version: int = Field(..., ge=1, description="Version number")
-    change_type: Literal["created", "modified", "rollback", "manual_backup"] | None = (
-        Field(default=None, description="Type of change")
-    )
+    change_type: ChangeType | None = Field(default=None, description="Type of change")
     size_bytes: int | None = Field(default=None, ge=0, description="Size in bytes")
     token_count: int | None = Field(default=None, ge=0, description="Token count")
     metadata: VersionHistoryMetadata = Field(
@@ -806,9 +837,7 @@ class ConsolidationImpactAnalysis(BaseModel):
     )
     transclusion_count: int = Field(ge=0, description="Number of transclusions")
     similarity_score: float = Field(ge=0.0, le=1.0, description="Similarity score 0-1")
-    risk_level: Literal["low", "medium", "high"] = Field(
-        default="low", description="Risk level"
-    )
+    risk_level: RiskLevel = Field(default=RiskLevel.LOW, description="Risk level")
     benefits: list[str] = Field(default_factory=list, description="List of benefits")
     risks: list[str] = Field(default_factory=list, description="List of risks")
 
@@ -1277,7 +1306,7 @@ class ErrorResponseModel(BaseModel):
 
     model_config = ConfigDict(extra="forbid", validate_assignment=True)
 
-    status: Literal["error"] = Field(description="Response status")
+    status: ResponseStatus = Field(description="Response status")
     error: str = Field(description="Error message")
     error_type: str = Field(description="Error type name")
     action_required: str | None = Field(

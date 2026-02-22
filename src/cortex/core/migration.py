@@ -15,6 +15,7 @@ from .models import (
     BackupInfo,
     MigrationInfo,
     MigrationResult,
+    MigrationResultStatus,
     SectionMetadata,
     VerificationResult,
     VersionMetadata,
@@ -512,7 +513,7 @@ class MigrationManager:
     ) -> MigrationResult:
         """Build migration result model."""
         return MigrationResult(
-            status="success",
+            status=MigrationResultStatus.SUCCESS,
             files_migrated=len(md_files),
             backup_location=str(backup_dir) if backup_dir else None,
             details=verification,

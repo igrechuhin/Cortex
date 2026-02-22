@@ -15,7 +15,7 @@ from typing import cast
 from cortex.core.async_file_utils import open_async_text_file
 from cortex.core.constants import CONSOLIDATION_MIN_SIMILARITY
 from cortex.core.models import JsonValue, ModelDict
-from cortex.refactoring.models import ConsolidationImpactModel
+from cortex.refactoring.models import ConsolidationImpactModel, RiskLevel
 
 
 @dataclass
@@ -707,19 +707,10 @@ class ConsolidationDetector:
         text = text.strip("-")
         return text
 
-    async def analyze_consolidation_impact(
+    def _impact_benefits_risks(
         self, opportunity: ConsolidationOpportunity
-    ) -> ConsolidationImpactModel:
-        """
-        Analyze the impact of applying a consolidation.
-
-        Args:
-            opportunity: The consolidation opportunity to analyze
-
-        Returns:
-            Impact analysis including token savings and risks
-        """
-        risk_level: str = "low" if opportunity.similarity_score > 0.95 else "medium"
+    ) -> tuple[list[str], list[str]]:
+        """Return (benefits, risks) lists for consolidation impact."""
         benefits = [
             f"Save ~{opportunity.token_savings} tokens",
             f"Reduce duplication across {len(opportunity.affected_files)} files",
@@ -735,7 +726,16 @@ class ConsolidationDetector:
             if opportunity.similarity_score < 0.95
             else ["Low risk - exact duplicates found"]
         )
+        return benefits, risks
 
+    async def analyze_consolidation_impact(
+        self, opportunity: ConsolidationOpportunity
+    ) -> ConsolidationImpactModel:
+        """Analyze the impact of applying a consolidation."""
+        risk_level = (
+            RiskLevel.LOW if opportunity.similarity_score > 0.95 else RiskLevel.MEDIUM
+        )
+        benefits, risks = self._impact_benefits_risks(opportunity)
         return ConsolidationImpactModel(
             opportunity_id=opportunity.opportunity_id,
             token_savings=opportunity.token_savings,

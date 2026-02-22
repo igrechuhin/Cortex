@@ -6,6 +6,7 @@ from cortex.refactoring.approval_manager import ApprovalManager
 from cortex.refactoring.models import (
     ApproveResult,
     ExecutionResult,
+    ExecutionStatus,
     RefactoringSuggestionModel,
     RollbackRefactoringResult,
 )
@@ -69,7 +70,7 @@ async def _apply_approved_refactoring(
     suggestion = await _get_suggestion(mgrs, suggestion_id)
     if suggestion is None:
         return ExecutionResult(
-            status="validation_failed",
+            status=ExecutionStatus.VALIDATION_FAILED,
             execution_id="",
             suggestion_id=suggestion_id,
             error=f"Suggestion '{suggestion_id}' not found",

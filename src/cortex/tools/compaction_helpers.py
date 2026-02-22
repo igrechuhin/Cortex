@@ -6,7 +6,7 @@ parsed structures. Used by compact_session tool and progress summarization.
 
 import re
 from datetime import datetime
-from typing import Literal
+from enum import Enum
 
 from cortex.tools.compaction_constants import (
     PROGRESS_DAYS_FULL,
@@ -208,20 +208,28 @@ def apply_progress_tiers(
     return "\n".join(before + new_parts + after)
 
 
+class ProgressTier(str, Enum):
+    """Progress summarization tier."""
+
+    WEEKLY = "weekly"
+    MONTHLY = "monthly"
+
+
 def summarize_progress(
     content: str,
-    tier: Literal["weekly", "monthly"],
+    tier: ProgressTier | str,
     today_str: str,
 ) -> str:
     """Summarize progress.md by tier: weekly (7-30d) or monthly (30+d)."""
-    if tier == "weekly":
+    tier_str = tier.value if isinstance(tier, ProgressTier) else tier
+    if tier_str == "weekly":
         return apply_progress_tiers(
             content,
             today_str,
             days_full=PROGRESS_DAYS_FULL,
             days_weekly=PROGRESS_DAYS_WEEKLY_SUMMARY,
         )
-    # monthly: keep 0-30 days full, summarize 30+ as monthly
+    # monthly
     return apply_progress_tiers(
         content,
         today_str,

@@ -24,9 +24,11 @@ from cortex.analysis.models import (
     AntiPatternInfo,
     CoAccessPattern,
     ComplexityAnalysisResult,
+    ComplexityAnalysisStatus,
     ComplexityAssessment,
     ComplexityHotspot,
     ComplexityMetrics,
+    SeverityLevel,
 )
 from cortex.analysis.pattern_types import UnusedFileEntry
 from cortex.core.exceptions import MemoryBankError
@@ -70,7 +72,7 @@ class TestInsightGeneration:
         mock_structure.detect_anti_patterns = AsyncMock(return_value=[])
         mock_structure.measure_complexity_metrics = AsyncMock(
             return_value=ComplexityAnalysisResult(
-                status="analyzed",
+                status=ComplexityAnalysisStatus.ANALYZED,
                 metrics=ComplexityMetrics(max_dependency_depth=3),
                 assessment=ComplexityAssessment(
                     score=95, grade="A", status="excellent"
@@ -129,7 +131,7 @@ class TestInsightGeneration:
         mock_structure = mocker.MagicMock()
         mock_structure.analyze_file_organization = AsyncMock(
             return_value=FileOrganizationResult(
-                status="analyzed",
+                status=ComplexityAnalysisStatus.ANALYZED,
                 file_count=5,
                 issues=["3 files very large"],
                 largest_files=[
@@ -145,21 +147,21 @@ class TestInsightGeneration:
                     type="similar_filenames",
                     file="test1.md",
                     files=["test1.md", "test2.md"],
-                    severity="medium",
+                    severity=SeverityLevel.MEDIUM,
                     description="Similar filenames detected",
                 ),
                 AntiPatternInfo(
                     type="similar_filenames",
                     file="doc1.md",
                     files=["doc1.md", "doc2.md"],
-                    severity="medium",
+                    severity=SeverityLevel.MEDIUM,
                     description="Similar filenames detected",
                 ),
             ]
         )
         mock_structure.measure_complexity_metrics = AsyncMock(
             return_value=ComplexityAnalysisResult(
-                status="analyzed",
+                status=ComplexityAnalysisStatus.ANALYZED,
                 metrics=ComplexityMetrics(max_dependency_depth=8),
                 assessment=ComplexityAssessment(
                     score=55,
@@ -226,7 +228,9 @@ class TestInsightGeneration:
         )
         mock_structure.detect_anti_patterns = AsyncMock(return_value=[])
         mock_structure.measure_complexity_metrics = AsyncMock(
-            return_value=ComplexityAnalysisResult(status="no_files")
+            return_value=ComplexityAnalysisResult(
+                status=ComplexityAnalysisStatus.NO_FILES
+            )
         )
 
         engine = InsightEngine(mock_pattern, mock_structure)
@@ -270,7 +274,9 @@ class TestInsightGeneration:
         )
         mock_structure.detect_anti_patterns = AsyncMock(return_value=[])
         mock_structure.measure_complexity_metrics = AsyncMock(
-            return_value=ComplexityAnalysisResult(status="no_files")
+            return_value=ComplexityAnalysisResult(
+                status=ComplexityAnalysisStatus.NO_FILES
+            )
         )
 
         engine = InsightEngine(mock_pattern, mock_structure)
@@ -318,7 +324,9 @@ class TestInsightGeneration:
         )
         mock_structure.detect_anti_patterns = AsyncMock(return_value=[])
         mock_structure.measure_complexity_metrics = AsyncMock(
-            return_value=ComplexityAnalysisResult(status="no_files")
+            return_value=ComplexityAnalysisResult(
+                status=ComplexityAnalysisStatus.NO_FILES
+            )
         )
 
         engine = InsightEngine(mock_pattern, mock_structure)
@@ -379,7 +387,9 @@ class TestUsageInsights:
         )
         mock_structure.detect_anti_patterns = AsyncMock(return_value=[])
         mock_structure.measure_complexity_metrics = AsyncMock(
-            return_value=ComplexityAnalysisResult(status="no_files")
+            return_value=ComplexityAnalysisResult(
+                status=ComplexityAnalysisStatus.NO_FILES
+            )
         )
 
         engine = InsightEngine(mock_pattern, mock_structure)
@@ -422,7 +432,9 @@ class TestUsageInsights:
         )
         mock_structure.detect_anti_patterns = AsyncMock(return_value=[])
         mock_structure.measure_complexity_metrics = AsyncMock(
-            return_value=ComplexityAnalysisResult(status="no_files")
+            return_value=ComplexityAnalysisResult(
+                status=ComplexityAnalysisStatus.NO_FILES
+            )
         )
 
         engine = InsightEngine(mock_pattern, mock_structure)
@@ -459,7 +471,7 @@ class TestOrganizationInsights:
         mock_structure = mocker.MagicMock()
         mock_structure.analyze_file_organization = AsyncMock(
             return_value=FileOrganizationResult(
-                status="analyzed",
+                status=ComplexityAnalysisStatus.ANALYZED,
                 file_count=3,
                 issues=["3 files very large"],
                 largest_files=[
@@ -472,7 +484,9 @@ class TestOrganizationInsights:
         )
         mock_structure.detect_anti_patterns = AsyncMock(return_value=[])
         mock_structure.measure_complexity_metrics = AsyncMock(
-            return_value=ComplexityAnalysisResult(status="no_files")
+            return_value=ComplexityAnalysisResult(
+                status=ComplexityAnalysisStatus.NO_FILES
+            )
         )
 
         engine = InsightEngine(mock_pattern, mock_structure)
@@ -503,7 +517,7 @@ class TestOrganizationInsights:
         mock_structure = mocker.MagicMock()
         mock_structure.analyze_file_organization = AsyncMock(
             return_value=FileOrganizationResult(
-                status="analyzed",
+                status=ComplexityAnalysisStatus.ANALYZED,
                 file_count=5,
                 issues=["5 files very small"],
                 largest_files=[],
@@ -515,7 +529,9 @@ class TestOrganizationInsights:
         )
         mock_structure.detect_anti_patterns = AsyncMock(return_value=[])
         mock_structure.measure_complexity_metrics = AsyncMock(
-            return_value=ComplexityAnalysisResult(status="no_files")
+            return_value=ComplexityAnalysisResult(
+                status=ComplexityAnalysisStatus.NO_FILES
+            )
         )
 
         engine = InsightEngine(mock_pattern, mock_structure)
@@ -559,20 +575,22 @@ class TestRedundancyInsights:
                     type="similar_filenames",
                     file="test1.md",
                     files=["test1.md", "test2.md"],
-                    severity="medium",
+                    severity=SeverityLevel.MEDIUM,
                     description="Similar filenames detected",
                 ),
                 AntiPatternInfo(
                     type="similar_filenames",
                     file="doc1.md",
                     files=["doc1.md", "doc2.md"],
-                    severity="medium",
+                    severity=SeverityLevel.MEDIUM,
                     description="Similar filenames detected",
                 ),
             ]
         )
         mock_structure.measure_complexity_metrics = AsyncMock(
-            return_value=ComplexityAnalysisResult(status="no_files")
+            return_value=ComplexityAnalysisResult(
+                status=ComplexityAnalysisStatus.NO_FILES
+            )
         )
 
         engine = InsightEngine(mock_pattern, mock_structure)
@@ -611,7 +629,7 @@ class TestDependencyInsights:
         mock_structure.detect_anti_patterns = AsyncMock(return_value=[])
         mock_structure.measure_complexity_metrics = AsyncMock(
             return_value=ComplexityAnalysisResult(
-                status="analyzed",
+                status=ComplexityAnalysisStatus.ANALYZED,
                 metrics=ComplexityMetrics(max_dependency_depth=8),
                 complexity_hotspots=[ComplexityHotspot(file="complex.md", score=50.0)],
                 assessment=ComplexityAssessment(
@@ -663,20 +681,22 @@ class TestDependencyInsights:
                     type="orphaned_file",
                     file="orphan1.md",
                     files=["orphan1.md"],
-                    severity="medium",
+                    severity=SeverityLevel.MEDIUM,
                     description="Orphaned file detected",
                 ),
                 AntiPatternInfo(
                     type="orphaned_file",
                     file="orphan2.md",
                     files=["orphan2.md"],
-                    severity="medium",
+                    severity=SeverityLevel.MEDIUM,
                     description="Orphaned file detected",
                 ),
             ]
         )
         mock_structure.measure_complexity_metrics = AsyncMock(
-            return_value=ComplexityAnalysisResult(status="no_files")
+            return_value=ComplexityAnalysisResult(
+                status=ComplexityAnalysisStatus.NO_FILES
+            )
         )
 
         engine = InsightEngine(mock_pattern, mock_structure)
@@ -717,7 +737,7 @@ class TestQualityInsights:
         mock_structure.detect_anti_patterns = AsyncMock(return_value=[])
         mock_structure.measure_complexity_metrics = AsyncMock(
             return_value=ComplexityAnalysisResult(
-                status="analyzed",
+                status=ComplexityAnalysisStatus.ANALYZED,
                 metrics=ComplexityMetrics(max_dependency_depth=8),
                 assessment=ComplexityAssessment(score=85),
             )
@@ -859,7 +879,9 @@ class TestInsightDetails:
         )
         mock_structure.detect_anti_patterns = AsyncMock(return_value=[])
         mock_structure.measure_complexity_metrics = AsyncMock(
-            return_value=ComplexityAnalysisResult(status="no_files")
+            return_value=ComplexityAnalysisResult(
+                status=ComplexityAnalysisStatus.NO_FILES
+            )
         )
 
         engine = InsightEngine(mock_pattern, mock_structure)
@@ -888,7 +910,9 @@ class TestInsightDetails:
         )
         mock_structure.detect_anti_patterns = AsyncMock(return_value=[])
         mock_structure.measure_complexity_metrics = AsyncMock(
-            return_value=ComplexityAnalysisResult(status="no_files")
+            return_value=ComplexityAnalysisResult(
+                status=ComplexityAnalysisStatus.NO_FILES
+            )
         )
 
         engine = InsightEngine(mock_pattern, mock_structure)

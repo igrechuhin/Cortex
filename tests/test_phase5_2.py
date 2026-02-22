@@ -13,6 +13,7 @@ from typing import cast
 
 import pytest
 
+from cortex.core.models import RiskLevel
 from cortex.refactoring.consolidation_detector import (
     ConsolidationDetector,
     ConsolidationOpportunity,
@@ -473,7 +474,7 @@ async def test_reorganization_planner_preview(temp_memory_bank: Path):
             complexity_reduction=0.0,
             maintainability_improvement=0.0,
             navigation_improvement=0.0,
-            estimated_effort="low",
+            estimated_effort=RiskLevel.LOW,
         ),
         risks=["May break links"],
         benefits=["Better organization"],

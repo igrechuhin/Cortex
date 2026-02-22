@@ -9,8 +9,6 @@ Notes:
   apply_refactoring(action=...).
 """
 
-from typing import Literal
-
 from cortex.core.constants import (
     MCP_TOOL_TIMEOUT_COMPLEX,
     MCP_TOOL_TIMEOUT_MEDIUM,
@@ -19,6 +17,7 @@ from cortex.core.context_logging import MCPContext, log_client
 from cortex.core.mcp_annotations import safe_write_annotations
 from cortex.core.mcp_stability import ensure_usage_context, mcp_tool_wrapper
 from cortex.core.project_root_resolver import resolve_project_root_async
+from cortex.refactoring.models import RefactoringAction
 from cortex.server import mcp
 from cortex.tools.phase5_execution_helpers import parse_refactoring_action
 from cortex.tools.phase5_execution_monitoring import log_invalid_action_and_return
@@ -70,7 +69,7 @@ async def _apply_refactoring_validate_and_run(
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_COMPLEX)
 async def apply_refactoring(
-    action: Literal["approve", "apply", "rollback"] = "apply",
+    action: RefactoringAction | str = RefactoringAction.APPLY,
     suggestion_id: str | None = None,
     execution_id: str | None = None,
     approval_id: str | None = None,
@@ -251,9 +250,10 @@ async def apply_refactoring(
         - Project root is resolved by the server (MCP roots or cwd).
     """
     await log_client(ctx, "info", "apply_refactoring: starting", logger_name=__name__)
+    action_str = action.value if isinstance(action, RefactoringAction) else action
     root = await resolve_project_root_async(None, ctx)
     return await _apply_refactoring_validate_and_run(
-        action,
+        action_str,
         str(root),
         suggestion_id,
         approval_id,

@@ -24,7 +24,9 @@ from cortex.refactoring.models import (
     ApprovalStatus,
     ApproveResult,
     ExecutionResult,
+    ExecutionStatus,
     FeedbackRecordResult,
+    FeedbackRecordStatus,
     LearningInsights,
     RefactoringActionModel,
     RefactoringImpactMetrics,
@@ -32,6 +34,7 @@ from cortex.refactoring.models import (
     RefactoringSuggestionModel,
     RefactoringType,
     RollbackRefactoringResult,
+    RollbackRefactoringStatus,
 )
 from cortex.tools.phase5_execution import apply_refactoring, provide_feedback
 from cortex.tools.phase5_execution_helpers import (
@@ -173,7 +176,7 @@ def mock_managers(
     refactoring_executor = MagicMock()
     refactoring_executor.execute_refactoring = AsyncMock(
         return_value=ExecutionResult(
-            status="success",
+            status=ExecutionStatus.SUCCESS,
             execution_id="exec-123",
             suggestion_id="test-123",
             approval_id="approval-123",
@@ -185,7 +188,7 @@ def mock_managers(
     rollback_manager = MagicMock()
     rollback_manager.rollback_refactoring = AsyncMock(
         return_value=RollbackRefactoringResult(
-            status="success",
+            status=RollbackRefactoringStatus.SUCCESS,
             rollback_id="rollback-123",
             execution_id="exec-123",
             files_restored=1,
@@ -198,7 +201,7 @@ def mock_managers(
     learning_engine = MagicMock()
     learning_engine.record_feedback = AsyncMock(
         return_value=FeedbackRecordResult(
-            status="recorded",
+            status=FeedbackRecordStatus.RECORDED,
             feedback_id="feedback-123",
             learning_enabled=True,
             message="Feedback recorded",
@@ -400,7 +403,7 @@ class TestApplyRefactoringApply:
         # type: ignore[assignment] - MagicMock assignment to optional manager
         mock_managers.refactoring_executor.execute_refactoring = AsyncMock(  # type: ignore[union-attr]
             return_value=ExecutionResult(
-                status="success",
+                status=ExecutionStatus.SUCCESS,
                 execution_id="exec-dry-123",
                 suggestion_id="test-123",
                 approval_id="approval-123",
@@ -601,7 +604,7 @@ class TestApplyRefactoringRollback:
         # type: ignore[assignment] - MagicMock assignment to optional manager
         mock_managers.rollback_manager.rollback_refactoring = AsyncMock(  # type: ignore[union-attr]
             return_value=RollbackRefactoringResult(
-                status="success",
+                status=RollbackRefactoringStatus.SUCCESS,
                 rollback_id="rollback-dry-123",
                 execution_id="exec-123",
                 files_restored=0,
@@ -1003,7 +1006,7 @@ class TestPhase5ExecutionHelpers:
         learning_engine = AsyncMock()
         learning_engine.record_feedback = AsyncMock(
             return_value=FeedbackRecordResult(
-                status="recorded",
+                status=FeedbackRecordStatus.RECORDED,
                 feedback_id="fb-1",
                 learning_enabled=True,
                 message="OK",
@@ -1167,7 +1170,7 @@ class TestHelperFunctions:
         # type: ignore[assignment] - MagicMock assignment to optional manager
         mock_managers.refactoring_executor.execute_refactoring = AsyncMock(  # type: ignore[union-attr]
             return_value=ExecutionResult(
-                status="success",
+                status=ExecutionStatus.SUCCESS,
                 execution_id="",
                 suggestion_id="test-123",
                 approval_id="approval-123",

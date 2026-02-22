@@ -1159,7 +1159,7 @@ This tool should be called at the START of any task to:
 - `loading_strategy` (str | None) - Required when strategy="progressive". Options: "by_relevance" (default), "by_priority", "by_dependencies"
 - `response_format` (str) - Response format: "concise" (default) or "detailed"
 
-**Zero budget (`token_budget=0`):** For **non-trivial** tasks (implement, fix, debug, refactor, test, optimize), passing `token_budget=0` returns a **validation error**; use an explicit non-zero budget (e.g. 10,000 for implement/add, 15,000 for fix/debug). For **trivial** tasks, `token_budget=0` is treated as "use default" and the config default budget is used. Recommend explicit non-zero budgets for implement, fix, debug, and planning tasks.
+**Explicit budget for non-trivial tasks:** For **non-trivial** tasks (implement, fix, debug, refactor, test, optimize), an **explicit non-zero** `token_budget` is required. **Omitting** `token_budget` or passing `token_budget=0` returns a **validation error**; use e.g. 10,000 for implement/add, 15,000 for fix/debug. For **trivial** tasks, omitting `token_budget` or passing 0 uses the config default. Always pass an explicit budget for implement, fix, debug, and planning flows.
 
 **Description:**
 

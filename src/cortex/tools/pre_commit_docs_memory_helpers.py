@@ -72,8 +72,12 @@ async def _run_docs_and_memory_bank_phase_tools(
     ctx: MCPContext | None,
 ) -> tuple[JsonDict | None, JsonDict | None]:
     """Run validate() for timestamps and roadmap_sync once for docs/memory phase."""
-    timestamps_result = await _run_single_validation("timestamps", ctx)
-    roadmap_result = await _run_single_validation("roadmap_sync", ctx)
+    timestamps_result = await _run_single_validation(
+        ValidateCheckTypeName.TIMESTAMPS, ctx
+    )
+    roadmap_result = await _run_single_validation(
+        ValidateCheckTypeName.ROADMAP_SYNC, ctx
+    )
     return timestamps_result, roadmap_result
 
 

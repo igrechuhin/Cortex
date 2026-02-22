@@ -7,7 +7,6 @@ Total: 1 tool, 1 resource
 - suggest_refactoring / suggest_refactoring_resource (cortex://analysis/suggest-refactoring/{type})
 """
 
-from typing import Literal
 from urllib.parse import unquote
 
 from cortex.core.constants import MCP_TOOL_TIMEOUT_COMPLEX
@@ -20,6 +19,7 @@ from cortex.core.mcp_stability import (
 )
 from cortex.core.models import ResponseFormat
 from cortex.core.project_root_resolver import resolve_project_root_async
+from cortex.refactoring.models import RefactoringSuggestionType
 from cortex.server import mcp
 from cortex.tools.refactoring_operation_helpers import (
     format_suggest_refactoring_response,
@@ -97,7 +97,7 @@ async def _suggest_refactoring_run(
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_COMPLEX)
 async def suggest_refactoring(
-    type: Literal["consolidation", "splits", "reorganization"],
+    type: RefactoringSuggestionType | str,
     min_similarity: float | None = None,
     size_threshold: int | None = None,
     goal: str | None = None,
@@ -524,9 +524,10 @@ async def suggest_refactoring(
           to apply changes after reviewing suggestions.
     """
     await log_client(ctx, "info", "suggest_refactoring: starting", logger_name=__name__)
+    type_str = type.value if isinstance(type, RefactoringSuggestionType) else type
     root = await resolve_project_root_async(None, ctx)
     return await _suggest_refactoring_run(
-        type,
+        type_str,
         str(root),
         min_similarity,
         size_threshold,

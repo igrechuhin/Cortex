@@ -7,7 +7,7 @@ Memory Bank files to assess overall data quality.
 
 import re
 from datetime import datetime
-from typing import Literal, cast
+from typing import cast
 
 from cortex.core.constants import (
     ORPHAN_FILE_THRESHOLD_DAYS,
@@ -25,7 +25,9 @@ from .models import (
     DuplicationDataModel,
     FileMetadataForQuality,
     FileQualityScore,
+    HealthGrade,
     LinkValidationDataModel,
+    QualityHealthStatus,
     QualityScoreResult,
 )
 from .schema_validator import SchemaValidator
@@ -411,7 +413,7 @@ class QualityMetrics:
             penalty = min(50, (excess / 1000) * 2)
             return max(50.0, 100 - penalty)
 
-    def get_grade(self, score: float) -> Literal["A", "B", "C", "D", "F"]:
+    def get_grade(self, score: float) -> HealthGrade:
         """
         Convert score to letter grade.
 
@@ -423,16 +425,16 @@ class QualityMetrics:
         """
         # Use early returns to reduce nesting
         if score >= 90:
-            return "A"
+            return HealthGrade.A
         if score >= 80:
-            return "B"
+            return HealthGrade.B
         if score >= 70:
-            return "C"
+            return HealthGrade.C
         if score >= 60:
-            return "D"
-        return "F"
+            return HealthGrade.D
+        return HealthGrade.F
 
-    def get_status(self, score: float) -> Literal["healthy", "warning", "critical"]:
+    def get_status(self, score: float) -> QualityHealthStatus:
         """
         Get health status based on score.
 
@@ -443,11 +445,11 @@ class QualityMetrics:
             Status string
         """
         if score >= 80:
-            return "healthy"
+            return QualityHealthStatus.HEALTHY
         elif score >= 60:
-            return "warning"
+            return QualityHealthStatus.WARNING
         else:
-            return "critical"
+            return QualityHealthStatus.CRITICAL
 
     def collect_issues(
         self,
@@ -612,9 +614,7 @@ class QualityMetrics:
 
     def _determine_grade_and_status(
         self, overall_score: int
-    ) -> tuple[
-        Literal["A", "B", "C", "D", "F"], Literal["healthy", "warning", "critical"]
-    ]:
+    ) -> tuple[HealthGrade, QualityHealthStatus]:
         """Determine grade and status from overall score."""
         return (self.get_grade(overall_score), self.get_status(overall_score))
 
@@ -650,8 +650,8 @@ class QualityMetrics:
         self,
         overall_score: int,
         category_scores: dict[str, float],
-        grade: Literal["A", "B", "C", "D", "F"],
-        status: Literal["healthy", "warning", "critical"],
+        grade: HealthGrade,
+        status: QualityHealthStatus,
         issues: list[str],
         recommendations: list[str],
     ) -> QualityScoreResult:

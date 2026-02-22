@@ -9,6 +9,7 @@ from pathlib import Path
 
 import pytest
 
+from cortex.core.models import RiskLevel
 from cortex.refactoring.models import (
     DependencyGraphInput,
     DependencyInfo,
@@ -854,7 +855,7 @@ class TestPreviewReorganization:
                 complexity_reduction=0.0,
                 maintainability_improvement=0.0,
                 navigation_improvement=0.0,
-                estimated_effort="low",
+                estimated_effort=RiskLevel.LOW,
             ),
             risks=["Low risk"],
             benefits=["Improved organization"],
@@ -888,7 +889,7 @@ class TestPreviewReorganization:
                 complexity_reduction=0.0,
                 maintainability_improvement=0.0,
                 navigation_improvement=0.0,
-                estimated_effort="low",
+                estimated_effort=RiskLevel.LOW,
             ),
             risks=[],
             benefits=[],
@@ -936,7 +937,7 @@ class TestReorganizationPlanModel:
                 complexity_reduction=0.0,
                 maintainability_improvement=0.0,
                 navigation_improvement=0.0,
-                estimated_effort="low",
+                estimated_effort=RiskLevel.LOW,
             ),
             risks=["Low risk"],
             benefits=["Improved organization"],

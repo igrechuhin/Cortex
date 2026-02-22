@@ -142,6 +142,8 @@ These violations create technical debt, hurt readability, and make onboarding ha
 
 **Acceptance criteria:** Zero `type: ignore` comments except where truly unavoidable (with documented justification).
 
+**Step 5 progress (2026-02-22):** Resolved type-ignore in phase1_foundation_stats (removed assignment ignores; no cast needed). Resolved in phase4_metadata_helpers (typed_sections cast, loop over list[ModelDict]; relevance_score direct float). Removed file-level pyright disable in phase5_evaluation; fixed load_optimization_history by typing runs as list[dict[str, object]]. Kept two type: ignore in session_models with documented justification (Pyright reportUnknownVariableType for list[ConcurrentSession]/list[TaskLock] in Pydantic Field — known limitation). Type check and quality gate pass. **Step 5 COMPLETE.**
+
 ---
 
 ## Step 6: Split Oversized Tool Files
@@ -157,6 +159,8 @@ These violations create technical debt, hurt readability, and make onboarding ha
 | `core/metadata_index.py` | 993 | Split into `metadata_index.py`, `metadata_queries.py`, `metadata_cache.py` |
 
 **Acceptance criteria:** All production files ≤ 400 lines.
+
+**Step 6 progress (2026-02-22):** Split `tools/file_operations.py` (1,110 lines) into: `file_section_operations.py`, `file_metadata_operations.py`, `file_crud_flow.py`, `file_manage_file_helpers.py`, `file_crud_operations.py`; `file_operations.py` is a re-export facade (~52 lines). Split `tools/session_start_tools.py` (896 lines) into: `session_start_tools.py` (main, 323 lines), `session_health.py` (130 lines), `session_brief.py` (361 lines). All new modules ≤ 400 lines. Tests updated to import from session_health and session_brief; MCP health patch path updated to session_health. Remaining Step 6 targets: markdown_operations, plan_operations, core/metadata_index.
 
 ---
 

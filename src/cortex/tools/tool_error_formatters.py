@@ -7,11 +7,11 @@ specific and actionable improvements, rather than opaque error codes or tracebac
 
 import json
 from difflib import SequenceMatcher
-from typing import Literal, cast
+from typing import cast
 
 from pydantic import BaseModel, Field
 
-from cortex.core.models import JsonDict, JsonValue
+from cortex.core.models import JsonDict, JsonValue, ResponseStatus
 
 
 class ToolErrorResponse(BaseModel):
@@ -27,7 +27,9 @@ class ToolErrorResponse(BaseModel):
 
     model_config = {"extra": "forbid", "validate_assignment": True}
 
-    status: Literal["error"] = Field(default="error", description="Response status")
+    status: ResponseStatus = Field(
+        default=ResponseStatus.ERROR, description="Response status"
+    )
     error: str = Field(description="Human-readable error message")
     error_type: str = Field(description="Exception class name")
     action_required: str | None = Field(
@@ -125,7 +127,7 @@ def format_tool_error(
         suggestion = action_required
 
     response = ToolErrorResponse(
-        status="error",
+        status=ResponseStatus.ERROR,
         error=error_message,
         error_type=error_type,
         action_required=action_required,

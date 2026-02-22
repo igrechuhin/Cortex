@@ -5,7 +5,7 @@ This module contains Pydantic models for optimization operations,
 migrated from dataclass and legacy dict-based shapes for better validation.
 """
 
-from typing import Literal
+from enum import Enum
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
@@ -588,14 +588,21 @@ class TokenBudgetOptConfigModel(OptimizationBaseModel):
     )
 
 
-LoadingStrategy = Literal["priority", "dependency_aware", "section_level", "hybrid"]
+class LoadingStrategy(str, Enum):
+    """Context loading strategy."""
+
+    PRIORITY = "priority"
+    DEPENDENCY_AWARE = "dependency_aware"
+    SECTION_LEVEL = "section_level"
+    HYBRID = "hybrid"
 
 
 class LoadingStrategyConfigModel(OptimizationBaseModel):
     """Loading strategy configuration."""
 
     default: LoadingStrategy = Field(
-        default="dependency_aware", description="Default loading strategy"
+        default=LoadingStrategy.DEPENDENCY_AWARE,
+        description="Default loading strategy",
     )
     mandatory_files: list[str] = Field(
         default_factory=lambda: ["memorybankinstructions.md"],
@@ -626,9 +633,13 @@ class LoadingStrategyConfigModel(OptimizationBaseModel):
     )
 
 
-SummarizationStrategy = Literal[
-    "extract_key_sections", "compress_examples", "remove_verbose", "hybrid"
-]
+class SummarizationStrategy(str, Enum):
+    """Summarization strategy."""
+
+    EXTRACT_KEY_SECTIONS = "extract_key_sections"
+    COMPRESS_EXAMPLES = "compress_examples"
+    REMOVE_VERBOSE = "remove_verbose"
+    HYBRID = "hybrid"
 
 
 class SummarizationConfigModel(OptimizationBaseModel):
@@ -645,7 +656,8 @@ class SummarizationConfigModel(OptimizationBaseModel):
         default=0.5, gt=0.0, lt=1.0, description="Target reduction ratio (0-1)"
     )
     strategy: SummarizationStrategy = Field(
-        default="extract_key_sections", description="Summarization strategy"
+        default=SummarizationStrategy.EXTRACT_KEY_SECTIONS,
+        description="Summarization strategy",
     )
     cache_summaries: bool = Field(
         default=True, description="Whether to cache generated summaries"
@@ -681,7 +693,11 @@ class PerformanceConfigModel(OptimizationBaseModel):
     )
 
 
-RulePriority = Literal["local_overrides_shared", "shared_overrides_local"]
+class RulePriority(str, Enum):
+    """Rule priority order (local vs shared)."""
+
+    LOCAL_OVERRIDES_SHARED = "local_overrides_shared"
+    SHARED_OVERRIDES_LOCAL = "shared_overrides_local"
 
 
 class LanguageKeywordsModel(OptimizationBaseModel):
@@ -757,7 +773,8 @@ class RulesConfigModel(OptimizationBaseModel):
         default=0.3, ge=0.0, le=1.0, description="Minimum relevance score for rules"
     )
     rule_priority: RulePriority = Field(
-        default="local_overrides_shared", description="Rule priority strategy"
+        default=RulePriority.LOCAL_OVERRIDES_SHARED,
+        description="Rule priority strategy",
     )
     context_aware_loading: bool = Field(
         default=True, description="Use context-aware rule loading"

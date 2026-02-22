@@ -11,6 +11,7 @@ from cortex.analysis import structure_analysis, structure_detection, structure_m
 from cortex.analysis.models import (
     AntiPatternInfo,
     ComplexityAnalysisResult,
+    ComplexityAnalysisStatus,
     ComplexityAssessment,
     ComplexityHotspot,
     ComplexityMetrics,
@@ -118,7 +119,7 @@ class StructureAnalyzer:
         """
         graph = structure_metrics.build_complexity_graph(self.dependency_graph)
         if not graph:
-            return ComplexityAnalysisResult(status="no_files")
+            return ComplexityAnalysisResult(status=ComplexityAnalysisStatus.NO_FILES)
 
         depth_map, max_depth = structure_metrics.calculate_dependency_depths(graph)
         edge_count, node_count, cyclomatic_complexity, avg_dependencies = (
@@ -204,7 +205,7 @@ def _build_complexity_result(
 ) -> ComplexityAnalysisResult:
     """Build complexity analysis result."""
     return ComplexityAnalysisResult(
-        status="analyzed",
+        status=ComplexityAnalysisStatus.ANALYZED,
         metrics=metrics,
         complexity_hotspots=hotspots,
         assessment=assessment,

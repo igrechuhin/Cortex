@@ -20,10 +20,13 @@ from cortex.refactoring.models import (
     ApproveResult,
     CleanupExpiredApprovalsResult,
     MarkAppliedResult,
+    MarkAppliedStatus,
     PendingApprovalsResult,
     PreferenceResult,
     PreferencesListResult,
+    PreferenceStatus,
     RejectResult,
+    RejectStatus,
 )
 from cortex.refactoring.models import (
     ApprovalStatus as ApprovalStatusEnum,
@@ -308,7 +311,7 @@ class ApprovalManager:
 
         if not approval:
             return RejectResult(
-                status="error",
+                status=RejectStatus.ERROR,
                 suggestion_id=suggestion_id,
                 message=f"No approval found for suggestion {suggestion_id}",
             )
@@ -320,7 +323,7 @@ class ApprovalManager:
         await self._save_approvals()
 
         return RejectResult(
-            status="rejected",
+            status=RejectStatus.REJECTED,
             approval_id=approval_id,
             suggestion_id=suggestion_id,
             message="Suggestion rejected",
@@ -345,7 +348,7 @@ class ApprovalManager:
 
         if not approval:
             return MarkAppliedResult(
-                status="error",
+                status=MarkAppliedStatus.ERROR,
                 approval_id=approval_id,
                 message=f"Approval {approval_id} not found",
             )
@@ -357,7 +360,7 @@ class ApprovalManager:
         await self._save_approvals()
 
         return MarkAppliedResult(
-            status="applied",
+            status=MarkAppliedStatus.APPLIED,
             approval_id=approval_id,
             execution_id=execution_id,
             message="Approval marked as applied",
@@ -406,7 +409,7 @@ class ApprovalManager:
         await self._save_approvals()
 
         return PreferenceResult(
-            status="success",
+            status=PreferenceStatus.SUCCESS,
             pattern_type=pattern_type,
             auto_approve=auto_approve,
             message=f"Preference added for {pattern_type}",
@@ -435,13 +438,13 @@ class ApprovalManager:
         if removed > 0:
             await self._save_approvals()
             return PreferenceResult(
-                status="success",
+                status=PreferenceStatus.SUCCESS,
                 pattern_type=pattern_type,
                 message=f"Preference removed for {pattern_type}",
             )
         else:
             return PreferenceResult(
-                status="not_found",
+                status=PreferenceStatus.NOT_FOUND,
                 pattern_type=pattern_type,
                 message=f"No preference found for {pattern_type}",
             )

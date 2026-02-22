@@ -7,7 +7,8 @@ are caught so client disconnect does not propagate (avoids TaskGroup noise).
 """
 
 import logging
-from typing import Literal
+from enum import Enum
+from typing import Literal, cast
 
 import anyio
 from mcp.server.fastmcp import Context
@@ -35,8 +36,16 @@ def _is_connection_error(exc: BaseException) -> bool:
     return False
 
 
-# Public type aliases for use in tool signatures and callers.
-LogLevel = Literal["debug", "info", "warning", "error"]
+# Public enum for use in tool signatures and callers.
+class LogLevel(str, Enum):
+    """Log level for client and fallback logger."""
+
+    DEBUG = "debug"
+    INFO = "info"
+    WARNING = "warning"
+    ERROR = "error"
+
+
 # Context is generic; use ServerSession and object to match SDK get_context().
 MCPContext = Context[ServerSession, object]
 
@@ -45,7 +54,7 @@ __all__ = ["LogLevel", "MCPContext", "log_client", "report_progress_safe"]
 
 async def log_client(
     ctx: MCPContext | None,
-    level: LogLevel,
+    level: LogLevel | str,
     message: str,
     *,
     logger_name: str | None = None,
@@ -58,13 +67,17 @@ async def log_client(
 
     Args:
         ctx: MCP Context (injected in tools); may be None in helpers or tests.
-        level: Log level (debug, info, warning, error).
+        level: Log level (debug, info, warning, error) or LogLevel member.
         message: Log message. Keep client-visible messages short and safe.
         logger_name: Optional logger name for Context logging.
     """
+    level_str = level.value if isinstance(level, LogLevel) else level
+    _level: Literal["debug", "info", "warning", "error"] = cast(
+        Literal["debug", "info", "warning", "error"], level_str
+    )
     if ctx is not None:
         try:
-            await ctx.log(level, message, logger_name=logger_name)
+            await ctx.log(_level, message, logger_name=logger_name)
         except BaseException as e:
             if _is_connection_error(e):
                 logger.debug(
@@ -74,7 +87,7 @@ async def log_client(
                 return
             raise
     else:
-        getattr(logger, level)(message)
+        getattr(logger, _level)(message)
 
 
 async def report_progress_safe(

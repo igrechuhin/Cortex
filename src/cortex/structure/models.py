@@ -5,7 +5,7 @@ This module contains Pydantic models for structure lifecycle operations,
 health checking, setup, and symlink management.
 """
 
-from typing import Literal
+from enum import Enum
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -143,14 +143,32 @@ class StructureConfigModel(StructureBaseModel):
 # ============================================================================
 
 
+class HealthGrade(str, Enum):
+    """Letter grade for structure health score."""
+
+    A = "A"
+    B = "B"
+    C = "C"
+    D = "D"
+    F = "F"
+
+
+class HealthStatus(str, Enum):
+    """Health status for structure check."""
+
+    HEALTHY = "healthy"
+    GOOD = "good"
+    FAIR = "fair"
+    WARNING = "warning"
+    CRITICAL = "critical"
+
+
 class HealthCheckResult(StructureBaseModel):
     """Result of structure health check."""
 
     score: int = Field(..., ge=0, le=100, description="Health score 0-100")
-    grade: Literal["A", "B", "C", "D", "F"] = Field(..., description="Letter grade")
-    status: Literal["healthy", "good", "fair", "warning", "critical"] = Field(
-        ..., description="Health status"
-    )
+    grade: HealthGrade = Field(..., description="Letter grade")
+    status: HealthStatus = Field(..., description="Health status")
     checks: list[str] = Field(default_factory=list, description="Passed checks")
     issues: list[str] = Field(default_factory=list, description="Issues found")
     recommendations: list[str] = Field(
@@ -201,10 +219,16 @@ class SymlinkReport(StructureBaseModel):
     platform: str = Field(..., description="Operating system platform")
 
 
+class SymlinkSuccess(Enum):
+    """Success value for symlink error response (always False)."""
+
+    FAILURE = False
+
+
 class SymlinkErrorResponse(StructureBaseModel):
     """Error response for symlink operations."""
 
-    success: Literal[False] = Field(default=False)
+    success: SymlinkSuccess = Field(default=SymlinkSuccess.FAILURE)
     error: str = Field(..., description="Error message")
 
 
@@ -345,14 +369,54 @@ class PlanTemplateResult(StructureBaseModel):
     errors: list[str] = Field(default_factory=list, description="Errors encountered")
 
 
+class ProjectSetupQuestionType(str, Enum):
+    """Type of project setup question."""
+
+    SELECT = "select"
+    MULTISELECT = "multiselect"
+    TEXT = "text"
+    CONFIRM = "confirm"
+
+
+class ProjectType(str, Enum):
+    """Type of project."""
+
+    UNSPECIFIED = ""
+    WEB = "web"
+    MOBILE = "mobile"
+    BACKEND = "backend"
+    LIBRARY = "library"
+    CLI = "cli"
+    DESKTOP = "desktop"
+
+
+class TeamSize(str, Enum):
+    """Team size category."""
+
+    UNSPECIFIED = ""
+    SOLO = "Solo"
+    SMALL = "2-5"
+    MEDIUM = "6-20"
+    LARGE = "21+"
+
+
+class DevelopmentProcess(str, Enum):
+    """Development process."""
+
+    UNSPECIFIED = ""
+    AGILE_SCRUM = "Agile/Scrum"
+    KANBAN = "Kanban"
+    WATERFALL = "Waterfall"
+    CONTINUOUS = "Continuous"
+    INFORMAL = "Informal"
+
+
 class ProjectSetupQuestion(StructureBaseModel):
     """Interactive project setup question."""
 
     id: str = Field(..., description="Question identifier")
     question: str = Field(..., description="Question text")
-    type: Literal["select", "multiselect", "text", "confirm"] = Field(
-        ..., description="Question type"
-    )
+    type: ProjectSetupQuestionType = Field(..., description="Question type")
     options: list[str] = Field(default_factory=list, description="Options for select")
     default: str | bool | None = Field(None, description="Default value")
 
@@ -389,19 +453,18 @@ class ProjectInfo(StructureBaseModel):
 
     project_name: str = Field(default="", description="Project name")
     project_description: str = Field(default="", description="Project description")
-    project_type: Literal[
-        "web", "mobile", "backend", "library", "cli", "desktop", ""
-    ] = Field(default="", description="Type of project")
+    project_type: ProjectType = Field(
+        default=ProjectType.UNSPECIFIED, description="Type of project"
+    )
     primary_language: str = Field(
         default="", description="Primary programming language"
     )
     frameworks: str = Field(default="", description="Main frameworks/libraries used")
-    team_size: Literal["Solo", "2-5", "6-20", "21+", ""] = Field(
-        default="", description="Team size"
+    team_size: TeamSize = Field(default=TeamSize.UNSPECIFIED, description="Team size")
+    development_process: DevelopmentProcess = Field(
+        default=DevelopmentProcess.UNSPECIFIED,
+        description="Development process",
     )
-    development_process: Literal[
-        "Agile/Scrum", "Kanban", "Waterfall", "Continuous", "Informal", ""
-    ] = Field(default="", description="Development process")
     use_shared_rules: bool = Field(
         default=False, description="Use shared rules repository"
     )
@@ -415,13 +478,21 @@ class ProjectInfo(StructureBaseModel):
         return {
             "project_name": self.project_name,
             "project_description": self.project_description,
-            "project_type": self.project_type,
+            "project_type": self.project_type.value,
             "primary_language": self.primary_language,
             "frameworks": self.frameworks,
-            "team_size": self.team_size,
-            "development_process": self.development_process,
+            "team_size": self.team_size.value,
+            "development_process": self.development_process.value,
             "use_shared_rules": str(self.use_shared_rules),
         }
+
+
+class InteractiveSetupQuestionType(str, Enum):
+    """Type of interactive setup question."""
+
+    TEXT = "text"
+    CHOICE = "choice"
+    BOOLEAN = "boolean"
 
 
 class InteractiveSetupQuestion(StructureBaseModel):
@@ -434,7 +505,7 @@ class InteractiveSetupQuestion(StructureBaseModel):
 
     id: str = Field(..., description="Question identifier")
     question: str = Field(..., description="Question text")
-    type: Literal["text", "choice", "boolean"] = Field(..., description="Question type")
+    type: InteractiveSetupQuestionType = Field(..., description="Question type")
     options: list[str] = Field(
         default_factory=list, description="Options for choice type"
     )

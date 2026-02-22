@@ -7,8 +7,8 @@ Total: 1 tool
 - analyze_health_check: Analyze prompts, rules, and/or tools for merge/optimization opportunities
 """
 
+from enum import Enum
 from pathlib import Path
-from typing import Literal
 
 from cortex.core.constants import MCP_TOOL_TIMEOUT_COMPLEX
 from cortex.core.context_logging import MCPContext, log_client
@@ -154,42 +154,72 @@ def _build_report_json(
     return payload.model_dump_json(indent=2)
 
 
-async def _run_analyses_by_type(
-    analysis_type: Literal["prompts", "rules", "tools", "all"],
-    project_root: Path,
-    se: SimilarityEngine,
-    validate_quality: bool,
-    include_dependencies: bool,
-) -> tuple[
+class HealthCheckAnalysisType(str, Enum):
+    """Type of health-check analysis."""
+
+    PROMPTS = "prompts"
+    RULES = "rules"
+    TOOLS = "tools"
+    ALL = "all"
+
+
+_AnalysesByTypeResult = tuple[
     PromptAnalysisResult,
     RuleAnalysisResult,
     ToolAnalysisResult,
     list[str],
     dict[str, list[str]] | None,
     dict[str, list[str]] | None,
-]:
-    """Run analyzers by analysis_type; return results, recs, and optional deps."""
+]
+
+
+async def _run_analyses_impl(
+    at: str,
+    project_root: Path,
+    se: SimilarityEngine,
+    validate_quality: bool,
+    include_dependencies: bool,
+) -> _AnalysesByTypeResult:
+    """Run analyzers for given type; return results, recs, and optional deps."""
     pr, rr, tr = empty_prompt_result(), empty_rule_result(), empty_tool_result()
     recs: list[str] = []
     pdeps: dict[str, list[str]] | None = None
     rdeps: dict[str, list[str]] | None = None
-    if analysis_type in ("prompts", "all"):
+    if at in ("prompts", "all"):
         pr, recs, pdeps = await _run_prompts_analysis(
             project_root, se, validate_quality, include_dependencies
         )
-    if analysis_type in ("rules", "all"):
+    if at in ("rules", "all"):
         rr, r, rdeps = await _run_rules_analysis(
             project_root, se, validate_quality, include_dependencies
         )
         recs = recs + r
-    if analysis_type in ("tools", "all"):
+    if at in ("tools", "all"):
         tr, r = await _run_tools_analysis(project_root, se, validate_quality)
         recs = recs + r
     return pr, rr, tr, recs, pdeps, rdeps
 
 
+async def _run_analyses_by_type(
+    analysis_type: HealthCheckAnalysisType | str,
+    project_root: Path,
+    se: SimilarityEngine,
+    validate_quality: bool,
+    include_dependencies: bool,
+) -> _AnalysesByTypeResult:
+    """Run analyzers by analysis_type; return results, recs, and optional deps."""
+    at = (
+        analysis_type.value
+        if isinstance(analysis_type, HealthCheckAnalysisType)
+        else analysis_type
+    )
+    return await _run_analyses_impl(
+        at, project_root, se, validate_quality, include_dependencies
+    )
+
+
 async def run_health_check_analysis(
-    analysis_type: Literal["prompts", "rules", "tools", "all"],
+    analysis_type: HealthCheckAnalysisType | str,
     similarity_threshold: float,
     include_dependencies: bool,
     validate_quality: bool,
@@ -200,9 +230,14 @@ async def run_health_check_analysis(
     pr, rr, tr, recs, pdeps, rdeps = await _run_analyses_by_type(
         analysis_type, project_root, se, validate_quality, include_dependencies
     )
+    at_str = (
+        analysis_type.value
+        if isinstance(analysis_type, HealthCheckAnalysisType)
+        else analysis_type
+    )
     report: HealthCheckReport = {
         "status": "success",
-        "analysis_type": analysis_type,
+        "analysis_type": at_str,
         "prompts": pr,
         "rules": rr,
         "tools": tr,
@@ -215,7 +250,7 @@ async def run_health_check_analysis(
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_COMPLEX)
 async def analyze_health_check(
-    analysis_type: Literal["prompts", "rules", "tools", "all"] = "all",
+    analysis_type: HealthCheckAnalysisType | str = HealthCheckAnalysisType.ALL,
     similarity_threshold: float = 0.75,
     include_dependencies: bool = True,
     validate_quality: bool = True,
@@ -254,13 +289,13 @@ async def analyze_health_check(
 @mcp_resource_wrapper(timeout=MCP_TOOL_TIMEOUT_COMPLEX)
 async def analyze_health_check_resource(analysis_type: str) -> str:
     """Resource: Health-check analysis (default params). Read via cortex://health/analyze/{analysis_type}. analysis_type: prompts, rules, tools, or all."""
-    valid: Literal["prompts", "rules", "tools", "all"] = (
+    valid_str = (
         analysis_type
         if analysis_type in ("prompts", "rules", "tools", "all")
         else "all"
     )
     return await analyze_health_check(
-        analysis_type=valid,
+        analysis_type=valid_str,
         similarity_threshold=0.75,
         include_dependencies=True,
         validate_quality=True,

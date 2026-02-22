@@ -1,9 +1,18 @@
 """Pydantic models for script capture records."""
 
 from datetime import UTC, datetime
-from typing import Literal
+from enum import Enum
 
 from pydantic import BaseModel, Field
+
+
+class PromotionStatus(str, Enum):
+    """Status in the promotion pipeline."""
+
+    PENDING = "pending"
+    ANALYZED = "analyzed"
+    PROMOTED = "promoted"
+    REJECTED = "rejected"
 
 
 class ScriptCaptureRecord(BaseModel):
@@ -27,8 +36,8 @@ class ScriptCaptureRecord(BaseModel):
         default=None,
         description="When and why this script was created",
     )
-    promotion_status: Literal["pending", "analyzed", "promoted", "rejected"] = Field(
-        default="pending",
+    promotion_status: PromotionStatus = Field(
+        default=PromotionStatus.PENDING,
         description="Status in the promotion pipeline",
     )
     agent_session: str | None = Field(

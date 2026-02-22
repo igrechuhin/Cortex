@@ -168,9 +168,9 @@ def get_str_list(result_dict: TestResultDict, key: str) -> list[str]:
     value_list = cast(list[object], value)
     # Verify all items are strings
     for i, item in enumerate(value_list):
-        assert isinstance(
-            item, str
-        ), f"Expected str at index {i} for '{key}', got {type(item)}"
+        assert isinstance(item, str), (
+            f"Expected str at index {i} for '{key}', got {type(item)}"
+        )
     return cast(list[str], value_list)
 
 
@@ -193,9 +193,9 @@ def get_dict_list(result_dict: TestResultDict, key: str) -> list[DictItem]:
     value_list = cast(list[object], value)
     # Verify all items are dicts
     for i, item in enumerate(value_list):
-        assert isinstance(
-            item, dict
-        ), f"Expected dict at index {i} for '{key}', got {type(item)}"
+        assert isinstance(item, dict), (
+            f"Expected dict at index {i} for '{key}', got {type(item)}"
+        )
     return cast(list[DictItem], value_list)
 
 
@@ -238,13 +238,13 @@ def get_nested_int(result_dict: TestResultDict, *keys: str) -> int:
     """
     current: dict[str, object] = result_dict
     for key in keys[:-1]:
-        assert isinstance(
-            current, dict
-        ), f"Expected dict at '{key}', got {type(current)}"
+        assert isinstance(current, dict), (
+            f"Expected dict at '{key}', got {type(current)}"
+        )
         next_val = current.get(key)
-        assert isinstance(
-            next_val, dict
-        ), f"Expected dict for '{key}', got {type(next_val)}"
+        assert isinstance(next_val, dict), (
+            f"Expected dict for '{key}', got {type(next_val)}"
+        )
         # Cast to satisfy pyright after isinstance check
         current = cast(dict[str, object], next_val)
     final = current.get(keys[-1])
@@ -264,13 +264,13 @@ def get_nested_str(result_dict: TestResultDict, *keys: str) -> str:
     """
     current: dict[str, object] = result_dict
     for key in keys[:-1]:
-        assert isinstance(
-            current, dict
-        ), f"Expected dict at '{key}', got {type(current)}"
+        assert isinstance(current, dict), (
+            f"Expected dict at '{key}', got {type(current)}"
+        )
         next_val = current.get(key)
-        assert isinstance(
-            next_val, dict
-        ), f"Expected dict for '{key}', got {type(next_val)}"
+        assert isinstance(next_val, dict), (
+            f"Expected dict for '{key}', got {type(next_val)}"
+        )
         # Cast to satisfy pyright after isinstance check
         current = cast(dict[str, object], next_val)
     final = current.get(keys[-1])
@@ -289,9 +289,9 @@ def assert_error_contains(result_dict: TestResultDict, substring: str) -> None:
         AssertionError: If assertion fails
     """
     error_value = result_dict.get("error")
-    assert isinstance(
-        error_value, str
-    ), f"Expected str for 'error', got {type(error_value)}"
+    assert isinstance(error_value, str), (
+        f"Expected str for 'error', got {type(error_value)}"
+    )
     assert substring in error_value, f"Expected '{substring}' in error: {error_value}"
 
 
@@ -306,12 +306,12 @@ def assert_message_contains(result_dict: TestResultDict, substring: str) -> None
         AssertionError: If assertion fails
     """
     message_value = result_dict.get("message")
-    assert isinstance(
-        message_value, str
-    ), f"Expected str for 'message', got {type(message_value)}"
-    assert (
-        substring in message_value
-    ), f"Expected '{substring}' in message: {message_value}"
+    assert isinstance(message_value, str), (
+        f"Expected str for 'message', got {type(message_value)}"
+    )
+    assert substring in message_value, (
+        f"Expected '{substring}' in message: {message_value}"
+    )
 
 
 def str_contains(result_dict: TestResultDict, key: str, substring: str) -> bool:

@@ -14,7 +14,7 @@ import json
 import logging
 from collections.abc import Callable, Sequence
 from pathlib import Path
-from typing import Literal, cast
+from typing import cast
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -81,20 +81,8 @@ _ADAPTER_REGISTRY: dict[str, Callable[[str | None], FrameworkAdapter]] = {
 }
 SUPPORTED_LANGUAGES: tuple[str, ...] = tuple(_ADAPTER_REGISTRY.keys())
 
-# Valid check names for execute_pre_commit_checks (must match PreCommitCheck enum).
-PreCommitCheckName = Literal[
-    "fix_errors",
-    "format",
-    "format_ci_parity",
-    "synapse_format",
-    "synapse_lint",
-    "type_check",
-    "quality",
-    "spelling",
-    "test_naming",
-    "check_async_tests",
-    "tests",
-]
+# Type alias for check names (must match PreCommitCheck enum).
+PreCommitCheckName = PreCommitCheck
 
 
 def _get_adapter(
@@ -564,9 +552,7 @@ async def _fix_markdown_and_update_files(
     )
     markdown_result_raw: JsonValue = json.loads(markdown_result_json)
     # Recursive JsonValue narrows incorrectly in pyright/basedpyright
-    if not isinstance(
-        markdown_result_raw, dict
-    ):  # pyright: ignore[reportUnnecessaryIsInstance]
+    if not isinstance(markdown_result_raw, dict):  # pyright: ignore[reportUnnecessaryIsInstance]
         return 0
     markdown_result = cast(ModelDict, markdown_result_raw)
     return _process_markdown_results(markdown_result, files_modified)
@@ -613,18 +599,12 @@ def _process_markdown_results(
         files_fixed_obj = markdown_result.get("files_fixed", 0)
         # Recursive JsonValue narrows incorrectly in pyright/basedpyright
         markdown_issues_fixed = (
-            int(files_fixed_obj)
-            if isinstance(files_fixed_obj, (int, str))
-            else 0  # pyright: ignore[reportUnnecessaryIsInstance]
+            int(files_fixed_obj) if isinstance(files_fixed_obj, (int, str)) else 0  # pyright: ignore[reportUnnecessaryIsInstance]
         )
         results_obj = markdown_result.get("results", [])
-        if isinstance(
-            results_obj, list
-        ):  # pyright: ignore[reportUnnecessaryIsInstance]
+        if isinstance(results_obj, list):  # pyright: ignore[reportUnnecessaryIsInstance]
             for item in cast(list[JsonValue], results_obj):
-                if isinstance(
-                    item, dict
-                ):  # pyright: ignore[reportUnnecessaryIsInstance]
+                if isinstance(item, dict):  # pyright: ignore[reportUnnecessaryIsInstance]
                     file_result = cast(ModelDict, item)
                     fixed_obj = file_result.get("fixed")
                     if fixed_obj:

@@ -307,9 +307,10 @@ class TestLoadContext:
                 side_effect=_get_manager_helper,
             ),
         ):
-            # Act
+            # Act - pass explicit budget so validation passes; mock yields effective 0
             result_str = await load_context(
                 task_description="Test task",
+                token_budget=10000,
                 response_format="detailed",
             )
             result = json.loads(result_str)
@@ -334,10 +335,9 @@ class TestLoadContext:
 
         # Assert: validation error, not success
         assert result["status"] == "error"
-        assert "token_budget=0" in result.get("error", "")
-        assert (
-            "non-trivial" in result.get("error", "").lower() or "suggestion" in result
-        )
+        err = result.get("error", "")
+        assert "Explicit" in err or "non-trivial" in err.lower() or "zero" in err
+        assert "suggestion" in result or "action_required" in result
 
     async def test_load_context_trivial_task_zero_budget_normalized_to_default(
         self, mock_project_root: Path, mock_managers: dict[str, object]
@@ -394,6 +394,7 @@ class TestLoadContext:
             # Act
             result_str = await load_context(
                 task_description="Test task",
+                token_budget=50000,
                 strategy="dependency_aware",
                 response_format="detailed",
             )
@@ -426,6 +427,7 @@ class TestLoadContext:
             # Act
             result_str = await load_context(
                 task_description="Test task",
+                token_budget=50000,
                 strategy="progressive",
                 loading_strategy="by_relevance",
                 response_format="detailed",
@@ -458,6 +460,7 @@ class TestLoadContext:
             # Act - don't specify loading_strategy, should default to "by_relevance"
             result_str = await load_context(
                 task_description="Test task",
+                token_budget=50000,
                 strategy="progressive",
                 response_format="detailed",
             )
@@ -477,7 +480,9 @@ class TestLoadContext:
             side_effect=RuntimeError("Test error"),
         ):
             # Act
-            result_str = await load_context(task_description="Test task")
+            result_str = await load_context(
+                task_description="Test task", token_budget=50000
+            )
             result = json.loads(result_str)
 
             # Assert
@@ -509,7 +514,9 @@ class TestLoadContext:
             ),
         ):
             # Act
-            result_str = await load_context(task_description="Test task")
+            result_str = await load_context(
+                task_description="Test task", token_budget=50000
+            )
             result = json.loads(result_str)
 
             # Assert
@@ -588,6 +595,7 @@ class TestLoadContext:
             # Act
             result_str = await load_context(
                 task_description="Test task",
+                token_budget=50000,
                 response_format="concise",
             )
             result = json.loads(result_str)
@@ -634,6 +642,7 @@ class TestLoadContext:
             # Act
             result_str = await load_context(
                 task_description="Test task",
+                token_budget=50000,
                 response_format="concise",
             )
             result = json.loads(result_str)
@@ -670,6 +679,7 @@ class TestLoadContext:
             # Act
             result_str = await load_context(
                 task_description="Test task",
+                token_budget=50000,
                 response_format="concise",
             )
 
@@ -860,8 +870,10 @@ class TestSummarizeContent:
                 side_effect=get_manager_helper,
             ),
         ):
-            # Act - test load_context
-            result_str = await load_context(task_description="test task")
+            # Act - test load_context (explicit budget so we reach disabled check)
+            result_str = await load_context(
+                task_description="test task", token_budget=50000
+            )
             result = json.loads(result_str)
 
             # Assert
@@ -1107,7 +1119,9 @@ class TestIntegration:
             ),
         ):
             # Act 1: Load context
-            opt_result = await load_context(task_description="Test task")
+            opt_result = await load_context(
+                task_description="Test task", token_budget=50000
+            )
             opt_data = json.loads(opt_result)
 
             # Assert 1
@@ -1341,10 +1355,25 @@ class TestContextBudgetValidation:
         )
         result = json.loads(result_str)
         assert result.get("status") == "error"
-        assert "token_budget=0" in result.get("error", "")
-        assert (
-            "non-trivial" in result.get("error", "").lower() or "suggestion" in result
+        err = result.get("error", "")
+        assert "Explicit" in err or "non-trivial" in err.lower() or "zero" in err
+        assert "suggestion" in result or "action_required" in result
+
+    @pytest.mark.asyncio
+    async def test_load_context_rejects_omitted_budget_for_non_trivial(
+        self, mock_project_root: Path, mock_managers: ManagersDict
+    ) -> None:
+        """load_context returns validation error when token_budget is omitted for non-trivial tasks."""
+        # No patches: validation runs before initialization (token_budget=None)
+        result_str = await load_context(
+            task_description="Refactor the auth module",
+            response_format="detailed",
         )
+        result = json.loads(result_str)
+        assert result.get("status") == "error"
+        err = result.get("error", "")
+        assert "Explicit" in err or "Omitted" in err or "non-trivial" in err.lower()
+        assert "suggestion" in result or "action_required" in result
 
     @pytest.mark.asyncio
     async def test_load_context_allows_zero_budget_for_trivial(
@@ -1421,6 +1450,6 @@ class TestContextBudgetValidation:
             assert result.get("status") == "success"
             warnings = result.get("warnings", [])
             assert len(warnings) > 0
-            assert any(
-                w.get("type") == "zero_files_selected" for w in warnings
-            ), f"Expected zero_files_selected warning, got: {warnings}"
+            assert any(w.get("type") == "zero_files_selected" for w in warnings), (
+                f"Expected zero_files_selected warning, got: {warnings}"
+            )
