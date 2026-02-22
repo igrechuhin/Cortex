@@ -14,7 +14,7 @@ import json
 import logging
 import re
 from pathlib import Path
-from typing import Any, Literal, cast
+from typing import Any, cast
 
 from pydantic import ValidationError
 
@@ -50,6 +50,8 @@ from cortex.tools.models import (
     SessionStartResult,
     SessionStartResultUnion,
 )
+from cortex.tools.models_base import ToolResultStatus
+from cortex.tools.session_models import TokenBudgetStatus
 from cortex.tools.session_registry import list_concurrent_sessions
 from cortex.tools.session_start_models import BriefInputs as _BriefInputs
 from cortex.tools.task_locking import list_active_locks
@@ -330,24 +332,23 @@ async def _get_git_status(project_root: Path) -> GitStatusSummary | None:
 
 def _determine_token_budget_status(
     total_tokens: int, default_budget: int = 80000
-) -> Literal["healthy", "warning", "over_budget"]:
+) -> TokenBudgetStatus:
     """Determine token budget status from usage.
 
     Args:
         total_tokens: Total tokens used
         default_budget: Default token budget
 
-    Returns:
-        Token budget status
+    Returns: Token budget status.
     """
     token_usage_percent = (
         (total_tokens / default_budget * 100) if default_budget > 0 else 0
     )
     if token_usage_percent >= 100:
-        return "over_budget"
+        return TokenBudgetStatus.OVER_BUDGET
     if token_usage_percent >= 85:
-        return "warning"
-    return "healthy"
+        return TokenBudgetStatus.WARNING
+    return TokenBudgetStatus.HEALTHY
 
 
 async def _count_file_tokens(metadata_index: MetadataIndex, file_name: str) -> int:
@@ -804,13 +805,13 @@ async def _load_memory_bank_files(
         fs_manager, MemoryBankFile.ACTIVE_CONTEXT
     )
     if error:
-        return SessionStartErrorResult(status="error", error=error)
+        return SessionStartErrorResult(status=ToolResultStatus.ERROR, error=error)
 
     roadmap_content, error = await _read_memory_bank_file(
         fs_manager, MemoryBankFile.ROADMAP
     )
     if error:
-        return SessionStartErrorResult(status="error", error=error)
+        return SessionStartErrorResult(status=ToolResultStatus.ERROR, error=error)
 
     assert active_context_content is not None
     assert roadmap_content is not None
@@ -849,7 +850,7 @@ async def _session_start_success_result(
     """Build SessionStartResult with token count from brief."""
     tc: TokenCounter = await get_manager(managers_dict, "tokens", TokenCounter)
     return SessionStartResult(
-        status="success",
+        status=ToolResultStatus.SUCCESS,
         brief=brief,
         token_count=tc.count_tokens(brief.model_dump_json()),
     )
@@ -882,7 +883,8 @@ async def _load_brief_and_return_result(
     except Exception as e:
         logger.exception("Error in session_start")
         return SessionStartErrorResult(
-            status="error", error=f"Failed to generate session brief: {str(e)}"
+            status=ToolResultStatus.ERROR,
+            error=f"Failed to generate session brief: {str(e)}",
         )
 
 
@@ -990,7 +992,7 @@ async def session_start(
     managers_raw = get_current_managers()
     if managers_raw is None:
         return SessionStartErrorResult(
-            status="error",
+            status=ToolResultStatus.ERROR,
             error="Managers not initialized",
         ).model_dump_json(exclude_none=True)
     managers: dict[str, object] = managers_raw

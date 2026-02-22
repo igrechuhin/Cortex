@@ -12,9 +12,9 @@ from cortex.managers.lazy_manager import LazyManager
 from cortex.tools.analysis_operations import analyze
 from cortex.tools.configuration_operations import configure
 from cortex.tools.file_operations import manage_file
-from cortex.tools.models import SchemaValidationResult
 from cortex.tools.refactoring_operations import suggest_refactoring
 from cortex.tools.validation_operations import validate
+from cortex.tools.validation_result_models import SchemaValidationResult
 from cortex.validation.models import (
     CategoryBreakdown,
     DuplicateEntry,

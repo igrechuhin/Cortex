@@ -13,7 +13,10 @@ from cortex.optimization.progressive_loader import (
     LoadedContent,
     ProgressiveLoader,
 )
-from cortex.tools.models import LoadedFileInfo, LoadProgressiveContextResult
+from cortex.tools.context_models import (
+    LoadedFileInfo,
+    LoadProgressiveContextResult,
+)
 
 
 def _calculate_progressive_budget(

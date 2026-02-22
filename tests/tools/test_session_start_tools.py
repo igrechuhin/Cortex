@@ -22,6 +22,7 @@ from cortex.tools.models import (
     SessionStartErrorResult,
     SessionStartResult,
 )
+from cortex.tools.session_models import TokenBudgetStatus
 from cortex.tools.session_start_tools import (
     _calculate_health_summary,  # type: ignore[reportPrivateUsage]
     _extract_current_focus,  # type: ignore[reportPrivateUsage]
@@ -496,7 +497,7 @@ class TestGenerateSessionSuggestions:
         health = SessionHealthSummary(
             file_count=7,
             total_tokens=10000,
-            token_budget_status="healthy",
+            token_budget_status=TokenBudgetStatus.HEALTHY,
             missing_files=[],
             has_errors=False,
         )
@@ -514,7 +515,7 @@ class TestGenerateSessionSuggestions:
         health = SessionHealthSummary(
             file_count=7,
             total_tokens=90000,
-            token_budget_status="over_budget",
+            token_budget_status=TokenBudgetStatus.OVER_BUDGET,
             missing_files=[],
             has_errors=False,
         )
@@ -527,7 +528,7 @@ class TestGenerateSessionSuggestions:
         health = SessionHealthSummary(
             file_count=5,
             total_tokens=10000,
-            token_budget_status="healthy",
+            token_budget_status=TokenBudgetStatus.HEALTHY,
             missing_files=["projectBrief.md", "systemPatterns.md"],
             has_errors=True,
         )
@@ -540,7 +541,7 @@ class TestGenerateSessionSuggestions:
         health = SessionHealthSummary(
             file_count=7,
             total_tokens=10000,
-            token_budget_status="healthy",
+            token_budget_status=TokenBudgetStatus.HEALTHY,
             missing_files=[],
             has_errors=False,
         )
@@ -555,7 +556,7 @@ class TestGenerateSessionSuggestions:
         health = SessionHealthSummary(
             file_count=7,
             total_tokens=10000,
-            token_budget_status="healthy",
+            token_budget_status=TokenBudgetStatus.HEALTHY,
             missing_files=[],
             has_errors=False,
         )
