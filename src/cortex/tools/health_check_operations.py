@@ -7,7 +7,6 @@ Total: 1 tool
 - analyze_health_check: Analyze prompts, rules, and/or tools for merge/optimization opportunities
 """
 
-import json
 from pathlib import Path
 from typing import Literal
 
@@ -23,6 +22,7 @@ from cortex.core.project_root_resolver import resolve_project_root_async
 from cortex.health_check.dependency_mapper import DependencyMapper
 from cortex.health_check.models import (
     HealthCheckReport,
+    HealthCheckReportPayload,
     MergeOpportunity,
     PromptAnalysisResult,
     RuleAnalysisResult,
@@ -144,12 +144,14 @@ def _build_report_json(
     rule_deps: dict[str, list[str]] | None,
 ) -> str:
     """Build JSON string from report and optional dependency maps."""
-    payload: dict[str, object] = dict(report)
-    if prompt_deps is not None:
-        payload["prompt_dependencies"] = prompt_deps
-    if rule_deps is not None:
-        payload["rule_dependencies"] = rule_deps
-    return json.dumps(payload, indent=2)
+    payload = HealthCheckReportPayload.model_validate(
+        {
+            **report,
+            "prompt_dependencies": prompt_deps,
+            "rule_dependencies": rule_deps,
+        }
+    )
+    return payload.model_dump_json(indent=2)
 
 
 async def _run_analyses_by_type(

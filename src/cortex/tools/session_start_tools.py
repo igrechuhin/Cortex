@@ -14,7 +14,7 @@ import json
 import logging
 import re
 from pathlib import Path
-from typing import Any, cast
+from typing import cast
 
 from pydantic import ValidationError
 
@@ -51,6 +51,10 @@ from cortex.tools.models import (
     SessionStartResultUnion,
 )
 from cortex.tools.models_base import ToolResultStatus
+from cortex.tools.session_brief_helpers import (
+    brief_from_suggestions_and_context,
+    session_brief_context_kwargs,
+)
 from cortex.tools.session_models import TokenBudgetStatus
 from cortex.tools.session_registry import list_concurrent_sessions
 from cortex.tools.session_start_models import BriefInputs as _BriefInputs
@@ -385,11 +389,11 @@ _REQUIRED_FILES = [
 
 
 async def _calculate_health_summary(
-    managers: dict[str, object],
+    managers: ManagersDict,
     project_root: Path,
 ) -> SessionHealthSummary:
     """Calculate health summary for session start."""
-    managers_dict = cast(ManagersDict, managers)
+    managers_dict = managers
     fs_manager: FileSystemManager = await get_manager(
         managers_dict, "fs", FileSystemManager
     )
@@ -567,114 +571,9 @@ async def _load_concurrency_info(
     return concurrent_sessions, locked_tasks
 
 
-def _create_session_brief(
-    project_name: str,
-    current_focus: str,
-    recent_completed: list[str],
-    next_work_item: str | None,
-    next_work_plan_path: str | None,
-    health: SessionHealthSummary,
-    git_status: GitStatusSummary | None,
-    session_suggestions: list[str],
-    last_handoff: SessionHandoff | None,
-    concurrent_sessions: list[ConcurrentSession],
-    locked_tasks: list[str],
-    mcp_healthy: bool = True,
-    mcp_health_message: str | None = None,
-) -> SessionBrief:
-    """Create SessionBrief from components."""
-    return SessionBrief(
-        project_name=project_name,
-        current_focus=current_focus,
-        recent_completed=recent_completed,
-        next_work_item=next_work_item,
-        next_work_plan_path=next_work_plan_path,
-        health=health,
-        git_status=git_status,
-        session_suggestions=session_suggestions,
-        last_handoff=last_handoff,
-        concurrent_sessions=concurrent_sessions,
-        locked_tasks=locked_tasks,
-        mcp_healthy=mcp_healthy,
-        mcp_health_message=mcp_health_message,
-    )
-
-
-def _create_brief_with_suggestions(
-    suggestions: list[str],
-    project_name: str,
-    current_focus: str,
-    recent_completed: list[str],
-    next_work_item: str | None,
-    next_work_plan_path: str | None,
-    health: SessionHealthSummary,
-    git_status: GitStatusSummary | None,
-    last_handoff: SessionHandoff | None,
-    concurrent_sessions: list[ConcurrentSession],
-    locked_tasks: list[str],
-    mcp_healthy: bool = True,
-    mcp_health_message: str | None = None,
-) -> SessionBrief:
-    """Build SessionBrief from suggestions and components."""
-    return _create_session_brief(
-        project_name,
-        current_focus,
-        recent_completed,
-        next_work_item,
-        next_work_plan_path,
-        health,
-        git_status,
-        suggestions,
-        last_handoff,
-        concurrent_sessions,
-        locked_tasks,
-        mcp_healthy=mcp_healthy,
-        mcp_health_message=mcp_health_message,
-    )
-
-
-def _session_brief_context_kwargs(
-    project_name: str,
-    current_focus: str,
-    recent_completed: list[str],
-    next_work_item: str | None,
-    next_work_plan_path: str | None,
-    health: SessionHealthSummary,
-    git_status: GitStatusSummary | None,
-    last_handoff: SessionHandoff | None,
-    concurrent_sessions: list[ConcurrentSession],
-    locked_tasks: list[str],
-    mcp_healthy: bool = True,
-    mcp_health_message: str | None = None,
-) -> dict[str, Any]:
-    """Build kwargs for _create_brief_with_suggestions from context (keeps _compute_suggestions_and_create_brief under 30 lines)."""
-    return {
-        "project_name": project_name,
-        "current_focus": current_focus,
-        "recent_completed": recent_completed,
-        "next_work_item": next_work_item,
-        "next_work_plan_path": next_work_plan_path,
-        "health": health,
-        "git_status": git_status,
-        "last_handoff": last_handoff,
-        "concurrent_sessions": concurrent_sessions,
-        "locked_tasks": locked_tasks,
-        "mcp_healthy": mcp_healthy,
-        "mcp_health_message": mcp_health_message,
-    }
-
-
-def _brief_from_suggestions_and_context(
-    suggestions: list[str],
-    **kwargs: Any,
-) -> SessionBrief:
-    """Build SessionBrief from suggestions and context kwargs."""
-    return _create_brief_with_suggestions(suggestions, **kwargs)
-
-
 def _compute_suggestions_and_create_brief(inp: _BriefInputs) -> SessionBrief:
     """Compute suggestions and build SessionBrief."""
-    return _brief_from_suggestions_and_context(
+    return brief_from_suggestions_and_context(
         _generate_session_suggestions(
             inp["health"],
             inp["git_status"],
@@ -683,7 +582,7 @@ def _compute_suggestions_and_create_brief(inp: _BriefInputs) -> SessionBrief:
             inp["concurrent_sessions"],
             mcp_healthy=inp["mcp_healthy"],
         ),
-        **_session_brief_context_kwargs(
+        **session_brief_context_kwargs(
             inp["project_name"],
             inp["current_focus"],
             inp["recent_completed"],
@@ -735,7 +634,7 @@ def _assemble_session_brief(
 async def _gather_brief_components(
     active_context_content: str,
     roadmap_content: str,
-    managers: dict[str, object],
+    managers: ManagersDict,
     project_root: Path,
     fs_manager: FileSystemManager,
 ) -> _BriefComponents:
@@ -767,7 +666,7 @@ async def _gather_brief_components(
 async def _build_session_brief(
     active_context_content: str,
     roadmap_content: str,
-    managers: dict[str, object],
+    managers: ManagersDict,
     project_root: Path,
     fs_manager: FileSystemManager,
     mcp_healthy: bool = True,
@@ -858,8 +757,7 @@ async def _session_start_success_result(
 
 async def _load_brief_and_return_result(
     fs_manager: FileSystemManager,
-    managers_dict: ManagersDict,
-    managers: dict[str, object],
+    managers: ManagersDict,
     project_root: Path,
     mcp_healthy: bool,
     mcp_health_message: str | None,
@@ -879,7 +777,7 @@ async def _load_brief_and_return_result(
             mcp_healthy=mcp_healthy,
             mcp_health_message=mcp_health_message,
         )
-        return await _session_start_success_result(brief, managers_dict)
+        return await _session_start_success_result(brief, managers)
     except Exception as e:
         logger.exception("Error in session_start")
         return SessionStartErrorResult(
@@ -891,17 +789,13 @@ async def _load_brief_and_return_result(
 async def _session_start_impl(
     task_description: str | None,
     project_root: Path,
-    managers: dict[str, object],
+    managers: ManagersDict,
 ) -> SessionStartResultUnion:
     """Implementation of session_start tool."""
-    managers_dict = cast(ManagersDict, managers)
-    fs_manager: FileSystemManager = await get_manager(
-        managers_dict, "fs", FileSystemManager
-    )
+    fs_manager: FileSystemManager = await get_manager(managers, "fs", FileSystemManager)
     mcp_healthy, mcp_health_message = await _get_mcp_health_status()
     return await _load_brief_and_return_result(
         fs_manager,
-        managers_dict,
         managers,
         project_root,
         mcp_healthy,
@@ -995,7 +889,7 @@ async def session_start(
             status=ToolResultStatus.ERROR,
             error="Managers not initialized",
         ).model_dump_json(exclude_none=True)
-    managers: dict[str, object] = managers_raw
+    managers = cast(ManagersDict, managers_raw)
 
     result = await _session_start_impl(task_description, project_root, managers)
 

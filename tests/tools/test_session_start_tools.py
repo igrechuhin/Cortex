@@ -5,7 +5,6 @@ Tests the session_start tool that combines orientation tasks into a single call.
 
 import json
 from pathlib import Path
-from typing import cast
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -425,7 +424,7 @@ class TestCalculateHealthSummary:
         managers = make_test_managers(fs=fs_manager, index=metadata_index)
 
         health = await _calculate_health_summary(
-            cast(dict[str, object], managers),
+            managers,
             tmp_path,  # type: ignore[arg-type]
         )
         assert health.file_count == 7
@@ -450,7 +449,7 @@ class TestCalculateHealthSummary:
         managers = make_test_managers(fs=fs_manager, index=metadata_index)
 
         health = await _calculate_health_summary(
-            cast(dict[str, object], managers),
+            managers,
             tmp_path,  # type: ignore[arg-type]
         )
         assert health.file_count == 2
@@ -483,7 +482,7 @@ class TestCalculateHealthSummary:
         managers = make_test_managers(fs=fs_manager, index=metadata_index)
 
         health = await _calculate_health_summary(
-            cast(dict[str, object], managers),
+            managers,
             tmp_path,  # type: ignore[arg-type]
         )
         assert health.token_budget_status == "over_budget"

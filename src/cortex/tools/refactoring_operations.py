@@ -7,8 +7,7 @@ Total: 1 tool, 1 resource
 - suggest_refactoring / suggest_refactoring_resource (cortex://analysis/suggest-refactoring/{type})
 """
 
-import json
-from typing import Literal, cast
+from typing import Literal
 from urllib.parse import unquote
 
 from cortex.core.constants import MCP_TOOL_TIMEOUT_COMPLEX
@@ -23,6 +22,7 @@ from cortex.core.models import ResponseFormat
 from cortex.core.project_root_resolver import resolve_project_root_async
 from cortex.server import mcp
 from cortex.tools.refactoring_operation_helpers import (
+    format_suggest_refactoring_response,
     parse_refactoring_suggestion_type,
     process_refactoring_request,
     suggest_refactoring_error_json,
@@ -558,120 +558,3 @@ async def suggest_refactoring_resource(type: str) -> str:
         show_diff=True,
         estimate_impact=True,
     )
-
-
-def _parse_suggest_refactoring_json(raw: str) -> dict[str, object] | None:
-    """Parse raw JSON string into a dict or return None on failure."""
-    try:
-        loaded = json.loads(raw)
-    except json.JSONDecodeError:
-        return None
-    if not isinstance(loaded, dict):
-        return None
-    return cast(dict[str, object], loaded)
-
-
-def _build_consolidation_suggestions(
-    data: dict[str, object],
-) -> list[dict[str, object]]:
-    """Build concise entries for consolidation suggestions."""
-    suggestions: list[dict[str, object]] = []
-    opportunities_raw: object = data.get("opportunities") or []
-    if not isinstance(opportunities_raw, list):
-        return suggestions
-    for opp_obj in cast(list[object], opportunities_raw):
-        if not isinstance(opp_obj, dict):
-            continue
-        opp = cast(dict[str, object], opp_obj)
-        suggestions.append(
-            {
-                "id": opp.get("id"),
-                "type": "consolidation",
-                "confidence": opp.get("confidence"),
-                "recommendation": opp.get("recommendation"),
-            }
-        )
-    return suggestions
-
-
-def _build_splits_suggestions(data: dict[str, object]) -> list[dict[str, object]]:
-    """Build concise entries for split recommendations."""
-    suggestions: list[dict[str, object]] = []
-    recommendations_raw: object = data.get("recommendations") or []
-    if not isinstance(recommendations_raw, list):
-        return suggestions
-    for rec_obj in cast(list[object], recommendations_raw):
-        if not isinstance(rec_obj, dict):
-            continue
-        rec = cast(dict[str, object], rec_obj)
-        suggestions.append(
-            {
-                "id": rec.get("id"),
-                "type": "splits",
-                "confidence": rec.get("confidence"),
-                "recommendation": rec.get("reason"),
-            }
-        )
-    return suggestions
-
-
-def _build_reorg_suggestions(data: dict[str, object]) -> list[dict[str, object]]:
-    """Build concise entry for reorganization plan."""
-    goal_val: object = data.get("goal")
-    goal = goal_val if isinstance(goal_val, str) else goal_val
-    recommendation = (
-        f"Reorganization plan optimized for goal='{goal}'"
-        if goal is not None
-        else "Reorganization plan"
-    )
-    return [
-        {
-            "id": "reorganization-plan",
-            "type": "reorganization",
-            "confidence": None,
-            "recommendation": recommendation,
-        }
-    ]
-
-
-def _build_concise_suggestions(
-    data: dict[str, object],
-) -> tuple[list[dict[str, object]], object | None]:
-    """Dispatch to type-specific concise suggestion builders."""
-    type_raw: object = data.get("type")
-    if type_raw == "consolidation":
-        return _build_consolidation_suggestions(data), type_raw
-    if type_raw == "splits":
-        return _build_splits_suggestions(data), type_raw
-    if type_raw == "reorganization":
-        return _build_reorg_suggestions(data), type_raw
-    return [], type_raw
-
-
-def format_suggest_refactoring_response(
-    raw: str,
-    response_format: ResponseFormat,
-) -> str:
-    """Format suggest_refactoring response based on response_format."""
-    if response_format != ResponseFormat.CONCISE:
-        return raw
-
-    data = _parse_suggest_refactoring_json(raw)
-    if data is None:
-        return raw
-
-    status_val: object = data.get("status", "success")
-    status = status_val if isinstance(status_val, str) else str(status_val)
-    if status != "success":
-        return raw
-
-    suggestions, type_raw = _build_concise_suggestions(data)
-    if not suggestions:
-        return raw
-
-    payload = {
-        "status": status,
-        "type": type_raw,
-        "suggestions": suggestions,
-    }
-    return json.dumps(payload, indent=2)

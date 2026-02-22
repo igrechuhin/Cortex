@@ -111,6 +111,31 @@ class LoadContextErrorResult(ErrorResultBase):
 LoadContextResultUnion = LoadContextResult | LoadContextErrorResult
 
 
+class SectionSummary(StrictBaseModel):
+    """Section metadata for file map entries (heading, tokens, level)."""
+
+    heading: str = Field(default="", description="Section heading")
+    tokens: int = Field(default=0, ge=0, description="Token count")
+    level: int = Field(default=2, ge=1, le=6, description="Heading level")
+
+
+def _empty_section_list() -> list[SectionSummary]:
+    """Return empty list for FileMapEntry.sections default."""
+    return []
+
+
+class FileMapEntry(StrictBaseModel):
+    """Single file entry in load_context files map (metadata-only response)."""
+
+    name: str = Field(..., description="File name")
+    total_tokens: int = Field(..., ge=0, description="Total tokens")
+    last_modified: str = Field(default="", description="Last modified timestamp")
+    relevance_score: float = Field(..., ge=0.0, le=1.0, description="Relevance score")
+    sections: list[SectionSummary] = Field(
+        default_factory=_empty_section_list, description="Section metadata list"
+    )
+
+
 # ============================================================================
 # configure
 # ============================================================================

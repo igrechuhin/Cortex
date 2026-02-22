@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from enum import Enum
 
-from pydantic import ConfigDict, Field
+from pydantic import ConfigDict, Field, field_validator
 
 from cortex.core.models import JsonDict, OperationStatus
 
@@ -180,10 +180,25 @@ class CleanupReport(StrictBaseModel):
     model_config = ConfigDict(extra="forbid", validate_assignment=True)
 
 
+def _coerce_context_analysis_status(
+    v: ContextAnalysisStatus | str,
+) -> ContextAnalysisStatus:
+    """Coerce str to ContextAnalysisStatus for validation from JSON/dict (strict mode)."""
+    if isinstance(v, ContextAnalysisStatus):
+        return v
+    return ContextAnalysisStatus(v)
+
+
 class CurrentSessionAnalysisResult(StrictBaseModel):
     """Result of analyzing current session's context usage."""
 
     status: ContextAnalysisStatus = Field(description="Analysis status")
+
+    @field_validator("status", mode="before")
+    @classmethod
+    def _status_enum(cls, v: ContextAnalysisStatus | str) -> ContextAnalysisStatus:
+        return _coerce_context_analysis_status(v)
+
     session_id: str | None = Field(None, description="Current session ID")
     current_session: JsonDict | None = Field(
         None, description="Current session data (calls, statistics, entries)"
@@ -208,6 +223,12 @@ class SessionLogsAnalysisResult(StrictBaseModel):
     """Result of analyzing session logs."""
 
     status: ContextAnalysisStatus = Field(description="Analysis status")
+
+    @field_validator("status", mode="before")
+    @classmethod
+    def _status_enum(cls, v: ContextAnalysisStatus | str) -> ContextAnalysisStatus:
+        return _coerce_context_analysis_status(v)
+
     new_sessions_analyzed: int | None = Field(
         None, ge=0, description="Number of new sessions analyzed"
     )
@@ -231,6 +252,12 @@ class ContextStatisticsResult(StrictBaseModel):
     """Result of getting context usage statistics."""
 
     status: ContextAnalysisStatus = Field(description="Status")
+
+    @field_validator("status", mode="before")
+    @classmethod
+    def _status_enum(cls, v: ContextAnalysisStatus | str) -> ContextAnalysisStatus:
+        return _coerce_context_analysis_status(v)
+
     last_updated: str | None = Field(None, description="Last update timestamp")
     total_sessions: int | None = Field(None, ge=0, description="Total sessions")
     total_calls: int | None = Field(None, ge=0, description="Total load_context calls")

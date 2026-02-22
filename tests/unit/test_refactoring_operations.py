@@ -1,7 +1,9 @@
 import json
 
 from cortex.core.models import ResponseFormat
-from cortex.tools.refactoring_operations import format_suggest_refactoring_response
+from cortex.tools.refactoring_operation_helpers import (
+    format_suggest_refactoring_response,
+)
 
 
 def test_format_suggest_refactoring_response_consolidation_concise() -> None:

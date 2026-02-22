@@ -213,6 +213,32 @@ class SuggestRefactoringErrorResult(ErrorResultBase):
     type: str | None = None
 
 
+class ConciseRefactoringSuggestionEntry(StrictBaseModel):
+    """Single suggestion entry in concise suggest_refactoring response."""
+
+    id: str | None = None
+    type: str = Field(..., description="consolidation | splits | reorganization")
+    confidence: str | None = None
+    recommendation: str | None = None
+
+
+def _empty_suggestion_list() -> list[ConciseRefactoringSuggestionEntry]:
+    """Return empty list for SuggestRefactoringConcisePayload.suggestions default."""
+    return []
+
+
+class SuggestRefactoringConcisePayload(StrictBaseModel):
+    """Concise suggest_refactoring JSON payload (response_format=concise)."""
+
+    status: str = Field(default="success")
+    type: str | None = Field(
+        None, description="consolidation | splits | reorganization"
+    )
+    suggestions: list[ConciseRefactoringSuggestionEntry] = Field(
+        default_factory=_empty_suggestion_list
+    )
+
+
 SuggestRefactoringResult = (
     SuggestRefactoringConsolidationResult
     | SuggestRefactoringSplitsResult

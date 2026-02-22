@@ -37,3 +37,4 @@ Completed investigations are recorded in [activeContext.md](activeContext.md). P
 - **Reference: Investigate execute_pre_commit_checks failure (2026-02-17)** - Plan: .cortex/plans/phase-investigate-execute_pre_commit_checks-failure-20260217-201854.md
 - **Reference: Investigate fix_markdown_lint failure (2026-02-16)** - Plan: .cortex/plans/phase-investigate-fix_markdown_lint-failure-20260216-204350.md
 - **Reference: Session Optimization load context and test typing** - Plan: .cortex/plans/session-optimization-load-context-and-test-typing.md
+- **Session optimization: load_context explicit budget for implement/refactor** - PENDING - Require explicit non-zero token_budget in implement/refactor flows; update implement prompt and docs.

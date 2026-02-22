@@ -2,6 +2,8 @@
 
 from typing import TypedDict
 
+from pydantic import BaseModel, Field
+
 
 class MergeOpportunity(TypedDict):
     """Represents a merge opportunity between files."""
@@ -57,3 +59,22 @@ class HealthCheckReport(TypedDict):
     rules: RuleAnalysisResult
     tools: ToolAnalysisResult
     recommendations: list[str]
+
+
+class HealthCheckReportPayload(BaseModel):
+    """JSON payload for health-check report (report + optional dependencies)."""
+
+    status: str = Field(..., description="Report status")
+    analysis_type: str = Field(..., description="prompts | rules | tools | all")
+    prompts: PromptAnalysisResult = Field(..., description="Prompt analysis result")
+    rules: RuleAnalysisResult = Field(..., description="Rule analysis result")
+    tools: ToolAnalysisResult = Field(..., description="Tool analysis result")
+    recommendations: list[str] = Field(
+        default_factory=list, description="Recommendations"
+    )
+    prompt_dependencies: dict[str, list[str]] | None = Field(
+        None, description="Optional prompt dependency map"
+    )
+    rule_dependencies: dict[str, list[str]] | None = Field(
+        None, description="Optional rule dependency map"
+    )

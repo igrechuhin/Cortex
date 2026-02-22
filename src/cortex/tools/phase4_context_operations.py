@@ -20,6 +20,7 @@ from cortex.optimization.agent_roles import AgentRole
 from cortex.optimization.context_optimizer import ContextOptimizer
 from cortex.optimization.optimization_config import OptimizationConfig
 from cortex.optimization.optimization_strategies import OptimizationResult
+from cortex.tools.context_models import FileMapEntry
 from cortex.tools.phase4_hybrid_metadata_helpers import (
     calculate_always_loaded_tokens,
     filter_metadata_excluding_always_loaded,
@@ -490,7 +491,7 @@ def _build_hybrid_metadata_response(
     task_description: str,
     token_budget: int,
     strategy: str,
-    files_map: list[dict[str, object]],
+    files_map: list[FileMapEntry],
     total_tokens_available: int,
     always_loaded_content: dict[str, str],
     always_loaded_tokens: int,
@@ -509,12 +510,7 @@ def _build_hybrid_metadata_response(
     Returns:
         JSON string with hybrid response (metadata + always-loaded sections)
     """
-
-    def get_tokens_for_sum(x: dict[str, object]) -> int:
-        tokens_raw = x.get("total_tokens", 0)
-        return int(tokens_raw) if isinstance(tokens_raw, (int, str)) else 0
-
-    metadata_tokens = sum(get_tokens_for_sum(f) for f in files_map[:10])
+    metadata_tokens = sum(f.total_tokens for f in files_map[:10])
     total_tokens = metadata_tokens + always_loaded_tokens
 
     response_data = {
@@ -523,7 +519,7 @@ def _build_hybrid_metadata_response(
         "token_budget": token_budget,
         "strategy": strategy,
         "depth": ContextDepth.METADATA_ONLY.value,
-        "files": files_map,
+        "files": [e.model_dump() for e in files_map],
         "total_files": len(files_map),
         "total_tokens_available": total_tokens_available,
         "always_loaded": always_loaded_content,
@@ -579,7 +575,7 @@ def _build_filtered_files_map(
     files_metadata: dict[str, ModelDict],
     relevance_scores: dict[str, float],
     always_load_sections: dict[str, list[str]],
-) -> tuple[list[dict[str, object]], int]:
+) -> tuple[list[FileMapEntry], int]:
     """Build files map from filtered metadata."""
     filtered_metadata = filter_metadata_excluding_always_loaded(
         files_metadata, always_load_sections
@@ -618,7 +614,7 @@ async def _prepare_hybrid_metadata_context(
     int,
     dict[str, ModelDict],
     dict[str, float],
-    list[dict[str, object]],
+    list[FileMapEntry],
     int,
 ]:
     """Prepare hybrid metadata context with role-based scoring."""
@@ -636,7 +632,7 @@ def _finalize_hybrid_metadata_context(
     int,
     dict[str, ModelDict],
     dict[str, float],
-    list[dict[str, object]],
+    list[FileMapEntry],
     int,
 ]:
     """Finalize hybrid metadata context from loaded data."""
@@ -661,7 +657,7 @@ def _emit_metadata_only_log(
     task_description: str,
     token_budget: int,
     strategy: str,
-    files_map: list[dict[str, object]],
+    files_map: list[FileMapEntry],
     always_loaded_content: dict[str, str],
     always_load_sections: dict[str, list[str]],
     files_metadata: dict[str, ModelDict],

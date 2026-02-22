@@ -12,6 +12,24 @@ from cortex.tools.models import (
 )
 
 
+# Kwargs for _create_brief_with_suggestions (replaces **kwargs: Any)
+class SessionBriefContextKwargs(TypedDict):
+    """Typed kwargs for building SessionBrief from suggestions and context."""
+
+    project_name: str
+    current_focus: str
+    recent_completed: list[str]
+    next_work_item: str | None
+    next_work_plan_path: str | None
+    health: SessionHealthSummary
+    git_status: GitStatusSummary | None
+    last_handoff: SessionHandoff | None
+    concurrent_sessions: list[ConcurrentSession]
+    locked_tasks: list[str]
+    mcp_healthy: bool
+    mcp_health_message: str | None
+
+
 # Input bundle for _compute_suggestions_and_create_brief (keeps function under 30 lines)
 class BriefInputs(TypedDict):
     project_name: str

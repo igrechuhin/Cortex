@@ -10,6 +10,7 @@ from typing import cast
 from cortex.core.models import JsonValue, ModelDict
 from cortex.core.session_logger import log_load_context_call
 from cortex.optimization.agent_roles import AgentRole, get_role_profile
+from cortex.tools.context_models import FileMapEntry, SectionSummary
 
 
 def calculate_metadata_relevance_scores(
@@ -122,20 +123,18 @@ def _apply_role_based_adjustments(
 
 def extract_sections_from_metadata(
     sections_list: object,
-) -> list[dict[str, object]]:
+) -> list[SectionSummary]:
     """Extract sections list from metadata.
 
     Args:
         sections_list: Sections list from metadata
 
     Returns:
-        List of section dictionaries
+        List of section summary models
     """
-    from typing import cast
-
     from cortex.core.models import ModelDict
 
-    sections: list[dict[str, object]] = []
+    sections: list[SectionSummary] = []
     if isinstance(sections_list, list):
         for section_item in sections_list:  # type: ignore[reportUnknownVariableType]
             if isinstance(section_item, dict):
@@ -154,11 +153,7 @@ def extract_sections_from_metadata(
                 level = int(level_raw) if isinstance(level_raw, (int, str)) else 2
 
                 sections.append(
-                    {
-                        "heading": heading,
-                        "tokens": tokens,
-                        "level": level,
-                    }
+                    SectionSummary(heading=heading, tokens=tokens, level=level)
                 )
     return sections
 
@@ -167,7 +162,7 @@ def build_file_entry(
     file_name: str,
     metadata: ModelDict,
     relevance_scores: dict[str, float],
-) -> tuple[dict[str, object], int]:
+) -> tuple[FileMapEntry, int]:
     """Build a single file entry for files map.
 
     Args:
@@ -189,20 +184,20 @@ def build_file_entry(
     last_modified_raw = metadata.get("last_modified", "")
     last_modified = str(last_modified_raw) if last_modified_raw else ""
 
-    file_entry: dict[str, object] = {
-        "name": file_name,
-        "total_tokens": file_tokens,
-        "last_modified": last_modified,
-        "relevance_score": round(relevance_score, 2),
-        "sections": sections,
-    }
+    file_entry = FileMapEntry(
+        name=file_name,
+        total_tokens=file_tokens,
+        last_modified=last_modified,
+        relevance_score=round(relevance_score, 2),
+        sections=sections,
+    )
 
     return file_entry, file_tokens
 
 
 def build_files_map_from_metadata(
     files_metadata: dict[str, ModelDict], relevance_scores: dict[str, float]
-) -> tuple[list[dict[str, object]], int]:
+) -> tuple[list[FileMapEntry], int]:
     """Build files map from metadata and relevance scores.
 
     Args:
@@ -212,7 +207,7 @@ def build_files_map_from_metadata(
     Returns:
         Tuple of (files_map, total_tokens_available)
     """
-    files_map: list[dict[str, object]] = []
+    files_map: list[FileMapEntry] = []
     total_tokens_available = 0
 
     for file_name, metadata in files_metadata.items():
@@ -222,49 +217,34 @@ def build_files_map_from_metadata(
         files_map.append(file_entry)
         total_tokens_available += file_tokens
 
-    def get_relevance_for_sort(x: dict[str, object]) -> float:
-        score_raw = x.get("relevance_score", 0.0)
-        return float(score_raw) if isinstance(score_raw, (int, float)) else 0.0
-
-    files_map.sort(key=get_relevance_for_sort, reverse=True)
+    files_map.sort(key=lambda x: x.relevance_score, reverse=True)
     return files_map, total_tokens_available
 
 
 def extract_selected_files_from_map(
-    files_map: list[dict[str, object]],
+    files_map: list[FileMapEntry],
 ) -> tuple[list[str], dict[str, list[str]]]:
     """Extract selected files and sections from files_map."""
     selected_files: list[str] = []
     selected_sections: dict[str, list[str]] = {}
     for file_entry in files_map:
-        file_name_raw = file_entry.get("file_name", "")
-        file_name = str(file_name_raw) if file_name_raw else ""
+        file_name = file_entry.name
         if file_name:
             selected_files.append(file_name)
-            sections_raw = file_entry.get("sections", [])
-            if isinstance(sections_raw, list) and sections_raw:
-                section_strings: list[str] = []
-                for section_item_raw in cast(list[object], sections_raw):
-                    if section_item_raw is not None:
-                        section_strings.append(str(section_item_raw))
-                selected_sections[file_name] = section_strings
+            if file_entry.sections:
+                selected_sections[file_name] = [
+                    s.heading for s in file_entry.sections if s.heading
+                ]
     return selected_files, selected_sections
 
 
-def calculate_metadata_tokens(files_map: list[dict[str, object]]) -> int:
+def calculate_metadata_tokens(files_map: list[FileMapEntry]) -> int:
     """Calculate total tokens from metadata files."""
-    return sum(
-        (
-            int(tokens_val)
-            if isinstance(tokens_val := file_entry.get("total_tokens"), (int, str))
-            else 0
-        )
-        for file_entry in files_map[:10]
-    )
+    return sum(file_entry.total_tokens for file_entry in files_map[:10])
 
 
 def extract_metadata_logging_info(
-    files_map: list[dict[str, object]],
+    files_map: list[FileMapEntry],
     always_loaded_content: dict[str, str],
     always_load_sections: dict[str, list[str]],
     files_metadata: dict[str, ModelDict],
@@ -290,7 +270,7 @@ def extract_metadata_logging_info(
 
 
 def _prepare_logging_params(
-    files_map: list[dict[str, object]],
+    files_map: list[FileMapEntry],
     always_loaded_content: dict[str, str],
     always_load_sections: dict[str, list[str]],
     files_metadata: dict[str, ModelDict],
@@ -342,7 +322,7 @@ def _emit_metadata_context_log(
     task_description: str,
     token_budget: int,
     strategy: str,
-    files_map: list[dict[str, object]],
+    files_map: list[FileMapEntry],
     always_loaded_content: dict[str, str],
     always_load_sections: dict[str, list[str]],
     files_metadata: dict[str, ModelDict],
@@ -371,7 +351,7 @@ def log_metadata_context_call(
     task_description: str,
     token_budget: int,
     strategy: str,
-    files_map: list[dict[str, object]],
+    files_map: list[FileMapEntry],
     always_loaded_content: dict[str, str],
     always_load_sections: dict[str, list[str]],
     files_metadata: dict[str, ModelDict],

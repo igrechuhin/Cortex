@@ -4,16 +4,20 @@ import json
 from collections.abc import Awaitable, Callable
 from enum import Enum
 from pathlib import Path
-from typing import Any
 
 from cortex.core.exceptions import (
     FileConflictError,
     FileLockTimeoutError,
     GitConflictError,
 )
+from cortex.core.file_system import FileSystemManager
+from cortex.core.metadata_index import MetadataIndex
 from cortex.core.models import JsonValue
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
+from cortex.core.token_counter import TokenCounter
+from cortex.core.version_manager import VersionManager
 from cortex.validation.models import ValidationResult
+from cortex.validation.schema_validator import SchemaValidator
 
 
 class FileOperation(str, Enum):
@@ -98,7 +102,7 @@ async def validate_and_prepare_write_content(
     file_name: str,
     content: str | None,
     change_description: str | None,
-    schema_validator: Any,
+    schema_validator: SchemaValidator | None,
     project_root: Path | None,
     validate_request_fn: Callable[[Path, str, str | None], str | None],
     verify_lock_fn: Callable[..., Awaitable[str | None]],
@@ -124,17 +128,17 @@ async def run_validate_prepare_then_execute(
     file_name: str,
     content: str | None,
     change_description: str | None,
-    schema_validator: Any,
+    schema_validator: SchemaValidator | None,
     project_root: Path | None,
     validate_req_fn: Callable[[Path, str, str | None], str | None],
     verify_lock_fn: Callable[..., Awaitable[str | None]],
     validate_schema_fn: Callable[..., Awaitable[str | None]],
     prepare_fn: Callable[[str, str], str],
     execute_fn: Callable[..., Awaitable[str]],
-    fs_manager: Any,
-    metadata_index: Any,
-    token_counter: Any,
-    version_manager: Any,
+    fs_manager: FileSystemManager,
+    metadata_index: MetadataIndex,
+    token_counter: TokenCounter,
+    version_manager: VersionManager,
 ) -> str:
     """Run validate/prepare then execute write. Returns error JSON or write result."""
     # fmt: off
