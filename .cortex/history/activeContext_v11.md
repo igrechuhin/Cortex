@@ -54,6 +54,10 @@
 
 - ✅ **Tools set optimization (deprecate/merge/remove poor performers)** - COMPLETE (2026-02-23) - API deprecation notices and Deprecated tools subsection added to docs/api/tools.md; deprecation and consolidation already in place per mapping; Analyze prompt uses query_usage for anomalies and recommendations.
 
+- ✅ **Evaluation framework maturation Step 1** - COMPLETE (2026-02-23) - Failure-based eval task audit and expansion. Audited .cortex/reviews for failures; added .cortex/evals/tasks/failure_based_evals.json with 26 tasks from commit pipeline hang/timeout, MCP connection closed, fix_markdown_lint blocking, load_context/rules/memory-bank misuse, Step 12 skip patterns. Total 52 eval tasks (40–50 target met), ≥50% from real failures. New test test_load_eval_tasks_includes_failure_based_evals. Plan Step 1 done; Steps 2–6 pending.
+
+- ✅ **Evaluation framework maturation Step 2** - COMPLETE (2026-02-23) - Completed evaluation harness: phase5_evaluation_execution (run_one_execution, run_execution_suite, build_execution_summary), deterministic checks (contains, schema_valid, exact_match), Fast/Full/Focused modes, execution_summary in run_tool_evaluation, exec_fast.json, registry and tests.
+
 ## Completed Work (2026-02-22)
 
 - **Summary (2026-02-22)** - 1 entries archived.

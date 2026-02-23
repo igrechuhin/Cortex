@@ -1,0 +1,132 @@
+[
+  {
+    "id": "exec-fast-structure-1",
+    "name": "Get structure info (fast 1)",
+    "description": "Deterministic eval: get_structure_info returns structure_info.",
+    "category": "other",
+    "expected_tools": ["get_structure_info"],
+    "expected_outcome": "Tool returns JSON with structure_info key.",
+    "execution": {
+      "tool": "get_structure_info",
+      "arguments": {},
+      "expect": { "type": "contains", "substring": "structure_info" }
+    }
+  },
+  {
+    "id": "exec-fast-structure-2",
+    "name": "Get structure info (fast 2)",
+    "description": "Deterministic eval: get_structure_info returns structure_info.",
+    "category": "other",
+    "expected_tools": ["get_structure_info"],
+    "expected_outcome": "Tool returns JSON with structure_info key.",
+    "execution": {
+      "tool": "get_structure_info",
+      "arguments": {},
+      "expect": { "type": "contains", "substring": "structure_info" }
+    }
+  },
+  {
+    "id": "exec-fast-structure-3",
+    "name": "Get structure info (fast 3)",
+    "description": "Deterministic eval: get_structure_info returns structure_info.",
+    "category": "other",
+    "expected_tools": ["get_structure_info"],
+    "expected_outcome": "Tool returns JSON with structure_info key.",
+    "execution": {
+      "tool": "get_structure_info",
+      "arguments": {},
+      "expect": { "type": "contains", "substring": "structure_info" }
+    }
+  },
+  {
+    "id": "exec-fast-structure-4",
+    "name": "Get structure info (fast 4)",
+    "description": "Deterministic eval: get_structure_info returns structure_info.",
+    "category": "other",
+    "expected_tools": ["get_structure_info"],
+    "expected_outcome": "Tool returns JSON with structure_info key.",
+    "execution": {
+      "tool": "get_structure_info",
+      "arguments": {},
+      "expect": { "type": "contains", "substring": "structure_info" }
+    }
+  },
+  {
+    "id": "exec-fast-structure-5",
+    "name": "Get structure info (fast 5)",
+    "description": "Deterministic eval: get_structure_info returns structure_info.",
+    "category": "other",
+    "expected_tools": ["get_structure_info"],
+    "expected_outcome": "Tool returns JSON with structure_info key.",
+    "execution": {
+      "tool": "get_structure_info",
+      "arguments": {},
+      "expect": { "type": "contains", "substring": "structure_info" }
+    }
+  },
+  {
+    "id": "exec-fast-structure-6",
+    "name": "Get structure info (fast 6)",
+    "description": "Deterministic eval: get_structure_info returns structure_info.",
+    "category": "other",
+    "expected_tools": ["get_structure_info"],
+    "expected_outcome": "Tool returns JSON with structure_info key.",
+    "execution": {
+      "tool": "get_structure_info",
+      "arguments": {},
+      "expect": { "type": "contains", "substring": "structure_info" }
+    }
+  },
+  {
+    "id": "exec-fast-structure-7",
+    "name": "Get structure info (fast 7)",
+    "description": "Deterministic eval: get_structure_info returns structure_info.",
+    "category": "other",
+    "expected_tools": ["get_structure_info"],
+    "expected_outcome": "Tool returns JSON with structure_info key.",
+    "execution": {
+      "tool": "get_structure_info",
+      "arguments": {},
+      "expect": { "type": "contains", "substring": "structure_info" }
+    }
+  },
+  {
+    "id": "exec-fast-structure-8",
+    "name": "Get structure info (fast 8)",
+    "description": "Deterministic eval: get_structure_info returns structure_info.",
+    "category": "other",
+    "expected_tools": ["get_structure_info"],
+    "expected_outcome": "Tool returns JSON with structure_info key.",
+    "execution": {
+      "tool": "get_structure_info",
+      "arguments": {},
+      "expect": { "type": "contains", "substring": "structure_info" }
+    }
+  },
+  {
+    "id": "exec-fast-structure-9",
+    "name": "Get structure info (fast 9)",
+    "description": "Deterministic eval: get_structure_info returns structure_info.",
+    "category": "other",
+    "expected_tools": ["get_structure_info"],
+    "expected_outcome": "Tool returns JSON with structure_info key.",
+    "execution": {
+      "tool": "get_structure_info",
+      "arguments": {},
+      "expect": { "type": "contains", "substring": "structure_info" }
+    }
+  },
+  {
+    "id": "exec-fast-structure-10",
+    "name": "Get structure info (fast 10)",
+    "description": "Deterministic eval: get_structure_info returns structure_info.",
+    "category": "other",
+    "expected_tools": ["get_structure_info"],
+    "expected_outcome": "Tool returns JSON with structure_info key.",
+    "execution": {
+      "tool": "get_structure_info",
+      "arguments": {},
+      "expect": { "type": "contains", "substring": "structure_info" }
+    }
+  }
+]

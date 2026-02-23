@@ -69,6 +69,59 @@ class EvalTaskStatus(str, Enum):
     UNAVAILABLE = "unavailable"
 
 
+class ExecutionExpectType(str, Enum):
+    """Type of deterministic check for execution-based eval output."""
+
+    SCHEMA_VALID = "schema_valid"
+    CONTAINS = "contains"
+    EXACT_MATCH = "exact_match"
+
+
+class EvalRunMode(str, Enum):
+    """Execution mode for run_tool_evaluation."""
+
+    FULL = "full"
+    FAST = "fast"
+    FOCUSED = "focused"
+
+
+class ExecutionExpectSpec(BaseModel):
+    """Expected outcome for a single execution (deterministic check)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    type: ExecutionExpectType = Field(
+        description="Check type: schema_valid (dict has keys), contains (output has substring), exact_match"
+    )
+    schema_keys: list[str] | None = Field(
+        default=None,
+        description="Required top-level keys when type is schema_valid (after JSON parse).",
+    )
+    substring: str | None = Field(
+        default=None,
+        description="Substring that must appear in tool output when type is contains.",
+    )
+    expected_value: object | None = Field(
+        default=None,
+        description="Exact value to compare when type is exact_match (JSON-serializable).",
+    )
+
+
+class ExecutionSpec(BaseModel):
+    """Spec to run one tool and check its output (for execution-based evals)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    tool: str = Field(description="MCP tool name to invoke (e.g. get_structure_info).")
+    arguments: dict[str, object] = Field(
+        default_factory=dict,
+        description="Arguments to pass to the tool (JSON-serializable).",
+    )
+    expect: ExecutionExpectSpec = Field(
+        description="How to validate the tool output (deterministic check)."
+    )
+
+
 class EvalTask(BaseModel):
     """Single evaluation task definition grounded in a real workflow."""
 
@@ -103,6 +156,10 @@ class EvalTask(BaseModel):
             "Optional query string used to filter historical usage events when "
             "computing metrics (e.g., by tool name, error substring, or summary)."
         ),
+    )
+    execution: ExecutionSpec | None = Field(
+        default=None,
+        description="Optional execution spec for deterministic run (tool + expect check).",
     )
 
 
@@ -274,6 +331,38 @@ class OptimizationRunRecord(BaseModel):
     total_error_count_optimized: int | None = None
 
 
+class ExecutionResultEntry(BaseModel):
+    """Single execution result for execution_summary.results."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    task_id: str = Field(description="Evaluation task id")
+    passed: bool = Field(description="Whether the execution check passed")
+    message: str = Field(description="Result message")
+    duration_ms: float = Field(ge=0, description="Duration in milliseconds")
+    skipped: bool = Field(description="True if task had no execution spec")
+
+
+def _empty_execution_result_entries() -> list[ExecutionResultEntry]:
+    """Typed default factory for ExecutionSummary.results."""
+    return []
+
+
+class ExecutionSummary(BaseModel):
+    """Pass/fail summary for execution-based evals."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    execution_passed: int = Field(ge=0, description="Count of passed executions")
+    execution_failed: int = Field(ge=0, description="Count of failed executions")
+    execution_skipped: int = Field(ge=0, description="Count of skipped (no spec)")
+    execution_total_run: int = Field(ge=0, description="Total executions run")
+    results: list[ExecutionResultEntry] = Field(
+        default_factory=_empty_execution_result_entries,
+        description="Per-task execution results",
+    )
+
+
 class RunToolEvaluationPayload(BaseModel):
     """JSON-serializable payload for run_tool_evaluation response."""
 
@@ -292,6 +381,10 @@ class RunToolEvaluationPayload(BaseModel):
     )
     dashboard_path: str | None = Field(
         default=None, description="Relative path to dashboard.md"
+    )
+    execution_summary: ExecutionSummary | None = Field(
+        default=None,
+        description="Pass/fail summary for execution-based evals (when mode runs executions).",
     )
 
 
@@ -578,14 +671,54 @@ async def _get_usage_tracker(root: Path) -> UsageTracker | None:
     return await usage_analytics._get_tracker(root)  # type: ignore[attr-defined]
 
 
+async def _run_tool_evaluation_impl(
+    root: Path,
+    task_ids: list[str] | None,
+    mode: EvalRunMode,
+    category: str | None,
+) -> str:
+    """Run evaluation suite and execution harness; return JSON payload."""
+    from cortex.tools.phase5_evaluation_execution import (
+        build_execution_summary,
+        run_execution_suite,
+    )
+
+    tracker = await _get_usage_tracker(root)
+    tasks = await load_eval_tasks(root, task_ids)
+    harness = ToolEvaluationHarness(project_root=root, tracker=tracker)
+    suite = await harness.run_suite(tasks)
+    analysis = harness.analyze_results(suite)
+    exec_results = await run_execution_suite(
+        tasks, mode=mode, category=category, fast_cap=10
+    )
+    execution_summary = build_execution_summary(exec_results)
+    await _persist_latest_suite(root, suite, analysis)
+    dashboard_path = await _write_evaluation_dashboard(root, analysis, suite)
+    payload = _build_evaluation_payload(root, tasks, suite, analysis)
+    payload = payload.model_copy(
+        update={
+            "dashboard_path": str(dashboard_path.relative_to(root)),
+            "execution_summary": execution_summary,
+        }
+    )
+    return json.dumps(payload.model_dump(mode="json"), indent=2)
+
+
 @mcp.tool(annotations=read_only_annotations("Tool Evaluation"))
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_COMPLEX)
 async def run_tool_evaluation(
     task_ids: list[str] | None = None,
+    mode: str = "full",
+    category: str | None = None,
     ctx: MCPContext | None = None,
 ) -> str:
-    """Run the evaluation suite for MCP tools and return metrics."""
+    """Run the evaluation suite for MCP tools and return metrics.
+
+    mode: "fast" (10 execution tasks, <30s), "full" (all tasks),
+    "focused" (filter by category). category: when mode is "focused",
+    only tasks with this category are run.
+    """
     root = await resolve_project_root_async(None, ctx)
     if ctx is not None:
         await log_client(
@@ -594,21 +727,8 @@ async def run_tool_evaluation(
             "run_tool_evaluation: starting",
             logger_name=__name__,
         )
-
-    tracker = await _get_usage_tracker(root)
-    tasks = await load_eval_tasks(root, task_ids)
-
-    harness = ToolEvaluationHarness(project_root=root, tracker=tracker)
-    suite = await harness.run_suite(tasks)
-    analysis = harness.analyze_results(suite)
-
-    await _persist_latest_suite(root, suite, analysis)
-    dashboard_path = await _write_evaluation_dashboard(root, analysis, suite)
-    payload = _build_evaluation_payload(root, tasks, suite, analysis)
-    payload = payload.model_copy(
-        update={"dashboard_path": str(dashboard_path.relative_to(root))}
-    )
-    return json.dumps(payload.model_dump(mode="json"), indent=2)
+    run_mode = EvalRunMode(mode)
+    return await _run_tool_evaluation_impl(root, task_ids, run_mode, category)
 
 
 async def _write_evaluation_dashboard(

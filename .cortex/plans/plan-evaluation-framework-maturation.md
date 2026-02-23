@@ -1,6 +1,6 @@
 # Plan: Evaluation Framework Maturation (Phase 57 Extension)
 
-## Status: PLANNED
+## Status: IN PROGRESS
 
 ## Priority: P1 (High)
 
@@ -25,7 +25,7 @@ Phase 57 established the evaluation foundation (26 tasks, error analysis, A/B fr
 
 ---
 
-## Step 1: Failure-Based Eval Task Audit & Expansion
+## Step 1: Failure-Based Eval Task Audit & Expansion — COMPLETED (2026-02-23)
 
 **Insight:** Real failures are the best source of eval tasks.
 
@@ -42,11 +42,13 @@ Phase 57 established the evaluation foundation (26 tasks, error analysis, A/B fr
 
 **Acceptance criteria:** 40–50 eval tasks. ≥ 50% based on documented real failures.
 
+**Done:** Audited session-optimization and investigation reports; added `.cortex/evals/tasks/failure_based_evals.json` with 26 failure-based tasks (commit pipeline hang/timeout, MCP connection closed, fix_markdown_lint blocking, load_context not called, roadmap/memory-bank misuse, Step 12 skip patterns, etc.). Total 52 tasks (26 core + 26 failure-based); 50% from real failures. Categorized via common_failure_modes (tool_errors, context_mismanagement, workflow_breakage, incorrect_results). New test `test_load_eval_tasks_includes_failure_based_evals` verifies expansion.
+
 ---
 
-## Step 2: Complete Evaluation Harness
+## Step 2: Complete Evaluation Harness — COMPLETED (2026-02-23)
 
-**Current state:** Phase 57 Step 2 (full evaluation harness) remains incomplete.
+**Current state:** Phase 57 Step 2 (full evaluation harness) implemented.
 
 **Action:**
 
@@ -63,6 +65,8 @@ Phase 57 established the evaluation foundation (26 tasks, error analysis, A/B fr
    - **Focused mode**: specific category only
 
 **Acceptance criteria:** Harness executes all tasks automatically. Reports generated with pass/fail breakdown.
+
+**Done:** Execution harness in `phase5_evaluation_execution.py`: run_one_execution (invoke tool, check expect), run_execution_suite (fast/full/focused), build_execution_summary. Deterministic checks: contains, schema_valid, exact_match. Tool registry in `phase5_evaluation_execution_registry.py` (get_structure_info). EvalTask extended with optional execution (ExecutionSpec/ExecutionExpectSpec). run_tool_evaluation now accepts mode and category and returns execution_summary. exec_fast.json adds 10 fast tasks for CI. Tests in test_phase5_evaluation_execution.py.
 
 ---
 

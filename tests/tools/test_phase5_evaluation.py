@@ -21,6 +21,7 @@ from cortex.tools.phase5_evaluation import (
     EvalTaskCategory,
     EvalTaskResult,
     EvalTaskStatus,
+    ExecutionExpectType,
     OptimizationRunRecord,
     OptimizationRunWinner,
     ToolEvaluationHarness,
@@ -58,6 +59,17 @@ async def test_load_eval_tasks_from_core_workflows() -> None:
 
 
 @pytest.mark.asyncio
+async def test_load_eval_tasks_includes_failure_based_evals() -> None:
+    """load_eval_tasks includes failure-based evals from failure_based_evals.json."""
+    project_root = Path(__file__).resolve().parents[2]
+    tasks = await load_eval_tasks(project_root, task_ids=None)
+    failure_based = [t for t in tasks if t.id.startswith("failure-")]
+    assert len(failure_based) >= 20, "Expected at least 20 failure-based tasks"
+    assert any(t.id == "failure-commit-no-progress-perceived-hang" for t in tasks)
+    assert len(tasks) >= 40, "Evaluation framework maturation: 40-50 tasks target"
+
+
+@pytest.mark.asyncio
 async def test_load_eval_tasks_filters_by_task_ids() -> None:
     """load_eval_tasks respects task_ids filter."""
     project_root = Path(__file__).resolve().parents[2]
@@ -84,6 +96,20 @@ async def test_load_eval_tasks_returns_empty_when_tasks_dir_missing(
         tasks = await load_eval_tasks(project_root, task_ids=None)
 
     assert tasks == []
+
+
+@pytest.mark.asyncio
+async def test_load_eval_tasks_includes_exec_fast_tasks_with_execution_spec() -> None:
+    """load_eval_tasks includes exec_fast tasks that have execution spec (Step 2 harness)."""
+    project_root = Path(__file__).resolve().parents[2]
+    tasks = await load_eval_tasks(project_root, task_ids=None)
+    exec_fast = [t for t in tasks if t.id.startswith("exec-fast-")]
+    assert len(exec_fast) >= 10, "Expected at least 10 exec_fast tasks for fast mode"
+    for t in exec_fast:
+        assert t.execution is not None
+        assert t.execution.tool == "get_structure_info"
+        assert t.execution.expect.type == ExecutionExpectType.CONTAINS
+        assert t.execution.expect.substring == "structure_info"
 
 
 def test_analyze_results_aggregates_basic_metrics() -> None:

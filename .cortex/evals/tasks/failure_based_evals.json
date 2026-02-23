@@ -1,0 +1,262 @@
+[
+  {
+    "id": "failure-commit-no-progress-perceived-hang",
+    "name": "Commit pipeline fix_errors/format no progress (perceived hang)",
+    "description": "Real failure: User reported 'hanged?' when agent ran execute_pre_commit_checks(checks=['fix_errors','format']). No progress is sent for fix_errors/format, so UI looks frozen for 1-3+ minutes. Task validates that progress reporting or documented wait expectation exists for long-running pre-commit steps.",
+    "category": "pre_commit",
+    "expected_tools": ["execute_pre_commit_checks"],
+    "expected_outcome": "Either progress is reported during fix_errors/format, or commit workflow documents 1-3 min wait; user does not assume hang.",
+    "common_failure_modes": ["Failure type: tool_errors", "No progress for fix_errors/format", "Client timeout before tool returns"],
+    "usage_query": "execute_pre_commit_checks fix_errors format"
+  },
+  {
+    "id": "failure-commit-test-step-timeout",
+    "name": "Commit pipeline test step exceeds MCP tool timeout",
+    "description": "Real failure: execute_pre_commit_checks(checks=['tests']) hits 600s MCP wrapper limit while full suite needs ~900s; tool always returns timeout. Task validates test step completes or timeout is sufficient.",
+    "category": "pre_commit",
+    "expected_tools": ["execute_pre_commit_checks"],
+    "expected_outcome": "Test step completes within tool timeout, or MCP timeout for this tool is increased so full suite can finish.",
+    "common_failure_modes": ["Failure type: tool_errors", "MCP_TOOL_TIMEOUT_VERY_COMPLEX 600s", "pytest session_timeout 900s"],
+    "usage_query": "execute_pre_commit_checks tests"
+  },
+  {
+    "id": "failure-mcp-connection-closed-fix_markdown_lint",
+    "name": "MCP connection closed during fix_markdown_lint",
+    "description": "Real failure: fix_markdown_lint(include_untracked_markdown=true) ran; client closed connection before response (MCP error -32000). Task validates retry-once then fallback and documentation.",
+    "category": "pre_commit",
+    "expected_tools": ["fix_markdown_lint"],
+    "expected_outcome": "On connection closed: retry once; if retry fails, use shell fallback and record 'MCP connection closed; fallback used'; do not skip Step 12.5.",
+    "common_failure_modes": ["Failure type: tool_errors", "Client-side timeout/disconnect", "fix_markdown_lint long run"],
+    "usage_query": "fix_markdown_lint"
+  },
+  {
+    "id": "failure-fix_markdown_lint-rglob-blocks-event-loop",
+    "name": "fix_markdown_lint file discovery blocks event loop",
+    "description": "Real failure: fix_markdown_lint with check_all_files uses synchronous Path.rglob on event loop; blocks for tens of seconds with no progress. Task validates file discovery runs off event loop (e.g. to_thread).",
+    "category": "pre_commit",
+    "expected_tools": ["fix_markdown_lint"],
+    "expected_outcome": "File discovery does not block event loop; progress or chunking reduces perceived hang.",
+    "common_failure_modes": ["Failure type: tool_errors", "rglob blocks event loop", "No progress during discovery"],
+    "usage_query": "fix_markdown_lint"
+  },
+  {
+    "id": "failure-implement-load-context-not-called",
+    "name": "Implement workflow without load_context at step start",
+    "description": "Real failure: Session optimization reported 'No session logs for load_context'; implement ran without loading context. Task validates load_context is called at step start with task-appropriate budget.",
+    "category": "context",
+    "expected_tools": ["load_context", "manage_file"],
+    "expected_outcome": "load_context(task_description=..., token_budget=...) called at implement step start; session logs show context usage.",
+    "common_failure_modes": ["Failure type: context_mismanagement", "Zero-budget or omitted load_context", "No session logs for load_context"],
+    "usage_query": "load_context implement"
+  },
+  {
+    "id": "failure-activecontext-duplicate-entries",
+    "name": "Duplicate completed-work entries in activeContext",
+    "description": "Real failure: Session optimization noted 'Duplicate E2E Plan Test entries in activeContext' from repeated completions. Task validates single canonical entry per plan completion or dedupe.",
+    "category": "memory_bank",
+    "expected_tools": ["append_active_context_entry", "manage_file"],
+    "expected_outcome": "No duplicate completed-work bullets for same plan; dedupe or single canonical entry per plan completion.",
+    "common_failure_modes": ["Failure type: workflow_breakage", "Multiple identical COMPLETE bullets", "Repeated complete_plan without dedupe"],
+    "usage_query": "append_active_context_entry activeContext"
+  },
+  {
+    "id": "failure-roadmap-full-content-write-corruption",
+    "name": "Full-content roadmap write causing corruption",
+    "description": "Real failure: Using manage_file(roadmap.md, write, full_content) causes corruption; roadmap must use helper tools only. Task validates only remove_roadmap_entry/add_roadmap_entry/register_plan_in_roadmap for edits.",
+    "category": "memory_bank",
+    "expected_tools": ["remove_roadmap_entry", "add_roadmap_entry", "register_plan_in_roadmap", "manage_file"],
+    "expected_outcome": "Roadmap edits use dedicated helpers; no full-content write to roadmap.md for single-entry changes.",
+    "common_failure_modes": ["Failure type: workflow_breakage", "Full-content roadmap write", "Corruption from overwrite"],
+    "usage_query": "roadmap manage_file write"
+  },
+  {
+    "id": "failure-plan-created-without-register-in-roadmap",
+    "name": "Plan created but not registered in roadmap",
+    "description": "Real failure: create_plan used without register_plan_in_roadmap; roadmap corruption or orphan plans. Task validates new plan is registered in roadmap via register_plan_in_roadmap.",
+    "category": "plan",
+    "expected_tools": ["create_plan", "register_plan_in_roadmap"],
+    "expected_outcome": "After create_plan, register_plan_in_roadmap is called so roadmap contains the new plan entry.",
+    "common_failure_modes": ["Failure type: workflow_breakage", "Plan not in roadmap", "Orphan plan file"],
+    "usage_query": "create_plan register_plan_in_roadmap"
+  },
+  {
+    "id": "failure-step-12-1-skipped-after-connection-close",
+    "name": "Step 12.1 (format) skipped after MCP connection close",
+    "description": "Real failure: Agent skipped Step 12.1 using Phase A results after connection closed; new files created in Step 4 may be unformatted. Task validates Step 12.1 always runs in Step 12 or fallback used.",
+    "category": "pre_commit",
+    "expected_tools": ["execute_pre_commit_checks"],
+    "expected_outcome": "Step 12.1 (format fix and check) executes in Step 12; if MCP fails, fallback scripts (Black) used; never skip based on Phase A.",
+    "common_failure_modes": ["Failure type: workflow_breakage", "Skipping 12.1", "Unformatted new files committed"],
+    "usage_query": "execute_pre_commit_checks format"
+  },
+  {
+    "id": "failure-step-12-7-skipped-after-connection-close",
+    "name": "Step 12.7 (tests) skipped after connection close",
+    "description": "Real failure: Agent proceeded to commit without re-running tests when Step 12.7 failed with connection error. Task validates commit is blocked if Step 12.7 cannot complete; no fallback.",
+    "category": "pre_commit",
+    "expected_tools": ["execute_pre_commit_checks"],
+    "expected_outcome": "If Step 12.7 fails after retry, commit is blocked; Phase A test results are not sufficient.",
+    "common_failure_modes": ["Failure type: workflow_breakage", "Skipping 12.7", "Committing without re-running tests"],
+    "usage_query": "execute_pre_commit_checks tests"
+  },
+  {
+    "id": "failure-fix-quality-issues-not-retried",
+    "name": "fix_quality_issues not retried on connection failure",
+    "description": "Real failure: fix_quality_issues fails due to connection issues; agent does not retry. Task validates retry once on connection closed, then proceed with execute_pre_commit_checks for gates.",
+    "category": "pre_commit",
+    "expected_tools": ["fix_quality_issues", "execute_pre_commit_checks"],
+    "expected_outcome": "On connection closed for fix_quality_issues: retry once; then rely on execute_pre_commit_checks for quality gate.",
+    "common_failure_modes": ["Failure type: tool_errors", "fix_quality_issues connection closed", "Not retrying"],
+    "usage_query": "fix_quality_issues"
+  },
+  {
+    "id": "failure-rules-not-loaded-before-fix",
+    "name": "Rules not loaded before applying fix-path changes",
+    "description": "Real failure: Agent applied type or visibility fixes without loading rules first. Task validates rules(operation='get_relevant', ...) or rule files read before fix-path code changes.",
+    "category": "context",
+    "expected_tools": ["rules", "load_context"],
+    "expected_outcome": "Before fix-path: load_context and rules loaded; fixes follow project rules and visibility standards.",
+    "common_failure_modes": ["Failure type: context_mismanagement", "Fixes without rule context", "reportPrivateUsage or type fixes without rules"],
+    "usage_query": "rules get_relevant fix"
+  },
+  {
+    "id": "failure-commit-zero-budget-load-context",
+    "name": "Commit pipeline load_context with zero budget",
+    "description": "Real failure: Zero-budget or zero-files load_context for non-trivial commit/fix work. Task validates load_context for commit/fix uses explicit non-zero budget (e.g. 10k-15k).",
+    "category": "context",
+    "expected_tools": ["load_context"],
+    "expected_outcome": "For commit or fix-path tasks, load_context is called with token_budget >= 10000 (no zero budget).",
+    "common_failure_modes": ["Failure type: context_mismanagement", "token_budget=0 or omitted", "Configuration error for non-trivial task"],
+    "usage_query": "load_context commit"
+  },
+  {
+    "id": "failure-manage-file-missing-params",
+    "name": "manage_file called with missing file_name or operation",
+    "description": "Real failure: manage_file({}) or omit file_name/operation causes structured error. Task validates all manage_file calls include file_name and operation.",
+    "category": "memory_bank",
+    "expected_tools": ["manage_file"],
+    "expected_outcome": "Every manage_file call has file_name and operation; no empty or partial payload.",
+    "common_failure_modes": ["Failure type: tool_errors", "details.missing file_name or operation", "Orchestration bug"],
+    "usage_query": "manage_file"
+  },
+  {
+    "id": "failure-rules-missing-operation",
+    "name": "rules called without operation parameter",
+    "description": "Real failure: rules() without operation returns structured error. Task validates rules(operation='index'|'get_relevant') with task_description when get_relevant.",
+    "category": "context",
+    "expected_tools": ["rules"],
+    "expected_outcome": "rules() always includes operation; get_relevant includes task_description.",
+    "common_failure_modes": ["Failure type: tool_errors", "details.missing operation", "Invalid operation value"],
+    "usage_query": "rules"
+  },
+  {
+    "id": "failure-hardcode-memory-bank-path",
+    "name": "Hardcoding memory bank or plans path",
+    "description": "Real failure: Code or prompts hardcode .cortex/memory-bank or .cortex/plans. Task validates paths resolved via get_structure_info or get_cortex_path.",
+    "category": "memory_bank",
+    "expected_tools": ["get_structure_info", "manage_file"],
+    "expected_outcome": "No hardcoded .cortex paths; use get_structure_info() or path resolver utilities.",
+    "common_failure_modes": ["Failure type: incorrect_results", "Hardcoded memory_bank path", "Hardcoded plans path"],
+    "usage_query": "get_structure_info memory"
+  },
+  {
+    "id": "failure-markdown-lint-output-truncation",
+    "name": "Step 12 output truncation hiding errors",
+    "description": "Real failure: Using | tail or | head in Step 12 hides errors; verification impossible. Task validates full output is read and parsed for all Step 12 checks.",
+    "category": "pre_commit",
+    "expected_tools": ["execute_pre_commit_checks", "fix_markdown_lint"],
+    "expected_outcome": "No output truncation in Step 12; full tool output parsed; error counts verified zero.",
+    "common_failure_modes": ["Failure type: workflow_breakage", "Output truncation", "CI failures from uncaught errors"],
+    "usage_query": "execute_pre_commit_checks"
+  },
+  {
+    "id": "failure-submodule-uncommitted-changes",
+    "name": "Submodule has uncommitted changes after Step 11",
+    "description": "Real failure: Step 11.5 must run; if submodule status --porcelain is non-empty after 11.4, commit must be blocked. Task validates no uncommitted submodule changes before Step 12.",
+    "category": "pre_commit",
+    "expected_tools": [],
+    "expected_outcome": "Step 11.5 run; submodule clean before Step 12; block commit if uncommitted changes in submodule.",
+    "common_failure_modes": ["Failure type: workflow_breakage", "Uncommitted submodule changes", "Skipping 11.5"],
+    "usage_query": "submodule"
+  },
+  {
+    "id": "failure-type-check-checks-src-and-tests",
+    "name": "Type check must run on both src and tests",
+    "description": "Real failure: Step 12.2 is authoritative; type_check must run on both src/ and tests/ to match CI. Task validates type_check scope includes tests.",
+    "category": "pre_commit",
+    "expected_tools": ["execute_pre_commit_checks"],
+    "expected_outcome": "execute_pre_commit_checks(checks=['type_check']) runs on src/ and tests/; 0 errors 0 warnings.",
+    "common_failure_modes": ["Failure type: incorrect_results", "Type check only on src", "CI type errors in tests"],
+    "usage_query": "execute_pre_commit_checks type_check"
+  },
+  {
+    "id": "failure-session-hang-after-fix_markdown_lint",
+    "name": "Perceived hang after fix_markdown_lint (tests step next)",
+    "description": "Real failure: User saw 'tool hung'; transcript showed fix_markdown_lint returned then next call (tests) or session ended. Task validates tests step or follow-up has clear timeout and progress.",
+    "category": "pre_commit",
+    "expected_tools": ["fix_markdown_lint", "execute_pre_commit_checks"],
+    "expected_outcome": "After fix_markdown_lint, next step (e.g. tests) has visible progress or documented timeout; no silent stall.",
+    "common_failure_modes": ["Failure type: tool_errors", "Tests step 600s limit", "Session/stdio stall"],
+    "usage_query": "fix_markdown_lint execute_pre_commit_checks"
+  },
+  {
+    "id": "failure-format-step-blocks-event-loop",
+    "name": "Format step blocks event loop (perceived hang)",
+    "description": "Real failure: execute_pre_commit_checks(checks=['format']) uses synchronous subprocess.run(); blocks event loop 10-60+ seconds with no progress. Task validates format runs off event loop (e.g. to_thread).",
+    "category": "pre_commit",
+    "expected_tools": ["execute_pre_commit_checks"],
+    "expected_outcome": "Format adapter work does not block event loop; progress or to_thread used.",
+    "common_failure_modes": ["Failure type: tool_errors", "subprocess.run on event loop", "No progress during format"],
+    "usage_query": "execute_pre_commit_checks format"
+  },
+  {
+    "id": "failure-session-hang-after-format-result",
+    "name": "Session freeze after format tool result",
+    "description": "Real failure: Format tool returned but no subsequent assistant turn; user saw hang. Task validates next step runs or session/stdio handling is robust.",
+    "category": "pre_commit",
+    "expected_tools": ["execute_pre_commit_checks"],
+    "expected_outcome": "After format result, agent proceeds to Step 1.5/2 or session end is explicit; no silent stall.",
+    "common_failure_modes": ["Failure type: workflow_breakage", "No turn after tool result", "Transcript cut or session drop"],
+    "usage_query": "execute_pre_commit_checks format"
+  },
+  {
+    "id": "failure-raw-pytest-instead-of-mcp-tests",
+    "name": "Running raw pytest in Shell instead of MCP tests check",
+    "description": "Real failure: Agent ran raw pytest in Shell when coverage was below 90%; large output and long run; session ended after Shell with no follow-up. Task validates tests run via execute_pre_commit_checks only.",
+    "category": "pre_commit",
+    "expected_tools": ["execute_pre_commit_checks"],
+    "expected_outcome": "Tests executed only via execute_pre_commit_checks(checks=['tests']); no raw pytest in Shell for commit pipeline.",
+    "common_failure_modes": ["Failure type: workflow_breakage", "Raw pytest bypasses MCP", "Coverage threshold not enforced by tool"],
+    "usage_query": "execute_pre_commit_checks tests"
+  },
+  {
+    "id": "failure-config-unused-properties",
+    "name": "Optimization config properties never read at runtime",
+    "description": "Real failure: optimization.json has properties (e.g. enabled, max_budget, reserve_for_response) that are never read; config drift. Task validates critical config keys are wired to behavior.",
+    "category": "other",
+    "expected_tools": ["configure", "load_context"],
+    "expected_outcome": "Documented config keys are either used at runtime or explicitly documented as unused; no silent drift.",
+    "common_failure_modes": ["Failure type: incorrect_results", "Unused config keys", "get_max_token_budget never called"],
+    "usage_query": "configure optimization"
+  },
+  {
+    "id": "failure-memory-bank-direct-write",
+    "name": "Direct Write/StrReplace on memory bank path",
+    "description": "Real failure: Using Write, StrReplace, or ApplyPatch on memory-bank paths causes violation; all edits must use manage_file. Task validates no direct file tools on memory_bank files.",
+    "category": "memory_bank",
+    "expected_tools": ["manage_file"],
+    "expected_outcome": "All memory bank updates use manage_file(operation='read'|'write') or dedicated append/remove helpers; no Write/StrReplace on memory-bank paths.",
+    "common_failure_modes": ["Failure type: workflow_breakage", "Direct file write to memory bank", "Corruption or violation"],
+    "usage_query": "manage_file activeContext progress roadmap"
+  },
+  {
+    "id": "failure-mcp-health-before-step-12-7",
+    "name": "MCP health check before Step 12.7",
+    "description": "Real failure: Long test run can cause connection staleness; Step 12.7 should be preceded by check_mcp_connection_health. Task validates health check runs before tests in final gate.",
+    "category": "pre_commit",
+    "expected_tools": ["check_mcp_connection_health", "execute_pre_commit_checks"],
+    "expected_outcome": "check_mcp_connection_health() called before Step 12.7; if unhealthy, block or wait; reduces timeout during tests.",
+    "common_failure_modes": ["Failure type: workflow_breakage", "Connection stale before 12.7", "Missing health check"],
+    "usage_query": "check_mcp_connection_health execute_pre_commit_checks"
+  }
+]

@@ -34,6 +34,9 @@
 - **Optimize MCP tools based on usage data (2026-02-23)** - COMPLETE. Baseline, mapping, deprecation path, query_usage extensions, configurable threshold, tests; API reference deprecation notices and roadmap/activeContext finalized.
 - **Tools set optimization (deprecate/merge/remove) (2026-02-23)** - COMPLETE. docs/api/tools.md updated with Deprecated tools subsection; both deprecated tools documented with alternatives; plan archived.
 - **Commit pipeline** - Pre-commit passed (fix_errors, format, markdown lint, type_check, quality, tests 4671 passed, 92.86% coverage). Memory bank and roadmap consistent; 0 plans archived.
+- **Evaluation framework maturation Step 1 (2026-02-23)** - COMPLETE. Failure-based eval audit: added failure_based_evals.json (26 tasks from session reviews and investigations). Total 52 tasks, 50% from real failures. Categorized by tool_errors, context_mismanagement, workflow_breakage, incorrect_results. Plan Step 1 acceptance criteria met.
+- **Evaluation framework maturation Step 2 (2026-02-23)** - COMPLETE. Implemented execution harness: load task → run tool → compare (deterministic: contains, schema_valid, exact_match) → report; Fast/Full/Focused modes; execution_summary in run_tool_evaluation; exec_fast.json (10 tasks); tests and quality gate passed.
+- **Commit pipeline** - Preflight passed (fix_errors, format, markdown lint, type_check, quality, tests 4681 passed, 92.8% coverage). Memory bank and roadmap consistent.
 
 ## 2026-02-22
 
