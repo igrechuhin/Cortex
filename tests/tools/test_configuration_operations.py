@@ -2,6 +2,7 @@
 
 import json
 from pathlib import Path
+from typing import cast
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -15,9 +16,12 @@ from cortex.tools.configuration_operations import (
     configure_learning,
     configure_optimization,
     configure_validation,
+    create_configuration_exception_error,
     create_error_response,
+    create_invalid_component_error,
     create_success_response,
     export_learned_patterns,
+    get_component_handler,
     get_learned_patterns,
     handle_learning_reset,
     handle_learning_update,
@@ -427,6 +431,20 @@ class TestValidationConfiguration:
         assert "suggestion" in result_data
 
     @pytest.mark.asyncio
+    async def test_configure_validation_invalid_action_else_branch(self) -> None:
+        """Test validation handler else branch for non-VIEW/UPDATE/RESET action."""
+        mgrs = make_test_managers(validation_config=MagicMock())
+        fake_action = cast(ConfigAction, type("FakeAction", (), {"value": "other"})())
+
+        result = await configure_validation(mgrs, fake_action, None, None, None)
+
+        result_data = json.loads(result)
+        assert result_data["status"] == "error"
+        assert "action" in result_data.get("error", "").lower() or "action" in str(
+            result_data
+        )
+
+    @pytest.mark.asyncio
     async def test_handle_validation_update(self) -> None:
         """Test _handle_validation_update helper."""
         # Arrange
@@ -544,6 +562,17 @@ class TestOptimizationConfiguration:
         assert "Invalid action" in result_data["error"]
         assert "available_options" in result_data
         assert "suggestion" in result_data
+
+    @pytest.mark.asyncio
+    async def test_configure_optimization_invalid_action_else_branch(self) -> None:
+        """Test optimization handler else branch for non-VIEW/UPDATE/RESET action."""
+        mgrs = make_test_managers(optimization_config=MagicMock())
+        fake_action = cast(ConfigAction, type("FakeAction", (), {"value": "other"})())
+
+        result = await configure_optimization(mgrs, fake_action, None, None, None)
+
+        result_data = json.loads(result)
+        assert result_data["status"] == "error"
 
     @pytest.mark.asyncio
     async def test_handle_optimization_update(self) -> None:
@@ -705,6 +734,22 @@ class TestLearningConfiguration:
         assert "Invalid action" in result_data["error"]
         assert "available_options" in result_data
         assert "suggestion" in result_data
+
+    @pytest.mark.asyncio
+    async def test_configure_learning_invalid_action_else_branch(self) -> None:
+        """Test learning handler else branch for non-VIEW/UPDATE/RESET action."""
+        mock_optimization_config = MagicMock()
+        mock_optimization_config.config = MagicMock()
+        mgrs = make_test_managers(
+            learning_engine=MagicMock(),
+            optimization_config=mock_optimization_config,
+        )
+        fake_action = cast(ConfigAction, type("FakeAction", (), {"value": "other"})())
+
+        result = await configure_learning(mgrs, fake_action, None, None, None)
+
+        result_data = json.loads(result)
+        assert result_data["status"] == "error"
 
     @pytest.mark.asyncio
     async def test_handle_learning_view(self) -> None:
@@ -879,6 +924,91 @@ class TestHelperFunctions:
         assert result_data["error"] == error
         assert result_data["available_options"] == ["view", "update", "reset"]
         assert "suggestion" in result_data
+
+    def test_create_error_response_unknown_component_branch(self) -> None:
+        """create_error_response with 'Unknown component' uses valid_components suggestion."""
+        error = "Unknown component: xyz"
+        valid_components: JsonValue = ["validation", "optimization", "learning"]
+        result_str: str = create_error_response(
+            error, valid_components=valid_components
+        )
+        result_data = json.loads(result_str)
+        assert result_data["status"] == "error"
+        assert "Use one of the valid components" in result_data.get("suggestion", "")
+        assert result_data["available_options"] == valid_components
+
+    def test_create_error_response_unknown_action_branch(self) -> None:
+        """create_error_response with 'Unknown action' uses valid_actions suggestion."""
+        error = "Unknown action: bad_action"
+        valid_actions: JsonValue = ["view", "update", "reset"]
+        result_str: str = create_error_response(error, valid_actions=valid_actions)
+        result_data = json.loads(result_str)
+        assert result_data["status"] == "error"
+        assert "Use one of the valid actions" in result_data.get("suggestion", "")
+        assert result_data["available_options"] == valid_actions
+
+    def test_create_error_response_example_component(self) -> None:
+        """create_error_response with 'component' in error builds component example."""
+        error = "Invalid component"
+        valid_components: JsonValue = ["validation", "optimization"]
+        result_str: str = create_error_response(
+            error, valid_components=valid_components
+        )
+        result_data = json.loads(result_str)
+        assert result_data["status"] == "error"
+        assert result_data.get("example") == {
+            "component": "validation",
+            "action": "view",
+        }
+
+    def test_create_error_response_example_action(self) -> None:
+        """create_error_response with 'action' in error builds action example."""
+        error = "Invalid action"
+        valid_actions: JsonValue = ["view", "update"]
+        result_str: str = create_error_response(error, valid_actions=valid_actions)
+        result_data = json.loads(result_str)
+        assert result_data["status"] == "error"
+        assert result_data.get("example") == {"action": "view"}
+
+    def test_create_error_response_valid_operations_extracted(self) -> None:
+        """create_error_response extracts available_options from valid_operations."""
+        error = "Invalid operation"
+        valid_operations: JsonValue = ["read", "write"]
+        result_str: str = create_error_response(
+            error, valid_operations=valid_operations
+        )
+        result_data = json.loads(result_str)
+        assert result_data["status"] == "error"
+        assert result_data["available_options"] == ["read", "write"]
+
+    def test_create_error_response_empty_valid_components(self) -> None:
+        """create_error_response with empty valid_components uses default in suggestion."""
+        error = "Unknown component: x"
+        valid_components: JsonValue = []
+        result_str: str = create_error_response(
+            error, valid_components=valid_components
+        )
+        result_data = json.loads(result_str)
+        assert result_data["status"] == "error"
+        assert "validation" in result_data.get("suggestion", "")
+
+    def test_create_error_response_context_dict_passthrough(self) -> None:
+        """create_error_response passes dict context through."""
+        error = "Some error"
+        context: JsonValue = {"key": "value"}
+        result_str: str = create_error_response(error, context=context)
+        result_data = json.loads(result_str)
+        assert result_data["status"] == "error"
+        assert result_data.get("context") == {"key": "value"}
+
+    def test_create_error_response_context_non_dict_wrapped(self) -> None:
+        """create_error_response wraps non-dict context in {'context': value}."""
+        error = "Some error"
+        context: JsonValue = "plain string"
+        result_str: str = create_error_response(error, context=context)
+        result_data = json.loads(result_str)
+        assert result_data["status"] == "error"
+        assert result_data.get("context") == {"context": "plain string"}
 
     def test_get_learned_patterns(self) -> None:
         """Test getting learned patterns."""
@@ -1139,3 +1269,49 @@ class TestConfigureContextLogging:
                 if len(c[0]) >= 2 and c[0][1] == "error"
             ]
             assert len(error_calls) == 1
+
+
+@pytest.mark.timeout(5)
+class TestGetComponentHandlerAndErrorBuilders:
+    """Unit tests for get_component_handler and error response builders."""
+
+    def test_get_component_handler_returns_handler_for_validation(self) -> None:
+        """get_component_handler('validation') returns configure_validation."""
+        handler = get_component_handler("validation")
+        assert handler is not None
+        assert callable(handler)
+
+    def test_get_component_handler_returns_handler_for_optimization(self) -> None:
+        """get_component_handler('optimization') returns configure_optimization."""
+        handler = get_component_handler("optimization")
+        assert handler is not None
+        assert callable(handler)
+
+    def test_get_component_handler_returns_handler_for_learning(self) -> None:
+        """get_component_handler('learning') returns configure_learning."""
+        handler = get_component_handler("learning")
+        assert handler is not None
+        assert callable(handler)
+
+    def test_get_component_handler_returns_none_for_unknown(self) -> None:
+        """get_component_handler returns None for unknown component."""
+        assert get_component_handler("unknown") is None
+        assert get_component_handler("") is None
+
+    def test_create_invalid_component_error_includes_valid_options(self) -> None:
+        """create_invalid_component_error returns JSON with valid options."""
+        result_str: str = create_invalid_component_error("bad_component")
+        data = json.loads(result_str)
+        assert data["status"] == "error"
+        assert "bad_component" in result_str
+        assert "validation" in result_str and "optimization" in result_str
+
+    def test_create_configuration_exception_error_includes_message(self) -> None:
+        """create_configuration_exception_error returns JSON with exception details."""
+        exc = ValueError("Invalid value")
+        result_str: str = create_configuration_exception_error(
+            exc, component="validation", action="view"
+        )
+        data = json.loads(result_str)
+        assert data["status"] == "error"
+        assert "Invalid value" in result_str

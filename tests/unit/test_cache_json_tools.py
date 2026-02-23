@@ -3,7 +3,7 @@
 import json
 import os
 from pathlib import Path
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
@@ -231,6 +231,34 @@ class TestErrorResponse:
         assert data["relative_path"] == ""
 
 
+class TestReadCacheJsonWithContext:
+    """Tests for read_cache_json when ctx is provided (log path)."""
+
+    @pytest.mark.asyncio
+    @pytest.mark.timeout(25)
+    async def test_read_cache_json_with_ctx_calls_log_client(
+        self, tmp_path: Path
+    ) -> None:
+        """When ctx is provided, log_client is called before proceeding."""
+        root = _project_root(tmp_path)
+        mock_ctx = MagicMock()
+        with patch(
+            "cortex.tools.cache_json_tools.resolve_project_root_async",
+            new_callable=AsyncMock,
+            return_value=root,
+        ):
+            with patch(
+                "cortex.tools.cache_json_tools.log_client",
+                new_callable=AsyncMock,
+            ) as mock_log:
+                _ = await read_cache_json(
+                    relative_path="usage/events/x.json",
+                    ctx=mock_ctx,
+                )
+        mock_log.assert_called_once()
+        assert "read_cache_json" in str(mock_log.call_args)
+
+
 class TestReadCacheJsonErrorPaths:
     """Tests for read_cache_json exception handling."""
 
@@ -277,6 +305,39 @@ class TestReadCacheJsonErrorPaths:
         result = json.loads(result_str)
         assert result["status"] == "error"
         assert result.get("error_type") == "RuntimeError"
+
+
+class TestWriteCacheJsonWithContext:
+    """Tests for write_cache_json when ctx is provided (log path)."""
+
+    @pytest.mark.asyncio
+    @pytest.mark.timeout(25)
+    async def test_write_cache_json_with_ctx_calls_log_client(
+        self, tmp_path: Path
+    ) -> None:
+        """When ctx is provided, log_client is called before proceeding."""
+        root = _project_root(tmp_path)
+        mock_ctx = MagicMock()
+        with patch(
+            "cortex.tools.cache_json_tools.resolve_project_root_async",
+            new_callable=AsyncMock,
+            return_value=root,
+        ):
+            with patch(
+                "cortex.tools.cache_json_tools.log_client",
+                new_callable=AsyncMock,
+            ) as mock_log:
+                with patch(
+                    "cortex.tools.cache_json_tools._write_cache_json",
+                    new_callable=AsyncMock,
+                ):
+                    _ = await write_cache_json(
+                        relative_path="x.json",
+                        content="{}",
+                        ctx=mock_ctx,
+                    )
+        mock_log.assert_called_once()
+        assert "write_cache_json" in str(mock_log.call_args)
 
 
 class TestWriteCacheJsonContentValidation:
@@ -378,3 +439,28 @@ class TestCacheJsonToolsEdgeCases:
         result = json.loads(result_str)
         assert result["status"] == "error"
         assert "Invalid cache key" in str(result.get("message", ""))
+
+    @pytest.mark.asyncio
+    @pytest.mark.timeout(25)
+    async def test_write_returns_error_with_error_type_when_write_raises_exception(
+        self, tmp_path: Path
+    ) -> None:
+        """When _write_cache_json raises generic Exception, tool returns error_type."""
+        root = _project_root(tmp_path)
+        with patch.dict(os.environ, {"CORTEX_USE_FALLBACK_ROOT": "1"}):
+            with patch(
+                "cortex.core.project_root_resolver.get_project_root",
+                return_value=root,
+            ):
+                with patch(
+                    "cortex.tools.cache_json_tools._write_cache_json",
+                    new_callable=AsyncMock,
+                    side_effect=OSError(13, "Permission denied"),
+                ):
+                    result_str = await write_cache_json(
+                        relative_path="x.json",
+                        content='{"a": 1}',
+                    )
+        result = json.loads(result_str)
+        assert result["status"] == "error"
+        assert result.get("error_type") in ("OSError", "PermissionError")

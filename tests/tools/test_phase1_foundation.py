@@ -1056,6 +1056,32 @@ def test_format_versions_for_export_minimal_fields():
     assert "change_description" not in version_dict
 
 
+def test_format_versions_for_export_skips_invalid_items():
+    """format_versions_for_export skips entries with invalid version or timestamp."""
+    from cortex.tools.phase1_foundation_version import format_versions_for_export
+
+    versions: list[ModelDict] = [
+        {"version": "not_a_number", "timestamp": "2026-01-10T10:00:00"},
+        {"version": 1, "timestamp": None},
+        {"version": 2, "timestamp": "2026-01-11T10:00:00"},
+    ]
+    result = format_versions_for_export(versions)
+    assert len(result) == 1
+    assert result[0]["version"] == 2
+
+
+def test_format_versions_for_export_change_type_non_str_defaults_to_unknown():
+    """format_versions_for_export uses 'unknown' when change_type is not a string."""
+    from cortex.tools.phase1_foundation_version import format_versions_for_export
+
+    versions: list[ModelDict] = [
+        {"version": 1, "timestamp": "2026-01-10T10:00:00", "change_type": 123},
+    ]
+    result = format_versions_for_export(versions)
+    assert len(result) == 1
+    assert result[0]["change_type"] == "unknown"
+
+
 def test_sum_file_field():
     """Test sum_file_field sums numeric fields correctly."""
     # Arrange

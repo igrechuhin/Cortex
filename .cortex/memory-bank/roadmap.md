@@ -12,8 +12,6 @@
 
 ## Pending plans (from .cortex/plans)
 
-- **E2E Plan Test** - PENDING - Plan: .cortex/plans/e2e-plan-test.md
-
 ### Investigation Plans (Archive / Reference)
 
 Completed investigations are recorded in [activeContext.md](activeContext.md). Plan files under `.cortex/plans/archive/` as needed.
@@ -26,7 +24,6 @@ Completed investigations are recorded in [activeContext.md](activeContext.md). P
 
 ### Features & Enhancements
 
-- **Pending: Test coverage and quality (P0)** - Plan: .cortex/plans/plan-test-coverage-and-quality.md
 - **Pending: Documentation completeness (P1)** - Plan: .cortex/plans/plan-documentation-completeness.md
 - **Pending: Evaluation framework maturation (P1)** - Plan: .cortex/plans/plan-evaluation-framework-maturation.md
 - **Pending: Anthropic context engineering alignment (P1)** - Plan: .cortex/plans/plan-anthropic-context-engineering-alignment.md

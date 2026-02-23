@@ -26,6 +26,14 @@
 
 - ✅ **Plan test-coverage-and-quality Step 7 (coverage)** - COMPLETE (2026-02-23) - Added tests to raise coverage toward 93%: preflight/docs decode branches, session_health, phase8 cache/invalidate, refactoring_result_models. Coverage 92.78%; step remains in progress until ≥93%.
 
+- ✅ **E2E Plan Test** - COMPLETE (2026-02-23) - E2E plan test completed; single step already done.
+
+- ✅ **Step 7 coverage progress (plan-test-coverage-and-quality)** - COMPLETE (2026-02-23) - Added configuration_operations unit tests (get_component_handler, error builders). Coverage 92.79%; Step 7 remains IN PROGRESS until ≥93%. Plan file updated.
+
+- ✅ **E2E Plan Test** - COMPLETE (2026-02-23) - Plan had single step already marked Done; no code changes. Removed from roadmap and archived.
+
+- ✅ **Test coverage and quality (P0)** - COMPLETE (2026-02-23) - All 7 steps done: untested modules (services, discovery, guides, script_promotion), parametrized tests, asyncio.sleep reduction, tool_helpers split, E2E workflows, TODO/FIXME audit, coverage ≥93%. Type fixes in test_configuration_operations (FakeAction cast).
+
 ## Completed Work (2026-02-22)
 
 - **Summary (2026-02-22)** - 1 entries archived.

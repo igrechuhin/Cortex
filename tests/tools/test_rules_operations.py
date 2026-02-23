@@ -30,6 +30,7 @@ from cortex.tools.rules_operation_helpers import (
     build_get_relevant_response,
     calculate_total_tokens,
     extract_all_rules,
+    parse_rules_operation,
     resolve_config_defaults,
 )
 from cortex.tools.rules_operations import (
@@ -430,6 +431,23 @@ def test_resolve_config_defaults_min_score_provided(
     assert min_score == 0.8
     mock_optimization_config_enabled.get_rules_max_tokens.assert_called_once()
     mock_optimization_config_enabled.get_rules_min_relevance.assert_not_called()
+
+
+def test_parse_rules_operation_returns_none_for_none() -> None:
+    """parse_rules_operation(None) returns None."""
+    assert parse_rules_operation(None) is None
+
+
+def test_parse_rules_operation_returns_enum_for_valid_values() -> None:
+    """parse_rules_operation returns RulesOperation for valid strings."""
+    assert parse_rules_operation("index") is RulesOperation.INDEX
+    assert parse_rules_operation("get_relevant") is RulesOperation.GET_RELEVANT
+
+
+def test_parse_rules_operation_returns_none_for_invalid_value() -> None:
+    """parse_rules_operation returns None for invalid string."""
+    assert parse_rules_operation("invalid") is None
+    assert parse_rules_operation("") is None
 
 
 # ============================================================================

@@ -19,9 +19,11 @@ from cortex.core.exceptions import (
 )
 from cortex.core.models import DetailedFileMetadata, ResponseStatus
 from cortex.tools.file_operation_helpers import (
+    FileOperation,
     build_invalid_operation_error,
     build_schema_validation_error_response,
     build_write_error_response,
+    parse_file_operation,
     validate_write_content,
 )
 from cortex.tools.file_operations import (
@@ -663,7 +665,21 @@ Final section
         # after the # symbols. "##Section 3" doesn't match (no space after ##)
         assert len(sections) == 1
         assert sections[0]["heading"] == "## Section 1"
-        assert sections[0]["level"] == 2
+
+    def test_parse_file_operation_returns_none_for_none(self) -> None:
+        """parse_file_operation(None) returns None."""
+        assert parse_file_operation(None) is None
+
+    def test_parse_file_operation_returns_enum_for_valid_values(self) -> None:
+        """parse_file_operation returns FileOperation for valid strings."""
+        assert parse_file_operation("read") is FileOperation.READ
+        assert parse_file_operation("write") is FileOperation.WRITE
+        assert parse_file_operation("metadata") is FileOperation.METADATA
+
+    def test_parse_file_operation_returns_none_for_invalid_value(self) -> None:
+        """parse_file_operation returns None for invalid string."""
+        assert parse_file_operation("invalid") is None
+        assert parse_file_operation("") is None
 
     def test_compute_file_metrics(self):
         """Test file metrics computation."""

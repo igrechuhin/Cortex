@@ -9,7 +9,11 @@ import pytest
 
 from cortex.core.models import DetailedFileMetadata, ModelDict
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
-from cortex.tools.validation_dispatch import setup_validation_managers
+from cortex.tools.validation_dispatch import (
+    handle_infrastructure_validation_wrapper,
+    handle_timestamps_validation_wrapper,
+    setup_validation_managers,
+)
 from cortex.tools.validation_duplication import (
     handle_duplications_validation,
     validate_duplications,
@@ -1317,6 +1321,40 @@ class TestValidateMainFunction:
             assert result_data["status"] == "success"
             assert result_data["check_type"] == "infrastructure"
             mock_handle.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_handle_infrastructure_validation_wrapper_calls_impl(
+        self, tmp_path: Path
+    ) -> None:
+        """Wrapper delegates to handle_infrastructure_validation (covers dispatch)."""
+        with patch(
+            "cortex.tools.validation_dispatch.handle_infrastructure_validation",
+            new_callable=AsyncMock,
+            return_value='{"status":"success","checks_performed":{}}',
+        ) as mock_impl:
+            result = await handle_infrastructure_validation_wrapper(
+                tmp_path, False, False, False, False
+            )
+            mock_impl.assert_called_once_with(tmp_path, False, False, False, False)
+            assert "status" in result
+
+    @pytest.mark.asyncio
+    async def test_handle_timestamps_validation_wrapper_calls_impl(
+        self, tmp_path: Path
+    ) -> None:
+        """Wrapper delegates to handle_timestamps_validation (covers dispatch)."""
+        mock_fs = MagicMock()
+        managers: dict[str, Any] = {"fs_manager": mock_fs}
+        with patch(
+            "cortex.tools.validation_dispatch.handle_timestamps_validation",
+            new_callable=AsyncMock,
+            return_value='{"status":"success","issues":[]}',
+        ) as mock_impl:
+            result = await handle_timestamps_validation_wrapper(
+                managers, tmp_path, None
+            )
+            mock_impl.assert_called_once_with(mock_fs, tmp_path, None)
+            assert "status" in result
 
     @pytest.mark.asyncio
     async def test_validate_invalid_check_type(self, tmp_path: Path) -> None:
