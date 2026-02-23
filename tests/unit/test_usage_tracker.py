@@ -9,7 +9,11 @@ import pytest
 from cortex.core.cache_json_access import read_cache_json
 from cortex.core.cache_utils import get_cache_dir
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
-from cortex.managers.usage_tracker import UsageTracker, generate_usage_event_id
+from cortex.managers.usage_tracker import (
+    UsageTracker,
+    generate_usage_event_id,
+    get_tool_optimization_config,
+)
 
 
 def _make_project_root(tmp_path: Path) -> Path:
@@ -37,6 +41,63 @@ class TestUsageTrackerInitialization:
         result = await tracker.get_usage_stats()
         total_ev = result.get("total_events", 0)
         assert isinstance(total_ev, (int, float)) and total_ev >= 1
+
+
+class TestGetToolOptimizationConfig:
+    """Tests for get_tool_optimization_config (Step 6 single source of truth)."""
+
+    def test_returns_defaults_when_config_missing(self, tmp_path: Path) -> None:
+        """When usage_tracking.json is missing, returns default days/count/threshold."""
+        root = _make_project_root(tmp_path)
+        config = get_tool_optimization_config(root)
+        assert config["days"] == 30
+        assert config["min_usage_count"] == 0
+        assert config["min_usage_threshold"] == 5
+
+    def test_returns_defaults_when_tool_optimization_section_missing(
+        self, tmp_path: Path
+    ) -> None:
+        """When file exists but tool_optimization key is missing, returns defaults."""
+        root = _make_project_root(tmp_path)
+        config_dir = get_cortex_path(root, CortexResourceType.CONFIG)
+        config_dir.mkdir(parents=True)
+        _ = (config_dir / "usage_tracking.json").write_text(
+            '{"enabled": true, "retention_days": 60}', encoding="utf-8"
+        )
+        config = get_tool_optimization_config(root)
+        assert config["days"] == 30
+        assert config["min_usage_count"] == 0
+        assert config["min_usage_threshold"] == 5
+
+    def test_returns_file_values_when_present(self, tmp_path: Path) -> None:
+        """When tool_optimization is present, returns its values."""
+        root = _make_project_root(tmp_path)
+        config_dir = get_cortex_path(root, CortexResourceType.CONFIG)
+        config_dir.mkdir(parents=True)
+        _ = (config_dir / "usage_tracking.json").write_text(
+            '{"tool_optimization": {"days": 60, "min_usage_count": 2, "min_usage_threshold": 10}}',
+            encoding="utf-8",
+        )
+        config = get_tool_optimization_config(root)
+        assert config["days"] == 60
+        assert config["min_usage_count"] == 2
+        assert config["min_usage_threshold"] == 10
+
+    def test_merges_partial_tool_optimization_with_defaults(
+        self, tmp_path: Path
+    ) -> None:
+        """When only some keys are present, the rest use defaults."""
+        root = _make_project_root(tmp_path)
+        config_dir = get_cortex_path(root, CortexResourceType.CONFIG)
+        config_dir.mkdir(parents=True)
+        _ = (config_dir / "usage_tracking.json").write_text(
+            '{"tool_optimization": {"days": 30}}',
+            encoding="utf-8",
+        )
+        config = get_tool_optimization_config(root)
+        assert config["days"] == 30
+        assert config["min_usage_count"] == 0
+        assert config["min_usage_threshold"] == 5
 
 
 class TestRecordToolUsage:
@@ -293,7 +354,7 @@ class TestGetUnusedTools:
         """Test get_unused_tools returns empty list when no events."""
         root = _make_project_root(tmp_path)
         tracker = UsageTracker(root)
-        unused = await tracker.get_unused_tools(days=90, min_usage_count=0)
+        unused = await tracker.get_unused_tools(days=30, min_usage_count=0)
         assert unused == []
 
     @pytest.mark.asyncio
@@ -305,7 +366,7 @@ class TestGetUnusedTools:
         await tracker.record_tool_usage("manage_file", 1.0, True)
         await tracker.record_tool_usage("load_context", 1.0, True)
         end = datetime.now(UTC)
-        start = end - timedelta(days=90)
+        start = end - timedelta(days=30)
         stats = await tracker.get_usage_stats(start_date=start, end_date=end)
         st_ev = stats.get("total_events", 0)
         assert isinstance(st_ev, (int, float)) and st_ev >= 3
@@ -319,10 +380,10 @@ class TestGetUnusedTools:
             cast(dict[str, object], t) for t in _raw if isinstance(t, dict)
         ]
         assert len(tools_list) >= 2
-        unused = await tracker.get_unused_tools(days=90, min_usage_count=5)
+        unused = await tracker.get_unused_tools(days=30, min_usage_count=5)
         assert "manage_file" in unused
         assert "load_context" in unused
-        unused_threshold_2 = await tracker.get_unused_tools(days=90, min_usage_count=2)
+        unused_threshold_2 = await tracker.get_unused_tools(days=30, min_usage_count=2)
         assert "manage_file" in unused_threshold_2
         assert "load_context" in unused_threshold_2
 

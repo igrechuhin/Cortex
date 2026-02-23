@@ -1140,6 +1140,71 @@ async def test_get_session_tool_anomalies_success() -> None:
 
 
 @pytest.mark.asyncio
+async def test_get_session_tool_anomalies_equivalent_to_query_usage_anomalies() -> None:
+    """Deprecated get_session_tool_anomalies returns equivalent structure to query_usage(anomalies) (Plan Step 7)."""
+    from cortex.tools.query_usage_operations import query_usage
+
+    mock_events = [
+        ToolUsageEvent(
+            tool_name="manage_file",
+            timestamp="2026-02-21T12:00:00Z",
+            duration_ms=5.0,
+            success=True,
+            retry_count=0,
+        ),
+    ]
+    mock_tracker = MagicMock()
+    mock_tracker.search_usage = AsyncMock(return_value=mock_events)
+    with (
+        patch(
+            "cortex.core.project_root_resolver.resolve_project_root_async",
+            new_callable=AsyncMock,
+            return_value=Path("/tmp"),
+        ),
+        patch(
+            "cortex.tools.usage_analytics._get_tracker",
+            new_callable=AsyncMock,
+            return_value=mock_tracker,
+        ),
+        patch(
+            "cortex.tools.query_usage_operations.log_client",
+            new_callable=AsyncMock,
+        ),
+        patch(
+            "cortex.tools.phase5_evaluation.log_client",
+            new_callable=AsyncMock,
+        ),
+    ):
+        deprecated_str = await get_session_tool_anomalies(hours=24)
+        consolidated_str = await query_usage(
+            query_type="anomalies",
+            hours=24,
+            ctx=None,
+        )
+    deprecated_result = json.loads(deprecated_str)
+    consolidated_result = json.loads(consolidated_str)
+    # Same structure and key fields (timestamps may differ by call time)
+    assert set(deprecated_result.keys()) == set(consolidated_result.keys())
+    assert deprecated_result["status"] == consolidated_result["status"] == "success"
+    assert (
+        deprecated_result["session_window_hours"]
+        == consolidated_result["session_window_hours"]
+        == 24
+    )
+    assert deprecated_result["total_events"] == consolidated_result["total_events"] == 1
+    assert deprecated_result["tools_used"] == consolidated_result["tools_used"]
+    assert (
+        deprecated_result["high_retry_tools"] == consolidated_result["high_retry_tools"]
+    )
+    assert (
+        deprecated_result["high_error_tools"] == consolidated_result["high_error_tools"]
+    )
+    assert "project_root" in deprecated_result
+    assert "start" in deprecated_result
+    assert "end" in deprecated_result
+
+
+@pytest.mark.asyncio
 async def test_load_optimization_history_empty_when_missing(tmp_path: Path) -> None:
     """load_optimization_history returns empty list when cache file is missing."""
     with patch(

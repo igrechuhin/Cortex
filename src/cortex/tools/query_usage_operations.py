@@ -66,11 +66,15 @@ async def _run_usage_stats(params: QueryUsageParams, ctx: MCPContext | None) -> 
 
 
 async def _run_unused(params: QueryUsageParams, ctx: MCPContext | None) -> str:
+    from cortex.core.project_root_resolver import resolve_project_root_async
+    from cortex.managers.usage_tracker import get_tool_optimization_config
     from cortex.tools import usage_analytics
 
+    root = await resolve_project_root_async(None, ctx)
+    config = get_tool_optimization_config(root)
     return await usage_analytics.get_unused_tools(
-        days=params.days,
-        min_usage_count=params.min_usage_count,
+        days=config["days"],
+        min_usage_count=config["min_usage_count"],
         ctx=ctx,
     )
 
@@ -86,11 +90,15 @@ async def _run_report(params: QueryUsageParams, ctx: MCPContext | None) -> str:
 
 
 async def _run_recommendations(params: QueryUsageParams, ctx: MCPContext | None) -> str:
+    from cortex.core.project_root_resolver import resolve_project_root_async
+    from cortex.managers.usage_tracker import get_tool_optimization_config
     from cortex.tools import usage_analytics
 
+    root = await resolve_project_root_async(None, ctx)
+    config = get_tool_optimization_config(root)
     return await usage_analytics.get_optimization_recommendations(
-        min_usage_threshold=params.min_usage_threshold,
-        days=params.days,
+        min_usage_threshold=config["min_usage_threshold"],
+        days=config["days"],
         ctx=ctx,
     )
 

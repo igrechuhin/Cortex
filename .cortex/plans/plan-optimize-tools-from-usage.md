@@ -1,6 +1,6 @@
 # Plan: Optimize MCP Tools Based on Usage Data
 
-**Status**: IN PROGRESS (Steps 1–5 complete)
+**Status**: IN PROGRESS (Steps 1–7 complete)
 **Priority**: P1 (high)
 **Estimated Effort**: 20–35 hours
 
@@ -35,7 +35,7 @@ Reduce the Cortex MCP tool set to a smaller, more effective set by using existin
 ## Approach
 
 1. **Baseline**: Use `query_usage` (unused, report, recommendations) to establish a baseline list of low-usage tools and current counts.
-2. **Policy**: Define a usage threshold (e.g. ≤ N calls in last 90 days) and tiers (e.g. zero use vs. low use) for classification.
+2. **Policy**: Define a usage threshold (e.g. ≤ N calls in last 30 days) and tiers (e.g. zero use vs. low use) for classification.
 3. **Classification**: For each tool below threshold, classify as: (a) safe to deprecate (redirect to consolidated tool or resource), (b) consolidate into an existing entry point, or (c) remove (with migration path if any).
 4. **Execute in phases**: Deprecate first (warnings, docs, redirects), then consolidate or remove with backward compatibility where required.
 5. **Docs and prompts**: Update tools.md, guides, and Synapse prompts so that recommended workflows use the reduced set and consolidated entry points.
@@ -46,9 +46,9 @@ Reduce the Cortex MCP tool set to a smaller, more effective set by using existin
 
 ### Step 1: Establish usage baseline and threshold policy ✅ COMPLETED (2026-02-23)
 
-- Run `query_usage(query_type="report", include_recommendations=True)` and `query_usage(query_type="unused", days=90, min_usage_count=0)` to get full baseline.
-- Run `query_usage(query_type="stats")` to get per-tool counts over a defined window (e.g. 90 days).
-- Document current tool count (published tools + resources) and the list of tools below a chosen threshold (e.g. ≤ 5 calls in 90 days).
+- Run `query_usage(query_type="report", include_recommendations=True)` and `query_usage(query_type="unused", days=30, min_usage_count=0)` to get full baseline.
+- Run `query_usage(query_type="stats")` to get per-tool counts over a defined window (e.g. 30 days).
+- Document current tool count (published tools + resources) and the list of tools below a chosen threshold (e.g. ≤ 5 calls in 30 days).
 - Define and document **threshold policy**: e.g. `min_usage_count` and `days` for “unused” vs “low use”; criteria for “must optimize” (e.g. zero or below-threshold usage).
 - **Deliverables**: Baseline report (markdown or JSON), threshold policy in plan or docs. → **Done:** `docs/architecture/tool-optimization-baseline.md`
 
@@ -81,17 +81,17 @@ Reduce the Cortex MCP tool set to a smaller, more effective set by using existin
 - **Deliverables**: Reduced number of published tools; migration path documented.
 - **Done:** Added `query_type="anomalies"` to `query_usage`; `get_session_tool_anomalies` now redirects to it with deprecation notice and docstring. analyze.md updated to prefer `query_usage(query_type="anomalies", hours=24)`. Mapping doc updated.
 
-### Step 6: Configuration and threshold as single source of truth
+### Step 6: Configuration and threshold as single source of truth ✅ COMPLETED (2026-02-23)
 
-- Where optimization logic uses a threshold (e.g. “unused” = ≤ 5 calls in 90 days), ensure it is configurable (e.g. in `.cortex/config/usage_tracking.json` or a dedicated optimization config) so that “tools below usage threshold” can be tuned without code changes.
+- Where optimization logic uses a threshold (e.g. “unused” = ≤ 5 calls in 30 days), ensure it is configurable (e.g. in `.cortex/config/usage_tracking.json` or a dedicated optimization config) so that “tools below usage threshold” can be tuned without code changes.
 - Document the threshold and how to run “unused tools” and “recommendations” reports.
 - **Deliverables**: Configurable threshold (if not already), documentation of how to reproduce “below threshold” list.
 
-### Step 7: Testing and regression
+### Step 7: Testing and regression ✅ COMPLETED (2026-02-23)
 
 - Add or update tests that: (1) run `query_usage(query_type="unused", ...)` and `query_usage(query_type="recommendations", ...)` and assert structure of response; (2) verify that consolidated tools return equivalent results for deprecated paths where applicable.
 - Regression: ensure commit pipeline and implement/analyze flows still pass; no removal of tools that are referenced by name in critical prompts without migration.
-- **Deliverables**: Tests for usage-based optimization workflow; regression suite passing.
+- **Deliverables**: Tests for usage-based optimization workflow; regression suite passing. → **Done:** `test_query_usage_unused_response_structure`, `test_query_usage_recommendations_response_structure` (structure assertions); `test_get_session_tool_anomalies_equivalent_to_query_usage_anomalies` (deprecated vs consolidated equivalence). Full test suite and quality gate passing.
 
 ### Step 8: Finalize documentation and roadmap
 
@@ -118,7 +118,7 @@ Reduce the Cortex MCP tool set to a smaller, more effective set by using existin
 
 - **Coverage target**: Minimum 95% for any new code (e.g. deprecation helpers, config for threshold). Existing `query_usage` and usage_analytics tests remain; add tests for new behavior only.
 - **Unit tests**: Any new function that computes “below threshold” or builds the mapping table; response shape of `query_usage` for `unused` and `recommendations`.
-- **Integration tests**: Call `query_usage(query_type="unused", days=90, min_usage_count=5)` and assert JSON structure and presence of `unused_tools` or equivalent; same for `recommendations`.
+- **Integration tests**: Call `query_usage(query_type="unused", days=30, min_usage_count=5)` and assert JSON structure and presence of `unused_tools` or equivalent; same for `recommendations`.
 - **Regression**: Full pre-commit and commit-pipeline run; implement and analyze prompts run without broken tool references.
 - **AAA**: All tests follow Arrange–Act–Assert.
 - **Pydantic v2**: Use BaseModel and `model_validate_json()` for MCP JSON responses where new tests are added.

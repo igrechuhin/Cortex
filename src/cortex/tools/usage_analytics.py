@@ -23,7 +23,7 @@ from cortex.core.project_root_resolver import resolve_project_root_async
 from cortex.managers.initialization import get_managers
 from cortex.managers.lazy_manager import LazyManager
 from cortex.managers.usage_models import ToolUsageEvent
-from cortex.managers.usage_tracker import UsageTracker
+from cortex.managers.usage_tracker import UsageTracker, get_tool_optimization_config
 from cortex.server import mcp
 
 
@@ -748,7 +748,13 @@ async def get_tool_usage_stats_resource() -> str:
 @mcp_resource_wrapper(timeout=MCP_TOOL_TIMEOUT_FAST)
 async def get_unused_tools_resource() -> str:
     """Resource: Unused tools report (default days/min_usage). Read via cortex://usage/unused."""
-    return await get_unused_tools(days=90, min_usage_count=0)
+    root = await resolve_project_root_async(None, None)
+    config = get_tool_optimization_config(root)
+    return await get_unused_tools(
+        days=config["days"],
+        min_usage_count=config["min_usage_count"],
+        ctx=None,
+    )
 
 
 @mcp.resource(uri="cortex://usage/report")
@@ -764,7 +770,13 @@ async def get_tool_usage_report_resource() -> str:
 @mcp_resource_wrapper(timeout=MCP_TOOL_TIMEOUT_FAST)
 async def get_optimization_recommendations_resource() -> str:
     """Resource: Optimization recommendations (default threshold/days). Read via cortex://usage/optimization-recommendations."""
-    return await get_optimization_recommendations(min_usage_threshold=5, days=90)
+    root = await resolve_project_root_async(None, None)
+    config = get_tool_optimization_config(root)
+    return await get_optimization_recommendations(
+        min_usage_threshold=config["min_usage_threshold"],
+        days=config["days"],
+        ctx=None,
+    )
 
 
 @mcp.resource(uri="cortex://usage/observation/{id}")

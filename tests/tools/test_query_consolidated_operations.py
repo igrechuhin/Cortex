@@ -232,6 +232,38 @@ async def test_query_usage_unused_dispatches() -> None:
 
 
 @pytest.mark.asyncio
+async def test_query_usage_unused_response_structure() -> None:
+    """query_usage(query_type=unused) returns JSON with required structure (Plan Step 7)."""
+    payload = json.dumps(
+        {
+            "status": "success",
+            "project_root": "/tmp/proj",
+            "days": 30,
+            "min_usage_count": 5,
+            "unused_tools": ["tool_a", "tool_b"],
+        },
+        indent=2,
+    )
+    with patch(
+        "cortex.tools.query_usage_operations.log_client",
+        new_callable=AsyncMock,
+    ):
+        with patch(
+            "cortex.tools.usage_analytics.get_unused_tools",
+            new_callable=AsyncMock,
+            return_value=payload,
+        ):
+            result = await query_usage(query_type="unused", ctx=None)
+    data = json.loads(result)
+    assert data["status"] == "success"
+    assert "unused_tools" in data
+    assert isinstance(data["unused_tools"], list)
+    assert data["unused_tools"] == ["tool_a", "tool_b"]
+    assert "days" in data
+    assert "min_usage_count" in data
+
+
+@pytest.mark.asyncio
 async def test_query_usage_search_dispatches() -> None:
     """query_usage with query_type=search calls search_usage."""
     payload = json.dumps({"status": "success", "matches": []}, indent=2)
@@ -290,6 +322,43 @@ async def test_query_usage_recommendations_dispatches() -> None:
             )
     data = json.loads(result)
     assert data["status"] == "success"
+
+
+@pytest.mark.asyncio
+async def test_query_usage_recommendations_response_structure() -> None:
+    """query_usage(query_type=recommendations) returns JSON with required structure (Plan Step 7)."""
+    payload = json.dumps(
+        {
+            "status": "success",
+            "project_root": "/tmp/proj",
+            "min_usage_threshold": 5,
+            "days": 30,
+            "low_usage_tools": ["deprecated_tool"],
+            "message": "Tools with usage at or below threshold may be candidates for deprecation or consolidation.",
+        },
+        indent=2,
+    )
+    with patch(
+        "cortex.tools.query_usage_operations.log_client",
+        new_callable=AsyncMock,
+    ):
+        with patch(
+            "cortex.tools.usage_analytics.get_optimization_recommendations",
+            new_callable=AsyncMock,
+            return_value=payload,
+        ):
+            result = await query_usage(
+                query_type="recommendations",
+                ctx=None,
+            )
+    data = json.loads(result)
+    assert data["status"] == "success"
+    assert "low_usage_tools" in data
+    assert isinstance(data["low_usage_tools"], list)
+    assert data["low_usage_tools"] == ["deprecated_tool"]
+    assert "min_usage_threshold" in data
+    assert "days" in data
+    assert "message" in data
 
 
 @pytest.mark.asyncio

@@ -27,6 +27,9 @@
 - **Documentation completeness (2026-02-23)** - COMPLETE. Steps 1–5: tool count/API docs, workflows, architecture, config reference, archived 3 plans to archive/.
 - **Plan optimize-tools-from-usage Step 5 (2026-02-23)** - COMPLETE. Consolidated get_session_tool_anomalies into query_usage(query_type="anomalies"); added deprecation and redirect; updated analyze.md and mapping doc; tests and quality gate pass.
 - **Commit** - Fixed synapse script generate_config_reference.py (E402, B009, I001); Phase A preflight and tests passed.
+- **Tool optimization Step 6 (2026-02-23)** - COMPLETE. Configurable threshold: added tool_optimization to .cortex/config/usage_tracking.json, get_tool_optimization_config() in usage_tracker, query_usage(unused/recommendations) and resources use config; documented in tool-optimization-baseline.md; unit tests added.
+- **Plan optimize-tools-from-usage Step 7 (2026-02-23)** - COMPLETE. Added tests for query_usage(unused/recommendations) response structure and deprecated-vs-consolidated equivalence (get_session_tool_anomalies vs query_usage(anomalies)); full regression and quality gate passing.
+- **Commit pipeline** - Pre-commit checks passed (fix_errors, format, markdown lint, type_check, quality, tests 4671 passed, 92.87% coverage). Memory bank and roadmap consistent; 0 plans archived.
 
 ## 2026-02-22
 

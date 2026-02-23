@@ -71,6 +71,46 @@ def _load_config(project_root: Path) -> dict[str, bool | int | float | list[str]
         return _default_config()
 
 
+def get_tool_optimization_config(
+    project_root: Path,
+) -> dict[str, int]:
+    """Load tool optimization threshold from .cortex/config/usage_tracking.json.
+
+    Returns dict with keys days, min_usage_count, min_usage_threshold.
+    Used as single source of truth for "tools below usage threshold" so the
+    list can be tuned without code changes. Missing keys use defaults.
+    """
+    import json
+
+    defaults: dict[str, int] = {
+        "days": 30,
+        "min_usage_count": 0,
+        "min_usage_threshold": 5,
+    }
+    config_dir = get_cortex_path(project_root, CortexResourceType.CONFIG)
+    config_path = config_dir / "usage_tracking.json"
+    if not config_path.is_file():
+        return defaults.copy()
+    try:
+        with open(config_path, encoding="utf-8") as f:
+            data = json.load(f)
+        if not isinstance(data, dict):
+            return defaults.copy()
+        data_dict = cast(dict[str, object], data)
+        section = data_dict.get("tool_optimization")
+        if not isinstance(section, dict):
+            return defaults.copy()
+        section_dict = cast(dict[str, object], section)
+        out = defaults.copy()
+        for key in ("days", "min_usage_count", "min_usage_threshold"):
+            val = section_dict.get(key)
+            if isinstance(val, int):
+                out[key] = val
+        return out
+    except (OSError, json.JSONDecodeError):
+        return defaults.copy()
+
+
 class UsageTracker:
     """Tracks MCP tool usage for analytics and optimization recommendations."""
 

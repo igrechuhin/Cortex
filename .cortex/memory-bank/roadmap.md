@@ -13,6 +13,7 @@
 ## Pending plans (from .cortex/plans)
 
 - Tools set optimization (deprecate/merge/remove poor performers) - PENDING - Execute deprecate/merge/remove for low-usage tools per mapping. Plan: .cortex/plans/plan-tools-set-optimization-deprecate-merge-remove.md
+- **E2E Plan Test** - PENDING - Plan: .cortex/plans/e2e-plan-test.md
 
 ### Investigation Plans (Archive / Reference)
 

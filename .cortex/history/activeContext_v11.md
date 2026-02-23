@@ -44,6 +44,10 @@
 
 - ✅ **Tool optimization Step 5: anomalies consolidated** - COMPLETE (2026-02-23) - Added query_type="anomalies" to query_usage; get_session_tool_anomalies now redirects with deprecation notice. analyze.md and tool-optimization-mapping.md updated. Tests and quality gate pass.
 
+- ✅ **Tool optimization Step 6: configurable threshold** - COMPLETE (2026-02-23) - Single source of truth for usage threshold: tool_optimization in usage_tracking.json; get_tool_optimization_config(); query_usage(unused/recommendations) and cortex://usage/unused and cortex://usage/optimization-recommendations use config; docs and unit tests added.
+
+- ✅ **Plan optimize-tools-from-usage Step 7: Testing and regression** - COMPLETE (2026-02-23) - Added test_query_usage_unused_response_structure, test_query_usage_recommendations_response_structure, and test_get_session_tool_anomalies_equivalent_to_query_usage_anomalies; full test suite and quality checks passing.
+
 ## Completed Work (2026-02-22)
 
 - **Summary (2026-02-22)** - 1 entries archived.
