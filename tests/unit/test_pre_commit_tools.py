@@ -364,6 +364,136 @@ class TestExecutePreCommitChecks:
             assert "Test error" in result["error"]
 
     @pytest.mark.asyncio
+    async def test_eval_fast_check_passes_when_above_threshold(self) -> None:
+        """eval_fast check passes when execution pass rate >= 85%."""
+        payload_above = json.dumps(
+            {
+                "execution_summary": {
+                    "execution_passed": 9,
+                    "execution_total_run": 10,
+                    "execution_failed": 1,
+                    "execution_skipped": 0,
+                    "results": [],
+                }
+            }
+        )
+        with tempfile.TemporaryDirectory() as tmpdir:
+            project_root = Path(tmpdir)
+            _ = (project_root / "pyproject.toml").write_text("[project]\nname = 'test'")
+            get_project_path(project_root, ProjectResourceType.VENV).mkdir()
+            python_info = LanguageInfo(
+                language="python",
+                test_framework=None,
+                formatter=None,
+                linter=None,
+                type_checker=None,
+                build_tool=None,
+                confidence=0.9,
+            )
+            with (
+                patch(
+                    "cortex.tools.pre_commit_tools.get_or_resolve_project_root",
+                    new_callable=AsyncMock,
+                    return_value=project_root,
+                ),
+                patch(
+                    "cortex.tools.pre_commit_tools.detect_or_use_language",
+                    return_value=(python_info, str(project_root)),
+                ),
+                patch(
+                    "cortex.tools.pre_commit_tools.asyncio.to_thread",
+                    new_callable=AsyncMock,
+                ) as mock_to_thread,
+                patch(
+                    "cortex.tools.phase5_evaluation.run_tool_evaluation",
+                    new_callable=AsyncMock,
+                    return_value=payload_above,
+                ),
+            ):
+
+                def _run_sync(
+                    f: Callable[..., object], *args: object, **kwargs: object
+                ) -> object:
+                    return f(*args, **kwargs)
+
+                mock_to_thread.side_effect = _run_sync
+
+                result = await execute_pre_commit_checks(
+                    checks=["eval_fast"],
+                    **_EXECUTE_REQUIRED,
+                )
+
+            assert result["status"] == "success"
+            assert "eval_fast" in result["checks_performed"]
+            assert result["results"]["eval_fast"]["success"] is True
+            assert "90" in result["results"]["eval_fast"]["output"]
+
+    @pytest.mark.asyncio
+    async def test_eval_fast_check_fails_when_below_threshold(self) -> None:
+        """eval_fast check fails when execution pass rate < 85%."""
+        payload_below = json.dumps(
+            {
+                "execution_summary": {
+                    "execution_passed": 7,
+                    "execution_total_run": 10,
+                    "execution_failed": 3,
+                    "execution_skipped": 0,
+                    "results": [],
+                }
+            }
+        )
+        with tempfile.TemporaryDirectory() as tmpdir:
+            project_root = Path(tmpdir)
+            _ = (project_root / "pyproject.toml").write_text("[project]\nname = 'test'")
+            get_project_path(project_root, ProjectResourceType.VENV).mkdir()
+            python_info = LanguageInfo(
+                language="python",
+                test_framework=None,
+                formatter=None,
+                linter=None,
+                type_checker=None,
+                build_tool=None,
+                confidence=0.9,
+            )
+            with (
+                patch(
+                    "cortex.tools.pre_commit_tools.get_or_resolve_project_root",
+                    new_callable=AsyncMock,
+                    return_value=project_root,
+                ),
+                patch(
+                    "cortex.tools.pre_commit_tools.detect_or_use_language",
+                    return_value=(python_info, str(project_root)),
+                ),
+                patch(
+                    "cortex.tools.pre_commit_tools.asyncio.to_thread",
+                    new_callable=AsyncMock,
+                ) as mock_to_thread,
+                patch(
+                    "cortex.tools.phase5_evaluation.run_tool_evaluation",
+                    new_callable=AsyncMock,
+                    return_value=payload_below,
+                ),
+            ):
+
+                def _run_sync(
+                    f: Callable[..., object], *args: object, **kwargs: object
+                ) -> object:
+                    return f(*args, **kwargs)
+
+                mock_to_thread.side_effect = _run_sync
+
+                result = await execute_pre_commit_checks(
+                    checks=["eval_fast"],
+                    **_EXECUTE_REQUIRED,
+                )
+
+            assert result["status"] == "error"
+            assert "eval_fast" in result["checks_performed"]
+            assert result["results"]["eval_fast"]["success"] is False
+            assert "70" in result["results"]["eval_fast"]["output"]
+
+    @pytest.mark.asyncio
     async def test_format_ci_parity_check_when_script_missing_returns_skipped(
         self,
     ) -> None:

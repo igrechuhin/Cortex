@@ -289,6 +289,17 @@ jobs:
           echo "✅ All tests passed with required coverage"
           echo "::endgroup::"
 
+      - name: Run evaluation suite (full)
+        id: eval_full
+        run: |
+          echo "::group::Running evaluation suite (full mode, threshold 85%)"
+          if ! uv run python .cortex/synapse/scripts/python/run_eval_check.py --mode full --threshold 0.85; then
+            echo "::error::Eval suite pass rate below 85%. Merge blocked."
+            exit 1
+          fi
+          echo "✅ Eval full passed"
+          echo "::endgroup::"
+
       - name: Upload coverage to Codecov
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
@@ -333,6 +344,7 @@ jobs:
           echo "Spelling: ${{ steps.spelling.outcome }}"
           echo "Markdown Lint: ${{ steps.markdown_lint.outcome }}"
           echo "Tests: ${{ steps.tests.outcome }}"
+          echo "Eval (full): ${{ steps.eval_full.outcome }}"
           echo "============================="
           
           # Fail if any critical check failed
@@ -346,7 +358,8 @@ jobs:
              [ "${{ steps.function_lengths.outcome }}" = "failure" ] || \
              [ "${{ steps.spelling.outcome }}" = "failure" ] || \
              [ "${{ steps.markdown_lint.outcome }}" = "failure" ] || \
-             [ "${{ steps.tests.outcome }}" = "failure" ]; then
+             [ "${{ steps.tests.outcome }}" = "failure" ] || \
+             [ "${{ steps.eval_full.outcome }}" = "failure" ]; then
             echo "::error::One or more quality checks failed. See above for details."
             exit 1
           fi

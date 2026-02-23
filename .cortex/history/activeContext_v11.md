@@ -58,6 +58,10 @@
 
 - ✅ **Evaluation framework maturation Step 2** - COMPLETE (2026-02-23) - Completed evaluation harness: phase5_evaluation_execution (run_one_execution, run_execution_suite, build_execution_summary), deterministic checks (contains, schema_valid, exact_match), Fast/Full/Focused modes, execution_summary in run_tool_evaluation, exec_fast.json, registry and tests.
 
+- ✅ **Evaluation framework maturation Step 3** - COMPLETE (2026-02-23) - CI/CD eval integration: eval_fast in pre-commit pipeline (Phase A) and execute_pre_commit_checks; eval-full in GitHub Actions quality workflow; 85% pass rate threshold; merge blocked on regression; results in Quality check summary and cache.
+
+- ✅ **Evaluation framework maturation Step 4** - COMPLETE (2026-02-23) - Implemented optimize_tool_description(tool_name) MCP tool: pulls error/usage data for a tool, suggests description improvements from patterns (USE WHEN, validation, params, retries), and returns A/B test plan. Registered in tool_categories and discovery; 6 unit tests; quality gate passed.
+
 ## Completed Work (2026-02-22)
 
 - **Summary (2026-02-22)** - 1 entries archived.

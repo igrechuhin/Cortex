@@ -19,19 +19,18 @@ Map each tool below the usage threshold (≤5 calls in 90 days) to an action: **
 | list_plans | **keep** | Plan discovery; used before create_plan and in implement (roadmap/plan steps). |
 | session_register | **keep** | Session lifecycle; may be used by clients for registration. |
 | session_deregister | **keep** | Session lifecycle; may be used by clients for deregistration. |
-| get_session_tool_anomalies | **deprecate** (consolidated) | Redirects to `query_usage(query_type="anomalies", hours=24)`. Use that as primary; see docs/api/tools.md and analyze.md. |
-| run_tool_optimization_workflow | **deprecate** | Low usage; document `query_usage(query_type="unused")` and `query_usage(query_type="recommendations")` and manual workflow as the primary path. Add deprecation notice and point to docs/tool-optimization-baseline. |
+| get_session_tool_anomalies | **removed** (pruned) | Use `query_usage(query_type="anomalies", hours=24)`. No longer in MCP tool list. |
+| run_tool_optimization_workflow | **removed** (pruned) | Use `query_usage(query_type="unused")` and `query_usage(query_type="recommendations")` and [tool-optimization-baseline](tool-optimization-baseline.md). No longer in MCP tool list. |
 
 ## Summary
 
 - **Keep**: 8 tools (task locking ×4, plan ×2, session ×2).
-- **Deprecate**: 2 tools (`get_session_tool_anomalies`, `run_tool_optimization_workflow`). One is a candidate for later consolidation into `query_usage`; the other is documented alternative only.
+- **Removed (pruned)**: 2 tools (`get_session_tool_anomalies`, `run_tool_optimization_workflow`) — no longer registered as MCP tools; use `query_usage` alternatives above.
 
-## Next Steps (Plan Step 5+)
+## Done
 
-1. `run_tool_optimization_workflow`: deprecation done (Step 3).
-2. `get_session_tool_anomalies`: consolidated into `query_usage(query_type="anomalies")`; tool redirects and is deprecated (Step 5).
-3. Update Synapse prompts (e.g. analyze.md) to use consolidated tools where applicable — done for anomalies (prefer query_usage).
+1. Both tools removed from MCP registration (pruning); tool count reduced by 2.
+2. analyze.md and callers use `query_usage(query_type="anomalies", hours=24)`.
 
 ## References
 

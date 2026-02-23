@@ -37,6 +37,8 @@
 - **Evaluation framework maturation Step 1 (2026-02-23)** - COMPLETE. Failure-based eval audit: added failure_based_evals.json (26 tasks from session reviews and investigations). Total 52 tasks, 50% from real failures. Categorized by tool_errors, context_mismanagement, workflow_breakage, incorrect_results. Plan Step 1 acceptance criteria met.
 - **Evaluation framework maturation Step 2 (2026-02-23)** - COMPLETE. Implemented execution harness: load task → run tool → compare (deterministic: contains, schema_valid, exact_match) → report; Fast/Full/Focused modes; execution_summary in run_tool_evaluation; exec_fast.json (10 tasks); tests and quality gate passed.
 - **Commit pipeline** - Preflight passed (fix_errors, format, markdown lint, type_check, quality, tests 4681 passed, 92.8% coverage). Memory bank and roadmap consistent.
+- **Evaluation framework maturation Step 3 (2026-02-23)** - COMPLETE. CI/CD eval integration: eval_fast in pre-commit (PreCommitCheck.EVAL_FAST, run_preflight_checks, 85% threshold), eval-full in CI (run_eval_check.py --mode full), merge blocked on regression; Quality summary reports eval step; task-level data in run_tool_evaluation payload and .cortex/.cache/evals/.
+- **Evaluation framework maturation Step 4 (2026-02-23)** - COMPLETE. Implemented optimize_tool_description MCP tool: pulls usage/error data, suggests description improvements, returns A/B test plan. Helpers in phase5_evaluation_optimization_helpers.py; tool in phase5_tool_description_optimization.py; tests in test_phase5_evaluation_optimization.py.
 
 ## 2026-02-22
 

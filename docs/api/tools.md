@@ -57,18 +57,18 @@ For details on adding annotations to custom tools, see the [Extension Developmen
 | [Sequential Thinking](#sequential-thinking) | 1 | Stepwise reasoning and planning |
 | [Legacy](#legacy-tools) | 3 | Legacy Support |
 
-**Phase 50 consolidation (2026-02):** Memory bank read operations (stats, version_history, dependency_graph, link_graph, parse_links, validate_links, resolve_transclusions) are available via **`query_memory_bank`**. Usage analytics (stats, unused, report, recommendations, search, events, observation, timeline) are available via **`query_usage`**. Context loading supports progressive strategy via **`load_context(strategy="progressive", ...)`**. File writes and config updates use **`manage_file`** and **`configure`**.
+**Phase 50 consolidation (2026-02):** Memory bank read operations (stats, version_history, dependency_graph, link_graph, parse_links, validate_links, resolve_transclusions) are available via **`query_memory_bank`**. Usage analytics (stats, unused, report, recommendations, search, events, observation, timeline, **tool_description_optimization**) are available via **`query_usage`**. Context loading supports progressive strategy via **`load_context(strategy="progressive", ...)`**. File writes and config updates use **`manage_file`** and **`configure`**.
 
-**Tool optimization (reduced surface):** Low-usage tools may be deprecated in favor of these consolidated entry points. For usage-based optimization (finding tools below a usage threshold), use **`query_usage(query_type="unused")`** and **`query_usage(query_type="recommendations")`**. See [Tool optimization baseline](../architecture/tool-optimization-baseline.md) and [tool-optimization-mapping](../architecture/tool-optimization-mapping.md).
+**Tool optimization (reduced surface):** Tool count is kept down by consolidating into **`query_usage`** and **`query_memory_bank`** instead of adding new tools. Tool description optimization (suggestions and A/B plan from usage/error data) is **`query_usage(query_type="tool_description_optimization", tool_name="...", days=90)`** — no standalone tool. For usage-based optimization (finding tools below a usage threshold), use **`query_usage(query_type="unused")`** and **`query_usage(query_type="recommendations")`**. See [Tool optimization baseline](../architecture/tool-optimization-baseline.md) and [tool-optimization-mapping](../architecture/tool-optimization-mapping.md).
 
-**Deprecated tools (use consolidated alternatives):**
+**Pruned tools (no longer in the tool list; use consolidated alternatives):**
 
-| Tool | Prefer instead |
-|------|----------------|
+| Former tool | Use instead |
+|-------------|-------------|
 | `get_session_tool_anomalies` | `query_usage(query_type="anomalies", hours=24)` |
 | `run_tool_optimization_workflow` | `query_usage(query_type="unused")`, `query_usage(query_type="recommendations")`, and [tool-optimization-baseline](../architecture/tool-optimization-baseline.md) workflow |
 
-Both tools remain callable but are deprecated; see per-tool sections below and [tool-optimization-mapping](../architecture/tool-optimization-mapping.md).
+These tools were removed from the published tool list to reduce tool count; use the alternatives above. See [tool-optimization-mapping](../architecture/tool-optimization-mapping.md).
 
 ### Advanced Tool Use (Phase 49)
 
@@ -772,9 +772,9 @@ Query usage analytics with a single tool. Replaces standalone `get_tool_usage_st
 
 **Parameters:**
 
-- `query_type` (str) - **Required.** One of: `stats`, `unused`, `report`, `recommendations`, `search`, `events`, `observation`, `timeline`.
+- `query_type` (str) - **Required.** One of: `stats`, `unused`, `report`, `recommendations`, `search`, `events`, `observation`, `timeline`, `anomalies`, `tool_description_optimization`.
 - `start_date`, `end_date` (str | None) - Date range for stats/events.
-- `tool_name` (str | None) - Filter by tool.
+- `tool_name` (str | None) - Filter by tool. **Required** for `tool_description_optimization` (target tool to analyze).
 - `response_format` (str) - `"concise"` (default) or `"detailed"`.
 - `days` (int) - Days for unused/report (default: 90).
 - `min_usage_count`, `min_usage_threshold` (int) - Thresholds for unused.
@@ -784,14 +784,16 @@ Query usage analytics with a single tool. Replaces standalone `get_tool_usage_st
 - `query` (str | None) - Search query for search type.
 - `format` (str) - Output format for report (default: `"markdown"`).
 - `include_recommendations` (bool) - Include recommendations (default: True).
+- `hours` (int | None) - For `anomalies`: session window in hours (default: 24).
 
-**Returns:** JSON string. Structure varies by `query_type`. Use `response_format="detailed"` for full payloads.
+**Returns:** JSON string. Structure varies by `query_type`. Use `response_format="detailed"` for full payloads. For `tool_description_optimization`, returns error_rate, suggestions, ab_test_plan, and meets_optimization_threshold.
 
 **Example:**
 
 ```python
 await query_usage(query_type="stats", response_format="concise")
 await query_usage(query_type="search", query="load_context", limit=20)
+await query_usage(query_type="tool_description_optimization", tool_name="load_context", days=30)
 ```
 
 ---
@@ -2773,34 +2775,15 @@ Analyze aggregated error patterns from the latest evaluation suite. Writes a com
 
 ---
 
-### get_session_tool_anomalies
+### get_session_tool_anomalies (removed from tool list)
 
-**Deprecated.** Prefer **`query_usage(query_type="anomalies", hours=24)`** (Phase 50). This tool redirects to that call; equivalent results. See [tool-optimization-mapping](../architecture/tool-optimization-mapping.md).
-
-Get tool usage anomalies for recent sessions (e.g. unusual failure rates or latency).
-
-**Parameters:**
-
-- `hours` (int) - Lookback window in hours (default: 24)
-- `ctx` (MCPContext | None) - MCP context (injected by server)
-
-**Returns:** JSON string with anomaly payload (sessions, tools, metrics).
+**Pruned.** This tool is no longer in the MCP tool list. Use **`query_usage(query_type="anomalies", hours=24)`** for the same behavior. See [tool-optimization-mapping](../architecture/tool-optimization-mapping.md).
 
 ---
 
-### run_tool_optimization_workflow
+### run_tool_optimization_workflow (removed from tool list)
 
-**Deprecated.** For usage-based optimization (finding tools below threshold), use **`query_usage(query_type="unused")`** and **`query_usage(query_type="recommendations")`** and follow the workflow in [tool-optimization-baseline](../architecture/tool-optimization-baseline.md). This tool remains callable but is not the primary path.
-
-Run the tool optimization workflow: run evaluations, analyze results, and optionally apply optimized analysis. Uses the same harness as `run_tool_evaluation` with a focus on optimization recommendations.
-
-**Parameters:**
-
-- `task_ids` (list[str] | None) - Optional list of task IDs
-- `optimized_analysis_json` (str | None) - Optional JSON from a previous analysis to drive optimization
-- `ctx` (MCPContext | None) - MCP context (injected by server)
-
-**Returns:** JSON string with status and optimization workflow results.
+**Pruned.** This tool is no longer in the MCP tool list. For usage-based optimization use **`query_usage(query_type="unused")`** and **`query_usage(query_type="recommendations")`** and the workflow in [tool-optimization-baseline](../architecture/tool-optimization-baseline.md). See [tool-optimization-mapping](../architecture/tool-optimization-mapping.md).
 
 ---
 

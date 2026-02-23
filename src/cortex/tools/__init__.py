@@ -53,6 +53,7 @@ from . import (
     phase4_optimization,  # noqa: F401
     phase5_analysis,  # noqa: F401
     phase5_evaluation,  # noqa: F401
+    phase5_evaluation_optimization_helpers,  # noqa: F401
     phase5_execution,  # noqa: F401
     phase5_refactoring,  # noqa: F401
     phase8_structure,  # noqa: F401
@@ -101,6 +102,7 @@ __all__ = [
     "phase4_optimization",
     "phase5_analysis",
     "phase5_evaluation",
+    "phase5_evaluation_optimization_helpers",
     "phase5_refactoring",
     "phase5_execution",
     "synapse_tools",

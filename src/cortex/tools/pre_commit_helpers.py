@@ -43,6 +43,7 @@ class PreCommitCheck(str, Enum):
     TEST_NAMING = "test_naming"
     CHECK_ASYNC_TESTS = "check_async_tests"
     TESTS = "tests"
+    EVAL_FAST = "eval_fast"
 
 
 DEFAULT_CHECKS: list[PreCommitCheck] = [

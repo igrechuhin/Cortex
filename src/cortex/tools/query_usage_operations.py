@@ -166,6 +166,28 @@ async def _run_anomalies(params: QueryUsageParams, ctx: MCPContext | None) -> st
     return json.dumps(payload.model_dump(mode="json"), indent=2)
 
 
+async def _run_tool_description_optimization(
+    params: QueryUsageParams, ctx: MCPContext | None
+) -> str:
+    """Tool description optimization: suggestions and A/B plan from usage/error data."""
+    if not params.tool_name or not params.tool_name.strip():
+        return _usage_error_payload(
+            "tool_name is required for query_type=tool_description_optimization"
+        )
+    from cortex.core.project_root_resolver import resolve_project_root_async
+    from cortex.tools import usage_analytics
+    from cortex.tools.phase5_evaluation_optimization_helpers import (
+        get_tool_description_optimization_payload,
+    )
+
+    root = await resolve_project_root_async(None, ctx)
+    tracker = await usage_analytics._get_tracker(root)  # type: ignore[attr-defined]
+    payload = await get_tool_description_optimization_payload(
+        root, tracker, params.tool_name.strip(), days=params.days
+    )
+    return payload.model_dump_json(indent=2)
+
+
 _Handler = Callable[[QueryUsageParams, MCPContext | None], Awaitable[str]]
 _USAGE_HANDLERS: dict[str, _Handler] = {
     "stats": _run_usage_stats,
@@ -177,6 +199,7 @@ _USAGE_HANDLERS: dict[str, _Handler] = {
     "observation": _run_observation,
     "timeline": _run_timeline,
     "anomalies": _run_anomalies,
+    "tool_description_optimization": _run_tool_description_optimization,
 }
 
 
@@ -244,7 +267,7 @@ async def query_usage(
     hours: int = 24,
     ctx: MCPContext | None = None,
 ) -> str:
-    """Query usage. query_type: stats|unused|report|recommendations|search|events|observation|timeline|anomalies."""
+    """Query usage. query_type: stats|unused|report|recommendations|search|events|observation|timeline|anomalies|tool_description_optimization. For tool_description_optimization, tool_name is required."""
     await _log_query_usage_start(ctx, query_type)
     params = _params_from_tool_args(locals())
     return await _query_usage_impl(query_type, params, ctx)

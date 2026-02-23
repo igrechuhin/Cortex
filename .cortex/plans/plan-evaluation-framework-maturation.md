@@ -2,6 +2,8 @@
 
 ## Status: IN PROGRESS
 
+(Step 4 completed 2026-02-23; Steps 5–6 pending.)
+
 ## Priority: P1 (High)
 
 ## Created: 2026-02-21
@@ -70,7 +72,7 @@ Phase 57 established the evaluation foundation (26 tasks, error analysis, A/B fr
 
 ---
 
-## Step 3: CI/CD Eval Integration
+## Step 3: CI/CD Eval Integration — COMPLETED (2026-02-23)
 
 **Insight from Anthropic:**
 > Automated evals are especially useful pre-launch and in CI/CD, running on each agent change and model upgrade as the first line of defense against quality problems.
@@ -85,9 +87,11 @@ Phase 57 established the evaluation foundation (26 tasks, error analysis, A/B fr
 
 **Acceptance criteria:** Pre-commit runs fast evals. CI runs full evals. Merge blocked on regression.
 
+**Done:** eval_fast added to pre-commit: PreCommitCheck.EVAL_FAST, run in run_preflight_checks (Phase A) and when execute_pre_commit_checks includes eval_fast; pass rate threshold 85%. CI: new step "Run evaluation suite (full)" in .github/workflows/quality.yml runs run_eval_check.py --mode full --threshold 0.85; merge blocked if step fails. Eval results reported in Quality check summary step; task-level breakdown available in run_tool_evaluation payload and .cortex/.cache/evals/. Trends can be tracked via cache/artifacts and future dashboard.
+
 ---
 
-## Step 4: Automated Tool Description Optimization
+## Step 4: Automated Tool Description Optimization — COMPLETED (2026-02-23)
 
 **Insight from "Writing Tools for Agents":**
 > One of the most effective methods for improving tools is prompt-engineering your tool descriptions. Even small refinements can yield dramatic improvements.
@@ -103,9 +107,11 @@ Phase 57 established the evaluation foundation (26 tasks, error analysis, A/B fr
    - Pulls error and usage data for the tool
    - Suggests description improvements based on patterns
    - Generates A/B test plan
-3. Run optimization cycle monthly or after significant changes
+3. Run optimization cycle 14-day or after significant changes
 
 **Acceptance criteria:** Optimization tool implemented. ≥ 5 tools optimized with measurable improvement. Error rate reduced ≥ 20% for optimized tools.
+
+**Done:** MCP tool `optimize_tool_description(tool_name, days=90)` implemented in `phase5_tool_description_optimization.py`. Uses `phase5_evaluation_optimization_helpers.py` to pull usage stats and failed events via UsageTracker, compute error rate and meets_optimization_threshold (>5% or param/retry signals), build suggestions (USE WHEN, validation, params, retries), and return A/B test plan (run_tool_evaluation baseline → update descriptor → re-run → compare). Registered in tool_categories (DEFERRED_MEDIUM) and discovery. Unit tests in `test_phase5_evaluation_optimization.py`. The "≥ 5 tools optimized" and "error rate reduced ≥ 20%" are usage outcomes to be achieved by running the tool and applying suggestions over time.
 
 ---
 

@@ -65,7 +65,13 @@ from cortex.tools.pre_commit_helpers import (
 )
 from cortex.tools.pre_commit_pipeline import run_checks_pipeline
 
+# Type for JSON numeric/string values that int() accepts (avoids Any)
+_IntConvertible = int | float | str
+
 logger = logging.getLogger(__name__)
+
+# Eval-fast pass rate threshold (85% per plan Step 3)
+EVAL_FAST_PASS_RATE_THRESHOLD = 0.85
 
 # Adapter registry: language -> factory(project_root) -> FrameworkAdapter.
 # Python, TypeScript, JavaScript, Rust, Go, Java, Swift, and Kotlin have full implementations.
@@ -171,7 +177,7 @@ async def _run_all_checks_off_loop(
     ):
         loop = asyncio.get_running_loop()
         progress_callback = _make_test_progress_callback(ctx, loop)
-    return await asyncio.to_thread(
+    results, stats = await asyncio.to_thread(
         _execute_all_checks,
         adapter,
         language_info.language,
@@ -181,6 +187,81 @@ async def _run_all_checks_off_loop(
         coverage_threshold,
         progress_callback,
     )
+    await _merge_eval_fast_if_requested(checks_to_perform, results, stats, ctx)
+    return results, stats
+
+
+async def _merge_eval_fast_if_requested(
+    checks_to_perform: list[PreCommitCheck],
+    results: dict[str, CheckResult | TestResult | QualityCheckResult],
+    stats: CheckStats,
+    ctx: MCPContext | None,
+) -> None:
+    """If eval_fast requested, run it and merge into results/stats."""
+    if PreCommitCheck.EVAL_FAST not in checks_to_perform:
+        return
+    eval_result = await _run_eval_fast_check(ctx)
+    results[PreCommitCheck.EVAL_FAST.value] = eval_result
+    stats.checks_performed.append(PreCommitCheck.EVAL_FAST.value)
+    if not eval_result.success:
+        stats.total_errors += len(eval_result.errors)
+
+
+def _parse_eval_execution_summary(payload: dict[str, object]) -> tuple[int, int, float]:
+    """Extract passed, total, rate from run_tool_evaluation payload."""
+    exec_summary = cast(dict[str, object], payload.get("execution_summary") or {})
+    # int() accepts int|float|str; cast so type checker accepts (dict value is object)
+    passed = int(cast(_IntConvertible, exec_summary.get("execution_passed", 0)))
+    total = int(cast(_IntConvertible, exec_summary.get("execution_total_run", 0)))
+    rate = (passed / total) if total else 1.0
+    return passed, total, rate
+
+
+def _build_eval_fast_result(
+    passed: int, total: int, rate: float, success: bool
+) -> CheckResult:
+    """Build CheckResult for eval_fast from pass stats."""
+    pct = round(rate * 100, 1)
+    thresh_pct = round(EVAL_FAST_PASS_RATE_THRESHOLD * 100)
+    output = f"eval_fast: {passed}/{total} passed ({pct}%). Threshold: {thresh_pct}%."
+    errors: list[str] = []
+    if not success:
+        errors.append(f"Eval fast pass rate {pct}% is below threshold {thresh_pct}%.")
+    return CheckResult(
+        check_type=PreCommitCheck.EVAL_FAST.value,
+        success=success,
+        output=output,
+        errors=errors,
+        warnings=[],
+        files_modified=[],
+    )
+
+
+async def _run_eval_fast_check(ctx: MCPContext | None) -> CheckResult:
+    """Run fast eval (10 tasks) and return CheckResult; fail if pass rate < 85%."""
+    from cortex.tools.phase5_evaluation import run_tool_evaluation
+
+    try:
+        payload_str = await run_tool_evaluation(
+            task_ids=None,
+            mode="fast",
+            category=None,
+            ctx=ctx,
+        )
+        payload = cast(dict[str, object], json.loads(payload_str))
+        passed, total, rate = _parse_eval_execution_summary(payload)
+        success = rate >= EVAL_FAST_PASS_RATE_THRESHOLD
+        return _build_eval_fast_result(passed, total, rate, success)
+    except Exception as e:  # noqa: BLE001
+        logger.exception("eval_fast check failed")
+        return CheckResult(
+            check_type=PreCommitCheck.EVAL_FAST.value,
+            success=False,
+            output=f"eval_fast failed: {e!s}",
+            errors=[f"eval_fast check failed: {e!s}"],
+            warnings=[],
+            files_modified=[],
+        )
 
 
 async def _log_connection_health_before_tests() -> ConnectionHealth | None:

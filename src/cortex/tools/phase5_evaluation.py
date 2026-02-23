@@ -961,60 +961,39 @@ async def analyze_error_patterns(
     return json.dumps(payload, indent=2)
 
 
-@mcp.tool(annotations=read_only_annotations("Session Tool Anomalies"))
-@ensure_usage_context
-@mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_COMPLEX)
 async def get_session_tool_anomalies(
     hours: int = 24,
     ctx: MCPContext | None = None,
 ) -> str:
-    """Compare session tool usage to expected patterns and flag anomalies.
+    """Session tool anomalies (pruned from MCP tool list). Use query_usage instead.
 
-    For use in end-of-session analysis: lists tools used in the last N hours,
-    and flags tools with retries or errors. Call this from the Analyze prompt
-    to add a Tool use anomalies subsection to the report.
-
-    **Deprecation (tool optimization)**: Prefer query_usage(query_type="anomalies",
-    hours=24). This tool remains available and redirects to that consolidated
-    entry point. See docs/architecture/tool-optimization-mapping.md.
+    Previously an MCP tool; pruned for tool-count reduction. Use
+    query_usage(query_type="anomalies", hours=hours) for the same behavior.
+    Kept as a callable for tests and any internal use.
     """
-    if ctx is not None:
-        await log_client(
-            ctx,
-            "info",
-            'get_session_tool_anomalies: deprecated; use query_usage(query_type="anomalies", hours=...)',
-            logger_name=__name__,
-        )
     from cortex.tools.query_usage_operations import query_usage
 
     return await query_usage(query_type="anomalies", hours=hours, ctx=ctx)
 
 
-@mcp.tool(annotations=read_only_annotations("Tool Optimization Workflow"))
-@ensure_usage_context
-@mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_COMPLEX)
 async def run_tool_optimization_workflow(
     task_ids: list[str] | None = None,
     optimized_analysis_json: str | None = None,
     ctx: MCPContext | None = None,
 ) -> str:
-    """Run evaluation baseline and optionally compare with optimized run (A/B).
+    """Evaluation baseline + A/B comparison (pruned from MCP tool list).
 
-    Runs the evaluation suite to get baseline metrics, then either records
-    a baseline-only entry or compares with provided optimized analysis and
-    appends the result to .cortex/.cache/evals/optimization_history.json.
-
-    **Deprecation (tool optimization)**: For usage-based tool optimization,
-    prefer query_usage(query_type="unused") and query_usage(query_type="recommendations")
-    plus the workflow in docs/architecture/tool-optimization-baseline.md. This tool
-    remains available for evaluation-baseline and A/B comparison use cases.
+    Previously an MCP tool; pruned for tool-count reduction. For usage-based
+    optimization use query_usage(query_type="unused") and
+    query_usage(query_type="recommendations"). Kept as callable for tests
+    and programmatic eval-baseline/A/B use.
     """
     root = await resolve_project_root_async(None, ctx)
     if ctx is not None:
         await log_client(
             ctx,
             "info",
-            "run_tool_optimization_workflow: starting (prefer query_usage for usage-based optimization)",
+            "run_tool_optimization_workflow: starting",
             logger_name=__name__,
         )
     tracker = await _get_usage_tracker(root)
