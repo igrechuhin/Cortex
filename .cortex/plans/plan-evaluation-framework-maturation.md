@@ -2,7 +2,7 @@
 
 ## Status: IN PROGRESS
 
-(Step 4 completed 2026-02-23; Steps 5–6 pending.)
+(Steps 4–5 completed 2026-02-23; Step 6 pending.)
 
 ## Priority: P1 (High)
 
@@ -115,7 +115,7 @@ Phase 57 established the evaluation foundation (26 tasks, error analysis, A/B fr
 
 ---
 
-## Step 5: Production Monitoring & Drift Detection
+## Step 5: Production Monitoring & Drift Detection — COMPLETED (2026-02-23)
 
 **Insight from Anthropic:**
 > Production monitoring kicks in post-launch to detect distribution drift and unanticipated real-world failures.
@@ -132,6 +132,8 @@ Phase 57 established the evaluation foundation (26 tasks, error analysis, A/B fr
 4. Feed anomalies back into eval task creation (close the loop)
 
 **Acceptance criteria:** Per-session metrics tracked. Drift detection active. Weekly reports generated.
+
+**Done:** Implemented in `phase5_production_monitoring_helpers.py`: per-tool and global metrics from usage events, 7-day rolling baseline, drift alerts when metric >2σ, weekly summary text, suggested eval tasks from drift. `query_usage(query_type="production_monitoring", production_baseline_days=7, production_window_hours=24)` returns payload or unavailable. Unit tests in `test_phase5_production_monitoring.py`, consolidated tests in `test_query_consolidated_operations.py`.
 
 ---
 

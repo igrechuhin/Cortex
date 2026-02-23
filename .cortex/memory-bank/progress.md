@@ -39,6 +39,10 @@
 - **Commit pipeline** - Preflight passed (fix_errors, format, markdown lint, type_check, quality, tests 4681 passed, 92.8% coverage). Memory bank and roadmap consistent.
 - **Evaluation framework maturation Step 3 (2026-02-23)** - COMPLETE. CI/CD eval integration: eval_fast in pre-commit (PreCommitCheck.EVAL_FAST, run_preflight_checks, 85% threshold), eval-full in CI (run_eval_check.py --mode full), merge blocked on regression; Quality summary reports eval step; task-level data in run_tool_evaluation payload and .cortex/.cache/evals/.
 - **Evaluation framework maturation Step 4 (2026-02-23)** - COMPLETE. Implemented optimize_tool_description MCP tool: pulls usage/error data, suggests description improvements, returns A/B test plan. Helpers in phase5_evaluation_optimization_helpers.py; tool in phase5_tool_description_optimization.py; tests in test_phase5_evaluation_optimization.py.
+- **E2E Plan Test (2026-02-23)** - COMPLETE. E2E plan test step completed; plan archived.
+- **Session optimization 2026-02-23: tools optimization (2026-02-23)** - COMPLETE. Mapping and baseline updated (remove_roadmap_entry keep; all low-usage actions); high-error symbols documented; plan marked COMPLETE.
+- **Evaluation framework maturation Step 5 (Production Monitoring)** - COMPLETE. Implemented production monitoring and drift detection: phase5_production_monitoring_helpers.py (per-tool/global metrics, 7-day baseline, drift alerts >2σ, weekly summary, suggested eval tasks), query_usage(query_type="production_monitoring"), unit and consolidated tests.
+- **Type fix phase5_production_monitoring_helpers** - COMPLETE. Unpacked _compute_metrics_and_drift tuple at call site to resolve pyright reportCallIssue/reportUnknownVariableType; quality and tests pass.
 
 ## 2026-02-22
 

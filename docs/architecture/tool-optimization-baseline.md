@@ -22,16 +22,17 @@ As of the baseline run (`query_usage(query_type="unused", days=30, min_usage_cou
 
 | Tool | Action (Step 2) |
 |------|------------------|
-| check_task_available_lock | TBD |
-| claim_task_lock | TBD |
-| get_plan | TBD |
-| get_session_tool_anomalies | TBD |
-| list_active_tasks | TBD |
-| list_plans | TBD |
-| release_task_lock | TBD |
-| run_tool_optimization_workflow | TBD |
-| session_deregister | TBD |
-| session_register | TBD |
+| check_task_available_lock | keep (Phase 58 task locking) |
+| claim_task_lock | keep (Phase 58 task locking) |
+| get_plan | keep (plan discovery; implement/create-plan) |
+| get_session_tool_anomalies | removed (pruned); use query_usage(anomalies) |
+| list_active_tasks | keep (Phase 58 task locking) |
+| list_plans | keep (plan discovery) |
+| release_task_lock | keep (Phase 58) |
+| remove_roadmap_entry | keep (memory bank discipline) |
+| run_tool_optimization_workflow | removed (pruned); use query_usage(unused/recommendations) |
+| session_deregister | keep (session lifecycle) |
+| session_register | keep (session lifecycle) |
 
 ### How to Reproduce the Baseline (and Run Unused / Recommendations)
 

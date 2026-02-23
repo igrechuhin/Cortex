@@ -437,6 +437,84 @@ async def test_query_usage_anomalies_success() -> None:
 
 
 @pytest.mark.asyncio
+async def test_query_usage_production_monitoring_unavailable() -> None:
+    """query_usage with query_type=production_monitoring returns unavailable when tracker is None."""
+    with (
+        patch(
+            "cortex.core.project_root_resolver.resolve_project_root_async",
+            new_callable=AsyncMock,
+            return_value=Path("/tmp"),
+        ),
+        patch(
+            "cortex.tools.usage_analytics._get_tracker",
+            new_callable=AsyncMock,
+            return_value=None,
+        ),
+    ):
+        with patch(
+            "cortex.tools.query_usage_operations.log_client",
+            new_callable=AsyncMock,
+        ):
+            result = await query_usage(
+                query_type="production_monitoring",
+                production_baseline_days=7,
+                production_window_hours=24,
+                ctx=None,
+            )
+    data = json.loads(result)
+    assert data["status"] == "unavailable"
+    assert data["baseline_days"] == 7
+    assert data["current_window_hours"] == 24
+    assert "message" in data
+
+
+@pytest.mark.asyncio
+async def test_query_usage_production_monitoring_success() -> None:
+    """query_usage with query_type=production_monitoring returns success payload when tracker has events."""
+    mock_tracker = MagicMock()
+    mock_tracker.search_usage = AsyncMock(
+        return_value=[
+            ToolUsageEvent(
+                tool_name="manage_file",
+                timestamp="2026-02-21T12:00:00Z",
+                duration_ms=5.0,
+                success=True,
+            ),
+        ]
+    )
+    with (
+        patch(
+            "cortex.core.project_root_resolver.resolve_project_root_async",
+            new_callable=AsyncMock,
+            return_value=Path("/tmp"),
+        ),
+        patch(
+            "cortex.tools.usage_analytics._get_tracker",
+            new_callable=AsyncMock,
+            return_value=mock_tracker,
+        ),
+    ):
+        with patch(
+            "cortex.tools.query_usage_operations.log_client",
+            new_callable=AsyncMock,
+        ):
+            result = await query_usage(
+                query_type="production_monitoring",
+                production_baseline_days=7,
+                production_window_hours=24,
+                ctx=None,
+            )
+    data = json.loads(result)
+    assert data["status"] == "success"
+    assert data["baseline_days"] == 7
+    assert data["current_window_hours"] == 24
+    assert "metrics_current_global" in data
+    assert "metrics_baseline_global" in data
+    assert "drift_alerts" in data
+    assert "weekly_summary_text" in data
+
+
+@pytest.mark.asyncio
 async def test_query_usage_handler_exception_returns_error_json() -> None:
     """query_usage when handler raises returns error JSON."""
     with patch(

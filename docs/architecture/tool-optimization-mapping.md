@@ -19,18 +19,28 @@ Map each tool below the usage threshold (≤5 calls in 90 days) to an action: **
 | list_plans | **keep** | Plan discovery; used before create_plan and in implement (roadmap/plan steps). |
 | session_register | **keep** | Session lifecycle; may be used by clients for registration. |
 | session_deregister | **keep** | Session lifecycle; may be used by clients for deregistration. |
+| remove_roadmap_entry | **keep** | Memory bank discipline; implement/commit use it for safe single-entry roadmap updates (see memory-bank-updater, AGENTS.md). |
 | get_session_tool_anomalies | **removed** (pruned) | Use `query_usage(query_type="anomalies", hours=24)`. No longer in MCP tool list. |
 | run_tool_optimization_workflow | **removed** (pruned) | Use `query_usage(query_type="unused")` and `query_usage(query_type="recommendations")` and [tool-optimization-baseline](tool-optimization-baseline.md). No longer in MCP tool list. |
 
 ## Summary
 
-- **Keep**: 8 tools (task locking ×4, plan ×2, session ×2).
+- **Keep**: 9 tools (task locking ×4, plan ×2, session ×2, roadmap ×1).
 - **Removed (pruned)**: 2 tools (`get_session_tool_anomalies`, `run_tool_optimization_workflow`) — no longer registered as MCP tools; use `query_usage` alternatives above.
 
 ## Done
 
 1. Both tools removed from MCP registration (pruning); tool count reduced by 2.
 2. analyze.md and callers use `query_usage(query_type="anomalies", hours=24)`.
+
+## High-error symbols (not MCP tools)
+
+The anomaly report (`query_usage(query_type="anomalies", hours=24)`) may list **AsyncMock** or **_execute_transclusion_resolution** as high-error. These are not MCP tools:
+
+- **AsyncMock**: Test mock (e.g. in `test_fix_markdown_lint.py`, `conftest.py`); usage events from test runs. No MCP action.
+- **_execute_transclusion_resolution**: Internal transclusion path; may appear in usage events. No MCP action.
+
+Optionally filter these from the anomaly report in a future change; documenting here avoids treating them as tools to deprecate.
 
 ## References
 

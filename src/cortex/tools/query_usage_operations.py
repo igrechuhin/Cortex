@@ -43,6 +43,10 @@ class QueryUsageParams(BaseModel):
     format: str = "markdown"
     include_recommendations: bool = True
     hours: int | None = None
+    production_baseline_days: int = 7
+    production_window_hours: int = 24
+    days_baseline: int = 7
+    current_window_hours: int = 24
 
 
 def _usage_error_payload(message: str) -> str:
@@ -188,6 +192,29 @@ async def _run_tool_description_optimization(
     return payload.model_dump_json(indent=2)
 
 
+async def _run_production_monitoring(
+    params: QueryUsageParams, ctx: MCPContext | None
+) -> str:
+    """Production monitoring: rolling baseline, current metrics, drift alerts, weekly report."""
+    from cortex.core.project_root_resolver import resolve_project_root_async
+    from cortex.tools import usage_analytics
+    from cortex.tools.phase5_production_monitoring_helpers import (
+        get_production_monitoring_payload,
+    )
+
+    root = await resolve_project_root_async(None, ctx)
+    tracker = await usage_analytics._get_tracker(root)  # type: ignore[attr-defined]
+    days_baseline = max(1, min(90, params.production_baseline_days))
+    current_window_hours = max(1, min(168, params.production_window_hours))
+    payload = await get_production_monitoring_payload(
+        root,
+        tracker,
+        days_baseline=days_baseline,
+        current_window_hours=current_window_hours,
+    )
+    return payload.model_dump_json(indent=2)
+
+
 _Handler = Callable[[QueryUsageParams, MCPContext | None], Awaitable[str]]
 _USAGE_HANDLERS: dict[str, _Handler] = {
     "stats": _run_usage_stats,
@@ -200,6 +227,7 @@ _USAGE_HANDLERS: dict[str, _Handler] = {
     "timeline": _run_timeline,
     "anomalies": _run_anomalies,
     "tool_description_optimization": _run_tool_description_optimization,
+    "production_monitoring": _run_production_monitoring,
 }
 
 
@@ -265,9 +293,11 @@ async def query_usage(
     format: str = "markdown",
     include_recommendations: bool = True,
     hours: int = 24,
+    production_baseline_days: int = 7,
+    production_window_hours: int = 24,
     ctx: MCPContext | None = None,
 ) -> str:
-    """Query usage. query_type: stats|unused|report|recommendations|search|events|observation|timeline|anomalies|tool_description_optimization. For tool_description_optimization, tool_name is required."""
+    """Query usage. query_type: stats|unused|report|recommendations|search|events|observation|timeline|anomalies|tool_description_optimization|production_monitoring. For tool_description_optimization, tool_name is required. For production_monitoring, production_baseline_days (default 7) and production_window_hours (default 24) set baseline and current windows."""
     await _log_query_usage_start(ctx, query_type)
     params = _params_from_tool_args(locals())
     return await _query_usage_impl(query_type, params, ctx)

@@ -62,6 +62,14 @@
 
 - ✅ **Evaluation framework maturation Step 4** - COMPLETE (2026-02-23) - Implemented optimize_tool_description(tool_name) MCP tool: pulls error/usage data for a tool, suggests description improvements from patterns (USE WHEN, validation, params, retries), and returns A/B test plan. Registered in tool_categories and discovery; 6 unit tests; quality gate passed.
 
+- ✅ **E2E Plan Test** - COMPLETE (2026-02-23) - E2E plan test step completed; plan had single step already Done. Plan archived.
+
+- ✅ **Session optimization 2026-02-23: tools optimization** - COMPLETE (2026-02-23) - Updated mapping (remove_roadmap_entry keep), baseline (all actions), high-error symbols note; docs and plan COMPLETE.
+
+- ✅ **Evaluation framework maturation Step 5: Production Monitoring & Drift Detection** - COMPLETE (2026-02-23) - Implemented production monitoring and drift detection. Added phase5_production_monitoring_helpers.py with per-tool/global metrics, 7-day rolling baseline, drift detection (>2σ), weekly report text, and suggested eval tasks from anomalies. query_usage supports production_monitoring. Tests in test_phase5_production_monitoring.py and test_query_consolidated_operations.py.
+
+- ✅ **Type fix phase5_production_monitoring_helpers** - COMPLETE (2026-02-23) - Fixed type checker errors in _build_success_payload_from_events: unpack_compute_metrics_and_drift result at call site so ProductionMonitoringPayload construction is correctly typed (reportCallIssue/reportUnknownVariableType resolved). Quality and tests pass.
+
 ## Completed Work (2026-02-22)
 
 - **Summary (2026-02-22)** - 1 entries archived.
