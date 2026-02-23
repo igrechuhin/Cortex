@@ -3,6 +3,9 @@
 ## 2026-02-23
 
 - Commit pipeline pre-commit passed - fix_errors, format, markdown lint, type_check, quality, tests 4548/4548, coverage 92.05%.
+- **Step 4 Split tool_helpers.py (2026-02-23)** - COMPLETE. Split into tool_call_helpers, assertion_helpers, and three stubs; removed tool_helpers.py; all tests pass.
+- **Step 5 E2E Workflow Tests (plan-test-coverage-and-quality) (2026-02-23)** - COMPLETE. Added tests/e2e/ with 5 modules (session lifecycle, memory bank workflow, commit pipeline, plan workflow, refactoring workflow); 10 tests total, each exercising 3+ MCP tools in sequence. Quality gate and type check passed.
+- **Commit pipeline** - Pre-commit passed (fix_errors, format, markdown lint, type_check, quality, tests). Tests: 4548 passed, coverage 92.05%.
 
 ## 2026-02-22
 

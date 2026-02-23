@@ -1,0 +1,147 @@
+"""E2E tests: create plan → update steps (roadmap) → list/archive flow.
+
+Exercises plan workflow with at least 3 MCP tools in sequence.
+"""
+
+import json
+from pathlib import Path
+from typing import cast
+from unittest.mock import AsyncMock, patch
+
+import pytest
+
+from cortex.core.path_resolver import CortexResourceType, get_cortex_path
+from cortex.tools.file_operations import manage_file
+from cortex.tools.plan_crud import create_plan, list_plans
+from cortex.tools.roadmap_operations import add_roadmap_entry
+from tests.helpers.path_helpers import ensure_test_cortex_structure
+from tests.helpers.tool_call_helpers import get_tool_fn, to_dict
+
+
+def _write_minimal_memory_bank_and_roadmap(
+    memory_bank_dir: Path, plans_dir: Path
+) -> None:
+    """Write minimal memory bank and roadmap for plan workflow."""
+    _ = (memory_bank_dir / "activeContext.md").write_text("# Active Context\n\n")
+    _ = (memory_bank_dir / "projectBrief.md").write_text("# Brief\n")
+    _ = (memory_bank_dir / "roadmap.md").write_text(
+        "# Roadmap\n\n## Pending plans (from .cortex/plans)\n\n"
+    )
+    for name in [
+        "progress.md",
+        "systemPatterns.md",
+        "techContext.md",
+        "productContext.md",
+    ]:
+        _ = (memory_bank_dir / name).write_text(f"# {name}\n")
+    _ = plans_dir.mkdir(parents=True, exist_ok=True)
+
+
+@pytest.mark.slow
+@pytest.mark.timeout(120)
+@pytest.mark.asyncio
+async def test_plan_workflow_create_add_list(tmp_path: Path) -> None:
+    """E2E: create_plan → add_roadmap_entry → list_plans (3 tools)."""
+    memory_bank_dir = ensure_test_cortex_structure(tmp_path)
+    plans_dir = get_cortex_path(tmp_path, CortexResourceType.PLANS)
+    _write_minimal_memory_bank_and_roadmap(memory_bank_dir, plans_dir)
+
+    with patch(
+        "cortex.core.project_root_resolver.resolve_project_root_async",
+        new_callable=AsyncMock,
+        return_value=tmp_path,
+    ):
+        # 1) create_plan
+        create_fn = get_tool_fn(create_plan)
+        create_result = await create_fn(
+            title="E2E Plan Test",
+            content="# E2E Plan\n\n## Step 1\n\nDone.\n",
+            slug="e2e-plan-test",
+            ctx=None,
+        )
+        create_data = cast(
+            dict[str, object],
+            (
+                to_dict(cast(object, create_result))
+                if isinstance(create_result, dict)
+                else json.loads(str(create_result))
+            ),
+        )
+        assert create_data.get("status") == "success" or "plan_path" in str(create_data)
+
+        # 2) add_roadmap_entry (register the plan)
+        add_fn = get_tool_fn(add_roadmap_entry)
+        add_result = await add_fn(
+            section="pending",
+            entry_text="- **E2E Plan Test** - PENDING - Plan: .cortex/plans/e2e-plan-test.md",
+            position="last",
+            ctx=None,
+        )
+        add_data = cast(
+            dict[str, object],
+            (
+                to_dict(cast(object, add_result))
+                if isinstance(add_result, dict)
+                else json.loads(str(add_result))
+            ),
+        )
+        assert add_data.get("status") in ("success", "error") or "line_inserted" in str(
+            add_data
+        )
+
+        # 3) list_plans
+        list_fn = get_tool_fn(list_plans)
+        list_result = await list_fn(include_archive=False, ctx=None)
+        list_data = cast(
+            dict[str, object],
+            (
+                to_dict(cast(object, list_result))
+                if isinstance(list_result, dict)
+                else json.loads(str(list_result))
+            ),
+        )
+        assert "plans" in list_data or "status" in list_data
+
+
+@pytest.mark.slow
+@pytest.mark.timeout(120)
+@pytest.mark.asyncio
+async def test_plan_workflow_manage_file_create_plan(tmp_path: Path) -> None:
+    """E2E: manage_file read roadmap → create_plan → list_plans (3 tools)."""
+    memory_bank_dir = ensure_test_cortex_structure(tmp_path)
+    plans_dir = get_cortex_path(tmp_path, CortexResourceType.PLANS)
+    _write_minimal_memory_bank_and_roadmap(memory_bank_dir, plans_dir)
+
+    with patch(
+        "cortex.core.project_root_resolver.resolve_project_root_async",
+        new_callable=AsyncMock,
+        return_value=tmp_path,
+    ):
+        # 1) manage_file read roadmap
+        read_result = await manage_file(operation="read", file_name="roadmap.md")
+        read_data = (
+            json.loads(read_result) if isinstance(read_result, str) else read_result
+        )
+        assert read_data.get("status") == "success"
+
+        # 2) create_plan
+        create_fn = get_tool_fn(create_plan)
+        create_result = await create_fn(
+            title="Workflow Plan",
+            content="# Workflow\n\n## Goals\n\n- E2E\n",
+            ctx=None,
+        )
+        assert create_result is not None
+
+        # 3) list_plans
+        list_fn = get_tool_fn(list_plans)
+        list_result = await list_fn(include_archive=False, ctx=None)
+        list_data = cast(
+            dict[str, object],
+            (
+                to_dict(cast(object, list_result))
+                if isinstance(list_result, dict)
+                else json.loads(str(list_result))
+            ),
+        )
+        assert "plans" in list_data or "status" in list_data

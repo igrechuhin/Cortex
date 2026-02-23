@@ -2,6 +2,12 @@
 
 **This file records completed work only.** For current status and upcoming work see [roadmap.md](roadmap.md).
 
+## Completed Work (2026-02-23)
+
+- ✅ **Step 4 Split tool_helpers.py (plan-test-coverage-and-quality)** - COMPLETE (2026-02-23) - Split tool_helpers into tool_call_helpers.py, assertion_helpers.py, and manager_mocks/file_fixtures/data_generators stubs; removed tool_helpers.py; updated test imports; quality and tests pass.
+
+- ✅ **Step 5 E2E Workflow Tests (plan-test-coverage-and-quality)** - COMPLETE (2026-02-23) - Added tests/e2e/ with test_session_lifecycle, test_memory_bank_workflow, test_commit_pipeline, test_plan_workflow, test_refactoring_workflow; 10 E2E tests, each exercising 3+ MCP tools in sequence. Schema-valid progress.md content used where required. All tests and quality gate passed.
+
 ## Completed Work (2026-02-22)
 
 - **Summary (2026-02-22)** - 1 entries archived.

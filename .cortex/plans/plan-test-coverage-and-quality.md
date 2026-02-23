@@ -109,25 +109,27 @@ Added edge-case parametrized tests: `test_manage_file_edge_case_file_name_return
 
 ---
 
-## Step 4: Split `tool_helpers.py` (P1)
+## Step 4: Split `tool_helpers.py` (P1) — COMPLETED 2026-02-23
 
-**11,796 lines** — largest file in the project (test utility monster).
+**11,796 lines** — largest file in the project (test utility monster). File had already been reduced to ~379 lines; content split into focused modules.
 
 **Split into:**
 
 | New File | Purpose |
 |----------|---------|
-| `helpers/manager_mocks.py` | Mock manager factories and fixtures |
-| `helpers/file_fixtures.py` | File/path/directory test fixtures |
+| `helpers/manager_mocks.py` | Mock manager factories and fixtures (stub) |
+| `helpers/file_fixtures.py` | File/path/directory test fixtures (stub) |
 | `helpers/assertion_helpers.py` | Custom assertion functions |
 | `helpers/tool_call_helpers.py` | Tool invocation and response helpers |
-| `helpers/data_generators.py` | Test data generation factories |
+| `helpers/data_generators.py` | Test data generation factories (stub) |
+
+**Done:** Created `tool_call_helpers.py` (get_tool_fn, to_dict, get_*accessors, TestResultDict), `assertion_helpers.py` (assert_*, str_contains, in_str_list), and three stub modules. Removed `tool_helpers.py`. Updated imports in `test_compaction_operations.py` and `test_session_start_tools.py`. All 4548 tests pass; quality gate passed.
 
 **Acceptance criteria:** `tool_helpers.py` removed. Each helper module ≤ 400 lines. All existing tests pass unchanged.
 
 ---
 
-## Step 5: Add E2E Workflow Tests (P2)
+## Step 5: Add E2E Workflow Tests (P2) — COMPLETED 2026-02-23
 
 Currently missing: tests that exercise complete user workflows end-to-end.
 

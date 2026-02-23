@@ -28,7 +28,7 @@ New tests should prefer these re-exports over importing directly from `cortex.*`
 ## Other helpers
 
 - **types.py**: Type aliases (e.g. `MockManagersDict`, `RawJSONDict`) and small type/assert helpers.
-- **tool_helpers.py**: Extract tool functions from FastMCP `FunctionTool`, build MCP context, parse JSON results.
+- **tool_call_helpers.py**: Extract tool functions from FastMCP `FunctionTool`, convert results to dicts, type-safe result accessors. **assertion_helpers.py**: Assertions on result dicts (error/message contains, in list). **manager_mocks.py**, **file_fixtures.py**, **data_generators.py**: Reserved for mock/fixture/data helpers.
 - **path_helpers.py**: Project and path resolution for tests.
 - **managers.py**: Fixtures and builders for manager mocks.
 - **schema_fixtures.py** / **fixture_validator.py**: Schema and fixture validation.

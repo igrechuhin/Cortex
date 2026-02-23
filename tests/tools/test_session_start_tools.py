@@ -41,7 +41,7 @@ from cortex.tools.session_start_tools import (
 )
 from tests.helpers.managers import make_test_managers
 from tests.helpers.path_helpers import ensure_test_cortex_structure
-from tests.helpers.tool_helpers import get_tool_fn
+from tests.helpers.tool_call_helpers import get_tool_fn
 
 
 # ConnectionHealth (cortex.core.models) shape matching check_mcp_connection_health

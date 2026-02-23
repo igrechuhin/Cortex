@@ -23,7 +23,7 @@ from cortex.tools.compaction_operations import (
 from cortex.tools.models import InProgressTask, SessionHandoff
 from tests.helpers.managers import make_test_managers
 from tests.helpers.path_helpers import ensure_test_cortex_structure
-from tests.helpers.tool_helpers import get_tool_fn, to_dict
+from tests.helpers.tool_call_helpers import get_tool_fn, to_dict
 
 
 class TestWriteHandoff:
