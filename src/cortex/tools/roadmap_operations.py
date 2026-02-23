@@ -92,7 +92,7 @@ def _finalize_last_section(
         )
 
 
-def _parse_roadmap_sections(content: str) -> dict[str, RoadmapSection]:
+def parse_roadmap_sections(content: str) -> dict[str, RoadmapSection]:
     """Parse roadmap to identify section boundaries."""
     sections: dict[str, RoadmapSection] = {}
     lines = content.split("\n")
@@ -121,7 +121,7 @@ def _parse_roadmap_sections(content: str) -> dict[str, RoadmapSection]:
     return sections
 
 
-def _get_section_bullet_lines(
+def get_section_bullet_lines(
     lines: list[str], section: RoadmapSection
 ) -> tuple[int, int]:
     """Get first and last bullet line numbers in a section."""
@@ -143,7 +143,7 @@ def _find_insertion_line(
     position: str,
 ) -> int:
     """Determine insertion line number for a new entry."""
-    first_bullet, last_bullet = _get_section_bullet_lines(lines, section)
+    first_bullet, last_bullet = get_section_bullet_lines(lines, section)
 
     if position == "first":
         if first_bullet == -1:
@@ -155,7 +155,7 @@ def _find_insertion_line(
     return last_bullet + 1
 
 
-def _insert_roadmap_entry(
+def insert_roadmap_entry(
     content: str,
     section_id: str,
     entry_text: str,
@@ -166,7 +166,7 @@ def _insert_roadmap_entry(
     Deduplicates entries that reference the same plan path to avoid
     accumulating duplicate blockers for the same plan.
     """
-    sections = _parse_roadmap_sections(content)
+    sections = parse_roadmap_sections(content)
 
     if section_id not in sections:
         return (content, None)
@@ -206,7 +206,7 @@ _ADD_ENTRY_COMPLETED_MESSAGE = (
 )
 
 
-def _entry_text_looks_completed(entry_text: str) -> bool:
+def entry_text_looks_completed(entry_text: str) -> bool:
     """Return True if entry text appears to be a completed-work entry (not allowed in roadmap)."""
     normalized = entry_text.strip()
     if not normalized:
@@ -217,7 +217,7 @@ def _entry_text_looks_completed(entry_text: str) -> bool:
     return " - COMPLETED" in upper or " - COMPLETE" in upper or " - DONE" in upper
 
 
-def _validate_section_id(section: str) -> tuple[str | None, str | None]:
+def validate_section_id(section: str) -> tuple[str | None, str | None]:
     """Validate section identifier. Returns (section_id, error_message)."""
     section_map = {
         "blockers": "blockers",
@@ -274,7 +274,7 @@ async def _write_roadmap_file(
         return str(e)
 
 
-def _find_bullet_line_containing(content: str, substring: str) -> int | None:
+def find_bullet_line_containing(content: str, substring: str) -> int | None:
     """Return 1-based line number of first bullet line containing substring, or None."""
     needle = substring.strip()
     if not needle:
@@ -286,7 +286,7 @@ def _find_bullet_line_containing(content: str, substring: str) -> int | None:
     return None
 
 
-def _remove_line_at(content: str, one_based_line: int) -> str:
+def remove_line_at(content: str, one_based_line: int) -> str:
     """Remove the line at the given 1-based index; return new content."""
     lines = content.split("\n")
     idx = one_based_line - 1
@@ -312,7 +312,7 @@ def _find_section_end_line(
     return end_i
 
 
-def _find_section_range_by_heading(
+def find_section_range_by_heading(
     content: str, section_heading_contains: str
 ) -> tuple[int, int, str] | None:
     """Find a section by heading text and return (start_0based, end_0based_inclusive, heading).
@@ -337,7 +337,7 @@ def _find_section_range_by_heading(
     return None
 
 
-def _remove_section_range(content: str, start_0based: int, end_0based: int) -> str:
+def remove_section_range(content: str, start_0based: int, end_0based: int) -> str:
     """Remove lines [start_0based, end_0based] inclusive; return new content."""
     lines = content.split("\n")
     if start_0based < 0 or end_0based >= len(lines) or start_0based > end_0based:
@@ -454,7 +454,7 @@ def _section_removal_error(message: str, error: str) -> RemoveRoadmapSectionResu
     )
 
 
-async def _execute_roadmap_removal(
+async def execute_roadmap_removal(
     root_path: Path, entry_contains: str
 ) -> RemoveRoadmapEntryResult:
     """Remove first roadmap bullet line containing entry_contains. Returns result."""
@@ -489,7 +489,7 @@ def _find_and_validate_removal_line(
     root_path: Path, current_content: str, entry_contains: str
 ) -> tuple[int | None, RemoveRoadmapEntryResult | None]:
     """Find and validate the line to remove."""
-    line_num = _find_bullet_line_containing(current_content, entry_contains)
+    line_num = find_bullet_line_containing(current_content, entry_contains)
     if line_num is None:
         return None, _removal_error(
             "No matching bullet found",
@@ -514,7 +514,7 @@ async def _perform_roadmap_removal(
     project_root: Path | None = None,
 ) -> RemoveRoadmapEntryResult:
     """Perform the actual roadmap removal and write."""
-    updated = _remove_line_at(current_content, line_num)
+    updated = remove_line_at(current_content, line_num)
     write_error = await _write_roadmap_file(roadmap_path, updated, project_root)
     if write_error:
         return _removal_error("Failed to write roadmap", write_error)
@@ -528,7 +528,7 @@ async def _perform_roadmap_removal(
     )
 
 
-async def _execute_roadmap_section_removal(
+async def execute_roadmap_section_removal(
     root_path: Path, section_heading_contains: str
 ) -> RemoveRoadmapSectionResult:
     """Remove a roadmap section by heading text. Returns result."""
@@ -537,7 +537,7 @@ async def _execute_roadmap_section_removal(
         return _section_removal_error("Failed to read roadmap", read_error)
     assert current_content is not None
 
-    range_result = _find_section_range_by_heading(
+    range_result = find_section_range_by_heading(
         current_content, section_heading_contains
     )
     if range_result is None:
@@ -547,7 +547,7 @@ async def _execute_roadmap_section_removal(
         )
     start_i, end_i, heading = range_result
     lines_removed = end_i - start_i + 1
-    updated = _remove_section_range(current_content, start_i, end_i)
+    updated = remove_section_range(current_content, start_i, end_i)
     write_error = await _write_roadmap_file(roadmap_path, updated, root_path)
     if write_error:
         return _section_removal_error("Failed to write roadmap", write_error)
@@ -642,17 +642,17 @@ def _handle_completed_entry_rejected() -> AddRoadmapEntryResult:
     )
 
 
-async def _execute_roadmap_insertion(
+async def execute_roadmap_insertion(
     root_path: Path,
     section: str,
     entry_text: str,
     position: str,
 ) -> AddRoadmapEntryResult:
     """Execute insertion. Returns AddRoadmapEntryResult."""
-    if _entry_text_looks_completed(entry_text):
+    if entry_text_looks_completed(entry_text):
         return _handle_completed_entry_rejected()
 
-    section_id, section_error = _validate_section_id(section)
+    section_id, section_error = validate_section_id(section)
     if section_error:
         return _handle_section_validation_error(section, section_error)
 
@@ -665,7 +665,7 @@ async def _execute_roadmap_insertion(
     assert current_content is not None
     assert section_id is not None
 
-    updated_content, line_inserted = _insert_roadmap_entry(
+    updated_content, line_inserted = insert_roadmap_entry(
         current_content, section_id, entry_text, position
     )
 
@@ -689,7 +689,7 @@ async def _add_roadmap_entry_impl(
     await log_client(ctx, "info", "add_roadmap_entry: starting", logger_name=__name__)
 
     root = await resolve_project_root_async(None, ctx)
-    result = await _execute_roadmap_insertion(root, section, entry_text, position)
+    result = await execute_roadmap_insertion(root, section, entry_text, position)
 
     await log_client(
         ctx,
@@ -748,7 +748,7 @@ async def _remove_roadmap_entry_impl(
         ctx, "info", "remove_roadmap_entry: starting", logger_name=__name__
     )
     root = await resolve_project_root_async(None, ctx)
-    result = await _execute_roadmap_removal(root, entry_contains)
+    result = await execute_roadmap_removal(root, entry_contains)
     await log_client(
         ctx,
         "info" if result.status == "success" else "warning",
@@ -803,7 +803,7 @@ async def _remove_roadmap_section_impl(
         logger_name=__name__,
     )
     root = await resolve_project_root_async(None, ctx)
-    result = await _execute_roadmap_section_removal(root, section_heading_contains)
+    result = await execute_roadmap_section_removal(root, section_heading_contains)
     await log_client(
         ctx,
         "info" if result.status == "success" else "warning",

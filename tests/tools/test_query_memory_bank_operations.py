@@ -56,6 +56,19 @@ async def test_query_memory_bank_resolve_transclusions_without_file_name() -> No
 
 
 @pytest.mark.asyncio
+async def test_query_memory_bank_validate_links_without_file_name() -> None:
+    """query_memory_bank returns error when file_name is None for validate_links."""
+    result_str = await query_memory_bank(
+        query_type="validate_links",
+        file_name=None,
+        ctx=None,
+    )
+    result = json.loads(result_str)
+    assert result["status"] == "error"
+    assert "file_name is required" in result["error"]
+
+
+@pytest.mark.asyncio
 async def test_query_memory_bank_dependency_graph() -> None:
     """query_memory_bank calls dependency_graph handler."""
 

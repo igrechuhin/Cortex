@@ -81,10 +81,39 @@ async def test_full_workflow():
         print(f"📁 Test project: {project_root}")
         print()
 
-        with patch(
+        # Patch resolver in the resolver module and in each tool that imports it
+        # at top level, so all code paths see the temp project root.
+        resolver_patch = patch(
             "cortex.core.project_root_resolver.resolve_project_root_async",
             new_callable=AsyncMock,
             return_value=root_path,
+        )
+        version_patch = patch(
+            "cortex.tools.phase1_foundation_version.resolve_project_root_async",
+            new_callable=AsyncMock,
+            return_value=root_path,
+        )
+        rollback_patch = patch(
+            "cortex.tools.phase1_foundation_rollback.resolve_project_root_async",
+            new_callable=AsyncMock,
+            return_value=root_path,
+        )
+        dependency_patch = patch(
+            "cortex.tools.phase1_foundation_dependency.resolve_project_root_async",
+            new_callable=AsyncMock,
+            return_value=root_path,
+        )
+        stats_patch = patch(
+            "cortex.tools.phase1_foundation_stats.resolve_project_root_async",
+            new_callable=AsyncMock,
+            return_value=root_path,
+        )
+        with (
+            resolver_patch,
+            version_patch,
+            rollback_patch,
+            dependency_patch,
+            stats_patch,
         ):
             # Test 1: Initialize Memory Bank
             print("🧪 Test 1: Initialize Memory Bank")
@@ -152,7 +181,9 @@ async def test_full_workflow():
             print("🧪 Test 5: Get version history")
             result = await get_version_history("projectBrief.md")
             data = json.loads(result)
-            assert data["status"] == "success", "Get history failed"
+            assert (
+                data["status"] == "success"
+            ), f"Get history failed: {data.get('error', data)}"
             print(f"   ✓ Total versions: {data['total_versions']}")
             if data["total_versions"] > 0:
                 latest = data["versions"][0]

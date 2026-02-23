@@ -10,19 +10,20 @@ import pytest
 from pydantic import ValidationError
 
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
-from cortex.tools.roadmap_operations import (  # type: ignore[import-not-found]
+from cortex.tools.roadmap_operations import (
     RoadmapSection,
-    _entry_text_looks_completed,  # type: ignore[name-defined]
-    _execute_roadmap_insertion,  # type: ignore[name-defined]
-    _execute_roadmap_removal,  # type: ignore[name-defined]
-    _execute_roadmap_section_removal,  # type: ignore[name-defined]
-    _find_bullet_line_containing,  # type: ignore[name-defined]
-    _find_section_range_by_heading,  # type: ignore[name-defined]
-    _get_section_bullet_lines,  # type: ignore[name-defined]
-    _insert_roadmap_entry,  # type: ignore[name-defined]
-    _parse_roadmap_sections,  # type: ignore[name-defined]
-    _remove_line_at,  # type: ignore[name-defined]
-    _remove_section_range,  # type: ignore[name-defined]
+    entry_text_looks_completed,
+    execute_roadmap_insertion,
+    execute_roadmap_removal,
+    execute_roadmap_section_removal,
+    find_bullet_line_containing,
+    find_section_range_by_heading,
+    get_section_bullet_lines,
+    insert_roadmap_entry,
+    parse_roadmap_sections,
+    remove_line_at,
+    remove_section_range,
+    validate_section_id,
 )
 
 
@@ -31,37 +32,59 @@ class TestEntryTextLooksCompleted:
 
     def test_completed_detected(self) -> None:
         """Entry with ' - COMPLETED' is detected as completed."""
-        assert _entry_text_looks_completed("- **Phase 50** - COMPLETED - Done.") is True
+        assert entry_text_looks_completed("- **Phase 50** - COMPLETED - Done.") is True
 
     def test_complete_detected(self) -> None:
         """Entry with ' - COMPLETE' is detected as completed."""
-        assert _entry_text_looks_completed("**Foo** - COMPLETE - Summary") is True
+        assert entry_text_looks_completed("**Foo** - COMPLETE - Summary") is True
 
     def test_done_detected(self) -> None:
         """Entry with ' - DONE' is detected as completed."""
-        assert _entry_text_looks_completed("- **Bar** - DONE - x") is True
+        assert entry_text_looks_completed("- **Bar** - DONE - x") is True
 
     def test_case_insensitive(self) -> None:
         """Detection is case-insensitive."""
-        assert _entry_text_looks_completed("- **X** - completed - y") is True
+        assert entry_text_looks_completed("- **X** - completed - y") is True
 
     def test_pending_not_detected(self) -> None:
         """Entry with PENDING is not detected as completed."""
-        assert _entry_text_looks_completed("- **Plan** - PENDING - Plan: x") is False
+        assert entry_text_looks_completed("- **Plan** - PENDING - Plan: x") is False
 
     def test_in_progress_not_detected(self) -> None:
         """Entry with IN PROGRESS is not detected as completed."""
-        assert (
-            _entry_text_looks_completed("- **Plan** - IN PROGRESS - Plan: x") is False
-        )
+        assert entry_text_looks_completed("- **Plan** - IN PROGRESS - Plan: x") is False
 
     def test_plain_text_not_detected(self) -> None:
         """Plain text without status is not detected as completed."""
-        assert _entry_text_looks_completed("Some task description") is False
+        assert entry_text_looks_completed("Some task description") is False
+
+
+class TestValidateSectionId:
+    """Tests for validate_section_id."""
+
+    def test_valid_sections_return_section_id(self) -> None:
+        """Valid section names return (section_id, None)."""
+        for section, expected in [
+            ("blockers", "blockers"),
+            ("active_work", "active_work"),
+            ("future", "future"),
+            ("pending", "pending"),
+            ("BLOCKERS", "blockers"),
+        ]:
+            section_id, err = validate_section_id(section)
+            assert section_id == expected
+            assert err is None
+
+    def test_invalid_section_returns_error(self) -> None:
+        """Invalid section name returns (None, error_message)."""
+        section_id, err = validate_section_id("invalid_section")
+        assert section_id is None
+        assert err is not None
+        assert "Section must be one of" in err or "blockers" in err
 
 
 class TestExecuteRoadmapInsertionRejectsCompleted:
-    """_execute_roadmap_insertion rejects completed-looking entry_text."""
+    """execute_roadmap_insertion rejects completed-looking entry_text."""
 
     @pytest.mark.asyncio
     async def test_insertion_rejects_completed_entry(self, tmp_path: Path) -> None:
@@ -73,7 +96,7 @@ class TestExecuteRoadmapInsertionRejectsCompleted:
             + "## Active Work (in progress)\n\n## Future Enhancements\n\n"
             + "## Pending plans (from .cortex/plans)\n- **Other** - PENDING\n"
         )
-        result = await _execute_roadmap_insertion(
+        result = await execute_roadmap_insertion(
             tmp_path,
             section="pending",
             entry_text="- **Phase 51** - COMPLETED - Summary",
@@ -92,7 +115,7 @@ class TestExecuteRoadmapInsertionRejectsCompleted:
             + "## Active Work (in progress)\n\n## Future Enhancements\n\n"
             + "## Pending plans (from .cortex/plans)\n- **Other** - PENDING\n"
         )
-        result = await _execute_roadmap_insertion(
+        result = await execute_roadmap_insertion(
             tmp_path,
             section="pending",
             entry_text="- **New plan** - PENDING - Plan: x",
@@ -101,29 +124,66 @@ class TestExecuteRoadmapInsertionRejectsCompleted:
         assert result.status == "success"
         assert result.line_inserted is not None
 
+    @pytest.mark.asyncio
+    async def test_insertion_invalid_section_returns_error(
+        self, tmp_path: Path
+    ) -> None:
+        """Adding an entry with invalid section returns error."""
+        memory_bank_dir = get_cortex_path(tmp_path, CortexResourceType.MEMORY_BANK)
+        memory_bank_dir.mkdir(parents=True)
+        _ = (memory_bank_dir / "roadmap.md").write_text(
+            "# Roadmap\n\n## Blockers\n\n## Pending\n\n- **Other** - PENDING\n"
+        )
+        result = await execute_roadmap_insertion(
+            tmp_path,
+            section="invalid_section",
+            entry_text="- **New** - PENDING - Plan: x",
+            position="last",
+        )
+        assert result.status == "error"
+        assert result.line_inserted is None
+
+    @pytest.mark.asyncio
+    async def test_insertion_roadmap_missing_returns_error(
+        self, tmp_path: Path
+    ) -> None:
+        """Adding an entry when roadmap.md does not exist returns error."""
+        memory_bank_dir = get_cortex_path(tmp_path, CortexResourceType.MEMORY_BANK)
+        memory_bank_dir.mkdir(parents=True)
+        # Do not create roadmap.md
+        result = await execute_roadmap_insertion(
+            tmp_path,
+            section="pending",
+            entry_text="- **New** - PENDING - Plan: x",
+            position="last",
+        )
+        assert result.status == "error"
+        assert result.line_inserted is None
+        assert result.error is not None
+
 
 class TestFindBulletLineContaining:
-    """Tests for _find_bullet_line_containing (remove_roadmap_entry)."""
+    """Tests for find_bullet_line_containing (remove_roadmap_entry)."""
 
     def test_finds_bullet_containing_substring(self) -> None:
         content = "## Pending\n\n- **Phase 50** - PENDING - Plan: x.\n"
-        assert _find_bullet_line_containing(content, "Phase 50") == 3
+        assert find_bullet_line_containing(content, "Phase 50") == 3
 
     def test_returns_none_when_not_found(self) -> None:
         content = "## Pending\n\n- **Other** - PENDING\n"
-        assert _find_bullet_line_containing(content, "Phase 50") is None
+        assert find_bullet_line_containing(content, "Phase 50") is None
 
     def test_ignores_non_bullet_lines(self) -> None:
         content = "## Phase 50\n\n- **Plan** - PENDING\n"
-        assert _find_bullet_line_containing(content, "Phase 50") is None
+        assert find_bullet_line_containing(content, "Phase 50") is None
 
     def test_first_bullet_match_wins(self) -> None:
         content = "- **A** - PENDING\n- **B** - PENDING\n"
-        assert _find_bullet_line_containing(content, "PENDING") == 1
+        assert find_bullet_line_containing(content, "PENDING") == 1
 
 
 class TestFindSectionRangeByHeading:
-    """Tests for _find_section_range_by_heading."""
+    """Tests for find_section_range_by_heading."""
 
     def test_finds_section_and_range(self) -> None:
         content = (
@@ -132,7 +192,7 @@ class TestFindSectionRangeByHeading:
             "Completed.\n\n"
             "## Active Work\n\n- Item\n"
         )
-        result = _find_section_range_by_heading(content, "Session Optimization")
+        result = find_section_range_by_heading(content, "Session Optimization")
         assert result is not None
         start, end, heading = result
         assert "Session Optimization" in heading
@@ -142,29 +202,29 @@ class TestFindSectionRangeByHeading:
         assert "Session" in lines[start]
 
     def test_returns_none_when_needle_empty(self) -> None:
-        assert _find_section_range_by_heading("## Foo\n", "  ") is None
-        assert _find_section_range_by_heading("## Foo\n", "") is None
+        assert find_section_range_by_heading("## Foo\n", "  ") is None
+        assert find_section_range_by_heading("## Foo\n", "") is None
 
     def test_returns_none_when_no_match(self) -> None:
         content = "## Blockers\n\nNone.\n"
-        assert _find_section_range_by_heading(content, "Session Optimization") is None
+        assert find_section_range_by_heading(content, "Session Optimization") is None
 
 
 class TestRemoveSectionRange:
-    """Tests for _remove_section_range."""
+    """Tests for remove_section_range."""
 
     def test_removes_range(self) -> None:
         content = "a\nb\nc\nd\ne"
-        out = _remove_section_range(content, 1, 3)
+        out = remove_section_range(content, 1, 3)
         assert out == "a\ne"
 
     def test_removes_single_line(self) -> None:
         content = "a\nb\nc"
-        assert _remove_section_range(content, 1, 1) == "a\nc"
+        assert remove_section_range(content, 1, 1) == "a\nc"
 
 
 class TestExecuteRoadmapSectionRemoval:
-    """Tests for _execute_roadmap_section_removal."""
+    """Tests for execute_roadmap_section_removal."""
 
     @pytest.mark.asyncio
     async def test_section_removal_success(self, tmp_path: Path) -> None:
@@ -177,7 +237,7 @@ class TestExecuteRoadmapSectionRemoval:
             "## Active Work\n\n- Item\n"
         )
         _ = (memory_bank_dir / "roadmap.md").write_text(content)
-        result = await _execute_roadmap_section_removal(
+        result = await execute_roadmap_section_removal(
             tmp_path, "Session Optimization (2026-02-03)"
         )
         assert result.status == "success"
@@ -199,7 +259,7 @@ class TestExecuteRoadmapSectionRemoval:
         _ = (memory_bank_dir / "roadmap.md").write_text(
             "# Roadmap\n\n## Blockers\n\nNone\n"
         )
-        result = await _execute_roadmap_section_removal(
+        result = await execute_roadmap_section_removal(
             tmp_path, "Session Optimization (2026-02-03)"
         )
         assert result.status == "error"
@@ -207,20 +267,20 @@ class TestExecuteRoadmapSectionRemoval:
 
 
 class TestRemoveLineAtRoadmap:
-    """Tests for _remove_line_at in roadmap_operations."""
+    """Tests for remove_line_at in roadmap_operations."""
 
     def test_removes_line(self) -> None:
         content = "line1\nline2\nline3"
-        out = _remove_line_at(content, 2)
+        out = remove_line_at(content, 2)
         assert out == "line1\nline3"
 
     def test_removes_first_line(self) -> None:
         content = "a\nb\nc"
-        assert _remove_line_at(content, 1) == "b\nc"
+        assert remove_line_at(content, 1) == "b\nc"
 
 
 class TestExecuteRoadmapRemoval:
-    """Tests for _execute_roadmap_removal."""
+    """Tests for execute_roadmap_removal."""
 
     @pytest.mark.asyncio
     async def test_removal_success(self, tmp_path: Path) -> None:
@@ -228,7 +288,7 @@ class TestExecuteRoadmapRemoval:
         memory_bank_dir.mkdir(parents=True)
         content = "# Roadmap\n\n## Pending\n\n- **Phase 50** - PENDING - Plan: x.\n"
         _ = (memory_bank_dir / "roadmap.md").write_text(content)
-        result = await _execute_roadmap_removal(tmp_path, "Phase 50")
+        result = await execute_roadmap_removal(tmp_path, "Phase 50")
         assert result.status == "success"
         assert result.line_removed is not None
         assert result.line_removed >= 1
@@ -241,20 +301,20 @@ class TestExecuteRoadmapRemoval:
         _ = (memory_bank_dir / "roadmap.md").write_text(
             "# Roadmap\n\n## Pending\n\n- **Other** - PENDING\n"
         )
-        result = await _execute_roadmap_removal(tmp_path, "Phase 50")
+        result = await execute_roadmap_removal(tmp_path, "Phase 50")
         assert result.status == "error"
         assert result.line_removed is None
 
     @pytest.mark.asyncio
     async def test_removal_file_not_found_returns_error(self, tmp_path: Path) -> None:
         get_cortex_path(tmp_path, CortexResourceType.MEMORY_BANK).mkdir(parents=True)
-        result = await _execute_roadmap_removal(tmp_path, "Phase 50")
+        result = await execute_roadmap_removal(tmp_path, "Phase 50")
         assert result.status == "error"
         assert "not found" in (result.error or "").lower()
 
 
 class TestParseRoadmapSections:
-    """Tests for _parse_roadmap_sections function."""
+    """Tests for parse_roadmap_sections function."""
 
     def test_parse_basic_sections(self) -> None:
         """Test parsing basic roadmap sections."""
@@ -274,7 +334,7 @@ None
 
 - **Plan A** - PENDING
 """
-        sections = _parse_roadmap_sections(content)
+        sections = parse_roadmap_sections(content)
 
         assert "blockers" in sections
         assert "active_work" in sections
@@ -292,7 +352,7 @@ None
 - Item 2
 - Item 3
 """
-        sections = _parse_roadmap_sections(content)
+        sections = parse_roadmap_sections(content)
 
         blockers_section = sections["blockers"]
         active_work_section = sections["active_work"]
@@ -311,7 +371,7 @@ None
 ## Future Enhancements
 
 """
-        sections = _parse_roadmap_sections(content)
+        sections = parse_roadmap_sections(content)
 
         assert "blockers" in sections
         assert "active_work" in sections
@@ -326,7 +386,7 @@ None
 ## Future Enhancements
 
 """
-        sections = _parse_roadmap_sections(content)
+        sections = parse_roadmap_sections(content)
 
         # Should have blockers and future, but not active_work or pending
         assert "blockers" in sections
@@ -336,7 +396,7 @@ None
 
 
 class TestGetSectionBulletLines:
-    """Tests for _get_section_bullet_lines function."""
+    """Tests for get_section_bullet_lines function."""
 
     def test_get_bullet_lines_with_content(self) -> None:
         """Test getting bullet lines from a section with content."""
@@ -355,7 +415,7 @@ class TestGetSectionBulletLines:
             end_line=4,
         )
 
-        first, last = _get_section_bullet_lines(lines, section)
+        first, last = get_section_bullet_lines(lines, section)
 
         assert first == 2
         assert last == 3
@@ -376,7 +436,7 @@ class TestGetSectionBulletLines:
             end_line=3,
         )
 
-        first, last = _get_section_bullet_lines(lines, section)
+        first, last = get_section_bullet_lines(lines, section)
 
         assert first == -1
         assert last == -1
@@ -397,14 +457,14 @@ class TestGetSectionBulletLines:
             end_line=3,
         )
 
-        first, last = _get_section_bullet_lines(lines, section)
+        first, last = get_section_bullet_lines(lines, section)
 
         assert first == 2
         assert last == 2
 
 
 class TestInsertRoadmapEntry:
-    """Tests for _insert_roadmap_entry function."""
+    """Tests for insert_roadmap_entry function."""
 
     def test_insert_at_last_position(self) -> None:
         """Test inserting entry at last position in a section."""
@@ -416,7 +476,7 @@ class TestInsertRoadmapEntry:
 
 - Item
 """
-        updated_content, line_inserted = _insert_roadmap_entry(
+        updated_content, line_inserted = insert_roadmap_entry(
             content,
             "blockers",
             "- **Issue 2** - PENDING",
@@ -436,7 +496,7 @@ class TestInsertRoadmapEntry:
 
 ## Other Section
 """
-        updated_content, _ = _insert_roadmap_entry(
+        updated_content, _ = insert_roadmap_entry(
             content,
             "pending",
             "- **Plan Z** - PENDING",
@@ -470,7 +530,7 @@ class TestInsertRoadmapEntry:
 
 - Item
 """
-        updated_content, line_inserted = _insert_roadmap_entry(
+        updated_content, line_inserted = insert_roadmap_entry(
             content,
             "future",
             "- **New Feature** - PENDING",
@@ -487,7 +547,7 @@ class TestInsertRoadmapEntry:
 
 - Item 1
 """
-        updated_content, line_inserted = _insert_roadmap_entry(
+        updated_content, line_inserted = insert_roadmap_entry(
             content,
             "nonexistent",
             "- **Item 2**",
@@ -506,7 +566,7 @@ class TestInsertRoadmapEntry:
 
 ## Other Section
 """
-        updated_content, _ = _insert_roadmap_entry(
+        updated_content, _ = insert_roadmap_entry(
             content,
             "pending",
             "**Plan B** - PENDING",  # No leading dash
@@ -533,7 +593,7 @@ class TestInsertRoadmapEntry:
         original_blockers_count = content.count("Item 1")
         original_active_work_count = content.count("**Phase 43**")
 
-        updated_content, _ = _insert_roadmap_entry(
+        updated_content, _ = insert_roadmap_entry(
             content,
             "pending",
             "- **Plan 2** - PENDING",
@@ -555,7 +615,7 @@ class TestInsertRoadmapEntry:
 """
         original_lines = content.count("\n")
 
-        updated_content, _ = _insert_roadmap_entry(
+        updated_content, _ = insert_roadmap_entry(
             content,
             "pending",
             "- **Plan B** - PENDING",
@@ -572,7 +632,7 @@ class TestInsertRoadmapEntry:
 ## Other Section
 """
         # Insert first entry
-        updated_content1, _ = _insert_roadmap_entry(
+        updated_content1, _ = insert_roadmap_entry(
             content,
             "pending",
             "- **Plan 1** - PENDING",
@@ -580,7 +640,7 @@ class TestInsertRoadmapEntry:
         )
 
         # Insert second entry
-        updated_content2, _ = _insert_roadmap_entry(
+        updated_content2, _ = insert_roadmap_entry(
             updated_content1,
             "pending",
             "- **Plan 2** - PENDING",
@@ -600,7 +660,7 @@ class TestInsertRoadmapEntry:
 ## Other Section
 """
         # Try to insert entry with same plan path
-        updated_content, line_inserted = _insert_roadmap_entry(
+        updated_content, line_inserted = insert_roadmap_entry(
             content,
             "blockers",
             "- **Investigate Tool Again** - PENDING - Plan: .cortex/plans/phase-investigate-tool-failure-20260217-123456.md.",
@@ -620,7 +680,7 @@ class TestInsertRoadmapEntry:
 ## Other Section
 """
         # Try to insert exact same entry
-        updated_content, line_inserted = _insert_roadmap_entry(
+        updated_content, line_inserted = insert_roadmap_entry(
             content,
             "pending",
             "- **Plan A** - PENDING - Plan: .cortex/plans/plan-a.md.",
@@ -640,7 +700,7 @@ class TestInsertRoadmapEntry:
 ## Other Section
 """
         # Insert entry with different plan path
-        updated_content, line_inserted = _insert_roadmap_entry(
+        updated_content, line_inserted = insert_roadmap_entry(
             content,
             "blockers",
             "- **Investigate Tool B** - PENDING - Plan: .cortex/plans/phase-investigate-tool-b-failure-20260217-123456.md.",
@@ -718,7 +778,7 @@ None - MCP annotations blocker resolved 2026-02-05
 
 - **Add add_roadmap_entry MCP tool** - PENDING - Plan: .cortex/plans/add-roadmap-entry-mcp-tool.md.
 """
-        updated_content, _ = _insert_roadmap_entry(
+        updated_content, _ = insert_roadmap_entry(
             content,
             "pending",
             "- **New Infrastructure Tool** - PENDING - Plan: .cortex/plans/new-tool.md.",
@@ -749,7 +809,7 @@ None
 
 - **Tool 1** - PENDING
 """
-        sections = _parse_roadmap_sections(content)
+        sections = parse_roadmap_sections(content)
 
         # All sections should be found
         assert "blockers" in sections

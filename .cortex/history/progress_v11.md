@@ -6,6 +6,13 @@
 - **Step 4 Split tool_helpers.py (2026-02-23)** - COMPLETE. Split into tool_call_helpers, assertion_helpers, and three stubs; removed tool_helpers.py; all tests pass.
 - **Step 5 E2E Workflow Tests (plan-test-coverage-and-quality) (2026-02-23)** - COMPLETE. Added tests/e2e/ with 5 modules (session lifecycle, memory bank workflow, commit pipeline, plan workflow, refactoring workflow); 10 tests total, each exercising 3+ MCP tools in sequence. Quality gate and type check passed.
 - **Commit pipeline** - Pre-commit passed (fix_errors, format, markdown lint, type_check, quality, tests). Tests: 4548 passed, coverage 92.05%.
+- **E2E Plan Test (2026-02-23)** - COMPLETE. E2E plan placeholder used by plan workflow tests; single step done. Plan archived.
+- **Step 6 TODO/FIXME (plan-test-coverage-and-quality) (2026-02-23)** - COMPLETE. Audited test code; 0 actionable TODO/FIXME directives (all matches are test data).
+- **Workflow plan (2026-02-23)** - COMPLETE. Expanded stub into full plan; E2E workflows documented and tested.
+- **E2E Plan Test (2026-02-23)** - COMPLETE. E2E plan workflow verified; plan had single step marked Done.
+- **Session optimization improvements 2026-02-23 (2026-02-23)** - COMPLETE. Dedup activeContext entries, plan-only short path doc, roadmap_sync unlinked_plans doc.
+- **Step 7 Test coverage (plan-test-coverage-and-quality)** - IN PROGRESS. Added tests for task_locking, session_registry, query_memory_bank_operations, roadmap_operations (edge cases, malformed cache, MCP exception paths). Coverage 92.29% (target ≥93% not yet met). Quality gate passed.
+- **E2E Plan Test (2026-02-23)** - COMPLETE. E2E plan test completed; single step already done.
 
 ## 2026-02-22
 

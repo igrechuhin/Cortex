@@ -1,8 +1,10 @@
 """Tests for task locking functionality (Phase 58)."""
 
+import json
 import os
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
+from unittest.mock import AsyncMock, patch
 
 import pytest
 
@@ -10,10 +12,14 @@ from cortex.core.cache_json_access import read_cache_json, write_cache_json
 from cortex.optimization.agent_roles import AgentRole
 from cortex.tools.task_locking import (
     check_task_available,
+    check_task_available_lock,
     claim_task,
+    claim_task_lock,
     generate_task_id,
     list_active_locks,
+    list_active_tasks,
     release_task,
+    release_task_lock,
 )
 
 
@@ -447,6 +453,105 @@ class TestCheckTaskAvailable:
                 _ = os.environ.pop(env_key, None)
 
 
+class TestLoadLocksRegistryEdgeCases:
+    """Tests for _load_locks_registry behavior with malformed cache data."""
+
+    @pytest.mark.asyncio
+    async def test_list_active_locks_when_cache_is_not_dict(
+        self, tmp_path: Path
+    ) -> None:
+        """When cache contains non-dict (e.g. list), locks are treated as empty."""
+        await write_cache_json(tmp_path, "locks/active.json", [])
+        env_key = "CORTEX_SESSION_ID"
+        original = os.environ.get(env_key)
+        os.environ[env_key] = "test_session_123"
+        try:
+            locks = await list_active_locks(tmp_path)
+            assert locks == []
+        finally:
+            if original:
+                os.environ[env_key] = original
+            else:
+                _ = os.environ.pop(env_key, None)
+
+    @pytest.mark.asyncio
+    async def test_load_locks_registry_skips_non_dict_entry(
+        self, tmp_path: Path
+    ) -> None:
+        """When cache has task_id mapping to non-dict value, that entry is skipped."""
+        task_id = generate_task_id("Some Task")
+        await write_cache_json(
+            tmp_path,
+            "locks/active.json",
+            {task_id: "not-a-dict"},
+        )
+        env_key = "CORTEX_SESSION_ID"
+        original = os.environ.get(env_key)
+        os.environ[env_key] = "test_session_123"
+        try:
+            locks = await list_active_locks(tmp_path)
+            assert locks == []
+        finally:
+            if original:
+                os.environ[env_key] = original
+            else:
+                _ = os.environ.pop(env_key, None)
+
+    @pytest.mark.asyncio
+    async def test_load_locks_registry_skips_invalid_lock_data(
+        self, tmp_path: Path
+    ) -> None:
+        """When cache has entry that fails TaskLock validation, that entry is skipped."""
+        await write_cache_json(
+            tmp_path,
+            "locks/active.json",
+            {"bad_id": {"task_id": "bad_id"}},  # missing required fields
+        )
+        env_key = "CORTEX_SESSION_ID"
+        original = os.environ.get(env_key)
+        os.environ[env_key] = "test_session_123"
+        try:
+            locks = await list_active_locks(tmp_path)
+            assert locks == []
+        finally:
+            if original:
+                os.environ[env_key] = original
+            else:
+                _ = os.environ.pop(env_key, None)
+
+    @pytest.mark.asyncio
+    async def test_cleanup_expired_locks_skips_invalid_expires_at(
+        self, tmp_path: Path
+    ) -> None:
+        """Locks with invalid expires_at are skipped during cleanup."""
+        task_title = "Phase 58: Multi-Agent Specialization"
+        task_id = generate_task_id(task_title)
+        invalid_expires_lock = {
+            "task_id": task_id,
+            "task_title": task_title,
+            "agent_session_id": "old_session",
+            "locked_at": (datetime.now(UTC) - timedelta(hours=1)).isoformat(),
+            "expires_at": "not-a-valid-datetime",
+            "agent_role": None,
+        }
+        await write_cache_json(
+            tmp_path,
+            "locks/active.json",
+            {task_id: invalid_expires_lock},
+        )
+        env_key = "CORTEX_SESSION_ID"
+        original = os.environ.get(env_key)
+        os.environ[env_key] = "test_session_123"
+        try:
+            locks = await list_active_locks(tmp_path)
+            assert len(locks) == 0
+        finally:
+            if original:
+                os.environ[env_key] = original
+            else:
+                _ = os.environ.pop(env_key, None)
+
+
 class TestLockExpiry:
     """Tests for lock expiry functionality."""
 
@@ -491,3 +596,70 @@ class TestLockExpiry:
                 os.environ[env_key] = original
             else:
                 _ = os.environ.pop(env_key, None)
+
+
+class TestTaskLockingMCPExceptionPaths:
+    """Tests for MCP tool exception handling when resolve_project_root_async raises."""
+
+    @pytest.mark.asyncio
+    async def test_claim_task_lock_returns_error_on_resolve_failure(self) -> None:
+        """claim_task_lock returns JSON error when project root resolution fails."""
+        with patch(
+            "cortex.tools.task_locking.resolve_project_root_async",
+            new_callable=AsyncMock,
+            side_effect=RuntimeError("No project root"),
+        ):
+            result_str = await claim_task_lock(
+                task_title="Some Task",
+                role=None,
+                ctx=None,
+            )
+        result = json.loads(result_str)
+        assert "error" in result or "status" in result
+        assert result.get("status") == "error" or "error" in result
+
+    @pytest.mark.asyncio
+    async def test_release_task_lock_returns_error_on_resolve_failure(self) -> None:
+        """release_task_lock returns JSON error when project root resolution fails."""
+        with patch(
+            "cortex.tools.task_locking.resolve_project_root_async",
+            new_callable=AsyncMock,
+            side_effect=RuntimeError("No project root"),
+        ):
+            result_str = await release_task_lock(task_title="Some Task", ctx=None)
+        result = json.loads(result_str)
+        assert result.get("status") == "error"
+        assert result.get("released") is False
+
+    @pytest.mark.asyncio
+    async def test_list_active_tasks_returns_empty_on_resolve_failure(self) -> None:
+        """list_active_tasks returns JSON with empty locks when resolution fails."""
+        with patch(
+            "cortex.tools.task_locking.resolve_project_root_async",
+            new_callable=AsyncMock,
+            side_effect=RuntimeError("No project root"),
+        ):
+            result_str = await list_active_tasks(ctx=None)
+        result = json.loads(result_str)
+        assert result.get("status") == "success"
+        assert result.get("locks", []) == []
+        assert result.get("count", 0) == 0
+
+    @pytest.mark.asyncio
+    async def test_check_task_available_lock_returns_available_on_resolve_failure(
+        self,
+    ) -> None:
+        """check_task_available_lock treats task as available when resolution fails."""
+        with patch(
+            "cortex.tools.task_locking.resolve_project_root_async",
+            new_callable=AsyncMock,
+            side_effect=RuntimeError("No project root"),
+        ):
+            result_str = await check_task_available_lock(
+                task_title="Some Task",
+                ctx=None,
+            )
+        result = json.loads(result_str)
+        assert result.get("status") == "success"
+        assert result.get("available") is True
+        assert result.get("lock") is None

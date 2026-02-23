@@ -103,6 +103,8 @@ async def _run_parse_links(
 async def _run_validate_links(
     params: QueryMemoryBankParams, ctx: MCPContext | None
 ) -> str:
+    if not params.file_name:
+        return _error_payload("file_name is required for query_type=validate_links")
     from cortex.tools.link_validation_operations import validate_links
 
     return await validate_links(file_name=params.file_name, ctx=ctx)

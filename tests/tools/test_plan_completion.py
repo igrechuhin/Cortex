@@ -324,6 +324,27 @@ class TestAppendActiveContextEntry:
         result = json.loads(result_str)
         assert result["status"] == "error"
 
+    @pytest.mark.asyncio
+    async def test_skips_duplicate_same_date_and_title(self, tmp_path: Path) -> None:
+        """When same date and title already exist, append is skipped (no duplicate bullet)."""
+        mem = get_cortex_path(tmp_path, CortexResourceType.MEMORY_BANK)
+        mem.mkdir(parents=True)
+        active = mem / "activeContext.md"
+        existing = (
+            "# Active\n\n## Completed Work (2026-02-09)\n\n"
+            "- ✅ **E2E Plan Test** - COMPLETE (2026-02-09) - Done.\n"
+        )
+        _ = active.write_text(existing)
+        with _patch_root(tmp_path):
+            result_str = await append_active_context_entry(
+                "2026-02-09", "E2E Plan Test", "Another summary."
+            )
+        result = json.loads(result_str)
+        assert result["status"] == "success"
+        assert result.get("line_inserted") is None
+        assert "Skipped duplicate" in (result.get("message") or "")
+        assert active.read_text() == existing
+
 
 class TestCompletePlanResult:
     """CompletePlanResult model."""

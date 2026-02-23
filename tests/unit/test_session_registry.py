@@ -1,16 +1,20 @@
 """Tests for session registry functionality (Phase 58 Step 4)."""
 
+import json
 import os
 from pathlib import Path
+from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from cortex.core.cache_json_access import read_cache_json
+from cortex.core.cache_json_access import read_cache_json, write_cache_json
 from cortex.optimization.agent_roles import AgentRole
 from cortex.tools.session_registry import (
     deregister_session,
     list_concurrent_sessions,
     register_session,
+    session_deregister,
+    session_register,
 )
 
 
@@ -202,6 +206,43 @@ class TestDeregisterSession:
                 os.environ[env_key] = original
 
 
+class TestLoadSessionsRegistryEdgeCases:
+    """Tests for _load_sessions_registry behavior with malformed cache data."""
+
+    @pytest.mark.asyncio
+    async def test_list_sessions_when_cache_is_not_dict(self, tmp_path: Path) -> None:
+        """When cache contains non-dict (e.g. list), sessions are treated as empty."""
+        await write_cache_json(tmp_path, "sessions/active.json", [])
+        sessions = await list_concurrent_sessions(tmp_path)
+        assert sessions == []
+
+    @pytest.mark.asyncio
+    async def test_load_sessions_registry_skips_non_dict_entry(
+        self, tmp_path: Path
+    ) -> None:
+        """When cache has session_id mapping to non-dict value, that entry is skipped."""
+        await write_cache_json(
+            tmp_path,
+            "sessions/active.json",
+            {"session_1": "not-a-dict"},
+        )
+        sessions = await list_concurrent_sessions(tmp_path)
+        assert sessions == []
+
+    @pytest.mark.asyncio
+    async def test_load_sessions_registry_skips_invalid_session_data(
+        self, tmp_path: Path
+    ) -> None:
+        """When cache has entry that fails ConcurrentSession validation, that entry is skipped."""
+        await write_cache_json(
+            tmp_path,
+            "sessions/active.json",
+            {"bad_id": {"session_id": "bad_id"}},  # missing required fields
+        )
+        sessions = await list_concurrent_sessions(tmp_path)
+        assert sessions == []
+
+
 class TestListConcurrentSessions:
     """Tests for listing concurrent sessions."""
 
@@ -304,3 +345,37 @@ class TestListConcurrentSessions:
                 _ = os.environ.pop(env_key, None)
             else:
                 os.environ[env_key] = original
+
+
+class TestSessionRegistryMCPExceptionPaths:
+    """Tests for MCP tool exception handling when resolve_project_root_async raises."""
+
+    @pytest.mark.asyncio
+    async def test_session_register_returns_error_on_resolve_failure(self) -> None:
+        """session_register returns JSON error when project root resolution fails."""
+        with patch(
+            "cortex.tools.session_registry.resolve_project_root_async",
+            new_callable=AsyncMock,
+            side_effect=RuntimeError("No project root"),
+        ):
+            result_str = await session_register(
+                task_title="Some Task",
+                role=None,
+                ctx=None,
+            )
+        result = json.loads(result_str)
+        assert result.get("status") == "error"
+        assert "error" in result
+
+    @pytest.mark.asyncio
+    async def test_session_deregister_returns_error_on_resolve_failure(self) -> None:
+        """session_deregister returns JSON error when project root resolution fails."""
+        with patch(
+            "cortex.tools.session_registry.resolve_project_root_async",
+            new_callable=AsyncMock,
+            side_effect=RuntimeError("No project root"),
+        ):
+            result_str = await session_deregister(ctx=None)
+        result = json.loads(result_str)
+        assert result.get("status") == "error"
+        assert "error" in result

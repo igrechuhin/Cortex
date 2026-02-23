@@ -432,6 +432,9 @@ async def validate(
                  "phase": "Phase 5: Refactoring"
                }
              ],
+             "unlinked_plans": [
+               ".cortex/plans/some-plan.md"
+             ],
              "warnings": [
                (
                   "Reference to src/cortex/core/token_counter.py:500 "
@@ -459,7 +462,9 @@ async def validate(
         - Timestamp validation ensures all timestamps use YYYY-MM-DDTHH:MM
           format (ISO 8601 date-time without seconds/timezone)
         - Roadmap sync validation ensures all production TODOs are tracked
-          in roadmap.md and all roadmap references are valid
+          in roadmap.md and all roadmap references are valid. When valid is
+          false, the response includes missing_roadmap_entries,
+          invalid_references, and unlinked_plans for actionable fixes.
         - The similarity_threshold parameter only affects duplication checks;
           typical values are 0.8-0.95
         - Suggested fixes for duplications recommend using DRY linking

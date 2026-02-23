@@ -114,6 +114,30 @@ def _last_bullet_line_in_range(
     return last
 
 
+def _has_completed_entry_for_date_and_title(
+    content: str, date_str: str, title: str
+) -> bool:
+    """True if activeContext has a completed entry with same date and title (avoids duplicate bullets)."""
+    section = _find_completed_work_section(content, date_str.strip())
+    if not section:
+        return False
+    start_1, end_1 = section
+    lines = content.split("\n")
+    want = title.strip()
+    for i in range(start_1 - 1, min(end_1, len(lines))):
+        line = lines[i].strip()
+        if not line.startswith("- "):
+            continue
+        # Bullet format: "- ✅ **Title** - COMPLETE (date) - summary"
+        if "**" in line:
+            parts = line.split("**", 2)
+            if len(parts) >= 2:
+                existing_title = parts[1].strip()
+                if existing_title == want:
+                    return True
+    return False
+
+
 def _append_completed_entry(
     content: str, date_str: str, title: str, summary: str
 ) -> tuple[str, int | None]:
@@ -592,6 +616,28 @@ def _active_context_error(message: str, error: str) -> AppendActiveContextEntryR
     )
 
 
+def _append_active_context_precondition(
+    content: str | None,
+    read_err: str | None,
+    date_str: str,
+    title: str,
+) -> AppendActiveContextEntryResult | None:
+    """Result to return early (read error or duplicate), or None to proceed."""
+    if read_err or not content:
+        return _active_context_error(
+            "Failed to read activeContext", read_err or "Empty file"
+        )
+    if _has_completed_entry_for_date_and_title(content, date_str, title):
+        return AppendActiveContextEntryResult(
+            status=OperationStatus.SUCCESS,
+            file_name=MemoryBankFile.ACTIVE_CONTEXT,
+            message="Skipped duplicate entry (same date and title already present).",
+            line_inserted=None,
+            error=None,
+        )
+    return None
+
+
 async def _execute_append_active_context(
     root: Path, date_str: str, title: str, summary: str
 ) -> AppendActiveContextEntryResult:
@@ -599,10 +645,12 @@ async def _execute_append_active_context(
     mem_dir = get_cortex_path(root, CortexResourceType.MEMORY_BANK)
     active_path = mem_dir / MemoryBankFile.ACTIVE_CONTEXT
     content, read_err = _read_file(active_path)
-    if read_err or not content:
-        return _active_context_error(
-            "Failed to read activeContext", read_err or "Empty file"
-        )
+    early = _append_active_context_precondition(
+        content, read_err, date_str.strip(), title
+    )
+    if early is not None:
+        return early
+    assert content is not None
     new_content, line_inserted = _create_section_and_append(
         content, date_str.strip(), title, summary
     )

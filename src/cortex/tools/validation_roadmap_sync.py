@@ -36,6 +36,9 @@ def _build_roadmap_sync_success_response(
 ) -> str:
     """Build success response for roadmap sync validation.
 
+    When valid is false, the response includes missing_roadmap_entries,
+    invalid_references, and unlinked_plans so callers can fix issues.
+
     Args:
         result: Validation result
 

@@ -145,9 +145,9 @@ Currently missing: tests that exercise complete user workflows end-to-end.
 
 ---
 
-## Step 6: Address TODO/FIXME Comments (P2)
+## Step 6: Address TODO/FIXME Comments (P2) — COMPLETED 2026-02-23
 
-**58 TODO/FIXME comments** in test code.
+**58 TODO/FIXME comments** in test code (from 2026-02-21 review).
 
 **Approach:**
 
@@ -156,11 +156,13 @@ Currently missing: tests that exercise complete user workflows end-to-end.
 3. Create issues for non-trivial TODOs with clear descriptions
 4. Remove obsolete TODOs
 
+**Done:** Audited `tests/` for directive-style TODO/FIXME comments. All matches in test code are **test data** (e.g. strings in `test_roadmap_sync.py` used to exercise the TODO scanner); no actionable TODO/FIXME directives remain. One comment `# Arrange: no TODOs; ...` is descriptive only. **0 TODOs remaining** — acceptance criteria met (≤ 10).
+
 **Acceptance criteria:** ≤ 10 TODOs remaining (all with linked issues).
 
 ---
 
-## Step 7: Increase Module-Level Test Coverage (P2)
+## Step 7: Increase Module-Level Test Coverage (P2) — IN PROGRESS
 
 Modules with low test-to-source ratio:
 
@@ -175,6 +177,8 @@ Modules with low test-to-source ratio:
 1. Identify highest-risk untested tool files (most complex, most used)
 2. Write focused unit tests for critical paths
 3. Prioritize error handling and edge cases over happy paths (happy paths likely covered by integration tests)
+
+**Progress (2026-02-23):** Added unit tests for tools/ critical paths: `query_memory_bank_operations` (validate_links file_name check + test), `task_locking` (malformed cache, invalid expires_at, MCP exception paths), `session_registry` (malformed cache, MCP exception paths), `roadmap_operations` (_validate_section_id, invalid section, missing roadmap on insertion). Coverage increased to **92.29%** (target ≥ 93%). Quality gate passed. Remaining: additional tests to reach 93% and/or improve module test-file ratios.
 
 **Acceptance criteria:** Overall test coverage ≥ 93%. Each module ratio ≥ 30%.
 
