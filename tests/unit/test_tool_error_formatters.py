@@ -157,6 +157,36 @@ class TestFormatToolError:
         parsed = json.loads(result)
         assert parsed["action_required"] == "Legacy action"
 
+    def test_auto_suggestion_permission_error(self) -> None:
+        """Test auto-suggestion for permission/access errors."""
+        error = PermissionError("Permission denied: no access to .cortex")
+        result = format_tool_error(error)
+        parsed = json.loads(result)
+        assert parsed["suggestion"] is not None
+        assert (
+            "permission" in parsed["suggestion"].lower()
+            or "access" in parsed["suggestion"].lower()
+        )
+
+    def test_auto_suggestion_timeout_error(self) -> None:
+        """Test auto-suggestion for timeout/lock errors."""
+        error = TimeoutError("Operation timed out waiting for lock")
+        result = format_tool_error(error)
+        parsed = json.loads(result)
+        assert parsed["suggestion"] is not None
+        assert (
+            "timeout" in parsed["suggestion"].lower()
+            or "lock" in parsed["suggestion"].lower()
+        )
+
+    def test_auto_suggestion_validation_error(self) -> None:
+        """Test auto-suggestion for validation errors (message has 'validation' but not 'invalid')."""
+        error = ValueError("Schema validation requirements not met")
+        result = format_tool_error(error)
+        parsed = json.loads(result)
+        assert parsed["suggestion"] is not None
+        assert "validation" in parsed["suggestion"].lower()
+
 
 class TestFormatFileNotFoundError:
     """Test format_file_not_found_error function."""

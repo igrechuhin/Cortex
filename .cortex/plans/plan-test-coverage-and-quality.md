@@ -180,6 +180,8 @@ Modules with low test-to-source ratio:
 
 **Progress (2026-02-23):** Added unit tests for tools/ critical paths: `query_memory_bank_operations` (validate_links file_name check + test), `task_locking` (malformed cache, invalid expires_at, MCP exception paths), `session_registry` (malformed cache, MCP exception paths), `roadmap_operations` (_validate_section_id, invalid section, missing roadmap on insertion). Coverage increased to **92.29%** (target ≥ 93%). Quality gate passed. Remaining: additional tests to reach 93% and/or improve module test-file ratios.
 
+**Progress (2026-02-23, continued):** Added tests for `tools/analysis_models.py` (full model coverage), `compaction_helpers` (no sections, invalid date, invalid today_str, empty content), `tool_error_formatters` (permission/timeout/validation suggestion branches), `validation_result_models` (enum coercion from string), `phase5_evaluation_task_loader` (load_eval_task_dicts, build_eval_tasks). Coverage **92.74%** (target ≥ 93%). Quality and type_check passed. Remaining: ~0.26% to reach 93%.
+
 **Acceptance criteria:** Overall test coverage ≥ 93%. Each module ratio ≥ 30%.
 
 ---

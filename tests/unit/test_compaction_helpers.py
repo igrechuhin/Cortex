@@ -97,6 +97,29 @@ class TestCompactActiveContextCompletedWork:
         result = compact_active_context_completed_work(content, "not-a-date")
         assert result == content
 
+    def test_no_completed_work_sections_unchanged(self) -> None:
+        """When content has no Completed Work sections, return unchanged."""
+        content = "# Active Context\n\n## Current Focus\n\nNothing."
+        result = compact_active_context_completed_work(content, "2026-02-17")
+        assert result == content
+
+    def test_invalid_section_date_kept_verbatim(self) -> None:
+        """Section with unparseable date (e.g. 2026-13-01) is kept as-is."""
+        content = """# Active Context
+
+## Completed Work (2026-02-17)
+
+- Task A
+
+## Completed Work (2026-13-01)
+
+- Task B
+"""
+        result = compact_active_context_completed_work(content, "2026-02-17")
+        assert "Task A" in result
+        assert "Task B" in result
+        assert "## Completed Work (2026-13-01)" in result
+
 
 class TestTrimRecentChanges:
     """Tests for trim_recent_changes."""
@@ -157,6 +180,28 @@ class TestGetProgressDateSections:
 
     def test_empty_progress(self) -> None:
         assert get_progress_date_sections("") == []
+
+
+class TestApplyProgressTiersEdgeCases:
+    """Edge cases for apply_progress_tiers."""
+
+    def test_invalid_today_str_keeps_sections_full(self) -> None:
+        """When today_str is invalid, _days_between returns None; sections kept full."""
+        content = """# Progress
+
+## 2026-02-17
+
+- Entry A
+"""
+        result = apply_progress_tiers(
+            content, "not-a-date", days_full=7, days_weekly=30
+        )
+        assert "Entry A" in result
+
+    def test_empty_content_unchanged(self) -> None:
+        """When content has no progress date sections, return unchanged."""
+        result = apply_progress_tiers("", "2026-02-17")
+        assert result == ""
 
 
 class TestApplyProgressTiers:
