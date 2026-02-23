@@ -12,9 +12,6 @@
 
 ## Pending plans (from .cortex/plans)
 
-- Tools set optimization (deprecate/merge/remove poor performers) - PENDING - Execute deprecate/merge/remove for low-usage tools per mapping. Plan: .cortex/plans/plan-tools-set-optimization-deprecate-merge-remove.md
-- **E2E Plan Test** - PENDING - Plan: .cortex/plans/e2e-plan-test.md
-
 ### Investigation Plans (Archive / Reference)
 
 Completed investigations are recorded in [activeContext.md](activeContext.md). Plan files under `.cortex/plans/archive/` as needed.
@@ -34,4 +31,3 @@ Completed investigations are recorded in [activeContext.md](activeContext.md). P
 - **Pending: Compound engineering alignment** - Plan: .cortex/plans/compound-engineering-alignment-cortex.md
 - **Pending: Phase 58 multi-agent specialization** - Plan: .cortex/plans/phase-58-multi-agent-specialization-task-locking.md
 - **Pending: Phase 9 excellence** - Plan: .cortex/plans/phase-9-excellence-98.md
-- **Optimize MCP tools based on usage data** - PENDING - Reduce tool set using query_usage data; deprecate or consolidate tools below usage threshold. Plan: .cortex/plans/plan-optimize-tools-from-usage.md

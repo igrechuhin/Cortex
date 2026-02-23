@@ -61,6 +61,15 @@ For details on adding annotations to custom tools, see the [Extension Developmen
 
 **Tool optimization (reduced surface):** Low-usage tools may be deprecated in favor of these consolidated entry points. For usage-based optimization (finding tools below a usage threshold), use **`query_usage(query_type="unused")`** and **`query_usage(query_type="recommendations")`**. See [Tool optimization baseline](../architecture/tool-optimization-baseline.md) and [tool-optimization-mapping](../architecture/tool-optimization-mapping.md).
 
+**Deprecated tools (use consolidated alternatives):**
+
+| Tool | Prefer instead |
+|------|----------------|
+| `get_session_tool_anomalies` | `query_usage(query_type="anomalies", hours=24)` |
+| `run_tool_optimization_workflow` | `query_usage(query_type="unused")`, `query_usage(query_type="recommendations")`, and [tool-optimization-baseline](../architecture/tool-optimization-baseline.md) workflow |
+
+Both tools remain callable but are deprecated; see per-tool sections below and [tool-optimization-mapping](../architecture/tool-optimization-mapping.md).
+
 ### Advanced Tool Use (Phase 49)
 
 Cortex supports Anthropic's advanced tool use features for lower token usage and better tool selection:
@@ -2766,6 +2775,8 @@ Analyze aggregated error patterns from the latest evaluation suite. Writes a com
 
 ### get_session_tool_anomalies
 
+**Deprecated.** Prefer **`query_usage(query_type="anomalies", hours=24)`** (Phase 50). This tool redirects to that call; equivalent results. See [tool-optimization-mapping](../architecture/tool-optimization-mapping.md).
+
 Get tool usage anomalies for recent sessions (e.g. unusual failure rates or latency).
 
 **Parameters:**
@@ -2778,6 +2789,8 @@ Get tool usage anomalies for recent sessions (e.g. unusual failure rates or late
 ---
 
 ### run_tool_optimization_workflow
+
+**Deprecated.** For usage-based optimization (finding tools below threshold), use **`query_usage(query_type="unused")`** and **`query_usage(query_type="recommendations")`** and follow the workflow in [tool-optimization-baseline](../architecture/tool-optimization-baseline.md). This tool remains callable but is not the primary path.
 
 Run the tool optimization workflow: run evaluations, analyze results, and optionally apply optimized analysis. Uses the same harness as `run_tool_evaluation` with a focus on optimization recommendations.
 

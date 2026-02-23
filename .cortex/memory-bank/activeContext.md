@@ -48,6 +48,12 @@
 
 - ✅ **Plan optimize-tools-from-usage Step 7: Testing and regression** - COMPLETE (2026-02-23) - Added test_query_usage_unused_response_structure, test_query_usage_recommendations_response_structure, and test_get_session_tool_anomalies_equivalent_to_query_usage_anomalies; full test suite and quality checks passing.
 
+- ✅ **E2E Plan Test** - COMPLETE (2026-02-23) - E2E plan test completed; single step was already done.
+
+- ✅ **Optimize MCP tools based on usage data** - COMPLETE (2026-02-23) - Steps 1–8 complete: baseline, mapping, deprecation (get_session_tool_anomalies, run_tool_optimization_workflow), query_usage anomalies/recommendations, config, tests. API reference and roadmap/activeContext finalized.
+
+- ✅ **Tools set optimization (deprecate/merge/remove poor performers)** - COMPLETE (2026-02-23) - API deprecation notices and Deprecated tools subsection added to docs/api/tools.md; deprecation and consolidation already in place per mapping; Analyze prompt uses query_usage for anomalies and recommendations.
+
 ## Completed Work (2026-02-22)
 
 - **Summary (2026-02-22)** - 1 entries archived.
