@@ -1990,6 +1990,49 @@ async def get_managers() -> ManagersCollection:
 
 ---
 
+## Phase 50+ and recent modules
+
+Later phases and tool layers built on the foundation. Documented briefly; see [MCP Tools API](tools.md) for tool-level reference.
+
+### Consolidated query (Phase 50)
+
+- **query_memory_bank_operations** – `query_memory_bank` tool: stats, version_history, dependency_graph, link_graph, parse_links, validate_links, resolve_transclusions.
+- **query_usage_operations** – `query_usage` tool: usage stats, unused, report, recommendations, search, events, observation, timeline.
+
+### Phase 5 evaluation
+
+- **phase5_evaluation** – Tool evaluation suite: `run_tool_evaluation`, `tool_error_pattern_analysis`, `get_session_tool_anomalies`, `run_tool_optimization_workflow`. Writes to `.cortex/.cache/evals/`.
+- **phase5_evaluation_dashboard_helpers** – Dashboard generation for evaluation results.
+- **phase5_evaluation_anomalies_helpers** – Session tool anomaly payloads.
+
+### Phase 58: Multi-agent
+
+- **task_locking** – Task lock tools: `claim_task_lock`, `release_task_lock`, `list_active_task_locks`, `check_task_availability` for multi-session coordination.
+
+### Health check
+
+- **health_check/** – `tool_analyzer`, `rule_analyzer`, `prompt_analyzer`; models and merge/optimization logic. Used by `analyze_health_check` tool.
+
+### Session and lifecycle
+
+- **session_start_tools** – `session_start` (orientation brief, next work item, health, git status).
+- **session_registry** – `register_session`, `deregister_session` for concurrent-session tracking.
+- **compaction_operations** – `compact_session` (summarization, handoff JSON, progress/activeContext compaction).
+
+### Pre-commit and configuration
+
+- **pre_commit_tools** – `run_preflight_checks`, `execute_pre_commit_checks` (format, type_check, quality, tests).
+- **pre_commit_phase_tools** – Phase helpers (e.g. docs/memory-bank sync).
+- **configuration_operations** – `configure` for memory bank config updates.
+
+### Plan and roadmap
+
+- **plan_completion** – `complete_plan`, `append_progress_entry`, `append_active_context_entry`.
+- **plan_crud** – Create/list/get plans. **plan_roadmap** – `register_plan_in_roadmap`.
+- **roadmap_operations** – Add/remove roadmap entries and sections. **roadmap_corruption** – Fix roadmap corruption.
+
+---
+
 ## Usage Patterns
 
 ### Initialization Pattern

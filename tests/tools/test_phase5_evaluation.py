@@ -1078,15 +1078,15 @@ def test_aggregate_session_tool_anomalies_flags_retries_and_errors() -> None:
 
 @pytest.mark.asyncio
 async def test_get_session_tool_anomalies_unavailable() -> None:
-    """get_session_tool_anomalies returns unavailable when tracker is None."""
+    """get_session_tool_anomalies (redirects to query_usage) returns unavailable when tracker is None."""
     with (
         patch(
-            "cortex.tools.phase5_evaluation.resolve_project_root_async",
+            "cortex.core.project_root_resolver.resolve_project_root_async",
             new_callable=AsyncMock,
             return_value=Path("/tmp"),
         ),
         patch(
-            "cortex.tools.phase5_evaluation._get_usage_tracker",
+            "cortex.tools.usage_analytics._get_tracker",
             new_callable=AsyncMock,
             return_value=None,
         ),
@@ -1100,7 +1100,7 @@ async def test_get_session_tool_anomalies_unavailable() -> None:
 
 @pytest.mark.asyncio
 async def test_get_session_tool_anomalies_success() -> None:
-    """get_session_tool_anomalies returns tools_used and anomalies when tracker has events."""
+    """get_session_tool_anomalies (redirects to query_usage) returns tools_used and anomalies when tracker has events."""
     mock_events = [
         ToolUsageEvent(
             tool_name="query_usage",
@@ -1115,12 +1115,12 @@ async def test_get_session_tool_anomalies_success() -> None:
 
     with (
         patch(
-            "cortex.tools.phase5_evaluation.resolve_project_root_async",
+            "cortex.core.project_root_resolver.resolve_project_root_async",
             new_callable=AsyncMock,
             return_value=Path("/tmp"),
         ),
         patch(
-            "cortex.tools.phase5_evaluation._get_usage_tracker",
+            "cortex.tools.usage_analytics._get_tracker",
             new_callable=AsyncMock,
             return_value=mock_tracker,
         ),

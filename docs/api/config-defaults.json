@@ -1,0 +1,276 @@
+{
+  "validation": {
+    "enabled": true,
+    "auto_validate_on_write": true,
+    "strict_mode": false,
+    "token_budget": {
+      "max_total_tokens": 100000,
+      "warn_at_percentage": 80.0,
+      "per_file_max": 15000,
+      "per_file_warn": 12000
+    },
+    "duplication": {
+      "enabled": true,
+      "threshold": 0.85,
+      "min_length": 50,
+      "suggest_transclusion": true
+    },
+    "schemas": {
+      "enforce_required_sections": true,
+      "enforce_section_order": false,
+      "custom_schemas": {}
+    },
+    "quality": {
+      "minimum_score": 70.0,
+      "fail_below": 50.0,
+      "weights": {
+        "completeness": 0.25,
+        "consistency": 0.25,
+        "freshness": 0.15,
+        "structure": 0.2,
+        "token_efficiency": 0.15
+      }
+    }
+  },
+  "optimization": {
+    "enabled": true,
+    "token_budget": {
+      "default_budget": 80000,
+      "max_budget": 100000,
+      "reserve_for_response": 10000
+    },
+    "loading_strategy": {
+      "default": "dependency_aware",
+      "mandatory_files": [
+        "memorybankinstructions.md"
+      ],
+      "priority_order": [
+        "memorybankinstructions.md",
+        "projectBrief.md",
+        "activeContext.md",
+        "systemPatterns.md",
+        "techContext.md",
+        "productContext.md",
+        "progress.md"
+      ],
+      "always_load_sections": {
+        "projectBrief.md": [],
+        "activeContext.md": [
+          "## Current Focus",
+          "## Next Steps"
+        ]
+      }
+    },
+    "summarization": {
+      "enabled": true,
+      "auto_summarize_old_files": false,
+      "age_threshold_days": 90,
+      "target_reduction": 0.5,
+      "strategy": "extract_key_sections",
+      "cache_summaries": true
+    },
+    "relevance": {
+      "keyword_weight": 0.4,
+      "dependency_weight": 0.3,
+      "recency_weight": 0.2,
+      "quality_weight": 0.1
+    },
+    "performance": {
+      "cache_enabled": true,
+      "cache_ttl_seconds": 3600,
+      "max_cache_size_mb": 50
+    },
+    "rules": {
+      "enabled": false,
+      "rules_folder": ".cursorrules",
+      "reindex_interval_minutes": 30,
+      "auto_include_in_context": true,
+      "max_rules_tokens": 5000,
+      "min_relevance_score": 0.3,
+      "rule_priority": "local_overrides_shared",
+      "context_aware_loading": true,
+      "always_include_generic": true,
+      "context_detection": {
+        "enabled": true,
+        "detect_from_task": true,
+        "detect_from_files": true,
+        "language_keywords": {
+          "python": [
+            "python",
+            "django",
+            "flask",
+            "fastapi",
+            "pytest",
+            "py"
+          ],
+          "swift": [
+            "swift",
+            "swiftui",
+            "ios",
+            "uikit",
+            "combine",
+            "cocoa"
+          ],
+          "javascript": [
+            "javascript",
+            "js",
+            "react",
+            "vue",
+            "node",
+            "typescript",
+            "ts"
+          ],
+          "rust": [
+            "rust",
+            "cargo",
+            "rustc"
+          ],
+          "go": [
+            "golang",
+            "go"
+          ],
+          "java": [
+            "java",
+            "spring",
+            "maven",
+            "gradle"
+          ],
+          "csharp": [
+            "c#",
+            "csharp",
+            "dotnet",
+            ".net"
+          ],
+          "cpp": [
+            "c++",
+            "cpp",
+            "cmake"
+          ]
+        }
+      }
+    },
+    "synapse": {
+      "enabled": false,
+      "synapse_folder": ".cortex/synapse",
+      "synapse_repo": "",
+      "auto_sync": true,
+      "sync_interval_minutes": 60
+    },
+    "self_evolution": {
+      "enabled": true,
+      "analysis": {
+        "track_usage_patterns": true,
+        "pattern_window_days": 30,
+        "min_access_count": 5,
+        "track_task_patterns": true
+      },
+      "insights": {
+        "auto_generate": false,
+        "min_impact_score": 0.5,
+        "categories": [
+          "usage",
+          "organization",
+          "redundancy",
+          "dependencies",
+          "quality"
+        ]
+      }
+    },
+    "tool_search": {
+      "enabled": false,
+      "always_loaded": [
+        "add_roadmap_entry",
+        "append_active_context_entry",
+        "append_progress_entry",
+        "check_mcp_connection_health",
+        "complete_plan",
+        "execute_pre_commit_checks",
+        "fix_quality_issues",
+        "get_structure_info",
+        "load_context",
+        "manage_file",
+        "query_memory_bank",
+        "remove_roadmap_entry",
+        "remove_roadmap_section",
+        "rules",
+        "search_tools",
+        "validate"
+      ],
+      "deferred_medium": [
+        "analyze",
+        "analyze_context_effectiveness",
+        "apply_refactoring",
+        "check_structure_health",
+        "compact_session",
+        "configure",
+        "create_plan",
+        "fix_markdown_lint",
+        "get_relevance_scores",
+        "get_session_tool_anomalies",
+        "get_synapse_prompts",
+        "get_synapse_rules",
+        "read_cache_json",
+        "register_plan_in_roadmap",
+        "run_docs_and_memory_bank_sync",
+        "run_preflight_checks",
+        "run_tool_evaluation",
+        "run_tool_optimization_workflow",
+        "sequentialthinking",
+        "suggest_refactoring",
+        "summarize_content",
+        "sync_synapse",
+        "think",
+        "write_cache_json"
+      ],
+      "deferred_low": [
+        "analyze_health_check",
+        "analyze_session_scripts",
+        "capture_session_script",
+        "cleanup_metadata_index",
+        "fix_roadmap_corruption",
+        "get_context_usage_statistics",
+        "list_session_scripts",
+        "promote_session_script",
+        "provide_feedback",
+        "query_usage",
+        "rollback_file_version",
+        "suggest_tool_improvements",
+        "update_synapse_prompt",
+        "update_synapse_rule"
+      ]
+    }
+  },
+  "structure": {
+    "version": "2.0",
+    "layout": {
+      "root": ".cortex",
+      "memory_bank": "memory-bank",
+      "rules": "rules",
+      "plans": "plans",
+      "config": "config",
+      "archived": "archived",
+      "reviews": "reviews"
+    },
+    "cursor_integration": {
+      "enabled": true,
+      "symlink_location": ".cursor",
+      "symlinks": {
+        "memory_bank": true,
+        "rules": true,
+        "plans": true
+      }
+    },
+    "housekeeping": {
+      "auto_cleanup": true,
+      "stale_plan_days": 90,
+      "archive_completed_plans": true,
+      "detect_duplicates": true
+    },
+    "rules": {
+      "use_submodule": false,
+      "submodule_path": "rules/shared",
+      "local_rules_path": "rules/local",
+      "shared_repo_url": null
+    }
+  }
+}

@@ -12,6 +12,8 @@
 
 ## Pending plans (from .cortex/plans)
 
+- Tools set optimization (deprecate/merge/remove poor performers) - PENDING - Execute deprecate/merge/remove for low-usage tools per mapping. Plan: .cortex/plans/plan-tools-set-optimization-deprecate-merge-remove.md
+
 ### Investigation Plans (Archive / Reference)
 
 Completed investigations are recorded in [activeContext.md](activeContext.md). Plan files under `.cortex/plans/archive/` as needed.
@@ -24,7 +26,6 @@ Completed investigations are recorded in [activeContext.md](activeContext.md). P
 
 ### Features & Enhancements
 
-- **Pending: Documentation completeness (P1)** - Plan: .cortex/plans/plan-documentation-completeness.md
 - **Pending: Evaluation framework maturation (P1)** - Plan: .cortex/plans/plan-evaluation-framework-maturation.md
 - **Pending: Anthropic context engineering alignment (P1)** - Plan: .cortex/plans/plan-anthropic-context-engineering-alignment.md
 - **Pending: Agent skills and composability (P2)** - Plan: .cortex/plans/plan-agent-skills-and-composability.md
@@ -32,6 +33,4 @@ Completed investigations are recorded in [activeContext.md](activeContext.md). P
 - **Pending: Compound engineering alignment** - Plan: .cortex/plans/compound-engineering-alignment-cortex.md
 - **Pending: Phase 58 multi-agent specialization** - Plan: .cortex/plans/phase-58-multi-agent-specialization-task-locking.md
 - **Pending: Phase 9 excellence** - Plan: .cortex/plans/phase-9-excellence-98.md
-- **Pending: Investigate execute_pre_commit_checks failure (2026-02-17)** - Plan: .cortex/plans/phase-investigate-execute_pre_commit_checks-failure-20260217-201854.md
-- **Pending: Investigate fix_markdown_lint failure (2026-02-16)** - Plan: .cortex/plans/phase-investigate-fix_markdown_lint-failure-20260216-204350.md
-- **Pending: Session Optimization load context and test typing** - Plan: .cortex/plans/session-optimization-load-context-and-test-typing.md
+- **Optimize MCP tools based on usage data** - PENDING - Reduce tool set using query_usage data; deprecate or consolidate tools below usage threshold. Plan: .cortex/plans/plan-optimize-tools-from-usage.md

@@ -4,7 +4,7 @@ This document describes the high-level architecture of Cortex.
 
 ## Overview
 
-Cortex is structured as an MCP (Model Context Protocol) server that provides 52 tools for managing structured documentation (Memory Bank files). The system is built with a modular, layered architecture designed for:
+Cortex is structured as an MCP (Model Context Protocol) server that provides 100+ tools for managing structured documentation (Memory Bank files). The system is built with a modular, layered architecture designed for:
 
 - **Extensibility**: Easy to add new phases and features
 - **Maintainability**: Each module has a single, well-defined responsibility
@@ -19,11 +19,11 @@ Cortex is structured as an MCP (Model Context Protocol) server that provides 52 
 │                         MCP Client                          │
 │           (Claude Desktop, Cursor IDE, etc.)                │
 └────────────────────────┬────────────────────────────────────┘
-                         │ stdio (JSON-RPC)
+                         │ stdio (default) or Bridge → HTTP/SSE
                          ▼
 ┌─────────────────────────────────────────────────────────────┐
 │                    MCP Server (FastMCP)                     │
-│                   52 Tools (10 phases)                      │
+│                   100+ tools (multiple phases)               │
 └────────────┬────────────────────────────────────────────────┘
              │
              ▼
@@ -71,34 +71,73 @@ Cortex is structured as an MCP (Model Context Protocol) server that provides 52 
 
 - Entry point for the MCP server
 - Tool registration via `@mcp.tool()` decorators
-- Communication over stdio using JSON-RPC
+- Transport: stdio (default), SSE, or streamable-HTTP (see Bridge Transport)
 - Delegates all business logic to managers
 
-### Layer 2: Tool Modules (10 modules)
+### Bridge Transport (stdio vs HTTP/SSE)
 
-**Files**: `tools/phase*.py`, `tools/legacy.py`
+Cortex supports multiple MCP transports for different deployment scenarios.
 
-Each tool module focuses on a specific phase:
+**Configuration**: Environment variables `CORTEX_MCP_TRANSPORT`, `CORTEX_MCP_PORT`, `CORTEX_MCP_HOST` (see `transport_config.py`). When `CORTEX_MCP_PORT` is set, default transport is SSE unless overridden.
 
-- **phase1_foundation.py** (10 tools) - Core Memory Bank operations
-- **phase2_linking.py** (4 tools) - DRY linking and transclusion
-- **phase3_validation.py** (5 tools) - Validation and quality checks
-- **phase4_optimization.py** (7 tools) - Token optimization and rules
-- **phase5_analysis.py** (3 tools) - Pattern analysis and insights
-- **phase5_refactoring.py** (4 tools) - Refactoring suggestions
-- **phase5_execution.py** (6 tools) - Safe execution and learning
-- **phase6_shared_rules.py** (4 tools) - Shared rules management
-- **phase8_structure.py** (6 tools) - Project structure management
-- **legacy.py** (3 tools) - Deprecated legacy tools
+| Transport | Use case | Description |
+|-----------|----------|-------------|
+| **stdio** | Default, Cursor/IDE | JSON-RPC over stdin/stdout; one process per client session |
+| **sse** | HTTP server | Server-Sent Events at `/sse`; client connects to port |
+| **streamable-http** | Concurrent HTTP | Streamable HTTP transport; supports concurrent request handling |
+
+**Bridge mode**: When the client (e.g. Cursor) only supports stdio, the **Bridge** (`bridge.py`) runs Cortex as a subprocess with `streamable-http` and proxies between Cursor's stdio and Cortex's HTTP endpoint. This keeps a single on/off switch in the client while Cortex handles requests over HTTP. Requires `uv sync --extra server`. URL and port are controlled by `CORTEX_BRIDGE_URL` and `CORTEX_MCP_PORT`.
+
+### Layer 2: Tool Modules
+
+**Files**: `tools/` (many modules; see [API tools](api/tools.md) for the full list)
+
+Tool modules are grouped by phase and responsibility. Representative groups:
+
+- **Phase 1** – Foundation: file operations, version, rollback, dependency, stats (split across `phase1_foundation_*`, `file_operations`, etc.)
+- **Phase 2** – Linking and transclusion
+- **Phase 3** – Validation and quality checks
+- **Phase 4** – Context optimization and rules
+- **Phase 5** – Analysis, refactoring, execution, evaluation (including evaluation dashboard helpers)
+- **Phase 8** – Structure management, validation, operations, docs
+- **Session and health** – `session_start_tools`, `connection_health`, `health_check_operations`, `compaction_operations`
+- **Pre-commit and quality** – `pre_commit_tools`, `markdown_operations`
+- **Plans and roadmap** – `plan_operations`, `plan_completion`, `roadmap_operations`
+- **Synapse** – `synapse_tools`, Synapse prompts registration
+- **Other** – `query_memory_bank_operations`, `query_usage_operations`, `cache_json_tools`, `script_capture_tools`, `sequential_thinking`, `task_locking`, and others
+
+Total tool count is 100+; exact count and parameters are in `docs/api/tools.md`.
 
 ### Layer 3: Manager Initialization
 
-**Files**: `managers/initialization.py`, `container.py`
+**Files**: `managers/initialization.py`, `manager_initialization.py`, `core/manager_registry.py`
 
-- Centralized manager lifecycle management
-- Dependency injection pattern
-- ManagerContainer dataclass for type-safe access
-- Lazy initialization of all services
+- Centralized manager lifecycle: `get_managers(project_root)` resolves root, then calls process-scoped `ManagerRegistry.get_managers()`; first call for a project root runs `initialize_managers()`.
+- **Lazy loading**: Core managers (e.g. FileSystemManager, MetadataIndex, path resolver) are initialized eagerly; all other managers are wrapped in `LazyManager` and created on first access.
+- Dependency injection: managers receive dependencies via constructors; built in `manager_initialization.py` (e.g. `add_linking_managers`, `add_optimization_managers`).
+- Type-safe access via `ManagersDict` (Pydantic model).
+
+**Manager initialization flow:**
+
+```text
+Tool call with project_root
+        ↓
+get_managers(project_root)
+        ↓
+ManagerRegistry.get_managers(project_root)
+        ↓
+  [cache miss?] → initialize_managers(project_root)
+        ↓
+  _init_core_managers() [eager]
+        ↓
+  add_*_managers() → LazyManager wrappers for non-core
+        ↓
+  cache result → return ManagersDict
+        ↓
+Tool accesses managers["fs"] or managers["context_optimizer"]
+        ↓
+  LazyManager: on first access → build real instance, replace in dict
+```
 
 ### Layer 4: Business Logic (41+ Modules)
 
@@ -198,6 +237,42 @@ Each manager/service module has a single responsibility:
 - `.memory-bank-approvals.json` - Approval records
 - `.memory-bank-refactoring-history.json` - Execution history
 - `.memory-bank-rollbacks.json` - Rollback history
+
+### Synapse Integration Architecture
+
+**Synapse** is the shared rules-and-prompts repository integrated as a Git submodule under `.cortex/synapse/`. It provides prompts, rules, agents, and scripts used by the commit pipeline, implement workflow, and quality gates.
+
+**Directory layout** (under `.cortex/synapse/`):
+
+- **prompts/** – Prompt templates (e.g. commit, implement, analyze, create-plan); registered with the MCP server for Cursor/IDE.
+- **rules/** – Rule files (`.mdc`): `general/`, `python/`, `markdown/`; loaded by the rules manager and `get_synapse_rules()`.
+- **agents/** – Synapse agents (e.g. plan-archiver, quality-checker, memory-bank-updater); referenced by orchestration prompts.
+- **scripts/** – Language-specific scripts (e.g. `python/check_formatting.py`, `run_tests.py`); used by `execute_pre_commit_checks` and CI.
+
+**Rule loading**: The rules manager indexes `.mdc` files under the rules directory. Tools such as `rules(operation="get_relevant", task_description="...")` and `get_synapse_rules(task_description="...")` return relevant rules for a task. Paths are resolved via `get_structure_info()` (e.g. `structure_info.paths.rules`); the Synapse submodule is the canonical source for shared rules and prompts.
+
+**Submodule pattern**: Projects add Synapse via `git submodule add <url> .cortex/synapse/`. The initialize and setup_synapse prompts configure the submodule; `sync_synapse` (or equivalent) keeps it updated. Cursor integration may symlink `.cursor/synapse` to `.cortex/synapse` for IDE discovery.
+
+### Health Check and Monitoring Architecture
+
+Health checks are split between **connection health** (MCP server), **structure health** (Memory Bank layout), and the **health_check** module (prompt/rule analysis).
+
+**Connection health** (`tools/connection_health.py`, `core/mcp_stability.py`):
+
+- `check_mcp_connection_health()` – Reports MCP connection status, concurrent operations, semaphore usage, and a simple healthy/unhealthy flag. Used by the commit pipeline and clients to verify the server is responsive before long operations.
+
+**Structure health** (`structure/lifecycle/health.py`, `structure_manager.py`):
+
+- `StructureHealthChecker` – Validates directories, symlinks, config, and memory bank files; returns a score (0–100), grade (A–F), and status (healthy/good/fair/warning/critical). Used by `check_structure_health` and structure lifecycle tools.
+
+**Health check module** (`health_check/`):
+
+- **tool_analyzer.py** – Analyzes tool usage and dependencies.
+- **prompt_analyzer.py** – Scans `.cortex/synapse/prompts/` for overlap and duplication.
+- **rule_analyzer.py**, **quality_validator.py**, **report_generator.py** – Rule quality and report generation.
+- **similarity_engine.py**, **dependency_mapper.py** – Support analysis for prompts and rules.
+
+These components support session optimization, context-effectiveness analysis, and commit-pipeline preflight (e.g. checking MCP health before Step 12).
 
 ## Design Patterns
 

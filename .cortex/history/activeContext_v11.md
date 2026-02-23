@@ -34,6 +34,16 @@
 
 - ✅ **Test coverage and quality (P0)** - COMPLETE (2026-02-23) - All 7 steps done: untested modules (services, discovery, guides, script_promotion), parametrized tests, asyncio.sleep reduction, tool_helpers split, E2E workflows, TODO/FIXME audit, coverage ≥93%. Type fixes in test_configuration_operations (FakeAction cast).
 
+- ✅ **Documentation completeness Steps 1–2** - COMPLETE (2026-02-23) - Updated API docs: tool count 100+, Phase 5 Evaluation and Phase 58 in tools.md, Phase 50+ in modules.md. Added docs/guides/workflows.md with 5 workflows (setup, session lifecycle, code quality, refactoring, plan management). Plan steps 3–5 pending.
+
+- ✅ **Documentation completeness Step 3** - COMPLETE (2026-02-23) - Synchronized docs/architecture.md with Bridge transport section, Synapse integration architecture, health check and monitoring section, manager initialization lazy-loading flow; updated tool modules layer to current phases. Plan Steps 4–5 pending.
+
+- ✅ **Documentation completeness Step 4** - COMPLETE (2026-02-23) - Created configuration reference (docs/api/configuration-reference.md) and generator script (generate_config_reference.py → config-defaults.json). Step 5 (archive completed investigation plans) remains pending.
+
+- ✅ **Documentation completeness (P1)** - COMPLETE (2026-02-23) - Steps 1–5 done: tool count and API docs updated, workflows.md added, architecture and config reference synced; archived 3 plans from plans root to Investigations/ and SessionOptimization.
+
+- ✅ **Tool optimization Step 5: anomalies consolidated** - COMPLETE (2026-02-23) - Added query_type="anomalies" to query_usage; get_session_tool_anomalies now redirects with deprecation notice. analyze.md and tool-optimization-mapping.md updated. Tests and quality gate pass.
+
 ## Completed Work (2026-02-22)
 
 - **Summary (2026-02-22)** - 1 entries archived.

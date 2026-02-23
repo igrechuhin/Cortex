@@ -1,6 +1,8 @@
 # Plan: Documentation Completeness & Accuracy
 
-## Status: PLANNED
+## Status: COMPLETE
+
+Steps 1–5 complete (2026-02-23).
 
 ## Priority: P1 (High)
 
@@ -21,7 +23,7 @@ Comprehensive review (2026-02-21) found documentation gaps and inaccuracies:
 
 ---
 
-## Step 1: Fix Tool Count and Phase Coverage in API Docs
+## Step 1: Fix Tool Count and Phase Coverage in API Docs ✅ COMPLETED
 
 **Files to update:**
 
@@ -43,7 +45,7 @@ Comprehensive review (2026-02-21) found documentation gaps and inaccuracies:
 
 ---
 
-## Step 2: Add End-to-End Workflow Examples
+## Step 2: Add End-to-End Workflow Examples ✅ COMPLETED
 
 **Create `docs/guides/workflows.md`** with:
 
@@ -63,7 +65,7 @@ Each workflow should include:
 
 ---
 
-## Step 3: Synchronize Architecture Documentation
+## Step 3: Synchronize Architecture Documentation ✅ COMPLETED
 
 **Issues:**
 
@@ -83,9 +85,11 @@ Each workflow should include:
 
 **Acceptance criteria:** Architecture docs reflect current system. No undocumented subsystems.
 
+**Done (2026-02-23):** Diagram updated (transport line); Layer 2 tool list updated to current phases and modules; Bridge Transport section added (stdio/SSE/streamable-http, Bridge proxy); Layer 3 expanded with ManagerRegistry and lazy-loading flow; Synapse Integration Architecture section added (layout, rule loading, submodule); Health Check and Monitoring Architecture section added (connection health, structure health, health_check module).
+
 ---
 
-## Step 4: Generate Configuration Defaults Reference
+## Step 4: Generate Configuration Defaults Reference ✅ COMPLETED
 
 **Current state:** `docs/guides/configuration.md` shows example configs but no generated reference of actual defaults.
 
@@ -98,17 +102,19 @@ Each workflow should include:
 
 **Acceptance criteria:** Complete configuration reference with all defaults. Generation script/tool exists.
 
+**Done (2026-02-23):** Created `docs/api/configuration-reference.md` with tables for validation, optimization, structure, and environment/transport; added `.cortex/synapse/scripts/python/generate_config_reference.py` that writes `docs/api/config-defaults.json` from `ValidationConfigModel()`, `DEFAULT_OPTIMIZATION_CONFIG` (+ tool_search), and `DEFAULT_STRUCTURE`.
+
 ---
 
-## Step 5: Archive Completed Investigation Plans
+## Step 5: Archive Completed Investigation Plans ✅ COMPLETED
 
-**3 completed plans** still in root of `.cortex/plans/`:
+**3 completed plans** moved from root of `.cortex/plans/` to archive (2026-02-23):
 
-- `phase-investigate-execute_pre_commit_checks-failure-20260217-201854.md`
-- `phase-investigate-fix_markdown_lint-failure-20260216-204350.md`
-- `session-optimization-load-context-and-test-typing.md`
+- `phase-investigate-execute_pre_commit_checks-failure-20260217-201854.md` → `archive/Investigations/2026-02-17/`
+- `phase-investigate-fix_markdown_lint-failure-20260216-204350.md` → `archive/Investigations/2026-02-16/`
+- `session-optimization-load-context-and-test-typing.md` → `archive/SessionOptimization/`
 
-**Action:** Move to `archive/` directory to keep root clean and focused on active/planned work.
+**Action:** Moved to `archive/` directory; roadmap entries for these plans removed.
 
 **Acceptance criteria:** Only active/planned work in plans root. Archive organized.
 

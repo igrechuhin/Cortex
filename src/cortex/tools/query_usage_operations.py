@@ -42,6 +42,7 @@ class QueryUsageParams(BaseModel):
     query: str | None = None
     format: str = "markdown"
     include_recommendations: bool = True
+    hours: int | None = None
 
 
 def _usage_error_payload(message: str) -> str:
@@ -139,6 +140,24 @@ async def _run_timeline(params: QueryUsageParams, ctx: MCPContext | None) -> str
     )
 
 
+async def _run_anomalies(params: QueryUsageParams, ctx: MCPContext | None) -> str:
+    """Session tool anomalies: tools used in last N hours with retry/error flags."""
+    from cortex.core.project_root_resolver import resolve_project_root_async
+    from cortex.tools import usage_analytics
+    from cortex.tools.phase5_evaluation_anomalies_helpers import (
+        get_session_tool_anomalies_payload,
+        unavailable_session_anomalies_response,
+    )
+
+    root = await resolve_project_root_async(None, ctx)
+    tracker = await usage_analytics._get_tracker(root)  # type: ignore[attr-defined]
+    hours = params.hours if params.hours is not None else 24
+    if tracker is None:
+        return unavailable_session_anomalies_response(hours)
+    payload = await get_session_tool_anomalies_payload(root, tracker, hours)
+    return json.dumps(payload.model_dump(mode="json"), indent=2)
+
+
 _Handler = Callable[[QueryUsageParams, MCPContext | None], Awaitable[str]]
 _USAGE_HANDLERS: dict[str, _Handler] = {
     "stats": _run_usage_stats,
@@ -149,6 +168,7 @@ _USAGE_HANDLERS: dict[str, _Handler] = {
     "events": _run_events,
     "observation": _run_observation,
     "timeline": _run_timeline,
+    "anomalies": _run_anomalies,
 }
 
 
@@ -213,9 +233,10 @@ async def query_usage(
     query: str | None = None,
     format: str = "markdown",
     include_recommendations: bool = True,
+    hours: int = 24,
     ctx: MCPContext | None = None,
 ) -> str:
-    """Query usage. query_type: stats|unused|report|recommendations|search|events|observation|timeline."""
+    """Query usage. query_type: stats|unused|report|recommendations|search|events|observation|timeline|anomalies."""
     await _log_query_usage_start(ctx, query_type)
     params = _params_from_tool_args(locals())
     return await _query_usage_impl(query_type, params, ctx)

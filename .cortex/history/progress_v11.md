@@ -21,6 +21,12 @@
 - **Plan test-coverage-and-quality Step 7 (2026-02-23)** - IN PROGRESS. Added unit tests for get_component_handler, create_invalid_component_error, create_configuration_exception_error in test_configuration_operations.py. Coverage 92.79%; target ≥93% not yet met.
 - **E2E Plan Test (2026-02-23)** - COMPLETE. Plan had one step already Done; no implementation required; archived.
 - **Test coverage and quality (P0) (2026-02-23)** - COMPLETE. All 7 steps done: untested modules, parametrized tests, asyncio.sleep reduction, tool_helpers split, E2E workflows, TODO/FIXME audit, coverage ≥93%.
+- **Documentation completeness (plan) Steps 1–2 (2026-02-23)** - COMPLETE. Fixed tool count (52→100+) in index, getting-started, architecture; added Phase 5 Evaluation and Phase 58 task locking to tools.md; added Phase 50+ section to modules.md; created docs/guides/workflows.md with 5 end-to-end workflows.
+- **Documentation completeness Step 3 (2026-02-23)** - COMPLETE. Synchronized architecture docs: Bridge transport (stdio/SSE/streamable-http), Synapse integration, health check and monitoring, manager lazy-loading flow; updated Layer 2 tool list.
+- **Documentation completeness Step 4 (2026-02-23)** - COMPLETE. Added docs/api/configuration-reference.md with full defaults for validation, optimization, structure, and env/transport; added generate_config_reference.py and config-defaults.json for sync.
+- **Documentation completeness (2026-02-23)** - COMPLETE. Steps 1–5: tool count/API docs, workflows, architecture, config reference, archived 3 plans to archive/.
+- **Plan optimize-tools-from-usage Step 5 (2026-02-23)** - COMPLETE. Consolidated get_session_tool_anomalies into query_usage(query_type="anomalies"); added deprecation and redirect; updated analyze.md and mapping doc; tests and quality gate pass.
+- **Commit** - Fixed synapse script generate_config_reference.py (E402, B009, I001); Phase A preflight and tests passed.
 
 ## 2026-02-22
 

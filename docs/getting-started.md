@@ -297,7 +297,7 @@ This sets up:
 ## Next Steps
 
 - **[Configuration Guide](./guides/configuration.md)** - Learn about all configuration options
-- **[API Reference](./api/tools.md)** - Explore all 52 MCP tools
+- **[API Reference](./api/tools.md)** - Explore 100+ MCP tools
 - **[Architecture](./architecture.md)** - Understand the system design
 - **[Troubleshooting](./guides/troubleshooting.md)** - Common issues and solutions
 

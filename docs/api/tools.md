@@ -51,11 +51,15 @@ For details on adding annotations to custom tools, see the [Extension Developmen
 | [Phase 5.3-5.4](#phase-53-54-safe-execution-and-learning) | 6 | Safe Execution & Learning |
 | [Phase 6](#phase-6-shared-rules-repository) | 4 | Shared Rules Repository |
 | [Phase 8](#phase-8-project-structure-management) | 7 | Project Structure Management |
+| [Phase 5 Evaluation](#phase-5-evaluation-tools) | 4 | Tool evaluation, error patterns, anomalies, optimization workflow |
+| [Phase 58](#phase-58-multi-agent-task-locking) | 4 | Multi-agent task locking (claim, release, list, check) |
 | [Health-Check](#health-check-analysis) | 1 | Health-Check (prompts, rules, tools analysis) |
 | [Sequential Thinking](#sequential-thinking) | 1 | Stepwise reasoning and planning |
 | [Legacy](#legacy-tools) | 3 | Legacy Support |
 
 **Phase 50 consolidation (2026-02):** Memory bank read operations (stats, version_history, dependency_graph, link_graph, parse_links, validate_links, resolve_transclusions) are available via **`query_memory_bank`**. Usage analytics (stats, unused, report, recommendations, search, events, observation, timeline) are available via **`query_usage`**. Context loading supports progressive strategy via **`load_context(strategy="progressive", ...)`**. File writes and config updates use **`manage_file`** and **`configure`**.
+
+**Tool optimization (reduced surface):** Low-usage tools may be deprecated in favor of these consolidated entry points. For usage-based optimization (finding tools below a usage threshold), use **`query_usage(query_type="unused")`** and **`query_usage(query_type="recommendations")`**. See [Tool optimization baseline](../architecture/tool-optimization-baseline.md) and [tool-optimization-mapping](../architecture/tool-optimization-mapping.md).
 
 ### Advanced Tool Use (Phase 49)
 
@@ -2728,6 +2732,119 @@ Idempotent MCP resource that returns the resolved project root path. Single reco
 ```
 
 Repeated reads in the same context return the same path (idempotent). Resolution uses the same logic as tools (MCP roots when available, else current working directory / script-based fallback).
+
+---
+
+## Phase 5 Evaluation Tools
+
+Tools for evaluating MCP tool behavior, analyzing error patterns, and running optimization workflows. Used for quality assurance and session optimization.
+
+### run_tool_evaluation
+
+Run the evaluation suite for MCP tools and return metrics.
+
+**Parameters:**
+
+- `task_ids` (list[str] | None) - Optional list of task IDs to run; if omitted, all tasks from `.cortex/evals/tasks` are loaded
+- `ctx` (MCPContext | None) - MCP context (injected by server)
+
+**Returns:** JSON string with `status`, `project_root`, `tasks_loaded`, `generated_at`, `cache_file`, `suite`, `analysis`, and `dashboard_path`. Results are also written to `.cortex/.cache/evals/last_suite.json` and a dashboard at `.cortex/.cache/evals/dashboard.md`.
+
+---
+
+### tool_error_pattern_analysis
+
+Analyze aggregated error patterns from the latest evaluation suite. Writes a compact payload to `.cortex/.cache/evals/error_patterns.json`.
+
+**Parameters:**
+
+- `ctx` (MCPContext | None) - MCP context (injected by server)
+
+**Returns:** JSON string with top error patterns and summary statistics.
+
+---
+
+### get_session_tool_anomalies
+
+Get tool usage anomalies for recent sessions (e.g. unusual failure rates or latency).
+
+**Parameters:**
+
+- `hours` (int) - Lookback window in hours (default: 24)
+- `ctx` (MCPContext | None) - MCP context (injected by server)
+
+**Returns:** JSON string with anomaly payload (sessions, tools, metrics).
+
+---
+
+### run_tool_optimization_workflow
+
+Run the tool optimization workflow: run evaluations, analyze results, and optionally apply optimized analysis. Uses the same harness as `run_tool_evaluation` with a focus on optimization recommendations.
+
+**Parameters:**
+
+- `task_ids` (list[str] | None) - Optional list of task IDs
+- `optimized_analysis_json` (str | None) - Optional JSON from a previous analysis to drive optimization
+- `ctx` (MCPContext | None) - MCP context (injected by server)
+
+**Returns:** JSON string with status and optimization workflow results.
+
+---
+
+## Phase 58: Multi-Agent Task Locking
+
+Tools for coordinating multiple agents via task locks. Use when multiple sessions or agents may work on the same project to avoid conflicting edits.
+
+### claim_task_lock
+
+Claim an exclusive lock on a task (by task_id). Fails if the task is already locked by another session.
+
+**Parameters:**
+
+- `task_id` (str) - Unique task identifier
+- `session_id` (str) - Session claiming the lock
+- `ctx` (MCPContext | None) - MCP context (injected by server)
+
+**Returns:** JSON with `status` ("success" | "error") and lock details or error message.
+
+---
+
+### release_task_lock
+
+Release a previously claimed task lock.
+
+**Parameters:**
+
+- `task_id` (str) - Task identifier
+- `session_id` (str) - Session that holds the lock
+- `ctx` (MCPContext | None) - MCP context (injected by server)
+
+**Returns:** JSON with `status` and confirmation or error.
+
+---
+
+### list_active_task_locks
+
+List all currently active task locks (read-only).
+
+**Parameters:**
+
+- `ctx` (MCPContext | None) - MCP context (injected by server)
+
+**Returns:** JSON with list of active locks (task_id, session_id, etc.).
+
+---
+
+### check_task_availability
+
+Check whether a task is available (not locked) or locked by another session.
+
+**Parameters:**
+
+- `task_id` (str) - Task identifier
+- `ctx` (MCPContext | None) - MCP context (injected by server)
+
+**Returns:** JSON with `available` (bool) and optional `locked_by` session id.
 
 ---
 

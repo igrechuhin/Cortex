@@ -1,11 +1,13 @@
 """Tests for Phase 50 consolidated tools: query_memory_bank and query_usage."""
 
 import json
-from unittest.mock import AsyncMock, patch
+from pathlib import Path
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
 from cortex.core.models import ResponseFormat
+from cortex.managers.usage_models import ToolUsageEvent
 from cortex.tools.query_memory_bank_operations import query_memory_bank
 from cortex.tools.query_usage_operations import query_usage
 
@@ -288,6 +290,81 @@ async def test_query_usage_recommendations_dispatches() -> None:
             )
     data = json.loads(result)
     assert data["status"] == "success"
+
+
+@pytest.mark.asyncio
+async def test_query_usage_anomalies_unavailable() -> None:
+    """query_usage with query_type=anomalies returns unavailable when tracker is None."""
+    with (
+        patch(
+            "cortex.core.project_root_resolver.resolve_project_root_async",
+            new_callable=AsyncMock,
+            return_value=Path("/tmp"),
+        ),
+        patch(
+            "cortex.tools.usage_analytics._get_tracker",
+            new_callable=AsyncMock,
+            return_value=None,
+        ),
+    ):
+        with patch(
+            "cortex.tools.query_usage_operations.log_client",
+            new_callable=AsyncMock,
+        ):
+            result = await query_usage(
+                query_type="anomalies",
+                hours=24,
+                ctx=None,
+            )
+    data = json.loads(result)
+    assert data["status"] == "unavailable"
+    assert data["session_window_hours"] == 24
+    assert "message" in data
+
+
+@pytest.mark.asyncio
+async def test_query_usage_anomalies_success() -> None:
+    """query_usage with query_type=anomalies returns tools_used and anomalies when tracker has events."""
+    mock_events = [
+        ToolUsageEvent(
+            tool_name="manage_file",
+            timestamp="2026-02-21T12:00:00Z",
+            duration_ms=5.0,
+            success=True,
+            retry_count=0,
+        ),
+    ]
+    mock_tracker = MagicMock()
+    mock_tracker.search_usage = AsyncMock(return_value=mock_events)
+    with (
+        patch(
+            "cortex.core.project_root_resolver.resolve_project_root_async",
+            new_callable=AsyncMock,
+            return_value=Path("/tmp"),
+        ),
+        patch(
+            "cortex.tools.usage_analytics._get_tracker",
+            new_callable=AsyncMock,
+            return_value=mock_tracker,
+        ),
+    ):
+        with patch(
+            "cortex.tools.query_usage_operations.log_client",
+            new_callable=AsyncMock,
+        ):
+            result = await query_usage(
+                query_type="anomalies",
+                hours=24,
+                ctx=None,
+            )
+    data = json.loads(result)
+    assert data["status"] == "success"
+    assert data["session_window_hours"] == 24
+    assert data["total_events"] == 1
+    assert len(data["tools_used"]) == 1
+    assert data["tools_used"][0]["tool_name"] == "manage_file"
+    assert "high_retry_tools" in data
+    assert "high_error_tools" in data
 
 
 @pytest.mark.asyncio
