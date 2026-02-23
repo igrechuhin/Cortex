@@ -294,6 +294,36 @@ class TestRunPreflightChecks:
         assert "markdown_lint" not in check_names
 
     @pytest.mark.asyncio
+    async def test_markdown_result_not_dict_gracefully_handled(self) -> None:
+        """Valid JSON that is not a dict (e.g. array) is treated as None result."""
+        with (
+            patch(
+                "cortex.tools.pre_commit_preflight_helpers.execute_pre_commit_checks",
+                new_callable=AsyncMock,
+            ) as mock_exec,
+            patch(
+                "cortex.tools.pre_commit_preflight_helpers.fix_markdown_lint",
+                new_callable=AsyncMock,
+            ) as mock_md,
+        ):
+            mock_exec.return_value = _make_pre_commit_result(
+                status="success",
+                tests_success=True,
+            )
+            mock_md.return_value = "[1, 2]"
+
+            result = await run_preflight_checks(
+                test_timeout=300,
+                coverage_threshold=0.9,
+                strict_mode=False,
+            )
+
+        assert result["status"] == "success"
+        assert result["preflight_passed"] is True
+        check_names = {e["name"] for e in result["checks"]}
+        assert "markdown_lint" not in check_names
+
+    @pytest.mark.asyncio
     async def test_multiple_check_results_in_summaries(self) -> None:
         """Multiple checks from execute_pre_commit_checks appear in summaries."""
         exec_result: ModelDict = {
@@ -685,6 +715,33 @@ class TestRunDocsAndMemoryBankSync:
         assert result["status"] == "success"
         assert result["docs_phase_passed"] is True
         assert result["checks"] == []
+
+    @pytest.mark.asyncio
+    async def test_validation_result_not_dict_handled(self) -> None:
+        """Valid JSON that is not a dict (e.g. array) from validate() is treated as None."""
+        roadmap_payload = {
+            "status": "success",
+            "check_type": "roadmap_sync",
+            "valid": True,
+            "summary": {
+                "missing_entries_count": 0,
+                "invalid_references_count": 0,
+                "completed_entries_count": 0,
+                "warnings_count": 0,
+            },
+        }
+        with patch(
+            "cortex.tools.pre_commit_docs_memory_helpers.validate",
+            new_callable=AsyncMock,
+        ) as mock_validate:
+            mock_validate.side_effect = ["[1, 2]", json.dumps(roadmap_payload)]
+            result = await run_docs_and_memory_bank_sync()
+
+        assert result["status"] == "success"
+        assert result["docs_phase_passed"] is True
+        check_names = {e["name"] for e in result["checks"]}
+        assert "roadmap_sync" in check_names
+        assert "timestamps" not in check_names
 
     @pytest.mark.asyncio
     async def test_roadmap_sync_with_warnings_only(self) -> None:

@@ -28,6 +28,7 @@ from cortex.tools.session_brief import (
 )
 from cortex.tools.session_health import (
     calculate_health_summary,
+    determine_token_budget_status,
     parse_mcp_health,
 )
 from cortex.tools.session_models import TokenBudgetStatus
@@ -597,6 +598,38 @@ class TestParseMCPHealth:
         ok, msg = parse_mcp_health("not json")
         assert ok is False
         assert msg is not None
+
+    def test_parse_mcp_health_health_none(self) -> None:
+        """Parse success status with health null returns unhealthy."""
+        payload = json.dumps({"status": "success", "health": None})
+        ok, msg = parse_mcp_health(payload)
+        assert ok is False
+        assert msg == "MCP health check response invalid"
+
+
+class TestDetermineTokenBudgetStatus:
+    """Tests for determine_token_budget_status."""
+
+    def test_healthy_when_under_85_percent(self) -> None:
+        """Returns HEALTHY when usage is below 85%."""
+        assert determine_token_budget_status(0) == TokenBudgetStatus.HEALTHY
+        assert determine_token_budget_status(84999, 100000) == TokenBudgetStatus.HEALTHY
+
+    def test_warning_when_85_to_99_percent(self) -> None:
+        """Returns WARNING when usage is 85% to under 100%."""
+        assert determine_token_budget_status(85000, 100000) == TokenBudgetStatus.WARNING
+        assert determine_token_budget_status(99999, 100000) == TokenBudgetStatus.WARNING
+
+    def test_over_budget_when_100_percent_or_more(self) -> None:
+        """Returns OVER_BUDGET when usage is 100% or more."""
+        assert (
+            determine_token_budget_status(100000, 100000)
+            == TokenBudgetStatus.OVER_BUDGET
+        )
+        assert (
+            determine_token_budget_status(100001, 100000)
+            == TokenBudgetStatus.OVER_BUDGET
+        )
 
 
 # ============================================================================

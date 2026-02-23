@@ -446,6 +446,36 @@ class TestPhase8StructureResources:
         assert result["success"] is True
         assert "structure_info" in result
 
+    async def test_get_structure_info_resource_uses_cache_on_second_call(
+        self,
+        mock_project_root: Path,
+        mock_structure_manager: MagicMock,
+    ) -> None:
+        """Second call to get_structure_info_resource returns cached result."""
+        from cortex.tools import phase8_structure
+
+        phase8_structure.invalidate_structure_resource_cache()
+        with (
+            patch(
+                "cortex.tools.phase8_structure.resolve_project_root_async",
+                new_callable=AsyncMock,
+                return_value=mock_project_root,
+            ),
+            patch(
+                "cortex.tools.phase8_structure.StructureManager",
+                return_value=mock_structure_manager,
+            ),
+            patch(
+                "cortex.tools.phase8_structure.get_structure_info",
+                new_callable=AsyncMock,
+                return_value='{"success": true, "structure_info": {"paths": {}}}',
+            ) as mock_get_info,
+        ):
+            first = await get_structure_info_resource()
+            second = await get_structure_info_resource()
+        assert first == second
+        mock_get_info.assert_called_once()
+
     async def test_check_structure_health_resource_returns_json(
         self,
         mock_project_root: Path,
@@ -471,6 +501,40 @@ class TestPhase8StructureResources:
             result = json.loads(result_str)
         assert "score" in result or "success" in result or "error" in result
         assert "cleanup" not in result
+
+    async def test_check_structure_health_resource_uses_cache_on_second_call(
+        self,
+        mock_project_root: Path,
+        mock_structure_manager: MagicMock,
+    ) -> None:
+        """Second call to check_structure_health_resource returns cached result."""
+        from cortex.tools import phase8_structure
+
+        phase8_structure.invalidate_structure_resource_cache()
+        with (
+            patch(
+                "cortex.tools.phase8_structure.resolve_project_root_async",
+                new_callable=AsyncMock,
+                return_value=mock_project_root,
+            ),
+            patch(
+                "cortex.tools.phase8_structure.StructureManager",
+                return_value=mock_structure_manager,
+            ),
+            patch(
+                "cortex.tools.phase8_structure.check_structure_initialized",
+                return_value=None,
+            ),
+            patch(
+                "cortex.tools.phase8_structure.check_structure_health",
+                new_callable=AsyncMock,
+                return_value='{"success": true, "score": 90, "grade": "A"}',
+            ) as mock_health,
+        ):
+            first = await check_structure_health_resource()
+            second = await check_structure_health_resource()
+        assert first == second
+        mock_health.assert_called_once()
 
     async def test_get_project_root_resource_returns_json_with_absolute_path(
         self,
@@ -531,6 +595,18 @@ class TestPhase8StructureResources:
 
 class TestHelperFunctions:
     """Tests for helper functions."""
+
+    def test_invalidate_structure_resource_cache_with_key(self) -> None:
+        """invalidate_structure_resource_cache with key invalidates that entry."""
+        from cortex.tools import phase8_structure
+
+        phase8_structure.invalidate_structure_resource_cache("structure/info")
+
+    def test_invalidate_structure_resource_cache_clear_all(self) -> None:
+        """invalidate_structure_resource_cache with None clears all."""
+        from cortex.tools import phase8_structure
+
+        phase8_structure.invalidate_structure_resource_cache()
 
     def test_check_structure_initialized_not_exists(
         self, mock_structure_manager: MagicMock

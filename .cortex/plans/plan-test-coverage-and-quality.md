@@ -182,6 +182,8 @@ Modules with low test-to-source ratio:
 
 **Progress (2026-02-23, continued):** Added tests for `tools/analysis_models.py` (full model coverage), `compaction_helpers` (no sections, invalid date, invalid today_str, empty content), `tool_error_formatters` (permission/timeout/validation suggestion branches), `validation_result_models` (enum coercion from string), `phase5_evaluation_task_loader` (load_eval_task_dicts, build_eval_tasks). Coverage **92.74%** (target ≥ 93%). Quality and type_check passed. Remaining: ~0.26% to reach 93%.
 
+**Progress (2026-02-23, session):** Added tests for preflight/docs decode branches (markdown result not dict, validation result not dict), `session_health` (`determine_token_budget_status` WARNING/OVER_BUDGET, `parse_mcp_health` health None), phase8 structure resource cache (get_structure_info_resource and check_structure_health_resource second-call cache, invalidate_structure_resource_cache with key and None), and `refactoring_result_models` (SuggestRefactoringConcisePayload default suggestions, string type coercion). Coverage **92.78%** (target ≥ 93%). Quality and type_check passed. Remaining: ~0.22% to reach 93%.
+
 **Acceptance criteria:** Overall test coverage ≥ 93%. Each module ratio ≥ 30%.
 
 ---
