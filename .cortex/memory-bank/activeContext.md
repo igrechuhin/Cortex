@@ -22,6 +22,10 @@
 
 - ✅ **Commit pipeline preflight checks** - COMPLETE (2026-02-24) - All pre-commit checks (fix_errors, format, markdown lint, type_check, quality, tests) passing with 4710 tests and 92.75% coverage for script capture tools, tool category updates, and their tests.
 
+- ✅ **E2E Plan Test** - COMPLETE (2026-02-24) - Mark the E2E Plan Test as completed; plan file already archived with step marked Done.
+
+- ✅ **Tool consolidation – Step 5 analytics** - COMPLETE (2026-02-24) - Consolidated context-effectiveness and health-check analytics into the unified `analyze` MCP tool, removed standalone context analysis tools, updated tool categories and optimization config, and kept Phase 43 resources delegating to the new implementation.
+
 ## Completed Work (2026-02-23)
 
 - **Summary (2026-02-23)** - 1 entries archived.

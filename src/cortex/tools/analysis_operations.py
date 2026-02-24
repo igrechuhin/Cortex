@@ -28,6 +28,15 @@ from cortex.managers.manager_utils import get_manager
 from cortex.managers.types import ManagersDict
 from cortex.server import mcp
 from cortex.tools.analysis_helpers import AnalysisTarget, parse_analysis_target
+from cortex.tools.context_analysis_operations import (
+    analyze_current_session,
+    analyze_session_logs,
+    get_context_statistics,
+)
+from cortex.tools.health_check_operations import (
+    HealthCheckAnalysisType,
+    run_health_check_analysis,
+)
 
 
 async def get_managers(root: Path) -> ManagersDict:
@@ -128,7 +137,37 @@ async def get_analysis_managers(
     return pattern_analyzer, structure_analyzer, insight_engine
 
 
-@mcp.tool(annotations=read_only_annotations("Analyze Memory Bank"))
+async def _run_context_analysis(
+    target: str,
+    root: Path,
+) -> str:
+    """Dispatch context-effectiveness and statistics analysis."""
+    if target in ("context", "context_effectiveness"):
+        result = analyze_current_session(root)
+        return json.dumps(result.model_dump(mode="json"), indent=2)
+    if target in ("context_all_sessions", "context_effectiveness_all"):
+        result = analyze_session_logs(root)
+        return json.dumps(result.model_dump(mode="json"), indent=2)
+    if target in ("context_stats", "context_statistics"):
+        stats = get_context_statistics(root)
+        return json.dumps(stats.model_dump(mode="json"), indent=2)
+    return _analysis_invalid_target_response(target)
+
+
+async def _run_health_analysis(
+    root: Path,
+) -> str:
+    """Run health-check analysis using the shared engine."""
+    return await run_health_check_analysis(
+        analysis_type=HealthCheckAnalysisType.ALL,
+        similarity_threshold=0.75,
+        include_dependencies=True,
+        validate_quality=True,
+        project_root=root,
+    )
+
+
+@mcp.tool(annotations=read_only_annotations("Analyze Memory Bank and Tools"))
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_COMPLEX)
 async def analyze(
@@ -138,46 +177,50 @@ async def analyze(
     categories: list[str] | None = None,
     ctx: MCPContext | None = None,
 ) -> str:
-    """Analyze Memory Bank usage patterns, file structure, and generate
-    optimization insights.
+    """Analyze Memory Bank, context effectiveness, or health-check data.
 
-    USE WHEN: User wants pattern analysis, user needs insights, user
-    requests analysis, user wants to find refactoring opportunities.
+    USE WHEN: User wants pattern analysis, context effectiveness statistics,
+    health-check consolidation, or optimization insights.
 
-    EXAMPLES: 'analyze memory bank patterns', 'find refactoring
-    opportunities', 'analyze project structure', 'get insights about
-    documentation'.
+    EXAMPLES: 'analyze memory bank patterns', 'analyze project structure',
+    'analyze context effectiveness', 'get context usage stats',
+    'analyze health check'.
 
     RETURNS: JSON with analysis results, patterns found, and insights.
 
-    This consolidated tool provides three types of analysis to help
-    understand and optimize your Memory Bank:
+    This consolidated tool provides multiple types of analysis:
 
     1. **usage_patterns**: Analyzes file access frequency, co-access
        patterns, task patterns, and identifies unused files within a time
-       window. Helps identify frequently accessed files, files that are
-       always accessed together, and files that haven't been used recently.
+       window.
 
     2. **structure**: Analyzes file organization, detects anti-patterns
        (deeply nested directories, oversized files, naming inconsistencies),
-       and measures complexity metrics (directory depth, file count per
-       directory, dependency complexity).
+       and measures complexity metrics.
 
     3. **insights**: Generates AI-driven optimization insights with impact
-       scoring. Analyzes patterns and structure to suggest specific
-       improvements like consolidating related files, splitting large files,
-       or reorganizing directory structure.
+       scoring.
+
+    4. **context / context_all_sessions / context_stats**: Runs
+       load_context effectiveness analysis for current session, all sessions,
+       or returns aggregated usage statistics.
+
+    5. **health**: Runs prompts/rules/tools health-check analysis and
+       returns the consolidated report.
 
     Args:
         target: Analysis target to perform.
             - "usage_patterns": Analyze file access and usage patterns
             - "structure": Analyze file organization and detect issues
             - "insights": Generate actionable optimization recommendations
+            - "context": Analyze current-session load_context effectiveness
+            - "context_all_sessions": Analyze all-session effectiveness logs
+            - "context_stats": Return aggregated context usage statistics
+            - "health": Run health-check analysis for prompts/rules/tools
 
         time_window_days: Number of days to analyze for usage_patterns.
-            Example: 30 (analyzes last 30 days)
-            Default: 30
-            Only applies to target="usage_patterns".
+            Example: 30 (analyzes last 30 days). Only applies to
+            target="usage_patterns".
 
         export_format: Output format for insights.
             - "json": Structured JSON data (default)
@@ -185,10 +228,8 @@ async def analyze(
             - "text": Plain text format
             Only applies to target="insights".
 
-        categories: Specific insight categories to analyze.
-            Example: ["duplication", "complexity", "organization"]
-            If None, analyzes all categories.
-            Only applies to target="insights".
+        categories: Specific insight categories to analyze for
+            target="insights".
 
     Returns:
         JSON string containing analysis results with the following structure:
@@ -436,27 +477,27 @@ async def analyze(
           provides formatted documentation, "text" provides plain text summary.
     """
     await log_client(ctx, "info", "analyze: starting", logger_name=__name__)
-    parsed_target = parse_analysis_target(target)
-    if parsed_target is None:
-        await log_client(ctx, "warning", "analyze: invalid target")
-        valid = [t.value for t in AnalysisTarget]
-        return json.dumps(
-            {
-                "status": "error",
-                "error": f"Invalid target: {target}",
-                "valid_targets": valid,
-            },
-            indent=2,
-        )
     root = await resolve_project_root_async(None, ctx)
-    return await _analyze_run_or_error(
-        ctx,
-        parsed_target,
-        root,
-        time_window_days,
-        export_format,
-        categories,
-    )
+    # First try legacy targets via AnalysisTarget/Pattern/Structure/Insights.
+    parsed_target = parse_analysis_target(target)
+    if parsed_target is not None:
+        return await _analyze_run_or_error(
+            ctx,
+            parsed_target,
+            root,
+            time_window_days,
+            export_format,
+            categories,
+        )
+
+    # Consolidated analytics targets: context* and health.
+    if target.startswith("context"):
+        return await _run_context_analysis(target, root)
+    if target in ("health", "health_check"):
+        return await _run_health_analysis(root)
+
+    await log_client(ctx, "warning", "analyze: invalid target")
+    return _analysis_invalid_target_response(target)
 
 
 async def _analyze_run_or_error(

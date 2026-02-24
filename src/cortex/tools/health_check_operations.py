@@ -12,11 +12,9 @@ from pathlib import Path
 
 from cortex.core.constants import MCP_TOOL_TIMEOUT_COMPLEX
 from cortex.core.context_logging import MCPContext, log_client
-from cortex.core.mcp_annotations import read_only_annotations
 from cortex.core.mcp_stability import (
     ensure_usage_context,
     mcp_resource_wrapper,
-    mcp_tool_wrapper,
 )
 from cortex.core.project_root_resolver import resolve_project_root_async
 from cortex.health_check.dependency_mapper import DependencyMapper
@@ -246,9 +244,6 @@ async def run_health_check_analysis(
     return _build_report_json(report, pdeps, rdeps)
 
 
-@mcp.tool(annotations=read_only_annotations("Analyze Health Check"))
-@ensure_usage_context
-@mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_COMPLEX)
 async def analyze_health_check(
     analysis_type: HealthCheckAnalysisType | str = HealthCheckAnalysisType.ALL,
     similarity_threshold: float = 0.75,
@@ -294,9 +289,11 @@ async def analyze_health_check_resource(analysis_type: str) -> str:
         if analysis_type in ("prompts", "rules", "tools", "all")
         else "all"
     )
-    return await analyze_health_check(
+    root = await resolve_project_root_async(None, None)
+    return await run_health_check_analysis(
         analysis_type=valid_str,
         similarity_threshold=0.75,
         include_dependencies=True,
         validate_quality=True,
+        project_root=root,
     )

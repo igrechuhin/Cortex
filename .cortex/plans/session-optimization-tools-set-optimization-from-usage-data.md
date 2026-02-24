@@ -138,7 +138,7 @@ Merge `capture_session_script`, `list_session_scripts`, `analyze_session_scripts
 
 Saves: ~4 tool slots
 
-### Step 5: Consolidate analytics tools
+### Step 5: Consolidate analytics tools ✅ COMPLETED 2026-02-24
 
 Merge `analyze_context_effectiveness` + `get_context_usage_statistics` into `analyze(analysis_type="context"|"context_stats")`.
 

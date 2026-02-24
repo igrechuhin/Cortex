@@ -216,6 +216,7 @@ class TestAnalyzeHealthCheck:
 
 
 @pytest.mark.asyncio
+@pytest.mark.timeout(5)
 class TestAnalyzeHealthCheckResource:
     """Tests for analyze_health_check_resource (Phase 43 cortex://health/analyze)."""
 
@@ -232,12 +233,20 @@ class TestAnalyzeHealthCheckResource:
             },
             indent=2,
         )
-        with patch(
-            "cortex.tools.health_check_operations.analyze_health_check",
-            new_callable=AsyncMock,
-            return_value=success_json,
-        ):
-            result_str = await analyze_health_check_resource(analysis_type="all")
+        with _temp_project() as root:
+            with (
+                patch(
+                    "cortex.tools.health_check_operations.resolve_project_root_async",
+                    new_callable=AsyncMock,
+                    return_value=root,
+                ),
+                patch(
+                    "cortex.tools.health_check_operations.run_health_check_analysis",
+                    new_callable=AsyncMock,
+                    return_value=success_json,
+                ),
+            ):
+                result_str = await analyze_health_check_resource(analysis_type="all")
         result = json.loads(result_str)
         assert result["status"] == "success"
         assert result["analysis_type"] == "all"

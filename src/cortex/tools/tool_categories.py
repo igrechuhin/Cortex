@@ -252,21 +252,11 @@ TOOL_CATEGORIES: tuple[ToolCategoryEntry, ...] = (
         rationale="Concurrent-safe cache writes",
     ),
     ToolCategoryEntry(
-        name="analyze_context_effectiveness",
-        category=ToolCategory.DEFERRED_MEDIUM,
-        rationale="End-of-session context analysis",
-    ),
-    ToolCategoryEntry(
         name="compact_session",
         category=ToolCategory.DEFERRED_MEDIUM,
         rationale="End-of-session compaction and handoff (Phase 56)",
     ),
     # ── Deferred low (admin / analytics / rare) ───────────────────────
-    ToolCategoryEntry(
-        name="analyze_health_check",
-        category=ToolCategory.DEFERRED_LOW,
-        rationale="Prompts/rules/tools merge analysis (admin)",
-    ),
     ToolCategoryEntry(
         name="provide_feedback",
         category=ToolCategory.DEFERRED_LOW,
@@ -296,11 +286,6 @@ TOOL_CATEGORIES: tuple[ToolCategoryEntry, ...] = (
         name="query_usage",
         category=ToolCategory.DEFERRED_LOW,
         rationale="Usage stats, unused tools, report, search, events, timeline (Phase 50)",
-    ),
-    ToolCategoryEntry(
-        name="get_context_usage_statistics",
-        category=ToolCategory.DEFERRED_LOW,
-        rationale="Context usage metrics (analytics)",
     ),
     ToolCategoryEntry(
         name="session_scripts",

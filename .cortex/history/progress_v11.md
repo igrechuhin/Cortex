@@ -15,6 +15,9 @@
 - **Tool consolidation Step 3 (2026-02-24)** - COMPLETE. Merged list_plans and get_plan into create_plan(operation="create"|"list"|"get"); updated tests and docs/api/tools.md. Session/task tools (session_register, list_active_tasks, etc.) already not @mcp.tool()-registered.
 - Completed `/cortex/commit` preflight: all fix_errors, format, synapse_format, synapse_lint, type_check, quality, and tests checks passed (4710 tests, 92.75% coverage) with no files modified.
 - - **Commit pipeline preflight (2026-02-24)** - COMPLETE. All pre-commit checks passing with 4710 tests and 92.75% coverage.
+- **E2E Plan Test (2026-02-24)** - COMPLETE. E2E plan test work is already done; syncing roadmap and memory bank only.
+- **Tool consolidation – Step 5 (2026-02-24)** - COMPLETED. Consolidated context and health analytics into the unified `analyze` MCP tool and removed legacy context-analysis tool registrations.
+- **Commit: tool categories, optimization config, analysis/health/context handlers, phase4_optimization, tests** - Preflight passed (fix_errors, format, type_check, quality, 4701 tests, 92.69% coverage); markdown lint fixed.
 
 ## 2026-02-23
 
