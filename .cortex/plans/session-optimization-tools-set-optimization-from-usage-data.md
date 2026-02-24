@@ -1,6 +1,6 @@
 # Plan: Tool Consolidation — From 64 Tools to ~24
 
-## Status: IN PROGRESS (Step 3 done 2026-02-24)
+## Status: IN PROGRESS (Step 4 done 2026-02-24)
 
 ## Created: 2026-02-24
 
@@ -127,7 +127,7 @@ Convert 7 dead tools from public `@mcp.tool()` to internal functions:
 
 Saves: ~8 tool slots
 
-### Step 4: Consolidate script capture tools (5 → 1)
+### Step 4: Consolidate script capture tools (5 → 1) ✅ COMPLETED 2026-02-24
 
 Merge `capture_session_script`, `list_session_scripts`, `analyze_session_scripts`, `suggest_tool_improvements`, `promote_session_script` into a single `session_scripts(operation=...)` tool following the Phase 50 pattern.
 

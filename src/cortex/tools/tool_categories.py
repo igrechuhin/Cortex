@@ -303,29 +303,9 @@ TOOL_CATEGORIES: tuple[ToolCategoryEntry, ...] = (
         rationale="Context usage metrics (analytics)",
     ),
     ToolCategoryEntry(
-        name="capture_session_script",
+        name="session_scripts",
         category=ToolCategory.DEFERRED_LOW,
-        rationale="Record session scripts for promotion review",
-    ),
-    ToolCategoryEntry(
-        name="list_session_scripts",
-        category=ToolCategory.DEFERRED_LOW,
-        rationale="List captured scripts (admin)",
-    ),
-    ToolCategoryEntry(
-        name="analyze_session_scripts",
-        category=ToolCategory.DEFERRED_LOW,
-        rationale="Script analysis for promotion (admin)",
-    ),
-    ToolCategoryEntry(
-        name="suggest_tool_improvements",
-        category=ToolCategory.DEFERRED_LOW,
-        rationale="Recommend existing tools before generating scripts",
-    ),
-    ToolCategoryEntry(
-        name="promote_session_script",
-        category=ToolCategory.DEFERRED_LOW,
-        rationale="Promote captured script to permanent tool (admin)",
+        rationale="Consolidated script capture tools (capture/list/analyze/suggest/promote)",
     ),
     ToolCategoryEntry(
         name="cleanup_metadata_index",

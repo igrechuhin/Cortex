@@ -14,6 +14,7 @@ from cortex.tools.script_capture_tools import (
     list_session_scripts,
     list_session_scripts_resource,
     promote_session_script,
+    session_scripts,
     suggest_tool_improvements,
     suggest_tool_improvements_resource,
 )
@@ -100,12 +101,12 @@ class TestListSessionScripts:
                 new_callable=AsyncMock,
                 return_value=root,
             ):
-                await capture_session_script(
+                _ = await capture_session_script(
                     script_path="a.py",
                     script_content="a",
                     task_description="A",
                 )
-                await capture_session_script(
+                _ = await capture_session_script(
                     script_path="b.sh",
                     script_content="b",
                     task_description="B",
@@ -153,7 +154,7 @@ class TestAnalyzeSessionScripts:
                 new_callable=AsyncMock,
                 return_value=root,
             ):
-                await capture_session_script(
+                _ = await capture_session_script(
                     script_path="foo.py",
                     script_content="def main(): pass",
                     task_description="Format code",
@@ -237,6 +238,89 @@ class TestPromoteSessionScript:
             assert "validation_passed" in data
             assert "quality_score" in data
             assert "template_content" in data
+
+
+@pytest.mark.asyncio
+class TestSessionScriptsDispatcher:
+    """Tests for consolidated session_scripts MCP tool dispatcher."""
+
+    async def test_capture_operation_dispatches_to_capture_session_script(
+        self,
+    ) -> None:
+        """session_scripts('capture', ...) forwards to capture_session_script."""
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            with patch(
+                "cortex.tools.script_capture_tools.resolve_project_root_async",
+                new_callable=AsyncMock,
+                return_value=root,
+            ):
+                result = await session_scripts(
+                    operation="capture",
+                    script_path="scripts/foo.py",
+                    script_content="print(1)",
+                    task_description="Test capture",
+                )
+        data = json.loads(result)
+        assert data["status"] == "success"
+        assert "script_id" in data
+
+    async def test_list_operation_dispatches_to_list_session_scripts(self) -> None:
+        """session_scripts('list') forwards to list_session_scripts."""
+        payload = json.dumps(
+            {"status": "success", "count": 0, "scripts": []},
+            indent=2,
+        )
+        with patch(
+            "cortex.tools.script_capture_tools.list_session_scripts",
+            new_callable=AsyncMock,
+            return_value=payload,
+        ) as mocked_list:
+            result = await session_scripts(operation="list")
+        mocked_list.assert_awaited_once()
+        data = json.loads(result)
+        assert data["status"] == "success"
+        assert data["count"] == 0
+
+    async def test_analyze_operation_dispatches_to_analyze_session_scripts(
+        self,
+    ) -> None:
+        """session_scripts('analyze') forwards to analyze_session_scripts."""
+        payload = json.dumps(
+            {"status": "success", "count": 0, "analyses": []},
+            indent=2,
+        )
+        with patch(
+            "cortex.tools.script_capture_tools.analyze_session_scripts",
+            new_callable=AsyncMock,
+            return_value=payload,
+        ) as mocked_analyze:
+            result = await session_scripts(operation="analyze")
+        mocked_analyze.assert_awaited_once()
+        data = json.loads(result)
+        assert data["status"] == "success"
+        assert data["count"] == 0
+
+    async def test_suggest_operation_requires_task_description(self) -> None:
+        """session_scripts('suggest') without task_description returns error."""
+        result = await session_scripts(operation="suggest")
+        data = json.loads(result)
+        assert data["status"] == "error"
+        assert "task_description is required" in data["error"]
+
+    async def test_promote_operation_requires_script_id(self) -> None:
+        """session_scripts('promote') without script_id returns error."""
+        result = await session_scripts(operation="promote")
+        data = json.loads(result)
+        assert data["status"] == "error"
+        assert "script_id is required" in data["error"]
+
+    async def test_unknown_operation_returns_error(self) -> None:
+        """session_scripts with unknown operation returns error."""
+        result = await session_scripts(operation="unknown-op")
+        data = json.loads(result)
+        assert data["status"] == "error"
+        assert "Unsupported operation" in data["error"]
 
 
 @pytest.mark.asyncio

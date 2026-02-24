@@ -12,11 +12,13 @@ Total: 5 tools
 """
 
 import json
+from collections.abc import Awaitable, Callable
+from typing import cast
 from urllib.parse import unquote
 
 from cortex.core.constants import MCP_TOOL_TIMEOUT_FAST, MCP_TOOL_TIMEOUT_MEDIUM
 from cortex.core.context_logging import MCPContext, log_client
-from cortex.core.mcp_annotations import read_only_annotations, safe_write_annotations
+from cortex.core.mcp_annotations import safe_write_annotations
 from cortex.core.mcp_stability import (
     ensure_usage_context,
     mcp_resource_wrapper,
@@ -50,7 +52,6 @@ def _record_to_summary(record: ScriptCaptureRecord) -> dict[str, object]:
     }
 
 
-@mcp.tool(annotations=safe_write_annotations("Capture Session Script"))
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_FAST)
 async def capture_session_script(
@@ -93,7 +94,6 @@ async def capture_session_script(
     return json.dumps(payload, indent=2)
 
 
-@mcp.tool(annotations=read_only_annotations("List Session Scripts"))
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_FAST)
 async def list_session_scripts(
@@ -157,7 +157,6 @@ def _analysis_to_summary(obj: ScriptAnalysisResult) -> dict[str, object]:
     }
 
 
-@mcp.tool(annotations=read_only_annotations("Analyze Session Scripts"))
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_MEDIUM)
 async def analyze_session_scripts(
@@ -190,7 +189,6 @@ async def analyze_session_scripts(
     return json.dumps(payload, indent=2)
 
 
-@mcp.tool(annotations=read_only_annotations("Suggest Tool Improvements"))
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_FAST)
 async def suggest_tool_improvements(
@@ -257,7 +255,6 @@ async def suggest_tool_improvements_resource(task_description: str) -> str:
     return await suggest_tool_improvements(task_description=decoded, max_results=15)
 
 
-@mcp.tool(annotations=safe_write_annotations("Promote Session Script"))
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_FAST)
 async def promote_session_script(
@@ -291,3 +288,161 @@ async def promote_session_script(
     payload = _build_promote_payload(record, script_id, validation, output_type)
     await log_client(ctx, "info", "promote_session_script: completed")
     return json.dumps(payload, indent=2)
+
+
+async def _session_scripts_capture_handler(
+    *,
+    script_path: str | None = None,
+    script_content: str | None = None,
+    task_description: str | None = None,
+    script_type: str = "python",
+    purpose: str = "utility",
+    ctx: MCPContext | None = None,
+    **_: object,
+) -> str:
+    if script_path is None or script_content is None or task_description is None:
+        error_payload = {
+            "status": "error",
+            "error": (
+                "script_path, script_content, and task_description are required for "
+                "operation 'capture'"
+            ),
+        }
+        return json.dumps(error_payload, indent=2)
+    return await capture_session_script(
+        script_path=script_path,
+        script_content=script_content,
+        task_description=task_description,
+        script_type=script_type,
+        purpose=purpose,
+        ctx=ctx,
+    )
+
+
+async def _session_scripts_list_handler(
+    *,
+    ctx: MCPContext | None = None,
+    **_: object,
+) -> str:
+    return await list_session_scripts(ctx=ctx)
+
+
+async def _session_scripts_analyze_handler(
+    *,
+    ctx: MCPContext | None = None,
+    **_: object,
+) -> str:
+    return await analyze_session_scripts(ctx=ctx)
+
+
+async def _session_scripts_suggest_handler(
+    *,
+    task_description: str | None = None,
+    max_results: int = 15,
+    ctx: MCPContext | None = None,
+    **_: object,
+) -> str:
+    if task_description is None:
+        error_payload = {
+            "status": "error",
+            "error": "task_description is required for operation 'suggest'",
+        }
+        return json.dumps(error_payload, indent=2)
+    return await suggest_tool_improvements(
+        task_description=task_description,
+        max_results=max_results,
+        ctx=ctx,
+    )
+
+
+async def _session_scripts_promote_handler(
+    *,
+    script_id: str | None = None,
+    output_type: str = "tool",
+    ctx: MCPContext | None = None,
+    **_: object,
+) -> str:
+    if script_id is None:
+        error_payload = {
+            "status": "error",
+            "error": "script_id is required for operation 'promote'",
+        }
+        return json.dumps(error_payload, indent=2)
+    return await promote_session_script(
+        script_id=script_id,
+        output_type=output_type,
+        ctx=ctx,
+    )
+
+
+_SESSION_SCRIPTS_HANDLERS: dict[str, Callable[..., Awaitable[str]]] = {
+    "capture": cast(Callable[..., Awaitable[str]], _session_scripts_capture_handler),
+    "list": cast(Callable[..., Awaitable[str]], _session_scripts_list_handler),
+    "analyze": cast(Callable[..., Awaitable[str]], _session_scripts_analyze_handler),
+    "suggest": cast(Callable[..., Awaitable[str]], _session_scripts_suggest_handler),
+    "promote": cast(Callable[..., Awaitable[str]], _session_scripts_promote_handler),
+}
+
+
+async def _dispatch_session_scripts(
+    operation: str,
+    script_path: str | None,
+    script_content: str | None,
+    task_description: str | None,
+    script_type: str,
+    purpose: str,
+    script_id: str | None,
+    max_results: int,
+    output_type: str,
+    ctx: MCPContext | None,
+) -> str:
+    handler = _SESSION_SCRIPTS_HANDLERS.get(operation.lower())
+    if handler is None:
+        error_message = (
+            f"Unsupported operation '{operation}'. "
+            + "Expected one of: capture, list, analyze, suggest, promote."
+        )
+        return json.dumps({"status": "error", "error": error_message}, indent=2)
+
+    kwargs = {
+        "script_path": script_path,
+        "script_content": script_content,
+        "task_description": task_description,
+        "script_type": script_type,
+        "purpose": purpose,
+        "script_id": script_id,
+        "max_results": max_results,
+        "output_type": output_type,
+        "ctx": ctx,
+    }
+    return await handler(**kwargs)
+
+
+@mcp.tool(annotations=safe_write_annotations("Session Scripts Dispatcher"))
+@ensure_usage_context
+@mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_MEDIUM)
+async def session_scripts(
+    operation: str,
+    script_path: str | None = None,
+    script_content: str | None = None,
+    task_description: str | None = None,
+    script_type: str = "python",
+    purpose: str = "utility",
+    script_id: str | None = None,
+    max_results: int = 15,
+    output_type: str = "tool",
+    ctx: MCPContext | None = None,
+) -> str:
+    """Dispatch script capture operations through a single MCP tool."""
+    return await _dispatch_session_scripts(
+        operation=operation,
+        script_path=script_path,
+        script_content=script_content,
+        task_description=task_description,
+        script_type=script_type,
+        purpose=purpose,
+        script_id=script_id,
+        max_results=max_results,
+        output_type=output_type,
+        ctx=ctx,
+    )

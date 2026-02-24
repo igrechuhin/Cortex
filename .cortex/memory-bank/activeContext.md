@@ -20,6 +20,8 @@
 
 - ✅ **Tool consolidation Step 3** - COMPLETE (2026-02-24) - Internalized low-usage MCP tools (session and task-locking + plan CRUD list/get) by removing @mcp.tool decorators while preserving internal helpers; re-ran execute_pre_commit_checks for quality + tests (4704 tests, 92.77% coverage).
 
+- ✅ **Commit pipeline preflight checks** - COMPLETE (2026-02-24) - All pre-commit checks (fix_errors, format, markdown lint, type_check, quality, tests) passing with 4710 tests and 92.75% coverage for script capture tools, tool category updates, and their tests.
+
 ## Completed Work (2026-02-23)
 
 - **Summary (2026-02-23)** - 1 entries archived.

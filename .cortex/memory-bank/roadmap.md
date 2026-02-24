@@ -14,6 +14,8 @@
 
 ## Pending plans (from .cortex/plans)
 
+- **E2E Plan Test** - PENDING - Plan: .cortex/plans/e2e-plan-test.md
+
 ### Investigation Plans (Archive / Reference)
 
 Completed investigations are recorded in [activeContext.md](activeContext.md). Plan files under `.cortex/plans/archive/` as needed.

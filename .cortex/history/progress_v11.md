@@ -13,6 +13,8 @@
 - **E2E Plan Test (2026-02-24)** - COMPLETE. E2E plan workflow test; single step marked Done.
 - **Tool consolidation Step 3 (2026-02-24)** - IN PROGRESS. Internalized low-usage MCP tools session_register, session_deregister, claim_task_lock, release_task_lock, list_active_tasks, check_task_available_lock, list_plans, get_plan by removing @mcp.tool decorators; quality gate and full test suite passed (92.77% coverage).
 - **Tool consolidation Step 3 (2026-02-24)** - COMPLETE. Merged list_plans and get_plan into create_plan(operation="create"|"list"|"get"); updated tests and docs/api/tools.md. Session/task tools (session_register, list_active_tasks, etc.) already not @mcp.tool()-registered.
+- Completed `/cortex/commit` preflight: all fix_errors, format, synapse_format, synapse_lint, type_check, quality, and tests checks passed (4710 tests, 92.75% coverage) with no files modified.
+- - **Commit pipeline preflight (2026-02-24)** - COMPLETE. All pre-commit checks passing with 4710 tests and 92.75% coverage.
 
 ## 2026-02-23
 
