@@ -36,7 +36,9 @@ from cortex.tools.tool_categories import (
 _MIN_ALWAYS_LOADED = 12  # at least this many core tools
 _MIN_DEFERRED_MEDIUM = 15
 _MIN_DEFERRED_LOW = 8  # reduced with session-optimization tool consolidation
-_MIN_TOTAL_TOOLS = 46  # Phase 50 + consolidation; update when tools added/removed
+_MIN_TOTAL_TOOLS = (
+    44  # Updated after Phase 50 consolidation; keep in sync with TOOL_CATEGORIES
+)
 
 
 @pytest.mark.timeout(5)

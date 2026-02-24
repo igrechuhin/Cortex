@@ -18,6 +18,7 @@
 - **E2E Plan Test (2026-02-24)** - COMPLETE. E2E plan test work is already done; syncing roadmap and memory bank only.
 - **Tool consolidation – Step 5 (2026-02-24)** - COMPLETED. Consolidated context and health analytics into the unified `analyze` MCP tool and removed legacy context-analysis tool registrations.
 - **Commit: tool categories, optimization config, analysis/health/context handlers, phase4_optimization, tests** - Preflight passed (fix_errors, format, type_check, quality, 4701 tests, 92.69% coverage); markdown lint fixed.
+- **Tool consolidation Step 6 — pre-commit pipeline (2026-02-24)** - COMPLETE. Merged run_preflight_checks and run_docs_and_memory_bank_sync into execute_pre_commit_checks(phase="A"|"B"|"full"); removed two MCP tools; updated tests and docs.
 
 ## 2026-02-23
 

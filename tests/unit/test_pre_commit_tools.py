@@ -1697,10 +1697,13 @@ class TestPreCommitToolsContextLogging:
             assert result["status"] == "success"
             args_list = [c[0] for c in mock_log.call_args_list]
             levels_and_messages = [(a[1], a[2]) for a in args_list]
-            assert (
-                "info",
-                "execute_pre_commit_checks: starting",
-            ) in levels_and_messages
+            has_start_log = any(
+                level == "info"
+                and "execute_pre_commit_checks" in msg
+                and "checks=" in msg
+                for level, msg in levels_and_messages
+            )
+            assert has_start_log, f"Expected start log; got {levels_and_messages}"
             assert (
                 "info",
                 "execute_pre_commit_checks: completed",

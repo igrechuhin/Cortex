@@ -202,16 +202,6 @@ TOOL_CATEGORIES: tuple[ToolCategoryEntry, ...] = (
         rationale="Plan registration in roadmap",
     ),
     ToolCategoryEntry(
-        name="run_preflight_checks",
-        category=ToolCategory.DEFERRED_MEDIUM,
-        rationale="Commit pipeline Phase A preflight",
-    ),
-    ToolCategoryEntry(
-        name="run_docs_and_memory_bank_sync",
-        category=ToolCategory.DEFERRED_MEDIUM,
-        rationale="Commit pipeline Phase B docs/memory bank sync",
-    ),
-    ToolCategoryEntry(
         name="sync_synapse",
         category=ToolCategory.DEFERRED_MEDIUM,
         rationale="Synapse repo pull/push operations",

@@ -91,8 +91,8 @@ Roles are automatically inferred from task descriptions using keyword heuristics
 
 The commit workflow is organized into phases (see `docs/design/commit-pipeline-phases.md`). Use phase helpers so `/cortex/commit` orchestrates instead of micromanaging:
 
-- **Phase A**: `run_preflight_checks()` — fix_errors, format, markdown lint, type_check, quality, tests. If it fails, stop and use `/cortex/fix-tests` or `/cortex/fix-quality`; do not debug inline.
-- **Phase B**: `run_docs_and_memory_bank_sync()` — after memory-bank/roadmap steps, validates timestamps and sync. If it fails, use `/cortex/docs-sync` then retry.
+- **Phase A**: `execute_pre_commit_checks(phase="A", ...)` — fix_errors, format, markdown lint, type_check, quality, tests. If it fails, stop and use `/cortex/fix-tests` or `/cortex/fix-quality`; do not debug inline.
+- **Phase B**: `execute_pre_commit_checks(phase="B")` — after memory-bank/roadmap steps, validates timestamps and sync. If it fails, use `/cortex/docs-sync` then retry.
 - **Zero-errors policy**: Any check with errors blocks commit; no exceptions. Apply fixes (or use the helper commands above) before proceeding.
 - **Doc-only when tooling unavailable**: For documentation-only sessions, if the environment cannot run the quality gate (e.g. ruff/black not in path, type_check certificate failure), the implement prompt may allow proceeding with a "run full pre-commit before commit" note; see [Troubleshooting: Quality gate unavailable](docs/guides/troubleshooting.md#quality-gate-unavailable-in-environment).
 

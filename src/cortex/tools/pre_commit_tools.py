@@ -14,7 +14,7 @@ import json
 import logging
 from collections.abc import Callable, Sequence
 from pathlib import Path
-from typing import cast
+from typing import Literal, cast
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -378,43 +378,6 @@ async def _execute_pre_commit_checks_impl(
     return out
 
 
-async def _log_pre_commit_start(
-    ctx: MCPContext | None,
-    checks: Sequence[PreCommitCheckName],
-    test_timeout: int,
-    coverage_threshold: float,
-    strict_mode: bool,
-) -> None:
-    """Log start and parameters for execute_pre_commit_checks."""
-    await log_client(
-        ctx, "info", "execute_pre_commit_checks: starting", logger_name=__name__
-    )
-    await log_client(
-        ctx,
-        "info",
-        (
-            f"execute_pre_commit_checks: checks={list(checks)}, "
-            f"test_timeout={test_timeout}, coverage_threshold={coverage_threshold}, "
-            f"strict_mode={strict_mode}"
-        ),
-        logger_name=__name__,
-    )
-
-
-async def _resolve_and_run_pre_commit_impl(
-    ctx: MCPContext | None,
-    checks: Sequence[PreCommitCheckName],
-    strict_mode: bool,
-    test_timeout: int,
-    coverage_threshold: float,
-) -> ModelDict:
-    """Resolve project root and run pre-commit checks implementation."""
-    root = await get_or_resolve_project_root(ctx)
-    return await _execute_pre_commit_checks_impl(
-        root, None, checks, strict_mode, test_timeout, coverage_threshold, ctx
-    )
-
-
 async def _run_execute_pre_commit_checks(
     checks: Sequence[PreCommitCheckName],
     test_timeout: int,
@@ -423,12 +386,16 @@ async def _run_execute_pre_commit_checks(
     ctx: MCPContext | None,
 ) -> ModelDict:
     """Resolve root, run impl, log and handle errors."""
-    await _log_pre_commit_start(
-        ctx, checks, test_timeout, coverage_threshold, strict_mode
+    await log_client(
+        ctx,
+        "info",
+        f"execute_pre_commit_checks: checks={list(checks)}, timeout={test_timeout}, cov={coverage_threshold}, strict={strict_mode}",
+        logger_name=__name__,
     )
     try:
-        return await _resolve_and_run_pre_commit_impl(
-            ctx, checks, strict_mode, test_timeout, coverage_threshold
+        root = await get_or_resolve_project_root(ctx)
+        return await _execute_pre_commit_checks_impl(
+            root, None, checks, strict_mode, test_timeout, coverage_threshold, ctx
         )
     except Exception as e:
         await log_client(
@@ -451,49 +418,41 @@ async def _run_execute_pre_commit_checks(
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_VERY_COMPLEX)
 async def execute_pre_commit_checks(
-    checks: Sequence[PreCommitCheckName],
-    test_timeout: int,
-    coverage_threshold: float,
-    strict_mode: bool,
+    phase: Literal["A", "B", "full"] | None = None,
+    checks: Sequence[PreCommitCheckName] | None = None,
+    test_timeout: int = 300,
+    coverage_threshold: float = 0.9,
+    strict_mode: bool = False,
+    include_untracked_markdown: bool = True,
     ctx: MCPContext | None = None,
 ) -> ModelDict:
-    """Execute pre-commit checks with language auto-detection.
+    """Execute pre-commit checks or commit pipeline phase (A/B/full).
 
-    Language is always auto-detected from the project; there is no language
-    parameter. USE WHEN: User wants pre-commit checks, user needs quality
-    validation, user requests pre-commit validation, user wants to
-    check before commit.
-
-    EXAMPLES: 'execute pre-commit checks', 'run quality checks',
-    'check formatting and linting', 'run pre-commit validation'.
-
-    RETURNS: JSON with check results, errors found, and pass/fail status.
-
-    Valid values for checks (invalid names are skipped; at least one required):
-    - fix_errors: Auto-fix lint/format errors
-    - format: Run formatter and fix formatting
-    - format_ci_parity: Verify formatter matches CI (script-based)
-    - type_check: Run type checker (e.g. pyright)
-    - quality: Lint, file size, function length; includes type_check
-    - spelling: Check spelling in code files (script-based)
-    - test_naming: Enforce test naming conventions (script-based)
-    - check_async_tests: Detect unawaited coroutines in test files (script-based)
-    - tests: Run test suite with coverage
-
-    All parameters are required. Example: checks=["fix_errors","format"],
-    test_timeout=300, coverage_threshold=0.9, strict_mode=False.
-
-    Args:
-        checks: List of check names (see valid values above).
-        test_timeout: Test run timeout in seconds (e.g. 300). Named to avoid
-            conflict with MCP wrapper's timeout parameter.
-        coverage_threshold: Minimum coverage 0.0-1.0 (e.g. 0.90).
-        strict_mode: Treat warnings as errors.
-    Returns:
-        Dict with status, language, checks, stats, error (if any); FastMCP serializes.
-    Examples:
-        See MCP tool descriptor for full JSON examples.
+    phase \"A\"|\"B\"|\"full\" runs Phase A preflight, Phase B docs/memory sync, or both.
+    phase None runs explicit checks (backward-compatible). USE WHEN: Phase A/B;
+    pre-commit validation. RETURNS: phase-specific keys (preflight_passed,
+    docs_phase_passed, phase_a/phase_b for full). Args: phase, checks (if phase
+    None), test_timeout, coverage_threshold, strict_mode, include_untracked_markdown, ctx.
     """
+    if phase is not None:
+        from cortex.tools.pre_commit_phase_dispatch import (
+            PreCommitPhase,
+            run_execute_pre_commit_checks_by_phase,
+        )
+
+        return await run_execute_pre_commit_checks_by_phase(
+            PreCommitPhase(phase),
+            test_timeout,
+            coverage_threshold,
+            strict_mode,
+            include_untracked_markdown,
+            ctx,
+        )
+    if not checks:
+        return create_error_result_dict(
+            "checks required when phase is None; or use phase='A'/'B'/'full'",
+            "ValidationError",
+        )
     return await _run_execute_pre_commit_checks(
         checks, test_timeout, coverage_threshold, strict_mode, ctx
     )
@@ -704,29 +663,6 @@ def _process_markdown_results(
     return markdown_issues_fixed
 
 
-def _build_quality_response(
-    errors_fixed: int,
-    warnings_fixed: int,
-    formatting_issues_fixed: int,
-    markdown_issues_fixed: int,
-    type_errors_fixed: int,
-    files_modified: list[str],
-    remaining_issues: list[str],
-) -> FixQualityResult:
-    """Build quality fix response."""
-    return FixQualityResult(
-        status=OperationStatus.SUCCESS,
-        errors_fixed=errors_fixed,
-        warnings_fixed=warnings_fixed,
-        formatting_issues_fixed=formatting_issues_fixed,
-        markdown_issues_fixed=markdown_issues_fixed,
-        type_errors_fixed=type_errors_fixed,
-        files_modified=files_modified,
-        remaining_issues=remaining_issues,
-        error_message=None,
-    )
-
-
 def _build_quality_response_json(
     errors_fixed: int,
     warnings_fixed: int,
@@ -737,14 +673,16 @@ def _build_quality_response_json(
     remaining_issues: list[str],
 ) -> str:
     """Build quality fix response as JSON string."""
-    response = _build_quality_response(
-        errors_fixed,
-        warnings_fixed,
-        formatting_issues_fixed,
-        markdown_issues_fixed,
-        type_errors_fixed,
-        files_modified,
-        remaining_issues,
+    response = FixQualityResult(
+        status=OperationStatus.SUCCESS,
+        errors_fixed=errors_fixed,
+        warnings_fixed=warnings_fixed,
+        formatting_issues_fixed=formatting_issues_fixed,
+        markdown_issues_fixed=markdown_issues_fixed,
+        type_errors_fixed=type_errors_fixed,
+        files_modified=files_modified,
+        remaining_issues=remaining_issues,
+        error_message=None,
     )
     data = response.model_dump(mode="json")
     compact = truncate_large_logs_in_data(data)
@@ -787,10 +725,6 @@ async def _run_markdown_fixes_and_build_json(
     markdown_issues_fixed = await _fix_markdown_and_update_files(
         root_str, include_untracked_markdown, files_modified
     )
-    await report_progress_safe(ctx, 90.0, 100.0)
-    await log_client(
-        ctx, "info", "fix_quality_issues: Finalizing results...", logger_name=__name__
-    )
     out = _build_markdown_fix_output(
         fix_errors_result, markdown_issues_fixed, files_modified
     )
@@ -804,23 +738,11 @@ async def _run_quality_fixes_and_build_response(
     ctx: MCPContext | None = None,
 ) -> tuple[bool, str]:
     """Run fix_errors + markdown fixes; return (success, json_string)."""
-    await log_client(
-        ctx,
-        "info",
-        "fix_quality_issues: Running fix_errors, format, and type_check...",
-        logger_name=__name__,
-    )
     await report_progress_safe(ctx, 10.0, 100.0)
     fix_errors_result = await _run_quality_checks(root_str)
     if isinstance(fix_errors_result, str):
         return (False, fix_errors_result)
     (_, _, _, _, files_modified) = _extract_fix_statistics(fix_errors_result)
-    await log_client(
-        ctx,
-        "info",
-        "fix_quality_issues: Code checks complete. Fixing markdown lint...",
-        logger_name=__name__,
-    )
     await report_progress_safe(ctx, 50.0, 100.0)
     out = await _run_markdown_fixes_and_build_json(
         fix_errors_result, root_str, include_untracked_markdown, files_modified, ctx

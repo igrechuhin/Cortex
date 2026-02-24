@@ -97,7 +97,7 @@ This guide documents common workflows as sequences of Cortex MCP tool calls, wit
 
 **Tool sequence:**
 
-1. **run_preflight_checks** – Single entry for Phase A (fix_errors, format, type_check, quality, tests, markdown lint).
+1. **execute_pre_commit_checks(phase="A")** – Single entry for Phase A (fix_errors, format, type_check, quality, tests, markdown lint).
 
    ```json
    {
@@ -112,7 +112,7 @@ This guide documents common workflows as sequences of Cortex MCP tool calls, wit
 2. If a check fails:
    - **execute_pre_commit_checks**(`checks=["fix_errors"]`) or `["format"]` or `["quality"]` to fix.
    - **fix_markdown_lint**(`include_untracked_markdown`: true) for markdown.
-   - Re-run **run_preflight_checks** or the specific check until all pass.
+   - Re-run **execute_pre_commit_checks(phase="A")** or the specific check until all pass.
 
 3. **validate** – Optional: `check_type="timestamps"` or `"roadmap_sync"` for memory bank consistency.
 

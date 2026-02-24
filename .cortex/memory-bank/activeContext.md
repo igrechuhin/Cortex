@@ -26,6 +26,8 @@
 
 - ✅ **Tool consolidation – Step 5 analytics** - COMPLETE (2026-02-24) - Consolidated context-effectiveness and health-check analytics into the unified `analyze` MCP tool, removed standalone context analysis tools, updated tool categories and optimization config, and kept Phase 43 resources delegating to the new implementation.
 
+- ✅ **Tool consolidation Step 6 — pre-commit pipeline** - COMPLETE (2026-02-24) - Merged run_preflight_checks and run_docs_and_memory_bank_sync into execute_pre_commit_checks(phase="A"|"B"|"full"); removed two MCP tool registrations; added pre_commit_phase_dispatch; updated tests and prompts.
+
 ## Completed Work (2026-02-23)
 
 - **Summary (2026-02-23)** - 1 entries archived.

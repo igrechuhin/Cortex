@@ -147,8 +147,8 @@ MCP_TOOL_TIMEOUT_QUALITY_FIXES = 60  # Quality auto-fix tools (e.g. fix_quality_
 - `validate`
 - `summarize_content`
 - `get_relevance_scores`
-- `run_preflight_checks`
-- `run_docs_and_memory_bank_sync`
+- `execute_pre_commit_checks(phase="A")` (Phase A preflight)
+- `execute_pre_commit_checks(phase="B")` (Phase B docs/memory sync)
 
 ### Very Complex Operations (960 seconds / 16 minutes)
 

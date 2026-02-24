@@ -1,7 +1,7 @@
 """Tests for phase-level pre-commit helper tools.
 
-Covers Phase A (run_preflight_checks) and Phase B (run_docs_and_memory_bank_sync)
-MCP tools and their underlying helper implementations with success, failure,
+Covers Phase A and Phase B via execute_pre_commit_checks(phase=\"A\"|\"B\")
+and their underlying helper implementations with success, failure,
 tool-error, and edge-case scenarios.
 """
 
@@ -22,10 +22,6 @@ from cortex.tools.pre_commit_docs_memory_helpers import (
     _build_timestamps_summary,  # pyright: ignore[reportPrivateUsage]
     _compute_docs_memory_bank_passed,  # pyright: ignore[reportPrivateUsage]
 )
-from cortex.tools.pre_commit_phase_tools import (
-    run_docs_and_memory_bank_sync,
-    run_preflight_checks,
-)
 from cortex.tools.pre_commit_preflight_helpers import (
     _append_markdown_summary,  # pyright: ignore[reportPrivateUsage]
     _build_check_summaries,  # pyright: ignore[reportPrivateUsage]
@@ -35,6 +31,7 @@ from cortex.tools.pre_commit_preflight_helpers import (
     _has_pre_commit_tool_error,  # pyright: ignore[reportPrivateUsage]
     _markdown_has_tool_error,  # pyright: ignore[reportPrivateUsage]
 )
+from cortex.tools.pre_commit_tools import execute_pre_commit_checks
 
 # ---------------------------------------------------------------------------
 # Factories
@@ -98,12 +95,12 @@ def _make_markdown_result(
 
 
 # ============================================================================
-# Phase A – run_preflight_checks (MCP tool integration tests)
+# Phase A – execute_pre_commit_checks(phase="A") (MCP tool integration tests)
 # ============================================================================
 
 
 class TestRunPreflightChecks:
-    """Tests for run_preflight_checks MCP tool."""
+    """Tests for execute_pre_commit_checks(phase='A') (Phase A preflight)."""
 
     @pytest.mark.asyncio
     async def test_success(self) -> None:
@@ -124,7 +121,8 @@ class TestRunPreflightChecks:
             )
             mock_md.return_value = _make_markdown_result(files_with_errors=0)
 
-            result = await run_preflight_checks(
+            result = await execute_pre_commit_checks(
+                phase="A",
                 test_timeout=300,
                 coverage_threshold=0.9,
                 strict_mode=False,
@@ -156,7 +154,8 @@ class TestRunPreflightChecks:
             )
             mock_md.return_value = _make_markdown_result(files_with_errors=0)
 
-            result = await run_preflight_checks(
+            result = await execute_pre_commit_checks(
+                phase="A",
                 test_timeout=300,
                 coverage_threshold=0.9,
                 strict_mode=False,
@@ -187,7 +186,8 @@ class TestRunPreflightChecks:
             )
             mock_md.return_value = _make_markdown_result(files_with_errors=0)
 
-            result = await run_preflight_checks(
+            result = await execute_pre_commit_checks(
+                phase="A",
                 test_timeout=300,
                 coverage_threshold=0.9,
                 strict_mode=False,
@@ -216,7 +216,8 @@ class TestRunPreflightChecks:
             )
             mock_md.return_value = _make_markdown_result(files_with_errors=3)
 
-            result = await run_preflight_checks(
+            result = await execute_pre_commit_checks(
+                phase="A",
                 test_timeout=300,
                 coverage_threshold=0.9,
                 strict_mode=False,
@@ -251,7 +252,8 @@ class TestRunPreflightChecks:
                 tool_error=True,
             )
 
-            result = await run_preflight_checks(
+            result = await execute_pre_commit_checks(
+                phase="A",
                 test_timeout=300,
                 coverage_threshold=0.9,
                 strict_mode=False,
@@ -279,7 +281,8 @@ class TestRunPreflightChecks:
             )
             mock_md.return_value = "NOT-JSON"
 
-            result = await run_preflight_checks(
+            result = await execute_pre_commit_checks(
+                phase="A",
                 test_timeout=300,
                 coverage_threshold=0.9,
                 strict_mode=False,
@@ -312,7 +315,8 @@ class TestRunPreflightChecks:
             )
             mock_md.return_value = "[1, 2]"
 
-            result = await run_preflight_checks(
+            result = await execute_pre_commit_checks(
+                phase="A",
                 test_timeout=300,
                 coverage_threshold=0.9,
                 strict_mode=False,
@@ -362,7 +366,8 @@ class TestRunPreflightChecks:
                 return_value=_make_markdown_result(files_with_errors=0),
             ),
         ):
-            result = await run_preflight_checks(
+            result = await execute_pre_commit_checks(
+                phase="A",
                 test_timeout=300,
                 coverage_threshold=0.9,
                 strict_mode=False,
@@ -518,12 +523,12 @@ class TestPreflightHelperFunctions:
 
 
 # ============================================================================
-# Phase B – run_docs_and_memory_bank_sync (MCP tool integration tests)
+# Phase B – execute_pre_commit_checks(phase="B") (MCP tool integration tests)
 # ============================================================================
 
 
 class TestRunDocsAndMemoryBankSync:
-    """Tests for run_docs_and_memory_bank_sync MCP tool."""
+    """Tests for execute_pre_commit_checks(phase='B') (Phase B docs/memory sync)."""
 
     @pytest.mark.asyncio
     async def test_success(self) -> None:
@@ -555,7 +560,7 @@ class TestRunDocsAndMemoryBankSync:
                 json.dumps(timestamps_payload),
                 json.dumps(roadmap_payload),
             ]
-            result = await run_docs_and_memory_bank_sync()
+            result = await execute_pre_commit_checks(phase="B")
 
         assert result["status"] == "success"
         assert result["docs_phase_passed"] is True
@@ -593,7 +598,7 @@ class TestRunDocsAndMemoryBankSync:
                 json.dumps(timestamps_payload),
                 json.dumps(roadmap_payload),
             ]
-            result = await run_docs_and_memory_bank_sync()
+            result = await execute_pre_commit_checks(phase="B")
 
         assert result["status"] == "success"
         assert result["docs_phase_passed"] is False
@@ -628,7 +633,7 @@ class TestRunDocsAndMemoryBankSync:
                 json.dumps(timestamps_payload),
                 json.dumps(roadmap_payload),
             ]
-            result = await run_docs_and_memory_bank_sync()
+            result = await execute_pre_commit_checks(phase="B")
 
         assert result["status"] == "error"
         assert result["error_type"] == "DocsMemoryBankToolError"
@@ -664,7 +669,7 @@ class TestRunDocsAndMemoryBankSync:
                 json.dumps(timestamps_payload),
                 json.dumps(roadmap_payload),
             ]
-            result = await run_docs_and_memory_bank_sync()
+            result = await execute_pre_commit_checks(phase="B")
 
         assert result["status"] == "success"
         assert result["docs_phase_passed"] is False
@@ -695,7 +700,7 @@ class TestRunDocsAndMemoryBankSync:
                 json.dumps(timestamps_payload),
                 json.dumps(roadmap_payload),
             ]
-            result = await run_docs_and_memory_bank_sync()
+            result = await execute_pre_commit_checks(phase="B")
 
         assert result["status"] == "error"
         assert result["error_type"] == "DocsMemoryBankToolError"
@@ -708,7 +713,7 @@ class TestRunDocsAndMemoryBankSync:
             new_callable=AsyncMock,
         ) as mock_validate:
             mock_validate.side_effect = ["NOT-JSON", "ALSO-NOT-JSON"]
-            result = await run_docs_and_memory_bank_sync()
+            result = await execute_pre_commit_checks(phase="B")
 
         # Both results are None, so docs_phase_passed should be True
         # (both default to True when None)
@@ -735,7 +740,7 @@ class TestRunDocsAndMemoryBankSync:
             new_callable=AsyncMock,
         ) as mock_validate:
             mock_validate.side_effect = ["[1, 2]", json.dumps(roadmap_payload)]
-            result = await run_docs_and_memory_bank_sync()
+            result = await execute_pre_commit_checks(phase="B")
 
         assert result["status"] == "success"
         assert result["docs_phase_passed"] is True
@@ -773,7 +778,7 @@ class TestRunDocsAndMemoryBankSync:
                 json.dumps(timestamps_payload),
                 json.dumps(roadmap_payload),
             ]
-            result = await run_docs_and_memory_bank_sync()
+            result = await execute_pre_commit_checks(phase="B")
 
         assert result["status"] == "success"
         assert result["docs_phase_passed"] is True

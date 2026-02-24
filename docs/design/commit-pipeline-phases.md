@@ -317,8 +317,8 @@ all phases:
 This document serves as the foundation for subsequent plan steps:
 
 - **Step 2**: Introduce phase-level MCP tools or helpers that
-  encapsulate phase logic (e.g., `run_preflight_checks`,
-  `sync_docs_and_memory_bank`).
+  encapsulate phase logic (e.g., `execute_pre_commit_checks(phase="A")`,
+  `execute_pre_commit_checks(phase="B")`).
 - **Step 3**: Refactor `/cortex/commit` prompt to orchestrate phase
   tools instead of micromanaging individual checks.
 - **Step 4**: Add focused helper commands for common failure modes

@@ -142,7 +142,7 @@ Cortex exposes 60+ MCP tools. Key tools by workflow:
 | **Session** | `session_start` – orientation brief; `load_context` – task context within token budget (supports `strategy="progressive"`); `compact_session` – end-of-session compaction and handoff |
 | **Memory Bank** | `manage_file` – read/write files; `query_memory_bank` – stats, version history, dependency/link graph, transclusions, validation |
 | **Validation & Quality** | `validate` – schema, duplication, quality; `execute_pre_commit_checks` – full pre-commit gate; `fix_quality_issues` – auto-fix lint/format/types |
-| **Commit Pipeline** | `run_preflight_checks` – Phase A (format, lint, types, tests); `run_docs_and_memory_bank_sync` – Phase B (docs/memory-bank sync) |
+| **Commit Pipeline** | `execute_pre_commit_checks(phase="A")` – Phase A (format, lint, types, tests); `execute_pre_commit_checks(phase="B")` – Phase B (docs/memory-bank sync) |
 | **Plans & Roadmap** | `create_plan`, `register_plan_in_roadmap`, `complete_plan`, `add_roadmap_entry`, `append_progress_entry`, `append_active_context_entry` |
 | **Rules & Synapse** | `rules`, `get_synapse_rules`, `get_synapse_prompts`, `sync_synapse`, `configure`, `get_structure_info` |
 | **Refactoring** | `suggest_refactoring`, `apply_refactoring`, `provide_feedback` |
