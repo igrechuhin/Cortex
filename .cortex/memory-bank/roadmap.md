@@ -8,9 +8,13 @@
 
 ## Active Work (in progress)
 
+- **Pending: Tool consolidation — 64 tools → ~24 (P0)** - Reduce MCP tool count to fit within editor limits (Cursor ~80 across all MCPs). Complete Phase 50 consolidation, remove duplicates/dead tools, consolidate script/analytics/pre-commit tools. Plan: .cortex/plans/session-optimization-tools-set-optimization-from-usage-data.md
+
 ## Future Enhancements
 
 ## Pending plans (from .cortex/plans)
+
+- **E2E Plan Test** - PENDING - Plan: .cortex/plans/e2e-plan-test.md
 
 ### Investigation Plans (Archive / Reference)
 

@@ -1,6 +1,11 @@
 """E2E tests: create plan → update steps (roadmap) → list/archive flow.
 
 Exercises plan workflow with at least 3 MCP tools in sequence.
+
+Test-only stubs: Plans created here (e2e-plan-test, workflow-plan) are for tmp_path
+only. They must NOT be created in the real .cortex/plans/; the patch on
+resolve_project_root_async ensures all tools use tmp_path. Assertions verify
+created plan paths stay under tmp_path.
 """
 
 import json
@@ -47,7 +52,7 @@ async def test_plan_workflow_create_add_list(tmp_path: Path) -> None:
     _write_minimal_memory_bank_and_roadmap(memory_bank_dir, plans_dir)
 
     with patch(
-        "cortex.core.project_root_resolver.resolve_project_root_async",
+        "cortex.tools.plan_crud.resolve_project_root_async",
         new_callable=AsyncMock,
         return_value=tmp_path,
     ):
@@ -68,6 +73,11 @@ async def test_plan_workflow_create_add_list(tmp_path: Path) -> None:
             ),
         )
         assert create_data.get("status") == "success" or "plan_path" in str(create_data)
+        file_path = create_data.get("file_path")
+        if isinstance(file_path, str):
+            assert (
+                Path(file_path).resolve().is_relative_to(tmp_path.resolve())
+            ), f"Plan must be under tmp_path, got {file_path!r}"
 
         # 2) add_roadmap_entry (register the plan)
         add_fn = get_tool_fn(add_roadmap_entry)
@@ -113,7 +123,7 @@ async def test_plan_workflow_manage_file_create_plan(tmp_path: Path) -> None:
     _write_minimal_memory_bank_and_roadmap(memory_bank_dir, plans_dir)
 
     with patch(
-        "cortex.core.project_root_resolver.resolve_project_root_async",
+        "cortex.tools.plan_crud.resolve_project_root_async",
         new_callable=AsyncMock,
         return_value=tmp_path,
     ):
@@ -132,6 +142,19 @@ async def test_plan_workflow_manage_file_create_plan(tmp_path: Path) -> None:
             ctx=None,
         )
         assert create_result is not None
+        create_data = cast(
+            dict[str, object],
+            (
+                to_dict(cast(object, create_result))
+                if isinstance(create_result, dict)
+                else json.loads(str(create_result))
+            ),
+        )
+        file_path = create_data.get("file_path")
+        if isinstance(file_path, str):
+            assert (
+                Path(file_path).resolve().is_relative_to(tmp_path.resolve())
+            ), f"Plan must be under tmp_path, got {file_path!r}"
 
         # 3) list_plans
         list_fn = get_tool_fn(list_plans)

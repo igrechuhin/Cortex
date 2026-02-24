@@ -8,6 +8,8 @@
 - **Anthropic alignment Step 1 (batch 2)** - COMPLETE. Added EXAMPLES to remove_roadmap_entry, remove_roadmap_section, complete_plan, compact_session, register_plan_in_roadmap (10 tools total with examples). Full audit of 101+ tools still pending.
 - **Anthropic alignment Step 1 (batch 3)** - COMPLETE. Added EXAMPLES to create_plan, run_preflight_checks, run_docs_and_memory_bank_sync, query_memory_bank, query_usage; 15 tools total with examples.
 - Commit: Fixed function length violation in query_usage_operations.query_usage; refactored to_build_query_usage_params_from_locals. Phase A and markdown lint passed.
+- **Tool consolidation (plan session-optimization-tools-set-optimization-from-usage-data)** - Step 1 and Step 2 completed. optimization.json aligned with Phase 50: removed old get_* and duplicate names from tool_search; added query_memory_bank, query_usage, remove_roadmap_section. Synapse prompts (analyze, commit, implement) updated to use query_memory_bank(query_type="stats") and consolidated validate_links wording. All pre-commit checks and tests pass.
+- **Commit pipeline markdown lint** - COMPLETE. Plan MD036 and analyze.md MD040 fixes. Preflight passed; 4704 tests, 92.76% coverage.
 
 ## 2026-02-23
 
