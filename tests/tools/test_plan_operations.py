@@ -41,8 +41,7 @@ from cortex.tools.plan_operations import (
     GetPlanResult,
     ListPlansResult,
     RegisterPlanResult,
-    get_plan,
-    list_plans,
+    create_plan,
     register_plan_in_roadmap,
 )
 from cortex.tools.plan_roadmap import (
@@ -760,11 +759,11 @@ class TestGetPlanImpl:
 
 
 class TestListPlansTool:
-    """Test list_plans MCP tool."""
+    """Test create_plan(operation='list') (list plans)."""
 
     @pytest.mark.asyncio
     async def test_list_plans_returns_json(self, tmp_path: Path) -> None:
-        """list_plans returns valid ListPlansResult JSON."""
+        """create_plan(operation='list') returns valid ListPlansResult JSON."""
         plans_dir = get_cortex_path(tmp_path, CortexResourceType.PLANS)
         plans_dir.mkdir(parents=True)
         _ = (plans_dir / "one.md").write_text("# One")
@@ -773,7 +772,9 @@ class TestListPlansTool:
             new_callable=AsyncMock,
             return_value=tmp_path,
         ):
-            result_str = await list_plans(include_archive=False, ctx=None)
+            result_str = await create_plan(
+                operation="list", include_archive=False, ctx=None
+            )
         result = ListPlansResult.model_validate_json(result_str)
         assert result.status == "success"
         assert len(result.plans) >= 1
@@ -781,11 +782,11 @@ class TestListPlansTool:
 
 
 class TestGetPlanTool:
-    """Test get_plan MCP tool."""
+    """Test create_plan(operation='get') (get plan by slug)."""
 
     @pytest.mark.asyncio
     async def test_get_plan_content_returns_full_text(self, tmp_path: Path) -> None:
-        """get_plan with response_format=content returns plan content."""
+        """create_plan(operation='get') with response_format=content returns plan content."""
         plans_dir = get_cortex_path(tmp_path, CortexResourceType.PLANS)
         plans_dir.mkdir(parents=True)
         _ = (plans_dir / "my-plan.md").write_text("# My Plan\n\nBody text")
@@ -794,8 +795,11 @@ class TestGetPlanTool:
             new_callable=AsyncMock,
             return_value=tmp_path,
         ):
-            result_str = await get_plan(
-                slug="my-plan", response_format="content", ctx=None
+            result_str = await create_plan(
+                operation="get",
+                slug="my-plan",
+                response_format="content",
+                ctx=None,
             )
         result = GetPlanResult.model_validate_json(result_str)
         assert result.status == "success"
@@ -804,14 +808,16 @@ class TestGetPlanTool:
 
     @pytest.mark.asyncio
     async def test_get_plan_not_found_returns_error(self, tmp_path: Path) -> None:
-        """get_plan with unknown slug returns error."""
+        """create_plan(operation='get') with unknown slug returns error."""
         get_cortex_path(tmp_path, CortexResourceType.PLANS).mkdir(parents=True)
         with patch(
             "cortex.tools.plan_crud.resolve_project_root_async",
             new_callable=AsyncMock,
             return_value=tmp_path,
         ):
-            result_str = await get_plan(slug="nonexistent", ctx=None)
+            result_str = await create_plan(
+                operation="get", slug="nonexistent", ctx=None
+            )
         result = GetPlanResult.model_validate_json(result_str)
         assert result.status == "error"
         assert "not found" in result.message.lower()

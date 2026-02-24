@@ -17,7 +17,7 @@ import pytest
 
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.tools.file_operations import manage_file
-from cortex.tools.plan_crud import create_plan, list_plans
+from cortex.tools.plan_crud import create_plan
 from cortex.tools.roadmap_operations import add_roadmap_entry
 from tests.helpers.path_helpers import ensure_test_cortex_structure
 from tests.helpers.tool_call_helpers import get_tool_fn, to_dict
@@ -99,9 +99,9 @@ async def test_plan_workflow_create_add_list(tmp_path: Path) -> None:
             add_data
         )
 
-        # 3) list_plans
-        list_fn = get_tool_fn(list_plans)
-        list_result = await list_fn(include_archive=False, ctx=None)
+        # 3) create_plan(operation="list")
+        list_fn = get_tool_fn(create_plan)
+        list_result = await list_fn(operation="list", include_archive=False, ctx=None)
         list_data = cast(
             dict[str, object],
             (
@@ -156,9 +156,9 @@ async def test_plan_workflow_manage_file_create_plan(tmp_path: Path) -> None:
                 Path(file_path).resolve().is_relative_to(tmp_path.resolve())
             ), f"Plan must be under tmp_path, got {file_path!r}"
 
-        # 3) list_plans
-        list_fn = get_tool_fn(list_plans)
-        list_result = await list_fn(include_archive=False, ctx=None)
+        # 3) create_plan(operation="list")
+        list_fn = get_tool_fn(create_plan)
+        list_result = await list_fn(operation="list", include_archive=False, ctx=None)
         list_data = cast(
             dict[str, object],
             (

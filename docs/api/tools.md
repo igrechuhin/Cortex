@@ -516,23 +516,26 @@ Performs server-side insertion into `roadmap.md` without requiring the client to
 
 ### create_plan
 
-Create a structured plan file in the plans directory.
+Create, list, or get plan files (single tool for plan CRUD).
 
-**USE WHEN:** Creating a new plan during the create-plan workflow. Prefer this over writing the plan file with the Write tool so path resolution and filename sanitization are handled consistently.
+**USE WHEN:** Creating a plan (`operation="create"`), listing plans (`operation="list"`), or reading a plan by slug (`operation="get"`). Prefer this over writing the plan file with the Write tool so path resolution and filename sanitization are handled consistently.
 
-**RETURNS:** JSON with `status`, `file_path` (on success), `message`, and `error` (if any).
+**RETURNS:** JSON — `CreatePlanResult` (create), `ListPlansResult` (list), or `GetPlanResult` (get).
 
 **Parameters:**
 
-- `title` (str) - **Required.** Plan title (used to generate slug if `slug` not provided).
-- `content` (str) - **Required.** Full markdown content for the plan file.
-- `slug` (str | None) - Optional filename slug (e.g. `phase-x-feature-name`). If not provided, generated from title (lowercase, non-alphanumeric replaced with hyphens).
+- `operation` (str) - `create` (default), `list`, or `get`.
+- `title` (str | None) - Plan title (required when `operation="create"`).
+- `content` (str | None) - Full markdown content (required when `operation="create"`).
+- `slug` (str | None) - Filename without `.md` (optional for create; required when `operation="get"`).
+- `include_archive` (bool) - Include archive plans when `operation="list"` (default: false).
+- `response_format` (str) - `content` or `metadata` when `operation="get"` (default: `content`).
 
 **Description:**
 
-- Resolves plans directory via project structure (same as `get_structure_info().paths.plans`).
-- Sanitizes slug/filename; writes content to `{plans_dir}/{slug}.md`.
-- Creates plans directory if it does not exist.
+- **create:** Resolves plans directory via project structure; sanitizes slug/filename; writes content to `{plans_dir}/{slug}.md`; creates plans directory if needed.
+- **list:** Returns list of plan entries (slug, optional title) under plans directory; optionally includes archive.
+- **get:** Reads plan by slug; returns full content or metadata (title, **Status** value).
 
 **Returns:**
 
@@ -558,14 +561,21 @@ Create a structured plan file in the plans directory.
 }
 ```
 
-**Example:**
+**Examples:**
 
 ```python
+# Create plan
 await create_plan(
+    operation="create",
     title="Phase 60: Structured plan tools",
     content="# Phase 60\n\n**Status**: Pending\n\n## Goal\n...",
-    slug="phase-60-structured-plan-tools"
+    slug="phase-60-structured-plan-tools",
 )
+# List plans
+await create_plan(operation="list", include_archive=False)
+# Get plan content or metadata
+await create_plan(operation="get", slug="phase-60-feature", response_format="content")
+await create_plan(operation="get", slug="phase-60-feature", response_format="metadata")
 ```
 
 **See also:** `register_plan_in_roadmap`, `add_roadmap_entry`, `get_structure_info`.
@@ -632,100 +642,19 @@ await register_plan_in_roadmap(
 )
 ```
 
-**See also:** `create_plan`, `list_plans`, `get_plan`, `add_roadmap_entry`, `remove_roadmap_entry`, `complete_plan`, `manage_file` (fallback).
+**See also:** `create_plan`, `add_roadmap_entry`, `remove_roadmap_entry`, `complete_plan`, `manage_file` (fallback).
 
 ---
 
-### list_plans
+### list_plans (use create_plan(operation="list"))
 
-List plan files in the plans directory.
-
-**USE WHEN:** Checking for existing plans before creating a new one (e.g. create-plan Step 2.5) or discovering plan slugs for `get_plan`.
-
-**RETURNS:** JSON with `status`, `plans` (list of `{slug, title}`), `message`, and `error` (if any).
-
-**Parameters:**
-
-- `include_archive` (bool) - If true, include plans under `.cortex/plans/archive/` (default: false).
-
-**Description:**
-
-- Resolves plans directory via project structure. Lists `.md` files; when `include_archive` is false, excludes paths under `archive/`. Each entry includes `slug` (filename without `.md`) and optional `title` (first `#` heading from file content).
-
-**Returns (success):**
-
-```json
-{
-  "status": "success",
-  "plans": [{"slug": "phase-60-feature", "title": "Phase 60: Feature"}],
-  "message": "Found 1 plan(s)",
-  "error": null
-}
-```
-
-**Example:**
-
-```python
-await list_plans(include_archive=False)
-```
-
-**See also:** `get_plan`, `create_plan`, `register_plan_in_roadmap`.
+List plan files: use `create_plan(operation="list", include_archive=False)`. Returns `ListPlansResult` JSON with `status`, `plans` (list of `{slug, title}`), `message`, and `error` (if any).
 
 ---
 
-### get_plan
+### get_plan (use create_plan(operation="get"))
 
-Read a plan by slug (filename without `.md`).
-
-**USE WHEN:** Enriching an existing plan or checking plan content without raw file reads.
-
-**RETURNS:** JSON with `status`, `slug`, and either full `content` (when `response_format='content'`) or `title` and `plan_status` (when `response_format='metadata'`).
-
-**Parameters:**
-
-- `slug` (str) - **Required.** Plan filename without `.md` (e.g. `phase-60-feature` or `structured-planning-cortex-mcp-tools`).
-- `response_format` (str) - `content` (default) for full markdown; `metadata` for title and **Status** value only.
-
-**Description:**
-
-- Resolves plan file under plans directory (root or under subdirs, e.g. archive). For `metadata`, parses first `#` heading as title and `**Status**:` line as `plan_status`.
-
-**Returns (success, content):**
-
-```json
-{
-  "status": "success",
-  "slug": "my-plan",
-  "content": "# My Plan\n\n**Status**: Pending\n\n...",
-  "title": null,
-  "plan_status": null,
-  "message": "Plan 'my-plan' read successfully",
-  "error": null
-}
-```
-
-**Returns (success, metadata):**
-
-```json
-{
-  "status": "success",
-  "slug": "my-plan",
-  "content": null,
-  "title": "My Plan",
-  "plan_status": "Pending",
-  "message": "Plan 'my-plan' metadata",
-  "error": null
-}
-```
-
-**Example:**
-
-```python
-await get_plan(slug="phase-60-feature", response_format="content")
-await get_plan(slug="phase-60-feature", response_format="metadata")
-```
-
-**See also:** `list_plans`, `create_plan`, `register_plan_in_roadmap`.
+Read a plan by slug: use `create_plan(operation="get", slug="phase-60-feature", response_format="content"|"metadata")`. Returns `GetPlanResult` JSON with `status`, `slug`, and either full `content` or `title`/`plan_status`.
 
 ---
 

@@ -6,6 +6,7 @@ Implementation module for plan file creation, listing, and reading.
 
 import re
 from pathlib import Path
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -258,26 +259,55 @@ async def _create_plan_impl(
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_MEDIUM)
 async def create_plan(
-    title: str,
-    content: str,
+    operation: Literal["create", "list", "get"] = "create",
+    title: str | None = None,
+    content: str | None = None,
     slug: str | None = None,
+    include_archive: bool = False,
+    response_format: str = "content",
     ctx: MCPContext | None = None,
 ) -> str:
-    """Create a structured plan file in the plans directory.
+    """Create, list, or get plan files (single tool for plan CRUD).
 
-    USE WHEN: Creating a new plan during the create-plan workflow.
+    USE WHEN: Creating a plan (operation=create), listing plans (operation=list),
+    or reading a plan by slug (operation=get).
 
-    EXAMPLES: 'create_plan(title="Phase 60 Tool Audit", content="# Plan...")',
-    'create plan for session optimization', 'add new plan file'.
+    EXAMPLES:
+    - create_plan(operation="create", title="Phase 60", content="# Plan...")
+    - create_plan(operation="list") or create_plan(operation="list", include_archive=True)
+    - create_plan(operation="get", slug="phase-58-multi-agent")
 
-    RETURNS: JSON with operation status, file path (on success), and error if any.
+    RETURNS: JSON (CreatePlanResult, ListPlansResult, or GetPlanResult per operation).
 
     Parameters:
-    - title: Plan title (used to generate slug if not provided)
-    - content: Full markdown content for the plan file
-    - slug: Optional filename slug (e.g., 'phase-x-feature-name'). If not provided,
-            generated from title by converting to lowercase and replacing spaces with hyphens.
+    - operation: 'create' (default), 'list', or 'get'
+    - title: Plan title (required when operation=create)
+    - content: Full markdown content (required when operation=create)
+    - slug: Filename without .md (optional for create; required when operation=get)
+    - include_archive: Include archive plans when operation=list (default False)
+    - response_format: 'content' or 'metadata' when operation=get (default 'content')
     """
+    if operation == "list":
+        return await _list_plans_tool_impl(include_archive, ctx)
+    if operation == "get":
+        if not slug:
+            return GetPlanResult(
+                status="error",
+                slug=None,
+                content=None,
+                title=None,
+                plan_status=None,
+                message="slug is required when operation is 'get'",
+                error="Missing slug",
+            ).model_dump_json()
+        return await _get_plan_tool_impl(slug, response_format, ctx)
+    if not title or not content:
+        return CreatePlanResult(
+            status="error",
+            file_path=None,
+            message="title and content are required when operation is 'create'",
+            error="Missing title or content",
+        ).model_dump_json()
     return await _create_plan_impl(title, content, slug, ctx)
 
 

@@ -8,6 +8,8 @@
 
 ## Active Work (in progress)
 
+- **Pending: Tool consolidation — 64 tools → ~24 (P0)** - Reduce MCP tool count to fit within editor limits (Cursor ~80 across all MCPs). Complete Phase 50 consolidation, remove duplicates/dead tools, consolidate script/analytics/pre-commit tools. Plan: .cortex/plans/session-optimization-tools-set-optimization-from-usage-data.md
+
 ## Future Enhancements
 
 ## Pending plans (from .cortex/plans)
@@ -24,15 +26,9 @@ Completed investigations are recorded in [activeContext.md](activeContext.md). P
 
 ### Features & Enhancements
 
-- **Pending: Test coverage and quality (P0)** - Plan: .cortex/plans/plan-test-coverage-and-quality.md
-- **Pending: Documentation completeness (P1)** - Plan: .cortex/plans/plan-documentation-completeness.md
-- **Pending: Evaluation framework maturation (P1)** - Plan: .cortex/plans/plan-evaluation-framework-maturation.md
 - **Pending: Anthropic context engineering alignment (P1)** - Plan: .cortex/plans/plan-anthropic-context-engineering-alignment.md
 - **Pending: Agent skills and composability (P2)** - Plan: .cortex/plans/plan-agent-skills-and-composability.md
 - **Pending: Security and resilience (P2)** - Plan: .cortex/plans/plan-security-and-resilience.md
 - **Pending: Compound engineering alignment** - Plan: .cortex/plans/compound-engineering-alignment-cortex.md
 - **Pending: Phase 58 multi-agent specialization** - Plan: .cortex/plans/phase-58-multi-agent-specialization-task-locking.md
 - **Pending: Phase 9 excellence** - Plan: .cortex/plans/phase-9-excellence-98.md
-- **Pending: Investigate execute_pre_commit_checks failure (2026-02-17)** - Plan: .cortex/plans/phase-investigate-execute_pre_commit_checks-failure-20260217-201854.md
-- **Pending: Investigate fix_markdown_lint failure (2026-02-16)** - Plan: .cortex/plans/phase-investigate-fix_markdown_lint-failure-20260216-204350.md
-- **Pending: Session Optimization load context and test typing** - Plan: .cortex/plans/session-optimization-load-context-and-test-typing.md

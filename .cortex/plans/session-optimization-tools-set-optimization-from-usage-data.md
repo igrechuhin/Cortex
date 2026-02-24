@@ -1,6 +1,6 @@
 # Plan: Tool Consolidation — From 64 Tools to ~24
 
-## Status: IN PROGRESS
+## Status: IN PROGRESS (Step 3 done 2026-02-24)
 
 ## Created: 2026-02-24
 
@@ -117,7 +117,7 @@ Remove `write_file`, `update_config`, and `load_progressive_context`.
 
 Saves: ~3 tool slots
 
-### Step 3: Remove/internalize dead tools
+### Step 3: Remove/internalize dead tools ✅ COMPLETED 2026-02-24
 
 Convert 7 dead tools from public `@mcp.tool()` to internal functions:
 
