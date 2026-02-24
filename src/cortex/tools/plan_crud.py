@@ -267,6 +267,9 @@ async def create_plan(
 
     USE WHEN: Creating a new plan during the create-plan workflow.
 
+    EXAMPLES: 'create_plan(title="Phase 60 Tool Audit", content="# Plan...")',
+    'create plan for session optimization', 'add new plan file'.
+
     RETURNS: JSON with operation status, file path (on success), and error if any.
 
     Parameters:
@@ -333,6 +336,8 @@ async def list_plans(
 
     USE WHEN: Checking for existing plans before creating a new one (e.g. create-plan
     Step 2.5) or discovering plan slugs for get_plan.
+
+    EXAMPLES: 'list plans', 'list plans include_archive=true', 'what plans exist'.
 
     RETURNS: JSON with status, plans (list of {slug, title}), and error if any.
 
@@ -438,6 +443,9 @@ async def get_plan(
     """Read a plan by slug (filename without .md).
 
     USE WHEN: Enriching an existing plan or checking plan content without raw file reads.
+
+    EXAMPLES: 'get_plan(slug="phase-58-multi-agent")', 'get plan phase-9-excellence',
+    'get_plan(slug="plan-foo", response_format="metadata")'.
 
     RETURNS: JSON with status, slug, and either content (full text) or title/plan_status (metadata).
 

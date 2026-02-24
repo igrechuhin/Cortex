@@ -197,7 +197,19 @@ async def query_memory_bank(
     response_format: str = "concise",
     ctx: MCPContext | None = None,
 ) -> str:
-    """Query Memory Bank. query_type: stats|version_history|dependency_graph|link_graph|parse_links|validate_links|resolve_transclusions."""
+    """Query Memory Bank for stats, version history, graphs, links, or transclusions.
+
+    USE WHEN: User needs memory bank stats, version history, dependency/link
+    graph, link parsing/validation, or transclusion resolution.
+
+    EXAMPLES: 'query_memory_bank(query_type="stats")', 'get memory bank stats',
+    'query_memory_bank(query_type="version_history", file_name="roadmap.md")',
+    'get link graph', 'validate links in activeContext.md'.
+
+    RETURNS: JSON (or format) with result for query_type: stats,
+    version_history, dependency_graph, link_graph, parse_links,
+    validate_links, resolve_transclusions.
+    """
     await log_client(
         ctx,
         "info",

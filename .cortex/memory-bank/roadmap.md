@@ -24,7 +24,6 @@ Completed investigations are recorded in [activeContext.md](activeContext.md). P
 
 ### Features & Enhancements
 
-- **Pending: Evaluation framework maturation (P1)** - Plan: .cortex/plans/plan-evaluation-framework-maturation.md
 - **Pending: Anthropic context engineering alignment (P1)** - Plan: .cortex/plans/plan-anthropic-context-engineering-alignment.md
 - **Pending: Agent skills and composability (P2)** - Plan: .cortex/plans/plan-agent-skills-and-composability.md
 - **Pending: Security and resilience (P2)** - Plan: .cortex/plans/plan-security-and-resilience.md

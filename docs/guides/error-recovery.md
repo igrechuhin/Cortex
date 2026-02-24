@@ -349,7 +349,7 @@ This guide provides solutions for common errors in Cortex.
 
 **Causes:**
 
-- Invalid JSON syntax in `.memory-bank-validation.json`
+- Invalid JSON syntax in `.cortex/config/validation.json`
 - Invalid config values (out of range, wrong type)
 - Corrupted config file
 
@@ -359,7 +359,7 @@ This guide provides solutions for common errors in Cortex.
 
    ```bash
    # Validate JSON
-   python -m json.tool .memory-bank-validation.json
+   python -m json.tool .cortex/config/validation.json
    ```
 
 2. **Check Config Values:**
@@ -371,7 +371,7 @@ This guide provides solutions for common errors in Cortex.
 
    ```bash
    # Backup current config
-   mv .memory-bank-validation.json .memory-bank-validation.json.bak
+   mv .cortex/config/validation.json .cortex/config/validation.json.bak
 
    # System will use default values
    ```
@@ -476,7 +476,7 @@ Retries use exponential backoff with jitter to avoid thundering herd problems.
 
 ### Configuration
 
-- **Primary:** User config from `.memory-bank-validation.json`
+- **Primary:** User config from `.cortex/config/validation.json`
 - **Fallback:** Default configuration values
 - **Trigger:** Config file missing, corrupted, or invalid
 

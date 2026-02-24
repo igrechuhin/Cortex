@@ -3,7 +3,7 @@
   "auto_validate_on_write": true,
   "strict_mode": false,
   "token_budget": {
-    "max_total_tokens": "100000",
+    "max_total_tokens": 100000,
     "warn_at_percentage": 80,
     "per_file_max": 15000,
     "per_file_warn": 12000

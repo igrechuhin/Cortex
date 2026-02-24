@@ -1,5 +1,14 @@
 # Progress Log
 
+## 2026-02-24
+
+- **Session improvements 2026-02-23 (tools optimization) (2026-02-24)** - COMPLETE. Updated tool-optimization-mapping with append_active_context_entry (keep). No further deprecations recommended.
+- **Evaluation framework maturation Step 6 (2026-02-24)** - COMPLETE. Model upgrade playbook at docs/guides/model-upgrade-playbook.md; benchmark_model tool and model_benchmarks.json storage; run_full_evaluation_payload API.
+- **Anthropic context engineering alignment Step 1 (in progress) (2026-02-24)** - Rubric doc added (docs/guides/tool-description-altitude-rubric.md), pilot: 5 tools given EXAMPLES (list_plans, get_plan, add_roadmap_entry, append_progress_entry, append_active_context_entry). Full audit pending.
+- **Anthropic alignment Step 1 (batch 2)** - COMPLETE. Added EXAMPLES to remove_roadmap_entry, remove_roadmap_section, complete_plan, compact_session, register_plan_in_roadmap (10 tools total with examples). Full audit of 101+ tools still pending.
+- **Anthropic alignment Step 1 (batch 3)** - COMPLETE. Added EXAMPLES to create_plan, run_preflight_checks, run_docs_and_memory_bank_sync, query_memory_bank, query_usage; 15 tools total with examples.
+- Commit: Fixed function length violation in query_usage_operations.query_usage; refactored to_build_query_usage_params_from_locals. Phase A and markdown lint passed.
+
 ## 2026-02-23
 
 - Commit pipeline pre-commit passed - fix_errors, format, markdown lint, type_check, quality, tests 4548/4548, coverage 92.05%.
@@ -199,17 +208,7 @@
 
 ## 2026-02-16
 
-- **Commit (type fixes test_query_memory_bank_operations)** - COMPLETE. Fixed type errors in `tests/tools/test_query_memory_bank_operations.py`: added type annotations (`QueryMemoryBankParams`, `MCPContext | None`) to mock handler functions, added `# type: ignore[reportPrivateUsage]` comments for private `_MEMORY_BANK_HANDLERS` access in tests, removed unused imports (`Awaitable`, `Callable`). All 3985 tests pass; 90.11% coverage.
-- **Phase 50 Step 6: Testing and Validation** - COMPLETE. Added comprehensive unit tests for consolidated tools (query_memory_bank, query_usage): success cases for all query types, response_format parameter tests (concise vs detailed), error handling. Coverage: query_usage_operations 100%, query_memory_bank_operations 80.26% (average 90.13%). Verified no tests exist for removed MCP tools. All 3994 tests pass. Updated plan with metrics: tool count reduced from 53+ to ~40, response_format implemented for 6 tools targeting 50-70% token savings.
-- **Phase 51 Steps 5-6: Hybrid Retrieval Strategy and Documentation** - COMPLETE. Implemented hybrid retrieval strategy: always-load sections ("## Current Focus", "## Next Steps" from activeContext.md) loaded in full even when depth=metadata_only, while other files return metadata only. Added `always_load_sections` config to `LoadingStrategyConfigModel` and `optimization.json`. Updated implement prompt, AGENTS.md, and docs/api/tools.md with two-step pattern guidance. Added test for hybrid retrieval. **Note**: File size violation (481 lines, excess 81) and function length violation (`load_context_impl` 36 lines, excess 6) - technical debt for follow-up refactoring.
-- **Phase 51 Step 7: Testing and Validation** - COMPLETE. Added comprehensive test suite: unit tests for all depth parameters (metadata_only, summary, full), hybrid retrieval strategy edge cases, two-step workflow integration tests, token savings measurement, and edge cases (empty memory bank, low budget, no sections, etc.). All 4057 tests pass. Coverage: 90.15% (close to 95% target; remaining gaps likely in error paths). Tests verify metadata_only provides significant token savings, two-step workflow works correctly, and all depth levels function as expected.
-- **Commit (quality violations: file size and function length)** - COMPLETE. Fixed quality violations in `phase4_context_operations.py`: extracted metadata building functions to `phase4_metadata_helpers.py` (reduced file size from 460 to 399 lines); extracted logic from `_prepare_hybrid_metadata_context()` to `_load_always_loaded_and_metadata()` helper (reduced function length from 31 to 30 lines). All quality checks pass; 4057 tests, 90.17% coverage.
-- **Phase52: Consistent Helpful Error Responses Step 3** - COMPLETE (Phase 1: high-impact tools). Updated validate, load_context, execute_pre_commit_checks, and fix_quality_issues tools to use standardized error formatters. All 4 high-impact tools now return consistent ToolErrorResponse format with suggestions, examples, and available_options. Updated tests to use new format. All 4090 tests pass, quality gate passes.
-- **Phase52: Consistent Helpful Error Responses Step 3 Phase 2** - COMPLETE. Updated medium-impact tools (suggest_refactoring, apply_refactoring, rules, configure) to use standardized error formatters. All 4 medium-impact tools now return consistent ToolErrorResponse format with suggestions, examples, and available_options. Updated tests to use new format. All 4090 tests pass, quality gate passes.
-- **Commit (function length and file size violations)** - COMPLETE. Fixed function length violations: extracted `_load_memory_bank_files` helper from `_session_start_impl` in `session_start_tools.py` (34→30 lines); extracted `_prepare_execution_context` and `_finalize_execution` helpers from `_run_with_retry_and_record` in `mcp_stability.py` (37→30 lines), inlined `_handle_cancellation`. Fixed file size violation in `mcp_stability.py` (425→400 lines) by removing blank lines and consolidating docstrings. All quality checks pass; 4123 tests, 90.17% coverage.
-- **Commit (preflight and pipeline)** - Pre-commit: fix_errors, format, markdown lint (1 file fixed, 0 errors), type_check, quality, tests 4134 passed, 90.21% coverage. No completed plans in plans root; memory bank and roadmap consistent.
-- **Commit (synapse_lint check_file_sizes)** - COMPLETE. Fixed I001 import order in `.cortex/synapse/scripts/python/check_file_sizes.py` via ruff --fix. Phase A preflight passed; 4134 tests, 90.21% coverage.
-- **Commit (type, file size, markdown lint)** - Type fix in test_fix_markdown_lint.py (reportUnusedCallResult). Extracted markdown_lint_helpers.py from markdown_operations.py to fix file size violation (502→399 lines). Fixed MD051/MD036 in docs/guides/troubleshooting.md. All preflight and markdown lint pass.
+- **Week containing 2026-02-16** - 1 entries summarized.
 
 ## 2026-02-13
 

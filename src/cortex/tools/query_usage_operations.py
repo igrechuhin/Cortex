@@ -31,7 +31,7 @@ class QueryUsageParams(BaseModel):
     end_date: str | None = None
     tool_name: str | None = None
     response_format: ResponseFormat = ResponseFormat.CONCISE
-    days: int = 90
+    days: int = 30
     min_usage_count: int = 0
     min_usage_threshold: int = 5
     ids: list[str] = Field(default_factory=list)
@@ -204,7 +204,7 @@ async def _run_production_monitoring(
 
     root = await resolve_project_root_async(None, ctx)
     tracker = await usage_analytics._get_tracker(root)  # type: ignore[attr-defined]
-    days_baseline = max(1, min(90, params.production_baseline_days))
+    days_baseline = max(1, min(30, params.production_baseline_days))
     current_window_hours = max(1, min(168, params.production_window_hours))
     payload = await get_production_monitoring_payload(
         root,
@@ -244,6 +244,15 @@ def _params_from_tool_args(
     return QueryUsageParams.model_validate(d)
 
 
+def _build_query_usage_params_from_locals(
+    locals_dict: dict[str, str | int | bool | list[str] | None],
+) -> QueryUsageParams:
+    """Build QueryUsageParams from query_usage's locals (excludes query_type, ctx)."""
+    return _params_from_tool_args(
+        {k: v for k, v in locals_dict.items() if k not in ("query_type", "ctx")}
+    )
+
+
 async def _query_usage_impl(
     query_type: str,
     params: QueryUsageParams,
@@ -281,7 +290,7 @@ async def query_usage(
     end_date: str | None = None,
     tool_name: str | None = None,
     response_format: str = "concise",
-    days: int = 90,
+    days: int = 30,
     min_usage_count: int = 0,
     min_usage_threshold: int = 5,
     ids: list[str] | None = None,
@@ -297,7 +306,20 @@ async def query_usage(
     production_window_hours: int = 24,
     ctx: MCPContext | None = None,
 ) -> str:
-    """Query usage. query_type: stats|unused|report|recommendations|search|events|observation|timeline|anomalies|tool_description_optimization|production_monitoring. For tool_description_optimization, tool_name is required. For production_monitoring, production_baseline_days (default 7) and production_window_hours (default 24) set baseline and current windows."""
+    """Query tool usage analytics: stats, unused tools, report, recommendations, anomalies.
+
+    USE WHEN: User needs usage stats, low-usage tool list, optimization
+    recommendations, session anomalies, or production monitoring.
+
+    EXAMPLES: 'query_usage(query_type="stats")', 'get usage statistics',
+    'query_usage(query_type="recommendations", days=90)',
+    'query_usage(query_type="anomalies", hours=24)'.
+
+    RETURNS: JSON (or markdown when format=markdown) with result for
+    query_type: stats, unused, report, recommendations, search, events,
+    observation, timeline, anomalies, tool_description_optimization,
+    production_monitoring. tool_name required for tool_description_optimization.
+    """
     await _log_query_usage_start(ctx, query_type)
-    params = _params_from_tool_args(locals())
+    params = _build_query_usage_params_from_locals(locals())
     return await _query_usage_impl(query_type, params, ctx)

@@ -42,6 +42,16 @@ async def run_preflight_checks(
 ) -> ModelDict:
     """Run Phase A preflight checks as a single MCP tool.
 
+    USE WHEN: Commit pipeline Phase A, before memory bank or commit; user
+    requests pre-commit validation, format/lint/type/quality/tests check.
+
+    EXAMPLES: 'run preflight checks', 'run Phase A checks', 'execute
+    pre-commit validation', 'run_preflight_checks(test_timeout=300,
+    coverage_threshold=0.9, strict_mode=False)'.
+
+    RETURNS: JSON with preflight_passed, language, checks (per-check
+    summaries), execute_result, markdown_result; status=\"error\" on tool failure.
+
     This helper runs execute_pre_commit_checks for the default Phase A
     checks and fix_markdown_lint once, then returns a structured JSON
     result with per-check summaries and raw tool outputs. Tool-level
@@ -86,6 +96,15 @@ async def run_docs_and_memory_bank_sync(
     ctx: MCPContext | None = None,
 ) -> ModelDict:
     """Run Phase B docs/memory validations as a single MCP tool.
+
+    USE WHEN: After Phase A and memory bank/roadmap updates; commit
+    pipeline Phase B; user requests timestamp or roadmap sync validation.
+
+    EXAMPLES: 'run docs and memory bank sync', 'run Phase B validations',
+    'validate timestamps and roadmap sync', 'run_docs_and_memory_bank_sync()'.
+
+    RETURNS: JSON with docs_phase_passed, checks, timestamps_result,
+    roadmap_sync_result; status=\"error\" on tool failure.
 
     This helper runs validate() for timestamps and roadmap_sync once, then
     returns a structured JSON result with per-check summaries and raw

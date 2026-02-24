@@ -715,6 +715,9 @@ async def add_roadmap_entry(
 
     USE WHEN: Create-plan Step 6 needs to register a new plan entry.
 
+    EXAMPLES: 'add_roadmap_entry(section="pending", entry_text="- Plan: .cortex/plans/foo.md")',
+    'add roadmap entry to future section'.
+
     RETURNS: JSON with operation status, line inserted, error if any.
 
     Sections supported: 'blockers', 'active_work', 'future', 'pending'.
@@ -769,6 +772,9 @@ async def remove_roadmap_entry(
 
     USE WHEN: Implement Step 5 needs to remove the completed step from the
     roadmap without building or writing full roadmap content (safe update).
+
+    EXAMPLES: 'remove_roadmap_entry(entry_contains="Plan: .cortex/plans/foo.md")',
+    'remove roadmap entry containing phase-58'.
 
     RETURNS: JSON with status, line_removed (1-based), or error.
     """
@@ -825,6 +831,9 @@ async def remove_roadmap_section(
     USE WHEN: After removing all bullets in a subsection with remove_roadmap_entry,
     use this to remove the orphan section header and optional intro paragraph
     without building or writing full roadmap content (avoids corruption risk).
+
+    EXAMPLES: 'remove_roadmap_section(section_heading_contains="Session Optimization (2026-02-01)")',
+    'remove empty roadmap section'.
 
     Matches ## or ### headings that contain the given text (case-sensitive).
     RETURNS: JSON with status, section_heading, lines_removed, or error.

@@ -479,6 +479,9 @@ async def compact_session(
 
     USE WHEN: End of session, reducing memory bank size, preparing handoff.
 
+    EXAMPLES: 'compact_session(summary="Implemented Step 1; next: audit remaining tools")',
+    'compact session', 'run session compaction'.
+
     Reads activeContext.md and progress.md, keeps current date in Completed Work
     and recent entries in progress, summarizes older content, writes handoff JSON
     to .cortex/.cache/session/last_handoff.json, and updates the files.

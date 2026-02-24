@@ -407,7 +407,7 @@ These failures degrade functionality but allow system to continue operating.
 
 **Causes:**
 
-- Invalid JSON syntax in `.memory-bank-validation.json`
+- Invalid JSON syntax in `.cortex/config/validation.json`
 - Invalid config values (out of range)
 - File corruption
 - Manual editing errors
@@ -431,7 +431,7 @@ These failures degrade functionality but allow system to continue operating.
 1. **Validate JSON:**
 
    ```bash
-   python -m json.tool .memory-bank-validation.json
+   python -m json.tool .cortex/config/validation.json
    ```
 
 2. **Check Syntax Errors:**
@@ -451,7 +451,7 @@ These failures degrade functionality but allow system to continue operating.
 
    ```bash
    # Backup current
-   mv .memory-bank-validation.json .memory-bank-validation.json.bak
+   mv .cortex/config/validation.json .cortex/config/validation.json.bak
 
    # System uses defaults
    ```
@@ -614,7 +614,7 @@ tar -czf memory-bank-backup-$(date +%Y%m%d).tar.gz memory-bank/ .memory-bank-*
 
 # 2. Remove all metadata
 rm .memory-bank-index
-rm .memory-bank-validation.json
+rm .cortex/config/validation.json
 rm .cortex/history/*
 
 # 3. Reinitialize

@@ -1,8 +1,8 @@
 # Plan: Evaluation Framework Maturation (Phase 57 Extension)
 
-## Status: IN PROGRESS
+## Status: COMPLETED
 
-(Steps 4–5 completed 2026-02-23; Step 6 pending.)
+(Steps 4–5 completed 2026-02-23; Step 6 completed 2026-02-24.)
 
 ## Priority: P1 (High)
 
@@ -137,7 +137,7 @@ Phase 57 established the evaluation foundation (26 tasks, error analysis, A/B fr
 
 ---
 
-## Step 6: Eval-Guided Model Upgrade Path
+## Step 6: Eval-Guided Model Upgrade Path — COMPLETED (2026-02-24)
 
 **Insight from Anthropic:**
 > Evals shape how quickly you can adopt new models. Teams without evals face weeks of testing while competitors with evals can quickly determine the model's strengths, tune prompts, and upgrade in days.
@@ -154,6 +154,8 @@ Phase 57 established the evaluation foundation (26 tasks, error analysis, A/B fr
 3. Store model benchmark results for historical comparison
 
 **Acceptance criteria:** Model upgrade playbook documented. Benchmark tool functional. Baseline stored.
+
+**Done:** Model upgrade playbook at `docs/guides/model-upgrade-playbook.md`. MCP tool `benchmark_model(model_name, baseline_model_name=None)` in `phase5_model_benchmark.py`: runs full eval via `run_full_evaluation_payload`, stores runs in `.cortex/.cache/evals/model_benchmarks.json`, optional comparison to baseline (regressions/improvements by task_id). Public API `run_full_evaluation_payload(root)` added in `phase5_evaluation.py`. Tests in `test_phase5_model_benchmark.py`.
 
 ---
 

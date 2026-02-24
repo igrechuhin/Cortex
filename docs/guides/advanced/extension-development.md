@@ -994,7 +994,7 @@ class CustomValidator:
 
 ### Register Validator
 
-Update validation configuration in `.memory-bank-validation.json`:
+Update validation configuration in `.cortex/config/validation.json`:
 
 ```json
 {

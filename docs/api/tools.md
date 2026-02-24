@@ -1097,7 +1097,7 @@ View or update validation configuration.
 
 **Description:**
 
-Allows viewing/updating validation settings stored in `.memory-bank-validation.json`.
+Allows viewing/updating validation settings stored in `.cortex/config/validation.json`.
 
 **Returns:**
 

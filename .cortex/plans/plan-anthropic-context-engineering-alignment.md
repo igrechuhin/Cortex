@@ -1,6 +1,6 @@
 # Plan: Anthropic Context Engineering Alignment
 
-## Status: PLANNED
+## Status: IN PROGRESS
 
 ## Priority: P1 (High)
 
@@ -24,6 +24,8 @@ Anthropic's engineering blog provides state-of-the-art guidance on context engin
 ---
 
 ## Step 1: Tool Description "Right Altitude" Audit
+
+**Status:** In progress. Rubric added (see [Tool Description Altitude Rubric](../../docs/guides/tool-description-altitude-rubric.md)). Pilot: 5 tools improved with EXAMPLES (list_plans, get_plan, add_roadmap_entry, append_progress_entry, append_active_context_entry). Second batch: 5 more (remove_roadmap_entry, remove_roadmap_section, complete_plan, compact_session, register_plan_in_roadmap). Third batch: 5 more (create_plan, run_preflight_checks, run_docs_and_memory_bank_sync, query_memory_bank, query_usage) — 15 tools total with embedded examples. Full audit of remaining 85+ tools pending.
 
 **Insight (from "Effective Context Engineering"):**
 > System prompts should be at the "right altitude" — the Goldilocks zone between hardcoding complex, brittle logic and providing vague, high-level guidance.

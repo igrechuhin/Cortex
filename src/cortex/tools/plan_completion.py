@@ -742,6 +742,9 @@ async def complete_plan(
     When the step references a plan file, pass plan_file_name so the tool
     also moves (archives) the plan file to the correct archive directory.
 
+    EXAMPLES: 'complete_plan(plan_title="Session improvements", summary="Tools optimization.", plan_file_name="session-optimization-2026-02-23.md")',
+    'complete plan Anthropic alignment Step 1'.
+
     RETURNS: JSON with status, roadmap_line_removed, active_context_line_inserted,
     optional progress_line_inserted, optional archive_path.
 
@@ -807,6 +810,9 @@ async def append_progress_entry(
     USE WHEN: Implement Step 5 needs to add one progress entry without
     building or writing full progress content (safe update).
 
+    EXAMPLES: 'append_progress_entry(date_str="2026-02-24", entry_text="**Phase X** - COMPLETE. Done.")',
+    'append progress entry for today'.
+
     date_str: YYYY-MM-DD. entry_text: one bullet line (e.g. "**Title** - COMPLETE. ...").
     RETURNS: JSON with status, line_inserted, or error.
     """
@@ -859,6 +865,9 @@ async def append_active_context_entry(
 
     USE WHEN: Implement Step 5 needs to add completed work without
     building or writing full activeContext content (safe update).
+
+    EXAMPLES: 'append_active_context_entry(date_str="2026-02-24", title="Step 1", summary="Rubric added.")',
+    'append active context entry for completed work'.
 
     date_str: YYYY-MM-DD. title/summary: entry content.
     RETURNS: JSON with status, line_inserted, or error.

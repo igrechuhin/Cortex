@@ -731,21 +731,19 @@ async def run_tool_evaluation(
     return await _run_tool_evaluation_impl(root, task_ids, run_mode, category)
 
 
+async def run_full_evaluation_payload(root: Path) -> dict[str, object]:
+    """Run full eval and return payload dict (for benchmark_model)."""
+    return json.loads(
+        await _run_tool_evaluation_impl(root, None, EvalRunMode.FULL, None)
+    )
+
+
 async def _write_evaluation_dashboard(
     root: Path,
     analysis: EvalAnalysis,
     suite: EvalSuiteResult,
 ) -> Path:
-    """Write evaluation dashboard Markdown report next to last_suite.json.
-
-    Args:
-        root: Project root path
-        analysis: Evaluation analysis
-        suite: Evaluation suite results
-
-    Returns:
-        Path to written dashboard file
-    """
+    """Write evaluation dashboard Markdown next to last_suite.json."""
     from cortex.tools.phase5_evaluation_dashboard_helpers import (
         generate_evaluation_dashboard,
     )

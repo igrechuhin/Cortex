@@ -451,6 +451,9 @@ async def register_plan_in_roadmap(
 
     USE WHEN: Registering a newly created plan in roadmap.md during the create-plan workflow.
 
+    EXAMPLES: 'register_plan_in_roadmap(plan_title="Phase 60", description="Tool altitude audit.", section="pending")',
+    'register plan in roadmap'.
+
     RETURNS: JSON with operation status, line inserted, section, and error if any.
 
     Parameters:

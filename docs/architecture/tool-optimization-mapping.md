@@ -20,12 +20,13 @@ Map each tool below the usage threshold (≤5 calls in 90 days) to an action: **
 | session_register | **keep** | Session lifecycle; may be used by clients for registration. |
 | session_deregister | **keep** | Session lifecycle; may be used by clients for deregistration. |
 | remove_roadmap_entry | **keep** | Memory bank discipline; implement/commit use it for safe single-entry roadmap updates (see memory-bank-updater, AGENTS.md). |
+| append_active_context_entry | **keep** | Memory bank discipline; implement and complete_plan use it for safe activeContext updates (memory-bank-updater, AGENTS.md). |
 | get_session_tool_anomalies | **removed** (pruned) | Use `query_usage(query_type="anomalies", hours=24)`. No longer in MCP tool list. |
 | run_tool_optimization_workflow | **removed** (pruned) | Use `query_usage(query_type="unused")` and `query_usage(query_type="recommendations")` and [tool-optimization-baseline](tool-optimization-baseline.md). No longer in MCP tool list. |
 
 ## Summary
 
-- **Keep**: 9 tools (task locking ×4, plan ×2, session ×2, roadmap ×1).
+- **Keep**: 10 tools (task locking ×4, plan ×2, session ×2, roadmap ×1, activeContext ×1).
 - **Removed (pruned)**: 2 tools (`get_session_tool_anomalies`, `run_tool_optimization_workflow`) — no longer registered as MCP tools; use `query_usage` alternatives above.
 
 ## Done
