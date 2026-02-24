@@ -1,0 +1,20 @@
+{
+  "name": "planning",
+  "description": "Planning and tracking: create plans, update roadmap, archive completed plans.",
+  "tools": ["create_plan", "register_plan_in_roadmap", "add_roadmap_entry", "remove_roadmap_entry", "complete_plan", "configure"],
+  "when_to_use": "Creating or updating plans, registering plans in roadmap, completing roadmap steps, roadmap entry management.",
+  "workflow_sequences": [
+    "create_plan → register_plan_in_roadmap → implement → complete_plan",
+    "remove_roadmap_entry(entry_contains=...) → append_progress_entry → append_active_context_entry"
+  ],
+  "example_invocations": [
+    "create_plan(title=\"...\", steps=[...])",
+    "complete_plan(plan_title=\"...\", summary=\"...\", plan_file_name=\"...\")",
+    "remove_roadmap_entry(entry_contains=\"unique substring\")"
+  ],
+  "troubleshooting_tips": [
+    "Use remove_roadmap_entry with a unique substring to avoid removing the wrong bullet.",
+    "When step references a plan file, prefer complete_plan so the plan is archived automatically."
+  ],
+  "keywords": ["plan", "roadmap", "create_plan", "register_plan", "complete_plan", "roadmap_entry", "archive"]
+}

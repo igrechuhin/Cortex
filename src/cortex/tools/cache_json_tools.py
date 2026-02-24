@@ -1,13 +1,16 @@
 """
 Cache JSON Tools
 
-MCP tools for concurrent-safe read/write of JSON files under .cortex/.cache.
-Agents MUST use these tools (not direct file access) when reading or writing
-cache JSON so that multiple chat sessions do not corrupt data.
+Single MCP tool cache_json(operation="read"|"write") for concurrent-safe
+read/write of JSON files under .cortex/.cache. Agents MUST use this tool
+(not direct file access) when reading or writing cache JSON so that
+multiple chat sessions do not corrupt data. Consolidated to keep tool
+count within MAX_REGISTERED_TOOLS without raising the limit.
 """
 
 import json
-from typing import cast
+from pathlib import Path
+from typing import Literal, cast
 
 from cortex.core.cache_json_access import (
     read_cache_json as _read_cache_json,
@@ -17,7 +20,7 @@ from cortex.core.cache_json_access import (
 )
 from cortex.core.constants import MCP_TOOL_TIMEOUT_FAST
 from cortex.core.context_logging import MCPContext, log_client
-from cortex.core.mcp_annotations import read_only_annotations, safe_write_annotations
+from cortex.core.mcp_annotations import safe_write_annotations
 from cortex.core.mcp_stability import ensure_usage_context, mcp_tool_wrapper
 from cortex.core.project_root_resolver import resolve_project_root_async
 from cortex.server import mcp
@@ -74,27 +77,8 @@ def error_response(
     return _error_response(message, relative_path, error_type)
 
 
-@mcp.tool(annotations=read_only_annotations("Read Cache JSON"))
-@ensure_usage_context
-@mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_FAST)
-async def read_cache_json(
-    relative_path: str,
-    ctx: MCPContext | None = None,
-) -> str:
-    """Read a JSON file from .cortex/.cache with concurrent-safe locking.
-
-    USE WHEN: You need to read any JSON under .cortex/.cache (e.g. usage
-    events, markdown-lint index). Do NOT read cache JSON files directly;
-    use this tool so access is serialized across chat sessions.
-
-    relative_path: Path under .cortex/.cache, e.g. "usage/events/2026-02-02.json"
-    or "markdown-lint-index.json". No leading slash, no "..".
-
-    Returns: JSON string (file content) or {"status":"error","message":"..."}.
-    """
-    if ctx is not None:
-        await log_client(ctx, "debug", "read_cache_json: starting")
-    root = await resolve_project_root_async(None, ctx)
+async def _cache_json_read(root: Path, relative_path: str) -> str:
+    """Perform cache read; return JSON string."""
     try:
         data = await _read_cache_json(root, relative_path)
         if data is None:
@@ -117,27 +101,12 @@ async def read_cache_json(
         )
 
 
-@mcp.tool(annotations=safe_write_annotations("Write Cache JSON"))
-@ensure_usage_context
-@mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_FAST)
-async def write_cache_json(
-    relative_path: str,
-    content: str,
-    ctx: MCPContext | None = None,
-) -> str:
-    """Write a JSON file under .cortex/.cache with concurrent-safe locking.
-
-    USE WHEN: You need to write any JSON under .cortex/.cache. Do NOT write
-    cache JSON files directly; use this tool so access is serialized.
-
-    relative_path: Path under .cortex/.cache (e.g. "usage/events/2026-02-02.json").
-    content: JSON string (object or array).
-
-    Returns: {"status":"success"} or {"status":"error","message":"..."}.
-    """
-    if ctx is not None:
-        await log_client(ctx, "debug", "write_cache_json: starting")
-    root = await resolve_project_root_async(None, ctx)
+async def _cache_json_write(root: Path, relative_path: str, content: str) -> str:
+    """Perform cache write; return JSON string."""
+    if not content.strip():
+        return _error_response(
+            "content required when operation is write", relative_path
+        )
     try:
         payload, err_msg = _parse_write_content(content)
         if err_msg is not None:
@@ -154,3 +123,44 @@ async def write_cache_json(
         return _error_response(str(e), relative_path)
     except Exception as e:
         return _error_response(str(e), relative_path, type(e).__name__)
+
+
+@mcp.tool(annotations=safe_write_annotations("Cache JSON (read/write)"))
+@ensure_usage_context
+@mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_FAST)
+async def cache_json(
+    operation: Literal["read", "write"],
+    relative_path: str,
+    content: str | None = None,
+    ctx: MCPContext | None = None,
+) -> str:
+    """Read or write a JSON file under .cortex/.cache with concurrent-safe locking.
+
+    USE WHEN: You need to read or write any JSON under .cortex/.cache (e.g.
+    usage events, markdown-lint index, session handoff). Do NOT access
+    cache JSON files directly; use this tool so access is serialized.
+
+    EXAMPLES: cache_json(operation="read", relative_path="usage/events/2026-02-24.json"),
+    cache_json(operation="write", relative_path="session/last_handoff.json", content="{}").
+
+    RETURNS: For read — JSON string (file content) or {"status":"missing"|"error",...}.
+    For write — {"status":"success"} or {"status":"error",...}.
+
+    Args:
+        operation: "read" to load file content, "write" to save content.
+        relative_path: Path under .cortex/.cache (e.g. "usage/events/2026-02-02.json").
+            No leading slash, no "..".
+        content: Required when operation is "write"; JSON string (object or array).
+        ctx: MCP context (automatically provided).
+
+    Returns:
+        JSON string: for read, file content or status; for write, success or error.
+    """
+    if ctx is not None:
+        await log_client(ctx, "debug", f"cache_json({operation}): starting")
+    root = await resolve_project_root_async(None, ctx)
+    if operation == "read":
+        return await _cache_json_read(root, relative_path)
+    if operation == "write":
+        return await _cache_json_write(root, relative_path, content or "")
+    return _error_response(f"Unknown operation: {operation}", relative_path)

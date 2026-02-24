@@ -6,8 +6,8 @@ import sys
 from pathlib import Path
 from typing import cast
 
-# Add src to path
-sys.path.insert(0, str(Path(__file__).parent / "src"))
+# Add src to path (repo root is one level up from tests/)
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
 from cortex.core.dependency_graph import DependencyGraph
 from cortex.core.exceptions import FileConflictError, MemoryBankError

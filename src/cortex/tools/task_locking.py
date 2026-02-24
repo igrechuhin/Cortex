@@ -352,15 +352,19 @@ async def claim_task_lock(
     USE WHEN: Starting work on a roadmap item to prevent other sessions
     from working on the same task concurrently.
 
-    RETURNS: JSON with lock data if successful, error if already locked.
+    EXAMPLES: 'claim task Phase 58: Multi-Agent Specialization', 'lock
+    roadmap item Anthropic context engineering alignment'.
+
+    RETURNS: JSON with lock data (task_title, task_id, expires_at, role)
+    if successful; error JSON if task already locked.
 
     Args:
-        task_title: Roadmap entry title to lock (e.g., "Phase 58: Multi-Agent Specialization")
-        role: Optional agent role (feature, quality, testing, docs, planning, debugging, review)
-        ctx: MCP context (automatically provided)
+        task_title: Roadmap entry title to lock (e.g., "Phase 58: Multi-Agent Specialization").
+        role: Optional agent role (feature, quality, testing, docs, planning, debugging, review).
+        ctx: MCP context (automatically provided).
 
     Returns:
-        JSON string with ClaimTaskResult or ClaimTaskErrorResult
+        JSON string with ClaimTaskResult or ClaimTaskErrorResult.
     """
     try:
         return await _claim_task_impl(task_title, role, ctx)
@@ -416,14 +420,17 @@ async def release_task_lock(
 
     USE WHEN: Completing work on a roadmap item or switching to a different task.
 
-    RETURNS: JSON with release status.
+    EXAMPLES: 'release task Phase 58', 'unlock Anthropic context engineering
+    alignment', 'release lock on current roadmap item'.
+
+    RETURNS: JSON with release status (released true/false, message).
 
     Args:
-        task_title: Roadmap entry title to unlock
-        ctx: MCP context (automatically provided)
+        task_title: Roadmap entry title to unlock.
+        ctx: MCP context (automatically provided).
 
     Returns:
-        JSON string with ReleaseTaskResult
+        JSON string with ReleaseTaskResult.
     """
     try:
         return await _release_task_impl(task_title, ctx)
@@ -469,13 +476,17 @@ async def list_active_tasks(
 
     USE WHEN: Checking what tasks are currently being worked on by other sessions.
 
-    RETURNS: JSON with list of active locks and their details.
+    EXAMPLES: 'list active tasks', 'what tasks are locked', 'show active
+    roadmap locks'.
+
+    RETURNS: JSON with list of active locks (task_title, task_id, expires_at,
+    role) and count.
 
     Args:
-        ctx: MCP context (automatically provided)
+        ctx: MCP context (automatically provided).
 
     Returns:
-        JSON string with ListActiveTasksResult
+        JSON string with ListActiveTasksResult.
     """
     try:
         return await _list_active_tasks_impl(ctx)
@@ -533,14 +544,18 @@ async def check_task_available_lock(
 
     USE WHEN: Before claiming a task, check if it's already locked.
 
-    RETURNS: JSON with availability status and lock info if locked.
+    EXAMPLES: 'check if Phase 58 is available', 'is Anthropic alignment
+    task locked', 'can I work on this roadmap item'.
+
+    RETURNS: JSON with available (true/false), task_title, and lock details
+    if locked.
 
     Args:
-        task_title: Roadmap entry title to check
-        ctx: MCP context (automatically provided)
+        task_title: Roadmap entry title to check.
+        ctx: MCP context (automatically provided).
 
     Returns:
-        JSON string with CheckTaskAvailableResult
+        JSON string with CheckTaskAvailableResult.
     """
     try:
         return await _check_task_available_impl(task_title, ctx)

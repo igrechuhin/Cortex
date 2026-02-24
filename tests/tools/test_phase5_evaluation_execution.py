@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
-from pathlib import Path
 from unittest.mock import AsyncMock, patch
 
 import pytest
 
+from cortex.managers.initialization import get_project_root
 from cortex.tools.phase5_evaluation import (
     EvalRunMode,
     EvalTask,
@@ -101,7 +101,7 @@ async def test_run_one_execution_fails_when_substring_missing() -> None:
 @pytest.mark.asyncio
 async def test_run_execution_suite_fast_mode_limits_tasks() -> None:
     """run_execution_suite in fast mode runs at most fast_cap tasks with execution."""
-    project_root = Path(__file__).resolve().parents[2]
+    project_root = get_project_root()
     from cortex.tools.phase5_evaluation import load_eval_tasks
 
     tasks = await load_eval_tasks(project_root, task_ids=None)

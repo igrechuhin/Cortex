@@ -426,13 +426,22 @@ async def execute_pre_commit_checks(
     include_untracked_markdown: bool = True,
     ctx: MCPContext | None = None,
 ) -> ModelDict:
-    """Execute pre-commit checks or commit pipeline phase (A/B/full).
+    """Run pre-commit checks or a commit-pipeline phase (A, B, or full).
 
-    phase \"A\"|\"B\"|\"full\" runs Phase A preflight, Phase B docs/memory sync, or both.
-    phase None runs explicit checks (backward-compatible). USE WHEN: Phase A/B;
-    pre-commit validation. RETURNS: phase-specific keys (preflight_passed,
-    docs_phase_passed, phase_a/phase_b for full). Args: phase, checks (if phase
-    None), test_timeout, coverage_threshold, strict_mode, include_untracked_markdown, ctx.
+    USE WHEN: Running the quality gate before commit, validating format/type/quality/tests,
+    or executing Phase A (preflight) or Phase B (docs/memory sync) of the commit pipeline.
+
+    EXAMPLES: execute_pre_commit_checks(phase="A") for preflight;
+    execute_pre_commit_checks(checks=["format", "type_check"]) for targeted checks;
+    execute_pre_commit_checks(phase="B") for docs/memory validation after Step 5.
+
+    RETURNS: JSON with status; for phase "A" or "full": preflight_passed, checks (per-check
+    results); for phase "B" or "full": docs_phase_passed, timestamps, roadmap_sync; for
+    explicit checks: results per check (format, type_check, quality, tests, etc.). Do not
+    pass project_root; the tool resolves it internally.
+
+    When phase is None, you must pass checks (e.g. ["format"], ["type_check", "quality"],
+    or ["tests"] with test_timeout and coverage_threshold). Language is auto-detected.
     """
     if phase is not None:
         from cortex.tools.pre_commit_phase_dispatch import (

@@ -621,6 +621,15 @@ async def summarize_content(
     activeContext.md', 'summarize content by 50%'.
 
     RETURNS: JSON with summarized content and token reduction metrics.
+
+    Args:
+        file_name: Optional Memory Bank file to summarize (e.g. "activeContext.md").
+            If None, summarization scope is configuration-dependent.
+        target_reduction: Optional target reduction ratio (0.0–1.0). If None,
+            uses configured default.
+        strategy: Optional strategy name (e.g. "progressive", "tiered"). If None,
+            uses configured default.
+        ctx: MCP context (automatically provided).
     """
     await log_client(ctx, "info", "summarize_content: starting", logger_name=__name__)
     try:
@@ -664,7 +673,14 @@ async def get_relevance_scores(
     feature X', 'rank files by relevance'.
 
     RETURNS: JSON with files ranked by relevance scores and detailed scoring
-    breakdown.
+    breakdown. When include_sections is True, includes section-level
+    scores per file.
+
+    Args:
+        task_description: Natural language description of the task; used
+            for semantic matching against memory bank content.
+        include_sections: If True, include per-section relevance scores
+            within each file. Default: False (file-level only).
     """
     await log_client(
         ctx, "info", "get_relevance_scores: starting", logger_name=__name__

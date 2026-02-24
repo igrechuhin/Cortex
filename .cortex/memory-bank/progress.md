@@ -21,6 +21,17 @@
 - **Tool consolidation Step 6 — pre-commit pipeline (2026-02-24)** - COMPLETE. Merged run_preflight_checks and run_docs_and_memory_bank_sync into execute_pre_commit_checks(phase="A"|"B"|"full"); removed two MCP tools; updated tests and docs.
 - **Tool consolidation Step 7 (2026-02-24)** - COMPLETE. Audited @mcp.resource() vs @mcp.tool(); no double-registrations. Added TestNoResourceDoubleRegisteredAsTool; updated plan and tool-optimization-mapping.md.
 - **Tool consolidation Step 8 (2026-02-24)** - COMPLETE. Updated tool governance: TOOLS_CATEGORIES now covers all @mcp.tool registrations; optimization.json tool_search synced from build_category_config(); added governance test to enforce equality and fixed analyzer coverage for async tools.
+- **Anthropic context engineering alignment – Step 1 (2026-02-24)** - IN PROGRESS. Audited tool description altitude for core context/rules tools (`load_context`, `manage_file`, `query_memory_bank`, `query_usage`) and updated the plan to record this progress.
+- **Tool consolidation P1 (usage census)** - Ran `query_usage(query_type="stats", response_format="detailed")` to confirm live usage across MCP tools and documented the current counts in `session-optimization-tools-set-optimization-from-usage-data.md`.
+- **Tool consolidation P1: tool budget lock (2026-02-24)** - Added MAX_REGISTERED_TOOLS constant and governance test to enforce that the MCP tool count does not exceed 47 without an explicit consolidation change and updated plan.
+- **Tool consolidation — 64 tools → ~24 (P0) (2026-02-24)** - COMPLETE. Phase 50 + P1 usage census and budget lock; 47 tools, 15 resources; governance and docs updated.
+- **Anthropic context engineering alignment Step 1 batch 5 (2026-02-24)** - COMPLETE. Improved execute_pre_commit_checks docstring to full altitude (USE WHEN, EXAMPLES, RETURNS); corrected get_structure_info doc (no project_root param); updated plan and docs/api/tools.md.
+- **Anthropic context engineering alignment Step 1 batch 6 (2026-02-24)** - COMPLETE. Tool altitude audit: check_structure_health doc fixed (no project_root); run_tool_evaluation, analyze_error_patterns, benchmark_model full altitude; get_relevance_scores Args added.
+- **Anthropic context engineering alignment Step 1 (2026-02-24)** - Seventh batch. read_cache_json and write_cache_json brought to full altitude (EXAMPLES, RETURNS, Args); EXAMPLES added to claim_task_lock, release_task_lock, list_active_tasks, check_task_available_lock.
+- **Anthropic context engineering alignment Step 1 (2026-02-24)** - Eighth batch. analyze_health_check Args added; session_scripts full altitude (USE WHEN, EXAMPLES, RETURNS, Args). Quality gate passed.
+- **Anthropic context engineering alignment Step 1 (2026-02-24)** - Ninth batch. summarize_content, suggest_tool_improvements, analyze_session_scripts Args added; compact_session RETURNS line. Quality gate passed.
+- **Commit pipeline preflight fixes (2026-02-24)** - COMPLETE. Synapse lint, type check, quality (function length) and tests passing; 4722 tests, 92.57% coverage.
+- Commit: E402 fix in synapse_tools.py (imports at top). Phase A passed.
 
 ## 2026-02-23
 

@@ -8,8 +8,6 @@
 
 ## Active Work (in progress)
 
-- **Pending: Tool consolidation — 64 tools → ~24 (P0)** - Reduce MCP tool count to fit within editor limits (Cursor ~80 across all MCPs). Complete Phase 50 consolidation, remove duplicates/dead tools, consolidate script/analytics/pre-commit tools. Plan: .cortex/plans/session-optimization-tools-set-optimization-from-usage-data.md
-
 ## Future Enhancements
 
 ## Pending plans (from .cortex/plans)
@@ -17,12 +15,6 @@
 ### Investigation Plans (Archive / Reference)
 
 Completed investigations are recorded in [activeContext.md](activeContext.md). Plan files under `.cortex/plans/archive/` as needed.
-
-### Session Optimization Plans (2026-02-03)
-
-### Session Optimization Plans (2026-02-02)
-
-### Session Optimization Plans (2026-02-01)
 
 ### Features & Enhancements
 
@@ -32,3 +24,4 @@ Completed investigations are recorded in [activeContext.md](activeContext.md). P
 - **Pending: Compound engineering alignment** - Plan: .cortex/plans/compound-engineering-alignment-cortex.md
 - **Pending: Phase 58 multi-agent specialization** - Plan: .cortex/plans/phase-58-multi-agent-specialization-task-locking.md
 - **Pending: Phase 9 excellence** - Plan: .cortex/plans/phase-9-excellence-98.md
+- **Pending: Tool consolidation — next analysis** - Run next tool consolidation analysis from usage data and governance; produce report and optional follow-up plan. Plan: .cortex/plans/tool-consolidation-next-analysis.md

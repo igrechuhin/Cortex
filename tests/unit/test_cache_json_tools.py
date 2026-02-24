@@ -1,4 +1,4 @@
-"""Unit tests for cache JSON MCP tools (read_cache_json, write_cache_json)."""
+"""Unit tests for cache JSON MCP tool (cache_json with operation=read|write)."""
 
 import json
 import os
@@ -9,10 +9,9 @@ import pytest
 
 from cortex.core.cache_utils import get_cache_dir
 from cortex.tools.cache_json_tools import (
+    cache_json,
     error_response,
     parse_write_content,
-    read_cache_json,
-    write_cache_json,
 )
 
 
@@ -23,8 +22,8 @@ def _project_root(tmp_path: Path) -> Path:
     return root
 
 
-class TestReadCacheJsonTool:
-    """Tests for read_cache_json MCP tool."""
+class TestCacheJsonReadTool:
+    """Tests for cache_json(operation=read) MCP tool."""
 
     @pytest.mark.asyncio
     @pytest.mark.timeout(25)
@@ -36,7 +35,8 @@ class TestReadCacheJsonTool:
                 "cortex.core.project_root_resolver.get_project_root",
                 return_value=root,
             ):
-                result_str = await read_cache_json(
+                result_str = await cache_json(
+                    operation="read",
                     relative_path="usage/events/2026-01-01.json",
                 )
         result = json.loads(result_str)
@@ -56,7 +56,8 @@ class TestReadCacheJsonTool:
                 "cortex.core.project_root_resolver.get_project_root",
                 return_value=root,
             ):
-                result_str = await read_cache_json(
+                result_str = await cache_json(
+                    operation="read",
                     relative_path="data.json",
                 )
         result = json.loads(result_str)
@@ -74,7 +75,8 @@ class TestReadCacheJsonTool:
                 "cortex.core.project_root_resolver.get_project_root",
                 return_value=root,
             ):
-                result_str = await read_cache_json(
+                result_str = await cache_json(
+                    operation="read",
                     relative_path="../../etc/passwd",
                 )
         result = json.loads(result_str)
@@ -82,8 +84,8 @@ class TestReadCacheJsonTool:
         assert "relative_path" in result
 
 
-class TestWriteCacheJsonTool:
-    """Tests for write_cache_json MCP tool."""
+class TestCacheJsonWriteTool:
+    """Tests for cache_json(operation=write) MCP tool."""
 
     @pytest.mark.asyncio
     @pytest.mark.timeout(25)
@@ -96,13 +98,15 @@ class TestWriteCacheJsonTool:
                 "cortex.core.project_root_resolver.get_project_root",
                 return_value=root,
             ):
-                out_str = await write_cache_json(
+                out_str = await cache_json(
+                    operation="write",
                     relative_path="roundtrip.json",
                     content=content,
                 )
                 out = json.loads(out_str)
                 assert out.get("status") == "success"
-                result_str = await read_cache_json(
+                result_str = await cache_json(
+                    operation="read",
                     relative_path="roundtrip.json",
                 )
         result = json.loads(result_str)
@@ -118,7 +122,8 @@ class TestWriteCacheJsonTool:
                 "cortex.core.project_root_resolver.get_project_root",
                 return_value=root,
             ):
-                result_str = await write_cache_json(
+                result_str = await cache_json(
+                    operation="write",
                     relative_path="bad.json",
                     content="not json {",
                 )
@@ -231,12 +236,12 @@ class TestErrorResponse:
         assert data["relative_path"] == ""
 
 
-class TestReadCacheJsonWithContext:
-    """Tests for read_cache_json when ctx is provided (log path)."""
+class TestCacheJsonReadWithContext:
+    """Tests for cache_json(operation=read) when ctx is provided (log path)."""
 
     @pytest.mark.asyncio
     @pytest.mark.timeout(25)
-    async def test_read_cache_json_with_ctx_calls_log_client(
+    async def test_cache_json_read_with_ctx_calls_log_client(
         self, tmp_path: Path
     ) -> None:
         """When ctx is provided, log_client is called before proceeding."""
@@ -251,16 +256,17 @@ class TestReadCacheJsonWithContext:
                 "cortex.tools.cache_json_tools.log_client",
                 new_callable=AsyncMock,
             ) as mock_log:
-                _ = await read_cache_json(
+                _ = await cache_json(
+                    operation="read",
                     relative_path="usage/events/x.json",
                     ctx=mock_ctx,
                 )
         mock_log.assert_called_once()
-        assert "read_cache_json" in str(mock_log.call_args)
+        assert "cache_json" in str(mock_log.call_args)
 
 
-class TestReadCacheJsonErrorPaths:
-    """Tests for read_cache_json exception handling."""
+class TestCacheJsonReadErrorPaths:
+    """Tests for cache_json(operation=read) exception handling."""
 
     @pytest.mark.asyncio
     @pytest.mark.timeout(25)
@@ -279,7 +285,9 @@ class TestReadCacheJsonErrorPaths:
                     new_callable=AsyncMock,
                     side_effect=ValueError("invalid path"),
                 ):
-                    result_str = await read_cache_json(relative_path="bad.json")
+                    result_str = await cache_json(
+                        operation="read", relative_path="bad.json"
+                    )
         result = json.loads(result_str)
         assert result["status"] == "error"
         assert "invalid path" in str(result.get("message", ""))
@@ -301,18 +309,20 @@ class TestReadCacheJsonErrorPaths:
                     new_callable=AsyncMock,
                     side_effect=RuntimeError("lock timeout"),
                 ):
-                    result_str = await read_cache_json(relative_path="x.json")
+                    result_str = await cache_json(
+                        operation="read", relative_path="x.json"
+                    )
         result = json.loads(result_str)
         assert result["status"] == "error"
         assert result.get("error_type") == "RuntimeError"
 
 
-class TestWriteCacheJsonWithContext:
-    """Tests for write_cache_json when ctx is provided (log path)."""
+class TestCacheJsonWriteWithContext:
+    """Tests for cache_json(operation=write) when ctx is provided (log path)."""
 
     @pytest.mark.asyncio
     @pytest.mark.timeout(25)
-    async def test_write_cache_json_with_ctx_calls_log_client(
+    async def test_cache_json_write_with_ctx_calls_log_client(
         self, tmp_path: Path
     ) -> None:
         """When ctx is provided, log_client is called before proceeding."""
@@ -331,17 +341,18 @@ class TestWriteCacheJsonWithContext:
                     "cortex.tools.cache_json_tools._write_cache_json",
                     new_callable=AsyncMock,
                 ):
-                    _ = await write_cache_json(
+                    _ = await cache_json(
+                        operation="write",
                         relative_path="x.json",
                         content="{}",
                         ctx=mock_ctx,
                     )
         mock_log.assert_called_once()
-        assert "write_cache_json" in str(mock_log.call_args)
+        assert "cache_json" in str(mock_log.call_args)
 
 
-class TestWriteCacheJsonContentValidation:
-    """Tests for write_cache_json content validation."""
+class TestCacheJsonWriteContentValidation:
+    """Tests for cache_json(operation=write) content validation."""
 
     @pytest.mark.asyncio
     @pytest.mark.timeout(25)
@@ -353,7 +364,8 @@ class TestWriteCacheJsonContentValidation:
                 "cortex.core.project_root_resolver.get_project_root",
                 return_value=root,
             ):
-                result_str = await write_cache_json(
+                result_str = await cache_json(
+                    operation="write",
                     relative_path="n.json",
                     content="123",
                 )
@@ -363,7 +375,7 @@ class TestWriteCacheJsonContentValidation:
 
 
 class TestCacheJsonToolsEdgeCases:
-    """Edge cases for read_cache_json and write_cache_json."""
+    """Edge cases for cache_json(operation=read|write)."""
 
     @pytest.mark.asyncio
     @pytest.mark.timeout(25)
@@ -381,7 +393,8 @@ class TestCacheJsonToolsEdgeCases:
                     "cortex.tools.cache_json_tools._write_cache_json",
                     new_callable=AsyncMock,
                 ) as mock_write:
-                    result_str = await write_cache_json(
+                    result_str = await cache_json(
+                        operation="write",
                         relative_path="empty.json",
                         content="{}",
                     )
@@ -406,7 +419,8 @@ class TestCacheJsonToolsEdgeCases:
                     "cortex.tools.cache_json_tools._write_cache_json",
                     new_callable=AsyncMock,
                 ) as mock_write:
-                    result_str = await write_cache_json(
+                    result_str = await cache_json(
+                        operation="write",
                         relative_path="empty_arr.json",
                         content="[]",
                     )
@@ -432,7 +446,8 @@ class TestCacheJsonToolsEdgeCases:
                     new_callable=AsyncMock,
                     side_effect=ValueError("Invalid cache key"),
                 ):
-                    result_str = await write_cache_json(
+                    result_str = await cache_json(
+                        operation="write",
                         relative_path="x.json",
                         content='{"a": 1}',
                     )
@@ -457,7 +472,8 @@ class TestCacheJsonToolsEdgeCases:
                     new_callable=AsyncMock,
                     side_effect=OSError(13, "Permission denied"),
                 ):
-                    result_str = await write_cache_json(
+                    result_str = await cache_json(
+                        operation="write",
                         relative_path="x.json",
                         content='{"a": 1}',
                     )

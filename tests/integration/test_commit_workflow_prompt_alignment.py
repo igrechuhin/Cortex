@@ -15,6 +15,7 @@ from cortex.core.path_resolver import (
     ProjectResourceType,
     get_cortex_path,
 )
+from cortex.managers.initialization import get_project_root
 from cortex.validation.commit_workflow_model import (
     get_commit_steps_metadata,
     get_parallel_block_step_ids,
@@ -24,7 +25,7 @@ from cortex.validation.commit_workflow_model import (
 
 def _repo_root() -> Path:
     """Return repository root (directory containing src/ and tests/)."""
-    return Path(__file__).resolve().parents[2]
+    return get_project_root()
 
 
 def _commit_prompt_path() -> Path:

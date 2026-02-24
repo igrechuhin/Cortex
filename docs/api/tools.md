@@ -2597,13 +2597,13 @@ Performs automated maintenance tasks to keep the structure clean and organized.
 
 ### get_structure_info
 
-Get current structure configuration and status.
+Get current project structure configuration, paths, and status. No parameters (project root resolved internally).
 
-**Parameters:**
+**USE WHEN:** Resolving memory bank/plans/rules paths, checking structure health, or discovering project layout at session start.
 
-**Description:**
+**EXAMPLES:** 'get structure info', 'show structure paths', 'get memory bank path'.
 
-Returns information about the current structure configuration and status.
+**Description:** Returns structure version, configured paths (memory_bank, plans, rules, config, reviews), configuration, existence flags, and health summary.
 
 **Returns:**
 

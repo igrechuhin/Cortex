@@ -24,7 +24,7 @@ Modules:
 - prompts: MCP prompt templates for one-time operations (7 prompts)
 - script_capture_tools: Session script capture, analysis, promotion (5 tools)
 - usage_analytics: Tool usage statistics and optimization (4 tools) - Phase 29
-- cache_json_tools: Concurrent-safe read/write of .cortex/.cache JSON (2 tools)
+- cache_json_tools: Concurrent-safe read/write of .cortex/.cache JSON (1 tool: cache_json)
 - roadmap_operations: Roadmap entry management (1 tool)
 - plan_operations: Structured plan creation and roadmap registration (2 tools)
 - plan_completion: Complete plan (move from roadmap to activeContext) (1 tool)
@@ -38,6 +38,7 @@ from . import (
     analysis_operations,  # noqa: F401
     cache_json_tools,  # noqa: F401
     compaction_operations,  # noqa: F401
+    composite_tools,  # noqa: F401
     configuration_hybrid,  # noqa: F401
     configuration_operations,  # noqa: F401
     connection_health,  # noqa: F401
@@ -72,12 +73,14 @@ from . import (
     sequential_thinking,  # noqa: F401
     session_registry,  # noqa: F401
     session_start_tools,  # noqa: F401
+    skill_pack_operations,  # noqa: F401
     synapse_prompts,  # noqa: F401  # Dynamic Synapse prompts registration
     synapse_tools,  # noqa: F401
     task_locking,  # noqa: F401
     tool_search_operations,  # noqa: F401
     usage_analytics,  # noqa: F401
     validation_operations,  # noqa: F401
+    workflow_operations,  # noqa: F401
 )
 
 # Explicitly reference synapse_prompts to satisfy type checker
@@ -90,6 +93,7 @@ __all__ = [
     "compaction_operations",
     "configuration_hybrid",
     "configuration_operations",
+    "composite_tools",
     "connection_health",
     "file_operations",
     "health_check_operations",
@@ -124,8 +128,10 @@ __all__ = [
     "refactoring_operations",
     "rules_operations",
     "script_capture_tools",
+    "skill_pack_operations",
     "synapse_prompts",
     "task_locking",
     "usage_analytics",
     "validation_operations",
+    "workflow_operations",
 ]

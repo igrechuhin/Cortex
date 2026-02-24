@@ -262,6 +262,17 @@ async def analyze_health_check(
     RETURNS: JSON with status, analysis_type, prompts/rules/tools sections,
     merge_opportunities, optimization_opportunities, recommendations, and
     optional prompt_dependencies/rule_dependencies.
+
+    Args:
+        analysis_type: Scope of analysis. "prompts", "rules", "tools", or "all"
+            (default). Only the selected layer(s) are analyzed.
+        similarity_threshold: Similarity threshold for merge detection (0.0–1.0).
+            Default 0.75. Higher values require stronger similarity to suggest merges.
+        include_dependencies: If True, include prompt/rule dependency mapping
+            in the report. Default True.
+        validate_quality: If True, run quality validation on merge opportunities
+            and append recommendations. Default True.
+        ctx: MCP context (automatically provided).
     """
     await log_client(ctx, "info", "analyze_health_check: starting")
     root = await resolve_project_root_async(None, ctx)

@@ -1,0 +1,16 @@
+name: new_feature_development
+description: Implement a new feature from roadmap or plan.
+steps:
+  - session_start
+  - load_context(task_description="implement X", token_budget=10000)
+  - create_plan (if not already)
+  - "[implement steps]"
+  - execute_pre_commit_checks(checks=["quality"])
+  - fix_quality_issues (if needed)
+  - compact_session (end of session)
+keywords:
+  - implement
+  - feature
+  - roadmap
+  - new feature
+  - development

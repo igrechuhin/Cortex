@@ -1,6 +1,6 @@
 # Plan: Agent Skills Pattern & Tool Composability
 
-## Status: PLANNED
+## Status: IN PROGRESS
 
 ## Priority: P2 (Medium)
 
@@ -48,12 +48,12 @@ Anthropic's "Equipping Agents for the Real World with Agent Skills" and "Code Ex
 
 **Action:**
 
-1. Define skill pack manifest format (Pydantic model)
-2. Create manifest files for each pack
-3. Add `discover_skills(task_description)` tool that recommends relevant packs
-4. Add `load_skill_pack(pack_name)` tool that loads pack's tools and context
+1. Define skill pack manifest format (Pydantic model) — **Done** (`SkillPackManifest` in `skill_pack_models.py`)
+2. Create manifest files for each pack — **Done** (7 packs under `src/cortex/resources/skills/*.json`)
+3. Add `discover_skills(task_description)` tool that recommends relevant packs — **Done** (consolidated as `skill_pack(operation="discover", task_description=...)`)
+4. Add `load_skill_pack(pack_name)` tool that loads pack's tools and context — **Done** (consolidated as `skill_pack(operation="load", pack_name=...)`)
 
-**Acceptance criteria:** 7+ skill packs defined. Discovery tool recommends correct packs for common tasks.
+**Acceptance criteria:** 7+ skill packs defined. Discovery tool recommends correct packs for common tasks. — **Met** (7 packs; tests verify discover recommends core/quality for session/lint tasks).
 
 ---
 

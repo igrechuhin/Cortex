@@ -14,9 +14,10 @@ from pathlib import Path
 import pytest
 
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
+from cortex.managers.initialization import get_project_root
 
 # Import script module from synapse scripts (standalone, not from cortex package)
-_PROJECT_ROOT = Path(__file__).resolve().parents[2]
+_PROJECT_ROOT = get_project_root()
 _SCRIPT_DIR = (
     get_cortex_path(_PROJECT_ROOT, CortexResourceType.SYNAPSE) / "scripts" / "python"
 )

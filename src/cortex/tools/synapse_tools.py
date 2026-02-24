@@ -4,19 +4,18 @@ Synapse Tools for MCP Memory Bank.
 This module contains tools for syncing, updating, and retrieving
 shared rules and prompts from a git submodule-based Synapse repository.
 
-Total: 5 tools
+Total: 4 tools (update_synapse_rule + update_synapse_prompt consolidated into update_synapse)
 - sync_synapse
-- update_synapse_rule
+- update_synapse (content_type=rule|prompt)
 - get_synapse_rules
 - get_synapse_prompts
-- update_synapse_prompt
 
 Note: setup_synapse has been replaced by a prompt template in docs/prompts/
 """
 
 import json
 from collections.abc import Sequence
-from typing import Protocol
+from typing import Literal, Protocol
 from urllib.parse import unquote
 
 from cortex.core.constants import (
@@ -37,6 +36,8 @@ from cortex.managers.manager_utils import get_manager
 from cortex.optimization.rules_manager import RulesManager
 from cortex.rules.synapse_manager import SynapseManager
 from cortex.server import mcp
+
+RulePriorityLiteral = Literal["local_overrides_shared", "shared_overrides_local"]
 
 
 class _ModelDumpable(Protocol):
@@ -216,9 +217,54 @@ async def _update_synapse_rule_impl(
     return out
 
 
-@mcp.tool(annotations=safe_write_annotations("Update Synapse Rule"))
+@mcp.tool(annotations=safe_write_annotations("Update Synapse (rule or prompt)"))
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_EXTERNAL)
+async def update_synapse(
+    content_type: Literal["rule", "prompt"],
+    category: str,
+    file: str,
+    content: str,
+    commit_message: str,
+    ctx: MCPContext | None = None,
+) -> str:
+    """Update a Synapse rule or prompt file and push changes to all projects.
+
+    USE WHEN: User wants to update a shared rule or prompt, user needs to
+    modify rule/prompt, user requests rule/prompt update.
+
+    EXAMPLES: update_synapse(content_type="rule", category="python", ...),
+    update_synapse(content_type="prompt", category="general", ...).
+
+    RETURNS: JSON with update status, changes made, and push results.
+
+    Args:
+        content_type: "rule" to update a rule file, "prompt" to update a prompt file.
+        category: Category name (e.g. "python", "general").
+        file: Filename within the category.
+        content: Complete new content for the file.
+        commit_message: Git commit message describing the change.
+        ctx: MCP context (automatically provided).
+    """
+    await log_client(
+        ctx, "info", f"update_synapse({content_type}): starting", logger_name=__name__
+    )
+    try:
+        if content_type == "rule":
+            return await _update_synapse_rule_impl(
+                category, file, content, commit_message, ctx
+            )
+        return await _update_synapse_prompt_impl(
+            category, file, content, commit_message, ctx
+        )
+    except Exception as e:
+        await log_client(ctx, "error", f"update_synapse: {e!s}", logger_name=__name__)
+        return json.dumps(
+            {"status": "error", "error": str(e), "error_type": type(e).__name__},
+            indent=2,
+        )
+
+
 async def update_synapse_rule(
     category: str,
     file: str,
@@ -226,82 +272,56 @@ async def update_synapse_rule(
     commit_message: str,
     ctx: MCPContext | None = None,
 ) -> str:
-    """Update a Synapse rule file and push changes to all projects.
+    """Update a Synapse rule file (wrapper; use update_synapse(content_type=\"rule\", ...) as MCP tool)."""
+    return await update_synapse(
+        content_type="rule",
+        category=category,
+        file=file,
+        content=content,
+        commit_message=commit_message,
+        ctx=ctx,
+    )
 
-    USE WHEN: User wants to update shared rule, user needs to modify rule,
-    user requests rule update, user wants to push rule changes.
 
-    EXAMPLES: 'update Synapse rule python-security', 'modify shared rule',
-    'update rule and push'.
-
-    RETURNS: JSON with update status, changes made, and push results.
-
-    This tool modifies a rule file in the Synapse repository, commits the
-    changes with a descriptive message, and pushes to the remote repository.
-    This makes the updated rule immediately available to all other projects
-    using the same Synapse repository.
-
-    Args:
-        category: Category name identifying the rule type.
-                  Examples: "python", "general", "markdown", "security"
-
-        file: Rule filename within the category.
-              Example: "style-guide.mdc", "async-patterns.mdc"
-
-        content: Complete new content for the rule file.
-                 Overwrites existing file content entirely.
-
-        commit_message: Git commit message describing the change.
-                       Should be descriptive and follow team conventions.
-
-    Returns:
-        JSON string containing:
-        - status: "success" or "error"
-        - category: Category name (only on success)
-        - file: Rule filename (only on success)
-        - message: Commit message used (only on success)
-        - commit_hash: Git commit hash (optional, if available)
-        - error: Error message (only present if status is "error")
-
-    Examples:
-        Example 1: Update a Python style guide rule
-        >>> await update_synapse_rule(
-        ...     category="python",
-        ...     file="style-guide.mdc",
-        ...     content=(
-        ...         "# Python Style Guide\n\n## Type Hints\n\n"
-        ...         "All functions must..."
-        ...     ),
-        ...     commit_message="Update Python style guide with type hint requirements"
-        ... )
-        {
-          "status": "success",
-          "category": "python",
-          "file": "style-guide.mdc",
-          "message": "Update Python style guide with type hint requirements",
-          "commit_hash": "a1b2c3d4e5f6"
-        }
-
-        Example 2: Error - Synapse not initialized
-        >>> await update_synapse_rule(
-        ...     category="python",
-        ...     file="test.mdc",
-        ...     content="test",
-        ...     commit_message="test"
-        ... )
-        {
-          "status": "error",
-          "error": "Synapse not initialized. Run setup_synapse first."
-        }
-    """
-    await log_client(ctx, "info", "update_synapse_rule: starting", logger_name=__name__)
-    try:
-        return await _update_synapse_rule_impl(
-            category, file, content, commit_message, ctx
+async def _get_synapse_handle_rules(
+    task_description: str | None,
+    max_tokens: int,
+    min_relevance_score: float,
+    project_files: str | None,
+    rule_priority: RulePriorityLiteral,
+    context_aware: bool,
+    ctx: MCPContext | None,
+) -> str:
+    """Handle get_synapse(content_type='rules') branch."""
+    if not (task_description or "").strip():
+        return json.dumps(
+            {
+                "status": "error",
+                "error": "task_description required when content_type is rules",
+            },
+            indent=2,
         )
+    desc = (task_description or "").strip()
+    return await _get_synapse_rules_impl(
+        desc,
+        max_tokens,
+        min_relevance_score,
+        project_files,
+        rule_priority,
+        context_aware,
+        ctx,
+    )
+
+
+async def _get_synapse_handle_prompts(
+    category: str | None, ctx: MCPContext | None
+) -> str:
+    """Handle get_synapse(content_type='prompts') branch."""
+    try:
+        return await _get_synapse_prompts_impl(category, ctx)
     except Exception as e:
         await log_client(
-            ctx, "error", f"update_synapse_rule: {e!s}", logger_name=__name__
+            ctx, "error", f"get_synapse(prompts): {e!s}", logger_name=__name__
         )
         return json.dumps(
             {"status": "error", "error": str(e), "error_type": type(e).__name__},
@@ -309,15 +329,53 @@ async def update_synapse_rule(
         )
 
 
-@mcp.tool(annotations=read_only_annotations("Get Synapse Rules"))
+@mcp.tool(annotations=read_only_annotations("Get Synapse (rules or prompts)"))
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_MEDIUM)
+async def get_synapse(
+    content_type: str,
+    task_description: str | None = None,
+    category: str | None = None,
+    max_tokens: int = 10000,
+    min_relevance_score: float = 0.3,
+    project_files: str | None = None,
+    rule_priority: RulePriorityLiteral = "local_overrides_shared",
+    context_aware: bool = True,
+    ctx: MCPContext | None = None,
+) -> str:
+    """Get Synapse rules (by task) or prompts (optionally by category).
+
+    USE WHEN: content_type=\"rules\" — user needs relevant rules. content_type=\"prompts\" — user needs prompts.
+    EXAMPLES: get_synapse(content_type=\"rules\", task_description=\"Python async\"), get_synapse(content_type=\"prompts\", category=\"general\").
+    """
+    ct = (content_type or "").strip().lower()
+    if ct == "rules":
+        return await _get_synapse_handle_rules(
+            task_description,
+            max_tokens,
+            min_relevance_score,
+            project_files,
+            rule_priority,
+            context_aware,
+            ctx,
+        )
+    if ct == "prompts":
+        return await _get_synapse_handle_prompts(category, ctx)
+    return json.dumps(
+        {
+            "status": "error",
+            "error": f"Unknown content_type: {content_type!r}. Use rules or prompts.",
+        },
+        indent=2,
+    )
+
+
 async def get_synapse_rules(
     task_description: str,
     max_tokens: int = 10000,
     min_relevance_score: float = 0.3,
     project_files: str | None = None,
-    rule_priority: str = "local_overrides_shared",
+    rule_priority: RulePriorityLiteral = "local_overrides_shared",
     context_aware: bool = True,
     ctx: MCPContext | None = None,
 ) -> str:
@@ -453,6 +511,35 @@ async def get_synapse_rules(
           "source": "mixed"
         }
     """
+    return await _get_synapse_rules_impl(
+        task_description,
+        max_tokens,
+        min_relevance_score,
+        project_files,
+        rule_priority,
+        context_aware,
+        ctx,
+    )
+
+
+def _get_synapse_rules_error_json(exc: Exception) -> str:
+    """Build JSON error response for get_synapse_rules failures."""
+    return json.dumps(
+        {"status": "error", "error": str(exc), "error_type": type(exc).__name__},
+        indent=2,
+    )
+
+
+async def _get_synapse_rules_impl(
+    task_description: str,
+    max_tokens: int,
+    min_relevance_score: float,
+    project_files: str | None,
+    rule_priority: RulePriorityLiteral,
+    context_aware: bool,
+    ctx: MCPContext | None,
+) -> str:
+    """Run get_synapse_rules logic and return JSON result."""
     await log_client(ctx, "info", "get_synapse_rules: starting", logger_name=__name__)
     try:
         from cortex.tools.synapse_tools_helpers import execute_rules_with_context
@@ -475,14 +562,6 @@ async def get_synapse_rules(
             ctx, "error", f"get_synapse_rules: {e!s}", logger_name=__name__
         )
         return _get_synapse_rules_error_json(e)
-
-
-def _get_synapse_rules_error_json(exc: Exception) -> str:
-    """Build JSON error response for get_synapse_rules failures."""
-    return json.dumps(
-        {"status": "error", "error": str(exc), "error_type": type(exc).__name__},
-        indent=2,
-    )
 
 
 def _build_category_prompts_response(
@@ -555,100 +634,16 @@ async def _get_synapse_prompts_impl(
     return out
 
 
-@mcp.tool(annotations=read_only_annotations("Get Synapse Prompts"))
-@ensure_usage_context
-@mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_FAST)
 async def get_synapse_prompts(
     category: str | None = None,
     ctx: MCPContext | None = None,
 ) -> str:
-    """Get prompts from Synapse repository.
-
-    USE WHEN: User needs Synapse prompts, user wants prompt templates,
-    user requests prompts, user needs workflow prompts.
-
-    EXAMPLES: 'get Synapse prompts', 'get prompts for commit', 'get
-    prompts by category', 'get workflow prompts'.
-
-    RETURNS: JSON with prompts, categories, and prompt content.
-
-    This tool retrieves prompts from the Synapse repository, optionally
-    filtered by category. Prompts are shared across projects and can be
-    used for common tasks, templates, or workflows.
-
-    Args:
-        category: Optional category name to filter prompts.
-                  Examples: "python", "general", "testing"
-                  If not provided, returns all prompts from all categories.
-
-    Returns:
-        JSON string containing:
-        - status: "success" or "error"
-        - prompts: List of prompt objects with file, name, description, keywords
-        - categories: List of available categories (if no category specified)
-        - total_count: Number of prompts returned
-        - error: Error message (only present if status is "error")
-
-    Examples:
-        Example 1: Get all prompts
-        >>> await get_synapse_prompts()
-        {
-          "status": "success",
-          "categories": ["python", "general", "testing"],
-          "prompts": [
-            {
-              "file": "code-review.md",
-              "name": "Code Review",
-              "category": "general",
-              "description": "Comprehensive code review checklist",
-              "keywords": ["review", "quality", "checklist"]
-            },
-            {
-              "file": "refactor-template.md",
-              "name": "Refactoring Template",
-              "category": "python",
-              "description": "Template for refactoring Python code",
-              "keywords": ["refactor", "python", "template"]
-            }
-          ],
-          "total_count": 2
-        }
-
-        Example 2: Get prompts for specific category
-        >>> await get_synapse_prompts(category="python")
-        {
-          "status": "success",
-          "category": "python",
-          "prompts": [
-            {
-              "file": "refactor-template.md",
-              "name": "Refactoring Template",
-              "category": "python",
-              "description": "Template for refactoring Python code",
-              "keywords": ["refactor", "python", "template"]
-            }
-          ],
-          "total_count": 1
-        }
-
-        Example 3: Error - Synapse not initialized
-        >>> await get_synapse_prompts()
-        {
-          "status": "error",
-          "error": "Synapse not initialized. Run setup_synapse first."
-        }
-    """
-    await log_client(ctx, "info", "get_synapse_prompts: starting", logger_name=__name__)
-    try:
-        return await _get_synapse_prompts_impl(category, ctx)
-    except Exception as e:
-        await log_client(
-            ctx, "error", f"get_synapse_prompts: {e!s}", logger_name=__name__
-        )
-        return json.dumps(
-            {"status": "error", "error": str(e), "error_type": type(e).__name__},
-            indent=2,
-        )
+    """Get Synapse prompts (wrapper; use get_synapse(content_type=\"prompts\", category=...) as MCP tool)."""
+    return await get_synapse(
+        content_type="prompts",
+        category=category,
+        ctx=ctx,
+    )
 
 
 async def _update_synapse_prompt_impl(
@@ -682,9 +677,6 @@ async def _update_synapse_prompt_impl(
     return out
 
 
-@mcp.tool(annotations=safe_write_annotations("Update Synapse Prompt"))
-@ensure_usage_context
-@mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_EXTERNAL)
 async def update_synapse_prompt(
     category: str,
     file: str,
@@ -692,89 +684,15 @@ async def update_synapse_prompt(
     commit_message: str,
     ctx: MCPContext | None = None,
 ) -> str:
-    """Update a Synapse prompt file and push changes to all projects.
-
-    USE WHEN: User wants to update shared prompt, user needs to modify
-    prompt, user requests prompt update, user wants to push prompt
-    changes.
-
-    EXAMPLES: 'update Synapse prompt commit', 'modify shared prompt',
-    'update prompt and push'.
-
-    RETURNS: JSON with update status, changes made, and push results.
-
-    This tool modifies a prompt file in the Synapse repository, commits the
-    changes with a descriptive message, and pushes to the remote repository.
-    This makes the updated prompt immediately available to all other projects
-    using the same Synapse repository.
-
-    Args:
-        category: Category name identifying the prompt type.
-                  Examples: "python", "general", "testing"
-
-        file: Prompt filename within the category.
-              Example: "code-review.md", "refactor-template.md"
-
-        content: Complete new content for the prompt file.
-                 Overwrites existing file content entirely.
-
-        commit_message: Git commit message describing the change.
-                       Should be descriptive and follow team conventions.
-
-    Returns:
-        JSON string containing:
-        - status: "success" or "error"
-        - category: Category name (only on success)
-        - file: Prompt filename (only on success)
-        - message: Commit message used (only on success)
-        - type: "prompt" (only on success)
-        - commit_hash: Git commit hash (optional, if available)
-        - error: Error message (only present if status is "error")
-
-    Examples:
-        Example 1: Update a code review prompt
-        >>> await update_synapse_prompt(
-        ...     category="general",
-        ...     file="code-review.md",
-        ...     content="# Code Review Checklist\n\n## Security\n\n- Check for...",
-        ...     commit_message="Add security section to code review prompt"
-        ... )
-        {
-          "status": "success",
-          "category": "general",
-          "file": "code-review.md",
-          "message": "Add security section to code review prompt",
-          "type": "prompt",
-          "commit_hash": "b2c3d4e5f6a7"
-        }
-
-        Example 2: Error - Synapse not initialized
-        >>> await update_synapse_prompt(
-        ...     category="general",
-        ...     file="test.md",
-        ...     content="test",
-        ...     commit_message="test"
-        ... )
-        {
-          "status": "error",
-          "error": "Synapse not initialized. Run setup_synapse first."
-        }
-    """
-    await log_client(
-        ctx, "info", "update_synapse_prompt: starting", logger_name=__name__
+    """Update a Synapse prompt file (wrapper; use update_synapse(content_type=\"prompt\", ...) as MCP tool)."""
+    return await update_synapse(
+        content_type="prompt",
+        category=category,
+        file=file,
+        content=content,
+        commit_message=commit_message,
+        ctx=ctx,
     )
-    try:
-        return await _update_synapse_prompt_impl(
-            category, file, content, commit_message, ctx
-        )
-    except Exception as e:
-        await log_client(
-            ctx, "error", f"update_synapse_prompt: {e!s}", logger_name=__name__
-        )
-        return json.dumps(
-            {"status": "error", "error": str(e), "error_type": type(e).__name__},
-            indent=2,
-        )
 
 
 @mcp.resource(uri="cortex://synapse/rules/{task_description}")

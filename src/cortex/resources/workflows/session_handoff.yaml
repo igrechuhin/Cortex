@@ -1,0 +1,12 @@
+name: session_handoff
+description: End session with compaction and memory bank updates.
+steps:
+  - compact_session(summary="...")
+  - "[memory bank updates if not done]"
+  - append_progress_entry / append_active_context_entry as needed
+keywords:
+  - handoff
+  - end session
+  - compact
+  - session
+  - wrap up

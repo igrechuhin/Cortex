@@ -1,0 +1,16 @@
+name: bug_investigation
+description: Debug and fix a bug.
+steps:
+  - session_start
+  - load_context(task_description="debug X", token_budget=15000)
+  - search_tools / read code as needed
+  - think
+  - "[implement fix]"
+  - execute_pre_commit_checks(checks=["tests"])
+keywords:
+  - bug
+  - fix
+  - debug
+  - investigation
+  - error
+  - failure

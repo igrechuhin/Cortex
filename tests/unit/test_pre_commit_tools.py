@@ -19,6 +19,7 @@ from cortex.core.path_resolver import (
     get_project_path,
     get_venv_bin_path,
 )
+from cortex.managers.initialization import get_project_root
 from cortex.services.framework_adapters.base import (
     CheckResult,
     FrameworkAdapter,
@@ -622,7 +623,7 @@ class TestRunSynapseScript:
         self,
     ) -> None:
         """check_async_tests script runs and returns a result (pass or report)."""
-        project_root = Path(__file__).resolve().parents[2]
+        project_root = get_project_root()
         script_path = (
             get_cortex_path(project_root, CortexResourceType.SYNAPSE)
             / "scripts"

@@ -715,9 +715,27 @@ async def run_tool_evaluation(
 ) -> str:
     """Run the evaluation suite for MCP tools and return metrics.
 
-    mode: "fast" (10 execution tasks, <30s), "full" (all tasks),
-    "focused" (filter by category). category: when mode is "focused",
-    only tasks with this category are run.
+    USE WHEN: User wants to run evals, user needs tool evaluation
+    results, user requests eval suite, user wants pass/fail metrics
+    before or after tool changes.
+
+    EXAMPLES: 'run_tool_evaluation(mode="fast")', 'run evals in full
+    mode', 'run_tool_evaluation(mode="focused", category="context")'.
+
+    RETURNS: JSON with status, tasks_loaded, suite (per-task results),
+    analysis (success rate, top error patterns), cache_file path, and
+    optional dashboard_path.
+
+    Modes: "fast" (10 tasks, <30s), "full" (all tasks), "focused"
+    (filter by category). Project root is resolved internally.
+
+    Args:
+        task_ids: Optional list of task IDs to run; if None, all tasks
+            for the selected mode are run.
+        mode: "fast" (10 execution tasks, <30s), "full" (all tasks),
+            "focused" (filter by category). Default: "full".
+        category: When mode is "focused", only tasks with this category
+            are run. Ignored for "fast" and "full".
     """
     root = await resolve_project_root_async(None, ctx)
     if ctx is not None:
@@ -922,10 +940,23 @@ async def analyze_error_patterns(
 ) -> str:
     """Analyze error patterns across evaluation tasks and cache the results.
 
-    This tool runs the same evaluation harness as ``run_tool_evaluation`` but
-    focuses on the aggregated error patterns. It writes a compact JSON payload
-    to ``.cortex/.cache/evals/error_patterns.json`` and returns a summary
-    payload including the top patterns.
+    USE WHEN: User wants error pattern analysis, user needs top eval
+    failures, user requests error aggregation, user wants to improve
+    tools based on failure patterns.
+
+    EXAMPLES: 'analyze error patterns', 'get top eval error patterns',
+    'analyze_error_patterns(task_ids=["task-1", "task-2"])'.
+
+    RETURNS: JSON with status, total_patterns, patterns (list with
+    pattern, count, task_ids), cache_path. Writes
+    .cortex/.cache/evals/error_patterns.json for dashboards.
+
+    Runs the same harness as run_tool_evaluation but focuses on
+    aggregated error patterns. Project root is resolved internally.
+
+    Args:
+        task_ids: Optional list of task IDs to include; if None, all
+            tasks are run and analyzed.
     """
     root = await resolve_project_root_async(None, ctx)
     if ctx is not None:

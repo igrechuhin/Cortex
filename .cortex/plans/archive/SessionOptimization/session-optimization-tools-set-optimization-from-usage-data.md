@@ -1,6 +1,6 @@
 # Plan: Tool Consolidation — From 64 Tools to ~24
 
-## Status: IN PROGRESS (Step 7 done 2026-02-24)
+## Status: IN PROGRESS (P1 usage census and tool budget lock done 2026-02-24)
 
 ## Created: 2026-02-24
 
@@ -206,12 +206,42 @@ Saves: 0 tool slots (validation) or up to 33 if any are double-registered
 
 ## Expected Outcome
 
-| Category | Before | After |
+### Phase 50 target (initial consolidation)
+
+| Category | Before | After (target) |
 |---|---|---|
 | Public tools (`@mcp.tool`) | 64 | ~24 |
 | Resources (`@mcp.resource`) | 34 | 34 (unchanged) |
 | Tool slots consumed | 64 | ~24 |
 | Slots remaining for other MCPs (80 limit) | 16 | ~56 |
+
+### Current actual state (post-Phase 50)
+
+- As of 2026-02-24, the `user-cortex` server exposes **47 tools and 15 resources (62 total endpoints)** after consolidation and budget-lock governance (MAX_REGISTERED_TOOLS in `tool_categories.py` plus TestToolCategoriesGovernance::test_registered_tools_respect_budget).
+- Phase 50 P0 mechanics (query tools, governance, tests, pre-commit integration) and the initial P1 usage census + budget lock are complete, but the **numerical target (64 → ~24 tools)** has **not** yet been reached.
+
+### Follow-up P1: Tools optimization from usage data
+
+This follow-up phase uses real usage data and governance tests to close the gap from **60 endpoints → ~39 (≈24 tools + 15 resources)**:
+
+1. **Tool census and budget check**
+   - Use `query_usage(query_type="stats", response_format="full")` and the governance tests to confirm the live counts (tools vs resources) and compare them to the 40/24 targets.
+   - Produce a ranked list of tools by call volume, grouped by category from `tool_categories.py`.
+   - **Status (2026-02-24)**: Ran `query_usage(query_type="stats", response_format="detailed")` and confirmed ~50k usage events across the consolidated tool set; roadmap and governance tests still report **45 tools and 15 resources (60 endpoints)**, so the numerical consolidation target remains open.
+2. **Eliminate dead and near-dead tools**
+   - Identify tools with `< 5–10` calls in the last 60–90 days that are not required by core workflows (commit, plan, analyze, memory bank).
+   - For each, decide whether to **remove**, **internalize** (keep as non-`@mcp.tool` helper), or merge into an existing dispatcher.
+3. **Merge low-value variants into dispatchers**
+   - For families of operations with shared domains (scripts, analytics, health checks, pre-commit helpers), merge “leaf” tools into parameterized dispatchers (Phase 50 pattern: `operation=...`).
+   - Update Synapse prompts/rules to call the dispatcher with explicit `operation` instead of separate tool names.
+4. **Audit resources vs tools**
+   - Verify that all 15 resources are registered only via `@mcp.resource()` and are not double-counted as tools.
+   - Where a resource is only used as a thin wrapper over a tool, decide whether it should remain a separate resource or be documented as part of the tool’s behavior.
+5. **Lock in the budget**
+   - Update `tool_categories.py` and governance tests to enforce a hard ceiling (e.g. `<= 40` tools total, with a stretch goal of `~24`).
+   - Add a test that fails if new tools are added without either (a) removing another tool, or (b) explicitly adjusting the budget in the mapping/rules.
+6. **Update memory bank and docs**
+   - Once the new budget is enforced and validated, update `activeContext.md` and this plan’s Status/Expected Outcome to reflect the **actual** final counts.
 
 ## Testing Strategy
 

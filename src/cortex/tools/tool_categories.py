@@ -24,6 +24,15 @@ from enum import Enum
 
 from pydantic import BaseModel, ConfigDict
 
+# Tool budget constraints (see tool consolidation plans).
+# MAX_REGISTERED_TOOLS is enforced by governance tests; if new tools are added,
+# either consolidate/remove other tools or explicitly raise this constant in
+# tandem with the consolidation plans and documentation.
+MAX_REGISTERED_TOOLS = 51
+
+# Long-term target from consolidation plans (not enforced in tests).
+TARGET_REGISTERED_TOOLS = 24
+
 
 # Type alias for category names used in function signatures.
 class ToolCategory(str, Enum):
@@ -146,6 +155,11 @@ TOOL_CATEGORIES: tuple[ToolCategoryEntry, ...] = (
         rationale="Discover deferred tools by query when tool search is enabled",
     ),
     ToolCategoryEntry(
+        name="list_available_tools",
+        category=ToolCategory.ALWAYS_LOADED,
+        rationale="List tools by tier (agent-skills Step 3 tool discovery)",
+    ),
+    ToolCategoryEntry(
         name="session_start",
         category=ToolCategory.ALWAYS_LOADED,
         rationale="Session orientation brief used at the start of non-trivial tasks",
@@ -212,14 +226,9 @@ TOOL_CATEGORIES: tuple[ToolCategoryEntry, ...] = (
         rationale="Synapse repo pull/push operations",
     ),
     ToolCategoryEntry(
-        name="get_synapse_rules",
+        name="get_synapse",
         category=ToolCategory.DEFERRED_MEDIUM,
-        rationale="Retrieve Synapse rules for task context",
-    ),
-    ToolCategoryEntry(
-        name="get_synapse_prompts",
-        category=ToolCategory.DEFERRED_MEDIUM,
-        rationale="Retrieve Synapse prompt templates",
+        rationale="Retrieve Synapse rules or prompts (content_type=rules|prompts)",
     ),
     ToolCategoryEntry(
         name="check_structure_health",
@@ -237,19 +246,39 @@ TOOL_CATEGORIES: tuple[ToolCategoryEntry, ...] = (
         rationale="Lightweight thinking for quick deliberation moments",
     ),
     ToolCategoryEntry(
-        name="read_cache_json",
+        name="cache_json",
         category=ToolCategory.DEFERRED_MEDIUM,
-        rationale="Concurrent-safe cache reads",
-    ),
-    ToolCategoryEntry(
-        name="write_cache_json",
-        category=ToolCategory.DEFERRED_MEDIUM,
-        rationale="Concurrent-safe cache writes",
+        rationale="Concurrent-safe cache read/write (operation=read|write)",
     ),
     ToolCategoryEntry(
         name="compact_session",
         category=ToolCategory.DEFERRED_MEDIUM,
         rationale="End-of-session compaction and handoff (Phase 56)",
+    ),
+    ToolCategoryEntry(
+        name="skill_pack",
+        category=ToolCategory.DEFERRED_MEDIUM,
+        rationale="Discover skill packs for task or load pack manifest (operation=discover|load)",
+    ),
+    ToolCategoryEntry(
+        name="quick_start",
+        category=ToolCategory.DEFERRED_MEDIUM,
+        rationale="Composite: session_start + load_context (agent-skills Step 2)",
+    ),
+    ToolCategoryEntry(
+        name="quality_check",
+        category=ToolCategory.DEFERRED_MEDIUM,
+        rationale="Composite: pre_commit quality + fix_quality_issues (agent-skills Step 2)",
+    ),
+    ToolCategoryEntry(
+        name="safe_manage_file",
+        category=ToolCategory.DEFERRED_MEDIUM,
+        rationale="Composite: validate + manage_file + validate (agent-skills Step 2)",
+    ),
+    ToolCategoryEntry(
+        name="suggest_workflow",
+        category=ToolCategory.DEFERRED_MEDIUM,
+        rationale="Recommend workflow templates for task (agent-skills Step 4)",
     ),
     # ── Deferred low (admin / analytics / rare) ───────────────────────
     ToolCategoryEntry(
@@ -268,14 +297,9 @@ TOOL_CATEGORIES: tuple[ToolCategoryEntry, ...] = (
         rationale="One-time corruption repair",
     ),
     ToolCategoryEntry(
-        name="update_synapse_rule",
+        name="update_synapse",
         category=ToolCategory.DEFERRED_LOW,
-        rationale="Modify shared rules (rare admin action)",
-    ),
-    ToolCategoryEntry(
-        name="update_synapse_prompt",
-        category=ToolCategory.DEFERRED_LOW,
-        rationale="Modify shared prompts (rare admin action)",
+        rationale="Modify shared rule or prompt (content_type=rule|prompt, rare admin)",
     ),
     ToolCategoryEntry(
         name="query_usage",

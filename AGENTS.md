@@ -17,7 +17,7 @@ This project has a **Cortex MCP server** that provides tools for everything agen
 | Tests and pre-commit checks | `execute_pre_commit_checks` | Run language-specific test runners directly (get standards via `get_synapse_rules`) |
 | Memory bank, roadmap, plans, reviews | Dedicated MCP helpers (`manage_file` for all reads/writes) | Edit `.cortex/` files directly; do not use Write, StrReplace, or ApplyPatch on memory-bank paths—any edit (including one-line fixes) must use `manage_file(operation='read')` then `manage_file(operation='write', content=...)` |
 | Project structure, paths | `get_structure_info` | Hardcode `.cortex/` paths |
-| Cache JSON under `.cortex/.cache` | `read_cache_json` / `write_cache_json` | Read/write cache files directly |
+| Cache JSON under `.cortex/.cache` | `cache_json` (operation=read\|write) | Read/write cache files directly |
 
 **Tools vs Resources:** For read-only operations (e.g. load context, stats, file content), prefer MCP Resources (`cortex://` URIs) when available. Read-only query tools: `query_memory_bank`, `query_usage`. Use Tools for writes (e.g. `manage_file`, `configure`). See `docs/api/tools.md` and Phase 43 plan for naming conventions.
 
@@ -127,6 +127,7 @@ The commit workflow is organized into phases (see `docs/design/commit-pipeline-p
 - Do not import or test private symbols; test via public API or make symbols public by renaming (no public aliases for private names).
 - Do not disable pyright (e.g. reportPrivateUsage, reportUnknownMemberType) to hide private usage or type issues; fix the underlying usage or types instead.
 - Prefer Pydantic v2 models over `object` for internal structured data; use `object` only for external interfaces (e.g. MCP) or when Pydantic is not feasible.
+- Do not increase MAX limits (e.g. tool caps); when adding new tools, make room by consolidating, merging, or removing underperformers.
 
 ## Learned Workspace Facts
 

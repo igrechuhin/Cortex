@@ -1,0 +1,21 @@
+{
+  "name": "rules",
+  "description": "Rules and standards: Synapse rules, rule indexing, validation compliance.",
+  "tools": ["get_synapse_rules", "rules", "validate"],
+  "when_to_use": "Loading coding standards, getting relevant rules for a task, validating rule compliance.",
+  "workflow_sequences": [
+    "rules(operation=\"get_relevant\", task_description=\"...\") at step start",
+    "get_synapse_rules(task_description=\"structured data\") for Pydantic/model standards",
+    "validate(check_type=\"...\") for roadmap_sync or schema"
+  ],
+  "example_invocations": [
+    "rules(operation=\"get_relevant\", task_description=\"Implementation, code quality\")",
+    "get_synapse_rules(task_description=\"markdown formatting\")",
+    "validate(check_type=\"roadmap_sync\")"
+  ],
+  "troubleshooting_tips": [
+    "When rules() returns indexed_files=0, run rules(operation=\"index\", force=True) then retry.",
+    "Use get_synapse_rules for Synapse prompt/rule content; use rules for .mdc rule discovery."
+  ],
+  "keywords": ["rules", "get_synapse_rules", "validate", "standards", "coding", "compliance", "index"]
+}

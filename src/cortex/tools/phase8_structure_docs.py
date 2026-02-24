@@ -34,8 +34,6 @@ CHECK_STRUCTURE_HEALTH_DOC = """Analyze project structure health and optionally 
     - remove_empty: Remove empty plan directories (active/, completed/, archived/)
 
     Args:
-        project_root: Absolute path to project root directory. If None, uses current
-            working directory. Example: "/Users/username/projects/my-project"
         perform_cleanup: Whether to perform cleanup actions in addition to health
             checks. Default: False (check-only mode)
         cleanup_actions: List of specific cleanup actions to perform. Valid values:
@@ -53,6 +51,7 @@ CHECK_STRUCTURE_HEALTH_DOC = """Analyze project structure health and optionally 
         JSON string containing health report. See tool descriptor for full schema.
 
     Note:
+        - Project root is resolved internally (MCP roots or current working directory).
         - This tool replaces the deprecated cleanup_project_structure tool
         - Use perform_cleanup=True to perform cleanup actions alongside health checks
         - Always run with dry_run=True first to preview changes before executing
@@ -82,11 +81,8 @@ GET_STRUCTURE_INFO_DOC = """Get current project structure configuration, paths, 
     Retrieves comprehensive information about the MCP Memory Bank project structure,
     including the structure version, all configured component paths (memory bank,
     plans, rules directories), configuration settings, existence status of each
-    component, and a high-level health summary.
-
-    Args:
-        project_root: Absolute path to project root directory. If None, uses current
-            working directory.
+    component, and a high-level health summary. Project root is resolved internally
+    (MCP roots or current working directory); no parameters required.
 
     Returns:
         JSON string containing structure information. See tool descriptor for schema.

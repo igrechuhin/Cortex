@@ -169,7 +169,11 @@ async def analyze_session_scripts(
 
     EXAMPLES: 'analyze captured scripts', 'run script analysis'.
 
-    RETURNS: JSON with status, count, and list of analysis summaries.
+    RETURNS: JSON with status, count, and list of analysis summaries
+    (use_case_label, gap_reason, is_gap, reusability_score, promotion_potential).
+
+    Args:
+        ctx: MCP context (automatically provided).
     """
     root = await resolve_project_root_async(None, ctx)
     await log_client(ctx, "info", "analyze_session_scripts: starting")
@@ -204,6 +208,12 @@ async def suggest_tool_improvements(
     EXAMPLES: 'suggest tools for formatting Python', 'recommend scripts for lint'.
 
     RETURNS: JSON with status, recommendations (name, type, score).
+
+    Args:
+        task_description: Natural language description of the task to match
+            against known tools and scripts.
+        max_results: Maximum number of recommendations to return (default 15).
+        ctx: MCP context (automatically provided).
     """
     root = await resolve_project_root_async(None, ctx)
     await log_client(ctx, "info", "suggest_tool_improvements: starting")
@@ -433,7 +443,36 @@ async def session_scripts(
     output_type: str = "tool",
     ctx: MCPContext | None = None,
 ) -> str:
-    """Dispatch script capture operations through a single MCP tool."""
+    """Dispatch script capture operations through a single MCP tool.
+
+    USE WHEN: Capturing a session-generated script, listing captured scripts,
+    analyzing scripts for promotion, discovering tools for a task, or
+    validating a script for promotion to Synapse/MCP.
+
+    EXAMPLES: 'capture this script for analysis', 'list session scripts',
+    'suggest tools for refactoring task', 'analyze script for promotion',
+    'promote session script to tool'.
+
+    RETURNS: JSON with status and operation-specific payload (script_id,
+    scripts list, analysis result, recommendations, or promotion template).
+
+    Args:
+        operation: One of "capture", "list", "analyze", "suggest", "promote".
+            capture: Record a script (requires script_path, script_content,
+                task_description). list: List captured scripts (no extra args).
+            analyze: Analyze captured scripts (optional task_description).
+            suggest: Get tool/script recommendations (requires task_description).
+            promote: Get promotion template (requires script_id).
+        script_path: Path to script file (capture only).
+        script_content: Script source (capture only).
+        task_description: Task context (capture, suggest, or analyze).
+        script_type: Script language (e.g. "python"). Default "python".
+        purpose: Purpose label (e.g. "utility"). Default "utility".
+        script_id: Captured script ID (promote only).
+        max_results: Max results for suggest. Default 15.
+        output_type: "tool" or "resource" for suggest. Default "tool".
+        ctx: MCP context (automatically provided).
+    """
     return await _dispatch_session_scripts(
         operation=operation,
         script_path=script_path,

@@ -266,15 +266,29 @@ async def benchmark_model(
 ) -> str:
     """Run the full evaluation suite and store results for model upgrade comparison.
 
-    Runs run_tool_evaluation(mode='full'), stores the result keyed by model_name
-    in .cortex/.cache/evals/model_benchmarks.json, and optionally compares
-    against a previous run (baseline_model_name). Use for eval-guided model
-    upgrades; see docs/guides/model-upgrade-playbook.md.
+    USE WHEN: User wants to benchmark a model, user needs eval-guided
+    model upgrade, user requests comparison with baseline, user wants
+    to store eval results by model name.
+
+    EXAMPLES: 'benchmark_model(model_name="claude-sonnet-4")',
+    'benchmark model current vs baseline', 'run model benchmark with
+    baseline claude-sonnet-3'.
+
+    RETURNS: JSON with status, model_name, baseline_model_name (if
+    set), record (success rate, task counts), history_runs_count,
+    cache_file. Optionally includes comparison when baseline_model_name
+    is set (regressions, improvements).
+
+    Runs run_tool_evaluation(mode='full'), stores the result keyed by
+    model_name in .cortex/.cache/evals/model_benchmarks.json. See
+    docs/guides/model-upgrade-playbook.md. Project root resolved internally.
 
     Args:
-        model_name: Identifier for this model (e.g. claude-sonnet-4, current).
-        baseline_model_name: If set, the most recent stored run with this name
-            is used to generate a comparison report (regressions, improvements).
+        model_name: Identifier for this model (e.g. claude-sonnet-4,
+            current). Used to store and retrieve benchmark runs.
+        baseline_model_name: If set, the most recent stored run with
+            this name is used to generate a comparison report
+            (regressions, improvements).
     """
     root = await resolve_project_root_async(None, ctx)
     if ctx is not None:

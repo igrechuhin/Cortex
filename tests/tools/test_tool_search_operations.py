@@ -13,7 +13,7 @@ from cortex.tools.tool_categories import (
     get_deferred_tool_names,
     get_tool_category,
 )
-from cortex.tools.tool_search_operations import search_tools
+from cortex.tools.tool_search_operations import list_available_tools, search_tools
 
 
 @pytest.mark.asyncio
@@ -109,3 +109,49 @@ async def test_tool_search_discovery_returns_only_deferred_tools() -> None:
 def test_search_tools_is_always_loaded() -> None:
     """search_tools must be always_loaded so it is available when deferred loading is on."""
     assert get_tool_category("search_tools") == ToolCategory.ALWAYS_LOADED
+
+
+# ---------------------------------------------------------------------------
+# list_available_tools (agent-skills Step 3)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+@pytest.mark.timeout(5)
+async def test_list_available_tools_all_returns_by_category() -> None:
+    """list_available_tools() with no category returns by_category and summary."""
+    result = await list_available_tools(category=None)
+    data = json.loads(result)
+    assert data["status"] == "success"
+    assert "by_category" in data
+    assert "summary" in data
+    assert "always_loaded" in data["by_category"]
+    assert "deferred_medium" in data["by_category"]
+    assert "deferred_low" in data["by_category"]
+
+
+@pytest.mark.asyncio
+@pytest.mark.timeout(5)
+async def test_list_available_tools_filter_returns_tools() -> None:
+    """list_available_tools(category=always_loaded) returns list of tools."""
+    result = await list_available_tools(category="always_loaded")
+    data = json.loads(result)
+    assert data["status"] == "success"
+    assert data["category"] == "always_loaded"
+    assert "tools" in data
+    assert "manage_file" in [t["name"] for t in data["tools"]]
+
+
+@pytest.mark.asyncio
+@pytest.mark.timeout(5)
+async def test_list_available_tools_invalid_category_returns_error() -> None:
+    """list_available_tools(invalid) returns error."""
+    result = await list_available_tools(category="invalid_tier")
+    data = json.loads(result)
+    assert data["status"] == "error"
+    assert "error" in data
+
+
+def test_list_available_tools_is_always_loaded() -> None:
+    """list_available_tools is always_loaded for discovery when defer_loading is on."""
+    assert get_tool_category("list_available_tools") == ToolCategory.ALWAYS_LOADED

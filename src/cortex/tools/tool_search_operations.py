@@ -13,7 +13,9 @@ from cortex.core.mcp_annotations import read_only_annotations
 from cortex.core.mcp_stability import ensure_usage_context, mcp_tool_wrapper
 from cortex.server import mcp
 from cortex.tools.tool_categories import (
+    ToolCategory,
     ToolCategoryName,
+    get_tools_by_category,
     search_deferred_tools,
 )
 
@@ -74,3 +76,86 @@ async def search_tools(
         },
         indent=2,
     )
+
+
+def _list_tools_invalid_category(category: str) -> str:
+    """Return error JSON for invalid category."""
+    return json.dumps(
+        {
+            "status": "error",
+            "error": f"Invalid category: {category!r}. Use always_loaded, deferred_medium, or deferred_low.",
+        },
+        indent=2,
+    )
+
+
+def _list_tools_by_category_all() -> str:
+    """Build JSON for list_available_tools when no category filter."""
+    by_category: dict[str, list[dict[str, str]]] = {}
+    summary: dict[str, int] = {}
+    for cat in ToolCategory:
+        entries = get_tools_by_category(cat)
+        by_category[cat.value] = [
+            {"name": e.name, "rationale": e.rationale} for e in entries
+        ]
+        summary[cat.value] = len(entries)
+    return json.dumps(
+        {"status": "success", "by_category": by_category, "summary": summary},
+        indent=2,
+    )
+
+
+@mcp.tool(  # pyright: ignore[reportUntypedFunctionDecorator]
+    annotations=read_only_annotations(
+        "List Available Tools",
+        idempotent=True,
+    ),  # pyright: ignore[reportCallIssue]
+)
+@ensure_usage_context
+@mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_FAST)
+async def list_available_tools(
+    category: str | None = None,
+) -> str:
+    """List MCP tools by loading tier (core vs extended).
+
+    USE WHEN: Agent wants to discover which tools exist, or filter by
+    category (always_loaded, deferred_medium, deferred_low).
+
+    EXAMPLES: list_available_tools(), list_available_tools(category="always_loaded").
+
+    RETURNS: JSON with status and tools (name, category, rationale). If category
+    is omitted, returns all tools grouped by category and a summary count.
+
+    Args:
+        category: Optional filter: "always_loaded", "deferred_medium", or "deferred_low".
+            If None, returns all tools with by_category and summary.
+
+    Returns:
+        JSON string with status and tool list or by_category map.
+    """
+    if category is not None and category not in (
+        "always_loaded",
+        "deferred_medium",
+        "deferred_low",
+    ):
+        return _list_tools_invalid_category(category)
+    if category is not None:
+        cat = ToolCategory(category)
+        entries = get_tools_by_category(cat)
+        return json.dumps(
+            {
+                "status": "success",
+                "category": category,
+                "count": len(entries),
+                "tools": [
+                    {
+                        "name": e.name,
+                        "category": e.category.value,
+                        "rationale": e.rationale,
+                    }
+                    for e in entries
+                ],
+            },
+            indent=2,
+        )
+    return _list_tools_by_category_all()

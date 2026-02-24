@@ -23,6 +23,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from cortex.core.models import ModelDict
+from cortex.managers.initialization import get_project_root
 from cortex.managers.types import ManagersDict
 from cortex.optimization.models import RulesManagerStatusModel
 from cortex.tools.rules_operation_helpers import (
@@ -1332,7 +1333,7 @@ async def test_rules_get_relevant_returns_at_least_one_rule_for_commit_pipeline(
     Ensures rules indexing is effective for commit/analyze workflows.
     Uses real project root and real managers when .cortex/rules exists.
     """
-    project_root = Path(__file__).resolve().parents[2]
+    project_root = get_project_root()
     rules_dir = project_root / ".cortex" / "rules"
     if not rules_dir.exists():
         pytest.skip(reason=".cortex/rules not present")

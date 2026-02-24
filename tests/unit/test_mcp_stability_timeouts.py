@@ -34,6 +34,7 @@ from cortex.core.mcp_stability import (
 )
 from cortex.core.models import HandlerKind
 from cortex.core.usage_context import set_current_managers
+from cortex.managers.initialization import get_project_root
 
 
 async def _block_forever() -> str:
@@ -462,7 +463,7 @@ class TestLongRunningSemaphoreWait:
 
 def _tools_dir() -> Path:
     """Return src/cortex/tools path relative to repo root."""
-    return Path(__file__).resolve().parents[2] / "src" / "cortex" / "tools"
+    return get_project_root() / "src" / "cortex" / "tools"
 
 
 def _file_has_mcp_tool_missing_required_wrappers(content: str) -> list[int]:

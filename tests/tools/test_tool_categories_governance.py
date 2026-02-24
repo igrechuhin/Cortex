@@ -13,11 +13,16 @@ import asyncio
 from pathlib import Path
 
 from cortex.health_check.tool_analyzer import ToolAnalyzer
-from cortex.tools.tool_categories import TOOL_CATEGORIES
+from cortex.managers.initialization import get_project_root
+from cortex.tools.tool_categories import (
+    MAX_REGISTERED_TOOLS,
+    TOOL_CATEGORIES,
+    get_category_summary,
+)
 
 
 def _tools_dir() -> Path:
-    return Path(__file__).resolve().parents[2] / "src" / "cortex" / "tools"
+    return get_project_root() / "src" / "cortex" / "tools"
 
 
 class TestToolCategoriesGovernance:
@@ -41,3 +46,17 @@ class TestToolCategoriesGovernance:
             f"Missing in TOOL_CATEGORIES: {missing_in_categories}. "
             f"Extra in TOOL_CATEGORIES: {extra_in_categories}."
         )
+
+    def test_registered_tools_respect_budget(self) -> None:
+        """Total registered tools must not exceed the configured budget."""
+        summary = get_category_summary()
+        total_tools = sum(summary.values())
+
+        assert total_tools <= MAX_REGISTERED_TOOLS, (
+            "Registered tools exceed MAX_REGISTERED_TOOLS; either consolidate or "
+            "remove tools, or intentionally raise MAX_REGISTERED_TOOLS in "
+            "tool_categories.py alongside an updated consolidation plan."
+        )
+
+        # Sanity check: TOOL_CATEGORIES should remain the single source of truth.
+        assert total_tools == len(TOOL_CATEGORIES)

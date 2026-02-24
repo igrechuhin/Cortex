@@ -1,0 +1,19 @@
+{
+  "name": "refactoring",
+  "description": "Code refactoring: suggest and apply consolidation, splits, and reorg.",
+  "tools": ["suggest_refactoring", "apply_refactoring"],
+  "when_to_use": "Consolidating tools, splitting large files, reorganizing code; use suggest first then apply.",
+  "workflow_sequences": [
+    "suggest_refactoring(...) → review suggestions → apply_refactoring(...)",
+    "suggest_refactoring(scope=\"file_size\") for file size violations"
+  ],
+  "example_invocations": [
+    "suggest_refactoring(scope=\"consolidation\")",
+    "apply_refactoring(operation_id=\"...\")"
+  ],
+  "troubleshooting_tips": [
+    "Helper module extraction: use suggest_refactoring for file_size or function_length scope.",
+    "Apply only after reviewing suggested changes."
+  ],
+  "keywords": ["refactor", "suggest_refactoring", "apply_refactoring", "consolidation", "split", "file size", "helper"]
+}

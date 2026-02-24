@@ -62,6 +62,12 @@ _KNOWN_TOOL_NAMES: list[str] = [
     "get_quality_score",
     "preview_refactoring",
     "check_mcp_connection_health",
+    "skill_pack",
+    "cache_json",
+    "update_synapse",
+    "quick_start",
+    "quality_check",
+    "safe_manage_file",
 ]
 
 

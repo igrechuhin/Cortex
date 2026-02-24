@@ -10,6 +10,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from cortex.core.models import HandlerKind
+from cortex.managers.initialization import get_project_root
 from cortex.managers.usage_models import ToolUsageEvent
 from cortex.tools.phase5_evaluation import (
     ABComparisonResult,
@@ -48,7 +49,7 @@ from cortex.tools.phase5_evaluation_dashboard_helpers import (
 @pytest.mark.asyncio
 async def test_load_eval_tasks_from_core_workflows() -> None:
     """load_eval_tasks loads tasks from .cortex/evals/tasks/core_workflows.json."""
-    project_root = Path(__file__).resolve().parents[2]
+    project_root = get_project_root()
     tasks = await load_eval_tasks(project_root, task_ids=None)
 
     # We expect at least a handful of tasks from the seeded core_workflows.json.
@@ -61,7 +62,7 @@ async def test_load_eval_tasks_from_core_workflows() -> None:
 @pytest.mark.asyncio
 async def test_load_eval_tasks_includes_failure_based_evals() -> None:
     """load_eval_tasks includes failure-based evals from failure_based_evals.json."""
-    project_root = Path(__file__).resolve().parents[2]
+    project_root = get_project_root()
     tasks = await load_eval_tasks(project_root, task_ids=None)
     failure_based = [t for t in tasks if t.id.startswith("failure-")]
     assert len(failure_based) >= 20, "Expected at least 20 failure-based tasks"
@@ -72,7 +73,7 @@ async def test_load_eval_tasks_includes_failure_based_evals() -> None:
 @pytest.mark.asyncio
 async def test_load_eval_tasks_filters_by_task_ids() -> None:
     """load_eval_tasks respects task_ids filter."""
-    project_root = Path(__file__).resolve().parents[2]
+    project_root = get_project_root()
 
     target_id = "context-add-new-mcp-tool"
     tasks = await load_eval_tasks(project_root, task_ids=[target_id])
@@ -101,7 +102,7 @@ async def test_load_eval_tasks_returns_empty_when_tasks_dir_missing(
 @pytest.mark.asyncio
 async def test_load_eval_tasks_includes_exec_fast_tasks_with_execution_spec() -> None:
     """load_eval_tasks includes exec_fast tasks that have execution spec (Step 2 harness)."""
-    project_root = Path(__file__).resolve().parents[2]
+    project_root = get_project_root()
     tasks = await load_eval_tasks(project_root, task_ids=None)
     exec_fast = [t for t in tasks if t.id.startswith("exec-fast-")]
     assert len(exec_fast) >= 10, "Expected at least 10 exec_fast tasks for fast mode"
@@ -195,7 +196,7 @@ def test_analyze_results_handles_empty_suite() -> None:
 @pytest.mark.asyncio
 async def test_run_suite_reproducibility_same_tracker_data() -> None:
     """Same tasks and same tracker data produce the same suite metrics (reproducibility)."""
-    project_root = Path(__file__).resolve().parents[2]
+    project_root = get_project_root()
     events_load_context = [
         ToolUsageEvent(
             tool_name="load_context",
