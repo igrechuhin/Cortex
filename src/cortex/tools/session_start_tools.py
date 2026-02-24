@@ -319,6 +319,11 @@ async def session_start(
         - brief: SessionBrief with orientation data
         - token_count: Token count of the brief
         - error: Error message (only if status is "error")
+
+    Example:
+        >>> session_start()
+        {"status": "success", "brief": {"current_focus": "...", "next_work_item": "...",
+         "health": {...}, "git_status": {...}, "session_suggestions": [...]}, "token_count": 261}
     """
     await log_client(ctx, "info", "session_start: starting", logger_name=__name__)
 

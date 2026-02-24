@@ -187,7 +187,7 @@ async def sequentialthinking(
     branches (list of branch IDs), thoughtHistoryLength. Compatible with
     the MCP sequential thinking server contract.
 
-    Parameters:
+    Args:
         thought: Current thinking step (required).
         next_thought_needed: Whether another thought step is needed (required).
         thought_number: Current thought index, 1-based (required).
@@ -197,6 +197,16 @@ async def sequentialthinking(
         branch_from_thought: Branching point thought number (optional).
         branch_id: Branch identifier when branching (optional).
         needs_more_thoughts: More thoughts needed than estimated (optional).
+
+    Example:
+        >>> sequentialthinking(
+        ...     thought="Identify the main steps for the refactor",
+        ...     next_thought_needed=True,
+        ...     thought_number=1,
+        ...     total_thoughts=3
+        ... )
+        {"thoughtNumber": 1, "totalThoughts": 3, "nextThoughtNeeded": true,
+         "branches": [], "thoughtHistoryLength": 1}
     """
     inp = SequentialThinkingInput(
         thought=thought,
@@ -231,8 +241,12 @@ async def think(thought: str) -> str:
 
     RETURNS: JSON with status and thought_number indicating the thought was logged.
 
-    Parameters:
+    Args:
         thought: A thought to think about (required).
+
+    Example:
+        >>> think(thought="Which pre-commit checks apply to these changes?")
+        {"status": "success", "thought_number": 1}
     """
     core = _get_core()
     # Auto-increment thought_number based on current history length

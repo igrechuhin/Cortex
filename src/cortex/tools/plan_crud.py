@@ -370,8 +370,13 @@ async def list_plans(
 
     RETURNS: JSON with status, plans (list of {slug, title}), and error if any.
 
-    Parameters:
-    - include_archive: If True, include plans under .cortex/plans/archive/ (default: False)
+    Args:
+        include_archive: If True, include plans under .cortex/plans/archive/.
+            Default: False.
+
+    Example:
+        >>> list_plans()
+        {"status": "success", "plans": [{"slug": "phase-58-multi-agent", "title": "Phase 58..."}], "count": 5}
     """
     return await _list_plans_tool_impl(include_archive, ctx)
 
@@ -477,8 +482,12 @@ async def get_plan(
 
     RETURNS: JSON with status, slug, and either content (full text) or title/plan_status (metadata).
 
-    Parameters:
-    - slug: Plan filename without .md (e.g. phase-60-feature or structured-planning-cortex-mcp-tools)
-    - response_format: 'content' (default) for full markdown; 'metadata' for title and status only
+    Args:
+        slug: Plan filename without .md (e.g. phase-60-feature or plan-anthropic-context-engineering-alignment).
+        response_format: "content" (default) for full markdown; "metadata" for title and status only.
+
+    Example:
+        >>> get_plan(slug="phase-58-multi-agent", response_format="metadata")
+        {"status": "success", "slug": "phase-58-multi-agent", "title": "Phase 58...", "plan_status": "PENDING", "message": "..."}
     """
     return await _get_plan_tool_impl(slug, response_format, ctx)

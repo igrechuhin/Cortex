@@ -104,6 +104,11 @@ async def suggest_workflow(
 
     Returns:
         JSON string with status and list of recommended workflows.
+
+    Example:
+        >>> suggest_workflow(task_description="implement new API", limit=2)
+        {"status": "success", "task_description": "implement new API", "count": 2,
+         "workflows": [{"name": "Implement", "description": "...", "steps": ["Load context", ...]}, ...]}
     """
     limit = max(1, min(10, limit))
     templates = _load_all_workflows()

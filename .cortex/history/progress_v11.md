@@ -32,6 +32,11 @@
 - **Anthropic context engineering alignment Step 1 (2026-02-24)** - Ninth batch. summarize_content, suggest_tool_improvements, analyze_session_scripts Args added; compact_session RETURNS line. Quality gate passed.
 - **Commit pipeline preflight fixes (2026-02-24)** - COMPLETE. Synapse lint, type check, quality (function length) and tests passing; 4722 tests, 92.57% coverage.
 - Commit: E402 fix in synapse_tools.py (imports at top). Phase A passed.
+- **Anthropic context engineering alignment Step 1 tenth batch (2026-02-24)** - COMPLETE. Tool description altitude audit: fix_markdown_lint (Args), quick_start (Args), quality_check (EXAMPLES), safe_manage_file (full altitude).
+- **Anthropic alignment Step 1 (batch 11)** - Tool altitude audit: get_synapse full altitude, fix_roadmap_corruption Args, update_synapse RETURNS/EXAMPLES.
+- **Anthropic context engineering alignment Step 1 batch 12 (2026-02-24)** - COMPLETE. cleanup_metadata_index brought to full altitude (Args for dry_run, RETURNS key fields). Plan updated; quality gate passed.
+- **Anthropic alignment Step 1 batch 13 (2026-02-24)** - COMPLETE. Added embedded EXAMPLES to list_available_tools, search_tools, fix_quality_issues, session_start, suggest_workflow; plan updated with thirteenth batch.
+- **Anthropic alignment Step 1 batch 14 (2026-02-24)** - COMPLETE. Tool altitude audit: added Args and Example JSON to think, sequentialthinking, capture_session_script, list_plans, get_plan. Quality gate passed.
 
 ## 2026-02-23
 

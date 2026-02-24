@@ -233,15 +233,16 @@ async def update_synapse(
     USE WHEN: User wants to update a shared rule or prompt, user needs to
     modify rule/prompt, user requests rule/prompt update.
 
-    EXAMPLES: update_synapse(content_type="rule", category="python", ...),
-    update_synapse(content_type="prompt", category="general", ...).
+    EXAMPLES: update_synapse(content_type="rule", category="python", file="type-hints.mdc", content="...", commit_message="Update type hints"),
+    update_synapse(content_type="prompt", category="general", file="implement.md", content="...", commit_message="Update implement prompt").
 
-    RETURNS: JSON with update status, changes made, and push results.
+    RETURNS: JSON with status, updated path, commit hash, and push result.
+    On error: status \"error\" and error message.
 
     Args:
         content_type: "rule" to update a rule file, "prompt" to update a prompt file.
         category: Category name (e.g. "python", "general").
-        file: Filename within the category.
+        file: Filename within the category (e.g. "type-hints.mdc", "implement.md").
         content: Complete new content for the file.
         commit_message: Git commit message describing the change.
         ctx: MCP context (automatically provided).
@@ -345,8 +346,26 @@ async def get_synapse(
 ) -> str:
     """Get Synapse rules (by task) or prompts (optionally by category).
 
-    USE WHEN: content_type=\"rules\" — user needs relevant rules. content_type=\"prompts\" — user needs prompts.
-    EXAMPLES: get_synapse(content_type=\"rules\", task_description=\"Python async\"), get_synapse(content_type=\"prompts\", category=\"general\").
+    USE WHEN: content_type=\"rules\" — agent needs relevant coding rules for a task.
+    content_type=\"prompts\" — agent needs Synapse prompts (optionally filtered by category).
+
+    EXAMPLES: get_synapse(content_type=\"rules\", task_description=\"Python async\"),
+    get_synapse(content_type=\"prompts\", category=\"general\"),
+    get_synapse(content_type=\"rules\", task_description=\"commit pipeline\", max_tokens=8000).
+
+    RETURNS: JSON with status; for rules: rules_loaded, total_tokens, context; for prompts:
+    prompts list (name, category, path). Errors include status \"error\" and error message.
+
+    Args:
+        content_type: \"rules\" to get task-relevant rules; \"prompts\" to list/get prompts.
+        task_description: Required for content_type=\"rules\". Natural language task for
+            rule relevance (e.g. \"Python async\", \"commit pipeline\").
+        category: For prompts only. Filter by category (e.g. \"general\", \"python\").
+        max_tokens: Max tokens for rules response (default 10000). Ignored for prompts.
+        min_relevance_score: Min relevance 0.0–1.0 for rules (default 0.3).
+        project_files: Optional comma-separated file paths for context. Rules only.
+        rule_priority: \"local_overrides_shared\" (default) or \"shared_overrides_local\".
+        context_aware: Use context detection for rule selection (default True). Rules only.
     """
     ct = (content_type or "").strip().lower()
     if ct == "rules":

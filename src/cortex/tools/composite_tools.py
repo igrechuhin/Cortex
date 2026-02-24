@@ -31,8 +31,19 @@ async def quick_start(
     """Run session_start then load_context in one call for fast orientation.
 
     USE WHEN: Starting a session and loading task context in one step.
-    EXAMPLES: quick_start(), quick_start(task_description=\"implement feature\", token_budget=10000).
-    RETURNS: JSON with session_brief and context keys (combined result).
+
+    EXAMPLES: 'quick start', 'quick_start()', 'quick_start(task_description=
+    "implement feature", token_budget=10000)', 'orient and load context'.
+
+    RETURNS: JSON with status, session_brief (SessionStartResult), and
+    context (load_context result). Combined orientation and context in one call.
+
+    Args:
+        task_description: Optional task description for load_context.
+            If omitted or empty, context uses "general task". Used to select
+            relevant memory bank files.
+        token_budget: Maximum tokens for load_context. Default: 10000 when
+            omitted. Use for implement/add (e.g. 10000) or fix/debug (e.g. 15000).
     """
     from cortex.tools.phase4_optimization_handlers import load_context
     from cortex.tools.session_start_tools import session_start
@@ -66,8 +77,14 @@ async def quick_start(
 async def quality_check() -> str:
     """Run execute_pre_commit_checks(quality) then fix_quality_issues if needed.
 
-    USE WHEN: Single-step quality gate and auto-fix before commit.
-    RETURNS: JSON with pre_commit_result and optional fix_result.
+    USE WHEN: Single-step quality gate and auto-fix before commit, or when
+    user wants to run quality check and auto-fix in one call.
+
+    EXAMPLES: 'quality check', 'run quality gate', 'check quality and fix',
+    'pre-commit quality before commit'.
+
+    RETURNS: JSON with status, pre_commit_result (execute_pre_commit_checks
+    output), fix_applied (bool), and fix_result (if fix_quality_issues ran).
     """
     from cortex.tools.pre_commit_tools import (
         execute_pre_commit_checks,
@@ -142,8 +159,26 @@ async def safe_manage_file(
 ) -> str:
     """Run validate, then manage_file, then validate (write with guard).
 
-    USE WHEN: Writing memory bank files with pre/post validation.
-    RETURNS: JSON with pre_validation, manage_file_result, post_validation.
+    USE WHEN: Writing memory bank files with pre/post validation to ensure
+    schema/consistency before and after the write.
+
+    EXAMPLES: 'safe_manage_file(file_name="roadmap.md", operation="read")',
+    'safe write activeContext with validation', 'manage file with guard'.
+
+    RETURNS: JSON with status, pre_validation (validate result),
+    manage_file_result (manage_file result), and post_validation (validate
+    result). Use when atomic write-with-validation is required.
+
+    Args:
+        file_name: Memory bank file name (e.g. "activeContext.md",
+            "roadmap.md"). Resolved via project structure.
+        operation: manage_file operation: "read", "write", "metadata".
+        content: Full file content for operation="write". Optional for read.
+        sections: Section names for section-level read/write. Optional.
+        change_description: Description of change for write operations.
+            Optional.
+        check_type: Validation check type run before and after (e.g.
+            "roadmap_sync", "schema", "timestamps"). Default: "roadmap_sync".
     """
     return await _safe_manage_file_impl(
         file_name, operation, content, sections, change_description, check_type

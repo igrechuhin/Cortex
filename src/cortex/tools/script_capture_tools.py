@@ -72,6 +72,22 @@ async def capture_session_script(
     for promotion review'.
 
     RETURNS: JSON with status, script_id, timestamp, and message.
+
+    Args:
+        script_path: Path or name of the script (e.g. "scripts/check_foo.py").
+        script_content: Full source code of the script.
+        task_description: What task the script was created for.
+        script_type: Language or type (e.g. "python", "shell"). Default: "python".
+        purpose: Category (e.g. "utility", "test"). Default: "utility".
+        usage_context: Optional context (e.g. "pre-commit fallback").
+
+    Example:
+        >>> capture_session_script(
+        ...     script_path="scripts/format_check.py",
+        ...     script_content="import black; black.check(...)",
+        ...     task_description="Format check fallback"
+        ... )
+        {"status": "success", "script_id": "cap-20260224-123456", "timestamp": "...", "message": "Captured script ..."}
     """
     root = await resolve_project_root_async(None, ctx)
     await log_client(ctx, "info", "capture_session_script: starting")

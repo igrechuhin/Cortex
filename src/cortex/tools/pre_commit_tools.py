@@ -823,11 +823,18 @@ async def fix_quality_issues(
     Call after code changes, when IDE reports errors, or before new work.
 
     Args:
-        include_untracked_markdown: Include untracked markdown (default True).
+        include_untracked_markdown: When True (default), lint and fix untracked
+            .md/.mdc files in addition to git-modified ones. Set False to limit
+            scope to modified files only.
+
     Returns:
         JSON with status, *_fixed counts, files_modified, remaining_issues.
-    Examples:
-        See MCP tool descriptor for full JSON examples.
+
+    Example:
+        >>> fix_quality_issues(include_untracked_markdown=True)
+        {"status": "success", "format_fixed": 2, "lint_fixed": 5, "markdown_fixed": 1,
+         "files_modified": ["src/foo.py", "tests/test_foo.py"], "remaining_issues": [],
+         "type_check_errors": []}
     """
     await log_client(ctx, "info", "fix_quality_issues: starting", logger_name=__name__)
     try:

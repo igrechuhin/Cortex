@@ -199,6 +199,15 @@ async def fix_markdown_lint(
     backward compatibility but **ignored** — it has no effect. For
     full-repo lint, run ``node_modules/.bin/markdownlint-cli2 --fix``
     directly from the shell.
+
+    Args:
+        include_untracked_markdown: If True, lint untracked .md/.mdc files
+            in addition to git-modified ones. Default: False.
+        dry_run: If True, report what would be fixed without writing.
+            Default: False.
+        check_all_files: Deprecated; accepted for backward compatibility
+            but ignored. Lint scope is always git-modified (and optionally
+            untracked when include_untracked_markdown=True).
     """
     _ = check_all_files  # Accepted for backward compat, always scoped to git-modified
     await log_client(ctx, "info", "fix_markdown_lint: starting", logger_name=__name__)

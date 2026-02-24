@@ -54,13 +54,18 @@ async def cleanup_metadata_index(
     metadata, user wants to clean up index, user requests index maintenance.
 
     EXAMPLES: 'cleanup metadata index', 'fix stale index entries', 'repair
-    corrupted index'.
+    corrupted index', 'cleanup_metadata_index(dry_run=True)'.
 
-    RETURNS: JSON with cleanup results: entries removed, entries kept, and
-    dry-run preview if enabled.
+    RETURNS: JSON with dry_run, stale_files_found, stale_files (list),
+    entries_cleaned, message. On error: status "error", error, error_type.
 
     Validates index consistency with filesystem and removes entries for
     files that no longer exist on disk. Supports dry-run mode.
+
+    Args:
+        dry_run: If True, report what would be cleaned without removing
+            entries. If False, remove stale entries from the index.
+            Default: False
     """
     await log_client(
         ctx, "info", "cleanup_metadata_index: starting", logger_name=__name__
