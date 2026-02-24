@@ -301,6 +301,10 @@ async def suggest_refactoring(
             "error_type": "ExceptionClassName"
         }
 
+    Example (error):
+        suggest_refactoring(type="invalid") → {"status": "error", "error": "...",
+        "error_type": "ValueError"}
+
     Examples:
         Example 1: Find consolidation opportunities with high similarity threshold
 

@@ -104,7 +104,26 @@ async def get_usage_observation(
     id: str,
     ctx: MCPContext | None = None,
 ) -> str:
-    """Get a single usage observation by ID."""
+    """Get a single usage observation by ID.
+
+    USE WHEN: You need full details for one usage event (e.g. after
+    search_usage returned IDs), user asks about a specific tool call,
+    debugging a single observation.
+
+    EXAMPLES: get_usage_observation(id="evt-20260224-abc123"),
+    get_usage_observation(id="obs-xyz") after search_usage returned that ID.
+
+    RETURNS: JSON with status, project_root, and observation (tool_name,
+    timestamp, duration_ms, success, result_summary, etc.) or
+    status/missing_ids when unavailable.
+
+    Args:
+        id: Observation/event ID (from search_usage or query_usage results).
+        ctx: MCP context (automatically provided).
+
+    Returns:
+        JSON string: observation payload or error/missing status.
+    """
     if ctx is not None:
         await log_client(ctx, "debug", f"get_usage_observation: starting id={id}")
     root = await resolve_project_root_async(None, ctx)
@@ -218,9 +237,22 @@ async def get_usage_events(
 ) -> str:
     """Get full usage events for a list of observation IDs.
 
-    This complements search_usage's compact index by allowing callers to fetch
-    full event payloads only for selected IDs, enabling the recommended
-    search → select IDs → get_usage_events(ids=[...]) workflow.
+    USE WHEN: You have observation IDs (e.g. from search_usage) and need
+    full event payloads for those IDs; user asks for details of specific
+    tool calls; recommended after search_usage to fetch only selected events.
+
+    EXAMPLES: get_usage_events(ids=["evt-1", "evt-2"]),
+    get_usage_events(ids=search_result_ids) after search_usage.
+
+    RETURNS: JSON with status, project_root, events (list of full payloads),
+    and missing_ids (IDs not found).
+
+    Args:
+        ids: List of observation/event IDs to fetch.
+        ctx: MCP context (automatically provided).
+
+    Returns:
+        JSON string with events array and missing_ids.
     """
     if ctx is not None:
         await log_client(ctx, "debug", f"get_usage_events: starting ids={len(ids)}")
@@ -432,7 +464,31 @@ async def search_usage(
     response_format: ResponseFormat = ResponseFormat.CONCISE,
     ctx: MCPContext | None = None,
 ) -> str:
-    """Search usage events and return a compact index."""
+    """Search usage events and return a compact index.
+
+    USE WHEN: User asks about tool usage over time, user needs to find
+    specific calls (by tool, date, success), user wants a compact list
+    of events before fetching full details with get_usage_events.
+
+    EXAMPLES: search_usage(tool_name="load_context"),
+    search_usage(start_date="2026-02-01", end_date="2026-02-24", limit=20).
+
+    RETURNS: JSON with status, project_root, results (id, tool_name,
+    timestamp, duration_ms, success, etc.), and total count.
+
+    Args:
+        start_date: Start of range (YYYY-MM-DD). Default: 365 days ago.
+        end_date: End of range (YYYY-MM-DD). Default: today.
+        tool_name: Filter to this tool only (optional).
+        success: Filter by success True/False (optional).
+        limit: Max results to return (default: 50).
+        query: Optional text query (implementation-specific).
+        response_format: "concise" or "detailed" (default: concise).
+        ctx: MCP context (automatically provided).
+
+    Returns:
+        JSON string with results array and total.
+    """
     if ctx is not None:
         await log_client(ctx, "debug", "search_usage: starting")
     root = await resolve_project_root_async(None, ctx)
@@ -561,7 +617,26 @@ async def get_usage_timeline(
     limit: int = 20,
     ctx: MCPContext | None = None,
 ) -> str:
-    """Get chronological usage context around a given observation ID."""
+    """Get chronological usage context around a given observation ID.
+
+    USE WHEN: User wants events before/after a specific call, debugging
+    sequence of tool calls around an ID, understanding context around
+    a failure or observation.
+
+    EXAMPLES: get_usage_timeline(around_id="evt-abc", limit=10),
+    get_usage_timeline(around_id=observation_id).
+
+    RETURNS: JSON with status, project_root, around_id, results (chronological
+    list of events around that ID), and total.
+
+    Args:
+        around_id: Observation/event ID to center the timeline on.
+        limit: Max events to return (default: 20).
+        ctx: MCP context (automatically provided).
+
+    Returns:
+        JSON string with results array and total.
+    """
     if ctx is not None:
         await log_client(ctx, "debug", f"get_usage_timeline: starting id={around_id}")
     root = await resolve_project_root_async(None, ctx)

@@ -55,7 +55,7 @@ async def get_version_history(
         JSON string with version history containing version numbers,
         timestamps, change types, descriptions, file sizes, and token counts.
 
-    Example:
+    Example (Success):
         ```json
         {
           "status": "success",
@@ -79,6 +79,15 @@ async def get_version_history(
               "token_count": 490
             }
           ]
+        }
+        ```
+
+    Example (Error - file not found):
+        ```json
+        {
+          "status": "error",
+          "error": "File 'missing.md' not found in memory bank",
+          "error_type": "FileNotFoundError"
         }
         ```
 

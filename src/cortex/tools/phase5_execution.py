@@ -153,6 +153,13 @@ async def apply_refactoring(
           "dry_run": false
         }
 
+        Example (Error - invalid action or missing suggestion_id):
+        {
+          "status": "error",
+          "error": "suggestion_id is required for action 'apply'",
+          "error_type": "ValueError"
+        }
+
         For action="apply" (validation failure):
         {
           "status": "failed",

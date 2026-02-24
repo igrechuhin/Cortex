@@ -63,6 +63,8 @@ async def get_memory_bank_stats(
             Shows recent refactorings, rollbacks, and success rates
         refactoring_days: Days of refactoring history to include (default: 90)
             Only used when include_refactoring_history=True
+        response_format: "concise" or "full" (default: concise)
+            Controls verbosity of the response
 
     Returns:
         JSON string with detailed statistics including:
@@ -95,6 +97,15 @@ async def get_memory_bank_stats(
           },
           "last_updated": "2026-01-04T10:30:00",
           "index_stats": { ... }
+        }
+        ```
+
+    Example (Error):
+        ```json
+        {
+          "status": "error",
+          "error": "<exception message>",
+          "error_type": "OSError"
         }
         ```
 

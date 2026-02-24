@@ -37,6 +37,13 @@
 - **Anthropic context engineering alignment Step 1 batch 12 (2026-02-24)** - COMPLETE. cleanup_metadata_index brought to full altitude (Args for dry_run, RETURNS key fields). Plan updated; quality gate passed.
 - **Anthropic alignment Step 1 batch 13 (2026-02-24)** - COMPLETE. Added embedded EXAMPLES to list_available_tools, search_tools, fix_quality_issues, session_start, suggest_workflow; plan updated with thirteenth batch.
 - **Anthropic alignment Step 1 batch 14 (2026-02-24)** - COMPLETE. Tool altitude audit: added Args and Example JSON to think, sequentialthinking, capture_session_script, list_plans, get_plan. Quality gate passed.
+- **Anthropic context engineering alignment Step 1 batch 15 (2026-02-24)** - COMPLETE. Brought get_usage_observation, get_usage_events, search_usage, get_usage_timeline to full altitude (USE WHEN, EXAMPLES, RETURNS, Args); added EXAMPLES to session_register. Plan updated; 41+ tools pending audit.
+- **Anthropic context engineering alignment Step 1 (batch 16) (2026-02-24)** - COMPLETE. Added embedded Example JSON to skill_pack (discover, load, error); updated plan; 40+ tools still pending for full audit.
+- **Anthropic context engineering alignment Step 1 batch 17 (2026-02-24)** - COMPLETE. session_deregister brought to full altitude (EXAMPLES, RETURNS, embedded Example JSON for success and error). Plan still in progress; full audit of remaining 40+ tools pending.
+- **Anthropic alignment Step 1 batch 18 (2026-02-24)** - COMPLETE. cache_json brought to full altitude with embedded Example JSON (read success/missing, write success/error). Plan updated.
+- **Anthropic alignment Step 1 batch 19 (2026-02-24)** - COMPLETE. check_mcp_connection_health: added Example (success) and Example (error). configure: added Example 4 (error — invalid component). Plan updated.
+- **Anthropic alignment Step 1 batch 20 (2026-02-24)** - COMPLETE. Tool altitude audit: get_structure_info (full doc + Example success/error), suggest_workflow (Example edge case), validate (Example success + error), analyze (Example error), suggest_refactoring (Example error). Plan updated.
+- **Anthropic context engineering alignment Step 1 batch 21 (2026-02-24)** - COMPLETE. Tool altitude audit: get_version_history (Example error), quality_check (Args + Example success), apply_refactoring (Example error), summarize_content (Example success + error), get_relevance_scores (Example success + error). Plan updated; quality gate passed.
 
 ## 2026-02-23
 

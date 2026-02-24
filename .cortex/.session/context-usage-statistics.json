@@ -1,14 +1,14 @@
 {
-  "last_updated": "2026-02-24T21:22",
-  "total_sessions_analyzed": 232,
-  "total_load_context_calls": 272,
-  "avg_token_utilization": 0.409,
-  "avg_files_selected": 5.81,
-  "avg_relevance_score": 0.544,
+  "last_updated": "2026-02-24T22:23",
+  "total_sessions_analyzed": 235,
+  "total_load_context_calls": 276,
+  "avg_token_utilization": 0.406,
+  "avg_files_selected": 5.8,
+  "avg_relevance_score": 0.542,
   "common_task_patterns": {
     "fix/debug": 35,
-    "other": 59,
-    "implement/add": 64,
+    "other": 62,
+    "implement/add": 65,
     "update/modify": 11,
     "testing": 61,
     "documentation": 15,
@@ -33,7 +33,7 @@
         "notes": "Moderate utilization - some budget optimization possible"
       },
       "other": {
-        "calls_count": 59,
+        "calls_count": 62,
         "recommended_budget": 10000,
         "essential_files": [
           "activeContext.md",
@@ -42,12 +42,12 @@
           "systemPatterns.md",
           "productContext.md"
         ],
-        "avg_utilization": 0.332,
-        "avg_relevance": 0.47,
+        "avg_utilization": 0.316,
+        "avg_relevance": 0.465,
         "notes": "Moderate utilization - some budget optimization possible; Low relevance - consider refining file selection"
       },
       "implement/add": {
-        "calls_count": 64,
+        "calls_count": 65,
         "recommended_budget": 10000,
         "essential_files": [
           "activeContext.md",
@@ -56,8 +56,8 @@
           "productContext.md",
           "systemPatterns.md"
         ],
-        "avg_utilization": 0.431,
-        "avg_relevance": 0.601,
+        "avg_utilization": 0.436,
+        "avg_relevance": 0.6,
         "notes": "Moderate utilization - some budget optimization possible"
       },
       "update/modify": {
@@ -139,50 +139,50 @@
     },
     "file_effectiveness": {
       "activeContext.md": {
-        "times_selected": 194,
-        "avg_relevance": 0.681,
+        "times_selected": 198,
+        "avg_relevance": 0.685,
         "task_types_used": [
           "documentation",
-          "update/modify",
           "other",
-          "review",
+          "implement/add",
           "refactor",
-          "testing",
-          "optimization",
+          "review",
           "fix/debug",
-          "implement/add"
+          "testing",
+          "update/modify",
+          "optimization"
         ],
         "recommendation": "Moderate value - include when relevant"
       },
       "techContext.md": {
-        "times_selected": 214,
-        "avg_relevance": 0.588,
+        "times_selected": 215,
+        "avg_relevance": 0.587,
         "task_types_used": [
           "documentation",
-          "update/modify",
           "other",
-          "review",
+          "implement/add",
           "refactor",
-          "testing",
-          "optimization",
+          "review",
           "fix/debug",
-          "implement/add"
+          "testing",
+          "update/modify",
+          "optimization"
         ],
         "recommendation": "Moderate value - include when relevant"
       },
       "roadmap.md": {
-        "times_selected": 174,
-        "avg_relevance": 0.581,
+        "times_selected": 175,
+        "avg_relevance": 0.58,
         "task_types_used": [
           "documentation",
-          "update/modify",
           "other",
-          "review",
+          "implement/add",
           "refactor",
-          "testing",
-          "optimization",
+          "review",
           "fix/debug",
-          "implement/add"
+          "testing",
+          "update/modify",
+          "optimization"
         ],
         "recommendation": "Moderate value - include when relevant"
       },
@@ -191,104 +191,104 @@
         "avg_relevance": 0.285,
         "task_types_used": [
           "documentation",
-          "update/modify",
           "other",
-          "review",
+          "implement/add",
           "refactor",
-          "testing",
-          "optimization",
+          "review",
           "fix/debug",
-          "implement/add"
+          "testing",
+          "update/modify",
+          "optimization"
         ],
         "recommendation": "Lower relevance - consider excluding for most tasks"
       },
       "projectBrief.md": {
-        "times_selected": 252,
-        "avg_relevance": 0.482,
+        "times_selected": 256,
+        "avg_relevance": 0.483,
         "task_types_used": [
           "documentation",
-          "update/modify",
           "other",
-          "review",
+          "implement/add",
           "refactor",
-          "testing",
-          "optimization",
+          "review",
           "fix/debug",
-          "implement/add"
+          "testing",
+          "update/modify",
+          "optimization"
         ],
         "recommendation": "Lower relevance - consider excluding for most tasks"
       },
       "phase-60-improve-manage-file-discoverability.plan.md": {
-        "times_selected": 23,
-        "avg_relevance": 0.324,
+        "times_selected": 26,
+        "avg_relevance": 0.317,
         "task_types_used": [
           "documentation",
           "other",
+          "implement/add",
           "refactor",
-          "testing",
           "fix/debug",
-          "implement/add"
+          "testing"
         ],
         "recommendation": "Lower relevance - consider excluding for most tasks"
       },
       "tmp-mcp-test.md": {
-        "times_selected": 23,
-        "avg_relevance": 0.188,
+        "times_selected": 26,
+        "avg_relevance": 0.187,
         "task_types_used": [
           "documentation",
           "other",
+          "implement/add",
           "refactor",
-          "testing",
           "fix/debug",
-          "implement/add"
+          "testing"
         ],
         "recommendation": "Lower relevance - consider excluding for most tasks"
       },
       "progress.md": {
-        "times_selected": 159,
-        "avg_relevance": 0.517,
+        "times_selected": 162,
+        "avg_relevance": 0.509,
         "task_types_used": [
           "documentation",
-          "update/modify",
           "other",
-          "review",
+          "implement/add",
           "refactor",
-          "testing",
-          "optimization",
+          "review",
           "fix/debug",
-          "implement/add"
+          "testing",
+          "update/modify",
+          "optimization"
         ],
         "recommendation": "Moderate value - include when relevant"
       },
       "systemPatterns.md": {
-        "times_selected": 210,
-        "avg_relevance": 0.568,
+        "times_selected": 211,
+        "avg_relevance": 0.567,
         "task_types_used": [
           "documentation",
-          "update/modify",
           "other",
-          "review",
+          "implement/add",
           "refactor",
-          "testing",
-          "optimization",
+          "review",
           "fix/debug",
-          "implement/add"
+          "testing",
+          "update/modify",
+          "optimization"
         ],
         "recommendation": "Moderate value - include when relevant"
       },
       "productContext.md": {
-        "times_selected": 212,
+        "times_selected": 213,
         "avg_relevance": 0.557,
         "task_types_used": [
           "documentation",
-          "update/modify",
           "other",
-          "review",
+          "implement/add",
           "refactor",
-          "testing",
-          "optimization",
+          "review",
           "fix/debug",
-          "implement/add"
+          "testing",
+          "update/modify",
+          "optimization"
         ],
         "recommendation": "Moderate value - include when relevant"
       },
@@ -311,8 +311,8 @@
     },
     "learned_patterns": [
       "Average 40% budget utilization - ~5k tokens unused per call",
-      "'projectBrief.md' is most frequently loaded (252/272 calls)",
-      "Most common task type: 'implement/add' (64 calls)",
+      "'projectBrief.md' is most frequently loaded (256/276 calls)",
+      "Most common task type: 'implement/add' (65 calls)",
       "\u26a0\ufe0f CRITICAL: At least one load_context call had token_budget=0 or files_selected=0 for a non-trivial task (refactor/fix/debug/implement/testing). This is a configuration error - these tasks MUST use a non-zero token budget (typically 10k-15k for fix/debug, 20k-30k for implement/add). Re-run load_context with an appropriate budget to ensure proper context loading. Zero-budget/zero-files calls for non-trivial tasks indicate the agent ran without memory-bank guidance, which violates the documented workflow."
     ],
     "budget_recommendations": {
@@ -336,11 +336,11 @@
         "notes": "Low utilization - consider smaller token budgets; Low relevance - consider refining file selection"
       },
       "planning": {
-        "calls_count": 18,
-        "recommended_budget": 20000,
+        "calls_count": 19,
+        "recommended_budget": 15000,
         "essential_files": [],
-        "avg_utilization": 0.034,
-        "avg_relevance": 0.232,
+        "avg_utilization": 0.072,
+        "avg_relevance": 0.248,
         "notes": "Low utilization - consider smaller token budgets; Low relevance - consider refining file selection"
       },
       "quality": {
@@ -362,27 +362,29 @@
         "notes": "Low utilization - consider smaller token budgets; Low relevance - consider refining file selection"
       },
       "feature": {
-        "calls_count": 9,
+        "calls_count": 11,
         "recommended_budget": 15000,
         "essential_files": [
           "activeContext.md"
         ],
-        "avg_utilization": 0.005,
-        "avg_relevance": 0.3,
+        "avg_utilization": 0.004,
+        "avg_relevance": 0.307,
         "notes": "Low utilization - consider smaller token budgets; Low relevance - consider refining file selection"
       },
       "docs": {
-        "calls_count": 1,
+        "calls_count": 2,
         "recommended_budget": 10000,
-        "essential_files": [],
+        "essential_files": [
+          "activeContext.md"
+        ],
         "avg_utilization": 0.0,
-        "avg_relevance": 0.228,
+        "avg_relevance": 0.317,
         "notes": "Low utilization - consider smaller token budgets; Low relevance - consider refining file selection; Limited data - insights will improve with more samples"
       }
     },
     "role_budget_recommendations": {
       "debugging": 10000,
-      "planning": 20000,
+      "planning": 15000,
       "quality": 20000,
       "testing": 20000,
       "feature": 15000,
@@ -8484,6 +8486,118 @@
       "task_description": "Anthropic context engineering alignment Step 1: tool description altitude audit, next batch of tools",
       "token_budget": 0,
       "total_tokens": 16547,
+      "utilization": 0.0,
+      "files_selected": 5,
+      "files_excluded": 0,
+      "avg_relevance_score": 0.338,
+      "files_with_high_relevance": 1,
+      "files_with_low_relevance": 3,
+      "selected_file_names": [
+        "phase-60-improve-manage-file-discoverability.plan.md",
+        "progress.md",
+        "tmp-mcp-test.md",
+        "projectBrief.md",
+        "activeContext.md"
+      ],
+      "relevance_by_file": {
+        "progress.md": 0.09000000000000001,
+        "activeContext.md": 0.8999999999999999,
+        "tmp-mcp-test.md": 0.09000000000000001,
+        "phase-60-improve-manage-file-discoverability.plan.md": 0.2700000000000001
+      },
+      "role": "feature"
+    },
+    {
+      "session_id": "4cfaa2e7a351",
+      "timestamp": "2026-02-24T21:39",
+      "task_description": "Implement next roadmap step: Anthropic context engineering alignment (P1)",
+      "token_budget": 10000,
+      "total_tokens": 7500,
+      "utilization": 0.75,
+      "files_selected": 6,
+      "files_excluded": 1,
+      "avg_relevance_score": 0.527,
+      "files_with_high_relevance": 1,
+      "files_with_low_relevance": 0,
+      "selected_file_names": [
+        "activeContext.md",
+        "productContext.md",
+        "techContext.md",
+        "systemPatterns.md",
+        "roadmap.md",
+        "projectBrief.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.449,
+        "progress.md": 0.613,
+        "activeContext.md": 0.816,
+        "projectBrief.md": 0.555,
+        "techContext.md": 0.386,
+        "productContext.md": 0.433,
+        "systemPatterns.md": 0.434
+      },
+      "role": "planning"
+    },
+    {
+      "session_id": "4cfaa2e7a351",
+      "timestamp": "2026-02-24T21:48",
+      "task_description": "Tool description right altitude audit, Anthropic context engineering alignment, improving MCP tool docstrings with EXAMPLES RETURNS Args",
+      "token_budget": 0,
+      "total_tokens": 16699,
+      "utilization": 0.0,
+      "files_selected": 5,
+      "files_excluded": 0,
+      "avg_relevance_score": 0.405,
+      "files_with_high_relevance": 1,
+      "files_with_low_relevance": 2,
+      "selected_file_names": [
+        "tmp-mcp-test.md",
+        "phase-60-improve-manage-file-discoverability.plan.md",
+        "progress.md",
+        "projectBrief.md",
+        "activeContext.md"
+      ],
+      "relevance_by_file": {
+        "progress.md": 0.09000000000000001,
+        "activeContext.md": 0.8999999999999999,
+        "tmp-mcp-test.md": 0.36000000000000004,
+        "phase-60-improve-manage-file-discoverability.plan.md": 0.2700000000000001
+      },
+      "role": "docs"
+    },
+    {
+      "session_id": "d0314e75df9c",
+      "timestamp": "2026-02-24T21:59",
+      "task_description": "Anthropic context engineering alignment Step 1 tool description right altitude audit, next batch of tools",
+      "token_budget": 0,
+      "total_tokens": 16824,
+      "utilization": 0.0,
+      "files_selected": 5,
+      "files_excluded": 0,
+      "avg_relevance_score": 0.338,
+      "files_with_high_relevance": 1,
+      "files_with_low_relevance": 3,
+      "selected_file_names": [
+        "phase-60-improve-manage-file-discoverability.plan.md",
+        "progress.md",
+        "tmp-mcp-test.md",
+        "projectBrief.md",
+        "activeContext.md"
+      ],
+      "relevance_by_file": {
+        "progress.md": 0.09000000000000001,
+        "activeContext.md": 0.8999999999999999,
+        "tmp-mcp-test.md": 0.09000000000000001,
+        "phase-60-improve-manage-file-discoverability.plan.md": 0.2700000000000001
+      },
+      "role": "feature"
+    },
+    {
+      "session_id": "24777d010601",
+      "timestamp": "2026-02-24T22:20",
+      "task_description": "Anthropic context engineering alignment Step 1 batch 21 tool altitude audit",
+      "token_budget": 0,
+      "total_tokens": 12353,
       "utilization": 0.0,
       "files_selected": 5,
       "files_excluded": 0,

@@ -84,8 +84,18 @@ GET_STRUCTURE_INFO_DOC = """Get current project structure configuration, paths, 
     component, and a high-level health summary. Project root is resolved internally
     (MCP roots or current working directory); no parameters required.
 
+    Args:
+        None. Project root is resolved by the server (MCP roots or cwd).
+
     Returns:
-        JSON string containing structure information. See tool descriptor for schema.
+        JSON string containing structure_info (paths, version, config) and success flag.
+
+    Example (success):
+        {"success": true, "structure_info": {"paths": {"memory_bank": "..."}, ...},
+         "message": "✅ Structure information retrieved successfully"}
+
+    Example (error):
+        {"success": false, "error": "Project root not found", "error_type": "ValueError"}
 
     Note:
         - This is a read-only tool that does not modify any files or directories

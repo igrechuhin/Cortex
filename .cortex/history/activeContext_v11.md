@@ -64,6 +64,20 @@
 
 - ✅ **Anthropic alignment Step 1 batch 14** - COMPLETE (2026-02-24) - Tool description altitude audit: think, sequentialthinking (Args + Example JSON); capture_session_script, list_plans, get_plan (Args + Example). Plan updated; 46+ tools pending.
 
+- ✅ **Anthropic alignment Step 1 batch 15** - COMPLETE (2026-02-24) - Tool altitude audit: get_usage_observation, get_usage_events, search_usage, get_usage_timeline (full altitude); session_register (EXAMPLES). Plan Step 1 status updated; 41+ tools remaining.
+
+- ✅ **Anthropic alignment Step 1 batch 16** - COMPLETE (2026-02-24) - skill_pack tool description brought to full altitude (embedded examples for discover, load, error). Plan updated; full audit of remaining 40+ tools still pending.
+
+- ✅ **Anthropic alignment Step 1 batch 17** - COMPLETE (2026-02-24) - session_deregister tool description brought to full altitude: added EXAMPLES, clarified RETURNS, and embedded Example JSON for success and session-not-found error. Plan file updated with seventeenth batch.
+
+- ✅ **Anthropic alignment Step 1 batch 18** - COMPLETE (2026-02-24) - cache_json docstring updated with embedded Example JSON for read (success, missing) and write (success, error). Plan file updated; full audit of remaining tools pending.
+
+- ✅ **Anthropic alignment Step 1 batch 19** - COMPLETE (2026-02-24) - Tool altitude audit: check_mcp_connection_health (success + error examples), configure (error example for invalid component). Plan Step 1 batch 19 recorded.
+
+- ✅ **Anthropic alignment Step 1 batch 20** - COMPLETE (2026-02-24) - Tool altitude audit: get_structure_info (GET_STRUCTURE_INFO_DOC with Args, Example success/error), suggest_workflow (Example edge case), validate (Example success + error), analyze (Example error), suggest_refactoring (Example error). Plan and memory bank updated.
+
+- ✅ **Anthropic context engineering alignment Step 1 batch 21** - COMPLETE (2026-02-24) - Tool altitude audit for 5 tools: get_version_history, quality_check, apply_refactoring, summarize_content, get_relevance_scores. Added embedded Examples (success/error) and Args where missing per rubric. Plan and quality gate updated.
+
 ## Completed Work (2026-02-23)
 
 - **Summary (2026-02-23)** - 1 entries archived.

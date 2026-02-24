@@ -85,6 +85,19 @@ async def quality_check() -> str:
 
     RETURNS: JSON with status, pre_commit_result (execute_pre_commit_checks
     output), fix_applied (bool), and fix_result (if fix_quality_issues ran).
+
+    Args:
+        None. No parameters; runs quality check and optional fix in one call.
+
+    Example (Success):
+        ```json
+        {
+          "status": "success",
+          "pre_commit_result": { "status": "success", "results": { ... } },
+          "fix_applied": true,
+          "fix_result": { "status": "success", "files_modified": 2 }
+        }
+        ```
     """
     from cortex.tools.pre_commit_tools import (
         execute_pre_commit_checks,

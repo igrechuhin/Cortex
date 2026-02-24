@@ -225,6 +225,9 @@ async def get_structure_info(
         )
 
 
+get_structure_info.__doc__ = GET_STRUCTURE_INFO_DOC
+
+
 @mcp.resource(uri="cortex://structure/info")
 @ensure_usage_context
 @mcp_resource_wrapper(timeout=MCP_TOOL_TIMEOUT_FAST)

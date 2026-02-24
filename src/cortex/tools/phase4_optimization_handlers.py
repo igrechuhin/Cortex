@@ -630,6 +630,27 @@ async def summarize_content(
         strategy: Optional strategy name (e.g. "progressive", "tiered"). If None,
             uses configured default.
         ctx: MCP context (automatically provided).
+
+    Example (Success):
+        ```json
+        {
+          "status": "success",
+          "file_name": "activeContext.md",
+          "original_tokens": 1200,
+          "summarized_tokens": 600,
+          "reduction_ratio": 0.5,
+          "strategy": "progressive"
+        }
+        ```
+
+    Example (Error - optimization disabled):
+        ```json
+        {
+          "status": "error",
+          "error": "Context optimization is disabled",
+          "error_type": "ValueError"
+        }
+        ```
     """
     await log_client(ctx, "info", "summarize_content: starting", logger_name=__name__)
     try:
@@ -681,6 +702,28 @@ async def get_relevance_scores(
             for semantic matching against memory bank content.
         include_sections: If True, include per-section relevance scores
             within each file. Default: False (file-level only).
+
+    Example (Success):
+        ```json
+        {
+          "status": "success",
+          "task_description": "refactoring memory bank",
+          "files": [
+            { "file_name": "activeContext.md", "relevance_score": 0.92, "tokens": 1200 },
+            { "file_name": "systemPatterns.md", "relevance_score": 0.78, "tokens": 800 }
+          ],
+          "include_sections": false
+        }
+        ```
+
+    Example (Error - optimization disabled):
+        ```json
+        {
+          "status": "error",
+          "error": "Context optimization is disabled",
+          "error_type": "ValueError"
+        }
+        ```
     """
     await log_client(
         ctx, "info", "get_relevance_scores: starting", logger_name=__name__

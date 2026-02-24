@@ -190,17 +190,22 @@ async def session_register(
 ) -> str:
     """Register the current session in the session registry.
 
-    USE WHEN: Starting work on a task to make your session visible to other agents.
+    USE WHEN: Starting work on a task to make your session visible to other
+    agents; user begins implementation or a tracked task.
 
-    RETURNS: JSON with registration status.
+    EXAMPLES: session_register(task_title="Implement Phase 58 task locking"),
+    session_register(task_title="Fix quality violations", role="quality").
+
+    RETURNS: JSON with status (success/error), message, and optional error.
 
     Args:
-        task_title: Task title being worked on
-        role: Optional agent role (feature, quality, testing, docs, planning, debugging, review)
-        ctx: MCP context (automatically provided)
+        task_title: Task title being worked on.
+        role: Optional agent role (feature, quality, testing, docs, planning,
+            debugging, review).
+        ctx: MCP context (automatically provided).
 
     Returns:
-        JSON string with SessionRegistryResult
+        JSON string with SessionRegistryResult (status, message, error).
     """
     try:
         return await _register_session_impl(task_title, role, ctx)
@@ -255,13 +260,21 @@ async def session_deregister(
 
     USE WHEN: Completing work or ending a session to remove it from the registry.
 
-    RETURNS: JSON with deregistration status.
+    EXAMPLES: session_deregister() when finishing a task; call after work is
+    done so other agents see the session as inactive.
+
+    RETURNS: JSON with status (success/error), message, and optional error.
 
     Args:
-        ctx: MCP context (automatically provided)
+        ctx: MCP context (automatically provided).
 
-    Returns:
-        JSON string with SessionRegistryResult
+    Example (success):
+        >>> await session_deregister()
+        {"status": "success", "message": "Successfully deregistered session", "error": null}
+
+    Example (error — session not in registry):
+        >>> await session_deregister()
+        {"status": "error", "message": "Session not found in registry", "error": "Session not found"}
     """
     try:
         return await _deregister_session_impl(ctx)

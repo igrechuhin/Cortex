@@ -169,8 +169,9 @@ class UsageTracker:
         retry_count: int | None,
         param_validation_failure: str | None,
         result_used: bool | None,
+        response_tokens: int | None,
     ) -> ToolUsageEvent:
-        """Build a ToolUsageEvent from recording parameters (Phase 57)."""
+        """Build a ToolUsageEvent from recording parameters (Phase 57/62)."""
         summary = self._select_result_summary(tool_name, result_summary)
         return ToolUsageEvent(
             tool_name=tool_name,
@@ -186,6 +187,7 @@ class UsageTracker:
             retry_count=retry_count,
             param_validation_failure=param_validation_failure,
             result_used=result_used,
+            response_tokens=response_tokens,
         )
 
     async def record_tool_usage(
@@ -200,6 +202,7 @@ class UsageTracker:
         retry_count: int | None = None,
         param_validation_failure: str | None = None,
         result_used: bool | None = None,
+        response_tokens: int | None = None,
     ) -> None:
         """Record a single tool or resource usage event."""
         if not self._should_record_event(tool_name, duration_ms):
@@ -215,6 +218,7 @@ class UsageTracker:
             retry_count,
             param_validation_failure,
             result_used,
+            response_tokens,
         )
         await _persist_event(self._project_root, event)
 

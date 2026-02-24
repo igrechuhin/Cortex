@@ -180,6 +180,31 @@ async def skill_pack(
         pack_name: Required for load. Pack name (e.g. \"core\", \"quality\").
             Case-insensitive.
         limit: Max packs to return for discover (1–10, default 5).
+
+    Example (discover):
+        >>> await skill_pack(operation="discover", task_description="implement feature", limit=3)
+        {
+          "status": "success",
+          "operation": "discover",
+          "count": 2,
+          "packs": [
+            {"name": "core", "relevance": 0.92, "description": "Core implementation workflows"},
+            {"name": "quality", "relevance": 0.75, "description": "Code quality and pre-commit"}
+          ]
+        }
+
+    Example (load):
+        >>> await skill_pack(operation="load", pack_name="core")
+        {
+          "status": "success",
+          "operation": "load",
+          "pack_name": "core",
+          "manifest": {"tools": [...], "workflows": [...], "examples": [...]}
+        }
+
+    Example (error — unknown operation):
+        >>> await skill_pack(operation="other")
+        {"status": "error", "error": "Unknown operation: 'other'. Use discover or load."}
     """
     op = (operation or "").strip().lower()
     if op == "discover":

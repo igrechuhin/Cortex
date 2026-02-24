@@ -262,6 +262,11 @@ async def configure(
             "...": "..."
         }
 
+        Example 4 (error — invalid component):
+        >>> configure(component="invalid", action="view")
+        {"status": "error", "error": "Invalid component: 'invalid'",
+         "valid_components": ["validation", "optimization", "learning"]}
+
     Note:
         - Use dot notation (e.g., "token_budget.max_total_tokens") for nested settings
         - Changes persist to `.cortex/{validation,optimization,learning}.json`

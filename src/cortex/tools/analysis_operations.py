@@ -338,6 +338,10 @@ async def analyze(
             "error_type": "ExceptionClassName"
         }
 
+    Example (error):
+        analyze(target="invalid_target") → {"status": "error", "error": "...",
+        "error_type": "ValueError"}
+
     Examples:
         Example 1: Analyze file access patterns over the last 60 days
 

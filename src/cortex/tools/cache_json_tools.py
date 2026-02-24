@@ -144,7 +144,7 @@ async def cache_json(
     cache_json(operation="write", relative_path="session/last_handoff.json", content="{}").
 
     RETURNS: For read — JSON string (file content) or {"status":"missing"|"error",...}.
-    For write — {"status":"success"} or {"status":"error",...}.
+    For write — {"status":"success","relative_path":"..."} or {"status":"error",...}.
 
     Args:
         operation: "read" to load file content, "write" to save content.
@@ -153,8 +153,22 @@ async def cache_json(
         content: Required when operation is "write"; JSON string (object or array).
         ctx: MCP context (automatically provided).
 
-    Returns:
-        JSON string: for read, file content or status; for write, success or error.
+    Example (read — file exists):
+        cache_json(operation="read", relative_path="session/last_handoff.json")
+        → {"session_id": "2026-02-24T22:01", "completed_tasks": [], "next_actions": []}
+
+    Example (read — file missing):
+        cache_json(operation="read", relative_path="nonexistent.json")
+        → {"status": "missing", "relative_path": "nonexistent.json"}
+
+    Example (write — success):
+        cache_json(operation="write", relative_path="session/last_handoff.json",
+                   content='{"session_id": "2026-02-24"}')
+        → {"status": "success", "relative_path": "session/last_handoff.json"}
+
+    Example (write — error, invalid JSON):
+        cache_json(operation="write", relative_path="x.json", content="not json")
+        → {"status": "error", "message": "Invalid JSON: ...", "relative_path": "x.json"}
     """
     if ctx is not None:
         await log_client(ctx, "debug", f"cache_json({operation}): starting")

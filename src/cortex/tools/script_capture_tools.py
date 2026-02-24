@@ -123,6 +123,24 @@ async def list_session_scripts(
     EXAMPLES: 'list captured scripts', 'show session scripts for analysis'.
 
     RETURNS: JSON with status, count, and list of script summaries.
+
+    Args:
+        None (ctx is internal).
+
+    Example (Success):
+        ```json
+        {
+          "status": "success",
+          "count": 2,
+          "scripts": [
+            {
+              "script_id": "abc-123",
+              "captured_at": "2026-02-24T10:00:00",
+              "task_description": "Parse markdown links"
+            }
+          ]
+        }
+        ```
     """
     root = await resolve_project_root_async(None, ctx)
     await log_client(ctx, "info", "list_session_scripts: starting")
@@ -296,6 +314,30 @@ async def promote_session_script(
     EXAMPLES: 'promote script abc-123', 'get tool template for script xyz'.
 
     RETURNS: JSON with status, validation, and template or issues.
+
+    Args:
+        script_id: ID of the captured script (from list_session_scripts).
+        output_type: "tool" or "script" (default: "tool") — template format.
+
+    Example (Success):
+        ```json
+        {
+          "status": "success",
+          "script_id": "abc-123",
+          "validation_passed": true,
+          "quality_score": 0.85,
+          "issues": [],
+          "template_content": "..."
+        }
+        ```
+
+    Example (Error - script not found):
+        ```json
+        {
+          "status": "error",
+          "error": "Script abc-123 not found"
+        }
+        ```
     """
     root = await resolve_project_root_async(None, ctx)
     await log_client(ctx, "info", "promote_session_script: starting")

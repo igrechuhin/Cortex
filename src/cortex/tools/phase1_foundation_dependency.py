@@ -85,6 +85,15 @@ async def get_dependency_graph(
         }
         ```
 
+    Example (Error):
+        ```json
+        {
+          "status": "error",
+          "error": "<exception message>",
+          "error_type": "ValueError"
+        }
+        ```
+
     Note:
         The loading order is computed using topological sort and respects
         both static priorities and dependency relationships.

@@ -253,6 +253,14 @@ async def validate(
           "error_type": "FileNotFoundError"
         }
 
+    Example (success):
+        validate(check_type="schema", file_name="projectBrief.md") → {"status": "success",
+        "check_type": "schema", "file_name": "projectBrief.md", "validation": {"valid": true, ...}}
+
+    Example (error):
+        validate(check_type="schema", file_name="nonexistent.md") → {"status": "error",
+        "error": "File nonexistent.md does not exist", "error_type": "FileNotFoundError"}
+
     Examples:
         1. Validate schema for a single file:
            Input: validate(check_type="schema", file_name="projectBrief.md")

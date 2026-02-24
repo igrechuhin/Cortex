@@ -412,6 +412,7 @@ async def record_usage_if_available(
     kind: HandlerKind = HandlerKind.TOOL,
     retry_count: int | None = None,
     param_validation_failure: str | None = None,
+    response_tokens: int | None = None,
 ) -> None:
     """Record tool or resource usage if UsageTracker is available."""
     from cortex.core.usage_context import get_current_managers
@@ -430,6 +431,7 @@ async def record_usage_if_available(
                 handler_kind=kind,
                 retry_count=retry_count,
                 param_validation_failure=param_validation_failure,
+                response_tokens=response_tokens,
             )
     except Exception as e:
         _logger.debug("Usage recording skipped or failed: %s (%s)", type(e).__name__, e)
@@ -443,6 +445,7 @@ async def record_usage_finish(
     kind: HandlerKind,
     retry_count: int | None = None,
     param_validation_failure: str | None = None,
+    response_tokens: int | None = None,
 ) -> None:
     """Record usage after tool run (duration and outcome)."""
     duration_ms = (time.perf_counter_ns() - start_ns) / 1_000_000.0
@@ -454,6 +457,7 @@ async def record_usage_finish(
         kind=kind,
         retry_count=retry_count,
         param_validation_failure=param_validation_failure,
+        response_tokens=response_tokens,
     )
 
 

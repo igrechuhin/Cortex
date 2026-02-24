@@ -56,18 +56,14 @@ async def check_mcp_connection_health() -> str:
           }
         }
 
-    Example:
-        >>> check_mcp_connection_health()
-        {
-          "status": "success",
-          "health": {
-            "healthy": true,
-            "concurrent_operations": 1,
-            "max_concurrent": 5,
-            "semaphore_available": 4,
-            "utilization_percent": 20.0
-          }
-        }
+    Example (success):
+        check_mcp_connection_health()
+        → {"status": "success", "health": {"healthy": true, "concurrent_operations": 1,
+           "max_concurrent": 5, "semaphore_available": 4, "utilization_percent": 20.0}}
+
+    Example (error):
+        check_mcp_connection_health() (when MCP disconnected or check fails)
+        → {"status": "error", "error": "Connection closed", "error_type": "ConnectionError"}
     """
     try:
         health = await check_connection_health()

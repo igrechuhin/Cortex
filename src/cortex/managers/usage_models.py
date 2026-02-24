@@ -58,6 +58,14 @@ class ToolUsageEvent(BaseModel):
             "None when unknown (Phase 57)."
         ),
     )
+    response_tokens: int | None = Field(
+        default=None,
+        ge=0,
+        description=(
+            "Estimated number of tokens in the tool response payload "
+            "(Phase 62: token-efficiency tracking)."
+        ),
+    )
 
 
 class ToolUsageStats(BaseModel):
