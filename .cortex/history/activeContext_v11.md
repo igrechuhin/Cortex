@@ -16,6 +16,10 @@
 
 - ✅ **Commit pipeline quality fix** - COMPLETE (2026-02-24) - Refactored query_usage in query_usage_operations.py to satisfy function length limit (≤30 lines); added_build_query_usage_params_from_locals helper. All preflight checks pass; 4704 tests, 92.77% coverage.
 
+- ✅ **E2E Plan Test** - COMPLETE (2026-02-24) - E2E plan workflow test; single step marked Done.
+
+- ✅ **Tool consolidation Step 3** - COMPLETE (2026-02-24) - Internalized low-usage MCP tools (session and task-locking + plan CRUD list/get) by removing @mcp.tool decorators while preserving internal helpers; re-ran execute_pre_commit_checks for quality + tests (4704 tests, 92.77% coverage).
+
 ## Completed Work (2026-02-23)
 
 - **Summary (2026-02-23)** - 1 entries archived.

@@ -10,6 +10,8 @@
 - Commit: Fixed function length violation in query_usage_operations.query_usage; refactored to_build_query_usage_params_from_locals. Phase A and markdown lint passed.
 - **Tool consolidation (plan session-optimization-tools-set-optimization-from-usage-data)** - Step 1 and Step 2 completed. optimization.json aligned with Phase 50: removed old get_* and duplicate names from tool_search; added query_memory_bank, query_usage, remove_roadmap_section. Synapse prompts (analyze, commit, implement) updated to use query_memory_bank(query_type="stats") and consolidated validate_links wording. All pre-commit checks and tests pass.
 - **Commit pipeline markdown lint** - COMPLETE. Plan MD036 and analyze.md MD040 fixes. Preflight passed; 4704 tests, 92.76% coverage.
+- **E2E Plan Test (2026-02-24)** - COMPLETE. E2E plan workflow test; single step marked Done.
+- **Tool consolidation Step 3 (2026-02-24)** - IN PROGRESS. Internalized low-usage MCP tools session_register, session_deregister, claim_task_lock, release_task_lock, list_active_tasks, check_task_available_lock, list_plans, get_plan by removing @mcp.tool decorators; quality gate and full test suite passed (92.77% coverage).
 
 ## 2026-02-23
 

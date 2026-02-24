@@ -17,13 +17,11 @@ from pathlib import Path
 from cortex.core.cache_json_access import read_cache_json, write_cache_json
 from cortex.core.constants import MCP_TOOL_TIMEOUT_MEDIUM
 from cortex.core.context_logging import MCPContext, log_client
-from cortex.core.mcp_annotations import read_only_annotations, safe_write_annotations
 from cortex.core.mcp_stability import ensure_usage_context, mcp_tool_wrapper
 from cortex.core.models import OperationStatus
 from cortex.core.project_root_resolver import resolve_project_root_async
 from cortex.core.session_logger import get_session_id
 from cortex.optimization.agent_roles import AgentRole, normalize_role_name
-from cortex.server import mcp
 from cortex.tools.models import (
     CheckTaskAvailableResult,
     ClaimTaskErrorResult,
@@ -342,7 +340,6 @@ async def _claim_task_impl(
     return result.model_dump_json()
 
 
-@mcp.tool(annotations=safe_write_annotations("Claim Task Lock"))
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_MEDIUM)
 async def claim_task_lock(
@@ -409,7 +406,6 @@ async def _release_task_impl(task_title: str, ctx: MCPContext | None) -> str:
     return result.model_dump_json()
 
 
-@mcp.tool(annotations=safe_write_annotations("Release Task Lock"))
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_MEDIUM)
 async def release_task_lock(
@@ -464,7 +460,6 @@ async def _list_active_tasks_impl(ctx: MCPContext | None) -> str:
     return result.model_dump_json()
 
 
-@mcp.tool(annotations=read_only_annotations("List Active Task Locks"))
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_MEDIUM)
 async def list_active_tasks(
@@ -528,7 +523,6 @@ async def _check_task_available_impl(task_title: str, ctx: MCPContext | None) ->
     return result.model_dump_json()
 
 
-@mcp.tool(annotations=read_only_annotations("Check Task Availability"))
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_MEDIUM)
 async def check_task_available_lock(

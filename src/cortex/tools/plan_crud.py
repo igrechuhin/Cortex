@@ -11,7 +11,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from cortex.core.constants import MCP_TOOL_TIMEOUT_FAST, MCP_TOOL_TIMEOUT_MEDIUM
 from cortex.core.context_logging import MCPContext, log_client
-from cortex.core.mcp_annotations import read_only_annotations, safe_write_annotations
+from cortex.core.mcp_annotations import safe_write_annotations
 from cortex.core.mcp_stability import ensure_usage_context, mcp_tool_wrapper
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.core.project_root_resolver import resolve_project_root_async
@@ -325,7 +325,6 @@ async def _list_plans_tool_impl(include_archive: bool, ctx: MCPContext | None) -
         ).model_dump_json()
 
 
-@mcp.tool(annotations=read_only_annotations("List Plans"))
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_FAST)
 async def list_plans(
@@ -432,7 +431,6 @@ async def _get_plan_tool_impl(
         ).model_dump_json()
 
 
-@mcp.tool(annotations=read_only_annotations("Get Plan"))
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_FAST)
 async def get_plan(
