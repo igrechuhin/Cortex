@@ -145,6 +145,11 @@ TOOL_CATEGORIES: tuple[ToolCategoryEntry, ...] = (
         category=ToolCategory.ALWAYS_LOADED,
         rationale="Discover deferred tools by query when tool search is enabled",
     ),
+    ToolCategoryEntry(
+        name="session_start",
+        category=ToolCategory.ALWAYS_LOADED,
+        rationale="Session orientation brief used at the start of non-trivial tasks",
+    ),
     # ── Deferred medium (specific workflows) ──────────────────────────
     ToolCategoryEntry(
         name="analyze",
@@ -286,6 +291,11 @@ TOOL_CATEGORIES: tuple[ToolCategoryEntry, ...] = (
         name="cleanup_metadata_index",
         category=ToolCategory.DEFERRED_LOW,
         rationale="One-time metadata index cleanup (admin)",
+    ),
+    ToolCategoryEntry(
+        name="analyze_error_patterns",
+        category=ToolCategory.DEFERRED_LOW,
+        rationale="Evaluation error-pattern analysis for optimization debugging",
     ),
 )
 

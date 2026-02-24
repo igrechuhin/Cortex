@@ -28,6 +28,10 @@
 
 - ✅ **Tool consolidation Step 6 — pre-commit pipeline** - COMPLETE (2026-02-24) - Merged run_preflight_checks and run_docs_and_memory_bank_sync into execute_pre_commit_checks(phase="A"|"B"|"full"); removed two MCP tool registrations; added pre_commit_phase_dispatch; updated tests and prompts.
 
+- ✅ **Tool consolidation Step 7 — resource audit** - COMPLETE (2026-02-24) - Audited all 34 @mcp.resource() registrations; confirmed none are also @mcp.tool(). Added regression test TestNoResourceDoubleRegisteredAsTool. Updated plan status and docs/architecture/tool-optimization-mapping.md.
+
+- ✅ **Tool consolidation Step 8 — governance** - COMPLETE (2026-02-24) - Aligned TOOL_CATEGORIES with all @mcp.tool registrations (including session_start and analyze_error_patterns), synced .cortex/config/optimization.json tool_search lists from build_category_config(), and added TestToolCategoriesGovernance to enforce registered tools == TOOL_CATEGORIES. All tests, quality, and type checks pass.
+
 ## Completed Work (2026-02-23)
 
 - **Summary (2026-02-23)** - 1 entries archived.

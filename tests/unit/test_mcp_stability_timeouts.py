@@ -502,6 +502,33 @@ def _file_has_mcp_tool_missing_required_wrappers(content: str) -> list[int]:
     return bad
 
 
+def _functions_with_both_tool_and_resource(content: str) -> list[tuple[int, int]]:
+    """Return (decorator_start_1based, async_def_line_1based) for double-registrations.
+
+    Phase 56 Step 7: No function must be registered as both @mcp.tool() and
+    @mcp.resource(); resources must be resource-only so they do not count toward
+    the tool limit.
+    """
+    lines = content.splitlines()
+    result: list[tuple[int, int]] = []
+    i = 0
+    while i < len(lines):
+        stripped = lines[i].strip()
+        if stripped.startswith("async def "):
+            # Collect decorator block (lines above this def that are decorators)
+            block_start = i
+            j = i - 1
+            while j >= 0 and (lines[j].strip().startswith("@") or not lines[j].strip()):
+                if lines[j].strip().startswith("@"):
+                    block_start = j
+                j -= 1
+            block = " ".join(lines[k].strip() for k in range(block_start, i))
+            if "@mcp.tool(" in block and "@mcp.resource(" in block:
+                result.append((block_start + 1, i + 1))
+        i += 1
+    return result
+
+
 def _file_has_mcp_resource_missing_required_wrappers(content: str) -> list[int]:
     """Return line numbers where @mcp.resource(uri=...) lacks required stack.
 
@@ -708,6 +735,30 @@ class TestAllResourcesHaveRequiredWrappers:
         assert not violations, (
             "MCP resources missing required decorator stack (@mcp.resource(uri=...) -> @ensure_usage_context -> @mcp_resource_wrapper): "
             + ", ".join(f"{f}: lines {lns}" for f, lns in violations)
+        )
+
+
+class TestNoResourceDoubleRegisteredAsTool:
+    """Phase 56 Step 7: Resources must be resource-only (no @mcp.tool on same function)."""
+
+    def test_no_function_has_both_mcp_tool_and_mcp_resource(self) -> None:
+        """No async def may have both @mcp.tool() and @mcp.resource() in its decorators."""
+        tools_dir = _tools_dir()
+        core_dir = tools_dir.parent / "core"
+        violations: list[tuple[str, list[tuple[int, int]]]] = []
+        for directory in (tools_dir, core_dir):
+            if not directory.is_dir():
+                continue
+            for path in sorted(directory.glob("*.py")):
+                if path.name.startswith("__"):
+                    continue
+                text = path.read_text()
+                pairs = _functions_with_both_tool_and_resource(text)
+                if pairs:
+                    violations.append((path.name, pairs))
+        assert not violations, (
+            "Functions must not be registered as both tool and resource (Step 7): "
+            + ", ".join(f"{f}: decorator+def at {pairs}" for f, pairs in violations)
         )
 
 

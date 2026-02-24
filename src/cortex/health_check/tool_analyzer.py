@@ -3,12 +3,27 @@
 import ast
 from pathlib import Path
 
+from pydantic import BaseModel
+
 from cortex.health_check.models import (
     MergeOpportunity,
     OptimizationOpportunity,
     ToolAnalysisResult,
 )
 from cortex.health_check.similarity_engine import SimilarityEngine
+
+
+class AnalyzedTool(BaseModel):
+    """Structured metadata for an MCP tool discovered in source code."""
+
+    name: str
+    params: list[str]
+    docstring: str
+    body: str
+    signature: str
+
+
+ToolFuncNode = ast.FunctionDef | ast.AsyncFunctionDef
 
 
 class ToolAnalyzer:
@@ -46,13 +61,21 @@ class ToolAnalyzer:
             optimization_opportunities=optimization_opportunities,
         )
 
-    async def _scan_tools(self) -> dict[str, dict[str, object]]:
+    async def get_registered_tools(self) -> dict[str, AnalyzedTool]:
+        """Return mapping of MCP tools discovered in tools_dir.
+
+        Public wrapper around the internal _scan_tools helper so callers do not
+        depend on a private method.
+        """
+        return await self._scan_tools()
+
+    async def _scan_tools(self) -> dict[str, AnalyzedTool]:
         """Scan all tool files and extract tool information.
 
         Returns:
             Dictionary mapping tool names to tool metadata
         """
-        tools: dict[str, dict[str, object]] = {}
+        tools: dict[str, AnalyzedTool] = {}
 
         if not self.tools_dir.exists():
             return tools
@@ -67,7 +90,7 @@ class ToolAnalyzer:
 
         return tools
 
-    def _extract_tools_from_file(self, file_path: Path) -> dict[str, dict[str, object]]:
+    def _extract_tools_from_file(self, file_path: Path) -> dict[str, AnalyzedTool]:
         """Extract tool information from a Python file.
 
         Args:
@@ -76,7 +99,7 @@ class ToolAnalyzer:
         Returns:
             Dictionary mapping tool names to tool metadata
         """
-        tools: dict[str, dict[str, object]] = {}
+        tools: dict[str, AnalyzedTool] = {}
 
         try:
             with open(file_path, encoding="utf-8") as f:
@@ -84,12 +107,13 @@ class ToolAnalyzer:
                 tree = ast.parse(content)
 
             for node in ast.walk(tree):
-                if isinstance(node, ast.FunctionDef):
+                if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                    func_node: ToolFuncNode = node
                     # Check if function has @mcp.tool() decorator
-                    if self._has_mcp_tool_decorator(node):
-                        tool_info = self._extract_tool_info(node, content)
+                    if self._has_mcp_tool_decorator(func_node):
+                        tool_info = self._extract_tool_info(func_node, content)
                         if tool_info:
-                            tool_name = str(tool_info["name"])
+                            tool_name = tool_info.name
                             tools[tool_name] = tool_info
         except Exception:
             # Skip files that can't be parsed
@@ -97,7 +121,7 @@ class ToolAnalyzer:
 
         return tools
 
-    def _has_mcp_tool_decorator(self, node: ast.FunctionDef) -> bool:
+    def _has_mcp_tool_decorator(self, node: ToolFuncNode) -> bool:
         """Check if function has @mcp.tool() decorator.
 
         Args:
@@ -126,8 +150,8 @@ class ToolAnalyzer:
         return False
 
     def _extract_tool_info(
-        self, node: ast.FunctionDef, file_content: str
-    ) -> dict[str, object] | None:
+        self, node: ToolFuncNode, file_content: str
+    ) -> AnalyzedTool | None:
         """Extract tool information from function node.
 
         Args:
@@ -148,16 +172,16 @@ class ToolAnalyzer:
         body_lines = lines[start_line:end_line]
         body = "\n".join(body_lines[:50])  # First 50 lines
 
-        return {
-            "name": node.name,
-            "params": params,
-            "docstring": docstring,
-            "body": body,
-            "signature": f"{node.name}({', '.join(params)})",
-        }
+        return AnalyzedTool(
+            name=node.name,
+            params=params,
+            docstring=docstring,
+            body=body,
+            signature=f"{node.name}({', '.join(params)})",
+        )
 
     async def _find_merge_opportunities(
-        self, tools: dict[str, dict[str, object]]
+        self, tools: dict[str, AnalyzedTool]
     ) -> list[MergeOpportunity]:
         """Find merge opportunities between tools.
 
@@ -173,10 +197,10 @@ class ToolAnalyzer:
         for i, (name1, tool1) in enumerate(tool_list):
             for name2, tool2 in tool_list[i + 1 :]:
                 # Compare docstrings and signatures
-                doc1 = str(tool1.get("docstring", ""))
-                doc2 = str(tool2.get("docstring", ""))
-                sig1 = str(tool1.get("signature", ""))
-                sig2 = str(tool2.get("signature", ""))
+                doc1 = tool1.docstring
+                doc2 = tool2.docstring
+                sig1 = tool1.signature
+                sig2 = tool2.signature
 
                 similarity = self.similarity_engine.calculate_content_similarity(
                     doc1 + sig1, doc2 + sig2
@@ -198,7 +222,7 @@ class ToolAnalyzer:
         return opportunities
 
     async def _find_consolidation_opportunities(
-        self, tools: dict[str, dict[str, object]]
+        self, tools: dict[str, AnalyzedTool]
     ) -> list[MergeOpportunity]:
         """Find consolidation opportunities (similar functionality).
 
@@ -231,7 +255,7 @@ class ToolAnalyzer:
         return opportunities
 
     def _calculate_param_overlap(
-        self, tool1: dict[str, object], tool2: dict[str, object]
+        self, tool1: AnalyzedTool, tool2: AnalyzedTool
     ) -> float:
         """Calculate parameter overlap between two tools.
 
@@ -242,29 +266,18 @@ class ToolAnalyzer:
         Returns:
             Parameter overlap ratio (0.0-1.0)
         """
-        params1_list = tool1.get("params", [])
-        params2_list = tool2.get("params", [])
+        params1_list = tool1.params
+        params2_list = tool2.params
 
         # Convert to sets of strings
-        params1: set[str] = set()
-        params2: set[str] = set()
-
-        if isinstance(params1_list, list):
-            for p in params1_list:  # type: ignore[assignment]
-                if p is not None:
-                    param_str: str = str(p)  # type: ignore[arg-type]
-                    params1.add(param_str)
-        if isinstance(params2_list, list):
-            for p in params2_list:  # type: ignore[assignment]
-                if p is not None:
-                    param_str: str = str(p)  # type: ignore[arg-type]
-                    params2.add(param_str)
+        params1: set[str] = set(params1_list)
+        params2: set[str] = set(params2_list)
 
         union = params1 | params2
         return len(params1 & params2) / len(union) if union else 0.0
 
     def _calculate_body_similarity(
-        self, tool1: dict[str, object], tool2: dict[str, object]
+        self, tool1: AnalyzedTool, tool2: AnalyzedTool
     ) -> float:
         """Calculate body similarity between two tools.
 
@@ -275,12 +288,12 @@ class ToolAnalyzer:
         Returns:
             Body similarity ratio (0.0-1.0)
         """
-        body1 = str(tool1.get("body", ""))
-        body2 = str(tool2.get("body", ""))
+        body1 = tool1.body
+        body2 = tool2.body
         return self.similarity_engine.calculate_content_similarity(body1, body2)
 
     async def _find_optimization_opportunities(
-        self, tools: dict[str, dict[str, object]]
+        self, tools: dict[str, AnalyzedTool]
     ) -> list[OptimizationOpportunity]:
         """Find optimization opportunities in tools.
 
@@ -293,7 +306,7 @@ class ToolAnalyzer:
         opportunities: list[OptimizationOpportunity] = []
 
         for name, tool in tools.items():
-            docstring = str(tool.get("docstring", ""))
+            docstring = tool.docstring
 
             # Check for very long docstrings (potential split)
             if len(docstring) > 5000:

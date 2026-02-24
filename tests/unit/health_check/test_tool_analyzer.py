@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from cortex.health_check.tool_analyzer import ToolAnalyzer
+from cortex.health_check.tool_analyzer import AnalyzedTool, ToolAnalyzer
 
 
 class TestToolAnalyzer:
@@ -24,7 +24,6 @@ class TestToolAnalyzer:
     async def test_analyze_no_tools_dir(self, analyzer: ToolAnalyzer):
         """Test analyze when tools directory doesn't exist."""
         result = await analyzer.analyze()
-        assert "total" in result
         assert result["total"] == 0
         assert result["merge_opportunities"] == []
         assert result["consolidation_opportunities"] == []
@@ -32,16 +31,40 @@ class TestToolAnalyzer:
 
     def test_calculate_param_overlap(self, analyzer: ToolAnalyzer):
         """Test calculating parameter overlap."""
-        tool1 = {"params": ["param1", "param2"]}
-        tool2 = {"params": ["param1", "param3"]}
+        tool1 = AnalyzedTool(
+            name="t1",
+            params=["param1", "param2"],
+            docstring="",
+            body="",
+            signature="t1(param1, param2)",
+        )
+        tool2 = AnalyzedTool(
+            name="t2",
+            params=["param1", "param3"],
+            docstring="",
+            body="",
+            signature="t2(param1, param3)",
+        )
         overlap = analyzer._calculate_param_overlap(tool1, tool2)  # type: ignore[attr-defined]
         assert 0.0 <= overlap <= 1.0
         assert overlap > 0.0  # Should have some overlap
 
     def test_calculate_body_similarity(self, analyzer: ToolAnalyzer):
         """Test calculating body similarity."""
-        tool1 = {"body": "This is test content."}
-        tool2 = {"body": "This is test content."}
+        tool1 = AnalyzedTool(
+            name="t1",
+            params=[],
+            docstring="",
+            body="This is test content.",
+            signature="t1()",
+        )
+        tool2 = AnalyzedTool(
+            name="t2",
+            params=[],
+            docstring="",
+            body="This is test content.",
+            signature="t2()",
+        )
         similarity = analyzer._calculate_body_similarity(tool1, tool2)  # type: ignore[attr-defined]
         assert similarity == 1.0
 
@@ -49,14 +72,20 @@ class TestToolAnalyzer:
     async def test_find_consolidation_opportunities(self, analyzer: ToolAnalyzer):
         """Test finding consolidation opportunities."""
         tools = {
-            "tool1": {
-                "params": ["param1", "param2"],
-                "body": "This is test content.",
-            },
-            "tool2": {
-                "params": ["param1", "param2"],
-                "body": "This is test content.",
-            },
+            "tool1": AnalyzedTool(
+                name="tool1",
+                params=["param1", "param2"],
+                docstring="",
+                body="This is test content.",
+                signature="tool1(param1, param2)",
+            ),
+            "tool2": AnalyzedTool(
+                name="tool2",
+                params=["param1", "param2"],
+                docstring="",
+                body="This is test content.",
+                signature="tool2(param1, param2)",
+            ),
         }
         opportunities = await analyzer._find_consolidation_opportunities(tools)  # type: ignore[attr-defined]
         assert len(opportunities) > 0
@@ -65,14 +94,20 @@ class TestToolAnalyzer:
     async def test_find_merge_opportunities(self, analyzer: ToolAnalyzer):
         """Test finding merge opportunities."""
         tools = {
-            "tool1": {
-                "docstring": "This is test documentation.",
-                "signature": "tool1(param1, param2)",
-            },
-            "tool2": {
-                "docstring": "This is test documentation.",
-                "signature": "tool2(param1, param2)",
-            },
+            "tool1": AnalyzedTool(
+                name="tool1",
+                params=["param1", "param2"],
+                docstring="This is test documentation.",
+                body="",
+                signature="tool1(param1, param2)",
+            ),
+            "tool2": AnalyzedTool(
+                name="tool2",
+                params=["param1", "param2"],
+                docstring="This is test documentation.",
+                body="",
+                signature="tool2(param1, param2)",
+            ),
         }
         opportunities = await analyzer._find_merge_opportunities(tools)  # type: ignore[attr-defined]
         assert isinstance(opportunities, list)
@@ -81,8 +116,20 @@ class TestToolAnalyzer:
     async def test_find_optimization_opportunities(self, analyzer: ToolAnalyzer):
         """Test finding optimization opportunities."""
         tools = {
-            "tool1": {"docstring": "Short doc."},
-            "tool2": {"docstring": ""},
+            "tool1": AnalyzedTool(
+                name="tool1",
+                params=[],
+                docstring="Short doc.",
+                body="",
+                signature="tool1()",
+            ),
+            "tool2": AnalyzedTool(
+                name="tool2",
+                params=[],
+                docstring="",
+                body="",
+                signature="tool2()",
+            ),
         }
         opportunities = await analyzer._find_optimization_opportunities(tools)  # type: ignore[attr-defined]
         assert isinstance(opportunities, list)
@@ -131,22 +178,46 @@ def test_tool(param1: str, param2: int) -> str:
         func_node = tree.body[0]
         tool_info = analyzer._extract_tool_info(func_node, code)  # type: ignore[attr-defined]
         assert tool_info is not None
-        assert tool_info["name"] == "test_tool"
-        params = tool_info.get("params", [])
+        assert tool_info.name == "test_tool"
+        params = tool_info.params
         assert isinstance(params, list)
         assert "param1" in params
         assert "param2" in params
 
     def test_calculate_param_overlap_no_overlap(self, analyzer: ToolAnalyzer):
         """Test calculating parameter overlap with no overlap."""
-        tool1: dict[str, object] = {"params": ["param1", "param2"]}
-        tool2: dict[str, object] = {"params": ["param3", "param4"]}
+        tool1 = AnalyzedTool(
+            name="t1",
+            params=["param1", "param2"],
+            docstring="",
+            body="",
+            signature="t1(param1, param2)",
+        )
+        tool2 = AnalyzedTool(
+            name="t2",
+            params=["param3", "param4"],
+            docstring="",
+            body="",
+            signature="t2(param3, param4)",
+        )
         overlap = analyzer._calculate_param_overlap(tool1, tool2)  # type: ignore[attr-defined]
         assert overlap == 0.0
 
     def test_calculate_param_overlap_empty(self, analyzer: ToolAnalyzer):
         """Test calculating parameter overlap with empty params."""
-        tool1: dict[str, object] = {"params": []}
-        tool2: dict[str, object] = {"params": []}
+        tool1 = AnalyzedTool(
+            name="t1",
+            params=[],
+            docstring="",
+            body="",
+            signature="t1()",
+        )
+        tool2 = AnalyzedTool(
+            name="t2",
+            params=[],
+            docstring="",
+            body="",
+            signature="t2()",
+        )
         overlap = analyzer._calculate_param_overlap(tool1, tool2)  # type: ignore[attr-defined]
         assert overlap == 0.0

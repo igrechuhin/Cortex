@@ -43,7 +43,12 @@ The anomaly report (`query_usage(query_type="anomalies", hours=24)`) may list **
 
 Optionally filter these from the anomaly report in a future change; documenting here avoids treating them as tools to deprecate.
 
+## Resource vs tool audit (Step 7, 2026-02-24)
+
+Tool consolidation plan Step 7 verified that all `*_resource` endpoints are registered only via `@mcp.resource()` (not also as `@mcp.tool()`). No double-registrations were found; resources do not consume tool slots. A regression test enforces this: `TestNoResourceDoubleRegisteredAsTool::test_no_function_has_both_mcp_tool_and_mcp_resource` in `tests/unit/test_mcp_stability_timeouts.py`.
+
 ## References
 
 - [Tool optimization baseline](tool-optimization-baseline.md)
 - Plan: `.cortex/plans/plan-optimize-tools-from-usage.md`
+- Plan: `.cortex/plans/session-optimization-tools-set-optimization-from-usage-data.md` (tool consolidation 64→24)

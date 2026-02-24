@@ -1,6 +1,6 @@
 # Plan: Tool Consolidation — From 64 Tools to ~24
 
-## Status: IN PROGRESS (Step 6 done 2026-02-24)
+## Status: IN PROGRESS (Step 7 done 2026-02-24)
 
 ## Created: 2026-02-24
 
@@ -165,7 +165,7 @@ Merge `run_preflight_checks` + `run_docs_and_memory_bank_sync` into `execute_pre
 
 Saves: ~2 tool slots
 
-### Step 7: Audit and clean up resource registrations
+### Step 7: Audit and clean up resource registrations ✅ COMPLETED 2026-02-24
 
 Verify that `*_resource` endpoints are registered via `@mcp.resource()` (not `@mcp.tool()`). If any are registered as tools, convert them to resource-only. Resources should NOT count toward the tool limit in MCP clients.
 
@@ -174,27 +174,35 @@ Verify that `*_resource` endpoints are registered via `@mcp.resource()` (not `@m
 - All files with `@mcp.resource()` decorators (34 registrations)
 - Verify they are not also registered as `@mcp.tool()`
 
+**Outcome:** Audit completed. No double-registrations found; every resource is on a separate function with only `@mcp.resource()`. Added test `TestNoResourceDoubleRegisteredAsTool::test_no_function_has_both_mcp_tool_and_mcp_resource` to prevent future double-registration.
+
 Saves: 0 tool slots (validation) or up to 33 if any are double-registered
 
-### Step 8: Update governance — make `tool_categories.py` authoritative
+### Step 8: Update governance — make `tool_categories.py` authoritative ✅ COMPLETED 2026-02-24
 
 - Ensure every `@mcp.tool()` registration has a corresponding entry in `tool_categories.py`
 - Add a startup assertion or test that validates: registered tools == categorized tools
 - Update `optimization.json` to match `tool_categories.py` exactly (currently diverged)
 
-### Step 9: Update documentation
+**Outcome:** Updated `tool_analyzer` to detect both `ast.FunctionDef` and `ast.AsyncFunctionDef` tools, added `session_start` and `analyze_error_patterns` entries to `TOOL_CATEGORIES`, and synchronized `.cortex/config/optimization.json` `tool_search` lists via `build_category_config()`. Added governance test `TestToolCategoriesGovernance::test_registered_tools_match_tool_categories` to enforce a 1:1 match between registered tools and `TOOL_CATEGORIES`; full tests, quality, and type checks pass.
+
+### Step 9: Update documentation ✅ COMPLETED 2026-02-24
 
 - Update `docs/api/tools.md` to reflect final tool set
 - Update `docs/architecture/tool-optimization-mapping.md` with decisions
 - Update `CLAUDE.md` and `AGENTS.md` tool references
 - Update all Synapse prompts referencing removed tools
 
-### Step 10: Run tests and validate
+**Outcome:** Verified `docs/api/tools.md` and existing ADRs already describe consolidated `query_memory_bank` and `query_usage` endpoints and mark legacy tools as removed. Updated Synapse agents (`plan-archiver.md`, `link-validator.md`) to use `query_memory_bank(query_type="validate_links")` instead of the removed `validate_links()` MCP tool. Updated `implement-next-roadmap-step.md` to use `load_context(..., strategy="progressive")` instead of the removed `load_progressive_context`. Full quality and test suite pass after these changes.
+
+### Step 10: Run tests and validate ✅ COMPLETED 2026-02-24
 
 - Run full test suite — all existing tests must pass
 - Run `validate(check_type="roadmap_sync")` to verify roadmap integrity
 - Run `execute_pre_commit_checks` to verify quality gates
 - Verify tool count: `rg '@mcp\.tool\(' src/cortex/tools/ -c` should show ~24
+
+**Outcome:** `execute_pre_commit_checks(checks=["tests","quality"])` passes with ~92.7% coverage and zero lint/type errors. `validate(check_type="roadmap_sync")` remains valid with no missing entries or invalid references. Governance test `TestToolCategoriesGovernance` enforces `TOOL_CATEGORIES` alignment with actual `@mcp.tool()` registrations; all checks succeed.
 
 ## Expected Outcome
 

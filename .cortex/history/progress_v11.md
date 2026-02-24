@@ -19,6 +19,8 @@
 - **Tool consolidation – Step 5 (2026-02-24)** - COMPLETED. Consolidated context and health analytics into the unified `analyze` MCP tool and removed legacy context-analysis tool registrations.
 - **Commit: tool categories, optimization config, analysis/health/context handlers, phase4_optimization, tests** - Preflight passed (fix_errors, format, type_check, quality, 4701 tests, 92.69% coverage); markdown lint fixed.
 - **Tool consolidation Step 6 — pre-commit pipeline (2026-02-24)** - COMPLETE. Merged run_preflight_checks and run_docs_and_memory_bank_sync into execute_pre_commit_checks(phase="A"|"B"|"full"); removed two MCP tools; updated tests and docs.
+- **Tool consolidation Step 7 (2026-02-24)** - COMPLETE. Audited @mcp.resource() vs @mcp.tool(); no double-registrations. Added TestNoResourceDoubleRegisteredAsTool; updated plan and tool-optimization-mapping.md.
+- **Tool consolidation Step 8 (2026-02-24)** - COMPLETE. Updated tool governance: TOOLS_CATEGORIES now covers all @mcp.tool registrations; optimization.json tool_search synced from build_category_config(); added governance test to enforce equality and fixed analyzer coverage for async tools.
 
 ## 2026-02-23
 
