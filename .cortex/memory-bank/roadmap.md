@@ -12,13 +12,14 @@
 
 ## Pending plans (from .cortex/plans)
 
+- **Pending: Anthropic context engineering alignment (P1)** - Plan: .cortex/plans/plan-anthropic-context-engineering-alignment.md (Step 4 Layered Evaluation complete; Steps 5–6 pending)
+
 ### Investigation Plans (Archive / Reference)
 
 Completed investigations are recorded in [activeContext.md](activeContext.md). Plan files under `.cortex/plans/archive/` as needed.
 
 ### Features & Enhancements
 
-- **Pending: Anthropic context engineering alignment (P1)** - Plan: .cortex/plans/plan-anthropic-context-engineering-alignment.md
 - **Pending: Agent skills and composability (P2)** - Plan: .cortex/plans/plan-agent-skills-and-composability.md
 - **Pending: Security and resilience (P2)** - Plan: .cortex/plans/plan-security-and-resilience.md
 - **Pending: Compound engineering alignment** - Plan: .cortex/plans/compound-engineering-alignment-cortex.md

@@ -85,6 +85,8 @@ Anthropic's engineering blog provides state-of-the-art guidance on context engin
 
 ## Step 3: Redundant Tool Call Detection
 
+**Status:** Complete (2026-02-25). Redundancy tracking in phase5_redundancy_helpers; query_usage(query_type="redundancy"); dashboard section; tool_improvement_hints.
+
 **Insight (from "Writing Tools for Agents"):**
 > Lots of redundant tool calls might suggest some rightsizing of pagination or token limit parameters is warranted; lots of tool errors for invalid parameters might suggest tools could use clearer description or better examples.
 
@@ -103,6 +105,8 @@ Anthropic's engineering blog provides state-of-the-art guidance on context engin
 ---
 
 ## Step 4: Layered Evaluation (Swiss Cheese Model)
+
+**Status:** Complete (2026-02-25). Layer 1: eval_fast in pre-commit Phase A, eval_full in CI. Layer 2: query_usage(production_monitoring) with drift detection. Layer 3: A/B baseline comparison in run_eval_check.py (--save-baseline, --compare-baseline, --current-results); CI runs compare after eval_full. Failure-based evals: failure_based_evals.json with 10+ tasks from real session logs.
 
 **Insight (from "Demystifying Evals"):**
 > Like the Swiss Cheese Model from safety engineering, no single evaluation layer catches every issue. With multiple methods combined, failures that slip through one layer are caught by another.

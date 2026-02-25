@@ -7,6 +7,8 @@
 - **E2E Plan Test (2026-02-25)** - COMPLETE. Plan with single step Done; roadmap entry removed, activeContext/progress updated.
 - **Anthropic Step 2 - Optimization and Benchmark (2026-02-25)** - COMPLETE. Added optimization_recommendations to token_efficiency payload and run_token_benchmark.py script for before/after comparison.
 - **Commit fixes** - run_token_benchmark.py: format and UP017 (datetime.UTC) for synapse_format/synapse_lint. Pre-commit Phase A passed.
+- **Anthropic context engineering Step 3 (2026-02-25)** - COMPLETE. Redundant tool call detection: phase5_redundancy_helpers, query_usage(redundancy), dashboard section, repeated identical, sequential same-tool, error rate by param.
+- **Anthropic Step 4 (Layered Evaluation) (2026-02-25)** - COMPLETE. Implemented A/B baseline comparison in run_eval_check.py: --save-baseline, --compare-baseline, --current-results, --output-summary. CI runs compare step after eval_full using eval_results.json. Layers 1–2 and failure-based evals already present.
 
 ## 2026-02-24
 

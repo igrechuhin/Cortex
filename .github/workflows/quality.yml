@@ -293,12 +293,20 @@ jobs:
         id: eval_full
         run: |
           echo "::group::Running evaluation suite (full mode, threshold 85%)"
-          if ! uv run python .cortex/synapse/scripts/python/run_eval_check.py --mode full --threshold 0.85; then
+          if ! uv run python .cortex/synapse/scripts/python/run_eval_check.py --mode full --threshold 0.85 --output-summary eval_results.json; then
             echo "::error::Eval suite pass rate below 85%. Merge blocked."
             exit 1
           fi
           echo "✅ Eval full passed"
           echo "::endgroup::"
+
+      - name: Compare eval to baseline (A/B on tool changes)
+        id: eval_compare
+        run: |
+          echo "::group::A/B eval comparison to baseline"
+          uv run python .cortex/synapse/scripts/python/run_eval_check.py --compare-baseline --current-results eval_results.json
+          echo "::endgroup::"
+        continue-on-error: false
 
       - name: Upload coverage to Codecov
         env:
@@ -345,6 +353,7 @@ jobs:
           echo "Markdown Lint: ${{ steps.markdown_lint.outcome }}"
           echo "Tests: ${{ steps.tests.outcome }}"
           echo "Eval (full): ${{ steps.eval_full.outcome }}"
+          echo "Eval (A/B compare): ${{ steps.eval_compare.outcome }}"
           echo "============================="
           
           # Fail if any critical check failed
@@ -359,7 +368,8 @@ jobs:
              [ "${{ steps.spelling.outcome }}" = "failure" ] || \
              [ "${{ steps.markdown_lint.outcome }}" = "failure" ] || \
              [ "${{ steps.tests.outcome }}" = "failure" ] || \
-             [ "${{ steps.eval_full.outcome }}" = "failure" ]; then
+             [ "${{ steps.eval_full.outcome }}" = "failure" ] || \
+             [ "${{ steps.eval_compare.outcome }}" = "failure" ]; then
             echo "::error::One or more quality checks failed. See above for details."
             exit 1
           fi

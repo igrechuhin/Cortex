@@ -75,6 +75,9 @@ coverage.xml
 /benchmark_results/
 .cortex/benchmark_results/
 
+# Eval A/B comparison artifact (from run_eval_check --output-summary)
+eval_results.json
+
 # Sibling/legacy project copies (use only .cortex paths in repo root)
 /schema/
 /optimization/

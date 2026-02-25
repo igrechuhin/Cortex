@@ -12,6 +12,10 @@
 
 - ✅ **Anthropic Step 2 - Optimization and Benchmark** - COMPLETE (2026-02-25) - Added optimization_recommendations to token_efficiency payload (tool-specific hints); added run_token_benchmark.py for before/after comparison (--baseline, --compare).
 
+- ✅ **Anthropic Step 3 - Redundant Tool Call Detection** - COMPLETE (2026-02-25) - Implemented redundancy tracking (repeated identical, sequential same-tool, error rate by param), query_usage(redundancy), Phase 57 dashboard section, tool_improvement_hints.
+
+- ✅ **Anthropic Step 4 - Layered Evaluation (Swiss Cheese)** - COMPLETE (2026-02-25) - Implemented A/B baseline comparison: run_eval_check.py --save-baseline, --compare-baseline, --current-results, --output-summary. CI runs A/B compare after eval_full. Layer 1 (eval_fast in pre-commit) and Layer 2 (production_monitoring) already present; failure-based evals in failure_based_evals.json.
+
 ## Completed Work (2026-02-24)
 
 - **Summary (2026-02-24)** - 1 entries archived.

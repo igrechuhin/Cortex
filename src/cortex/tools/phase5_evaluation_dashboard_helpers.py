@@ -7,6 +7,7 @@ from cortex.tools.phase5_evaluation import (
     EvalSuiteResult,
     EvalTaskResult,
 )
+from cortex.tools.phase5_redundancy_helpers import RedundancyPayload
 
 
 def aggregate_tool_metrics(
@@ -113,6 +114,82 @@ def format_error_patterns(analysis: EvalAnalysis) -> list[str]:
     return lines
 
 
+def _format_redundancy_repeated(redundancy: RedundancyPayload) -> list[str]:
+    """Format Top Repeated Identical Calls subsection."""
+    lines: list[str] = []
+    if not redundancy.repeated_identical:
+        return lines
+    lines.append("### Top Repeated Identical Calls")
+    lines.append("")
+    for i, p in enumerate(redundancy.repeated_identical[:5], 1):
+        lines.append(
+            f"{i}. **{p.tool_name}** — {p.total_occurrences} occurrences "
+            + f"in {p.session_count} sessions (max {p.max_per_session}/session)"
+        )
+    lines.append("")
+    return lines
+
+
+def _format_redundancy_sequential(redundancy: RedundancyPayload) -> list[str]:
+    """Format Top Sequential Same-Tool Runs subsection."""
+    lines: list[str] = []
+    if not redundancy.sequential_same_tool:
+        return lines
+    lines.append("### Top Sequential Same-Tool Runs")
+    lines.append("")
+    for i, p in enumerate(redundancy.sequential_same_tool[:5], 1):
+        lines.append(
+            f"{i}. **{p.tool_name}** — max run {p.max_run_length} "
+            + f"in {p.session_count} sessions"
+        )
+    lines.append("")
+    return lines
+
+
+def _format_redundancy_error_by_param(redundancy: RedundancyPayload) -> list[str]:
+    """Format Error Rate by Parameter subsection."""
+    lines: list[str] = []
+    if not redundancy.error_rate_by_param:
+        return lines
+    lines.append("### Error Rate by Parameter")
+    lines.append("")
+    for i, p in enumerate(redundancy.error_rate_by_param[:5], 1):
+        lines.append(
+            f"{i}. **{p.tool_name}** — '{p.param_or_error}' "
+            + f"{p.error_rate:.0%} ({p.error_count}/{p.total_calls})"
+        )
+    lines.append("")
+    return lines
+
+
+def format_redundancy(redundancy: RedundancyPayload | None) -> list[str]:
+    """Format redundancy metrics section (Anthropic Step 3)."""
+    lines: list[str] = []
+    if redundancy is None or redundancy.total_events == 0:
+        return lines
+    if not (
+        redundancy.repeated_identical
+        or redundancy.sequential_same_tool
+        or redundancy.error_rate_by_param
+        or redundancy.tool_improvement_hints
+    ):
+        return lines
+    lines.append("## Redundancy Metrics")
+    lines.append("")
+    lines.append(f"Window: {redundancy.days} days, {redundancy.total_events} events.")
+    lines.append("")
+    lines.extend(_format_redundancy_repeated(redundancy))
+    lines.extend(_format_redundancy_sequential(redundancy))
+    lines.extend(_format_redundancy_error_by_param(redundancy))
+    if redundancy.tool_improvement_hints:
+        lines.append("### Tool Improvement Hints")
+        lines.append("")
+        for hint in redundancy.tool_improvement_hints[:5]:
+            lines.append(f"- {hint}")
+        lines.append("")
+    return lines
+
+
 def format_token_efficiency(analysis: EvalAnalysis) -> list[str]:
     """Format token efficiency trends section (when token data is available)."""
     lines: list[str] = []
@@ -184,6 +261,7 @@ def format_task_details(suite: EvalSuiteResult) -> list[str]:
 def generate_evaluation_dashboard(
     analysis: EvalAnalysis,
     suite: EvalSuiteResult,
+    redundancy: RedundancyPayload | None = None,
 ) -> str:
     """Generate Markdown dashboard from evaluation analysis."""
     lines: list[str] = []
@@ -192,5 +270,6 @@ def generate_evaluation_dashboard(
     lines.extend(format_category_success_rates(analysis))
     lines.extend(format_error_patterns(analysis))
     lines.extend(format_token_efficiency(analysis))
+    lines.extend(format_redundancy(redundancy))
     lines.extend(format_task_details(suite))
     return "\n".join(lines)

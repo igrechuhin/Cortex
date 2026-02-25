@@ -693,7 +693,7 @@ async def _run_tool_evaluation_impl(
     )
     execution_summary = build_execution_summary(exec_results)
     await _persist_latest_suite(root, suite, analysis)
-    dashboard_path = await _write_evaluation_dashboard(root, analysis, suite)
+    dashboard_path = await _write_evaluation_dashboard(root, analysis, suite, tracker)
     payload = _build_evaluation_payload(root, tasks, suite, analysis)
     payload = payload.model_copy(
         update={
@@ -760,13 +760,26 @@ async def _write_evaluation_dashboard(
     root: Path,
     analysis: EvalAnalysis,
     suite: EvalSuiteResult,
+    tracker: UsageTracker | None,
 ) -> Path:
     """Write evaluation dashboard Markdown next to last_suite.json."""
     from cortex.tools.phase5_evaluation_dashboard_helpers import (
         generate_evaluation_dashboard,
     )
+    from cortex.tools.phase5_redundancy_helpers import (
+        RedundancyPayload,
+        get_redundancy_payload,
+    )
 
-    dashboard_content = generate_evaluation_dashboard(analysis, suite)
+    redundancy: RedundancyPayload | None = None
+    if tracker is not None:
+        try:
+            redundancy = await get_redundancy_payload(root, tracker, days=30)
+        except Exception:
+            pass
+    dashboard_content = generate_evaluation_dashboard(
+        analysis, suite, redundancy=redundancy
+    )
     cache_dir = get_cache_path(root, CortexResourceType.CACHE.value)
     dashboard_path = cache_dir / "evals" / "dashboard.md"
     # Create directory if it doesn't exist; return value intentionally unused
