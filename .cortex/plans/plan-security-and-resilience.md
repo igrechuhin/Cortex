@@ -65,20 +65,20 @@ Comprehensive review (2026-02-21) identified resilience and security areas needi
 
 ---
 
-## Step 3: Error Recovery Audit
+## Step 3: Error Recovery Audit ✅ DONE (2026-02-25)
 
 **Current state:** 44 generic exception raises (mostly `RuntimeError`, `ValueError`). Some catch-all patterns.
 
 **Action:**
 
-1. Audit all `except Exception` and `except BaseException` handlers
+1. Audit all `except Exception` and `except BaseException` handlers — DONE: see docs/security/error-recovery-audit-2026-02-25.md
 2. Ensure each handler:
-   - Logs the error with context
-   - Releases held resources (locks, semaphores, file handles)
-   - Returns meaningful error to the MCP client
-   - Does not swallow errors silently
-3. Replace generic exceptions with specific custom exceptions where appropriate
-4. Ensure `asyncio.CancelledError` is never accidentally caught
+   - Logs the error with context — verified for critical paths
+   - Releases held resources (locks, semaphores, file handles) — mcp_stability_config releases semaphore; TrackedSemaphore **aexit** releases
+   - Returns meaningful error to the MCP client — tool handlers return structured JSON
+   - Does not swallow errors silently — context_logging and mcp_stability_config re-raise
+3. Replace generic exceptions with specific custom exceptions where appropriate — documented as future work
+4. Ensure `asyncio.CancelledError` is never accidentally caught — DONE: explicit re-raise in context_logging; mcp_stability_config re-raises; tests added
 
 **Acceptance criteria:** No silent error swallowing. All resources released on error. Specific exceptions used.
 

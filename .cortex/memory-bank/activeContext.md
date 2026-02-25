@@ -32,6 +32,10 @@
 
 - ✅ **Tool consolidation agent_workflow** - COMPLETE (2026-02-25) - Consolidated 4 agent-skills tools (quick_start, quality_check, safe_manage_file, suggest_workflow) into agent_workflow dispatcher. Tool count 49→46. Plan partially complete; target ≤40 not yet reached.
 
+- ✅ **Tool consolidation follow-up** - COMPLETE (2026-02-25) - Phase 50 done, 2 pruned, agent_workflow consolidated; further reduction blocked by workflow-required tools per mapping. Path forward: run tool-consolidation-next-analysis.
+
+- ✅ **Security & Resilience Step 3 - Error Recovery Audit** - COMPLETE (2026-02-25) - Audited except Exception handlers; documented in docs/security/error-recovery-audit-2026-02-25.md; context_logging and mcp_stability_config re-raise CancelledError; tests/unit/test_error_recovery_audit.py.
+
 ## Completed Work (2026-02-24)
 
 - **Summary (2026-02-24)** - 1 entries archived.

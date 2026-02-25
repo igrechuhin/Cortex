@@ -12,8 +12,6 @@
 
 ## Pending plans (from .cortex/plans)
 
-- **Tool consolidation follow-up** - Reduce to ≤40; Phase 50 done, 2 pruned; blocked by workflow-required tools per mapping. Plan: .cortex/plans/tool-consolidation-from-session-analysis-2026-02-25.md
-
 ### Investigation Plans (Archive / Reference)
 
 Completed investigations are recorded in [activeContext.md](activeContext.md). Plan files under `.cortex/plans/archive/` as needed.

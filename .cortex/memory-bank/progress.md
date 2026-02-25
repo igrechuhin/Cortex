@@ -18,6 +18,8 @@
 - **Tool consolidation from session analysis (2026-02-25)** - COMPLETE. Phase 50 verified; 2 dead tools already pruned; plan updated. Further reduction blocked by tool-optimization-mapping.md.
 - **Tool consolidation agent_workflow (2026-02-25)** - COMPLETE. Consolidated quick_start, quality_check, safe_manage_file, suggest_workflow into agent_workflow(operation=...). Tool count 49→46. Plan remains partially complete (target ≤40).
 - **Commit pipeline: markdown lint fix (MD056)** - COMPLETE. Fixed table column count in docs/architecture/tool-optimization-mapping.md (pipe in backticks). Phase A passed; 4775 tests, 92.41% coverage.
+- **Tool consolidation follow-up (2026-02-25)** - COMPLETE. Phase 50 done, 2 pruned, agent_workflow consolidated; blocked by mapping KEEP. Path forward: tool-consolidation-next-analysis.
+- **Security & Resilience Step 3 (Error Recovery Audit) (2026-02-25)** - COMPLETE. Audit in docs/security/error-recovery-audit-2026-02-25.md; CancelledError re-raise in context_logging and mcp_stability_config; test_error_recovery_audit.py.
 
 ## 2026-02-24
 

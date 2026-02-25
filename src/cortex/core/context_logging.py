@@ -6,6 +6,7 @@ and fall back to standard Python logging when Context is not available
 are caught so client disconnect does not propagate (avoids TaskGroup noise).
 """
 
+import asyncio
 import logging
 from enum import Enum
 from typing import Literal, cast
@@ -79,6 +80,8 @@ async def log_client(
         try:
             await ctx.log(_level, message, logger_name=logger_name)
         except BaseException as e:
+            if isinstance(e, asyncio.CancelledError):
+                raise
             if _is_connection_error(e):
                 logger.debug(
                     "log_client: connection closed (client disconnected); %s",
@@ -108,6 +111,8 @@ async def report_progress_safe(
         try:
             await ctx.report_progress(progress, total)
         except BaseException as e:
+            if isinstance(e, asyncio.CancelledError):
+                raise
             if _is_connection_error(e):
                 logger.debug(
                     "report_progress_safe: connection closed (client disconnected); %s",
