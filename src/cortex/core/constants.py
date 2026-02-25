@@ -17,6 +17,11 @@ from enum import StrEnum
 
 MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024  # 10 MB - Maximum file size for processing
 MAX_FILE_LINES = 400  # Maximum lines per file (maintainability rule)
+
+# MCP tool input limits (security: prevent resource exhaustion)
+MAX_MANAGE_FILE_CONTENT_BYTES = MAX_FILE_SIZE_BYTES  # Same as processing limit
+MAX_TASK_DESCRIPTION_CHARS = 50_000  # Max chars for load_context task_description
+MAX_SECTIONS_LIST_SIZE = 100  # Max sections list length for manage_file
 MAX_FUNCTION_LINES = 30  # Maximum logical lines per function
 
 # Filenames excluded from file-size check (must match CI and local quality gate)

@@ -21,7 +21,7 @@ Comprehensive review (2026-02-21) identified resilience and security areas needi
 
 ---
 
-## Step 1: MCP Tool Input Sanitization Audit
+## Step 1: MCP Tool Input Sanitization Audit ✅ DONE (2026-02-25)
 
 **Risk:** MCP tools accept string parameters from AI agents. Malformed or adversarial inputs could cause:
 
@@ -31,17 +31,17 @@ Comprehensive review (2026-02-21) identified resilience and security areas needi
 
 **Action:**
 
-1. Audit all 101+ tool parameter handlers for input validation
-2. Verify file path parameters are sandboxed to project root
-3. Check for shell command construction (should use subprocess with args, not string interpolation)
-4. Add input size limits (max string length, max list size, max nesting depth)
-5. Add fuzz tests for critical tools: `manage_file`, `execute_pre_commit_checks`, `load_context`
+1. Audit all 101+ tool parameter handlers for input validation — DONE: FileSystemManager + InputValidator block path traversal
+2. Verify file path parameters are sandboxed to project root — DONE: construct_safe_path + validate_path enforce project root
+3. Check for shell command construction (should use subprocess with args, not string interpolation) — DONE: framework adapters use list args, no shell=True
+4. Add input size limits (max string length, max list size, max nesting depth) — DONE: MAX_MANAGE_FILE_CONTENT_BYTES, MAX_TASK_DESCRIPTION_CHARS, MAX_SECTIONS_LIST_SIZE; manage_file and load_context enforce limits
+5. Add fuzz tests for critical tools: `manage_file`, `execute_pre_commit_checks`, `load_context` — DONE: tests/unit/test_mcp_tool_input_sanitization.py
 
 **Acceptance criteria:** All tools validate inputs. Path traversal blocked. No shell injection possible. Fuzz tests pass.
 
 ---
 
-## Step 2: Resilience Testing for Concurrent Access
+## Step 2: Resilience Testing for Concurrent Access ✅ DONE (2026-02-25)
 
 **Current state:** Cortex uses `asyncio.Lock`, `TrackedSemaphore`, and file locking. But no tests verify behavior under contention.
 

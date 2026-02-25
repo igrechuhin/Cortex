@@ -9,6 +9,10 @@ import time
 from pathlib import Path
 from typing import cast
 
+from cortex.core.constants import (
+    MAX_MANAGE_FILE_CONTENT_BYTES,
+    MAX_SECTIONS_LIST_SIZE,
+)
 from cortex.core.context_logging import MCPContext, log_client
 from cortex.core.file_system import FileSystemManager
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
@@ -55,6 +59,39 @@ async def _log_validation_failure(
     )
 
 
+def _validate_manage_file_input_limits(
+    content: str | None, sections: list[str] | None, operation: FileOperation
+) -> str | None:
+    """Validate content and sections input limits. Returns error JSON or None."""
+    if operation == FileOperation.WRITE and content is not None:
+        size_bytes = len(content.encode("utf-8"))
+        if size_bytes > MAX_MANAGE_FILE_CONTENT_BYTES:
+            return json.dumps(
+                {
+                    "status": "error",
+                    "error": (
+                        f"Content too large: {size_bytes} bytes exceeds "
+                        f"limit of {MAX_MANAGE_FILE_CONTENT_BYTES} bytes"
+                    ),
+                    "error_type": "ValueError",
+                },
+                indent=2,
+            )
+    if sections is not None and len(sections) > MAX_SECTIONS_LIST_SIZE:
+        return json.dumps(
+            {
+                "status": "error",
+                "error": (
+                    f"Sections list too long: {len(sections)} items exceeds "
+                    f"limit of {MAX_SECTIONS_LIST_SIZE}"
+                ),
+                "error_type": "ValueError",
+            },
+            indent=2,
+        )
+    return None
+
+
 async def manage_file_validate_and_run(
     ctx: MCPContext | None,
     file_name: str | None,
@@ -71,6 +108,11 @@ async def manage_file_validate_and_run(
         return err
 
     assert parsed_op is not None and file_name is not None
+    limits_err = _validate_manage_file_input_limits(content, sections, parsed_op)
+    if limits_err is not None:
+        await _log_validation_failure(ctx, file_name, operation)
+        return limits_err
+
     root = await _manage_file_get_root(ctx)
     return await _manage_file_run_or_error(
         ctx,

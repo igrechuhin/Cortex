@@ -20,6 +20,7 @@ from urllib.parse import unquote
 # Import via facade to allow test patching
 import cortex.tools.phase4_optimization as phase4_opt
 from cortex.core.constants import (
+    MAX_TASK_DESCRIPTION_CHARS,
     MCP_TOOL_TIMEOUT_COMPLEX,
     MCP_TOOL_TIMEOUT_FAST,
     MCP_TOOL_TIMEOUT_MEDIUM,
@@ -455,6 +456,23 @@ def _add_zero_file_warning_if_needed(
     return result_str
 
 
+def _validate_task_description_length(task_description: str) -> str | None:
+    """Return error JSON if task_description exceeds max length, else None."""
+    if len(task_description) <= MAX_TASK_DESCRIPTION_CHARS:
+        return None
+    return json.dumps(
+        {
+            "status": "error",
+            "error": (
+                f"task_description too long: {len(task_description)} chars "
+                f"exceeds limit of {MAX_TASK_DESCRIPTION_CHARS}"
+            ),
+            "error_type": "ValueError",
+        },
+        indent=2,
+    )
+
+
 @mcp.tool(annotations=read_only_annotations("Load Context"))
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_COMPLEX)
@@ -486,6 +504,9 @@ async def load_context(
         JSON with selected files, their content, and relevance scores
     """
     await log_client(ctx, "info", "load_context: starting", logger_name=__name__)
+    length_error = _validate_task_description_length(task_description)
+    if length_error:
+        return length_error
     effective_budget, budget_error = _resolve_load_context_budget(
         task_description, token_budget
     )

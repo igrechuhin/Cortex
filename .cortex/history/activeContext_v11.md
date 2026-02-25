@@ -26,6 +26,8 @@
 
 - ✅ **Agent skills and composability (P2)** - COMPLETE (2026-02-25) - Implemented Step 3: added query_usage(query_type="tool_classification") for usage-ranked tool analysis with category. Steps 1–4 complete (skill packs, composites, tool discovery, workflow templates).
 
+- ✅ **Security & Resilience Step 2 - Resilience Testing** - COMPLETE (2026-02-25) - Added tests/unit/test_resilience_concurrent_access.py: semaphore exhaustion/recovery, concurrent manage_file writes to same file, concurrent session_start, lock timeout handling, chaos (random delay, simulated PermissionError). Plan Step 2 done.
+
 ## Completed Work (2026-02-24)
 
 - **Summary (2026-02-24)** - 1 entries archived.
