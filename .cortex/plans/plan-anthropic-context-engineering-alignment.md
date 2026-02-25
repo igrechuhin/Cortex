@@ -49,7 +49,7 @@ Anthropic's engineering blog provides state-of-the-art guidance on context engin
 
 ## Step 2: Tool Response Token Efficiency
 
-**Status:** In progress. Measure and Track done (2026-02-25). Analysis done (2026-02-25): `query_usage(query_type="token_efficiency", days=30)` returns top-10 tools by total and by avg response tokens. Optimization and benchmarking still pending.
+**Status:** Complete (2026-02-25). Measure, Track, Analysis done. Optimization: added `optimization_recommendations` to token_efficiency payload (tool-specific hints for load_context, manage_file, query_usage, etc.). Benchmark: `run_token_benchmark.py` with --baseline/--compare for before/after comparison.
 
 **Insight (from "Writing Tools for Agents"):**
 > Optimize the quantity of context returned in tool responses. Implement pagination, range selection, filtering, and/or truncation with sensible default parameter values.

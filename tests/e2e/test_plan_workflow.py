@@ -3,12 +3,13 @@
 Exercises plan workflow with at least 3 MCP tools in sequence.
 
 Test-only stubs: Plans created here (e2e-plan-test, workflow-plan) are for tmp_path
-only. They must NOT be created in the real .cortex/plans/; the patch on
-resolve_project_root_async ensures all tools use tmp_path. Assertions verify
-created plan paths stay under tmp_path.
+only. They must NOT be created in the real .cortex/plans/ or roadmap. We patch all
+path-resolution entry points (plan_crud, roadmap_operations, usage_context) so every
+tool uses tmp_path and does not pollute the real project.
 """
 
 import json
+from contextlib import contextmanager
 from pathlib import Path
 from typing import cast
 from unittest.mock import AsyncMock, patch
@@ -18,9 +19,37 @@ import pytest
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.tools.file_operations import manage_file
 from cortex.tools.plan_crud import create_plan
-from cortex.tools.roadmap_operations import add_roadmap_entry
+from cortex.tools.roadmap_operations import add_roadmap_entry, remove_roadmap_entry
 from tests.helpers.path_helpers import ensure_test_cortex_structure
 from tests.helpers.tool_call_helpers import get_tool_fn, to_dict
+
+
+@contextmanager
+def _isolated_root_patches(tmp_path: Path):
+    """Yield nested patches so all tools use tmp_path as project root.
+
+    Prevents test from polluting the real roadmap/plans. Must cover:
+    - plan_crud.resolve_project_root_async (create_plan, list)
+    - roadmap_operations.resolve_project_root_async (add_roadmap_entry)
+    - usage_context.get_or_resolve_project_root (manage_file)
+    """
+    mock_resolve = AsyncMock(return_value=tmp_path)
+    mock_get_root = AsyncMock(return_value=tmp_path)
+    with (
+        patch(
+            "cortex.tools.plan_crud.resolve_project_root_async",
+            mock_resolve,
+        ),
+        patch(
+            "cortex.tools.roadmap_operations.resolve_project_root_async",
+            mock_resolve,
+        ),
+        patch(
+            "cortex.core.usage_context.get_or_resolve_project_root",
+            mock_get_root,
+        ),
+    ):
+        yield
 
 
 def _write_minimal_memory_bank_and_roadmap(
@@ -51,11 +80,7 @@ async def test_plan_workflow_create_add_list(tmp_path: Path) -> None:
     plans_dir = get_cortex_path(tmp_path, CortexResourceType.PLANS)
     _write_minimal_memory_bank_and_roadmap(memory_bank_dir, plans_dir)
 
-    with patch(
-        "cortex.tools.plan_crud.resolve_project_root_async",
-        new_callable=AsyncMock,
-        return_value=tmp_path,
-    ):
+    with _isolated_root_patches(tmp_path):
         # 1) create_plan
         create_fn = get_tool_fn(create_plan)
         create_result = await create_fn(
@@ -112,6 +137,19 @@ async def test_plan_workflow_create_add_list(tmp_path: Path) -> None:
         )
         assert "plans" in list_data or "status" in list_data
 
+        # 4) remove_roadmap_entry (cleanup the test entry)
+        remove_fn = get_tool_fn(remove_roadmap_entry)
+        remove_result = await remove_fn(entry_contains="E2E Plan Test", ctx=None)
+        remove_data = cast(
+            dict[str, object],
+            (
+                to_dict(cast(object, remove_result))
+                if isinstance(remove_result, dict)
+                else json.loads(str(remove_result))
+            ),
+        )
+        assert remove_data.get("status") == "success"
+
 
 @pytest.mark.slow
 @pytest.mark.timeout(120)
@@ -122,11 +160,7 @@ async def test_plan_workflow_manage_file_create_plan(tmp_path: Path) -> None:
     plans_dir = get_cortex_path(tmp_path, CortexResourceType.PLANS)
     _write_minimal_memory_bank_and_roadmap(memory_bank_dir, plans_dir)
 
-    with patch(
-        "cortex.tools.plan_crud.resolve_project_root_async",
-        new_callable=AsyncMock,
-        return_value=tmp_path,
-    ):
+    with _isolated_root_patches(tmp_path):
         # 1) manage_file read roadmap
         read_result = await manage_file(operation="read", file_name="roadmap.md")
         read_data = (

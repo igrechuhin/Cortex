@@ -589,6 +589,8 @@ async def test_query_usage_token_efficiency_success() -> None:
     assert len(data["top_by_total"]) == 1
     assert data["top_by_total"][0]["tool_name"] == "load_context"
     assert data["top_by_total"][0]["total_response_tokens"] == 3000
+    assert "optimization_recommendations" in data
+    assert any("load_context" in r for r in data["optimization_recommendations"])
 
 
 @pytest.mark.asyncio

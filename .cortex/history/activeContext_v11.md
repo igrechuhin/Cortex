@@ -8,6 +8,10 @@
 
 - ✅ **Anthropic Step 2 - Token efficiency analysis** - COMPLETE (2026-02-25) - Added query_usage(query_type="token_efficiency", days=30) for top-10 token-expensive tools. phase5_token_efficiency_helpers.py, tests. Optimization and benchmark remain.
 
+- ✅ **E2E Plan Test** - COMPLETE (2026-02-25) - Plan had single step already Done; closed via complete_plan. Plan file already in archive/Other/.
+
+- ✅ **Anthropic Step 2 - Optimization and Benchmark** - COMPLETE (2026-02-25) - Added optimization_recommendations to token_efficiency payload (tool-specific hints); added run_token_benchmark.py for before/after comparison (--baseline, --compare).
+
 ## Completed Work (2026-02-24)
 
 - **Summary (2026-02-24)** - 1 entries archived.

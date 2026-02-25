@@ -4,6 +4,9 @@
 
 - **Anthropic context engineering Step 2 (Measure & Track) (2026-02-25)** - COMPLETE. Instrumented mcp_tool_wrapper with response token counting; response_tokens computed in run_execute_and_finalize, passed to record_usage_finish, and persisted in ToolUsageEvent per tool per session.
 - **Anthropic context engineering Step 2 - Analysis (2026-02-25)** - COMPLETE. Implemented query_usage(query_type="token_efficiency"): top-10 token-expensive tools by total and avg response tokens. phase5_token_efficiency_helpers.py, unit and consolidated tests.
+- **E2E Plan Test (2026-02-25)** - COMPLETE. Plan with single step Done; roadmap entry removed, activeContext/progress updated.
+- **Anthropic Step 2 - Optimization and Benchmark (2026-02-25)** - COMPLETE. Added optimization_recommendations to token_efficiency payload and run_token_benchmark.py script for before/after comparison.
+- **Commit fixes** - run_token_benchmark.py: format and UP017 (datetime.UTC) for synapse_format/synapse_lint. Pre-commit Phase A passed.
 
 ## 2026-02-24
 

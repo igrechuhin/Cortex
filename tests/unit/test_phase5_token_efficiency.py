@@ -118,3 +118,7 @@ async def test_get_token_efficiency_payload_with_data(tmp_path: Path) -> None:
     assert len(payload.top_by_avg) == 2
     assert payload.top_by_avg[0].tool_name == "load_context"
     assert payload.top_by_avg[0].avg_tokens_per_call == 2500.0
+    # Optimization recommendations generated for top tools with hints
+    assert isinstance(payload.optimization_recommendations, list)
+    assert any("load_context" in r for r in payload.optimization_recommendations)
+    assert any("manage_file" in r for r in payload.optimization_recommendations)
