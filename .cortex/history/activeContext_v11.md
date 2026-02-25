@@ -62,6 +62,14 @@
 
 - ✅ **Phase 9.1.9 refactoring_executor split** - COMPLETE (2026-02-25) - Split refactoring_executor.py 761→400 lines; extracted refactoring_executor_history.py, refactoring_executor_impact.py; 25 unit + phase5 tests pass.
 
+- ✅ **Phase 9.1.10 consolidation_detector split** - COMPLETE (2026-02-25) - Split consolidation_detector.py (815→399 lines); extracted consolidation_detector_models, consolidation_detector_similarity, consolidation_detector_opportunities; all tests pass, quality gates pass.
+
+- ✅ **Phase 9.1.11-9.1.12 insight_engine and template_manager verified done** - COMPLETE (2026-02-25) - Marked insight_engine.py (262 lines) and template_manager.py (106 lines) as DONE in Phase 9 plan; both already under 400 lines. Updated plan Recommended Start and Next Phase.
+
+- ✅ **Phase 9.1.13 plan_completion split** - COMPLETE (2026-02-25) - Split plan_completion.py (890→222 lines); extracted plan_completion_content, plan_completion_archive, plan_completion_io, plan_completion_validation, plan_completion_models, plan_completion_ops.
+
+- ✅ **Phase 9.1.14 Split usage_analytics** - COMPLETE (2026-02-25) - Split usage_analytics.py into models, formatters, impl modules for file size compliance (665→338 lines).
+
 ## Completed Work (2026-02-24)
 
 - **Summary (2026-02-24)** - 1 entries archived.

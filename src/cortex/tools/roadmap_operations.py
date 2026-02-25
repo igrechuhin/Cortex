@@ -5,18 +5,30 @@ This module contains MCP tools and helpers for roadmap manipulation,
 including adding entries deterministically to avoid truncation issues.
 """
 
-import re
-from pathlib import Path
-
-from pydantic import BaseModel, ConfigDict, Field
+__all__ = [
+    "add_roadmap_entry",
+    "entry_text_looks_completed",
+    "execute_roadmap_insertion",
+    "execute_roadmap_removal",
+    "execute_roadmap_section_removal",
+    "find_bullet_line_containing",
+    "find_section_range_by_heading",
+    "get_section_bullet_lines",
+    "insert_roadmap_entry",
+    "parse_roadmap_sections",
+    "remove_line_at",
+    "remove_roadmap_entry",
+    "remove_roadmap_section",
+    "remove_section_range",
+    "RoadmapSection",
+    "validate_section_id",
+]
 
 from cortex.core.constants import MCP_TOOL_TIMEOUT_MEDIUM, MemoryBankFile
 from cortex.core.context_logging import MCPContext, log_client
-from cortex.core.exceptions import FileConflictError, FileLockTimeoutError
 from cortex.core.mcp_annotations import safe_write_annotations
 from cortex.core.mcp_stability import ensure_usage_context, mcp_tool_wrapper
 from cortex.core.models import OperationStatus
-from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.core.project_root_resolver import resolve_project_root_async
 from cortex.server import mcp
 from cortex.tools.models import (
@@ -24,659 +36,25 @@ from cortex.tools.models import (
     RemoveRoadmapEntryResult,
     RemoveRoadmapSectionResult,
 )
-from cortex.tools.roadmap_corruption import fix_roadmap_content_if_needed
-
-
-class RoadmapSection(BaseModel):
-    """Represents a section in the roadmap."""
-
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
-
-    name: str = Field(description="Section name (e.g., 'blockers', 'active_work')")
-    header: str = Field(description="Markdown header as it appears in file")
-    start_line: int = Field(ge=0, description="Line number where section starts")
-    end_line: int = Field(ge=0, description="Line number where section ends")
-
-
-def _get_header_to_section_map() -> dict[str, str]:
-    """Get mapping of header text to section identifiers."""
-    return {
-        "Blockers (ASAP Priority)": "blockers",
-        "Active Work (in progress)": "active_work",
-        "Future Enhancements": "future",
-        "Pending plans (from .cortex/plans)": "pending",
-        "Active Work": "active_work",
-    }
-
-
-def _process_section_header(
-    lines: list[str],
-    i: int,
-    header_text: str,
-    header_to_section: dict[str, str],
-    current_section_name: str | None,
-    current_section_start: int,
-    sections: dict[str, RoadmapSection],
-) -> tuple[str | None, int]:
-    """Process a section header and update sections dict.
-
-    Returns: (new_current_section_name, new_current_section_start)
-    """
-    section_id = header_to_section.get(header_text)
-    if current_section_name is not None:
-        sections[current_section_name] = RoadmapSection(
-            name=current_section_name,
-            header=lines[current_section_start],
-            start_line=current_section_start,
-            end_line=i - 1,
-        )
-    if section_id:
-        return (section_id, i)
-    # Unknown header - clear current section so it doesn't get overwritten at end
-    return (None, current_section_start)
-
-
-def _finalize_last_section(
-    sections: dict[str, RoadmapSection],
-    current_section_name: str | None,
-    current_section_start: int,
-    lines: list[str],
-) -> None:
-    """Finalize the last section if one is still open."""
-    if current_section_name is not None:
-        sections[current_section_name] = RoadmapSection(
-            name=current_section_name,
-            header=lines[current_section_start],
-            start_line=current_section_start,
-            end_line=len(lines) - 1,
-        )
-
-
-def parse_roadmap_sections(content: str) -> dict[str, RoadmapSection]:
-    """Parse roadmap to identify section boundaries."""
-    sections: dict[str, RoadmapSection] = {}
-    lines = content.split("\n")
-    header_pattern = re.compile(r"^(#{2,3})\s+(.+)$")
-    header_to_section = _get_header_to_section_map()
-
-    current_section_name: str | None = None
-    current_section_start = 0
-
-    for i, line in enumerate(lines):
-        match = header_pattern.match(line)
-        if not match:
-            continue
-        header_text = match.group(2)
-        current_section_name, current_section_start = _process_section_header(
-            lines,
-            i,
-            header_text,
-            header_to_section,
-            current_section_name,
-            current_section_start,
-            sections,
-        )
-
-    _finalize_last_section(sections, current_section_name, current_section_start, lines)
-    return sections
-
-
-def get_section_bullet_lines(
-    lines: list[str], section: RoadmapSection
-) -> tuple[int, int]:
-    """Get first and last bullet line numbers in a section."""
-    first_bullet = -1
-    last_bullet = -1
-
-    for i in range(section.start_line + 1, section.end_line + 1):
-        if lines[i].startswith("- "):
-            if first_bullet == -1:
-                first_bullet = i
-            last_bullet = i
-
-    return (first_bullet, last_bullet)
-
-
-def _find_insertion_line(
-    lines: list[str],
-    section: RoadmapSection,
-    position: str,
-) -> int:
-    """Determine insertion line number for a new entry."""
-    first_bullet, last_bullet = get_section_bullet_lines(lines, section)
-
-    if position == "first":
-        if first_bullet == -1:
-            return section.start_line + 1
-        return first_bullet
-
-    if last_bullet == -1:
-        return section.start_line + 1
-    return last_bullet + 1
-
-
-def insert_roadmap_entry(
-    content: str,
-    section_id: str,
-    entry_text: str,
-    position: str = "last",
-) -> tuple[str, int | None]:
-    """Insert a roadmap entry into the specified section.
-
-    Deduplicates entries that reference the same plan path to avoid
-    accumulating duplicate blockers for the same plan.
-    """
-    sections = parse_roadmap_sections(content)
-
-    if section_id not in sections:
-        return (content, None)
-
-    section = sections[section_id]
-    lines = content.split("\n")
-
-    if not entry_text.startswith("- "):
-        entry_text = f"- {entry_text}"
-
-    # Extract plan path from entry text, if present
-    plan_path = _extract_plan_path_from_bullet(entry_text)
-    if plan_path:
-        # Check if any existing entry in this section already references this plan path
-        for i in range(section.start_line + 1, section.end_line + 1):
-            if i < len(lines):
-                existing_plan_path = _extract_plan_path_from_bullet(lines[i])
-                if existing_plan_path and plan_path == existing_plan_path:
-                    # Duplicate found - return unchanged content (no-op)
-                    return (content, None)
-
-    # As an extra safety guard, avoid inserting an exact duplicate line within this section
-    section_content = "\n".join(lines[section.start_line : section.end_line + 1])
-    if entry_text.strip() in section_content:
-        return (content, None)
-
-    insert_line = _find_insertion_line(lines, section, position)
-    lines.insert(insert_line, entry_text)
-    updated_content = "\n".join(lines)
-
-    return (updated_content, insert_line + 1)
-
-
-_ADD_ENTRY_COMPLETED_MESSAGE = (
-    "Roadmap records future/upcoming work only. "
-    "Do not add COMPLETED entries here; record completed work in activeContext.md."
+from cortex.tools.roadmap_operations_content import (
+    entry_text_looks_completed,
+    find_bullet_line_containing,
+    find_section_range_by_heading,
+    insert_roadmap_entry,
+    remove_line_at,
+    remove_section_range,
+    validate_section_id,
 )
-
-
-def entry_text_looks_completed(entry_text: str) -> bool:
-    """Return True if entry text appears to be a completed-work entry (not allowed in roadmap)."""
-    normalized = entry_text.strip()
-    if not normalized:
-        return False
-    if not normalized.startswith("- "):
-        normalized = "- " + normalized
-    upper = normalized.upper()
-    return " - COMPLETED" in upper or " - COMPLETE" in upper or " - DONE" in upper
-
-
-def validate_section_id(section: str) -> tuple[str | None, str | None]:
-    """Validate section identifier. Returns (section_id, error_message)."""
-    section_map = {
-        "blockers": "blockers",
-        "active_work": "active_work",
-        "future": "future",
-        "pending": "pending",
-    }
-
-    section_id = section_map.get(section.lower())
-    if not section_id:
-        error_msg = f"Section must be one of: {', '.join(section_map.keys())}"
-        return (None, error_msg)
-
-    return (section_id, None)
-
-
-def _read_roadmap_file(roadmap_path: Path) -> tuple[str | None, str | None]:
-    """Read roadmap file. Returns (content, error_message)."""
-    if not roadmap_path.exists():
-        return (None, f"{MemoryBankFile.ROADMAP} not found at {roadmap_path}")
-
-    try:
-        content = roadmap_path.read_text(encoding="utf-8")
-        return (content, None)
-    except Exception as e:
-        return (None, str(e))
-
-
-async def _write_roadmap_file(
-    roadmap_path: Path, content: str, project_root: Path | None = None
-) -> str | None:
-    """Write updated roadmap with lock-guarding. Returns error_message if failed."""
-    # Lock-guarding: verify lock before writing
-    if project_root is not None:
-        from cortex.tools.file_lock_guard import verify_lock_for_file_operation
-
-        is_allowed, lock_error = await verify_lock_for_file_operation(
-            project_root=project_root,
-            file_name=MemoryBankFile.ROADMAP,
-            content=content,
-            change_description=None,
-        )
-        if not is_allowed:
-            assert lock_error is not None
-            return f"Lock verification failed: {lock_error}"
-
-    try:
-        fixed_content = fix_roadmap_content_if_needed(content)
-        _ = roadmap_path.write_text(fixed_content, encoding="utf-8")
-        return None
-    except (FileConflictError, FileLockTimeoutError) as e:
-        return str(e)
-    except Exception as e:
-        return str(e)
-
-
-def find_bullet_line_containing(content: str, substring: str) -> int | None:
-    """Return 1-based line number of first bullet line containing substring, or None."""
-    needle = substring.strip()
-    if not needle:
-        return None
-    for i, line in enumerate(content.split("\n"), start=1):
-        stripped = line.strip()
-        if stripped.startswith("- ") and needle in line:
-            return i
-    return None
-
-
-def remove_line_at(content: str, one_based_line: int) -> str:
-    """Remove the line at the given 1-based index; return new content."""
-    lines = content.split("\n")
-    idx = one_based_line - 1
-    if idx < 0 or idx >= len(lines):
-        return content
-    new_lines = lines[:idx] + lines[idx + 1 :]
-    return "\n".join(new_lines)
-
-
-def _find_section_end_line(
-    lines: list[str],
-    header_pattern: re.Pattern[str],
-    start_i: int,
-    start_level: int,
-) -> int:
-    """Return 0-based index of last line of section (inclusive)."""
-    end_i = start_i
-    for i in range(start_i + 1, len(lines)):
-        match = header_pattern.match(lines[i])
-        if match and len(match.group(1)) <= start_level:
-            return i - 1
-        end_i = i
-    return end_i
-
-
-def find_section_range_by_heading(
-    content: str, section_heading_contains: str
-) -> tuple[int, int, str] | None:
-    """Find a section by heading text and return (start_0based, end_0based_inclusive, heading).
-
-    Matches ## or ### lines whose rest contains section_heading_contains (case-sensitive).
-    Section ends at the line before the next ## or ### of same or higher level, or end of file.
-    Returns None if no matching heading found.
-    """
-    needle = section_heading_contains.strip()
-    if not needle:
-        return None
-    lines = content.split("\n")
-    header_pattern = re.compile(r"^(#{2,3})\s+(.+)$")
-    for i, line in enumerate(lines):
-        match = header_pattern.match(line)
-        if not match or needle not in match.group(2).strip():
-            continue
-        start_heading = match.group(2).strip()
-        start_level = len(match.group(1))
-        end_i = _find_section_end_line(lines, header_pattern, i, start_level)
-        return (i, end_i, start_heading)
-    return None
-
-
-def remove_section_range(content: str, start_0based: int, end_0based: int) -> str:
-    """Remove lines [start_0based, end_0based] inclusive; return new content."""
-    lines = content.split("\n")
-    if start_0based < 0 or end_0based >= len(lines) or start_0based > end_0based:
-        return content
-    new_lines = lines[:start_0based] + lines[end_0based + 1 :]
-    return "\n".join(new_lines)
-
-
-def _extract_plan_path_from_bullet(line: str) -> str | None:
-    """Extract a plan path from a roadmap bullet, if present.
-
-    Expected patterns (examples):
-    - \"Plan: .cortex/plans/phase-58-...md.\"
-    - \"Plan: plans/phase-58-...md\"
-
-    Returns:
-        The raw plan path string (without surrounding punctuation) or None
-        if no plan reference is found.
-    """
-    # Simple, conservative heuristic: look for \"Plan:\" followed by a path-like token.
-    match = re.search(r"Plan:\s*([^\s]+)", line)
-    if not match:
-        return None
-    # Strip common trailing punctuation like '.' or ',' from the captured path.
-    raw = match.group(1).strip()
-    return raw.rstrip(".,")
-
-
-def _is_plan_marked_complete(plan_path: Path) -> bool:
-    """Return True if the plan file exists and its Status line indicates completion.
-
-    A plan is treated as complete when its Status line contains the word
-    \"COMPLETE\" or \"COMPLETED\" (case-insensitive). Missing or unreadable
-    plans are treated as *not* complete so that removal is conservative.
-    """
-    if not plan_path.exists():
-        return False
-    try:
-        text = plan_path.read_text(encoding="utf-8")
-    except OSError:
-        return False
-    status_match = re.search(
-        r"^\\*\\*Status:\\*\\*\\s*(.+)$", text, flags=re.IGNORECASE | re.MULTILINE
-    )
-    if not status_match:
-        return False
-    status_value = status_match.group(1).strip().upper()
-    return "COMPLETE" in status_value
-
-
-def _validate_plan_status_before_removal(
-    root_path: Path, roadmap_content: str, one_based_line: int
-) -> str | None:
-    """Enforce guardrail: do not remove roadmap entries for PENDING/IN PROGRESS plans.
-
-    If the target bullet references a plan file under the plans directory and that
-    plan is not marked COMPLETE/COMPLETED, return an error message explaining why
-    removal is blocked. Returns None when it is safe to proceed.
-    """
-    lines = roadmap_content.split("\\n")
-    idx = one_based_line - 1
-    if idx < 0 or idx >= len(lines):
-        return None
-    line = lines[idx]
-    plan_ref = _extract_plan_path_from_bullet(line)
-    if not plan_ref:
-        return None
-
-    plans_root = get_cortex_path(root_path, CortexResourceType.PLANS)
-    # Normalize common plan path styles against the plans root.
-    if plan_ref.startswith(".cortex/plans/"):
-        plan_rel = plan_ref[len(".cortex/plans/") :]
-        candidate = plans_root / plan_rel
-    elif plan_ref.startswith("plans/"):
-        plan_rel = plan_ref[len("plans/") :]
-        candidate = plans_root / plan_rel
-    elif plan_ref.startswith("cortex/plans/"):
-        plan_rel = plan_ref[len("cortex/plans/") :]
-        candidate = plans_root / plan_rel
-    else:
-        # If it's not clearly a plan path, do not block.
-        return None
-
-    if not _is_plan_marked_complete(candidate):
-        return (
-            "Refusing to remove roadmap entry for a plan that is not marked "
-            "COMPLETE. Update the plan's **Status:** to COMPLETE/COMPLETED and "
-            "use complete_plan(), or leave the roadmap entry in place for "
-            "PENDING/IN PROGRESS work."
-        )
-    return None
-
-
-def _removal_error(message: str, error: str) -> RemoveRoadmapEntryResult:
-    """Build error result for roadmap removal."""
-    return RemoveRoadmapEntryResult(
-        status=OperationStatus.ERROR,
-        file_name=MemoryBankFile.ROADMAP,
-        message=message,
-        line_removed=None,
-        error=error,
-    )
-
-
-def _section_removal_error(message: str, error: str) -> RemoveRoadmapSectionResult:
-    """Build error result for roadmap section removal."""
-    return RemoveRoadmapSectionResult(
-        status=OperationStatus.ERROR,
-        file_name=MemoryBankFile.ROADMAP,
-        message=message,
-        section_heading=None,
-        lines_removed=None,
-        error=error,
-    )
-
-
-async def execute_roadmap_removal(
-    root_path: Path, entry_contains: str
-) -> RemoveRoadmapEntryResult:
-    """Remove first roadmap bullet line containing entry_contains. Returns result."""
-    roadmap_path, current_content, read_error = _prepare_roadmap_for_removal(root_path)
-    if read_error:
-        return _removal_error("Failed to read roadmap", read_error)
-    assert current_content is not None
-
-    line_num, find_error = _find_and_validate_removal_line(
-        root_path, current_content, entry_contains
-    )
-    if find_error:
-        return find_error
-    assert line_num is not None
-
-    return await _perform_roadmap_removal(
-        roadmap_path, current_content, line_num, root_path
-    )
-
-
-def _prepare_roadmap_for_removal(
-    root_path: Path,
-) -> tuple[Path, str | None, str | None]:
-    """Prepare roadmap file for removal operation."""
-    memory_bank_root = get_cortex_path(root_path, CortexResourceType.MEMORY_BANK)
-    roadmap_path = memory_bank_root / MemoryBankFile.ROADMAP
-    current_content, read_error = _read_roadmap_file(roadmap_path)
-    return roadmap_path, current_content, read_error
-
-
-def _find_and_validate_removal_line(
-    root_path: Path, current_content: str, entry_contains: str
-) -> tuple[int | None, RemoveRoadmapEntryResult | None]:
-    """Find and validate the line to remove."""
-    line_num = find_bullet_line_containing(current_content, entry_contains)
-    if line_num is None:
-        return None, _removal_error(
-            "No matching bullet found",
-            "No bullet line containing given text found in roadmap",
-        )
-
-    guardrail_error = _validate_plan_status_before_removal(
-        root_path, current_content, line_num
-    )
-    if guardrail_error is not None:
-        return None, _removal_error(
-            "Refused to remove roadmap entry for non-complete plan", guardrail_error
-        )
-
-    return line_num, None
-
-
-async def _perform_roadmap_removal(
-    roadmap_path: Path,
-    current_content: str,
-    line_num: int,
-    project_root: Path | None = None,
-) -> RemoveRoadmapEntryResult:
-    """Perform the actual roadmap removal and write."""
-    updated = remove_line_at(current_content, line_num)
-    write_error = await _write_roadmap_file(roadmap_path, updated, project_root)
-    if write_error:
-        return _removal_error("Failed to write roadmap", write_error)
-
-    return RemoveRoadmapEntryResult(
-        status=OperationStatus.SUCCESS,
-        file_name=MemoryBankFile.ROADMAP,
-        message=f"Removed roadmap entry at line {line_num}",
-        line_removed=line_num,
-        error=None,
-    )
-
-
-async def execute_roadmap_section_removal(
-    root_path: Path, section_heading_contains: str
-) -> RemoveRoadmapSectionResult:
-    """Remove a roadmap section by heading text. Returns result."""
-    roadmap_path, current_content, read_error = _prepare_roadmap_for_removal(root_path)
-    if read_error:
-        return _section_removal_error("Failed to read roadmap", read_error)
-    assert current_content is not None
-
-    range_result = find_section_range_by_heading(
-        current_content, section_heading_contains
-    )
-    if range_result is None:
-        return _section_removal_error(
-            "No matching section found",
-            f"No ##/### heading containing '{section_heading_contains.strip()}' found",
-        )
-    start_i, end_i, heading = range_result
-    lines_removed = end_i - start_i + 1
-    updated = remove_section_range(current_content, start_i, end_i)
-    write_error = await _write_roadmap_file(roadmap_path, updated, root_path)
-    if write_error:
-        return _section_removal_error("Failed to write roadmap", write_error)
-
-    return RemoveRoadmapSectionResult(
-        status=OperationStatus.SUCCESS,
-        file_name=MemoryBankFile.ROADMAP,
-        message=f"Removed section '{heading}' ({lines_removed} lines)",
-        section_heading=heading,
-        lines_removed=lines_removed,
-        error=None,
-    )
-
-
-def _handle_read_error(
-    section_id: str | None, read_error: str
-) -> AddRoadmapEntryResult:
-    """Handle read errors. Returns error result."""
-    return AddRoadmapEntryResult(
-        status=OperationStatus.ERROR,
-        file_name=MemoryBankFile.ROADMAP,
-        message="Failed to read roadmap",
-        line_inserted=None,
-        section=None,
-        error=read_error,
-    )
-
-
-def _handle_insert_failure(
-    section_id: str,
-) -> AddRoadmapEntryResult:
-    """Handle insert failures. Returns error result."""
-    return AddRoadmapEntryResult(
-        status=OperationStatus.ERROR,
-        file_name=MemoryBankFile.ROADMAP,
-        message="Failed to insert entry",
-        line_inserted=None,
-        section=section_id,
-        error=f"Could not find section '{section_id}' in roadmap",
-    )
-
-
-def _handle_write_error(section_id: str, write_error: str) -> AddRoadmapEntryResult:
-    """Handle write errors. Returns error result."""
-    return AddRoadmapEntryResult(
-        status=OperationStatus.ERROR,
-        file_name=MemoryBankFile.ROADMAP,
-        message="Conflict or lock timeout",
-        line_inserted=None,
-        section=section_id,
-        error=write_error,
-    )
-
-
-def _make_insert_success_result(
-    section_id: str, line_inserted: int
-) -> AddRoadmapEntryResult:
-    """Build success result for roadmap insertion."""
-    return AddRoadmapEntryResult(
-        status=OperationStatus.SUCCESS,
-        file_name=MemoryBankFile.ROADMAP,
-        message=f"Entry added to '{section_id}' section at line {line_inserted}",
-        line_inserted=line_inserted,
-        section=section_id,
-        error=None,
-    )
-
-
-def _handle_section_validation_error(
-    section: str, section_error: str
-) -> AddRoadmapEntryResult:
-    """Handle section validation errors."""
-    return AddRoadmapEntryResult(
-        status=OperationStatus.ERROR,
-        file_name=MemoryBankFile.ROADMAP,
-        message=f"Unknown section: {section}",
-        line_inserted=None,
-        section=None,
-        error=section_error,
-    )
-
-
-def _handle_completed_entry_rejected() -> AddRoadmapEntryResult:
-    """Return error result when entry looks like completed work."""
-    return AddRoadmapEntryResult(
-        status=OperationStatus.ERROR,
-        file_name=MemoryBankFile.ROADMAP,
-        message="Completed entries not allowed in roadmap",
-        line_inserted=None,
-        section=None,
-        error=_ADD_ENTRY_COMPLETED_MESSAGE,
-    )
-
-
-async def execute_roadmap_insertion(
-    root_path: Path,
-    section: str,
-    entry_text: str,
-    position: str,
-) -> AddRoadmapEntryResult:
-    """Execute insertion. Returns AddRoadmapEntryResult."""
-    if entry_text_looks_completed(entry_text):
-        return _handle_completed_entry_rejected()
-
-    section_id, section_error = validate_section_id(section)
-    if section_error:
-        return _handle_section_validation_error(section, section_error)
-
-    memory_bank_root = get_cortex_path(root_path, CortexResourceType.MEMORY_BANK)
-    roadmap_path = memory_bank_root / MemoryBankFile.ROADMAP
-    current_content, read_error = _read_roadmap_file(roadmap_path)
-    if read_error:
-        return _handle_read_error(section_id, read_error)
-
-    assert current_content is not None
-    assert section_id is not None
-
-    updated_content, line_inserted = insert_roadmap_entry(
-        current_content, section_id, entry_text, position
-    )
-
-    if line_inserted is None:
-        return _handle_insert_failure(section_id)
-
-    write_error = await _write_roadmap_file(roadmap_path, updated_content, root_path)
-    if write_error:
-        return _handle_write_error(section_id, write_error)
-
-    return _make_insert_success_result(section_id, line_inserted)
+from cortex.tools.roadmap_operations_insert import execute_roadmap_insertion
+from cortex.tools.roadmap_operations_parsing import (
+    RoadmapSection,
+    get_section_bullet_lines,
+    parse_roadmap_sections,
+)
+from cortex.tools.roadmap_operations_removal import (
+    execute_roadmap_removal,
+    execute_roadmap_section_removal,
+)
 
 
 async def _add_roadmap_entry_impl(
@@ -693,8 +71,8 @@ async def _add_roadmap_entry_impl(
 
     await log_client(
         ctx,
-        "info" if result.status == "success" else "warning",
-        f"add_roadmap_entry: {result.status}",
+        "info" if result.status == OperationStatus.SUCCESS else "warning",
+        f"add_roadmap_entry: {result.status.value}",
         logger_name=__name__,
     )
 
@@ -754,8 +132,8 @@ async def _remove_roadmap_entry_impl(
     result = await execute_roadmap_removal(root, entry_contains)
     await log_client(
         ctx,
-        "info" if result.status == "success" else "warning",
-        f"remove_roadmap_entry: {result.status}",
+        "info" if result.status == OperationStatus.SUCCESS else "warning",
+        f"remove_roadmap_entry: {result.status.value}",
         logger_name=__name__,
     )
     return result.model_dump_json()
@@ -812,8 +190,8 @@ async def _remove_roadmap_section_impl(
     result = await execute_roadmap_section_removal(root, section_heading_contains)
     await log_client(
         ctx,
-        "info" if result.status == "success" else "warning",
-        f"remove_roadmap_section: {result.status}",
+        "info" if result.status == OperationStatus.SUCCESS else "warning",
+        f"remove_roadmap_section: {result.status.value}",
         logger_name=__name__,
     )
     return result.model_dump_json()

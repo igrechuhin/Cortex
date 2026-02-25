@@ -34,6 +34,10 @@
 - **Phase 9.1.8 mcp_stability_config split (2026-02-25)** - COMPLETE. Split mcp_stability_config.py (756→215 lines) into mcp_stability_semaphores.py, mcp_stability_finalize.py. Quality gates pass.
 - **Phase 9.1.9 refactoring_executor split (2026-02-25)** - COMPLETE. Split refactoring_executor.py 761→400 lines; extracted refactoring_executor_history, refactoring_executor_impact; all tests pass.
 - **Commit** - Phase 9.1.8 mcp_stability_config, Phase 9.1.9 refactoring_executor splits; mcp_stability_semaphores, mcp_stability_finalize, refactoring_executor_history, refactoring_executor_impact. Tests 4780 pass, coverage 92.76%.
+- **Phase 9.1.10 consolidation_detector split** - COMPLETE. Split consolidation_detector.py 815→399 lines; extracted consolidation_detector_models, consolidation_detector_similarity, consolidation_detector_opportunities. All tests pass, quality gates pass.
+- **Phase 9.1.11-9.1.12 plan update (2026-02-25)** - COMPLETE. Verified insight_engine (262 lines) and template_manager (106 lines) already under 400; marked done in phase-9-excellence-98.md. Next Phase: fix integration tests, TODOs, extract long functions.
+- **Phase 9.1.13 plan_completion split (2026-02-25)** - COMPLETE. Split plan_completion.py 890→222 lines; extracted 6 helper modules (content, archive, io, validation, models, ops).
+- **Phase 9.1.14 Split usage_analytics (2026-02-25)** - COMPLETE. Split usage_analytics.py (665→338 lines) into usage_analytics_models, usage_analytics_formatters, usage_analytics_impl. Tests pass, coverage 92.77%.
 
 ## 2026-02-24
 

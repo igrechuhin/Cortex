@@ -53,10 +53,12 @@ Phase 9 builds on Phase 7's achievements (9.2/10) to reach excellence at 9.8+/10
 
 1. **Split 20 oversized files** (60-70 hours)
    - consolidated.py: 1,189 → 4 files <400 lines each (8h)
-   - insight_engine.py: 763 → 2 files (4h)
-   - template_manager.py: 797 → 2 files (4h)
+   - insight_engine.py: 763 → 262 lines (9.1.11 DONE — already split)
+   - template_manager.py: 797 → 106 lines (9.1.12 DONE — delegates to loader/renderer/questions)
    - pattern_analyzer.py: 769 → 2 files (4h)
    - refactoring_executor.py: 761 → 400 (9.1.9 DONE 2026-02-25)
+   - consolidation_detector.py: 815 → 399 (9.1.10 DONE 2026-02-25)
+   - roadmap_operations.py: 662 → 236 (9.1.15 DONE 2026-02-25)
    - reorganization_planner.py: 457 → <400 (9.1.6 DONE 2026-02-25)
    - mcp_stability.py: 971 → 376 (9.1.7 DONE 2026-02-25)
    - mcp_stability_config.py: 756 → 215 (9.1.8 DONE 2026-02-25)
@@ -490,9 +492,15 @@ Phase 9 builds on Phase 7's achievements (9.2/10) to reach excellence at 9.8+/10
 **Phase 9.1.7: Split mcp_stability.py** (2026-02-25) — ✅ DONE (971 → 376 lines; extracted mcp_stability_usage, mcp_stability_retry, mcp_stability_progress)
 **Phase 9.1.8: Split mcp_stability_config.py** (2026-02-25) — ✅ DONE (756 → 215 lines; extracted mcp_stability_semaphores, mcp_stability_finalize)
 **Phase 9.1.9: Split refactoring_executor.py** (2026-02-25) — ✅ DONE (761 → 400 lines; extracted refactoring_executor_history, refactoring_executor_impact)
+**Phase 9.1.10: Split consolidation_detector.py** (2026-02-25) — ✅ DONE (815 → 399 lines; extracted consolidation_detector_models, consolidation_detector_similarity, consolidation_detector_opportunities)
+**Phase 9.1.11: insight_engine.py** — ✅ DONE (262 lines; already split into insight_usage_org, insight_dep_quality, insight_formatter, insight_summary)
+**Phase 9.1.12: template_manager.py** — ✅ DONE (106 lines; delegates to template_loader, template_renderer, template_questions)
+**Phase 9.1.13: Split plan_completion.py** (2026-02-25) — ✅ DONE (890 → 222 lines; extracted plan_completion_content, plan_completion_archive, plan_completion_io, plan_completion_validation, plan_completion_models, plan_completion_ops)
+**Phase 9.1.14: Split usage_analytics.py** (2026-02-25) — ✅ DONE (665 → 338 lines; extracted usage_analytics_models, usage_analytics_formatters, usage_analytics_impl)
+**Phase 9.1.15: Split roadmap_operations.py** (2026-02-25) — ✅ DONE (662 → 236 lines; extracted roadmap_operations_parsing, roadmap_operations_content, roadmap_operations_io, roadmap_operations_removal, roadmap_operations_insert)
 
 ---
 
 Last Updated: 2026-02-25
-Status: 🚀 IN PROGRESS - Phase 9.1.9 complete; refactoring_executor 400 lines; quality gates pass
-Next Phase: Phase 9.1 - Rules Compliance Excellence (split next oversized file: consolidation_detector, insight_engine, etc.)
+Status: 🚀 IN PROGRESS - Phase 9.1.15 complete; roadmap_operations 236 lines; quality gates pass
+Next Phase: Phase 9.1 - Rules Compliance Excellence (fix integration tests, complete TODOs; next oversized: consolidated.py 1189, pattern_analyzer 769)
