@@ -515,6 +515,83 @@ async def test_query_usage_production_monitoring_success() -> None:
 
 
 @pytest.mark.asyncio
+async def test_query_usage_token_efficiency_unavailable() -> None:
+    """query_usage with query_type=token_efficiency returns unavailable when tracker is None."""
+    with (
+        patch(
+            "cortex.core.project_root_resolver.resolve_project_root_async",
+            new_callable=AsyncMock,
+            return_value=Path("/tmp"),
+        ),
+        patch(
+            "cortex.tools.usage_analytics._get_tracker",
+            new_callable=AsyncMock,
+            return_value=None,
+        ),
+    ):
+        with patch(
+            "cortex.tools.query_usage_operations.log_client",
+            new_callable=AsyncMock,
+        ):
+            result = await query_usage(
+                query_type="token_efficiency",
+                days=30,
+                ctx=None,
+            )
+    data = json.loads(result)
+    assert data["status"] == "unavailable"
+    assert data["days"] == 30
+    assert "message" in data
+
+
+@pytest.mark.asyncio
+async def test_query_usage_token_efficiency_success() -> None:
+    """query_usage with query_type=token_efficiency returns success with top tools when data exists."""
+    mock_tracker = MagicMock()
+    mock_tracker.search_usage = AsyncMock(
+        return_value=[
+            ToolUsageEvent(
+                tool_name="load_context",
+                timestamp="2026-02-21T12:00:00Z",
+                duration_ms=100.0,
+                success=True,
+                response_tokens=3000,
+            ),
+        ]
+    )
+    with (
+        patch(
+            "cortex.core.project_root_resolver.resolve_project_root_async",
+            new_callable=AsyncMock,
+            return_value=Path("/tmp"),
+        ),
+        patch(
+            "cortex.tools.usage_analytics._get_tracker",
+            new_callable=AsyncMock,
+            return_value=mock_tracker,
+        ),
+    ):
+        with patch(
+            "cortex.tools.query_usage_operations.log_client",
+            new_callable=AsyncMock,
+        ):
+            result = await query_usage(
+                query_type="token_efficiency",
+                days=30,
+                ctx=None,
+            )
+    data = json.loads(result)
+    assert data["status"] == "success"
+    assert data["days"] == 30
+    assert data["event_count_with_tokens"] == 1
+    assert "top_by_total" in data
+    assert "top_by_avg" in data
+    assert len(data["top_by_total"]) == 1
+    assert data["top_by_total"][0]["tool_name"] == "load_context"
+    assert data["top_by_total"][0]["total_response_tokens"] == 3000
+
+
+@pytest.mark.asyncio
 async def test_query_usage_handler_exception_returns_error_json() -> None:
     """query_usage when handler raises returns error JSON."""
     with patch(

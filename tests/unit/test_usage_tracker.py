@@ -179,6 +179,25 @@ class TestRecordToolUsage:
         assert err_dict.get("ValueError") == 1
 
     @pytest.mark.asyncio
+    async def test_record_with_response_tokens(self, tmp_path: Path) -> None:
+        """Test recording with response_tokens (Phase 62 token-efficiency tracking)."""
+        root = _make_project_root(tmp_path)
+        tracker = UsageTracker(root)
+        await tracker.record_tool_usage(
+            tool_name="load_context",
+            duration_ms=10.0,
+            success=True,
+            response_tokens=2048,
+        )
+        today = datetime.now(UTC).strftime("%Y-%m-%d")
+        relative_key = f"usage/events/{today}.json"
+        raw = await read_cache_json(root, relative_key)
+        assert isinstance(raw, list) and raw
+        first = raw[0]
+        first_d = cast(dict[str, object], first) if isinstance(first, dict) else {}
+        assert first_d.get("response_tokens") == 2048
+
+    @pytest.mark.asyncio
     async def test_record_phase57_retry_and_validation_fields(
         self, tmp_path: Path
     ) -> None:

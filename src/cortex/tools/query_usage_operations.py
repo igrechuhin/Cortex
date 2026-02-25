@@ -215,6 +215,23 @@ async def _run_production_monitoring(
     return payload.model_dump_json(indent=2)
 
 
+async def _run_token_efficiency(
+    params: QueryUsageParams, ctx: MCPContext | None
+) -> str:
+    """Token efficiency: top token-expensive tools by total and by avg (Anthropic Step 2)."""
+    from cortex.core.project_root_resolver import resolve_project_root_async
+    from cortex.tools import usage_analytics
+    from cortex.tools.phase5_token_efficiency_helpers import (
+        get_token_efficiency_payload,
+    )
+
+    root = await resolve_project_root_async(None, ctx)
+    tracker = await usage_analytics._get_tracker(root)  # type: ignore[attr-defined]
+    days = max(1, min(365, params.days))
+    payload = await get_token_efficiency_payload(root, tracker, days=days)
+    return payload.model_dump_json(indent=2)
+
+
 _Handler = Callable[[QueryUsageParams, MCPContext | None], Awaitable[str]]
 _USAGE_HANDLERS: dict[str, _Handler] = {
     "stats": _run_usage_stats,
@@ -228,6 +245,7 @@ _USAGE_HANDLERS: dict[str, _Handler] = {
     "anomalies": _run_anomalies,
     "tool_description_optimization": _run_tool_description_optimization,
     "production_monitoring": _run_production_monitoring,
+    "token_efficiency": _run_token_efficiency,
 }
 
 
@@ -318,7 +336,9 @@ async def query_usage(
     RETURNS: JSON (or markdown when format=markdown) with result for
     query_type: stats, unused, report, recommendations, search, events,
     observation, timeline, anomalies, tool_description_optimization,
-    production_monitoring. tool_name required for tool_description_optimization.
+    production_monitoring, token_efficiency. tool_name required for
+    tool_description_optimization. token_efficiency shows top token-expensive
+    tools (Anthropic context engineering Step 2).
     """
     await _log_query_usage_start(ctx, query_type)
     params = _build_query_usage_params_from_locals(locals())

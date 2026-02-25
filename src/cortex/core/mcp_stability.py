@@ -590,6 +590,7 @@ async def _finalize_execution(
     kind: HandlerKind,
     retry_count: int | None = None,
     param_validation_failure: str | None = None,
+    response_tokens: int | None = None,
 ) -> None:  # Finalize execution: cancel progress and record usage.
     if not was_cancelled:
         await _cancel_progress_and_report_done(progress_task, ctx, func_name)
@@ -601,6 +602,7 @@ async def _finalize_execution(
         kind=kind,
         retry_count=retry_count,
         param_validation_failure=param_validation_failure,
+        response_tokens=response_tokens,
     )
 
 

@@ -79,6 +79,24 @@ class TestToolUsageEvent:
         assert event2.retry_count is None
         assert event2.result_used is None
 
+    def test_event_phase62_response_tokens(self) -> None:
+        """Test Phase 62 field: response_tokens (token-efficiency tracking)."""
+        event = ToolUsageEvent(
+            tool_name="load_context",
+            timestamp="2026-02-01T12:00:00+00:00",
+            duration_ms=10.0,
+            success=True,
+            response_tokens=1500,
+        )
+        assert event.response_tokens == 1500
+        event_none = ToolUsageEvent(
+            tool_name="manage_file",
+            timestamp="2026-02-01T12:00:01+00:00",
+            duration_ms=5.0,
+            success=True,
+        )
+        assert event_none.response_tokens is None
+
 
 class TestToolUsageStats:
     """Test ToolUsageStats model."""

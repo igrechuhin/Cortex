@@ -7,14 +7,12 @@ used by mcp_stability to avoid exceeding the main module file size limit.
 from __future__ import annotations
 
 import asyncio
+import json
 import logging
 import time
 from collections.abc import Awaitable, Callable
 from types import TracebackType
-from typing import TYPE_CHECKING, NoReturn, cast
-
-if TYPE_CHECKING:
-    from cortex.managers.usage_tracker import UsageTracker
+from typing import NoReturn, cast
 
 import anyio
 
@@ -24,6 +22,7 @@ from cortex.core.constants import (
 )
 from cortex.core.mcp_async_utils import cancel_and_drain_progress_task
 from cortex.core.models import HandlerKind, JsonValue
+from cortex.managers.usage_tracker import UsageTracker
 
 
 class TrackedSemaphore:
@@ -395,13 +394,56 @@ async def _resolve_usage_tracker(
 ) -> UsageTracker | None:
     """Resolve usage_tracker from managers; None if missing or not ready."""
     from cortex.managers.lazy_manager import LazyManager
-    from cortex.managers.usage_tracker import UsageTracker
 
     raw = managers.get("usage_tracker") if managers else None
     if raw is None:
         return None
     tracker = cast(object, await raw.get() if isinstance(raw, LazyManager) else raw)
     return tracker if isinstance(tracker, UsageTracker) else None
+
+
+def _result_to_countable_string(result: object) -> str:
+    """Convert tool result to string for token counting (Phase 62)."""
+    if result is None:
+        return ""
+    if isinstance(result, str):
+        return result
+    try:
+        return json.dumps(result, default=str)
+    except (TypeError, ValueError):
+        return str(result)
+
+
+async def _count_response_tokens(result: object) -> int | None:
+    """Count tokens in tool response; returns None on failure or missing counter."""
+    from cortex.core.token_counter import TokenCounter
+    from cortex.core.usage_context import get_current_managers
+    from cortex.managers.lazy_manager import LazyManager
+
+    managers = get_current_managers()
+    if not managers:
+        return None
+    raw = managers.get("tokens")
+    if raw is None:
+        return None
+    token_counter: TokenCounter | None = None
+    if isinstance(raw, LazyManager):
+        try:
+            resolved = cast(object, await raw.get())
+            token_counter = resolved if isinstance(resolved, TokenCounter) else None
+        except Exception:
+            return None
+    elif isinstance(raw, TokenCounter):
+        token_counter = raw
+    else:
+        return None
+    if token_counter is None:
+        return None
+    try:
+        text = _result_to_countable_string(result)
+        return token_counter.count_tokens(text) if text else 0
+    except Exception:
+        return None
 
 
 async def record_usage_if_available(
@@ -416,7 +458,6 @@ async def record_usage_if_available(
 ) -> None:
     """Record tool or resource usage if UsageTracker is available."""
     from cortex.core.usage_context import get_current_managers
-    from cortex.managers.usage_tracker import UsageTracker
 
     try:
         tracker: UsageTracker | None = await _resolve_usage_tracker(
@@ -599,6 +640,69 @@ async def run_and_finalize_impl[T](
         )
 
 
+async def _finalize_with_response_tokens(
+    finalize_fn: Callable[..., Awaitable[None]],
+    result: object,
+    success: bool,
+    progress_task: asyncio.Task[None] | None,
+    ctx: object,
+    func_name: str,
+    start_ns: int,
+    was_cancelled: bool,
+    error_type: str | None,
+    kind: HandlerKind,
+    retry_count: int | None,
+    param_validation_failure: str | None,
+) -> None:
+    """Compute response_tokens when success, then call finalize_fn."""
+    response_tokens: int | None = (
+        await _count_response_tokens(result) if success else None
+    )
+    await finalize_fn(
+        progress_task,
+        ctx,
+        func_name,
+        start_ns,
+        was_cancelled,
+        success,
+        error_type,
+        kind,
+        retry_count=retry_count,
+        param_validation_failure=param_validation_failure,
+        response_tokens=response_tokens,
+    )
+
+
+async def _execute_then_finalize[T_run](
+    finalize_fn: Callable[..., Awaitable[None]],
+    execute_fn: Callable[
+        [], Awaitable[tuple[T_run, bool, str | None, bool, int | None, str | None]]
+    ],
+    progress_task: asyncio.Task[None] | None,
+    ctx: object,
+    func_name: str,
+    start_ns: int,
+    kind: HandlerKind,
+) -> T_run:
+    """Execute and finalize on success; caller handles exceptions."""
+    result, s, et, wc, retry_count, pvf = await execute_fn()
+    await _finalize_with_response_tokens(
+        finalize_fn,
+        result,
+        s,
+        progress_task,
+        ctx,
+        func_name,
+        start_ns,
+        wc,
+        et,
+        kind,
+        retry_count,
+        pvf,
+    )
+    return result
+
+
 async def run_execute_and_finalize[T_run](
     finalize_fn: Callable[..., Awaitable[None]],
     execute_fn: Callable[
@@ -612,20 +716,9 @@ async def run_execute_and_finalize[T_run](
 ) -> T_run:
     """Run execute_fn, then call finalize_fn (cancel progress, record usage)."""
     try:
-        result, s, et, wc, retry_count, pvf = await execute_fn()
-        await finalize_fn(
-            progress_task,
-            ctx,
-            func_name,
-            start_ns,
-            wc,
-            s,
-            et,
-            kind,
-            retry_count=retry_count,
-            param_validation_failure=pvf,
+        return await _execute_then_finalize(
+            finalize_fn, execute_fn, progress_task, ctx, func_name, start_ns, kind
         )
-        return result
     except Exception as e:
         await finalize_on_exception(
             progress_task, ctx, func_name, start_ns, kind, e, finalize_fn
