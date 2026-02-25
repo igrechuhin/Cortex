@@ -371,11 +371,11 @@ class TestLongRunningSemaphoreWait:
     @pytest.mark.asyncio
     async def test_second_long_running_waits_then_succeeds(self) -> None:
         """Second long-running call waits for first to finish then runs (reduces commit blocking)."""
-        import cortex.core.mcp_stability_config as config_mod
+        import cortex.core.mcp_stability_semaphores as semaphores_mod
         from cortex.core.mcp_stability import _run_and_finalize
         from cortex.core.mcp_stability_config import get_long_running_semaphore
 
-        config_mod._long_running_tools_semaphore = None
+        semaphores_mod._long_running_tools_semaphore = None
         _ = get_long_running_semaphore()
         first_done: asyncio.Event = asyncio.Event()
         first_acquired: asyncio.Event = asyncio.Event()
@@ -393,7 +393,7 @@ class TestLongRunningSemaphoreWait:
             return "second", True, None, False, None, None
 
         with patch(
-            "cortex.core.mcp_stability_config.LONG_RUNNING_SEMAPHORE_WAIT_SECONDS",
+            "cortex.core.mcp_stability_semaphores.LONG_RUNNING_SEMAPHORE_WAIT_SECONDS",
             1.0,
         ):
             # Start first (holds semaphore), then second (waits then runs)
@@ -429,11 +429,11 @@ class TestLongRunningSemaphoreWait:
     @pytest.mark.asyncio
     async def test_second_long_running_fails_after_wait_timeout(self) -> None:
         """Second long-running call raises RuntimeError if first runs longer than wait."""
-        import cortex.core.mcp_stability_config as config_mod
+        import cortex.core.mcp_stability_semaphores as semaphores_mod
         from cortex.core.mcp_stability import _run_and_finalize
         from cortex.core.mcp_stability_config import get_long_running_semaphore
 
-        config_mod._long_running_tools_semaphore = None
+        semaphores_mod._long_running_tools_semaphore = None
         sem = get_long_running_semaphore()
         await sem.acquire()
         try:
@@ -444,7 +444,7 @@ class TestLongRunningSemaphoreWait:
                 return "fast", True, None, False, None, None
 
             with patch(
-                "cortex.core.mcp_stability_config.LONG_RUNNING_SEMAPHORE_WAIT_SECONDS",
+                "cortex.core.mcp_stability_semaphores.LONG_RUNNING_SEMAPHORE_WAIT_SECONDS",
                 0.15,
             ):
                 with pytest.raises(RuntimeError, match="Another long-running tool"):

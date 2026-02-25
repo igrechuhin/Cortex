@@ -58,6 +58,10 @@
 
 - ✅ **Phase 9.1.7 Split mcp_stability.py** - COMPLETE (2026-02-25) - Extracted mcp_stability_usage, mcp_stability_retry, mcp_stability_progress; reduced mcp_stability from 971 to 376 lines. Updated tests to patch mcp_stability_usage.get_current_managers and mcp_stability_retry.check_connection_health. All 4780 tests pass.
 
+- ✅ **Phase 9.1.8 mcp_stability_config split** - COMPLETE (2026-02-25) - Split mcp_stability_config.py (756→215 lines) into mcp_stability_semaphores.py (271 lines) and mcp_stability_finalize.py (349 lines). All files under 400 lines. Tests and quality gates pass.
+
+- ✅ **Phase 9.1.9 refactoring_executor split** - COMPLETE (2026-02-25) - Split refactoring_executor.py 761→400 lines; extracted refactoring_executor_history.py, refactoring_executor_impact.py; 25 unit + phase5 tests pass.
+
 ## Completed Work (2026-02-24)
 
 - **Summary (2026-02-24)** - 1 entries archived.

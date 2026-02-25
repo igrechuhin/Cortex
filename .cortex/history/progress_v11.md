@@ -31,6 +31,9 @@
 - **Phase 9.1.5 optimization/models split (2026-02-25)** - COMPLETE. Split optimization/models.py (921 lines) into package with _base.py,_scoring.py, _results.py,_rules.py, _config.py, **init**.py; each file <400 lines. All tests pass, coverage 92.75%.
 - **Phase 9.1.6 Split reorganization_planner.py (2026-02-25)** - COMPLETE. Extracted preview/validation helpers to reorganization/preview.py; planner 457→386 lines (<400). All tests pass, quality gate passed.
 - **Phase 9.1.7 Split mcp_stability.py (2026-02-25)** - COMPLETE. Extracted mcp_stability_usage, mcp_stability_retry, mcp_stability_progress; reduced mcp_stability from 971 to 376 lines (<400). All tests pass, coverage 92.76%.
+- **Phase 9.1.8 mcp_stability_config split (2026-02-25)** - COMPLETE. Split mcp_stability_config.py (756→215 lines) into mcp_stability_semaphores.py, mcp_stability_finalize.py. Quality gates pass.
+- **Phase 9.1.9 refactoring_executor split (2026-02-25)** - COMPLETE. Split refactoring_executor.py 761→400 lines; extracted refactoring_executor_history, refactoring_executor_impact; all tests pass.
+- **Commit** - Phase 9.1.8 mcp_stability_config, Phase 9.1.9 refactoring_executor splits; mcp_stability_semaphores, mcp_stability_finalize, refactoring_executor_history, refactoring_executor_impact. Tests 4780 pass, coverage 92.76%.
 
 ## 2026-02-24
 
