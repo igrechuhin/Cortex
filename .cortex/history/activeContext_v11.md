@@ -44,6 +44,14 @@
 
 - ✅ **Phase 58 multi-agent specialization** - COMPLETE (2026-02-25) - Added integration tests for two sessions claiming different tasks and lock conflict resolution; marked Step 7 testing complete.
 
+- ✅ **Phase 9.4 Security section in CLAUDE.md** - COMPLETE (2026-02-25) - Added Security section to CLAUDE.md referencing docs/security/best-practices.md, threat model, and related audits (Error Recovery, Secret/Credential Protection). Phase 9.4 task 3 complete.
+
+- ✅ **Phase 9.1.2 Split refactoring/models.py** - COMPLETE (2026-02-25) - Split refactoring/models.py (1,910 lines) into models/ package with 6 submodules. Largest file 495 lines. All tests pass, quality gate passed.
+
+- ✅ **Phase 9.1.3 Split core/models.py** - COMPLETE (2026-02-25) - Split core/models.py (1,316 lines) into models/ package with 6 submodules. Max file ~350 lines. All tests pass.
+
+- ✅ **Phase 9.1.4 Split phase5_evaluation.py** - COMPLETE (2026-02-25) - Split phase5_evaluation.py (1,056 lines) into phase5_evaluation/ package with _models,_aggregation, _harness,_optimization, _run_impl. Fixed run_tool_optimization_workflow test patch targets (_harness.load_eval_tasks, _harness.ToolEvaluationHarness,_run_impl.get_usage_tracker). All 33 phase5_evaluation tests pass, full suite 4780 passed, coverage 92.7%.
+
 ## Completed Work (2026-02-24)
 
 - **Summary (2026-02-24)** - 1 entries archived.

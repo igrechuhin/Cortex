@@ -1,6 +1,6 @@
 # Security Best Practices
 
-**Last Updated:** 2026-01-03
+**Last Updated:** 2026-02-25
 **Status:** Official Security Guidelines
 
 ---
@@ -8,6 +8,13 @@
 ## Overview
 
 This document provides comprehensive security best practices for the Cortex project. All developers, contributors, and users should follow these guidelines to maintain the security posture of the system.
+
+### Related Audits
+
+Recent security audits complement this guide:
+
+- [Error Recovery Audit (2026-02-25)](error-recovery-audit-2026-02-25.md) – Exception handling, CancelledError propagation, resource release
+- [Secret/Credential Protection (2026-02-25)](secret-credential-protection-2026-02-25.md) – Secret detection, .gitignore patterns, logging audit
 
 ---
 

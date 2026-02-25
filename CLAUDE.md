@@ -59,6 +59,12 @@ See implement prompt for full checklist and zero-budget guardrails.
 
 See [AGENTS.md](AGENTS.md#compound-engineering) for the compound-engineering goal and Plan→Work→Review→Compound loop.
 
+## Security
+
+- **No hardcoded secrets**; no sensitive data in logs or memory bank.
+- **Security documentation**: See [docs/security/best-practices.md](docs/security/best-practices.md) for threat model, input validation, file/git security, and deployment guidance.
+- **Related audits**: [Error Recovery Audit](docs/security/error-recovery-audit-2026-02-25.md), [Secret/Credential Protection](docs/security/secret-credential-protection-2026-02-25.md).
+
 ## Safety (non-negotiable)
 
 See [AGENTS.md](AGENTS.md#safety-non-negotiable) for safety rules.

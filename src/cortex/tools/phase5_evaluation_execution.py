@@ -10,7 +10,7 @@ from __future__ import annotations
 import json
 import time
 
-from cortex.tools.phase5_evaluation import (
+from cortex.tools.phase5_evaluation._models import (
     EvalRunMode,
     EvalTask,
     ExecutionExpectSpec,

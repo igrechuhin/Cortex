@@ -80,7 +80,7 @@ class ToolAnalyzer:
         if not self.tools_dir.exists():
             return tools
 
-        for file_path in self.tools_dir.glob("*.py"):
+        for file_path in self.tools_dir.glob("**/*.py"):
             try:
                 file_tools = self._extract_tools_from_file(file_path)
                 tools.update(file_tools)

@@ -62,7 +62,8 @@ Phase 9 builds on Phase 7's achievements (9.2/10) to reach excellence at 9.8+/10
    - managers/initialization.py: 673 → 2 files (4h)
    - learning_engine.py: 672 → 2 files (4h)
    - metadata_index.py: 657 → 2 files (4h)
-   - (10 more files: 400-650 lines each) (20h)
+   - phase5_evaluation.py: 1,056 → package (9.1.4 DONE 2026-02-25)
+   - (9 more files: 400-650 lines each) (18h)
 
 2. **Fix integration test failures** (4-6 hours)
    - Investigate 6 failing tests
@@ -173,9 +174,9 @@ Phase 9 builds on Phase 7's achievements (9.2/10) to reach excellence at 9.8+/10
    - Validate all external inputs
 
 2. **Security documentation** (3-4 hours)
-   - Create docs/security/best-practices.md
-   - Document threat model
-   - Add security section to CLAUDE.md
+   - Create docs/security/best-practices.md ✅
+   - Document threat model ✅
+   - Add security section to CLAUDE.md ✅ (2026-02-25)
 
 3. **Enhanced security measures** (3-4 hours)
    - Add sandboxing for git operations
@@ -477,7 +478,9 @@ Phase 9 builds on Phase 7's achievements (9.2/10) to reach excellence at 9.8+/10
 
 ### Recommended Start
 
-**Phase 9.1.1: Split consolidated.py** (8 hours, highest impact)
+**Phase 9.1.1: Split consolidated.py** (8 hours, highest impact) — ✅ DONE
+**Phase 9.1.2: Split refactoring/models.py** (2026-02-25) — ✅ DONE (1,910 → package, max 495 lines)
+**Phase 9.1.3: Split core/models.py** (2026-02-25) — ✅ DONE (1,316 → package, 6 submodules, max ~350 lines)
 
 ---
 

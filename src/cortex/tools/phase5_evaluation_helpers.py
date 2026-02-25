@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from cortex.tools.phase5_evaluation import (
+from cortex.tools.phase5_evaluation._models import (
     ErrorPattern,
     EvalAnalysis,
     EvalSuiteResult,

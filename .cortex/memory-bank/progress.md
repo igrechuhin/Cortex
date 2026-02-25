@@ -24,6 +24,10 @@
 - **Compound engineering alignment (2026-02-25)** - COMPLETE. Documented compound-engineering goal and loop in project brief, CLAUDE.md, AGENTS.md; aligned implement/commit/analyze prompts; added compound checklist to commit prompt; memory bank and session optimization docs state compound role; Related plans cross-referenced.
 - **Phase 58 Step 6 (2026-02-25)** - COMPLETE. Updated implement prompt, AGENTS.md, and CLAUDE.md with claim_task_lock/release_task_lock workflow for multi-agent coordination.
 - **Phase 58 Step 7 (2026-02-25)** - COMPLETE. Added integration tests for task locking (two sessions claiming different tasks, lock conflict resolution); all Step 7 validation complete.
+- **Phase 9.4 Security section in CLAUDE.md (2026-02-25)** - COMPLETE. Added Security section to CLAUDE.md referencing docs/security/best-practices.md, threat model, and related audits.
+- **Phase 9.1.2: Split refactoring/models.py (2026-02-25)** - COMPLETE. Split refactoring/models.py (1,910 lines) into models/ package: _enums.py (133),_base.py (136), _suggestions.py (351),_execution.py (266), _results.py (433),_config.py (495), **init**.py (238). All imports preserved; tests 4780 passed, coverage 92.58%. Quality gate passed.
+- **Phase 9.1.3 Split core/models.py (2026-02-25)** - COMPLETE. Split core/models.py (1,316 lines) into models/ package with 6 submodules (_enums,_base, _version,_metadata, _structure,_responses). Max file ~350 lines. All tests pass, quality gate passed, coverage 92.7%.
+- **Phase 9.1.4 Split phase5_evaluation.py (2026-02-25)** - COMPLETE. Split phase5_evaluation.py (1,056 lines) into phase5_evaluation/ package: _models,_aggregation, _harness,_optimization, _run_impl. All tests pass, coverage 92.7%.
 
 ## 2026-02-24
 
