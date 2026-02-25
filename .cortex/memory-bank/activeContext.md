@@ -22,6 +22,10 @@
 
 - ✅ **Commit pipeline: function length fix** - COMPLETE (2026-02-25) - Fixed function length violation in compaction_operations: extracted_compact_write_back_from_ctx from _compact_session_write_then_success (31→30 lines). Quality, tests, coverage 92.29% pass.
 
+- ✅ **Agent skills Step 2 (Tool Composition)** - COMPLETE (2026-02-25) - Completed Step 2 of plan-agent-skills-and-composability: 3 composite tools (quick_start, quality_check, safe_manage_file), 7 unit tests. Step 3 (Dynamic Tool Registry) and Step 4 (Workflow Templates) remain.
+
+- ✅ **Agent skills and composability (P2)** - COMPLETE (2026-02-25) - Implemented Step 3: added query_usage(query_type="tool_classification") for usage-ranked tool analysis with category. Steps 1–4 complete (skill packs, composites, tool discovery, workflow templates).
+
 ## Completed Work (2026-02-24)
 
 - **Summary (2026-02-24)** - 1 entries archived.

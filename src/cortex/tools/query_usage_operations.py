@@ -8,6 +8,8 @@ from __future__ import annotations
 
 import json
 from collections.abc import Awaitable, Callable
+from datetime import UTC, datetime, timedelta
+from typing import cast
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -291,6 +293,105 @@ async def _run_tool_frequency(params: QueryUsageParams, ctx: MCPContext | None) 
     return payload.model_dump_json(indent=2)
 
 
+def _build_tool_classification_rows(
+    tools_list: list[dict[str, object]],
+) -> list[dict[str, object]]:
+    """Build classification rows from usage stats, merging with tool_categories."""
+    from cortex.tools import tool_categories
+
+    rows: list[dict[str, object]] = []
+    for t in tools_list:
+        name_val = t.get("tool_name")
+        name = str(name_val) if isinstance(name_val, str) else ""
+        total_val = t.get("total_calls")
+        total_calls = int(total_val) if isinstance(total_val, (int, float)) else 0
+        entry = next(
+            (e for e in tool_categories.TOOL_CATEGORIES if e.name == name), None
+        )
+        cat: str | None = entry.category.value if entry else None
+        rationale = entry.rationale if entry else ""
+        rows.append(
+            {
+                "tool_name": name,
+                "total_calls": total_calls,
+                "category": cat,
+                "rationale": rationale,
+            }
+        )
+
+    def _total(r: dict[str, object]) -> int:
+        v = r.get("total_calls", 0)
+        return int(v) if isinstance(v, (int, float)) else 0
+
+    rows.sort(key=_total, reverse=True)
+    return rows
+
+
+def _build_tool_classification_by_category(
+    rows: list[dict[str, object]],
+) -> dict[str, int]:
+    """Count tools per category from classification rows."""
+    by_cat: dict[str, int] = {}
+    for r in rows:
+        c = r.get("category")
+        key = str(c) if c is not None else "uncategorized"
+        by_cat[key] = by_cat.get(key, 0) + 1
+    return by_cat
+
+
+def _build_tool_classification_payload(
+    root: object,
+    days: int,
+    result: dict[str, object],
+) -> str:
+    """Build JSON payload from usage stats result for tool_classification."""
+    tools_raw: object = result.get("tools", []) or []
+    raw_list = cast(list[object], tools_raw if isinstance(tools_raw, list) else [])
+    tools_list: list[dict[str, object]] = [
+        cast(dict[str, object], x) for x in raw_list if isinstance(x, dict)
+    ]
+    rows = _build_tool_classification_rows(tools_list)
+    by_cat = _build_tool_classification_by_category(rows)
+    ev_val = result.get("total_events", 0)
+    total_events = int(ev_val) if isinstance(ev_val, (int, float)) else 0
+    return json.dumps(
+        {
+            "status": "success",
+            "project_root": str(root),
+            "days": days,
+            "total_tools": len(rows),
+            "total_events": total_events,
+            "by_category": by_cat,
+            "tools": rows,
+        },
+        indent=2,
+    )
+
+
+async def _run_tool_classification(
+    params: QueryUsageParams, ctx: MCPContext | None
+) -> str:
+    """Tool classification (agent-skills Step 3): usage + category for core vs extended."""
+    from cortex.core.project_root_resolver import resolve_project_root_async
+    from cortex.tools import usage_analytics
+
+    root = await resolve_project_root_async(None, ctx)
+    tracker = await usage_analytics._get_tracker(root)  # type: ignore[attr-defined]
+    if tracker is None:
+        return json.dumps(
+            {
+                "status": "unavailable",
+                "message": "Usage tracker not available for tool classification",
+            },
+            indent=2,
+        )
+    days = max(1, min(365, params.days))
+    end = datetime.now(UTC)
+    start = end - timedelta(days=days)
+    result = await tracker.get_usage_stats(start_date=start, end_date=end)
+    return _build_tool_classification_payload(root, days, result)
+
+
 _Handler = Callable[[QueryUsageParams, MCPContext | None], Awaitable[str]]
 _USAGE_HANDLERS: dict[str, _Handler] = {
     "stats": _run_usage_stats,
@@ -308,6 +409,7 @@ _USAGE_HANDLERS: dict[str, _Handler] = {
     "redundancy": _run_redundancy,
     "session_continuity": _run_session_continuity,
     "tool_frequency": _run_tool_frequency,
+    "tool_classification": _run_tool_classification,
 }
 
 
@@ -399,7 +501,9 @@ async def query_usage(
     query_type: stats, unused, report, recommendations, search, events,
     observation, timeline, anomalies, tool_description_optimization,
     production_monitoring, token_efficiency, redundancy, session_continuity,
-    tool_frequency. tool_name required for tool_description_optimization.
+    tool_frequency, tool_classification. tool_name required for
+    tool_description_optimization. tool_classification returns usage-ranked
+    tools with current category (agent-skills Step 3).
     token_efficiency shows top token-expensive tools (Anthropic Step 2).
     redundancy shows repeated identical calls (Step 3). session_continuity
     tracks turns until productive (Step 5). tool_frequency shows tools by

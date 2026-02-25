@@ -594,6 +594,85 @@ async def test_query_usage_token_efficiency_success() -> None:
 
 
 @pytest.mark.asyncio
+async def test_query_usage_tool_classification_unavailable() -> None:
+    """query_usage with query_type=tool_classification returns unavailable when tracker is None."""
+    with (
+        patch(
+            "cortex.core.project_root_resolver.resolve_project_root_async",
+            new_callable=AsyncMock,
+            return_value=Path("/tmp"),
+        ),
+        patch(
+            "cortex.tools.usage_analytics._get_tracker",
+            new_callable=AsyncMock,
+            return_value=None,
+        ),
+    ):
+        with patch(
+            "cortex.tools.query_usage_operations.log_client",
+            new_callable=AsyncMock,
+        ):
+            result = await query_usage(
+                query_type="tool_classification",
+                days=30,
+                ctx=None,
+            )
+    data = json.loads(result)
+    assert data["status"] == "unavailable"
+    assert "message" in data
+
+
+@pytest.mark.asyncio
+async def test_query_usage_tool_classification_success() -> None:
+    """query_usage with query_type=tool_classification returns tools by usage with category."""
+    mock_tracker = MagicMock()
+    mock_tracker.get_usage_stats = AsyncMock(
+        return_value={
+            "tools": [
+                {"tool_name": "manage_file", "total_calls": 100},
+                {"tool_name": "load_context", "total_calls": 50},
+            ],
+            "total_events": 150,
+        }
+    )
+    with (
+        patch(
+            "cortex.core.project_root_resolver.resolve_project_root_async",
+            new_callable=AsyncMock,
+            return_value=Path("/tmp"),
+        ),
+        patch(
+            "cortex.tools.usage_analytics._get_tracker",
+            new_callable=AsyncMock,
+            return_value=mock_tracker,
+        ),
+    ):
+        with patch(
+            "cortex.tools.query_usage_operations.log_client",
+            new_callable=AsyncMock,
+        ):
+            result = await query_usage(
+                query_type="tool_classification",
+                days=30,
+                ctx=None,
+            )
+    data = json.loads(result)
+    assert data["status"] == "success"
+    assert data["project_root"] == "/tmp"
+    assert data["days"] == 30
+    assert data["total_tools"] == 2
+    assert data["total_events"] == 150
+    assert "by_category" in data
+    assert "tools" in data
+    tools = data["tools"]
+    assert len(tools) == 2
+    assert tools[0]["tool_name"] == "manage_file"
+    assert tools[0]["total_calls"] == 100
+    assert "category" in tools[0]
+    assert "rationale" in tools[0]
+
+
+@pytest.mark.asyncio
 async def test_query_usage_handler_exception_returns_error_json() -> None:
     """query_usage when handler raises returns error JSON."""
     with patch(

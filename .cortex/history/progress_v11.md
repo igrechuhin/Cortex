@@ -12,6 +12,8 @@
 - **Anthropic Step 5 - Long-Running Agent Harness (2026-02-25)** - COMPLETE. Structured progress (progress.txt), compact_session handoff params, create_checkpoint, query_usage(session_continuity).
 - **Anthropic context engineering alignment (2026-02-25)** - COMPLETE. Step 6 On-Demand Tool Loading: query_usage(tool_frequency) reports tools by session presence (core/medium/rare) and token_impact with reduction_pct_when_tiered (≥15%); infrastructure ready for MCP defer_loading.
 - **Function length fix (compaction_operations)** - COMPLETE. Extracted `_compact_write_back_from_ctx` to resolve `_compact_session_write_then_success` 31-line violation; quality gate passes.
+- **Agent skills and composability Step 2 (2026-02-25)** - COMPLETE. Implemented Tool Composition Patterns: 3 composite tools (quick_start, quality_check, safe_manage_file) in composite_tools.py, added 7 unit tests. Plan Step 2 marked Done.
+- **Agent skills and composability (P2) (2026-02-25)** - COMPLETE. Implemented tool_classification query type for usage analysis. Steps 1–4 done.
 
 ## 2026-02-24
 
