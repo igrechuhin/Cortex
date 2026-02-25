@@ -36,6 +36,8 @@
 
 - ✅ **Security & Resilience Step 3 - Error Recovery Audit** - COMPLETE (2026-02-25) - Audited except Exception handlers; documented in docs/security/error-recovery-audit-2026-02-25.md; context_logging and mcp_stability_config re-raise CancelledError; tests/unit/test_error_recovery_audit.py.
 
+- ✅ **Security and resilience (P2)** - COMPLETE (2026-02-25) - Step 4 Secret/Credential Protection: detect-secrets baseline + pre-commit hook, .gitignore patterns, MCP/logging audit. docs/security/secret-credential-protection-2026-02-25.md.
+
 ## Completed Work (2026-02-24)
 
 - **Summary (2026-02-24)** - 1 entries archived.

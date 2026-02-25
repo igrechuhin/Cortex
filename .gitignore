@@ -46,6 +46,14 @@ logs/
 .env.test.local
 .env.production.local
 
+# Credentials and secrets (do not commit)
+*.pem
+*.key
+credentials.json
+secrets.json
+*credentials*.json
+*secrets*.json
+
 # Coverage reports
 htmlcov/
 .tox/

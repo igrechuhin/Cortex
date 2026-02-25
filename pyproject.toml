@@ -44,6 +44,7 @@ dev = [
     "black>=25.12.0",
     "ruff>=0.1.0",
     "pyright>=1.1.400",
+    "detect-secrets>=1.5.0",
 ]
 
 [tool.black]
