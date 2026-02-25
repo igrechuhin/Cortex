@@ -52,6 +52,8 @@
 
 - ✅ **Phase 9.1.4 Split phase5_evaluation.py** - COMPLETE (2026-02-25) - Split phase5_evaluation.py (1,056 lines) into phase5_evaluation/ package with _models,_aggregation, _harness,_optimization, _run_impl. Fixed run_tool_optimization_workflow test patch targets (_harness.load_eval_tasks, _harness.ToolEvaluationHarness,_run_impl.get_usage_tracker). All 33 phase5_evaluation tests pass, full suite 4780 passed, coverage 92.7%.
 
+- ✅ **Phase 9.1.5 optimization/models split** - COMPLETE (2026-02-25) - Split optimization/models.py (921 lines) into package with _base,_scoring, _results,_rules, _config submodules for file size compliance; all files <400 lines.
+
 ## Completed Work (2026-02-24)
 
 - **Summary (2026-02-24)** - 1 entries archived.

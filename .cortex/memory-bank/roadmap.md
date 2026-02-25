@@ -12,7 +12,7 @@
 
 ## Pending plans (from .cortex/plans)
 
-- **Pending: Phase 9 excellence** - Plan: .cortex/plans/phase-9-excellence-98.md (Phase 9.1.4 phase5_evaluation split done)
+- **Pending: Phase 9 excellence** - Plan: .cortex/plans/phase-9-excellence-98.md (Phase 9.1.5 optimization/models split done)
 
 ### Investigation Plans (Archive / Reference)
 
@@ -20,5 +20,5 @@ Completed investigations are recorded in [activeContext.md](activeContext.md). P
 
 ### Features & Enhancements
 
-- **Pending: Phase 9 excellence** - Plan: .cortex/plans/phase-9-excellence-98.md (Phase 9.1.4 phase5_evaluation split done)
+- **Pending: Phase 9 excellence** - Plan: .cortex/plans/phase-9-excellence-98.md (Phase 9.1.5 optimization/models split done)
 - **Pending: Tool consolidation — next analysis** - Run next tool consolidation analysis from usage data and governance; produce report and optional follow-up plan. Plan: .cortex/plans/tool-consolidation-next-analysis.md
