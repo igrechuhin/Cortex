@@ -57,7 +57,8 @@ Phase 9 builds on Phase 7's achievements (9.2/10) to reach excellence at 9.8+/10
    - template_manager.py: 797 → 2 files (4h)
    - pattern_analyzer.py: 769 → 2 files (4h)
    - refactoring_executor.py: 761 → 2 files (4h)
-   - reorganization_planner.py: 737 → 2 files (4h)
+   - reorganization_planner.py: 457 → <400 (9.1.6 DONE 2026-02-25)
+   - mcp_stability.py: 971 → 376 (9.1.7 DONE 2026-02-25)
    - shared_rules_manager.py: 685 → 2 files (4h)
    - managers/initialization.py: 673 → 2 files (4h)
    - learning_engine.py: 672 → 2 files (4h)
@@ -484,9 +485,11 @@ Phase 9 builds on Phase 7's achievements (9.2/10) to reach excellence at 9.8+/10
 **Phase 9.1.3: Split core/models.py** (2026-02-25) — ✅ DONE (1,316 → package, 6 submodules, max ~350 lines)
 **Phase 9.1.4: Split phase5_evaluation.py** (2026-02-25) — ✅ DONE (1,056 → package)
 **Phase 9.1.5: Split optimization/models.py** (2026-02-25) — ✅ DONE (921 → package, 6 submodules)
+**Phase 9.1.6: Split reorganization_planner.py** (2026-02-25) — ✅ DONE (457 → 386 lines; preview/validation extracted to reorganization/preview.py)
+**Phase 9.1.7: Split mcp_stability.py** (2026-02-25) — ✅ DONE (971 → 376 lines; extracted mcp_stability_usage, mcp_stability_retry, mcp_stability_progress)
 
 ---
 
 Last Updated: 2026-02-25
-Status: 🚀 IN PROGRESS - Phase 9.1.4 & 9.1.5 complete; quality gates pass
-Next Phase: Phase 9.1 - Rules Compliance Excellence
+Status: 🚀 IN PROGRESS - Phase 9.1.7 complete; mcp_stability <400 lines; quality gates pass
+Next Phase: Phase 9.1 - Rules Compliance Excellence (split next oversized file: refactoring_executor.py, mcp_stability_config.py)

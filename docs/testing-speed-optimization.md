@@ -69,7 +69,7 @@ Tools that call **`resolve_project_root_async(None, ctx)`** (e.g. `suggest_refac
 
 **Current**: `test_connection_health`, `test_configuration_operations`, and `test_analysis_operations` each patch `get_current_managers` (per-file fixture or helper).
 
-**Option**: In `tests/conftest.py`, add an autouse fixture that applies only inside `tests/tools/` (e.g. via a `conftest.py` under `tests/tools/` that patches `cortex.core.mcp_stability.get_current_managers` to return `{}`). Then any new tool test that calls a decorated handler gets the bypass by default and avoids accidental slow runs.
+**Option**: In `tests/conftest.py`, add an autouse fixture that applies only inside `tests/tools/` (e.g. via a `conftest.py` under `tests/tools/` that patches `cortex.core.mcp_stability_usage.get_current_managers` to return `{}`). Then any new tool test that calls a decorated handler gets the bypass by default and avoids accidental slow runs.
 
 ### 4. CI: cache and test step tuning (medium impact)
 

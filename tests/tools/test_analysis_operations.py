@@ -58,7 +58,7 @@ from tests.helpers.managers import make_test_managers
 @pytest.fixture(autouse=True)
 def _skip_usage_context_init():  # pyright: ignore[reportUnusedFunction]
     """Avoid slow resolve_project_root + get_managers in ensure_usage_context."""
-    with patch("cortex.core.mcp_stability.get_current_managers", return_value={}):
+    with patch("cortex.core.mcp_stability_usage.get_current_managers", return_value={}):
         yield
 
 
@@ -1424,7 +1424,7 @@ class TestAnalyzeResource:
         )
         with (
             patch(
-                "cortex.core.mcp_stability.get_current_managers",
+                "cortex.core.mcp_stability_usage.get_current_managers",
                 return_value={},
             ),
             patch(
@@ -1476,7 +1476,7 @@ class TestSuggestRefactoringResource:
         )
         with (
             patch(
-                "cortex.core.mcp_stability.get_current_managers",
+                "cortex.core.mcp_stability_usage.get_current_managers",
                 return_value={},
             ),
             patch(

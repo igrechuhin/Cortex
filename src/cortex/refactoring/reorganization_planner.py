@@ -11,9 +11,7 @@ from typing import cast
 from cortex.core.models import (
     EstimatedImpactMetrics,
     ModelDict,
-    ReorganizationActionPreview,
     ReorganizationPreview,
-    StructureComparison,
 )
 from cortex.refactoring.models import (
     DependencyGraphInput,
@@ -26,6 +24,11 @@ from cortex.refactoring.reorganization.analyzer import ReorganizationAnalyzer
 from cortex.refactoring.reorganization.executor import (
     ReorganizationAction,
     ReorganizationExecutor,
+)
+from cortex.refactoring.reorganization.preview import (
+    build_preview_details,
+    normalize_structure_data_input,
+    validate_reorganization_inputs,
 )
 from cortex.refactoring.reorganization.strategies import (
     ReorganizationStrategies,
@@ -98,7 +101,7 @@ class ReorganizationPlanner:
         Returns:
             Reorganization plan or None if no changes needed
         """
-        if not self._validate_reorganization_inputs(structure_data, dependency_graph):
+        if not validate_reorganization_inputs(structure_data, dependency_graph):
             return None
 
         assert dependency_graph is not None
@@ -133,7 +136,7 @@ class ReorganizationPlanner:
             structure_data
             if isinstance(structure_data, MemoryBankStructureData)
             else MemoryBankStructureData.model_validate(
-                self._normalize_structure_data_input(cast(ModelDict, structure_data))
+                normalize_structure_data_input(cast(ModelDict, structure_data))
             )
         )
         graph_model = (
@@ -173,7 +176,7 @@ class ReorganizationPlanner:
             dependency_depth_reduction=0,
         )
 
-        actions, structure_comparison = self._build_preview_details(plan, show_details)
+        actions, structure_comparison = build_preview_details(plan, show_details)
 
         return ReorganizationPreview(
             plan_id=plan.plan_id,
@@ -185,80 +188,6 @@ class ReorganizationPlanner:
             actions=actions,
             structure_comparison=structure_comparison,
         )
-
-    def _build_action_previews(
-        self, plan: ReorganizationPlanModel
-    ) -> list[ReorganizationActionPreview]:
-        """Build action previews from plan."""
-        actions: list[ReorganizationActionPreview] = []
-        for action in plan.actions:
-            actions.append(
-                ReorganizationActionPreview(
-                    type=action.action_type,
-                    description=(
-                        f"{action.action_type}: {action.source} -> {action.target}"
-                    ),
-                    reason=action.reason,
-                )
-            )
-        return actions
-
-    def _build_structure_comparison(
-        self, plan: ReorganizationPlanModel
-    ) -> StructureComparison:
-        """Build structure comparison from plan."""
-        from cortex.core.models import StructureMetrics
-
-        current_metrics = StructureMetrics(
-            total_files=plan.current_structure.total_files,
-            max_depth=plan.current_structure.dependency_depth,
-            files_by_category={
-                k: len(v) for k, v in plan.current_structure.categories.items()
-            },
-            organization=plan.current_structure.organization,
-        )
-        proposed_metrics = StructureMetrics(
-            total_files=plan.proposed_structure.total_files,
-            max_depth=plan.proposed_structure.dependency_depth,
-            files_by_category={
-                k: len(v) for k, v in plan.proposed_structure.categories.items()
-            },
-            organization=plan.proposed_structure.organization,
-        )
-        return StructureComparison(
-            current=current_metrics,
-            proposed=proposed_metrics,
-        )
-
-    def _build_preview_details(
-        self, plan: ReorganizationPlanModel, show_details: bool
-    ) -> tuple[list[ReorganizationActionPreview], StructureComparison | None]:
-        """Build preview details from reorganization plan."""
-        actions = self._build_action_previews(plan) if show_details else []
-        structure_comparison = (
-            self._build_structure_comparison(plan) if show_details else None
-        )
-        return actions, structure_comparison
-
-    def _validate_reorganization_inputs(
-        self,
-        structure_data: MemoryBankStructureData | ModelDict | None,
-        dependency_graph: DependencyGraphInput | ModelDict | None,
-    ) -> bool:
-        """Validate inputs for reorganization plan creation."""
-        return structure_data is not None and dependency_graph is not None
-
-    @staticmethod
-    def _normalize_structure_data_input(structure_data: ModelDict) -> ModelDict:
-        """Normalize legacy structure_data shapes for model validation."""
-        organization = structure_data.get("organization")
-        if isinstance(organization, dict):
-            org_type = organization.get("type")
-            if isinstance(org_type, str):
-                normalized = dict(structure_data)
-                normalized["organization"] = org_type
-                return normalized
-        return structure_data
 
     def needs_reorganization(
         self, current_structure: MemoryBankStructureData, optimize_for: str

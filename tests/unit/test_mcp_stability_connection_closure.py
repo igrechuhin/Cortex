@@ -169,10 +169,17 @@ class TestConnectionClosureHandling:
                 raise ConnectionError("Connection closed")
             return "success"
 
-        with patch(
-            "cortex.core.mcp_stability.check_connection_health",
-            new_callable=AsyncMock,
-            side_effect=check_health,
+        with (
+            patch(
+                "cortex.core.mcp_stability.check_connection_health",
+                new_callable=AsyncMock,
+                side_effect=check_health,
+            ),
+            patch(
+                "cortex.core.mcp_stability_retry.check_connection_health",
+                new_callable=AsyncMock,
+                side_effect=check_health,
+            ),
         ):
             # Act & Assert - second check (before retry) returns unhealthy
             with pytest.raises(ConnectionError, match="not healthy before retry"):

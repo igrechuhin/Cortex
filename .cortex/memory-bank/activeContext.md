@@ -54,6 +54,10 @@
 
 - ✅ **Phase 9.1.5 optimization/models split** - COMPLETE (2026-02-25) - Split optimization/models.py (921 lines) into package with _base,_scoring, _results,_rules, _config submodules for file size compliance; all files <400 lines.
 
+- ✅ **Phase 9.1.6 Split reorganization_planner.py** - COMPLETE (2026-02-25) - Extracted preview-building and validation helpers to reorganization/preview.py; reduced reorganization_planner from 457 to 386 lines (<400 limit). All tests pass.
+
+- ✅ **Phase 9.1.7 Split mcp_stability.py** - COMPLETE (2026-02-25) - Extracted mcp_stability_usage, mcp_stability_retry, mcp_stability_progress; reduced mcp_stability from 971 to 376 lines. Updated tests to patch mcp_stability_usage.get_current_managers and mcp_stability_retry.check_connection_health. All 4780 tests pass.
+
 ## Completed Work (2026-02-24)
 
 - **Summary (2026-02-24)** - 1 entries archived.

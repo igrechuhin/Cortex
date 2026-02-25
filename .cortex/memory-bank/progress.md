@@ -29,6 +29,8 @@
 - **Phase 9.1.3 Split core/models.py (2026-02-25)** - COMPLETE. Split core/models.py (1,316 lines) into models/ package with 6 submodules (_enums,_base, _version,_metadata, _structure,_responses). Max file ~350 lines. All tests pass, quality gate passed, coverage 92.7%.
 - **Phase 9.1.4 Split phase5_evaluation.py (2026-02-25)** - COMPLETE. Split phase5_evaluation.py (1,056 lines) into phase5_evaluation/ package: _models,_aggregation, _harness,_optimization, _run_impl. All tests pass, coverage 92.7%.
 - **Phase 9.1.5 optimization/models split (2026-02-25)** - COMPLETE. Split optimization/models.py (921 lines) into package with _base.py,_scoring.py, _results.py,_rules.py, _config.py, **init**.py; each file <400 lines. All tests pass, coverage 92.75%.
+- **Phase 9.1.6 Split reorganization_planner.py (2026-02-25)** - COMPLETE. Extracted preview/validation helpers to reorganization/preview.py; planner 457→386 lines (<400). All tests pass, quality gate passed.
+- **Phase 9.1.7 Split mcp_stability.py (2026-02-25)** - COMPLETE. Extracted mcp_stability_usage, mcp_stability_retry, mcp_stability_progress; reduced mcp_stability from 971 to 376 lines (<400). All tests pass, coverage 92.76%.
 
 ## 2026-02-24
 

@@ -20,7 +20,7 @@ from cortex.tools.connection_health import (
 def _patch_usage_context():
     """Patch so ensure_usage_context skips slow resolve_project_root + get_managers."""
     return patch(
-        "cortex.core.mcp_stability.get_current_managers",
+        "cortex.core.mcp_stability_usage.get_current_managers",
         return_value={},
     )
 
