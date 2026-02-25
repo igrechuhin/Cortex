@@ -38,6 +38,8 @@
 - **Phase 9.1.11-9.1.12 plan update (2026-02-25)** - COMPLETE. Verified insight_engine (262 lines) and template_manager (106 lines) already under 400; marked done in phase-9-excellence-98.md. Next Phase: fix integration tests, TODOs, extract long functions.
 - **Phase 9.1.13 plan_completion split (2026-02-25)** - COMPLETE. Split plan_completion.py 890→222 lines; extracted 6 helper modules (content, archive, io, validation, models, ops).
 - **Phase 9.1.14 Split usage_analytics (2026-02-25)** - COMPLETE. Split usage_analytics.py (665→338 lines) into usage_analytics_models, usage_analytics_formatters, usage_analytics_impl. Tests pass, coverage 92.77%.
+- **Phase 9.1 verification (2026-02-25)** - Verified integration tests pass (4780/4780), quality gate passes, TODOs resolved. Updated phase-9-excellence-98 plan status.
+- **Tool consolidation — next analysis (2026-02-25)** - COMPLETE. Census and usage analysis; report with budget status, dead tools, incomplete consolidations, recommendations. Report: .cortex/reviews/tool-consolidation-analysis-2026-02-25T21-47.md
 
 ## 2026-02-24
 

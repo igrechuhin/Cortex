@@ -70,6 +70,10 @@
 
 - ✅ **Phase 9.1.14 Split usage_analytics** - COMPLETE (2026-02-25) - Split usage_analytics.py into models, formatters, impl modules for file size compliance (665→338 lines).
 
+- ✅ **Phase 9.1 verification** - COMPLETE (2026-02-25) - Verified pre-commit checks pass (type_check, quality, tests 4780/4780, coverage 92.8%). Updated phase-9-excellence-98 plan status. Next oversized: python_adapter 858, phase4_optimization_handlers 818.
+
+- ✅ **Tool consolidation — next analysis** - COMPLETE (2026-02-25) - Tool census and usage analysis completed. Report saved to .cortex/reviews/tool-consolidation-analysis-2026-02-25T21-47.md. Budget: 51/40 (CRITICAL). Findings: 15 low-usage tools, incomplete Phase 50 consolidation (7 old get_* tools), consolidation candidates.
+
 ## Completed Work (2026-02-24)
 
 - **Summary (2026-02-24)** - 1 entries archived.

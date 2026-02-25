@@ -16,17 +16,11 @@ from collections.abc import Callable, Sequence
 from pathlib import Path
 from typing import Literal, cast
 
-from pydantic import BaseModel, ConfigDict, Field
-
 from cortex.core.constants import MCP_TOOL_TIMEOUT_VERY_COMPLEX
 from cortex.core.context_logging import MCPContext, log_client, report_progress_safe
 from cortex.core.mcp_annotations import external_annotations, safe_write_annotations
-from cortex.core.mcp_stability import (
-    check_connection_health,
-    ensure_usage_context,
-    mcp_tool_wrapper,
-)
-from cortex.core.models import ConnectionHealth, JsonValue, ModelDict, OperationStatus
+from cortex.core.mcp_stability import ensure_usage_context, mcp_tool_wrapper
+from cortex.core.models import ModelDict, OperationStatus
 from cortex.core.usage_context import get_or_resolve_project_root
 from cortex.server import mcp
 from cortex.services.framework_adapters.base import (
@@ -43,35 +37,31 @@ from cortex.services.framework_adapters.rust_adapter import RustAdapter
 from cortex.services.framework_adapters.swift_adapter import SwiftAdapter
 from cortex.services.framework_adapters.typescript_adapter import TypeScriptAdapter
 from cortex.services.language_detector import LanguageInfo
-
-# No circular import: markdown_operations doesn't import pre_commit_tools
-from cortex.tools.markdown_operations import fix_markdown_lint  # noqa: F401
+from cortex.tools.pre_commit_connection import (
+    log_connection_health_after_tests,
+    log_connection_health_before_tests,
+    log_test_execution_error,
+)
+from cortex.tools.pre_commit_eval import run_eval_fast_check
+from cortex.tools.pre_commit_fix_quality import (
+    create_quality_error_response,
+    fix_quality_issues_impl,
+)
 from cortex.tools.pre_commit_helpers import (
     CheckStats,
     PreCommitCheck,
     PreCommitResult,
     QualityCheckResult,
-    collect_remaining_issues,
     create_error_result_dict,
     detect_or_use_language,
     determine_checks_to_perform,
     ensure_json_serializable_for_mcp,
-    extract_check_results,
-    extract_dict_from_object,
-    extract_int_from_object,
-    extract_list_from_object,
     truncate_large_logs_in_data,
     unsupported_language_result_dict,
 )
 from cortex.tools.pre_commit_pipeline import run_checks_pipeline
 
-# Type for JSON numeric/string values that int() accepts (avoids Any)
-_IntConvertible = int | float | str
-
 logger = logging.getLogger(__name__)
-
-# Eval-fast pass rate threshold (85% per plan Step 3)
-EVAL_FAST_PASS_RATE_THRESHOLD = 0.85
 
 # Adapter registry: language -> factory(project_root) -> FrameworkAdapter.
 # Python, TypeScript, JavaScript, Rust, Go, Java, Swift, and Kotlin have full implementations.
@@ -200,114 +190,11 @@ async def _merge_eval_fast_if_requested(
     """If eval_fast requested, run it and merge into results/stats."""
     if PreCommitCheck.EVAL_FAST not in checks_to_perform:
         return
-    eval_result = await _run_eval_fast_check(ctx)
+    eval_result = await run_eval_fast_check(ctx)
     results[PreCommitCheck.EVAL_FAST.value] = eval_result
     stats.checks_performed.append(PreCommitCheck.EVAL_FAST.value)
     if not eval_result.success:
         stats.total_errors += len(eval_result.errors)
-
-
-def _parse_eval_execution_summary(payload: dict[str, object]) -> tuple[int, int, float]:
-    """Extract passed, total, rate from run_tool_evaluation payload."""
-    exec_summary = cast(dict[str, object], payload.get("execution_summary") or {})
-    # int() accepts int|float|str; cast so type checker accepts (dict value is object)
-    passed = int(cast(_IntConvertible, exec_summary.get("execution_passed", 0)))
-    total = int(cast(_IntConvertible, exec_summary.get("execution_total_run", 0)))
-    rate = (passed / total) if total else 1.0
-    return passed, total, rate
-
-
-def _build_eval_fast_result(
-    passed: int, total: int, rate: float, success: bool
-) -> CheckResult:
-    """Build CheckResult for eval_fast from pass stats."""
-    pct = round(rate * 100, 1)
-    thresh_pct = round(EVAL_FAST_PASS_RATE_THRESHOLD * 100)
-    output = f"eval_fast: {passed}/{total} passed ({pct}%). Threshold: {thresh_pct}%."
-    errors: list[str] = []
-    if not success:
-        errors.append(f"Eval fast pass rate {pct}% is below threshold {thresh_pct}%.")
-    return CheckResult(
-        check_type=PreCommitCheck.EVAL_FAST.value,
-        success=success,
-        output=output,
-        errors=errors,
-        warnings=[],
-        files_modified=[],
-    )
-
-
-async def _run_eval_fast_check(ctx: MCPContext | None) -> CheckResult:
-    """Run fast eval (10 tasks) and return CheckResult; fail if pass rate < 85%."""
-    from cortex.tools.phase5_evaluation import run_tool_evaluation
-
-    try:
-        payload_str = await run_tool_evaluation(
-            task_ids=None,
-            mode="fast",
-            category=None,
-            ctx=ctx,
-        )
-        payload = cast(dict[str, object], json.loads(payload_str))
-        passed, total, rate = _parse_eval_execution_summary(payload)
-        success = rate >= EVAL_FAST_PASS_RATE_THRESHOLD
-        return _build_eval_fast_result(passed, total, rate, success)
-    except Exception as e:  # noqa: BLE001
-        logger.exception("eval_fast check failed")
-        return CheckResult(
-            check_type=PreCommitCheck.EVAL_FAST.value,
-            success=False,
-            output=f"eval_fast failed: {e!s}",
-            errors=[f"eval_fast check failed: {e!s}"],
-            warnings=[],
-            files_modified=[],
-        )
-
-
-async def _log_connection_health_before_tests() -> ConnectionHealth | None:
-    """Log connection health before test execution (Step 12.7 monitoring)."""
-    try:
-        health = await check_connection_health()
-        logger.info(
-            "execute_pre_commit_checks: connection health before tests: %s",
-            health.model_dump(),
-        )
-        return health
-    except Exception as e:
-        logger.warning(
-            "execute_pre_commit_checks: failed to check connection health before tests: %s",
-            e,
-        )
-        return None
-
-
-async def _log_connection_health_after_tests(
-    health_before: ConnectionHealth | None,
-) -> None:
-    """Log connection health after successful test execution (Step 12.7 monitoring)."""
-    try:
-        health_after = await check_connection_health()
-        logger.info(
-            "execute_pre_commit_checks: connection health after tests: %s (health_before=%s)",
-            health_after.model_dump(),
-            health_before.model_dump() if health_before else None,
-        )
-    except Exception as e:
-        logger.warning(
-            "execute_pre_commit_checks: failed to check connection health after tests: %s",
-            e,
-        )
-
-
-def _log_test_execution_error(
-    error: Exception, health_before: ConnectionHealth | None
-) -> None:
-    """Log test execution error with connection health context."""
-    logger.error(
-        "execute_pre_commit_checks: test execution failed: %s (health_before=%s)",
-        error,
-        health_before,
-    )
 
 
 async def _run_checks_with_connection_monitoring(
@@ -320,8 +207,8 @@ async def _run_checks_with_connection_monitoring(
     ctx: MCPContext | None,
 ) -> tuple[dict[str, CheckResult | TestResult | QualityCheckResult], CheckStats]:
     """Run checks with connection stability monitoring for tests (Step 12.7)."""
-    health_before: ConnectionHealth | None = (
-        await _log_connection_health_before_tests()
+    health_before = (
+        await log_connection_health_before_tests()
         if PreCommitCheck.TESTS in checks_to_perform
         else None
     )
@@ -337,11 +224,11 @@ async def _run_checks_with_connection_monitoring(
         )
     except Exception as e:
         if PreCommitCheck.TESTS in checks_to_perform:
-            _log_test_execution_error(e, health_before)
+            log_test_execution_error(e, health_before)
         raise
     finally:
         if PreCommitCheck.TESTS in checks_to_perform:
-            await _log_connection_health_after_tests(health_before)
+            await log_connection_health_after_tests(health_before)
 
 
 async def _execute_pre_commit_checks_impl(
@@ -521,268 +408,6 @@ def _build_response(
     return ensure_json_serializable_for_mcp(cast(ModelDict, compact))
 
 
-class FixQualityResult(BaseModel):
-    """Result of fix_quality_issues operation."""
-
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
-
-    status: OperationStatus = Field(description="Operation status")
-    errors_fixed: int = Field(ge=0, description="Number of errors fixed")
-    warnings_fixed: int = Field(ge=0, description="Number of warnings fixed")
-    formatting_issues_fixed: int = Field(
-        ge=0, description="Number of formatting issues fixed"
-    )
-    markdown_issues_fixed: int = Field(
-        ge=0, description="Number of markdown issues fixed"
-    )
-    type_errors_fixed: int = Field(ge=0, description="Number of type errors fixed")
-    files_modified: list[str] = Field(
-        default_factory=list, description="List of modified files"
-    )
-    remaining_issues: list[str] = Field(
-        default_factory=list, description="List of remaining issues"
-    )
-    error_message: str | None = Field(default=None, description="Error message if any")
-
-
-def _create_quality_error_response(error_message: str) -> str:
-    """Create error response for quality fixes."""
-    from cortex.tools.tool_error_formatters import format_tool_error
-
-    return format_tool_error(
-        Exception(error_message),
-        suggestion=(
-            "Review the error details. Ensure the project root is valid and "
-            "quality tools (ruff, black, etc.) are available. Check file permissions."
-        ),
-        example={
-            "include_untracked_markdown": True,
-        },
-        context={"error_message": error_message},
-    )
-
-
-async def _run_quality_checks(root_str: str) -> ModelDict | str:
-    """Run quality checks and return result or error response."""
-    fix_errors_result = await execute_pre_commit_checks(
-        checks=[
-            PreCommitCheck.FIX_ERRORS.value,
-            PreCommitCheck.FORMAT.value,
-            PreCommitCheck.TYPE_CHECK.value,
-        ],
-        test_timeout=300,
-        coverage_threshold=0.90,
-        strict_mode=False,
-    )
-
-    # `execute_pre_commit_checks()` uses `"status": "error"` both for:
-    # - genuine tool failures (exception paths), which include `error`/`error_type`
-    # - "checks ran, but errors remain" (normal outcome for this fixer)
-    #
-    # Only treat it as a tool failure if it contains the explicit error payload.
-    if fix_errors_result.get("status") == "error" and (
-        "error" in fix_errors_result or "error_type" in fix_errors_result
-    ):
-        error_obj = fix_errors_result.get("error")
-        return _create_quality_error_response(
-            str(error_obj) if error_obj is not None else "Unknown error"
-        )
-
-    return fix_errors_result
-
-
-async def _fix_markdown_and_update_files(
-    root_str: str, include_untracked_markdown: bool, files_modified: list[str]
-) -> int:
-    """Fix markdown lint errors and update files_modified list."""
-    markdown_result_json = await fix_markdown_lint(
-        include_untracked_markdown=include_untracked_markdown,
-        dry_run=False,
-    )
-    markdown_result_raw: JsonValue = json.loads(markdown_result_json)
-    # Recursive JsonValue narrows incorrectly in pyright/basedpyright
-    if not isinstance(
-        markdown_result_raw, dict
-    ):  # pyright: ignore[reportUnnecessaryIsInstance]
-        return 0
-    markdown_result = cast(ModelDict, markdown_result_raw)
-    return _process_markdown_results(markdown_result, files_modified)
-
-
-def _extract_fix_statistics(
-    fix_errors_result: dict[str, JsonValue],
-) -> tuple[int, int, int, int, list[str]]:
-    """Extract statistics from fix_errors result."""
-    results_obj = fix_errors_result.get("results", {})
-    results = extract_dict_from_object(results_obj, {})
-    fix_errors_check, format_check, type_check_result = extract_check_results(results)
-
-    errors = extract_list_from_object(fix_errors_check.get("errors", []), [])
-    warnings = extract_list_from_object(fix_errors_check.get("warnings", []), [])
-    errors_fixed = len(errors)
-    warnings_fixed = len(warnings)
-    formatting_issues_fixed = extract_int_from_object(
-        format_check.get("files_formatted", 0), 0
-    )
-    type_errors = extract_list_from_object(type_check_result.get("errors", []), [])
-    type_errors_fixed = len(type_errors)
-    files_modified_list = extract_list_from_object(
-        fix_errors_result.get("files_modified", []), []
-    )
-    files_modified = list(set(files_modified_list))
-
-    return (
-        errors_fixed,
-        warnings_fixed,
-        formatting_issues_fixed,
-        type_errors_fixed,
-        files_modified,
-    )
-
-
-def _process_markdown_results(
-    markdown_result: ModelDict, files_modified: list[str]
-) -> int:
-    """Process markdown fix results and update files_modified list."""
-    markdown_issues_fixed = 0
-    success_obj = markdown_result.get("success")
-    if success_obj:
-        files_fixed_obj = markdown_result.get("files_fixed", 0)
-        # Recursive JsonValue narrows incorrectly in pyright/basedpyright
-        markdown_issues_fixed = (
-            int(files_fixed_obj)
-            if isinstance(files_fixed_obj, (int, str))
-            else 0  # pyright: ignore[reportUnnecessaryIsInstance]
-        )
-        results_obj = markdown_result.get("results", [])
-        if isinstance(
-            results_obj, list
-        ):  # pyright: ignore[reportUnnecessaryIsInstance]
-            for item in cast(list[JsonValue], results_obj):
-                if isinstance(
-                    item, dict
-                ):  # pyright: ignore[reportUnnecessaryIsInstance]
-                    file_result = cast(ModelDict, item)
-                    fixed_obj = file_result.get("fixed")
-                    if fixed_obj:
-                        file_path_obj = file_result.get("file", "")
-                        file_path = str(file_path_obj) if file_path_obj else ""
-                        if file_path and file_path not in files_modified:
-                            files_modified.append(file_path)
-    return markdown_issues_fixed
-
-
-def _build_quality_response_json(
-    errors_fixed: int,
-    warnings_fixed: int,
-    formatting_issues_fixed: int,
-    markdown_issues_fixed: int,
-    type_errors_fixed: int,
-    files_modified: list[str],
-    remaining_issues: list[str],
-) -> str:
-    """Build quality fix response as JSON string."""
-    response = FixQualityResult(
-        status=OperationStatus.SUCCESS,
-        errors_fixed=errors_fixed,
-        warnings_fixed=warnings_fixed,
-        formatting_issues_fixed=formatting_issues_fixed,
-        markdown_issues_fixed=markdown_issues_fixed,
-        type_errors_fixed=type_errors_fixed,
-        files_modified=files_modified,
-        remaining_issues=remaining_issues,
-        error_message=None,
-    )
-    data = response.model_dump(mode="json")
-    compact = truncate_large_logs_in_data(data)
-    return json.dumps(compact, separators=(",", ":"))
-
-
-def _build_markdown_fix_output(
-    fix_errors_result: ModelDict,
-    markdown_issues_fixed: int,
-    files_modified: list[str],
-) -> str:
-    """Build final quality response JSON from fix result and markdown stats."""
-    remaining_issues = collect_remaining_issues(fix_errors_result)
-    (
-        errors_fixed,
-        warnings_fixed,
-        formatting_issues_fixed,
-        type_errors_fixed,
-        _,
-    ) = _extract_fix_statistics(fix_errors_result)
-    return _build_quality_response_json(
-        errors_fixed,
-        warnings_fixed,
-        formatting_issues_fixed,
-        markdown_issues_fixed,
-        type_errors_fixed,
-        files_modified,
-        remaining_issues,
-    )
-
-
-async def _run_markdown_fixes_and_build_json(
-    fix_errors_result: ModelDict,
-    root_str: str,
-    include_untracked_markdown: bool,
-    files_modified: list[str],
-    ctx: MCPContext | None,
-) -> str:
-    """Run markdown fixes and build final quality response JSON."""
-    markdown_issues_fixed = await _fix_markdown_and_update_files(
-        root_str, include_untracked_markdown, files_modified
-    )
-    out = _build_markdown_fix_output(
-        fix_errors_result, markdown_issues_fixed, files_modified
-    )
-    await report_progress_safe(ctx, 100.0, 100.0)
-    return out
-
-
-async def _run_quality_fixes_and_build_response(
-    root_str: str,
-    include_untracked_markdown: bool,
-    ctx: MCPContext | None = None,
-) -> tuple[bool, str]:
-    """Run fix_errors + markdown fixes; return (success, json_string)."""
-    await report_progress_safe(ctx, 10.0, 100.0)
-    fix_errors_result = await _run_quality_checks(root_str)
-    if isinstance(fix_errors_result, str):
-        return (False, fix_errors_result)
-    (_, _, _, _, files_modified) = _extract_fix_statistics(fix_errors_result)
-    await report_progress_safe(ctx, 50.0, 100.0)
-    out = await _run_markdown_fixes_and_build_json(
-        fix_errors_result, root_str, include_untracked_markdown, files_modified, ctx
-    )
-    return (True, out)
-
-
-async def _fix_quality_issues_impl(
-    root: Path,
-    include_untracked_markdown: bool,
-    ctx: MCPContext | None,
-) -> str:
-    """Run quality fixes and return JSON result."""
-    root_str = str(root)
-    success, out = await _run_quality_fixes_and_build_response(
-        root_str, include_untracked_markdown, ctx
-    )
-    if not success:
-        await log_client(
-            ctx,
-            "warning",
-            "fix_quality_issues: quality checks returned error",
-            logger_name=__name__,
-        )
-    else:
-        await log_client(
-            ctx, "info", "fix_quality_issues: completed", logger_name=__name__
-        )
-    return out
-
-
 @mcp.tool(  # pyright: ignore[reportUntypedFunctionDecorator]
     annotations=safe_write_annotations(
         "Fix Code Quality Issues",
@@ -839,9 +464,9 @@ async def fix_quality_issues(
     await log_client(ctx, "info", "fix_quality_issues: starting", logger_name=__name__)
     try:
         root = await get_or_resolve_project_root(ctx)
-        return await _fix_quality_issues_impl(root, include_untracked_markdown, ctx)
+        return await fix_quality_issues_impl(root, include_untracked_markdown, ctx)
     except Exception as e:
         await log_client(
             ctx, "error", f"fix_quality_issues: {e!s}", logger_name=__name__
         )
-        return _create_quality_error_response(str(e))
+        return create_quality_error_response(str(e))

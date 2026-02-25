@@ -983,10 +983,12 @@ class TestFixQualityIssues:
 
             with (
                 patch(
-                    "cortex.tools.pre_commit_tools.execute_pre_commit_checks"
+                    "cortex.tools.pre_commit_tools.execute_pre_commit_checks",
+                    new_callable=AsyncMock,
                 ) as mock_execute,
                 patch(
-                    "cortex.tools.pre_commit_tools.fix_markdown_lint"
+                    "cortex.tools.markdown_operations.fix_markdown_lint",
+                    new_callable=AsyncMock,
                 ) as mock_markdown,
             ):
                 mock_execute.return_value = {
@@ -1007,7 +1009,12 @@ class TestFixQualityIssues:
                     },
                 }
                 mock_markdown.return_value = json.dumps(
-                    {"success": True, "files_fixed": 0, "files_processed": 0}
+                    {
+                        "success": True,
+                        "files_fixed": 0,
+                        "files_processed": 0,
+                        "results": [],
+                    }
                 )
 
                 with patch(
@@ -1019,7 +1026,7 @@ class TestFixQualityIssues:
                 result = json.loads(result_json)
 
                 assert result["status"] == "success"
-                assert result["error_message"] is None
+                assert result.get("error_message") is None
                 assert result["errors_fixed"] == 1
                 # Check that remaining issues are reported (with more specific message)
                 assert len(result["remaining_issues"]) > 0
@@ -1054,15 +1061,17 @@ class TestFixQualityIssues:
 
             with (
                 patch(
-                    "cortex.tools.pre_commit_tools.execute_pre_commit_checks"
+                    "cortex.tools.pre_commit_tools.execute_pre_commit_checks",
+                    new_callable=AsyncMock,
                 ) as mock_execute,
                 patch(
-                    "cortex.tools.pre_commit_tools.fix_markdown_lint"
+                    "cortex.tools.markdown_operations.fix_markdown_lint",
+                    new_callable=AsyncMock,
                 ) as mock_markdown,
             ):
                 mock_execute.return_value = {
                     "status": "success",
-                    "checks": {
+                    "results": {
                         "fix_errors": {
                             "errors": [],
                             "warnings": [],
@@ -1073,7 +1082,12 @@ class TestFixQualityIssues:
                     },
                 }
                 mock_markdown.return_value = json.dumps(
-                    {"success": True, "files_fixed": 1, "files_processed": 1}
+                    {
+                        "success": True,
+                        "files_fixed": 1,
+                        "files_processed": 1,
+                        "results": [],
+                    }
                 )
 
                 with patch(
@@ -1085,7 +1099,7 @@ class TestFixQualityIssues:
                 result = json.loads(result_json)
 
                 assert result["status"] == "success"
-                assert result["errors_fixed"] >= 0
+                assert result.get("errors_fixed", 0) >= 0
                 assert len(result["files_modified"]) >= 0
 
     @pytest.mark.asyncio
@@ -1103,10 +1117,12 @@ class TestFixQualityIssues:
 
             with (
                 patch(
-                    "cortex.tools.pre_commit_tools.execute_pre_commit_checks"
+                    "cortex.tools.pre_commit_tools.execute_pre_commit_checks",
+                    new_callable=AsyncMock,
                 ) as mock_execute,
                 patch(
-                    "cortex.tools.pre_commit_tools.fix_markdown_lint"
+                    "cortex.tools.markdown_operations.fix_markdown_lint",
+                    new_callable=AsyncMock,
                 ) as mock_markdown,
             ):
                 # Simulate a clean repo where all checks succeeded but
