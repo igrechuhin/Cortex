@@ -261,24 +261,9 @@ TOOL_CATEGORIES: tuple[ToolCategoryEntry, ...] = (
         rationale="Discover skill packs for task or load pack manifest (operation=discover|load)",
     ),
     ToolCategoryEntry(
-        name="quick_start",
+        name="agent_workflow",
         category=ToolCategory.DEFERRED_MEDIUM,
-        rationale="Composite: session_start + load_context (agent-skills Step 2)",
-    ),
-    ToolCategoryEntry(
-        name="quality_check",
-        category=ToolCategory.DEFERRED_MEDIUM,
-        rationale="Composite: pre_commit quality + fix_quality_issues (agent-skills Step 2)",
-    ),
-    ToolCategoryEntry(
-        name="safe_manage_file",
-        category=ToolCategory.DEFERRED_MEDIUM,
-        rationale="Composite: validate + manage_file + validate (agent-skills Step 2)",
-    ),
-    ToolCategoryEntry(
-        name="suggest_workflow",
-        category=ToolCategory.DEFERRED_MEDIUM,
-        rationale="Recommend workflow templates for task (agent-skills Step 4)",
+        rationale="Composite: quick_start, quality_check, safe_manage_file, suggest_workflow (tool consolidation)",
     ),
     # ── Deferred low (admin / analytics / rare) ───────────────────────
     ToolCategoryEntry(

@@ -1,7 +1,7 @@
-"""Tests for composite tools (quick_start, quality_check, safe_manage_file).
+"""Tests for composite tools (agent_workflow dispatcher).
 
-Composite tools chain multiple tool calls to reduce round-trips.
-Plan: agent-skills-and-composability Step 2.
+Composite tool chains multiple operations. Plan: agent-skills-and-composability Step 2,
+tool consolidation.
 """
 
 import json
@@ -9,15 +9,15 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from cortex.tools.composite_tools import quality_check, quick_start, safe_manage_file
+from cortex.tools.composite_tools import agent_workflow
 
 
 @pytest.mark.asyncio
-class TestQuickStart:
-    """Tests for quick_start composite (session_start + load_context)."""
+class TestAgentWorkflowQuickStart:
+    """Tests for agent_workflow(operation='quick_start')."""
 
     async def test_quick_start_returns_combined_result(self) -> None:
-        """quick_start returns session_brief and context in one response."""
+        """agent_workflow(operation='quick_start') returns session_brief and context."""
         brief_data = {"status": "success", "brief": {"current_focus": "test"}}
         context_data = {"status": "success", "total_tokens": 500}
         with patch(
@@ -30,7 +30,8 @@ class TestQuickStart:
                 new_callable=AsyncMock,
                 return_value=json.dumps(context_data),
             ):
-                result = await quick_start(
+                result = await agent_workflow(
+                    operation="quick_start",
                     task_description="implement feature",
                     token_budget=10000,
                 )
@@ -42,7 +43,7 @@ class TestQuickStart:
         assert out["context"] == context_data
 
     async def test_quick_start_default_budget_when_omitted(self) -> None:
-        """quick_start uses 10000 token budget when omitted."""
+        """agent_workflow quick_start uses 10000 token budget when omitted."""
         brief_data = {"status": "success"}
         context_data = {"status": "success"}
         with patch(
@@ -55,13 +56,13 @@ class TestQuickStart:
                 new_callable=AsyncMock,
                 return_value=json.dumps(context_data),
             ) as mock_load:
-                await quick_start()
+                await agent_workflow(operation="quick_start")
                 mock_load.assert_awaited_once()
                 call_kwargs = mock_load.call_args[1]
                 assert call_kwargs["token_budget"] == 10000
 
     async def test_quick_start_general_task_when_no_description(self) -> None:
-        """quick_start uses 'general task' when task_description empty."""
+        """agent_workflow quick_start uses 'general task' when task_description empty."""
         brief_data = {"status": "success"}
         context_data = {"status": "success"}
         with patch(
@@ -74,14 +75,14 @@ class TestQuickStart:
                 new_callable=AsyncMock,
                 return_value=json.dumps(context_data),
             ) as mock_load:
-                await quick_start(task_description="")
+                await agent_workflow(operation="quick_start", task_description="")
                 call_kwargs = mock_load.call_args[1]
                 assert call_kwargs["task_description"] == "general task"
 
 
 @pytest.mark.asyncio
-class TestQualityCheck:
-    """Tests for quality_check composite (pre_commit + fix_quality)."""
+class TestAgentWorkflowQualityCheck:
+    """Tests for agent_workflow(operation='quality_check')."""
 
     async def test_quality_check_skips_fix_when_pre_passes(self) -> None:
         """fix_quality_issues not called when execute_pre_commit_checks passes."""
@@ -99,7 +100,7 @@ class TestQualityCheck:
                 "cortex.tools.pre_commit_tools.fix_quality_issues",
                 new_callable=AsyncMock,
             ) as mock_fix:
-                result = await quality_check()
+                result = await agent_workflow(operation="quality_check")
                 mock_fix.assert_not_awaited()
         out = json.loads(result)
         assert out["status"] == "success"
@@ -120,7 +121,7 @@ class TestQualityCheck:
                 new_callable=AsyncMock,
                 return_value=json.dumps(fix_result),
             ) as mock_fix:
-                result = await quality_check()
+                result = await agent_workflow(operation="quality_check")
                 mock_fix.assert_awaited_once()
         out = json.loads(result)
         assert out["status"] == "success"
@@ -129,8 +130,8 @@ class TestQualityCheck:
 
 
 @pytest.mark.asyncio
-class TestSafeManageFile:
-    """Tests for safe_manage_file composite (validate + manage_file + validate)."""
+class TestAgentWorkflowSafeManageFile:
+    """Tests for agent_workflow(operation='safe_manage_file')."""
 
     async def test_safe_manage_file_returns_pre_file_post(self) -> None:
         """safe_manage_file returns pre_validation, manage_file_result, post_validation."""
@@ -147,9 +148,10 @@ class TestSafeManageFile:
                 new_callable=AsyncMock,
                 return_value=json.dumps(file_result),
             ):
-                result = await safe_manage_file(
+                result = await agent_workflow(
+                    operation="safe_manage_file",
                     file_name="roadmap.md",
-                    operation="read",
+                    file_operation="read",
                     check_type="roadmap_sync",
                 )
         out = json.loads(result)
@@ -173,11 +175,19 @@ class TestSafeManageFile:
                 new_callable=AsyncMock,
                 return_value=json.dumps(file_result),
             ):
-                await safe_manage_file(
+                await agent_workflow(
+                    operation="safe_manage_file",
                     file_name="activeContext.md",
-                    operation="read",
+                    file_operation="read",
                 )
                 calls = mock_validate.call_args_list
                 assert len(calls) == 2
                 for call in calls:
                     assert call[1]["check_type"].value == "roadmap_sync"
+
+    async def test_safe_manage_file_requires_file_name_and_operation(self) -> None:
+        """Missing file_name or file_operation returns error."""
+        result = await agent_workflow(operation="safe_manage_file")
+        out = json.loads(result)
+        assert out["status"] == "error"
+        assert "file_name" in out["message"].lower()

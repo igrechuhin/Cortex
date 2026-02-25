@@ -23,11 +23,13 @@ Map each tool below the usage threshold (≤5 calls in 90 days) to an action: **
 | append_active_context_entry | **keep** | Memory bank discipline; implement and complete_plan use it for safe activeContext updates (memory-bank-updater, AGENTS.md). |
 | get_session_tool_anomalies | **removed** (pruned) | Use `query_usage(query_type="anomalies", hours=24)`. No longer in MCP tool list. |
 | run_tool_optimization_workflow | **removed** (pruned) | Use `query_usage(query_type="unused")` and `query_usage(query_type="recommendations")` and [tool-optimization-baseline](tool-optimization-baseline.md). No longer in MCP tool list. |
+| quick_start, quality_check, safe_manage_file, suggest_workflow | **consolidated** (2026-02-25) | Use `agent_workflow(operation="quick_start" or "quality_check" or "safe_manage_file" or "suggest_workflow", ...)`. Saves 3 tool slots. |
 
 ## Summary
 
 - **Keep**: 10 tools (task locking ×4, plan ×2, session ×2, roadmap ×1, activeContext ×1).
-- **Removed (pruned)**: 2 tools (`get_session_tool_anomalies`, `run_tool_optimization_workflow`) — no longer registered as MCP tools; use `query_usage` alternatives above.
+- **Removed (pruned)**: 2 tools (`get_session_tool_anomalies`, `run_tool_optimization_workflow`) — no longer registered; use `query_usage` alternatives above.
+- **Consolidated**: 4 tools → 1 (`agent_workflow`) — quick_start, quality_check, safe_manage_file, suggest_workflow.
 
 ## Done
 

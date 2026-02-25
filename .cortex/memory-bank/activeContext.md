@@ -28,6 +28,10 @@
 
 - ✅ **Security & Resilience Step 2 - Resilience Testing** - COMPLETE (2026-02-25) - Added tests/unit/test_resilience_concurrent_access.py: semaphore exhaustion/recovery, concurrent manage_file writes to same file, concurrent session_start, lock timeout handling, chaos (random delay, simulated PermissionError). Plan Step 2 done.
 
+- ✅ **Tool consolidation from session analysis** - COMPLETE (2026-02-25) - Phase 50 consolidation verified complete; 2 dead tools already pruned. Plan updated to PARTIALLY COMPLETE. Further reduction to ≤40 blocked by workflow requirements in tool-optimization-mapping.md.
+
+- ✅ **Tool consolidation agent_workflow** - COMPLETE (2026-02-25) - Consolidated 4 agent-skills tools (quick_start, quality_check, safe_manage_file, suggest_workflow) into agent_workflow dispatcher. Tool count 49→46. Plan partially complete; target ≤40 not yet reached.
+
 ## Completed Work (2026-02-24)
 
 - **Summary (2026-02-24)** - 1 entries archived.

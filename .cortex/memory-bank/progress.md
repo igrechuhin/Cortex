@@ -15,6 +15,9 @@
 - **Agent skills and composability Step 2 (2026-02-25)** - COMPLETE. Implemented Tool Composition Patterns: 3 composite tools (quick_start, quality_check, safe_manage_file) in composite_tools.py, added 7 unit tests. Plan Step 2 marked Done.
 - **Agent skills and composability (P2) (2026-02-25)** - COMPLETE. Implemented tool_classification query type for usage analysis. Steps 1–4 done.
 - **Security & Resilience Step 2 (2026-02-25)** - COMPLETE. Implemented resilience concurrent access tests: TrackedSemaphore exhaustion/recovery, concurrent manage_file writes, concurrent session_start, lock timeout, chaos scenarios. tests/unit/test_resilience_concurrent_access.py.
+- **Tool consolidation from session analysis (2026-02-25)** - COMPLETE. Phase 50 verified; 2 dead tools already pruned; plan updated. Further reduction blocked by tool-optimization-mapping.md.
+- **Tool consolidation agent_workflow (2026-02-25)** - COMPLETE. Consolidated quick_start, quality_check, safe_manage_file, suggest_workflow into agent_workflow(operation=...). Tool count 49→46. Plan remains partially complete (target ≤40).
+- **Commit pipeline: markdown lint fix (MD056)** - COMPLETE. Fixed table column count in docs/architecture/tool-optimization-mapping.md (pipe in backticks). Phase A passed; 4775 tests, 92.41% coverage.
 
 ## 2026-02-24
 

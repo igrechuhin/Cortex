@@ -11,10 +11,6 @@ from pathlib import Path
 
 import yaml
 
-from cortex.core.constants import MCP_TOOL_TIMEOUT_FAST
-from cortex.core.mcp_annotations import read_only_annotations
-from cortex.core.mcp_stability import ensure_usage_context, mcp_tool_wrapper
-from cortex.server import mcp
 from cortex.tools.workflow_models import WorkflowTemplate
 
 _workflows_dir: Path | None = None
@@ -75,44 +71,14 @@ def _recommended_workflows(
     return recommended
 
 
-@mcp.tool(  # pyright: ignore[reportUntypedFunctionDecorator]
-    annotations=read_only_annotations(
-        "Suggest Workflow",
-        idempotent=True,
-    ),  # pyright: ignore[reportCallIssue]
-)
-@ensure_usage_context
-@mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_FAST)
-async def suggest_workflow(
+async def suggest_workflow_impl(
     task_description: str,
     limit: int = 3,
 ) -> str:
     """Recommend workflow templates relevant to a task description.
 
-    USE WHEN: Agent wants guidance on which tool sequence to follow
-    for the current task (implement, debug, quality, handoff).
-
-    EXAMPLES: suggest_workflow(task_description="implement new API"),
-    suggest_workflow(task_description="fix failing tests", limit=2).
-
-    RETURNS: JSON with status and recommended workflows (name, description, steps).
-    Templates are guidance only; agent adapts the sequence as needed.
-
-    Args:
-        task_description: Short description of the current task or goal.
-        limit: Maximum number of workflows to return (default 3, max 10).
-
-    Returns:
-        JSON string with status and list of recommended workflows.
-
-    Example (success):
-        >>> suggest_workflow(task_description="implement new API", limit=2)
-        {"status": "success", "task_description": "implement new API", "count": 2,
-         "workflows": [{"name": "Implement", "description": "...", "steps": ["Load context", ...]}, ...]}
-
-    Example (edge case — empty task description):
-        >>> suggest_workflow(task_description="")
-        {"status": "success", "task_description": "(none)", "count": 0, "workflows": []}
+    Implementation used by agent_workflow(operation="suggest_workflow"). See
+    agent_workflow docstring for public API.
     """
     limit = max(1, min(10, limit))
     templates = _load_all_workflows()

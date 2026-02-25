@@ -1,9 +1,10 @@
-"""Composite tools: thin wrappers that chain multiple tool calls (plan: agent-skills-and-composability).
+"""Composite tools: agent workflow dispatcher (plan: agent-skills-and-composability, tool consolidation).
 
-Reduces round-trips by combining common sequences:
+Consolidates agent-skills operations into a single dispatcher:
 - quick_start: session_start + load_context
 - quality_check: execute_pre_commit_checks(quality) + optional fix_quality_issues
 - safe_manage_file: validate + manage_file + validate (write with guard)
+- suggest_workflow: recommend workflow templates for task description
 """
 
 from __future__ import annotations
@@ -11,40 +12,20 @@ from __future__ import annotations
 import json
 
 from cortex.core.constants import MCP_TOOL_TIMEOUT_COMPLEX
-from cortex.core.mcp_annotations import read_only_annotations, safe_write_annotations
+from cortex.core.mcp_annotations import safe_write_annotations
 from cortex.core.mcp_stability import ensure_usage_context, mcp_tool_wrapper
 from cortex.server import mcp
 
+# ---------------------------------------------------------------------------
+# Internal implementations (no @mcp.tool; called by agent_workflow)
+# ---------------------------------------------------------------------------
 
-@mcp.tool(  # pyright: ignore[reportUntypedFunctionDecorator]
-    annotations=read_only_annotations(
-        "Quick Start (Session + Context)",
-        idempotent=False,
-    ),  # pyright: ignore[reportCallIssue]
-)
-@ensure_usage_context
-@mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_COMPLEX)
-async def quick_start(
+
+async def _quick_start_impl(
     task_description: str | None = None,
     token_budget: int | None = None,
 ) -> str:
-    """Run session_start then load_context in one call for fast orientation.
-
-    USE WHEN: Starting a session and loading task context in one step.
-
-    EXAMPLES: 'quick start', 'quick_start()', 'quick_start(task_description=
-    "implement feature", token_budget=10000)', 'orient and load context'.
-
-    RETURNS: JSON with status, session_brief (SessionStartResult), and
-    context (load_context result). Combined orientation and context in one call.
-
-    Args:
-        task_description: Optional task description for load_context.
-            If omitted or empty, context uses "general task". Used to select
-            relevant memory bank files.
-        token_budget: Maximum tokens for load_context. Default: 10000 when
-            omitted. Use for implement/add (e.g. 10000) or fix/debug (e.g. 15000).
-    """
+    """Run session_start then load_context."""
     from cortex.tools.phase4_optimization_handlers import load_context
     from cortex.tools.session_start_tools import session_start
 
@@ -69,36 +50,8 @@ async def quick_start(
     )
 
 
-@mcp.tool(  # pyright: ignore[reportUntypedFunctionDecorator]
-    annotations=safe_write_annotations("Quality Check (Pre-commit + Fix)"),
-)
-@ensure_usage_context
-@mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_COMPLEX)
-async def quality_check() -> str:
-    """Run execute_pre_commit_checks(quality) then fix_quality_issues if needed.
-
-    USE WHEN: Single-step quality gate and auto-fix before commit, or when
-    user wants to run quality check and auto-fix in one call.
-
-    EXAMPLES: 'quality check', 'run quality gate', 'check quality and fix',
-    'pre-commit quality before commit'.
-
-    RETURNS: JSON with status, pre_commit_result (execute_pre_commit_checks
-    output), fix_applied (bool), and fix_result (if fix_quality_issues ran).
-
-    Args:
-        None. No parameters; runs quality check and optional fix in one call.
-
-    Example (Success):
-        ```json
-        {
-          "status": "success",
-          "pre_commit_result": { "status": "success", "results": { ... } },
-          "fix_applied": true,
-          "fix_result": { "status": "success", "files_modified": 2 }
-        }
-        ```
-    """
+async def _quality_check_impl() -> str:
+    """Run execute_pre_commit_checks(quality) then fix_quality_issues if needed."""
     from cortex.tools.pre_commit_tools import (
         execute_pre_commit_checks,
         fix_quality_issues,
@@ -129,6 +82,7 @@ async def _safe_manage_file_impl(
     change_description: str | None,
     check_type: str,
 ) -> str:
+    """Run validate, manage_file, validate (write with guard)."""
     from cortex.tools.file_crud_operations import manage_file
     from cortex.tools.file_operation_helpers import FileOperation
     from cortex.tools.validation_helpers import ValidationCheckType
@@ -155,44 +109,123 @@ async def _safe_manage_file_impl(
     )
 
 
+# ---------------------------------------------------------------------------
+# Dispatch helpers (keep functions under 30 lines)
+# ---------------------------------------------------------------------------
+
+
+async def _run_safe_manage_file(
+    file_name: str | None,
+    file_operation: str | None,
+    content: str | None,
+    sections: list[str] | None,
+    change_description: str | None,
+    check_type: str,
+) -> str:
+    """Run safe_manage_file with validation of required params."""
+    if not file_name or not file_operation:
+        return json.dumps(
+            {
+                "status": "error",
+                "message": "safe_manage_file requires file_name and file_operation",
+            },
+            indent=2,
+        )
+    return await _safe_manage_file_impl(
+        file_name=file_name,
+        operation=file_operation,
+        content=content,
+        sections=sections,
+        change_description=change_description,
+        check_type=check_type,
+    )
+
+
+async def _run_suggest_workflow(task_description: str | None, limit: int) -> str:
+    """Run suggest_workflow with clamped limit."""
+    from cortex.tools.workflow_operations import suggest_workflow_impl
+
+    task = (task_description or "").strip()
+    lim = max(1, min(10, limit))
+    return await suggest_workflow_impl(task_description=task, limit=lim)
+
+
+async def _dispatch_agent_workflow(
+    operation: str,
+    task_description: str | None,
+    token_budget: int | None,
+    file_name: str | None,
+    file_operation: str | None,
+    content: str | None,
+    sections: list[str] | None,
+    change_description: str | None,
+    check_type: str,
+    limit: int,
+) -> str:
+    """Route to operation-specific implementation."""
+    op = operation.strip().lower() if operation else ""
+    if op == "quick_start":
+        return await _quick_start_impl(
+            task_description=task_description, token_budget=token_budget
+        )
+    if op == "quality_check":
+        return await _quality_check_impl()
+    if op == "safe_manage_file":
+        return await _run_safe_manage_file(
+            file_name, file_operation, content, sections, change_description, check_type
+        )
+    if op == "suggest_workflow":
+        return await _run_suggest_workflow(task_description, limit)
+    msg = f"Unknown operation: {operation}. Use quick_start, quality_check, safe_manage_file, or suggest_workflow."
+    return json.dumps({"status": "error", "message": msg}, indent=2)
+
+
+# ---------------------------------------------------------------------------
+# Consolidated MCP tool: agent_workflow
+# ---------------------------------------------------------------------------
+
+
 @mcp.tool(  # pyright: ignore[reportUntypedFunctionDecorator]
     annotations=safe_write_annotations(
-        "Safe Manage File (Validate + Write + Validate)"
-    ),
+        "Agent Workflow (Session, Quality, Safe File, Suggest Workflow)"
+    ),  # pyright: ignore[reportCallIssue]
 )
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_COMPLEX)
-async def safe_manage_file(
-    file_name: str,
+async def agent_workflow(
     operation: str,
+    task_description: str | None = None,
+    token_budget: int | None = None,
+    file_name: str | None = None,
+    file_operation: str | None = None,
     content: str | None = None,
     sections: list[str] | None = None,
     change_description: str | None = None,
     check_type: str = "roadmap_sync",
+    limit: int = 3,
 ) -> str:
-    """Run validate, then manage_file, then validate (write with guard).
+    """Agent-skills workflow dispatcher: quick_start, quality_check, safe_manage_file, suggest_workflow.
 
-    USE WHEN: Writing memory bank files with pre/post validation to ensure
-    schema/consistency before and after the write.
+    USE WHEN: Combining session+context, quality gate, safe file write, or workflow suggestions
+    in one call. Reduces tool count; use operation= to select behavior.
 
-    EXAMPLES: 'safe_manage_file(file_name="roadmap.md", operation="read")',
-    'safe write activeContext with validation', 'manage file with guard'.
+    operation="quick_start": session_start + load_context. Params: task_description, token_budget.
+    operation="quality_check": pre_commit quality + fix. No extra params.
+    operation="safe_manage_file": validate + manage_file + validate. Params: file_name,
+        file_operation, content, sections, change_description, check_type.
+    operation="suggest_workflow": recommend templates. Params: task_description, limit.
 
-    RETURNS: JSON with status, pre_validation (validate result),
-    manage_file_result (manage_file result), and post_validation (validate
-    result). Use when atomic write-with-validation is required.
-
-    Args:
-        file_name: Memory bank file name (e.g. "activeContext.md",
-            "roadmap.md"). Resolved via project structure.
-        operation: manage_file operation: "read", "write", "metadata".
-        content: Full file content for operation="write". Optional for read.
-        sections: Section names for section-level read/write. Optional.
-        change_description: Description of change for write operations.
-            Optional.
-        check_type: Validation check type run before and after (e.g.
-            "roadmap_sync", "schema", "timestamps"). Default: "roadmap_sync".
+    RETURNS: JSON result specific to the operation.
     """
-    return await _safe_manage_file_impl(
-        file_name, operation, content, sections, change_description, check_type
+    return await _dispatch_agent_workflow(
+        operation,
+        task_description,
+        token_budget,
+        file_name,
+        file_operation,
+        content,
+        sections,
+        change_description,
+        check_type,
+        limit,
     )
