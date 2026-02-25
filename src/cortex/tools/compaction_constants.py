@@ -28,5 +28,8 @@ PROGRESS_TOKEN_THRESHOLD_DEFAULT = 10_000
 SESSION_HANDOFF_FILENAME = "last_handoff.json"
 """Filename for session handoff under .cortex/.cache/session/."""
 
+SESSION_PROGRESS_FILENAME = "progress.txt"
+"""Filename for human-readable progress file under .cortex/.cache/session/."""
+
 SESSION_HANDOFF_SCHEMA_VERSION = 1
 """Current schema version for SessionHandoff (for future compatibility)."""

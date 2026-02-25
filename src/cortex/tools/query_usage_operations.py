@@ -253,6 +253,44 @@ async def _run_redundancy(params: QueryUsageParams, ctx: MCPContext | None) -> s
     return payload.model_dump_json(indent=2)
 
 
+async def _run_session_continuity(
+    params: QueryUsageParams, ctx: MCPContext | None
+) -> str:
+    """Session continuity score (Anthropic Step 5): turns until productive."""
+    from cortex.core.project_root_resolver import resolve_project_root_async
+    from cortex.tools import usage_analytics
+    from cortex.tools.phase5_session_continuity_helpers import (
+        get_session_continuity_payload,
+    )
+
+    root = await resolve_project_root_async(None, ctx)
+    tracker = await usage_analytics._get_tracker(root)  # type: ignore[attr-defined]
+    if tracker is None:
+        return json.dumps(
+            {
+                "status": "unavailable",
+                "message": "Usage tracker not available",
+            },
+            indent=2,
+        )
+    days = max(1, min(365, params.days))
+    payload = await get_session_continuity_payload(root, tracker, days=days)
+    return payload.model_dump_json(indent=2)
+
+
+async def _run_tool_frequency(params: QueryUsageParams, ctx: MCPContext | None) -> str:
+    """Tool frequency (Anthropic Step 6): tools per session, tier token impact."""
+    from cortex.core.project_root_resolver import resolve_project_root_async
+    from cortex.tools import usage_analytics
+    from cortex.tools.phase5_tool_frequency_helpers import get_tool_frequency_payload
+
+    root = await resolve_project_root_async(None, ctx)
+    tracker = await usage_analytics._get_tracker(root)  # type: ignore[attr-defined]
+    days = max(1, min(365, params.days))
+    payload = await get_tool_frequency_payload(root, tracker, days=days)
+    return payload.model_dump_json(indent=2)
+
+
 _Handler = Callable[[QueryUsageParams, MCPContext | None], Awaitable[str]]
 _USAGE_HANDLERS: dict[str, _Handler] = {
     "stats": _run_usage_stats,
@@ -268,6 +306,8 @@ _USAGE_HANDLERS: dict[str, _Handler] = {
     "production_monitoring": _run_production_monitoring,
     "token_efficiency": _run_token_efficiency,
     "redundancy": _run_redundancy,
+    "session_continuity": _run_session_continuity,
+    "tool_frequency": _run_tool_frequency,
 }
 
 
@@ -358,10 +398,12 @@ async def query_usage(
     RETURNS: JSON (or markdown when format=markdown) with result for
     query_type: stats, unused, report, recommendations, search, events,
     observation, timeline, anomalies, tool_description_optimization,
-    production_monitoring, token_efficiency, redundancy. tool_name required
-    for tool_description_optimization. token_efficiency shows top
-    token-expensive tools (Anthropic Step 2). redundancy shows repeated
-    identical calls, sequential same-tool runs, error rate by param (Step 3).
+    production_monitoring, token_efficiency, redundancy, session_continuity,
+    tool_frequency. tool_name required for tool_description_optimization.
+    token_efficiency shows top token-expensive tools (Anthropic Step 2).
+    redundancy shows repeated identical calls (Step 3). session_continuity
+    tracks turns until productive (Step 5). tool_frequency shows tools by
+    session presence and token savings when tiered loading is enabled (Step 6).
     """
     await _log_query_usage_start(ctx, query_type)
     params = _build_query_usage_params_from_locals(locals())

@@ -311,8 +311,73 @@ class TestCompactSession:
         # The important thing is that compaction succeeds
         if handoff is not None:
             assert "Test summary" in handoff.next_actions
-        # If handoff is None, log it but don't fail - this is a test environment issue
-        # In production, handoff should always be written
+        # Verify progress.txt created (Anthropic Step 5 structured format)
+        session_dir = get_cache_dir(tmp_path, CacheType.SESSION)
+        progress_txt = session_dir / "progress.txt"
+        if progress_txt.exists():
+            content = progress_txt.read_text()
+            assert "Session Progress" in content
+            assert "Next Actions" in content
+
+    @pytest.mark.asyncio
+    async def test_compact_session_with_handoff_params_writes_progress(
+        self, tmp_path: Path
+    ) -> None:
+        """compact_session with completed_tasks writes structured progress.txt."""
+        _ = ensure_test_cortex_structure(tmp_path)
+        mb_dir = get_cortex_path(tmp_path, CortexResourceType.MEMORY_BANK)
+        today = date.today().strftime("%Y-%m-%d")
+        active_content = f"# Active Context\n\n## Completed Work ({today})\n- x\n"
+        progress_content = f"# Progress\n\n## {today}\n- y\n"
+        fs_manager = FileSystemManager(tmp_path)
+        _ = await fs_manager.write_file(
+            mb_dir / "activeContext.md", active_content, expected_hash=None
+        )
+        _ = await fs_manager.write_file(
+            mb_dir / "progress.md", progress_content, expected_hash=None
+        )
+        managers = make_test_managers(
+            fs=fs_manager,
+            tokens=TokenCounter(),
+            index=MetadataIndex(tmp_path),
+            versions=VersionManager(tmp_path),
+        )
+        with (
+            patch(
+                "cortex.tools.compaction_operations.get_current_managers",
+                return_value=managers,
+            ),
+            patch(
+                "cortex.tools.compaction_operations.get_or_resolve_project_root",
+                new_callable=AsyncMock,
+                return_value=tmp_path,
+            ),
+        ):
+            tool_fn = get_tool_fn(compact_session)
+            result_json = await tool_fn(
+                summary="Done",
+                completed_tasks=["Task A", "Task B"],
+                blockers=["Blocker 1"],
+                ctx=None,
+            )
+        result = to_dict(result_json)
+        assert result.get("status") == "success"
+        # Verify handoff has structured params
+        handoff = await read_handoff(tmp_path, fs_manager)
+        assert handoff is not None
+        assert (
+            "Task A" in handoff.completed_tasks or "Task B" in handoff.completed_tasks
+        )
+        assert "Blocker 1" in handoff.blockers
+        # Verify progress.txt created (Anthropic Step 5)
+        session_dir = get_cache_dir(tmp_path, CacheType.SESSION)
+        progress_txt = session_dir / "progress.txt"
+        assert (
+            progress_txt.exists()
+        ), f"progress.txt not at {progress_txt}; session_dir={session_dir}"
+        content = progress_txt.read_text()
+        assert "Task A" in content or "Task B" in content
+        assert "Blocker 1" in content
 
     @pytest.mark.asyncio
     async def test_compact_session_creates_snapshots(self, tmp_path: Path) -> None:

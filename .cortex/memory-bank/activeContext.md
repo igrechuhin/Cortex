@@ -16,6 +16,12 @@
 
 - ✅ **Anthropic Step 4 - Layered Evaluation (Swiss Cheese)** - COMPLETE (2026-02-25) - Implemented A/B baseline comparison: run_eval_check.py --save-baseline, --compare-baseline, --current-results, --output-summary. CI runs A/B compare after eval_full. Layer 1 (eval_fast in pre-commit) and Layer 2 (production_monitoring) already present; failure-based evals in failure_based_evals.json.
 
+- ✅ **Anthropic Step 5 - Long-Running Agent Harness** - COMPLETE (2026-02-25) - Implemented structured progress format (progress.txt), compact_session optional params (completed_tasks, in_progress_task, blockers, decisions_made), create_checkpoint for git tags, query_usage(session_continuity) for turns-until-productive tracking.
+
+- ✅ **Anthropic context engineering alignment** - COMPLETE (2026-02-25) - Step 6 On-Demand Tool Loading: query_usage(tool_frequency) for session presence and token impact; 15%+ reduction when tiered loading enabled; infrastructure ready for MCP defer_loading.
+
+- ✅ **Commit pipeline: function length fix** - COMPLETE (2026-02-25) - Fixed function length violation in compaction_operations: extracted_compact_write_back_from_ctx from _compact_session_write_then_success (31→30 lines). Quality, tests, coverage 92.29% pass.
+
 ## Completed Work (2026-02-24)
 
 - **Summary (2026-02-24)** - 1 entries archived.

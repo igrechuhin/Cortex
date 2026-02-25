@@ -116,6 +116,8 @@ When `enabled: false` (default), all tools are listed as today. When MCP SDK sup
 
 **Token savings:** When deferred loading is enabled, initial tool list size equals `len(always_loaded)` instead of all tools; the difference is the number of tools loaded on demand via `search_tools`. Tests in `tests/tools/test_tool_search_operations.py` and `tests/unit/test_optimization_config.py` assert `always_loaded < total` so that when `defer_loading` is implemented, token savings are realized.
 
+**Tool frequency and token impact (Step 6):** Use `query_usage(query_type="tool_frequency", days=30)` to see tools by session presence (core ≥80%, medium 10–80%, rare &lt;10%) and `token_impact.reduction_pct_when_tiered` — the estimated reduction in initial context tokens when only tier1 tools are sent. With current tiers, this is typically ≥15%.
+
 **Verifying tool discovery:** Call the **search_tools** MCP tool with a query (e.g. `query="refactor"`, `query="usage"`, `category="deferred_low"`). Results are only from deferred tiers; always_loaded tools are not in the search index. Unit tests assert that search results are a subset of deferred tools and disjoint from always_loaded.
 
 ## Programmatic Tool Calling – Orchestration Analysis (Phase 49 Step 7)
