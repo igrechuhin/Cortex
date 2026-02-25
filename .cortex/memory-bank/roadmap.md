@@ -23,3 +23,4 @@ Completed investigations are recorded in [activeContext.md](activeContext.md). P
 - **Pending: Phase 58 multi-agent specialization** - Plan: .cortex/plans/phase-58-multi-agent-specialization-task-locking.md
 - **Pending: Phase 9 excellence** - Plan: .cortex/plans/phase-9-excellence-98.md
 - **Pending: Tool consolidation — next analysis** - Run next tool consolidation analysis from usage data and governance; produce report and optional follow-up plan. Plan: .cortex/plans/tool-consolidation-next-analysis.md
+- **Tool consolidation from session analysis** - PENDING - Reduce tool count from 100+ to ≤40; Phase 50 consolidation, deprecate dead tools. Plan: .cortex/plans/tool-consolidation-from-session-analysis-2026-02-25.md
