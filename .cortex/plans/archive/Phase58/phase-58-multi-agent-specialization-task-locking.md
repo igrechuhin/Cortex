@@ -1,6 +1,6 @@
 # Phase 58: Multi-Agent Specialization and Task Locking
 
-**Status:** PENDING
+**Status:** COMPLETE
 **Created:** 2026-02-11
 **Priority:** MEDIUM
 **Estimated Effort:** 2-3 sprints
@@ -107,7 +107,7 @@ Current Cortex limitations:
   - Always load: projectBrief, productContext
   - Relevant tools: manage_file, fix_markdown_lint
   - Skip: quality tools, refactoring tools
-- [ ] Unit tests for role-based context selection
+- [x] Unit tests for role-based context selection
 
 ### Step 3: Task Locking Mechanism - ✅ COMPLETED
 
@@ -151,33 +151,33 @@ Current Cortex limitations:
 - [x] Session registry stored in `.cortex/.cache/sessions/active.json`
 - [x] Include session info in `get_memory_bank_stats` (via session_start brief)
 
-### Step 5: Implement as MCP Tools
+### Step 5: Implement as MCP Tools - ✅ COMPLETED
 
-- [ ] Create `claim_task(task_title: str, role: str | None = None)` MCP tool
-- [ ] Create `release_task(task_title: str)` MCP tool
-- [ ] Create `list_active_tasks()` MCP tool — shows all locked tasks and their agents
-- [ ] Add role parameter to `load_context`
-- [ ] Register all new tools with appropriate descriptions
+- [x] Create `claim_task(task_title: str, role: str | None = None)` MCP tool — implemented as `claim_task_lock`
+- [x] Create `release_task(task_title: str)` MCP tool — implemented as `release_task_lock`
+- [x] Create `list_active_tasks()` MCP tool — shows all locked tasks and their agents
+- [x] Add role parameter to `load_context`
+- [x] Register all new tools with appropriate descriptions
 
-### Step 6: Update Prompts and Documentation
+### Step 6: Update Prompts and Documentation - ✅ COMPLETED
 
-- [ ] Update implement-next-roadmap-step prompt:
+- [x] Update implement-next-roadmap-step prompt:
   1. Call `session_start` to see available tasks
-  2. Call `claim_task` on chosen task
+  2. Call `claim_task_lock` on chosen task
   3. Work on task
-  4. Call `release_task` when done or switching tasks
-- [ ] Update AGENTS.md with multi-agent guidance
-- [ ] Document role profiles and their tool/context presets
-- [ ] Add parallel work best practices to CLAUDE.md
+  4. Call `release_task_lock` when done or switching tasks
+- [x] Update AGENTS.md with multi-agent guidance
+- [x] Document role profiles and their tool/context presets (in AGENTS.md supported roles)
+- [x] Add parallel work best practices to CLAUDE.md
 
 ### Step 7: Testing and Validation
 
-- [ ] Unit tests for all lock operations (95%+ coverage)
-- [ ] Unit tests for role detection and context selection
-- [ ] Integration test: two simulated sessions claiming different tasks
-- [ ] Integration test: lock conflict resolution (second agent picks different task)
-- [ ] Test lock expiry and cleanup
-- [ ] Verify no deadlocks or orphaned locks
+- [x] Unit tests for all lock operations (95%+ coverage)
+- [x] Unit tests for role detection and context selection
+- [x] Integration test: two simulated sessions claiming different tasks
+- [x] Integration test: lock conflict resolution (second agent picks different task)
+- [x] Test lock expiry and cleanup
+- [x] Verify no deadlocks or orphaned locks
 
 ## Dependencies
 

@@ -22,6 +22,8 @@ load_context(task_description="<your goal>", token_budget=<appropriate>)
 
 **Pattern**: `session_start()` → review brief → `load_context(task_description=brief.next_work_item, ...)` → work
 
+**Parallel agents (Phase 58)**: See AGENTS.md (Multi-agent coordination) for task locking when multiple Cursor tabs work on the same project.
+
 Token budget guidance comes from `load_context` tool documentation and context-effectiveness analysis. Use task-appropriate budgets.
 
 **Context budget defaults (task-type)**:
