@@ -22,6 +22,9 @@ from cortex.tools.pre_commit_docs_memory_helpers import (
     _build_timestamps_summary,  # pyright: ignore[reportPrivateUsage]
     _compute_docs_memory_bank_passed,  # pyright: ignore[reportPrivateUsage]
 )
+from cortex.tools.pre_commit_phase_dispatch import (
+    _ensure_dict,  # pyright: ignore[reportPrivateUsage]
+)
 from cortex.tools.pre_commit_preflight_helpers import (
     _append_markdown_summary,  # pyright: ignore[reportPrivateUsage]
     _build_check_summaries,  # pyright: ignore[reportPrivateUsage]
@@ -520,6 +523,35 @@ class TestPreflightHelperFunctions:
         model = _build_preflight_model(exec_result, "python", None, None)
         assert model["status"] == "error"
         assert model["error_type"] == "PreflightToolError"
+
+
+# ============================================================================
+# _ensure_dict unit tests (string-to-dict defensive handling)
+# ============================================================================
+
+
+class TestEnsureDict:
+    """Unit tests for _ensure_dict (handles MCP cancellation/string responses)."""
+
+    def test_ensure_dict_passes_through_dict(self) -> None:
+        """Dict input is returned unchanged."""
+        d: ModelDict = {"status": "success", "preflight_passed": True}
+        assert _ensure_dict(d) is d
+
+    def test_ensure_dict_parses_json_string(self) -> None:
+        """JSON string (e.g. CANCELLED_RESPONSE_JSON) is parsed to dict."""
+        s = '{"status":"error","error":"CancelledError","message":"Tool call was cancelled"}'
+        result = _ensure_dict(s)
+        assert isinstance(result, dict)
+        assert result["status"] == "error"
+        assert result["error"] == "CancelledError"
+
+    def test_ensure_dict_invalid_json_returns_error_dict(self) -> None:
+        """Invalid JSON string returns error dict."""
+        result = _ensure_dict("not valid json")
+        assert isinstance(result, dict)
+        assert result["status"] == "error"
+        assert "error" in result
 
 
 # ============================================================================

@@ -25,6 +25,23 @@ from cortex.tools.pre_commit_helpers_remaining import (
 logger = logging.getLogger(__name__)
 
 
+def _ensure_result_dict(value: ModelDict | str) -> ModelDict:
+    """Ensure value is a dict; parse JSON string if needed (e.g. cancellation response).
+
+    MCP stability can return CANCELLED_RESPONSE_JSON as a string. Prevents
+    AttributeError: 'str' object has no attribute 'get'.
+    """
+    if isinstance(value, dict):
+        return value
+    try:
+        parsed = json.loads(value)
+        return (
+            cast(ModelDict, parsed) if isinstance(parsed, dict) else cast(ModelDict, {})
+        )
+    except (json.JSONDecodeError, TypeError):
+        return cast(ModelDict, {"status": "error", "error": str(value)})
+
+
 class FixQualityResult(BaseModel):
     """Result of fix_quality_issues operation."""
 
@@ -177,7 +194,7 @@ async def _run_quality_checks() -> ModelDict | str:
     """Run quality checks and return result or error response."""
     from cortex.tools.pre_commit_tools import execute_pre_commit_checks
 
-    fix_errors_result = await execute_pre_commit_checks(
+    raw_result = await execute_pre_commit_checks(
         checks=[
             PreCommitCheck.FIX_ERRORS.value,
             PreCommitCheck.FORMAT.value,
@@ -187,6 +204,7 @@ async def _run_quality_checks() -> ModelDict | str:
         coverage_threshold=0.90,
         strict_mode=False,
     )
+    fix_errors_result = _ensure_result_dict(raw_result)
     if fix_errors_result.get("status") == "error" and (
         "error" in fix_errors_result or "error_type" in fix_errors_result
     ):

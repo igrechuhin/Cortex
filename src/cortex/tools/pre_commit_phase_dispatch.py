@@ -6,11 +6,29 @@ helpers import execute_pre_commit_checks from pre_commit_tools).
 
 from __future__ import annotations
 
+import json
 from enum import Enum
 from typing import cast
 
 from cortex.core.context_logging import MCPContext
 from cortex.core.models import ModelDict
+
+
+def _ensure_dict(value: ModelDict | str) -> ModelDict:
+    """Ensure value is a dict; parse JSON string if needed (MCP protocol edge case).
+
+    Some MCP clients may return tool results as JSON strings instead of parsed dicts.
+    This prevents AttributeError: 'str' object has no attribute 'get'.
+    """
+    if isinstance(value, dict):
+        return value
+    try:
+        parsed = json.loads(value)
+        return (
+            cast(ModelDict, parsed) if isinstance(parsed, dict) else cast(ModelDict, {})
+        )
+    except (json.JSONDecodeError, TypeError):
+        return cast(ModelDict, {"status": "error", "error": str(value)})
 
 
 class PreCommitPhase(str, Enum):
@@ -59,15 +77,17 @@ async def _run_phase_full(
         test_timeout, coverage_threshold, strict_mode, include_untracked_markdown, ctx
     )
     phase_b_result = await _run_phase_b(ctx)
+    phase_a_dict = _ensure_dict(phase_a_result)
+    phase_b_dict = _ensure_dict(phase_b_result)
     return cast(
         ModelDict,
         {
             "status": "success",
             "phase": "full",
-            "phase_a": phase_a_result,
-            "phase_b": phase_b_result,
-            "preflight_passed": phase_a_result.get("preflight_passed", False),
-            "docs_phase_passed": phase_b_result.get("docs_phase_passed", False),
+            "phase_a": phase_a_dict,
+            "phase_b": phase_b_dict,
+            "preflight_passed": phase_a_dict.get("preflight_passed", False),
+            "docs_phase_passed": phase_b_dict.get("docs_phase_passed", False),
         },
     )
 

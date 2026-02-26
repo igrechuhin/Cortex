@@ -34,6 +34,23 @@ _PRE_FLIGHT_DEFAULT_CHECKS: tuple[PreCommitCheckName, ...] = (
 )
 
 
+def _ensure_result_dict(value: ModelDict | str) -> ModelDict:
+    """Ensure value is a dict; parse JSON string if needed (e.g. cancellation response).
+
+    MCP stability can return CANCELLED_RESPONSE_JSON as a string. Prevents
+    AttributeError: 'str' object has no attribute 'get'.
+    """
+    if isinstance(value, dict):
+        return value
+    try:
+        parsed = json.loads(value)
+        return (
+            cast(ModelDict, parsed) if isinstance(parsed, dict) else cast(ModelDict, {})
+        )
+    except (json.JSONDecodeError, TypeError):
+        return cast(ModelDict, {"status": "error", "error": str(value)})
+
+
 def _has_pre_commit_tool_error(execute_result: ModelDict) -> bool:
     """Return True when execute_pre_commit_checks failed as a tool."""
     status = str(execute_result.get("status"))
@@ -188,13 +205,14 @@ async def _run_preflight_checks_phase_tools(
 ) -> tuple[ModelDict, str | None, JsonDict | None]:
     """Run execute_pre_commit_checks and markdown lint once for preflight."""
     checks: Sequence[PreCommitCheckName] = _PRE_FLIGHT_DEFAULT_CHECKS
-    execute_result = await execute_pre_commit_checks(
+    raw_result = await execute_pre_commit_checks(
         checks=checks,
         test_timeout=test_timeout,
         coverage_threshold=coverage_threshold,
         strict_mode=strict_mode,
         ctx=ctx,
     )
+    execute_result = _ensure_result_dict(raw_result)
     language_value = execute_result.get("language")
     language = str(language_value) if isinstance(language_value, str) else None
     markdown_result = await _run_markdown_phase(include_untracked_markdown, ctx)
