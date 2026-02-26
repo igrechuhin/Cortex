@@ -5,19 +5,27 @@ This module provides tools to analyze load_context effectiveness
 and store statistics for optimization.
 """
 
-import json
 from datetime import datetime
 from pathlib import Path
 from typing import cast
 
 from cortex.core.models import JsonDict, JsonValue, ModelDict
-from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.core.session_logger import (
     LoadContextLogEntry,
     get_session_id,
     get_session_log_path,
     list_session_logs,
     read_session_log,
+)
+from cortex.tools.context_analysis_operations_insights import (
+    extract_task_pattern,
+    generate_insights,
+)
+from cortex.tools.context_analysis_operations_io import (
+    create_empty_insights,
+    get_statistics_path,
+    load_statistics,
+    save_statistics,
 )
 from cortex.tools.models import (
     ContextAnalysisStatus,
@@ -26,115 +34,9 @@ from cortex.tools.models import (
     ContextUsageEntry,
     ContextUsageStatistics,
     CurrentSessionAnalysisResult,
-    FileEffectiveness,
     SessionLogsAnalysisResult,
     SessionStats,
-    TaskTypeInsight,
 )
-
-
-def _get_statistics_path(project_root: Path) -> Path:
-    """Get path to context usage statistics file."""
-    session_dir = get_cortex_path(project_root, CortexResourceType.SESSION)
-    return session_dir / "context-usage-statistics.json"
-
-
-def _load_statistics(stats_path: Path) -> ContextUsageStatistics:
-    """Load existing statistics or create empty structure."""
-    if stats_path.exists():
-        with open(stats_path, encoding="utf-8") as f:
-            data = json.load(f)
-            return ContextUsageStatistics.model_validate(data)
-
-    return ContextUsageStatistics(
-        last_updated=datetime.now().isoformat(timespec="minutes"),
-        total_sessions_analyzed=0,
-        total_load_context_calls=0,
-        avg_token_utilization=0.0,
-        avg_files_selected=0.0,
-        avg_relevance_score=0.0,
-        common_task_patterns={},
-        insights=_create_empty_insights(),
-        entries=[],
-    )
-
-
-def _create_empty_insights() -> ContextInsights:
-    """Create empty insights structure."""
-    return ContextInsights(
-        task_type_recommendations={},
-        file_effectiveness={},
-        learned_patterns=[],
-        budget_recommendations={},
-        role_recommendations={},
-        role_budget_recommendations={},
-    )
-
-
-def _save_statistics(stats_path: Path, stats: ContextUsageStatistics) -> None:
-    """Save statistics to file."""
-    stats_path.parent.mkdir(parents=True, exist_ok=True)
-    with open(stats_path, "w", encoding="utf-8") as f:
-        json.dump(stats.model_dump(mode="json"), f, indent=2)
-
-
-def _is_non_trivial_task(task_description: str) -> bool:
-    """Check if task description indicates a non-trivial task requiring context.
-
-    Non-trivial tasks are those that require project context to complete correctly:
-    - refactor, fix, debug, implement, add, create tasks
-    - These tasks MUST use non-zero token budgets for proper context loading.
-
-    Args:
-        task_description: Task description to check
-
-    Returns:
-        True if task is non-trivial and requires context
-    """
-    task_lower = task_description.lower()
-    non_trivial_keywords = [
-        "refactor",
-        "fix",
-        "bug",
-        "debug",
-        "implement",
-        "add",
-        "create",
-        "testing",
-        "test ",
-    ]
-    return any(keyword in task_lower for keyword in non_trivial_keywords)
-
-
-def _extract_task_pattern(task_description: str) -> str:
-    """Extract a simplified pattern from task description."""
-    # Extract key action words
-    task_lower = task_description.lower()
-
-    # Order matters: more specific patterns first
-    patterns = [
-        ("security", "security"),
-        ("document", "documentation"),
-        ("optimize", "optimization"),
-        ("review", "review"),
-        ("test", "testing"),
-        ("refactor", "refactor"),
-        ("fix", "fix/debug"),
-        ("bug", "fix/debug"),
-        ("debug", "fix/debug"),
-        ("implement", "implement/add"),
-        ("add", "implement/add"),
-        ("create", "implement/add"),
-        ("update", "update/modify"),
-        ("modify", "update/modify"),
-        ("change", "update/modify"),
-    ]
-
-    for keyword, pattern in patterns:
-        if keyword in task_lower:
-            return pattern
-
-    return "other"
 
 
 def _analyze_log_entry(
@@ -143,8 +45,6 @@ def _analyze_log_entry(
     """Analyze a single log entry and create usage entry."""
     relevance_scores = list(entry.relevance_scores.values())
     avg_score = sum(relevance_scores) / len(relevance_scores) if relevance_scores else 0
-
-    # Store file names and relevances for insight generation
     selected_files = entry.selected_files
     relevance_by_file = entry.relevance_scores
 
@@ -166,337 +66,6 @@ def _analyze_log_entry(
     )
 
 
-def _generate_task_type_insights(
-    entries: list[ContextUsageEntry],
-) -> dict[str, TaskTypeInsight]:
-    """Generate insights for each task type."""
-    task_entries: dict[str, list[ContextUsageEntry]] = {}
-    for entry in entries:
-        pattern = _extract_task_pattern(entry.task_description)
-        if pattern not in task_entries:
-            task_entries[pattern] = []
-        task_entries[pattern].append(entry)
-
-    insights: dict[str, TaskTypeInsight] = {}
-    for task_type, task_list in task_entries.items():
-        insights[task_type] = _compute_task_insight(task_type, task_list)
-    return insights
-
-
-def _generate_role_insights(
-    entries: list[ContextUsageEntry],
-) -> dict[str, TaskTypeInsight]:
-    """Generate insights for each agent role."""
-    role_entries: dict[str, list[ContextUsageEntry]] = {}
-    for entry in entries:
-        # Only include entries with a role
-        if entry.role:
-            if entry.role not in role_entries:
-                role_entries[entry.role] = []
-            role_entries[entry.role].append(entry)
-
-    insights: dict[str, TaskTypeInsight] = {}
-    for role, role_list in role_entries.items():
-        # Use role name as the "task type" for consistency with TaskTypeInsight
-        insights[role] = _compute_task_insight(role, role_list)
-    return insights
-
-
-def _compute_recommended_budget(avg_tokens: float) -> int:
-    """Compute recommended token budget with 20% buffer."""
-    recommended = int(avg_tokens * 1.2)
-    # Round to nearest 5000
-    recommended = ((recommended + 2500) // 5000) * 5000
-    return max(recommended, 10000)  # Minimum 10k
-
-
-def _find_essential_files(entries: list[ContextUsageEntry]) -> list[str]:
-    """Find files that appear in >50% of entries with high relevance."""
-    file_counts: dict[str, int] = {}
-    file_relevances: dict[str, list[float]] = {}
-    for entry in entries:
-        selected_files = entry.selected_file_names or []
-        relevance_by_file = entry.relevance_by_file or {}
-        for fname in selected_files:
-            file_counts[fname] = file_counts.get(fname, 0) + 1
-            if fname not in file_relevances:
-                file_relevances[fname] = []
-            rel = relevance_by_file.get(fname, 0.5)
-            file_relevances[fname].append(rel)
-
-    essential: list[str] = []
-    threshold = len(entries) * 0.5
-    for fname, count in file_counts.items():
-        if count >= threshold:
-            avg_file_rel = sum(file_relevances[fname]) / len(file_relevances[fname])
-            if avg_file_rel > 0.5:
-                essential.append(fname)
-    return essential
-
-
-def _compute_task_insight(
-    task_type: str, entries: list[ContextUsageEntry]
-) -> TaskTypeInsight:
-    """Compute insight for a specific task type."""
-    avg_util = sum(e.utilization for e in entries) / len(entries)
-    avg_rel = sum(e.avg_relevance_score for e in entries) / len(entries)
-    avg_tokens = sum(e.total_tokens for e in entries) / len(entries)
-    recommended = _compute_recommended_budget(avg_tokens)
-    essential = _find_essential_files(entries)
-    notes = _generate_task_notes(avg_util, avg_rel, len(entries))
-
-    return TaskTypeInsight(
-        calls_count=len(entries),
-        recommended_budget=recommended,
-        essential_files=essential[:5],  # Top 5
-        avg_utilization=round(avg_util, 3),
-        avg_relevance=round(avg_rel, 3),
-        notes=notes,
-    )
-
-
-def _generate_task_notes(avg_util: float, avg_rel: float, count: int) -> str:
-    """Generate human-readable notes for a task type."""
-    notes: list[str] = []
-
-    if avg_util < 0.3:
-        notes.append("Low utilization - consider smaller token budgets")
-    elif avg_util < 0.5:
-        notes.append("Moderate utilization - some budget optimization possible")
-    elif avg_util > 0.8:
-        notes.append("High utilization - budget well-matched to needs")
-
-    if avg_rel > 0.7:
-        notes.append("High relevance - file selection is effective")
-    elif avg_rel < 0.5:
-        notes.append("Low relevance - consider refining file selection")
-
-    if count < 3:
-        notes.append("Limited data - insights will improve with more samples")
-
-    return "; ".join(notes) if notes else "Adequate performance"
-
-
-def _generate_file_effectiveness(
-    entries: list[ContextUsageEntry],
-) -> dict[str, FileEffectiveness]:
-    """Generate effectiveness tracking for each file."""
-    file_data: dict[str, dict[str, list[float] | set[str]]] = {}
-
-    for entry in entries:
-        task_type = _extract_task_pattern(entry.task_description)
-        selected_files = entry.selected_file_names or []
-        relevance_by_file = entry.relevance_by_file or {}
-        for fname in selected_files:
-            if fname not in file_data:
-                file_data[fname] = {"relevances": [], "task_types": set()}
-            rel = relevance_by_file.get(fname, 0.5)
-            relevances = file_data[fname]["relevances"]
-            if isinstance(relevances, list):
-                relevances.append(rel)
-            task_types = file_data[fname]["task_types"]
-            if isinstance(task_types, set):
-                task_types.add(task_type)
-
-    effectiveness: dict[str, FileEffectiveness] = {}
-    for fname, data in file_data.items():
-        relevances = data["relevances"]
-        task_types = data["task_types"]
-        if isinstance(relevances, list) and isinstance(task_types, set):
-            effectiveness[fname] = _compute_file_effectiveness(
-                fname, relevances, list(task_types)
-            )
-    return effectiveness
-
-
-def _compute_file_effectiveness(
-    fname: str, relevances: list[float], task_types: list[str]
-) -> FileEffectiveness:
-    """Compute effectiveness for a single file."""
-    avg_rel = sum(relevances) / len(relevances) if relevances else 0
-
-    if avg_rel > 0.7:
-        rec = "High value - prioritize for loading"
-    elif avg_rel > 0.5:
-        rec = "Moderate value - include when relevant"
-    else:
-        rec = "Lower relevance - consider excluding for most tasks"
-
-    return FileEffectiveness(
-        times_selected=len(relevances),
-        avg_relevance=round(avg_rel, 3),
-        task_types_used=task_types,
-        recommendation=rec,
-    )
-
-
-def _get_budget_efficiency_pattern(
-    entries: list[ContextUsageEntry],
-    avg_util: float,
-    avg_budget: float,
-    avg_tokens: float,
-) -> str | None:
-    """Generate budget efficiency pattern message if utilization is low."""
-    if avg_util >= 0.5:
-        return None
-    waste = int((avg_budget - avg_tokens) / 1000)
-    return (
-        f"Average {int(avg_util * 100)}% budget utilization - "
-        f"~{waste}k tokens unused per call"
-    )
-
-
-def _get_file_frequency_pattern(entries: list[ContextUsageEntry]) -> str | None:
-    """Generate most frequently loaded file pattern."""
-    file_counts: dict[str, int] = {}
-    for entry in entries:
-        selected_files = entry.selected_file_names or []
-        for fname in selected_files:
-            file_counts[fname] = file_counts.get(fname, 0) + 1
-    if not file_counts:
-        return None
-    top_file = max(file_counts, key=lambda x: file_counts[x])
-    return (
-        f"'{top_file}' is most frequently loaded "
-        f"({file_counts[top_file]}/{len(entries)} calls)"
-    )
-
-
-def _get_task_type_pattern(entries: list[ContextUsageEntry]) -> str | None:
-    """Generate most common task type pattern."""
-    task_counts: dict[str, int] = {}
-    for entry in entries:
-        pattern = _extract_task_pattern(entry.task_description)
-        task_counts[pattern] = task_counts.get(pattern, 0) + 1
-    if not task_counts:
-        return None
-    top_task = max(task_counts, key=lambda x: task_counts[x])
-    return f"Most common task type: '{top_task}' ({task_counts[top_task]} calls)"
-
-
-def _get_zero_budget_warning(entries: list[ContextUsageEntry]) -> str | None:
-    """Generate warning for zero-budget/zero-files load_context calls."""
-    zero_budget = any(e.token_budget == 0 for e in entries)
-    zero_files = any(e.files_selected == 0 for e in entries)
-    if not (zero_budget or zero_files):
-        return None
-
-    # Check if any zero-budget/zero-files calls are for non-trivial tasks
-    non_trivial_tasks = [
-        e
-        for e in entries
-        if (e.token_budget == 0 or e.files_selected == 0)
-        and _is_non_trivial_task(e.task_description)
-    ]
-    if non_trivial_tasks:
-        return (
-            "⚠️ CRITICAL: At least one load_context call had token_budget=0 "
-            "or files_selected=0 for a non-trivial task (refactor/fix/debug/implement/testing). "
-            "This is a configuration error - these tasks MUST use a non-zero token budget "
-            "(typically 10k-15k for fix/debug, 20k-30k for implement/add). "
-            "Re-run load_context with an appropriate budget to ensure proper context loading. "
-            "Zero-budget/zero-files calls for non-trivial tasks indicate the agent ran without "
-            "memory-bank guidance, which violates the documented workflow."
-        )
-    return (
-        "Warning: at least one load_context call had token_budget=0 or "
-        "no selected files. For non-trivial tasks (refactor/fix/debug/implement/testing), "
-        "this is a configuration error - use a non-zero token budget "
-        "(typically 10k-15k for fix/debug, 20k-30k for implement/add)."
-    )
-
-
-def _generate_learned_patterns(entries: list[ContextUsageEntry]) -> list[str]:
-    """Generate human-readable learned patterns from data."""
-    if not entries:
-        return []
-
-    patterns: list[str] = []
-    avg_util = sum(e.utilization for e in entries) / len(entries)
-    avg_budget = sum(e.token_budget for e in entries) / len(entries)
-    avg_tokens = sum(e.total_tokens for e in entries) / len(entries)
-
-    budget_pattern = _get_budget_efficiency_pattern(
-        entries, avg_util, avg_budget, avg_tokens
-    )
-    if budget_pattern:
-        patterns.append(budget_pattern)
-
-    file_pattern = _get_file_frequency_pattern(entries)
-    if file_pattern:
-        patterns.append(file_pattern)
-
-    task_pattern = _get_task_type_pattern(entries)
-    if task_pattern:
-        patterns.append(task_pattern)
-
-    zero_budget_warning = _get_zero_budget_warning(entries)
-    if zero_budget_warning:
-        patterns.append(zero_budget_warning)
-
-    return patterns
-
-
-def _generate_budget_recommendations(
-    entries: list[ContextUsageEntry],
-) -> dict[str, int]:
-    """Generate recommended budgets per task type."""
-    task_tokens: dict[str, list[int]] = {}
-    for entry in entries:
-        pattern = _extract_task_pattern(entry.task_description)
-        if pattern not in task_tokens:
-            task_tokens[pattern] = []
-        task_tokens[pattern].append(entry.total_tokens)
-
-    recommendations: dict[str, int] = {}
-    for task_type, tokens in task_tokens.items():
-        avg = sum(tokens) / len(tokens)
-        # Add 20% buffer, round to nearest 5000, minimum 10000
-        recommended = int(avg * 1.2)
-        recommended = ((recommended + 2500) // 5000) * 5000
-        recommendations[task_type] = max(recommended, 10000)
-
-    return recommendations
-
-
-def _generate_role_budget_recommendations(
-    entries: list[ContextUsageEntry],
-) -> dict[str, int]:
-    """Generate budget recommendations by agent role."""
-    role_tokens: dict[str, list[int]] = {}
-    for entry in entries:
-        # Only include entries with a role
-        if entry.role:
-            if entry.role not in role_tokens:
-                role_tokens[entry.role] = []
-            role_tokens[entry.role].append(entry.total_tokens)
-
-    recommendations: dict[str, int] = {}
-    for role, tokens in role_tokens.items():
-        avg = sum(tokens) / len(tokens)
-        # Add 20% buffer, round to nearest 5000, minimum 10000
-        recommended = int(avg * 1.2)
-        recommended = ((recommended + 2500) // 5000) * 5000
-        recommendations[role] = max(recommended, 10000)
-
-    return recommendations
-
-
-def _generate_insights(entries: list[ContextUsageEntry]) -> ContextInsights:
-    """Generate all actionable insights from entries."""
-    if not entries:
-        return _create_empty_insights()
-
-    return ContextInsights(
-        task_type_recommendations=_generate_task_type_insights(entries),
-        file_effectiveness=_generate_file_effectiveness(entries),
-        learned_patterns=_generate_learned_patterns(entries),
-        budget_recommendations=_generate_budget_recommendations(entries),
-        role_recommendations=_generate_role_insights(entries),
-        role_budget_recommendations=_generate_role_budget_recommendations(entries),
-    )
-
-
 def _update_aggregates(stats: ContextUsageStatistics) -> None:
     """Update aggregate statistics from entries."""
     entries = stats.entries
@@ -511,15 +80,12 @@ def _update_aggregates(stats: ContextUsageStatistics) -> None:
         sum(e.avg_relevance_score for e in entries) / total, 3
     )
 
-    # Count task patterns
     patterns: dict[str, int] = {}
     for entry in entries:
-        pattern = _extract_task_pattern(entry.task_description)
+        pattern = extract_task_pattern(entry.task_description)
         patterns[pattern] = patterns.get(pattern, 0) + 1
     stats.common_task_patterns = patterns
-
-    # Generate actionable insights
-    stats.insights = _generate_insights(entries)
+    stats.insights = generate_insights(entries, create_empty_insights)
 
 
 def _calculate_session_stats(
@@ -529,7 +95,7 @@ def _calculate_session_stats(
     total = len(entries)
     patterns: dict[str, int] = {}
     for entry in entries:
-        pattern = _extract_task_pattern(entry.task_description)
+        pattern = extract_task_pattern(entry.task_description)
         patterns[pattern] = patterns.get(pattern, 0) + 1
     return SessionStats(
         calls_count=total,
@@ -547,8 +113,8 @@ def _update_global_stats(
 ) -> tuple[ContextUsageStatistics, int]:
     """Update global statistics with new session entries. Returns
     (stats, new_entries_count)."""
-    stats_path = _get_statistics_path(project_root)
-    stats = _load_statistics(stats_path)
+    stats_path = get_statistics_path(project_root)
+    stats = load_statistics(stats_path)
     existing_sessions = {e.session_id for e in stats.entries}
     new_entries_added = 0
     if session_id not in existing_sessions:
@@ -556,7 +122,7 @@ def _update_global_stats(
         stats.total_sessions_analyzed += 1
         stats.last_updated = datetime.now().isoformat(timespec="minutes")
         _update_aggregates(stats)
-        _save_statistics(stats_path, stats)
+        save_statistics(stats_path, stats)
         new_entries_added = len(entries)
     return stats, new_entries_added
 
@@ -569,9 +135,7 @@ def _build_current_session_result(
     new_entries_added: int,
 ) -> CurrentSessionAnalysisResult:
     """Build result model for current session analysis."""
-    from cortex.core.models import JsonDict
-
-    insights = stats.insights or _create_empty_insights()
+    insights = stats.insights or create_empty_insights()
     return CurrentSessionAnalysisResult(
         status=ContextAnalysisStatus.SUCCESS,
         session_id=session_id,
@@ -644,9 +208,7 @@ def _build_session_logs_result(
     stats: ContextUsageStatistics,
 ) -> SessionLogsAnalysisResult:
     """Build result model for session logs analysis."""
-    from cortex.core.models import JsonDict, JsonValue
-
-    insights = stats.insights or _create_empty_insights()
+    insights: ContextInsights = stats.insights or create_empty_insights()
     common_task_patterns_json: dict[str, JsonValue] = {
         key: cast(JsonValue, value) for key, value in stats.common_task_patterns.items()
     }
@@ -684,8 +246,8 @@ def analyze_session_logs(project_root: Path) -> SessionLogsAnalysisResult:
             message="No session logs found. Use load_context to generate data.",
         )
 
-    stats_path = _get_statistics_path(project_root)
-    stats = _load_statistics(stats_path)
+    stats_path = get_statistics_path(project_root)
+    stats = load_statistics(stats_path)
     existing_sessions = {e.session_id for e in stats.entries}
     new_entries, sessions_analyzed = _process_log_files(log_files, existing_sessions)
 
@@ -694,7 +256,7 @@ def analyze_session_logs(project_root: Path) -> SessionLogsAnalysisResult:
         stats.total_sessions_analyzed += sessions_analyzed
         stats.last_updated = datetime.now().isoformat(timespec="minutes")
         _update_aggregates(stats)
-        _save_statistics(stats_path, stats)
+        save_statistics(stats_path, stats)
 
     return _build_session_logs_result(sessions_analyzed, new_entries, stats)
 
@@ -715,7 +277,7 @@ def _build_success_statistics_result(
     stats: ContextUsageStatistics, common_task_patterns_json: dict[str, JsonValue]
 ) -> ContextStatisticsResult:
     """Build success statistics result."""
-    insights = stats.insights or _create_empty_insights()
+    insights = stats.insights or create_empty_insights()
     return ContextStatisticsResult(
         status=ContextAnalysisStatus.SUCCESS,
         last_updated=stats.last_updated,
@@ -741,7 +303,7 @@ def get_context_statistics(project_root: Path) -> ContextStatisticsResult:
     Returns:
         Current statistics or empty structure if none exist
     """
-    stats_path = _get_statistics_path(project_root)
+    stats_path = get_statistics_path(project_root)
     if not stats_path.exists():
         return ContextStatisticsResult(
             status=ContextAnalysisStatus.NO_DATA,
@@ -754,7 +316,7 @@ def get_context_statistics(project_root: Path) -> ContextStatisticsResult:
             message="No statistics found. Run analyze_context_effectiveness first.",
         )
 
-    stats = _load_statistics(stats_path)
+    stats = load_statistics(stats_path)
     common_task_patterns_json: dict[str, JsonValue] = {
         key: cast(JsonValue, value) for key, value in stats.common_task_patterns.items()
     }

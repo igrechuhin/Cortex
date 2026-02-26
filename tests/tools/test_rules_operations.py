@@ -34,13 +34,12 @@ from cortex.tools.rules_operation_helpers import (
     parse_rules_operation,
     resolve_config_defaults,
 )
-from cortex.tools.rules_operations import (
+from cortex.tools.rules_operations import rules, rules_get_relevant_resource
+from cortex.tools.rules_operations_handlers import (
     check_rules_enabled,
     dispatch_operation,
     handle_get_relevant_operation,
     handle_index_operation,
-    rules,
-    rules_get_relevant_resource,
     validate_get_relevant_params,
 )
 from tests.helpers.managers import make_test_managers
