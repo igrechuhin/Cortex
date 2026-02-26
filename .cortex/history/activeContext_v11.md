@@ -22,6 +22,12 @@
 
 - ✅ **E402 fix in mcp_stability modules** - COMPLETE (2026-02-26) - Moved SignatureAware import to top in mcp_stability.py and mcp_stability_usage.py for E402 compliance; all pre-commit checks pass.
 
+- ✅ **Phase 9.1.23 Split summarization_engine.py** - COMPLETE (2026-02-26) - Split summarization_engine.py (729→315 lines); extracted summarization_engine_cache, summarization_engine_sections, summarization_engine_compress, summarization_engine_result. All tests pass, quality gates pass.
+
+- ✅ **Phase 9.1.24 pre_commit_helpers split** - COMPLETE (2026-02-26) - Split pre_commit_helpers.py (723→126 lines) into 4 helper modules: pre_commit_helpers_models, pre_commit_helpers_remaining, pre_commit_helpers_language, pre_commit_helpers_quality. Resolved circular imports by having consumers import directly from helper modules. All 4780 tests pass, 92.85% coverage.
+
+- ✅ **Phase 9.1.25 configuration_operations split** - COMPLETE (2026-02-26) - Split configuration_operations.py (722→210 lines); extracted configuration_operations_errors, configuration_operations_handlers, configuration_operations_response. Tests and quality gates pass.
+
 ## Completed Work (2026-02-25)
 
 - **Summary (2026-02-25)** - 1 entries archived.

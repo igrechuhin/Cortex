@@ -26,17 +26,16 @@ from cortex.services.framework_adapters.base import (
     TestResult,
 )
 from cortex.services.language_detector import LanguageInfo
-from cortex.tools.pre_commit_helpers import (
-    DEFAULT_CHECKS,
-    MAX_LOG_OUTPUT_LENGTH,
-    PreCommitCheck,
+from cortex.tools.pre_commit_helpers import ensure_json_serializable_for_mcp
+from cortex.tools.pre_commit_helpers_language import detect_or_use_language
+from cortex.tools.pre_commit_helpers_models import DEFAULT_CHECKS, PreCommitCheck
+from cortex.tools.pre_commit_helpers_quality import (
     check_file_sizes,
     check_function_lengths_in_file,
     count_file_lines,
-    detect_or_use_language,
-    ensure_json_serializable_for_mcp,
     get_docstring_range,
 )
+from cortex.tools.pre_commit_helpers_remaining import MAX_LOG_OUTPUT_LENGTH
 from cortex.tools.pre_commit_pipeline import (
     _check_function_lengths,  # pyright: ignore[reportPrivateUsage]
 )
@@ -146,11 +145,11 @@ class TestExecutePreCommitChecks:
             # Force root_str to tmpdir; ensure adapter-based detection finds nothing
             with (
                 patch(
-                    "cortex.tools.pre_commit_helpers.get_project_root_str",
+                    "cortex.tools.pre_commit_helpers_language.get_project_root_str",
                     return_value=str(Path(tmpdir).resolve()),
                 ),
                 patch(
-                    "cortex.tools.pre_commit_helpers.detect_language_at_path",
+                    "cortex.tools.pre_commit_helpers_language.detect_language_at_path",
                     return_value=None,
                 ),
                 patch(

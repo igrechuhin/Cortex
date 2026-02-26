@@ -14,6 +14,9 @@
 - **Phase 9.1.22 Split progressive_loader.py (2026-02-26)** - COMPLETE. Split progressive_loader.py (737→362 lines); extracted progressive_loader_metadata, progressive_loader_models, progressive_loader_priority, progressive_loader_relevance, progressive_loader_budget. All tests pass, quality gates pass.
 - **Tool budget reduction from analysis 2026-02-26** - COMPLETE. Internalized cache_json, get_synapse, list_available_tools, skill_pack, provide_feedback, fix_roadmap_corruption; 46→40 tools; MAX_REGISTERED_TOOLS=40; docs and AGENTS.md updated.
 - **E402 fix in mcp_stability modules** - Moved `SignatureAware` import to top in mcp_stability.py and mcp_stability_usage.py; all pre-commit checks pass.
+- **Phase 9.1.23 Split summarization_engine.py (2026-02-26)** - COMPLETE. Split summarization_engine.py (729→315 lines); extracted summarization_engine_cache, summarization_engine_sections, summarization_engine_compress, summarization_engine_result. All tests pass, 92.85% coverage.
+- **Phase 9.1.24 pre_commit_helpers split (2026-02-26)** - COMPLETE. Split pre_commit_helpers.py (723→126 lines) into pre_commit_helpers_models, pre_commit_helpers_remaining, pre_commit_helpers_language, pre_commit_helpers_quality. All tests pass, 92.85% coverage.
+- **Phase 9.1.25 configuration_operations split (2026-02-26)** - COMPLETE. Split configuration_operations.py (722→210 lines); extracted configuration_operations_errors, configuration_operations_handlers, configuration_operations_response. 4780 tests, 92.85% coverage; quality gates pass.
 
 ## 2026-02-25
 

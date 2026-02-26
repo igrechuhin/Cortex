@@ -12,8 +12,8 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from cortex.core.context_logging import MCPContext, log_client, report_progress_safe
 from cortex.core.models import JsonValue, ModelDict, OperationStatus
-from cortex.tools.pre_commit_helpers import (
-    PreCommitCheck,
+from cortex.tools.pre_commit_helpers_models import PreCommitCheck
+from cortex.tools.pre_commit_helpers_remaining import (
     collect_remaining_issues,
     extract_check_results,
     extract_dict_from_object,

@@ -48,17 +48,19 @@ from cortex.tools.pre_commit_fix_quality import (
     fix_quality_issues_impl,
 )
 from cortex.tools.pre_commit_helpers import (
+    create_error_result_dict,
+    determine_checks_to_perform,
+    ensure_json_serializable_for_mcp,
+    unsupported_language_result_dict,
+)
+from cortex.tools.pre_commit_helpers_language import detect_or_use_language
+from cortex.tools.pre_commit_helpers_models import (
     CheckStats,
     PreCommitCheck,
     PreCommitResult,
     QualityCheckResult,
-    create_error_result_dict,
-    detect_or_use_language,
-    determine_checks_to_perform,
-    ensure_json_serializable_for_mcp,
-    truncate_large_logs_in_data,
-    unsupported_language_result_dict,
 )
+from cortex.tools.pre_commit_helpers_remaining import truncate_large_logs_in_data
 from cortex.tools.pre_commit_pipeline import run_checks_pipeline
 
 logger = logging.getLogger(__name__)

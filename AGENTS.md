@@ -127,6 +127,7 @@ The commit workflow is organized into phases (see `docs/design/commit-pipeline-p
 ## Learned Workspace Facts
 
 - Do not edit files under `.venv` or other third-party package directories; apply coding standards (e.g. enums, types) only to project source code.
+- Respect the project's defined structure; do not introduce new top-level directories or concepts (e.g., `scripts`) that deviate from it; avoid workflow or automation artifacts that pollute the project layout.
 
 ## Cursor Cloud specific instructions
 

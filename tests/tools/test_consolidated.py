@@ -1282,7 +1282,7 @@ class TestConfigure:
                 return_value=Path("/tmp/test"),
             ),
             patch(
-                "cortex.tools.configuration_operations.get_manager",
+                "cortex.tools.configuration_operations_handlers.get_manager",
                 return_value=mock_validation_config,
             ),
         ):
@@ -1488,7 +1488,7 @@ class TestConfigure:
                 return_value=Path("/tmp/test"),
             ),
             patch(
-                "cortex.tools.configuration_operations.get_manager",
+                "cortex.tools.configuration_operations_handlers.get_manager",
                 side_effect=get_manager_side_effect,
             ),
             patch(
