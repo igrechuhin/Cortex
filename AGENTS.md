@@ -160,7 +160,7 @@ The VM update script handles: `uv sync --extra dev`, `git submodule update --ini
 
 ### Gotchas
 
-- The `Makefile` `TIMEOUT` variable auto-detects `gtimeout` (macOS) vs `timeout` (Linux). The `typecheck` target calls bare `pyright` (not in PATH unless globally installed); use `uv run pyright src/ tests/` instead. The `format` target calls `.venv/bin/isort` which is not installed; ruff handles import sorting.
+- `make check` runs format + lint + typecheck + test. All targets use `.venv/bin/` paths and work cross-platform.
 - The git submodule `.cortex/synapse` must be initialized before running pre-commit hooks or scripts that reference `.cortex/synapse/scripts/python/`.
 - One pre-existing e2e test failure exists: `tests/e2e/test_plan_workflow.py::test_plan_workflow_create_add_list` (remove_roadmap_entry error). This is not caused by environment setup.
 - `uv sync --extra dev` installs both the `[project.optional-dependencies] dev` extras (pytest, etc.) and the `[dependency-groups] dev` group (black, ruff, pyright, detect-secrets).

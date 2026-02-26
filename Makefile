@@ -8,7 +8,7 @@ help:
 	@echo "  make test       - run fast test suite (timeout)"
 	@echo "  make test-full  - run full test suite (timeout)"
 	@echo "  make typecheck  - run pyright"
-	@echo "  make format     - run black + isort"
+	@echo "  make format     - run black + ruff import sort"
 	@echo "  make lint       - run ruff"
 	@echo "  make compile    - run compileall for src/"
 	@echo "  make check      - run format + lint + typecheck + test"
@@ -20,11 +20,11 @@ test-full:
 	$(TIMEOUT) 600 $(VENV_PY) -m pytest
 
 typecheck:
-	pyright src/ tests/
+	./.venv/bin/pyright src/ tests/
 
 format:
 	./.venv/bin/black .
-	./.venv/bin/isort .
+	./.venv/bin/ruff check --select I --fix .
 
 lint:
 	./.venv/bin/ruff check src/ tests/
