@@ -162,5 +162,5 @@ The VM update script handles: `uv sync --extra dev`, `git submodule update --ini
 
 - `make check` runs format + lint + typecheck + test. All targets use `.venv/bin/` paths and work cross-platform.
 - The git submodule `.cortex/synapse` must be initialized before running pre-commit hooks or scripts that reference `.cortex/synapse/scripts/python/`.
-- One pre-existing e2e test failure exists: `tests/e2e/test_plan_workflow.py::test_plan_workflow_create_add_list` (remove_roadmap_entry error). This is not caused by environment setup.
+- All tests pass (4799 passed). Run with `uv run pytest tests/ -q`.
 - `uv sync --extra dev` installs both the `[project.optional-dependencies] dev` extras (pytest, etc.) and the `[dependency-groups] dev` group (black, ruff, pyright, detect-secrets).
