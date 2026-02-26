@@ -179,11 +179,11 @@ class TestSyncSharedRules:
         # Arrange
         with (
             patch(
-                "cortex.tools.synapse_tools.get_project_root",
+                "cortex.tools.synapse_tools_impl.get_project_root",
                 return_value=mock_project_root,
             ),
             patch(
-                "cortex.tools.synapse_tools.get_managers",
+                "cortex.tools.synapse_tools_impl.get_managers",
                 return_value=mock_managers_with_synapse,
             ),
             patch(
@@ -217,11 +217,11 @@ class TestSyncSharedRules:
         # Arrange
         with (
             patch(
-                "cortex.tools.synapse_tools.get_project_root",
+                "cortex.tools.synapse_tools_impl.get_project_root",
                 return_value=mock_project_root,
             ),
             patch(
-                "cortex.tools.synapse_tools.get_managers",
+                "cortex.tools.synapse_tools_impl.get_managers",
                 return_value=mock_managers_with_synapse,
             ),
             patch(
@@ -250,11 +250,11 @@ class TestSyncSharedRules:
         managers = make_test_managers()  # Synapse not configured by default
         with (
             patch(
-                "cortex.tools.synapse_tools.get_project_root",
+                "cortex.tools.synapse_tools_impl.get_project_root",
                 return_value=mock_project_root,
             ),
             patch(
-                "cortex.tools.synapse_tools.get_managers",
+                "cortex.tools.synapse_tools_impl.get_managers",
                 return_value=managers,
             ),
         ):
@@ -275,11 +275,11 @@ class TestSyncSharedRules:
         # Arrange
         with (
             patch(
-                "cortex.tools.synapse_tools.get_project_root",
+                "cortex.tools.synapse_tools_impl.get_project_root",
                 return_value=mock_project_root,
             ),
             patch(
-                "cortex.tools.synapse_tools.get_managers",
+                "cortex.tools.synapse_tools_impl.get_managers",
                 return_value=mock_managers_with_synapse,
             ),
             patch(
@@ -310,11 +310,11 @@ class TestSyncSharedRules:
         # Arrange
         with (
             patch(
-                "cortex.tools.synapse_tools.get_project_root",
+                "cortex.tools.synapse_tools_impl.get_project_root",
                 return_value=mock_project_root,
             ),
             patch(
-                "cortex.tools.synapse_tools.get_managers",
+                "cortex.tools.synapse_tools_impl.get_managers",
                 side_effect=RuntimeError("Network error"),
             ),
         ):
@@ -345,11 +345,11 @@ class TestUpdateSharedRule:
         # Arrange
         with (
             patch(
-                "cortex.tools.synapse_tools.get_project_root",
+                "cortex.tools.synapse_tools_impl.get_project_root",
                 return_value=mock_project_root,
             ),
             patch(
-                "cortex.tools.synapse_tools.get_managers",
+                "cortex.tools.synapse_tools_impl.get_managers",
                 return_value=mock_managers_with_synapse,
             ),
             patch(
@@ -385,11 +385,11 @@ class TestUpdateSharedRule:
         managers = make_test_managers()  # Synapse not configured by default
         with (
             patch(
-                "cortex.tools.synapse_tools.get_project_root",
+                "cortex.tools.synapse_tools_impl.get_project_root",
                 return_value=mock_project_root,
             ),
             patch(
-                "cortex.tools.synapse_tools.get_managers",
+                "cortex.tools.synapse_tools_impl.get_managers",
                 return_value=managers,
             ),
         ):
@@ -413,11 +413,11 @@ class TestUpdateSharedRule:
         # Arrange
         with (
             patch(
-                "cortex.tools.synapse_tools.get_project_root",
+                "cortex.tools.synapse_tools_impl.get_project_root",
                 return_value=mock_project_root,
             ),
             patch(
-                "cortex.tools.synapse_tools.get_managers",
+                "cortex.tools.synapse_tools_impl.get_managers",
                 side_effect=ValueError("Invalid category"),
             ),
         ):
@@ -453,11 +453,11 @@ class TestGetRulesWithContext:
         # Arrange
         with (
             patch(
-                "cortex.tools.synapse_tools.get_project_root",
+                "cortex.tools.synapse_tools_impl.get_project_root",
                 return_value=mock_project_root,
             ),
             patch(
-                "cortex.tools.synapse_tools.get_managers",
+                "cortex.tools.synapse_tools_impl.get_managers",
                 return_value=mock_managers_with_synapse,
             ),
             patch(
@@ -496,11 +496,11 @@ class TestGetRulesWithContext:
         # Arrange
         with (
             patch(
-                "cortex.tools.synapse_tools.get_project_root",
+                "cortex.tools.synapse_tools_impl.get_project_root",
                 return_value=mock_project_root,
             ),
             patch(
-                "cortex.tools.synapse_tools.get_managers",
+                "cortex.tools.synapse_tools_impl.get_managers",
                 return_value=mock_managers_with_synapse,
             ),
             patch(
@@ -532,11 +532,11 @@ class TestGetRulesWithContext:
         # Arrange
         with (
             patch(
-                "cortex.tools.synapse_tools.get_project_root",
+                "cortex.tools.synapse_tools_impl.get_project_root",
                 return_value=mock_project_root,
             ),
             patch(
-                "cortex.tools.synapse_tools.get_managers",
+                "cortex.tools.synapse_tools_impl.get_managers",
                 return_value=mock_managers_with_synapse,
             ),
             patch(
@@ -569,11 +569,11 @@ class TestGetRulesWithContext:
         # Arrange
         with (
             patch(
-                "cortex.tools.synapse_tools.get_project_root",
+                "cortex.tools.synapse_tools_impl.get_project_root",
                 return_value=mock_project_root,
             ),
             patch(
-                "cortex.tools.synapse_tools.get_managers",
+                "cortex.tools.synapse_tools_impl.get_managers",
                 side_effect=RuntimeError("Manager initialization failed"),
             ),
         ):
@@ -811,11 +811,11 @@ class TestIntegration:
         """Test complete workflow: sync -> get rules -> update."""
         with (
             patch(
-                "cortex.tools.synapse_tools.get_project_root",
+                "cortex.tools.synapse_tools_impl.get_project_root",
                 return_value=mock_project_root,
             ),
             patch(
-                "cortex.tools.synapse_tools.get_managers",
+                "cortex.tools.synapse_tools_impl.get_managers",
                 return_value=mock_managers_with_synapse,
             ),
             patch(
@@ -872,15 +872,15 @@ class TestSynapseToolsContextLogging:
         mock_ctx = AsyncMock()
         with (
             patch(
-                "cortex.tools.synapse_tools.log_client",
+                "cortex.tools.synapse_tools_impl.log_client",
                 new_callable=AsyncMock,
             ) as mock_log,
             patch(
-                "cortex.tools.synapse_tools.get_project_root",
+                "cortex.tools.synapse_tools_impl.get_project_root",
                 return_value=mock_project_root,
             ),
             patch(
-                "cortex.tools.synapse_tools.get_managers",
+                "cortex.tools.synapse_tools_impl.get_managers",
                 new=AsyncMock(return_value=mock_managers),
             ),
             patch(
@@ -930,11 +930,11 @@ class TestSynapseResources:
         """get_synapse_rules_resource returns JSON (Phase 43 cortex://synapse/rules)."""
         with (
             patch(
-                "cortex.tools.synapse_tools.get_project_root",
+                "cortex.tools.synapse_tools_impl.get_project_root",
                 return_value=mock_project_root,
             ),
             patch(
-                "cortex.tools.synapse_tools.get_managers",
+                "cortex.tools.synapse_tools_impl.get_managers",
                 return_value=mock_managers_with_synapse,
             ),
             patch(

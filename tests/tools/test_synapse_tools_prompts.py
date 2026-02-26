@@ -54,8 +54,13 @@ class TestSynapsePromptsTools:
         # Arrange
         managers = make_test_managers()
         with (
-            patch("cortex.tools.synapse_tools.get_project_root", return_value=tmp_path),
-            patch("cortex.tools.synapse_tools.get_managers", return_value=managers),
+            patch(
+                "cortex.tools.synapse_tools_impl.get_project_root",
+                return_value=tmp_path,
+            ),
+            patch(
+                "cortex.tools.synapse_tools_impl.get_managers", return_value=managers
+            ),
         ):
             # Act
             result_str = await get_synapse_prompts()
@@ -71,10 +76,15 @@ class TestSynapsePromptsTools:
         # Arrange
         managers = make_test_managers(synapse=mock_synapse_manager_for_prompts)
         with (
-            patch("cortex.tools.synapse_tools.get_project_root", return_value=tmp_path),
-            patch("cortex.tools.synapse_tools.get_managers", return_value=managers),
             patch(
-                "cortex.tools.synapse_tools.get_manager",
+                "cortex.tools.synapse_tools_impl.get_project_root",
+                return_value=tmp_path,
+            ),
+            patch(
+                "cortex.tools.synapse_tools_impl.get_managers", return_value=managers
+            ),
+            patch(
+                "cortex.tools.synapse_tools_impl.get_manager",
                 side_effect=_get_manager_helper,
             ),
         ):
@@ -97,10 +107,15 @@ class TestSynapsePromptsTools:
         # Arrange
         managers = make_test_managers(synapse=mock_synapse_manager_for_prompts)
         with (
-            patch("cortex.tools.synapse_tools.get_project_root", return_value=tmp_path),
-            patch("cortex.tools.synapse_tools.get_managers", return_value=managers),
             patch(
-                "cortex.tools.synapse_tools.get_manager",
+                "cortex.tools.synapse_tools_impl.get_project_root",
+                return_value=tmp_path,
+            ),
+            patch(
+                "cortex.tools.synapse_tools_impl.get_managers", return_value=managers
+            ),
+            patch(
+                "cortex.tools.synapse_tools_impl.get_manager",
                 side_effect=_get_manager_helper,
             ),
         ):
@@ -120,8 +135,13 @@ class TestSynapsePromptsTools:
         # Arrange
         managers = make_test_managers()
         with (
-            patch("cortex.tools.synapse_tools.get_project_root", return_value=tmp_path),
-            patch("cortex.tools.synapse_tools.get_managers", return_value=managers),
+            patch(
+                "cortex.tools.synapse_tools_impl.get_project_root",
+                return_value=tmp_path,
+            ),
+            patch(
+                "cortex.tools.synapse_tools_impl.get_managers", return_value=managers
+            ),
         ):
             # Act
             result_str = await update_synapse_prompt(
@@ -142,10 +162,15 @@ class TestSynapsePromptsTools:
         # Arrange
         managers = make_test_managers(synapse=mock_synapse_manager_for_prompts)
         with (
-            patch("cortex.tools.synapse_tools.get_project_root", return_value=tmp_path),
-            patch("cortex.tools.synapse_tools.get_managers", return_value=managers),
             patch(
-                "cortex.tools.synapse_tools.get_manager",
+                "cortex.tools.synapse_tools_impl.get_project_root",
+                return_value=tmp_path,
+            ),
+            patch(
+                "cortex.tools.synapse_tools_impl.get_managers", return_value=managers
+            ),
+            patch(
+                "cortex.tools.synapse_tools_impl.get_manager",
                 side_effect=_get_manager_helper,
             ),
         ):

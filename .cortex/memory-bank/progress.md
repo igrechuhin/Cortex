@@ -8,6 +8,9 @@
 - **Commit type fix** - Fixed reportUnusedCallResult in test_plan_workflow.py (plan_path.write_text). Phase A passed; 4780 tests, 92.81% coverage.
 - **Phase 9.1.18 context_analysis_operations split (2026-02-26)** - COMPLETE. Split context_analysis_operations.py (606 → 323 lines); extracted context_analysis_operations_io (57 lines), context_analysis_operations_insights (374 lines). Quality gates and tests pass.
 - **Phase 9.1.19 rules_operations split (2026-02-26)** - COMPLETE. Extracted rules_operations_validation.py (71 lines), rules_operations_handlers.py (241 lines); rules_operations.py 757 → 288 lines.
+- **Phase 9.1.20 phase4_context_operations split (2026-02-26)** - COMPLETE. Split phase4_context_operations.py (757→186 lines) into phase4_context_operations_content, phase4_context_operations_metadata, phase4_context_operations_result; all tests pass, 92.81% coverage.
+- **Phase 9.1.21 synapse_tools split (2026-02-26)** - COMPLETE. Extracted synapse_tools_impl (738→316+315 lines); tests and quality pass.
+- **Tool Consolidation Phase 2 Step 1 (2026-02-26)** - COMPLETE. Migrated integration tests and test_quick to use query_memory_bank instead of get_memory_bank_stats, get_version_history, get_dependency_graph. Phase 50 consolidation verified; old tools not registered.
 
 ## 2026-02-25
 

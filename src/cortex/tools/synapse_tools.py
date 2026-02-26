@@ -13,9 +13,21 @@ Total: 4 tools (update_synapse_rule + update_synapse_prompt consolidated into up
 Note: setup_synapse has been replaced by a prompt template in docs/prompts/
 """
 
+__all__ = [
+    "RulePriorityLiteral",
+    "get_synapse",
+    "get_synapse_prompts",
+    "get_synapse_prompts_resource",
+    "get_synapse_rules",
+    "get_synapse_rules_resource",
+    "sync_synapse",
+    "update_synapse",
+    "update_synapse_prompt",
+    "update_synapse_rule",
+]
+
 import json
-from collections.abc import Sequence
-from typing import Literal, Protocol
+from typing import Literal
 from urllib.parse import unquote
 
 from cortex.core.constants import (
@@ -30,65 +42,16 @@ from cortex.core.mcp_stability import (
     mcp_resource_wrapper,
     mcp_tool_wrapper,
 )
-from cortex.core.models import ModelDict
-from cortex.managers.initialization import get_managers, get_project_root
-from cortex.managers.manager_utils import get_manager
-from cortex.optimization.rules_manager import RulesManager
-from cortex.rules.synapse_manager import SynapseManager
 from cortex.server import mcp
-
-RulePriorityLiteral = Literal["local_overrides_shared", "shared_overrides_local"]
-
-
-class _ModelDumpable(Protocol):
-    def model_dump(self, *, mode: str) -> ModelDict: ...
-
-
-def format_prompts_list(
-    prompts: Sequence[ModelDict] | Sequence[_ModelDumpable],
-) -> list[ModelDict]:
-    """Format a list of prompt objects into dictionaries."""
-    result: list[ModelDict] = []
-    for p in prompts:
-        prompt_dict: ModelDict = p if isinstance(p, dict) else p.model_dump(mode="json")
-        result.append(
-            {
-                "file": prompt_dict.get("file"),
-                "name": prompt_dict.get("name"),
-                "category": prompt_dict.get("category"),
-                "description": prompt_dict.get("description"),
-                "keywords": prompt_dict.get("keywords"),
-            }
-        )
-    return result
-
-
-async def _sync_synapse_impl(pull: bool, push: bool, ctx: MCPContext | None) -> str:
-    """Run sync_synapse logic and return JSON result."""
-    project_root = get_project_root()
-    managers = await get_managers(project_root)
-    if managers.synapse is None:
-        await log_client(
-            ctx,
-            "warning",
-            "sync_synapse: Synapse not initialized",
-            logger_name=__name__,
-        )
-        return json.dumps(
-            {
-                "status": "error",
-                "error": "Synapse not initialized. Run setup_synapse first.",
-            },
-            indent=2,
-        )
-    synapse_manager = await get_manager(managers, "synapse", SynapseManager)
-    result = await synapse_manager.sync_synapse(pull=pull, push=push)
-    if result.reindex_triggered and managers.rules_manager is not None:
-        rules_manager = await get_manager(managers, "rules_manager", RulesManager)
-        _ = await rules_manager.index_rules(force=True)
-    out = json.dumps(result.model_dump(mode="json"), indent=2)
-    await log_client(ctx, "info", "sync_synapse: completed", logger_name=__name__)
-    return out
+from cortex.tools.synapse_tools_impl import (
+    RulePriorityLiteral,
+    get_synapse_handle_prompts,
+    get_synapse_handle_rules,
+    get_synapse_rules,
+    sync_synapse_impl,
+    update_synapse_prompt_impl,
+    update_synapse_rule_impl,
+)
 
 
 @mcp.tool(annotations=safe_write_annotations("Sync Synapse"))
@@ -177,44 +140,13 @@ async def sync_synapse(
     """
     await log_client(ctx, "info", "sync_synapse: starting", logger_name=__name__)
     try:
-        return await _sync_synapse_impl(pull, push, ctx)
+        return await sync_synapse_impl(pull, push, ctx)
     except Exception as e:
         await log_client(ctx, "error", f"sync_synapse: {e!s}", logger_name=__name__)
         return json.dumps(
             {"status": "error", "error": str(e), "error_type": type(e).__name__},
             indent=2,
         )
-
-
-async def _update_synapse_rule_impl(
-    category: str, file: str, content: str, commit_message: str, ctx: MCPContext | None
-) -> str:
-    """Run update_synapse_rule logic and return JSON result."""
-    project_root = get_project_root()
-    managers = await get_managers(project_root)
-    if managers.synapse is None:
-        await log_client(
-            ctx,
-            "warning",
-            "update_synapse_rule: Synapse not initialized",
-            logger_name=__name__,
-        )
-        return json.dumps(
-            {
-                "status": "error",
-                "error": "Synapse not initialized. Run setup_synapse first.",
-            },
-            indent=2,
-        )
-    synapse_manager = await get_manager(managers, "synapse", SynapseManager)
-    result = await synapse_manager.update_synapse_rule(
-        category=category, file=file, content=content, commit_message=commit_message
-    )
-    out = json.dumps(result, indent=2)
-    await log_client(
-        ctx, "info", "update_synapse_rule: completed", logger_name=__name__
-    )
-    return out
 
 
 @mcp.tool(annotations=safe_write_annotations("Update Synapse (rule or prompt)"))
@@ -252,10 +184,10 @@ async def update_synapse(
     )
     try:
         if content_type == "rule":
-            return await _update_synapse_rule_impl(
+            return await update_synapse_rule_impl(
                 category, file, content, commit_message, ctx
             )
-        return await _update_synapse_prompt_impl(
+        return await update_synapse_prompt_impl(
             category, file, content, commit_message, ctx
         )
     except Exception as e:
@@ -282,52 +214,6 @@ async def update_synapse_rule(
         commit_message=commit_message,
         ctx=ctx,
     )
-
-
-async def _get_synapse_handle_rules(
-    task_description: str | None,
-    max_tokens: int,
-    min_relevance_score: float,
-    project_files: str | None,
-    rule_priority: RulePriorityLiteral,
-    context_aware: bool,
-    ctx: MCPContext | None,
-) -> str:
-    """Handle get_synapse(content_type='rules') branch."""
-    if not (task_description or "").strip():
-        return json.dumps(
-            {
-                "status": "error",
-                "error": "task_description required when content_type is rules",
-            },
-            indent=2,
-        )
-    desc = (task_description or "").strip()
-    return await _get_synapse_rules_impl(
-        desc,
-        max_tokens,
-        min_relevance_score,
-        project_files,
-        rule_priority,
-        context_aware,
-        ctx,
-    )
-
-
-async def _get_synapse_handle_prompts(
-    category: str | None, ctx: MCPContext | None
-) -> str:
-    """Handle get_synapse(content_type='prompts') branch."""
-    try:
-        return await _get_synapse_prompts_impl(category, ctx)
-    except Exception as e:
-        await log_client(
-            ctx, "error", f"get_synapse(prompts): {e!s}", logger_name=__name__
-        )
-        return json.dumps(
-            {"status": "error", "error": str(e), "error_type": type(e).__name__},
-            indent=2,
-        )
 
 
 @mcp.tool(annotations=read_only_annotations("Get Synapse (rules or prompts)"))
@@ -369,7 +255,7 @@ async def get_synapse(
     """
     ct = (content_type or "").strip().lower()
     if ct == "rules":
-        return await _get_synapse_handle_rules(
+        return await get_synapse_handle_rules(
             task_description,
             max_tokens,
             min_relevance_score,
@@ -379,7 +265,7 @@ async def get_synapse(
             ctx,
         )
     if ct == "prompts":
-        return await _get_synapse_handle_prompts(category, ctx)
+        return await get_synapse_handle_prompts(category, ctx)
     return json.dumps(
         {
             "status": "error",
@@ -387,270 +273,6 @@ async def get_synapse(
         },
         indent=2,
     )
-
-
-async def get_synapse_rules(
-    task_description: str,
-    max_tokens: int = 10000,
-    min_relevance_score: float = 0.3,
-    project_files: str | None = None,
-    rule_priority: RulePriorityLiteral = "local_overrides_shared",
-    context_aware: bool = True,
-    ctx: MCPContext | None = None,
-) -> str:
-    """Get intelligently selected rules from task context and project.
-
-    USE WHEN: User needs relevant rules, user wants Synapse rules, user
-    requests rule retrieval, user needs coding standards.
-
-    EXAMPLES: 'get Synapse rules for Python', 'get relevant rules for task',
-    'get coding standards', 'get rules for refactoring'.
-
-    RETURNS: JSON with relevant rules, relevance scores, and rule content.
-
-    This tool analyzes your task description and project files to automatically
-    select the most relevant coding rules from both Synapse and local sources.
-    It detects programming languages, frameworks, and task types to load
-    appropriate rules while respecting token budget constraints.
-
-    Args:
-        task_description: Natural language description of your current task.
-                         Used for keyword extraction and semantic matching.
-
-        max_tokens: Maximum total tokens to include in response.
-                   Default: 10000
-
-        min_relevance_score: Minimum relevance score (0.0-1.0) for rule inclusion.
-                            Default: 0.3
-
-        project_files: Comma-separated list of file paths for context detection.
-                      Optional - if not provided, uses task_description only.
-
-        rule_priority: Conflict resolution strategy when Synapse and local
-                      rules overlap.
-                      "local_overrides_shared": Prefer project-specific
-                      rules (default)
-                      "shared_overrides_local": Prefer team-wide Synapse
-                      rules
-
-        context_aware: Enable intelligent context detection and rule selection.
-                      Default: True
-
-    Returns:
-        JSON string containing:
-        - status: "success" or "error"
-        - task_description: Echo of input task description
-        - context: Detected context information
-        - rules_loaded: Categorized rules (generic, language, local)
-        - total_tokens: Actual token count of returned rules
-        - token_budget: Maximum token limit specified
-        - source: Rules source ("mixed", "shared_only", "local_only")
-
-    Examples:
-        Example 1: Get rules for Python async task
-        >>> await get_synapse_rules(
-        ...     task_description=(
-        ...         "Implement async file operations with proper error "
-        ...         "handling"
-        ...     ),
-        ...     max_tokens=8000,
-        ...     min_relevance_score=0.4
-        ... )
-        {
-          "status": "success",
-          "task_description": (
-              "Implement async file operations with proper error handling"
-          ),
-          "context": {
-            "languages": ["python"],
-            "frameworks": [],
-            "task_type": "implementation"
-          },
-          "rules_loaded": {
-            "generic": [
-              {
-                "file": "general/error-handling.mdc",
-                "tokens": 450,
-                "priority": "high",
-                "relevance_score": 0.92
-              }
-            ],
-            "language": [
-              {
-                "file": "python/async-patterns.mdc",
-                "category": "python",
-                "tokens": 680,
-                "priority": "high",
-                "relevance_score": 0.88
-              }
-            ],
-            "local": []
-          },
-          "total_tokens": 1130,
-          "token_budget": 8000,
-          "source": "mixed"
-        }
-
-        Example 2: Get rules with project file context
-        >>> await get_synapse_rules(
-        ...     task_description="Refactor authentication module",
-        ...     project_files="src/auth.py, tests/test_auth.py",
-        ...     max_tokens=10000
-        ... )
-        {
-          "status": "success",
-          "task_description": "Refactor authentication module",
-          "context": {
-            "languages": ["python"],
-            "frameworks": [],
-            "task_type": "refactoring"
-          },
-          "rules_loaded": {
-            "generic": [
-              {
-                "file": "general/refactoring-patterns.mdc",
-                "tokens": 520,
-                "priority": "medium",
-                "relevance_score": 0.75
-              }
-            ],
-            "language": [
-              {
-                "file": "python/code-organization.mdc",
-                "category": "python",
-                "tokens": 420,
-                "priority": "medium",
-                "relevance_score": 0.68
-              }
-            ],
-            "local": []
-          },
-          "total_tokens": 940,
-          "token_budget": 10000,
-          "source": "mixed"
-        }
-    """
-    return await _get_synapse_rules_impl(
-        task_description,
-        max_tokens,
-        min_relevance_score,
-        project_files,
-        rule_priority,
-        context_aware,
-        ctx,
-    )
-
-
-def _get_synapse_rules_error_json(exc: Exception) -> str:
-    """Build JSON error response for get_synapse_rules failures."""
-    return json.dumps(
-        {"status": "error", "error": str(exc), "error_type": type(exc).__name__},
-        indent=2,
-    )
-
-
-async def _get_synapse_rules_impl(
-    task_description: str,
-    max_tokens: int,
-    min_relevance_score: float,
-    project_files: str | None,
-    rule_priority: RulePriorityLiteral,
-    context_aware: bool,
-    ctx: MCPContext | None,
-) -> str:
-    """Run get_synapse_rules logic and return JSON result."""
-    await log_client(ctx, "info", "get_synapse_rules: starting", logger_name=__name__)
-    try:
-        from cortex.tools.synapse_tools_helpers import execute_rules_with_context
-
-        result = await execute_rules_with_context(
-            task_description,
-            max_tokens,
-            min_relevance_score,
-            project_files,
-            rule_priority,
-            context_aware,
-        )
-        out = json.dumps(result.model_dump(mode="json"), indent=2)
-        await log_client(
-            ctx, "info", "get_synapse_rules: completed", logger_name=__name__
-        )
-        return out
-    except Exception as e:
-        await log_client(
-            ctx, "error", f"get_synapse_rules: {e!s}", logger_name=__name__
-        )
-        return _get_synapse_rules_error_json(e)
-
-
-def _build_category_prompts_response(
-    category: str, prompts: Sequence[ModelDict] | Sequence[_ModelDumpable]
-) -> str:
-    """Build JSON response for category-specific prompts."""
-    return json.dumps(
-        {
-            "status": "success",
-            "category": category,
-            "prompts": format_prompts_list(prompts),
-            "total_count": len(prompts),
-        },
-        indent=2,
-    )
-
-
-def _build_all_prompts_response(
-    prompts: Sequence[ModelDict] | Sequence[_ModelDumpable], categories: list[str]
-) -> str:
-    """Build JSON response for all prompts."""
-    return json.dumps(
-        {
-            "status": "success",
-            "categories": categories,
-            "prompts": format_prompts_list(prompts),
-            "total_count": len(prompts),
-        },
-        indent=2,
-    )
-
-
-def _synapse_not_initialized_json() -> str:
-    """Build JSON error when Synapse is not initialized."""
-    return json.dumps(
-        {
-            "status": "error",
-            "error": "Synapse not initialized. Run setup_synapse first.",
-        },
-        indent=2,
-    )
-
-
-async def _get_synapse_prompts_impl(
-    category: str | None, ctx: MCPContext | None
-) -> str:
-    """Run get_synapse_prompts logic and return JSON result."""
-    project_root = get_project_root()
-    managers = await get_managers(project_root)
-    if managers.synapse is None:
-        await log_client(
-            ctx,
-            "warning",
-            "get_synapse_prompts: Synapse not initialized",
-            logger_name=__name__,
-        )
-        return _synapse_not_initialized_json()
-    synapse_manager = await get_manager(managers, "synapse", SynapseManager)
-    _ = await synapse_manager.load_prompts_manifest()
-    if category:
-        prompts = await synapse_manager.load_prompts_category(category)
-        out = _build_category_prompts_response(category, prompts)
-    else:
-        prompts = await synapse_manager.get_all_prompts()
-        categories = synapse_manager.get_prompt_categories()
-        out = _build_all_prompts_response(prompts, categories)
-    await log_client(
-        ctx, "info", "get_synapse_prompts: completed", logger_name=__name__
-    )
-    return out
 
 
 async def get_synapse_prompts(
@@ -663,37 +285,6 @@ async def get_synapse_prompts(
         category=category,
         ctx=ctx,
     )
-
-
-async def _update_synapse_prompt_impl(
-    category: str, file: str, content: str, commit_message: str, ctx: MCPContext | None
-) -> str:
-    """Run update_synapse_prompt logic and return JSON result."""
-    project_root = get_project_root()
-    managers = await get_managers(project_root)
-    if managers.synapse is None:
-        await log_client(
-            ctx,
-            "warning",
-            "update_synapse_prompt: Synapse not initialized",
-            logger_name=__name__,
-        )
-        return json.dumps(
-            {
-                "status": "error",
-                "error": "Synapse not initialized. Run setup_synapse first.",
-            },
-            indent=2,
-        )
-    synapse_manager = await get_manager(managers, "synapse", SynapseManager)
-    result = await synapse_manager.update_synapse_prompt(
-        category=category, file=file, content=content, commit_message=commit_message
-    )
-    out = json.dumps(result, indent=2)
-    await log_client(
-        ctx, "info", "update_synapse_prompt: completed", logger_name=__name__
-    )
-    return out
 
 
 async def update_synapse_prompt(

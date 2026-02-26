@@ -17,11 +17,9 @@ import pytest
 
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.tools.file_operations import manage_file
-from cortex.tools.phase1_foundation_dependency import get_dependency_graph
-from cortex.tools.phase1_foundation_stats import get_memory_bank_stats
-from cortex.tools.phase1_foundation_version import get_version_history
 from cortex.tools.phase2_linking import parse_file_links, validate_links
 from cortex.tools.phase4_optimization import load_context
+from cortex.tools.query_memory_bank_operations import query_memory_bank
 from cortex.tools.validation_operations import validate
 from tests.helpers.schema_fixtures import MINIMAL_VALID_PROJECT_BRIEF_CONTENT
 
@@ -261,8 +259,10 @@ class TestMCPToolWorkflows:
                 change_description="Updated version",
             )
 
-            # Act 3: Get version history
-            result = await get_version_history("test.md")
+            # Act 3: Get version history (via query_memory_bank)
+            result = await query_memory_bank(
+                query_type="version_history", file_name="test.md"
+            )
             data = json.loads(result)
             assert data["status"] == "success"
             assert data["total_versions"] >= 2
@@ -294,8 +294,10 @@ class TestMCPToolWorkflows:
             "cortex.core.project_root_resolver.get_project_root",
             return_value=temp_project_root,
         ):
-            # Act: Get dependency graph
-            result = await get_dependency_graph(format="json")
+            # Act: Get dependency graph (via query_memory_bank)
+            result = await query_memory_bank(
+                query_type="dependency_graph", format="json"
+            )
             data = json.loads(result)
             assert data["status"] == "success"
             assert "graph" in data
@@ -315,8 +317,10 @@ class TestMCPToolWorkflows:
             "cortex.core.project_root_resolver.get_project_root",
             return_value=temp_project_root,
         ):
-            # Act: Get stats
-            result = await get_memory_bank_stats(response_format="detailed")
+            # Act: Get stats (via query_memory_bank)
+            result = await query_memory_bank(
+                query_type="stats", response_format="detailed"
+            )
             data = json.loads(result)
             assert data["status"] == "success"
             assert "summary" in data

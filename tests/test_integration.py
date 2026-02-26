@@ -12,11 +12,9 @@ import pytest
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.tools.file_operations import manage_file
 
-# Import the tool functions directly
-from cortex.tools.phase1_foundation_dependency import get_dependency_graph
+# Use consolidated query_memory_bank (Phase 50); rollback stays direct
 from cortex.tools.phase1_foundation_rollback import rollback_file_version
-from cortex.tools.phase1_foundation_stats import get_memory_bank_stats
-from cortex.tools.phase1_foundation_version import get_version_history
+from cortex.tools.query_memory_bank_operations import query_memory_bank
 from tests.helpers.schema_fixtures import MINIMAL_VALID_PROJECT_BRIEF_CONTENT
 
 
@@ -177,9 +175,11 @@ async def test_full_workflow():
             print(f"   ✓ Token count: {metadata.get('token_count', 0)}")
             print()
 
-            # Test 5: Get version history
+            # Test 5: Get version history (via query_memory_bank)
             print("🧪 Test 5: Get version history")
-            result = await get_version_history("projectBrief.md")
+            result = await query_memory_bank(
+                query_type="version_history", file_name="projectBrief.md"
+            )
             data = json.loads(result)
             assert (
                 data["status"] == "success"
@@ -190,18 +190,22 @@ async def test_full_workflow():
                 print(f"   ✓ Latest: v{latest['version']} - {latest['change_type']}")
             print()
 
-            # Test 6: Get dependency graph
+            # Test 6: Get dependency graph (via query_memory_bank)
             print("🧪 Test 6: Get dependency graph")
-            result = await get_dependency_graph(format="json")
+            result = await query_memory_bank(
+                query_type="dependency_graph", format="json"
+            )
             data = json.loads(result)
             assert data["status"] == "success", "Get graph failed"
             print(f"   ✓ Files in graph: {len(data['graph']['files'])}")
             print(f"   ✓ Loading order: {len(data['loading_order'])} files")
             print()
 
-            # Test 7: Get overall stats
+            # Test 7: Get overall stats (via query_memory_bank)
             print("🧪 Test 7: Get Memory Bank statistics")
-            result = await get_memory_bank_stats(response_format="detailed")
+            result = await query_memory_bank(
+                query_type="stats", response_format="detailed"
+            )
             data = json.loads(result)
             assert data["status"] == "success", "Get stats failed"
             summary = data["summary"]

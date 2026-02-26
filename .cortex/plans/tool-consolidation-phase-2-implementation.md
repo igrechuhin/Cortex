@@ -17,14 +17,14 @@ Reduce tool count from 51 to ≤40 by completing Phase 50 consolidation, depreca
 
 ## Implementation Steps
 
-### Step 1: Complete Phase 50 — Remove old memory/usage tools (Est. 7 slots)
+### Step 1: Complete Phase 50 — Remove old memory/usage tools (Est. 7 slots) — ✅ DONE 2026-02-26
 
-1. Migrate all internal callers from get_memory_bank_stats, get_version_history, get_link_graph to query_memory_bank (query_type=stats|version_history|link_graph).
-2. Migrate callers from get_tool_usage_stats, get_unused_tools, get_tool_usage_report, get_optimization_recommendations to query_usage.
-3. Update MCP resources that invoke old tools to use consolidated dispatchers.
-4. Remove @mcp.tool() registration for: get_memory_bank_stats, get_version_history, get_link_graph, get_dependency_graph, get_tool_usage_stats, get_unused_tools, get_tool_usage_report, get_optimization_recommendations.
-5. Keep implementations as internal callables for query_memory_bank/query_usage dispatch.
-6. Update tests and docs/api/tools.md.
+1. ✅ Migrate all internal callers from get_memory_bank_stats, get_version_history, get_link_graph to query_memory_bank (tests/test_integration.py, tests/integration/test_mcp_tools_integration.py, tests/test_quick.py).
+2. ✅ Migrate callers from get_tool_usage_stats, get_unused_tools, etc. — query_usage already dispatches; no external callers migrated (usage tools were never registered).
+3. MCP resources — resources use internal callables; no change needed.
+4. ✅ Old tools (get_memory_bank_stats, get_version_history, get_dependency_graph, get_link_graph, get_tool_usage_stats, get_unused_tools, get_tool_usage_report, get_optimization_recommendations) have no @mcp.tool() — already consolidated into query_memory_bank/query_usage.
+5. ✅ Implementations kept as internal callables for query_memory_bank/query_usage dispatch.
+6. ✅ Tests updated; docs/api/tools.md already documents Phase 50 consolidation.
 
 ### Step 2: Deprecate low-usage plan tools (Est. 2 slots)
 
