@@ -86,7 +86,7 @@ async def test_plan_workflow_create_add_list(tmp_path: Path) -> None:
         create_fn = get_tool_fn(create_plan)
         create_result = await create_fn(
             title="E2E Plan Test",
-            content="# E2E Plan\n\n## Step 1\n\nDone.\n",
+            content="# E2E Plan\n\n**Status:** COMPLETE\n\n## Step 1\n\nDone.\n",
             slug="e2e-plan-test",
             ctx=None,
         )

@@ -127,3 +127,33 @@ The commit workflow is organized into phases (see `docs/design/commit-pipeline-p
 ## Learned Workspace Facts
 
 - Do not edit files under `.venv` or other third-party package directories; apply coding standards (e.g. enums, types) only to project source code.
+
+## Cursor Cloud specific instructions
+
+### Prerequisites
+
+The VM update script handles: `uv sync --extra dev`, `git submodule update --init --recursive`, and `npm install -g markdownlint-cli2`. Python 3.13+ and `uv` must be pre-installed as system dependencies (the update script does not install them).
+
+### Running the Cortex MCP server
+
+- Default transport is **stdio** (reads JSON-RPC from stdin, writes to stdout): `uv run cortex`
+- For HTTP/SSE testing: `CORTEX_MCP_TRANSPORT=sse uv run cortex` (starts on port 8000 by default)
+- The server is self-contained with no database or external API dependencies; all state is filesystem-based (`.cortex/` directory)
+
+### Development commands
+
+| Task | Command |
+|------|---------|
+| Install deps | `uv sync --extra dev` |
+| Lint (ruff) | `.venv/bin/ruff check src/ tests/` |
+| Format check | `.venv/bin/black --check .` |
+| Type check | `uv run pyright src/ tests/` |
+| Tests | `uv run pytest tests/ -q` |
+| All checks | `make check` (note: Makefile uses `gtimeout` which may not exist on Linux; use commands above directly) |
+
+### Gotchas
+
+- `make check` runs format + lint + typecheck + test. All targets use `.venv/bin/` paths and work cross-platform.
+- The git submodule `.cortex/synapse` must be initialized before running pre-commit hooks or scripts that reference `.cortex/synapse/scripts/python/`.
+- All tests pass (4799 passed). Run with `uv run pytest tests/ -q`.
+- `uv sync --extra dev` installs both the `[project.optional-dependencies] dev` extras (pytest, etc.) and the `[dependency-groups] dev` group (black, ruff, pyright, detect-secrets).
