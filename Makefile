@@ -1,5 +1,5 @@
 VENV_PY := ./.venv/bin/python
-TIMEOUT := gtimeout -k 5
+TIMEOUT := $(shell command -v gtimeout >/dev/null 2>&1 && echo "gtimeout -k 5" || echo "timeout -k 5")
 
 .PHONY: help test test-full typecheck format lint compile check
 
