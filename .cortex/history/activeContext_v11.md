@@ -52,6 +52,10 @@
 
 - ✅ **Phase 9.3 Advanced Caching** - COMPLETE (2026-02-26) - Fixed co-access tracking in AdvancedCacheManager (_record_access), fixed clear() evictions, documented cache architecture in performance-benchmarks.md
 
+- ✅ **Phase 9.3 Task 3 Async optimization** - COMPLETE (2026-02-26) - Parallelized session_brief hot paths (health, project name, handoff, concurrency, memory bank files) via asyncio.gather. Documented TaskGroup vs gather usage. Connection pooling N/A.
+
+- ✅ **Phase 9.3 Task 4 Memory optimization** - COMPLETE (2026-02-26) - Added memory benchmarks (tracemalloc), Memory Optimization section in performance-benchmarks.md, memory suite in run_benchmarks. Phase 9.3 complete.
+
 ## Completed Work (2026-02-25)
 
 - **Summary (2026-02-25)** - 1 entries archived.

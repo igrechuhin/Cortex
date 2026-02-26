@@ -36,6 +36,11 @@ from cortex.benchmarks.framework import (
     BenchmarkRunner,
     BenchmarkSuite,
 )
+from cortex.benchmarks.memory_benchmarks import (
+    ContextLoadMemoryBenchmark,
+    IndexLoadMemoryBenchmark,
+    create_memory_benchmark_suite,
+)
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 
 # ==============================================================================
@@ -721,6 +726,41 @@ class TestCreateAnalysisBenchmarkSuite:
         assert suite.description != ""
         # 3 pattern + 4 structure + 3 Phase 9.3 hot-path + 3 co-access = 13 benchmarks
         assert len(suite.benchmarks) == 13
+
+
+class TestCreateMemoryBenchmarkSuite:
+    """Tests for create_memory_benchmark_suite function (Phase 9.3 Task 4)."""
+
+    def test_create_memory_benchmark_suite(self):
+        """Test creating memory benchmark suite."""
+        # Arrange/Act
+        suite = create_memory_benchmark_suite()
+
+        # Assert
+        assert suite.name == "Memory Usage"
+        assert suite.description != ""
+        # 2 context load + 2 index load = 4 benchmarks
+        assert len(suite.benchmarks) == 4
+
+    @pytest.mark.asyncio
+    async def test_context_load_memory_benchmark_records_peak(self) -> None:
+        """Test that ContextLoadMemoryBenchmark records peak_memory_mb in metadata."""
+        benchmark = ContextLoadMemoryBenchmark(num_files=3, content_lines=10)
+        result = await benchmark.run()
+        assert "peak_memory_mb" in result.metadata
+        assert isinstance(result.metadata["peak_memory_mb"], (int, float))
+        assert result.metadata["peak_memory_mb"] >= 0
+        assert result.metadata.get("target_mb") == 50
+
+    @pytest.mark.asyncio
+    async def test_index_load_memory_benchmark_records_peak(self) -> None:
+        """Test that IndexLoadMemoryBenchmark records peak_memory_mb in metadata."""
+        benchmark = IndexLoadMemoryBenchmark(num_files=10, edges_per_file=2)
+        result = await benchmark.run()
+        assert "peak_memory_mb" in result.metadata
+        assert isinstance(result.metadata["peak_memory_mb"], (int, float))
+        assert result.metadata["peak_memory_mb"] >= 0
+        assert result.metadata.get("target_mb") == 50
 
 
 # ==============================================================================

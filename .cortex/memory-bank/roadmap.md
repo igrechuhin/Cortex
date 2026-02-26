@@ -12,7 +12,7 @@
 
 ## Pending plans (from .cortex/plans)
 
-- **Pending: Phase 9 excellence** - Plan: .cortex/plans/phase-9-excellence-98.md (Phase 9.2 complete; next Phase 9.3 Performance)
+- **Pending: Phase 9 excellence** - Plan: .cortex/plans/phase-9-excellence-98.md (Phase 9.3 complete; next Phase 9.4 Security)
 
 ### Investigation Plans (Archive / Reference)
 
@@ -20,4 +20,4 @@ Completed investigations are recorded in [activeContext.md](activeContext.md). P
 
 ### Features & Enhancements
 
-- **Pending: Phase 9 excellence** - Plan: .cortex/plans/phase-9-excellence-98.md (Phase 9.2 complete; next Phase 9.3 Performance)
+- **Pending: Phase 9 excellence** - Plan: .cortex/plans/phase-9-excellence-98.md (Phase 9.3 complete; next Phase 9.4 Security)

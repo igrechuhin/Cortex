@@ -5,6 +5,7 @@ Extracted from session_start_tools to keep file size under 400 lines.
 
 from __future__ import annotations
 
+import asyncio
 import re
 from pathlib import Path
 
@@ -207,9 +208,11 @@ async def _load_locked_tasks_safe(project_root: Path) -> list[str]:
 async def _load_concurrency_info(
     project_root: Path,
 ) -> tuple[list[ConcurrentSession], list[str]]:
-    """Load concurrent sessions and locked tasks."""
-    concurrent_sessions = await _load_concurrent_sessions_safe(project_root)
-    locked_tasks = await _load_locked_tasks_safe(project_root)
+    """Load concurrent sessions and locked tasks in parallel."""
+    concurrent_sessions, locked_tasks = await asyncio.gather(
+        _load_concurrent_sessions_safe(project_root),
+        _load_locked_tasks_safe(project_root),
+    )
     return concurrent_sessions, locked_tasks
 
 
@@ -313,11 +316,15 @@ async def _load_brief_async(
 ) -> tuple[
     SessionHealthSummary, str, SessionHandoff | None, list[ConcurrentSession], list[str]
 ]:
-    """Load health, project name, handoff, and concurrency for brief."""
-    health = await calculate_health_summary(managers, project_root)
-    project_name = await _extract_project_name(fs_manager)
-    last_handoff = await read_handoff(project_root, fs_manager)
-    concurrent_sessions, locked_tasks = await _load_concurrency_info(project_root)
+    """Load health, project name, handoff, and concurrency for brief in parallel."""
+    health, project_name, last_handoff, (concurrent_sessions, locked_tasks) = (
+        await asyncio.gather(
+            calculate_health_summary(managers, project_root),
+            _extract_project_name(fs_manager),
+            read_handoff(project_root, fs_manager),
+            _load_concurrency_info(project_root),
+        )
+    )
     return health, project_name, last_handoff, concurrent_sessions, locked_tasks
 
 
@@ -397,19 +404,14 @@ async def build_session_brief(
 async def load_memory_bank_files(
     fs_manager: FileSystemManager,
 ) -> tuple[str, str] | SessionStartErrorResult:
-    """Load activeContext.md and roadmap.md. Returns tuple or error result."""
-    active_context_content, error = await _read_memory_bank_file(
-        fs_manager, MemoryBankFile.ACTIVE_CONTEXT
+    """Load activeContext.md and roadmap.md in parallel. Returns tuple or error."""
+    (active_content, active_err), (roadmap_content, roadmap_err) = await asyncio.gather(
+        _read_memory_bank_file(fs_manager, MemoryBankFile.ACTIVE_CONTEXT),
+        _read_memory_bank_file(fs_manager, MemoryBankFile.ROADMAP),
     )
-    if error:
-        return SessionStartErrorResult(status=ToolResultStatus.ERROR, error=error)
-
-    roadmap_content, error = await _read_memory_bank_file(
-        fs_manager, MemoryBankFile.ROADMAP
-    )
-    if error:
-        return SessionStartErrorResult(status=ToolResultStatus.ERROR, error=error)
-
-    assert active_context_content is not None
-    assert roadmap_content is not None
-    return active_context_content, roadmap_content
+    if active_err:
+        return SessionStartErrorResult(status=ToolResultStatus.ERROR, error=active_err)
+    if roadmap_err:
+        return SessionStartErrorResult(status=ToolResultStatus.ERROR, error=roadmap_err)
+    assert active_content is not None and roadmap_content is not None
+    return active_content, roadmap_content
