@@ -4,41 +4,39 @@ Adapter for Python projects using pytest, ruff, pyright, and black.
 """
 
 import os
-import re
 import subprocess
 import threading
 from collections.abc import Sequence
 from pathlib import Path
 
-from cortex.core.path_resolver import (
-    CortexResourceType,
-    get_cortex_path,
-    get_venv_bin_path,
-)
+from cortex.core.path_resolver import get_venv_bin_path
 from cortex.services.language_detector import LanguageDetector, LanguageInfo
 
 from .base import (
-    COVERAGE_ACCEPT_MIN,
     CheckResult,
     FrameworkAdapter,
     ProgressCallback,
     TestResult,
 )
-
-_RUFF_DIAGNOSTIC_RE = re.compile(r"^.+?:\d+:\d+:\s+[A-Z]{1,6}\d{1,4}\b")
-_TESTS_COLLECTED_RE = re.compile(r"(\d+)\s+tests?\s+collected", re.IGNORECASE)
-_PYTEST_RESULT_LINE_RE = re.compile(
-    r"\s+(PASSED|FAILED|SKIPPED|ERROR)\s+\[", re.IGNORECASE
+from .python_adapter_checks import (
+    get_type_check_script_path,
+    run_black_formatting,
+    run_ruff_fix,
+    run_ruff_import_sorting,
+    type_check_pyright_only,
+    type_check_via_script,
 )
+from .python_adapter_parsing import (
+    is_pytest_result_line,
+    parse_lint_errors,
+    parse_pytest_output,
+    parse_tests_collected,
+    parse_type_errors,
+    should_report_progress,
+)
+
 _PROGRESS_REPORT_EVERY_N_TESTS = 50
-_PROGRESS_HEARTBEAT_SECONDS = (
-    20  # Report progress when pytest is silent (e.g. long test)
-)
-
-
-def _should_report_progress(completed: int, total: int) -> bool:
-    """True if we should report progress (every N tests or at completion)."""
-    return completed % _PROGRESS_REPORT_EVERY_N_TESTS == 0 or completed >= total
+_PROGRESS_HEARTBEAT_SECONDS = 20
 
 
 class PythonAdapter(FrameworkAdapter):
@@ -53,30 +51,21 @@ class PythonAdapter(FrameworkAdapter):
         return None
 
     def __init__(self, project_root: str | None = None) -> None:
-        """Initialize Python adapter.
-
-        Args:
-            project_root: Path to project root directory.
-        """
+        """Initialize Python adapter."""
         super().__init__(project_root)
         self.venv_bin = get_venv_bin_path(self.project_root)
         self._xdist_available: bool = False
 
     def _get_command(self, tool: str) -> str:
-        """Get full path to tool command. Never relies on PATH (MCP-safe).
-
-        Tries project_root/.venv/bin/<tool>, then cwd/.venv/bin/<tool>.
-        Raises FileNotFoundError with clear message if neither exists.
-        """
+        """Get full path to tool command. Never relies on PATH (MCP-safe)."""
         venv_tool = self.venv_bin / tool
         if venv_tool.exists():
             return str(venv_tool)
         cwd_venv = get_venv_bin_path(Path.cwd()) / tool
         if cwd_venv.exists():
             return str(cwd_venv)
-        expected = str(venv_tool)
         msg = (
-            f"{tool} not found at {expected} or at {cwd_venv}. "
+            f"{tool} not found at {venv_tool} or at {cwd_venv}. "
             + "Ensure .venv is set up (e.g. uv sync) and run from project root or "
             + "pass project_root to execute_pre_commit_checks."
         )
@@ -90,22 +79,7 @@ class PythonAdapter(FrameworkAdapter):
         progress_callback: ProgressCallback | None = None,
         include_slow_tests: bool = False,
     ) -> TestResult:
-        """Run pytest test suite.
-
-        Uses pytest-xdist -n auto when available for parallel runs (commit pipeline
-        and CI). Set CORTEX_PYTEST_PARALLEL=0 to disable parallel (e.g. for debugging).
-
-        Args:
-            timeout: Maximum time in seconds for test execution.
-            coverage_threshold: Minimum coverage percentage required.
-            max_failures: Maximum number of failures before stopping.
-            progress_callback: Optional (completed, total) for real test progress.
-            include_slow_tests: If False (default), run with -m "not slow" so
-                slow integration tests are excluded and the run finishes quickly.
-
-        Returns:
-            TestResult with test execution details.
-        """
+        """Run pytest test suite."""
         cmd = self._build_test_command(
             coverage_threshold, max_failures, include_slow_tests
         )
@@ -118,18 +92,14 @@ class PythonAdapter(FrameworkAdapter):
         return self._execute_test_command(cmd, timeout, coverage_threshold)
 
     def _pytest_parallel_requested(self) -> bool:
-        """Return True if parallel test runs are allowed (default True when xdist used).
-
-        Parallel (-n auto) is used when this returns True and xdist is available.
-        Set CORTEX_PYTEST_PARALLEL=0 or false or no to disable (e.g. for debugging).
-        """
+        """Return True if parallel test runs are allowed."""
         val = os.environ.get("CORTEX_PYTEST_PARALLEL", "").strip().lower()
         if val in ("0", "false", "no"):
             return False
         return True
 
     def _has_pytest_xdist(self) -> bool:
-        """Return True if pytest-xdist is installed so we can use -n auto."""
+        """Return True if pytest-xdist is installed."""
         try:
             python_exe = self._get_command("python")
             result = subprocess.run(
@@ -162,22 +132,18 @@ class PythonAdapter(FrameworkAdapter):
         max_failures: int | None,
         include_slow_tests: bool = False,
     ) -> list[str]:
-        """Build pytest command with options (matches CI when include_slow_tests).
-
-        Uses python -m pytest so invocation matches CI (uv run python -m pytest).
-        """
+        """Build pytest command with options."""
         python_exe = self._get_command("python")
         cmd = [
             python_exe,
             "-m",
             "pytest",
-            "tests/",  # Match CI: tests/
+            "tests/",
             "-v",
-            "--cov=src/cortex",  # Match CI: --cov=src/cortex
-            "--cov-report=xml",  # Match CI: --cov-report=xml
-            "--cov-report=term",  # Also include terminal report
-            f"--cov-fail-under={int(coverage_threshold * 100)}",  # Match CI:
-            # --cov-fail-under=90
+            "--cov=src/cortex",
+            "--cov-report=xml",
+            "--cov-report=term",
+            f"--cov-fail-under={int(coverage_threshold * 100)}",
         ]
         if self._pytest_parallel_requested() and self._has_pytest_xdist():
             cmd.extend(["-n", "auto"])
@@ -209,11 +175,8 @@ class PythonAdapter(FrameworkAdapter):
                 timeout=60,
             )
             combined = result.stdout + result.stderr
-            for line in reversed(combined.splitlines()):
-                match = _TESTS_COLLECTED_RE.search(line)
-                if match:
-                    return int(match.group(1))
-        except (subprocess.TimeoutExpired, ValueError):
+            return parse_tests_collected(combined)
+        except subprocess.TimeoutExpired:
             pass
         return None
 
@@ -223,12 +186,7 @@ class PythonAdapter(FrameworkAdapter):
         total: int,
         progress_callback: ProgressCallback,
     ) -> list[str]:
-        """Read proc stdout line by line and report test progress; return lines.
-
-        When pytest is silent (e.g. one long test), a heartbeat thread still
-        reports progress every _PROGRESS_HEARTBEAT_SECONDS so the UI does not
-        appear stuck (e.g. around 300/3704 when a slow test runs).
-        """
+        """Read proc stdout line by line and report test progress; return lines."""
         lines: list[str] = []
         completed = 0
         completed_ref: list[int] = [0]
@@ -245,10 +203,12 @@ class PythonAdapter(FrameworkAdapter):
         try:
             for line in proc.stdout:
                 lines.append(line)
-                if _PYTEST_RESULT_LINE_RE.search(line):
+                if is_pytest_result_line(line):
                     completed += 1
                     completed_ref[0] = completed
-                    if _should_report_progress(completed, total):
+                    if should_report_progress(
+                        completed, total, _PROGRESS_REPORT_EVERY_N_TESTS
+                    ):
                         progress_callback(completed, total)
             return lines
         finally:
@@ -283,11 +243,8 @@ class PythonAdapter(FrameworkAdapter):
             _ = proc.wait(timeout=wait_timeout)  # noqa: F841
             output = "".join(lines)
             if proc.returncode == 0 and total > 0:
-                # Ensure final 100% progress update even if no per-test lines matched.
                 progress_callback(total, total)
-            return self._parse_test_output(
-                output, proc.returncode == 0, coverage_threshold
-            )
+            return parse_pytest_output(output, proc.returncode == 0, coverage_threshold)
         except subprocess.TimeoutExpired:
             if proc is not None and proc.poll() is None:
                 proc.kill()
@@ -308,7 +265,7 @@ class PythonAdapter(FrameworkAdapter):
                 timeout=timeout,
             )
             output = result.stdout + result.stderr
-            return self._parse_test_output(
+            return parse_pytest_output(
                 output, result.returncode == 0, coverage_threshold
             )
         except subprocess.TimeoutExpired:
@@ -348,16 +305,7 @@ class PythonAdapter(FrameworkAdapter):
         auto_fix: bool = True,
         strict_mode: bool = False,
     ) -> CheckResult:
-        """Fix errors using ruff and formatting tools.
-
-        Args:
-            error_types: Types of errors to fix (e.g., ['formatting', 'linting']).
-            auto_fix: Whether to automatically fix errors.
-            strict_mode: Whether to treat warnings as errors.
-
-        Returns:
-            CheckResult with fix operation details.
-        """
+        """Fix errors using ruff and formatting tools."""
         files_modified: list[str] = []
         errors: list[str] = []
         warnings: list[str] = []
@@ -408,17 +356,15 @@ class PythonAdapter(FrameworkAdapter):
             errors.extend(format_result.errors)
 
     def format_code(self) -> CheckResult:
-        """Format code using black and ruff import sorting.
-
-        Returns:
-            CheckResult with formatting operation details.
-        """
+        """Format code using black and ruff import sorting."""
         files_modified: list[str] = []
         errors: list[str] = []
         output_parts: list[str] = []
 
-        self._run_black_formatting(errors, output_parts)
-        self._run_ruff_import_sorting(errors, output_parts)
+        run_black_formatting(self.project_root, self._get_command, errors, output_parts)
+        run_ruff_import_sorting(
+            self.project_root, self._get_command, errors, output_parts
+        )
 
         return CheckResult(
             check_type="format",
@@ -429,430 +375,24 @@ class PythonAdapter(FrameworkAdapter):
             files_modified=files_modified,
         )
 
-    def _run_black_formatting(self, errors: list[str], output_parts: list[str]) -> None:
-        """Run black formatter on src/ and tests/ (matches CI workflow)."""
-        try:
-            result = subprocess.run(
-                [self._get_command("black"), "src/", "tests/"],
-                cwd=self.project_root,
-                capture_output=True,
-                text=True,
-            )
-            output_parts.append(result.stdout)
-            if result.returncode != 0:
-                errors.append("Black formatting failed")
-        except Exception as e:
-            errors.append(f"Black formatting error: {e}")
-
-    def _run_ruff_import_sorting(
-        self, errors: list[str], output_parts: list[str]
-    ) -> None:
-        """Run ruff import sorting on src/ and tests/ (matches CI workflow)."""
-        try:
-            result = subprocess.run(
-                [
-                    self._get_command("ruff"),
-                    "check",
-                    "--fix",
-                    "--select",
-                    "I",
-                    "src/",
-                    "tests/",
-                ],
-                cwd=self.project_root,
-                capture_output=True,
-                text=True,
-            )
-            output_parts.append(result.stdout)
-            if result.returncode != 0:
-                errors.append("Ruff import sorting failed")
-        except Exception as e:
-            errors.append(f"Ruff import sorting error: {e}")
-
     def type_check(self) -> CheckResult:
-        """Run type checker matching CI scope (src, tests, synapse scripts).
-
-        Uses .cortex/synapse/scripts/python/check_types.py when present so scope
-        matches CI step 'Type check (tests and scripts)'; otherwise falls back
-        to pyright src/ tests/.
-        """
-        script_path = (
-            get_cortex_path(self.project_root, CortexResourceType.SYNAPSE)
-            / "scripts"
-            / "python"
-            / "check_types.py"
-        )
+        """Run type checker matching CI scope."""
+        script_path = get_type_check_script_path(self.project_root)
         if script_path.exists():
-            return self._type_check_via_script(script_path)
-        return self._type_check_pyright_only()
-
-    def _type_check_result(
-        self, success: bool, output: str, errors: list[str]
-    ) -> CheckResult:
-        """Build a type_check CheckResult."""
-        return CheckResult(
-            check_type="type_check",
-            success=success,
-            output=output,
-            errors=errors,
-            warnings=[],
-            files_modified=[],
+            return type_check_via_script(
+                self.project_root,
+                self.venv_bin,
+                script_path,
+                parse_type_errors,
+            )
+        return type_check_pyright_only(
+            self.project_root, self._get_command, parse_type_errors
         )
-
-    def _type_check_via_script(self, script_path: Path) -> CheckResult:
-        """Run check_types.py so scope matches CI (src + tests + synapse scripts)."""
-        try:
-            python_bin = (
-                str(self.venv_bin / "python")
-                if (self.venv_bin / "python").exists()
-                else "python3"
-            )
-            result = subprocess.run(
-                [python_bin, str(script_path)],
-                cwd=self.project_root,
-                capture_output=True,
-                text=True,
-                timeout=300,
-            )
-            output = result.stdout + result.stderr
-            errors = self._parse_type_errors(output) if result.returncode != 0 else []
-            err_list = (
-                errors
-                if errors
-                else ([output.strip()] if result.returncode != 0 else [])
-            )
-            return self._type_check_result(result.returncode == 0, output, err_list)
-        except subprocess.TimeoutExpired:
-            return self._type_check_result(
-                False,
-                "check_types.py timed out (300s)",
-                ["Type check script timed out"],
-            )
-        except Exception as e:
-            return self._type_check_result(False, str(e), [str(e)])
-
-    def _type_check_pyright_only(self) -> CheckResult:
-        """Fallback: pyright on src/ and tests/ when check_types.py is missing."""
-        try:
-            result = subprocess.run(
-                [self._get_command("pyright"), "src/", "tests/"],
-                cwd=self.project_root,
-                capture_output=True,
-                text=True,
-            )
-            output = result.stdout + result.stderr
-            errors = self._parse_type_errors(output)
-            return CheckResult(
-                check_type="type_check",
-                success=len(errors) == 0,
-                output=output,
-                errors=errors,
-                warnings=[],
-                files_modified=[],
-            )
-        except Exception as e:
-            return CheckResult(
-                check_type="type_check",
-                success=False,
-                output=str(e),
-                errors=[str(e)],
-                warnings=[],
-                files_modified=[],
-            )
 
     def lint_code(self) -> CheckResult:
-        """Run ruff linter.
-
-        Returns:
-            CheckResult with linting details.
-        """
+        """Run ruff linter."""
         return self._run_ruff_fix()
 
     def _run_ruff_fix(self) -> CheckResult:
-        """Run ruff with auto-fix, then verify no errors remain.
-
-        Uses pyproject.toml rule set (E, F, I, B, UP) - matches CI workflow.
-        """
-        try:
-            # Step 1: Auto-fix errors
-            fix_output = self._execute_ruff_fix_command()
-
-            # Step 2: Verify no errors remain (matches CI workflow exactly)
-            verify_output = self._execute_ruff_verify_command()
-            verify_errors = self._parse_lint_errors(verify_output)
-
-            # Combine outputs
-            combined_output = (
-                f"{fix_output}\n\n--- Verification (matches CI) ---\n{verify_output}"
-            )
-
-            # If verification found errors, those are the real errors
-            if verify_errors:
-                return self._create_lint_result(combined_output, verify_errors)
-
-            # If fix step had errors but verification passed, that's OK
-            # (errors were fixed)
-            return self._create_lint_result(combined_output, [])
-        except Exception as e:
-            return self._create_lint_error_result(str(e))
-
-    def _execute_ruff_fix_command(self) -> str:
-        """Execute ruff check with --fix to auto-fix errors.
-
-        Uses pyproject.toml rule set (E, F, I, B, UP).
-        """
-        result = subprocess.run(
-            [
-                self._get_command("ruff"),
-                "check",
-                "--fix",
-                "src/",
-                "tests/",
-            ],
-            cwd=self.project_root,
-            capture_output=True,
-            text=True,
-        )
-        return result.stdout + result.stderr
-
-    def _execute_ruff_verify_command(self) -> str:
-        """Execute ruff check without --fix to verify no errors remain.
-
-        Uses pyproject.toml rule set - matches CI workflow.
-        """
-        result = subprocess.run(
-            [
-                self._get_command("ruff"),
-                "check",
-                "src/",
-                "tests/",
-            ],
-            cwd=self.project_root,
-            capture_output=True,
-            text=True,
-        )
-        # Check return code - non-zero means errors remain
-        if result.returncode != 0:
-            # Add explicit error message if return code indicates failure
-            error_msg = (
-                f"Ruff verification failed (exit code {result.returncode}). "
-                "Unfixable errors remain after auto-fix."
-            )
-            return f"{result.stdout}{result.stderr}\n{error_msg}"
-        return result.stdout + result.stderr
-
-    def _create_lint_result(self, output: str, errors: list[str]) -> CheckResult:
-        """Create lint check result from output and errors."""
-        return CheckResult(
-            check_type="lint",
-            success=len(errors) == 0,
-            output=output,
-            errors=errors,
-            warnings=[],
-            files_modified=[],
-        )
-
-    def _create_lint_error_result(self, error_msg: str) -> CheckResult:
-        """Create lint check result for error case."""
-        return CheckResult(
-            check_type="lint",
-            success=False,
-            output=error_msg,
-            errors=[error_msg],
-            warnings=[],
-            files_modified=[],
-        )
-
-    def _coverage_accept_and_warning(
-        self,
-        coverage: float | None,
-        coverage_threshold: float,
-    ) -> tuple[bool, list[str]]:
-        """Return (coverage_met, warnings). Accept 89.5%+ with warning."""
-        coverage_met = coverage is not None and coverage >= COVERAGE_ACCEPT_MIN
-        warning: list[str] = []
-        if (
-            coverage is not None
-            and coverage >= COVERAGE_ACCEPT_MIN
-            and coverage < coverage_threshold
-        ):
-            warning = [
-                f"Coverage {coverage * 100:.2f}% is below 90%; 90%+ required for CI/release."
-            ]
-        return coverage_met, warning
-
-    def _parse_test_output(
-        self, output: str, success: bool, coverage_threshold: float = 0.90
-    ) -> TestResult:
-        """Parse pytest output to extract test results."""
-        tests_passed, tests_failed = self._parse_test_counts(output)
-        coverage = self._parse_coverage(output)
-        tests_run = tests_passed + tests_failed
-        tests_passed_check = tests_failed == 0 and tests_run > 0
-        coverage_met, coverage_warning = self._coverage_accept_and_warning(
-            coverage, coverage_threshold
-        )
-        actual_success = tests_passed_check and coverage_met
-        errors = self._build_test_errors(actual_success, coverage, coverage_threshold)
-        if tests_failed > 0:
-            for line in self._extract_failed_test_lines(output):
-                if line not in errors:
-                    errors.append(line)
-        pass_rate = (tests_passed / tests_run) if tests_run > 0 else 0.0
-        return TestResult(
-            success=actual_success,
-            tests_run=tests_run,
-            tests_passed=tests_passed,
-            tests_failed=tests_failed,
-            pass_rate=pass_rate,
-            coverage=coverage,
-            output=output,
-            errors=errors,
-            warnings=coverage_warning,
-        )
-
-    def _extract_failed_test_lines(self, output: str) -> list[str]:
-        """Extract FAILED summary lines from pytest output.
-
-        These lines look like:
-            FAILED tests/path/test_file.py::TestClass::test_name - AssertionError: ...
-        We keep the full line but only a handful of them, so they remain small
-        and survive any later log truncation.
-        """
-        failed: list[str] = []
-        for raw in output.splitlines():
-            line = raw.strip()
-            if not line.startswith("FAILED "):
-                continue
-            # Ignore decorative lines that might contain FAILED but are not summaries.
-            if "====" in line or "======" in line:
-                continue
-            failed.append(line)
-        return failed
-
-    def _parse_test_counts(self, output: str) -> tuple[int, int]:
-        """Parse test passed/failed counts from output."""
-        tests_passed = 0
-        tests_failed = 0
-
-        lines = output.split("\n")
-        # Search from the end for pytest's actual summary line (has timing " in X.XXs ")
-        for line in reversed(lines):
-            line_lower = line.lower()
-            # Pytest summary always includes timing (e.g. " in 57.17s " or " in 0:01:00 ")
-            if " in " not in line_lower:
-                continue
-            if not ("passed" in line_lower or "failed" in line_lower):
-                continue
-            if not any(c.isdigit() for c in line):
-                continue
-            parts = line.split()
-            passed_count = self._extract_count_from_line(parts, "passed")
-            failed_count = self._extract_count_from_line(parts, "failed")
-            if passed_count is not None:
-                tests_passed = passed_count
-            if failed_count is not None:
-                tests_failed = failed_count
-            if passed_count is not None:
-                break
-
-        return tests_passed, tests_failed
-
-    def _is_test_summary_line(self, line: str) -> bool:
-        """Check if line contains test summary with passed/failed counts."""
-        line_lower = line.lower()
-        # Check for test summary - contains passed/failed and has numbers
-        return ("passed" in line_lower or "failed" in line_lower) and any(
-            char.isdigit() for char in line
-        )
-
-    def _extract_count_from_line(self, parts: list[str], keyword: str) -> int | None:
-        """Extract count value for given keyword from line parts."""
-        for i, part in enumerate(parts):
-            # Handle keywords with or without trailing comma/punctuation
-            part_clean = part.rstrip(".,;")
-            if part_clean != keyword:
-                continue
-
-            try:
-                # Get the number before the keyword
-                count_str = parts[i - 1]
-                return int(count_str)
-            except (ValueError, IndexError):
-                pass
-
-        return None
-
-    def _parse_coverage(self, output: str) -> float | None:
-        """Parse coverage percentage from output."""
-        # Look for coverage percentage in multiple formats
-        for line in output.split("\n"):
-            # Format 1: "TOTAL ... XX.XX%"
-            if "TOTAL" in line and "%" in line:
-                try:
-                    # Find the percentage value (last number with %)
-                    parts = line.split()
-                    for part in reversed(parts):
-                        if "%" in part:
-                            coverage_str = part.replace("%", "")
-                            return float(coverage_str) / 100.0
-                except (ValueError, IndexError):
-                    pass
-            # Format 2: "Required test coverage of XX% reached. Total coverage: YY.YY%"
-            if "Total coverage:" in line and "%" in line:
-                try:
-                    # Extract percentage after "Total coverage:"
-                    coverage_part = line.split("Total coverage:")[-1].strip()
-                    coverage_str = coverage_part.split("%")[0].strip()
-                    return float(coverage_str) / 100.0
-                except (ValueError, IndexError):
-                    pass
-        return None
-
-    def _build_test_errors(
-        self,
-        success: bool,
-        coverage: float | None = None,
-        coverage_threshold: float = 0.90,
-    ) -> list[str]:
-        """Build error list for test results."""
-        errors: list[str] = []
-        if not success:
-            if coverage is not None and coverage < coverage_threshold:
-                threshold_pct = coverage_threshold * 100
-                msg = (
-                    f"Test coverage {coverage * 100:.2f}% is below "
-                    + f"required threshold {threshold_pct:.0f}%"
-                )
-                errors.append(msg)
-            else:
-                errors.append("Test execution failed")
-        return errors
-
-    def _parse_type_errors(self, output: str) -> list[str]:
-        """Parse pyright output for type errors."""
-        errors: list[str] = []
-        for line in output.split("\n"):
-            if "error" in line.lower() and "warning" not in line.lower():
-                errors.append(line.strip())
-        return errors
-
-    def _parse_lint_errors(self, output: str) -> list[str]:
-        """Parse ruff output for linting errors."""
-        errors: list[str] = []
-        for raw_line in output.splitlines():
-            line = raw_line.strip()
-            if not line:
-                continue
-
-            # Ruff emits summary lines like:
-            # - "Found N errors (M fixed, K remaining)."
-            # Those should not be counted as "remaining errors".
-            if line.lower().startswith("error:"):
-                errors.append(line)
-                continue
-
-            if _RUFF_DIAGNOSTIC_RE.match(line):
-                errors.append(line)
-
-        return errors
+        """Run ruff with auto-fix, then verify no errors remain."""
+        return run_ruff_fix(self.project_root, self._get_command, parse_lint_errors)

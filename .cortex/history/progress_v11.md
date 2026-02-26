@@ -1,5 +1,9 @@
 # Progress Log
 
+## 2026-02-26
+
+- Commit: Phase 9.1.16 python_adapter split, markdown lint fix (MD024). Preflight passed; 4780 tests, 92.81% coverage.
+
 ## 2026-02-25
 
 - **Anthropic context engineering Step 2 (Measure & Track) (2026-02-25)** - COMPLETE. Instrumented mcp_tool_wrapper with response token counting; response_tokens computed in run_execute_and_finalize, passed to record_usage_finish, and persisted in ToolUsageEvent per tool per session.
@@ -40,6 +44,7 @@
 - **Phase 9.1.14 Split usage_analytics (2026-02-25)** - COMPLETE. Split usage_analytics.py (665→338 lines) into usage_analytics_models, usage_analytics_formatters, usage_analytics_impl. Tests pass, coverage 92.77%.
 - **Phase 9.1 verification (2026-02-25)** - Verified integration tests pass (4780/4780), quality gate passes, TODOs resolved. Updated phase-9-excellence-98 plan status.
 - **Tool consolidation — next analysis (2026-02-25)** - COMPLETE. Census and usage analysis; report with budget status, dead tools, incomplete consolidations, recommendations. Report: .cortex/reviews/tool-consolidation-analysis-2026-02-25T21-47.md
+- **Phase 9.1.16 python_adapter split (2026-02-25)** - COMPLETE. Split python_adapter.py 658→399 lines; extracted python_adapter_parsing, python_adapter_checks. All tests pass.
 
 ## 2026-02-24
 
@@ -238,26 +243,7 @@
 
 ## 2026-02-18
 
-- **Commit (session_start_tools function length)** - Fixed function length violations in `session_start_tools.py`: extracted `_create_brief_with_suggestions` and `_session_start_success_result` helpers; shortened `_compute_suggestions_and_create_brief` and `_load_brief_and_return_result`. Pre-commit: fix_errors, format, markdown lint (0 errors), type_check, quality, tests 4229 passed, 91.83% coverage.
-- **Session Optimization: Test Coverage and Development Workflow** - COMPLETE. Coverage gap script, file size 350/400 warn/error, coverage guidance docs and prompt refs, canonical imports, 89.5%+ accept with warning, test templates. Quality gate and tests passed.
-- **Commit (quality + synapse format)** - Fixed function length in session_start_tools.py (_compute_suggestions_and_create_brief ≤30 lines); formatted .cortex/synapse/scripts/python/analyze_coverage_gaps.py. Preflight: fix_errors, format, synapse_format, synapse_lint, type_check, quality, tests 4235 passed, 91.84% coverage.
-- **Fix Broken Progress Entry: Phase 54 Title Corruption** - COMPLETE. Extended corruption detection to catch truncation patterns in phase titles. Added `_detect_phase_truncation_patterns` function that detects "Phase N" followed by lowercase+uppercase without colon (e.g., "Phase 54lizer Pattern"). Pattern works for both roadmap.md and progress.md. Added 5 comprehensive tests covering truncation detection, false positives, and progress.md integration. All tests pass (4240 tests, 91.81% coverage). Quality gate passed.
-- **Session Optimization: pytest.ini and IDE test discovery documentation** - COMPLETE. Documented pytest.ini design rationale (coverage not in addopts for IDE compatibility) in docs/development/testing.md with explanation of why coverage is excluded, when to use coverage explicitly, and reminder for implement/commit workflows.
-- **Add roadmap entry MCP tool** - COMPLETE. Added documentation for `add_roadmap_entry` MCP tool to `docs/api/tools.md`. Tool was already implemented with comprehensive tests. Updated Phase 1 tool count from 8 to 9.
-- **Compound Engineering Alignment** - COMPLETE. Documented Plan→Work→Review→Compound loop in projectBrief.md, CLAUDE.md, AGENTS.md; added compound note to memory-bank-workflow.mdc; verified prompts already reference compound loop; verified compound checklist exists in commit prompt. All steps complete.
-- **Investigate FastMCP blocking before tool handlers** - COMPLETE. Implemented two fixes documented in investigation plan: (1) Wrapped `_fallback_root()` in `asyncio.to_thread()` to prevent blocking event loop during project root resolution; (2) Added 25s timeout to usage context init lock acquisition to prevent indefinite hangs. Added tests, quality gate passed.
-- **Commit: Fix test failures in pre_commit_tools and markdown lint errors** - Fixed two test failures in `test_pre_commit_tools.py`: (1) `test_runs_adapter_checks_off_event_loop_via_to_thread` - updated assertion to check for `_execute_all_checks` call via `to_thread` (accounting for `get_or_resolve_project_root` also calling `to_thread`); (2) `test_execute_pre_commit_checks_calls_log_client_when_ctx_passed` - fixed mock function to accept `*args` and handle both `_execute_all_checks` and other function calls. Fixed MD033 markdown lint errors in 4 plan files by escaping `<locals>` as `&lt;locals&gt;`. All tests pass (4244/4244, 91.79% coverage).
-- **Investigate FastMCP blocking before tool handlers** - COMPLETE. Verified fixes implemented: blocking event loop in project root fallback (asyncio.to_thread wrapper) and unbounded wait on usage context init lock (25s timeout). Investigation complete, roadmap reference cleaned up.
-- **Phase 9.1.1: Split consolidated.py** - COMPLETE. Phase 9.1.1 was already completed in a previous session. The consolidated.py file (1,204 lines) was successfully split into 5 focused modules (file_operations.py, validation_operations.py, analysis_operations.py, rules_operations.py, configuration_operations.py), all under 400 lines. Quality gate passes with no file size violations. Phase 9 roadmap entry marked as Reference (documentation only).
-- **Phase: Investigate execute_pre_commit_checks failure (20260209)** - COMPLETE. Confirmed test passes and MCP tool works; documented outcome in plan and closed as resolved.
-- **Phase: Investigate promote_session_script failure** - COMPLETE. Root cause: tool_converter.tool_conversion_template() used an f-string containing JSON with colons; Python interpreted it as an invalid format specifier. Fix:_TOOL_TEMPLATE_RETURN_JSON and_TOOL_TEMPLATE_BODY constants with .format() interpolation. Tests and quality gate pass.
-- **Commit (promote_session_script fix, memory bank, reviews)** - Preflight passed: fix_errors, format, synapse_format, synapse_lint, type_check, quality, tests 4245 passed, 91.81% coverage; markdown lint 0 errors. Memory bank and roadmap consistent; no completed plans to archive.
-- **Phase: Investigate roadmap sync validator ghost references** - COMPLETE. Resolved plan refs to archive; added regression test; quality gate passed.
-- **Session Optimization: Commit pipeline context loading and helper module - Reference** - COMPLETE. Added reference docs: commit-pipeline-phases.md (context loading: essential files, 3000–4000 token budget); code-quality.md (function length limits, helper module extraction pattern and *_helpers.py).
-- **Session Optimization: Context usage analytics followups (2026211COMPLETE. Reference plan reviewed; Tasks 1–3 (Coverage refresh, Context defaults, Usage analytics observability) deferred to future sessions. Plan archived to SessionOptimization.
-- **Session Optimization: Context usage analytics followups (2026-02-11)** - COMPLETE. Reference plan reviewed; Tasks 1–3 deferred to future sessions. Plan archived to SessionOptimization. (Corrected entry; previous line had typo.)
-- **Session Optimization: Load context on problem fix path (2026)** - COMPLETE. Added load-context-before-fix to commit prompt (after Pre-Step Load Rules), umbrella fix-path rule in implement ERROR HANDLING, and fix-path guideline in AGENTS.md and CLAUDE.md.
-- **Session Optimization: Pydantic rule visibility and rule discovery (2026-02-12 Analysis)** - COMPLETE. Implement prompt Step 4 and AGENTS.md/CLAUDE.md now explicitly require Pydantic BaseModel (not dict[str, Any]) for tool parameters and dispatch data; rule discovery fallback in implement and analyze prompts clarified; python-mcp-development.mdc updated with tool-params sentence.
+- **Week containing 2026-02-18** - 1 entries summarized.
 
 ## 2026-02-17
 
