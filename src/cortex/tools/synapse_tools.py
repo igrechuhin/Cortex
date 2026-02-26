@@ -36,7 +36,7 @@ from cortex.core.constants import (
     MCP_TOOL_TIMEOUT_MEDIUM,
 )
 from cortex.core.context_logging import MCPContext, log_client
-from cortex.core.mcp_annotations import read_only_annotations, safe_write_annotations
+from cortex.core.mcp_annotations import safe_write_annotations
 from cortex.core.mcp_stability import (
     ensure_usage_context,
     mcp_resource_wrapper,
@@ -216,7 +216,8 @@ async def update_synapse_rule(
     )
 
 
-@mcp.tool(annotations=read_only_annotations("Get Synapse (rules or prompts)"))
+# Internalized for tool budget reduction (2026-02-26). Use cortex://synapse/rules/{task}
+# and cortex://synapse/prompts resources or rules(operation="get_relevant") instead.
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_MEDIUM)
 async def get_synapse(

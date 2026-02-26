@@ -35,9 +35,11 @@ from cortex.tools.tool_categories import (
 
 _MIN_ALWAYS_LOADED = 12  # at least this many core tools
 _MIN_DEFERRED_MEDIUM = 15
-_MIN_DEFERRED_LOW = 8  # reduced with session-optimization tool consolidation
+_MIN_DEFERRED_LOW = (
+    6  # reduced with tool budget 2026-02-26 (cache_json, skill_pack, etc. internalized)
+)
 _MIN_TOTAL_TOOLS = (
-    44  # Updated after Phase 50 consolidation; keep in sync with TOOL_CATEGORIES
+    40  # Tool budget reduction 2026-02-26; keep in sync with MAX_REGISTERED_TOOLS
 )
 
 

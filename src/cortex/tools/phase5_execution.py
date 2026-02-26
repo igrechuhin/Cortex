@@ -275,7 +275,7 @@ async def apply_refactoring(
     )
 
 
-@mcp.tool(annotations=safe_write_annotations("Provide Refactoring Feedback"))
+# Internalized for tool budget reduction (2026-02-26). Kept as callable for learning engine.
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_MEDIUM)
 async def provide_feedback(

@@ -13,11 +13,9 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from cortex.core.constants import MCP_TOOL_TIMEOUT_MEDIUM, MemoryBankFile
 from cortex.core.context_logging import MCPContext, log_client
-from cortex.core.mcp_annotations import destructive_annotations
 from cortex.core.mcp_stability import ensure_usage_context, mcp_tool_wrapper
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.core.project_root_resolver import resolve_project_root_async
-from cortex.server import mcp
 
 
 class CorruptionMatch(BaseModel):
@@ -539,7 +537,7 @@ def _fix_roadmap_corruption_run(root_path: Path, dry_run: bool) -> tuple[str, bo
     return (_create_roadmap_success_response(matches), True)
 
 
-@mcp.tool(annotations=destructive_annotations("Fix Roadmap Corruption"))
+# Internalized for tool budget reduction (2026-02-26). Rare admin; kept as callable.
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_MEDIUM)
 async def fix_roadmap_corruption(

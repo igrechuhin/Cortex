@@ -28,7 +28,7 @@ from pydantic import BaseModel, ConfigDict
 # MAX_REGISTERED_TOOLS is enforced by governance tests; if new tools are added,
 # either consolidate/remove other tools or explicitly raise this constant in
 # tandem with the consolidation plans and documentation.
-MAX_REGISTERED_TOOLS = 51
+MAX_REGISTERED_TOOLS = 40
 
 # Long-term target from consolidation plans (not enforced in tests).
 TARGET_REGISTERED_TOOLS = 24
@@ -155,11 +155,6 @@ TOOL_CATEGORIES: tuple[ToolCategoryEntry, ...] = (
         rationale="Discover deferred tools by query when tool search is enabled",
     ),
     ToolCategoryEntry(
-        name="list_available_tools",
-        category=ToolCategory.ALWAYS_LOADED,
-        rationale="List tools by tier (agent-skills Step 3 tool discovery)",
-    ),
-    ToolCategoryEntry(
         name="session_start",
         category=ToolCategory.ALWAYS_LOADED,
         rationale="Session orientation brief used at the start of non-trivial tasks",
@@ -226,11 +221,6 @@ TOOL_CATEGORIES: tuple[ToolCategoryEntry, ...] = (
         rationale="Synapse repo pull/push operations",
     ),
     ToolCategoryEntry(
-        name="get_synapse",
-        category=ToolCategory.DEFERRED_MEDIUM,
-        rationale="Retrieve Synapse rules or prompts (content_type=rules|prompts)",
-    ),
-    ToolCategoryEntry(
         name="check_structure_health",
         category=ToolCategory.DEFERRED_MEDIUM,
         rationale="Project structure health check and cleanup",
@@ -246,19 +236,9 @@ TOOL_CATEGORIES: tuple[ToolCategoryEntry, ...] = (
         rationale="Lightweight thinking for quick deliberation moments",
     ),
     ToolCategoryEntry(
-        name="cache_json",
-        category=ToolCategory.DEFERRED_MEDIUM,
-        rationale="Concurrent-safe cache read/write (operation=read|write)",
-    ),
-    ToolCategoryEntry(
         name="compact_session",
         category=ToolCategory.DEFERRED_MEDIUM,
         rationale="End-of-session compaction and handoff (Phase 56)",
-    ),
-    ToolCategoryEntry(
-        name="skill_pack",
-        category=ToolCategory.DEFERRED_MEDIUM,
-        rationale="Discover skill packs for task or load pack manifest (operation=discover|load)",
     ),
     ToolCategoryEntry(
         name="agent_workflow",
@@ -267,19 +247,9 @@ TOOL_CATEGORIES: tuple[ToolCategoryEntry, ...] = (
     ),
     # ── Deferred low (admin / analytics / rare) ───────────────────────
     ToolCategoryEntry(
-        name="provide_feedback",
-        category=ToolCategory.DEFERRED_LOW,
-        rationale="Refactoring feedback for learning engine",
-    ),
-    ToolCategoryEntry(
         name="rollback_file_version",
         category=ToolCategory.DEFERRED_LOW,
         rationale="Rare undo operation for memory bank files",
-    ),
-    ToolCategoryEntry(
-        name="fix_roadmap_corruption",
-        category=ToolCategory.DEFERRED_LOW,
-        rationale="One-time corruption repair",
     ),
     ToolCategoryEntry(
         name="update_synapse",

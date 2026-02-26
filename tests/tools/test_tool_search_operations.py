@@ -152,6 +152,6 @@ async def test_list_available_tools_invalid_category_returns_error() -> None:
     assert "error" in data
 
 
-def test_list_available_tools_is_always_loaded() -> None:
-    """list_available_tools is always_loaded for discovery when defer_loading is on."""
-    assert get_tool_category("list_available_tools") == ToolCategory.ALWAYS_LOADED
+def test_list_available_tools_internalized_not_in_tool_categories() -> None:
+    """list_available_tools was internalized (2026-02-26); use search_tools for discovery."""
+    assert get_tool_category("list_available_tools") is None

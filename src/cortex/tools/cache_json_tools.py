@@ -20,10 +20,8 @@ from cortex.core.cache_json_access import (
 )
 from cortex.core.constants import MCP_TOOL_TIMEOUT_FAST
 from cortex.core.context_logging import MCPContext, log_client
-from cortex.core.mcp_annotations import safe_write_annotations
 from cortex.core.mcp_stability import ensure_usage_context, mcp_tool_wrapper
 from cortex.core.project_root_resolver import resolve_project_root_async
-from cortex.server import mcp
 
 
 def _parse_write_content(
@@ -125,7 +123,9 @@ async def _cache_json_write(root: Path, relative_path: str, content: str) -> str
         return _error_response(str(e), relative_path, type(e).__name__)
 
 
-@mcp.tool(annotations=safe_write_annotations("Cache JSON (read/write)"))
+# Internalized for tool budget reduction (2026-02-26). Use cortex.core.cache_json_access
+# read_cache_json/write_cache_json for programmatic access. MCP callers: use manage_file
+# for .cortex/.cache files when appropriate.
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_FAST)
 async def cache_json(

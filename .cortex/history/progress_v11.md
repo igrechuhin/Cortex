@@ -11,6 +11,9 @@
 - **Phase 9.1.20 phase4_context_operations split (2026-02-26)** - COMPLETE. Split phase4_context_operations.py (757→186 lines) into phase4_context_operations_content, phase4_context_operations_metadata, phase4_context_operations_result; all tests pass, 92.81% coverage.
 - **Phase 9.1.21 synapse_tools split (2026-02-26)** - COMPLETE. Extracted synapse_tools_impl (738→316+315 lines); tests and quality pass.
 - **Tool Consolidation Phase 2 Step 1 (2026-02-26)** - COMPLETE. Migrated integration tests and test_quick to use query_memory_bank instead of get_memory_bank_stats, get_version_history, get_dependency_graph. Phase 50 consolidation verified; old tools not registered.
+- **Phase 9.1.22 Split progressive_loader.py (2026-02-26)** - COMPLETE. Split progressive_loader.py (737→362 lines); extracted progressive_loader_metadata, progressive_loader_models, progressive_loader_priority, progressive_loader_relevance, progressive_loader_budget. All tests pass, quality gates pass.
+- **Tool budget reduction from analysis 2026-02-26** - COMPLETE. Internalized cache_json, get_synapse, list_available_tools, skill_pack, provide_feedback, fix_roadmap_corruption; 46→40 tools; MAX_REGISTERED_TOOLS=40; docs and AGENTS.md updated.
+- **E402 fix in mcp_stability modules** - Moved `SignatureAware` import to top in mcp_stability.py and mcp_stability_usage.py; all pre-commit checks pass.
 
 ## 2026-02-25
 

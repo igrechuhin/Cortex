@@ -16,6 +16,12 @@
 
 - ✅ **Tool Consolidation Phase 2 Step 1** - COMPLETE (2026-02-26) - Migrated integration tests (test_integration.py, test_mcp_tools_integration.py, test_quick.py) to use query_memory_bank for stats, version_history, dependency_graph. Verified Phase 50 consolidation complete; old tools already not registered.
 
+- ✅ **Phase 9.1.22 Split progressive_loader.py** - COMPLETE (2026-02-26) - Split progressive_loader.py (737→362 lines); extracted 5 helper modules: progressive_loader_metadata, progressive_loader_models, progressive_loader_priority, progressive_loader_relevance, progressive_loader_budget. All tests pass, quality gates pass.
+
+- ✅ **Tool budget reduction from analysis 2026-02-26** - COMPLETE (2026-02-26) - Internalized 6 tools (cache_json, get_synapse, list_available_tools, skill_pack, provide_feedback, fix_roadmap_corruption); set MAX_REGISTERED_TOOLS=40; governance tests pass.
+
+- ✅ **E402 fix in mcp_stability modules** - COMPLETE (2026-02-26) - Moved SignatureAware import to top in mcp_stability.py and mcp_stability_usage.py for E402 compliance; all pre-commit checks pass.
+
 ## Completed Work (2026-02-25)
 
 - **Summary (2026-02-25)** - 1 entries archived.

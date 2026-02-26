@@ -67,8 +67,14 @@ For details on adding annotations to custom tools, see the [Extension Developmen
 |-------------|-------------|
 | `get_session_tool_anomalies` | `query_usage(query_type="anomalies", hours=24)` |
 | `run_tool_optimization_workflow` | `query_usage(query_type="unused")`, `query_usage(query_type="recommendations")`, and [tool-optimization-baseline](../architecture/tool-optimization-baseline.md) workflow |
+| `cache_json` | `cortex.core.cache_json_access.read_cache_json` / `write_cache_json` for programmatic access; `manage_file` for .cortex/.cache when appropriate |
+| `get_synapse` | `cortex://synapse/rules/{task}` and `cortex://synapse/prompts` resources; `rules(operation="get_relevant")` |
+| `list_available_tools` | `search_tools` for discovery |
+| `skill_pack` | Kept as internal callable; use `search_tools` for tool discovery |
+| `provide_feedback` | Kept as internal callable for learning engine |
+| `fix_roadmap_corruption` | Kept as internal callable for admin repair |
 
-These tools were removed from the published tool list to reduce tool count; use the alternatives above. See [tool-optimization-mapping](../architecture/tool-optimization-mapping.md).
+These tools were removed from the published tool list in the 2026-02-26 tool budget reduction (46→40). See [tool-optimization-mapping](../architecture/tool-optimization-mapping.md).
 
 ### Advanced Tool Use (Phase 49)
 

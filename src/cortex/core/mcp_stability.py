@@ -10,8 +10,7 @@ This module provides connection stability features for MCP tool handlers:
 import asyncio
 import time
 from collections.abc import Awaitable, Callable
-from inspect import Signature
-from typing import Protocol, cast
+from typing import cast
 
 from cortex.core.constants import (
     MCP_TOOL_TIMEOUT_SECONDS,
@@ -44,6 +43,7 @@ from cortex.core.models import (
     JsonValue,
     MCPToolArguments,
 )
+from cortex.core.protocols.mcp import SignatureAware
 
 # Re-export for backward compatibility
 __all__ = [
@@ -58,10 +58,6 @@ __all__ = [
 
 # Returned to the client when the request was cancelled (e.g. client timeout).
 CANCELLED_RESPONSE_JSON = '{"status":"error","error":"CancelledError","message":"Tool call was cancelled by client"}'
-
-
-class _SignatureAware(Protocol):
-    __signature__: Signature
 
 
 def _stability_params(
@@ -318,7 +314,7 @@ def mcp_tool_wrapper[T](
         func: Callable[..., Awaitable[T]],
     ) -> Callable[..., Awaitable[T]]:
         wrapper = _make_tool_wrapper_func(func, timeout, progress_enabled)
-        cast(_SignatureAware, wrapper).__signature__ = inspect.signature(func)
+        cast(SignatureAware, wrapper).__signature__ = inspect.signature(func)
         return wrapper
 
     return decorator
@@ -352,7 +348,7 @@ def mcp_resource_wrapper[T](
             )
 
         original_sig = inspect.signature(func)
-        cast(_SignatureAware, wrapper).__signature__ = original_sig
+        cast(SignatureAware, wrapper).__signature__ = original_sig
         return wrapper
 
     return decorator

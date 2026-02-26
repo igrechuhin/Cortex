@@ -7,21 +7,17 @@ import asyncio
 import logging
 import time
 from collections.abc import Awaitable, Callable
-from inspect import Signature
 from pathlib import Path
-from typing import Protocol, cast
+from typing import cast
 
 from cortex.core.constants import MCP_USAGE_CONTEXT_INIT_LOCK_TIMEOUT_SECONDS
 from cortex.core.context_logging import MCPContext
 from cortex.core.mcp_stability_config import get_usage_context_init_lock
 from cortex.core.models import JsonValue
+from cortex.core.protocols.mcp import SignatureAware
 from cortex.core.usage_context import get_current_managers, set_current_managers
 
 logger = logging.getLogger(__name__)
-
-
-class _SignatureAware(Protocol):
-    __signature__: Signature
 
 
 async def _resolve_root_and_managers(
@@ -125,7 +121,7 @@ def ensure_usage_context[T](
         return await func(*args, **kwargs)
 
     original_sig = inspect.signature(func)
-    cast(_SignatureAware, wrapper).__signature__ = original_sig
+    cast(SignatureAware, wrapper).__signature__ = original_sig
     return wrapper
 
 

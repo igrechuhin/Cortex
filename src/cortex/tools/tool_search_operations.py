@@ -112,12 +112,7 @@ def _list_tools_by_category_all() -> str:
     )
 
 
-@mcp.tool(  # pyright: ignore[reportUntypedFunctionDecorator]
-    annotations=read_only_annotations(
-        "List Available Tools",
-        idempotent=True,
-    ),  # pyright: ignore[reportCallIssue]
-)
+# Internalized for tool budget reduction (2026-02-26). Use search_tools for discovery.
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_FAST)
 async def list_available_tools(

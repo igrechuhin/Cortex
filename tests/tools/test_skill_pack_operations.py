@@ -8,7 +8,7 @@ from typing import cast
 import pytest
 
 from cortex.tools.skill_pack_operations import skill_pack
-from cortex.tools.tool_categories import ToolCategory, get_tool_category
+from cortex.tools.tool_categories import get_tool_category
 
 
 @pytest.mark.asyncio
@@ -128,6 +128,6 @@ async def test_skill_pack_load_not_found_returns_error() -> None:
     assert "core" in data["available"]
 
 
-def test_skill_pack_is_deferred_medium() -> None:
-    """skill_pack is catalogued as deferred_medium."""
-    assert get_tool_category("skill_pack") == ToolCategory.DEFERRED_MEDIUM
+def test_skill_pack_internalized_not_in_tool_categories() -> None:
+    """skill_pack was internalized (2026-02-26); no longer in TOOL_CATEGORIES."""
+    assert get_tool_category("skill_pack") is None
