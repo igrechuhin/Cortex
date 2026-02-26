@@ -26,6 +26,8 @@
 - **Phase 9.2 Protocol alignment (2026-02-26)** - COMPLETE. Aligned FileSystemProtocol (parse_sections→SectionMetadata, write_file create_version, memory_bank_dir), ContextOptimizerProtocol (optimize_context), FileSystemManager.write_file. LoaderProtocol kept on concrete types (type checker invariance). docs/design/architecture-layering.md updated.
 - **Phase 9.2 SequentialThinking constructor injection (2026-02-26)** - COMPLETE. Added configure_sequential_thinking_core(), injection at main.py composition root; lazy fallback for tests. Updated ADR-009 and architecture-layering.md.
 - **Phase 9.2 Architecture Refinement (2026-02-26)** - COMPLETE. Protocol boundaries strengthened, SequentialThinking constructor injection, module coupling optimized (0 circular dependencies per analyzer). Clear layering documented.
+- **Phase 9.3 Performance (partial)** - COMPLETE. Added benchmarks (AntiPatternDetectionBenchmark, ComplexityMetricsBenchmark, DependencyChainsBenchmark), fixed StructureAnalysisBenchmark to use memory-bank layout, created docs/design/performance-benchmarks.md. Confirmed structure_detection.detect_similar_filenames already O(n×k).
+- **Phase 9.3 Advanced Caching (2026-02-26)** - COMPLETE. Fixed co-access tracking in AdvancedCacheManager (_record_access populates co_accessed_files from 60s window). Fixed clear() evictions count. Documented cache architecture in performance-benchmarks.md. Added test_record_access_populates_co_accessed_files.
 
 ## 2026-02-25
 

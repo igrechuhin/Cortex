@@ -297,6 +297,29 @@ class TestAdvancedCacheManager:
         assert cache_manager.get("file2.md") == "already_cached"
         assert cache_manager.get("file3.md") == "content_file3.md"
 
+    def test_record_access_populates_co_accessed_files(
+        self, cache_manager: AdvancedCacheManager
+    ):
+        """Test that sequential access populates co_accessed_files automatically."""
+        # Arrange - access A, then B, then C, then A again
+        cache_manager.set("fileA.md", "a")
+        cache_manager.set("fileB.md", "b")
+        cache_manager.set("fileC.md", "c")
+
+        _ = cache_manager.get("fileA.md")
+        _ = cache_manager.get("fileB.md")
+        _ = cache_manager.get("fileC.md")
+        _ = cache_manager.get("fileA.md")  # Second access - B and C in window
+
+        # Act
+        patterns = cache_manager.get_access_patterns()
+
+        # Assert - fileA's co_accessed_files should include fileB and fileC
+        assert "fileA.md" in patterns
+        co_accessed = cast(list[str], patterns["fileA.md"]["co_accessed_files"])
+        assert "fileB.md" in co_accessed
+        assert "fileC.md" in co_accessed
+
 
 class TestCreateCacheForManager:
     """Test cache factory function."""

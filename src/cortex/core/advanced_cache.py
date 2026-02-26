@@ -10,7 +10,6 @@ This module extends the basic caching functionality with:
 
 import asyncio
 import time
-from collections import defaultdict
 from collections.abc import Callable
 
 from pydantic import ConfigDict, Field
@@ -92,7 +91,9 @@ class AdvancedCacheManager:
 
         # Access pattern tracking for prefetching
         self._access_patterns: dict[str, AccessPattern] = {}
-        self._co_access_tracking: dict[str, list[tuple[str, float]]] = defaultdict(list)
+        # Global recent-access list: (key, timestamp) for co-access detection
+        self._recent_accesses: list[tuple[str, float]] = []
+        self._co_access_window_seconds: float = 60.0
 
     def get(self, key: str) -> JsonValue | None:
         """
@@ -149,9 +150,10 @@ class AdvancedCacheManager:
 
     def clear(self) -> None:
         """Clear all cache entries from both caches."""
+        size_before = len(self.ttl_cache) + len(self.lru_cache)
         self.ttl_cache.clear()
         self.lru_cache.clear()
-        self._stats["evictions"] += len(self.ttl_cache) + len(self.lru_cache)
+        self._stats["evictions"] += size_before
 
     def get_stats(self) -> CacheStats:
         """
@@ -185,6 +187,9 @@ class AdvancedCacheManager:
         """
         Record access pattern for predictive prefetching.
 
+        Updates frequency/last_access and infers co_accessed_files from
+        other keys accessed within the co-access window.
+
         Args:
             key: Cache key that was accessed
         """
@@ -192,6 +197,17 @@ class AdvancedCacheManager:
             return
 
         now = time.time()
+
+        # Trim recent accesses to window
+        cutoff = now - self._co_access_window_seconds
+        self._recent_accesses = [
+            (k, t) for k, t in self._recent_accesses if t >= cutoff
+        ]
+
+        # Infer co-accessed files from other keys in recent window
+        co_accessed = list(
+            {k for k, t in self._recent_accesses if k != key and t >= cutoff}
+        )
 
         # Update access pattern
         if key not in self._access_patterns:
@@ -205,13 +221,11 @@ class AdvancedCacheManager:
         pattern = self._access_patterns[key]
         pattern.frequency += 1
         pattern.last_access = now
+        if co_accessed:
+            pattern.co_accessed_files = co_accessed
 
-        # Track co-accesses (files accessed within 60 seconds)
-        recent_accesses = [
-            (k, t) for k, t in self._co_access_tracking[key] if now - t < 60
-        ]
-        self._co_access_tracking[key] = recent_accesses
-        self._co_access_tracking[key].append((key, now))
+        # Add this access to recent list
+        self._recent_accesses.append((key, now))
 
     async def warm_cache(
         self, keys: list[str], loader: Callable[[str], JsonValue]

@@ -130,20 +130,20 @@ Phase 9 builds on Phase 7's achievements (9.2/10) to reach excellence at 9.8+/10
 
 **Goal:** 8.5 → 9.8/10
 **Effort:** 16-20 hours
-**Status:** 🟡 HIGH PRIORITY
+**Status:** 🟡 IN PROGRESS
 
 **Tasks:**
 
-1. **Profile and optimize hot paths** (6-8 hours)
-   - Run profiler on key operations
-   - Identify O(n²) patterns in structure_analyzer
-   - Optimize token counting with incremental updates
-   - Add benchmarks
+1. **Profile and optimize hot paths** (6-8 hours) — PARTIAL
+   - ✅ O(n²) patterns: structure_detection.detect_similar_filenames already optimized (O(n×k) window)
+   - ✅ Benchmarks added (AntiPatternDetectionBenchmark, ComplexityMetricsBenchmark, DependencyChainsBenchmark)
+   - ✅ docs/design/performance-benchmarks.md created
+   - Deferred: token counting incremental updates (cache sufficient for now)
 
-2. **Advanced caching strategies** (4-6 hours)
-   - Implement cache warming
-   - Add predictive prefetching
-   - Optimize cache eviction policies
+2. **Advanced caching strategies** (4-6 hours) — DONE (2026-02-26)
+   - ✅ Cache warming: CacheWarmer + warm_cache_on_startup exist
+   - ✅ Predictive prefetching: co-access tracking fixed (_record_access populates co_accessed_files from 60s window)
+   - ✅ Eviction: clear() fixed; docs/design/performance-benchmarks.md updated with cache architecture
 
 3. **Async optimization** (4-6 hours)
    - Convert remaining sync operations
@@ -513,6 +513,7 @@ Phase 9 builds on Phase 7's achievements (9.2/10) to reach excellence at 9.8+/10
 ---
 
 Last Updated: 2026-02-26
-Status: 🚀 IN PROGRESS — Phase 9.1 COMPLETE; Phase 9.2 STARTED
+Status: 🚀 IN PROGRESS — Phase 9.1 COMPLETE; Phase 9.2 COMPLETE; Phase 9.3 Task 2 DONE
 Phase 9.1: Zero file-size and function-length violations; 4781 tests pass; 92.84% coverage; integration tests pass; no production TODOs.
-Phase 9.2 (complete): docs/design/architecture-layering.md, ADR-009 (SequentialThinking constructor injection). Protocol alignment DONE: FileSystemProtocol, ContextOptimizerProtocol. LoaderProtocol kept on concrete types (type checker invariance). SequentialThinking core injected at main.py startup. Module coupling: 0 circular dependencies (analyzer confirmed). 2026-02-26.
+Phase 9.2 (complete): docs/design/architecture-layering.md, ADR-009 (SequentialThinking constructor injection). Protocol alignment DONE. SequentialThinking core injected at main.py startup. Module coupling: 0 circular dependencies. 2026-02-26.
+Phase 9.3 Task 2 (complete): Advanced caching - co-access tracking fixed in AdvancedCacheManager, clear() evictions fixed, Cache architecture documented in performance-benchmarks.md. 2026-02-26.

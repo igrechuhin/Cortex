@@ -1,7 +1,7 @@
 """Benchmarks for analysis operations.
 
 This module contains benchmarks for pattern analysis, structure analysis,
-and other analytical operations.
+and other analytical operations. Phase 9.3 target: p95 < 200ms for hot paths.
 """
 
 import tempfile
@@ -11,6 +11,7 @@ from ..analysis.pattern_analyzer import PatternAnalyzer
 from ..analysis.structure_analyzer import StructureAnalyzer
 from ..core.dependency_graph import DependencyGraph
 from ..core.file_system import FileSystemManager
+from ..core.path_resolver import CortexResourceType, get_cortex_path
 from .framework import Benchmark, BenchmarkSuite
 
 
@@ -77,15 +78,17 @@ class StructureAnalysisBenchmark(Benchmark):
         self.fs_manager: FileSystemManager | None = None
 
     async def setup(self) -> None:
-        """Set up structure analyzer."""
+        """Set up structure analyzer with memory bank layout."""
         self.temp_dir = tempfile.TemporaryDirectory[str]()
         base_path = Path(self.temp_dir.name)
         self.fs_manager = FileSystemManager(base_path)
+        memory_bank_dir = get_cortex_path(base_path, CortexResourceType.MEMORY_BANK)
+        memory_bank_dir.mkdir(parents=True, exist_ok=True)
 
-        # Create test files
+        # Create test files in memory bank
         for i in range(self.num_files):
             content = f"# File {i}\n" + ("Content line\n" * 100)
-            file_path = base_path / f"file_{i}.md"
+            file_path = memory_bank_dir / f"file_{i}.md"
             _ = await self.fs_manager.write_file(file_path, content)
 
         # Create dependency graph
@@ -115,6 +118,51 @@ class StructureAnalysisBenchmark(Benchmark):
         """Run single structure analysis iteration."""
         if self.analyzer:
             _ = await self.analyzer.analyze_file_organization()
+
+
+class AntiPatternDetectionBenchmark(StructureAnalysisBenchmark):
+    """Benchmark detect_anti_patterns (Phase 9.3 hot path)."""
+
+    def __init__(self, num_files: int = 20):
+        """Initialize anti-pattern detection benchmark."""
+        super().__init__(num_files=num_files)
+        self.name = f"Anti-Pattern Detection ({num_files} files)"
+        self.description = f"Measure detect_anti_patterns with {num_files} files"
+
+    async def run_iteration(self) -> None:
+        """Run single anti-pattern detection iteration."""
+        if self.analyzer:
+            _ = await self.analyzer.detect_anti_patterns()
+
+
+class ComplexityMetricsBenchmark(StructureAnalysisBenchmark):
+    """Benchmark measure_complexity_metrics (Phase 9.3 hot path)."""
+
+    def __init__(self, num_files: int = 20):
+        """Initialize complexity metrics benchmark."""
+        super().__init__(num_files=num_files)
+        self.name = f"Complexity Metrics ({num_files} files)"
+        self.description = f"Measure measure_complexity_metrics with {num_files} files"
+
+    async def run_iteration(self) -> None:
+        """Run single complexity metrics iteration."""
+        if self.analyzer:
+            _ = await self.analyzer.measure_complexity_metrics()
+
+
+class DependencyChainsBenchmark(StructureAnalysisBenchmark):
+    """Benchmark find_dependency_chains (Phase 9.3 hot path)."""
+
+    def __init__(self, num_files: int = 20):
+        """Initialize dependency chains benchmark."""
+        super().__init__(num_files=num_files)
+        self.name = f"Dependency Chains ({num_files} files)"
+        self.description = f"Measure find_dependency_chains with {num_files} files"
+
+    async def run_iteration(self) -> None:
+        """Run single dependency chains iteration."""
+        if self.analyzer:
+            _ = await self.analyzer.find_dependency_chains(max_chain_length=10)
 
 
 class CoAccessPatternBenchmark(Benchmark):
@@ -175,6 +223,12 @@ def create_analysis_benchmark_suite() -> BenchmarkSuite:
     suite.add_benchmark(StructureAnalysisBenchmark(num_files=10))
     suite.add_benchmark(StructureAnalysisBenchmark(num_files=20))
     suite.add_benchmark(StructureAnalysisBenchmark(num_files=30))
+    suite.add_benchmark(StructureAnalysisBenchmark(num_files=50))
+
+    # Phase 9.3 hot-path benchmarks (target: p95 < 200ms)
+    suite.add_benchmark(AntiPatternDetectionBenchmark(num_files=20))
+    suite.add_benchmark(ComplexityMetricsBenchmark(num_files=20))
+    suite.add_benchmark(DependencyChainsBenchmark(num_files=20))
 
     # Co-access pattern benchmarks
     suite.add_benchmark(CoAccessPatternBenchmark(num_files=20))

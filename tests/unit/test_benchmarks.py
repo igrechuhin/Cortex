@@ -719,8 +719,8 @@ class TestCreateAnalysisBenchmarkSuite:
         # Assert
         assert suite.name == "Analysis Operations"
         assert suite.description != ""
-        # 3 pattern + 3 structure + 3 co-access = 9 benchmarks
-        assert len(suite.benchmarks) == 9
+        # 3 pattern + 4 structure + 3 Phase 9.3 hot-path + 3 co-access = 13 benchmarks
+        assert len(suite.benchmarks) == 13
 
 
 # ==============================================================================
