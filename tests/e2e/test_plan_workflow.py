@@ -9,6 +9,7 @@ tool uses tmp_path and does not pollute the real project.
 """
 
 import json
+import re
 from contextlib import contextmanager
 from pathlib import Path
 from typing import cast
@@ -137,7 +138,25 @@ async def test_plan_workflow_create_add_list(tmp_path: Path) -> None:
         )
         assert "plans" in list_data or "status" in list_data
 
-        # 4) remove_roadmap_entry (cleanup the test entry)
+        # 4) Mark plan COMPLETE so remove_roadmap_entry guardrail allows removal
+        plan_path = plans_dir / "e2e-plan-test.md"
+        if plan_path.exists():
+            content = plan_path.read_text()
+            if re.search(r"^\*\*Status:\*\*", content, re.MULTILINE):
+                content = re.sub(
+                    r"^\*\*Status:\*\*\s*.*$",
+                    "**Status:** COMPLETE",
+                    content,
+                    count=1,
+                    flags=re.MULTILINE,
+                )
+            else:
+                content = content.replace(
+                    "# E2E Plan", "# E2E Plan\n\n**Status:** COMPLETE"
+                )
+            _ = plan_path.write_text(content)
+
+        # 5) remove_roadmap_entry (cleanup the test entry)
         remove_fn = get_tool_fn(remove_roadmap_entry)
         remove_result = await remove_fn(entry_contains="E2E Plan Test", ctx=None)
         remove_data = cast(

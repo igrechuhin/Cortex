@@ -3,6 +3,9 @@
 ## 2026-02-26
 
 - Commit: Phase 9.1.16 python_adapter split, markdown lint fix (MD024). Preflight passed; 4780 tests, 92.81% coverage.
+- **Phase 9.1.17 phase4_optimization_handlers split (2026-02-26)** - COMPLETE. Split phase4_optimization_handlers.py (818 lines) to <400 lines; extracted phase4_optimization_handlers_validation, phase4_optimization_handlers_format, phase4_optimization_handlers_load.
+- **Phase 9.1.17 phase4_optimization_handlers split** - COMPLETE. Commit: split into _validation,_format, _load modules; 4780 tests pass, 92.8% coverage.
+- **Commit type fix** - Fixed reportUnusedCallResult in test_plan_workflow.py (plan_path.write_text). Phase A passed; 4780 tests, 92.81% coverage.
 
 ## 2026-02-25
 

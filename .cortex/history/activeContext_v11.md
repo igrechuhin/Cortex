@@ -2,6 +2,10 @@
 
 **This file records completed work only.** For current status and upcoming work see [roadmap.md](roadmap.md).
 
+## Completed Work (2026-02-26)
+
+- ✅ **Phase 9.1.17 phase4_optimization_handlers split** - COMPLETE (2026-02-26) - Split phase4_optimization_handlers.py (818→295 lines) into phase4_optimization_handlers_validation,_format, _load; all tests pass.
+
 ## Completed Work (2026-02-25)
 
 - **Summary (2026-02-25)** - 1 entries archived.

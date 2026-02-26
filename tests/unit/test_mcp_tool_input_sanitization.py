@@ -137,11 +137,11 @@ class TestLoadContextInputSanitization:
         task_description = "x" * MAX_TASK_DESCRIPTION_CHARS
 
         with patch(
-            "cortex.tools.phase4_optimization_handlers._resolve_load_context_budget",
+            "cortex.tools.phase4_optimization_handlers.resolve_load_context_budget",
             return_value=(10_000, None),
         ):
             with patch(
-                "cortex.tools.phase4_optimization_handlers._execute_load_context_with_logging",
+                "cortex.tools.phase4_optimization_handlers.execute_load_context_with_logging",
                 new_callable=AsyncMock,
                 return_value='{"status":"success","files_map":{}}',
             ):

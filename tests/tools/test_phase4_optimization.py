@@ -482,9 +482,9 @@ class TestLoadContext:
         self, mock_project_root: Path
     ) -> None:
         """Test exception handling in load_context."""
-        # Arrange
+        # Arrange - exception raised in load module's initialization
         with patch(
-            "cortex.tools.phase4_optimization_handlers.resolve_project_root_async",
+            "cortex.tools.phase4_optimization_handlers_load.resolve_project_root_async",
             new_callable=AsyncMock,
             side_effect=RuntimeError("Test error"),
         ):
@@ -597,7 +597,7 @@ class TestLoadContext:
                 return_value=mock_managers,
             ),
             patch(
-                "cortex.tools.phase4_optimization_handlers.load_context_impl",
+                "cortex.tools.phase4_optimization_handlers_load.load_context_impl",
                 side_effect=mock_load_context_impl,
             ),
         ):
@@ -644,7 +644,7 @@ class TestLoadContext:
                 return_value=mock_managers,
             ),
             patch(
-                "cortex.tools.phase4_optimization_handlers.load_context_impl",
+                "cortex.tools.phase4_optimization_handlers_load.load_context_impl",
                 side_effect=mock_load_context_impl,
             ),
         ):
@@ -681,7 +681,7 @@ class TestLoadContext:
                 return_value=mock_managers,
             ),
             patch(
-                "cortex.tools.phase4_optimization_handlers.load_context_impl",
+                "cortex.tools.phase4_optimization_handlers_load.load_context_impl",
                 side_effect=mock_load_context_impl,
             ),
         ):
@@ -875,7 +875,7 @@ class TestSummarizeContent:
                 return_value=mock_managers,
             ),
             patch(
-                "cortex.tools.phase4_optimization_handlers.get_manager",
+                "cortex.tools.phase4_optimization_handlers_load.get_manager",
                 side_effect=get_manager_helper,
             ),
         ):
@@ -1165,11 +1165,16 @@ class TestPhase4OptimizationContextLogging:
     ) -> None:
         """When ctx is passed, load_context logs start and completion."""
         mock_ctx = AsyncMock()
+        mock_log = AsyncMock()
         with (
             patch(
                 "cortex.tools.phase4_optimization_handlers.log_client",
-                new_callable=AsyncMock,
-            ) as mock_log,
+                mock_log,
+            ),
+            patch(
+                "cortex.core.context_logging.log_client",
+                mock_log,
+            ),
             patch(
                 "cortex.tools.phase4_optimization_handlers.resolve_project_root_async",
                 new_callable=AsyncMock,
@@ -1442,12 +1447,8 @@ class TestContextBudgetValidation:
                 return_value=mock_managers,
             ),
             patch(
-                "cortex.tools.phase4_optimization_handlers._load_context_with_error_handling",
+                "cortex.tools.phase4_optimization_handlers_load.load_context_with_error_handling",
                 new_callable=AsyncMock,
-                return_value=mock_result,
-            ),
-            patch(
-                "cortex.tools.phase4_optimization_handlers._format_load_context_response",
                 return_value=mock_result,
             ),
         ):
