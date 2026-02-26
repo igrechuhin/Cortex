@@ -1350,6 +1350,12 @@ class TestContextBudgetValidation:
         assert is_non_trivial_task("Update the module") is True
         assert is_non_trivial_task("modify the function") is True
 
+    def test_is_non_trivial_task_detects_plan_and_planning(self) -> None:
+        """is_non_trivial_task detects 'plan' and 'planning' keywords."""
+        assert is_non_trivial_task("Plan the architecture") is True
+        assert is_non_trivial_task("planning session optimization") is True
+        assert is_non_trivial_task("Create a plan for Phase 9") is True
+
     def test_is_non_trivial_task_rejects_trivial(self) -> None:
         """is_non_trivial_task returns False for trivial tasks."""
         assert is_non_trivial_task("Read a file") is False

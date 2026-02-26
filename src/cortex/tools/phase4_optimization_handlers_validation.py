@@ -17,7 +17,7 @@ def is_non_trivial_task(task_description: str) -> bool:
         "implement add create build develop fix debug resolve correct repair "
         "refactor refactoring restructure restructuring reorganize test testing "
         "verify validate optimize optimization improve improving enhance "
-        "update modify change edit"
+        "update modify change edit plan planning analyze analysis"
     ).split()
     return any(kw in task_lower for kw in keywords)
 
