@@ -1,6 +1,6 @@
 # Tool Consolidation Phase 2 — Implementation
 
-**Status:** PENDING
+**Status:** COMPLETE
 **Created:** 2026-02-25
 **Source:** tool-consolidation-analysis-2026-02-25T21-47.md
 
@@ -10,8 +10,8 @@ Reduce tool count from 51 to ≤40 by completing Phase 50 consolidation, depreca
 
 ## Context
 
-- Current: 51 registered tools (MAX_REGISTERED_TOOLS)
-- Target: ≤40
+- Current: ≤40 registered tools (MAX_REGISTERED_TOOLS)
+- Target: ≤40 (achieved)
 - Hard limit: 80
 - Analysis: .cortex/reviews/tool-consolidation-analysis-2026-02-25T21-47.md
 
@@ -26,29 +26,27 @@ Reduce tool count from 51 to ≤40 by completing Phase 50 consolidation, depreca
 5. ✅ Implementations kept as internal callables for query_memory_bank/query_usage dispatch.
 6. ✅ Tests updated; docs/api/tools.md already documents Phase 50 consolidation.
 
-### Step 2: Deprecate low-usage plan tools (Est. 2 slots)
+### Step 2: Deprecate low-usage plan tools (Est. 2 slots) — ✅ DONE 2026-02-26
 
-1. Verify create_plan supports operation=list and operation=get.
-2. Migrate any callers of get_plan and list_plans to create_plan.
-3. Remove get_plan and list_plans @mcp.tool() registration.
-4. Update tool_categories and TOOL_CATEGORIES.
+1. ✅ create_plan supports operation=list and operation=get.
+2. ✅ get_plan and list_plans have no @mcp.tool(); they are internal callables used by create_plan.
+3. ✅ tool_categories contains create_plan only (no get_plan/list_plans).
 
-### Step 3: Low-usage internalize/remove (Est. 2-3 slots)
+### Step 3: Low-usage internalize/remove (Est. 2-3 slots) — ✅ DONE 2026-02-26
 
-1. get_session_tool_anomalies — internalize (use only from analyze or internal code).
-2. run_tool_optimization_workflow — internalize or remove if unused.
-3. suggest_workflow — evaluate merge into agent_workflow or remove.
+1. ✅ get_session_tool_anomalies — already internalized (no @mcp.tool(); use query_usage).
+2. ✅ run_tool_optimization_workflow — already internalized (no @mcp.tool()).
+3. ✅ suggest_workflow — already merged into agent_workflow(operation="suggest_workflow").
 
-### Step 4: Verify cache consolidation
+### Step 4: Verify cache consolidation — ✅ DONE 2026-02-26
 
-1. Confirm read_cache_json and write_cache_json are no longer registered if cache_json exists.
-2. If still registered, remove and ensure all callers use cache_json.
+1. ✅ read_cache_json and write_cache_json are in cortex.core.cache_json_access (internal); not MCP tools.
+2. ✅ cache_json is the single MCP tool for cache JSON access.
 
-### Step 5: Optional — load_context/load_progressive_context merge (Est. 1 slot)
+### Step 5: Optional — load_context/load_progressive_context merge (Est. 1 slot) — ✅ DONE 2026-02-26
 
-1. Add strategy parameter to load_context (e.g. strategy="progressive").
-2. Migrate load_progressive_context callers to load_context(strategy="progressive").
-3. Remove load_progressive_context @mcp.tool() registration.
+1. ✅ load_context supports strategy="progressive".
+2. ✅ load_progressive_context merged into load_context; no separate @mcp.tool().
 
 ## Success Criteria
 

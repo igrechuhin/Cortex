@@ -13,7 +13,6 @@
 ## Pending plans (from .cortex/plans)
 
 - **Pending: Phase 9 excellence** - Plan: .cortex/plans/phase-9-excellence-98.md (Phase 9.1.6 reorganization_planner split done)
-- **Pending: Tool consolidation Phase 2** - Plan: .cortex/plans/tool-consolidation-phase-2-implementation.md (implementation plan from 2026-02-25 analysis)
 
 ### Investigation Plans (Archive / Reference)
 
@@ -22,3 +21,4 @@ Completed investigations are recorded in [activeContext.md](activeContext.md). P
 ### Features & Enhancements
 
 - **Pending: Phase 9 excellence** - Plan: .cortex/plans/phase-9-excellence-98.md (Phase 9.1.6 reorganization_planner split done)
+- **Improvements from session analysis 2026-02-26** - PENDING - Plan: .cortex/plans/improvements-from-session-analysis-2026-02-26.md - Zero-budget load_context fix, query_usage schema alignment, tools consolidation
