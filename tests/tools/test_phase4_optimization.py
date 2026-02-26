@@ -446,6 +446,74 @@ class TestLoadContext:
             # Assert
             assert result["status"] == "success"
 
+    async def test_load_context_progressive_strategy_invalid_loading(
+        self, mock_project_root: Path, mock_managers: dict[str, object]
+    ) -> None:
+        """Test progressive strategy with invalid loading_strategy returns error."""
+        # Arrange
+        with (
+            patch(
+                "cortex.tools.phase4_optimization_handlers.resolve_project_root_async",
+                new_callable=AsyncMock,
+                return_value=mock_project_root,
+            ),
+            patch(
+                "cortex.tools.phase4_optimization.get_managers",
+                return_value=mock_managers,
+            ),
+            patch(
+                "cortex.tools.phase4_progressive_operations.get_manager",
+                side_effect=_get_manager_helper,
+            ),
+        ):
+            # Act
+            result_str = await load_context(
+                task_description="Test task",
+                token_budget=50000,
+                strategy="progressive",
+                loading_strategy="invalid_strategy",
+                response_format="detailed",
+            )
+            result = json.loads(result_str)
+
+            # Assert
+            assert result["status"] == "error"
+            assert "invalid_strategy" in result["error"]
+            assert "by_priority" in result["error"]
+
+    async def test_load_context_progressive_strategy_by_dependencies(
+        self, mock_project_root: Path, mock_managers: dict[str, object]
+    ) -> None:
+        """Test progressive strategy with by_dependencies loading."""
+        # Arrange
+        with (
+            patch(
+                "cortex.tools.phase4_optimization_handlers.resolve_project_root_async",
+                new_callable=AsyncMock,
+                return_value=mock_project_root,
+            ),
+            patch(
+                "cortex.tools.phase4_optimization.get_managers",
+                return_value=mock_managers,
+            ),
+            patch(
+                "cortex.tools.phase4_progressive_operations.get_manager",
+                side_effect=_get_manager_helper,
+            ),
+        ):
+            # Act
+            result_str = await load_context(
+                task_description="Test task",
+                token_budget=50000,
+                strategy="progressive",
+                loading_strategy="by_dependencies",
+                response_format="detailed",
+            )
+            result = json.loads(result_str)
+
+            # Assert
+            assert result["status"] == "success"
+
     async def test_load_context_progressive_strategy_default_loading(
         self, mock_project_root: Path, mock_managers: dict[str, object]
     ) -> None:

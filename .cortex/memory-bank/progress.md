@@ -31,6 +31,7 @@
 - **Phase 9.3 Task 3 Async optimization (2026-02-26)** - COMPLETE. Parallelized session_brief (_load_brief_async, _load_concurrency_info, load_memory_bank_files) via asyncio.gather. Documented TaskGroup vs gather in performance-benchmarks.md. Connection pooling N/A for server architecture. Tests pass, 92.85% coverage.
 - **Phase 9.3 Task 4 Memory optimization (2026-02-26)** - COMPLETE. Added memory_benchmarks.py (ContextLoadMemoryBenchmark, IndexLoadMemoryBenchmark), Memory Optimization section in performance-benchmarks.md, memory suite in run_benchmarks. Tests pass, 92.85% coverage.
 - **Phase 9.4 Security Excellence (2026-02-26)** - COMPLETE. Comprehensive security audit (docs/security/phase-9.4-security-audit-2026-02-26.md), git rate limiting (GIT_RATE_LIMIT_OPS_PER_SECOND=10), acquire_git_operation_slot in SynapseRepository/session_start_tools/compaction_operations, test_acquire_git_operation_slot added.
+- **Phase 9.5 Test Coverage (2026-02-26)** - IN PROGRESS. Fixed 8 type errors in test_phase4_optimization_handlers_format.py; added edge-case tests (format_load_context_error, format_detailed non-dict, build_concise list). Coverage 92.9%.
 
 ## 2026-02-25
 

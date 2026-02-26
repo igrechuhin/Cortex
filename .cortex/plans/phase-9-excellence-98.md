@@ -203,16 +203,16 @@ Phase 9 builds on Phase 7's achievements (9.2/10) to reach excellence at 9.8+/10
 
 **Goal:** 9.5 → 9.8/10
 **Effort:** 8-12 hours
-**Status:** 🟢 MEDIUM PRIORITY
+**Status:** 🟡 IN PROGRESS (2026-02-26)
 
 **Tasks:**
 
 1. **Improve tool module coverage** (6-8 hours)
-   - phase6_shared_rules.py: 19% → 85%+
-   - phase8_structure.py: 12% → 85%+
-   - phase5_execution.py: 13% → 85%+
-   - phase4_optimization.py: 23% → 85%+
-   - phase2_linking.py: 32% → 85%+
+   - phase6_shared_rules.py: 19% → 95%+
+   - phase8_structure.py: 12% → 95%+
+   - phase5_execution.py: 13% → 95%+
+   - phase4_optimization.py: 23% → 95%+
+   - phase2_linking.py: 32% → 95%+
 
 2. **Add edge case tests** (2-4 hours)
    - Error paths
@@ -222,7 +222,7 @@ Phase 9 builds on Phase 7's achievements (9.2/10) to reach excellence at 9.8+/10
 **Success Criteria:**
 
 - ✅ Overall coverage: 83% → 90%+
-- ✅ All tool modules: >85% coverage
+- ✅ All tool modules: >95% coverage
 - ✅ Critical paths: 100% coverage
 
 ---
@@ -515,8 +515,9 @@ Phase 9 builds on Phase 7's achievements (9.2/10) to reach excellence at 9.8+/10
 ---
 
 Last Updated: 2026-02-26
-Status: 🚀 IN PROGRESS — Phase 9.1 COMPLETE; Phase 9.2 COMPLETE; Phase 9.3 COMPLETE
+Status: 🚀 IN PROGRESS — Phase 9.1–9.4 COMPLETE; Phase 9.5 IN PROGRESS
 Phase 9.1: Zero file-size and function-length violations; 4782 tests pass; 92.85% coverage; integration tests pass; no production TODOs.
 Phase 9.2 (complete): docs/design/architecture-layering.md, ADR-009 (SequentialThinking constructor injection). Protocol alignment DONE. SequentialThinking core injected at main.py startup. Module coupling: 0 circular dependencies. 2026-02-26.
 Phase 9.3 (complete): Task 1 partial (benchmarks added); Task 2-3 done (caching, async); Task 4 (memory): memory_benchmarks.py (ContextLoadMemoryBenchmark, IndexLoadMemoryBenchmark), performance-benchmarks.md Memory Optimization section, run_benchmarks.py includes memory suite. 2026-02-26.
 Phase 9.4 (complete): Comprehensive security audit (phase-9.4-security-audit-2026-02-26.md), git rate limiting (GIT_RATE_LIMIT_OPS_PER_SECOND=10, acquire_git_operation_slot in SynapseRepository, session_start_tools, compaction_operations), security docs linked. 2026-02-26.
+Phase 9.5 (in progress): Fixed 8 type errors in test_phase4_optimization_handlers_format.py (dict[str, object] casts). Added edge-case tests: format_load_context_error, format_detailed non-dict JSON, build_concise with selected_files as list. Coverage 92.9%. 2026-02-26.
