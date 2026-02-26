@@ -6,6 +6,8 @@
 
 ## Blockers (ASAP Priority)
 
+- [Phase: Investigate execute_pre_commit_checks MCP Tool Failure](.cortex/plans/phase-investigate-execute_pre_commit_checks-failure-20260226-184816.md) - ASAP (PLANNING) - Investigate and fix MCP tool failure that occurred during commit procedure - Tool: `execute_pre_commit_checks`, Error: AttributeError - Impact: Commit procedure blocked - Target completion: 2026-02-26
+
 ## Active Work (in progress)
 
 ## Future Enhancements

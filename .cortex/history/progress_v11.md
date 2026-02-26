@@ -32,6 +32,12 @@
 - **Phase 9.3 Task 4 Memory optimization (2026-02-26)** - COMPLETE. Added memory_benchmarks.py (ContextLoadMemoryBenchmark, IndexLoadMemoryBenchmark), Memory Optimization section in performance-benchmarks.md, memory suite in run_benchmarks. Tests pass, 92.85% coverage.
 - **Phase 9.4 Security Excellence (2026-02-26)** - COMPLETE. Comprehensive security audit (docs/security/phase-9.4-security-audit-2026-02-26.md), git rate limiting (GIT_RATE_LIMIT_OPS_PER_SECOND=10), acquire_git_operation_slot in SynapseRepository/session_start_tools/compaction_operations, test_acquire_git_operation_slot added.
 - **Phase 9.5 Test Coverage (2026-02-26)** - IN PROGRESS. Fixed 8 type errors in test_phase4_optimization_handlers_format.py; added edge-case tests (format_load_context_error, format_detailed non-dict, build_concise list). Coverage 92.9%.
+- **Phase 9.5 format edge-case (2026-02-26)** - COMPLETE. Added test_concise_format_returns_original_when_non_dict_json for format_load_context_response. phase4_optimization_handlers_format coverage 100%. Overall 92.92%.
+- **Phase 9.5 phase8_structure coverage (2026-02-26)** - COMPLETE. phase8_structure.py already at 100% coverage. Added parity test for check_structure_health ctx logging; 39 tests pass.
+- **Phase 9.5 phase6_shared_rules (2026-02-26)** - COMPLETE. Created tests/tools/test_phase6_shared_rules.py with sync_synapse, update_synapse, get_synapse_rules edge-case tests.
+- **Phase 9.5 phase5_execution coverage (2026-02-26)** - COMPLETE. Added 18 tests: test_phase5_execution_validation (6), test_phase5_execution_monitoring (5), test_phase5_execution_planning (6), plus test_apply_refactoring_with_enum_action. Total 65 phase5_execution tests. Coverage improved for validation, monitoring, planning modules.
+- **Phase 9.5 phase2_linking (2026-02-26)** - COMPLETE. phase2_linking tool modules at 100% coverage (link_graph_operations, link_parser_operations, link_validation_operations, transclusion_operations). Added test_parse_file_links_impl_exception for_parse_file_links_run_or_error exception path.
+- **test_phase6_shared_rules type fixes (commit)** - COMPLETE. Fixed 47 pyright errors via cast(MagicMock) for mock manager assertions. 4838 tests, 92.96% coverage.
 
 ## 2026-02-25
 

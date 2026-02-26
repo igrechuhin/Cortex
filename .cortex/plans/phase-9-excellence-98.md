@@ -208,11 +208,11 @@ Phase 9 builds on Phase 7's achievements (9.2/10) to reach excellence at 9.8+/10
 **Tasks:**
 
 1. **Improve tool module coverage** (6-8 hours)
-   - phase6_shared_rules.py: 19% → 95%+
-   - phase8_structure.py: 12% → 95%+
+   - phase6_shared_rules: 19% → 95%+ ✅ DONE (tests/tools/test_phase6_shared_rules.py added; functionality in synapse_tools)
+   - phase8_structure.py: 12% → 95%+ ✅ DONE (100% coverage; parity test added for check_structure_health ctx logging)
    - phase5_execution.py: 13% → 95%+
    - phase4_optimization.py: 23% → 95%+
-   - phase2_linking.py: 32% → 95%+
+   - phase2_linking.py: 32% → 95%+ ✅ DONE (100% coverage; link_parser/graph/validation/transclusion ops; added test_parse_file_links_impl_exception)
 
 2. **Add edge case tests** (2-4 hours)
    - Error paths
@@ -520,4 +520,4 @@ Phase 9.1: Zero file-size and function-length violations; 4782 tests pass; 92.85
 Phase 9.2 (complete): docs/design/architecture-layering.md, ADR-009 (SequentialThinking constructor injection). Protocol alignment DONE. SequentialThinking core injected at main.py startup. Module coupling: 0 circular dependencies. 2026-02-26.
 Phase 9.3 (complete): Task 1 partial (benchmarks added); Task 2-3 done (caching, async); Task 4 (memory): memory_benchmarks.py (ContextLoadMemoryBenchmark, IndexLoadMemoryBenchmark), performance-benchmarks.md Memory Optimization section, run_benchmarks.py includes memory suite. 2026-02-26.
 Phase 9.4 (complete): Comprehensive security audit (phase-9.4-security-audit-2026-02-26.md), git rate limiting (GIT_RATE_LIMIT_OPS_PER_SECOND=10, acquire_git_operation_slot in SynapseRepository, session_start_tools, compaction_operations), security docs linked. 2026-02-26.
-Phase 9.5 (in progress): Fixed 8 type errors in test_phase4_optimization_handlers_format.py (dict[str, object] casts). Added edge-case tests: format_load_context_error, format_detailed non-dict JSON, build_concise with selected_files as list. Coverage 92.9%. 2026-02-26.
+Phase 9.5 (in progress): Fixed 8 type errors in test_phase4_optimization_handlers_format.py (dict[str, object] casts). Added edge-case tests: format_load_context_error, format_detailed non-dict JSON, build_concise with selected_files as list, format_load_context_response concise non-dict JSON. Coverage 92.92%. phase4_optimization_handlers_format at 100%. phase8_structure.py: 100% coverage (parity test for check_structure_health ctx logging added). phase2_linking: 100% — all link ops modules; added test_parse_file_links_impl_exception. phase5_execution: added test_phase5_execution_validation (6 tests), test_phase5_execution_monitoring (5), test_phase5_execution_planning (6), plus test_apply_refactoring_with_enum_action. 65 phase5 tests total. 2026-02-26.

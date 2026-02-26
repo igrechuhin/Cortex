@@ -217,6 +217,14 @@ class TestFormatLoadContextResponse:
         parsed = json.loads(result)
         assert parsed["role"] == "x"
 
+    def test_concise_format_returns_original_when_non_dict_json(self) -> None:
+        """Concise format returns original when JSON parses to non-dict (e.g. array)."""
+        out = json.dumps([1, 2, 3])
+        result = format_load_context_response(
+            out, response_format=ResponseFormat.CONCISE, role=None
+        )
+        assert result == out
+
 
 class TestFormatAndAddWarningsIfNeeded:
     """Tests for format_and_add_warnings_if_needed."""

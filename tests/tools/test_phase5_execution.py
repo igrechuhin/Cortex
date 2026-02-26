@@ -28,6 +28,7 @@ from cortex.refactoring.models import (
     FeedbackRecordResult,
     FeedbackRecordStatus,
     LearningInsights,
+    RefactoringAction,
     RefactoringActionModel,
     RefactoringImpactMetrics,
     RefactoringPriority,
@@ -662,6 +663,27 @@ class TestApplyRefactoringRollback:
 
 class TestApplyRefactoringEdgeCases:
     """Tests for apply_refactoring() edge cases."""
+
+    async def test_apply_refactoring_with_enum_action(
+        self, mock_project_root: Path, mock_managers: ManagersDict
+    ) -> None:
+        """Test apply_refactoring accepts RefactoringAction enum."""
+        with (
+            patch(
+                "cortex.tools.phase5_execution_planning.get_project_root",
+                return_value=mock_project_root,
+            ),
+            patch(
+                "cortex.managers.initialization.get_managers",
+                return_value=mock_managers,
+            ),
+        ):
+            result_str = await apply_refactoring(
+                action=RefactoringAction.APPROVE, suggestion_id="test-123"
+            )
+            result = json.loads(result_str)
+        assert result["status"] == "approved"
+        assert result["suggestion_id"] == "test-123"
 
     async def test_invalid_action(
         self, mock_project_root: Path, mock_managers: ManagersDict

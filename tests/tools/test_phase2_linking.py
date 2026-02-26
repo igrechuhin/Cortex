@@ -247,7 +247,7 @@ class TestParseFileLinks:
             assert "not found" in result["error"]
 
     async def test_parse_file_links_exception(self, mock_project_root: Path) -> None:
-        """Test exception handling in parse_file_links."""
+        """Test exception handling in parse_file_links (root resolve raises)."""
         # Arrange
         with patch(
             "cortex.tools.link_parser_operations.resolve_project_root_async",
@@ -262,6 +262,32 @@ class TestParseFileLinks:
             assert result["status"] == "error"
             assert "Test error" in result["error"]
             assert result["error_type"] == "ValueError"
+
+    async def test_parse_file_links_impl_exception(
+        self, mock_project_root: Path, mock_managers: ManagersDict
+    ) -> None:
+        """Test exception in _parse_file_links_impl is caught and logged."""
+        # Arrange: _parse_file_links_impl raises inside run_or_error
+        with (
+            patch(
+                "cortex.tools.link_parser_operations.resolve_project_root_async",
+                new_callable=AsyncMock,
+                return_value=mock_project_root,
+            ),
+            patch(
+                "cortex.tools.link_parser_operations.get_managers",
+                new_callable=AsyncMock,
+                side_effect=RuntimeError("internal error"),
+            ),
+        ):
+            # Act
+            result_str = await parse_file_links(file_name="test.md")
+            result = json.loads(result_str)
+
+            # Assert
+            assert result["status"] == "error"
+            assert "internal error" in result["error"]
+            assert result["error_type"] == "RuntimeError"
 
 
 # ============================================================================

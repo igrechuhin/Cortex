@@ -60,6 +60,18 @@
 
 - ✅ **Phase 9.5 Test Coverage (partial)** - COMPLETE (2026-02-26) - Fixed type errors in test_phase4_optimization_handlers_format; added 4 edge-case tests for phase4 format module; coverage 92.9%. Phase 9.5 in progress.
 
+- ✅ **Phase 9.5 format edge-case** - COMPLETE (2026-02-26) - Added test_concise_format_returns_original_when_non_dict_json for format_load_context_response (CONCISE + non-dict JSON). phase4_optimization_handlers_format 100% coverage.
+
+- ✅ **Phase 9.5 phase8_structure coverage** - COMPLETE (2026-02-26) - Verified phase8_structure.py at 100% coverage; added test_check_structure_health_calls_log_client_when_ctx_passed for parity with get_structure_info. Plan updated.
+
+- ✅ **Phase 9.5 phase6_shared_rules test coverage** - COMPLETE (2026-02-26) - Added tests/tools/test_phase6_shared_rules.py with 9 tests for sync_synapse edge cases (rules_manager None, reindex not triggered), update_synapse(content_type=rule|prompt) branches, get_synapse_rules exception/empty-task paths, and update wrappers. Complements test_synapse_tools.py.
+
+- ✅ **Phase 9.5 phase5_execution coverage** - COMPLETE (2026-02-26) - Added unit tests for phase5_execution_validation, phase5_execution_monitoring, phase5_execution_planning, plus enum-action test in test_phase5_execution. 18 new tests, 65 total for phase5_execution modules.
+
+- ✅ **Phase 9.5 phase2_linking coverage** - COMPLETE (2026-02-26) - Implemented phase2_linking test coverage for Phase 9.5. Added test_parse_file_links_impl_exception to cover the exception handler in _parse_file_links_run_or_error (link_parser_operations). All Phase 2 linking modules now at 100%: phase2_linking.py, link_graph_operations, link_parser_operations, link_validation_operations, transclusion_operations.
+
+- ✅ **test_phase6_shared_rules type fixes** - COMPLETE (2026-02-26) - Fixed 47 type errors in test_phase6_shared_rules.py: added cast() for LazyManager/ManagersDict mock assertions (sync_synapse, index_rules, update_synapse_rule, update_synapse_prompt). All pre-commit checks pass.
+
 ## Completed Work (2026-02-25)
 
 - **Summary (2026-02-25)** - 1 entries archived.

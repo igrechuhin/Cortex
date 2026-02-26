@@ -1094,3 +1094,33 @@ class TestPhase8StructureContextLogging:
         levels_and_messages = [(a[1], a[2]) for a in args_list]
         assert ("info", "get_structure_info: starting") in levels_and_messages
         assert ("info", "get_structure_info: completed") in levels_and_messages
+
+    async def test_check_structure_health_calls_log_client_when_ctx_passed(
+        self,
+        mock_project_root: Path,
+        mock_structure_manager: MagicMock,
+    ) -> None:
+        """When ctx is passed, check_structure_health logs start and completion."""
+        mock_ctx = AsyncMock()
+        with (
+            patch(
+                "cortex.tools.phase8_structure.log_client",
+                new_callable=AsyncMock,
+            ) as mock_log,
+            patch(
+                "cortex.tools.phase8_structure.resolve_project_root_async",
+                new_callable=AsyncMock,
+                return_value=mock_project_root,
+            ),
+            patch(
+                "cortex.tools.phase8_structure.StructureManager",
+                return_value=mock_structure_manager,
+            ),
+        ):
+            result_str = await check_structure_health(ctx=mock_ctx)
+            result = json.loads(result_str)
+        assert result["success"] is True
+        args_list = [c[0] for c in mock_log.call_args_list]
+        levels_and_messages = [(a[1], a[2]) for a in args_list]
+        assert ("info", "check_structure_health: starting") in levels_and_messages
+        assert ("info", "check_structure_health: completed") in levels_and_messages
