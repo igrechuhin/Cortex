@@ -7,12 +7,14 @@ relevance scoring, progressive loading, and content summarization.
 
 from typing import Protocol
 
+from cortex.core.models import ModelDict
 from cortex.optimization.models import (
     FileMetadataForScoring,
     FileRelevanceScoreModel,
     OptimizationResultModel,
     SectionScoreModel,
 )
+from cortex.optimization.optimization_types import OptimizationResult
 
 
 class RelevanceScorerProtocol(Protocol):
@@ -226,6 +228,30 @@ class ContextOptimizerProtocol(Protocol):
 
         Returns:
             Optimization result model
+        """
+        ...
+
+    async def optimize_context(
+        self,
+        task_description: str,
+        files_content: dict[str, str],
+        files_metadata: dict[str, ModelDict],
+        token_budget: int,
+        strategy: str = "dependency_aware",
+        quality_scores: dict[str, float] | None = None,
+    ) -> OptimizationResult:
+        """Select optimal context within budget (ContextOptimizer-style API).
+
+        Args:
+            task_description: Description of task
+            files_content: Available files with content
+            files_metadata: File metadata (ModelDict-compatible)
+            token_budget: Maximum tokens allowed
+            strategy: Optimization strategy
+            quality_scores: Optional quality scores for files
+
+        Returns:
+            OptimizationResult with selected content
         """
         ...
 

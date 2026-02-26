@@ -36,6 +36,18 @@
 
 - ✅ **Improvements from session analysis 2026-02-26** - COMPLETE (2026-02-26) - Zero-budget load_context fix (added plan/planning/analyze to non-trivial keywords), query_usage response_format alignment (changed analyze prompt from full to detailed)
 
+- ✅ **Phase 9.1 Rules Compliance COMPLETE** - COMPLETE (2026-02-26) - Phase 9.1 verified complete: zero file-size and function-length violations, 4781 tests pass, 92.84% coverage, integration tests pass, no production TODOs. Plan and roadmap updated; next: Phase 9.2 Architecture Refinement.
+
+- ✅ **Phase 9.2 Architecture (partial)** - COMPLETE (2026-02-26) - Added docs/design/architecture-layering.md (layer boundaries, protocol usage, dependency rules). Added ADR-009 for SequentialThinkingCore singleton (rationale and future DI path). Updated phase-9 plan with Phase 9.2 progress. LoaderProtocol decoupling deferred (protocol signature alignment needed).
+
+- ✅ **Phase 9.2 Protocol documentation** - COMPLETE (2026-02-26) - Documented LoaderProtocol alignment gaps in docs/design/architecture-layering.md. Decoupling deferred until parse_sections, write_file, and optimize/optimize_context signatures align.
+
+- ✅ **Phase 9.2 Protocol alignment** - COMPLETE (2026-02-26) - Aligned FileSystemProtocol (parse_sections return type, write_file create_version param, memory_bank_dir attr), ContextOptimizerProtocol (optimize_context method), FileSystemManager.write_file. LoaderProtocol decoupling deferred due to type checker invariance.
+
+- ✅ **Phase 9.2 SequentialThinking constructor injection** - COMPLETE (2026-02-26) - Converted SequentialThinkingCore to constructor injection: configure_sequential_thinking_core() for composition root; main.py injects at startup via_inject_sequential_thinking_core(); lazy fallback for tests. Updated ADR-009 and architecture-layering.md.
+
+- ✅ **Phase 9.2 Architecture Refinement** - COMPLETE (2026-02-26) - Protocol boundaries, DI (SequentialThinking injected at main.py startup), module coupling (0 circular deps). Layering documented in architecture-layering.md.
+
 ## Completed Work (2026-02-25)
 
 - **Summary (2026-02-25)** - 1 entries archived.

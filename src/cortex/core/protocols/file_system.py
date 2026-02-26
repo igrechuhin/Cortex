@@ -9,7 +9,7 @@ abstraction and reduced circular dependencies.
 from pathlib import Path
 from typing import Protocol
 
-from cortex.core.models import DetailedFileMetadata, IndexData
+from cortex.core.models import DetailedFileMetadata, IndexData, SectionMetadata
 
 
 class FileSystemProtocol(Protocol):
@@ -50,7 +50,7 @@ class FileSystemProtocol(Protocol):
             def compute_hash(self, content: str) -> str:
                 return hashlib.sha256(content.encode()).hexdigest()
 
-            def parse_sections(self, content: str) -> list[dict[str, str | int]]:
+            def parse_sections(self, content: str) -> list[SectionMetadata]:
                 # Parse markdown headers into sections
                 return sections
 
@@ -69,6 +69,9 @@ class FileSystemProtocol(Protocol):
         - All protocol methods must be implemented for full compatibility
         - Used throughout the system for loose coupling and testability
     """
+
+    memory_bank_dir: Path
+    """Path to memory bank directory (for path resolution)."""
 
     def validate_path(self, file_path: Path) -> bool:
         """Validate that a path is safe and within bounds.
@@ -131,14 +134,14 @@ class FileSystemProtocol(Protocol):
         """
         ...
 
-    def parse_sections(self, content: str) -> list[dict[str, str | int]]:
+    def parse_sections(self, content: str) -> list[SectionMetadata]:
         """Parse markdown content into sections.
 
         Args:
             content: Markdown content
 
         Returns:
-            List of section dictionaries with title, level, start_line, end_line
+            List of section metadata models
         """
         ...
 

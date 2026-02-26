@@ -201,8 +201,19 @@ def _require_http_deps() -> None:
         sys.exit(1)
 
 
+def _inject_sequential_thinking_core() -> None:
+    """Inject SequentialThinkingCore at composition root (Phase 9.2 DI)."""
+    from cortex.tools.sequential_thinking import (
+        SequentialThinkingCore,
+        configure_sequential_thinking_core,
+    )
+
+    configure_sequential_thinking_core(SequentialThinkingCore())
+
+
 def _run_server_once() -> None:
     """Run the MCP server once (stdio or HTTP). Exits on disconnect or error."""
+    _inject_sequential_thinking_core()
     transport = get_effective_transport()
     if transport in (TRANSPORT_SSE, TRANSPORT_STREAMABLE_HTTP):
         _require_http_deps()

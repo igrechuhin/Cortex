@@ -124,6 +124,9 @@ The commit workflow is organized into phases (see `docs/design/commit-pipeline-p
 
 ## Learned User Preferences
 
+- When enforcing new coding standards (e.g., Literal→enum), update `.cortex/synapse/rules/python` so the rule is reflected there.
+- When refactoring, briefly explain why the new approach is better, especially when the change is non-obvious.
+
 ## Learned Workspace Facts
 
 - Do not edit files under `.venv` or other third-party package directories; apply coding standards (e.g. enums, types) only to project source code.

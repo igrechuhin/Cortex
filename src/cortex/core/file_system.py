@@ -166,6 +166,7 @@ class FileSystemManager:
         file_path: Path,
         content: str,
         expected_hash: str | None = None,
+        create_version: bool = True,
     ) -> str:
         """
         Write file content with locking, conflict detection, and retry logic.
@@ -174,6 +175,8 @@ class FileSystemManager:
             file_path: Path to file to write
             content: Content to write
             expected_hash: Expected current hash (for conflict detection)
+            create_version: Whether to create version snapshot (reserved for
+                protocol compatibility; versioning handled by callers)
 
         Returns:
             New content hash

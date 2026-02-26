@@ -108,21 +108,33 @@ class SequentialThinkingCore:
         )
 
 
-# One shared core per process (single-client stdio usage)
-_core: SequentialThinkingCore | None = None
+# Injected core (composition root); lazy fallback for tests after reset
+_injected_core: SequentialThinkingCore | None = None
+
+
+def configure_sequential_thinking_core(core: SequentialThinkingCore | None) -> None:
+    """Inject or clear the SequentialThinkingCore (composition root).
+
+    Call with a core instance at server startup. Call with None to reset
+    (e.g. reset_core_for_testing). Enables constructor-injection pattern.
+    """
+    global _injected_core
+    _injected_core = core
 
 
 def _get_core() -> SequentialThinkingCore:
-    global _core
-    if _core is None:
-        _core = SequentialThinkingCore()
-    return _core
+    global _injected_core
+    if _injected_core is not None:
+        return _injected_core
+    # Lazy fallback for tests after reset_core_for_testing(); production
+    # injects at startup so this path is not hit there.
+    _injected_core = SequentialThinkingCore()
+    return _injected_core
 
 
 def reset_core_for_testing() -> None:
     """Reset the shared core to None. For use in tests only."""
-    global _core
-    _core = None
+    configure_sequential_thinking_core(None)
 
 
 def _output_to_json_string(output: SequentialThinkingOutput) -> str:

@@ -20,6 +20,12 @@
 - **Phase 9.1.26 quality_metrics split (2026-02-26)** - COMPLETE. Split quality_metrics.py 721→374 lines; extracted quality_metrics_coercion, quality_metrics_scoring, quality_metrics_issues, quality_metrics_recommendations, quality_metrics_result.
 - **Tool Consolidation Phase 2 (2026-02-26)** - COMPLETE. Verified Steps 2-5 done: plan tools internalized, low-usage tools internalized, cache consolidation verified, load_context merge done.
 - **Improvements from session analysis 2026-02-26** - COMPLETE. Zero-budget guardrails: added plan, planning, analyze to non-trivial task keywords; query_usage alignment: analyze prompt now uses response_format=detailed.
+- **Phase 9.1 Rules Compliance COMPLETE (2026-02-26)** - COMPLETE. Verified all Phase 9.1 success criteria met: zero file-size/function-length violations, 4781 tests pass, 92.84% coverage. Plan and roadmap updated; next Phase 9.2 Architecture.
+- **Phase 9.2 Architecture Refinement (2026-02-26)** - PARTIAL. Architecture layering doc, ADR-009 (SequentialThinking singleton), protocol boundary documentation. LoaderProtocol decoupling deferred.
+- **Phase 9.2 Architecture (2026-02-26)** - Documented LoaderProtocol alignment gaps in architecture-layering.md (parse_sections return type, write_file defaults, optimize vs optimize_context). LoaderProtocol decoupling remains deferred until signatures align.
+- **Phase 9.2 Protocol alignment (2026-02-26)** - COMPLETE. Aligned FileSystemProtocol (parse_sections→SectionMetadata, write_file create_version, memory_bank_dir), ContextOptimizerProtocol (optimize_context), FileSystemManager.write_file. LoaderProtocol kept on concrete types (type checker invariance). docs/design/architecture-layering.md updated.
+- **Phase 9.2 SequentialThinking constructor injection (2026-02-26)** - COMPLETE. Added configure_sequential_thinking_core(), injection at main.py composition root; lazy fallback for tests. Updated ADR-009 and architecture-layering.md.
+- **Phase 9.2 Architecture Refinement (2026-02-26)** - COMPLETE. Protocol boundaries strengthened, SequentialThinking constructor injection, module coupling optimized (0 circular dependencies per analyzer). Clear layering documented.
 
 ## 2026-02-25
 

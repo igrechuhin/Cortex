@@ -2,6 +2,12 @@
 Protocols for progressive loader helpers.
 
 Shared protocol definitions—define once, reuse across modules (DRY).
+
+Uses concrete types for LoaderProtocol attributes to satisfy type checker
+invariance. Protocol alignment (FileSystemProtocol, ContextOptimizerProtocol,
+etc.) is complete per docs/design/architecture-layering.md; switching
+LoaderProtocol to protocol types is deferred until type checker variance
+handling is resolved.
 """
 
 from typing import Protocol
