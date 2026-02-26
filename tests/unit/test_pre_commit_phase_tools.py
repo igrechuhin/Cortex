@@ -454,6 +454,47 @@ class TestPreflightHelperFunctions:
         )
         assert _compute_preflight_passed(exec_ok, md_err) is False
 
+    def test_compute_preflight_passed_files_with_errors_as_string_zero(self) -> None:
+        """Passes when files_with_errors is str '0' (boundary)."""
+        exec_ok: ModelDict = {"status": "success"}
+        md_ok = cast(
+            JsonDict,
+            {
+                "status": "success",
+                "files_with_errors": "0",
+                "error_message": None,
+            },
+        )
+        assert _compute_preflight_passed(exec_ok, md_ok) is True
+
+    def test_compute_preflight_passed_files_with_errors_as_string_positive(
+        self,
+    ) -> None:
+        """Fails when files_with_errors is str '3'."""
+        exec_ok: ModelDict = {"status": "success"}
+        md_bad = cast(
+            JsonDict,
+            {
+                "status": "success",
+                "files_with_errors": "3",
+                "error_message": None,
+            },
+        )
+        assert _compute_preflight_passed(exec_ok, md_bad) is False
+
+    def test_compute_preflight_passed_markdown_status_error_fails(self) -> None:
+        """Fails when markdown status is 'error' even if files_with_errors is 0."""
+        exec_ok: ModelDict = {"status": "success"}
+        md_err = cast(
+            JsonDict,
+            {
+                "status": "error",
+                "files_with_errors": 0,
+                "error_message": None,
+            },
+        )
+        assert _compute_preflight_passed(exec_ok, md_err) is False
+
     def test_build_execute_check_summaries_empty_results(self) -> None:
         """Returns empty list when results dict is empty."""
         result: ModelDict = {"results": {}}
@@ -549,6 +590,19 @@ class TestEnsureDict:
     def test_ensure_dict_invalid_json_returns_error_dict(self) -> None:
         """Invalid JSON string returns error dict."""
         result = _ensure_dict("not valid json")
+        assert isinstance(result, dict)
+        assert result["status"] == "error"
+        assert "error" in result
+
+    def test_ensure_dict_parsed_non_dict_returns_empty_dict(self) -> None:
+        """JSON that parses to non-dict (e.g. array) returns empty dict."""
+        result = _ensure_dict("[]")
+        assert isinstance(result, dict)
+        assert result == {}
+
+    def test_ensure_dict_empty_string_returns_error_dict(self) -> None:
+        """Empty string causes JSONDecodeError and returns error dict."""
+        result = _ensure_dict("")
         assert isinstance(result, dict)
         assert result["status"] == "error"
         assert "error" in result

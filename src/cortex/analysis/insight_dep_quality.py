@@ -1,7 +1,20 @@
 """Dependency and Quality Insight Generators.
 
 Generate insights from dependency structure and quality metrics.
+Uses constants from cortex.core.constants for thresholds and token estimates.
 """
+
+from cortex.core.constants import (
+    INSIGHT_AVG_FILE_SIZE_RECOMMENDED_KB,
+    INSIGHT_AVG_SIZE_THRESHOLD_KB,
+    INSIGHT_COMPLEXITY_GOOD_THRESHOLD,
+    INSIGHT_COMPLEXITY_SEVERITY_HIGH_THRESHOLD,
+    INSIGHT_MAX_DEPENDENCY_DEPTH_RECOMMENDED,
+    INSIGHT_TOKEN_SAVINGS_PER_COMPLEXITY_POINT,
+    INSIGHT_TOKEN_SAVINGS_PER_EXCESSIVE_DEP,
+    INSIGHT_TOKEN_SAVINGS_PER_KB_OVER_AVG,
+    INSIGHT_TOKEN_SAVINGS_PER_ORPHAN,
+)
 
 from .insight_types import InsightDict
 from .models import (
@@ -47,36 +60,45 @@ class DependencyQualityInsights:
     async def _generate_complexity_insight(self) -> InsightDict | None:
         """Generate insight about dependency complexity."""
         complexity = await self.structure_analyzer.measure_complexity_metrics()
-
         if complexity.status != "analyzed":
             return None
-
         assessment = complexity.assessment
-        score_int: int = assessment.score
-
-        if score_int >= 80:
+        if assessment.score >= INSIGHT_COMPLEXITY_GOOD_THRESHOLD:
             return None
+        return self._build_complexity_insight(complexity, assessment)
 
-        description = self._build_complexity_description(assessment)
+    def _complexity_severity(self, score: int) -> str:
+        """Return severity from complexity score."""
+        return (
+            "high" if score < INSIGHT_COMPLEXITY_SEVERITY_HIGH_THRESHOLD else "medium"
+        )
+
+    def _build_complexity_insight(
+        self,
+        complexity: ComplexityAnalysisResult,
+        assessment: ComplexityAssessment,
+    ) -> InsightDict:
+        """Build dependency complexity InsightDict."""
+        score_int = assessment.score
         hotspots = self._extract_complexity_hotspots(complexity)
-        recommendations = assessment.recommendations
-
         return InsightDict.model_validate(
             {
                 "id": "dependency_complexity",
                 "category": "dependencies",
                 "title": f"Dependency structure complexity: {assessment.grade}",
-                "description": description,
+                "description": self._build_complexity_description(assessment),
                 "impact_score": 0.8,
-                "severity": "high" if score_int < 60 else "medium",
+                "severity": self._complexity_severity(score_int),
                 "evidence": {
                     "complexity_score": score_int,
                     "grade": assessment.grade,
                     "metrics": complexity.metrics.model_dump(mode="json"),
                     "hotspots": [h.model_dump(mode="json") for h in hotspots],
                 },
-                "recommendations": recommendations,
-                "estimated_token_savings": int((100 - score_int) * 50),
+                "recommendations": assessment.recommendations,
+                "estimated_token_savings": int(
+                    (100 - score_int) * INSIGHT_TOKEN_SAVINGS_PER_COMPLEXITY_POINT
+                ),
                 "affected_files": [h.file for h in hotspots],
             }
         )
@@ -119,7 +141,8 @@ class DependencyQualityInsights:
                     "Consider if orphaned files are still needed",
                     "Archive or remove truly unused files",
                 ],
-                "estimated_token_savings": len(orphaned) * 100,
+                "estimated_token_savings": len(orphaned)
+                * INSIGHT_TOKEN_SAVINGS_PER_ORPHAN,
                 "affected_files": [ap.file for ap in orphaned if ap.file],
             }
         )
@@ -131,10 +154,14 @@ class DependencyQualityInsights:
         excessive_deps = [
             ap for ap in anti_patterns if ap.type == "excessive_dependencies"
         ]
-
         if not excessive_deps:
             return None
+        return self._build_excessive_deps_insight(excessive_deps)
 
+    def _build_excessive_deps_insight(
+        self, excessive_deps: list[AntiPatternInfo]
+    ) -> InsightDict:
+        """Build excessive dependencies InsightDict."""
         return InsightDict.model_validate(
             {
                 "id": "excessive_dependencies",
@@ -154,7 +181,9 @@ class DependencyQualityInsights:
                     "Split file into smaller, focused files",
                     "Use transclusion to manage shared content",
                 ],
-                "estimated_token_savings": len(excessive_deps) * 400,
+                "estimated_token_savings": (
+                    len(excessive_deps) * INSIGHT_TOKEN_SAVINGS_PER_EXCESSIVE_DEP
+                ),
                 "affected_files": [ap.file for ap in excessive_deps if ap.file],
             }
         )
@@ -186,64 +215,79 @@ class DependencyQualityInsights:
 
         max_depth = complexity2.metrics.max_dependency_depth
 
-        if max_depth > 5:
-            return self._create_deep_dependencies_insight(max_depth)
+        if max_depth > INSIGHT_MAX_DEPENDENCY_DEPTH_RECOMMENDED:
+            return self._create_deep_dependencies_insight(
+                max_depth, INSIGHT_MAX_DEPENDENCY_DEPTH_RECOMMENDED
+            )
 
         return None
 
-    def _create_deep_dependencies_insight(self, max_depth: int) -> InsightDict:
+    def _create_deep_dependencies_insight(
+        self,
+        max_depth: int,
+        recommended_max: int = INSIGHT_MAX_DEPENDENCY_DEPTH_RECOMMENDED,
+    ) -> InsightDict:
         """Create insight for deep dependencies."""
         return InsightDict.model_validate(
             {
                 "id": "deep_dependencies",
                 "category": "quality",
                 "title": "Dependency chains are too deep",
-                "description": f"Maximum depth is {max_depth}, recommended is ≤5",
+                "description": (
+                    f"Maximum depth is {max_depth}, recommended is ≤{recommended_max}"
+                ),
                 "impact_score": 0.75,
                 "severity": "medium",
-                "evidence": {"max_depth": max_depth, "recommended_max": 5},
+                "evidence": {
+                    "max_depth": max_depth,
+                    "recommended_max": recommended_max,
+                },
                 "recommendations": [
                     "Flatten dependency hierarchy where possible",
                     "Consider direct references instead of chains",
                     "Review if all dependencies are necessary",
                 ],
-                "estimated_token_savings": (max_depth - 5) * 200,
+                "estimated_token_savings": (max_depth - recommended_max) * 200,
             }
         )
 
     async def _analyze_organization_insights(self) -> InsightDict | None:
-        """Analyze organization quality and generate insight if needed.
-
-        Returns:
-            Insight dictionary if issue found, None otherwise
-        """
+        """Analyze organization quality and generate insight if needed."""
         org_analysis2 = await self.structure_analyzer.analyze_file_organization()
-
         if org_analysis2.status != "analyzed":
             return None
-
         avg_size = int(org_analysis2.avg_size_kb)
-
-        if avg_size > 20:
-            return InsightDict.model_validate(
-                {
-                    "id": "large_average_size",
-                    "category": "quality",
-                    "title": "Average file size is large",
-                    "description": (
-                        f"Average file size is {avg_size}KB, consider "
-                        "smaller focused files"
-                    ),
-                    "impact_score": 0.6,
-                    "severity": "low",
-                    "evidence": {"avg_size_kb": avg_size, "recommended_max_kb": 15},
-                    "recommendations": [
-                        "Split larger files into focused topics",
-                        "Use transclusion to compose content",
-                        "Aim for files under 15KB when possible",
-                    ],
-                    "estimated_token_savings": max(0, int((avg_size - 15) * 100)),
-                }
-            )
-
+        if avg_size > INSIGHT_AVG_SIZE_THRESHOLD_KB:
+            return self._build_large_avg_size_insight(avg_size)
         return None
+
+    def _build_large_avg_size_insight(self, avg_size: int) -> InsightDict:
+        """Build large average size InsightDict."""
+        return InsightDict.model_validate(
+            {
+                "id": "large_average_size",
+                "category": "quality",
+                "title": "Average file size is large",
+                "description": (
+                    f"Average file size is {avg_size}KB, consider smaller focused files"
+                ),
+                "impact_score": 0.6,
+                "severity": "low",
+                "evidence": {
+                    "avg_size_kb": avg_size,
+                    "recommended_max_kb": INSIGHT_AVG_FILE_SIZE_RECOMMENDED_KB,
+                },
+                "recommendations": [
+                    "Split larger files into focused topics",
+                    "Use transclusion to compose content",
+                    f"Aim for files under {INSIGHT_AVG_FILE_SIZE_RECOMMENDED_KB}KB when possible",
+                ],
+                "estimated_token_savings": max(
+                    0,
+                    int(
+                        (avg_size - INSIGHT_AVG_FILE_SIZE_RECOMMENDED_KB)
+                        * INSIGHT_TOKEN_SAVINGS_PER_KB_OVER_AVG
+                    ),
+                ),
+            }
+        )

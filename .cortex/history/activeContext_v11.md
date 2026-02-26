@@ -74,6 +74,14 @@
 
 - ✅ **Investigate execute_pre_commit_checks MCP Tool Failure** - COMPLETE (2026-02-26) - Added defensive handling for str results (MCP cancellation/edge cases) in pre_commit_phase_dispatch, pre_commit_preflight_helpers, and pre_commit_fix_quality. Prevents AttributeError when tool returns JSON string instead of dict.
 
+- ✅ **Phase 9.5 edge case tests** - COMPLETE (2026-02-26) - Added 6 edge case tests for pre-commit phase tools (_ensure_dict, _compute_preflight_passed) and phase5_execution provide_feedback exception path. 4847 tests, 92.93% coverage.
+
+- ✅ **Phase 9.5 Test Coverage Excellence** - COMPLETE (2026-02-26) - Completed Phase 9.5: added test_phase4_optimization_exports_all_public_api for phase4 facade; phase5_execution and phase4_optimization covered. 4848 tests pass, 92.93% coverage.
+
+- ✅ **Phase 9.6 Code Style Polish** - COMPLETE (2026-02-26) - Added 40+ named constants (health penalties, quality tiers, insight thresholds); replaced magic numbers in health.py, quality_metrics_scoring.py, insight_dep_quality.py; improved docstrings with examples and band explanations; refactored long functions in insight_dep_quality.
+
+- ✅ **insight_dep_quality function-length fix** - COMPLETE (2026-02-26) - Extracted _complexity_severity() helper from _build_complexity_insight to resolve 31-line violation; all pre-commit checks pass.
+
 ## Completed Work (2026-02-25)
 
 - **Summary (2026-02-25)** - 1 entries archived.

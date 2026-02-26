@@ -926,7 +926,7 @@ class TestProvideFeedback:
     async def test_provide_feedback_exception_handling(
         self, mock_project_root: Path
     ) -> None:
-        """Test exception handling in provide_feedback."""
+        """Test exception handling in provide_feedback (resolve_project_root)."""
         # Arrange
         with patch(
             "cortex.tools.phase5_execution_planning.get_project_root",
@@ -942,6 +942,33 @@ class TestProvideFeedback:
             assert result["status"] == "error"
             assert "Invalid feedback" in result["error"]
             assert result["error_type"] == "ValueError"
+
+    async def test_provide_feedback_impl_raises_returns_formatted_error(
+        self, mock_project_root: Path, mock_managers: ManagersDict
+    ) -> None:
+        """Test provide_feedback catches exception from provide_feedback_impl."""
+        with (
+            patch(
+                "cortex.tools.phase5_execution.provide_feedback_impl",
+                new_callable=AsyncMock,
+                side_effect=RuntimeError("Learning engine unavailable"),
+            ),
+            patch(
+                "cortex.tools.phase5_execution.resolve_project_root_async",
+                new_callable=AsyncMock,
+                return_value=mock_project_root,
+            ),
+        ):
+            result_str = await provide_feedback(
+                suggestion_id="test-123", feedback_type="helpful"
+            )
+            result = json.loads(result_str)
+
+        assert result["status"] == "error"
+        assert "Learning engine unavailable" in result["error"]
+        assert result["error_type"] == "RuntimeError"
+        assert "suggestion" in result
+        assert "available_options" in result
 
 
 # ============================================================================

@@ -6,10 +6,24 @@ This module handles:
 - Symlink validation
 - Configuration file validation
 - Memory bank file validation
+
+Health score starts at 100 and is reduced by fixed penalties for each issue.
+Grade mapping: A=90+, B=75-89, C=60-74, D=50-59, F=0-49.
 """
 
 from typing import cast
 
+from cortex.core.constants import (
+    HEALTH_GRADE_B_MIN,
+    HEALTH_GRADE_C_MIN,
+    HEALTH_GRADE_D_MIN,
+    HEALTH_INITIAL_SCORE,
+    HEALTH_PENALTY_BROKEN_SYMLINK,
+    HEALTH_PENALTY_NO_CONFIG,
+    HEALTH_PENALTY_NO_MEMORY_BANK_FILES,
+    HEALTH_PENALTY_PER_MISSING_DIR,
+    HEALTH_SCORE_EXCELLENT,
+)
 from cortex.core.models import ModelDict
 from cortex.structure.models import HealthCheckResult, HealthGrade, HealthStatus
 from cortex.structure.structure_config import StructureConfig
@@ -26,14 +40,14 @@ def _determine_health_grade_and_status(
     Returns:
         Tuple of (grade, status)
     """
-    # Use early returns to reduce nesting
-    if score >= 90:
+    # Use early returns to reduce nesting; thresholds from constants
+    if score >= HEALTH_SCORE_EXCELLENT:
         return HealthGrade.A, HealthStatus.HEALTHY
-    if score >= 75:
+    if score >= HEALTH_GRADE_B_MIN:
         return HealthGrade.B, HealthStatus.GOOD
-    if score >= 60:
+    if score >= HEALTH_GRADE_C_MIN:
         return HealthGrade.C, HealthStatus.FAIR
-    if score >= 50:
+    if score >= HEALTH_GRADE_D_MIN:
         return HealthGrade.D, HealthStatus.WARNING
     return HealthGrade.F, HealthStatus.CRITICAL
 
@@ -52,13 +66,22 @@ class StructureHealthChecker:
     def check_structure_health(self) -> HealthCheckResult:
         """Check the health of the project structure.
 
+        Validates directories, symlinks, config, and memory bank files.
+        Score starts at 100; deductions applied for each issue found.
+
         Returns:
-            Health report with score and recommendations
+            Health report with score (0-100), grade (A-F), and recommendations
+
+        Example:
+            >>> checker = StructureHealthChecker(config)
+            >>> result = checker.check_structure_health()
+            >>> result.grade  # HealthGrade.A if score >= 90
+            >>> result.recommendations  # List of actionable fixes
         """
         checks: list[str] = []
         issues: list[str] = []
         recommendations: list[str] = []
-        score = 100
+        score = HEALTH_INITIAL_SCORE
 
         score = self._check_required_directories(checks, issues, recommendations, score)
         score = self._check_symlinks_validity(checks, issues, recommendations, score)
@@ -135,7 +158,7 @@ class StructureHealthChecker:
         Returns:
             Updated score
         """
-        return score - (len(missing_dirs) * 15)
+        return score - (len(missing_dirs) * HEALTH_PENALTY_PER_MISSING_DIR)
 
     def _add_missing_dirs_issues(
         self,
@@ -259,7 +282,7 @@ class StructureHealthChecker:
             if symlink_path.is_symlink():
                 if not symlink_path.exists():
                     broken_symlinks.append(symlink_name)
-                    score -= 10
+                    score -= HEALTH_PENALTY_BROKEN_SYMLINK
 
         return broken_symlinks, score
 
@@ -282,7 +305,7 @@ class StructureHealthChecker:
             Updated score after config file check
         """
         if not self.config.structure_config_path.exists():
-            score -= 10
+            score -= HEALTH_PENALTY_NO_CONFIG
             issues_list.append("Configuration file missing")
             recommendations_list.append("Run create_structure() to generate config")
         else:
@@ -312,7 +335,7 @@ class StructureHealthChecker:
         if memory_bank_dir.exists():
             memory_bank_files = list(memory_bank_dir.glob("*.md"))
             if len(memory_bank_files) == 0:
-                score -= 5
+                score -= HEALTH_PENALTY_NO_MEMORY_BANK_FILES
                 issues_list.append("No memory bank files found")
                 recommendations_list.append(
                     "Add memory bank files to memory-bank directory"

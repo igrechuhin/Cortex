@@ -158,7 +158,61 @@ HEALTH_SCORE_EXCELLENT = 90  # A grade threshold (90-100)
 HEALTH_SCORE_GOOD = 80  # B grade threshold (80-89)
 HEALTH_SCORE_FAIR = 70  # C grade threshold (70-79)
 HEALTH_SCORE_POOR = 60  # D grade threshold (60-69)
-# Below POOR is F grade (0-59)
+HEALTH_SCORE_WARNING = 50  # D grade minimum (50-59); below is F (0-49)
+
+# Structure health checker grade boundaries (StructureHealthChecker)
+HEALTH_GRADE_B_MIN = 75  # B grade: 75-89
+HEALTH_GRADE_C_MIN = 60  # C grade: 60-74
+HEALTH_GRADE_D_MIN = 50  # D grade: 50-59; below 50 is F
+HEALTH_INITIAL_SCORE = 100  # Starting score before deductions
+HEALTH_PENALTY_PER_MISSING_DIR = 15  # Deduction per missing required directory
+HEALTH_PENALTY_BROKEN_SYMLINK = 10  # Deduction per broken Cursor symlink
+HEALTH_PENALTY_NO_CONFIG = 10  # Deduction when config file missing
+HEALTH_PENALTY_NO_MEMORY_BANK_FILES = 5  # Deduction when no .md files in memory_bank
+
+# =============================================================================
+# Quality Metrics Scoring (Freshness, Structure, Token Efficiency)
+# =============================================================================
+
+# Freshness score by age tiers (days since last modification)
+QUALITY_FRESHNESS_DAYS_RECENT = 7  # ≤7 days → 100 score
+QUALITY_FRESHNESS_DAYS_OLD = 90  # 31-90 days → 60 score (8-30 days → 80)
+QUALITY_FRESHNESS_DAYS_VERY_OLD = 180  # 91-180 days → 40; >180 → 20
+QUALITY_FRESHNESS_SCORE_RECENT = 100.0
+QUALITY_FRESHNESS_SCORE_WITHIN_ORPHAN_DAYS = 80.0  # Within ORPHAN_FILE_THRESHOLD_DAYS
+QUALITY_FRESHNESS_SCORE_OLD = 60.0  # 31-90 days
+QUALITY_FRESHNESS_SCORE_VERY_OLD = 40.0  # 91-180 days
+QUALITY_FRESHNESS_SCORE_STALE = 20.0  # >180 days
+QUALITY_FRESHNESS_SCORE_UNKNOWN = 50.0  # When last_modified is missing or parse fails
+
+# Structure score penalties (heading hierarchy validation)
+QUALITY_STRUCTURE_INITIAL_SCORE = 100.0
+QUALITY_STRUCTURE_PENALTY_SKIP_LEVEL = 10  # Per heading level skip (e.g. ## to ####)
+QUALITY_STRUCTURE_PENALTY_DEEP_HEADING = 5  # Per heading level > 4
+QUALITY_STRUCTURE_MAX_HEADING_LEVEL = 4  # Recommended max heading depth
+
+# Token efficiency score bands (total context tokens)
+QUALITY_TOKEN_OPTIMAL_MIN = 20_000  # Optimal range start
+QUALITY_TOKEN_OPTIMAL_MAX = 80_000  # Optimal range end
+QUALITY_TOKEN_EFFICIENCY_FLOOR = 50.0  # Minimum score for low/high token count
+QUALITY_TOKEN_EFFICIENCY_PENALTY_PER_1000 = 2  # Excess tokens penalty rate
+QUALITY_TOKEN_EFFICIENCY_MAX_PENALTY = 50  # Cap on excess-token penalty
+
+# =============================================================================
+# Insight Generation Thresholds
+# =============================================================================
+
+INSIGHT_COMPLEXITY_GOOD_THRESHOLD = 80  # No complexity insight if score >= 80
+INSIGHT_COMPLEXITY_SEVERITY_HIGH_THRESHOLD = 60  # "high" severity if score < 60
+INSIGHT_TOKEN_SAVINGS_PER_COMPLEXITY_POINT = 50  # Estimated savings per point below 100
+INSIGHT_TOKEN_SAVINGS_PER_ORPHAN = 100  # Estimated savings per orphaned file
+INSIGHT_TOKEN_SAVINGS_PER_EXCESSIVE_DEP = (
+    400  # Estimated savings per excessive dependency
+)
+INSIGHT_MAX_DEPENDENCY_DEPTH_RECOMMENDED = 5  # Recommended max dependency chain depth
+INSIGHT_AVG_FILE_SIZE_RECOMMENDED_KB = 15  # Recommended average file size (KB)
+INSIGHT_AVG_SIZE_THRESHOLD_KB = 20  # Trigger "large average size" insight above this
+INSIGHT_TOKEN_SAVINGS_PER_KB_OVER_AVG = 100  # Estimated savings per KB over recommended
 
 # =============================================================================
 # Pattern Analysis
