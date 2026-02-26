@@ -136,6 +136,7 @@ MARKDOWN_LINT_BATCH_SIZE = 25
 # =============================================================================
 
 RATE_LIMIT_OPS_PER_SECOND = 100  # Rate limit for file operations
+GIT_RATE_LIMIT_OPS_PER_SECOND = 10  # Rate limit for git operations (Phase 9.4)
 BATCH_SIZE_DEFAULT = 50  # Default batch size for bulk operations
 MAX_CONCURRENT_OPERATIONS = 10  # Maximum concurrent async operations
 

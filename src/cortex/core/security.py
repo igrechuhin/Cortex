@@ -10,7 +10,10 @@ from collections import deque
 from pathlib import Path
 from typing import cast
 
-from cortex.core.constants import RATE_LIMIT_OPS_PER_SECOND
+from cortex.core.constants import (
+    GIT_RATE_LIMIT_OPS_PER_SECOND,
+    RATE_LIMIT_OPS_PER_SECOND,
+)
 from cortex.core.models import JsonDict, JsonList, JsonValue, ModelDict
 
 from .async_file_utils import open_async_text_file
@@ -715,3 +718,15 @@ class RateLimiter:
     def reset(self) -> None:
         """Reset the rate limiter."""
         self.operations.clear()
+
+
+# Module-level git rate limiter (Phase 9.4)
+_git_rate_limiter = RateLimiter(
+    max_ops=GIT_RATE_LIMIT_OPS_PER_SECOND,
+    window_seconds=1.0,
+)
+
+
+async def acquire_git_operation_slot() -> None:
+    """Acquire permission to run a git operation (Phase 9.4 rate limiting)."""
+    await _git_rate_limiter.acquire()

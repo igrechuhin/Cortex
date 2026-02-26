@@ -13,6 +13,7 @@ This document provides comprehensive security best practices for the Cortex proj
 
 Recent security audits complement this guide:
 
+- [Phase 9.4 Security Audit (2026-02-26)](phase-9.4-security-audit-2026-02-26.md) – File/git operations audit, git rate limiting
 - [Error Recovery Audit (2026-02-25)](error-recovery-audit-2026-02-25.md) – Exception handling, CancelledError propagation, resource release
 - [Secret/Credential Protection (2026-02-25)](secret-credential-protection-2026-02-25.md) – Secret detection, .gitignore patterns, logging audit
 
@@ -512,11 +513,14 @@ await rate_limiter.acquire()
 
 **Configuration:**
 
-The default rate limit is 100 operations per second, defined in `src/cortex/core/constants.py`:
+Rate limits are defined in `src/cortex/core/constants.py`:
 
 ```python
 RATE_LIMIT_OPS_PER_SECOND = 100  # Rate limit for file operations
+GIT_RATE_LIMIT_OPS_PER_SECOND = 10  # Rate limit for git operations (Phase 9.4)
 ```
+
+Git operations use `acquire_git_operation_slot()` before each git command.
 
 **Tuning Guidelines:**
 

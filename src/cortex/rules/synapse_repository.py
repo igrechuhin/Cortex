@@ -12,7 +12,7 @@ from pathlib import Path
 
 from cortex.core.constants import GIT_OPERATION_TIMEOUT_SECONDS
 from cortex.core.models import OperationStatus
-from cortex.core.security import CommitMessageSanitizer
+from cortex.core.security import CommitMessageSanitizer, acquire_git_operation_slot
 from cortex.rules.models import (
     GitCommandResult,
     SubmoduleInitResult,
@@ -69,6 +69,7 @@ class SynapseRepository:
         Returns:
             Git command result model
         """
+        await acquire_git_operation_slot()
         if self.git_command_runner is not None:
             return await self.git_command_runner(cmd)
 

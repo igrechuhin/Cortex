@@ -18,6 +18,7 @@ from cortex.core.security import (
     JSONIntegrity,
     RateLimiter,
     RegexValidator,
+    acquire_git_operation_slot,
 )
 
 
@@ -270,6 +271,13 @@ class TestRateLimiter:
         await limiter.acquire()
         elapsed = asyncio.get_event_loop().time() - start
         assert elapsed < 0.1
+
+    @pytest.mark.asyncio
+    async def test_acquire_git_operation_slot(self):
+        """Test acquire_git_operation_slot completes (Phase 9.4 git rate limiting)."""
+        await acquire_git_operation_slot()
+        # Second call should also complete (within limit)
+        await acquire_git_operation_slot()
 
     def test_validate_file_name_windows_drive_letter(self):
         """Test validation rejects Windows drive letter paths."""

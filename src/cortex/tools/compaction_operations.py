@@ -21,6 +21,7 @@ from cortex.core.mcp_annotations import destructive_annotations
 from cortex.core.mcp_stability import ensure_usage_context, mcp_tool_wrapper
 from cortex.core.metadata_index import MetadataIndex
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
+from cortex.core.security import acquire_git_operation_slot
 from cortex.core.token_counter import TokenCounter
 from cortex.core.usage_context import (
     get_current_managers,
@@ -352,6 +353,7 @@ async def _write_progress_txt(
 
 async def _create_git_checkpoint(project_root: Path) -> bool:
     """Create lightweight git tag for session rollback. Returns True on success."""
+    await acquire_git_operation_slot()
     tag_name = f"cortex/session-{_session_id_from_now()}"
     try:
         process = await asyncio.create_subprocess_exec(

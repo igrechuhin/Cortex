@@ -29,6 +29,7 @@ from cortex.core.mcp_stability import (
     mcp_tool_wrapper,
 )
 from cortex.core.models import GitCommandResult
+from cortex.core.security import acquire_git_operation_slot
 from cortex.core.token_counter import TokenCounter
 from cortex.core.usage_context import (
     get_current_managers,
@@ -90,6 +91,7 @@ async def _run_git_command(
     cmd: list[str], cwd: Path | None = None, timeout: float = 5.0
 ) -> GitCommandResult:
     """Run a git command asynchronously with timeout."""
+    await acquire_git_operation_slot()
     try:
         async with asyncio.timeout(timeout):
             process = await asyncio.create_subprocess_exec(
