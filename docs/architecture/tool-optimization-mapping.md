@@ -1,7 +1,8 @@
 # Tool Optimization Mapping (Low-Usage Tools)
 
 **Status**: Step 2 deliverable (plan: optimize-tools-from-usage)  
-**Created**: 2026-02-23
+**Created**: 2026-02-23  
+**Updated**: 2026-02-27 (census 2026-02-27)
 
 ## Purpose
 
@@ -24,6 +25,13 @@ Map each tool below the usage threshold (≤5 calls in 90 days) to an action: **
 | get_session_tool_anomalies | **removed** (pruned) | Use `query_usage(query_type="anomalies", hours=24)`. No longer in MCP tool list. |
 | run_tool_optimization_workflow | **removed** (pruned) | Use `query_usage(query_type="unused")` and `query_usage(query_type="recommendations")` and [tool-optimization-baseline](tool-optimization-baseline.md). No longer in MCP tool list. |
 | quick_start, quality_check, safe_manage_file, suggest_workflow | **consolidated** (2026-02-25) | Use `agent_workflow(operation="quick_start" or "quality_check" or "safe_manage_file" or "suggest_workflow", ...)`. Saves 3 tool slots. |
+
+### Census 2026-02-27 Additions
+
+| Tool | Action | Target / Notes |
+|------|--------|----------------|
+| create_plan | **keep** | Already consolidates list/get via operation param; create-plan workflow depends on it. |
+| register_plan_in_roadmap | **keep** | Required by create-plan Step 6; distinct params from create_plan. |
 
 ## Summary
 

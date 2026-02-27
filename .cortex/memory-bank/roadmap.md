@@ -12,6 +12,9 @@
 
 ## Pending plans (from .cortex/plans)
 
+- **Consolidate Plan and Roadmap Tools** - PENDING - Consolidate create_plan+complete_plan into plan(operation=...), add_roadmap_entry+remove_roadmap_entry+remove_roadmap_section into roadmap(operation=...). Saves 3 tool slots. Plan: .cortex/plans/consolidate-plan-and-roadmap-tools.md Plan: .cortex/plans/consolidate-plan-and-roadmap-tools.md
+- **Unify and Simplify Tools, Prompts, and Resources Naming** - PENDING - Define unified naming rubric for tools, cortex:// resources, and Synapse prompts; audit current names, propose simplifications, update docs. Plan: .cortex/plans/unify-simplify-tools-prompts-resources-naming.md
+
 ### Investigation Plans (Archive / Reference)
 
 Completed investigations are recorded in [activeContext.md](activeContext.md). Plan files under `.cortex/plans/archive/` as needed.

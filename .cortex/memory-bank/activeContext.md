@@ -10,6 +10,8 @@
 
 - ✅ **Phase 9 excellence** - COMPLETE (2026-02-27) - Phase 9.1–9.9 COMPLETE (2026-02-27). Excellence polish: error handling, maintainability, final integration & validation.
 
+- ✅ **Optimize Exposed Tools from Usage Statistics** - COMPLETE (2026-02-27) - Census and mapping completed. Steps 3–4 N/A (no internalize/consolidate candidates this census). Documented exception for target 24 in baseline. Regression passed.
+
 ## Completed Work (2026-02-26)
 
 - **Summary (2026-02-26)** - 1 entries archived.

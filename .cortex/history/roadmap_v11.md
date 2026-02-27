@@ -12,7 +12,7 @@
 
 ## Pending plans (from .cortex/plans)
 
-- **Pending: Phase 9 excellence** - Plan: .cortex/plans/archive/Phase9/phase-9-excellence-98.md (Phase 9.1–9.9 COMPLETE)
+- **Consolidate Plan and Roadmap Tools** - PENDING - Consolidate create_plan+complete_plan into plan(operation=...), add_roadmap_entry+remove_roadmap_entry+remove_roadmap_section into roadmap(operation=...). Saves 3 tool slots. Plan: .cortex/plans/consolidate-plan-and-roadmap-tools.md
 
 ### Investigation Plans (Archive / Reference)
 
