@@ -10,11 +10,11 @@
 
 ## Future Enhancements
 
-- **Pending: Phase 9 excellence** - Plan: .cortex/plans/phase-9-excellence-98.md (Phase 9.6 complete; next Phase 9.7 Error Handling Polish)
+- **Pending: Phase 9 excellence** - Plan: .cortex/plans/phase-9-excellence-98.md (Phase 9.7 complete; next Phase 9.8 Maintainability Polish)
 
 ## Pending plans (from .cortex/plans)
 
-- **Pending: Phase 9 excellence** - Plan: .cortex/plans/phase-9-excellence-98.md (Phase 9.6 complete; next Phase 9.7 Error Handling Polish)
+- **Pending: Phase 9 excellence** - Plan: .cortex/plans/phase-9-excellence-98.md (Phase 9.7 complete; next Phase 9.8 Maintainability Polish)
 
 ### Investigation Plans (Archive / Reference)
 

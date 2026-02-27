@@ -543,6 +543,54 @@ fileA.md -> fileB.md -> fileA.md -->
 
 ---
 
+### 8. MCP Connection Closed During Tool Execution
+
+**Severity:** Medium
+**Impact:** Tool call fails; agent may continue without MCP control
+
+**Symptoms:**
+
+- Error: `MCP error -32000: Connection closed`
+- Error: `Connection closed` or `ClosedResourceError`
+- Occurs during long-running tools (e.g. `fix_markdown_lint`, `execute_pre_commit_checks`)
+
+**Causes:**
+
+- Client (e.g. Cursor) closed the MCP connection before the tool finished
+- Client-side tool timeout
+- IDE lifecycle or client disconnect
+- Long-running operation exceeded client timeout
+
+**Impact:**
+
+- Single tool call fails
+- Agent may continue running without MCP (memory bank, rules, quality checks unavailable)
+- Commit pipeline may need fallback steps
+- No data corruption; server may have completed the operation
+
+**Recovery Procedure:**
+
+1. **Retry once** – Many connection drops are transient; the second call often succeeds.
+2. **Reconnect MCP** – Cortex exits on disconnect by default; client starts a new process when needed.
+3. **Use documented fallbacks** – For commit pipeline steps (e.g. Step 12.5, 12.6), use shell fallbacks when retry fails.
+4. **See troubleshooting** – Full runbook: [MCP error -32000: Connection closed](../troubleshooting.md#issue-mcp-error-32000-connection-closed).
+
+**Retry behavior:**
+
+- `mcp_tool_wrapper` automatically retries connection errors (configurable attempts, exponential backoff)
+- `fix_markdown_lint`: 4 attempts with backoff 1s, 2s, 4s
+- Other tools: default retry attempts from `MCP_CONNECTION_RETRY_ATTEMPTS`
+
+**Prevention:**
+
+- Use stable MCP setup (see [Getting started: Stable MCP setup](../getting-started.md#stable-mcp-setup-recommended))
+- Call `check_mcp_connection_health()` before important work
+- For long tools, prefer local executables (e.g. local markdownlint) to reduce timeout risk
+
+**Recovery Time:** Immediate after reconnect; fallbacks available for commit pipeline
+
+---
+
 ## Failure Detection and Monitoring
 
 ### Logging
@@ -599,6 +647,7 @@ Monitor these metrics:
 | Token Estimation | Low | Immediate | None (estimation) |
 | Config Corruption | Low | Immediate | None (defaults) |
 | Transclusion Error | Low | Manual | None (marked) |
+| MCP Connection Closed | Medium | Retry/reconnect | None |
 
 ---
 

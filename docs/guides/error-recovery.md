@@ -2,6 +2,29 @@
 
 This guide provides solutions for common errors in Cortex.
 
+## MCP Connection Errors
+
+### Connection Closed (-32000)
+
+**Symptoms:**
+
+- `MCP error -32000: Connection closed`
+- Tool call returns connection error during long operations
+
+**Causes:**
+
+- Client closed connection before tool finished (often due to timeout)
+- Occurs most during `fix_markdown_lint`, `execute_pre_commit_checks`, `fix_quality_issues`
+
+**Solutions:**
+
+1. **Retry once** – Transient; second call often succeeds.
+2. **Reconnect MCP** – Cortex exits on disconnect; client restarts when needed.
+3. **Use fallbacks** – For commit pipeline, use documented shell fallbacks (Step 12.5, 12.6).
+4. **Full runbook** – [Troubleshooting: MCP error -32000](troubleshooting.md#issue-mcp-error-32000-connection-closed).
+
+See [Failure Modes: MCP Connection Closed](failure-modes.md#8-mcp-connection-closed-during-tool-execution) for severity, impact, and prevention.
+
 ## File Operations Errors
 
 ### FileNotFoundError

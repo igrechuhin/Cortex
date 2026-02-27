@@ -187,6 +187,24 @@ class TestFormatToolError:
         assert parsed["suggestion"] is not None
         assert "validation" in parsed["suggestion"].lower()
 
+    def test_auto_suggestion_connection_closed(self) -> None:
+        """Test auto-suggestion for MCP connection/closure errors."""
+        error = RuntimeError("MCP error -32000: Connection closed")
+        result = format_tool_error(error)
+        parsed = json.loads(result)
+        assert parsed["suggestion"] is not None
+        assert "reconnect" in parsed["suggestion"].lower()
+        assert "troubleshooting" in parsed["suggestion"].lower()
+
+    def test_auto_suggestion_tool_not_found(self) -> None:
+        """Test auto-suggestion for tool not found (often after connection drop)."""
+        error = ValueError("Tool not found: manage_file")
+        result = format_tool_error(error)
+        parsed = json.loads(result)
+        assert parsed["suggestion"] is not None
+        assert "mcp" in parsed["suggestion"].lower()
+        assert "reconnect" in parsed["suggestion"].lower()
+
 
 class TestFormatFileNotFoundError:
     """Test format_file_not_found_error function."""

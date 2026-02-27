@@ -51,7 +51,12 @@ _TOOLS_NEEDING_FREQUENT_PROGRESS = frozenset(
 _LONG_RUNNING_TOOLS_SERIALIZED = frozenset(
     {"execute_pre_commit_checks", "fix_markdown_lint", "fix_quality_issues"}
 )
-# Fallback steps in connection-error messages so the user can resolve without the tool.
+# Default fallback when tool has no specific recovery steps.
+_CONNECTION_ERROR_FALLBACK_DEFAULT = (
+    " Reconnect Cortex MCP and retry. See docs/guides/troubleshooting.md"
+    "#issue-mcp-error-32000-connection-closed for recovery steps."
+)
+# Tool-specific fallback steps in connection-error messages.
 _CONNECTION_ERROR_FALLBACK: dict[str, str] = {
     "execute_pre_commit_checks": (
         " Retry once. If still failing: run pre-commit locally (e.g. uv run pytest, ruff check, black .). "
@@ -142,7 +147,9 @@ def raise_final_error(func_name: str, last_exception: Exception | None) -> NoRet
     """Raise ConnectionError or RuntimeError after retries exhausted; never returns."""
     max_attempts = get_connection_retry_attempts(func_name)
     if last_exception and is_connection_error(last_exception):
-        fallback = _CONNECTION_ERROR_FALLBACK.get(func_name, "")
+        fallback = _CONNECTION_ERROR_FALLBACK.get(
+            func_name, _CONNECTION_ERROR_FALLBACK_DEFAULT
+        )
         raise ConnectionError(
             f"MCP tool {func_name} failed after {max_attempts} attempts (connection)."
             + fallback

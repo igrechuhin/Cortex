@@ -1,5 +1,9 @@
 # Progress Log
 
+## 2026-02-27
+
+- **Phase 9.7 Error Handling Polish (2026-02-27)** - COMPLETE. Improved error messages (MCP connection, tool not found suggestions in tool_error_formatters), added generic connection fallback in mcp_stability_config, documented MCP connection failure in failure-modes.md and error-recovery.md; retry/graceful degradation already present.
+
 ## 2026-02-26
 
 - Commit: Phase 9.1.16 python_adapter split, markdown lint fix (MD024). Preflight passed; 4780 tests, 92.81% coverage.
@@ -248,37 +252,7 @@
 
 ## 2026-02-19
 
-- **Session Optimization: Roadmap completed section cleanup (2026-02-10)** - COMPLETE. Verified no legacy completed bullets in roadmap; completed_entries_in_roadmap empty; no migration or removal required.
-- **Session Optimization: Roadmap section removal and sync** - COMPLETE. remove_roadmap_section tool, roadmap_sync doc and test for archive exclusion, implement/memory-bank-updater guidance.
-- **Session Optimization: Roadmap sync cleanup (2026-02-09)** - COMPLETE. Fixed invalid roadmap reference, linked 15 unlinked plans via Plan links and reference entries; roadmap_sync validation now valid.
-- **Commit (preflight, memory bank, plan archive)** - Preflight passed: fix_errors, format, markdown lint (0 errors), type_check, quality, tests 4256 passed, 91.74% coverage. No completed plans in plans root; memory bank and roadmap consistent.
-- **Session Optimization: Rule Loading and Discovery (2026-02-18)** - COMPLETE. Implement prompt Step 3 rule verification and get_synapse_rules fallback; context budget table in CLAUDE/AGENTS; zero-budget reminder in commit.md; integration test for rules() tool.
-- **Promote OperationStatus to str Enum** - COMPLETE. Replaced type alias with str Enum in core/models; updated 8 modules and all construction sites; JSON unchanged.
-- **Commit (function length: pre_commit_preflight_helpers)** - Extracted `_one_check_summary` from `_build_execute_check_summaries` to fix function length (32→≤30 lines). Preflight: fix_errors, format, markdown lint (0 errors), type_check, quality, tests 4263 passed, 91.75% coverage.
-- **Session Optimization: Rules and context loading follow-ups (2026-02-12 Analysis)** - COMPLETE. Implemented plan: (1) watcher tests use mocked Observer and simulated events; added File Watcher subsection to general testing-standards.mdc. (2) Context budget table in AGENTS.md and task-type defaults in implement prompt Pre-Action Checklist. (3) Integration test for rules(get_relevant, "Commit pipeline, test coverage") fixed to assert on rules/rules_count. (4) Zero-budget/zero-files guardrails already in analytics and commit/analyze prompts.
-- **Session Optimization: Rules context followups (2026-02-12) – Reference** – COMPLETE. Reconciled roadmap: plan already completed and archived; removed stale roadmap entry.
-- **Session Optimization: Sequential plan steps** - COMPLETE. Verified implement-next-roadmap-step.md Plan step sequence block (added explicit in-order/first-uncompleted/do-not-skip wording); create-plan.md already documents implementation sequence. Added test_plan_step_sequence_mandatory_block and TestCreatePlanImplementationSequence in test_implement_prompt_quality_gates.py.
-- **Commit (preflight, memory bank, plan archive)** - Preflight passed: fix_errors, format, markdown lint (0 errors), synapse_format, synapse_lint, type_check, quality, tests 4265 passed, 91.74% coverage. No completed plans in plans root; memory bank and roadmap consistent.
-- **Session Optimization: Test coverage and development workflow (Reference)** - Roadmap cleanup. Plan was already completed and archived; removed stale PENDING roadmap entry so next implement picks the next pending item.
-- **Session Optimization: Testing coverage documentation and planning (2026-02-16 Analysis)** - COMPLETE. Coverage expectations and Test Coverage Planning Checklist already in testing-standards.mdc and implement prompt; added integration vs unit test subsection to docs/guides/testing.md.
-- **Structured planning Cortex MCP tools** - COMPLETE. Documented create_plan and register_plan_in_roadmap in docs/api/tools.md; updated create-plan prompt to prefer create_plan and register_plan_in_roadmap; added integration tests and create_plan preference compliance tests.
-- **Test fixture validation and maintenance** - COMPLETE. Generic fixture validator, protocol, integration test for fixture completeness; FIXTURE_REQUIREMENTS and FIXTURE_MAINTENANCE already present.
-- **Type cleanup inventory** - COMPLETE. Reference plan archived; inventory doc available for Phase 53 model design and refactor prioritization.
-- **Session Optimization Follow-Ups: Roadmap Dedup and Plan Lifecycle** - COMPLETE. Added plan-path-based deduplication to register_plan_in_roadmap and add_roadmap_entry tools to prevent duplicate blockers for the same investigation plan. Fixed regex bug in_extract_plan_path_from_bullet (double backslash \s instead of \s). Added unit tests for deduplication behavior. Reviewed plan-archiver agent - already has Status: COMPLETE guidance. All tests pass.
-- **Commit (plan archiving, roadmap dedup, test fixture validation)** - Preflight passed: fix_errors, format, markdown lint (0 errors), type_check, quality, tests 4304 passed, 91.77% coverage. Archived 3 completed plans; updated plan deduplication logic and test fixture validation.
-- **Session Optimization Follow-Ups: Phase 57 Evaluation Framework and Context Budgets (2026-02-17)** - COMPLETE. Added context budget validation (rejects token_budget=0 for non-trivial tasks), zero-file warnings, 9 evaluation tasks (7 memory-bank, 2 commit pipeline), evaluation dashboard generation, rules indexing integration in prompts. Fixed testing standards violations (private API testing), function length violations via helper extraction. Quality gate passed.
-- **Session Optimization: Phase 58 multi-agent follow-ups** - COMPLETE. Verified role logging is working (role field already in models and logged correctly), ensured backward compatibility (role field optional everywhere), updated implement/analyze prompts to explicitly mention AgentRole and role detection, enhanced AGENTS.md and CLAUDE.md with detailed role descriptions including default budgets and file focus preferences, added 5 role-aware evaluation tasks (quality, testing, docs, debugging, planning agents) to core_workflows.json. All quality checks and tests passing.
-- **Session Optimization: Refactoring Workflow Improvements (2026-02-17 Analysis)** - COMPLETE. Added intermediate validation (Step 3.5) and duplicate detection (Step 3.6) to commit prompt; incremental validation and duplicate detection to implement prompt; Type Narrowing with assert section to python-coding-standards.mdc; Refactoring Workflow Best Practices to troubleshooting guide; integration tests for prompt/rule alignment. All 20 tests pass.
-- **Commit (type fix test_mcp_failure_handler)** - Fixed reportUnknownArgumentType/reportUnknownLambdaType in tests/unit/test_mcp_failure_handler.py: replaced lambda with typed_fake_project_root(_root: str | None) -> Path. Preflight: fix_errors, format, synapse_format, synapse_lint, type_check, quality, tests 4321 passed, 91.72% coverage.
-- **Session Optimization: Fix load_context Zero-Budget Configuration Error** - COMPLETE. Normalized token_budget=0 to None in handler and in_calculate_effective_budget; added prompt examples in implement and analyze; tests updated; quality gate passed.
-- Commit (Phase A preflight, memory bank, plan archive) - Preflight passed: fix_errors, format, markdown lint (0 errors), synapse_format, synapse_lint, type_check, quality, tests 4322 passed, 91.71% coverage. No completed plans in plans root; memory bank and roadmap consistent.
-- **Session Optimization: load_context Budget and Test Type Narrowing** - COMPLETE. Documented non-zero load_context token budget for non-trivial tasks in implement and commit prompts (pre-action checklist); added JsonValue narrowing in tests section to python-testing-standards.mdc with examples and violations.
-- **Investigate tool_raising_json_error MCP Tool Failure** - COMPLETE. Root cause: false positive from test (tool name only in test_mcp_failure_handler.py). Removed duplicate blockers from roadmap and archived both investigation plans to archive/Investigations/2026-02-19.
-- **Session Optimization: Fix load_context Zero-Budget Configuration Error** - COMPLETE. Validation rejects token_budget=0 for non-trivial tasks; trivial tasks still get 0 normalized to default. Prompts and docs updated; tests pass.
-- **Session Optimization: MCP Connection Stability and Fallback Script Improvements** - COMPLETE. Connection health before Step 12 and optional before Step 4; retry with 2–5s delay during Step 12; fallback scripts fixed for Python 3.7+ (future annotations); sandbox limitations documented for Step 12.7; troubleshooting section added.
-- **Commit (preflight, memory bank, plan archive)** - Preflight passed: fix_errors, format, markdown lint (0 errors), synapse_format, synapse_lint, type_check, quality, tests 4323 passed, 91.72% coverage. No completed plans in plans root; memory bank and roadmap consistent.
-- **Session Optimization: Progress Entry Validation and Memory Bank Write Discipline** - COMPLETE. Guidance and validation for progress entry format and manage_file-only memory-bank writes; optional MCP validation for corruption patterns.
-- **Commit (preflight, memory bank, plan archive)** - COMPLETE. Preflight passed: fix_errors, format, markdown lint (0 errors), type_check, quality, tests 4329 passed, 91.72% coverage. No completed plans in plans root; memory bank and roadmap consistent.
+- **Week containing 2026-02-19** - 1 entries summarized.
 
 ## 2026-02-18
 

@@ -259,19 +259,17 @@ Phase 9 builds on Phase 7's achievements (9.2/10) to reach excellence at 9.8+/10
 
 **Goal:** 9.5 → 9.8/10
 **Effort:** 4-6 hours
-**Status:** 🟢 MEDIUM PRIORITY
+**Status:** ✅ COMPLETE (2026-02-27)
 
 **Tasks:**
 
-1. **Improve error messages** (2-3 hours)
-   - Make messages more actionable
-   - Add recovery suggestions
-   - Include context in all errors
+1. **Improve error messages** (2-3 hours) — DONE
+   - Added MCP connection/closure and tool-not-found suggestions in tool_error_formatters._generate_default_suggestion
+   - Generic connection fallback for tools not in _CONNECTION_ERROR_FALLBACK (mcp_stability_config)
 
-2. **Add error recovery** (2-3 hours)
-   - Implement retry logic where appropriate
-   - Add graceful degradation
-   - Document failure modes
+2. **Add error recovery** (2-3 hours) — DONE
+   - Retry logic and graceful degradation already present (mcp_tool_wrapper, retry_async, error-recovery.md, failure-modes.md)
+   - Documented MCP connection failure mode (#8) in failure-modes.md; added MCP Connection Errors section to error-recovery.md
 
 **Success Criteria:**
 
@@ -511,11 +509,12 @@ Phase 9 builds on Phase 7's achievements (9.2/10) to reach excellence at 9.8+/10
 
 ---
 
-Last Updated: 2026-02-26
-Status: 🚀 IN PROGRESS — Phase 9.1–9.5 COMPLETE
+Last Updated: 2026-02-27
+Status: 🚀 IN PROGRESS — Phase 9.1–9.7 COMPLETE
 Phase 9.1: Zero file-size and function-length violations; 4848 tests pass; 92.93% coverage; integration tests pass; no production TODOs.
 Phase 9.2 (complete): docs/design/architecture-layering.md, ADR-009 (SequentialThinking constructor injection). Protocol alignment DONE. SequentialThinking core injected at main.py startup. Module coupling: 0 circular dependencies. 2026-02-26.
 Phase 9.3 (complete): Task 1 partial (benchmarks added); Task 2-3 done (caching, async); Task 4 (memory): memory_benchmarks.py, performance-benchmarks.md, run_benchmarks.py. 2026-02-26.
 Phase 9.4 (complete): Comprehensive security audit, git rate limiting, security docs linked. 2026-02-26.
 Phase 9.5 (complete): phase4_optimization, phase5_execution covered; added test_phase4_optimization_exports_all_public_api. 4848 tests, 92.93% coverage. 2026-02-26.
 Phase 9.6 (complete): Extracted 40+ named constants to cortex.core.constants; replaced magic numbers in health.py, quality_metrics_scoring.py, insight_dep_quality.py; added docstring examples and explanatory comments. 2026-02-26.
+Phase 9.7 (complete): MCP connection and tool-not-found suggestions in tool_error_formatters; generic fallback in mcp_stability_config; MCP connection failure documented in failure-modes.md and error-recovery.md. 2026-02-27.

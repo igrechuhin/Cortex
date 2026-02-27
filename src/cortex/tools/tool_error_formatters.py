@@ -140,17 +140,34 @@ def format_tool_error(
     return response.to_json()
 
 
+def _suggestion_for_mcp_connection_errors(error_lower: str) -> str | None:
+    """Return suggestion for MCP connection/closure errors."""
+    if "tool not found" in error_lower:
+        return (
+            "The MCP connection may have dropped. Reconnect Cortex MCP and retry. "
+            "See docs/guides/troubleshooting.md."
+        )
+    if (
+        "connection" in error_lower
+        or "closed" in error_lower
+        or "32000" in error_lower
+        or "broken" in error_lower
+        or "resource" in error_lower
+    ):
+        return (
+            "Reconnect Cortex MCP and retry. If the error persists, see "
+            "docs/guides/troubleshooting.md#issue-mcp-error-32000-connection-closed."
+        )
+    return None
+
+
 def _generate_default_suggestion(error_type: str, error_message: str) -> str | None:
-    """Generate default suggestion based on error type and message.
-
-    Args:
-        error_type: Exception class name
-        error_message: Error message string
-
-    Returns:
-        Default suggestion string or None
-    """
+    """Generate default suggestion based on error type and message."""
     error_lower = error_message.lower()
+
+    mcp_suggestion = _suggestion_for_mcp_connection_errors(error_lower)
+    if mcp_suggestion is not None:
+        return mcp_suggestion
 
     if "file" in error_lower and "not found" in error_lower:
         return (

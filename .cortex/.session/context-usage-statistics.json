@@ -1,16 +1,16 @@
 {
-  "last_updated": "2026-02-26T18:07",
-  "total_sessions_analyzed": 255,
-  "total_load_context_calls": 565,
-  "avg_token_utilization": 0.447,
-  "avg_files_selected": 3.92,
-  "avg_relevance_score": 0.687,
+  "last_updated": "2026-02-26T23:10",
+  "total_sessions_analyzed": 256,
+  "total_load_context_calls": 599,
+  "avg_token_utilization": 0.449,
+  "avg_files_selected": 3.81,
+  "avg_relevance_score": 0.695,
   "common_task_patterns": {
-    "fix/debug": 35,
-    "other": 141,
+    "fix/debug": 36,
+    "other": 150,
     "implement/add": 68,
     "update/modify": 11,
-    "testing": 266,
+    "testing": 290,
     "documentation": 15,
     "refactor": 15,
     "review": 10,
@@ -20,7 +20,7 @@
   "insights": {
     "task_type_recommendations": {
       "fix/debug": {
-        "calls_count": 35,
+        "calls_count": 36,
         "recommended_budget": 10000,
         "essential_files": [
           "activeContext.md",
@@ -29,19 +29,19 @@
           "progress.md",
           "systemPatterns.md"
         ],
-        "avg_utilization": 0.457,
-        "avg_relevance": 0.506,
-        "notes": "Moderate utilization - some budget optimization possible"
+        "avg_utilization": 0.444,
+        "avg_relevance": 0.495,
+        "notes": "Moderate utilization - some budget optimization possible; Low relevance - consider refining file selection"
       },
       "other": {
-        "calls_count": 141,
+        "calls_count": 150,
         "recommended_budget": 10000,
         "essential_files": [
           "file1.md",
           "file2.md"
         ],
-        "avg_utilization": 0.417,
-        "avg_relevance": 0.668,
+        "avg_utilization": 0.422,
+        "avg_relevance": 0.679,
         "notes": "Moderate utilization - some budget optimization possible"
       },
       "implement/add": {
@@ -72,14 +72,14 @@
         "notes": "Adequate performance"
       },
       "testing": {
-        "calls_count": 266,
+        "calls_count": 290,
         "recommended_budget": 10000,
         "essential_files": [
           "file1.md",
           "file2.md"
         ],
-        "avg_utilization": 0.489,
-        "avg_relevance": 0.78,
+        "avg_utilization": 0.49,
+        "avg_relevance": 0.786,
         "notes": "Moderate utilization - some budget optimization possible; High relevance - file selection is effective"
       },
       "documentation": {
@@ -146,16 +146,16 @@
         "times_selected": 210,
         "avg_relevance": 0.672,
         "task_types_used": [
-          "review",
-          "testing",
           "other",
-          "optimization",
-          "security",
+          "review",
+          "update/modify",
           "documentation",
-          "refactor",
-          "implement/add",
+          "security",
           "fix/debug",
-          "update/modify"
+          "refactor",
+          "testing",
+          "implement/add",
+          "optimization"
         ],
         "recommendation": "Moderate value - include when relevant"
       },
@@ -163,15 +163,15 @@
         "times_selected": 219,
         "avg_relevance": 0.587,
         "task_types_used": [
-          "review",
-          "testing",
           "other",
-          "optimization",
+          "review",
+          "update/modify",
           "documentation",
-          "refactor",
-          "implement/add",
           "fix/debug",
-          "update/modify"
+          "refactor",
+          "testing",
+          "implement/add",
+          "optimization"
         ],
         "recommendation": "Moderate value - include when relevant"
       },
@@ -179,15 +179,15 @@
         "times_selected": 177,
         "avg_relevance": 0.576,
         "task_types_used": [
-          "review",
-          "testing",
           "other",
-          "optimization",
+          "review",
+          "update/modify",
           "documentation",
-          "refactor",
-          "implement/add",
           "fix/debug",
-          "update/modify"
+          "refactor",
+          "testing",
+          "implement/add",
+          "optimization"
         ],
         "recommendation": "Moderate value - include when relevant"
       },
@@ -195,15 +195,15 @@
         "times_selected": 110,
         "avg_relevance": 0.285,
         "task_types_used": [
-          "review",
-          "testing",
           "other",
-          "optimization",
+          "review",
+          "update/modify",
           "documentation",
-          "refactor",
-          "implement/add",
           "fix/debug",
-          "update/modify"
+          "refactor",
+          "testing",
+          "implement/add",
+          "optimization"
         ],
         "recommendation": "Lower relevance - consider excluding for most tasks"
       },
@@ -211,16 +211,16 @@
         "times_selected": 268,
         "avg_relevance": 0.482,
         "task_types_used": [
-          "review",
-          "testing",
           "other",
-          "optimization",
-          "security",
+          "review",
+          "update/modify",
           "documentation",
-          "refactor",
-          "implement/add",
+          "security",
           "fix/debug",
-          "update/modify"
+          "refactor",
+          "testing",
+          "implement/add",
+          "optimization"
         ],
         "recommendation": "Lower relevance - consider excluding for most tasks"
       },
@@ -228,13 +228,13 @@
         "times_selected": 34,
         "avg_relevance": 0.333,
         "task_types_used": [
-          "testing",
           "other",
-          "security",
           "documentation",
+          "security",
+          "fix/debug",
           "refactor",
-          "implement/add",
-          "fix/debug"
+          "testing",
+          "implement/add"
         ],
         "recommendation": "Lower relevance - consider excluding for most tasks"
       },
@@ -242,13 +242,13 @@
         "times_selected": 34,
         "avg_relevance": 0.185,
         "task_types_used": [
-          "testing",
           "other",
-          "security",
           "documentation",
+          "security",
+          "fix/debug",
           "refactor",
-          "implement/add",
-          "fix/debug"
+          "testing",
+          "implement/add"
         ],
         "recommendation": "Lower relevance - consider excluding for most tasks"
       },
@@ -256,16 +256,16 @@
         "times_selected": 173,
         "avg_relevance": 0.489,
         "task_types_used": [
-          "review",
-          "testing",
           "other",
-          "optimization",
-          "security",
+          "review",
+          "update/modify",
           "documentation",
-          "refactor",
-          "implement/add",
+          "security",
           "fix/debug",
-          "update/modify"
+          "refactor",
+          "testing",
+          "implement/add",
+          "optimization"
         ],
         "recommendation": "Lower relevance - consider excluding for most tasks"
       },
@@ -273,15 +273,15 @@
         "times_selected": 215,
         "avg_relevance": 0.565,
         "task_types_used": [
-          "review",
-          "testing",
           "other",
-          "optimization",
+          "review",
+          "update/modify",
           "documentation",
-          "refactor",
-          "implement/add",
           "fix/debug",
-          "update/modify"
+          "refactor",
+          "testing",
+          "implement/add",
+          "optimization"
         ],
         "recommendation": "Moderate value - include when relevant"
       },
@@ -289,41 +289,41 @@
         "times_selected": 217,
         "avg_relevance": 0.554,
         "task_types_used": [
-          "review",
-          "testing",
           "other",
-          "optimization",
+          "review",
+          "update/modify",
           "documentation",
-          "refactor",
-          "implement/add",
           "fix/debug",
-          "update/modify"
+          "refactor",
+          "testing",
+          "implement/add",
+          "optimization"
         ],
         "recommendation": "Moderate value - include when relevant"
       },
       "file1.md": {
-        "times_selected": 280,
+        "times_selected": 313,
         "avg_relevance": 0.9,
         "task_types_used": [
-          "testing",
-          "other"
+          "other",
+          "testing"
         ],
         "recommendation": "High value - prioritize for loading"
       },
       "file2.md": {
-        "times_selected": 280,
+        "times_selected": 313,
         "avg_relevance": 0.8,
         "task_types_used": [
-          "testing",
-          "other"
+          "other",
+          "testing"
         ],
         "recommendation": "High value - prioritize for loading"
       }
     },
     "learned_patterns": [
       "Average 44% budget utilization - ~7k tokens unused per call",
-      "'file1.md' is most frequently loaded (280/565 calls)",
-      "Most common task type: 'testing' (266 calls)",
+      "'file1.md' is most frequently loaded (313/599 calls)",
+      "Most common task type: 'testing' (290 calls)",
       "\u26a0\ufe0f CRITICAL: At least one load_context call had token_budget=0 or files_selected=0 for a non-trivial task (refactor/fix/debug/implement/testing). This is a configuration error - these tasks MUST use a non-zero token budget (typically 10k-15k for fix/debug, 20k-30k for implement/add). Re-run load_context with an appropriate budget to ensure proper context loading. Zero-budget/zero-files calls for non-trivial tasks indicate the agent ran without memory-bank guidance, which violates the documented workflow."
     ],
     "budget_recommendations": {
@@ -340,14 +340,14 @@
     },
     "role_recommendations": {
       "debugging": {
-        "calls_count": 40,
+        "calls_count": 44,
         "recommended_budget": 10000,
         "essential_files": [
           "file1.md",
           "file2.md"
         ],
-        "avg_utilization": 0.402,
-        "avg_relevance": 0.62,
+        "avg_utilization": 0.399,
+        "avg_relevance": 0.625,
         "notes": "Moderate utilization - some budget optimization possible"
       },
       "planning": {
@@ -359,36 +359,36 @@
         "notes": "Low utilization - consider smaller token budgets; Low relevance - consider refining file selection"
       },
       "quality": {
-        "calls_count": 30,
+        "calls_count": 33,
         "recommended_budget": 10000,
         "essential_files": [
           "file1.md",
           "file2.md"
         ],
-        "avg_utilization": 0.417,
-        "avg_relevance": 0.746,
+        "avg_utilization": 0.424,
+        "avg_relevance": 0.755,
         "notes": "Moderate utilization - some budget optimization possible; High relevance - file selection is effective"
       },
       "testing": {
-        "calls_count": 183,
+        "calls_count": 204,
         "recommended_budget": 10000,
         "essential_files": [
           "file1.md",
           "file2.md"
         ],
-        "avg_utilization": 0.48,
-        "avg_relevance": 0.828,
+        "avg_utilization": 0.482,
+        "avg_relevance": 0.83,
         "notes": "Moderate utilization - some budget optimization possible; High relevance - file selection is effective"
       },
       "feature": {
-        "calls_count": 61,
+        "calls_count": 67,
         "recommended_budget": 10000,
         "essential_files": [
           "file1.md",
           "file2.md"
         ],
-        "avg_utilization": 0.411,
-        "avg_relevance": 0.752,
+        "avg_utilization": 0.419,
+        "avg_relevance": 0.761,
         "notes": "Moderate utilization - some budget optimization possible; High relevance - file selection is effective"
       },
       "docs": {
@@ -15077,6 +15077,756 @@
         "file2.md": 0.8
       },
       "role": "feature"
+    },
+    {
+      "session_id": "92ec37aaa65a",
+      "timestamp": "2026-02-26T22:50",
+      "task_description": "Fixing function length violation in insight_dep_quality",
+      "token_budget": 0,
+      "total_tokens": 0,
+      "utilization": 0.0,
+      "files_selected": 0,
+      "files_excluded": 7,
+      "avg_relevance_score": 0.136,
+      "files_with_high_relevance": 0,
+      "files_with_low_relevance": 7,
+      "selected_file_names": [],
+      "relevance_by_file": {
+        "roadmap.md": 0.05,
+        "progress.md": 0.25,
+        "activeContext.md": 0.25,
+        "projectBrief.md": 0.05,
+        "techContext.md": 0.137,
+        "productContext.md": 0.084,
+        "systemPatterns.md": 0.131
+      },
+      "role": "debugging"
+    },
+    {
+      "session_id": "92ec37aaa65a",
+      "timestamp": "2026-02-26T22:51",
+      "task_description": "What is the project name?",
+      "token_budget": 0,
+      "total_tokens": 5000,
+      "utilization": 0.5,
+      "files_selected": 2,
+      "files_excluded": 1,
+      "avg_relevance_score": 0.85,
+      "files_with_high_relevance": 2,
+      "files_with_low_relevance": 0,
+      "selected_file_names": [
+        "file1.md",
+        "file2.md"
+      ],
+      "relevance_by_file": {
+        "file1.md": 0.9,
+        "file2.md": 0.8
+      },
+      "role": "feature"
+    },
+    {
+      "session_id": "92ec37aaa65a",
+      "timestamp": "2026-02-26T22:51",
+      "task_description": "Test task",
+      "token_budget": 40000,
+      "total_tokens": 5000,
+      "utilization": 0.5,
+      "files_selected": 2,
+      "files_excluded": 1,
+      "avg_relevance_score": 0.85,
+      "files_with_high_relevance": 2,
+      "files_with_low_relevance": 0,
+      "selected_file_names": [
+        "file1.md",
+        "file2.md"
+      ],
+      "relevance_by_file": {
+        "file1.md": 0.9,
+        "file2.md": 0.8
+      },
+      "role": "testing"
+    },
+    {
+      "session_id": "92ec37aaa65a",
+      "timestamp": "2026-02-26T22:51",
+      "task_description": "Test task",
+      "token_budget": 40000,
+      "total_tokens": 5000,
+      "utilization": 0.5,
+      "files_selected": 2,
+      "files_excluded": 1,
+      "avg_relevance_score": 0.85,
+      "files_with_high_relevance": 2,
+      "files_with_low_relevance": 0,
+      "selected_file_names": [
+        "file1.md",
+        "file2.md"
+      ],
+      "relevance_by_file": {
+        "file1.md": 0.9,
+        "file2.md": 0.8
+      },
+      "role": "testing"
+    },
+    {
+      "session_id": "92ec37aaa65a",
+      "timestamp": "2026-02-26T22:51",
+      "task_description": "Test task",
+      "token_budget": 40000,
+      "total_tokens": 5000,
+      "utilization": 0.5,
+      "files_selected": 2,
+      "files_excluded": 1,
+      "avg_relevance_score": 0.85,
+      "files_with_high_relevance": 2,
+      "files_with_low_relevance": 0,
+      "selected_file_names": [
+        "file1.md",
+        "file2.md"
+      ],
+      "relevance_by_file": {
+        "file1.md": 0.9,
+        "file2.md": 0.8
+      },
+      "role": "testing"
+    },
+    {
+      "session_id": "92ec37aaa65a",
+      "timestamp": "2026-02-26T22:51",
+      "task_description": "Test task",
+      "token_budget": 0,
+      "total_tokens": 5000,
+      "utilization": 0.5,
+      "files_selected": 2,
+      "files_excluded": 1,
+      "avg_relevance_score": 0.85,
+      "files_with_high_relevance": 2,
+      "files_with_low_relevance": 0,
+      "selected_file_names": [
+        "file1.md",
+        "file2.md"
+      ],
+      "relevance_by_file": {
+        "file1.md": 0.9,
+        "file2.md": 0.8
+      },
+      "role": "testing"
+    },
+    {
+      "session_id": "92ec37aaa65a",
+      "timestamp": "2026-02-26T22:51",
+      "task_description": "Test task",
+      "token_budget": 0,
+      "total_tokens": 5000,
+      "utilization": 0.5,
+      "files_selected": 2,
+      "files_excluded": 1,
+      "avg_relevance_score": 0.85,
+      "files_with_high_relevance": 2,
+      "files_with_low_relevance": 0,
+      "selected_file_names": [
+        "file1.md",
+        "file2.md"
+      ],
+      "relevance_by_file": {
+        "file1.md": 0.9,
+        "file2.md": 0.8
+      },
+      "role": "testing"
+    },
+    {
+      "session_id": "92ec37aaa65a",
+      "timestamp": "2026-02-26T22:51",
+      "task_description": "Read a file",
+      "token_budget": 0,
+      "total_tokens": 5000,
+      "utilization": 0.5,
+      "files_selected": 2,
+      "files_excluded": 1,
+      "avg_relevance_score": 0.85,
+      "files_with_high_relevance": 2,
+      "files_with_low_relevance": 0,
+      "selected_file_names": [
+        "file1.md",
+        "file2.md"
+      ],
+      "relevance_by_file": {
+        "file1.md": 0.9,
+        "file2.md": 0.8
+      },
+      "role": "feature"
+    },
+    {
+      "session_id": "92ec37aaa65a",
+      "timestamp": "2026-02-26T22:52",
+      "task_description": "Test task",
+      "token_budget": 40000,
+      "total_tokens": 5000,
+      "utilization": 0.5,
+      "files_selected": 2,
+      "files_excluded": 1,
+      "avg_relevance_score": 0.85,
+      "files_with_high_relevance": 2,
+      "files_with_low_relevance": 0,
+      "selected_file_names": [
+        "file1.md",
+        "file2.md"
+      ],
+      "relevance_by_file": {
+        "file1.md": 0.9,
+        "file2.md": 0.8
+      },
+      "role": "testing"
+    },
+    {
+      "session_id": "92ec37aaa65a",
+      "timestamp": "2026-02-26T22:52",
+      "task_description": "Fix failing tests for feature X",
+      "token_budget": 0,
+      "total_tokens": 5000,
+      "utilization": 0.5,
+      "files_selected": 2,
+      "files_excluded": 1,
+      "avg_relevance_score": 0.85,
+      "files_with_high_relevance": 2,
+      "files_with_low_relevance": 0,
+      "selected_file_names": [
+        "file1.md",
+        "file2.md"
+      ],
+      "relevance_by_file": {
+        "file1.md": 0.9,
+        "file2.md": 0.8
+      },
+      "role": "debugging"
+    },
+    {
+      "session_id": "92ec37aaa65a",
+      "timestamp": "2026-02-26T22:52",
+      "task_description": "Some generic task",
+      "token_budget": 0,
+      "total_tokens": 5000,
+      "utilization": 0.5,
+      "files_selected": 2,
+      "files_excluded": 1,
+      "avg_relevance_score": 0.85,
+      "files_with_high_relevance": 2,
+      "files_with_low_relevance": 0,
+      "selected_file_names": [
+        "file1.md",
+        "file2.md"
+      ],
+      "relevance_by_file": {
+        "file1.md": 0.9,
+        "file2.md": 0.8
+      },
+      "role": "quality"
+    },
+    {
+      "session_id": "92ec37aaa65a",
+      "timestamp": "2026-02-26T22:52",
+      "task_description": "Test task",
+      "token_budget": 0,
+      "total_tokens": 5000,
+      "utilization": 0.5,
+      "files_selected": 2,
+      "files_excluded": 1,
+      "avg_relevance_score": 0.85,
+      "files_with_high_relevance": 2,
+      "files_with_low_relevance": 0,
+      "selected_file_names": [
+        "file1.md",
+        "file2.md"
+      ],
+      "relevance_by_file": {
+        "file1.md": 0.9,
+        "file2.md": 0.8
+      },
+      "role": "testing"
+    },
+    {
+      "session_id": "92ec37aaa65a",
+      "timestamp": "2026-02-26T23:05",
+      "task_description": "What is the project name?",
+      "token_budget": 0,
+      "total_tokens": 5000,
+      "utilization": 0.5,
+      "files_selected": 2,
+      "files_excluded": 1,
+      "avg_relevance_score": 0.85,
+      "files_with_high_relevance": 2,
+      "files_with_low_relevance": 0,
+      "selected_file_names": [
+        "file1.md",
+        "file2.md"
+      ],
+      "relevance_by_file": {
+        "file1.md": 0.9,
+        "file2.md": 0.8
+      },
+      "role": "feature"
+    },
+    {
+      "session_id": "92ec37aaa65a",
+      "timestamp": "2026-02-26T23:05",
+      "task_description": "Test task",
+      "token_budget": 40000,
+      "total_tokens": 5000,
+      "utilization": 0.5,
+      "files_selected": 2,
+      "files_excluded": 1,
+      "avg_relevance_score": 0.85,
+      "files_with_high_relevance": 2,
+      "files_with_low_relevance": 0,
+      "selected_file_names": [
+        "file1.md",
+        "file2.md"
+      ],
+      "relevance_by_file": {
+        "file1.md": 0.9,
+        "file2.md": 0.8
+      },
+      "role": "testing"
+    },
+    {
+      "session_id": "92ec37aaa65a",
+      "timestamp": "2026-02-26T23:05",
+      "task_description": "Test task",
+      "token_budget": 40000,
+      "total_tokens": 5000,
+      "utilization": 0.5,
+      "files_selected": 2,
+      "files_excluded": 1,
+      "avg_relevance_score": 0.85,
+      "files_with_high_relevance": 2,
+      "files_with_low_relevance": 0,
+      "selected_file_names": [
+        "file1.md",
+        "file2.md"
+      ],
+      "relevance_by_file": {
+        "file1.md": 0.9,
+        "file2.md": 0.8
+      },
+      "role": "testing"
+    },
+    {
+      "session_id": "92ec37aaa65a",
+      "timestamp": "2026-02-26T23:05",
+      "task_description": "Test task",
+      "token_budget": 40000,
+      "total_tokens": 5000,
+      "utilization": 0.5,
+      "files_selected": 2,
+      "files_excluded": 1,
+      "avg_relevance_score": 0.85,
+      "files_with_high_relevance": 2,
+      "files_with_low_relevance": 0,
+      "selected_file_names": [
+        "file1.md",
+        "file2.md"
+      ],
+      "relevance_by_file": {
+        "file1.md": 0.9,
+        "file2.md": 0.8
+      },
+      "role": "testing"
+    },
+    {
+      "session_id": "92ec37aaa65a",
+      "timestamp": "2026-02-26T23:05",
+      "task_description": "Test task",
+      "token_budget": 0,
+      "total_tokens": 5000,
+      "utilization": 0.5,
+      "files_selected": 2,
+      "files_excluded": 1,
+      "avg_relevance_score": 0.85,
+      "files_with_high_relevance": 2,
+      "files_with_low_relevance": 0,
+      "selected_file_names": [
+        "file1.md",
+        "file2.md"
+      ],
+      "relevance_by_file": {
+        "file1.md": 0.9,
+        "file2.md": 0.8
+      },
+      "role": "testing"
+    },
+    {
+      "session_id": "92ec37aaa65a",
+      "timestamp": "2026-02-26T23:05",
+      "task_description": "Test task",
+      "token_budget": 0,
+      "total_tokens": 5000,
+      "utilization": 0.5,
+      "files_selected": 2,
+      "files_excluded": 1,
+      "avg_relevance_score": 0.85,
+      "files_with_high_relevance": 2,
+      "files_with_low_relevance": 0,
+      "selected_file_names": [
+        "file1.md",
+        "file2.md"
+      ],
+      "relevance_by_file": {
+        "file1.md": 0.9,
+        "file2.md": 0.8
+      },
+      "role": "testing"
+    },
+    {
+      "session_id": "92ec37aaa65a",
+      "timestamp": "2026-02-26T23:05",
+      "task_description": "Read a file",
+      "token_budget": 0,
+      "total_tokens": 5000,
+      "utilization": 0.5,
+      "files_selected": 2,
+      "files_excluded": 1,
+      "avg_relevance_score": 0.85,
+      "files_with_high_relevance": 2,
+      "files_with_low_relevance": 0,
+      "selected_file_names": [
+        "file1.md",
+        "file2.md"
+      ],
+      "relevance_by_file": {
+        "file1.md": 0.9,
+        "file2.md": 0.8
+      },
+      "role": "feature"
+    },
+    {
+      "session_id": "92ec37aaa65a",
+      "timestamp": "2026-02-26T23:05",
+      "task_description": "Test task",
+      "token_budget": 40000,
+      "total_tokens": 5000,
+      "utilization": 0.5,
+      "files_selected": 2,
+      "files_excluded": 1,
+      "avg_relevance_score": 0.85,
+      "files_with_high_relevance": 2,
+      "files_with_low_relevance": 0,
+      "selected_file_names": [
+        "file1.md",
+        "file2.md"
+      ],
+      "relevance_by_file": {
+        "file1.md": 0.9,
+        "file2.md": 0.8
+      },
+      "role": "testing"
+    },
+    {
+      "session_id": "92ec37aaa65a",
+      "timestamp": "2026-02-26T23:05",
+      "task_description": "Fix failing tests for feature X",
+      "token_budget": 0,
+      "total_tokens": 5000,
+      "utilization": 0.5,
+      "files_selected": 2,
+      "files_excluded": 1,
+      "avg_relevance_score": 0.85,
+      "files_with_high_relevance": 2,
+      "files_with_low_relevance": 0,
+      "selected_file_names": [
+        "file1.md",
+        "file2.md"
+      ],
+      "relevance_by_file": {
+        "file1.md": 0.9,
+        "file2.md": 0.8
+      },
+      "role": "debugging"
+    },
+    {
+      "session_id": "92ec37aaa65a",
+      "timestamp": "2026-02-26T23:05",
+      "task_description": "Some generic task",
+      "token_budget": 0,
+      "total_tokens": 5000,
+      "utilization": 0.5,
+      "files_selected": 2,
+      "files_excluded": 1,
+      "avg_relevance_score": 0.85,
+      "files_with_high_relevance": 2,
+      "files_with_low_relevance": 0,
+      "selected_file_names": [
+        "file1.md",
+        "file2.md"
+      ],
+      "relevance_by_file": {
+        "file1.md": 0.9,
+        "file2.md": 0.8
+      },
+      "role": "quality"
+    },
+    {
+      "session_id": "92ec37aaa65a",
+      "timestamp": "2026-02-26T23:05",
+      "task_description": "Test task",
+      "token_budget": 0,
+      "total_tokens": 5000,
+      "utilization": 0.5,
+      "files_selected": 2,
+      "files_excluded": 1,
+      "avg_relevance_score": 0.85,
+      "files_with_high_relevance": 2,
+      "files_with_low_relevance": 0,
+      "selected_file_names": [
+        "file1.md",
+        "file2.md"
+      ],
+      "relevance_by_file": {
+        "file1.md": 0.9,
+        "file2.md": 0.8
+      },
+      "role": "testing"
+    },
+    {
+      "session_id": "92ec37aaa65a",
+      "timestamp": "2026-02-26T23:09",
+      "task_description": "What is the project name?",
+      "token_budget": 0,
+      "total_tokens": 5000,
+      "utilization": 0.5,
+      "files_selected": 2,
+      "files_excluded": 1,
+      "avg_relevance_score": 0.85,
+      "files_with_high_relevance": 2,
+      "files_with_low_relevance": 0,
+      "selected_file_names": [
+        "file1.md",
+        "file2.md"
+      ],
+      "relevance_by_file": {
+        "file1.md": 0.9,
+        "file2.md": 0.8
+      },
+      "role": "feature"
+    },
+    {
+      "session_id": "92ec37aaa65a",
+      "timestamp": "2026-02-26T23:09",
+      "task_description": "Test task",
+      "token_budget": 40000,
+      "total_tokens": 5000,
+      "utilization": 0.5,
+      "files_selected": 2,
+      "files_excluded": 1,
+      "avg_relevance_score": 0.85,
+      "files_with_high_relevance": 2,
+      "files_with_low_relevance": 0,
+      "selected_file_names": [
+        "file1.md",
+        "file2.md"
+      ],
+      "relevance_by_file": {
+        "file1.md": 0.9,
+        "file2.md": 0.8
+      },
+      "role": "testing"
+    },
+    {
+      "session_id": "92ec37aaa65a",
+      "timestamp": "2026-02-26T23:09",
+      "task_description": "Test task",
+      "token_budget": 40000,
+      "total_tokens": 5000,
+      "utilization": 0.5,
+      "files_selected": 2,
+      "files_excluded": 1,
+      "avg_relevance_score": 0.85,
+      "files_with_high_relevance": 2,
+      "files_with_low_relevance": 0,
+      "selected_file_names": [
+        "file1.md",
+        "file2.md"
+      ],
+      "relevance_by_file": {
+        "file1.md": 0.9,
+        "file2.md": 0.8
+      },
+      "role": "testing"
+    },
+    {
+      "session_id": "92ec37aaa65a",
+      "timestamp": "2026-02-26T23:09",
+      "task_description": "Test task",
+      "token_budget": 40000,
+      "total_tokens": 5000,
+      "utilization": 0.5,
+      "files_selected": 2,
+      "files_excluded": 1,
+      "avg_relevance_score": 0.85,
+      "files_with_high_relevance": 2,
+      "files_with_low_relevance": 0,
+      "selected_file_names": [
+        "file1.md",
+        "file2.md"
+      ],
+      "relevance_by_file": {
+        "file1.md": 0.9,
+        "file2.md": 0.8
+      },
+      "role": "testing"
+    },
+    {
+      "session_id": "92ec37aaa65a",
+      "timestamp": "2026-02-26T23:09",
+      "task_description": "Test task",
+      "token_budget": 0,
+      "total_tokens": 5000,
+      "utilization": 0.5,
+      "files_selected": 2,
+      "files_excluded": 1,
+      "avg_relevance_score": 0.85,
+      "files_with_high_relevance": 2,
+      "files_with_low_relevance": 0,
+      "selected_file_names": [
+        "file1.md",
+        "file2.md"
+      ],
+      "relevance_by_file": {
+        "file1.md": 0.9,
+        "file2.md": 0.8
+      },
+      "role": "testing"
+    },
+    {
+      "session_id": "92ec37aaa65a",
+      "timestamp": "2026-02-26T23:09",
+      "task_description": "Test task",
+      "token_budget": 0,
+      "total_tokens": 5000,
+      "utilization": 0.5,
+      "files_selected": 2,
+      "files_excluded": 1,
+      "avg_relevance_score": 0.85,
+      "files_with_high_relevance": 2,
+      "files_with_low_relevance": 0,
+      "selected_file_names": [
+        "file1.md",
+        "file2.md"
+      ],
+      "relevance_by_file": {
+        "file1.md": 0.9,
+        "file2.md": 0.8
+      },
+      "role": "testing"
+    },
+    {
+      "session_id": "92ec37aaa65a",
+      "timestamp": "2026-02-26T23:09",
+      "task_description": "Read a file",
+      "token_budget": 0,
+      "total_tokens": 5000,
+      "utilization": 0.5,
+      "files_selected": 2,
+      "files_excluded": 1,
+      "avg_relevance_score": 0.85,
+      "files_with_high_relevance": 2,
+      "files_with_low_relevance": 0,
+      "selected_file_names": [
+        "file1.md",
+        "file2.md"
+      ],
+      "relevance_by_file": {
+        "file1.md": 0.9,
+        "file2.md": 0.8
+      },
+      "role": "feature"
+    },
+    {
+      "session_id": "92ec37aaa65a",
+      "timestamp": "2026-02-26T23:09",
+      "task_description": "Test task",
+      "token_budget": 40000,
+      "total_tokens": 5000,
+      "utilization": 0.5,
+      "files_selected": 2,
+      "files_excluded": 1,
+      "avg_relevance_score": 0.85,
+      "files_with_high_relevance": 2,
+      "files_with_low_relevance": 0,
+      "selected_file_names": [
+        "file1.md",
+        "file2.md"
+      ],
+      "relevance_by_file": {
+        "file1.md": 0.9,
+        "file2.md": 0.8
+      },
+      "role": "testing"
+    },
+    {
+      "session_id": "92ec37aaa65a",
+      "timestamp": "2026-02-26T23:09",
+      "task_description": "Fix failing tests for feature X",
+      "token_budget": 0,
+      "total_tokens": 5000,
+      "utilization": 0.5,
+      "files_selected": 2,
+      "files_excluded": 1,
+      "avg_relevance_score": 0.85,
+      "files_with_high_relevance": 2,
+      "files_with_low_relevance": 0,
+      "selected_file_names": [
+        "file1.md",
+        "file2.md"
+      ],
+      "relevance_by_file": {
+        "file1.md": 0.9,
+        "file2.md": 0.8
+      },
+      "role": "debugging"
+    },
+    {
+      "session_id": "92ec37aaa65a",
+      "timestamp": "2026-02-26T23:09",
+      "task_description": "Some generic task",
+      "token_budget": 0,
+      "total_tokens": 5000,
+      "utilization": 0.5,
+      "files_selected": 2,
+      "files_excluded": 1,
+      "avg_relevance_score": 0.85,
+      "files_with_high_relevance": 2,
+      "files_with_low_relevance": 0,
+      "selected_file_names": [
+        "file1.md",
+        "file2.md"
+      ],
+      "relevance_by_file": {
+        "file1.md": 0.9,
+        "file2.md": 0.8
+      },
+      "role": "quality"
+    },
+    {
+      "session_id": "92ec37aaa65a",
+      "timestamp": "2026-02-26T23:09",
+      "task_description": "Test task",
+      "token_budget": 0,
+      "total_tokens": 5000,
+      "utilization": 0.5,
+      "files_selected": 2,
+      "files_excluded": 1,
+      "avg_relevance_score": 0.85,
+      "files_with_high_relevance": 2,
+      "files_with_low_relevance": 0,
+      "selected_file_names": [
+        "file1.md",
+        "file2.md"
+      ],
+      "relevance_by_file": {
+        "file1.md": 0.9,
+        "file2.md": 0.8
+      },
+      "role": "testing"
     }
   ]
 }
