@@ -36,6 +36,10 @@ import cortex.core.logging_config  # noqa: F401, E402
 # Import tools package to register all @mcp.tool() decorators
 import cortex.setup.prompts_always  # noqa: F401, E402
 import cortex.tools  # noqa: F401, E402
+from cortex.core.mcp_stability_semaphores import (  # noqa: E402
+    get_long_running_elapsed_seconds,
+    get_long_running_semaphore_holder,
+)
 from cortex.server import mcp  # noqa: E402
 from cortex.setup import should_mount_setup  # noqa: E402
 from cortex.transport_config import (  # noqa: E402
@@ -102,19 +106,31 @@ def _handle_broken_resource_in_group(eg: BaseExceptionGroup) -> bool:
     """
     for exc in eg.exceptions:
         if _is_connection_error(exc):
+            holder = get_long_running_semaphore_holder()
+            elapsed = get_long_running_elapsed_seconds()
             logger.info(
                 (
                     "MCP stdio connection broken during TaskGroup cleanup "
                     "(client disconnected); group_msg=%s sub_count=%d "
-                    "exc_type=%s exc_msg=%s"
+                    "exc_type=%s exc_msg=%s long_running_holder=%s elapsed_sec=%s"
                 ),
                 eg.message,
                 len(eg.exceptions),
                 type(exc).__name__,
                 str(exc),
+                holder or "none",
+                f"{elapsed:.1f}" if elapsed is not None else "n/a",
             )
             return True
     return False
+
+
+def _disconnect_diag_str() -> str:
+    """Return diagnostic string for connection disconnect (holder, elapsed_sec)."""
+    holder = get_long_running_semaphore_holder()
+    elapsed = get_long_running_elapsed_seconds()
+    es = f"{elapsed:.1f}" if elapsed is not None else "n/a"
+    return f" long_running_holder={holder or 'none'} elapsed_sec={es}"
 
 
 def _handle_connection_error(e: Exception) -> None:
@@ -125,30 +141,32 @@ def _handle_connection_error(e: Exception) -> None:
     """
     exc_type = type(e).__name__
     exc_msg = str(e)
+    diag = _disconnect_diag_str()
     if isinstance(
         e, (anyio.BrokenResourceError, anyio.ClosedResourceError, BrokenPipeError)
     ):
         logger.warning(
-            (
-                "MCP stdio connection broken or closed (client disconnected); "
-                "exc_type=%s exc_msg=%s"
-            ),
+            "MCP stdio connection broken or closed (client disconnected); exc_type=%s exc_msg=%s%s",
             exc_type,
             exc_msg,
+            diag,
         )
         sys.exit(0)  # Graceful shutdown
-    elif isinstance(e, ConnectionError):
-        logger.error("MCP connection error; exc_type=%s exc_msg=%s", exc_type, exc_msg)
+    if isinstance(e, ConnectionError):
+        logger.error(
+            "MCP connection error; exc_type=%s exc_msg=%s%s", exc_type, exc_msg, diag
+        )
         sys.exit(1)
-    elif isinstance(e, OSError):
+    if isinstance(e, OSError):
         if "Broken pipe" in exc_msg or "Connection reset" in exc_msg:
             logger.warning(
-                ("MCP connection reset (client disconnected); exc_type=%s exc_msg=%s"),
+                "MCP connection reset (client disconnected); exc_type=%s exc_msg=%s%s",
                 exc_type,
                 exc_msg,
+                diag,
             )
             sys.exit(0)  # Exit gracefully - client disconnected
-        logger.error("MCP OS error; exc_type=%s exc_msg=%s", exc_type, exc_msg)
+        logger.error("MCP OS error; exc_type=%s exc_msg=%s%s", exc_type, exc_msg, diag)
         sys.exit(1)
 
 

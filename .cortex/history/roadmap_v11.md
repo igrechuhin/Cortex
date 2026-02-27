@@ -12,7 +12,8 @@
 
 ## Pending plans (from .cortex/plans)
 
-- **Consolidate Plan and Roadmap Tools** - PENDING - Consolidate create_plan+complete_plan into plan(operation=...), add_roadmap_entry+remove_roadmap_entry+remove_roadmap_section into roadmap(operation=...). Saves 3 tool slots. Plan: .cortex/plans/consolidate-plan-and-roadmap-tools.md
+- **Synapse Usage Storage with usage_writable and Static Snapshot Mode** - PENDING - [plan](.cortex/plans/synapse-usage-storage-usage-writable-static-snapshot.md) - Store tool usage in Synapse when usage_writable=true; when false, operate as static snapshot (no stats writes for tools/prompts/resources).
+- **Session Improvements 2026-02-27** - PENDING - [plan](.cortex/plans/session-improvements-2026-02-27.md) - Improvements from end-of-session analysis: context-effectiveness, rules indexing, tools optimization
 
 ### Investigation Plans (Archive / Reference)
 

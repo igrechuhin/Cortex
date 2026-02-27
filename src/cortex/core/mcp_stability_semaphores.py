@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import time
 from collections.abc import Awaitable, Callable
 from types import TracebackType
 
@@ -81,6 +82,7 @@ _concurrent_tools_semaphore: TrackedSemaphore | None = None
 _concurrent_resources_semaphore: TrackedSemaphore | None = None
 _long_running_tools_semaphore: TrackedSemaphore | None = None
 _long_running_semaphore_holder: str | None = None
+_long_running_start_time: float | None = None
 _long_running_released_by_timeout: bool = False
 _long_running_auto_release_task: asyncio.Task[None] | None = None
 
@@ -111,13 +113,21 @@ def get_long_running_semaphore() -> TrackedSemaphore:
 
 def set_long_running_semaphore_holder(tool_name: str | None) -> None:
     """Set or clear the name of the tool currently holding the long-running semaphore."""
-    global _long_running_semaphore_holder
+    global _long_running_semaphore_holder, _long_running_start_time
     _long_running_semaphore_holder = tool_name
+    _long_running_start_time = time.monotonic() if tool_name else None
 
 
 def get_long_running_semaphore_holder() -> str | None:
     """Return the name of the tool holding the long-running semaphore, or None."""
     return _long_running_semaphore_holder
+
+
+def get_long_running_elapsed_seconds() -> float | None:
+    """Return seconds since the long-running tool acquired the semaphore, or None."""
+    if _long_running_semaphore_holder is None or _long_running_start_time is None:
+        return None
+    return time.monotonic() - _long_running_start_time
 
 
 def was_long_running_released_by_timeout() -> bool:
@@ -140,15 +150,21 @@ async def _run_auto_release_after_timeout(tool_name: str) -> None:
     global _long_running_semaphore_holder, _long_running_released_by_timeout
     if _long_running_semaphore_holder != tool_name:
         return
+    elapsed = (
+        time.monotonic() - _long_running_start_time
+        if _long_running_start_time is not None
+        else None
+    )
     global _long_running_released_by_timeout
     try:
         get_long_running_semaphore().release()
         set_long_running_semaphore_holder(None)
         _long_running_released_by_timeout = True
         _logger.info(
-            "long_running_semaphore: auto-released after %.0fs (holder was %s)",
+            "long_running_semaphore: auto-released after %.0fs (holder=%s elapsed_sec=%s)",
             LONG_RUNNING_SEMAPHORE_MAX_HOLD_SECONDS,
             tool_name,
+            f"{elapsed:.1f}" if elapsed is not None else "n/a",
         )
     except Exception as e:
         _logger.error(
@@ -259,6 +275,7 @@ __all__ = [
     "acquire_long_running_semaphore",
     "cancel_long_running_auto_release",
     "clear_long_running_released_by_timeout",
+    "get_long_running_elapsed_seconds",
     "get_long_running_semaphore",
     "get_long_running_semaphore_holder",
     "get_resource_semaphore",

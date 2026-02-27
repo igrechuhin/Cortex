@@ -19,6 +19,7 @@ from cortex.core.mcp_stability_config import (
     is_connection_error,
     raise_if_retries_exhausted,
 )
+from cortex.core.mcp_stability_semaphores import get_long_running_elapsed_seconds
 from cortex.core.models import ConnectionHealth, JsonValue, MCPToolArguments
 
 logger = logging.getLogger(__name__)
@@ -56,27 +57,49 @@ async def _handle_timeout_error(
     return None, e
 
 
+def _connection_error_diag() -> tuple[str, str]:
+    """Return (holder_str, elapsed_str) for connection error logging."""
+    holder = get_long_running_semaphore_holder()
+    elapsed = get_long_running_elapsed_seconds()
+    es = f"{elapsed:.1f}" if elapsed is not None else "n/a"
+    return (holder or "none", es)
+
+
+def _build_connection_error_final(
+    func_name: str, attempt: int, e: Exception
+) -> ConnectionError | RuntimeError:
+    """Build final error when retries exhausted for connection error."""
+    fallback = connection_error_fallback.get(func_name, "")
+    base_msg = f"MCP tool {func_name} failed after {attempt} attempts (connection)."
+    err: ConnectionError | RuntimeError = (
+        ConnectionError(base_msg + fallback)
+        if is_connection_error(e)
+        else RuntimeError(
+            f"MCP connection failed for {func_name} after {attempt} attempts"
+        )
+    )
+    err.__cause__ = e
+    return err
+
+
 async def _handle_connection_error(
     func_name: str, attempt: int, e: Exception
 ) -> tuple[ConnectionError | RuntimeError | None, Exception | None]:
     """Handle connection error during retry."""
     _record_connection_closure()
     max_attempts = get_connection_retry_attempts(func_name)
+    holder_str, elapsed_str = _connection_error_diag()
     logger.warning(
-        f"MCP connection error in {func_name} (attempt {attempt}/{max_attempts}): {e}"
+        "MCP connection error in %s (attempt %d/%d) holder=%s elapsed_sec=%s: %s",
+        func_name,
+        attempt,
+        max_attempts,
+        holder_str,
+        elapsed_str,
+        e,
     )
     if attempt == max_attempts:
-        fallback = connection_error_fallback.get(func_name, "")
-        base_msg = f"MCP tool {func_name} failed after {attempt} attempts (connection)."
-        error: RuntimeError | ConnectionError = (
-            ConnectionError(base_msg + fallback)
-            if is_connection_error(e)
-            else RuntimeError(
-                f"MCP connection failed for {func_name} after {attempt} attempts"
-            )
-        )
-        error.__cause__ = e
-        return error, None
+        return _build_connection_error_final(func_name, attempt, e), None
     delay = get_connection_retry_delay(func_name, attempt)
     logger.info(
         "MCP connection error in %s (attempt %d/%d): retrying in %.1fs",
