@@ -426,6 +426,71 @@ class TestManageFile:
                 assert result["status"] == "error"
                 assert "Invalid operation" in result["error"]
 
+    async def test_manage_file_rollback_requires_version(
+        self, mock_managers: dict[str, object]
+    ):
+        """Rollback operation requires version parameter."""
+        with patch(
+            "cortex.tools.file_manage_file_helpers.get_or_resolve_project_root",
+            new_callable=AsyncMock,
+            return_value=Path("/tmp/test"),
+        ):
+            result_str = await manage_file(
+                file_name="projectBrief.md",
+                operation="rollback",
+            )
+        result = json.loads(result_str)
+        assert result["status"] == "error"
+        assert "Version is required" in result["error"]
+
+    async def test_manage_file_rollback_success(
+        self, mock_managers: dict[str, object], temp_memory_bank: Path
+    ):
+        """Rollback via manage_file returns success when version exists."""
+        root = temp_memory_bank.parent.parent.parent
+        memory_bank_dir = get_cortex_path(root, CortexResourceType.MEMORY_BANK)
+        file_path = memory_bank_dir / "projectBrief.md"
+        file_path.parent.mkdir(parents=True, exist_ok=True)
+        _ = file_path.write_text("# Project Brief")
+
+        mock_fs = MagicMock()
+        mock_fs.construct_safe_path = MagicMock(return_value=file_path)
+        mock_managers_dict = {
+            "fs": mock_fs,
+            "index": AsyncMock(),
+            "tokens": MagicMock(),
+            "versions": AsyncMock(),
+        }
+        rollback_result = {
+            "status": "success",
+            "file_name": "projectBrief.md",
+            "rolled_back_from_version": 2,
+            "new_version": 5,
+            "token_count": 128,
+        }
+        with patch(
+            "cortex.tools.file_manage_file_helpers.get_managers",
+            new=AsyncMock(return_value=make_test_managers(**mock_managers_dict)),
+        ):
+            with patch(
+                "cortex.tools.file_manage_file_helpers.get_or_resolve_project_root",
+                new_callable=AsyncMock,
+                return_value=root,
+            ):
+                with patch(
+                    "cortex.tools.phase1_foundation_rollback._execute_rollback",
+                    new=AsyncMock(return_value=rollback_result),
+                ):
+                    result_str = await manage_file(
+                        file_name="projectBrief.md",
+                        operation="rollback",
+                        version=2,
+                    )
+        result = json.loads(result_str)
+        assert result["status"] == "success"
+        assert result["rolled_back_from_version"] == 2
+        assert result["new_version"] == 5
+
 
 @pytest.mark.asyncio
 class TestValidate:

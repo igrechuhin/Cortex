@@ -17,7 +17,7 @@ from cortex.core.mcp_stability import ensure_usage_context, mcp_tool_wrapper
 from cortex.server import mcp
 
 # ---------------------------------------------------------------------------
-# Internal implementations (no @mcp.tool; called by agent_workflow)
+# Internal implementations (no @mcp.tool; called by run_composite_workflow)
 # ---------------------------------------------------------------------------
 
 
@@ -25,11 +25,11 @@ async def _quick_start_impl(
     task_description: str | None = None,
     token_budget: int | None = None,
 ) -> str:
-    """Run session_start then load_context."""
+    """Run session(operation=start) then load_context."""
     from cortex.tools.phase4_optimization_handlers import load_context
-    from cortex.tools.session_start_tools import session_start
+    from cortex.tools.session_dispatcher import session
 
-    brief_json = await session_start(task_description=None)
+    brief_json = await session(operation="start", task_description=None, ctx=None)
     budget = token_budget if token_budget is not None else 10000
     task = (
         task_description.strip()
@@ -181,18 +181,18 @@ async def _dispatch_agent_workflow(
 
 
 # ---------------------------------------------------------------------------
-# Consolidated MCP tool: agent_workflow
+# Consolidated MCP tool: run_composite_workflow
 # ---------------------------------------------------------------------------
 
 
 @mcp.tool(  # pyright: ignore[reportUntypedFunctionDecorator]
     annotations=safe_write_annotations(
-        "Agent Workflow (Session, Quality, Safe File, Suggest Workflow)"
+        "Run Composite Workflow (Session+Context, Quality, Safe File, Suggest)"
     ),  # pyright: ignore[reportCallIssue]
 )
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_COMPLEX)
-async def agent_workflow(
+async def run_composite_workflow(
     operation: str,
     task_description: str | None = None,
     token_budget: int | None = None,
@@ -204,18 +204,27 @@ async def agent_workflow(
     check_type: str = "roadmap_sync",
     limit: int = 3,
 ) -> str:
-    """Agent-skills workflow dispatcher: quick_start, quality_check, safe_manage_file, suggest_workflow.
+    """Run composite workflow: quick_start, quality_check, safe_manage_file, suggest_workflow.
 
     USE WHEN: Combining session+context, quality gate, safe file write, or workflow suggestions
     in one call. Reduces tool count; use operation= to select behavior.
 
-    operation="quick_start": session_start + load_context. Params: task_description, token_budget.
+    operation="quick_start": session(operation="start") + load_context. Params: task_description, token_budget.
     operation="quality_check": pre_commit quality + fix. No extra params.
     operation="safe_manage_file": validate + manage_file + validate. Params: file_name,
         file_operation, content, sections, change_description, check_type.
     operation="suggest_workflow": recommend templates. Params: task_description, limit.
 
     RETURNS: JSON result specific to the operation.
+
+    Args:
+        operation: quick_start, quality_check, safe_manage_file, or suggest_workflow.
+        task_description, token_budget: For quick_start and suggest_workflow.
+        file_name, file_operation, content: For safe_manage_file.
+        check_type: For safe_manage_file (default roadmap_sync).
+
+    Example:
+        run_composite_workflow(operation="quick_start", task_description="Implement feature X")
     """
     return await _dispatch_agent_workflow(
         operation,

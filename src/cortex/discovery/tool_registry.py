@@ -38,14 +38,15 @@ _KNOWN_TOOL_NAMES: list[str] = [
     "initialize_memory_bank",
     "list_session_scripts",
     "load_context",
+    "manage_session_scripts",
     "manage_file",
     "migrate_memory_bank",
     "migrate_project_structure",
     "provide_feedback",
     "query_usage",
-    "rollback_file_version",
     "rollback_refactoring",
     "rules",
+    "session",
     "setup_cursor_integration",
     "setup_project_structure",
     "setup_shared_rules",
@@ -64,8 +65,8 @@ _KNOWN_TOOL_NAMES: list[str] = [
     "check_mcp_connection_health",
     "skill_pack",
     "cache_json",
-    "update_synapse",
-    "agent_workflow",
+    "synapse",
+    "run_composite_workflow",
 ]
 
 

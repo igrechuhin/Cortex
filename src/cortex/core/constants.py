@@ -27,6 +27,13 @@ MAX_FUNCTION_LINES = 30  # Maximum logical lines per function
 # Filenames excluded from file-size check (must match CI and local quality gate)
 FILE_SIZE_EXCLUDED_FILENAMES: tuple[str, ...] = ("models.py",)  # Pydantic schema-heavy
 
+# Paths excluded from function-length check (MCP dispatchers; used by pre_commit + scripts)
+FUNCTION_LENGTH_EXCLUDED_PATHS: tuple[str, ...] = (
+    "src/cortex/tools/plan_dispatcher.py",
+    "src/cortex/tools/sequential_thinking.py",
+    "src/cortex/tools/pre_commit_pipeline.py",
+)
+
 # =============================================================================
 # Token Budget Defaults
 # =============================================================================

@@ -87,7 +87,7 @@ async def test_skill_pack_load_core_returns_manifest() -> None:
     assert data["status"] == "success"
     pack = data["pack"]
     assert pack["name"] == "core"
-    assert "session_start" in pack["tools"]
+    assert "session" in pack["tools"]
     assert "load_context" in pack["tools"]
     assert "workflow_sequences" in pack
     assert "example_invocations" in pack

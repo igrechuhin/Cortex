@@ -6,6 +6,8 @@
 - **Phase 9.8 Maintainability Polish (2026-02-27)** - COMPLETE. Reduced cyclomatic complexity in tool_error_formatters (_generate_default_suggestion 13→7) and validation_helpers (generate_duplication_fixes 13→2); added module-level documentation. 4850 tests, 92.92% coverage.
 - **Optimize Exposed Tools from Usage Statistics (2026-02-27)** - COMPLETE. Census and mapping completed; Steps 3–4 N/A (no safe consolidation candidates); documented exception for target 24 in baseline; regression passed.
 - **Consolidate Plan and Roadmap Tools (2026-02-27)** - COMPLETE. Plan+roadmap tools consolidated; 40→37 registered tools; docs and callers updated.
+- **Unify and Simplify Tools, Prompts, and Resources Naming (2026-02-27)** - COMPLETE. Naming rubric, inventory, proposals; doc updates; cortex://rules/relevant deprecation note.
+- **Commit pipeline quality fixes (2026-02-27)** - COMPLETE. Synapse format (check_tool_description_altitude.py), function length (session_dispatcher), test thresholds (manage_file rollback, deferred ≥15), markdown lint (tools.md link, table pipes). Phase A passed.
 
 ## 2026-02-26
 

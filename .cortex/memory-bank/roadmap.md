@@ -12,8 +12,6 @@
 
 ## Pending plans (from .cortex/plans)
 
-- **Unify and Simplify Tools, Prompts, and Resources Naming** - PENDING - Define unified naming rubric for tools, cortex:// resources, and Synapse prompts; audit current names, propose simplifications, update docs. Plan: .cortex/plans/unify-simplify-tools-prompts-resources-naming.md
-
 ### Investigation Plans (Archive / Reference)
 
 Completed investigations are recorded in [activeContext.md](activeContext.md). Plan files under `.cortex/plans/archive/` as needed.

@@ -183,9 +183,7 @@ MCP_TOOL_TIMEOUT_QUALITY_FIXES = 60  # Quality auto-fix tools (e.g. fix_quality_
 
 **Tools using this category**:
 
-- `sync_synapse`
-- `update_synapse_rule`
-- `update_synapse_prompt`
+- `synapse` (sync, update_rule, update_prompt)
 - `get_synapse_rules`
 - `get_synapse_prompts`
 - `execute_pre_commit_checks`

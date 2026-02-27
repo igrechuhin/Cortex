@@ -28,14 +28,14 @@ def _empty_str_list() -> list[str]:
 def _infer_sessions_by_session_start(
     events: list[ToolUsageEvent],
 ) -> list[list[ToolUsageEvent]]:
-    """Group events into sessions by session_start boundaries."""
+    """Group events into sessions by session(operation=start) or session_start boundaries."""
     if not events:
         return []
     sorted_evs = sorted(events, key=lambda e: e.timestamp)
     sessions: list[list[ToolUsageEvent]] = []
     current: list[ToolUsageEvent] = []
     for ev in sorted_evs:
-        if ev.tool_name == "session_start":
+        if ev.tool_name in ("session", "session_start"):
             if current:
                 sessions.append(current)
             current = [ev]

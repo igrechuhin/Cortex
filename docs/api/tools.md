@@ -15,7 +15,7 @@ Cortex follows MCP semantics: **Resources** are GET-like (read-only, load data i
 - **Tools** use imperative verb names: `manage_file`, `apply_refactoring`, `configure`, `fix_markdown_lint`. Do not use `get_*` for operations that mutate state.
 - **Resources** are identified by `cortex://` URIs (e.g. `cortex://memory-bank/stats`, `cortex://optimization/load-context/{task_description}`). Read-only operations are exposed as both a Tool (for backward compatibility) and a Resource.
 - **Prefer Resources for read-only operations** when your client supports MCP resources: use the `cortex://` URI to load data. Use Tools for any operation that writes or changes state.
-- **No `get_*` Tool performs writes**; all current `get_*` tools are read-only and have a corresponding Resource. See Phase 43 plan (`.cortex/plans/phase-43-reconsider-tools-registration.md`) for the full inventory and naming conventions.
+- **No `get_*` Tool performs writes**; all current `get_*` tools are read-only and have a corresponding Resource. See [Naming conventions](../architecture/naming-conventions.md) and Phase 43 plan (`.cortex/plans/phase-43-reconsider-tools-registration.md`) for the full inventory and naming rules.
 
 ### MCP Tool Annotations
 
@@ -54,7 +54,7 @@ For details on adding annotations to custom tools, see the [Extension Developmen
 | [Phase 5 Evaluation](#phase-5-evaluation-tools) | 4 | Tool evaluation, error patterns, anomalies, optimization workflow |
 | [Phase 58](#phase-58-multi-agent-task-locking) | 4 | Multi-agent task locking (claim, release, list, check) |
 | [Health-Check](#health-check-analysis) | 1 | Health-Check (prompts, rules, tools analysis) |
-| [Sequential Thinking](#sequential-thinking) | 1 | Stepwise reasoning and planning |
+| [Thinking](#thinking) | 1 | Stepwise reasoning and planning |
 | [Legacy](#legacy-tools) | 3 | Legacy Support |
 
 **Phase 50 consolidation (2026-02):** Memory bank read operations (stats, version_history, dependency_graph, link_graph, parse_links, validate_links, resolve_transclusions) are available via **`query_memory_bank`**. Usage analytics (stats, unused, report, recommendations, search, events, observation, timeline, **tool_description_optimization**) are available via **`query_usage`**. Context loading supports progressive strategy via **`load_context(strategy="progressive", ...)`**. File writes and config updates use **`manage_file`** and **`configure`**.
@@ -73,8 +73,11 @@ For details on adding annotations to custom tools, see the [Extension Developmen
 | `skill_pack` | Kept as internal callable; use `search_tools` for tool discovery |
 | `provide_feedback` | Kept as internal callable for learning engine |
 | `fix_roadmap_corruption` | Kept as internal callable for admin repair |
+| `sync_synapse`, `update_synapse` | **Consolidated** into `synapse(operation="sync" or "update_rule" or "update_prompt", ...)` (2026-02-27) |
+| `rollback_file_version` | **Consolidated** into `manage_file(operation="rollback", file_name="...", version=<int>)` (2026-02-27) |
+| `append_progress_entry`, `append_active_context_entry` | **Consolidated** into `append_entry(operation="progress" or "active_context", ...)` |
 
-These tools were removed from the published tool list in the 2026-02-26 tool budget reduction (46→40). See [tool-optimization-mapping](../architecture/tool-optimization-mapping.md).
+These tools were removed from the published tool list in the 2026-02-26 tool budget reduction (46→40). `sync_synapse` and `update_synapse` were consolidated into `synapse` in 2026-02-27. `rollback_file_version` was consolidated into `manage_file` in 2026-02-27. See [tool-optimization-mapping](../architecture/tool-optimization-mapping.md).
 
 ### Advanced Tool Use (Phase 49)
 
@@ -245,10 +248,12 @@ Unified Memory Bank file management tool for read/write/metadata operations.
   - `"read"` - Read file content (optionally with metadata).
   - `"write"` - Write content with versioning and metadata updates.
   - `"metadata"` - Return metadata only (no file content).
+  - `"rollback"` - Restore file from version snapshot (requires `version`).
 
 **Optional Parameters:**
 
 - `content` (str | None) - Content to write (required when `operation="write"`).
+- `version` (int | None) - Version number to restore from (required when `operation="rollback"`).
 - `include_metadata` (bool) - When `operation="read"`, include metadata block.
 - `change_description` (str | None) - Human-friendly description stored in version history.
 
@@ -259,7 +264,7 @@ Unified Memory Bank file management tool for read/write/metadata operations.
 - Resolves `.cortex/memory-bank/` via `get_cortex_path()` and validates `file_name` with safe path construction.
 - Provides **rich error responses** for:
   - Missing required parameters (`file_name`, `operation`) with `details.missing`, `details.required`, and `details.operation_values`.
-  - Invalid operations (`operation` not in `["read", "write", "metadata"]`) with `valid_operations` and a usage `hint`.
+  - Invalid operations (`operation` not in `["read", "write", "metadata", "rollback"]`) with `valid_operations` and a usage `hint`.
   - Invalid file names and path traversal attempts.
   - Non-existent files (including an `available_files` list for discovery).
   - Write-time conflicts (file conflict, lock timeout, Git conflict) with recovery suggestions.
@@ -280,7 +285,7 @@ Unified Memory Bank file management tool for read/write/metadata operations.
     "details": {
       "missing": ["file_name", "operation"],
       "required": ["file_name", "operation"],
-      "operation_values": ["read", "write", "metadata"]
+      "operation_values": ["read", "write", "metadata", "rollback"]
     },
     "hint": "Call manage_file(file_name=..., operation=...) for read/write/metadata operations. See docs/api/tools.md#manage_file."
   }
@@ -292,8 +297,8 @@ Unified Memory Bank file management tool for read/write/metadata operations.
   {
     "status": "error",
     "error": "Invalid operation: delete",
-    "valid_operations": ["read", "write", "metadata"],
-    "hint": "Use one of: 'read', 'write', or 'metadata' for the operation parameter."
+    "valid_operations": ["read", "write", "metadata", "rollback"],
+    "hint": "Use one of: 'read', 'write', 'metadata', or 'rollback' for the operation parameter."
   }
   ```
 
@@ -418,6 +423,28 @@ Unified Memory Bank file management tool for read/write/metadata operations.
   )
   ```
 
+- **Example 4 – Rollback to previous version:**
+
+  ```python
+  await manage_file(
+      file_name="projectBrief.md",
+      operation="rollback",
+      version=3,
+  )
+  ```
+
+**Rollback returns:** Same structure as the former `rollback_file_version` tool:
+
+  ```json
+  {
+    "status": "success",
+    "file_name": "projectBrief.md",
+    "rolled_back_from_version": 3,
+    "new_version": 6,
+    "token_count": 490
+  }
+  ```
+
 ---
 
 ### roadmap
@@ -446,7 +473,7 @@ await roadmap(operation="remove_entry", entry_contains="Plan: .cortex/plans/foo.
 await roadmap(operation="remove_section", section_heading_contains="Session Optimization")
 ```
 
-**See also:** `register_plan_in_roadmap`, `plan`, `manage_file` (fallback for multi-entry updates).
+**See also:** `plan(operation="register", ...)`, `plan`, `manage_file` (fallback for multi-entry updates).
 
 ---
 
@@ -514,13 +541,13 @@ await create_plan(operation="get", slug="phase-60-feature", response_format="con
 await create_plan(operation="get", slug="phase-60-feature", response_format="metadata")
 ```
 
-**See also:** `register_plan_in_roadmap`, `roadmap`, `get_structure_info`.
+**See also:** `plan(operation="register", ...)`, `roadmap`, `get_structure_info`.
 
 ---
 
-### register_plan_in_roadmap
+### plan(operation="register") (roadmap registration)
 
-Register a plan entry in the roadmap using structured merging.
+Register a plan entry in the roadmap. Use **`plan(operation="register", plan_title=..., description=..., section=...)`** (consolidated from `register_plan_in_roadmap`).
 
 **USE WHEN:** Registering a newly created plan in roadmap.md during the create-plan workflow. Prefer this over building full roadmap content and calling `manage_file(write)` for a single new entry to avoid truncation.
 
@@ -533,44 +560,11 @@ Register a plan entry in the roadmap using structured merging.
 - `status` (str) - Plan status: use `PENDING` or `IN PROGRESS` only (default: `PENDING`). Completed work belongs in activeContext.md; COMPLETED/COMPLETE/DONE are rejected.
 - `section` (str) - Roadmap section: `blockers`, `active_work`, `future`, or `pending` (default: `pending`).
 
-**Description:**
-
-- Reads `roadmap.md` via the same path as memory-bank operations.
-- Inserts one bullet in the requested section (format: `- **Title** - STATUS - description`).
-- Writes updated content with lock-guarding and corruption fixes; no truncation of existing entries.
-
-**Returns:**
-
-**Success:**
-
-```json
-{
-  "status": "success",
-  "file_name": "roadmap.md",
-  "message": "Plan registered in 'pending' section at line 45",
-  "line_inserted": 45,
-  "section": "pending",
-  "error": null
-}
-```
-
-**Error (completed status rejected):**
-
-```json
-{
-  "status": "error",
-  "file_name": "roadmap.md",
-  "message": "Failed to register plan",
-  "line_inserted": null,
-  "section": null,
-  "error": "Roadmap records future/upcoming work only. ..."
-}
-```
-
 **Example:**
 
 ```python
-await register_plan_in_roadmap(
+await plan(
+    operation="register",
     plan_title="Phase 60: Structured plan tools",
     description="Reference. Plan: .cortex/plans/phase-60-structured-plan-tools.md.",
     status="PENDING",
@@ -663,29 +657,11 @@ await query_usage(query_type="tool_description_optimization", tool_name="load_co
 
 ---
 
-### rollback_file_version
+### rollback_file_version (consolidated)
 
-Rollback a Memory Bank file to a previous version.
+**Use instead:** `manage_file(operation="rollback", file_name="...", version=<int>)`
 
-**Parameters:**
-
-- `file_name` (str) - Name of the file (e.g., "projectBrief.md")
-- `version` (int) - Version number to rollback to
-**Description:**
-
-Restores content from a snapshot and creates a new version entry. Does not delete history - the rollback itself becomes a new version.
-
-**Returns:**
-
-```json
-{
-  "status": "success",
-  "file_name": "projectBrief.md",
-  "rolled_back_from_version": 3,
-  "new_version": 6,
-  "token_count": 490
-}
-```
+See [manage_file](#manage_file) for the rollback operation.
 
 ---
 
@@ -2840,22 +2816,26 @@ Analyzes a project description and suggests what should go into each Memory Bank
 
 ---
 
-## Sequential Thinking
+## Thinking
 
-Stepwise, reflective problem-solving compatible with the MCP sequential thinking contract (thought history, revisions, branches).
+Unified thinking tool: lightweight by default, full sequential mode when optional params are provided.
 
-### sequentialthinking
+### think
 
-Run one step of sequential thinking and return structured state.
+Think about something. Lightweight by default; use optional params for full sequential mode (thought history, revisions, branches).
 
-**USE WHEN:** Breaking down complex problems, multi-step planning, analysis with revision, unclear scope, or when you need to filter irrelevant information (e.g. plan a refactor, debug a failing test, design an API).
+**LIGHTWEIGHT (default):** Pass only `thought`. Returns `{status, thought_number}`. Use for quick deliberation.
+
+**FULL MODE:** Pass `thought_number`, `total_thoughts`, `next_thought_needed`. Returns full state with camelCase keys. Use for multi-step planning, revisions, branches.
+
+**USE WHEN:** Analyzing tool outputs, checking policy compliance, planning multi-step operations, or formal multi-step reasoning (refactoring plans, debugging tests, designing APIs).
 
 **Parameters:**
 
 - `thought` (str) - Current thinking step (required)
-- `next_thought_needed` (bool) - Whether another thought step is needed (required)
-- `thought_number` (int) - Current thought index, 1-based (required)
-- `total_thoughts` (int) - Estimated total thoughts; can be adjusted (required)
+- `thought_number` (int | None) - Current thought index, 1-based (optional; omit for lightweight)
+- `total_thoughts` (int | None) - Estimated total thoughts (optional; omit for lightweight)
+- `next_thought_needed` (bool | None) - Whether another thought is needed (optional; omit for lightweight)
 - `is_revision` (bool) - This thought revises previous thinking (optional, default: false)
 - `revises_thought` (int | None) - Which thought number is being revised (optional)
 - `branch_from_thought` (int | None) - Branching point thought number (optional)
@@ -2864,7 +2844,7 @@ Run one step of sequential thinking and return structured state.
 
 **Returns:**
 
-JSON with camelCase keys: `thoughtNumber`, `totalThoughts`, `nextThoughtNeeded`, `branches` (list of branch IDs), `thoughtHistoryLength`. Compatible with the reference MCP sequential thinking server.
+Lightweight: `{status: "thought_logged", thought_number: N}`. Full mode: JSON with `thoughtNumber`, `totalThoughts`, `nextThoughtNeeded`, `branches`, `thoughtHistoryLength` (camelCase).
 
 ---
 

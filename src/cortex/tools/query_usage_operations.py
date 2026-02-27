@@ -502,12 +502,17 @@ async def query_usage(
     observation, timeline, anomalies, tool_description_optimization,
     production_monitoring, token_efficiency, redundancy, session_continuity,
     tool_frequency, tool_classification. tool_name required for
-    tool_description_optimization. tool_classification returns usage-ranked
+    tool_description_optimization.     tool_classification returns usage-ranked
     tools with current category (agent-skills Step 3).
     token_efficiency shows top token-expensive tools (Anthropic Step 2).
     redundancy shows repeated identical calls (Step 3). session_continuity
     tracks turns until productive (Step 5). tool_frequency shows tools by
     session presence and token savings when tiered loading is enabled (Step 6).
+
+    Args:
+        query_type: stats, unused, report, recommendations, anomalies, etc.
+        tool_name: Required for tool_description_optimization. Optional for others.
+        days, hours, limit: Query-specific window and limit parameters.
     """
     await _log_query_usage_start(ctx, query_type)
     params = _build_query_usage_params_from_locals(locals())

@@ -34,11 +34,9 @@ from cortex.tools.tool_categories import (
 # ---------------------------------------------------------------------------
 
 _MIN_ALWAYS_LOADED = 12  # at least this many core tools
-_MIN_DEFERRED_MEDIUM = 15
-_MIN_DEFERRED_LOW = (
-    6  # reduced with tool budget 2026-02-26 (cache_json, skill_pack, etc. internalized)
-)
-_MIN_TOTAL_TOOLS = 37  # After plan+roadmap consolidation; MAX_REGISTERED_TOOLS=40
+_MIN_DEFERRED_MEDIUM = 13  # 2026-02-27: register_plan_in_roadmap consolidated into plan
+_MIN_DEFERRED_LOW = 4  # 2026-02-27: rollback_file_version consolidated into manage_file
+_MIN_TOTAL_TOOLS = 31  # 2026-02-27: append_progress_entry+append_active_context_entry consolidated into append_entry
 
 
 @pytest.mark.timeout(5)
@@ -287,7 +285,7 @@ class TestGetDeferredToolNames:
         """Contains tools from both deferred_medium and deferred_low."""
         names = set(get_deferred_tool_names())
         assert "suggest_refactoring" in names  # medium
-        assert "rollback_file_version" in names  # low
+        assert "query_usage" in names  # low
 
     def test_no_always_loaded_tools(self) -> None:
         """No always_loaded tools appear in deferred list."""

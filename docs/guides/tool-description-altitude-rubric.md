@@ -32,6 +32,16 @@ A tool description at the right altitude:
 - All tools score **≥ 4** on this rubric.
 - At least **20+ tools** have embedded examples (score 5).
 
+## Validation
+
+Run the altitude audit script to verify compliance:
+
+```bash
+uv run python .cortex/synapse/scripts/python/check_tool_description_altitude.py
+```
+
+The script scores each `@mcp.tool` docstring and reports tools below 4. Exit code 0 when targets are met.
+
 ## Reference
 
 - Plan: Anthropic context engineering alignment (`.cortex/plans/plan-anthropic-context-engineering-alignment.md`) — Step 1.

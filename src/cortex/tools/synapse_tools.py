@@ -4,11 +4,8 @@ Synapse Tools for MCP Memory Bank.
 This module contains tools for syncing, updating, and retrieving
 shared rules and prompts from a git submodule-based Synapse repository.
 
-Total: 4 tools (update_synapse_rule + update_synapse_prompt consolidated into update_synapse)
-- sync_synapse
-- update_synapse (content_type=rule|prompt)
-- get_synapse_rules
-- get_synapse_prompts
+Tools: synapse (dispatcher), get_synapse_rules, get_synapse_prompts.
+synapse consolidates sync_synapse and update_synapse (operation=sync|update_rule|update_prompt).
 
 Note: setup_synapse has been replaced by a prompt template in docs/prompts/
 """
@@ -20,6 +17,7 @@ __all__ = [
     "get_synapse_prompts_resource",
     "get_synapse_rules",
     "get_synapse_rules_resource",
+    "synapse",
     "sync_synapse",
     "update_synapse",
     "update_synapse_prompt",
@@ -54,104 +52,132 @@ from cortex.tools.synapse_tools_impl import (
 )
 
 
-@mcp.tool(annotations=safe_write_annotations("Sync Synapse"))
-@ensure_usage_context
-@mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_EXTERNAL)
-async def sync_synapse(
-    pull: bool = True,
-    push: bool = False,
-    ctx: MCPContext | None = None,
-) -> str:
-    """Sync Synapse repository with remote using git operations.
-
-    USE WHEN: User wants to sync shared rules, user needs to update Synapse,
-    user requests Synapse sync, user wants to pull/push changes.
-
-    EXAMPLES: 'sync Synapse repository', 'pull Synapse updates', 'push
-    Synapse changes', 'sync shared rules'.
-
-    RETURNS: JSON with sync status, changes pulled/pushed, and operation
-    results.
-
-    This tool synchronizes the local Synapse git submodule with the remote
-    repository. When pulling, it fetches the latest rules and prompts from
-    other projects that share the same Synapse repository. When pushing, it
-    shares local modifications with all other projects. After pulling changes,
-    the rules index is automatically rebuilt to incorporate new or modified rules.
-
-    Args:
-        pull: Pull latest changes from remote repository.
-              Set to True to fetch updates from other projects.
-              Triggers automatic rules reindexing if changes are detected.
-              Default: True
-
-        push: Push local changes to remote repository.
-              Set to True to share your local modifications with other projects.
-              Requires commit access to the Synapse repository.
-              Default: False
-
-    Returns:
-        JSON string containing:
-        - status: "success" or "error"
-        - pulled: Boolean indicating if pull was performed
-        - pushed: Boolean indicating if push was performed
-        - changes: Dictionary with lists of added/modified/deleted files
-        - reindex_triggered: Boolean indicating if rules reindex occurred
-        - last_sync: ISO timestamp of sync operation
-        - error: Error message (only present if status is "error")
-
-    Examples:
-        Example 1: Pull latest changes from remote
-        >>> await sync_synapse(pull=True, push=False)
+def _synapse_error_invalid_operation(operation: str) -> str:
+    """Build error JSON for invalid synapse operation."""
+    return json.dumps(
         {
-          "status": "success",
-          "pulled": true,
-          "pushed": false,
-          "changes": {
-            "added": ["python/async-patterns.mdc"],
-            "modified": ["general/code-style.mdc"],
-            "deleted": []
-          },
-          "reindex_triggered": true,
-          "last_sync": "2026-01-13T10:30:00Z"
-        }
+            "status": "error",
+            "error": f"Invalid operation '{operation}'. Use sync, update_rule, or update_prompt.",
+        },
+        indent=2,
+    )
 
-        Example 2: Push local changes to remote
-        >>> await sync_synapse(pull=False, push=True)
-        {
-          "status": "success",
-          "pulled": false,
-          "pushed": true,
-          "changes": {
-            "added": [],
-            "modified": ["python/type-hints.mdc"],
-            "deleted": []
-          },
-          "reindex_triggered": false,
-          "last_sync": "2026-01-13T10:35:00Z"
-        }
 
-        Example 3: Error - Synapse not initialized
-        >>> await sync_synapse()
+def _synapse_error_update_missing_params(operation: str) -> str:
+    """Build error JSON when update_rule/update_prompt params are missing."""
+    return json.dumps(
         {
-          "status": "error",
-          "error": "Synapse not initialized. Run setup_synapse first."
-        }
-    """
-    await log_client(ctx, "info", "sync_synapse: starting", logger_name=__name__)
+            "status": "error",
+            "error": f"category, file, content, and commit_message are required when operation is '{operation}'",
+        },
+        indent=2,
+    )
+
+
+async def _synapse_handle_sync(pull: bool, push: bool, ctx: MCPContext | None) -> str:
+    """Handle synapse(operation='sync')."""
+    await log_client(ctx, "info", "synapse(sync): starting", logger_name=__name__)
     try:
         return await sync_synapse_impl(pull, push, ctx)
     except Exception as e:
-        await log_client(ctx, "error", f"sync_synapse: {e!s}", logger_name=__name__)
+        await log_client(ctx, "error", f"synapse(sync): {e!s}", logger_name=__name__)
         return json.dumps(
             {"status": "error", "error": str(e), "error_type": type(e).__name__},
             indent=2,
         )
 
 
-@mcp.tool(annotations=safe_write_annotations("Update Synapse (rule or prompt)"))
+async def _synapse_handle_update(
+    op: str,
+    category: str,
+    file: str,
+    content: str,
+    commit_message: str,
+    ctx: MCPContext | None,
+) -> str:
+    """Handle synapse(operation='update_rule'|'update_prompt')."""
+    impl = (
+        update_synapse_rule_impl if op == "update_rule" else update_synapse_prompt_impl
+    )
+    await log_client(ctx, "info", f"synapse({op}): starting", logger_name=__name__)
+    try:
+        return await impl(category, file, content, commit_message, ctx)
+    except Exception as e:
+        await log_client(ctx, "error", f"synapse({op}): {e!s}", logger_name=__name__)
+        return json.dumps(
+            {"status": "error", "error": str(e), "error_type": type(e).__name__},
+            indent=2,
+        )
+
+
+@mcp.tool(annotations=safe_write_annotations("Synapse (Sync or Update rule/prompt)"))
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_EXTERNAL)
+async def synapse(
+    operation: str = "sync",
+    # sync params
+    pull: bool = True,
+    push: bool = False,
+    # update_rule / update_prompt params
+    category: str | None = None,
+    file: str | None = None,
+    content: str | None = None,
+    commit_message: str | None = None,
+    ctx: MCPContext | None = None,
+) -> str:
+    """Sync Synapse repository with remote or update a rule/prompt file (single tool).
+
+    USE WHEN: User wants to sync shared rules (operation=sync), pull/push
+    Synapse changes, or update a shared rule/prompt file
+    (operation=update_rule|update_prompt).
+
+    EXAMPLES:
+    - synapse(operation="sync", pull=True, push=False) — pull latest from remote
+    - synapse(operation="sync", pull=False, push=True) — push local changes
+    - synapse(operation="update_rule", category="python", file="type-hints.mdc",
+      content="...", commit_message="Update type hints")
+    - synapse(operation="update_prompt", category="general", file="implement.md",
+      content="...", commit_message="Update implement prompt")
+
+    RETURNS: JSON. For sync: status, pulled, pushed, changes (added/modified/deleted),
+    reindex_triggered, last_sync. For update_rule/update_prompt: status, category,
+    file, commit_hash, committed, pushed. On error: status "error", error message.
+
+    Args:
+        operation: "sync" (default) — git pull/push; "update_rule" or
+            "update_prompt" — modify file, commit, push.
+        pull: For sync. Pull latest from remote (default True).
+        push: For sync. Push local changes (default False).
+        category: For update_rule/update_prompt. Category (e.g. "python", "general").
+        file: For update_rule/update_prompt. Filename (e.g. "type-hints.mdc").
+        content: For update_rule/update_prompt. Complete new file content.
+        commit_message: For update_rule/update_prompt. Git commit message.
+    """
+    op = (operation or "sync").strip().lower()
+    if op not in ("sync", "update_rule", "update_prompt"):
+        return _synapse_error_invalid_operation(operation or "")
+
+    if op == "sync":
+        return await _synapse_handle_sync(pull, push, ctx)
+
+    if not all([category, file, content, commit_message]):
+        return _synapse_error_update_missing_params(op)
+    assert category is not None and file is not None
+    assert content is not None and commit_message is not None
+    return await _synapse_handle_update(
+        op, category, file, content, commit_message, ctx
+    )
+
+
+async def sync_synapse(
+    pull: bool = True,
+    push: bool = False,
+    ctx: MCPContext | None = None,
+) -> str:
+    """Sync Synapse with remote (internal; use synapse(operation=\"sync\", ...) as MCP tool)."""
+    return await synapse(operation="sync", pull=pull, push=push, ctx=ctx)
+
+
 async def update_synapse(
     content_type: Literal["rule", "prompt"],
     category: str,
@@ -160,42 +186,16 @@ async def update_synapse(
     commit_message: str,
     ctx: MCPContext | None = None,
 ) -> str:
-    """Update a Synapse rule or prompt file and push changes to all projects.
-
-    USE WHEN: User wants to update a shared rule or prompt, user needs to
-    modify rule/prompt, user requests rule/prompt update.
-
-    EXAMPLES: update_synapse(content_type="rule", category="python", file="type-hints.mdc", content="...", commit_message="Update type hints"),
-    update_synapse(content_type="prompt", category="general", file="implement.md", content="...", commit_message="Update implement prompt").
-
-    RETURNS: JSON with status, updated path, commit hash, and push result.
-    On error: status \"error\" and error message.
-
-    Args:
-        content_type: "rule" to update a rule file, "prompt" to update a prompt file.
-        category: Category name (e.g. "python", "general").
-        file: Filename within the category (e.g. "type-hints.mdc", "implement.md").
-        content: Complete new content for the file.
-        commit_message: Git commit message describing the change.
-        ctx: MCP context (automatically provided).
-    """
-    await log_client(
-        ctx, "info", f"update_synapse({content_type}): starting", logger_name=__name__
+    """Update Synapse rule or prompt (internal; use synapse(operation=\"update_rule\"|\"update_prompt\", ...) as MCP tool)."""
+    op = "update_rule" if content_type == "rule" else "update_prompt"
+    return await synapse(
+        operation=op,
+        category=category,
+        file=file,
+        content=content,
+        commit_message=commit_message,
+        ctx=ctx,
     )
-    try:
-        if content_type == "rule":
-            return await update_synapse_rule_impl(
-                category, file, content, commit_message, ctx
-            )
-        return await update_synapse_prompt_impl(
-            category, file, content, commit_message, ctx
-        )
-    except Exception as e:
-        await log_client(ctx, "error", f"update_synapse: {e!s}", logger_name=__name__)
-        return json.dumps(
-            {"status": "error", "error": str(e), "error_type": type(e).__name__},
-            indent=2,
-        )
 
 
 async def update_synapse_rule(
@@ -205,7 +205,7 @@ async def update_synapse_rule(
     commit_message: str,
     ctx: MCPContext | None = None,
 ) -> str:
-    """Update a Synapse rule file (wrapper; use update_synapse(content_type=\"rule\", ...) as MCP tool)."""
+    """Update a Synapse rule file (wrapper; use synapse(operation=\"update_rule\", ...) as MCP tool)."""
     return await update_synapse(
         content_type="rule",
         category=category,
@@ -295,7 +295,7 @@ async def update_synapse_prompt(
     commit_message: str,
     ctx: MCPContext | None = None,
 ) -> str:
-    """Update a Synapse prompt file (wrapper; use update_synapse(content_type=\"prompt\", ...) as MCP tool)."""
+    """Update a Synapse prompt file (wrapper; use synapse(operation=\"update_prompt\", ...) as MCP tool)."""
     return await update_synapse(
         content_type="prompt",
         category=category,

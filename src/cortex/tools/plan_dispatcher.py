@@ -1,8 +1,8 @@
 """
 Plan dispatcher: unified plan(operation=...) MCP tool.
 
-Consolidates create_plan and complete_plan into a single operation-based dispatcher
-following the Phase 50 pattern (query_memory_bank, query_usage).
+Consolidates create_plan, complete_plan, and register_plan_in_roadmap into a single
+operation-based dispatcher following the Phase 50 pattern (query_memory_bank, query_usage).
 """
 
 from __future__ import annotations
@@ -20,7 +20,7 @@ def _plan_error_invalid_operation(operation: str) -> str:
     return CreatePlanResult(
         status="error",
         file_path=None,
-        message=f"Invalid operation '{operation}'. Use create, list, get, or complete.",
+        message=f"Invalid operation '{operation}'. Use create, list, get, complete, or register.",
         error="Invalid operation",
     ).model_dump_json()
 
@@ -82,55 +82,87 @@ async def _plan_handle_crud(
     )
 
 
-@mcp.tool(annotations=destructive_annotations("Plan (Create/List/Get/Complete)"))
+def _plan_error_missing_register_params() -> str:
+    from cortex.tools.plan_roadmap import RegisterPlanResult
+
+    return RegisterPlanResult(
+        status="error",
+        file_name="roadmap.md",
+        message="plan_title and description are required when operation is 'register'",
+        line_inserted=None,
+        section=None,
+        error="Missing plan_title or description",
+    ).model_dump_json()
+
+
+async def _plan_handle_register(
+    plan_title: str,
+    description: str,
+    status: str,
+    section: str,
+    ctx: MCPContext | None,
+) -> str:
+    from cortex.tools.plan_roadmap import register_plan_in_roadmap
+
+    return await register_plan_in_roadmap(
+        plan_title=plan_title,
+        description=description,
+        status=status,
+        section=section,
+        ctx=ctx,
+    )
+
+
+@mcp.tool(
+    annotations=destructive_annotations("Plan (Create/List/Get/Complete/Register)")
+)
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_MEDIUM)
 async def plan(
     operation: str = "create",
-    # create params
     title: str | None = None,
     content: str | None = None,
     slug: str | None = None,
-    # list params
     include_archive: bool = False,
-    # get params
     response_format: str = "content",
-    # complete params
     plan_title: str | None = None,
     summary: str | None = None,
     completion_date: str | None = None,
     progress_entry: str | None = None,
     plan_file_name: str | None = None,
+    description: str | None = None,
+    status: str = "PENDING",
+    section: str = "pending",
     ctx: MCPContext | None = None,
 ) -> str:
-    """Create, list, get, or complete plan files (single plan lifecycle tool).
+    """Plan lifecycle: create, list, get, complete, or register in roadmap (single tool).
 
-    USE WHEN: Creating a plan (operation=create), listing plans (operation=list),
-    reading a plan by slug (operation=get), or completing a plan and moving it
-    from roadmap to activeContext (operation=complete).
+    USE WHEN: Creating a plan file, listing/getting plans, completing a plan (move
+    to activeContext), or registering a new plan in roadmap (create-plan workflow).
 
-    EXAMPLES:
-    - plan(operation="create", title="Phase 60", content="# Plan...")
-    - plan(operation="list") or plan(operation="list", include_archive=True)
-    - plan(operation="get", slug="phase-58-multi-agent")
-    - plan(operation="complete", plan_title="Session improvements", summary="Tools optimization.", plan_file_name="session-optimization-2026-02-23.md")
+    RETURNS: JSON per operation (CreatePlanResult, ListPlansResult, GetPlanResult,
+    CompletePlanResult, or RegisterPlanResult).
 
-    RETURNS: JSON (CreatePlanResult, ListPlansResult, GetPlanResult, or CompletePlanResult per operation).
+    Parameters: operation (create|list|get|complete|register); create: title, content;
+    list: include_archive; get: slug, response_format; complete: plan_title, summary;
+    register: plan_title, description, status, section.
 
-    Parameters:
-    - operation: 'create' (default), 'list', 'get', or 'complete'
-    - create: title, content required; slug optional
-    - list: include_archive (default False)
-    - get: slug required; response_format 'content' or 'metadata'
-    - complete: plan_title, summary required; completion_date, progress_entry, plan_file_name optional
+    EXAMPLES: plan(operation="create", title="Phase 60", content="# Plan...");
+    plan(operation="register", plan_title="Phase 60", description="...", section="pending")
     """
-    if operation not in ("create", "list", "get", "complete"):
+    if operation not in ("create", "list", "get", "complete", "register"):
         return _plan_error_invalid_operation(operation)
     if operation == "complete":
         if not plan_title or not summary:
             return _plan_error_missing_complete_params()
         return await _plan_handle_complete(
             plan_title, summary, completion_date, progress_entry, plan_file_name, ctx
+        )
+    if operation == "register":
+        if not plan_title or not description:
+            return _plan_error_missing_register_params()
+        return await _plan_handle_register(
+            plan_title, description, status, section, ctx
         )
     return await _plan_handle_crud(
         operation, title, content, slug, include_archive, response_format, ctx

@@ -26,6 +26,7 @@ class FileOperation(str, Enum):
     READ = "read"
     WRITE = "write"
     METADATA = "metadata"
+    ROLLBACK = "rollback"
 
 
 def parse_file_operation(value: str | None) -> FileOperation | None:
@@ -317,7 +318,7 @@ def build_invalid_operation_error(operation: str) -> str:
     # Add backward-compatible valid_operations and hint at top level
     parsed["valid_operations"] = valid_operations
     parsed["hint"] = (
-        "Use one of: 'read', 'write', or 'metadata' for the operation parameter."
+        "Use one of: 'read', 'write', 'metadata', or 'rollback' for the operation parameter."
     )
 
     return json.dumps(parsed, indent=2)
@@ -326,8 +327,9 @@ def build_invalid_operation_error(operation: str) -> str:
 def validate_manage_file_operation(
     operation: str | None,
     file_name: str | None,
+    version: int | None = None,
 ) -> tuple[FileOperation | None, str | None]:
-    """Validate operation and file_name. Returns (parsed_op, None) or (None, error_json)."""
+    """Validate operation, file_name, and version (for rollback). Returns (parsed_op, None) or (None, error_json)."""
     parsed_op = parse_file_operation(operation)
     if parsed_op is None:
         if operation is None:
@@ -339,6 +341,18 @@ def validate_manage_file_operation(
         return (None, build_invalid_operation_error(str(operation)))
     if not file_name:
         return (None, build_missing_parameters_error(["file_name"]))
+    if parsed_op == FileOperation.ROLLBACK and version is None:
+        return (
+            None,
+            json.dumps(
+                {
+                    "status": "error",
+                    "error": "Version is required for rollback operation",
+                    "hint": "Call manage_file(operation='rollback', file_name='...', version=<int>)",
+                },
+                indent=2,
+            ),
+        )
     return (parsed_op, None)
 
 

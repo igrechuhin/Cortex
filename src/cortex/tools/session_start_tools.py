@@ -23,7 +23,6 @@ from typing import cast
 from cortex.core.constants import MCP_TOOL_TIMEOUT_FAST
 from cortex.core.context_logging import MCPContext, log_client
 from cortex.core.file_system import FileSystemManager
-from cortex.core.mcp_annotations import read_only_annotations
 from cortex.core.mcp_stability import (
     ensure_usage_context,
     mcp_tool_wrapper,
@@ -37,7 +36,6 @@ from cortex.core.usage_context import (
 )
 from cortex.managers.manager_utils import get_manager
 from cortex.managers.types import ManagersDict
-from cortex.server import mcp
 from cortex.tools.models import (
     SessionBrief,
     SessionStartErrorResult,
@@ -278,12 +276,7 @@ async def _session_start_impl(
     )
 
 
-@mcp.tool(
-    annotations=read_only_annotations(
-        "Session Start Initializer",
-        idempotent=False,
-    ),
-)
+# Internal; use session(operation="start") as MCP tool.
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_FAST)
 async def session_start(

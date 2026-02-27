@@ -106,7 +106,7 @@ Tool modules are grouped by phase and responsibility. Representative groups:
 - **Synapse** – `synapse_tools`, Synapse prompts registration
 - **Other** – `query_memory_bank_operations`, `query_usage_operations`, `cache_json_tools`, `script_capture_tools`, `sequential_thinking`, `task_locking`, and others
 
-Total tool count is 100+; exact count and parameters are in `docs/api/tools.md`.
+Total tool count is 100+; exact count and parameters are in `docs/api/tools.md`. Naming rules: [naming conventions](architecture/naming-conventions.md).
 
 ### Layer 3: Manager Initialization
 
@@ -251,7 +251,7 @@ Each manager/service module has a single responsibility:
 
 **Rule loading**: The rules manager indexes `.mdc` files under the rules directory. Tools such as `rules(operation="get_relevant", task_description="...")` and `get_synapse_rules(task_description="...")` return relevant rules for a task. Paths are resolved via `get_structure_info()` (e.g. `structure_info.paths.rules`); the Synapse submodule is the canonical source for shared rules and prompts.
 
-**Submodule pattern**: Projects add Synapse via `git submodule add <url> .cortex/synapse/`. The initialize and setup_synapse prompts configure the submodule; `sync_synapse` (or equivalent) keeps it updated. Cursor integration may symlink `.cursor/synapse` to `.cortex/synapse` for IDE discovery.
+**Submodule pattern**: Projects add Synapse via `git submodule add <url> .cortex/synapse/`. The initialize and setup_synapse prompts configure the submodule; `synapse(operation="sync")` (or equivalent) keeps it updated. Cursor integration may symlink `.cursor/synapse` to `.cortex/synapse` for IDE discovery.
 
 ### Health Check and Monitoring Architecture
 

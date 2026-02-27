@@ -37,7 +37,8 @@ class TestManageFileInputExamples:
                 "read",
                 "write",
                 "metadata",
-            ), f"Example {i} operation must be read/write/metadata"
+                "rollback",
+            ), f"Example {i} operation must be read/write/metadata/rollback"
 
     def test_read_example_may_include_include_metadata(self) -> None:
         """Read examples may include include_metadata for doc accuracy."""

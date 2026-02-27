@@ -9,22 +9,16 @@ appropriate archive directory and removes any duplicate from the plans root.
 
 __all__ = [
     "CompletePlanResult",
-    "append_active_context_entry",
-    "append_progress_entry",
+    "append_active_context_entry_impl",
+    "append_progress_entry_impl",
     "complete_plan",
 ]
 
-from cortex.core.constants import MCP_TOOL_TIMEOUT_MEDIUM, MemoryBankFile
+from cortex.core.constants import MCP_TOOL_TIMEOUT_MEDIUM
 from cortex.core.context_logging import MCPContext, log_client
-from cortex.core.mcp_annotations import safe_write_annotations
 from cortex.core.mcp_stability import ensure_usage_context, mcp_tool_wrapper
 from cortex.core.models import OperationStatus
 from cortex.core.project_root_resolver import resolve_project_root_async
-from cortex.server import mcp
-from cortex.tools.models import (
-    AppendActiveContextEntryResult,
-    AppendProgressEntryResult,
-)
 from cortex.tools.plan_completion_content import today_iso
 from cortex.tools.plan_completion_models import CompletePlanResult
 from cortex.tools.plan_completion_ops import (
@@ -118,114 +112,42 @@ async def complete_plan(
         ).model_dump_json()
 
 
-async def _append_progress_entry_impl(
+async def append_progress_entry_impl(
     date_str: str,
     entry_text: str,
     ctx: MCPContext | None,
 ) -> str:
-    """Implementation of append_progress_entry."""
+    """Implementation of append_progress_entry. Used by append_entry dispatcher."""
     await log_client(
-        ctx, "info", "append_progress_entry: starting", logger_name=__name__
+        ctx, "info", "append_entry(progress): starting", logger_name=__name__
     )
     root = await resolve_project_root_async(None, ctx)
     result = await execute_append_progress(root, date_str, entry_text)
     await log_client(
         ctx,
         "info" if result.status == "success" else "warning",
-        f"append_progress_entry: {result.status}",
+        f"append_entry(progress): {result.status}",
         logger_name=__name__,
     )
     return result.model_dump_json()
 
 
-@mcp.tool(annotations=safe_write_annotations("Append Progress Entry"))
-@ensure_usage_context
-@mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_MEDIUM)
-async def append_progress_entry(
-    date_str: str,
-    entry_text: str,
-    ctx: MCPContext | None = None,
-) -> str:
-    """Append a single entry to progress.md under the given date section.
-
-    USE WHEN: Implement Step 5 needs to add one progress entry without
-    building or writing full progress content (safe update).
-
-    EXAMPLES: 'append_progress_entry(date_str="2026-02-24", entry_text="**Phase X** - COMPLETE. Done.")',
-    'append progress entry for today'.
-
-    date_str: YYYY-MM-DD. entry_text: one bullet line (e.g. "**Title** - COMPLETE. ...").
-    RETURNS: JSON with status, line_inserted, or error.
-    """
-    try:
-        return await _append_progress_entry_impl(date_str, entry_text, ctx)
-    except Exception as e:
-        await log_client(
-            ctx, "error", f"append_progress_entry: {e}", logger_name=__name__
-        )
-        return AppendProgressEntryResult(
-            status=OperationStatus.ERROR,
-            file_name=MemoryBankFile.PROGRESS,
-            message="Unexpected error",
-            line_inserted=None,
-            error=str(e),
-        ).model_dump_json()
-
-
-async def _append_active_context_entry_impl(
+async def append_active_context_entry_impl(
     date_str: str,
     title: str,
     summary: str,
     ctx: MCPContext | None,
 ) -> str:
-    """Implementation of append_active_context_entry."""
+    """Implementation of append_active_context_entry. Used by append_entry dispatcher."""
     await log_client(
-        ctx, "info", "append_active_context_entry: starting", logger_name=__name__
+        ctx, "info", "append_entry(active_context): starting", logger_name=__name__
     )
     root = await resolve_project_root_async(None, ctx)
     result = await execute_append_active_context(root, date_str, title, summary)
     await log_client(
         ctx,
         "info" if result.status == "success" else "warning",
-        f"append_active_context_entry: {result.status}",
+        f"append_entry(active_context): {result.status}",
         logger_name=__name__,
     )
     return result.model_dump_json()
-
-
-@mcp.tool(annotations=safe_write_annotations("Append Active Context Entry"))
-@ensure_usage_context
-@mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_MEDIUM)
-async def append_active_context_entry(
-    date_str: str,
-    title: str,
-    summary: str,
-    ctx: MCPContext | None = None,
-) -> str:
-    """Append a single completed entry to activeContext.md.
-
-    USE WHEN: Implement Step 5 needs to add completed work without
-    building or writing full activeContext content (safe update).
-
-    EXAMPLES: 'append_active_context_entry(date_str="2026-02-24", title="Step 1", summary="Rubric added.")',
-    'append active context entry for completed work'.
-
-    date_str: YYYY-MM-DD. title/summary: entry content.
-    RETURNS: JSON with status, line_inserted, or error.
-    """
-    try:
-        return await _append_active_context_entry_impl(date_str, title, summary, ctx)
-    except Exception as e:
-        await log_client(
-            ctx,
-            "error",
-            f"append_active_context_entry: {e}",
-            logger_name=__name__,
-        )
-        return AppendActiveContextEntryResult(
-            status=OperationStatus.ERROR,
-            file_name=MemoryBankFile.ACTIVE_CONTEXT,
-            message="Unexpected error",
-            line_inserted=None,
-            error=str(e),
-        ).model_dump_json()

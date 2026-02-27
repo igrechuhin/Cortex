@@ -15,7 +15,6 @@ from cortex.tools.sequential_thinking import (
     SequentialThinkingCore,
     SequentialThinkingInput,
     reset_core_for_testing,
-    sequentialthinking,
     think,
 )
 
@@ -46,9 +45,9 @@ def _input(
     )
 
 
-# Response model with camelCase aliases for validating tool JSON output
+# Response model with camelCase aliases for validating full-mode think output
 class SequentialThinkingResponse(BaseModel):
-    """Tool JSON response shape (camelCase keys)."""
+    """Tool JSON response shape (camelCase keys) for full mode."""
 
     thoughtNumber: int = Field(..., alias="thoughtNumber")
     totalThoughts: int = Field(..., alias="totalThoughts")
@@ -166,24 +165,24 @@ class TestSequentialThinkingCoreOptionalParams:
 
 
 # =============================================================================
-# Output shape (via handler; JSON uses camelCase)
+# think tool: full mode (explicit thought_number, total_thoughts, next_thought_needed)
 # =============================================================================
 
 
 @pytest.mark.asyncio
-class TestSequentialthinkingHandler:
-    """Handler returns valid JSON with expected shape and camelCase keys."""
+class TestThinkFullMode:
+    """think tool in full mode returns JSON with expected shape and camelCase keys."""
 
-    async def test_sequentialthinking_returns_json_with_camel_case_keys(self):
+    async def test_think_full_returns_json_with_camel_case_keys(self):
         with patch(
             "cortex.tools.sequential_thinking._get_core",
             return_value=SequentialThinkingCore(),
         ):
-            result = await sequentialthinking(
+            result = await think(
                 thought="Test",
-                next_thought_needed=False,
                 thought_number=1,
                 total_thoughts=1,
+                next_thought_needed=False,
             )
         data = json.loads(result)
         assert "thoughtNumber" in data
@@ -197,43 +196,43 @@ class TestSequentialthinkingHandler:
         assert parsed.thoughtHistoryLength == 1
         assert parsed.branches == []
 
-    async def test_sequentialthinking_second_call_increases_history_length(self):
+    async def test_think_full_second_call_increases_history_length(self):
         with patch(
             "cortex.tools.sequential_thinking._get_core",
             return_value=SequentialThinkingCore(),
         ):
-            await sequentialthinking(
+            await think(
                 thought="First",
-                next_thought_needed=True,
                 thought_number=1,
                 total_thoughts=2,
+                next_thought_needed=True,
             )
-            result = await sequentialthinking(
+            result = await think(
                 thought="Second",
-                next_thought_needed=False,
                 thought_number=2,
                 total_thoughts=2,
+                next_thought_needed=False,
             )
         data = json.loads(result)
         assert data["thoughtHistoryLength"] == 2
         assert data["thoughtNumber"] == 2
 
-    async def test_sequentialthinking_with_branch_records_branch(self):
+    async def test_think_full_with_branch_records_branch(self):
         with patch(
             "cortex.tools.sequential_thinking._get_core",
             return_value=SequentialThinkingCore(),
         ):
-            await sequentialthinking(
+            await think(
                 thought="Root",
-                next_thought_needed=True,
                 thought_number=1,
                 total_thoughts=2,
+                next_thought_needed=True,
             )
-            result = await sequentialthinking(
+            result = await think(
                 thought="Branch",
-                next_thought_needed=False,
                 thought_number=2,
                 total_thoughts=2,
+                next_thought_needed=False,
                 branch_from_thought=1,
                 branch_id="my-branch",
             )
@@ -241,72 +240,72 @@ class TestSequentialthinkingHandler:
         assert "my-branch" in data["branches"]
         assert data["thoughtHistoryLength"] == 2
 
-    async def test_sequentialthinking_get_core_creates_core_when_none(self):
+    async def test_think_full_get_core_creates_core_when_none(self):
         reset_core_for_testing()
-        result = await sequentialthinking(
+        result = await think(
             thought="First",
-            next_thought_needed=False,
             thought_number=1,
             total_thoughts=1,
+            next_thought_needed=False,
         )
         data = json.loads(result)
         assert data["thoughtHistoryLength"] == 1
-        result2 = await sequentialthinking(
+        result2 = await think(
             thought="Second",
-            next_thought_needed=False,
             thought_number=2,
             total_thoughts=2,
+            next_thought_needed=False,
         )
         data2 = json.loads(result2)
         assert data2["thoughtHistoryLength"] == 2
 
-    async def test_sequentialthinking_disabled_logging_skips_stderr(self):
+    async def test_think_full_disabled_logging_skips_stderr(self):
         with patch(
             "cortex.tools.sequential_thinking._get_core",
             return_value=SequentialThinkingCore(),
         ):
             with patch.dict(os.environ, {"DISABLE_THOUGHT_LOGGING": "true"}):
-                result = await sequentialthinking(
+                result = await think(
                     thought="No log",
-                    next_thought_needed=False,
                     thought_number=1,
                     total_thoughts=1,
+                    next_thought_needed=False,
                 )
         data = json.loads(result)
         assert data["thoughtNumber"] == 1
 
-    async def test_sequentialthinking_log_oserror_handled(self):
+    async def test_think_full_log_oserror_handled(self):
         with patch(
             "cortex.tools.sequential_thinking._get_core",
             return_value=SequentialThinkingCore(),
         ):
             with patch("sys.stderr") as mock_stderr:
                 mock_stderr.write.side_effect = OSError("stderr closed")
-                result = await sequentialthinking(
+                result = await think(
                     thought="Oops",
-                    next_thought_needed=False,
                     thought_number=1,
                     total_thoughts=1,
+                    next_thought_needed=False,
                 )
         data = json.loads(result)
         assert data["thoughtHistoryLength"] == 1
 
 
 # =============================================================================
-# Lightweight think tool
+# think tool: lightweight mode (thought only)
 # =============================================================================
 
 
 class ThinkResponse(BaseModel):
-    """Response shape for the think tool."""
+    """Response shape for the think tool in lightweight mode."""
 
     status: str = Field(..., description="Status of the thought logging")
     thought_number: int = Field(..., description="Thought number assigned")
 
 
 @pytest.mark.asyncio
-class TestThinkTool:
-    """Lightweight think tool - simple thought logging."""
+class TestThinkLightweightMode:
+    """think tool in lightweight mode - simple thought logging."""
 
     async def test_think_logs_first_thought(self):
         """First think call logs thought with number 1."""
@@ -334,40 +333,33 @@ class TestThinkTool:
         data3 = json.loads(result3)
         assert data3["thought_number"] == 3
 
-    async def test_think_shares_core_with_sequentialthinking(self):
-        """think tool shares the same core as sequentialthinking."""
+    async def test_think_lightweight_after_full_mode(self):
+        """Lightweight think continues numbering after full-mode calls."""
         reset_core_for_testing()
-        # Use sequentialthinking first
-        await sequentialthinking(
-            thought="Sequential thought",
-            next_thought_needed=False,
+        await think(
+            thought="Full thought",
             thought_number=1,
             total_thoughts=1,
+            next_thought_needed=False,
         )
-        # Then use think - should continue numbering
-        result = await think(thought="Think thought")
+        result = await think(thought="Lightweight thought")
         data = json.loads(result)
         assert data["thought_number"] == 2
 
-    async def test_think_works_after_sequentialthinking(self):
-        """think tool works correctly after sequentialthinking calls."""
+    async def test_think_full_after_lightweight(self):
+        """Full-mode think continues numbering after lightweight calls."""
         reset_core_for_testing()
-        await sequentialthinking(
-            thought="One",
-            next_thought_needed=True,
-            thought_number=1,
-            total_thoughts=2,
-        )
-        await sequentialthinking(
-            thought="Two",
+        await think(thought="One")
+        await think(thought="Two")
+        result = await think(
+            thought="Three (full)",
+            thought_number=3,
+            total_thoughts=3,
             next_thought_needed=False,
-            thought_number=2,
-            total_thoughts=2,
         )
-        # think should continue with number 3
-        result = await think(thought="After sequential")
         data = json.loads(result)
-        assert data["thought_number"] == 3
+        assert data["thoughtNumber"] == 3
+        assert data["thoughtHistoryLength"] == 3
 
     async def test_think_empty_thought_allowed(self):
         """Empty thought string is allowed."""
@@ -403,16 +395,15 @@ class TestThinkTool:
             data = json.loads(result)
             assert data["thought_number"] == i + 1
 
-    async def test_think_independent_from_sequentialthinking_sessions(self):
-        """think tool works independently - doesn't require sequentialthinking setup."""
+    async def test_think_standalone_lightweight(self):
+        """think tool works standalone - no prior full-mode setup needed."""
         reset_core_for_testing()
-        # Can use think without any sequentialthinking calls
         result = await think(thought="Standalone thought")
         data = json.loads(result)
         assert data["status"] == "thought_logged"
         assert data["thought_number"] == 1
 
-    async def test_think_disabled_logging_skips_stderr(self):
+    async def test_think_lightweight_disabled_logging_skips_stderr(self):
         """think tool respects DISABLE_THOUGHT_LOGGING environment variable."""
         reset_core_for_testing()
         with patch(
@@ -424,7 +415,7 @@ class TestThinkTool:
         data = json.loads(result)
         assert data["thought_number"] == 1
 
-    async def test_think_log_oserror_handled(self):
+    async def test_think_lightweight_log_oserror_handled(self):
         """think tool handles OSError during logging gracefully."""
         reset_core_for_testing()
         with patch(

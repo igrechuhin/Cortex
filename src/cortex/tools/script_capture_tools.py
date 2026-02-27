@@ -486,10 +486,10 @@ async def _dispatch_session_scripts(
     return await handler(**kwargs)
 
 
-@mcp.tool(annotations=safe_write_annotations("Session Scripts Dispatcher"))
+@mcp.tool(annotations=safe_write_annotations("Manage Session Scripts"))
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_MEDIUM)
-async def session_scripts(
+async def manage_session_scripts(
     operation: str,
     script_path: str | None = None,
     script_content: str | None = None,
@@ -501,7 +501,7 @@ async def session_scripts(
     output_type: str = "tool",
     ctx: MCPContext | None = None,
 ) -> str:
-    """Dispatch script capture operations through a single MCP tool.
+    """Manage session scripts: capture, list, analyze, suggest, promote (single MCP tool).
 
     USE WHEN: Capturing a session-generated script, listing captured scripts,
     analyzing scripts for promotion, discovering tools for a task, or

@@ -36,6 +36,9 @@ async def check_mcp_connection_health() -> str:
     RETURNS: JSON with connection status, resource metrics, and health
     indicators.
 
+    Args:
+        None. No parameters required.
+
     Returns connection health metrics including:
     - Connection status (healthy/unhealthy)
     - Current concurrent operations

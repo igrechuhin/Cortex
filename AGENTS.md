@@ -19,7 +19,7 @@ This project has a **Cortex MCP server** that provides tools for everything agen
 | Project structure, paths | `get_structure_info` | Hardcode `.cortex/` paths |
 | Cache JSON under `.cortex/.cache` | `cortex.core.cache_json_access.read_cache_json` / `write_cache_json` (internal); `manage_file` for reads | Read/write cache files directly; `cache_json` was internalized 2026-02-26 |
 
-**Tools vs Resources:** For read-only operations (e.g. load context, stats, file content), prefer MCP Resources (`cortex://` URIs) when available. Read-only query tools: `query_memory_bank`, `query_usage`. Use Tools for writes (e.g. `manage_file`, `configure`). See `docs/api/tools.md` and Phase 43 plan for naming conventions.
+**Tools vs Resources:** For read-only operations (e.g. load context, stats, file content), prefer MCP Resources (`cortex://` URIs) when available. Read-only query tools: `query_memory_bank`, `query_usage`. Use Tools for writes (e.g. `manage_file`, `configure`). See [docs/api/tools.md](docs/api/tools.md) and [docs/architecture/naming-conventions.md](docs/architecture/naming-conventions.md) for naming rules.
 
 **Workflow and compound-engineering:** Delivered by Cortex MCP; do not duplicate here — fetch via `load_context` / memory bank.
 
@@ -50,9 +50,9 @@ See the implement, commit, and analyze prompts (Synapse) for detailed workflow g
 
 ## Workflow
 
-1. **Get session orientation** (recommended) — call `session_start()` for efficient orientation (< 1000 tokens). Returns current focus, next work item, health check, git status, and suggestions. Replaces 3-5 manual orientation calls.
+1. **Get session orientation** (recommended) — call `session(operation="start")` for efficient orientation (< 1000 tokens). Returns current focus, next work item, health check, git status, and suggestions. Replaces 3-5 manual orientation calls.
 2. **Scope the task** — restate the user's goal.
-3. **Call Cortex MCP** — load context using two-step pattern (`load_context(depth="metadata_only")` → `manage_file(sections=[...])`), fetch rules, discover tools. Let Cortex choose what's relevant. **Pattern**: `session_start()` → `load_context(task_description=brief.next_work_item, ...)` → work
+3. **Call Cortex MCP** — load context using two-step pattern (`load_context(depth="metadata_only")` → `manage_file(sections=[...])`), fetch rules, discover tools. Let Cortex choose what's relevant. **Pattern**: `session(operation="start")` → `load_context(task_description=brief.next_work_item, ...)` → work
 
 **Context budget defaults (task-type)**:
 
@@ -81,7 +81,7 @@ Zero-budget or zero-files `load_context` is only acceptable for trivial/no-op ta
 
 Roles are automatically inferred from task descriptions using keyword heuristics; explicit role parameters are optional. The role is logged in `load_context` session logs and used for role-aware statistics in context-effectiveness analysis. See `cortex.optimization.agent_roles` for role detection logic and profiles. Role-aware budget recommendations are available in `analyze_context_effectiveness()` insights via `role_budget_recommendations` and `role_recommendations`.
 
-1. **Think before acting** — use the `think` tool for quick deliberation moments (analyzing tool outputs, checking policy compliance, planning multi-step operations). For formal multi-step reasoning, use `sequentialthinking`.
+1. **Think before acting** — use the `think` tool: lightweight `think(thought="...")` for quick deliberation; full mode (pass thought_number, total_thoughts, next_thought_needed) for multi-step reasoning.
 2. **Edit code** — use IDE tools (`Read`, `Write`, `Grep`, `Glob`, `LS`) for source files.
 3. **Verify** — use Cortex quality/test tools, not raw shell commands.
 

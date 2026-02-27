@@ -1,11 +1,11 @@
 {
   "name": "planning",
   "description": "Planning and tracking: create plans, update roadmap, archive completed plans.",
-  "tools": ["plan", "register_plan_in_roadmap", "roadmap", "configure"],
+  "tools": ["plan", "roadmap", "configure"],
   "when_to_use": "Creating or updating plans, registering plans in roadmap, completing roadmap steps, roadmap entry management.",
   "workflow_sequences": [
-    "plan(operation=\"create\") → register_plan_in_roadmap → implement → plan(operation=\"complete\")",
-    "roadmap(operation=\"remove_entry\", entry_contains=...) → append_progress_entry → append_active_context_entry"
+    "plan(operation=\"create\") → plan(operation=\"register\") → implement → plan(operation=\"complete\")",
+    "roadmap(operation=\"remove_entry\", entry_contains=...) → append_entry(operation=\"progress\"|\"active_context\", ...)"
   ],
   "example_invocations": [
     "plan(operation=\"create\", title=\"...\", content=\"...\")",

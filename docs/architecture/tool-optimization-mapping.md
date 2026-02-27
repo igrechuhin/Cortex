@@ -18,26 +18,34 @@ Map each tool below the usage threshold (≤5 calls in 90 days) to an action: **
 | list_active_tasks | **keep** | Phase 58; discovery of locked tasks. |
 | get_plan | **keep** | Plan discovery and content; used by create-plan and implement workflows (see docs/api/tools.md). |
 | list_plans | **keep** | Plan discovery; used before create_plan and in implement (roadmap/plan steps). |
-| session_register | **keep** | Session lifecycle; may be used by clients for registration. |
-| session_deregister | **keep** | Session lifecycle; may be used by clients for deregistration. |
+| session_register | **consolidated** (2026-02-27) | Use `session(operation="register", task_title=..., role=...)`. |
+| session_deregister | **consolidated** (2026-02-27) | Use `session(operation="deregister")`. |
+| session_start | **consolidated** (2026-02-27) | Use `session(operation="start")`. |
+| compact_session | **consolidated** (2026-02-27) | Use `session(operation="compact", summary=...)`. |
 | roadmap | **keep** | Consolidates add_roadmap_entry, remove_roadmap_entry, remove_roadmap_section (plan: consolidate-plan-and-roadmap-tools). |
-| append_active_context_entry | **keep** | Memory bank discipline; implement and complete_plan use it for safe activeContext updates (memory-bank-updater, AGENTS.md). |
+| append_entry | **keep** | Consolidates append_progress_entry and append_active_context_entry. Memory bank discipline; implement and complete_plan use it (operation=progress or active_context). |
 | get_session_tool_anomalies | **removed** (pruned) | Use `query_usage(query_type="anomalies", hours=24)`. No longer in MCP tool list. |
 | run_tool_optimization_workflow | **removed** (pruned) | Use `query_usage(query_type="unused")` and `query_usage(query_type="recommendations")` and [tool-optimization-baseline](tool-optimization-baseline.md). No longer in MCP tool list. |
-| quick_start, quality_check, safe_manage_file, suggest_workflow | **consolidated** (2026-02-25) | Use `agent_workflow(operation="quick_start" or "quality_check" or "safe_manage_file" or "suggest_workflow", ...)`. Saves 3 tool slots. |
+| quick_start, quality_check, safe_manage_file, suggest_workflow | **consolidated** (2026-02-25) | Use `run_composite_workflow(operation="quick_start" or "quality_check" or "safe_manage_file" or "suggest_workflow", ...)`. Saves 3 tool slots. |
+| sync_synapse, update_synapse | **consolidated** (2026-02-27) | Use `synapse(operation="sync" or "update_rule" or "update_prompt", ...)`. Saves 1 tool slot. |
 
 ### Census 2026-02-27 Additions
 
 | Tool | Action | Target / Notes |
 |------|--------|----------------|
-| plan | **keep** | Consolidates create_plan, complete_plan, list_plans, get_plan (plan: consolidate-plan-and-roadmap-tools). |
-| register_plan_in_roadmap | **keep** | Required by create-plan Step 6; distinct params from create_plan. |
+| plan | **keep** | Consolidates create_plan, complete_plan, list_plans, get_plan, register_plan_in_roadmap. Use `plan(operation="register", ...)` for roadmap registration. |
+| register_plan_in_roadmap | **consolidated** (2026-02-27) | Use `plan(operation="register", plan_title=..., description=..., section=...)`. Saves 1 tool slot. |
+| rollback_file_version | **consolidated** (2026-02-27) | Use `manage_file(operation="rollback", file_name="...", version=<int>)`. Saves 1 tool slot. |
 
 ## Summary
 
-- **Keep**: 10 tools (task locking ×4, plan ×2, session ×2, roadmap ×1, activeContext ×1).
+- **Keep**: 6 tools (task locking ×4, plan ×1, roadmap ×1, activeContext ×1).
+- **Consolidated** (2026-02-27): session_start, session_register, session_deregister, compact_session → `session(operation=start|register|deregister|compact)`. Saves 4 tool slots.
 - **Removed (pruned)**: 2 tools (`get_session_tool_anomalies`, `run_tool_optimization_workflow`) — no longer registered; use `query_usage` alternatives above.
-- **Consolidated**: 4 tools → 1 (`agent_workflow`) — quick_start, quality_check, safe_manage_file, suggest_workflow.
+- **Consolidated**: 4 tools → 1 (`run_composite_workflow`) — quick_start, quality_check, safe_manage_file, suggest_workflow.
+- **Consolidated**: 2 tools → 1 (`synapse`) — sync_synapse, update_synapse.
+- **Consolidated**: register_plan_in_roadmap → `plan` (operation="register").
+- **Consolidated**: rollback_file_version → `manage_file` (operation="rollback").
 
 ## Done
 
@@ -59,6 +67,8 @@ Tool consolidation plan Step 7 verified that all `*_resource` endpoints are regi
 
 ## References
 
+- [Naming conventions](naming-conventions.md) — Tools, resources, prompts naming rubric
+- [Naming inventory](naming-inventory-2026-02.md) — Current state and inconsistencies
 - [Tool optimization baseline](tool-optimization-baseline.md)
 - Plan: `.cortex/plans/plan-optimize-tools-from-usage.md`
 - Plan: `.cortex/plans/session-optimization-tools-set-optimization-from-usage-data.md` (tool consolidation 64→24)

@@ -1,14 +1,14 @@
 {
   "name": "core",
   "description": "Essential session operations: orientation, context loading, file operations, and quick thinking.",
-  "tools": ["session_start", "load_context", "manage_file", "think"],
+  "tools": ["session", "load_context", "manage_file", "think"],
   "when_to_use": "Start of session, orientation, reading or writing memory bank files, quick deliberation.",
   "workflow_sequences": [
-    "session_start → load_context(task_description=...) → work",
-    "session_start → load_context(depth=metadata_only) → manage_file(sections=[...])"
+    "session(operation=\"start\") → load_context(task_description=...) → work",
+    "session(operation=\"start\") → load_context(depth=metadata_only) → manage_file(sections=[...])"
   ],
   "example_invocations": [
-    "session_start(task_description=None)",
+    "session(operation=\"start\", task_description=None)",
     "load_context(task_description=\"Implement feature X\", token_budget=10000)",
     "manage_file(file_name=\"activeContext.md\", operation=\"read\")"
   ],

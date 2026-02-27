@@ -17,7 +17,6 @@ from cortex.core.exceptions import (
     GitConflictError,
 )
 from cortex.core.file_system import FileSystemManager
-from cortex.core.mcp_annotations import destructive_annotations
 from cortex.core.mcp_stability import ensure_usage_context, mcp_tool_wrapper
 from cortex.core.metadata_index import MetadataIndex
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
@@ -30,7 +29,6 @@ from cortex.core.usage_context import (
 from cortex.core.version_manager import VersionManager
 from cortex.managers.manager_utils import get_manager
 from cortex.managers.types import ManagersDict
-from cortex.server import mcp
 from cortex.tools.compaction_constants import (
     PROGRESS_TOKEN_THRESHOLD_DEFAULT,
     SESSION_HANDOFF_FILENAME,
@@ -614,7 +612,7 @@ async def _compact_session_impl(
     )
 
 
-@mcp.tool(annotations=destructive_annotations("Session Compaction"))
+# Internal; use session(operation="compact") as MCP tool.
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_MEDIUM)
 async def compact_session(

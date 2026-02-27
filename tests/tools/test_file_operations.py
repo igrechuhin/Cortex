@@ -99,8 +99,8 @@ class TestManageFileEdgeCases:
 
     @pytest.mark.parametrize(
         "operation",
-        ["read", "write", "metadata"],
-        ids=["read", "write", "metadata"],
+        ["read", "write", "metadata", "rollback"],
+        ids=["read", "write", "metadata", "rollback"],
     )
     async def test_manage_file_invalid_file_name_returns_error_for_operation(
         self, operation: str
@@ -133,6 +133,8 @@ class TestManageFileEdgeCases:
                 }
                 if operation == "write":
                     kwargs["content"] = "# dummy"
+                if operation == "rollback":
+                    kwargs["version"] = 1
                 result_str = await manage_file(**kwargs)
                 result = json.loads(result_str)
                 assert result["status"] == "error"
@@ -564,7 +566,12 @@ class TestManageFileEdgeCases:
         assert "missing required parameters" in payload.error.lower()
         assert payload.details.missing == ["file_name", "operation"]
         assert payload.details.required == ["file_name", "operation"]
-        assert payload.details.operation_values == ["read", "write", "metadata"]
+        assert payload.details.operation_values == [
+            "read",
+            "write",
+            "metadata",
+            "rollback",
+        ]
 
     async def test_manage_file_missing_file_name_only_returns_friendly_error(
         self,
@@ -579,7 +586,12 @@ class TestManageFileEdgeCases:
         assert "missing required parameters" in payload.error.lower()
         assert payload.details.missing == ["file_name"]
         assert payload.details.required == ["file_name", "operation"]
-        assert payload.details.operation_values == ["read", "write", "metadata"]
+        assert payload.details.operation_values == [
+            "read",
+            "write",
+            "metadata",
+            "rollback",
+        ]
 
     async def test_manage_file_missing_operation_only_returns_friendly_error(
         self,
@@ -594,7 +606,12 @@ class TestManageFileEdgeCases:
         assert "missing required parameters" in payload.error.lower()
         assert payload.details.missing == ["operation"]
         assert payload.details.required == ["file_name", "operation"]
-        assert payload.details.operation_values == ["read", "write", "metadata"]
+        assert payload.details.operation_values == [
+            "read",
+            "write",
+            "metadata",
+            "rollback",
+        ]
 
 
 @pytest.mark.asyncio

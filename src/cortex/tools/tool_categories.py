@@ -102,7 +102,7 @@ TOOL_CATEGORIES: tuple[ToolCategoryEntry, ...] = (
     ToolCategoryEntry(
         name="plan",
         category=ToolCategory.ALWAYS_LOADED,
-        rationale="Plan lifecycle: create, list, get, complete (consolidates create_plan + complete_plan)",
+        rationale="Plan lifecycle: create, list, get, complete, register (consolidates create_plan, complete_plan, register_plan_in_roadmap)",
     ),
     ToolCategoryEntry(
         name="roadmap",
@@ -110,14 +110,9 @@ TOOL_CATEGORIES: tuple[ToolCategoryEntry, ...] = (
         rationale="Roadmap mutations: add_entry, remove_entry, remove_section (consolidates 3 tools)",
     ),
     ToolCategoryEntry(
-        name="append_progress_entry",
+        name="append_entry",
         category=ToolCategory.ALWAYS_LOADED,
-        rationale="Used in implement workflow step 5 (progress update)",
-    ),
-    ToolCategoryEntry(
-        name="append_active_context_entry",
-        category=ToolCategory.ALWAYS_LOADED,
-        rationale="Used in implement workflow step 5 (active context update)",
+        rationale="Append progress or active context entries (operation=progress|active_context, consolidates 2 tools)",
     ),
     ToolCategoryEntry(
         name="execute_pre_commit_checks",
@@ -145,9 +140,9 @@ TOOL_CATEGORIES: tuple[ToolCategoryEntry, ...] = (
         rationale="Discover deferred tools by query when tool search is enabled",
     ),
     ToolCategoryEntry(
-        name="session_start",
+        name="session",
         category=ToolCategory.ALWAYS_LOADED,
-        rationale="Session orientation brief used at the start of non-trivial tasks",
+        rationale="Session lifecycle: start (orientation), register, deregister, compact (consolidates session_start, session_register, session_deregister, compact_session)",
     ),
     # ── Deferred medium (specific workflows) ──────────────────────────
     ToolCategoryEntry(
@@ -196,14 +191,9 @@ TOOL_CATEGORIES: tuple[ToolCategoryEntry, ...] = (
         rationale="Markdown formatting fixes (part of quality workflow)",
     ),
     ToolCategoryEntry(
-        name="register_plan_in_roadmap",
+        name="synapse",
         category=ToolCategory.DEFERRED_MEDIUM,
-        rationale="Plan registration in roadmap",
-    ),
-    ToolCategoryEntry(
-        name="sync_synapse",
-        category=ToolCategory.DEFERRED_MEDIUM,
-        rationale="Synapse repo pull/push operations",
+        rationale="Synapse: sync (pull/push) or update rule/prompt",
     ),
     ToolCategoryEntry(
         name="check_structure_health",
@@ -211,45 +201,26 @@ TOOL_CATEGORIES: tuple[ToolCategoryEntry, ...] = (
         rationale="Project structure health check and cleanup",
     ),
     ToolCategoryEntry(
-        name="sequentialthinking",
-        category=ToolCategory.DEFERRED_MEDIUM,
-        rationale="Stepwise reasoning for complex planning",
-    ),
-    ToolCategoryEntry(
         name="think",
         category=ToolCategory.DEFERRED_MEDIUM,
-        rationale="Lightweight thinking for quick deliberation moments",
+        rationale="Thinking: lightweight (thought only) or full sequential mode (optional params)",
     ),
     ToolCategoryEntry(
-        name="compact_session",
+        name="run_composite_workflow",
         category=ToolCategory.DEFERRED_MEDIUM,
-        rationale="End-of-session compaction and handoff (Phase 56)",
-    ),
-    ToolCategoryEntry(
-        name="agent_workflow",
-        category=ToolCategory.DEFERRED_MEDIUM,
-        rationale="Composite: quick_start, quality_check, safe_manage_file, suggest_workflow (tool consolidation)",
+        rationale="Run composite workflows: quick_start, quality_check, safe_manage_file, suggest_workflow",
     ),
     # ── Deferred low (admin / analytics / rare) ───────────────────────
-    ToolCategoryEntry(
-        name="rollback_file_version",
-        category=ToolCategory.DEFERRED_LOW,
-        rationale="Rare undo operation for memory bank files",
-    ),
-    ToolCategoryEntry(
-        name="update_synapse",
-        category=ToolCategory.DEFERRED_LOW,
-        rationale="Modify shared rule or prompt (content_type=rule|prompt, rare admin)",
-    ),
+    # rollback_file_version: consolidated into manage_file(operation="rollback", ...)
     ToolCategoryEntry(
         name="query_usage",
         category=ToolCategory.DEFERRED_LOW,
         rationale="Usage stats, unused tools, report, search, events, timeline (Phase 50)",
     ),
     ToolCategoryEntry(
-        name="session_scripts",
+        name="manage_session_scripts",
         category=ToolCategory.DEFERRED_LOW,
-        rationale="Consolidated script capture tools (capture/list/analyze/suggest/promote)",
+        rationale="Manage session scripts: capture, list, analyze, suggest, promote",
     ),
     ToolCategoryEntry(
         name="cleanup_metadata_index",

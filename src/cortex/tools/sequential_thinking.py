@@ -1,9 +1,9 @@
 """Sequential thinking MCP tool for stepwise, reflective problem-solving.
 
-Exposes two tools:
-- `sequentialthinking`: Full-featured sequential thinking compatible with the reference
-  MCP sequential thinking server API (thought history, revisions, branches).
-- `think`: Lightweight think tool for quick deliberation moments - just a thought string.
+Exposes one unified tool:
+- `think`: Lightweight by default (just thought); use optional params for full
+  sequential thinking (thought history, revisions, branches) compatible with
+  the reference MCP sequential thinking server API.
 """
 
 import json
@@ -55,7 +55,7 @@ class SequentialThinkingInput(BaseModel):
 
 
 class SequentialThinkingOutput(BaseModel):
-    """Response shape for the sequentialthinking tool (serialized with camelCase keys)."""
+    """Response shape for full-mode think (serialized with camelCase keys)."""
 
     thought_number: int = Field(..., description="Current thought index")
     total_thoughts: int = Field(..., description="Total thoughts (may be adjusted)")
@@ -167,62 +167,78 @@ def _maybe_log_thought(thought_number: int, total_thoughts: int, thought: str) -
 
 
 # =============================================================================
-# MCP tool handler
+# MCP tool handler (unified think)
 # =============================================================================
 
 
-@mcp.tool(annotations=safe_write_annotations("Sequential Thinking"))
+def _resolve_think_mode(
+    core: SequentialThinkingCore,
+    thought_number: int | None,
+    total_thoughts: int | None,
+    next_thought_needed: bool | None,
+) -> tuple[int, int, bool, bool]:
+    """Resolve thought_number, total_thoughts, next_thought_needed; return (tn, tt, ntn, lightweight)."""
+    lightweight = (
+        thought_number is None
+        and total_thoughts is None
+        and next_thought_needed is None
+    )
+    if lightweight:
+        tn = core.get_history_length() + 1
+        tt = max(tn, 1)
+        ntn = False
+    else:
+        tn = thought_number if thought_number is not None else 1
+        tt = total_thoughts if total_thoughts is not None else max(tn, 1)
+        ntn = next_thought_needed if next_thought_needed is not None else False
+    return (tn, tt, ntn, lightweight)
+
+
+@mcp.tool(annotations=safe_write_annotations("Thinking"))
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_MEDIUM)
-async def sequentialthinking(
+async def think(
     thought: str,
-    next_thought_needed: bool,
-    thought_number: int,
-    total_thoughts: int,
+    thought_number: int | None = None,
+    total_thoughts: int | None = None,
+    next_thought_needed: bool | None = None,
     is_revision: bool = False,
     revises_thought: int | None = None,
     branch_from_thought: int | None = None,
     branch_id: str | None = None,
     needs_more_thoughts: bool = False,
 ) -> str:
-    """Run one step of sequential thinking and return structured state.
+    """Append a thought to an internal scratchpad; lightweight (thought only) or full sequential mode (optional params).
 
-    USE WHEN: Breaking down complex problems, multi-step planning, analysis
-    with revision, unclear scope, or when you need to filter irrelevant
-    information. Use for refactoring plans, debugging failing tests, or
-    designing APIs.
+    USE WHEN: Agent needs to reason before acting, analyzing tool outputs,
+    checking policy compliance, planning multi-step operations, or formal
+    multi-step reasoning with revisions and branches (refactoring plans,
+    debugging tests, designing APIs).
 
-    EXAMPLES: "Plan a refactor", "Debug a failing test", "Design an API",
-    "Break down migration steps".
+    LIGHTWEIGHT (default): Pass only thought. Returns {status, thought_number}.
+    FULL MODE: Pass thought_number, total_thoughts, next_thought_needed for full state.
 
-    RETURNS: JSON with thoughtNumber, totalThoughts, nextThoughtNeeded,
-    branches (list of branch IDs), thoughtHistoryLength. Compatible with
-    the MCP sequential thinking server contract.
+    RETURNS: Lightweight — {status, thought_number}. Full — JSON with
+    thoughtNumber, totalThoughts, nextThoughtNeeded, branches,
+    thoughtHistoryLength (camelCase).
+
+    EXAMPLES: think(thought="Which pre-commit checks apply?"),
+    think(thought="Step 1: identify scope", thought_number=1, total_thoughts=3,
+    next_thought_needed=True).
 
     Args:
         thought: Current thinking step (required).
-        next_thought_needed: Whether another thought step is needed (required).
-        thought_number: Current thought index, 1-based (required).
-        total_thoughts: Estimated total thoughts; can be adjusted (required).
-        is_revision: This thought revises previous thinking (optional).
-        revises_thought: Which thought number is being revised (optional).
-        branch_from_thought: Branching point thought number (optional).
-        branch_id: Branch identifier when branching (optional).
-        needs_more_thoughts: More thoughts needed than estimated (optional).
-
-    Example:
-        >>> sequentialthinking(
-        ...     thought="Identify the main steps for the refactor",
-        ...     next_thought_needed=True,
-        ...     thought_number=1,
-        ...     total_thoughts=3
-        ... )
-        {"thoughtNumber": 1, "totalThoughts": 3, "nextThoughtNeeded": true,
-         "branches": [], "thoughtHistoryLength": 1}
+        thought_number, total_thoughts, next_thought_needed: Full mode params.
+        is_revision, revises_thought, branch_from_thought, branch_id,
+        needs_more_thoughts: Optional full-mode params.
     """
+    core = _get_core()
+    thought_number, total_thoughts, next_thought_needed_val, lightweight = (
+        _resolve_think_mode(core, thought_number, total_thoughts, next_thought_needed)
+    )
     inp = SequentialThinkingInput(
         thought=thought,
-        next_thought_needed=next_thought_needed,
+        next_thought_needed=next_thought_needed_val,
         thought_number=thought_number,
         total_thoughts=total_thoughts,
         is_revision=is_revision,
@@ -232,57 +248,9 @@ async def sequentialthinking(
         needs_more_thoughts=needs_more_thoughts,
     )
     _maybe_log_thought(inp.thought_number, inp.total_thoughts, inp.thought)
-    core = _get_core()
-    output = core.process_thought(inp)
-    return _output_to_json_string(output)
-
-
-@mcp.tool(annotations=safe_write_annotations("Lightweight Thinking"))
-@ensure_usage_context
-@mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_MEDIUM)
-async def think(thought: str) -> str:
-    """Use to think about something before taking action.
-
-    USE WHEN: Analyzing tool outputs, checking policy compliance, planning
-    multi-step operations, or reasoning about complex decisions. This is a
-    lightweight alternative to sequentialthinking for quick deliberation moments.
-
-    EXAMPLES: "Which pre-commit checks apply to these changes?", "Verify all
-    files are staged and no secrets included", "Check if memory bank updates
-    are needed", "Analyze dependencies before implementing a feature".
-
-    RETURNS: JSON with status and thought_number indicating the thought was logged.
-
-    Args:
-        thought: A thought to think about (required).
-
-    Example:
-        >>> think(thought="Which pre-commit checks apply to these changes?")
-        {"status": "success", "thought_number": 1}
-    """
-    core = _get_core()
-    # Auto-increment thought_number based on current history length
-    thought_number = core.get_history_length() + 1
-    total_thoughts = max(thought_number, 1)  # At least 1
-
-    inp = SequentialThinkingInput(
-        thought=thought,
-        next_thought_needed=False,  # Lightweight tool assumes single thought
-        thought_number=thought_number,
-        total_thoughts=total_thoughts,
-        is_revision=False,
-        revises_thought=None,
-        branch_from_thought=None,
-        branch_id=None,
-        needs_more_thoughts=False,
-    )
-    _maybe_log_thought(thought_number, total_thoughts, thought)
-    output = core.process_thought(inp)
-
-    # Return simplified response
-    return json.dumps(
-        {
-            "status": "thought_logged",
-            "thought_number": output.thought_number,
-        }
+    out = core.process_thought(inp)
+    return (
+        json.dumps({"status": "thought_logged", "thought_number": out.thought_number})
+        if lightweight
+        else _output_to_json_string(out)
     )

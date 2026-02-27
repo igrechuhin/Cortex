@@ -951,4 +951,4 @@ class TestGetToolSearchConfig:
         total = len(always) + len(medium) + len(low)
         assert len(always) < total
         assert len(always) >= 10
-        assert len(medium) + len(low) >= 20
+        assert len(medium) + len(low) >= 15

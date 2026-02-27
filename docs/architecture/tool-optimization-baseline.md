@@ -22,7 +22,7 @@ Document the usage baseline and threshold policy for reducing the Cortex MCP too
 The census and optimization mapping (plan: optimize-tools-from-usage-statistics) determined that **no additional consolidation or internalization is safe this cycle**:
 
 - All low-usage tools are either **internal/dispatchers** (not in TOOL_CATEGORIES; do not consume tool slots) or marked **keep** for critical workflows (Phase 58 task locking, plan discovery, session lifecycle, memory-bank discipline).
-- Prior pruned/consolidated tools (get_session_tool_anomalies, run_tool_optimization_workflow, agent_workflow consolidation) were already applied in earlier phases.
+- Prior pruned/consolidated tools (get_session_tool_anomalies, run_tool_optimization_workflow, run_composite_workflow consolidation) were already applied in earlier phases.
 - **Rationale**: Further reduction would require consolidating task-locking, plan, or session tools into dispatchers; the plan opted to keep them standalone for workflow clarity and discoverability.
 - **Next census**: Re-evaluate in a future optimization cycle when usage patterns may justify consolidation of plan or task-locking tools.
 

@@ -3,7 +3,7 @@ Integration tests for Phase 66: Plan creation workflow compliance.
 
 Verifies that the create-plan prompt enforces:
 - Path resolution via structure_info.paths.plans (absolute path; no hardcoding).
-- Roadmap updates for new plan entry via register_plan_in_roadmap (or roadmap(operation="add_entry")); manage_file(write) only as fallback; no StrReplace/direct Write.
+- Roadmap updates for new plan entry via plan(operation="register") (or roadmap(operation="add_entry")); manage_file(write) only as fallback; no StrReplace/direct Write.
 """
 
 from pathlib import Path
@@ -116,7 +116,7 @@ class TestCreatePlanPrefersCreatePlanTool:
 
 
 class TestCreatePlanRoadmapUpdate:
-    """Assert create-plan prompt requires register_plan_in_roadmap for new plan; no StrReplace/direct Write."""
+    """Assert create-plan prompt requires plan(operation='register') for new plan; no StrReplace/direct Write."""
 
     @pytest.fixture
     def create_plan_prompt_content(self) -> str:
@@ -131,8 +131,8 @@ class TestCreatePlanRoadmapUpdate:
     def test_prompt_requires_register_plan_in_roadmap_for_new_plan(
         self, create_plan_prompt_content: str
     ) -> None:
-        """Create-plan Step 6 must require register_plan_in_roadmap for adding a new plan entry."""
-        assert "register_plan_in_roadmap" in create_plan_prompt_content
+        """Create-plan Step 6 must require plan(operation='register', ...) for adding a new plan entry."""
+        assert 'plan(operation="register"' in create_plan_prompt_content
         assert "REQUIRED" in create_plan_prompt_content
         assert "roadmap" in create_plan_prompt_content.lower()
 

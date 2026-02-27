@@ -276,7 +276,7 @@ async def _execute_rules_operation(
 @ensure_usage_context
 @mcp_resource_wrapper(timeout=MCP_TOOL_TIMEOUT_MEDIUM)
 async def rules_get_relevant_resource(task_description: str) -> str:
-    """Resource: Rules relevant to task (default params). Read via cortex://rules/relevant/{task_description}. Task description may be URL-encoded."""
+    """Resource: Rules relevant to task (default params). Read via cortex://rules/relevant/{task_description}. Task description may be URL-encoded. Prefer cortex://synapse/rules/{task_description} for canonical rules resource (see docs/architecture/naming-conventions.md)."""
     decoded = unquote(task_description)
     return await rules(
         operation="get_relevant",

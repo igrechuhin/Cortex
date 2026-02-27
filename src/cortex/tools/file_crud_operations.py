@@ -34,6 +34,11 @@ MANAGE_FILE_INPUT_EXAMPLES: list[dict[str, object]] = [
         "change_description": "Updated current work focus",
     },
     {"file_name": MemoryBankFile.ROADMAP, "operation": "metadata"},
+    {
+        "file_name": "projectBrief.md",
+        "operation": "rollback",
+        "version": 3,
+    },
 ]
 
 
@@ -53,6 +58,7 @@ async def manage_file(
     include_metadata: bool = False,
     change_description: str | None = None,
     sections: list[str] | None = None,
+    version: int | None = None,
     ctx: MCPContext | None = None,
 ) -> str:
     """Manage Memory Bank file operations: read, write, or get metadata.
@@ -71,11 +77,12 @@ async def manage_file(
     providing version control, conflict detection, and metadata tracking. All files
     are stored in the memory-bank/ directory relative to the project root.
 
-    The tool consolidates three distinct operations:
+    The tool consolidates four distinct operations:
     - read: Retrieve file content with optional metadata (size, tokens, hash, sections)
     - write: Write file content with automatic versioning, conflict
       detection, and metadata updates
     - metadata: Query file metadata without reading full content
+    - rollback: Restore file from a version snapshot (requires version parameter)
 
     Args:
         file_name: Name of the file within memory-bank/ directory.
@@ -86,6 +93,7 @@ async def manage_file(
             - "read": Read file content, optionally with metadata
             - "write": Write content with versioning and conflict detection
             - "metadata": Get metadata only (size, tokens, hash, version history)
+            - "rollback": Restore file from version snapshot (requires version)
 
         content: Content to write to the file (required for write operation).
             Must be valid UTF-8 text. For Markdown files, the content should
@@ -101,6 +109,8 @@ async def manage_file(
             Stored in version history for tracking changes.
             Example: "Updated project goals and milestones"
             Default: "Updated via MCP"
+
+        version: For rollback operation, version number to restore from (required).
 
         sections: For read operation, extract one or more sections by heading.
             Example: ["## Current Focus"] for single section
@@ -192,6 +202,13 @@ async def manage_file(
         ...     operation="metadata"
         ... )
 
+        Example 4: Rollback to previous version
+        >>> await manage_file(
+        ...     file_name="projectBrief.md",
+        ...     operation="rollback",
+        ...     version=3
+        ... )
+
     Note:
         - All file operations are performed within .cortex/memory-bank/
           directory for security
@@ -224,6 +241,7 @@ async def manage_file(
         include_metadata,
         change_description,
         sections,
+        version,
     )
 
 

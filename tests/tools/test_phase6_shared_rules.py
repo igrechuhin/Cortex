@@ -167,7 +167,7 @@ class TestSyncSharedRulesEdgeCases:
                 new=AsyncMock(side_effect=_get_manager_helper),
             ),
         ):
-            await sync_synapse(pull=True, push=False)
+            _ = await sync_synapse(pull=True, push=False)
         rules_mock = cast(MagicMock, mock_managers_with_synapse.rules_manager)
         rules_mock.index_rules.assert_not_called()
 

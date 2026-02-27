@@ -72,7 +72,7 @@ The assistant will:
   "synapse_path": ".cortex/synapse/",
   "submodule_url": "https://github.com/igrechuhin/Synapse.git",
   "commit": "a1b2c3d4e5f6",
-  "suggestion": "Use sync_synapse to update"
+  "suggestion": "Use synapse(operation=\"sync\") to update"
 }
 ```
 
@@ -138,7 +138,7 @@ After successful setup:
 
 1. **Rules are indexed** - Use `rules(operation="get_relevant", ...)` to retrieve rules
 2. **Prompts are available** - Synapse prompts (commit, review, implement, plan) are registered
-3. **Sync updates** - Use `sync_synapse` to pull latest changes from remote
+3. **Sync updates** - Use `synapse(operation="sync")` to pull latest changes from remote
 4. **Customize** - You can customize rules locally (they won't be overwritten by sync)
 
 ## Updating Synapse
@@ -149,7 +149,7 @@ To update Synapse later:
 Please sync my Synapse repository with the remote.
 ```
 
-Or use the `sync_synapse` MCP tool to pull the latest changes.
+Or use the `synapse(operation="sync")` MCP tool to pull the latest changes.
 
 ## Related Prompts
 

@@ -57,7 +57,7 @@ All 63 Cortex MCP tools are categorized into three loading priority tiers in `sr
 
 ### Categorization Rationale
 
-- **always_loaded**: Tools that appear in the implement-prompt workflow, session startup (`load_context`), quality gates (`execute_pre_commit_checks`, `fix_quality_issues`), and memory bank updates (`complete_plan`, `append_progress_entry`, etc.).
+- **always_loaded**: Tools that appear in the implement-prompt workflow, session startup (`load_context`), quality gates (`execute_pre_commit_checks`, `fix_quality_issues`), and memory bank updates (`complete_plan`, `append_entry`, etc.).
 - **deferred_medium**: Tools used in specific workflows (plan creation, refactoring, synapse sync, commit pipeline phases) but not every session.
 - **deferred_low**: Usage analytics, script capture/promotion, admin operations (rollback, corruption fix, cleanup). These are used infrequently and can be loaded on-demand.
 
@@ -76,7 +76,7 @@ from cortex.tools.tool_categories import (
 get_tool_category("manage_file")  # ToolCategory.ALWAYS_LOADED
 
 # Get all always-loaded tool names (sorted)
-get_always_loaded_tool_names()  # ["add_roadmap_entry", "append_active_context_entry", ...]
+get_always_loaded_tool_names()  # ["roadmap", "append_entry", ...]
 
 # Build config for optimization.json
 config = build_category_config()

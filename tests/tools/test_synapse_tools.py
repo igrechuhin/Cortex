@@ -24,6 +24,7 @@ from cortex.tools.synapse_tools import (
     get_synapse_prompts_resource,
     get_synapse_rules,
     get_synapse_rules_resource,
+    synapse,
     sync_synapse,
     update_synapse_rule,
 )
@@ -160,6 +161,91 @@ def mock_managers_without_synapse(
 ) -> ManagersDict:
     """Create typed managers container without Synapse manager."""
     return make_test_managers(rules_manager=mock_rules_manager)
+
+
+# ============================================================================
+# Test synapse() dispatcher
+# ============================================================================
+
+
+class TestSynapseDispatcher:
+    """Tests for synapse(operation=...) dispatcher tool."""
+
+    async def test_synapse_invalid_operation(
+        self, mock_project_root: Path, mock_managers_with_synapse: ManagersDict
+    ) -> None:
+        """synapse(operation='invalid') returns error JSON."""
+        with (
+            patch(
+                "cortex.tools.synapse_tools_impl.get_project_root",
+                return_value=mock_project_root,
+            ),
+            patch(
+                "cortex.tools.synapse_tools_impl.get_managers",
+                return_value=mock_managers_with_synapse,
+            ),
+        ):
+            result_str = await synapse(operation="invalid")
+            result = json.loads(result_str)
+            assert result["status"] == "error"
+            assert "Invalid operation" in result["error"]
+
+    async def test_synapse_update_rule_missing_params(
+        self, mock_project_root: Path, mock_managers_with_synapse: ManagersDict
+    ) -> None:
+        """synapse(operation='update_rule') without category/file/content/commit_message returns error."""
+        with (
+            patch(
+                "cortex.tools.synapse_tools_impl.get_project_root",
+                return_value=mock_project_root,
+            ),
+            patch(
+                "cortex.tools.synapse_tools_impl.get_managers",
+                return_value=mock_managers_with_synapse,
+            ),
+        ):
+            result_str = await synapse(
+                operation="update_rule",
+                category=None,
+                file=None,
+                content=None,
+                commit_message=None,
+            )
+            result = json.loads(result_str)
+            assert result["status"] == "error"
+            assert "required" in result["error"]
+
+    async def test_synapse_operation_sync_delegates(
+        self,
+        mock_project_root: Path,
+        mock_managers_with_synapse: ManagersDict,
+    ) -> None:
+        """synapse(operation='sync') delegates to sync_synapse_impl."""
+        with (
+            patch(
+                "cortex.tools.synapse_tools_impl.get_project_root",
+                return_value=mock_project_root,
+            ),
+            patch(
+                "cortex.tools.synapse_tools_impl.get_managers",
+                return_value=mock_managers_with_synapse,
+            ),
+            patch(
+                "cortex.tools.synapse_tools_helpers.get_manager",
+                new=AsyncMock(side_effect=_get_manager_helper),
+            ),
+            patch(
+                "cortex.managers.manager_utils.get_manager",
+                new=AsyncMock(side_effect=_get_manager_helper),
+            ),
+        ):
+            result_str = await synapse(operation="sync", pull=True, push=False)
+            result = json.loads(result_str)
+            assert result["status"] == "success"
+            # type: ignore[union-attr] - Mock manager, safe to access
+            mock_managers_with_synapse.synapse.sync_synapse.assert_called_once_with(  # type: ignore[attr-defined]
+                pull=True, push=False
+            )
 
 
 # ============================================================================

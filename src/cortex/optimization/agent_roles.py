@@ -155,7 +155,6 @@ ROLE_PROFILES: dict[AgentRole, AgentRoleProfile] = {
     AgentRole.PLANNING: _make_profile(
         priority_tools=[
             "plan",
-            "register_plan_in_roadmap",
             "manage_file",
         ],
         deprioritized_tools=[

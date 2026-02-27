@@ -86,7 +86,7 @@ def test_tool_search_token_savings_potential() -> None:
     total = always + deferred
     assert always < total, "always_loaded must be a subset to achieve token savings"
     assert always >= 10, "enough core tools for session start and quality gates"
-    assert deferred >= 20, "enough deferred tools for on-demand discovery"
+    assert deferred >= 15, "enough deferred tools for on-demand discovery"
 
 
 @pytest.mark.asyncio

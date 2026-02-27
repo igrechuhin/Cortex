@@ -181,6 +181,7 @@ async def _register_session_impl(
     return result.model_dump_json()
 
 
+# Internal; use session(operation="register") as MCP tool.
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_MEDIUM)
 async def session_register(
@@ -251,6 +252,7 @@ async def _deregister_session_impl(ctx: MCPContext | None) -> str:
     return result.model_dump_json()
 
 
+# Internal; use session(operation="deregister") as MCP tool.
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_MEDIUM)
 async def session_deregister(

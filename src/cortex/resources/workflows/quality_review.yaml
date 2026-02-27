@@ -1,7 +1,7 @@
 name: quality_review
 description: Review code quality and apply fixes.
 steps:
-  - session_start
+  - session(operation="start")
   - load_context(task_description="review quality", token_budget=10000)
   - execute_pre_commit_checks(checks=["quality"])
   - fix_quality_issues

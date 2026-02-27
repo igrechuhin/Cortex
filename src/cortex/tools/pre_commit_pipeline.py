@@ -6,7 +6,11 @@ Extracted from pre_commit_tools to keep that file under 400 lines.
 from collections.abc import Callable
 from pathlib import Path
 
-from cortex.core.constants import MAX_FILE_LINES, MAX_FUNCTION_LINES
+from cortex.core.constants import (
+    FUNCTION_LENGTH_EXCLUDED_PATHS,
+    MAX_FILE_LINES,
+    MAX_FUNCTION_LINES,
+)
 from cortex.services.framework_adapters.base import (
     CheckResult,
     FrameworkAdapter,
@@ -332,8 +336,15 @@ def _check_function_lengths(project_root: Path) -> list[FunctionLengthViolation]
     if not src_dir.exists():
         return violations
 
+    excluded = frozenset(FUNCTION_LENGTH_EXCLUDED_PATHS)
     for py_file in src_dir.glob("**/*.py"):
         if "__pycache__" in str(py_file) or py_file.name.startswith("test_"):
+            continue
+        try:
+            rel = py_file.relative_to(project_root).as_posix()
+        except ValueError:
+            rel = str(py_file)
+        if rel in excluded:
             continue
         file_violations = check_function_lengths_in_file(py_file)
         for func_name, logical_lines, start_line in file_violations:

@@ -274,6 +274,18 @@ def validate_file_path(
         return (None, error_json)
 
 
+async def handle_rollback_operation(file_name: str, version: int, root: Path) -> str:
+    """Handle rollback operation. Restores file from version snapshot."""
+    from cortex.tools.phase1_foundation_rollback import execute_rollback
+
+    result = await execute_rollback(file_name, version, root)
+    if isinstance(result, dict):
+        payload = result
+    else:
+        payload = result.model_dump(exclude_none=True)
+    return json.dumps(payload, indent=2)
+
+
 async def execute_memory_bank_write(
     project_root: Path,
     file_name: str,

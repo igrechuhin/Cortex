@@ -13,8 +13,8 @@ from cortex.tools.script_capture_tools import (
     capture_session_script,
     list_session_scripts,
     list_session_scripts_resource,
+    manage_session_scripts,
     promote_session_script,
-    session_scripts,
     suggest_tool_improvements,
     suggest_tool_improvements_resource,
 )
@@ -242,12 +242,12 @@ class TestPromoteSessionScript:
 
 @pytest.mark.asyncio
 class TestSessionScriptsDispatcher:
-    """Tests for consolidated session_scripts MCP tool dispatcher."""
+    """Tests for consolidated manage_session_scripts MCP tool dispatcher."""
 
     async def test_capture_operation_dispatches_to_capture_session_script(
         self,
     ) -> None:
-        """session_scripts('capture', ...) forwards to capture_session_script."""
+        """manage_session_scripts('capture', ...) forwards to capture_session_script."""
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             with patch(
@@ -255,7 +255,7 @@ class TestSessionScriptsDispatcher:
                 new_callable=AsyncMock,
                 return_value=root,
             ):
-                result = await session_scripts(
+                result = await manage_session_scripts(
                     operation="capture",
                     script_path="scripts/foo.py",
                     script_content="print(1)",
@@ -266,7 +266,7 @@ class TestSessionScriptsDispatcher:
         assert "script_id" in data
 
     async def test_list_operation_dispatches_to_list_session_scripts(self) -> None:
-        """session_scripts('list') forwards to list_session_scripts."""
+        """manage_session_scripts('list') forwards to list_session_scripts."""
         payload = json.dumps(
             {"status": "success", "count": 0, "scripts": []},
             indent=2,
@@ -276,7 +276,7 @@ class TestSessionScriptsDispatcher:
             new_callable=AsyncMock,
             return_value=payload,
         ) as mocked_list:
-            result = await session_scripts(operation="list")
+            result = await manage_session_scripts(operation="list")
         mocked_list.assert_awaited_once()
         data = json.loads(result)
         assert data["status"] == "success"
@@ -285,7 +285,7 @@ class TestSessionScriptsDispatcher:
     async def test_analyze_operation_dispatches_to_analyze_session_scripts(
         self,
     ) -> None:
-        """session_scripts('analyze') forwards to analyze_session_scripts."""
+        """manage_session_scripts('analyze') forwards to analyze_session_scripts."""
         payload = json.dumps(
             {"status": "success", "count": 0, "analyses": []},
             indent=2,
@@ -295,29 +295,29 @@ class TestSessionScriptsDispatcher:
             new_callable=AsyncMock,
             return_value=payload,
         ) as mocked_analyze:
-            result = await session_scripts(operation="analyze")
+            result = await manage_session_scripts(operation="analyze")
         mocked_analyze.assert_awaited_once()
         data = json.loads(result)
         assert data["status"] == "success"
         assert data["count"] == 0
 
     async def test_suggest_operation_requires_task_description(self) -> None:
-        """session_scripts('suggest') without task_description returns error."""
-        result = await session_scripts(operation="suggest")
+        """manage_session_scripts('suggest') without task_description returns error."""
+        result = await manage_session_scripts(operation="suggest")
         data = json.loads(result)
         assert data["status"] == "error"
         assert "task_description is required" in data["error"]
 
     async def test_promote_operation_requires_script_id(self) -> None:
-        """session_scripts('promote') without script_id returns error."""
-        result = await session_scripts(operation="promote")
+        """manage_session_scripts('promote') without script_id returns error."""
+        result = await manage_session_scripts(operation="promote")
         data = json.loads(result)
         assert data["status"] == "error"
         assert "script_id is required" in data["error"]
 
     async def test_unknown_operation_returns_error(self) -> None:
-        """session_scripts with unknown operation returns error."""
-        result = await session_scripts(operation="unknown-op")
+        """manage_session_scripts with unknown operation returns error."""
+        result = await manage_session_scripts(operation="unknown-op")
         data = json.loads(result)
         assert data["status"] == "error"
         assert "Unsupported operation" in data["error"]

@@ -1,21 +1,21 @@
 {
   "name": "context",
   "description": "Context management: load context, relevance scores, session compaction.",
-  "tools": ["load_context", "get_relevance_scores", "compact_session"],
+  "tools": ["load_context", "get_relevance_scores", "session"],
   "when_to_use": "Loading task-specific context, prioritizing files before load, end-of-session compaction and handoff.",
   "workflow_sequences": [
     "load_context(depth=metadata_only) → manage_file(sections=[...])",
     "get_relevance_scores(task_description=...) → load_context with selected files",
-    "compact_session(summary=...) at end of session"
+    "session(operation=\"compact\", summary=...) at end of session"
   ],
   "example_invocations": [
     "load_context(task_description=\"...\", token_budget=10000, depth=\"metadata_only\")",
     "get_relevance_scores(task_description=\"...\")",
-    "compact_session(summary=\"...\")"
+    "session(operation=\"compact\", summary=\"...\")"
   ],
   "troubleshooting_tips": [
     "Use token_budget 10000 for implement, 15000 for fix/debug, 20000-30000 for small feature.",
-    "compact_session is called automatically by the analyze prompt at end of session."
+    "session(operation=\"compact\") is called automatically by the analyze prompt at end of session."
   ],
-  "keywords": ["context", "load_context", "relevance", "compact_session", "handoff", "token budget"]
+  "keywords": ["context", "load_context", "relevance", "session", "compact", "handoff", "token budget"]
 }

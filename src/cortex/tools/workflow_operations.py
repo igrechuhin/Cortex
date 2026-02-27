@@ -77,8 +77,8 @@ async def suggest_workflow_impl(
 ) -> str:
     """Recommend workflow templates relevant to a task description.
 
-    Implementation used by agent_workflow(operation="suggest_workflow"). See
-    agent_workflow docstring for public API.
+    Implementation used by run_composite_workflow(operation="suggest_workflow"). See
+    run_composite_workflow docstring for public API.
     """
     limit = max(1, min(10, limit))
     templates = _load_all_workflows()

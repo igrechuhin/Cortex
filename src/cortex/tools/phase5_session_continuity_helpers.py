@@ -23,6 +23,7 @@ def _empty_int_list() -> list[int]:
 # Tools that are orientation-only (not productive); first call to other tool = productive
 _ORIENTATION_TOOLS: frozenset[str] = frozenset(
     {
+        "session",
         "session_start",
         "load_context",
         "get_relevance_scores",
@@ -39,10 +40,10 @@ _ORIENTATION_TOOLS: frozenset[str] = frozenset(
 def _infer_sessions_by_session_start(
     events: list[ToolUsageEvent],
 ) -> list[list[ToolUsageEvent]]:
-    """Group events into sessions by session_start boundaries.
+    """Group events into sessions by session start boundaries.
 
-    Each session starts at a session_start call and runs until the next
-    session_start or end of data.
+    Each session starts at a session(operation=start) or session_start call and
+    runs until the next such call or end of data.
     """
     if not events:
         return []
@@ -50,7 +51,7 @@ def _infer_sessions_by_session_start(
     sessions: list[list[ToolUsageEvent]] = []
     current: list[ToolUsageEvent] = []
     for ev in sorted_evs:
-        if ev.tool_name == "session_start":
+        if ev.tool_name in ("session", "session_start"):
             if current:
                 sessions.append(current)
             current = [ev]

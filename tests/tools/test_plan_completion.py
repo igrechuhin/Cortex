@@ -1,7 +1,8 @@
 """
 Tests for plan_completion module.
 
-Tests public API: complete_plan, append_progress_entry, append_active_context_entry.
+Tests public API: complete_plan, append_entry (dispatcher consolidating
+append_progress_entry and append_active_context_entry).
 """
 
 import json
@@ -12,12 +13,8 @@ import pytest
 
 from cortex.core.models import OperationStatus
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
-from cortex.tools.plan_completion import (
-    CompletePlanResult,
-    append_active_context_entry,
-    append_progress_entry,
-    complete_plan,
-)
+from cortex.tools.append_entry_dispatcher import append_entry
+from cortex.tools.plan_completion import CompletePlanResult, complete_plan
 
 
 def _patch_root(tmp_path: Path):
@@ -26,6 +23,21 @@ def _patch_root(tmp_path: Path):
         "cortex.tools.plan_completion.resolve_project_root_async",
         new_callable=AsyncMock,
         return_value=tmp_path,
+    )
+
+
+def _append_progress(date_str: str, entry_text: str):
+    """Call append_entry(operation=progress)."""
+    return append_entry(operation="progress", date_str=date_str, entry_text=entry_text)
+
+
+def _append_active_context(date_str: str, title: str, summary: str):
+    """Call append_entry(operation=active_context)."""
+    return append_entry(
+        operation="active_context",
+        date_str=date_str,
+        title=title,
+        summary=summary,
     )
 
 
@@ -153,7 +165,7 @@ class TestCompletePlanCompletedWorkSection:
 
 
 class TestAppendProgressEntry:
-    """append_progress_entry public API."""
+    """append_entry(operation=progress) public API."""
 
     @pytest.mark.asyncio
     async def test_appends_to_existing_date_section(self, tmp_path: Path) -> None:
@@ -164,7 +176,7 @@ class TestAppendProgressEntry:
             "# Progress Log\n\n## 2026-02-09\n\n- **Old** - COMPLETE.\n"
         )
         with _patch_root(tmp_path):
-            result_str = await append_progress_entry(
+            result_str = await _append_progress(
                 "2026-02-09", "**New step** - COMPLETE. Done."
             )
         result = json.loads(result_str)
@@ -179,7 +191,7 @@ class TestAppendProgressEntry:
         progress = mem / "progress.md"
         _ = progress.write_text("# Progress\n\n## 2026-02-08\n\n")
         with _patch_root(tmp_path):
-            result_str = await append_progress_entry(
+            result_str = await _append_progress(
                 "2026-02-09", "**New** - COMPLETE. Summary."
             )
         result = json.loads(result_str)
@@ -192,9 +204,7 @@ class TestAppendProgressEntry:
     async def test_returns_error_when_file_missing(self, tmp_path: Path) -> None:
         get_cortex_path(tmp_path, CortexResourceType.MEMORY_BANK).mkdir(parents=True)
         with _patch_root(tmp_path):
-            result_str = await append_progress_entry(
-                "2026-02-09", "**New** - COMPLETE."
-            )
+            result_str = await _append_progress("2026-02-09", "**New** - COMPLETE.")
         result = json.loads(result_str)
         assert result["status"] == "error"
 
@@ -206,7 +216,7 @@ class TestAppendProgressEntry:
             "# Progress\n\n## 2026-02-09\n\n- **Old** - COMPLETE.\n"
         )
         with _patch_root(tmp_path):
-            result_str = await append_progress_entry("2026-02-09", "20260209COMPLETE")
+            result_str = await _append_progress("2026-02-09", "20260209COMPLETE")
         result = json.loads(result_str)
         assert result["status"] == "error"
         assert result.get("error")
@@ -220,7 +230,7 @@ class TestAppendProgressEntry:
             "# Progress\n\n## 2026-02-09\n\n- **Old** - COMPLETE.\n"
         )
         with _patch_root(tmp_path):
-            result_str = await append_progress_entry(
+            result_str = await _append_progress(
                 "2026/02/09", "**New** - COMPLETE. Done."
             )
         result = json.loads(result_str)
@@ -229,7 +239,7 @@ class TestAppendProgressEntry:
 
 
 class TestAppendProgressEntryValidation:
-    """Progress entry format validation via append_progress_entry."""
+    """Progress entry format validation via append_entry(operation=progress)."""
 
     @pytest.mark.asyncio
     async def test_valid_formats_accepted(self, tmp_path: Path) -> None:
@@ -243,7 +253,7 @@ class TestAppendProgressEntryValidation:
                 "**Phase 54 (2026-02-20)** - COMPLETE. Implemented.",
                 "**Ongoing** - In progress.",
             ):
-                result_str = await append_progress_entry("2026-02-09", entry)
+                result_str = await _append_progress("2026-02-09", entry)
                 result = json.loads(result_str)
                 assert result["status"] == "success", f"Rejected valid: {entry!r}"
 
@@ -258,7 +268,7 @@ class TestAppendProgressEntryValidation:
                 ("20260209COMPLETE", " - COMPLETE"),
                 ("COMPLETE", None),
             ):
-                result_str = await append_progress_entry("2026-02-09", entry)
+                result_str = await _append_progress("2026-02-09", entry)
                 result = json.loads(result_str)
                 assert result["status"] == "error", f"Accepted invalid: {entry!r}"
                 if fragment:
@@ -266,7 +276,7 @@ class TestAppendProgressEntryValidation:
 
 
 class TestCompletePlanDateValidation:
-    """Date validation (YYYY-MM-DD) via complete_plan and append_progress_entry."""
+    """Date validation (YYYY-MM-DD) via complete_plan and append_entry."""
 
     @pytest.mark.asyncio
     async def test_complete_plan_rejects_invalid_date(self) -> None:
@@ -289,13 +299,13 @@ class TestCompletePlanDateValidation:
         valid_entry = "**X** - COMPLETE. Done."
         with _patch_root(tmp_path):
             for bad_date in ("", "2026-2-20", "20260220", "2026/02/20", "2026-02-30"):
-                result_str = await append_progress_entry(bad_date, valid_entry)
+                result_str = await _append_progress(bad_date, valid_entry)
                 result = json.loads(result_str)
                 assert result["status"] == "error", f"Accepted date: {bad_date!r}"
 
 
 class TestAppendActiveContextEntry:
-    """append_active_context_entry public API."""
+    """append_entry(operation=active_context) public API."""
 
     @pytest.mark.asyncio
     async def test_appends_to_existing_section(self, tmp_path: Path) -> None:
@@ -304,7 +314,7 @@ class TestAppendActiveContextEntry:
         active = mem / "activeContext.md"
         _ = active.write_text("# Active\n\n## Completed Work (2026-02-09)\n\n")
         with _patch_root(tmp_path):
-            result_str = await append_active_context_entry(
+            result_str = await _append_active_context(
                 "2026-02-09", "New step", "Summary of work."
             )
         result = json.loads(result_str)
@@ -318,9 +328,7 @@ class TestAppendActiveContextEntry:
     async def test_returns_error_when_file_missing(self, tmp_path: Path) -> None:
         get_cortex_path(tmp_path, CortexResourceType.MEMORY_BANK).mkdir(parents=True)
         with _patch_root(tmp_path):
-            result_str = await append_active_context_entry(
-                "2026-02-09", "Title", "Summary"
-            )
+            result_str = await _append_active_context("2026-02-09", "Title", "Summary")
         result = json.loads(result_str)
         assert result["status"] == "error"
 
@@ -336,7 +344,7 @@ class TestAppendActiveContextEntry:
         )
         _ = active.write_text(existing)
         with _patch_root(tmp_path):
-            result_str = await append_active_context_entry(
+            result_str = await _append_active_context(
                 "2026-02-09", "E2E Plan Test", "Another summary."
             )
         result = json.loads(result_str)

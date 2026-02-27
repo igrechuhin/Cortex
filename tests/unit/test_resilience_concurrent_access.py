@@ -8,7 +8,6 @@ tool calls, and chaos scenarios.
 import asyncio
 import json
 from pathlib import Path
-from typing import cast
 from unittest.mock import AsyncMock, patch
 
 import pytest
@@ -138,13 +137,10 @@ class TestConcurrentSessionStart:
             new_callable=AsyncMock,
             return_value=tmp_path,
         ):
-            gathered = cast(
-                tuple[str, str, str],
-                await asyncio.gather(
-                    session_start(task_description=None),
-                    session_start(task_description=None),
-                    session_start(task_description=None),
-                ),
+            gathered: tuple[str, str, str] = await asyncio.gather(
+                session_start(task_description=None),
+                session_start(task_description=None),
+                session_start(task_description=None),
             )
 
         for r in gathered:

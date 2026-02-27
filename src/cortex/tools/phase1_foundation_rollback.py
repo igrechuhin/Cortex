@@ -10,15 +10,9 @@ from pathlib import Path
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from cortex.core.constants import MCP_TOOL_TIMEOUT_MEDIUM
 from cortex.core.context_logging import MCPContext, log_client
 from cortex.core.file_system import FileSystemManager
-from cortex.core.mcp_annotations import destructive_annotations
-from cortex.core.mcp_stability import (
-    ensure_usage_context,
-    execute_tool_with_stability,
-    mcp_tool_wrapper,
-)
+from cortex.core.mcp_stability import execute_tool_with_stability
 from cortex.core.metadata_index import MetadataIndex
 from cortex.core.models import SectionMetadata
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
@@ -26,7 +20,6 @@ from cortex.core.project_root_resolver import resolve_project_root_async
 from cortex.core.token_counter import TokenCounter
 from cortex.core.version_manager import VersionManager
 from cortex.managers import initialization
-from cortex.server import mcp
 from cortex.tools.models import (
     RollbackFileVersionErrorResult,
     RollbackFileVersionResult,
@@ -61,13 +54,6 @@ class RollbackProcessingData(BaseModel):
     size_bytes: int = Field(..., ge=0, description="Size in bytes")
 
 
-@mcp.tool(  # pyright: ignore[reportUntypedFunctionDecorator]
-    annotations=destructive_annotations(
-        "Rollback File Version"
-    ),  # pyright: ignore[reportCallIssue]
-)
-@ensure_usage_context
-@mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_MEDIUM)
 async def rollback_file_version(
     file_name: str,
     version: int,
@@ -130,7 +116,7 @@ async def rollback_file_version(
     )
     try:
         root = await resolve_project_root_async(None, ctx)
-        result = await _rollback_file_version_run(file_name, version, root)
+        result = await execute_rollback(file_name, version, root)
         await log_client(
             ctx, "info", "rollback_file_version: completed", logger_name=__name__
         )
@@ -149,7 +135,7 @@ async def rollback_file_version(
         return json.dumps(error_result.model_dump(exclude_none=True), indent=2)
 
 
-async def _rollback_file_version_run(
+async def execute_rollback(
     file_name: str, version: int, root: Path
 ) -> (
     RollbackFileVersionResult

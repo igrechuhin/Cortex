@@ -6,7 +6,7 @@ Accepted
 
 ## Context
 
-The `sequentialthinking` MCP tool maintains thought history and branches across multiple tool invocations. Each invocation appends a thought; the history persists for the duration of the client session.
+The `think` MCP tool (full mode) maintains thought history and branches across multiple tool invocations. Each invocation appends a thought; the history persists for the duration of the client session.
 
 ### Deployment Model
 

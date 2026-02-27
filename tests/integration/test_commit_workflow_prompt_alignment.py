@@ -136,13 +136,14 @@ class TestCommitPromptAlignment:
         """Commit prompt must require script tooling when a script was created or executed.
 
         Session optimization (2026-02-01): If during the run a script was created or
-        executed, agent MUST use capture_session_script and/or analyze_session_scripts
-        or suggest_tool_improvements.
+        executed, agent MUST use manage_session_scripts(operation="capture"|"analyze"|"suggest").
         """
-        assert "capture_session_script" in commit_prompt_content
+        assert "manage_session_scripts" in commit_prompt_content
         assert (
-            "analyze_session_scripts" in commit_prompt_content
-            or "suggest_tool_improvements" in commit_prompt_content
+            "operation=" in commit_prompt_content
+            or "capture" in commit_prompt_content
+            or "analyze" in commit_prompt_content
+            or "suggest" in commit_prompt_content
         )
         assert (
             "Script use" in commit_prompt_content

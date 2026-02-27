@@ -26,6 +26,7 @@ from cortex.managers.manager_utils import get_manager
 from cortex.managers.types import ManagersDict
 from cortex.tools.file_crud_flow import (
     handle_read_operation,
+    handle_rollback_operation,
     handle_write_operation,
 )
 from cortex.tools.file_crud_flow import (
@@ -100,9 +101,10 @@ async def manage_file_validate_and_run(
     include_metadata: bool,
     change_description: str | None,
     sections: list[str] | None,
+    version: int | None = None,
 ) -> str:
     """Validate manage_file inputs and run operation or return error."""
-    parsed_op, err = validate_manage_file_operation(operation, file_name)
+    parsed_op, err = validate_manage_file_operation(operation, file_name, version)
     if err is not None:
         await _log_validation_failure(ctx, file_name, operation)
         return err
@@ -123,6 +125,7 @@ async def manage_file_validate_and_run(
         include_metadata,
         change_description,
         sections,
+        version,
     )
 
 
@@ -190,6 +193,7 @@ async def _manage_file_run_or_error(
     include_metadata: bool,
     change_description: str | None,
     sections: list[str] | None,
+    version: int | None = None,
 ) -> str:
     """Run execute_file_operation and handle exceptions with logging."""
     try:
@@ -201,6 +205,7 @@ async def _manage_file_run_or_error(
             include_metadata,
             change_description,
             sections,
+            version,
         )
         await _log_result_by_status(ctx, file_name, parsed_op, result)
         return result
@@ -250,6 +255,7 @@ async def execute_file_operation(
     include_metadata: bool,
     change_description: str | None,
     sections: list[str] | None,
+    version: int | None = None,
 ) -> str:
     """Execute file operation after validation. Reuses current managers when root matches."""
     managers, fs_manager = await _get_managers_for_root(root)
@@ -266,6 +272,7 @@ async def execute_file_operation(
         root,
         managers,
         sections,
+        version,
     )
 
 
@@ -287,6 +294,7 @@ async def _dispatch_operation(
     root: Path,
     managers: ManagersDict,
     sections: list[str] | None,
+    version: int | None = None,
 ) -> str:
     """Dispatch operation to appropriate handler."""
     if operation == FileOperation.READ:
@@ -299,6 +307,9 @@ async def _dispatch_operation(
         )
     if operation == FileOperation.METADATA:
         return await handle_metadata_operation(file_path, file_name, managers.index)
+    if operation == FileOperation.ROLLBACK:
+        assert version is not None
+        return await handle_rollback_operation(file_name, version, root)
     return build_invalid_operation_error(operation.value)
 
 

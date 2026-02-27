@@ -329,6 +329,11 @@ async def execute_pre_commit_checks(
     explicit checks: results per check (format, type_check, quality, tests, etc.). Do not
     pass project_root; the tool resolves it internally.
 
+    Args:
+        phase: "A", "B", or "full" for pipeline phases. Optional.
+        checks: Required when phase is None. E.g. ["format"], ["type_check", "quality"].
+        test_timeout, coverage_threshold, strict_mode: Check options.
+
     When phase is None, you must pass checks (e.g. ["format"], ["type_check", "quality"],
     or ["tests"] with test_timeout and coverage_threshold). Language is auto-detected.
     """

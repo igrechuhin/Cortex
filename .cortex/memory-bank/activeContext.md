@@ -14,6 +14,8 @@
 
 - ✅ **Consolidate Plan and Roadmap Tools** - COMPLETE (2026-02-27) - Consolidated plan tools (create_plan, complete_plan) into plan(operation=create|list|get|complete) and roadmap tools (add_roadmap_entry, remove_roadmap_entry, remove_roadmap_section) into roadmap(operation=add_entry|remove_entry|remove_section). Tool count 40→37.
 
+- ✅ **Unify and Simplify Tools, Prompts, and Resources Naming** - COMPLETE (2026-02-27) - Defined naming rubric (docs/architecture/naming-conventions.md), inventory (naming-inventory-2026-02.md), proposals for tools/resources/prompts. Updated tools.md, AGENTS.md, tool-optimization-mapping.md, architecture.md. Added deprecation note to cortex://rules/relevant resource. Phase A passed.
+
 ## Completed Work (2026-02-26)
 
 - **Summary (2026-02-26)** - 1 entries archived.

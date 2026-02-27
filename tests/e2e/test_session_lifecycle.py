@@ -1,4 +1,4 @@
-"""E2E tests: session_start → load_context → work → compact_session.
+"""E2E tests: session(operation=start) → load_context → work → session(operation=compact).
 
 Exercises session lifecycle workflow with at least 3 MCP tools in sequence.
 """
@@ -10,10 +10,9 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from cortex.tools.compaction_operations import compact_session
 from cortex.tools.file_operations import manage_file
 from cortex.tools.phase4_optimization_handlers import load_context
-from cortex.tools.session_start_tools import session_start
+from cortex.tools.session_dispatcher import session
 from tests.helpers.path_helpers import ensure_test_cortex_structure
 from tests.helpers.tool_call_helpers import get_tool_fn, to_dict
 
@@ -42,7 +41,7 @@ def _write_minimal_memory_bank(memory_bank_dir: Path) -> None:
 async def test_session_lifecycle_session_start_load_context_compact(
     tmp_path: Path,
 ) -> None:
-    """E2E: session_start → load_context → compact_session (3+ tools)."""
+    """E2E: session(start) → load_context → session(compact) (3+ tools)."""
     memory_bank_dir = ensure_test_cortex_structure(tmp_path)
     _write_minimal_memory_bank(memory_bank_dir)
 
@@ -51,9 +50,9 @@ async def test_session_lifecycle_session_start_load_context_compact(
         new_callable=AsyncMock,
         return_value=tmp_path,
     ):
-        # 1) session_start
-        tool_fn = get_tool_fn(session_start)
-        result_json = await tool_fn(task_description=None, ctx=None)
+        # 1) session(operation="start")
+        tool_fn = get_tool_fn(session)
+        result_json = await tool_fn(operation="start", task_description=None, ctx=None)
         result = cast(
             dict[str, object],
             (
@@ -83,9 +82,11 @@ async def test_session_lifecycle_session_start_load_context_compact(
         assert load_data.get("status") == "success"
         assert "file_names" in load_data or "total_tokens" in load_data
 
-        # 3) compact_session (optional summary)
-        compact_fn = get_tool_fn(compact_session)
-        compact_result = await compact_fn(summary="E2E lifecycle test", ctx=None)
+        # 3) session(operation="compact") (optional summary)
+        compact_fn = get_tool_fn(session)
+        compact_result = await compact_fn(
+            operation="compact", summary="E2E lifecycle test", ctx=None
+        )
         compact_data = cast(
             dict[str, object],
             (
@@ -103,7 +104,7 @@ async def test_session_lifecycle_session_start_load_context_compact(
 @pytest.mark.timeout(120)
 @pytest.mark.asyncio
 async def test_session_lifecycle_with_manage_file(tmp_path: Path) -> None:
-    """E2E: session_start → manage_file read → load_context → compact (4 tools)."""
+    """E2E: session(start) → manage_file read → load_context → session(compact) (4 tools)."""
     memory_bank_dir = ensure_test_cortex_structure(tmp_path)
     _write_minimal_memory_bank(memory_bank_dir)
 
@@ -112,9 +113,9 @@ async def test_session_lifecycle_with_manage_file(tmp_path: Path) -> None:
         new_callable=AsyncMock,
         return_value=tmp_path,
     ):
-        # 1) session_start
-        tool_fn = get_tool_fn(session_start)
-        r1 = await tool_fn(task_description=None, ctx=None)
+        # 1) session(operation="start")
+        tool_fn = get_tool_fn(session)
+        r1 = await tool_fn(operation="start", task_description=None, ctx=None)
         r1_dict = cast(
             dict[str, object],
             to_dict(cast(object, r1)) if isinstance(r1, dict) else json.loads(str(r1)),
@@ -144,9 +145,9 @@ async def test_session_lifecycle_with_manage_file(tmp_path: Path) -> None:
         )
         assert load_result is not None
 
-        # 4) compact_session
-        compact_fn = get_tool_fn(compact_session)
-        compact_result = await compact_fn(summary=None, ctx=None)
+        # 4) session(operation="compact")
+        compact_fn = get_tool_fn(session)
+        compact_result = await compact_fn(operation="compact", summary=None, ctx=None)
         compact_data = cast(
             dict[str, object],
             (

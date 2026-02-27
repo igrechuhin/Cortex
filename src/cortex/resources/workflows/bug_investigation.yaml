@@ -1,7 +1,7 @@
 name: bug_investigation
 description: Debug and fix a bug.
 steps:
-  - session_start
+  - session(operation="start")
   - load_context(task_description="debug X", token_budget=15000)
   - search_tools / read code as needed
   - think

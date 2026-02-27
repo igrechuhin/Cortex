@@ -191,7 +191,7 @@ This guide documents common workflows as sequences of Cortex MCP tool calls, wit
 **Decision points:**
 
 - If the plan is not yet complete, update the plan file with status and leave in `.cortex/plans/`.
-- If **plan(operation="complete")** is unavailable, use **roadmap(operation="remove_entry")**, **append_progress_entry**, **append_active_context_entry**, then run the plan-archiver steps manually.
+- If **plan(operation="complete")** is unavailable, use **roadmap(operation="remove_entry")**, **append_entry(operation="progress")**, **append_entry(operation="active_context")**, then run the plan-archiver steps manually.
 
 **Error recovery:**
 

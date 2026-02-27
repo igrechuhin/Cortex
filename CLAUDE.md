@@ -11,7 +11,7 @@ This project runs a **Cortex MCP server**. All project knowledge, rules, and wor
 **For session orientation** (recommended first step):
 
 ```text
-session_start(task_description=None)  # Get orientation brief (< 1000 tokens)
+session(operation="start", task_description=None)  # Get orientation brief (< 1000 tokens)
 ```
 
 **For task-specific context**:
@@ -20,7 +20,7 @@ session_start(task_description=None)  # Get orientation brief (< 1000 tokens)
 load_context(task_description="<your goal>", token_budget=<appropriate>)
 ```
 
-**Pattern**: `session_start()` → review brief → `load_context(task_description=brief.next_work_item, ...)` → work
+**Pattern**: `session(operation="start")` → review brief → `load_context(task_description=brief.next_work_item, ...)` → work
 
 **Parallel agents (Phase 58)**: See AGENTS.md (Multi-agent coordination) for task locking when multiple Cursor tabs work on the same project.
 
@@ -43,7 +43,7 @@ See implement prompt for full checklist and zero-budget guardrails.
 
 **On the fix path**: When you encounter a problem and have to fix something (errors, test failures, quality/type issues), you **must** load context and rules before making changes—e.g. `load_context(task_description="Fixing errors and issues", token_budget=15000)` and get relevant rules—so fixes follow all project rules and guidelines. See AGENTS.md and the commit/implement prompts for details.
 
-**For thinking and reasoning:** Use the `think` tool for quick deliberation moments (analyzing tool outputs, checking policy compliance, planning multi-step operations). For formal multi-step reasoning with revisions and branches, use `sequentialthinking`.
+**For thinking and reasoning:** Use the `think` tool. Lightweight: `think(thought="...")` for quick deliberation. Full mode: pass `thought_number`, `total_thoughts`, `next_thought_needed` for multi-step reasoning with revisions and branches.
 
 **For rules and standards:** Use Cortex rules/validation tools — do not read `.cortex/rules/` or `.cortex/synapse/` directly. Get structured data standards via `get_synapse_rules(task_description="[language] models, structured data")` or `rules(operation="get_relevant", task_description="structured data, tool parameters")`. For tool parameters and structured dispatch data use Pydantic BaseModel, not `dict[str, Any]`.
 

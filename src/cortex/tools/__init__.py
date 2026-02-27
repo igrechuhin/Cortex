@@ -28,7 +28,7 @@ Modules:
 - roadmap_operations: Roadmap entry management (1 tool)
 - plan_operations: Structured plan creation and roadmap registration (2 tools)
 - plan_completion: Complete plan (move from roadmap to activeContext) (1 tool)
-- sequential_thinking: Sequential thinking for stepwise reasoning (1 tool)
+- sequential_thinking: Unified think tool (lightweight + full sequential mode)
 - compaction_operations: Session compaction and handoff (1 tool) - Phase 56
 Total: 71 tools + 7 prompts
 """
@@ -36,6 +36,7 @@ Total: 71 tools + 7 prompts
 # Import all tool modules to register their decorators
 from . import (
     analysis_operations,  # noqa: F401
+    append_entry_dispatcher,  # noqa: F401
     cache_json_tools,  # noqa: F401
     compaction_operations,  # noqa: F401
     composite_tools,  # noqa: F401
@@ -73,6 +74,7 @@ from . import (
     rules_operations,  # noqa: F401
     script_capture_tools,  # noqa: F401
     sequential_thinking,  # noqa: F401
+    session_dispatcher,  # noqa: F401
     session_registry,  # noqa: F401
     session_start_tools,  # noqa: F401
     skill_pack_operations,  # noqa: F401
@@ -86,11 +88,13 @@ from . import (
 )
 
 # Explicitly reference modules imported for side effects to satisfy type checker
+_ = append_entry_dispatcher
 _ = plan_dispatcher
 _ = roadmap_dispatcher
 _ = synapse_prompts
 
 __all__ = [
+    "append_entry_dispatcher",
     "analysis_operations",
     "cache_json_tools",
     "compaction_operations",
@@ -121,6 +125,7 @@ __all__ = [
     "query_memory_bank_operations",
     "query_usage_operations",
     "sequential_thinking",
+    "session_dispatcher",
     "session_registry",
     "session_start_tools",
     "tool_search_operations",

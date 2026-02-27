@@ -2027,7 +2027,7 @@ Later phases and tool layers built on the foundation. Documented briefly; see [M
 
 ### Plan and roadmap
 
-- **plan_completion** – `complete_plan`, `append_progress_entry`, `append_active_context_entry`.
+- **plan_completion** – `complete_plan`. **append_entry_dispatcher** – `append_entry` (operation=progress|active_context, consolidates append_progress_entry and append_active_context_entry).
 - **plan_crud** – Create/list/get plans. **plan_roadmap** – `register_plan_in_roadmap`.
 - **roadmap_operations** – Add/remove roadmap entries and sections. **roadmap_corruption** – Fix roadmap corruption.
 

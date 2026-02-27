@@ -15,11 +15,9 @@ from cortex.core.constants import (
 )
 from cortex.core.context_logging import MCPContext, log_client
 from cortex.core.exceptions import FileConflictError, FileLockTimeoutError
-from cortex.core.mcp_annotations import safe_write_annotations
 from cortex.core.mcp_stability import ensure_usage_context, mcp_tool_wrapper
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.core.project_root_resolver import resolve_project_root_async
-from cortex.server import mcp
 from cortex.tools.roadmap_corruption import fix_roadmap_content_if_needed
 
 
@@ -437,7 +435,6 @@ async def _register_plan_impl(
         ).model_dump_json()
 
 
-@mcp.tool(annotations=safe_write_annotations("Register Plan in Roadmap"))
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_MEDIUM)
 async def register_plan_in_roadmap(

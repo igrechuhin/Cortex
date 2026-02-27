@@ -179,9 +179,7 @@
     "tool_search": {
       "enabled": false,
       "always_loaded": [
-        "add_roadmap_entry",
-        "append_active_context_entry",
-        "append_progress_entry",
+        "append_entry",
         "check_mcp_connection_health",
         "complete_plan",
         "execute_pre_commit_checks",
@@ -190,8 +188,7 @@
         "load_context",
         "manage_file",
         "query_memory_bank",
-        "remove_roadmap_entry",
-        "remove_roadmap_section",
+        "roadmap",
         "rules",
         "search_tools",
         "validate"
@@ -215,28 +212,21 @@
         "run_preflight_checks",
         "run_tool_evaluation",
         "run_tool_optimization_workflow",
-        "sequentialthinking",
         "suggest_refactoring",
         "summarize_content",
-        "sync_synapse",
+        "synapse",
         "think",
         "write_cache_json"
       ],
       "deferred_low": [
         "analyze_health_check",
-        "analyze_session_scripts",
-        "capture_session_script",
         "cleanup_metadata_index",
         "fix_roadmap_corruption",
         "get_context_usage_statistics",
-        "list_session_scripts",
-        "promote_session_script",
+        "manage_session_scripts",
         "provide_feedback",
         "query_usage",
-        "rollback_file_version",
-        "suggest_tool_improvements",
-        "update_synapse_prompt",
-        "update_synapse_rule"
+        "suggest_tool_improvements"
       ]
     }
   },

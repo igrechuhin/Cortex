@@ -209,6 +209,12 @@ async def query_memory_bank(
     RETURNS: JSON (or format) with result for query_type: stats,
     version_history, dependency_graph, link_graph, parse_links,
     validate_links, resolve_transclusions.
+
+    Args:
+        query_type: stats, version_history, dependency_graph, link_graph,
+            parse_links, validate_links, or resolve_transclusions.
+        file_name: Optional file for version_history, parse_links, etc.
+        limit, format, include_transclusions: Query-specific options.
     """
     await log_client(
         ctx,
