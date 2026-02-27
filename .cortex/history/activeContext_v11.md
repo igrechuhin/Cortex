@@ -6,6 +6,8 @@
 
 - ✅ **Phase 9.7 Error Handling Polish** - COMPLETE (2026-02-27) - Improved error messages (MCP connection and tool-not-found suggestions), generic connection fallback for tools without specific fallbacks, documented MCP connection failure in failure-modes.md and error-recovery.md.
 
+- ✅ **Phase 9.8 Maintainability Polish** - COMPLETE (2026-02-27) - Reduced cyclomatic complexity in tool_error_formatters and validation_helpers via dispatch table and helper extraction; added module-level documentation. Preflight passed.
+
 ## Completed Work (2026-02-26)
 
 - **Summary (2026-02-26)** - 1 entries archived.

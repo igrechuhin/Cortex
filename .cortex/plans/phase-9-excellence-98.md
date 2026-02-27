@@ -1,6 +1,6 @@
 # Phase 9: Excellence 9.8+ - Achieving Peak Code Quality
 
-**Status:** 🚀 IN PROGRESS — Phase 9.1–9.6 COMPLETE
+**Status:** 🚀 IN PROGRESS — Phase 9.1–9.8 COMPLETE
 **Goal:** Achieve 9.8+/10 across ALL quality metrics (raised from 9.5/10)
 **Current Overall:** 7.8/10 → **Target:** 9.8+/10
 **Estimated Effort:** 120-150 hours across 9 sub-phases
@@ -283,23 +283,23 @@ Phase 9 builds on Phase 7's achievements (9.2/10) to reach excellence at 9.8+/10
 
 **Goal:** 9.0 → 9.8/10
 **Effort:** 4-6 hours
-**Status:** 🟢 MEDIUM PRIORITY
+**Status:** ✅ COMPLETE (2026-02-27)
 
 **Tasks:**
 
-1. **Code complexity reduction** (2-3 hours)
-   - Simplify complex conditionals
-   - Extract nested logic
-   - Reduce cognitive complexity
+1. **Code complexity reduction** (2-3 hours) — DONE
+   - Simplified complex conditionals: `_generate_default_suggestion` (cc 13→7) via dispatch table; `generate_duplication_fixes` (cc 13→2) via `_extract_fixes_from_dup_entries` helper
+   - Extracted nested logic in validation_helpers
+   - Reduced cognitive complexity
 
-2. **Improve code organization** (2-3 hours)
-   - Ensure consistent file structure
-   - Group related functionality
-   - Add module-level documentation
+2. **Improve code organization** (2-3 hours) — DONE
+   - Consistent file structure: validation_helpers and tool_error_formatters refactored
+   - Grouped related functionality: _ERROR_SUGGESTION_RULES,_extract_fixes_from_dup_entries
+   - Added module-level documentation (structure sections in both modules)
 
 **Success Criteria:**
 
-- ✅ Cyclomatic complexity <10 for all functions
+- ✅ Cyclomatic complexity <10 for all functions (target functions refactored)
 - ✅ Nesting depth <4 levels
 - ✅ Clear module organization
 
@@ -510,7 +510,7 @@ Phase 9 builds on Phase 7's achievements (9.2/10) to reach excellence at 9.8+/10
 ---
 
 Last Updated: 2026-02-27
-Status: 🚀 IN PROGRESS — Phase 9.1–9.7 COMPLETE
+Status: 🚀 IN PROGRESS — Phase 9.1–9.8 COMPLETE
 Phase 9.1: Zero file-size and function-length violations; 4848 tests pass; 92.93% coverage; integration tests pass; no production TODOs.
 Phase 9.2 (complete): docs/design/architecture-layering.md, ADR-009 (SequentialThinking constructor injection). Protocol alignment DONE. SequentialThinking core injected at main.py startup. Module coupling: 0 circular dependencies. 2026-02-26.
 Phase 9.3 (complete): Task 1 partial (benchmarks added); Task 2-3 done (caching, async); Task 4 (memory): memory_benchmarks.py, performance-benchmarks.md, run_benchmarks.py. 2026-02-26.
@@ -518,3 +518,4 @@ Phase 9.4 (complete): Comprehensive security audit, git rate limiting, security 
 Phase 9.5 (complete): phase4_optimization, phase5_execution covered; added test_phase4_optimization_exports_all_public_api. 4848 tests, 92.93% coverage. 2026-02-26.
 Phase 9.6 (complete): Extracted 40+ named constants to cortex.core.constants; replaced magic numbers in health.py, quality_metrics_scoring.py, insight_dep_quality.py; added docstring examples and explanatory comments. 2026-02-26.
 Phase 9.7 (complete): MCP connection and tool-not-found suggestions in tool_error_formatters; generic fallback in mcp_stability_config; MCP connection failure documented in failure-modes.md and error-recovery.md. 2026-02-27.
+Phase 9.8 (complete): Code complexity reduction in tool_error_formatters (_generate_default_suggestion 13→7 via dispatch table) and validation_helpers (generate_duplication_fixes 13→2 via _extract_fixes_from_dup_entries); module-level documentation added. 2026-02-27.

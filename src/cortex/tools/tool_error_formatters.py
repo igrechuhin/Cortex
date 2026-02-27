@@ -3,6 +3,12 @@
 This module provides consistent error response formatting for all MCP tools,
 following Anthropic's guidance: "error responses should clearly communicate
 specific and actionable improvements, rather than opaque error codes or tracebacks."
+
+Structure:
+- ToolErrorResponse: Pydantic model for standardized error JSON
+- format_tool_error: Main entry point; auto-generates suggestions when omitted
+- Domain formatters: format_file_not_found_error, format_invalid_parameter_error,
+  format_missing_parameter_error, format_validation_error, etc.
 """
 
 import json
@@ -161,6 +167,53 @@ def _suggestion_for_mcp_connection_errors(error_lower: str) -> str | None:
     return None
 
 
+def _matches_any(error_lower: str, keywords: tuple[str, ...]) -> bool:
+    """Return True if any keyword is in error_lower."""
+    return any(kw in error_lower for kw in keywords)
+
+
+def _matches_all(error_lower: str, keywords: tuple[str, ...]) -> bool:
+    """Return True if all keywords are in error_lower."""
+    return all(kw in error_lower for kw in keywords)
+
+
+# Suggestion rules: (predicate, suggestion). First match wins.
+# Using predicate tuples reduces cyclomatic complexity vs long if/elif chains.
+_ERROR_SUGGESTION_RULES: list[tuple[tuple[str, ...], str, bool]] = [
+    # (keywords, suggestion, match_all)
+    (
+        ("file", "not found"),
+        "Verify the file name is correct. Use manage_file(operation='metadata') to list available files.",
+        True,
+    ),
+    (
+        ("invalid", "not valid"),
+        "Check the parameter values and ensure they match the expected format.",
+        False,
+    ),
+    (
+        ("required", "missing"),
+        "Provide all required parameters. Check the tool documentation for required fields.",
+        False,
+    ),
+    (
+        ("permission", "access"),
+        "Check file system permissions. Ensure the process has read/write access to the required directories.",
+        False,
+    ),
+    (
+        ("timeout", "lock"),
+        "The operation timed out or a lock could not be acquired. Wait and retry, or check for stale lock files.",
+        False,
+    ),
+    (
+        ("validation",),
+        "The input does not meet validation requirements. Review the error details and fix the issues before retrying.",
+        False,
+    ),
+]
+
+
 def _generate_default_suggestion(error_type: str, error_message: str) -> str | None:
     """Generate default suggestion based on error type and message."""
     error_lower = error_message.lower()
@@ -169,35 +222,11 @@ def _generate_default_suggestion(error_type: str, error_message: str) -> str | N
     if mcp_suggestion is not None:
         return mcp_suggestion
 
-    if "file" in error_lower and "not found" in error_lower:
-        return (
-            "Verify the file name is correct. Use manage_file(operation='metadata') "
-            "to list available files."
-        )
-
-    if "invalid" in error_lower or "not valid" in error_lower:
-        return "Check the parameter values and ensure they match the expected format."
-
-    if "required" in error_lower or "missing" in error_lower:
-        return "Provide all required parameters. Check the tool documentation for required fields."
-
-    if "permission" in error_lower or "access" in error_lower:
-        return (
-            "Check file system permissions. Ensure the process has read/write access "
-            "to the required directories."
-        )
-
-    if "timeout" in error_lower or "lock" in error_lower:
-        return (
-            "The operation timed out or a lock could not be acquired. "
-            "Wait and retry, or check for stale lock files."
-        )
-
-    if "validation" in error_lower:
-        return (
-            "The input does not meet validation requirements. "
-            "Review the error details and fix the issues before retrying."
-        )
+    for keywords, suggestion, match_all in _ERROR_SUGGESTION_RULES:
+        if match_all and _matches_all(error_lower, keywords):
+            return suggestion
+        if not match_all and _matches_any(error_lower, keywords):
+            return suggestion
 
     return None
 

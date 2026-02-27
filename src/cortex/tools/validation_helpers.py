@@ -1,4 +1,12 @@
-"""Shared validation helper functions."""
+"""Shared validation helper functions.
+
+This module groups validation-related utilities used by the validate tool and
+pre-commit pipelines:
+
+- ValidationCheckType: Enum of valid check types (schema, duplications, etc.)
+- Error creators: create_invalid_check_type_error, create_validation_error_response
+- Duplication fixes: generate_duplication_fixes (exact/similar content)
+"""
 
 from enum import Enum
 from pathlib import Path
@@ -99,26 +107,27 @@ def _create_transclusion_fix(files: list[str]) -> ModelDict:
     }
 
 
+def _extract_fixes_from_dup_entries(entries: object) -> list[ModelDict]:
+    """Extract transclusion fixes from a list of duplication entries."""
+    fixes: list[ModelDict] = []
+    if not isinstance(entries, list):
+        return fixes
+    for raw_entry in cast(list[object], entries):
+        entry = cast(ModelDict, raw_entry) if isinstance(raw_entry, dict) else None
+        if entry is None:
+            continue
+        files = entry.get("files")
+        if not isinstance(files, list) or len(files) < 2:
+            continue
+        fixes.append(_create_transclusion_fix([str(f) for f in files]))
+    return fixes
+
+
 def generate_duplication_fixes(
     duplications_data: ModelDict,
 ) -> list[ModelDict]:
     """Generate fix suggestions for duplicate content."""
     fixes: list[ModelDict] = []
-
-    exact_duplicates = duplications_data.get("exact_duplicates")
-    if isinstance(exact_duplicates, list):
-        for dup in exact_duplicates:
-            if isinstance(dup, dict):
-                files = dup.get("files")
-                if isinstance(files, list) and len(files) >= 2:
-                    fixes.append(_create_transclusion_fix([str(f) for f in files]))
-
-    similar_content = duplications_data.get("similar_content")
-    if isinstance(similar_content, list):
-        for sim in similar_content:
-            if isinstance(sim, dict):
-                files = sim.get("files")
-                if isinstance(files, list) and len(files) >= 2:
-                    fixes.append(_create_transclusion_fix([str(f) for f in files]))
-
+    for key in ("exact_duplicates", "similar_content"):
+        fixes.extend(_extract_fixes_from_dup_entries(duplications_data.get(key)))
     return fixes
