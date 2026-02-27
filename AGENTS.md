@@ -127,6 +127,7 @@ The commit workflow is organized into phases (see `docs/design/commit-pipeline-p
 - When enforcing new coding standards (e.g., Literal→enum), update `.cortex/synapse/rules/python` so the rule is reflected there.
 - When refactoring, briefly explain why the new approach is better, especially when the change is non-obvious.
 - When consolidating tools or updating tool descriptions, follow `docs/guides/tool-description-altitude-rubric.md` (target score ≥4).
+- Tool names must reflect the purpose of the tool.
 
 ## Learned Workspace Facts
 

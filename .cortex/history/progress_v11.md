@@ -8,6 +8,7 @@
 - **Consolidate Plan and Roadmap Tools (2026-02-27)** - COMPLETE. Plan+roadmap tools consolidated; 40→37 registered tools; docs and callers updated.
 - **Unify and Simplify Tools, Prompts, and Resources Naming (2026-02-27)** - COMPLETE. Naming rubric, inventory, proposals; doc updates; cortex://rules/relevant deprecation note.
 - **Commit pipeline quality fixes (2026-02-27)** - COMPLETE. Synapse format (check_tool_description_altitude.py), function length (session_dispatcher), test thresholds (manage_file rollback, deferred ≥15), markdown lint (tools.md link, table pipes). Phase A passed.
+- Commit (2026-02-27) - Roadmap update, AGENTS update, Synapse usage storage plan added. Phase A passed; 4856 tests, 92.61% coverage.
 
 ## 2026-02-26
 

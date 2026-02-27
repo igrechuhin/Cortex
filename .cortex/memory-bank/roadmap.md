@@ -12,6 +12,8 @@
 
 ## Pending plans (from .cortex/plans)
 
+- **Synapse Usage Storage with usage_writable and Static Snapshot Mode** - PENDING - Store tool usage in Synapse when usage_writable=true; when false, operate as static snapshot (no stats writes for tools/prompts/resources).
+
 ### Investigation Plans (Archive / Reference)
 
 Completed investigations are recorded in [activeContext.md](activeContext.md). Plan files under `.cortex/plans/archive/` as needed.
