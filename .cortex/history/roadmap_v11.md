@@ -10,11 +10,9 @@
 
 ## Future Enhancements
 
-- **Pending: Phase 9 excellence** - Plan: .cortex/plans/phase-9-excellence-98.md (Phase 9.8 complete; next Phase 9.9 Final Integration & Validation)
-
 ## Pending plans (from .cortex/plans)
 
-- **Pending: Phase 9 excellence** - Plan: .cortex/plans/phase-9-excellence-98.md (Phase 9.8 complete; next Phase 9.9 Final Integration & Validation)
+- **Pending: Phase 9 excellence** - Plan: .cortex/plans/archive/Phase9/phase-9-excellence-98.md (Phase 9.1–9.9 COMPLETE)
 
 ### Investigation Plans (Archive / Reference)
 
