@@ -12,6 +12,8 @@
 
 - ✅ **Optimize Exposed Tools from Usage Statistics** - COMPLETE (2026-02-27) - Census and mapping completed. Steps 3–4 N/A (no internalize/consolidate candidates this census). Documented exception for target 24 in baseline. Regression passed.
 
+- ✅ **Consolidate Plan and Roadmap Tools** - COMPLETE (2026-02-27) - Consolidated plan tools (create_plan, complete_plan) into plan(operation=create|list|get|complete) and roadmap tools (add_roadmap_entry, remove_roadmap_entry, remove_roadmap_section) into roadmap(operation=add_entry|remove_entry|remove_section). Tool count 40→37.
+
 ## Completed Work (2026-02-26)
 
 - **Summary (2026-02-26)** - 1 entries archived.

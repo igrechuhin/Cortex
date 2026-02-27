@@ -13,7 +13,7 @@ Document the usage baseline and threshold policy for reducing the Cortex MCP too
 
 - **Period**: 2026-02-03 to 2026-02-27 (approx. 24 days)
 - **Total events**: 50,341
-- **Registered tools** (TOOL_CATEGORIES): 40
+- **Registered tools** (TOOL_CATEGORIES): 37 (after plan+roadmap consolidation; was 40)
 - **Target** (TARGET_REGISTERED_TOOLS): 24
 - **Tools below threshold (≤5 calls in 30 days)**: 13 (from usage recommendations; some are internal/pruned)
 

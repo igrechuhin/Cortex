@@ -38,9 +38,7 @@ _MIN_DEFERRED_MEDIUM = 15
 _MIN_DEFERRED_LOW = (
     6  # reduced with tool budget 2026-02-26 (cache_json, skill_pack, etc. internalized)
 )
-_MIN_TOTAL_TOOLS = (
-    40  # Tool budget reduction 2026-02-26; keep in sync with MAX_REGISTERED_TOOLS
-)
+_MIN_TOTAL_TOOLS = 37  # After plan+roadmap consolidation; MAX_REGISTERED_TOOLS=40
 
 
 @pytest.mark.timeout(5)

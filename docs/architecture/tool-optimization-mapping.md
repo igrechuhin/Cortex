@@ -20,7 +20,7 @@ Map each tool below the usage threshold (≤5 calls in 90 days) to an action: **
 | list_plans | **keep** | Plan discovery; used before create_plan and in implement (roadmap/plan steps). |
 | session_register | **keep** | Session lifecycle; may be used by clients for registration. |
 | session_deregister | **keep** | Session lifecycle; may be used by clients for deregistration. |
-| remove_roadmap_entry | **keep** | Memory bank discipline; implement/commit use it for safe single-entry roadmap updates (see memory-bank-updater, AGENTS.md). |
+| roadmap | **keep** | Consolidates add_roadmap_entry, remove_roadmap_entry, remove_roadmap_section (plan: consolidate-plan-and-roadmap-tools). |
 | append_active_context_entry | **keep** | Memory bank discipline; implement and complete_plan use it for safe activeContext updates (memory-bank-updater, AGENTS.md). |
 | get_session_tool_anomalies | **removed** (pruned) | Use `query_usage(query_type="anomalies", hours=24)`. No longer in MCP tool list. |
 | run_tool_optimization_workflow | **removed** (pruned) | Use `query_usage(query_type="unused")` and `query_usage(query_type="recommendations")` and [tool-optimization-baseline](tool-optimization-baseline.md). No longer in MCP tool list. |
@@ -30,7 +30,7 @@ Map each tool below the usage threshold (≤5 calls in 90 days) to an action: **
 
 | Tool | Action | Target / Notes |
 |------|--------|----------------|
-| create_plan | **keep** | Already consolidates list/get via operation param; create-plan workflow depends on it. |
+| plan | **keep** | Consolidates create_plan, complete_plan, list_plans, get_plan (plan: consolidate-plan-and-roadmap-tools). |
 | register_plan_in_roadmap | **keep** | Required by create-plan Step 6; distinct params from create_plan. |
 
 ## Summary

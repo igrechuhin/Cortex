@@ -16,7 +16,7 @@ __all__ = [
 
 from cortex.core.constants import MCP_TOOL_TIMEOUT_MEDIUM, MemoryBankFile
 from cortex.core.context_logging import MCPContext, log_client
-from cortex.core.mcp_annotations import destructive_annotations, safe_write_annotations
+from cortex.core.mcp_annotations import safe_write_annotations
 from cortex.core.mcp_stability import ensure_usage_context, mcp_tool_wrapper
 from cortex.core.models import OperationStatus
 from cortex.core.project_root_resolver import resolve_project_root_async
@@ -66,7 +66,6 @@ async def _complete_plan_impl(
     return result.model_dump_json()
 
 
-@mcp.tool(annotations=destructive_annotations("Complete Plan"))
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_MEDIUM)
 async def complete_plan(

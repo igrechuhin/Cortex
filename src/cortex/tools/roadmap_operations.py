@@ -26,11 +26,9 @@ __all__ = [
 
 from cortex.core.constants import MCP_TOOL_TIMEOUT_MEDIUM, MemoryBankFile
 from cortex.core.context_logging import MCPContext, log_client
-from cortex.core.mcp_annotations import safe_write_annotations
 from cortex.core.mcp_stability import ensure_usage_context, mcp_tool_wrapper
 from cortex.core.models import OperationStatus
 from cortex.core.project_root_resolver import resolve_project_root_async
-from cortex.server import mcp
 from cortex.tools.models import (
     AddRoadmapEntryResult,
     RemoveRoadmapEntryResult,
@@ -79,7 +77,6 @@ async def _add_roadmap_entry_impl(
     return result.model_dump_json()
 
 
-@mcp.tool(annotations=safe_write_annotations("Add Roadmap Entry"))
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_MEDIUM)
 async def add_roadmap_entry(
@@ -139,7 +136,6 @@ async def _remove_roadmap_entry_impl(
     return result.model_dump_json()
 
 
-@mcp.tool(annotations=safe_write_annotations("Remove Roadmap Entry"))
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_MEDIUM)
 async def remove_roadmap_entry(
@@ -197,7 +193,6 @@ async def _remove_roadmap_section_impl(
     return result.model_dump_json()
 
 
-@mcp.tool(annotations=safe_write_annotations("Remove Roadmap Section"))
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_MEDIUM)
 async def remove_roadmap_section(

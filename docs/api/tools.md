@@ -420,103 +420,33 @@ Unified Memory Bank file management tool for read/write/metadata operations.
 
 ---
 
-### add_roadmap_entry
+### roadmap
 
-Add entry to roadmap section, avoiding truncation from full updates.
+Add, remove, or mutate roadmap entries and sections (single roadmap tool). Consolidates `add_roadmap_entry`, `remove_roadmap_entry`, and `remove_roadmap_section`.
 
-**USE WHEN:** Create-plan Step 6 needs to register a new plan entry.
+**USE WHEN:** Adding a plan entry (`operation="add_entry"`), removing a completed entry (`operation="remove_entry"`), or removing an orphan section after all bullets are gone (`operation="remove_section"`). Prefer over full-content `manage_file(write)` to avoid truncation and corruption.
 
-**RETURNS:** JSON with operation status, line inserted, error if any.
+**RETURNS:** JSON — `AddRoadmapEntryResult`, `RemoveRoadmapEntryResult`, or `RemoveRoadmapSectionResult` per operation.
 
 **Parameters:**
 
-- `section` (str) - **Required.** Section identifier: `"blockers"`, `"active_work"`, `"future"`, or `"pending"`.
-- `entry_text` (str) - **Required.** Single bullet line text (e.g., `"- **Title** - PENDING - Description. Plan: .cortex/plans/slug.md."`). If missing leading `"- "`, it will be auto-added.
-- `position` (str) - Position within section: `"first"` or `"last"` (default: `"last"`).
-- `change_description` (str | None) - Optional description for change tracking.
-
-**Description:**
-
-Performs server-side insertion into `roadmap.md` without requiring the client to send the full roadmap content. This avoids truncation risks from full-content serialization. The tool:
-
-- Parses roadmap sections by header patterns (`## Blockers (ASAP Priority)`, `## Active Work (in progress)`, etc.)
-- Validates section identifier and rejects unknown sections
-- Rejects completed entries (entries containing `- COMPLETED`, `- COMPLETE`, or `- DONE`) — roadmap records future/upcoming work only
-- Inserts the entry at the specified position (first or last bullet in section)
-- Applies roadmap corruption fixes before writing
-- Uses lock-guarding and conflict detection (same as `manage_file`)
-
-**Section Mapping:**
-
-- `"blockers"` → `## Blockers (ASAP Priority)`
-- `"active_work"` → `## Active Work (in progress)` or `### Active Work`
-- `"future"` → `## Future Enhancements`
-- `"pending"` → `## Pending plans (from .cortex/plans)`
-
-**Returns:**
-
-**Success:**
-
-```json
-{
-  "status": "success",
-  "file_name": "roadmap.md",
-  "message": "Entry added to 'pending' section at line 45",
-  "line_inserted": 45,
-  "section": "pending",
-  "error": null
-}
-```
-
-**Error (unknown section):**
-
-```json
-{
-  "status": "error",
-  "file_name": "roadmap.md",
-  "message": "Unknown section: invalid_section",
-  "line_inserted": null,
-  "section": null,
-  "error": "Section must be one of: blockers, active_work, future, pending"
-}
-```
-
-**Error (completed entry rejected):**
-
-```json
-{
-  "status": "error",
-  "file_name": "roadmap.md",
-  "message": "Completed entries not allowed in roadmap",
-  "line_inserted": null,
-  "section": null,
-  "error": "Roadmap records future/upcoming work only. Do not add COMPLETED entries here; record completed work in activeContext.md."
-}
-```
+- `operation` (str) - `add_entry` (default), `remove_entry`, or `remove_section`.
+- **add_entry:** `section` (str), `entry_text` (str) required; `position` (default `"last"`), `change_description` optional.
+- **remove_entry:** `entry_contains` (str) required — unique substring of the bullet.
+- **remove_section:** `section_heading_contains` (str) required.
 
 **Examples:**
 
-- **Add plan entry to pending section:**
+```python
+# Add plan entry
+await roadmap(operation="add_entry", section="pending", entry_text="- Plan: .cortex/plans/foo.md")
+# Remove completed entry
+await roadmap(operation="remove_entry", entry_contains="Plan: .cortex/plans/foo.md")
+# Remove orphan section
+await roadmap(operation="remove_section", section_heading_contains="Session Optimization")
+```
 
-  ```python
-  await add_roadmap_entry(
-      section="pending",
-      entry_text="- **Phase 50: Consolidated query tools** - PENDING - Plan: .cortex/plans/phase-50-consolidated-query-tools.md.",
-      position="last"
-  )
-  ```
-
-- **Add blocker entry:**
-
-  ```python
-  await add_roadmap_entry(
-      section="blockers",
-      entry_text="- **Critical bug fix** - PENDING - Blocks all other work.",
-      position="first"
-  )
-  ```
-
-**See also:** `remove_roadmap_entry`, `register_plan_in_roadmap`, `create_plan`, `complete_plan`, `manage_file` (fallback for multi-entry updates).
+**See also:** `register_plan_in_roadmap`, `plan`, `manage_file` (fallback for multi-entry updates).
 
 ---
 
@@ -584,7 +514,7 @@ await create_plan(operation="get", slug="phase-60-feature", response_format="con
 await create_plan(operation="get", slug="phase-60-feature", response_format="metadata")
 ```
 
-**See also:** `register_plan_in_roadmap`, `add_roadmap_entry`, `get_structure_info`.
+**See also:** `register_plan_in_roadmap`, `roadmap`, `get_structure_info`.
 
 ---
 
@@ -648,7 +578,7 @@ await register_plan_in_roadmap(
 )
 ```
 
-**See also:** `create_plan`, `add_roadmap_entry`, `remove_roadmap_entry`, `complete_plan`, `manage_file` (fallback).
+**See also:** `plan`, `roadmap`, `manage_file` (fallback).
 
 ---
 

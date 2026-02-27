@@ -3,7 +3,7 @@ Integration tests for Phase 66: Plan creation workflow compliance.
 
 Verifies that the create-plan prompt enforces:
 - Path resolution via structure_info.paths.plans (absolute path; no hardcoding).
-- Roadmap updates for new plan entry via register_plan_in_roadmap (or add_roadmap_entry); manage_file(write) only as fallback; no StrReplace/direct Write.
+- Roadmap updates for new plan entry via register_plan_in_roadmap (or roadmap(operation="add_entry")); manage_file(write) only as fallback; no StrReplace/direct Write.
 """
 
 from pathlib import Path
@@ -94,8 +94,8 @@ class TestCreatePlanPrefersCreatePlanTool:
     def test_prompt_prefers_create_plan_for_new_plan_file(
         self, create_plan_prompt_content: str
     ) -> None:
-        """Create-plan Step 5 must prefer create_plan when creating a new plan file."""
-        assert "create_plan" in create_plan_prompt_content
+        """Create-plan Step 5 must prefer plan(operation='create') when creating a new plan file."""
+        assert "plan" in create_plan_prompt_content
         assert (
             "Prefer" in create_plan_prompt_content
             or "prefer" in create_plan_prompt_content
@@ -104,14 +104,14 @@ class TestCreatePlanPrefersCreatePlanTool:
     def test_prompt_mentions_fallback_write_for_plan_file(
         self, create_plan_prompt_content: str
     ) -> None:
-        """Create-plan Step 5 must mention fallback (Write) when create_plan unavailable."""
+        """Create-plan Step 5 must mention fallback (Write) when plan(operation='create') unavailable."""
         assert (
             "Fallback" in create_plan_prompt_content
             or "fallback" in create_plan_prompt_content
         )
         assert (
             "Write" in create_plan_prompt_content
-            or "create_plan" in create_plan_prompt_content
+            or 'plan(operation="create")' in create_plan_prompt_content
         )
 
 

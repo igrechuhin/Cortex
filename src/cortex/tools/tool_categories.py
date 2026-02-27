@@ -100,24 +100,14 @@ TOOL_CATEGORIES: tuple[ToolCategoryEntry, ...] = (
         rationale="Loaded at start of implement workflow for coding standards",
     ),
     ToolCategoryEntry(
-        name="add_roadmap_entry",
+        name="plan",
         category=ToolCategory.ALWAYS_LOADED,
-        rationale="Used in plan-creation and implement workflows",
+        rationale="Plan lifecycle: create, list, get, complete (consolidates create_plan + complete_plan)",
     ),
     ToolCategoryEntry(
-        name="remove_roadmap_entry",
+        name="roadmap",
         category=ToolCategory.ALWAYS_LOADED,
-        rationale="Used in implement workflow step 5 (memory bank update)",
-    ),
-    ToolCategoryEntry(
-        name="remove_roadmap_section",
-        category=ToolCategory.ALWAYS_LOADED,
-        rationale="Used in implement workflow step 5 to remove orphan sections without full-content write",
-    ),
-    ToolCategoryEntry(
-        name="complete_plan",
-        category=ToolCategory.ALWAYS_LOADED,
-        rationale="Used in implement workflow step 5 for plan completion",
+        rationale="Roadmap mutations: add_entry, remove_entry, remove_section (consolidates 3 tools)",
     ),
     ToolCategoryEntry(
         name="append_progress_entry",
@@ -204,11 +194,6 @@ TOOL_CATEGORIES: tuple[ToolCategoryEntry, ...] = (
         name="fix_markdown_lint",
         category=ToolCategory.DEFERRED_MEDIUM,
         rationale="Markdown formatting fixes (part of quality workflow)",
-    ),
-    ToolCategoryEntry(
-        name="create_plan",
-        category=ToolCategory.DEFERRED_MEDIUM,
-        rationale="Plan creation workflow",
     ),
     ToolCategoryEntry(
         name="register_plan_in_roadmap",

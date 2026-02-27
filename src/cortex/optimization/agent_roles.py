@@ -111,7 +111,7 @@ ROLE_PROFILES: dict[AgentRole, AgentRoleProfile] = {
             "fix_markdown_lint",
         ],
         deprioritized_tools=[
-            "create_plan",
+            "plan",
             "suggest_refactoring",
         ],
         context_focus=[
@@ -154,7 +154,7 @@ ROLE_PROFILES: dict[AgentRole, AgentRoleProfile] = {
     ),
     AgentRole.PLANNING: _make_profile(
         priority_tools=[
-            "create_plan",
+            "plan",
             "register_plan_in_roadmap",
             "manage_file",
         ],
@@ -175,7 +175,7 @@ ROLE_PROFILES: dict[AgentRole, AgentRoleProfile] = {
             "execute_pre_commit_checks",
         ],
         deprioritized_tools=[
-            "create_plan",
+            "plan",
         ],
         context_focus=[
             MemoryBankFile.ACTIVE_CONTEXT,
@@ -190,7 +190,7 @@ ROLE_PROFILES: dict[AgentRole, AgentRoleProfile] = {
             "get_relevance_scores",
         ],
         deprioritized_tools=[
-            "create_plan",
+            "plan",
             "fix_quality_issues",
         ],
         context_focus=[

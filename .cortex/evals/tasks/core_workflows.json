@@ -88,28 +88,28 @@
     "name": "Create a plan for adding dark mode support",
     "description": "Agent creates a structured plan and registers it in the roadmap for a dark mode feature.",
     "category": "plan",
-    "expected_tools": ["create_plan", "register_plan_in_roadmap", "add_roadmap_entry"],
+    "expected_tools": ["plan", "register_plan_in_roadmap", "add_roadmap_entry"],
     "expected_outcome": "Plan file is created under plans/, registered in roadmap, and ready for implement.",
     "token_budget_baseline": 0,
     "common_failure_modes": [
       "Plan not registered in roadmap",
       "Roadmap entry missing plan path"
     ],
-    "usage_query": "create_plan"
+    "usage_query": "plan"
   },
   {
     "id": "plan-register-completed-plan",
     "name": "Register a completed plan and update roadmap",
-    "description": "Agent uses complete_plan to move a finished plan from roadmap to activeContext and archive.",
+    "description": "Agent uses plan(operation=\"complete\") to move a finished plan from roadmap to activeContext and archive.",
     "category": "plan",
-    "expected_tools": ["complete_plan", "append_progress_entry", "append_active_context_entry"],
+    "expected_tools": ["plan", "append_progress_entry", "append_active_context_entry"],
     "expected_outcome": "Roadmap no longer lists the completed plan, activeContext and progress are updated, and the plan file is archived.",
     "token_budget_baseline": 0,
     "common_failure_modes": [
       "Roadmap entry removed without updating activeContext",
       "Plan file left in root plans directory instead of archive"
     ],
-    "usage_query": "complete_plan"
+    "usage_query": "plan"
   },
   {
     "id": "plan-find-and-implement-next-roadmap-item",

@@ -60,6 +60,7 @@ from . import (
     phase5_refactoring,  # noqa: F401
     phase8_structure,  # noqa: F401
     plan_completion,  # noqa: F401
+    plan_dispatcher,  # noqa: F401
     plan_operations,  # noqa: F401
     pre_commit_tools,  # noqa: F401
     prompts,  # noqa: F401
@@ -67,6 +68,7 @@ from . import (
     query_usage_operations,  # noqa: F401
     refactoring_operations,  # noqa: F401
     roadmap_corruption,  # noqa: F401
+    roadmap_dispatcher,  # noqa: F401
     roadmap_operations,  # noqa: F401
     rules_operations,  # noqa: F401
     script_capture_tools,  # noqa: F401
@@ -83,8 +85,9 @@ from . import (
     workflow_operations,  # noqa: F401
 )
 
-# Explicitly reference synapse_prompts to satisfy type checker
-# (imported for side effects)
+# Explicitly reference modules imported for side effects to satisfy type checker
+_ = plan_dispatcher
+_ = roadmap_dispatcher
 _ = synapse_prompts
 
 __all__ = [
