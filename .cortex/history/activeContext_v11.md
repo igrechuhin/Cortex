@@ -6,6 +6,8 @@
 
 - ✅ **Synapse Usage Storage with usage_writable and Static Snapshot Mode** - COMPLETE (2026-02-28) - Implemented usage_writable config, static snapshot gating for UsageTracker and context stats, Synapse storage root for usage when writable, and documentation updates.
 
+- ✅ **Session Improvements 2026-02-27** - COMPLETE (2026-02-28) - Updated rules_folder to .cortex/synapse/rules for indexing; added Phase 58 consolidation to roadmap. Context effectiveness and MCP health already covered by existing prompts.
+
 ## Completed Work (2026-02-27)
 
 - **Summary (2026-02-27)** - 1 entries archived.

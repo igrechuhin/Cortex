@@ -10,9 +10,9 @@
 
 ## Future Enhancements
 
-## Pending plans (from .cortex/plans)
+- Phase 58 tools consolidation: merge check_task_available_lock, claim_task_lock, release_task_lock, list_active_tasks into single dispatcher (low priority)
 
-- **Session Improvements 2026-02-27** - PENDING - [plan](.cortex/plans/session-improvements-2026-02-27.md) - Improvements from end-of-session analysis: context-effectiveness, rules indexing, tools optimization
+## Pending plans (from .cortex/plans)
 
 ### Investigation Plans (Archive / Reference)
 

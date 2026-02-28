@@ -4,6 +4,7 @@
 
 - **Synapse Usage Storage with usage_writable and Static Snapshot Mode (2026-02-28)** - COMPLETE. Added load_synapse_usage_config, is_usage_writable, get_usage_storage_root; gated UsageTracker.record_tool_usage and context stats save_statistics; wired Synapse .cache for usage when usage_writable=true; updated tool-usage-tracking doc.
 - Commit (2026-02-28) - Fixed function length violation in usage_tracker.record_tool_usage; extracted_build_and_persist_usage_event. Phase A passed; 4867 tests, 92.61% coverage.
+- **Session Improvements 2026-02-27 (2026-02-28)** - COMPLETE. Updated optimization.json rules_folder to .cortex/synapse/rules (17 .mdc files). Rules indexing will work after MCP restart. Added Phase 58 tools consolidation to roadmap. Context effectiveness and MCP health already in implement/commit prompts.
 
 ## 2026-02-27
 
