@@ -68,7 +68,7 @@ Phase 9 achieved the target of 9.8+/10 across all quality dimensions. All 9 sub-
 
 ## References
 
-- [Phase 9 Plan](.cortex/plans/phase-9-excellence-98.md)
-- [Performance Benchmarks](design/performance-benchmarks.md)
-- [Security Best Practices](security/best-practices.md)
-- [Architecture Layering](design/architecture-layering.md)
+- [Phase 9 Plan](../../.cortex/plans/archive/Phase9/phase-9-excellence-98.md)
+- [Performance Benchmarks](performance-benchmarks.md)
+- [Security Best Practices](../security/best-practices.md)
+- [Architecture Layering](architecture-layering.md)

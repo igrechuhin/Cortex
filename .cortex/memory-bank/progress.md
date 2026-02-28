@@ -8,6 +8,11 @@
 - **Fix requirements.txt and Dockerfile dependency gap (2026-02-28)** - COMPLETE. Migrated Dockerfile to pip install .; updated requirements.txt with all pyproject.toml deps.
 - **Fix legacy .memory-bank/ path references (2026-02-28)** - COMPLETE. Replaced ~50 legacy path references across 15+ docs with current .cortex/ layout. Updated architecture.md diagram, Storage Layer, getting-started, index, failure-modes, troubleshooting, configuration, error-recovery, managers, modules, exceptions, tools, initialize-memory-bank, performance-tuning, design/architecture-layering. Left adr/ and migration docs as-is.
 - **Fix getting-started.md (2026-02-28)** - COMPLETE. Rewrote Quick Start to use current tools (initialize prompt, validate, get_structure_info) and .cortex/ paths; removed references to initialize_memory_bank, validate_memory_bank, get_quality_score, setup_project_structure.
+- **Fix Gitignore Gaps and Remove Tracked Build Artifacts (2026-02-28)** - COMPLETE. Added coverage.json and coverage_consolidated.json to .gitignore; removed coverage_consolidated.json from git tracking (~2.5 MB).
+- **Compact CLAUDE.md (2026-02-28)** - COMPLETE. Removed ~55 lines of duplicated Python standards from .claude/CLAUDE.md; replaced with compact summary referencing Synapse rules. File now 120 lines.
+- **Move phase-9-completion-summary to docs/design (2026-02-28)** - COMPLETE. Moved phase-9-completion-summary.md to docs/design/; updated README and internal references.
+- **Rename roadmap-fix-temp.md to Permanent Name (2026-02-28)** - COMPLETE. Renamed docs/design/roadmap-fix-temp.md to docs/design/roadmap.md; updated references.
+- **Fix stale tool/test/module counts (2026-02-28)** - COMPLETE. Updated all docs to 70+ tools, 4800+ tests, 20+ modules; removed hardcoded AGENTS.md test count.
 
 ## 2026-02-27
 

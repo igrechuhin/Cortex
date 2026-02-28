@@ -16,6 +16,16 @@
 
 - ✅ **Fix getting-started.md Removed Tool References** - COMPLETE (2026-02-28) - Rewrote Quick Start to use initialize prompt, validate(check_type=...), get_structure_info; replaced removed tools; updated to .cortex/ layout; 70+ tools.
 
+- ✅ **Fix Gitignore Gaps and Remove Tracked Build Artifacts** - COMPLETE (2026-02-28) - Added coverage.json and coverage_consolidated.json to .gitignore; removed coverage_consolidated.json from git tracking (~2.5 MB).
+
+- ✅ **Compact CLAUDE.md at project root — remove ~80 lines duplicated from Synapse rules** - COMPLETE (2026-02-28) - Reduced .claude/CLAUDE.md from 175 to 120 lines by replacing Python Standards and MCP Development with compact summaries referencing Synapse rules.
+
+- ✅ **Move docs/phase-9-completion-summary.md to docs/design/** - COMPLETE (2026-02-28) - Moved docs/phase-9-completion-summary.md to docs/design/phase-9-completion-summary.md and updated README link and internal references.
+
+- ✅ **Rename roadmap-fix-temp.md to Permanent Name** - COMPLETE (2026-02-28) - Renamed docs/design/roadmap-fix-temp.md to docs/design/roadmap.md; updated session review reference to new path.
+
+- ✅ **Fix stale tool/test/module counts in documentation** - COMPLETE (2026-02-28) - Updated docs/architecture.md, docs/api (index), docs/testing-speed-optimization.md, AGENTS.md, README.md, tool-optimization-baseline.md: 100+→70+ tools, 3700+→4800+ tests, 41+→20+ modules, removed hardcoded test count.
+
 ## Completed Work (2026-02-27)
 
 - **Summary (2026-02-27)** - 1 entries archived.

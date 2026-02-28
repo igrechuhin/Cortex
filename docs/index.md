@@ -92,8 +92,8 @@ To get started with Cortex, see the [Getting Started Guide](./getting-started.md
 
 For detailed API documentation, see:
 
-- [MCP Tools Reference](./api/tools.md) - 100+ MCP tools
-- [Module Documentation](./api/modules.md) - All 41+ modules
+- [MCP Tools Reference](./api/tools.md) - 70+ MCP tools
+- [Module Documentation](./api/modules.md) - All modules
 - [Exception Reference](./api/exceptions.md) - Exception hierarchy
 
 ## User Guides

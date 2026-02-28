@@ -135,7 +135,7 @@ For a new project, use the **initialize** prompt to create the Memory Bank and `
 
 ## Available Tools
 
-Cortex exposes 60+ MCP tools. Key tools by workflow:
+Cortex exposes 70+ MCP tools. Key tools by workflow:
 
 | Workflow | Tools |
 |----------|--------|
@@ -267,7 +267,7 @@ Use transclusion to include content from other files without duplication:
 ## Documentation
 
 - [Getting started](docs/getting-started.md) – Setup and first steps
-- [Phase 9 completion summary](docs/phase-9-completion-summary.md) – Quality validation and metric achievement (9.8+/10)
+- [Phase 9 completion summary](docs/design/phase-9-completion-summary.md) – Quality validation and metric achievement (9.8+/10)
 - [MCP Tools API](docs/api/tools.md) – Full tool reference
 - [Troubleshooting](docs/guides/troubleshooting.md) – Common issues and fixes
 - [Advanced tool use](docs/guides/advanced-tool-use.md) – Tool search and categorization

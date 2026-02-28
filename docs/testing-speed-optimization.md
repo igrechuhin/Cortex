@@ -1,6 +1,6 @@
 # Testing Speed Optimization
 
-Ways to speed up the test suite (3700+ tests, `-m "not slow"`).
+Ways to speed up the test suite (4800+ tests, `-m "not slow"`).
 
 ## Already in place
 
@@ -8,11 +8,11 @@ Ways to speed up the test suite (3700+ tests, `-m "not slow"`).
 - **Slow tests excluded**: `-m "not slow"` in CI and commit pipeline; two long integration tests are skipped.
 - **Per-test timeout**: 5–10s in `pytest.ini` so slow tests fail fast.
 - **Usage context bypass**: Tool tests that call decorated handlers patch `get_current_managers` so `ensure_usage_context` does not run `resolve_project_root_async` / `get_managers()` (avoids multi-second stalls).
-- **Progress heartbeat**: When `execute_pre_commit_checks` runs tests with progress (e.g. 300/3704), a heartbeat thread reports progress every 20s even when pytest emits no output (e.g. one long test). The UI no longer appears stuck during those gaps.
+- **Progress heartbeat**: When `execute_pre_commit_checks` runs tests with progress (e.g. 300/4800+), a heartbeat thread reports progress every 20s even when pytest emits no output (e.g. one long test). The UI no longer appears stuck during those gaps.
 
 ## Finding slow tests that cause long progress gaps
 
-If progress stalls at a given count (e.g. 300/3704) for minutes, one or more tests in that range are slow. To find them:
+If progress stalls at a given count (e.g. 300/4800+) for minutes, one or more tests in that range are slow. To find them:
 
 - Run with durations: `pytest tests/ -m "not slow" -v --durations=20` (or `--durations=0` for all). The slowest tests are listed at the end.
 - Run without xdist to get deterministic order: `CORTEX_PYTEST_PARALLEL=0 pytest tests/ -m "not slow" -v --durations=20`. Then correlate the slowest tests with the approximate position (e.g. test #300) to find the culprit.

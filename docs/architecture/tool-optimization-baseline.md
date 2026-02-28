@@ -30,7 +30,7 @@ The census and optimization mapping (plan: optimize-tools-from-usage-statistics)
 
 - **Period**: 2025-11-25 to 2026-02-23 (approx. 30 days)
 - **Total events**: 49,955
-- **Published tools**: 100+ (exact count from tool registry; report lists all tools with at least one call)
+- **Published tools**: 100+ at baseline (pre-consolidation; post-Phase 50 ~71; report lists all tools with at least one call)
 - **Tools below threshold (≤5 calls in 30 days)**: 10
 
 ### Tools Below Threshold (≤5 calls in 30 days)

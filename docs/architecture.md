@@ -4,7 +4,7 @@ This document describes the high-level architecture of Cortex.
 
 ## Overview
 
-Cortex is structured as an MCP (Model Context Protocol) server that provides 100+ tools for managing structured documentation (Memory Bank files). The system is built with a modular, layered architecture designed for:
+Cortex is structured as an MCP (Model Context Protocol) server that provides 70+ tools for managing structured documentation (Memory Bank files). The system is built with a modular, layered architecture designed for:
 
 - **Extensibility**: Easy to add new phases and features
 - **Maintainability**: Each module has a single, well-defined responsibility
@@ -23,7 +23,7 @@ Cortex is structured as an MCP (Model Context Protocol) server that provides 100
                          ▼
 ┌─────────────────────────────────────────────────────────────┐
 │                    MCP Server (FastMCP)                     │
-│                   100+ tools (multiple phases)               │
+│                  70+ tools (multiple phases)                │
 └────────────┬────────────────────────────────────────────────┘
              │
              ▼
@@ -107,7 +107,7 @@ Tool modules are grouped by phase and responsibility. Representative groups:
 - **Synapse** – `synapse_tools`, Synapse prompts registration
 - **Other** – `query_memory_bank_operations`, `query_usage_operations`, `cache_json_tools`, `script_capture_tools`, `sequential_thinking`, `task_locking`, and others
 
-Total tool count is 100+; exact count and parameters are in `docs/api/tools.md`. Naming rules: [naming conventions](architecture/naming-conventions.md).
+Total tool count is 71 (70+ tools, 7 prompts); exact count and parameters are in `docs/api/tools.md` and `src/cortex/tools/__init__.py`. Naming rules: [naming conventions](architecture/naming-conventions.md).
 
 ### Layer 3: Manager Initialization
 
@@ -140,7 +140,7 @@ Tool accesses managers["fs"] or managers["context_optimizer"]
   LazyManager: on first access → build real instance, replace in dict
 ```
 
-### Layer 4: Business Logic (41+ Modules)
+### Layer 4: Business Logic (20+ Modules)
 
 Each manager/service module has a single responsibility:
 

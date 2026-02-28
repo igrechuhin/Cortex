@@ -85,76 +85,28 @@ When encountering unexpected MCP tool results:
 
 - Always use US English
 
-## Python Standards (STRICT MANDATORY)
+## Python Standards
 
-### Type Safety
+Loaded from Synapse rules. Key constraints:
 
-- 100% type hint coverage required
-- **NEVER use `Any` type** - use Protocols, Pydantic models, or concrete types
-- Use Python 3.13+ built-ins: `list[str]`, `dict[str, int]`, `T | None`
-- Use concrete types - investigate actual return types
-- **Make types MORE specific, not less**
+- No `Any` type; 100% type hints; Pydantic 2 mandatory
+- Functions ≤30 lines; files ≤400 lines
+- AAA test pattern; 90%+ coverage
+- Black (88 cols); async-first I/O
 
-### Pydantic 2 (STRICT MANDATORY)
-
-- ALL structured data MUST use Pydantic `BaseModel`
-- Use Pydantic 2 API: `model_validate()`, `model_dump()`, `ConfigDict`
-- Use `Literal` types for status/enum fields
-- NEVER use: `.dict()`, `.json()`, `parse_obj()`, `from_orm()`, `class Config:`
-
-### Async Patterns
-
-- Use async for I/O, avoid blocking event loop
-- Use `asyncio.timeout()` instead of `asyncio.wait_for()`
-- Use `asyncio.TaskGroup` for concurrent operations
-- Offload CPU/file I/O with executors
-
-### Code Organization
-
-- Functions ≤30 lines (logical lines)
-- Files ≤400 lines (production code)
-- One public type per file
-- Private constants at file level
-- Pure helpers at file level
-
-### Module Visibility
-
-- Cross-module symbols MUST be public (no `_` prefix)
-- Private symbols are module-internal only
-- **NEVER use `# pyright: ignore[reportPrivateUsage]`**
-
-### Testing
-
-- AAA pattern (Arrange-Act-Assert) MANDATORY
-- No blanket skips; justify every skip with reason and ticket
-- Minimum 90% coverage for new code
-- Unit tests for all critical business logic
-
-### Formatting
-
-- Black (88 columns)
-- isort with black profile
-- No manual formatting
+Use `rules(operation="get_relevant", task_description="python standards")` for full details.
 
 ## MCP Development
 
-- All MCP tool return types MUST use Pydantic `BaseModel`
-- Register handlers on MCP server instance
-- Use `stdio_server()` as async context manager without arguments
-- Keep handlers thin; delegate to pure helpers
+Loaded from Synapse rules. Key: Pydantic `BaseModel` for tool returns; thin handlers; `stdio_server()` as async context manager.
 
 ## Memory Bank
 
-- Location: `.cortex/memory-bank/`
-- Update after significant changes
-- Validate links after file operations using `validate_links()`
-- Use YY-MM-DD timestamps
+- Location: `.cortex/memory-bank/`; update after significant changes; validate links; YY-MM-DD timestamps
 
 ## Git
 
-- No commits/pushes without explicit request
-- Stage only related changes
-- Never rebase/reset/force-push
+- No commits/pushes without explicit request; stage only related changes; never rebase/reset/force-push
 
 ## Violations (BLOCKED)
 
@@ -165,7 +117,4 @@ When encountering unexpected MCP tool results:
 - Proceeding without fetching rules
 - MCP errors without investigation plan
 - **Premature stopping**
-- Using `Any` type
-- Using untyped collections
-- Using Pydantic 1 API
-- Type-checker suppressions for private usage
+- Using `Any` type, untyped collections, Pydantic 1 API, type-checker suppressions (see Synapse rules)

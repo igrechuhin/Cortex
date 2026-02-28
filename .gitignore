@@ -61,6 +61,8 @@ htmlcov/
 .coverage.*
 .cache
 coverage.xml
+coverage.json
+coverage_consolidated.json
 *.cover
 
 # Cortex data directories (project-specific, not tracked in this repo)

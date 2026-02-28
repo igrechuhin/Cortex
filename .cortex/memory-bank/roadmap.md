@@ -14,14 +14,8 @@
 
 ## Pending plans (from .cortex/plans)
 
-- **PENDING** Fix gitignore gaps and remove tracked build artifacts (see plan). Plan: `.cortex/plans/plan-gitignore-coverage-cleanup.md`
-- **PENDING** Compact CLAUDE.md at project root — remove ~80 lines duplicated from Synapse rules. Plan: `.cortex/plans/plan-claude-md-compaction.md`
-- **PENDING** Move docs/phase-9-completion-summary.md to docs/design/. Plan: `.cortex/plans/plan-docs-move-phase-summary.md`
-- **PENDING** Rename docs/design/roadmap-fix-temp.md to permanent name. Plan: `.cortex/plans/plan-docs-rename-roadmap-fix-temp.md`
-
 ### Fixes
 
-- **PENDING** Fix stale tool/test/module counts in documentation (docs say "100+ tools", actual 71). Plan: `.cortex/plans/plan-docs-fix-stale-counts.md`
 - **PENDING** Fix session function naming inconsistency in AGENTS.md (mixes session() and session_start()). Plan: `.cortex/plans/plan-docs-fix-session-naming.md`
 
 ### Documentation Cleanup (DRY)
