@@ -8,6 +8,8 @@
 
 - ✅ **Session Improvements 2026-02-27** - COMPLETE (2026-02-28) - Updated rules_folder to .cortex/synapse/rules for indexing; added Phase 58 consolidation to roadmap. Context effectiveness and MCP health already covered by existing prompts.
 
+- ✅ **Markdown lint fix (MD040)** - COMPLETE (2026-02-28) - Added language specifiers to fenced code blocks in plan-gitignore-coverage-cleanup.md and plan-tools-subpackage-reorganization.md.
+
 ## Completed Work (2026-02-27)
 
 - **Summary (2026-02-27)** - 1 entries archived.
