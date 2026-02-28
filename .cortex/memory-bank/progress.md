@@ -13,6 +13,7 @@
 - **Move phase-9-completion-summary to docs/design (2026-02-28)** - COMPLETE. Moved phase-9-completion-summary.md to docs/design/; updated README and internal references.
 - **Rename roadmap-fix-temp.md to Permanent Name (2026-02-28)** - COMPLETE. Renamed docs/design/roadmap-fix-temp.md to docs/design/roadmap.md; updated references.
 - **Fix stale tool/test/module counts (2026-02-28)** - COMPLETE. Updated all docs to 70+ tools, 4800+ tests, 20+ modules; removed hardcoded AGENTS.md test count.
+- **Fix Session Naming (2026-02-28)** - COMPLETE. Standardized session naming in AGENTS.md; added README equivalence note.
 
 ## 2026-02-27
 

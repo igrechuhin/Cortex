@@ -125,6 +125,8 @@ In Cursor (or any AI assistant with Cortex MCP), try:
 session_start()
 ```
 
+(`session_start()` is equivalent to `session(operation="start")` — the dispatcher form.)
+
 Then load task-specific context:
 
 ```text

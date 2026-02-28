@@ -26,6 +26,8 @@
 
 - ✅ **Fix stale tool/test/module counts in documentation** - COMPLETE (2026-02-28) - Updated docs/architecture.md, docs/api (index), docs/testing-speed-optimization.md, AGENTS.md, README.md, tool-optimization-baseline.md: 100+→70+ tools, 3700+→4800+ tests, 41+→20+ modules, removed hardcoded test count.
 
+- ✅ **Fix session function naming inconsistency in AGENTS.md** - COMPLETE (2026-02-28) - Standardized session naming in AGENTS.md to session(operation="start"); added README equivalence note.
+
 ## Completed Work (2026-02-27)
 
 - **Summary (2026-02-27)** - 1 entries archived.

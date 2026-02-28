@@ -16,7 +16,6 @@
 
 ### Fixes
 
-- **PENDING** Fix session function naming inconsistency in AGENTS.md (mixes session() and session_start()). Plan: `.cortex/plans/plan-docs-fix-session-naming.md`
 
 ### Documentation Cleanup (DRY)
 

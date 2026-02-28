@@ -87,7 +87,7 @@ Roles are automatically inferred from task descriptions using keyword heuristics
 
 **Load context on the fix path (MANDATORY)**: When you encounter a problem and have to fix something (errors, test failures, quality issues, type/lint violations), you **must** load context and rules **before** making changes. Call `load_context(task_description="Fixing errors and issues", token_budget=15000)` and, when applicable, `rules(operation="get_relevant", task_description="...")` (or read key standards from the rules path if rules are disabled). Only after context and rules are loaded, proceed with fixes. This ensures fixes follow all project rules and guidelines. See the commit and implement prompts for concrete placement.
 
-**Multi-agent coordination (Phase 58)**: When multiple Cursor tabs or agents work on the same project, use task locking to avoid duplicate work. `session_start()` returns `concurrent_sessions` and `locked_tasks`. Use `claim_task_lock(task_title, role)` before starting work on a roadmap item; use `release_task_lock(task_title)` when done. Use `list_active_tasks()` and `check_task_available_lock(task_title)` to see what other agents are working on. Locks auto-expire after 2 hours. See the implement prompt for the full claim/release workflow.
+**Multi-agent coordination (Phase 58)**: When multiple Cursor tabs or agents work on the same project, use task locking to avoid duplicate work. `session(operation="start")` returns `concurrent_sessions` and `locked_tasks`. Use `claim_task_lock(task_title, role)` before starting work on a roadmap item; use `release_task_lock(task_title)` when done. Use `list_active_tasks()` and `check_task_available_lock(task_title)` to see what other agents are working on. Locks auto-expire after 2 hours. See the implement prompt for the full claim/release workflow.
 
 ## Commit pipeline (phase-based)
 
@@ -107,7 +107,7 @@ The commit workflow is organized into phases (see `docs/design/commit-pipeline-p
 - Create session handoff JSON (`.cortex/.cache/session/last_handoff.json`) for next session continuity
 - Generate pre-compaction snapshots for rollback safety
 
-**Session handoff**: The handoff JSON is automatically loaded by `session_start()` at the beginning of the next session, providing:
+**Session handoff**: The handoff JSON is automatically loaded by `session(operation="start")` at the beginning of the next session, providing:
 
 - Completed tasks from the previous session
 - In-progress tasks with notes
