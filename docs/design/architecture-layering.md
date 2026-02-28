@@ -27,7 +27,7 @@ Layer boundaries, protocol usage, and dependency rules (Phase 9.2).
                              │
                              ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│ Layer 4: Storage (filesystem, .cortex/, .memory-bank-index)     │
+│ Layer 4: Storage (filesystem, .cortex/, .cortex/index.json)     │
 │ - Markdown files, JSON caches, version snapshots                │
 └─────────────────────────────────────────────────────────────────┘
 ```

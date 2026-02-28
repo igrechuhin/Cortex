@@ -5,6 +5,9 @@
 - **Synapse Usage Storage with usage_writable and Static Snapshot Mode (2026-02-28)** - COMPLETE. Added load_synapse_usage_config, is_usage_writable, get_usage_storage_root; gated UsageTracker.record_tool_usage and context stats save_statistics; wired Synapse .cache for usage when usage_writable=true; updated tool-usage-tracking doc.
 - Commit (2026-02-28) - Fixed function length violation in usage_tracker.record_tool_usage; extracted_build_and_persist_usage_event. Phase A passed; 4867 tests, 92.61% coverage.
 - **Session Improvements 2026-02-27 (2026-02-28)** - COMPLETE. Updated optimization.json rules_folder to .cortex/synapse/rules (17 .mdc files). Rules indexing will work after MCP restart. Added Phase 58 tools consolidation to roadmap. Context effectiveness and MCP health already in implement/commit prompts.
+- **Fix requirements.txt and Dockerfile dependency gap (2026-02-28)** - COMPLETE. Migrated Dockerfile to pip install .; updated requirements.txt with all pyproject.toml deps.
+- **Fix legacy .memory-bank/ path references (2026-02-28)** - COMPLETE. Replaced ~50 legacy path references across 15+ docs with current .cortex/ layout. Updated architecture.md diagram, Storage Layer, getting-started, index, failure-modes, troubleshooting, configuration, error-recovery, managers, modules, exceptions, tools, initialize-memory-bank, performance-tuning, design/architecture-layering. Left adr/ and migration docs as-is.
+- **Fix getting-started.md (2026-02-28)** - COMPLETE. Rewrote Quick Start to use current tools (initialize prompt, validate, get_structure_info) and .cortex/ paths; removed references to initialize_memory_bank, validate_memory_bank, get_quality_score, setup_project_structure.
 
 ## 2026-02-27
 

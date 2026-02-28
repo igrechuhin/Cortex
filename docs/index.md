@@ -77,7 +77,7 @@ Cortex provides a powerful set of tools for managing structured documentation (M
 
 ### Phase 8: Project Structure
 
-- Standardized `.memory-bank/` directory structure
+- Standardized `.cortex/` directory structure
 - Cross-platform Cursor IDE integration via symlinks
 - Automated migration from legacy structures
 - Interactive project setup with guided configuration

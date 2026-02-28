@@ -413,7 +413,7 @@ FileLockTimeoutError: Could not acquire lock for activeContext.md within 10 seco
 
    ```bash
    # Remove lock files
-   rm .memory-bank/*.lock
+   rm .cortex/memory-bank/*.lock
    ```
 
 3. Retry the operation
@@ -1183,7 +1183,7 @@ RollbackError: Failed to rollback refactoring split_002
 1. Check rollback history:
 
    ```bash
-   cat .memory-bank-rollbacks.json
+   cat .cortex/rollbacks.json
    ```
 
 2. Manual rollback:
@@ -1399,13 +1399,13 @@ uv run cortex 2> debug.log
 
 ```bash
 # View metadata index
-cat .memory-bank-index | jq .
+cat .cortex/index.json | jq .
 
-# View access log
-cat .memory-bank-access-log.json | jq .
+# View usage analytics (in index)
+cat .cortex/index.json | jq '.usage_analytics'
 
 # View learning data
-cat .memory-bank-learning.json | jq .
+cat .cortex/config/learning.json | jq .
 ```
 
 ## Getting Help

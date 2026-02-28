@@ -32,7 +32,7 @@ These failures can prevent the system from operating and require immediate actio
 
 - Disk failure during write operation
 - Concurrent modification by multiple processes
-- Invalid JSON syntax in `.memory-bank-index` file
+- Invalid JSON syntax in `.cortex/index.json` file
 - Power loss during save
 - File system corruption
 
@@ -50,14 +50,14 @@ These failures can prevent the system from operating and require immediate actio
 
    ```bash
    # Delete corrupted index
-   rm .memory-bank-index
+   rm .cortex/index.json
 
    # Run any operation to trigger rebuild
    query_memory_bank(query_type="stats")
    ```
 
    The system automatically:
-   - Creates backup of corrupted index (`.memory-bank-index.corrupted`)
+   - Creates backup of corrupted index (`.cortex/index.json.corrupted`)
    - Builds new index from scratch
    - Scans all memory bank files
    - Regenerates metadata
@@ -659,10 +659,10 @@ If system is severely corrupted:
 
 ```bash
 # 1. Backup current state
-tar -czf memory-bank-backup-$(date +%Y%m%d).tar.gz memory-bank/ .memory-bank-*
+tar -czf cortex-backup-$(date +%Y%m%d).tar.gz .cortex/
 
 # 2. Remove all metadata
-rm .memory-bank-index
+rm .cortex/index.json
 rm .cortex/config/validation.json
 rm .cortex/history/*
 
@@ -685,7 +685,7 @@ pkill -f cortex
 find . -name "*.lock" -delete
 
 # 3. Reset index
-rm .memory-bank-index
+rm .cortex/index.json
 
 # 4. Restart fresh
 initialize_memory_bank()
@@ -701,7 +701,7 @@ Test these scenarios in development:
 
    ```bash
    # Create invalid JSON
-   echo "{invalid}" > .memory-bank-index
+   echo "{invalid}" > .cortex/index.json
    # Verify auto-recovery
    ```
 
@@ -709,7 +709,7 @@ Test these scenarios in development:
 
    ```bash
    # Create stale lock
-   touch memory-bank/test.md.lock
+   touch .cortex/memory-bank/test.md.lock
    # Verify timeout handling
    ```
 

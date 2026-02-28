@@ -133,7 +133,7 @@ except GitConflictError as e:
 
 ### IndexCorruptedError
 
-Raised when `.memory-bank-index` is corrupted or invalid.
+Raised when `.cortex/index.json` is corrupted or invalid.
 
 **Attributes**:
 

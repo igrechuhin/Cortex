@@ -6,8 +6,6 @@
 
 ## Blockers (ASAP Priority)
 
-- **PENDING** Fix requirements.txt and Dockerfile dependency gap (CRITICAL — Docker builds missing 4 core deps). Plan: `.cortex/plans/plan-fix-requirements-dockerfile.md`
-
 ## Active Work (in progress)
 
 ## Future Enhancements
@@ -16,11 +14,13 @@
 
 ## Pending plans (from .cortex/plans)
 
+- **PENDING** Fix gitignore gaps and remove tracked build artifacts (see plan). Plan: `.cortex/plans/plan-gitignore-coverage-cleanup.md`
+- **PENDING** Compact CLAUDE.md at project root — remove ~80 lines duplicated from Synapse rules. Plan: `.cortex/plans/plan-claude-md-compaction.md`
+- **PENDING** Move docs/phase-9-completion-summary.md to docs/design/. Plan: `.cortex/plans/plan-docs-move-phase-summary.md`
+- **PENDING** Rename docs/design/roadmap-fix-temp.md to permanent name. Plan: `.cortex/plans/plan-docs-rename-roadmap-fix-temp.md`
+
 ### Fixes
 
-- **PENDING** Fix legacy .memory-bank/ path references across 12+ docs files (~50 references to obsolete layout). Plan: `.cortex/plans/plan-docs-fix-legacy-paths.md`
-- **PENDING** Fix getting-started.md references to removed tools (initialize_memory_bank, validate_memory_bank, get_quality_score). Plan: `.cortex/plans/plan-docs-fix-getting-started.md`
-- **PENDING** Fix gitignore gaps and remove tracked build artifacts (coverage_consolidated.json tracked, 2.5 MB). Plan: `.cortex/plans/plan-gitignore-coverage-cleanup.md`
 - **PENDING** Fix stale tool/test/module counts in documentation (docs say "100+ tools", actual 71). Plan: `.cortex/plans/plan-docs-fix-stale-counts.md`
 - **PENDING** Fix session function naming inconsistency in AGENTS.md (mixes session() and session_start()). Plan: `.cortex/plans/plan-docs-fix-session-naming.md`
 
@@ -29,9 +29,6 @@
 - **PENDING** Archive 7 legacy prompt docs superseded by 3 unified prompts. Plan: `.cortex/plans/plan-docs-archive-legacy-prompts.md`
 - **PENDING** Consolidate duplicate protocol documentation (2 files, same content). Plan: `.cortex/plans/plan-docs-consolidate-protocols.md`
 - **PENDING** Deduplicate token budget table (identical in CLAUDE.md and AGENTS.md). Plan: `.cortex/plans/plan-deduplicate-budget-table.md`
-- **PENDING** Compact .claude/CLAUDE.md — remove ~80 lines duplicated from Synapse rules. Plan: `.cortex/plans/plan-claude-md-compaction.md`
-- **PENDING** Move phase-9-completion-summary.md from docs root to docs/design/. Plan: `.cortex/plans/plan-docs-move-phase-summary.md`
-- **PENDING** Rename roadmap-fix-temp.md to permanent name. Plan: `.cortex/plans/plan-docs-rename-roadmap-fix-temp.md`
 
 ### Refactoring
 

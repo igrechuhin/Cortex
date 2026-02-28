@@ -92,7 +92,7 @@ sections = fs_manager.parse_sections(content)
 **Location:** `src/cortex/metadata_index.py`
 
 **Description:**
-Manages `.memory-bank-index` file with JSON-based storage, atomic writes, and corruption recovery. Serves as the single source of truth for all file metadata.
+Manages `.cortex/index.json` file with JSON-based storage, atomic writes, and corruption recovery. Serves as the single source of truth for all file metadata.
 
 **Key Classes:**
 
@@ -1720,19 +1720,20 @@ Manages standardized project structure including memory bank files, rules, plans
 **Default Structure:**
 
 ```plaintext
-.memory-bank/
-├── knowledge/           # Memory bank documents
-├── rules/              # Project rules
-│   ├── local/         # Local project rules
-│   └── shared/        # Shared rules (via git submodule)
-├── plans/             # Active development plans
-├── archived/          # Archived content
-└── config/            # Configuration files
+.cortex/
+├── memory-bank/        # Memory bank documents
+├── synapse/rules/      # Rules (Synapse submodule)
+├── plans/              # Active development plans
+├── plans/archive/      # Archived plans
+├── config/             # Configuration files
+├── history/            # Version snapshots
+├── .cache/             # Cache files
+└── index.json          # Metadata index
 
-.cursor/               # Cursor IDE integration (symlinks)
-├── memory-bank/      # → .memory-bank/knowledge/
-├── rules/           # → .memory-bank/rules/
-└── plans/           # → .memory-bank/plans/
+.cursor/                # Cursor IDE integration (symlinks)
+├── memory-bank/       # → .cortex/memory-bank/
+├── rules/             # → .cortex/synapse/rules/
+└── plans/             # → .cortex/plans/
 ```
 
 **Public Methods:**

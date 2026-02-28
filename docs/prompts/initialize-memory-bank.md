@@ -33,9 +33,9 @@ If an old format is detected, please migrate it to the current format.
 The assistant will:
 
 1. Check if Memory Bank is already initialized
-2. Create `memory-bank/` directory if needed
+2. Create `.cortex/memory-bank/` directory if needed
 3. Generate all core files from templates
-4. Initialize metadata index at `.memory-bank-index`
+4. Initialize metadata index at `.cortex/index.json`
 5. Create initial version snapshots
 6. Report success with file count and token statistics
 
@@ -53,7 +53,7 @@ The assistant will:
 
 ## Migration
 
-If an old Memory Bank format is detected (e.g., `.cursor/memory-bank/`), the assistant will automatically migrate it to the new `memory-bank/` location while preserving all content and version history.
+If an old Memory Bank format is detected (e.g., `.cursor/memory-bank/`), the assistant will automatically migrate it to the new `.cortex/memory-bank/` location while preserving all content and version history.
 
 ## Next Steps
 

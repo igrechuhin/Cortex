@@ -2220,7 +2220,7 @@ Analyzes the task description and project context to intelligently select the mo
 
 ## Phase 8: Project Structure Management
 
-Tools for managing standardized `.memory-bank/` project structure with migration support.
+Tools for managing standardized `.cortex/` project structure with migration support.
 
 ### setup_project_structure
 
@@ -2238,10 +2238,10 @@ Initialize comprehensive project structure with optional interactive setup.
 
 **Description:**
 
-Creates the standardized `.memory-bank/` directory structure including:
+Creates the standardized `.cortex/` directory structure including:
 
-- `knowledge/` directory for Memory Bank files
-- `rules/` directory (local and optional shared via git submodule)
+- `memory-bank/` directory for Memory Bank files
+- `synapse/rules/` (or `rules/`) for rules
 - `plans/` directory with templates
 - `config/` directory for configuration
 - Cursor IDE integration via symlinks
@@ -2254,25 +2254,24 @@ Creates the standardized `.memory-bank/` directory structure including:
   "message": "Project structure created successfully",
   "report": {
     "directories_created": [
-      ".memory-bank/knowledge",
-      ".memory-bank/rules/local",
-      ".memory-bank/plans/templates",
-      ".memory-bank/config"
+      ".cortex/memory-bank",
+      ".cortex/synapse/rules",
+      ".cortex/plans/templates",
+      ".cortex/config"
     ],
     "files_created": [
-      ".memory-bank/knowledge/projectBrief.md",
-      ".memory-bank/rules/local/main.cursorrules",
+      ".cortex/memory-bank/projectBrief.md",
       ".cortex/config/structure.json"
     ],
     "symlinks_created": [
-      ".cursor/knowledge -> ../.memory-bank/knowledge",
-      ".cursorrules -> .memory-bank/rules/local/main.cursorrules"
+      ".cursor/memory-bank -> ../.cortex/memory-bank",
+      ".cursor/plans -> ../.cortex/plans"
     ],
     "shared_rules_setup": false
   },
   "next_steps": [
-    "Edit .memory-bank/knowledge/projectBrief.md to document your project",
-    "Customize rules in .memory-bank/rules/local/",
+    "Edit .cortex/memory-bank/projectBrief.md to document your project",
+    "Customize rules in .cortex/synapse/rules/",
     "Use setup_cursor_integration() if symlinks weren't created"
   ]
 }
@@ -2282,7 +2281,7 @@ Creates the standardized `.memory-bank/` directory structure including:
 
 ### migrate_project_structure
 
-Migrate from legacy structure to standardized `.memory-bank/` structure.
+Migrate from legacy structure to standardized `.cortex/` structure.
 
 **Parameters:**
 
@@ -2308,7 +2307,7 @@ Migrates from various legacy structures to the standardized format. Supports mul
   "report": {
     "legacy_type": "tradewing-style",
     "backup_created": true,
-    "backup_path": "/path/to/project/.memory-bank-backup-20251225",
+    "backup_path": "/path/to/project/.cortex-backup-20251225",
     "files_migrated": {
       "knowledge": 7,
       "rules": 3,
@@ -2322,7 +2321,7 @@ Migrates from various legacy structures to the standardized format. Supports mul
     "symlinks_created": true
   },
   "next_steps": [
-    "Review migrated files in .memory-bank/",
+    "Review migrated files in .cortex/memory-bank/",
     "Update any broken links using validate_links()",
     "Archive old structure if everything looks correct"
   ]
@@ -2341,7 +2340,7 @@ Setup Cursor IDE integration via symlinks.
 
 **Description:**
 
-Creates symlinks in `.cursor/` directory pointing to `.memory-bank/` structure. Works cross-platform (Unix/macOS with symlinks, Windows with junctions).
+Creates symlinks in `.cursor/` directory pointing to `.cortex/` structure. Works cross-platform (Unix/macOS with symlinks, Windows with junctions).
 
 **Returns:**
 
@@ -2352,10 +2351,9 @@ Creates symlinks in `.cursor/` directory pointing to `.memory-bank/` structure. 
   "report": {
     "platform": "darwin",
     "symlinks_created": [
-      ".cursor/knowledge -> ../.memory-bank/knowledge",
-      ".cursor/rules -> ../.memory-bank/rules",
-      ".cursor/plans -> ../.memory-bank/plans",
-      ".cursorrules -> .memory-bank/rules/local/main.cursorrules"
+      ".cursor/memory-bank -> ../.cortex/memory-bank",
+      ".cursor/rules -> ../.cortex/synapse/rules",
+      ".cursor/plans -> ../.cortex/plans"
     ],
     "symlinks_recreated": 0,
     "errors": []
@@ -2415,7 +2413,7 @@ Checks:
         "name": "Orphaned files",
         "passed": false,
         "message": "Found 2 misplaced files",
-        "details": ["old-file.md in root", "temp.md in .memory-bank/"]
+        "details": ["old-file.md in root", "temp.md in .cortex/memory-bank/"]
       }
     ],
     "issues": [
@@ -2423,7 +2421,7 @@ Checks:
         "severity": "warning",
         "category": "organization",
         "message": "Found 2 misplaced files",
-        "files": ["old-file.md", ".memory-bank/temp.md"],
+        "files": ["old-file.md", ".cortex/memory-bank/temp.md"],
         "recommendation": "Move to appropriate directory or archive"
       }
     ],
@@ -2526,12 +2524,10 @@ Get current project structure configuration, paths, and status. No parameters (p
     "version": "1.0.0",
     "root": "/path/to/project",
     "paths": {
-      "memory_bank": ".memory-bank",
-      "knowledge": ".memory-bank/knowledge",
-      "rules_local": ".memory-bank/rules/local",
-      "rules_shared": ".memory-bank/rules/shared",
-      "plans": ".memory-bank/plans",
-      "config": ".memory-bank/config"
+      "memory_bank": ".cortex/memory-bank",
+      "plans": ".cortex/plans",
+      "rules": ".cortex/synapse/rules",
+      "config": ".cortex/config"
     },
     "configuration": {
       "project_name": "My Project",
@@ -2551,10 +2547,9 @@ Get current project structure configuration, paths, and status. No parameters (p
     "cursor_integration": {
       "enabled": true,
       "symlinks": [
-        ".cursor/knowledge -> ../.memory-bank/knowledge",
-        ".cursor/rules -> ../.memory-bank/rules",
-        ".cursor/plans -> ../.memory-bank/plans",
-        ".cursorrules -> .memory-bank/rules/local/main.cursorrules"
+        ".cursor/memory-bank -> ../.cortex/memory-bank",
+        ".cursor/rules -> ../.cortex/synapse/rules",
+        ".cursor/plans -> ../.cortex/plans"
       ]
     },
     "health": {

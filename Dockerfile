@@ -12,9 +12,9 @@ WORKDIR /app
 # Copy all files
 COPY . /app
 
-# Install Python dependencies
+# Install Python dependencies from pyproject.toml (single source of truth)
 RUN pip install --upgrade pip \
-    && pip install --no-cache-dir -r requirements.txt
+    && pip install --no-cache-dir .
 
 # Run the Cortex MCP server
 CMD ["python", "src/cortex/main.py"]

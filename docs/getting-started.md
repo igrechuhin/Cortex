@@ -131,43 +131,30 @@ Details and troubleshooting: [MCP disconnections and connection closed](guides/t
 
 ### 1. Initialize a Memory Bank
 
-Use the `initialize_memory_bank` tool to create a new Memory Bank:
+Use the **initialize** prompt to create a new Memory Bank and `.cortex/` structure. In Cursor (or any AI assistant with Cortex MCP), invoke the initialize prompt. It creates:
 
-```json
-{
-  "project_root": "/path/to/your/project"
-}
-```
+- `.cortex/memory-bank/` directory with core files
+- `.cortex/index.json` for metadata
+- All 7 core memory bank files (projectBrief.md, activeContext.md, progress.md, roadmap.md, and others)
+- Cursor IDE integration (symlinks, mcp config)
 
-This creates:
-
-- `.memory-bank/` directory with core files
-- `.memory-bank-index` for metadata
-- Initial memory bank structure
+Project root is resolved by the server; you do not need to pass it.
 
 ### 2. Set Up Project Structure (Optional)
 
-For a standardized structure with Cursor IDE integration:
+The **initialize** prompt also creates the full project structure:
 
-```json
-{
-  "project_root": "/path/to/your/project",
-  "project_name": "My Project",
-  "project_type": "software",
-  "interactive": true
-}
-```
+- `.cortex/memory-bank/` – Memory Bank files
+- `.cortex/synapse/` – Shared rules (or `.cortex/rules/local/` for project-specific rules)
+- `.cortex/plans/` – Planning system
+- `.cortex/config/` – Configuration
+- `.cursor/` – Cursor IDE symlinks
 
-This creates:
-
-- `.memory-bank/knowledge/` - Memory Bank files
-- `.memory-bank/rules/local/` - Project-specific rules
-- `.memory-bank/plans/` - Planning system
-- `.cursor/` - Cursor IDE symlinks
+Use `get_structure_info()` to inspect paths and layout.
 
 ### 3. Write Your First Memory Bank File
 
-Create `projectBrief.md`:
+Create or edit `.cortex/memory-bank/projectBrief.md`:
 
 ```markdown
 # Project Brief
@@ -189,20 +176,22 @@ What's in scope and out of scope.
 
 ### 4. Validate Your Memory Bank
 
-Use the `validate_memory_bank` tool:
+Use the `validate` tool with different check types:
 
 ```json
 {
-  "project_root": "/path/to/your/project"
+  "check_type": "schema"
 }
 ```
 
-This checks:
+This checks required sections and file structure. Other useful check types:
 
-- Required sections are present
-- No duplicate content
-- Links are valid
-- Quality score
+- `validate(check_type="schema")` – Required sections present, file structure
+- `validate(check_type="duplications")` – Detect duplicate content
+- `validate(check_type="quality")` – Quality score and health
+- `validate(check_type="roadmap_sync")` – Roadmap and plans consistency
+
+Project root is resolved by the server.
 
 ### 5. Load Context
 
@@ -210,9 +199,8 @@ Use the `load_context` tool to load relevant files for a task:
 
 ```json
 {
-  "project_root": "/path/to/your/project",
   "task_description": "Implement user authentication",
-  "token_budget": 100000
+  "token_budget": 10000
 }
 ```
 
@@ -222,14 +210,16 @@ This returns:
 - Token usage information
 - Optimization metadata
 
+Project root is resolved by the server; you can omit it.
+
 ## Common Workflows
 
 ### Adding New Content
 
-1. Write new markdown file in `.memory-bank/knowledge/`
+1. Write new markdown file in `.cortex/memory-bank/`
 2. Use transclusion to include shared content: `{{include:shared.md#section}}`
-3. Validate with `validate_memory_bank`
-4. Check quality with `get_quality_score`
+3. Validate with `validate(check_type="schema")`
+4. Check quality with `validate(check_type="quality")`
 
 ### Using DRY Linking
 
@@ -260,35 +250,16 @@ Users authenticate via OAuth 2.0 using Google...
 
 ### Migrating from Legacy Structure
 
-If you have existing Memory Bank files:
-
-```json
-{
-  "project_root": "/path/to/your/project",
-  "backup": true
-}
-```
-
-This automatically:
+If you have existing Memory Bank files in a legacy layout (`.cursor/memory-bank/`, `memory-bank/`, or `.memory-bank/`), use the **migrate** prompt. It:
 
 - Detects legacy structure type
 - Creates backup
-- Migrates files to standardized structure
-- Updates links
+- Migrates files to `.cortex/` structure
+- Updates links and validates
 
 ### Setting Up Shared Rules
 
-To share rules across projects:
-
-```json
-{
-  "project_root": "/path/to/your/project",
-  "repo_url": "https://github.com/your-org/shared-rules.git",
-  "branch": "main"
-}
-```
-
-This sets up:
+To share rules across projects, use the **setup_synapse** prompt. It sets up:
 
 - Git submodule at `.cortex/synapse/`
 - Automatic rule synchronization
@@ -297,16 +268,16 @@ This sets up:
 ## Next Steps
 
 - **[Configuration Guide](./guides/configuration.md)** - Learn about all configuration options
-- **[API Reference](./api/tools.md)** - Explore 100+ MCP tools
+- **[API Reference](./api/tools.md)** - Explore 70+ MCP tools
 - **[Architecture](./architecture.md)** - Understand the system design
 - **[Troubleshooting](./guides/troubleshooting.md)** - Common issues and solutions
 
 ## Tips
 
 1. **Start Small**: Begin with just `projectBrief.md` and `activeContext.md`
-2. **Use Templates**: Use `setup_project_structure` for guided setup
-3. **Validate Often**: Run `validate_memory_bank` after changes
-4. **Monitor Quality**: Track quality scores with `get_quality_score`
+2. **Use Templates**: Use the **initialize** prompt for guided setup
+3. **Validate Often**: Run `validate(check_type="schema")` after changes
+4. **Monitor Quality**: Track quality with `validate(check_type="quality")`
 5. **Use Transclusion**: Avoid duplication with `{{include:}}` syntax
 6. **Leverage Context Loading**: Use `load_context` for large projects
 

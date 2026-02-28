@@ -220,7 +220,7 @@ See [Failure Modes: MCP Connection Closed](failure-modes.md#8-mcp-connection-clo
 
 **Causes:**
 
-- Corrupted `.memory-bank-index` file
+- Corrupted `.cortex/index.json` file
 - Invalid JSON in index
 - Disk failure during write
 - Concurrent modifications
@@ -231,7 +231,7 @@ See [Failure Modes: MCP Connection Closed](failure-modes.md#8-mcp-connection-clo
 
    ```bash
    # Delete corrupted index
-   rm .memory-bank-index
+   rm .cortex/index.json
 
    # Trigger rebuild by running any operation
    query_memory_bank(query_type="stats")
@@ -506,7 +506,7 @@ Retries use exponential backoff with jitter to avoid thundering herd problems.
 ## Prevention Best Practices
 
 1. **Regular Backups:**
-   - Backup `.memory-bank-index` periodically
+   - Backup `.cortex/index.json` periodically
    - Version control memory bank files with git
 
 2. **Single Server Instance:**

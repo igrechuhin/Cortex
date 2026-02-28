@@ -10,10 +10,34 @@
 
 ## Future Enhancements
 
+- Phase 58 tools consolidation: merge check_task_available_lock, claim_task_lock, release_task_lock, list_active_tasks into single dispatcher (low priority)
+
 ## Pending plans (from .cortex/plans)
 
-- **Synapse Usage Storage with usage_writable and Static Snapshot Mode** - PENDING - [plan](.cortex/plans/synapse-usage-storage-usage-writable-static-snapshot.md) - Store tool usage in Synapse when usage_writable=true; when false, operate as static snapshot (no stats writes for tools/prompts/resources).
-- **Session Improvements 2026-02-27** - PENDING - [plan](.cortex/plans/session-improvements-2026-02-27.md) - Improvements from end-of-session analysis: context-effectiveness, rules indexing, tools optimization
+### Fixes
+
+- **PENDING** Fix gitignore gaps and remove tracked build artifacts (see plan). Plan: `.cortex/plans/plan-gitignore-coverage-cleanup.md`
+- **PENDING** Fix stale tool/test/module counts in documentation (docs say "100+ tools", actual 71). Plan: `.cortex/plans/plan-docs-fix-stale-counts.md`
+- **PENDING** Fix session function naming inconsistency in AGENTS.md (mixes session() and session_start()). Plan: `.cortex/plans/plan-docs-fix-session-naming.md`
+
+### Documentation Cleanup (DRY)
+
+- **PENDING** Archive 7 legacy prompt docs superseded by 3 unified prompts. Plan: `.cortex/plans/plan-docs-archive-legacy-prompts.md`
+- **PENDING** Consolidate duplicate protocol documentation (2 files, same content). Plan: `.cortex/plans/plan-docs-consolidate-protocols.md`
+- **PENDING** Deduplicate token budget table (identical in CLAUDE.md and AGENTS.md). Plan: `.cortex/plans/plan-deduplicate-budget-table.md`
+- **PENDING** Compact CLAUDE.md at project root — remove ~80 lines duplicated from Synapse rules. Plan: `.cortex/plans/plan-claude-md-compaction.md`
+- **PENDING** Move docs/phase-9-completion-summary.md to docs/design/. Plan: `.cortex/plans/plan-docs-move-phase-summary.md`
+- **PENDING** Rename docs/design/roadmap-fix-temp.md to permanent name. Plan: `.cortex/plans/plan-docs-rename-roadmap-fix-temp.md`
+
+### Refactoring
+
+- **PENDING** Fix 26 tool files exceeding 400-line limit (project rule violation). Plan: `.cortex/plans/plan-tools-file-size-violations.md`
+- **PENDING** Rename 47 phase-prefixed tool files to functional names (depends on file-size plan). Plan: `.cortex/plans/plan-rename-phase-prefixed-files.md`
+- **PENDING** Reorganize tools/ into domain sub-packages (depends on rename + file-size plans). Plan: `.cortex/plans/plan-tools-subpackage-reorganization.md`
+
+### Cleanup
+
+- **PENDING** Remove 3 empty archive files and stale history (0-byte placeholders). Plan: `.cortex/plans/plan-empty-file-cleanup.md`
 
 ### Investigation Plans (Archive / Reference)
 

@@ -187,7 +187,7 @@ new_hash = await fs.write_file(
 
 ### MetadataIndex
 
-Manages metadata index (.memory-bank-index) with JSON storage and corruption recovery.
+Manages metadata index (`.cortex/index.json`) with JSON storage and corruption recovery.
 
 **Module:** `cortex.core.metadata_index`
 
@@ -206,7 +206,7 @@ def __init__(self, project_root: Path)
 **Attributes:**
 
 - `project_root` (Path) - Project root path
-- `index_path` (Path) - Path to .memory-bank-index file
+- `index_path` (Path) - Path to `.cortex/index.json` file
 - `memory_bank_dir` (Path) - Path to memory-bank/ directory
 - `SCHEMA_VERSION` (str) - Index schema version ("1.0.0")
 

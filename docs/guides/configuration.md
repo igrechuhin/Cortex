@@ -337,11 +337,11 @@ Summarization cache (summarize_content with `cache_summaries` enabled) is stored
 
 Canonical location for quality and check scripts (e.g. `check_formatting.py`, `check_types.py`, `check_file_sizes.py`) is `.cortex/synapse/scripts/{language}/` (e.g. `python/`). CI and `execute_pre_commit_checks` use these paths. Root `scripts/` is **restricted legacy**: use only for project-specific utilities; do not place Synapse check scripts there.
 
-### `.memory-bank-approvals.json`
+### `.cortex/approvals.json`
 
 Stores refactoring approval records.
 
-**Location**: Project root (auto-created)
+**Location**: `.cortex/approvals.json` (under project root, auto-created)
 
 **Structure**:
 
@@ -481,12 +481,12 @@ Adjust weights based on your workflow:
 .cortex/config/validation.json
 .cortex/config/optimization.json
 .cortex/config/learning.json
-.memory-bank-approvals.json
-.memory-bank-index
+.cortex/approvals.json
+.cortex/index.json
 .cortex/history/
-.memory-bank-access-log.json
-.memory-bank-refactoring-history.json
-.memory-bank-rollbacks.json
+.cortex/.cache/
+.cortex/refactoring-history.json
+.cortex/rollbacks.json
 ```
 
 ## Environment Variables

@@ -10,6 +10,12 @@
 
 - ✅ **Markdown lint fix (MD040)** - COMPLETE (2026-02-28) - Added language specifiers to fenced code blocks in plan-gitignore-coverage-cleanup.md and plan-tools-subpackage-reorganization.md.
 
+- ✅ **Fix requirements.txt and Dockerfile dependency gap** - COMPLETE (2026-02-28) - Migrated Dockerfile to pip install . (pyproject.toml as source of truth); updated requirements.txt with all 6 core deps and sync header.
+
+- ✅ **Fix legacy .memory-bank/ path references** - COMPLETE (2026-02-28) - Replaced legacy .memory-bank/ path references across 15+ docs with current .cortex/ layout. Architecture diagram and Storage Layer updated. ADR and migration docs left as-is.
+
+- ✅ **Fix getting-started.md Removed Tool References** - COMPLETE (2026-02-28) - Rewrote Quick Start to use initialize prompt, validate(check_type=...), get_structure_info; replaced removed tools; updated to .cortex/ layout; 70+ tools.
+
 ## Completed Work (2026-02-27)
 
 - **Summary (2026-02-27)** - 1 entries archived.

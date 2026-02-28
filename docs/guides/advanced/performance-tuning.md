@@ -378,7 +378,7 @@ cortex analyze_token_distribution --output=tokens.json
 
       "l2": {
         "type": "disk",
-        "path": ".memory-bank-cache",
+        "path": ".cortex/.cache",
         "max_size_mb": 500,
         "max_entries": 10000,
         "ttl_seconds": 3600,
@@ -1120,7 +1120,7 @@ cortex analyze_profile \
 {
   "metadata_index": {
     "backend": "sqlite",
-    "path": ".memory-bank-index.db",
+    "path": ".cortex/.cache/metadata.db",
 
     "optimization": {
       "wal_mode": true,

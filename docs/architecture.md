@@ -48,17 +48,18 @@ Cortex is structured as an MCP (Model Context Protocol) server that provides 100
 │                     Storage Layer                           │
 │  ┌─────────────────────────────────────────────────────┐    │
 │  │           Markdown Files (Git-tracked)              │    │
-│  │  .memory-bank/knowledge/                            │    │
+│  │  .cortex/memory-bank/                               │    │
 │  │  ├── projectBrief.md                                │    │
 │  │  ├── productContext.md                              │    │
 │  │  └── ... (7 core files)                             │    │
 │  └─────────────────────────────────────────────────────┘    │
 │  ┌─────────────────────────────────────────────────────┐    │
-│  │          Metadata (NOT Git-tracked)                 │    │
-│  │  .memory-bank-index                                 │    │
+│  │          Metadata and Cache (NOT Git-tracked)       │    │
+│  │  .cortex/index.json                                 │    │
 │  │  .cortex/history/                                   │    │
-│  │  .memory-bank-access-log.json                       │    │
-│  │  .memory-bank-learning.json                         │    │
+│  │  .cortex/.cache/                                    │    │
+│  │  .cortex/config/learning.json                       │    │
+│  │  .cortex/approvals.json, rollbacks.json, etc.       │    │
 │  └─────────────────────────────────────────────────────┘    │
 └─────────────────────────────────────────────────────────────┘
 ```
@@ -224,19 +225,19 @@ Each manager/service module has a single responsibility:
 
 #### Git-Tracked Files
 
-- Markdown files in `.memory-bank/knowledge/`
-- Rules in `.memory-bank/rules/`
-- Plans in `.memory-bank/plans/`
+- Markdown files in `.cortex/memory-bank/`
+- Rules in `.cortex/synapse/rules/` (or `.cortex/rules/`)
+- Plans in `.cortex/plans/`
 
 #### Not Git-Tracked
 
-- `.memory-bank-index` - Metadata JSON
+- `.cortex/index.json` - Metadata JSON (includes usage analytics)
 - `.cortex/history/` - Version snapshots
-- `.memory-bank-access-log.json` - Usage patterns
-- `.memory-bank-learning.json` - Learning data
-- `.memory-bank-approvals.json` - Approval records
-- `.memory-bank-refactoring-history.json` - Execution history
-- `.memory-bank-rollbacks.json` - Rollback history
+- `.cortex/.cache/` - Cache (summaries, markdown-lint, usage when writable)
+- `.cortex/config/learning.json` - Learning data
+- `.cortex/approvals.json` - Approval records
+- `.cortex/refactoring-history.json` - Execution history
+- `.cortex/rollbacks.json` - Rollback history
 
 ### Synapse Integration Architecture
 
