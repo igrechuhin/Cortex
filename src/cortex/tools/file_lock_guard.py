@@ -22,9 +22,9 @@ from cortex.core.session_logger import get_session_id
 from cortex.tools.task_locking import (
     check_task_available,
     claim_task,
-    generate_task_id,
     list_active_locks,
 )
+from cortex.tools.task_locking_helpers import generate_task_id
 
 logger = logging.getLogger(__name__)
 

@@ -221,6 +221,12 @@ class UsageTracker:
         )
         await _persist_event(self._project_root, event)
 
+    def _should_skip_recording(self, tool_name: str, duration_ms: float) -> bool:
+        """Return True if recording should be skipped."""
+        return not is_usage_writable(
+            self._project_root
+        ) or not self._should_record_event(tool_name, duration_ms)
+
     async def record_tool_usage(
         self,
         tool_name: str,
@@ -236,9 +242,7 @@ class UsageTracker:
         response_tokens: int | None = None,
     ) -> None:
         """Record a single tool or resource usage event."""
-        if not is_usage_writable(self._project_root) or not self._should_record_event(
-            tool_name, duration_ms
-        ):
+        if self._should_skip_recording(tool_name, duration_ms):
             return
         await self._build_and_persist_usage_event(
             tool_name,

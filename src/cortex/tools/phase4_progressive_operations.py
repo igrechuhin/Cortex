@@ -13,7 +13,7 @@ from cortex.optimization.progressive_loader import (
     LoadedContent,
     ProgressiveLoader,
 )
-from cortex.tools.context_models import (
+from cortex.tools.context_auxiliary_models import (
     LoadedFileInfo,
     LoadProgressiveContextResult,
 )

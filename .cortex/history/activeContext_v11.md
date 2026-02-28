@@ -2,37 +2,13 @@
 
 **This file records completed work only.** For current status and upcoming work see [roadmap.md](roadmap.md).
 
+## Completed Work (2026-03-01)
+
+- ✅ **Phase1 foundation rollback file-size split (Batch 3)** - COMPLETE (2026-03-01) - Split phase1_foundation_rollback.py (485→218 lines) into phase1_foundation_rollback_models.py and phase1_foundation_rollback_helpers.py. Updated plan-tools-file-size-violations.md. All rollback tests pass.
+
 ## Completed Work (2026-02-28)
 
-- ✅ **Synapse Usage Storage with usage_writable and Static Snapshot Mode** - COMPLETE (2026-02-28) - Implemented usage_writable config, static snapshot gating for UsageTracker and context stats, Synapse storage root for usage when writable, and documentation updates.
-
-- ✅ **Session Improvements 2026-02-27** - COMPLETE (2026-02-28) - Updated rules_folder to .cortex/synapse/rules for indexing; added Phase 58 consolidation to roadmap. Context effectiveness and MCP health already covered by existing prompts.
-
-- ✅ **Markdown lint fix (MD040)** - COMPLETE (2026-02-28) - Added language specifiers to fenced code blocks in plan-gitignore-coverage-cleanup.md and plan-tools-subpackage-reorganization.md.
-
-- ✅ **Fix requirements.txt and Dockerfile dependency gap** - COMPLETE (2026-02-28) - Migrated Dockerfile to pip install . (pyproject.toml as source of truth); updated requirements.txt with all 6 core deps and sync header.
-
-- ✅ **Fix legacy .memory-bank/ path references** - COMPLETE (2026-02-28) - Replaced legacy .memory-bank/ path references across 15+ docs with current .cortex/ layout. Architecture diagram and Storage Layer updated. ADR and migration docs left as-is.
-
-- ✅ **Fix getting-started.md Removed Tool References** - COMPLETE (2026-02-28) - Rewrote Quick Start to use initialize prompt, validate(check_type=...), get_structure_info; replaced removed tools; updated to .cortex/ layout; 70+ tools.
-
-- ✅ **Fix Gitignore Gaps and Remove Tracked Build Artifacts** - COMPLETE (2026-02-28) - Added coverage.json and coverage_consolidated.json to .gitignore; removed coverage_consolidated.json from git tracking (~2.5 MB).
-
-- ✅ **Compact CLAUDE.md at project root — remove ~80 lines duplicated from Synapse rules** - COMPLETE (2026-02-28) - Reduced .claude/CLAUDE.md from 175 to 120 lines by replacing Python Standards and MCP Development with compact summaries referencing Synapse rules.
-
-- ✅ **Move docs/phase-9-completion-summary.md to docs/design/** - COMPLETE (2026-02-28) - Moved docs/phase-9-completion-summary.md to docs/design/phase-9-completion-summary.md and updated README link and internal references.
-
-- ✅ **Rename roadmap-fix-temp.md to Permanent Name** - COMPLETE (2026-02-28) - Renamed docs/design/roadmap-fix-temp.md to docs/design/roadmap.md; updated session review reference to new path.
-
-- ✅ **Fix stale tool/test/module counts in documentation** - COMPLETE (2026-02-28) - Updated docs/architecture.md, docs/api (index), docs/testing-speed-optimization.md, AGENTS.md, README.md, tool-optimization-baseline.md: 100+→70+ tools, 3700+→4800+ tests, 41+→20+ modules, removed hardcoded test count.
-
-- ✅ **Fix session function naming inconsistency in AGENTS.md** - COMPLETE (2026-02-28) - Standardized session naming in AGENTS.md to session(operation="start"); added README equivalence note.
-
-- ✅ **Archive 7 legacy prompt docs superseded by 3 unified prompts** - COMPLETE (2026-02-28) - Archived 7 legacy prompt docs to docs/prompts/archive/ with deprecation headers; updated README and test references to unified prompts.
-
-- ✅ **Consolidate duplicate protocol documentation** - COMPLETE (2026-02-28) - Replaced docs/architecture/protocols.md with cross-reference to docs/api/protocols.md as canonical source; eliminated DRY violation.
-
-- ✅ **Deduplicate Token Budget Table** - COMPLETE (2026-02-28) - Replaced duplicated token budget table in CLAUDE.md with cross-reference to AGENTS.md. Table now exists only in AGENTS.md.
+- **Summary (2026-02-28)** - 1 entries archived.
 
 ## Completed Work (2026-02-27)
 

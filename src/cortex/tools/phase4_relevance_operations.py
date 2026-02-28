@@ -12,7 +12,7 @@ from cortex.managers.manager_utils import get_manager
 from cortex.managers.types import ManagersDict
 from cortex.optimization.models import FileMetadataForScoring
 from cortex.optimization.relevance_scorer import RelevanceScorer
-from cortex.tools.context_models import (
+from cortex.tools.context_auxiliary_models import (
     FileRelevanceScore,
     GetRelevanceScoresResult,
     SectionRelevanceScore,

@@ -470,7 +470,7 @@ class TestCompactSession:
                 return_value=tmp_path,
             ),
             patch(
-                "cortex.tools.compaction_operations.execute_memory_bank_write",
+                "cortex.tools.compaction_write_helpers.execute_memory_bank_write",
                 new_callable=AsyncMock,
                 side_effect=FileConflictError("activeContext.md", "hash1", "hash2"),
             ),
@@ -528,7 +528,7 @@ class TestCompactSession:
                 return_value=tmp_path,
             ),
             patch(
-                "cortex.tools.compaction_operations.PROGRESS_TOKEN_THRESHOLD_DEFAULT",
+                "cortex.tools.compaction_write_helpers.PROGRESS_TOKEN_THRESHOLD_DEFAULT",
                 10_000,
             ),
         ):
@@ -601,7 +601,7 @@ class TestCompactSession:
                 return_value=tmp_path,
             ),
             patch(
-                "cortex.tools.compaction_operations.PROGRESS_TOKEN_THRESHOLD_DEFAULT",
+                "cortex.tools.compaction_write_helpers.PROGRESS_TOKEN_THRESHOLD_DEFAULT",
                 0,
             ),
         ):

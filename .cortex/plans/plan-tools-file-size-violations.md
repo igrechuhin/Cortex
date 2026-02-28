@@ -16,16 +16,16 @@ The project rule mandates files <= 400 lines (production code), but 26 files in 
 
 | File | Lines |
 |------|-------|
-| `compaction_operations.py` | 670 |
+| `compaction_operations.py` | 110 (split into handoff, write_helpers) |
 | `validation_operations.py` | 620 |
 | `analysis_operations.py` | 598 |
 | `roadmap_corruption.py` | 586 |
-| `phase5_production_monitoring_helpers.py` | 580 |
+| `phase5_production_monitoring_helpers.py` | 314 (split: models, metrics, drift) |
 | `task_locking.py` | 572 |
-| `refactoring_operations.py` | 565 |
-| `script_capture_tools.py` | 545 |
-| `query_usage_operations.py` | 519 |
-| `validation_result_models.py` | 511 |
+| `refactoring_operations.py` | 150 (split: refactoring_operations_docs.py) |
+| `script_capture_tools.py` | 368 (split: script_capture_helpers, script_capture_handlers) |
+| `query_usage_operations.py` | <400 (split: query_usage_models) |
+| `validation_result_models.py` | 365 (split: validation_result_links_models) |
 | `context_models.py` | 498 |
 
 ## Approach
@@ -34,9 +34,9 @@ For each file, identify logical split points (helpers, models, formatters, handl
 
 ## Implementation Steps
 
-1. **Batch 1** (largest 5): Split `compaction_operations.py`, `validation_operations.py`, `analysis_operations.py`, `roadmap_corruption.py`, `phase5_production_monitoring_helpers.py`
-2. **Batch 2** (next 5): Split `task_locking.py`, `refactoring_operations.py`, `script_capture_tools.py`, `query_usage_operations.py`, `validation_result_models.py`
-3. **Batch 3** (next 5): Split `context_models.py`, `models.py`, `plan_crud.py`, `phase1_foundation_rollback.py`, `pre_commit_tools.py`
+1. **Batch 1** (largest 5): Split `compaction_operations.py` ✅, `validation_operations.py` ✅ (validation_response_formatters.py), `analysis_operations.py` ✅ (analysis_run_helpers.py), `roadmap_corruption.py` ✅ (roadmap_corruption_models.py, roadmap_corruption_detectors.py, roadmap_corruption_helpers.py), `phase5_production_monitoring_helpers.py` ✅ (phase5_production_monitoring_models.py, phase5_production_monitoring_metrics.py, phase5_production_monitoring_drift.py)
+2. **Batch 2** (next 5): Split `task_locking.py` ✅ (task_locking_helpers.py, task_locking_handlers.py), `refactoring_operations.py` ✅ (refactoring_operations_docs.py), `script_capture_tools.py` ✅ (script_capture_helpers.py, script_capture_handlers.py), `query_usage_operations.py` ✅ (query_usage_models.py), `validation_result_models.py` ✅ (validation_result_links_models.py)
+3. **Batch 3** (next 5): Split `context_models.py` ✅ (context_auxiliary_models.py), `models.py` ✅ (models_reexports.py), `plan_crud.py` ✅ (plan_crud_models.py, plan_crud_helpers.py), `phase1_foundation_rollback.py` ✅ (phase1_foundation_rollback_models.py, phase1_foundation_rollback_helpers.py), `pre_commit_tools.py` ✅ (pre_commit_tools_run_helpers.py)
 4. **Batch 4** (remaining): Split remaining files exceeding 400 lines
 5. **For each file**:
    a. Read file, identify logical groupings

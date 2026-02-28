@@ -250,7 +250,7 @@ class TestRoadmapCorruption:
 
     def test_detect_roadmap_corruption_missing_space(self):
         """Test detection of missing space after completion date."""
-        from cortex.tools.roadmap_corruption import detect_roadmap_corruption
+        from cortex.tools.roadmap_corruption_detectors import detect_roadmap_corruption
 
         content = "Target completion:2026-01-20Fix"
         matches = detect_roadmap_corruption(content)
@@ -261,7 +261,7 @@ class TestRoadmapCorruption:
 
     def test_detect_roadmap_corruption_corrupted_phase(self):
         """Test detection of corrupted phase numbers."""
-        from cortex.tools.roadmap_corruption import detect_roadmap_corruption
+        from cortex.tools.roadmap_corruption_detectors import detect_roadmap_corruption
 
         content = "Phase 5% rate"
         matches = detect_roadmap_corruption(content)
@@ -271,7 +271,7 @@ class TestRoadmapCorruption:
 
     def test_detect_roadmap_corruption_ented(self):
         """Test detection of 'ented' corruption."""
-        from cortex.tools.roadmap_corruption import detect_roadmap_corruption
+        from cortex.tools.roadmap_corruption_detectors import detect_roadmap_corruption
 
         content = "Feature ented successfully"
         matches = detect_roadmap_corruption(content)
@@ -281,7 +281,7 @@ class TestRoadmapCorruption:
 
     def test_detect_roadmap_corruption_percent_to(self):
         """Test detection of percent+to corruption (e.g. 89.89to -> 89.89% to)."""
-        from cortex.tools.roadmap_corruption import detect_roadmap_corruption
+        from cortex.tools.roadmap_corruption_detectors import detect_roadmap_corruption
 
         content = "Coverage 89.89to 90%"
         matches = detect_roadmap_corruption(content)
@@ -294,7 +294,7 @@ class TestRoadmapCorruption:
 
     def test_detect_roadmap_corruption_number_actual(self):
         """Test detection of number+ctual corruption (e.g. 0ctual -> 0 actual)."""
-        from cortex.tools.roadmap_corruption import detect_roadmap_corruption
+        from cortex.tools.roadmap_corruption_detectors import detect_roadmap_corruption
 
         content = "0ctual completion"
         matches = detect_roadmap_corruption(content)
@@ -307,7 +307,7 @@ class TestRoadmapCorruption:
 
     def test_detect_roadmap_corruption_ceeds_percent(self):
         """Test detection of ceeds+digit corruption (e.g. ceeds90 -> (exceeds 90%)."""
-        from cortex.tools.roadmap_corruption import detect_roadmap_corruption
+        from cortex.tools.roadmap_corruption_detectors import detect_roadmap_corruption
 
         content = "Threshold ceeds90"
         matches = detect_roadmap_corruption(content)
@@ -320,7 +320,7 @@ class TestRoadmapCorruption:
 
     def test_detect_roadmap_corruption_files_unchanged(self):
         """Test detection of number+es unchanged (e.g. 285es -> 285 files)."""
-        from cortex.tools.roadmap_corruption import detect_roadmap_corruption
+        from cortex.tools.roadmap_corruption_detectors import detect_roadmap_corruption
 
         content = "285es unchanged"
         matches = detect_roadmap_corruption(content)
@@ -333,7 +333,7 @@ class TestRoadmapCorruption:
 
     def test_detect_roadmap_corruption_malformed_date_fixed(self):
         """Test detection of 2026MM-DDixed -> 2026-MM-DD) - Fixed."""
-        from cortex.tools.roadmap_corruption import detect_roadmap_corruption
+        from cortex.tools.roadmap_corruption_detectors import detect_roadmap_corruption
 
         content = "Target 202601-15ixed"
         matches = detect_roadmap_corruption(content)

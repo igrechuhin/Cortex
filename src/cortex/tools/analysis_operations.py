@@ -11,9 +11,6 @@ import json
 from pathlib import Path
 from urllib.parse import unquote
 
-from cortex.analysis.insight_engine import InsightEngine
-from cortex.analysis.pattern_analyzer import PatternAnalyzer
-from cortex.analysis.structure_analyzer import StructureAnalyzer
 from cortex.core.constants import MCP_TOOL_TIMEOUT_COMPLEX
 from cortex.core.context_logging import MCPContext, log_client
 from cortex.core.mcp_annotations import read_only_annotations
@@ -24,18 +21,15 @@ from cortex.core.mcp_stability import (
 )
 from cortex.core.project_root_resolver import resolve_project_root_async
 from cortex.managers import initialization
-from cortex.managers.manager_utils import get_manager
 from cortex.managers.types import ManagersDict
 from cortex.server import mcp
 from cortex.tools.analysis_helpers import AnalysisTarget, parse_analysis_target
-from cortex.tools.context_analysis_operations import (
-    analyze_current_session,
-    analyze_session_logs,
-    get_context_statistics,
-)
-from cortex.tools.health_check_operations import (
-    HealthCheckAnalysisType,
-    run_health_check_analysis,
+from cortex.tools.analysis_run_helpers import (
+    analysis_invalid_target_response,
+    dispatch_analysis_target,
+    get_analysis_managers,
+    run_context_analysis,
+    run_health_analysis,
 )
 
 
@@ -45,126 +39,6 @@ async def get_managers(root: Path) -> ManagersDict:
     Some tests patch `cortex.tools.analysis_operations.get_managers`.
     """
     return await initialization.get_managers(root)
-
-
-async def analyze_usage_patterns(
-    pattern_analyzer: PatternAnalyzer, time_window_days: int
-) -> str:
-    """Analyze usage patterns and return JSON response."""
-    access_frequency = await pattern_analyzer.get_access_frequency(
-        time_range_days=time_window_days
-    )
-    co_access = await pattern_analyzer.get_co_access_patterns(
-        time_range_days=time_window_days
-    )
-    task_patterns = await pattern_analyzer.get_task_patterns(
-        time_range_days=time_window_days
-    )
-    unused_files = await pattern_analyzer.get_unused_files(
-        time_range_days=time_window_days
-    )
-
-    patterns = {
-        "access_frequency": access_frequency,
-        "co_access_patterns": co_access,
-        "task_patterns": task_patterns,
-        "unused_files": unused_files,
-    }
-
-    return json.dumps(
-        {
-            "status": "success",
-            "target": "usage_patterns",
-            "time_window_days": time_window_days,
-            "patterns": patterns,
-        },
-        indent=2,
-    )
-
-
-async def analyze_structure(structure_analyzer: StructureAnalyzer) -> str:
-    """Analyze structure and return JSON response."""
-    organization = await structure_analyzer.analyze_file_organization()
-    anti_patterns = await structure_analyzer.detect_anti_patterns()
-    complexity = await structure_analyzer.measure_complexity_metrics()
-
-    analysis = {
-        "organization": organization.model_dump(mode="json"),
-        "anti_patterns": [p.model_dump(mode="json") for p in anti_patterns],
-        "complexity_metrics": complexity.model_dump(mode="json"),
-    }
-
-    return json.dumps(
-        {"status": "success", "target": "structure", "analysis": analysis}, indent=2
-    )
-
-
-async def analyze_insights(
-    insight_engine: InsightEngine, export_format: str, categories: list[str] | None
-) -> str:
-    """Analyze insights and return JSON response."""
-    insights = await insight_engine.generate_insights(
-        min_impact_score=0.5, categories=categories
-    )
-    # Export in requested format
-    if export_format == "markdown":
-        exported = await insight_engine.export_insights(insights, format="markdown")
-    elif export_format == "text":
-        exported = await insight_engine.export_insights(insights, format="text")
-    else:
-        exported = insights.model_dump(mode="json")
-
-    return json.dumps(
-        {
-            "status": "success",
-            "target": "insights",
-            "format": export_format,
-            "insights": exported,
-        },
-        indent=2,
-    )
-
-
-async def get_analysis_managers(
-    mgrs: ManagersDict,
-) -> tuple[PatternAnalyzer, StructureAnalyzer, InsightEngine]:
-    """Unwrap and return analysis managers."""
-    pattern_analyzer = await get_manager(mgrs, "pattern_analyzer", PatternAnalyzer)
-    structure_analyzer = await get_manager(
-        mgrs, "structure_analyzer", StructureAnalyzer
-    )
-    insight_engine = await get_manager(mgrs, "insight_engine", InsightEngine)
-    return pattern_analyzer, structure_analyzer, insight_engine
-
-
-async def _run_context_analysis(
-    target: str,
-    root: Path,
-) -> str:
-    """Dispatch context-effectiveness and statistics analysis."""
-    if target in ("context", "context_effectiveness"):
-        result = analyze_current_session(root)
-        return json.dumps(result.model_dump(mode="json"), indent=2)
-    if target in ("context_all_sessions", "context_effectiveness_all"):
-        result = analyze_session_logs(root)
-        return json.dumps(result.model_dump(mode="json"), indent=2)
-    if target in ("context_stats", "context_statistics"):
-        stats = get_context_statistics(root)
-        return json.dumps(stats.model_dump(mode="json"), indent=2)
-    return _analysis_invalid_target_response(target)
-
-
-async def _run_health_analysis(
-    root: Path,
-) -> str:
-    """Run health-check analysis using the shared engine."""
-    return await run_health_check_analysis(
-        analysis_type=HealthCheckAnalysisType.ALL,
-        similarity_threshold=0.75,
-        include_dependencies=True,
-        validate_quality=True,
-        project_root=root,
-    )
 
 
 @mcp.tool(annotations=read_only_annotations("Analyze Memory Bank and Tools"))
@@ -232,240 +106,8 @@ async def analyze(
             target="insights".
 
     Returns:
-        JSON string containing analysis results with the following structure:
-
-        For target="usage_patterns":
-        {
-            "status": "success",
-            "target": "usage_patterns",
-            "time_window_days": 30,
-            "patterns": {
-                "access_frequency": {
-                    "path/to/file.md": 45,
-                    "path/to/other.md": 23
-                },
-                "co_access_patterns": [
-                    {
-                        "files": ["file1.md", "file2.md"],
-                        "co_access_count": 12,
-                        "confidence": 0.85
-                    }
-                ],
-                "task_patterns": {
-                    "refactoring": [MemoryBankFile.SYSTEM_PATTERNS, MemoryBankFile.TECH_CONTEXT],
-                    "feature_development": [MemoryBankFile.ACTIVE_CONTEXT, MemoryBankFile.PROGRESS]
-                },
-                "unused_files": ["old_file.md", "deprecated.md"]
-            }
-        }
-
-        For target="structure":
-        {
-            "status": "success",
-            "target": "structure",
-            "analysis": {
-                "organization": {
-                    "total_files": 12,
-                    "total_directories": 3,
-                    "max_depth": 2,
-                    "avg_files_per_directory": 4.0
-                },
-                "anti_patterns": [
-                    {
-                        "type": "deeply_nested",
-                        "path": "a/b/c/d/e/file.md",
-                        "severity": "high",
-                        "recommendation": "Move file closer to root"
-                    },
-                    {
-                        "type": "oversized_file",
-                        "path": "large_file.md",
-                        "size_tokens": 15000,
-                        "severity": "medium",
-                        "recommendation": "Split into smaller files"
-                    }
-                ],
-                "complexity_metrics": {
-                    "avg_directory_depth": 1.8,
-                    "max_dependencies": 5,
-                    "circular_dependencies": []
-                }
-            }
-        }
-
-        For target="insights":
-        {
-            "status": "success",
-            "target": "insights",
-            "format": "json",
-            "insights": {
-                "high_impact": [
-                    {
-                        "category": "duplication",
-                        "description": (
-                            "productContext.md and activeContext.md share "
-                            "85% similar content"
-                        ),
-                        "impact_score": 0.92,
-                        "recommendation": (
-                            "Consolidate shared content using transclusion"
-                        ),
-                        "affected_files": [MemoryBankFile.PRODUCT_CONTEXT, MemoryBankFile.ACTIVE_CONTEXT]
-                    }
-                ],
-                "medium_impact": [
-                    {
-                        "category": "complexity",
-                        "description": (
-                            "systemPatterns.md exceeds recommended size "
-                            "(12000 tokens)"
-                        ),
-                        "impact_score": 0.68,
-                        "recommendation": (
-                            "Split into architecture.md and patterns.md"
-                        ),
-                        "affected_files": [MemoryBankFile.SYSTEM_PATTERNS]
-                    }
-                ],
-                "low_impact": []
-            }
-        }
-
-        On error:
-        {
-            "status": "error",
-            "error": "Error message",
-            "error_type": "ExceptionClassName"
-        }
-
-    Example (error):
-        analyze(target="invalid_target") → {"status": "error", "error": "...",
-        "error_type": "ValueError"}
-
-    Examples:
-        Example 1: Analyze file access patterns over the last 60 days
-
-        Input:
-            target="usage_patterns"
-            time_window_days=60
-
-        Output:
-            {
-                "status": "success",
-                "target": "usage_patterns",
-                "time_window_days": 60,
-                "patterns": {
-                    "access_frequency": {
-                        MemoryBankFile.PROJECT_BRIEF: 124,
-                        MemoryBankFile.ACTIVE_CONTEXT: 98,
-                        MemoryBankFile.SYSTEM_PATTERNS: 67,
-                        MemoryBankFile.TECH_CONTEXT: 45,
-                        MemoryBankFile.PRODUCT_CONTEXT: 23,
-                        MemoryBankFile.PROGRESS: 12
-                    },
-                    "co_access_patterns": [
-                        {
-                            "files": [MemoryBankFile.ACTIVE_CONTEXT, MemoryBankFile.PROGRESS],
-                            "co_access_count": 34,
-                            "confidence": 0.92
-                        },
-                        {
-                            "files": [MemoryBankFile.SYSTEM_PATTERNS, MemoryBankFile.TECH_CONTEXT],
-                            "co_access_count": 28,
-                            "confidence": 0.87
-                        }
-                    ],
-                    "task_patterns": {
-                        "feature_planning": [MemoryBankFile.PRODUCT_CONTEXT, MemoryBankFile.ACTIVE_CONTEXT],
-                        "architecture_review": [MemoryBankFile.SYSTEM_PATTERNS, MemoryBankFile.TECH_CONTEXT],
-                        "progress_tracking": [MemoryBankFile.PROGRESS, MemoryBankFile.ACTIVE_CONTEXT]
-                    },
-                    "unused_files": ["old_design.md", "deprecated_api.md"]
-                }
-            }
-
-        Example 2: Analyze project structure for issues
-
-        Input:
-            target="structure"
-
-        Output:
-            {
-                "status": "success",
-                "target": "structure",
-                "analysis": {
-                    "organization": {
-                        "total_files": 8,
-                        "total_directories": 2,
-                        "max_depth": 1,
-                        "avg_files_per_directory": 4.0
-                    },
-                    "anti_patterns": [
-                        {
-                            "type": "oversized_file",
-                            "path": "systemPatterns.md",
-                            "size_tokens": 14500,
-                            "severity": "high",
-                            "recommendation": (
-                                "Split into architecture.md and "
-                                "design-patterns.md"
-                            )
-                        },
-                        {
-                            "type": "naming_inconsistency",
-                            "path": "product_context.md",
-                            "severity": "low",
-                            "recommendation": (
-                                f"Rename to {MemoryBankFile.PRODUCT_CONTEXT} for consistency"
-                            )
-                        }
-                    ],
-                    "complexity_metrics": {
-                        "avg_directory_depth": 1.2,
-                        "max_dependencies": 4,
-                        "circular_dependencies": []
-                    }
-                }
-            }
-
-        Example 3: Generate optimization insights in markdown format
-
-        Input:
-            target="insights"
-            export_format="markdown"
-            categories=["duplication", "complexity"]
-
-        Output:
-            {
-                "status": "success",
-                "target": "insights",
-                "format": "markdown",
-                "insights": (
-                    "# Memory Bank Optimization Insights\n\n"
-                    "## High Impact Improvements\n\n"
-                    "### Duplication: Consolidate Shared Content\n\n"
-                    "**Impact Score:** 0.89\n\n"
-                    "**Description:** activeContext.md and progress.md "
-                    "contain 78% duplicate content regarding current sprint "
-                    "goals and completed tasks.\n\n"
-                    "**Recommendation:** Use transclusion to include shared "
-                    "sprint information from a single source file.\n\n"
-                    "**Affected Files:**\n"
-                    "- activeContext.md\n"
-                    "- progress.md\n\n"
-                    "---\n\n"
-                    "## Medium Impact Improvements\n\n"
-                    "### Complexity: Split Large File\n\n"
-                    "**Impact Score:** 0.65\n\n"
-                    "**Description:** systemPatterns.md contains 11200 tokens "
-                    "across multiple distinct topics.\n\n"
-                    "**Recommendation:** Split into separate files: "
-                    "architecture.md, design-patterns.md, and "
-                    "coding-standards.md.\n\n"
-                    "**Affected Files:**\n"
-                    "- systemPatterns.md\n\n"
-                )
-            }
+        JSON string. Success: status, target, and type-specific fields
+        (patterns, analysis, insights). Error: status "error", error, error_type.
 
     Note:
         - Usage patterns analysis requires file access history. If no history exists,
@@ -496,12 +138,12 @@ async def analyze(
 
     # Consolidated analytics targets: context* and health.
     if target.startswith("context"):
-        return await _run_context_analysis(target, root)
+        return await run_context_analysis(target, root)
     if target in ("health", "health_check"):
-        return await _run_health_analysis(root)
+        return await run_health_analysis(root)
 
     await log_client(ctx, "warning", "analyze: invalid target")
-    return _analysis_invalid_target_response(target)
+    return analysis_invalid_target_response(target)
 
 
 async def _analyze_run_or_error(
@@ -527,56 +169,6 @@ async def _analyze_run_or_error(
             {"status": "error", "error": str(e), "error_type": type(e).__name__},
             indent=2,
         )
-
-
-def _analysis_invalid_target_response(target_display: str) -> str:
-    """Build JSON error response for invalid analysis target."""
-    valid = [t.value for t in AnalysisTarget]
-    return json.dumps(
-        {
-            "status": "error",
-            "error": f"Invalid target: {target_display}",
-            "valid_targets": valid,
-        },
-        indent=2,
-    )
-
-
-async def _execute_analysis_target(
-    target: AnalysisTarget,
-    analyzers: tuple[PatternAnalyzer, StructureAnalyzer, InsightEngine],
-    time_window_days: int | None,
-    export_format: str,
-    categories: list[str] | None,
-) -> str:
-    """Run the analysis handler for the resolved target."""
-    pattern_analyzer, structure_analyzer, insight_engine = analyzers
-    if target == AnalysisTarget.USAGE_PATTERNS:
-        window = time_window_days or 30
-        return await analyze_usage_patterns(pattern_analyzer, window)
-    if target == AnalysisTarget.STRUCTURE:
-        return await analyze_structure(structure_analyzer)
-    if target == AnalysisTarget.INSIGHTS:
-        return await analyze_insights(insight_engine, export_format, categories)
-    return _analysis_invalid_target_response(target.value)
-
-
-async def dispatch_analysis_target(
-    target: str | AnalysisTarget,
-    analyzers: tuple[PatternAnalyzer, StructureAnalyzer, InsightEngine],
-    time_window_days: int | None,
-    export_format: str,
-    categories: list[str] | None,
-) -> str:
-    """Dispatch analysis to appropriate handler based on target."""
-    if not isinstance(target, AnalysisTarget):
-        parsed = parse_analysis_target(target)
-        if parsed is None:
-            return _analysis_invalid_target_response(target)
-        target = parsed
-    return await _execute_analysis_target(
-        target, analyzers, time_window_days, export_format, categories
-    )
 
 
 @mcp.resource(uri="cortex://analysis/analyze/{target}")

@@ -10,10 +10,12 @@ import pytest
 
 from cortex.managers.usage_models import ToolUsageEvent
 from cortex.tools.phase5_production_monitoring_helpers import (
+    get_production_monitoring_payload,
+)
+from cortex.tools.phase5_production_monitoring_models import (
     DriftAlert,
     GlobalMetricSummary,
     ToolMetricSummary,
-    get_production_monitoring_payload,
 )
 
 

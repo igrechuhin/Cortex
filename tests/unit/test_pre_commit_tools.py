@@ -74,7 +74,7 @@ class TestExecutePreCommitChecks:
 
     @pytest.mark.asyncio
     async def test_runs_adapter_checks_off_event_loop_via_to_thread(self) -> None:
-        """Verify execute_pre_commit_checks runs _execute_all_checks via asyncio.to_thread."""
+        """Verify execute_pre_commit_checks runs execute_all_checks via asyncio.to_thread."""
         with tempfile.TemporaryDirectory() as tmpdir:
             project_root = Path(tmpdir)
             _ = (project_root / "pyproject.toml").write_text("[project]\nname = 'test'")
@@ -90,7 +90,7 @@ class TestExecutePreCommitChecks:
                     return_value=project_root,
                 ),
                 patch(
-                    "cortex.tools.pre_commit_tools.asyncio.to_thread",
+                    "cortex.tools.pre_commit_tools_run_helpers.asyncio.to_thread",
                     new_callable=AsyncMock,
                 ) as mock_to_thread,
             ):
@@ -118,23 +118,23 @@ class TestExecutePreCommitChecks:
                     **_EXECUTE_REQUIRED,
                 )
 
-                # Verify _execute_all_checks was called via to_thread
+                # Verify execute_all_checks was called via to_thread
                 # (get_or_resolve_project_root may also call to_thread, so check for at least one call)
                 assert mock_to_thread.call_count >= 1
-                # Find the call that invokes _execute_all_checks
+                # Find the call that invokes execute_all_checks
                 execute_all_checks_call = None
                 for call in mock_to_thread.call_args_list:
                     if call[0] and len(call[0]) > 0:
                         func = call[0][0]
                         if (
                             hasattr(func, "__name__")
-                            and func.__name__ == "_execute_all_checks"
+                            and func.__name__ == "execute_all_checks"
                         ):
                             execute_all_checks_call = call
                             break
                 assert (
                     execute_all_checks_call is not None
-                ), "Expected _execute_all_checks to be called via to_thread"
+                ), "Expected execute_all_checks to be called via to_thread"
                 assert result["status"] == "success"
                 assert result["language"] == "python"
 
@@ -401,7 +401,7 @@ class TestExecutePreCommitChecks:
                     return_value=(python_info, str(project_root)),
                 ),
                 patch(
-                    "cortex.tools.pre_commit_tools.asyncio.to_thread",
+                    "cortex.tools.pre_commit_tools_run_helpers.asyncio.to_thread",
                     new_callable=AsyncMock,
                 ) as mock_to_thread,
                 patch(
@@ -466,7 +466,7 @@ class TestExecutePreCommitChecks:
                     return_value=(python_info, str(project_root)),
                 ),
                 patch(
-                    "cortex.tools.pre_commit_tools.asyncio.to_thread",
+                    "cortex.tools.pre_commit_tools_run_helpers.asyncio.to_thread",
                     new_callable=AsyncMock,
                 ) as mock_to_thread,
                 patch(
@@ -1651,7 +1651,7 @@ class TestPreCommitToolsContextLogging:
                     return_value=project_root,
                 ),
                 patch(
-                    "cortex.tools.pre_commit_tools.asyncio.to_thread",
+                    "cortex.tools.pre_commit_tools_run_helpers.asyncio.to_thread",
                     new_callable=AsyncMock,
                 ) as mock_to_thread,
             ):

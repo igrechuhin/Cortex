@@ -29,8 +29,10 @@ from cortex.refactoring.models import (
 from cortex.refactoring.split_recommender import SplitRecommendation
 from cortex.tools.analysis_operations import (
     analyze,
-    analyze_insights,
     analyze_resource,
+)
+from cortex.tools.analysis_run_helpers import (
+    analyze_insights,
     analyze_structure,
     analyze_usage_patterns,
     dispatch_analysis_target,

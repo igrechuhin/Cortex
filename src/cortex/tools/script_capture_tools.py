@@ -12,8 +12,6 @@ Total: 5 tools
 """
 
 import json
-from collections.abc import Awaitable, Callable
-from typing import cast
 from urllib.parse import unquote
 
 from cortex.core.constants import MCP_TOOL_TIMEOUT_FAST, MCP_TOOL_TIMEOUT_MEDIUM
@@ -27,29 +25,17 @@ from cortex.core.mcp_stability import (
 from cortex.core.project_root_resolver import resolve_project_root_async
 from cortex.discovery.recommendation_engine import recommend_tools_and_scripts
 from cortex.discovery.tool_registry import get_known_script_names, get_known_tool_names
-from cortex.script_analysis.models import ScriptAnalysisResult
 from cortex.script_analysis.script_analyzer import analyze_script
-from cortex.script_detection.models import ScriptCaptureRecord
 from cortex.script_detection.script_capture import capture_script
 from cortex.script_detection.storage import get_capture_by_id, list_captures
-from cortex.script_promotion.models import ValidationResult
-from cortex.script_promotion.script_integrator import script_integration_template
 from cortex.script_promotion.script_validator import validate_for_promotion
-from cortex.script_promotion.tool_converter import tool_conversion_template
 from cortex.server import mcp
-
-
-def _record_to_summary(record: ScriptCaptureRecord) -> dict[str, object]:
-    """Build a JSON-serializable summary from a ScriptCaptureRecord."""
-    return {
-        "script_id": record.script_id,
-        "timestamp": record.timestamp,
-        "task_description": record.task_description,
-        "script_path": record.script_path,
-        "script_type": record.script_type,
-        "purpose": record.purpose,
-        "promotion_status": record.promotion_status.value,
-    }
+from cortex.tools.script_capture_handlers import dispatch_session_scripts
+from cortex.tools.script_capture_helpers import (
+    analysis_to_summary,
+    build_promote_payload,
+    record_to_summary,
+)
 
 
 @ensure_usage_context
@@ -145,7 +131,7 @@ async def list_session_scripts(
     root = await resolve_project_root_async(None, ctx)
     await log_client(ctx, "info", "list_session_scripts: starting")
     records = await list_captures(root)
-    summaries = [_record_to_summary(r) for r in records]
+    summaries = [record_to_summary(r) for r in records]
     payload = {
         "status": "success",
         "count": len(summaries),
@@ -153,42 +139,6 @@ async def list_session_scripts(
     }
     await log_client(ctx, "info", "list_session_scripts: completed")
     return json.dumps(payload, indent=2)
-
-
-def _build_promote_payload(
-    record: ScriptCaptureRecord,
-    script_id: str,
-    validation: ValidationResult,
-    output_type: str,
-) -> dict[str, object]:
-    """Build JSON payload for promote_session_script success response."""
-    payload: dict[str, object] = {
-        "status": "success",
-        "script_id": script_id,
-        "validation_passed": validation.passed,
-        "quality_score": validation.quality_score,
-        "issues": validation.issues,
-    }
-    if output_type == "script":
-        rel_path, content = script_integration_template(record)
-        payload["template_path"] = rel_path
-        payload["template_content"] = content
-    else:
-        payload["template_content"] = tool_conversion_template(record)
-    return payload
-
-
-def _analysis_to_summary(obj: ScriptAnalysisResult) -> dict[str, object]:
-    """Build JSON-serializable summary from ScriptAnalysisResult."""
-    return {
-        "script_id": obj.script_id,
-        "use_case_label": obj.use_case.use_case_label,
-        "keywords": obj.use_case.keywords,
-        "gap_reason": obj.gap.gap_reason,
-        "is_gap": obj.gap.is_gap,
-        "reusability_score": obj.reusability_score,
-        "promotion_potential": obj.promotion_potential,
-    }
 
 
 @ensure_usage_context
@@ -217,7 +167,7 @@ async def analyze_session_scripts(
     analyses: list[dict[str, object]] = []
     for record in records:
         result = analyze_script(record, tool_names, script_names)
-        analyses.append(_analysis_to_summary(result))
+        analyses.append(analysis_to_summary(result))
     payload = {
         "status": "success",
         "count": len(analyses),
@@ -353,137 +303,9 @@ async def promote_session_script(
     script_names = get_known_script_names(root)
     analysis = analyze_script(record, tool_names, script_names)
     validation = validate_for_promotion(record, analysis)
-    payload = _build_promote_payload(record, script_id, validation, output_type)
+    payload = build_promote_payload(record, script_id, validation, output_type)
     await log_client(ctx, "info", "promote_session_script: completed")
     return json.dumps(payload, indent=2)
-
-
-async def _session_scripts_capture_handler(
-    *,
-    script_path: str | None = None,
-    script_content: str | None = None,
-    task_description: str | None = None,
-    script_type: str = "python",
-    purpose: str = "utility",
-    ctx: MCPContext | None = None,
-    **_: object,
-) -> str:
-    if script_path is None or script_content is None or task_description is None:
-        error_payload = {
-            "status": "error",
-            "error": (
-                "script_path, script_content, and task_description are required for "
-                "operation 'capture'"
-            ),
-        }
-        return json.dumps(error_payload, indent=2)
-    return await capture_session_script(
-        script_path=script_path,
-        script_content=script_content,
-        task_description=task_description,
-        script_type=script_type,
-        purpose=purpose,
-        ctx=ctx,
-    )
-
-
-async def _session_scripts_list_handler(
-    *,
-    ctx: MCPContext | None = None,
-    **_: object,
-) -> str:
-    return await list_session_scripts(ctx=ctx)
-
-
-async def _session_scripts_analyze_handler(
-    *,
-    ctx: MCPContext | None = None,
-    **_: object,
-) -> str:
-    return await analyze_session_scripts(ctx=ctx)
-
-
-async def _session_scripts_suggest_handler(
-    *,
-    task_description: str | None = None,
-    max_results: int = 15,
-    ctx: MCPContext | None = None,
-    **_: object,
-) -> str:
-    if task_description is None:
-        error_payload = {
-            "status": "error",
-            "error": "task_description is required for operation 'suggest'",
-        }
-        return json.dumps(error_payload, indent=2)
-    return await suggest_tool_improvements(
-        task_description=task_description,
-        max_results=max_results,
-        ctx=ctx,
-    )
-
-
-async def _session_scripts_promote_handler(
-    *,
-    script_id: str | None = None,
-    output_type: str = "tool",
-    ctx: MCPContext | None = None,
-    **_: object,
-) -> str:
-    if script_id is None:
-        error_payload = {
-            "status": "error",
-            "error": "script_id is required for operation 'promote'",
-        }
-        return json.dumps(error_payload, indent=2)
-    return await promote_session_script(
-        script_id=script_id,
-        output_type=output_type,
-        ctx=ctx,
-    )
-
-
-_SESSION_SCRIPTS_HANDLERS: dict[str, Callable[..., Awaitable[str]]] = {
-    "capture": cast(Callable[..., Awaitable[str]], _session_scripts_capture_handler),
-    "list": cast(Callable[..., Awaitable[str]], _session_scripts_list_handler),
-    "analyze": cast(Callable[..., Awaitable[str]], _session_scripts_analyze_handler),
-    "suggest": cast(Callable[..., Awaitable[str]], _session_scripts_suggest_handler),
-    "promote": cast(Callable[..., Awaitable[str]], _session_scripts_promote_handler),
-}
-
-
-async def _dispatch_session_scripts(
-    operation: str,
-    script_path: str | None,
-    script_content: str | None,
-    task_description: str | None,
-    script_type: str,
-    purpose: str,
-    script_id: str | None,
-    max_results: int,
-    output_type: str,
-    ctx: MCPContext | None,
-) -> str:
-    handler = _SESSION_SCRIPTS_HANDLERS.get(operation.lower())
-    if handler is None:
-        error_message = (
-            f"Unsupported operation '{operation}'. "
-            + "Expected one of: capture, list, analyze, suggest, promote."
-        )
-        return json.dumps({"status": "error", "error": error_message}, indent=2)
-
-    kwargs = {
-        "script_path": script_path,
-        "script_content": script_content,
-        "task_description": task_description,
-        "script_type": script_type,
-        "purpose": purpose,
-        "script_id": script_id,
-        "max_results": max_results,
-        "output_type": output_type,
-        "ctx": ctx,
-    }
-    return await handler(**kwargs)
 
 
 @mcp.tool(annotations=safe_write_annotations("Manage Session Scripts"))
@@ -531,7 +353,7 @@ async def manage_session_scripts(
         output_type: "tool" or "resource" for suggest. Default "tool".
         ctx: MCP context (automatically provided).
     """
-    return await _dispatch_session_scripts(
+    return await dispatch_session_scripts(
         operation=operation,
         script_path=script_path,
         script_content=script_content,

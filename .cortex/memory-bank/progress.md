@@ -1,5 +1,10 @@
 # Progress Log
 
+## 2026-03-01
+
+- **Phase1 foundation rollback file-size split (2026-03-01)** - COMPLETE. Extracted phase1_foundation_rollback_models.py (RollbackManagers, RollbackProcessingData) and phase1_foundation_rollback_helpers.py (validate_rollback_file, get_rollback_snapshot, process_rollback_content, update_rollback_metadata, finalize_rollback, build_rollback_success_response, build_rollback_error_response). Main module 218 lines, all under 400.
+- Commit - Phase1 foundation rollback Batch 3, tools file-size splits. Phase A passed; 4867 tests, 92.35% coverage.
+
 ## 2026-02-28
 
 - **Synapse Usage Storage with usage_writable and Static Snapshot Mode (2026-02-28)** - COMPLETE. Added load_synapse_usage_config, is_usage_writable, get_usage_storage_root; gated UsageTracker.record_tool_usage and context stats save_statistics; wired Synapse .cache for usage when usage_writable=true; updated tool-usage-tracking doc.
@@ -17,6 +22,14 @@
 - **Archive Legacy Prompt Docs (2026-02-28)** - COMPLETE. Archived 7 legacy prompt docs to docs/prompts/archive/ with deprecation headers; updated README and test references to unified prompts (initialize.md, migrate.md).
 - **Consolidate Duplicate Protocol Docs (2026-02-28)** - COMPLETE. Replaced architecture protocols with cross-reference to API reference.
 - **Deduplicate Token Budget Table (2026-02-28)** - COMPLETE. Replaced duplicated token budget table in CLAUDE.md with cross-reference to AGENTS.md; table retained in AGENTS.md only.
+- **Tools file-size Batch 1 (compaction_operations) (2026-02-28)** - COMPLETE. Split compaction_operations.py (670→110 lines) into compaction_handoff.py and compaction_write_helpers.py; updated tests; quality and tests pass.
+- **File-size plan Batch 1 (2026-02-28)** - COMPLETE for validation_operations and analysis_operations. validation_response_formatters.py, analysis_run_helpers.py created. Tests updated. Quality gate and coverage passed.
+- **Phase5 production monitoring split (2026-02-28)** - COMPLETE. Split phase5_production_monitoring_helpers.py (580 lines) into phase5_production_monitoring_models.py, phase5_production_monitoring_metrics.py, phase5_production_monitoring_drift.py; helpers reduced to 314 lines. All files under 400-line limit; tests and quality gate pass.
+- **Tools file-size Batch 2: task_locking (2026-02-28)** - COMPLETE. Split task_locking.py (572→327 lines) into task_locking_helpers.py, task_locking_handlers.py; updated file_lock_guard and tests to import generate_task_id from helpers; tests patch task_locking_handlers.resolve_project_root_async. Quality gate and tests pass.
+- **Plan-tools-file-size-violations Batch 2: refactoring_operations.py (2026-02-28)** - COMPLETE. Extracted docstring to refactoring_operations_docs.py; main module reduced from 565 to 150 lines. All refactoring tests pass.
+- **Plan tools file size violations Batch 2 (2026-02-28)** - COMPLETE. Split script_capture_tools (helpers, handlers), query_usage_operations (query_usage_models), validation_result_models (validation_result_links_models). All files now ≤400 lines. Tests pass, coverage 92.35%.
+- **Tools file-size Batch 3 (2026-02-28)** - Split context_models.py into context_auxiliary_models.py; context_models 498→336 lines; updated transclusion_operations, phase4_progressive_operations, phase4_relevance_operations imports.
+- **Plan CRUD split (Batch 3) (2026-02-28)** - COMPLETE. Extracted plan_crud_models.py and plan_crud_helpers.py from plan_crud.py; plan_crud reduced from 490 to 235 lines; all tests pass.
 
 ## 2026-02-27
 
@@ -235,26 +248,7 @@
 
 ## 2026-02-21
 
-- **Phase 56 Step 4: Progressive summarization (2026-02-21)** - COMPLETE. Implemented auto-trigger when progress.md exceeds token threshold (PROGRESS_TOKEN_THRESHOLD_DEFAULT); progress summarization only when tokens >= 10K. Added unit tests for Tier 1/2/3 and summarize_progress(weekly|monthly), and test for progress-below-threshold unchanged.
-- **Commit (preflight, memory bank, plan archive)** - Preflight passed: fix_errors, format, markdown lint (0 errors), synapse_format, synapse_lint, type_check, quality, tests 4344 passed, 91.84% coverage. No completed plans in plans root; memory bank and roadmap consistent.
-- Commit (preflight, memory bank, plan archive) - Preflight passed: fix_errors, format, markdown lint (0 errors), synapse_format, synapse_lint, type_check, quality, tests 4344 passed, 91.84% coverage. No completed plans in plans root; memory bank and roadmap consistent.
-- **Phase 56 Session Compaction Workflow (2026-02-21)** - COMPLETE. Step 6 Testing and Validation: added test_compact_session_managers_not_initialized and test_read_handoff_invalid_schema_returns_none; fixed lifecycle test (patch compaction_operations for project root and managers). All tests pass, quality gate passed.
-- **Pydantic rules encourage enums for all fixed sets (2026-02-21)** - COMPLETE. Updated Pydantic standards rule; rules-only.
-- **Phase 49 Step 6: Tool Search Tool - Testing (2026-02-21)** - COMPLETE. Token savings and tool discovery tests (test_tool_search_operations, test_optimization_config), get_tool_search_config tests, configuration options documented in docs/guides/advanced-tool-use.md. Quality gate passed.
-- **Phase 49 Step 7: Programmatic Tool Calling - Analysis (2026-02-21)** - COMPLETE. Identified tool chains (validation, refactoring, batch manage_file), recommended allowed_callers for validate, suggest_refactoring, apply_refactoring, manage_file, documented orchestration patterns in docs/guides/advanced-tool-use.md.
-- **Phase 49 Step 8: Programmatic Tool Calling - Implementation (2026-02-21)** - COMPLETE. Added allowed_callers to tool meta for validate, suggest_refactoring, apply_refactoring, manage_file; ALLOWED_CALLERS_CODE_EXECUTION and TOOLS_WITH_ALLOWED_CALLERS in tool_categories.py; docs and unit tests updated.
-- **Commit (preflight, memory bank, plan archive)** - Preflight passed: fix_errors, format, markdown lint (0 errors), synapse_format, synapse_lint, type_check, quality, tests 4357 passed, 91.85% coverage. No completed plans in plans root; memory bank and roadmap consistent.
-- **Phase 49 Step 9: Documentation and Testing (2026-02-21)** - COMPLETE. Updated API tools reference with Advanced Tool Use subsection; added Usage guide and Measuring improvements to advanced-tool-use.md; extended tests (input_examples minimum count, allowed_callers category consistency, search_tools always_loaded).
-- **Phase 49: Introduce Anthropic Advanced Tool Use (2026-02-21)** - COMPLETE. Tool use examples, tool search (deferred loading), programmatic tool calling meta; docs and tests updated.
-- **Phase 57: Evaluation dashboard extension (2026-02-21)** - COMPLETE. Added per-tool metrics (ToolTaskMetrics, tool_metrics on EvalTaskResult), harness populates from events; extended evaluation dashboard with Overall Tool Effectiveness Score, Top 5 Tools by Usage, and Top 5 Tools by Improvement Needed; tests and quality gate pass.
-- **Phase 57 Step 1: Evaluation task suite (2026-02-21)** - COMPLETE. Extended core_workflows.json to 26 tasks with 5+ per category (context 8, pre_commit 5, plan 5, memory_bank 8); plan file updated; quality gate and tests passed.
-- **Phase 57 Steps 4 & 6 (Evaluation-Driven Tool Improvement)** - COMPLETE. Added A/B comparison (compare_ab_analyses), optimization history (OptimizationRunRecord, evals/optimization_history.json), run_tool_optimization_workflow MCP tool; dashboard formatting extracted to phase5_evaluation_dashboard_helpers; tests for A/B, history, workflow. Quality gate and tests passed.
-- **Phase 57 Step 2 & Step 6 (partial) (2026-02-21)** - COMPLETE. Completed evaluation harness: token fields and tool combinations in EvalTaskResult/EvalAnalysis, top_tool_combinations and token_consumption_by_category; added reproducibility test; extracted phase5_evaluation_helpers for file size/function length; quality gate passed.
-- **Commit (markdown lint fixes)** - Fixed MD040 (fenced code language) in plan-agent-skills-and-composability.md, MD024 (duplicate heading) in session-optimization-2026-02-21T14-12.md. Preflight passed; 4375 tests, 91.88% coverage. No completed plans in plans root.
-- **Phase 57 Step 3: Extend usage tracking for error patterns (2026-02-21)** - COMPLETE. Added retry_count, param_validation_failure, result_used to ToolUsageEvent and record_tool_usage; threaded retry_count from_execute_with_retry to record_usage_finish; set param_validation_failure from ValidationError message on exception path; moved run_execute_and_finalize/finalize_on_exception/attach_attempt_to_exception to mcp_stability_config to keep file size under limit.
-- **Commit (quality: function length mcp_stability, mcp_stability_config)** - Fixed function length: extracted _try_one_attempt,_release_serial_and_reraise,_run_do_with_optional_serial; run_and_finalize_impl and_execute_with_retry ≤30 lines. Preflight: fix_errors, format, type_check, quality, tests 4377 passed, 91.88% coverage. No completed plans in plans root.
-- **Phase 57 Step 5 End-of-session evaluation integration** - COMPLETE. Added get_session_tool_anomalies MCP tool, optional analyze.md step, and phase5_evaluation_anomalies_helpers; quality gate and tests pass.
-- **Phase 57 Token efficiency trends (2026-02-21)** - COMPLETE. Added Token Efficiency Trends section to evaluation dashboard: format_token_efficiency in phase5_evaluation_dashboard_helpers.py shows average tokens per task and by-category when data available; three unit tests added.
+- **Week containing 2026-02-21** - 1 entries summarized.
 
 ## 2026-02-20
 

@@ -9,7 +9,6 @@ Total: 2 tools
   (fix errors, format, type check, markdown lint)
 """
 
-import asyncio
 import json
 import logging
 from collections.abc import Callable, Sequence
@@ -17,17 +16,13 @@ from pathlib import Path
 from typing import Literal, cast
 
 from cortex.core.constants import MCP_TOOL_TIMEOUT_VERY_COMPLEX
-from cortex.core.context_logging import MCPContext, log_client, report_progress_safe
+from cortex.core.context_logging import MCPContext, log_client
 from cortex.core.mcp_annotations import external_annotations, safe_write_annotations
 from cortex.core.mcp_stability import ensure_usage_context, mcp_tool_wrapper
-from cortex.core.models import ModelDict, OperationStatus
+from cortex.core.models import ModelDict
 from cortex.core.usage_context import get_or_resolve_project_root
 from cortex.server import mcp
-from cortex.services.framework_adapters.base import (
-    CheckResult,
-    FrameworkAdapter,
-    TestResult,
-)
+from cortex.services.framework_adapters.base import FrameworkAdapter
 from cortex.services.framework_adapters.go_adapter import GoAdapter
 from cortex.services.framework_adapters.java_adapter import JavaAdapter
 from cortex.services.framework_adapters.javascript_adapter import JavaScriptAdapter
@@ -37,12 +32,6 @@ from cortex.services.framework_adapters.rust_adapter import RustAdapter
 from cortex.services.framework_adapters.swift_adapter import SwiftAdapter
 from cortex.services.framework_adapters.typescript_adapter import TypeScriptAdapter
 from cortex.services.language_detector import LanguageInfo
-from cortex.tools.pre_commit_connection import (
-    log_connection_health_after_tests,
-    log_connection_health_before_tests,
-    log_test_execution_error,
-)
-from cortex.tools.pre_commit_eval import run_eval_fast_check
 from cortex.tools.pre_commit_fix_quality import (
     create_quality_error_response,
     fix_quality_issues_impl,
@@ -50,18 +39,14 @@ from cortex.tools.pre_commit_fix_quality import (
 from cortex.tools.pre_commit_helpers import (
     create_error_result_dict,
     determine_checks_to_perform,
-    ensure_json_serializable_for_mcp,
     unsupported_language_result_dict,
 )
 from cortex.tools.pre_commit_helpers_language import detect_or_use_language
-from cortex.tools.pre_commit_helpers_models import (
-    CheckStats,
-    PreCommitCheck,
-    PreCommitResult,
-    QualityCheckResult,
+from cortex.tools.pre_commit_helpers_models import PreCommitCheck
+from cortex.tools.pre_commit_tools_run_helpers import (
+    build_pre_commit_response,
+    run_checks_with_connection_monitoring,
 )
-from cortex.tools.pre_commit_helpers_remaining import truncate_large_logs_in_data
-from cortex.tools.pre_commit_pipeline import run_checks_pipeline
 
 logger = logging.getLogger(__name__)
 
@@ -131,108 +116,6 @@ async def _resolve_language_and_adapter(
     return (adapter, language_info)
 
 
-def _make_test_progress_callback(
-    ctx: MCPContext | None, loop: asyncio.AbstractEventLoop
-) -> Callable[[int, int], None] | None:
-    """Build (completed, total) callback that reports test counts to MCP.
-
-    Reports progress as (tests executed, total tests) so the client sees
-    actual test counts. This complements (does not replace) the generic
-    time-based progress loop that keeps the connection alive during setup.
-    """
-    if ctx is None:
-        return None
-
-    def report(completed: int, total: int) -> None:
-        _ = asyncio.run_coroutine_threadsafe(
-            report_progress_safe(ctx, float(completed), float(total)), loop
-        )
-
-    return report
-
-
-async def _run_all_checks_off_loop(
-    adapter: FrameworkAdapter,
-    language_info: LanguageInfo,
-    checks_to_perform: list[PreCommitCheck],
-    strict_mode: bool,
-    timeout: int | None,
-    coverage_threshold: float,
-    ctx: MCPContext | None,
-) -> tuple[dict[str, CheckResult | TestResult | QualityCheckResult], CheckStats]:
-    """Run checks off event loop with optional test progress callback."""
-    progress_callback: Callable[[int, int], None] | None = None
-    if (
-        ctx is not None
-        and PreCommitCheck.TESTS in checks_to_perform
-        and language_info.language == "python"
-    ):
-        loop = asyncio.get_running_loop()
-        progress_callback = _make_test_progress_callback(ctx, loop)
-    results, stats = await asyncio.to_thread(
-        _execute_all_checks,
-        adapter,
-        language_info.language,
-        checks_to_perform,
-        strict_mode,
-        timeout,
-        coverage_threshold,
-        progress_callback,
-    )
-    await _merge_eval_fast_if_requested(checks_to_perform, results, stats, ctx)
-    return results, stats
-
-
-async def _merge_eval_fast_if_requested(
-    checks_to_perform: list[PreCommitCheck],
-    results: dict[str, CheckResult | TestResult | QualityCheckResult],
-    stats: CheckStats,
-    ctx: MCPContext | None,
-) -> None:
-    """If eval_fast requested, run it and merge into results/stats."""
-    if PreCommitCheck.EVAL_FAST not in checks_to_perform:
-        return
-    eval_result = await run_eval_fast_check(ctx)
-    results[PreCommitCheck.EVAL_FAST.value] = eval_result
-    stats.checks_performed.append(PreCommitCheck.EVAL_FAST.value)
-    if not eval_result.success:
-        stats.total_errors += len(eval_result.errors)
-
-
-async def _run_checks_with_connection_monitoring(
-    adapter: FrameworkAdapter,
-    language_info: LanguageInfo,
-    checks_to_perform: list[PreCommitCheck],
-    strict_mode: bool,
-    timeout: int | None,
-    coverage_threshold: float,
-    ctx: MCPContext | None,
-) -> tuple[dict[str, CheckResult | TestResult | QualityCheckResult], CheckStats]:
-    """Run checks with connection stability monitoring for tests (Step 12.7)."""
-    health_before = (
-        await log_connection_health_before_tests()
-        if PreCommitCheck.TESTS in checks_to_perform
-        else None
-    )
-    try:
-        return await _run_all_checks_off_loop(
-            adapter,
-            language_info,
-            checks_to_perform,
-            strict_mode,
-            timeout,
-            coverage_threshold,
-            ctx,
-        )
-    except Exception as e:
-        if PreCommitCheck.TESTS in checks_to_perform:
-            log_test_execution_error(e, health_before)
-        raise
-    finally:
-        if PreCommitCheck.TESTS in checks_to_perform:
-            await log_connection_health_after_tests(health_before)
-
-
 async def _execute_pre_commit_checks_impl(
     root: Path,
     language: str | None,
@@ -250,7 +133,7 @@ async def _execute_pre_commit_checks_impl(
     adapter, language_info = resolved
     checks_to_perform = determine_checks_to_perform(checks)
 
-    results, stats = await _run_checks_with_connection_monitoring(
+    results, stats = await run_checks_with_connection_monitoring(
         adapter,
         language_info,
         checks_to_perform,
@@ -260,7 +143,7 @@ async def _execute_pre_commit_checks_impl(
         ctx,
     )
 
-    out = _build_response(results, stats, language_info.language)
+    out = build_pre_commit_response(results, stats, language_info.language)
     await log_client(
         ctx, "info", "execute_pre_commit_checks: completed", logger_name=__name__
     )
@@ -359,60 +242,6 @@ async def execute_pre_commit_checks(
     return await _run_execute_pre_commit_checks(
         checks, test_timeout, coverage_threshold, strict_mode, ctx
     )
-
-
-def _execute_all_checks(
-    adapter: FrameworkAdapter,
-    language: str,
-    checks_to_perform: list[PreCommitCheck],
-    strict_mode: bool,
-    timeout: int | None,
-    coverage_threshold: float,
-    progress_callback: Callable[[int, int], None] | None = None,
-) -> tuple[dict[str, CheckResult | TestResult | QualityCheckResult], CheckStats]:
-    """Execute all requested checks."""
-    results: dict[str, CheckResult | TestResult | QualityCheckResult] = {}
-    stats = CheckStats(
-        total_errors=0,
-        total_warnings=0,
-        files_modified=[],
-        checks_performed=[],
-    )
-    run_checks_pipeline(
-        adapter,
-        language,
-        checks_to_perform,
-        strict_mode,
-        timeout,
-        coverage_threshold,
-        progress_callback,
-        results,
-        stats,
-    )
-    return results, stats
-
-
-def _build_response(
-    results: dict[str, CheckResult | TestResult | QualityCheckResult],
-    stats: CheckStats,
-    detected_language: str,
-) -> ModelDict:
-    """Build response dict (FastMCP serializes to JSON; avoids double-encoding)."""
-    total_errors = stats.total_errors
-    success = total_errors == 0
-    response = PreCommitResult(
-        status=OperationStatus.SUCCESS if success else OperationStatus.ERROR,
-        language=detected_language,
-        checks_performed=stats.checks_performed,
-        results=results,
-        total_errors=total_errors,
-        total_warnings=stats.total_warnings,
-        files_modified=list(set(stats.files_modified)),
-        success=success,
-    )
-    data = response.model_dump(mode="json")
-    compact = truncate_large_logs_in_data(data)
-    return ensure_json_serializable_for_mcp(cast(ModelDict, compact))
 
 
 @mcp.tool(  # pyright: ignore[reportUntypedFunctionDecorator]

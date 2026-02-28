@@ -1,10 +1,8 @@
 import json
 
 from cortex.core.models import ResponseFormat
-from cortex.tools.validation_operations import (
-    ValidateCheckTypeName,
-    format_validate_response,
-)
+from cortex.tools.validation_helpers import ValidationCheckType
+from cortex.tools.validation_response_formatters import format_validate_response
 
 
 def test_format_validate_response_schema_single_concise() -> None:
@@ -23,7 +21,7 @@ def test_format_validate_response_schema_single_concise() -> None:
 
     out = format_validate_response(
         raw,
-        check_type=ValidateCheckTypeName.SCHEMA,
+        check_type=ValidationCheckType.SCHEMA,
         response_format=ResponseFormat.CONCISE,
     )
     data = json.loads(out)
@@ -39,7 +37,7 @@ def test_format_validate_response_detailed_passthrough() -> None:
     original = json.dumps({"status": "success", "check_type": "schema"})
     out = format_validate_response(
         original,
-        check_type=ValidateCheckTypeName.SCHEMA,
+        check_type=ValidationCheckType.SCHEMA,
         response_format=ResponseFormat.DETAILED,
     )
     assert out == original
@@ -58,7 +56,7 @@ def test_format_validate_response_error_status_passthrough() -> None:
 
     out = format_validate_response(
         original,
-        check_type=ValidateCheckTypeName.SCHEMA,
+        check_type=ValidationCheckType.SCHEMA,
         response_format=ResponseFormat.CONCISE,
     )
 
@@ -78,7 +76,7 @@ def test_format_validate_response_non_schema_uses_top_level_valid_flag() -> None
 
     out = format_validate_response(
         raw,
-        check_type=ValidateCheckTypeName.DUPLICATIONS,
+        check_type=ValidationCheckType.DUPLICATIONS,
         response_format=ResponseFormat.CONCISE,
     )
     data = json.loads(out)
@@ -94,7 +92,7 @@ def test_format_validate_response_invalid_json_returns_raw() -> None:
 
     out = format_validate_response(
         original,
-        check_type=ValidateCheckTypeName.SCHEMA,
+        check_type=ValidationCheckType.SCHEMA,
         response_format=ResponseFormat.CONCISE,
     )
 
@@ -117,7 +115,7 @@ def test_format_validate_response_schema_prefers_inner_valid_over_top_level() ->
 
     out = format_validate_response(
         raw,
-        check_type=ValidateCheckTypeName.SCHEMA,
+        check_type=ValidationCheckType.SCHEMA,
         response_format=ResponseFormat.CONCISE,
     )
     data = json.loads(out)
@@ -143,7 +141,7 @@ def test_format_validate_response_schema_uses_top_level_when_no_inner_valid() ->
 
     out = format_validate_response(
         raw,
-        check_type=ValidateCheckTypeName.SCHEMA,
+        check_type=ValidationCheckType.SCHEMA,
         response_format=ResponseFormat.CONCISE,
     )
     data = json.loads(out)
