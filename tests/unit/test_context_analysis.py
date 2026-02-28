@@ -14,6 +14,17 @@ from cortex.tools.context_analysis_operations import (
 from cortex.tools.models import ContextUsageEntry
 
 
+def _enable_usage_writable(project_root: Path) -> None:
+    """Enable usage_writable so context stats are persisted (for tests needing persistence)."""
+    cortex_dir = project_root / ".cortex"
+    cortex_dir.mkdir(parents=True, exist_ok=True)
+    synapse_dir = cortex_dir / "synapse"
+    synapse_dir.mkdir(parents=True, exist_ok=True)
+    _ = (synapse_dir / "config.json").write_text(
+        '{"usage_writable": true}', encoding="utf-8"
+    )
+
+
 class TestAnalyzeSessionLogs:
     """Tests for session log analysis."""
 
@@ -89,6 +100,7 @@ class TestAnalyzeSessionLogs:
             json.dumps(log_data)
         )
 
+        _enable_usage_writable(tmp_path)
         # First analysis
         _ = analyze_session_logs(tmp_path)
 
@@ -520,6 +532,7 @@ class TestInsightGeneration:
             json.dumps(log_data)
         )
 
+        _enable_usage_writable(tmp_path)
         # Act
         _ = analyze_session_logs(tmp_path)
         result = get_context_statistics(tmp_path)

@@ -39,17 +39,23 @@ def _validate_relative_key(relative_key: str) -> None:
         raise ValueError(f"Invalid cache key: {relative_key!r}")
 
 
-def _resolve_cache_file(project_root: Path, relative_key: str) -> Path:
-    """Resolve relative_key under .cortex/.cache; validate it stays under cache."""
+def _resolve_cache_file(
+    project_root: Path, relative_key: str, cache_root: Path | None = None
+) -> Path:
+    """Resolve relative_key under cache; validate it stays under cache.
+
+    When cache_root is provided, use it as base; otherwise use
+    get_cache_path(project_root, None).
+    """
     _validate_relative_key(relative_key)
-    cache_dir = get_cache_path(project_root, None)
-    full = (cache_dir / relative_key).resolve()
-    cache_resolved = cache_dir.resolve()
+    base = cache_root if cache_root is not None else get_cache_path(project_root, None)
+    full = (base / relative_key).resolve()
+    base_resolved = base.resolve()
     try:
-        _ = full.relative_to(cache_resolved)
+        _ = full.relative_to(base_resolved)
     except ValueError:
         raise ValueError(
-            f"Cache key {relative_key!r} resolves outside .cortex/.cache"
+            f"Cache key {relative_key!r} resolves outside cache root"
         ) from None
     return full
 
@@ -106,9 +112,13 @@ async def read_cache_json(
     relative_key: str,
     *,
     timeout_seconds: float = _DEFAULT_TIMEOUT,
+    cache_root: Path | None = None,
 ) -> dict[str, object] | list[object] | None:
-    """Read a JSON file from .cortex/.cache with lock. Returns None if missing/invalid."""
-    path = _resolve_cache_file(project_root, relative_key)
+    """Read a JSON file from cache with lock. Returns None if missing/invalid.
+
+    When cache_root is provided, use it as base; otherwise project .cortex/.cache.
+    """
+    path = _resolve_cache_file(project_root, relative_key, cache_root=cache_root)
     lock_path = _lock_path_for(path)
     await _acquire_lock(lock_path, timeout_seconds)
     try:
@@ -200,9 +210,14 @@ async def read_modify_write_cache_json(
     *,
     indent: int = 2,
     timeout_seconds: float = _DEFAULT_TIMEOUT,
+    cache_root: Path | None = None,
 ) -> None:
-    """Atomically read, update, and write a cache JSON file (single lock)."""
-    path = _resolve_cache_file(project_root, relative_key)
+    """Atomically read, update, and write a cache JSON file (single lock).
+
+    When cache_root is provided, use it as base instead of project .cortex/.cache.
+    Used for Synapse usage storage when usage_writable is true.
+    """
+    path = _resolve_cache_file(project_root, relative_key, cache_root=cache_root)
     lock_path = _lock_path_for(path)
     await _acquire_lock(lock_path, timeout_seconds)
     try:

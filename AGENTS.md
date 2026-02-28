@@ -124,6 +124,7 @@ The commit workflow is organized into phases (see `docs/design/commit-pipeline-p
 
 ## Learned User Preferences
 
+- When the user says to add something to a plan instead of coding (e.g. "Don't code now. Add it in plan"), add it to the plan and do not implement immediately.
 - When enforcing new coding standards (e.g., Literal→enum), update `.cortex/synapse/rules/python` so the rule is reflected there.
 - When refactoring, briefly explain why the new approach is better, especially when the change is non-obvious.
 - When consolidating tools or updating tool descriptions, follow `docs/guides/tool-description-altitude-rubric.md` (target score ≥4).

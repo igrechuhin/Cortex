@@ -30,6 +30,19 @@ All structured data uses Pydantic `BaseModel` (no TypedDict).
 
 Paths are resolved via `get_cache_path(project_root, "usage")` from `cortex.core.path_resolver`.
 
+### Synapse Usage Storage and Static Snapshot Mode
+
+When a Synapse fork opts in via `usage_writable: true` in `.cortex/synapse/config.json`:
+
+- **Storage location**: Usage events are written to `.cortex/synapse/.cache/usage/events/` (committed to Synapse for cross-project aggregation).
+- **Config**: `{"usage_writable": true}` in `.cortex/synapse/config.json`.
+- **Cross-project flow**: Consumer projects push usage into their Synapse submodule; the Synapse fork receives aggregated data.
+
+When `usage_writable` is `false` or absent (default):
+
+- **Static snapshot**: Cortex does not write any usage statistics (tools, context stats, prompts, resources). No population of usage stores.
+- **Read-only**: `query_usage` and `get_tool_usage_stats` may still read from project-local cache if present (backward compat).
+
 ### Querying Usage JSON with jq (Step 11)
 
 Power users can inspect raw usage events directly from the JSON files for ad-hoc analysis or dashboards without adding an HTTP API.

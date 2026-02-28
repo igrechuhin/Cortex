@@ -1,5 +1,10 @@
 # Progress Log
 
+## 2026-02-28
+
+- **Synapse Usage Storage with usage_writable and Static Snapshot Mode (2026-02-28)** - COMPLETE. Added load_synapse_usage_config, is_usage_writable, get_usage_storage_root; gated UsageTracker.record_tool_usage and context stats save_statistics; wired Synapse .cache for usage when usage_writable=true; updated tool-usage-tracking doc.
+- Commit (2026-02-28) - Fixed function length violation in usage_tracker.record_tool_usage; extracted_build_and_persist_usage_event. Phase A passed; 4867 tests, 92.61% coverage.
+
 ## 2026-02-27
 
 - **Phase 9.7 Error Handling Polish (2026-02-27)** - COMPLETE. Improved error messages (MCP connection, tool not found suggestions in tool_error_formatters), added generic connection fallback in mcp_stability_config, documented MCP connection failure in failure-modes.md and error-recovery.md; retry/graceful degradation already present.
@@ -240,22 +245,7 @@
 
 ## 2026-02-20
 
-- **Session Optimization: Analyze 2026-02-18 Follow-ups** - COMPLETE. Step 12.5 retry and user guidance to reconnect MCP and re-run commit; load_context zero-budget/zero-files documented in troubleshooting; manage_file contract in analyze prompt and Pre-Analysis Checklist.
-- **Blocker: Resolve Cortex MCP Disconnects During Commit (Steps 1–3)** - Runbook and docs: added MCP disconnect runbook to troubleshooting.md, commit-pipeline tools table to mcp-tool-timeouts.md; commit prompt updated with optional health check before 12.7, runbook links, and reconnect/re-run messaging; integration test for runbook reference. Step 5 (run commit pipeline twice) pending.
-- **Blocker: Resolve Cortex MCP Server Disconnects During Commit** - COMPLETE. Runbook, timeout alignment, and commit prompt resilience in place; full commit pipeline validated (Steps 0–15 passed).
-- **Session Optimization: Progress Entry Validation and Write Quality (2026-02-18 Analysis)** - COMPLETE. Date and progress-entry validation in tools; template and write-quality guidance in implement prompt and memory-bank-updater.
-- **Session Optimization: Memory bank write discipline (2026-02-20)** - COMPLETE. Added explicit reminders about manage_file-only for roadmap edits in implement prompt, analyze prompt, and memory-bank-updater agent.
-- **Session Optimization: Testing Standards and Code Quality Improvements (2026-02-19 Analysis) (2026-02-20)** - COMPLETE. Implement prompt and rules updated for testing standards and proactive helper extraction; Pyright guidance documented.
-- **Promote response_format Literal to Pydantic Enum (2026-02-20)** - COMPLETE. Replaced Literal["concise", "detailed"] with ResponseFormat(str, Enum) across 5 tool modules and consolidated query params; added unit tests for enum and serialization.
-- **Session Optimization: Analyze 2026-02-19 Follow-ups (2026-02-20)** - COMPLETE. Implemented load_context budget examples, memory-bank MCP-only edit reminders, and roadmap sync guidance in implement, analyze, and create-plan prompts.
-- **Session Optimization: Step 12.7 MCP Connection Stability Enhancements (2026-02-20)** - COMPLETE. Implemented connection health check before Step 12.7, enhanced retry logic with exponential backoff, connection stability monitoring, and documentation updates.
-- **Promote load_context depth Literal to Pydantic Enum (2026-02-20)** - COMPLETE. Replaced Literal type annotations with ContextDepth(str, Enum) for load_context depth parameter. Updated all handlers and operations to use enum. Maintained backward compatibility with string coercion. All tests pass (4328/4328), quality gate passed.
-- **Encourage enums for all fixed-set fields in Python Pydantic standards (2026-02-20)** - COMPLETE. Updated python-pydantic-standards.mdc to encourage enums (or project enums) for all fixed-set fields (status, priority, state, etc.), not only status; aligned with python-coding-standards and DRY principles. Changed section title from "Status Fields" to "Fixed-Set Fields" and updated guidance to prefer enums over Literal for reused or branched-on sets.
-- **Phase 56 Step 2: Implement compact_session Tool (2026-02-20)** - COMPLETE. Implemented compact_session tool in compaction_operations.py with safe compaction (pre-compaction snapshots saved to .cortex/.cache/session/), rollback mechanism, session handoff JSON write, and comprehensive unit tests covering success paths, missing files, snapshots, managers not initialized, and file conflict errors. Integration with analyze prompt already complete. Quality gate passes.
-- **Phase 56 Step 3: Structured Session Handoff (2026-02-20)** - COMPLETE. Added unit tests for session_start handoff integration. SessionHandoff model, read/write functions, and session_start integration already implemented. Tests verify handoff is included in SessionBrief when present and None when missing.
-- **Blocker: MCP disconnects during commit – Step 4 (2026-02-20)** - COMPLETE. Server-side retry for fix_markdown_lint: 4 attempts with exponential backoff (1s, 2s, 4s). Per-tool retry config in mcp_stability_config; is_connection_error, raise_final_error, raise_if_retries_exhausted moved to config. Unit tests for retry config and 4-attempt behavior. Troubleshooting updated.
-- **Commit (preflight, memory bank, plan archive)** - Preflight passed: fix_errors, format, markdown lint (0 errors), type_check, quality, tests 4336 passed, 91.84% coverage. No completed plans in plans root; memory bank and roadmap consistent.
-- **Blocker: MCP disconnects during commit (2026-02-20)** - COMPLETE. Server-side retry, health check, runbook; Step 5 validation passed; manual /cortex/commit run recommended.
+- **Week containing 2026-02-20** - 1 entries summarized.
 
 ## 2026-02-19
 

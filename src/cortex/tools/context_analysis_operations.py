@@ -17,6 +17,7 @@ from cortex.core.session_logger import (
     list_session_logs,
     read_session_log,
 )
+from cortex.core.synapse_usage_config import is_usage_writable
 from cortex.tools.context_analysis_operations_insights import (
     extract_task_pattern,
     generate_insights,
@@ -112,7 +113,7 @@ def _update_global_stats(
     project_root: Path, session_id: str, entries: list[ContextUsageEntry]
 ) -> tuple[ContextUsageStatistics, int]:
     """Update global statistics with new session entries. Returns
-    (stats, new_entries_count)."""
+    (stats, new_entries_count). When usage_writable is false, skips persist."""
     stats_path = get_statistics_path(project_root)
     stats = load_statistics(stats_path)
     existing_sessions = {e.session_id for e in stats.entries}
@@ -122,7 +123,8 @@ def _update_global_stats(
         stats.total_sessions_analyzed += 1
         stats.last_updated = datetime.now().isoformat(timespec="minutes")
         _update_aggregates(stats)
-        save_statistics(stats_path, stats)
+        if is_usage_writable(project_root):
+            save_statistics(stats_path, stats)
         new_entries_added = len(entries)
     return stats, new_entries_added
 
@@ -256,7 +258,8 @@ def analyze_session_logs(project_root: Path) -> SessionLogsAnalysisResult:
         stats.total_sessions_analyzed += sessions_analyzed
         stats.last_updated = datetime.now().isoformat(timespec="minutes")
         _update_aggregates(stats)
-        save_statistics(stats_path, stats)
+        if is_usage_writable(project_root):
+            save_statistics(stats_path, stats)
 
     return _build_session_logs_result(sessions_analyzed, new_entries, stats)
 

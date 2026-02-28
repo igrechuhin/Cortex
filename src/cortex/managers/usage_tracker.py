@@ -9,6 +9,7 @@ from cortex.core.cache_json_access import read_cache_json, read_modify_write_cac
 from cortex.core.cache_utils import CacheType, get_cache_dir
 from cortex.core.models import HandlerKind
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
+from cortex.core.synapse_usage_config import get_usage_storage_root, is_usage_writable
 from cortex.managers.usage_models import ToolUsageEvent, ToolUsageStats
 
 
@@ -190,6 +191,36 @@ class UsageTracker:
             response_tokens=response_tokens,
         )
 
+    async def _build_and_persist_usage_event(
+        self,
+        tool_name: str,
+        duration_ms: float,
+        success: bool,
+        error_type: str | None,
+        params_hash: str | None,
+        handler_kind: HandlerKind,
+        result_summary: str | None,
+        retry_count: int | None,
+        param_validation_failure: str | None,
+        result_used: bool | None,
+        response_tokens: int | None,
+    ) -> None:
+        """Build a usage event and persist it to storage."""
+        event = self._build_usage_event(
+            tool_name,
+            duration_ms,
+            success,
+            error_type,
+            params_hash,
+            handler_kind,
+            result_summary,
+            retry_count,
+            param_validation_failure,
+            result_used,
+            response_tokens,
+        )
+        await _persist_event(self._project_root, event)
+
     async def record_tool_usage(
         self,
         tool_name: str,
@@ -205,9 +236,11 @@ class UsageTracker:
         response_tokens: int | None = None,
     ) -> None:
         """Record a single tool or resource usage event."""
-        if not self._should_record_event(tool_name, duration_ms):
+        if not is_usage_writable(self._project_root) or not self._should_record_event(
+            tool_name, duration_ms
+        ):
             return
-        event = self._build_usage_event(
+        await self._build_and_persist_usage_event(
             tool_name,
             duration_ms,
             success,
@@ -220,7 +253,6 @@ class UsageTracker:
             result_used,
             response_tokens,
         )
-        await _persist_event(self._project_root, event)
 
     async def get_usage_stats(
         self,
@@ -474,13 +506,15 @@ def _filter_events_by_query(
 
 
 async def _persist_event(project_root: Path, event: ToolUsageEvent) -> None:
-    """Append a single event to .cortex/.cache/usage/events/{date}.json (concurrent-safe).
+    """Append a single event to usage/events/{date}.json (concurrent-safe).
 
-    Uses read_modify_write_cache_json so all tool/resource requests are tracked
-    reliably from multiple chat sessions.
+    When usage_writable is true, writes to Synapse .cache (project_root/.cortex/
+    synapse/.cache/usage/events/). Uses read_modify_write_cache_json for
+    reliable multi-session tracking.
     """
     date_str = event.timestamp[:10]
     relative_key = f"usage/events/{date_str}.json"
+    cache_root = get_usage_storage_root(project_root)
 
     def append_event(existing: list[object] | dict[str, object]) -> list[object]:
         lst = list(existing) if isinstance(existing, list) else []
@@ -492,6 +526,7 @@ async def _persist_event(project_root: Path, event: ToolUsageEvent) -> None:
         relative_key,
         append_event,
         default=[],
+        cache_root=cache_root,
     )
 
 
@@ -556,12 +591,16 @@ async def _load_events_in_range(
     end_date: datetime | None,
     tool_name: str | None,
 ) -> list[ToolUsageEvent]:
-    """Load events from daily JSON files in the given range (concurrent-safe)."""
+    """Load events from daily JSON files in the given range (concurrent-safe).
+
+    Uses get_usage_storage_root so reads match write location (Synapse or project).
+    """
     start_str = (start_date or datetime.now(UTC) - timedelta(days=365)).strftime(
         "%Y-%m-%d"
     )
     end_str = (end_date or datetime.now(UTC)).strftime("%Y-%m-%d")
     events: list[ToolUsageEvent] = []
+    storage_root = get_usage_storage_root(project_root)
     start_d = datetime.strptime(start_str, "%Y-%m-%d").date()
     end_d = datetime.strptime(end_str, "%Y-%m-%d").date()
     delta = timedelta(days=1)
@@ -569,7 +608,7 @@ async def _load_events_in_range(
     while d <= end_d:
         date_str = d.strftime("%Y-%m-%d")
         relative_key = f"usage/events/{date_str}.json"
-        raw = await read_cache_json(project_root, relative_key)
+        raw = await read_cache_json(project_root, relative_key, cache_root=storage_root)
         if isinstance(raw, list):
             content = __import__("json").dumps(raw)
             events.extend(_parse_events_from_content(content, tool_name))

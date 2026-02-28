@@ -9,6 +9,7 @@ import pytest
 from cortex.core.cache_json_access import read_cache_json
 from cortex.core.cache_utils import get_cache_dir
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
+from cortex.core.synapse_usage_config import get_usage_storage_root
 from cortex.managers.usage_tracker import (
     UsageTracker,
     generate_usage_event_id,
@@ -16,10 +17,20 @@ from cortex.managers.usage_tracker import (
 )
 
 
-def _make_project_root(tmp_path: Path) -> Path:
-    """Create a project root with .cortex/.cache for usage storage."""
+def _make_project_root(tmp_path: Path, usage_writable: bool = False) -> Path:
+    """Create a project root with .cortex/.cache for usage storage.
+
+    When usage_writable is True, adds .cortex/synapse/config.json so
+    usage events are persisted. Default False = static snapshot (no writes).
+    """
     root = tmp_path / "project"
     get_cache_dir(root).mkdir(parents=True)
+    if usage_writable:
+        synapse_dir = get_cortex_path(root, CortexResourceType.SYNAPSE)
+        synapse_dir.mkdir(parents=True)
+        _ = (synapse_dir / "config.json").write_text(
+            '{"usage_writable": true}', encoding="utf-8"
+        )
     return root
 
 
@@ -34,8 +45,8 @@ class TestUsageTrackerInitialization:
 
     @pytest.mark.asyncio
     async def test_record_works_with_default_config(self, tmp_path: Path) -> None:
-        """Test recording works when .cortex/config/usage_tracking.json missing."""
-        root = _make_project_root(tmp_path)
+        """Test recording works when usage_writable true and config minimal."""
+        root = _make_project_root(tmp_path, usage_writable=True)
         tracker = UsageTracker(root)
         await tracker.record_tool_usage("test_tool", 1.0, True)
         result = await tracker.get_usage_stats()
@@ -104,9 +115,20 @@ class TestRecordToolUsage:
     """Test record_tool_usage."""
 
     @pytest.mark.asyncio
+    async def test_record_does_not_persist_when_usage_writable_false(
+        self, tmp_path: Path
+    ) -> None:
+        """When usage_writable is false (static snapshot), no events are persisted."""
+        root = _make_project_root(tmp_path)
+        tracker = UsageTracker(root)
+        await tracker.record_tool_usage("test_tool", 1.0, True)
+        result = await tracker.get_usage_stats()
+        assert result.get("total_events", 0) == 0
+
+    @pytest.mark.asyncio
     async def test_record_creates_event_file(self, tmp_path: Path) -> None:
         """Test recording creates events visible via get_usage_stats."""
-        root = _make_project_root(tmp_path)
+        root = _make_project_root(tmp_path, usage_writable=True)
         tracker = UsageTracker(root)
         await tracker.record_tool_usage(
             tool_name="manage_file",
@@ -131,7 +153,7 @@ class TestRecordToolUsage:
     @pytest.mark.asyncio
     async def test_record_persists_event_id(self, tmp_path: Path) -> None:
         """Recorded events include a stable id field in persisted JSON."""
-        root = _make_project_root(tmp_path)
+        root = _make_project_root(tmp_path, usage_writable=True)
         tracker = UsageTracker(root)
         await tracker.record_tool_usage(
             tool_name="with_id",
@@ -140,7 +162,8 @@ class TestRecordToolUsage:
         )
         today = datetime.now(UTC).strftime("%Y-%m-%d")
         relative_key = f"usage/events/{today}.json"
-        raw = await read_cache_json(root, relative_key)
+        storage_root = get_usage_storage_root(root)
+        raw = await read_cache_json(root, relative_key, cache_root=storage_root)
         assert isinstance(raw, list) and raw
         first = raw[0]
         first_d = cast(dict[str, object], first) if isinstance(first, dict) else {}
@@ -151,7 +174,7 @@ class TestRecordToolUsage:
     @pytest.mark.asyncio
     async def test_record_appends_to_existing_file(self, tmp_path: Path) -> None:
         """Test recording multiple events aggregates correctly."""
-        root = _make_project_root(tmp_path)
+        root = _make_project_root(tmp_path, usage_writable=True)
         tracker = UsageTracker(root)
         await tracker.record_tool_usage(
             tool_name="manage_file",
@@ -181,7 +204,7 @@ class TestRecordToolUsage:
     @pytest.mark.asyncio
     async def test_record_with_response_tokens(self, tmp_path: Path) -> None:
         """Test recording with response_tokens (Phase 62 token-efficiency tracking)."""
-        root = _make_project_root(tmp_path)
+        root = _make_project_root(tmp_path, usage_writable=True)
         tracker = UsageTracker(root)
         await tracker.record_tool_usage(
             tool_name="load_context",
@@ -191,7 +214,8 @@ class TestRecordToolUsage:
         )
         today = datetime.now(UTC).strftime("%Y-%m-%d")
         relative_key = f"usage/events/{today}.json"
-        raw = await read_cache_json(root, relative_key)
+        storage_root = get_usage_storage_root(root)
+        raw = await read_cache_json(root, relative_key, cache_root=storage_root)
         assert isinstance(raw, list) and raw
         first = raw[0]
         first_d = cast(dict[str, object], first) if isinstance(first, dict) else {}
@@ -202,7 +226,7 @@ class TestRecordToolUsage:
         self, tmp_path: Path
     ) -> None:
         """Test Phase 57 retry_count and param_validation_failure are persisted."""
-        root = _make_project_root(tmp_path)
+        root = _make_project_root(tmp_path, usage_writable=True)
         tracker = UsageTracker(root)
         await tracker.record_tool_usage(
             tool_name="test_tool",
@@ -213,7 +237,8 @@ class TestRecordToolUsage:
         )
         today = datetime.now(UTC).strftime("%Y-%m-%d")
         relative_key = f"usage/events/{today}.json"
-        raw = await read_cache_json(root, relative_key)
+        storage_root = get_usage_storage_root(root)
+        raw = await read_cache_json(root, relative_key, cache_root=storage_root)
         assert isinstance(raw, list) and raw
         first = raw[0]
         first_d = cast(dict[str, object], first) if isinstance(first, dict) else {}
@@ -226,7 +251,7 @@ class TestRecordToolUsage:
             error_type="ValidationError",
             param_validation_failure="task_description: required",
         )
-        raw2 = await read_cache_json(root, relative_key)
+        raw2 = await read_cache_json(root, relative_key, cache_root=storage_root)
         assert isinstance(raw2, list) and len(raw2) >= 2
         candidates: list[dict[str, object]] = [
             cast(dict[str, object], e)
@@ -249,7 +274,7 @@ class TestResultSummaryPersistence:
         """result_summary is persisted when tool is enabled in config."""
         import json
 
-        root = _make_project_root(tmp_path)
+        root = _make_project_root(tmp_path, usage_writable=True)
         config_dir = get_cortex_path(root, CortexResourceType.CONFIG)
         config_dir.mkdir(parents=True, exist_ok=True)
         cfg_path = config_dir / "usage_tracking.json"
@@ -270,7 +295,8 @@ class TestResultSummaryPersistence:
         )
         today = datetime.now(UTC).strftime("%Y-%m-%d")
         relative_key = f"usage/events/{today}.json"
-        raw = await read_cache_json(root, relative_key)
+        storage_root = get_usage_storage_root(root)
+        raw = await read_cache_json(root, relative_key, cache_root=storage_root)
         assert isinstance(raw, list) and raw
         first = raw[0]
         first_d = cast(dict[str, object], first) if isinstance(first, dict) else {}
@@ -282,7 +308,7 @@ class TestResultSummaryPersistence:
         tmp_path: Path,
     ) -> None:
         """result_summary is not stored when tool is not enabled in config."""
-        root = _make_project_root(tmp_path)
+        root = _make_project_root(tmp_path, usage_writable=True)
         tracker = UsageTracker(root)
         await tracker.record_tool_usage(
             tool_name="other_tool",
@@ -292,7 +318,8 @@ class TestResultSummaryPersistence:
         )
         today = datetime.now(UTC).strftime("%Y-%m-%d")
         relative_key = f"usage/events/{today}.json"
-        raw = await read_cache_json(root, relative_key)
+        storage_root = get_usage_storage_root(root)
+        raw = await read_cache_json(root, relative_key, cache_root=storage_root)
         assert isinstance(raw, list) and raw
         first = raw[0]
         first_d = cast(dict[str, object], first) if isinstance(first, dict) else {}
@@ -315,7 +342,7 @@ class TestGetUsageStats:
     @pytest.mark.asyncio
     async def test_get_usage_stats_aggregates_events(self, tmp_path: Path) -> None:
         """Test get_usage_stats aggregates recorded events."""
-        root = _make_project_root(tmp_path)
+        root = _make_project_root(tmp_path, usage_writable=True)
         tracker = UsageTracker(root)
         await tracker.record_tool_usage("manage_file", 10.0, True)
         await tracker.record_tool_usage("manage_file", 20.0, True)
@@ -379,7 +406,7 @@ class TestGetUnusedTools:
     @pytest.mark.asyncio
     async def test_get_unused_tools_filters_low_usage(self, tmp_path: Path) -> None:
         """Test get_unused_tools returns tools at or below threshold."""
-        root = _make_project_root(tmp_path)
+        root = _make_project_root(tmp_path, usage_writable=True)
         tracker = UsageTracker(root)
         await tracker.record_tool_usage("manage_file", 1.0, True)
         await tracker.record_tool_usage("manage_file", 1.0, True)
@@ -422,7 +449,7 @@ class TestAggregateEventsViaStats:
     @pytest.mark.asyncio
     async def test_single_event_stats(self, tmp_path: Path) -> None:
         """Test single event produces correct aggregated stats."""
-        root = _make_project_root(tmp_path)
+        root = _make_project_root(tmp_path, usage_writable=True)
         tracker = UsageTracker(root)
         await tracker.record_tool_usage("single_tool", 10.0, True)
         result = await tracker.get_usage_stats()
@@ -447,12 +474,13 @@ class TestGetEventById:
         tmp_path: Path,
     ) -> None:
         """get_event_by_id returns event when id exists."""
-        root = _make_project_root(tmp_path)
+        root = _make_project_root(tmp_path, usage_writable=True)
         tracker = UsageTracker(root)
         await tracker.record_tool_usage("tool_a", 1.0, True)
         today = datetime.now(UTC).strftime("%Y-%m-%d")
         relative_key = f"usage/events/{today}.json"
-        raw = await read_cache_json(root, relative_key)
+        storage_root = get_usage_storage_root(root)
+        raw = await read_cache_json(root, relative_key, cache_root=storage_root)
         assert isinstance(raw, list) and raw
         first = raw[0]
         first_d = cast(dict[str, object], first) if isinstance(first, dict) else {}
@@ -483,13 +511,14 @@ class TestGetEventsByIds:
         tmp_path: Path,
     ) -> None:
         """get_events_by_ids returns all events matching provided IDs."""
-        root = _make_project_root(tmp_path)
+        root = _make_project_root(tmp_path, usage_writable=True)
         tracker = UsageTracker(root)
         await tracker.record_tool_usage("tool_a", 1.0, True)
         await tracker.record_tool_usage("tool_b", 2.0, False, error_type="Err")
         today = datetime.now(UTC).strftime("%Y-%m-%d")
         relative_key = f"usage/events/{today}.json"
-        raw = await read_cache_json(root, relative_key)
+        storage_root = get_usage_storage_root(root)
+        raw = await read_cache_json(root, relative_key, cache_root=storage_root)
         assert isinstance(raw, list) and len(raw) >= 2
         first = cast(dict[str, object], raw[0])
         second = cast(dict[str, object], raw[1])
@@ -506,13 +535,14 @@ class TestGetEventsByIds:
         tmp_path: Path,
     ) -> None:
         """get_events_by_ids skips missing IDs and preserves requested order."""
-        root = _make_project_root(tmp_path)
+        root = _make_project_root(tmp_path, usage_writable=True)
         tracker = UsageTracker(root)
         await tracker.record_tool_usage("tool_a", 1.0, True)
         await tracker.record_tool_usage("tool_b", 2.0, True)
         today = datetime.now(UTC).strftime("%Y-%m-%d")
         relative_key = f"usage/events/{today}.json"
-        raw = await read_cache_json(root, relative_key)
+        storage_root = get_usage_storage_root(root)
+        raw = await read_cache_json(root, relative_key, cache_root=storage_root)
         assert isinstance(raw, list) and len(raw) >= 2
         first = cast(dict[str, object], raw[0])
         second = cast(dict[str, object], raw[1])
@@ -532,7 +562,7 @@ class TestSearchUsage:
         tmp_path: Path,
     ) -> None:
         """search_usage returns limited, time-sorted events."""
-        root = _make_project_root(tmp_path)
+        root = _make_project_root(tmp_path, usage_writable=True)
         tracker = UsageTracker(root)
         await tracker.record_tool_usage("tool_a", 5.0, True)
         await tracker.record_tool_usage("tool_a", 10.0, False)
@@ -554,7 +584,7 @@ class TestSearchUsage:
         tmp_path: Path,
     ) -> None:
         """search_usage filters events by tool_name and success flag."""
-        root = _make_project_root(tmp_path)
+        root = _make_project_root(tmp_path, usage_writable=True)
         tracker = UsageTracker(root)
         await tracker.record_tool_usage("tool_a", 5.0, True)
         await tracker.record_tool_usage("tool_a", 10.0, False)
@@ -581,7 +611,7 @@ class TestGetUsageTimelineBasic:
         tmp_path: Path,
     ) -> None:
         """get_usage_timeline returns sorted events including the center ID."""
-        root = _make_project_root(tmp_path)
+        root = _make_project_root(tmp_path, usage_writable=True)
         tracker = UsageTracker(root)
         # Record multiple events so we have context around a middle ID.
         await tracker.record_tool_usage("tool_a", 5.0, True)
@@ -590,7 +620,8 @@ class TestGetUsageTimelineBasic:
 
         today = datetime.now(UTC).strftime("%Y-%m-%d")
         relative_key = f"usage/events/{today}.json"
-        raw = await read_cache_json(root, relative_key)
+        storage_root = get_usage_storage_root(root)
+        raw = await read_cache_json(root, relative_key, cache_root=storage_root)
         assert isinstance(raw, list) and len(raw) >= 3
 
         # Use the second event as the center of the timeline.
@@ -611,7 +642,7 @@ class TestGetUsageTimelineBasic:
         tmp_path: Path,
     ) -> None:
         """get_usage_timeline returns empty list when ID is not found."""
-        root = _make_project_root(tmp_path)
+        root = _make_project_root(tmp_path, usage_writable=True)
         tracker = UsageTracker(root)
         await tracker.record_tool_usage("tool_a", 1.0, True)
 
@@ -624,7 +655,7 @@ class TestGetUsageTimelineBasic:
         tmp_path: Path,
     ) -> None:
         """get_usage_timeline returns empty list when limit is non-positive."""
-        root = _make_project_root(tmp_path)
+        root = _make_project_root(tmp_path, usage_writable=True)
         tracker = UsageTracker(root)
         await tracker.record_tool_usage("tool_a", 1.0, True)
 
@@ -639,7 +670,7 @@ class TestGetUsageTimelineBasic:
         tmp_path: Path,
     ) -> None:
         """search_usage filters events by keyword across basic text fields."""
-        root = _make_project_root(tmp_path)
+        root = _make_project_root(tmp_path, usage_writable=True)
         tracker = UsageTracker(root)
         await tracker.record_tool_usage("alpha_tool", 5.0, True)
         await tracker.record_tool_usage(
@@ -672,14 +703,15 @@ class TestGetUsageTimelineWindow:
         tmp_path: Path,
     ) -> None:
         """get_usage_timeline returns a chronological window around the id."""
-        root = _make_project_root(tmp_path)
+        root = _make_project_root(tmp_path, usage_writable=True)
         tracker = UsageTracker(root)
         # Record several events so we have context around a center event.
         for i in range(5):
             await tracker.record_tool_usage(f"tool_{i}", float(i + 1), True)
         today = datetime.now(UTC).strftime("%Y-%m-%d")
         relative_key = f"usage/events/{today}.json"
-        raw = await read_cache_json(root, relative_key)
+        storage_root = get_usage_storage_root(root)
+        raw = await read_cache_json(root, relative_key, cache_root=storage_root)
         assert isinstance(raw, list) and len(raw) >= 5
         events = [
             cast(dict[str, object], item) for item in raw if isinstance(item, dict)
@@ -700,7 +732,7 @@ class TestGetUsageTimelineWindow:
         tmp_path: Path,
     ) -> None:
         """get_usage_timeline returns empty list for missing id or non-positive limit."""
-        root = _make_project_root(tmp_path)
+        root = _make_project_root(tmp_path, usage_writable=True)
         tracker = UsageTracker(root)
         # No events yet: missing id yields empty list.
         result_no_events = await tracker.get_usage_timeline(
@@ -712,7 +744,8 @@ class TestGetUsageTimelineWindow:
         await tracker.record_tool_usage("tool_x", 1.0, True)
         today = datetime.now(UTC).strftime("%Y-%m-%d")
         relative_key = f"usage/events/{today}.json"
-        raw = await read_cache_json(root, relative_key)
+        storage_root = get_usage_storage_root(root)
+        raw = await read_cache_json(root, relative_key, cache_root=storage_root)
         assert isinstance(raw, list) and raw
         first = cast(dict[str, object], raw[0])
         existing_id = str(first.get("id"))

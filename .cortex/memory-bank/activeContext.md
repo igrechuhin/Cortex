@@ -2,19 +2,13 @@
 
 **This file records completed work only.** For current status and upcoming work see [roadmap.md](roadmap.md).
 
+## Completed Work (2026-02-28)
+
+- ✅ **Synapse Usage Storage with usage_writable and Static Snapshot Mode** - COMPLETE (2026-02-28) - Implemented usage_writable config, static snapshot gating for UsageTracker and context stats, Synapse storage root for usage when writable, and documentation updates.
+
 ## Completed Work (2026-02-27)
 
-- ✅ **Phase 9.7 Error Handling Polish** - COMPLETE (2026-02-27) - Improved error messages (MCP connection and tool-not-found suggestions), generic connection fallback for tools without specific fallbacks, documented MCP connection failure in failure-modes.md and error-recovery.md.
-
-- ✅ **Phase 9.8 Maintainability Polish** - COMPLETE (2026-02-27) - Reduced cyclomatic complexity in tool_error_formatters and validation_helpers via dispatch table and helper extraction; added module-level documentation. Preflight passed.
-
-- ✅ **Phase 9 excellence** - COMPLETE (2026-02-27) - Phase 9.1–9.9 COMPLETE (2026-02-27). Excellence polish: error handling, maintainability, final integration & validation.
-
-- ✅ **Optimize Exposed Tools from Usage Statistics** - COMPLETE (2026-02-27) - Census and mapping completed. Steps 3–4 N/A (no internalize/consolidate candidates this census). Documented exception for target 24 in baseline. Regression passed.
-
-- ✅ **Consolidate Plan and Roadmap Tools** - COMPLETE (2026-02-27) - Consolidated plan tools (create_plan, complete_plan) into plan(operation=create|list|get|complete) and roadmap tools (add_roadmap_entry, remove_roadmap_entry, remove_roadmap_section) into roadmap(operation=add_entry|remove_entry|remove_section). Tool count 40→37.
-
-- ✅ **Unify and Simplify Tools, Prompts, and Resources Naming** - COMPLETE (2026-02-27) - Defined naming rubric (docs/architecture/naming-conventions.md), inventory (naming-inventory-2026-02.md), proposals for tools/resources/prompts. Updated tools.md, AGENTS.md, tool-optimization-mapping.md, architecture.md. Added deprecation note to cortex://rules/relevant resource. Phase A passed.
+- **Summary (2026-02-27)** - 1 entries archived.
 
 ## Completed Work (2026-02-26)
 
