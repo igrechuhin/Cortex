@@ -1,3 +1,5 @@
+> **DEPRECATED**: This prompt has been unified. See [initialize.md](../initialize.md), [migrate.md](../migrate.md), or [setup-synapse.md](../setup-synapse.md).
+
 # Migrate Project Structure
 
 This prompt template guides you through migrating your project to the standardized structure.

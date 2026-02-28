@@ -1,3 +1,5 @@
+> **DEPRECATED**: This prompt has been unified. See [initialize.md](../initialize.md), [migrate.md](../migrate.md), or [setup-synapse.md](../setup-synapse.md).
+
 # Check Migration Status
 
 This prompt template guides you through checking if your Memory Bank needs migration.
@@ -66,6 +68,6 @@ The assistant will:
 
 ## Next Steps
 
-- If migration is needed, use the [Migrate Memory Bank](migrate-memory-bank.md) prompt
-- If not initialized, use the [Initialize Memory Bank](initialize-memory-bank.md) prompt
+- If migration is needed, use the [migrate.md](../migrate.md) prompt
+- If not initialized, use the [initialize.md](../initialize.md) prompt
 - If up to date, continue using Memory Bank normally

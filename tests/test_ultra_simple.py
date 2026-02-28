@@ -4,7 +4,7 @@
 import pytest
 
 # Note: check_migration_status has been replaced by prompt templates
-# See docs/prompts/check-migration-status.md
+# See docs/prompts/migrate.md
 
 
 @pytest.mark.asyncio

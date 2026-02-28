@@ -26,18 +26,7 @@ load_context(task_description="<your goal>", token_budget=<appropriate>)
 
 Token budget guidance comes from `load_context` tool documentation and context-effectiveness analysis. Use task-appropriate budgets.
 
-**Context budget defaults (task-type)**:
-
-| Task type | Token budget |
-|-----------|--------------|
-| implement/add, update/modify | 10,000 |
-| fix/debug, other | 15,000 |
-| small feature | 20,000–30,000 |
-| optimization | 15,000 |
-| narrow review/documentation | 7,000–8,000 |
-| architecture/large design | 40,000–50,000 |
-
-See implement prompt for full checklist and zero-budget guardrails.
+**Context budget defaults**: See [AGENTS.md](AGENTS.md#workflow) for the token budget table by task type. See implement prompt for full checklist and zero-budget guardrails.
 
 **AgentRole awareness**: The `load_context` tool automatically detects agent roles (feature/quality/testing/docs/planning/debugging/review) from task descriptions and uses role-aware context selection. Roles influence file prioritization and context-effectiveness analysis provides role-specific budget recommendations. The detected role is logged in session logs for analysis. See AGENTS.md for role descriptions, detection keywords, default budgets, and file focus preferences. Role-aware budget recommendations are available in `analyze_context_effectiveness()` insights.
 

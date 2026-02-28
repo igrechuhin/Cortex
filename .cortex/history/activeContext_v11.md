@@ -26,6 +26,14 @@
 
 - ✅ **Fix stale tool/test/module counts in documentation** - COMPLETE (2026-02-28) - Updated docs/architecture.md, docs/api (index), docs/testing-speed-optimization.md, AGENTS.md, README.md, tool-optimization-baseline.md: 100+→70+ tools, 3700+→4800+ tests, 41+→20+ modules, removed hardcoded test count.
 
+- ✅ **Fix session function naming inconsistency in AGENTS.md** - COMPLETE (2026-02-28) - Standardized session naming in AGENTS.md to session(operation="start"); added README equivalence note.
+
+- ✅ **Archive 7 legacy prompt docs superseded by 3 unified prompts** - COMPLETE (2026-02-28) - Archived 7 legacy prompt docs to docs/prompts/archive/ with deprecation headers; updated README and test references to unified prompts.
+
+- ✅ **Consolidate duplicate protocol documentation** - COMPLETE (2026-02-28) - Replaced docs/architecture/protocols.md with cross-reference to docs/api/protocols.md as canonical source; eliminated DRY violation.
+
+- ✅ **Deduplicate Token Budget Table** - COMPLETE (2026-02-28) - Replaced duplicated token budget table in CLAUDE.md with cross-reference to AGENTS.md. Table now exists only in AGENTS.md.
+
 ## Completed Work (2026-02-27)
 
 - **Summary (2026-02-27)** - 1 entries archived.

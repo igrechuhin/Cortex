@@ -16,12 +16,7 @@
 
 ### Fixes
 
-
 ### Documentation Cleanup (DRY)
-
-- **PENDING** Archive 7 legacy prompt docs superseded by 3 unified prompts. Plan: `.cortex/plans/plan-docs-archive-legacy-prompts.md`
-- **PENDING** Consolidate duplicate protocol documentation (2 files, same content). Plan: `.cortex/plans/plan-docs-consolidate-protocols.md`
-- **PENDING** Deduplicate token budget table (identical in CLAUDE.md and AGENTS.md). Plan: `.cortex/plans/plan-deduplicate-budget-table.md`
 
 ### Refactoring
 

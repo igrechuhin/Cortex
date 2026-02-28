@@ -4,7 +4,7 @@
 import pytest
 
 # Note: initialize_memory_bank has been replaced by prompt templates
-# See docs/prompts/initialize-memory-bank.md
+# See docs/prompts/initialize.md
 
 
 @pytest.mark.asyncio

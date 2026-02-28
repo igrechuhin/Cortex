@@ -1,3 +1,5 @@
+> **DEPRECATED**: This prompt has been unified. See [initialize.md](../initialize.md), [migrate.md](../migrate.md), or [setup-synapse.md](../setup-synapse.md).
+
 # Setup Shared Rules
 
 This prompt template guides you through setting up shared rules via Git submodule.

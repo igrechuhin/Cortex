@@ -14,6 +14,9 @@
 - **Rename roadmap-fix-temp.md to Permanent Name (2026-02-28)** - COMPLETE. Renamed docs/design/roadmap-fix-temp.md to docs/design/roadmap.md; updated references.
 - **Fix stale tool/test/module counts (2026-02-28)** - COMPLETE. Updated all docs to 70+ tools, 4800+ tests, 20+ modules; removed hardcoded AGENTS.md test count.
 - **Fix Session Naming (2026-02-28)** - COMPLETE. Standardized session naming in AGENTS.md; added README equivalence note.
+- **Archive Legacy Prompt Docs (2026-02-28)** - COMPLETE. Archived 7 legacy prompt docs to docs/prompts/archive/ with deprecation headers; updated README and test references to unified prompts (initialize.md, migrate.md).
+- **Consolidate Duplicate Protocol Docs (2026-02-28)** - COMPLETE. Replaced architecture protocols with cross-reference to API reference.
+- **Deduplicate Token Budget Table (2026-02-28)** - COMPLETE. Replaced duplicated token budget table in CLAUDE.md with cross-reference to AGENTS.md; table retained in AGENTS.md only.
 
 ## 2026-02-27
 

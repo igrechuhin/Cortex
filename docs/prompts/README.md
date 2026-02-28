@@ -60,7 +60,7 @@ Cortex registers each prompt with an **emoji icon** (per MCP spec): setup prompt
 ### Initializing a New Project
 
 ```markdown
-1. Read: docs/prompts/initialize-memory-bank.md
+1. Read: docs/prompts/initialize.md
 2. Send: "Please initialize a Memory Bank in my project at /path/to/project"
 3. Verify: Check that memory-bank/ directory exists with 7 files
 4. Customize: Fill in project-specific details in each file
@@ -69,12 +69,9 @@ Cortex registers each prompt with an **emoji icon** (per MCP spec): setup prompt
 ### Migrating an Existing Project
 
 ```markdown
-1. Read: docs/prompts/check-migration-status.md
-2. Send: "Please check if my Memory Bank at /path/to/project needs migration"
-3. If needed:
-   a. Read: docs/prompts/migrate-memory-bank.md
-   b. Send: "Please migrate my Memory Bank at /path/to/project"
-4. Verify: Check migration output and validate structure
+1. Read: docs/prompts/migrate.md
+2. Send: "Please migrate my Memory Bank at /path/to/project" (migrate detects and runs migration)
+3. Verify: Check migration output and validate structure
 ```
 
 ## Benefits of Prompt-Based Approach
@@ -106,6 +103,8 @@ This simplification:
 - Better matches user workflows (initialize new project vs. migrate existing)
 - Provides default synapse_repo_url for easier setup
 - Maintains all functionality while improving usability
+
+Legacy prompts (the 7 originals) are archived in [archive/](archive/) for reference.
 
 ## Contributing
 
