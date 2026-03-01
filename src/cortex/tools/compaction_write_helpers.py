@@ -34,7 +34,7 @@ from cortex.tools.compaction_helpers import (
     compact_active_context_completed_work,
     trim_recent_changes,
 )
-from cortex.tools.file_operations import execute_memory_bank_write
+from cortex.tools.files.file_operations import execute_memory_bank_write
 
 logger = logging.getLogger(__name__)
 

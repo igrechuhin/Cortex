@@ -986,7 +986,7 @@ class TestFixQualityIssues:
                     new_callable=AsyncMock,
                 ) as mock_execute,
                 patch(
-                    "cortex.tools.markdown_operations.fix_markdown_lint",
+                    "cortex.tools.files.markdown_operations.fix_markdown_lint",
                     new_callable=AsyncMock,
                 ) as mock_markdown,
             ):
@@ -1064,7 +1064,7 @@ class TestFixQualityIssues:
                     new_callable=AsyncMock,
                 ) as mock_execute,
                 patch(
-                    "cortex.tools.markdown_operations.fix_markdown_lint",
+                    "cortex.tools.files.markdown_operations.fix_markdown_lint",
                     new_callable=AsyncMock,
                 ) as mock_markdown,
             ):
@@ -1120,7 +1120,7 @@ class TestFixQualityIssues:
                     new_callable=AsyncMock,
                 ) as mock_execute,
                 patch(
-                    "cortex.tools.markdown_operations.fix_markdown_lint",
+                    "cortex.tools.files.markdown_operations.fix_markdown_lint",
                     new_callable=AsyncMock,
                 ) as mock_markdown,
             ):

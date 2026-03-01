@@ -9,19 +9,19 @@ Implementation is split across:
 
 Consumers should import from this module for backward compatibility.
 Tests that patch internals should patch the implementation modules
-(cortex.tools.markdown_lint_core, cortex.tools.markdown_lint_run).
+(cortex.tools.files.markdown_lint_core, cortex.tools.files.markdown_lint_run).
 """
 
 # pyright: reportPrivateUsage=false
 
-from cortex.tools.markdown_lint import (
+from cortex.tools.files.markdown_lint import (
     FileResult,
     FixMarkdownLintResult,
     calculate_statistics,
     fix_markdown_lint,
     run_markdownlint_with_cache,
 )
-from cortex.tools.markdown_lint_core import (
+from cortex.tools.files.markdown_lint_core import (
     _update_markdown_lint_cache_from_results,
     after_one_file,
     compute_file_hashes,
@@ -36,11 +36,11 @@ from cortex.tools.markdown_lint_core import (
     update_markdown_lint_cache_safe,
     validate_markdown_prerequisites,
 )
-from cortex.tools.markdown_lint_helpers import (
+from cortex.tools.files.markdown_lint_helpers import (
     parse_markdownlint_errors,
     parse_markdownlint_output,
 )
-from cortex.tools.markdown_lint_run import (
+from cortex.tools.files.markdown_lint_run import (
     _process_markdown_files_sequential,
     run_markdownlint_batch,
     run_markdownlint_fix,

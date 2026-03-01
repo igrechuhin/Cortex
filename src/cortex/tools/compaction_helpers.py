@@ -13,7 +13,10 @@ from cortex.tools.compaction_constants import (
     PROGRESS_DAYS_WEEKLY_SUMMARY,
     RECENT_CHANGES_MAX_ENTRIES,
 )
-from cortex.tools.file_section_helpers import find_section_end, find_section_heading
+from cortex.tools.files.file_section_helpers import (
+    find_section_end,
+    find_section_heading,
+)
 
 # Pattern for "## Completed Work (YYYY-MM-DD)"
 _COMPLETED_WORK_HEADING = re.compile(

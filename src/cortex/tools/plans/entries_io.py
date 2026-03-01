@@ -28,7 +28,7 @@ async def write_roadmap_file(
 ) -> str | None:
     """Write updated roadmap with lock-guarding. Returns error_message if failed."""
     if project_root is not None:
-        from cortex.tools.file_lock_guard import verify_lock_for_file_operation
+        from cortex.tools.files.file_lock_guard import verify_lock_for_file_operation
 
         is_allowed, lock_error = await verify_lock_for_file_operation(
             project_root=project_root,

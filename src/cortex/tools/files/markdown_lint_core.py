@@ -11,13 +11,16 @@ import aiofiles
 from cortex.core.constants import GIT_OPERATION_TIMEOUT_SECONDS
 from cortex.core.context_logging import MCPContext, log_client, report_progress_safe
 from cortex.core.models import GitCommandResult
-from cortex.tools.markdown_lint_cache import MarkdownLintIndex, save_markdown_lint_index
-from cortex.tools.markdown_lint_helpers import (
+from cortex.tools.files.markdown_lint_cache import (
+    MarkdownLintIndex,
+    save_markdown_lint_index,
+)
+from cortex.tools.files.markdown_lint_helpers import (
     FileResult,
     _result_stdout,
     _result_success,
 )
-from cortex.tools.markdown_lint_responses import create_error_response
+from cortex.tools.files.markdown_lint_responses import create_error_response
 
 __all__ = [
     "after_one_file",

@@ -973,7 +973,7 @@ Fixed sets of string values used at MCP tool boundaries (operation, action, type
 | `ConfigAction` | cortex.tools.configuration_helpers | VIEW, UPDATE, RESET |
 | `AnalysisTarget` | cortex.tools.context.analysis_helpers | USAGE_PATTERNS, STRUCTURE, INSIGHTS |
 | `StubAdapterLanguage` | cortex.services.framework_adapters.stub_adapter | TYPESCRIPT, JAVASCRIPT, RUST, GO, JAVA |
-| `FileOperation` | cortex.tools.file_operation_helpers | READ, WRITE, METADATA |
+| `FileOperation` | cortex.tools.files.file_operation_helpers | READ, WRITE, METADATA |
 | `RulesOperation` | cortex.tools.rules_operation_helpers | INDEX, GET_RELEVANT |
 | `RefactoringAction` | cortex.refactoring.models | APPROVE, APPLY, ROLLBACK |
 | `RefactoringSuggestionType` | cortex.refactoring.models | CONSOLIDATION, SPLITS, REORGANIZATION |

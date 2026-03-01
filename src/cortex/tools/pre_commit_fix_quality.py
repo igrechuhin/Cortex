@@ -220,7 +220,7 @@ async def _fix_markdown_and_update_files(
     files_modified_list: list[str],
 ) -> int:
     """Fix markdown lint errors and update files_modified list."""
-    from cortex.tools.markdown_operations import fix_markdown_lint
+    from cortex.tools.files.markdown_operations import fix_markdown_lint
 
     markdown_result_json = await fix_markdown_lint(
         include_untracked_markdown=include_untracked,

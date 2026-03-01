@@ -10,7 +10,7 @@ from cortex.core.file_system import FileSystemManager
 from cortex.core.metadata_index import MetadataIndex
 from cortex.core.models import ModelDict
 from cortex.core.token_counter import TokenCounter
-from cortex.tools.file_section_helpers import extract_content_sections
+from cortex.tools.files.file_section_helpers import extract_content_sections
 
 logger = logging.getLogger(__name__)
 

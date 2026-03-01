@@ -14,22 +14,22 @@ Total: 1 tool, 1 resource
 - get_file_resource: Read file via cortex://memory-bank/file/{file_name}
 """
 
-from cortex.tools.file_crud_flow import (
+from cortex.tools.files.file_crud_flow import (
     build_write_response,
     execute_memory_bank_write,
 )
-from cortex.tools.file_crud_operations import (
+from cortex.tools.files.file_crud_operations import (
     MANAGE_FILE_INPUT_EXAMPLES,
     get_file_resource,
     manage_file,
 )
-from cortex.tools.file_metadata_operations import (
+from cortex.tools.files.file_metadata_operations import (
     compute_file_metrics,
     create_version_snapshot,
     update_file_metadata,
 )
-from cortex.tools.file_operation_helpers import FileOperation
-from cortex.tools.file_section_operations import extract_sections
+from cortex.tools.files.file_operation_helpers import FileOperation
+from cortex.tools.files.file_section_operations import extract_sections
 
 __all__ = [
     "MANAGE_FILE_INPUT_EXAMPLES",

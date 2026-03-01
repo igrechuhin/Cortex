@@ -14,7 +14,7 @@ from typing import cast
 
 from cortex.core.context_logging import MCPContext, log_client
 from cortex.core.models import JsonDict, JsonValue, ModelDict, OperationStatus
-from cortex.tools.markdown_operations import fix_markdown_lint
+from cortex.tools.files.markdown_operations import fix_markdown_lint
 from cortex.tools.models import (
     PreflightCheckSummary,
     RunPreflightChecksErrorResult,

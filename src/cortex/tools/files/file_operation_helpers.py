@@ -9,7 +9,7 @@ from cortex.core.file_system import FileSystemManager
 from cortex.core.metadata_index import MetadataIndex
 from cortex.core.token_counter import TokenCounter
 from cortex.core.version_manager import VersionManager
-from cortex.tools.file_operation_error_responses import (
+from cortex.tools.files.file_operation_error_responses import (
     build_invalid_operation_error,
     build_missing_parameters_error,
     build_new_file_creation_error,

@@ -5,7 +5,7 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from cortex.tools.markdown_lint_cache import (
+from cortex.tools.files.markdown_lint_cache import (
     MarkdownLintIndex,
     load_markdown_lint_index,
     load_markdown_lint_index_safe,
@@ -42,7 +42,7 @@ class TestLoadMarkdownLintIndex:
     async def test_returns_empty_when_raw_none(self, tmp_path: Path):
         """When read_cache_json returns None, returns empty index."""
         with patch(
-            "cortex.tools.markdown_lint_cache.read_cache_json",
+            "cortex.tools.files.markdown_lint_cache.read_cache_json",
             new_callable=AsyncMock,
             return_value=None,
         ):
@@ -54,7 +54,7 @@ class TestLoadMarkdownLintIndex:
     async def test_returns_empty_when_raw_not_dict(self, tmp_path: Path):
         """When raw is not a dict, returns empty index."""
         with patch(
-            "cortex.tools.markdown_lint_cache.read_cache_json",
+            "cortex.tools.files.markdown_lint_cache.read_cache_json",
             new_callable=AsyncMock,
             return_value=[],
         ):
@@ -66,7 +66,7 @@ class TestLoadMarkdownLintIndex:
         """When raw is valid v2 dict, returns validated index."""
         raw = {"version": "2.0", "files": {"f.md": "sha256:xyz"}}
         with patch(
-            "cortex.tools.markdown_lint_cache.read_cache_json",
+            "cortex.tools.files.markdown_lint_cache.read_cache_json",
             new_callable=AsyncMock,
             return_value=raw,
         ):
@@ -78,7 +78,7 @@ class TestLoadMarkdownLintIndex:
     async def test_returns_empty_on_validation_error(self, tmp_path: Path):
         """When model_validate raises, returns empty index."""
         with patch(
-            "cortex.tools.markdown_lint_cache.read_cache_json",
+            "cortex.tools.files.markdown_lint_cache.read_cache_json",
             new_callable=AsyncMock,
             return_value={"version": "1.0", "invalid": True},
         ):
@@ -89,7 +89,7 @@ class TestLoadMarkdownLintIndex:
     async def test_returns_empty_index_when_raw_empty_dict(self, tmp_path: Path):
         """When raw is valid empty dict, returns index with empty files."""
         with patch(
-            "cortex.tools.markdown_lint_cache.read_cache_json",
+            "cortex.tools.files.markdown_lint_cache.read_cache_json",
             new_callable=AsyncMock,
             return_value={"version": "2.0", "files": {}},
         ):
@@ -106,12 +106,12 @@ class TestLoadMarkdownLintIndexSafe:
         """When load_markdown_lint_index raises, returns empty and logs warning."""
         with (
             patch(
-                "cortex.tools.markdown_lint_cache.load_markdown_lint_index",
+                "cortex.tools.files.markdown_lint_cache.load_markdown_lint_index",
                 new_callable=AsyncMock,
                 side_effect=RuntimeError("cache read failed"),
             ),
             patch(
-                "cortex.tools.markdown_lint_cache.log_client",
+                "cortex.tools.files.markdown_lint_cache.log_client",
                 new_callable=AsyncMock,
             ) as mock_log,
         ):
@@ -130,7 +130,7 @@ class TestSaveMarkdownLintIndex:
         index = MarkdownLintIndex(files={"a.md": "sha256:aa", "b.md": "sha256:bb"})
         with (
             patch(
-                "cortex.tools.markdown_lint_cache.write_cache_json",
+                "cortex.tools.files.markdown_lint_cache.write_cache_json",
                 new_callable=AsyncMock,
             ) as mock_write,
         ):
@@ -149,12 +149,12 @@ class TestSaveMarkdownLintIndex:
         index = MarkdownLintIndex()
         with (
             patch(
-                "cortex.tools.markdown_lint_cache.write_cache_json",
+                "cortex.tools.files.markdown_lint_cache.write_cache_json",
                 new_callable=AsyncMock,
                 side_effect=OSError("disk full"),
             ),
             patch(
-                "cortex.tools.markdown_lint_cache.log_client",
+                "cortex.tools.files.markdown_lint_cache.log_client",
                 new_callable=AsyncMock,
             ) as mock_log,
         ):

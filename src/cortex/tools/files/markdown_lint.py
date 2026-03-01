@@ -14,23 +14,23 @@ from cortex.core.mcp_annotations import safe_write_annotations
 from cortex.core.mcp_stability import ensure_usage_context, mcp_tool_wrapper
 from cortex.core.project_root_resolver import resolve_project_root_async
 from cortex.server import mcp
-from cortex.tools.markdown_lint_cache import load_markdown_lint_index_safe
-from cortex.tools.markdown_lint_core import (
+from cortex.tools.files.markdown_lint_cache import load_markdown_lint_index_safe
+from cortex.tools.files.markdown_lint_core import (
     filter_files_for_linting,
     get_markdown_files_to_process,
     update_markdown_lint_cache_safe,
     validate_markdown_prerequisites,
 )
-from cortex.tools.markdown_lint_helpers import (
+from cortex.tools.files.markdown_lint_helpers import (
     FileResult,
     apply_validation_error_hint,
     calculate_statistics,
 )
-from cortex.tools.markdown_lint_responses import (
+from cortex.tools.files.markdown_lint_responses import (
     create_empty_success_response,
     create_error_response,
 )
-from cortex.tools.markdown_lint_run import run_markdownlint_for_files
+from cortex.tools.files.markdown_lint_run import run_markdownlint_for_files
 
 __all__ = [
     "FileResult",

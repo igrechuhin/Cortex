@@ -13,7 +13,7 @@ from cortex.core.metadata_index import MetadataIndex
 from cortex.core.models import ModelDict, VersionMetadata
 from cortex.core.token_counter import TokenCounter
 from cortex.core.version_manager import VersionManager
-from cortex.tools.file_section_operations import extract_sections
+from cortex.tools.files.file_section_operations import extract_sections
 
 
 def compute_file_metrics(

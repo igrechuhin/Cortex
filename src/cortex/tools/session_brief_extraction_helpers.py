@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import re
 
-from cortex.tools.file_section_helpers import extract_section_from_content
+from cortex.tools.files.file_section_helpers import extract_section_from_content
 from cortex.tools.models import (
     ConcurrentSession,
     GitStatusSummary,

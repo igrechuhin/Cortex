@@ -19,7 +19,7 @@ from cortex.validation.models import ValidationResult
 
 def _get_file_operation_enum():
     """Late import to avoid circular dependency with file_operation_helpers."""
-    from cortex.tools.file_operation_helpers import FileOperation
+    from cortex.tools.files.file_operation_helpers import FileOperation
 
     return FileOperation
 

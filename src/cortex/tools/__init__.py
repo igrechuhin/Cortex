@@ -46,14 +46,12 @@ from . import (
     evaluation_optimization_helpers,  # noqa: F401
     execution,  # noqa: F401
     execution_feedback,  # noqa: F401
-    file_operations,  # noqa: F401
     foundation_dependency,  # noqa: F401
     foundation_rollback,  # noqa: F401
     foundation_stats,  # noqa: F401
     foundation_version,  # noqa: F401
     health_check_operations,  # noqa: F401
     linking_operations,  # noqa: F401
-    markdown_operations,  # noqa: F401
     model_benchmark,  # noqa: F401
     optimization,  # noqa: F401
     pre_commit_tools,  # noqa: F401
@@ -82,6 +80,10 @@ from . import (
 from .context import (
     analysis_operations,  # noqa: F401
     analysis_usage,  # noqa: F401
+)
+from .files import (
+    file_operations,  # noqa: F401
+    markdown_operations,  # noqa: F401
 )
 from .plans import (
     completion,  # noqa: F401

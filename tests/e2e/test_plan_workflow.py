@@ -18,7 +18,7 @@ from unittest.mock import AsyncMock, patch
 import pytest
 
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
-from cortex.tools.file_operations import manage_file
+from cortex.tools.files.file_operations import manage_file
 from cortex.tools.plans.crud import create_plan
 from cortex.tools.plans.entries import (
     add_roadmap_entry,

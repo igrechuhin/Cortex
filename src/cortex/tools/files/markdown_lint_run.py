@@ -11,9 +11,9 @@ from cortex.core.constants import (
     MARKDOWN_LINT_PROGRESS_HEARTBEAT_SECONDS,
 )
 from cortex.core.context_logging import MCPContext, report_progress_safe
-from cortex.tools.markdown_lint_cache import MarkdownLintIndex
-from cortex.tools.markdown_lint_core import after_one_file, run_command
-from cortex.tools.markdown_lint_helpers import (
+from cortex.tools.files.markdown_lint_cache import MarkdownLintIndex
+from cortex.tools.files.markdown_lint_core import after_one_file, run_command
+from cortex.tools.files.markdown_lint_helpers import (
     FileResult,
     _build_error_result,
     _build_markdownlint_batch_results,
