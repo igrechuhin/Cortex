@@ -405,7 +405,7 @@ class TestExecutePreCommitChecks:
                     new_callable=AsyncMock,
                 ) as mock_to_thread,
                 patch(
-                    "cortex.tools.phase5_evaluation.run_tool_evaluation",
+                    "cortex.tools.evaluation.run_tool_evaluation",
                     new_callable=AsyncMock,
                     return_value=payload_above,
                 ),
@@ -470,7 +470,7 @@ class TestExecutePreCommitChecks:
                     new_callable=AsyncMock,
                 ) as mock_to_thread,
                 patch(
-                    "cortex.tools.phase5_evaluation.run_tool_evaluation",
+                    "cortex.tools.evaluation.run_tool_evaluation",
                     new_callable=AsyncMock,
                     return_value=payload_below,
                 ),

@@ -1,10 +1,10 @@
-"""Unit tests for phase5_execution_monitoring module."""
+"""Unit tests for execution_monitoring module."""
 
 import json
 
 import pytest
 
-from cortex.tools.phase5_execution_monitoring import (
+from cortex.tools.execution_monitoring import (
     log_apply_result,
     log_invalid_action_and_return,
     warn_suggestion_not_found_and_return,

@@ -1,10 +1,10 @@
 """Parameter validation for Phase 5 execution tools.
 
-Extracted to keep phase5_execution.py under 400 lines.
+Extracted to keep execution module under 400 lines.
 """
 
 from cortex.refactoring.models import RefactoringAction
-from cortex.tools.phase5_execution_errors import create_missing_param_error
+from cortex.tools.execution_errors import create_missing_param_error
 
 
 def validate_apply_refactoring_params(

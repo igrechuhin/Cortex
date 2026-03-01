@@ -1,4 +1,4 @@
-"""Tests for phase5_evaluation_task_loader (load_eval_task_dicts, build_eval_tasks)."""
+"""Tests for evaluation_task_loader (load_eval_task_dicts, build_eval_tasks)."""
 
 from __future__ import annotations
 
@@ -6,7 +6,7 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
 
-from cortex.tools.phase5_evaluation_task_loader import (
+from cortex.tools.evaluation_task_loader import (
     build_eval_tasks,
     load_eval_task_dicts,
 )

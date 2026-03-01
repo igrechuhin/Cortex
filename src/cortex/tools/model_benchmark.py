@@ -187,7 +187,7 @@ async def _save_benchmarks(root: Path, records: list[ModelBenchmarkRecord]) -> N
 
 async def _run_full_eval(root: Path) -> dict[str, object]:
     """Run full evaluation suite and return payload dict."""
-    from cortex.tools.phase5_evaluation import run_full_evaluation_payload
+    from cortex.tools.evaluation import run_full_evaluation_payload
 
     return await run_full_evaluation_payload(root)
 

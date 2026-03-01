@@ -1,4 +1,4 @@
-"""Handler functions for phase5_execution module."""
+"""Handler functions for execution module."""
 
 from cortex.managers.manager_utils import get_manager
 from cortex.managers.types import ManagersDict
@@ -111,7 +111,7 @@ async def handle_approve_action(
 ) -> str:
     """Handle approve action."""
     if not suggestion_id:
-        from cortex.tools.phase5_execution_errors import create_missing_param_error
+        from cortex.tools.execution_errors import create_missing_param_error
 
         return create_missing_param_error("suggestion_id", "approve")
     result = await _approve_refactoring(mgrs, suggestion_id, user_comment, auto_apply)
@@ -127,11 +127,11 @@ async def handle_apply_action(
 ) -> str:
     """Handle apply action."""
     if not suggestion_id:
-        from cortex.tools.phase5_execution_errors import create_missing_param_error
+        from cortex.tools.execution_errors import create_missing_param_error
 
         return create_missing_param_error("suggestion_id", "apply")
     if not approval_id:
-        from cortex.tools.phase5_execution_errors import create_missing_param_error
+        from cortex.tools.execution_errors import create_missing_param_error
 
         return create_missing_param_error("approval_id", "apply")
     result = await _apply_approved_refactoring(
@@ -149,7 +149,7 @@ async def handle_rollback_action(
 ) -> str:
     """Handle rollback action."""
     if not execution_id:
-        from cortex.tools.phase5_execution_errors import create_missing_param_error
+        from cortex.tools.execution_errors import create_missing_param_error
 
         return create_missing_param_error("execution_id", "rollback")
     result = await _rollback_refactoring(

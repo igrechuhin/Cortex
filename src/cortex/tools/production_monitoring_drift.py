@@ -1,13 +1,13 @@
 """Drift detection for production monitoring (Plan: Evaluation Framework Maturation Step 5).
 
 Compares current vs baseline metrics and emits alerts when |z| > sigma_threshold.
-Used by phase5_production_monitoring_helpers.
+Used by production_monitoring_helpers.
 """
 
 from __future__ import annotations
 
-from cortex.tools.phase5_production_monitoring_metrics import mean_std
-from cortex.tools.phase5_production_monitoring_models import (
+from cortex.tools.production_monitoring_metrics import mean_std
+from cortex.tools.production_monitoring_models import (
     DriftAlert,
     GlobalMetricSummary,
     ToolMetricSummary,

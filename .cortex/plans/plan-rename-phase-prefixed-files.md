@@ -46,7 +46,7 @@ Create a rename mapping, then batch-rename by phase prefix. Update all imports p
 2. **Check for naming conflicts** with existing non-phase files
 3. **Batch 1**: Rename all `phase1_` files (8 files) ✅ — done 2026-03-01; update imports, run tests
 4. **Batch 2**: Rename all `phase4_` files (15 files) ✅ — done 2026-03-01; update imports, run tests
-5. **Batch 3**: Rename all `phase5_` files (26 files), update imports, run tests
+5. **Batch 3**: Rename all `phase5_` files (26 files) ✅ — done 2026-03-01; update imports, run tests
 6. **Batch 4**: Rename `phase2_`, `phase3_`, `phase8_` files (6 files), update imports, run tests
 7. **Update `__init__.py`** exports after all renames
 8. **Final verification**: `ls src/cortex/tools/phase*.py` returns empty

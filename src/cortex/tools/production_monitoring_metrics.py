@@ -1,6 +1,6 @@
 """Metric aggregation for production monitoring (Plan: Evaluation Framework Maturation Step 5).
 
-Computes per-tool and global metrics from usage events. Used by phase5_production_monitoring_helpers.
+Computes per-tool and global metrics from usage events. Used by production_monitoring_helpers.
 """
 
 from __future__ import annotations
@@ -8,7 +8,7 @@ from __future__ import annotations
 import math
 
 from cortex.managers.usage_models import ToolUsageEvent
-from cortex.tools.phase5_production_monitoring_models import (
+from cortex.tools.production_monitoring_models import (
     GlobalMetricSummary,
     ToolMetricSummary,
 )

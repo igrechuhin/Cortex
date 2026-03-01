@@ -1,6 +1,6 @@
 """Pydantic models for production monitoring (Plan: Evaluation Framework Maturation Step 5).
 
-Used by phase5_production_monitoring_helpers and query_usage(query_type="production_monitoring").
+Used by production_monitoring_helpers and query_usage(query_type="production_monitoring").
 """
 
 from __future__ import annotations

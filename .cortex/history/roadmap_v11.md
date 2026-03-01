@@ -20,13 +20,10 @@
 
 ### Refactoring
 
-- **PENDING** Fix 26 tool files exceeding 400-line limit (project rule violation). Plan: `.cortex/plans/plan-tools-file-size-violations.md` — 6 more splits this session; 3 remain (file_operation_helpers, phase1_foundation_stats, pre_commit_pipeline)
-- **PENDING** Rename 47 phase-prefixed tool files to functional names (depends on file-size plan). Plan: `.cortex/plans/plan-rename-phase-prefixed-files.md`
+- **PENDING** Rename phase2_, phase3_, phase8_ files (Batch 4). Plan: `.cortex/plans/plan-rename-phase-prefixed-files.md`
 - **PENDING** Reorganize tools/ into domain sub-packages (depends on rename + file-size plans). Plan: `.cortex/plans/plan-tools-subpackage-reorganization.md`
 
 ### Cleanup
-
-- **PENDING** Remove 3 empty archive files and stale history (0-byte placeholders). Plan: `.cortex/plans/plan-empty-file-cleanup.md`
 
 ### Investigation Plans (Archive / Reference)
 

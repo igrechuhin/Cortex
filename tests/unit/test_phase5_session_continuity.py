@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 
 from cortex.managers.usage_models import ToolUsageEvent
-from cortex.tools.phase5_session_continuity_helpers import (
+from cortex.tools.session_continuity_helpers import (
     compute_session_continuity,
     get_session_continuity_payload,
 )

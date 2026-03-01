@@ -9,7 +9,7 @@ from unittest.mock import AsyncMock, patch
 import pytest
 
 from cortex.managers.usage_models import ToolUsageEvent
-from cortex.tools.phase5_evaluation_optimization_helpers import (
+from cortex.tools.evaluation_optimization_helpers import (
     ERROR_RATE_THRESHOLD,
     ToolDescriptionOptimizationPayload,
     get_tool_description_optimization_payload,

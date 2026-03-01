@@ -1,13 +1,13 @@
 """Phase 5: provide_feedback tool.
 
-Extracted from phase5_execution to keep the main module under 400 lines.
+Extracted from execution to keep the main module under 400 lines.
 """
 
 from cortex.core.constants import MCP_TOOL_TIMEOUT_MEDIUM
 from cortex.core.context_logging import MCPContext, log_client
 from cortex.core.mcp_stability import ensure_usage_context, mcp_tool_wrapper
 from cortex.core.project_root_resolver import resolve_project_root_async
-from cortex.tools.phase5_execution_planning import provide_feedback_impl
+from cortex.tools.execution_planning import provide_feedback_impl
 
 
 # Internalized for tool budget reduction (2026-02-26). Kept as callable for learning engine.

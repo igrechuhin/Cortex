@@ -1,9 +1,9 @@
-"""Unit tests for phase5_execution_validation module."""
+"""Unit tests for execution_validation module."""
 
 import json
 
 from cortex.refactoring.models import RefactoringAction
-from cortex.tools.phase5_execution_validation import validate_apply_refactoring_params
+from cortex.tools.execution_validation import validate_apply_refactoring_params
 
 
 class TestValidateApplyRefactoringParams:

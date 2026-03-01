@@ -20,7 +20,7 @@
 
 ### Refactoring
 
-- **PENDING** Rename 47 phase-prefixed tool files to functional names (depends on file-size plan). Plan: `.cortex/plans/plan-rename-phase-prefixed-files.md`
+- **PENDING** Rename phase2_, phase3_, phase8_ files (Batch 4). Plan: `.cortex/plans/plan-rename-phase-prefixed-files.md`
 - **PENDING** Reorganize tools/ into domain sub-packages (depends on rename + file-size plans). Plan: `.cortex/plans/plan-tools-subpackage-reorganization.md`
 
 ### Cleanup

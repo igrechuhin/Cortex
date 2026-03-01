@@ -1,8 +1,8 @@
-"""Unit tests for phase5_execution_errors module."""
+"""Unit tests for execution_errors module."""
 
 import json
 
-from cortex.tools.phase5_execution_errors import (
+from cortex.tools.execution_errors import (
     create_execution_error_response,
     create_invalid_action_error,
     create_missing_param_error,

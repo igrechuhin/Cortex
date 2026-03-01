@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 
 from cortex.managers.usage_models import ToolUsageEvent
-from cortex.tools.phase5_tool_frequency_helpers import (
+from cortex.tools.tool_frequency_helpers import (
     compute_tool_frequency,
     get_tool_frequency_payload,
 )

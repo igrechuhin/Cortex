@@ -16,9 +16,9 @@ Modules:
 - phase2_linking: Link management and transclusion (4 tools)
 - phase3_validation: Validation and quality checks (5 tools)
 - optimization: Token optimization and context management (7 tools)
-- phase5_analysis: Usage pattern and structure analysis (3 tools)
-- phase5_refactoring: Refactoring suggestions (4 tools)
-- phase5_execution: Safe execution and learning (6 tools)
+- analysis_usage: Usage pattern and structure analysis (3 tools)
+- refactoring_tools: Refactoring suggestions (4 tools)
+- execution: Safe execution and learning (6 tools)
 - synapse_tools: Synapse repository tools for rules and prompts (5 tools)
 - phase8_structure: Project structure management (6 tools)
 - prompts: MCP prompt templates for one-time operations (7 prompts)
@@ -36,6 +36,7 @@ Total: 71 tools + 7 prompts
 # Import all tool modules to register their decorators
 from . import (
     analysis_operations,  # noqa: F401
+    analysis_usage,  # noqa: F401
     append_entry_dispatcher,  # noqa: F401
     cache_json_tools,  # noqa: F401
     compaction_operations,  # noqa: F401
@@ -43,6 +44,10 @@ from . import (
     configuration_hybrid,  # noqa: F401
     configuration_operations,  # noqa: F401
     connection_health,  # noqa: F401
+    evaluation,  # noqa: F401
+    evaluation_optimization_helpers,  # noqa: F401
+    execution,  # noqa: F401
+    execution_feedback,  # noqa: F401
     file_operations,  # noqa: F401
     foundation_dependency,  # noqa: F401
     foundation_rollback,  # noqa: F401
@@ -50,16 +55,10 @@ from . import (
     foundation_version,  # noqa: F401
     health_check_operations,  # noqa: F401
     markdown_operations,  # noqa: F401
+    model_benchmark,  # noqa: F401
     optimization,  # noqa: F401
     phase2_linking,  # noqa: F401
     phase3_validation,  # noqa: F401
-    phase5_analysis,  # noqa: F401
-    phase5_evaluation,  # noqa: F401
-    phase5_evaluation_optimization_helpers,  # noqa: F401
-    phase5_execution,  # noqa: F401
-    phase5_execution_feedback,  # noqa: F401
-    phase5_model_benchmark,  # noqa: F401
-    phase5_refactoring,  # noqa: F401
     phase8_structure,  # noqa: F401
     plan_completion,  # noqa: F401
     plan_dispatcher,  # noqa: F401
@@ -69,6 +68,7 @@ from . import (
     query_memory_bank_operations,  # noqa: F401
     query_usage_operations,  # noqa: F401
     refactoring_operations,  # noqa: F401
+    refactoring_tools,  # noqa: F401
     roadmap_corruption,  # noqa: F401
     roadmap_dispatcher,  # noqa: F401
     roadmap_operations,  # noqa: F401
@@ -90,7 +90,7 @@ from . import (
 
 # Explicitly reference modules imported for side effects to satisfy type checker
 _ = append_entry_dispatcher
-_ = phase5_execution_feedback
+_ = execution_feedback
 _ = plan_dispatcher
 _ = roadmap_dispatcher
 _ = synapse_prompts
@@ -114,12 +114,12 @@ __all__ = [
     "phase2_linking",
     "phase3_validation",
     "optimization",
-    "phase5_analysis",
-    "phase5_evaluation",
-    "phase5_evaluation_optimization_helpers",
-    "phase5_model_benchmark",
-    "phase5_refactoring",
-    "phase5_execution",
+    "analysis_usage",
+    "evaluation",
+    "evaluation_optimization_helpers",
+    "model_benchmark",
+    "refactoring_tools",
+    "execution",
     "synapse_tools",
     "roadmap_corruption",
     "roadmap_operations",

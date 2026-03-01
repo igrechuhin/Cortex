@@ -1,6 +1,6 @@
 """Orchestration and execution flow for Phase 5 execution tools.
 
-Extracted to keep phase5_execution.py under 400 lines.
+Extracted to keep execution module under 400 lines.
 """
 
 import json
@@ -16,22 +16,22 @@ from cortex.refactoring.models import (
     RefactoringSuggestionModel,
 )
 from cortex.refactoring.refactoring_engine import RefactoringEngine
-from cortex.tools.phase5_execution_errors import create_invalid_action_error
-from cortex.tools.phase5_execution_handlers import (
+from cortex.tools.execution_errors import create_invalid_action_error
+from cortex.tools.execution_handlers import (
     handle_apply_action,
     handle_approve_action,
     handle_rollback_action,
 )
-from cortex.tools.phase5_execution_helpers import (
+from cortex.tools.execution_helpers import (
     check_approval_status,
     extract_feedback_managers,
     record_feedback_and_build_result,
 )
-from cortex.tools.phase5_execution_monitoring import (
+from cortex.tools.execution_monitoring import (
     log_apply_result,
     warn_suggestion_not_found_and_return,
 )
-from cortex.tools.phase5_execution_validation import validate_apply_refactoring_params
+from cortex.tools.execution_validation import validate_apply_refactoring_params
 
 
 async def execute_with_error_handling(

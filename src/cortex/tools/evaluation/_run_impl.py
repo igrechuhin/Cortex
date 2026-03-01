@@ -56,10 +56,10 @@ async def _write_evaluation_dashboard(
     tracker: UsageTracker | None,
 ) -> Path:
     """Write evaluation dashboard Markdown next to last_suite.json."""
-    from cortex.tools.phase5_evaluation_dashboard_helpers import (
+    from cortex.tools.evaluation_dashboard_helpers import (
         generate_evaluation_dashboard,
     )
-    from cortex.tools.phase5_redundancy_helpers import (
+    from cortex.tools.redundancy_helpers import (
         RedundancyPayload,
         get_redundancy_payload,
     )
@@ -148,7 +148,7 @@ async def run_tool_evaluation_impl(
     category: str | None,
 ) -> str:
     """Run evaluation suite and execution harness; return JSON payload."""
-    from cortex.tools.phase5_evaluation_execution import (
+    from cortex.tools.evaluation_execution import (
         build_execution_summary,
         run_execution_suite,
     )

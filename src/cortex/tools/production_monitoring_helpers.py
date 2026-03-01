@@ -11,12 +11,12 @@ from pathlib import Path
 
 from cortex.managers.usage_models import ToolUsageEvent
 from cortex.managers.usage_tracker import UsageTracker
-from cortex.tools.phase5_production_monitoring_drift import compute_drift_alerts
-from cortex.tools.phase5_production_monitoring_metrics import (
+from cortex.tools.production_monitoring_drift import compute_drift_alerts
+from cortex.tools.production_monitoring_metrics import (
     aggregate_events_to_metrics,
     daily_global_metrics,
 )
-from cortex.tools.phase5_production_monitoring_models import (
+from cortex.tools.production_monitoring_models import (
     DriftAlert,
     GlobalMetricSummary,
     ProductionMonitoringPayload,

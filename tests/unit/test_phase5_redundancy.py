@@ -8,7 +8,7 @@ from unittest.mock import AsyncMock
 import pytest
 
 from cortex.managers.usage_models import ToolUsageEvent
-from cortex.tools.phase5_redundancy_helpers import (
+from cortex.tools.redundancy_helpers import (
     compute_redundancy_from_events,
     get_redundancy_payload,
 )

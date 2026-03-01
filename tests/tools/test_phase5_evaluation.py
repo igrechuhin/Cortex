@@ -12,7 +12,7 @@ import pytest
 from cortex.core.models import HandlerKind
 from cortex.managers.initialization import get_project_root
 from cortex.managers.usage_models import ToolUsageEvent
-from cortex.tools.phase5_evaluation import (
+from cortex.tools.evaluation import (
     ABComparisonResult,
     ABWinner,
     ErrorPattern,
@@ -36,10 +36,10 @@ from cortex.tools.phase5_evaluation import (
     run_tool_evaluation,
     run_tool_optimization_workflow,
 )
-from cortex.tools.phase5_evaluation_anomalies_helpers import (
+from cortex.tools.evaluation_anomalies_helpers import (
     aggregate_session_tool_anomalies,
 )
-from cortex.tools.phase5_evaluation_dashboard_helpers import (
+from cortex.tools.evaluation_dashboard_helpers import (
     aggregate_tool_metrics,
     format_token_efficiency,
     generate_evaluation_dashboard,
@@ -91,7 +91,7 @@ async def test_load_eval_tasks_returns_empty_when_tasks_dir_missing(
     project_root = tmp_path
 
     with patch(
-        "cortex.tools.phase5_evaluation._harness.get_cortex_path",
+        "cortex.tools.evaluation._harness.get_cortex_path",
         return_value=project_root / ".cortex",
     ):
         tasks = await load_eval_tasks(project_root, task_ids=None)
@@ -328,36 +328,36 @@ async def test_run_tool_evaluation_uses_harness_and_writes_cache() -> None:
 
     with (
         patch(
-            "cortex.tools.phase5_evaluation.resolve_project_root_async",
+            "cortex.tools.evaluation.resolve_project_root_async",
             new_callable=AsyncMock,
             return_value=project_root,
         ),
         patch(
-            "cortex.tools.phase5_evaluation._run_impl.get_usage_tracker",
+            "cortex.tools.evaluation._run_impl.get_usage_tracker",
             new_callable=AsyncMock,
             return_value=None,
         ),
         patch(
-            "cortex.tools.phase5_evaluation._run_impl.load_eval_tasks",
+            "cortex.tools.evaluation._run_impl.load_eval_tasks",
             new_callable=AsyncMock,
             return_value=fake_tasks,
         ),
         patch(
-            "cortex.tools.phase5_evaluation.ToolEvaluationHarness.run_suite",
+            "cortex.tools.evaluation.ToolEvaluationHarness.run_suite",
             new_callable=AsyncMock,
             return_value=suite,
         ) as mock_run_suite,
         patch(
-            "cortex.tools.phase5_evaluation.ToolEvaluationHarness.analyze_results",
+            "cortex.tools.evaluation.ToolEvaluationHarness.analyze_results",
             new=MagicMock(return_value=analysis),
         ) as mock_analyze,
         patch(
-            "cortex.tools.phase5_evaluation._run_impl._write_evaluation_dashboard",
+            "cortex.tools.evaluation._run_impl._write_evaluation_dashboard",
             new_callable=AsyncMock,
             return_value=Path("/project/.cortex/evals/dashboard.md"),
         ),
         patch(
-            "cortex.tools.phase5_evaluation._run_impl.write_cache_json",
+            "cortex.tools.evaluation._run_impl.write_cache_json",
             new_callable=AsyncMock,
         ) as mock_write_cache,
     ):
@@ -430,31 +430,31 @@ async def test_analyze_error_patterns_persists_error_cache() -> None:
 
     with (
         patch(
-            "cortex.tools.phase5_evaluation.resolve_project_root_async",
+            "cortex.tools.evaluation.resolve_project_root_async",
             new_callable=AsyncMock,
             return_value=project_root,
         ),
         patch(
-            "cortex.tools.phase5_evaluation._run_impl.get_usage_tracker",
+            "cortex.tools.evaluation._run_impl.get_usage_tracker",
             new_callable=AsyncMock,
             return_value=None,
         ),
         patch(
-            "cortex.tools.phase5_evaluation._run_impl.load_eval_tasks",
+            "cortex.tools.evaluation._run_impl.load_eval_tasks",
             new_callable=AsyncMock,
             return_value=fake_tasks,
         ),
         patch(
-            "cortex.tools.phase5_evaluation.ToolEvaluationHarness.run_suite",
+            "cortex.tools.evaluation.ToolEvaluationHarness.run_suite",
             new_callable=AsyncMock,
             return_value=suite,
         ),
         patch(
-            "cortex.tools.phase5_evaluation.ToolEvaluationHarness.analyze_results",
+            "cortex.tools.evaluation.ToolEvaluationHarness.analyze_results",
             new=MagicMock(return_value=analysis),
         ),
         patch(
-            "cortex.tools.phase5_evaluation._run_impl.write_cache_json",
+            "cortex.tools.evaluation._run_impl.write_cache_json",
             new_callable=AsyncMock,
         ) as mock_write_cache,
     ):
@@ -499,30 +499,30 @@ async def test_analyze_error_patterns_empty_suite_returns_zero_patterns() -> Non
 
     with (
         patch(
-            "cortex.tools.phase5_evaluation.resolve_project_root_async",
+            "cortex.tools.evaluation.resolve_project_root_async",
             new_callable=AsyncMock,
             return_value=project_root,
         ),
         patch(
-            "cortex.tools.phase5_evaluation._run_impl.get_usage_tracker",
+            "cortex.tools.evaluation._run_impl.get_usage_tracker",
             new_callable=AsyncMock,
         ),
         patch(
-            "cortex.tools.phase5_evaluation._run_impl.load_eval_tasks",
+            "cortex.tools.evaluation._run_impl.load_eval_tasks",
             new_callable=AsyncMock,
             return_value=[],
         ),
         patch(
-            "cortex.tools.phase5_evaluation.ToolEvaluationHarness.run_suite",
+            "cortex.tools.evaluation.ToolEvaluationHarness.run_suite",
             new_callable=AsyncMock,
             return_value=empty_suite,
         ),
         patch(
-            "cortex.tools.phase5_evaluation.ToolEvaluationHarness.analyze_results",
+            "cortex.tools.evaluation.ToolEvaluationHarness.analyze_results",
             new=MagicMock(return_value=empty_analysis),
         ),
         patch(
-            "cortex.tools.phase5_evaluation._run_impl.write_cache_json",
+            "cortex.tools.evaluation._run_impl.write_cache_json",
             new_callable=AsyncMock,
         ),
     ):
@@ -555,30 +555,30 @@ async def test_analyze_error_patterns_passes_task_ids_to_load_tasks() -> None:
 
     with (
         patch(
-            "cortex.tools.phase5_evaluation.resolve_project_root_async",
+            "cortex.tools.evaluation.resolve_project_root_async",
             new_callable=AsyncMock,
             return_value=project_root,
         ),
         patch(
-            "cortex.tools.phase5_evaluation._run_impl.get_usage_tracker",
+            "cortex.tools.evaluation._run_impl.get_usage_tracker",
             new_callable=AsyncMock,
         ),
         patch(
-            "cortex.tools.phase5_evaluation._run_impl.load_eval_tasks",
+            "cortex.tools.evaluation._run_impl.load_eval_tasks",
             new_callable=AsyncMock,
             return_value=[],
         ) as mock_load,
         patch(
-            "cortex.tools.phase5_evaluation.ToolEvaluationHarness.run_suite",
+            "cortex.tools.evaluation.ToolEvaluationHarness.run_suite",
             new_callable=AsyncMock,
             return_value=empty_suite,
         ),
         patch(
-            "cortex.tools.phase5_evaluation.ToolEvaluationHarness.analyze_results",
+            "cortex.tools.evaluation.ToolEvaluationHarness.analyze_results",
             new=MagicMock(return_value=empty_analysis),
         ),
         patch(
-            "cortex.tools.phase5_evaluation._run_impl.write_cache_json",
+            "cortex.tools.evaluation._run_impl.write_cache_json",
             new_callable=AsyncMock,
         ),
     ):
@@ -805,16 +805,16 @@ async def test_run_tool_evaluation_generates_dashboard(tmp_path: Path) -> None:
 
     with (
         patch(
-            "cortex.tools.phase5_evaluation.resolve_project_root_async",
+            "cortex.tools.evaluation.resolve_project_root_async",
             new_callable=AsyncMock,
             return_value=project_root,
         ),
         patch(
-            "cortex.tools.phase5_evaluation._run_impl.get_usage_tracker",
+            "cortex.tools.evaluation._run_impl.get_usage_tracker",
             new_callable=AsyncMock,
         ) as mock_tracker,
         patch(
-            "cortex.tools.phase5_evaluation._run_impl.load_eval_tasks",
+            "cortex.tools.evaluation._run_impl.load_eval_tasks",
             new_callable=AsyncMock,
             return_value=[
                 EvalTask(
@@ -828,7 +828,7 @@ async def test_run_tool_evaluation_generates_dashboard(tmp_path: Path) -> None:
             ],
         ),
         patch(
-            "cortex.tools.phase5_evaluation._run_impl._persist_latest_suite",
+            "cortex.tools.evaluation._run_impl._persist_latest_suite",
             new_callable=AsyncMock,
         ),
     ):
@@ -906,16 +906,16 @@ async def test_run_tool_evaluation_dashboard_includes_top_tools_sections(
 
     with (
         patch(
-            "cortex.tools.phase5_evaluation.resolve_project_root_async",
+            "cortex.tools.evaluation.resolve_project_root_async",
             new_callable=AsyncMock,
             return_value=project_root,
         ),
         patch(
-            "cortex.tools.phase5_evaluation._run_impl.get_usage_tracker",
+            "cortex.tools.evaluation._run_impl.get_usage_tracker",
             new_callable=AsyncMock,
         ),
         patch(
-            "cortex.tools.phase5_evaluation._run_impl.load_eval_tasks",
+            "cortex.tools.evaluation._run_impl.load_eval_tasks",
             new_callable=AsyncMock,
             return_value=[
                 EvalTask(
@@ -929,12 +929,12 @@ async def test_run_tool_evaluation_dashboard_includes_top_tools_sections(
             ],
         ),
         patch(
-            "cortex.tools.phase5_evaluation.ToolEvaluationHarness.run_suite",
+            "cortex.tools.evaluation.ToolEvaluationHarness.run_suite",
             new_callable=AsyncMock,
             return_value=suite_with_tool_metrics,
         ),
         patch(
-            "cortex.tools.phase5_evaluation._run_impl._persist_latest_suite",
+            "cortex.tools.evaluation._run_impl._persist_latest_suite",
             new_callable=AsyncMock,
         ),
     ):
@@ -1198,7 +1198,7 @@ async def test_get_session_tool_anomalies_equivalent_to_query_usage_anomalies() 
             new_callable=AsyncMock,
         ),
         patch(
-            "cortex.tools.phase5_evaluation.log_client",
+            "cortex.tools.evaluation.log_client",
             new_callable=AsyncMock,
         ),
     ):
@@ -1235,7 +1235,7 @@ async def test_get_session_tool_anomalies_equivalent_to_query_usage_anomalies() 
 async def test_load_optimization_history_empty_when_missing(tmp_path: Path) -> None:
     """load_optimization_history returns empty list when cache file is missing."""
     with patch(
-        "cortex.tools.phase5_evaluation._optimization.read_cache_json",
+        "cortex.tools.evaluation._optimization.read_cache_json",
         new_callable=AsyncMock,
         return_value=None,
     ):
@@ -1261,7 +1261,7 @@ async def test_load_optimization_history_parses_runs(tmp_path: Path) -> None:
         ]
     }
     with patch(
-        "cortex.tools.phase5_evaluation._optimization.read_cache_json",
+        "cortex.tools.evaluation._optimization.read_cache_json",
         new_callable=AsyncMock,
         return_value=raw,
     ):
@@ -1293,12 +1293,12 @@ async def test_append_optimization_record_persists(tmp_path: Path) -> None:
 
     with (
         patch(
-            "cortex.tools.phase5_evaluation._optimization.read_cache_json",
+            "cortex.tools.evaluation._optimization.read_cache_json",
             new_callable=AsyncMock,
             return_value=None,
         ),
         patch(
-            "cortex.tools.phase5_evaluation._optimization.write_cache_json",
+            "cortex.tools.evaluation._optimization.write_cache_json",
             side_effect=capture_write,
         ),
     ):
@@ -1334,17 +1334,17 @@ async def test_run_tool_optimization_workflow_baseline_only() -> None:
     )
     with (
         patch(
-            "cortex.tools.phase5_evaluation.resolve_project_root_async",
+            "cortex.tools.evaluation.resolve_project_root_async",
             new_callable=AsyncMock,
             return_value=project_root,
         ),
         patch(
-            "cortex.tools.phase5_evaluation._run_impl.get_usage_tracker",
+            "cortex.tools.evaluation._run_impl.get_usage_tracker",
             new_callable=AsyncMock,
             return_value=None,
         ),
         patch(
-            "cortex.tools.phase5_evaluation._harness.load_eval_tasks",
+            "cortex.tools.evaluation._harness.load_eval_tasks",
             new_callable=AsyncMock,
             return_value=[
                 EvalTask(
@@ -1358,20 +1358,20 @@ async def test_run_tool_optimization_workflow_baseline_only() -> None:
             ],
         ),
         patch(
-            "cortex.tools.phase5_evaluation._harness.ToolEvaluationHarness.run_suite",
+            "cortex.tools.evaluation._harness.ToolEvaluationHarness.run_suite",
             new_callable=AsyncMock,
             return_value=suite,
         ),
         patch(
-            "cortex.tools.phase5_evaluation._harness.ToolEvaluationHarness.analyze_results",
+            "cortex.tools.evaluation._harness.ToolEvaluationHarness.analyze_results",
             return_value=baseline_analysis,
         ),
         patch(
-            "cortex.tools.phase5_evaluation.append_optimization_record",
+            "cortex.tools.evaluation.append_optimization_record",
             new_callable=AsyncMock,
         ) as mock_append,
         patch(
-            "cortex.tools.phase5_evaluation.load_optimization_history",
+            "cortex.tools.evaluation.load_optimization_history",
             new_callable=AsyncMock,
             return_value=[],
         ),
@@ -1422,35 +1422,35 @@ async def test_run_tool_optimization_workflow_with_ab_comparison() -> None:
     )
     with (
         patch(
-            "cortex.tools.phase5_evaluation.resolve_project_root_async",
+            "cortex.tools.evaluation.resolve_project_root_async",
             new_callable=AsyncMock,
             return_value=project_root,
         ),
         patch(
-            "cortex.tools.phase5_evaluation._run_impl.get_usage_tracker",
+            "cortex.tools.evaluation._run_impl.get_usage_tracker",
             new_callable=AsyncMock,
             return_value=None,
         ),
         patch(
-            "cortex.tools.phase5_evaluation._harness.load_eval_tasks",
+            "cortex.tools.evaluation._harness.load_eval_tasks",
             new_callable=AsyncMock,
             return_value=[],
         ),
         patch(
-            "cortex.tools.phase5_evaluation._harness.ToolEvaluationHarness.run_suite",
+            "cortex.tools.evaluation._harness.ToolEvaluationHarness.run_suite",
             new_callable=AsyncMock,
             return_value=suite,
         ),
         patch(
-            "cortex.tools.phase5_evaluation._harness.ToolEvaluationHarness.analyze_results",
+            "cortex.tools.evaluation._harness.ToolEvaluationHarness.analyze_results",
             return_value=baseline_analysis,
         ),
         patch(
-            "cortex.tools.phase5_evaluation.append_optimization_record",
+            "cortex.tools.evaluation.append_optimization_record",
             new_callable=AsyncMock,
         ) as mock_append,
         patch(
-            "cortex.tools.phase5_evaluation.load_optimization_history",
+            "cortex.tools.evaluation.load_optimization_history",
             new_callable=AsyncMock,
             return_value=[
                 OptimizationRunRecord(

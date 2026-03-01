@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
-from cortex.tools.phase5_evaluation._models import (
+from cortex.tools.evaluation._models import (
     EvalAnalysis,
     EvalSuiteResult,
     EvalTaskResult,
 )
-from cortex.tools.phase5_redundancy_helpers import RedundancyPayload
+from cortex.tools.redundancy_helpers import RedundancyPayload
 
 
 def aggregate_tool_metrics(

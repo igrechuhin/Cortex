@@ -1,4 +1,4 @@
-"""Helper functions for phase5_execution module."""
+"""Helper functions for execution module."""
 
 from typing import cast
 

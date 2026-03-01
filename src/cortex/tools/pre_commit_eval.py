@@ -50,7 +50,7 @@ def build_eval_fast_result(
 
 async def run_eval_fast_check(ctx: object | None) -> CheckResult:
     """Run fast eval (10 tasks) and return CheckResult; fail if pass rate < 85%."""
-    from cortex.tools.phase5_evaluation import run_tool_evaluation
+    from cortex.tools.evaluation import run_tool_evaluation
 
     try:
         payload_str = await run_tool_evaluation(

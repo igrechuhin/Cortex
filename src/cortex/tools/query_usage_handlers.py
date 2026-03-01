@@ -119,7 +119,7 @@ async def run_anomalies(params: QueryUsageParams, ctx: MCPContext | None) -> str
     """Session tool anomalies: tools used in last N hours with retry/error flags."""
     from cortex.core.project_root_resolver import resolve_project_root_async
     from cortex.tools import usage_analytics
-    from cortex.tools.phase5_evaluation_anomalies_helpers import (
+    from cortex.tools.evaluation_anomalies_helpers import (
         get_session_tool_anomalies_payload,
         unavailable_session_anomalies_response,
     )
@@ -143,7 +143,7 @@ async def run_tool_description_optimization(
         )
     from cortex.core.project_root_resolver import resolve_project_root_async
     from cortex.tools import usage_analytics
-    from cortex.tools.phase5_evaluation_optimization_helpers import (
+    from cortex.tools.evaluation_optimization_helpers import (
         get_tool_description_optimization_payload,
     )
 
@@ -161,7 +161,7 @@ async def run_production_monitoring(
     """Production monitoring: rolling baseline, current metrics, drift alerts."""
     from cortex.core.project_root_resolver import resolve_project_root_async
     from cortex.tools import usage_analytics
-    from cortex.tools.phase5_production_monitoring_helpers import (
+    from cortex.tools.production_monitoring_helpers import (
         get_production_monitoring_payload,
     )
 
@@ -182,7 +182,7 @@ async def run_token_efficiency(params: QueryUsageParams, ctx: MCPContext | None)
     """Token efficiency: top token-expensive tools by total and by avg."""
     from cortex.core.project_root_resolver import resolve_project_root_async
     from cortex.tools import usage_analytics
-    from cortex.tools.phase5_token_efficiency_helpers import (
+    from cortex.tools.token_efficiency_helpers import (
         get_token_efficiency_payload,
     )
 
@@ -197,7 +197,7 @@ async def run_redundancy(params: QueryUsageParams, ctx: MCPContext | None) -> st
     """Redundant tool call detection (Anthropic Step 3)."""
     from cortex.core.project_root_resolver import resolve_project_root_async
     from cortex.tools import usage_analytics
-    from cortex.tools.phase5_redundancy_helpers import get_redundancy_payload
+    from cortex.tools.redundancy_helpers import get_redundancy_payload
 
     root = await resolve_project_root_async(None, ctx)
     tracker = await usage_analytics._get_tracker(root)  # type: ignore[attr-defined]
@@ -220,7 +220,7 @@ async def run_session_continuity(
     """Session continuity score (Anthropic Step 5): turns until productive."""
     from cortex.core.project_root_resolver import resolve_project_root_async
     from cortex.tools import usage_analytics
-    from cortex.tools.phase5_session_continuity_helpers import (
+    from cortex.tools.session_continuity_helpers import (
         get_session_continuity_payload,
     )
 
@@ -243,7 +243,7 @@ async def run_tool_frequency(params: QueryUsageParams, ctx: MCPContext | None) -
     """Tool frequency (Anthropic Step 6): tools per session, tier token impact."""
     from cortex.core.project_root_resolver import resolve_project_root_async
     from cortex.tools import usage_analytics
-    from cortex.tools.phase5_tool_frequency_helpers import get_tool_frequency_payload
+    from cortex.tools.tool_frequency_helpers import get_tool_frequency_payload
 
     root = await resolve_project_root_async(None, ctx)
     tracker = await usage_analytics._get_tracker(root)  # type: ignore[attr-defined]

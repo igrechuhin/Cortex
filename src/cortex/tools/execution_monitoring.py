@@ -1,10 +1,10 @@
 """Logging and monitoring helpers for Phase 5 execution tools.
 
-Extracted to keep phase5_execution.py under 400 lines.
+Extracted to keep execution module under 400 lines.
 """
 
 from cortex.core.context_logging import MCPContext, log_client
-from cortex.tools.phase5_execution_errors import (
+from cortex.tools.execution_errors import (
     create_execution_error_response,
     create_invalid_action_error,
 )
