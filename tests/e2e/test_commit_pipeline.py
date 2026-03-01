@@ -13,7 +13,7 @@ import pytest
 
 from cortex.tools.execution.pre_commit_tools import execute_pre_commit_checks
 from cortex.tools.files.file_operations import manage_file
-from cortex.tools.validation_operations import validate
+from cortex.tools.validation.operations import validate
 from tests.helpers.path_helpers import ensure_test_cortex_structure
 from tests.helpers.tool_call_helpers import get_tool_fn, to_dict
 

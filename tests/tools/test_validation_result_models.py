@@ -5,7 +5,7 @@ from __future__ import annotations
 import pytest
 from pydantic import ValidationError
 
-from cortex.tools.validation_result_models import (
+from cortex.tools.validation.result_models import (
     LinkGraphFormat,
     ValidateCheckType,
     ValidateDuplicationsResult,

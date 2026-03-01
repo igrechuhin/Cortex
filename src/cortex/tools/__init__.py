@@ -5,7 +5,7 @@ This package contains all MCP tool implementations organized by phase.
 
 Modules:
 - file_operations: File management operations (1 tool) - Phase 9.1.1 split
-- validation_operations: Validation operations (1 tool) - Phase 9.1.1 split
+- validation.operations: Validation operations (1 tool) - Phase 9.1.1 split
 - analysis_operations: Analysis operations (1 tool) - Phase 9.1.1 split
 - refactoring_operations: Refactoring suggestions (1 tool) - Split from
   analysis_operations
@@ -14,7 +14,7 @@ Modules:
 - markdown_operations: Markdown file operations (1 tool) - Markdown lint fixing
 - foundation_*: Core Memory Bank operations (4 tools split across modules)
 - linking_operations: Link management and transclusion (4 tools)
-- validation_tools: Validation and quality checks (5 tools)
+- validation: Validation and quality checks (validate tool)
 - optimization: Token optimization and context management (7 tools)
 - analysis_usage: Usage pattern and structure analysis (3 tools)
 - refactoring_tools: Refactoring suggestions (4 tools)
@@ -72,8 +72,7 @@ from . import (
     task_locking,  # noqa: F401
     tool_search_operations,  # noqa: F401
     usage_analytics,  # noqa: F401
-    validation_operations,  # noqa: F401
-    validation_tools,  # noqa: F401
+    validation,  # noqa: F401
     workflow_operations,  # noqa: F401
 )
 from .context import (
@@ -118,7 +117,6 @@ __all__ = [
     "foundation_stats",
     "foundation_version",
     "linking_operations",
-    "validation_tools",
     "optimization",
     "analysis_usage",
     "evaluation",
@@ -150,6 +148,6 @@ __all__ = [
     "synapse_prompts",
     "task_locking",
     "usage_analytics",
-    "validation_operations",
+    "validation",
     "workflow_operations",
 ]

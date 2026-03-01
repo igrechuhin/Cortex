@@ -4,7 +4,7 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
-from cortex.tools.validation_helpers import (
+from cortex.tools.validation.helpers import (
     ValidationCheckType,
     create_invalid_check_type_error,
     create_validation_error_response,

@@ -10,16 +10,22 @@ from cortex.core.file_system import FileSystemManager
 from cortex.core.metadata_index import MetadataIndex
 from cortex.managers import initialization
 from cortex.managers.manager_utils import get_manager
-from cortex.tools.validation_duplication import handle_duplications_validation
-from cortex.tools.validation_helpers import (
+from cortex.tools.validation.duplication import (
+    handle_duplications_validation,
+)
+from cortex.tools.validation.helpers import (
     ValidationCheckType,
     create_invalid_check_type_error,
 )
-from cortex.tools.validation_infrastructure import handle_infrastructure_validation
-from cortex.tools.validation_quality import handle_quality_validation
-from cortex.tools.validation_roadmap_sync import handle_roadmap_sync_validation
-from cortex.tools.validation_schema import handle_schema_validation
-from cortex.tools.validation_timestamps import handle_timestamps_validation
+from cortex.tools.validation.infrastructure import (
+    handle_infrastructure_validation,
+)
+from cortex.tools.validation.quality import handle_quality_validation
+from cortex.tools.validation.roadmap_sync import (
+    handle_roadmap_sync_validation,
+)
+from cortex.tools.validation.schema import handle_schema_validation
+from cortex.tools.validation.timestamps import handle_timestamps_validation
 from cortex.validation.duplication_detector import DuplicationDetector
 from cortex.validation.quality_metrics import QualityMetrics
 from cortex.validation.schema_validator import SchemaValidator

@@ -12,7 +12,7 @@ import pytest
 
 from cortex.tools.query_memory_bank_operations import query_memory_bank
 from cortex.tools.refactoring_operations import suggest_refactoring
-from cortex.tools.validation_operations import validate
+from cortex.tools.validation.operations import validate
 from tests.helpers.path_helpers import ensure_test_cortex_structure
 from tests.helpers.tool_call_helpers import get_tool_fn, to_dict
 

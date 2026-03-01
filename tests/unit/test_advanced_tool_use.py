@@ -12,7 +12,7 @@ from cortex.tools.tool_categories import (
     ToolCategory,
     get_tool_category,
 )
-from cortex.tools.validation_operations import VALIDATE_INPUT_EXAMPLES
+from cortex.tools.validation.operations import VALIDATE_INPUT_EXAMPLES
 
 
 class TestManageFileInputExamples:

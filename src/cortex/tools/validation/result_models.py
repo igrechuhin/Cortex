@@ -11,7 +11,7 @@ from typing import Annotated
 
 from pydantic import BeforeValidator, Field
 
-from .models_base import (
+from cortex.tools.models_base import (
     ErrorResultBase,
     StrictBaseModel,
     ToolResultBase,

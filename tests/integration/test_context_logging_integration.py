@@ -15,7 +15,7 @@ import pytest
 from cortex.core.context_logging import log_client, report_progress_safe
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.tools.files.file_operations import manage_file
-from cortex.tools.validation_operations import validate
+from cortex.tools.validation.operations import validate
 
 
 @pytest.mark.asyncio
@@ -93,11 +93,12 @@ class TestContextLoggingIntegration:
         resolve_mock = AsyncMock(return_value=temp_project_root)
         with (
             patch(
-                "cortex.tools.validation_operations.resolve_project_root_async",
+                "cortex.tools.validation.operations.resolve_project_root_async",
                 resolve_mock,
             ),
             patch(
-                "cortex.tools.validation_operations.log_client", new_callable=AsyncMock
+                "cortex.tools.validation.operations.log_client",
+                new_callable=AsyncMock,
             ) as mock_log,
         ):
             # Act

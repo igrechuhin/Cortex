@@ -30,7 +30,7 @@ from cortex.validation.models import (
 
 from .models_reexports import *  # noqa: F403
 from .models_reexports import __all__
-from .validation_result_models import (
+from .validation.result_models import (
     ValidateDuplicationsResult,
     ValidateErrorResult,
     ValidateInfrastructureResult,

@@ -18,7 +18,10 @@ from cortex.tools.models import (
     DocsAndMemoryBankSyncResult,
     PreflightCheckSummary,
 )
-from cortex.tools.validation_operations import ValidateCheckTypeName, validate
+from cortex.tools.validation.operations import (
+    ValidateCheckTypeName,
+    validate,
+)
 
 
 async def _decode_validation_result(

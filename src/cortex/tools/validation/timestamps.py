@@ -3,7 +3,7 @@
 from pathlib import Path
 
 from cortex.core.file_system import FileSystemManager
-from cortex.tools.validation_helpers import read_all_memory_bank_files
+from cortex.tools.validation.helpers import read_all_memory_bank_files
 from cortex.validation.timestamp_validator import (
     validate_timestamps_all_files,
     validate_timestamps_single_file,

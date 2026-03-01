@@ -9,35 +9,39 @@ import pytest
 
 from cortex.core.models import DetailedFileMetadata, ModelDict
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
-from cortex.tools.validation_dispatch import (
+from cortex.tools.validation.dispatch import (
     handle_infrastructure_validation_wrapper,
     handle_timestamps_validation_wrapper,
     setup_validation_managers,
 )
-from cortex.tools.validation_duplication import (
+from cortex.tools.validation.duplication import (
     handle_duplications_validation,
     validate_duplications,
 )
-from cortex.tools.validation_helpers import (
+from cortex.tools.validation.helpers import (
     create_invalid_check_type_error,
     create_validation_error_response,
     generate_duplication_fixes,
     read_all_memory_bank_files,
 )
-from cortex.tools.validation_infrastructure import handle_infrastructure_validation
-from cortex.tools.validation_operations import validate, validate_resource
-from cortex.tools.validation_quality import (
+from cortex.tools.validation.infrastructure import (
+    handle_infrastructure_validation,
+)
+from cortex.tools.validation.operations import validate, validate_resource
+from cortex.tools.validation.quality import (
     handle_quality_validation,
     validate_quality_all_files,
     validate_quality_single_file,
 )
-from cortex.tools.validation_roadmap_sync import handle_roadmap_sync_validation
-from cortex.tools.validation_schema import (
+from cortex.tools.validation.roadmap_sync import (
+    handle_roadmap_sync_validation,
+)
+from cortex.tools.validation.schema import (
     handle_schema_validation,
     validate_schema_all_files,
     validate_schema_single_file,
 )
-from cortex.tools.validation_timestamps import handle_timestamps_validation
+from cortex.tools.validation.timestamps import handle_timestamps_validation
 from cortex.validation.timestamp_validator import (
     validate_timestamps_all_files,
     validate_timestamps_single_file,
@@ -1170,9 +1174,9 @@ class TestSetupValidationManagers:
 
         with (
             patch(
-                "cortex.tools.validation_dispatch.initialization.get_managers"
+                "cortex.tools.validation.dispatch.initialization.get_managers"
             ) as mock_get_managers,
-            patch("cortex.tools.validation_dispatch.get_manager") as mock_get_manager,
+            patch("cortex.tools.validation.dispatch.get_manager") as mock_get_manager,
         ):
             mock_get_managers.return_value = {
                 "fs": mock_fs,
@@ -1213,10 +1217,10 @@ class TestValidateMainFunction:
 
         with (
             patch(
-                "cortex.tools.validation_dispatch.setup_validation_managers"
+                "cortex.tools.validation.dispatch.setup_validation_managers"
             ) as mock_setup,
             patch(
-                "cortex.tools.validation_dispatch.handle_schema_validation_wrapper"
+                "cortex.tools.validation.dispatch.handle_schema_validation_wrapper"
             ) as mock_handle,
         ):
             mock_setup.return_value = {}
@@ -1239,10 +1243,10 @@ class TestValidateMainFunction:
 
         with (
             patch(
-                "cortex.tools.validation_dispatch.setup_validation_managers"
+                "cortex.tools.validation.dispatch.setup_validation_managers"
             ) as mock_setup,
             patch(
-                "cortex.tools.validation_dispatch.handle_duplications_validation_wrapper"
+                "cortex.tools.validation.dispatch.handle_duplications_validation_wrapper"
             ) as mock_handle,
         ):
             mock_setup.return_value = {}
@@ -1265,10 +1269,10 @@ class TestValidateMainFunction:
 
         with (
             patch(
-                "cortex.tools.validation_dispatch.setup_validation_managers"
+                "cortex.tools.validation.dispatch.setup_validation_managers"
             ) as mock_setup,
             patch(
-                "cortex.tools.validation_dispatch.handle_quality_validation_wrapper"
+                "cortex.tools.validation.dispatch.handle_quality_validation_wrapper"
             ) as mock_handle,
         ):
             mock_setup.return_value = {}
@@ -1291,10 +1295,10 @@ class TestValidateMainFunction:
 
         with (
             patch(
-                "cortex.tools.validation_dispatch.setup_validation_managers"
+                "cortex.tools.validation.dispatch.setup_validation_managers"
             ) as mock_setup,
             patch(
-                "cortex.tools.validation_dispatch.handle_infrastructure_validation_wrapper"
+                "cortex.tools.validation.dispatch.handle_infrastructure_validation_wrapper"
             ) as mock_handle,
         ):
             mock_setup.return_value = {}
@@ -1328,7 +1332,7 @@ class TestValidateMainFunction:
     ) -> None:
         """Wrapper delegates to handle_infrastructure_validation (covers dispatch)."""
         with patch(
-            "cortex.tools.validation_dispatch.handle_infrastructure_validation",
+            "cortex.tools.validation.dispatch.handle_infrastructure_validation",
             new_callable=AsyncMock,
             return_value='{"status":"success","checks_performed":{}}',
         ) as mock_impl:
@@ -1346,7 +1350,7 @@ class TestValidateMainFunction:
         mock_fs = MagicMock()
         managers: dict[str, Any] = {"fs_manager": mock_fs}
         with patch(
-            "cortex.tools.validation_dispatch.handle_timestamps_validation",
+            "cortex.tools.validation.dispatch.handle_timestamps_validation",
             new_callable=AsyncMock,
             return_value='{"status":"success","issues":[]}',
         ) as mock_impl:
@@ -1364,7 +1368,7 @@ class TestValidateMainFunction:
         memory_bank_dir.mkdir(parents=True)
 
         with patch(
-            "cortex.tools.validation_dispatch.setup_validation_managers"
+            "cortex.tools.validation.dispatch.setup_validation_managers"
         ) as mock_setup:
             mock_setup.return_value = {}
 
@@ -1383,7 +1387,7 @@ class TestValidateMainFunction:
         """Test validate function exception handling."""
         # Arrange
         with patch(
-            "cortex.tools.validation_dispatch.setup_validation_managers"
+            "cortex.tools.validation.dispatch.setup_validation_managers"
         ) as mock_setup:
             mock_setup.side_effect = RuntimeError("Setup failed")
 
@@ -1405,10 +1409,10 @@ class TestValidateMainFunction:
 
         with (
             patch(
-                "cortex.tools.validation_dispatch.setup_validation_managers"
+                "cortex.tools.validation.dispatch.setup_validation_managers"
             ) as mock_setup,
             patch(
-                "cortex.tools.validation_dispatch.handle_duplications_validation_wrapper"
+                "cortex.tools.validation.dispatch.handle_duplications_validation_wrapper"
             ) as mock_handle,
         ):
             mock_setup.return_value = {}
@@ -1446,15 +1450,15 @@ class TestValidateContextLogging:
         mock_ctx = AsyncMock()
         with (
             patch(
-                "cortex.tools.validation_operations.log_client",
+                "cortex.tools.validation.operations.log_client",
                 new_callable=AsyncMock,
             ) as mock_log,
             patch(
-                "cortex.tools.validation_dispatch.prepare_validation_managers",
+                "cortex.tools.validation.dispatch.prepare_validation_managers",
                 new_callable=AsyncMock,
             ) as mock_prepare,
             patch(
-                "cortex.tools.validation_dispatch.call_dispatch_validation",
+                "cortex.tools.validation.dispatch.call_dispatch_validation",
                 new_callable=AsyncMock,
                 return_value='{"status": "success"}',
             ),
@@ -1484,7 +1488,7 @@ class TestValidateContextLogging:
         memory_bank_dir.mkdir(parents=True)
         mock_ctx = AsyncMock()
         with patch(
-            "cortex.tools.validation_operations.log_client",
+            "cortex.tools.validation.operations.log_client",
             new_callable=AsyncMock,
         ) as mock_log:
             # Act
@@ -1513,11 +1517,11 @@ class TestValidateContextLogging:
         mock_ctx = AsyncMock()
         with (
             patch(
-                "cortex.tools.validation_operations.log_client",
+                "cortex.tools.validation.operations.log_client",
                 new_callable=AsyncMock,
             ) as mock_log,
             patch(
-                "cortex.tools.validation_operations.prepare_validation_managers",
+                "cortex.tools.validation.operations.prepare_validation_managers",
                 new_callable=AsyncMock,
                 side_effect=RuntimeError("Setup failed"),
             ),
@@ -1942,10 +1946,10 @@ class TestValidateResource:
         memory_bank_dir.mkdir(parents=True)
         with (
             patch(
-                "cortex.tools.validation_operations.prepare_validation_managers"
+                "cortex.tools.validation.operations.prepare_validation_managers"
             ) as mock_prepare,
             patch(
-                "cortex.tools.validation_operations.call_dispatch_validation"
+                "cortex.tools.validation.operations.call_dispatch_validation"
             ) as mock_dispatch,
         ):
             mock_prepare.return_value = (tmp_path, {})

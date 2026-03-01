@@ -7,13 +7,13 @@ from typing import Annotated
 
 from pydantic import BeforeValidator, Field
 
-from .models_base import (
+from cortex.tools.models_base import (
     ErrorResultBase,
     StrictBaseModel,
     ToolResultBase,
     ToolResultStatus,
 )
-from .validation_result_models import (
+from cortex.tools.validation.result_models import (
     LinkGraphFormat,
     ValidateLinksMode,
 )

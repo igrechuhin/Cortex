@@ -20,7 +20,7 @@ from cortex.tools.files.file_operations import manage_file
 from cortex.tools.linking_operations import parse_file_links, validate_links
 from cortex.tools.optimization import load_context
 from cortex.tools.query_memory_bank_operations import query_memory_bank
-from cortex.tools.validation_operations import validate
+from cortex.tools.validation.operations import validate
 from tests.helpers.schema_fixtures import MINIMAL_VALID_PROJECT_BRIEF_CONTENT
 
 

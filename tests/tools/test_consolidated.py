@@ -15,8 +15,8 @@ from cortex.tools.configuration_operations import configure
 from cortex.tools.context.analysis_operations import analyze
 from cortex.tools.files.file_operations import manage_file
 from cortex.tools.refactoring_operations import suggest_refactoring
-from cortex.tools.validation_operations import validate
-from cortex.tools.validation_result_models import SchemaValidationResult
+from cortex.tools.validation.operations import validate
+from cortex.tools.validation.result_models import SchemaValidationResult
 from cortex.validation.models import (
     CategoryBreakdown,
     DuplicateEntry,
@@ -526,7 +526,7 @@ class TestValidate:
 
         with (
             patch(
-                "cortex.tools.validation_operations.resolve_project_root_async",
+                "cortex.tools.validation.operations.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=temp_memory_bank.parent.parent.parent,
             ),
@@ -610,7 +610,7 @@ class TestValidate:
 
         with (
             patch(
-                "cortex.tools.validation_operations.resolve_project_root_async",
+                "cortex.tools.validation.operations.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=temp_memory_bank.parent.parent.parent,
             ),
@@ -627,7 +627,7 @@ class TestValidate:
                 return_value=temp_memory_bank.parent.parent.parent,
             ),
             patch(
-                "cortex.tools.validation_helpers.read_all_memory_bank_files",
+                "cortex.tools.validation.helpers.read_all_memory_bank_files",
                 return_value={"file1.md": "# Content", "file2.md": "# Content"},
             ),
         ):
@@ -699,7 +699,7 @@ class TestValidate:
 
         with (
             patch(
-                "cortex.tools.validation_operations.resolve_project_root_async",
+                "cortex.tools.validation.operations.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=temp_memory_bank.parent.parent.parent,
             ),
@@ -750,7 +750,7 @@ class TestValidate:
 
         with (
             patch(
-                "cortex.tools.validation_operations.resolve_project_root_async",
+                "cortex.tools.validation.operations.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=temp_memory_bank.parent.parent.parent,
             ),

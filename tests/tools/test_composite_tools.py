@@ -141,7 +141,7 @@ class TestAgentWorkflowSafeManageFile:
         file_result = {"status": "success", "file_name": "roadmap.md"}
         post_val = {"status": "success", "valid": True}
         with patch(
-            "cortex.tools.validation_operations.validate",
+            "cortex.tools.validation.operations.validate",
             new_callable=AsyncMock,
             side_effect=[json.dumps(pre_val), json.dumps(post_val)],
         ):
@@ -168,7 +168,7 @@ class TestAgentWorkflowSafeManageFile:
         file_result = {"status": "success"}
         post_val = {"status": "success"}
         with patch(
-            "cortex.tools.validation_operations.validate",
+            "cortex.tools.validation.operations.validate",
             new_callable=AsyncMock,
             side_effect=[json.dumps(pre_val), json.dumps(post_val)],
         ) as mock_validate:

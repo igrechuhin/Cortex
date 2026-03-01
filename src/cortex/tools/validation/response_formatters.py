@@ -7,7 +7,7 @@ import json
 from typing import cast
 
 from cortex.core.models import ResponseFormat
-from cortex.tools.validation_helpers import ValidationCheckType
+from cortex.tools.validation.helpers import ValidationCheckType
 
 
 def parse_validate_json(raw: str) -> dict[str, object] | None:

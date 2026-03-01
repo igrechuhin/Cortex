@@ -30,6 +30,8 @@
 
 - ✅ **Tools subpackage Session 5 (optimization/)** - COMPLETE (2026-03-01) - Moved progressive_operations, relevance_operations, summarization_operations into optimization/ subpackage. Updated imports project-wide. All tests pass.
 
+- ✅ **Tools subpackage Session 6: validation/** - COMPLETE (2026-03-01) - Moved validation_*, schema_* (12 files) into src/cortex/tools/validation/; updated imports project-wide; tests and quality gate pass.
+
 ## Completed Work (2026-02-28)
 
 - **Summary (2026-02-28)** - 1 entries archived.

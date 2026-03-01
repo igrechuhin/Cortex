@@ -19,6 +19,7 @@
 - **Tools subpackage Session 3: files/** - COMPLETE. Moved file_*and markdown_* — 19 files — into src/cortex/tools/files/; updated imports project-wide; tests and quality gate pass.
 - **Tools subpackage Session 4 (execution/)** - COMPLETE. Moved pre_commit_* and quality_precommit_models into src/cortex/tools/execution/; moved execution.py to execution/safe_execution.py. Updated imports project-wide. All tests pass.
 - **Tools subpackage Session 5 (optimization/)** - COMPLETE. Moved progressive_operations, relevance_operations, summarization_operations into optimization/ subpackage. Updated imports in optimization_handlers*.py and tests. 4867 tests pass, 92.36% coverage.
+- **Tools subpackage Session 6 (validation/)** - COMPLETE. Moved validation_* files into src/cortex/tools/validation/ subpackage. Updated imports project-wide. 4867 tests pass, 92.36% coverage.
 
 ## 2026-02-28
 
