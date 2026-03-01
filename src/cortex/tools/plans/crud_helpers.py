@@ -6,8 +6,8 @@ import re
 from pathlib import Path
 
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
-from cortex.tools.plan_archive import is_path_under_archive
-from cortex.tools.plan_crud_models import (
+from cortex.tools.plans.archive import is_path_under_archive
+from cortex.tools.plans.crud_models import (
     CreatePlanResult,
     GetPlanResult,
     ListPlansResult,

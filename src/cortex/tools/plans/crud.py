@@ -11,14 +11,14 @@ from cortex.core.constants import MCP_TOOL_TIMEOUT_FAST, MCP_TOOL_TIMEOUT_MEDIUM
 from cortex.core.context_logging import MCPContext, log_client
 from cortex.core.mcp_stability import ensure_usage_context, mcp_tool_wrapper
 from cortex.core.project_root_resolver import resolve_project_root_async
-from cortex.tools.plan_crud_helpers import (
+from cortex.tools.plans.crud_helpers import (
     create_error_result,
     create_plan_file,
     create_success_result,
     get_plan_impl,
     list_plans_impl,
 )
-from cortex.tools.plan_crud_models import (
+from cortex.tools.plans.crud_models import (
     CreatePlanResult,
     GetPlanResult,
     ListPlansResult,

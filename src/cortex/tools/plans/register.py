@@ -14,7 +14,7 @@ from cortex.core.context_logging import MCPContext, log_client
 from cortex.core.mcp_stability import ensure_usage_context, mcp_tool_wrapper
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.core.project_root_resolver import resolve_project_root_async
-from cortex.tools.plan_roadmap_helpers import (
+from cortex.tools.plans.register_helpers import (
     create_register_error_result,
     create_register_success_result,
     is_completed_status,
@@ -23,7 +23,7 @@ from cortex.tools.plan_roadmap_helpers import (
     validate_registration_section,
     write_roadmap_file,
 )
-from cortex.tools.plan_roadmap_models import RegisterPlanResult
+from cortex.tools.plans.register_models import RegisterPlanResult
 
 _ROADMAP_COMPLETED_STATUS_MESSAGE = (
     "Roadmap records future/upcoming work only. "

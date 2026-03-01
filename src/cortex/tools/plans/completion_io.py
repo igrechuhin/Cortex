@@ -7,7 +7,7 @@ from pathlib import Path
 
 from cortex.core.constants import MemoryBankFile
 from cortex.core.exceptions import FileConflictError, FileLockTimeoutError
-from cortex.tools.roadmap_corruption import fix_roadmap_content_if_needed
+from cortex.tools.plans.corruption import fix_roadmap_content_if_needed
 
 
 def read_file(path: Path) -> tuple[str | None, str | None]:

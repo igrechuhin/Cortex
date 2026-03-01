@@ -15,10 +15,10 @@ Tools:
 
 Consumers should import from this module for backward compatibility.
 Tests that patch resolve_project_root_async should patch the implementation module
-(cortex.tools.plan_crud or cortex.tools.plan_roadmap).
+(cortex.tools.plans.crud or cortex.tools.plans.register).
 """
 
-from cortex.tools.plan_crud import (
+from cortex.tools.plans.crud import (
     CreatePlanResult,
     GetPlanResult,
     ListPlansResult,
@@ -27,7 +27,7 @@ from cortex.tools.plan_crud import (
     get_plan,
     list_plans,
 )
-from cortex.tools.plan_roadmap import (
+from cortex.tools.plans.register import (
     RegisterPlanResult,
     register_plan_in_roadmap,
 )

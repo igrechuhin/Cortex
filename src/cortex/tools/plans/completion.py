@@ -19,16 +19,16 @@ from cortex.core.context_logging import MCPContext, log_client
 from cortex.core.mcp_stability import ensure_usage_context, mcp_tool_wrapper
 from cortex.core.models import OperationStatus
 from cortex.core.project_root_resolver import resolve_project_root_async
-from cortex.tools.plan_completion_content import today_iso
-from cortex.tools.plan_completion_models import CompletePlanResult
-from cortex.tools.plan_completion_ops import (
+from cortex.tools.plans.completion_content import today_iso
+from cortex.tools.plans.completion_models import CompletePlanResult
+from cortex.tools.plans.completion_ops import (
     apply_progress_and_archive,
     complete_plan_invalid_date_json,
     do_complete_plan,
     execute_append_active_context,
     execute_append_progress,
 )
-from cortex.tools.plan_completion_validation import validate_date_str
+from cortex.tools.plans.completion_validation import validate_date_str
 
 
 async def _complete_plan_impl(

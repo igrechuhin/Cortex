@@ -10,7 +10,7 @@ import pytest
 from pydantic import ValidationError
 
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
-from cortex.tools.roadmap_operations import (
+from cortex.tools.plans.entries import (
     RoadmapSection,
     entry_text_looks_completed,
     execute_roadmap_insertion,

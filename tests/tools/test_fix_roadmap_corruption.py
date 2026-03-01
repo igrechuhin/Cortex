@@ -5,7 +5,7 @@ from unittest.mock import AsyncMock, patch
 import pytest
 
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
-from cortex.tools.roadmap_corruption import (
+from cortex.tools.plans.corruption import (
     fix_memory_bank_content_if_needed,
     fix_roadmap_content_if_needed,
     fix_roadmap_corruption,
@@ -19,7 +19,7 @@ class TestFixRoadmapCorruption:
     ) -> None:
         # Arrange
         with patch(
-            "cortex.tools.roadmap_corruption.resolve_project_root_async",
+            "cortex.tools.plans.corruption.resolve_project_root_async",
             new_callable=AsyncMock,
             return_value=tmp_path,
         ):
@@ -43,7 +43,7 @@ class TestFixRoadmapCorruption:
         _ = roadmap_path.write_text(original, encoding="utf-8")
 
         with patch(
-            "cortex.tools.roadmap_corruption.resolve_project_root_async",
+            "cortex.tools.plans.corruption.resolve_project_root_async",
             new_callable=AsyncMock,
             return_value=tmp_path,
         ):
@@ -68,7 +68,7 @@ class TestFixRoadmapCorruption:
         _ = roadmap_path.write_text(original, encoding="utf-8")
 
         with patch(
-            "cortex.tools.roadmap_corruption.resolve_project_root_async",
+            "cortex.tools.plans.corruption.resolve_project_root_async",
             new_callable=AsyncMock,
             return_value=tmp_path,
         ):
@@ -193,11 +193,11 @@ class TestFixRoadmapCorruptionContextLogging:
         mock_ctx = AsyncMock()
         with (
             patch(
-                "cortex.tools.roadmap_corruption.log_client",
+                "cortex.tools.plans.corruption.log_client",
                 new_callable=AsyncMock,
             ) as mock_log,
             patch(
-                "cortex.tools.roadmap_corruption.resolve_project_root_async",
+                "cortex.tools.plans.corruption.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=tmp_path,
             ),
@@ -228,11 +228,11 @@ class TestFixRoadmapCorruptionContextLogging:
         mock_ctx = AsyncMock()
         with (
             patch(
-                "cortex.tools.roadmap_corruption.log_client",
+                "cortex.tools.plans.corruption.log_client",
                 new_callable=AsyncMock,
             ) as mock_log,
             patch(
-                "cortex.tools.roadmap_corruption.resolve_project_root_async",
+                "cortex.tools.plans.corruption.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=tmp_path,
             ),

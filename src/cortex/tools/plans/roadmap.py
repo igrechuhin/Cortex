@@ -80,7 +80,7 @@ async def _roadmap_handle_add_entry(
     change_description: str | None,
     ctx: MCPContext | None,
 ) -> str:
-    from cortex.tools.roadmap_operations import add_roadmap_entry
+    from cortex.tools.plans.entries import add_roadmap_entry
 
     return await add_roadmap_entry(
         section=section,
@@ -95,7 +95,7 @@ async def _roadmap_handle_remove_entry(
     entry_contains: str,
     ctx: MCPContext | None,
 ) -> str:
-    from cortex.tools.roadmap_operations import remove_roadmap_entry
+    from cortex.tools.plans.entries import remove_roadmap_entry
 
     return await remove_roadmap_entry(entry_contains=entry_contains, ctx=ctx)
 
@@ -104,7 +104,7 @@ async def _roadmap_handle_remove_section(
     section_heading_contains: str,
     ctx: MCPContext | None,
 ) -> str:
-    from cortex.tools.roadmap_operations import remove_roadmap_section
+    from cortex.tools.plans.entries import remove_roadmap_section
 
     return await remove_roadmap_section(
         section_heading_contains=section_heading_contains,

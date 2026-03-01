@@ -63,7 +63,7 @@ async def _append_entry_handle_progress(
     from cortex.core.context_logging import log_client
     from cortex.core.models import OperationStatus
     from cortex.tools.models import AppendProgressEntryResult
-    from cortex.tools.plan_completion import append_progress_entry_impl
+    from cortex.tools.plans.completion import append_progress_entry_impl
 
     try:
         return await append_progress_entry_impl(date_str, entry_text, ctx)
@@ -87,7 +87,7 @@ async def _append_entry_handle_active_context(
     from cortex.core.context_logging import log_client
     from cortex.core.models import OperationStatus
     from cortex.tools.models import AppendActiveContextEntryResult
-    from cortex.tools.plan_completion import append_active_context_entry_impl
+    from cortex.tools.plans.completion import append_active_context_entry_impl
 
     try:
         return await append_active_context_entry_impl(date_str, title, summary, ctx)

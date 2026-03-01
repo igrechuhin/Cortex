@@ -22,6 +22,8 @@
 
 - ✅ **Tools subpackage Session 1: context/** - COMPLETE (2026-03-01) - Moved context_*, analysis_* (16 files) into src/cortex/tools/context/; updated imports; tests and quality gate pass.
 
+- ✅ **Tools subpackage Session 2: plans/** - COMPLETE (2026-03-01) - Moved plan_*and roadmap_* (27 files) into src/cortex/tools/plans/; kept roadmap_operations_models in tools root to avoid circular imports; updated imports project-wide; tests and quality gate pass.
+
 ## Completed Work (2026-02-28)
 
 - **Summary (2026-02-28)** - 1 entries archived.

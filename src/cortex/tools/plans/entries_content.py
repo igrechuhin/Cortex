@@ -6,7 +6,7 @@ Extracted from roadmap_operations for maintainability.
 
 import re
 
-from cortex.tools.roadmap_operations_parsing import (
+from cortex.tools.plans.entries_parsing import (
     find_insertion_line,
     parse_roadmap_sections,
 )

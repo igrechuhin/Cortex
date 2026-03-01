@@ -5,11 +5,11 @@ from pathlib import Path
 
 from cortex.core.constants import MemoryBankFile
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
-from cortex.tools.roadmap_corruption_detectors import (
+from cortex.tools.plans.corruption_detectors import (
     detect_phrase_corruption,
     detect_roadmap_corruption,
 )
-from cortex.tools.roadmap_corruption_models import (
+from cortex.tools.plans.corruption_models import (
     CorruptionMatch,
     FixRoadmapCorruptionResult,
 )

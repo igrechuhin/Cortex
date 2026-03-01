@@ -10,13 +10,16 @@ from cortex.core.constants import MemoryBankFile
 from cortex.core.models import OperationStatus
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.tools.models import AddRoadmapEntryResult
-from cortex.tools.roadmap_operations_content import (
+from cortex.tools.plans.entries_content import (
     ADD_ENTRY_COMPLETED_MESSAGE,
     entry_text_looks_completed,
     insert_roadmap_entry,
     validate_section_id,
 )
-from cortex.tools.roadmap_operations_io import read_roadmap_file, write_roadmap_file
+from cortex.tools.plans.entries_io import (
+    read_roadmap_file,
+    write_roadmap_file,
+)
 
 
 def _handle_read_error(

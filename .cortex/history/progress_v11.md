@@ -14,6 +14,8 @@
 - **Rename phase-prefixed files Batch 4 (2026-03-01)** - COMPLETE. Renamed 6 phase2/3/8 tool files to linking_operations, validation_tools, structure (and structure_docs, structure_operations, structure_validation). Zero phase*.py files remain. Tests 4867 pass, coverage 92.37%.
 - **Tools subpackage Session 1: context/ (2026-03-01)** - COMPLETE. Moved 16 files (context_*, analysis_*) into src/cortex/tools/context/. Updated imports project-wide. 4867 tests pass, 92.37% coverage, quality gate passed.
 - **Commit: tools subpackage Session 1 (context/)** - COMPLETE. Phase A passed; 4867 tests, 92.37% coverage. Memory bank, roadmap, plan archiving (0 plans).
+- **Tools subpackage Session 2: plans/ (2026-03-01)** - COMPLETE. Moved plan_*and roadmap_* (27 files) into src/cortex/tools/plans/; kept roadmap_operations_models in tools root to avoid circular imports; updated all imports; tests and quality gate pass.
+- Commit: tools subpackage Session 2 (plans/). Phase A passed; 4867 tests, 92.36% coverage. Memory bank, roadmap, plan archiving (0 plans).
 
 ## 2026-02-28
 

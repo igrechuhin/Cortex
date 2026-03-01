@@ -35,7 +35,7 @@ from cortex.tools.file_operation_helpers import (
     validate_write_request,
 )
 from cortex.tools.file_section_helpers import extract_content_sections
-from cortex.tools.roadmap_corruption import fix_memory_bank_content_if_needed
+from cortex.tools.plans.corruption import fix_memory_bank_content_if_needed
 from cortex.validation.schema_validator import SchemaValidator
 
 # Avoid circular import: file_lock_guard used only at runtime in _verify_write_lock

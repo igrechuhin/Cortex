@@ -2,7 +2,7 @@
 
 import re
 
-from cortex.tools.roadmap_corruption_models import CorruptionMatch
+from cortex.tools.plans.corruption_models import CorruptionMatch
 
 
 def _detect_pattern1(lines: list[str], matches: list[CorruptionMatch]) -> None:

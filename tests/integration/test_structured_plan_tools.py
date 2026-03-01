@@ -12,7 +12,7 @@ import pytest
 
 from cortex.core.constants import MemoryBankFile
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
-from cortex.tools.plan_operations import (
+from cortex.tools.plans.operations import (
     CreatePlanResult,
     RegisterPlanResult,
     create_plan,
@@ -60,7 +60,7 @@ class TestCreatePlanIntegration:
         content = "# Test Plan\n\n**Status**: Pending\n\n## Goal\nTest.\n"
 
         with patch(
-            "cortex.tools.plan_crud.resolve_project_root_async",
+            "cortex.tools.plans.crud.resolve_project_root_async",
             new_callable=AsyncMock,
             return_value=root,
         ):
@@ -90,7 +90,7 @@ class TestCreatePlanIntegration:
         content = "# Phase 60 Feature\n\nContent."
 
         with patch(
-            "cortex.tools.plan_crud.resolve_project_root_async",
+            "cortex.tools.plans.crud.resolve_project_root_async",
             new_callable=AsyncMock,
             return_value=root,
         ):
@@ -122,7 +122,7 @@ class TestRegisterPlanInRoadmapIntegration:
         roadmap_path = memory_bank / MemoryBankFile.ROADMAP
 
         with patch(
-            "cortex.tools.plan_roadmap.resolve_project_root_async",
+            "cortex.tools.plans.register.resolve_project_root_async",
             new_callable=AsyncMock,
             return_value=root,
         ):
@@ -158,7 +158,7 @@ class TestRegisterPlanInRoadmapIntegration:
         root = temp_project_with_roadmap
 
         with patch(
-            "cortex.tools.plan_roadmap.resolve_project_root_async",
+            "cortex.tools.plans.register.resolve_project_root_async",
             new_callable=AsyncMock,
             return_value=root,
         ):
@@ -202,12 +202,12 @@ class TestCreatePlanThenRegisterIntegration:
 
         with (
             patch(
-                "cortex.tools.plan_crud.resolve_project_root_async",
+                "cortex.tools.plans.crud.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=root,
             ),
             patch(
-                "cortex.tools.plan_roadmap.resolve_project_root_async",
+                "cortex.tools.plans.register.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=root,
             ),

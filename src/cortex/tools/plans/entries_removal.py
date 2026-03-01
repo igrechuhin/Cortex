@@ -14,14 +14,17 @@ from cortex.tools.models import (
     RemoveRoadmapEntryResult,
     RemoveRoadmapSectionResult,
 )
-from cortex.tools.roadmap_operations_content import (
+from cortex.tools.plans.entries_content import (
     extract_plan_path_from_bullet,
     find_bullet_line_containing,
     find_section_range_by_heading,
     remove_line_at,
     remove_section_range,
 )
-from cortex.tools.roadmap_operations_io import read_roadmap_file, write_roadmap_file
+from cortex.tools.plans.entries_io import (
+    read_roadmap_file,
+    write_roadmap_file,
+)
 
 
 def _is_plan_marked_complete(plan_path: Path) -> bool:

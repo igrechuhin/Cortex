@@ -9,22 +9,22 @@ from cortex.tools.models import (
     AppendActiveContextEntryResult,
     AppendProgressEntryResult,
 )
-from cortex.tools.plan_completion_archive import archive_plan_file
-from cortex.tools.plan_completion_content import (
+from cortex.tools.plans.completion_archive import archive_plan_file
+from cortex.tools.plans.completion_content import (
     append_progress_entry_content,
     create_section_and_append,
     find_roadmap_bullet_line,
     has_completed_entry_for_date_and_title,
     remove_line_at,
 )
-from cortex.tools.plan_completion_io import (
+from cortex.tools.plans.completion_io import (
     read_file,
     write_active_context,
     write_progress,
     write_roadmap,
 )
-from cortex.tools.plan_completion_models import CompletePlanResult
-from cortex.tools.plan_completion_validation import (
+from cortex.tools.plans.completion_models import CompletePlanResult
+from cortex.tools.plans.completion_validation import (
     validate_date_str,
     validate_progress_entry_text,
 )

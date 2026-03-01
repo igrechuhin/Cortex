@@ -14,13 +14,13 @@ import pytest
 from cortex.core.models import OperationStatus
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.tools.append_entry_dispatcher import append_entry
-from cortex.tools.plan_completion import CompletePlanResult, complete_plan
+from cortex.tools.plans.completion import CompletePlanResult, complete_plan
 
 
 def _patch_root(tmp_path: Path):
     """Context manager to patch resolve_project_root_async to return tmp_path."""
     return patch(
-        "cortex.tools.plan_completion.resolve_project_root_async",
+        "cortex.tools.plans.completion.resolve_project_root_async",
         new_callable=AsyncMock,
         return_value=tmp_path,
     )

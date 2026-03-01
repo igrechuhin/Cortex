@@ -9,8 +9,8 @@ from cortex.core.constants import MCP_TOOL_TIMEOUT_MEDIUM
 from cortex.core.context_logging import MCPContext, log_client
 from cortex.core.mcp_stability import ensure_usage_context, mcp_tool_wrapper
 from cortex.core.project_root_resolver import resolve_project_root_async
-from cortex.tools.roadmap_corruption_detectors import detect_roadmap_corruption
-from cortex.tools.roadmap_corruption_helpers import (
+from cortex.tools.plans.corruption_detectors import detect_roadmap_corruption
+from cortex.tools.plans.corruption_helpers import (
     create_roadmap_error_response,
     fix_memory_bank_content_if_needed,
     fix_roadmap_content_if_needed,

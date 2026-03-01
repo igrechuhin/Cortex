@@ -12,7 +12,7 @@ from unittest.mock import AsyncMock, patch
 import pytest
 
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
-from cortex.tools.plan_crud_helpers import (
+from cortex.tools.plans.crud_helpers import (
     create_plan_file,
     extract_first_heading,
     extract_status_line,
@@ -22,7 +22,7 @@ from cortex.tools.plan_crud_helpers import (
     list_plans_impl,
     sanitize_plan_slug,
 )
-from cortex.tools.plan_operations import (
+from cortex.tools.plans.operations import (
     CreatePlanResult,
     GetPlanResult,
     ListPlansResult,
@@ -30,10 +30,10 @@ from cortex.tools.plan_operations import (
     create_plan,
     register_plan_in_roadmap,
 )
-from cortex.tools.plan_roadmap_helpers import (
+from cortex.tools.plans.register_helpers import (
     find_insertion_line_for_section as find_insertion_line,
 )
-from cortex.tools.plan_roadmap_helpers import (
+from cortex.tools.plans.register_helpers import (
     is_completed_status,
     parse_roadmap_sections,
     register_plan_entry,
@@ -82,7 +82,7 @@ class TestRegisterPlanInRoadmapRejectsCompleted:
     ) -> None:
         """Calling with status=COMPLETED returns error and mentions activeContext."""
         with patch(
-            "cortex.tools.plan_roadmap.resolve_project_root_async",
+            "cortex.tools.plans.register.resolve_project_root_async",
             new_callable=AsyncMock,
             return_value=tmp_path,
         ):
@@ -110,7 +110,7 @@ class TestRegisterPlanInRoadmapRejectsCompleted:
             + "## Pending plans (from .cortex/plans)\n- **Other** - PENDING\n"
         )
         with patch(
-            "cortex.tools.plan_roadmap.resolve_project_root_async",
+            "cortex.tools.plans.register.resolve_project_root_async",
             new_callable=AsyncMock,
             return_value=tmp_path,
         ):
@@ -750,7 +750,7 @@ class TestListPlansTool:
         plans_dir.mkdir(parents=True)
         _ = (plans_dir / "one.md").write_text("# One")
         with patch(
-            "cortex.tools.plan_crud.resolve_project_root_async",
+            "cortex.tools.plans.crud.resolve_project_root_async",
             new_callable=AsyncMock,
             return_value=tmp_path,
         ):
@@ -773,7 +773,7 @@ class TestGetPlanTool:
         plans_dir.mkdir(parents=True)
         _ = (plans_dir / "my-plan.md").write_text("# My Plan\n\nBody text")
         with patch(
-            "cortex.tools.plan_crud.resolve_project_root_async",
+            "cortex.tools.plans.crud.resolve_project_root_async",
             new_callable=AsyncMock,
             return_value=tmp_path,
         ):
@@ -793,7 +793,7 @@ class TestGetPlanTool:
         """create_plan(operation='get') with unknown slug returns error."""
         get_cortex_path(tmp_path, CortexResourceType.PLANS).mkdir(parents=True)
         with patch(
-            "cortex.tools.plan_crud.resolve_project_root_async",
+            "cortex.tools.plans.crud.resolve_project_root_async",
             new_callable=AsyncMock,
             return_value=tmp_path,
         ):

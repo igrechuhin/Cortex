@@ -34,7 +34,7 @@ from cortex.tools.models import (
     RemoveRoadmapEntryResult,
     RemoveRoadmapSectionResult,
 )
-from cortex.tools.roadmap_operations_content import (
+from cortex.tools.plans.entries_content import (
     entry_text_looks_completed,
     find_bullet_line_containing,
     find_section_range_by_heading,
@@ -43,13 +43,13 @@ from cortex.tools.roadmap_operations_content import (
     remove_section_range,
     validate_section_id,
 )
-from cortex.tools.roadmap_operations_insert import execute_roadmap_insertion
-from cortex.tools.roadmap_operations_parsing import (
+from cortex.tools.plans.entries_insert import execute_roadmap_insertion
+from cortex.tools.plans.entries_parsing import (
     RoadmapSection,
     get_section_bullet_lines,
     parse_roadmap_sections,
 )
-from cortex.tools.roadmap_operations_removal import (
+from cortex.tools.plans.entries_removal import (
     execute_roadmap_removal,
     execute_roadmap_section_removal,
 )

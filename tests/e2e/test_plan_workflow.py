@@ -19,8 +19,11 @@ import pytest
 
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.tools.file_operations import manage_file
-from cortex.tools.plan_crud import create_plan
-from cortex.tools.roadmap_operations import add_roadmap_entry, remove_roadmap_entry
+from cortex.tools.plans.crud import create_plan
+from cortex.tools.plans.entries import (
+    add_roadmap_entry,
+    remove_roadmap_entry,
+)
 from tests.helpers.path_helpers import ensure_test_cortex_structure
 from tests.helpers.tool_call_helpers import get_tool_fn, to_dict
 
@@ -38,11 +41,11 @@ def _isolated_root_patches(tmp_path: Path):
     mock_get_root = AsyncMock(return_value=tmp_path)
     with (
         patch(
-            "cortex.tools.plan_crud.resolve_project_root_async",
+            "cortex.tools.plans.crud.resolve_project_root_async",
             mock_resolve,
         ),
         patch(
-            "cortex.tools.roadmap_operations.resolve_project_root_async",
+            "cortex.tools.plans.entries.resolve_project_root_async",
             mock_resolve,
         ),
         patch(

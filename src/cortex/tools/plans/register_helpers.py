@@ -7,8 +7,8 @@ from pathlib import Path
 
 from cortex.core.constants import MemoryBankFile
 from cortex.core.exceptions import FileConflictError, FileLockTimeoutError
-from cortex.tools.plan_roadmap_models import RegisterPlanResult
-from cortex.tools.roadmap_corruption import fix_roadmap_content_if_needed
+from cortex.tools.plans.corruption import fix_roadmap_content_if_needed
+from cortex.tools.plans.register_models import RegisterPlanResult
 
 
 def parse_roadmap_sections(content: str) -> dict[str, tuple[int, int]]:

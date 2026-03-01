@@ -15,7 +15,7 @@ from cortex.server import mcp
 
 
 def _plan_error_invalid_operation(operation: str) -> str:
-    from cortex.tools.plan_crud import CreatePlanResult
+    from cortex.tools.plans.crud import CreatePlanResult
 
     return CreatePlanResult(
         status="error",
@@ -27,7 +27,7 @@ def _plan_error_invalid_operation(operation: str) -> str:
 
 def _plan_error_missing_complete_params() -> str:
     from cortex.core.models import OperationStatus
-    from cortex.tools.plan_completion_models import CompletePlanResult
+    from cortex.tools.plans.completion_models import CompletePlanResult
 
     return CompletePlanResult(
         status=OperationStatus.ERROR,
@@ -48,7 +48,7 @@ async def _plan_handle_complete(
     plan_file_name: str | None,
     ctx: MCPContext | None,
 ) -> str:
-    from cortex.tools.plan_completion import complete_plan
+    from cortex.tools.plans.completion import complete_plan
 
     return await complete_plan(
         plan_title=plan_title,
@@ -69,7 +69,7 @@ async def _plan_handle_crud(
     response_format: str,
     ctx: MCPContext | None,
 ) -> str:
-    from cortex.tools.plan_crud import create_plan as _create_plan
+    from cortex.tools.plans.crud import create_plan as _create_plan
 
     return await _create_plan(
         operation=operation,
@@ -83,7 +83,7 @@ async def _plan_handle_crud(
 
 
 def _plan_error_missing_register_params() -> str:
-    from cortex.tools.plan_roadmap import RegisterPlanResult
+    from cortex.tools.plans.register_models import RegisterPlanResult
 
     return RegisterPlanResult(
         status="error",
@@ -102,7 +102,7 @@ async def _plan_handle_register(
     section: str,
     ctx: MCPContext | None,
 ) -> str:
-    from cortex.tools.plan_roadmap import register_plan_in_roadmap
+    from cortex.tools.plans.register import register_plan_in_roadmap
 
     return await register_plan_in_roadmap(
         plan_title=plan_title,
@@ -110,6 +110,68 @@ async def _plan_handle_register(
         status=status,
         section=section,
         ctx=ctx,
+    )
+
+
+async def _plan_dispatch_complete(
+    plan_title: str | None,
+    summary: str | None,
+    completion_date: str | None,
+    progress_entry: str | None,
+    plan_file_name: str | None,
+    ctx: MCPContext | None,
+) -> str:
+    if not plan_title or not summary:
+        return _plan_error_missing_complete_params()
+    assert plan_title is not None and summary is not None
+    return await _plan_handle_complete(
+        plan_title, summary, completion_date, progress_entry, plan_file_name, ctx
+    )
+
+
+async def _plan_dispatch_register(
+    plan_title: str | None,
+    description: str | None,
+    status: str,
+    section: str,
+    ctx: MCPContext | None,
+) -> str:
+    if not plan_title or not description:
+        return _plan_error_missing_register_params()
+    assert plan_title is not None and description is not None
+    return await _plan_handle_register(plan_title, description, status, section, ctx)
+
+
+async def _plan_dispatch(
+    operation: str,
+    title: str | None,
+    content: str | None,
+    slug: str | None,
+    include_archive: bool,
+    response_format: str,
+    plan_title: str | None,
+    summary: str | None,
+    completion_date: str | None,
+    progress_entry: str | None,
+    plan_file_name: str | None,
+    description: str | None,
+    status: str,
+    section: str,
+    ctx: MCPContext | None,
+) -> str:
+    """Dispatch plan(operation=...) to the appropriate handler."""
+    if operation not in ("create", "list", "get", "complete", "register"):
+        return _plan_error_invalid_operation(operation)
+    if operation == "complete":
+        return await _plan_dispatch_complete(
+            plan_title, summary, completion_date, progress_entry, plan_file_name, ctx
+        )
+    if operation == "register":
+        return await _plan_dispatch_register(
+            plan_title, description, status, section, ctx
+        )
+    return await _plan_handle_crud(
+        operation, title, content, slug, include_archive, response_format, ctx
     )
 
 
@@ -135,35 +197,21 @@ async def plan(
     section: str = "pending",
     ctx: MCPContext | None = None,
 ) -> str:
-    """Plan lifecycle: create, list, get, complete, or register in roadmap (single tool).
-
-    USE WHEN: Creating a plan file, listing/getting plans, completing a plan (move
-    to activeContext), or registering a new plan in roadmap (create-plan workflow).
-
-    RETURNS: JSON per operation (CreatePlanResult, ListPlansResult, GetPlanResult,
-    CompletePlanResult, or RegisterPlanResult).
-
-    Parameters: operation (create|list|get|complete|register); create: title, content;
-    list: include_archive; get: slug, response_format; complete: plan_title, summary;
-    register: plan_title, description, status, section.
-
-    EXAMPLES: plan(operation="create", title="Phase 60", content="# Plan...");
-    plan(operation="register", plan_title="Phase 60", description="...", section="pending")
-    """
-    if operation not in ("create", "list", "get", "complete", "register"):
-        return _plan_error_invalid_operation(operation)
-    if operation == "complete":
-        if not plan_title or not summary:
-            return _plan_error_missing_complete_params()
-        return await _plan_handle_complete(
-            plan_title, summary, completion_date, progress_entry, plan_file_name, ctx
-        )
-    if operation == "register":
-        if not plan_title or not description:
-            return _plan_error_missing_register_params()
-        return await _plan_handle_register(
-            plan_title, description, status, section, ctx
-        )
-    return await _plan_handle_crud(
-        operation, title, content, slug, include_archive, response_format, ctx
+    """Plan lifecycle: create, list, get, complete, or register in roadmap."""
+    return await _plan_dispatch(
+        operation,
+        title,
+        content,
+        slug,
+        include_archive,
+        response_format,
+        plan_title,
+        summary,
+        completion_date,
+        progress_entry,
+        plan_file_name,
+        description,
+        status,
+        section,
+        ctx,
     )

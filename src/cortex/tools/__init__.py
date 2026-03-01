@@ -56,18 +56,12 @@ from . import (
     markdown_operations,  # noqa: F401
     model_benchmark,  # noqa: F401
     optimization,  # noqa: F401
-    plan_completion,  # noqa: F401
-    plan_dispatcher,  # noqa: F401
-    plan_operations,  # noqa: F401
     pre_commit_tools,  # noqa: F401
     prompts,  # noqa: F401
     query_memory_bank_operations,  # noqa: F401
     query_usage_operations,  # noqa: F401
     refactoring_operations,  # noqa: F401
     refactoring_tools,  # noqa: F401
-    roadmap_corruption,  # noqa: F401
-    roadmap_dispatcher,  # noqa: F401
-    roadmap_operations,  # noqa: F401
     rules_operations,  # noqa: F401
     script_capture_tools,  # noqa: F401
     sequential_thinking,  # noqa: F401
@@ -89,12 +83,21 @@ from .context import (
     analysis_operations,  # noqa: F401
     analysis_usage,  # noqa: F401
 )
+from .plans import (
+    completion,  # noqa: F401
+    corruption,  # noqa: F401
+    entries,  # noqa: F401
+    operations,  # noqa: F401
+    plan,  # noqa: F401
+    register,  # noqa: F401
+    roadmap,  # noqa: F401
+)
 
 # Explicitly reference modules imported for side effects to satisfy type checker
 _ = append_entry_dispatcher
 _ = execution_feedback
-_ = plan_dispatcher
-_ = roadmap_dispatcher
+_ = plan
+_ = roadmap
 _ = synapse_prompts
 
 __all__ = [
@@ -123,9 +126,9 @@ __all__ = [
     "refactoring_tools",
     "execution",
     "synapse_tools",
-    "roadmap_corruption",
-    "roadmap_operations",
-    "plan_completion",
+    "completion",
+    "corruption",
+    "entries",
     "query_memory_bank_operations",
     "query_usage_operations",
     "sequential_thinking",
@@ -133,7 +136,10 @@ __all__ = [
     "session_registry",
     "session_start_tools",
     "tool_search_operations",
-    "plan_operations",
+    "operations",
+    "plan",
+    "register",
+    "roadmap",
     "structure",
     "pre_commit_tools",
     "prompts",
