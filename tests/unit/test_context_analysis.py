@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import cast
 
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
-from cortex.tools.context_analysis_operations import (
+from cortex.tools.context.effectiveness_operations import (
     analyze_current_session,
     analyze_session_logs,
     get_context_statistics,

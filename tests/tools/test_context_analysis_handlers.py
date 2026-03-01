@@ -3,7 +3,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from cortex.tools.context_analysis_handlers import (
+from cortex.tools.context.effectiveness_handlers import (
     analyze_context_effectiveness_resource,
     get_context_usage_statistics_resource,
 )
@@ -20,7 +20,7 @@ class TestContextAnalysisResources:
             model_dump=MagicMock(return_value={"status": "success"})
         )
         with patch(
-            "cortex.tools.context_analysis_handlers.analyze_current_session",
+            "cortex.tools.context.effectiveness_handlers.analyze_current_session",
             return_value=analysis_result,
         ):
             result_str = await analyze_context_effectiveness_resource()
@@ -33,7 +33,7 @@ class TestContextAnalysisResources:
             model_dump=MagicMock(return_value={"status": "success"})
         )
         with patch(
-            "cortex.tools.context_analysis_handlers.get_context_statistics",
+            "cortex.tools.context.effectiveness_handlers.get_context_statistics",
             return_value=stats_result,
         ):
             result_str = await get_context_usage_statistics_resource()

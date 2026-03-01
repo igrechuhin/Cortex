@@ -8,7 +8,7 @@ from typing import cast
 
 from cortex.core.models import JsonValue, ModelDict, SectionMetadata
 from cortex.optimization.agent_roles import AgentRole, get_role_profile
-from cortex.tools.context_models import FileMapEntry, SectionSummary
+from cortex.tools.context.load_models import FileMapEntry, SectionSummary
 
 
 def calculate_metadata_relevance_scores(

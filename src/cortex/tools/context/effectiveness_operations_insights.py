@@ -6,7 +6,7 @@ Insight generation from context usage entries.
 
 from collections.abc import Callable
 
-from cortex.tools.models import (
+from cortex.tools.context.effectiveness_models import (
     ContextInsights,
     ContextUsageEntry,
     FileEffectiveness,

@@ -13,7 +13,7 @@ from cortex.core.models import ContextDepth, ModelDict
 from cortex.optimization.agent_roles import AgentRole
 from cortex.optimization.context_optimizer import ContextOptimizer
 from cortex.optimization.optimization_strategies import OptimizationResult
-from cortex.tools.context_operations_result import (
+from cortex.tools.context.load_operations_result import (
     format_load_context_result,
     log_context_call,
 )

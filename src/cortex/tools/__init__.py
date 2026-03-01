@@ -35,8 +35,6 @@ Total: 71 tools + 7 prompts
 
 # Import all tool modules to register their decorators
 from . import (
-    analysis_operations,  # noqa: F401
-    analysis_usage,  # noqa: F401
     append_entry_dispatcher,  # noqa: F401
     cache_json_tools,  # noqa: F401
     compaction_operations,  # noqa: F401
@@ -86,6 +84,10 @@ from . import (
     validation_operations,  # noqa: F401
     validation_tools,  # noqa: F401
     workflow_operations,  # noqa: F401
+)
+from .context import (
+    analysis_operations,  # noqa: F401
+    analysis_usage,  # noqa: F401
 )
 
 # Explicitly reference modules imported for side effects to satisfy type checker

@@ -9,7 +9,10 @@ from datetime import datetime
 from pathlib import Path
 
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
-from cortex.tools.models import ContextInsights, ContextUsageStatistics
+from cortex.tools.context.effectiveness_models import (
+    ContextInsights,
+    ContextUsageStatistics,
+)
 
 
 def get_statistics_path(project_root: Path) -> Path:

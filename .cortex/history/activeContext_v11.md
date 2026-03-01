@@ -20,6 +20,8 @@
 
 - ✅ **Rename phase-prefixed files Batch 4** - COMPLETE (2026-03-01) - Renamed phase2_, phase3_, phase8_files to linking_operations, validation_tools, structure. All phase*.py files removed from src/cortex/tools/. Plan complete.
 
+- ✅ **Tools subpackage Session 1: context/** - COMPLETE (2026-03-01) - Moved context_*, analysis_* (16 files) into src/cortex/tools/context/; updated imports; tests and quality gate pass.
+
 ## Completed Work (2026-02-28)
 
 - **Summary (2026-02-28)** - 1 entries archived.

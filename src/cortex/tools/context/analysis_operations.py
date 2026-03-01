@@ -23,8 +23,8 @@ from cortex.core.project_root_resolver import resolve_project_root_async
 from cortex.managers import initialization
 from cortex.managers.types import ManagersDict
 from cortex.server import mcp
-from cortex.tools.analysis_helpers import AnalysisTarget, parse_analysis_target
-from cortex.tools.analysis_run_helpers import (
+from cortex.tools.context.analysis_helpers import AnalysisTarget, parse_analysis_target
+from cortex.tools.context.analysis_run_helpers import (
     analysis_invalid_target_response,
     dispatch_analysis_target,
     get_analysis_managers,
@@ -36,7 +36,7 @@ from cortex.tools.analysis_run_helpers import (
 async def get_managers(root: Path) -> ManagersDict:
     """Runtime indirection for test patching.
 
-    Some tests patch `cortex.tools.analysis_operations.get_managers`.
+    Some tests patch `cortex.tools.context.analysis_operations.get_managers`.
     """
     return await initialization.get_managers(root)
 

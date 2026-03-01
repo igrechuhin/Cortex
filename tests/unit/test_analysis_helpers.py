@@ -1,6 +1,6 @@
 """Unit tests for analysis_helpers."""
 
-from cortex.tools.analysis_helpers import AnalysisTarget, parse_analysis_target
+from cortex.tools.context.analysis_helpers import AnalysisTarget, parse_analysis_target
 
 
 def test_parse_analysis_target_returns_none_for_none() -> None:

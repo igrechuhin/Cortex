@@ -10,9 +10,8 @@ from enum import Enum
 from pydantic import ConfigDict, Field, field_validator
 
 from cortex.core.models import JsonDict, OperationStatus
-
-from .models_base import StrictBaseModel
-from .structure_models import CleanupActionResult
+from cortex.tools.models_base import StrictBaseModel
+from cortex.tools.structure_models import CleanupActionResult
 
 
 class ContextAnalysisStatus(str, Enum):

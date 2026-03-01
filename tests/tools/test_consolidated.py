@@ -11,8 +11,8 @@ from cortex.core.models import DetailedFileMetadata, SectionMetadata
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.managers.lazy_manager import LazyManager
 from cortex.structure.models import HealthGrade
-from cortex.tools.analysis_operations import analyze
 from cortex.tools.configuration_operations import configure
+from cortex.tools.context.analysis_operations import analyze
 from cortex.tools.file_operations import manage_file
 from cortex.tools.refactoring_operations import suggest_refactoring
 from cortex.tools.validation_operations import validate
@@ -794,7 +794,7 @@ class TestAnalyze:
 
         with (
             patch(
-                "cortex.tools.analysis_operations.resolve_project_root_async",
+                "cortex.tools.context.analysis_operations.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=Path("/tmp/test"),
             ),
@@ -862,12 +862,12 @@ class TestAnalyze:
 
         with (
             patch(
-                "cortex.tools.analysis_operations.resolve_project_root_async",
+                "cortex.tools.context.analysis_operations.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=Path("/tmp/test"),
             ),
             patch(
-                "cortex.tools.analysis_operations.get_managers",
+                "cortex.tools.context.analysis_operations.get_managers",
                 return_value=make_test_managers(**mock_managers_dict_with_lazy),  # type: ignore[arg-type] - LazyManager is valid for ManagersDict
             ),
             patch(
@@ -929,12 +929,12 @@ class TestAnalyze:
 
         with (
             patch(
-                "cortex.tools.analysis_operations.resolve_project_root_async",
+                "cortex.tools.context.analysis_operations.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=Path("/tmp/test"),
             ),
             patch(
-                "cortex.tools.analysis_operations.get_managers",
+                "cortex.tools.context.analysis_operations.get_managers",
                 return_value=make_test_managers(**mock_managers_dict_with_lazy),  # type: ignore[arg-type] - LazyManager is valid for ManagersDict
             ),
             patch(
@@ -966,7 +966,7 @@ class TestAnalyze:
 
         with (
             patch(
-                "cortex.tools.analysis_operations.resolve_project_root_async",
+                "cortex.tools.context.analysis_operations.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=Path("/tmp/test"),
             ),

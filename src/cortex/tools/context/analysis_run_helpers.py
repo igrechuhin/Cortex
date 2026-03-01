@@ -11,8 +11,8 @@ from cortex.analysis.pattern_analyzer import PatternAnalyzer
 from cortex.analysis.structure_analyzer import StructureAnalyzer
 from cortex.managers.manager_utils import get_manager
 from cortex.managers.types import ManagersDict
-from cortex.tools.analysis_helpers import AnalysisTarget, parse_analysis_target
-from cortex.tools.context_analysis_operations import (
+from cortex.tools.context.analysis_helpers import AnalysisTarget, parse_analysis_target
+from cortex.tools.context.effectiveness_operations import (
     analyze_current_session,
     analyze_session_logs,
     get_context_statistics,

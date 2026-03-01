@@ -27,11 +27,11 @@ from cortex.refactoring.models import (
     ReorganizationPlanModel,
 )
 from cortex.refactoring.split_recommender import SplitRecommendation
-from cortex.tools.analysis_operations import (
+from cortex.tools.context.analysis_operations import (
     analyze,
     analyze_resource,
 )
-from cortex.tools.analysis_run_helpers import (
+from cortex.tools.context.analysis_run_helpers import (
     analyze_insights,
     analyze_structure,
     analyze_usage_patterns,
@@ -264,7 +264,8 @@ class TestAnalyzeHandler:
         """Test analyzing usage patterns."""
         # Arrange
         with patch(
-            "cortex.tools.analysis_operations.get_managers", new_callable=AsyncMock
+            "cortex.tools.context.analysis_operations.get_managers",
+            new_callable=AsyncMock,
         ) as mock_get_managers:
             mock_pattern_analyzer = MagicMock()
             mock_pattern_analyzer.get_access_frequency = AsyncMock(
@@ -297,7 +298,8 @@ class TestAnalyzeHandler:
         """Test analyzing structure."""
         # Arrange
         with patch(
-            "cortex.tools.analysis_operations.get_managers", new_callable=AsyncMock
+            "cortex.tools.context.analysis_operations.get_managers",
+            new_callable=AsyncMock,
         ) as mock_get_managers:
             mock_structure_analyzer = MagicMock()
             mock_structure_analyzer.analyze_file_organization = AsyncMock(
@@ -330,7 +332,8 @@ class TestAnalyzeHandler:
         """Test analyzing insights."""
         # Arrange
         with patch(
-            "cortex.tools.analysis_operations.get_managers", new_callable=AsyncMock
+            "cortex.tools.context.analysis_operations.get_managers",
+            new_callable=AsyncMock,
         ) as mock_get_managers:
             mock_insight_engine = MagicMock()
             mock_insight_engine.generate_insights = AsyncMock(
@@ -368,7 +371,8 @@ class TestAnalyzeHandler:
         """Test exception handling in analyze."""
         # Arrange
         with patch(
-            "cortex.tools.analysis_operations.get_managers", new_callable=AsyncMock
+            "cortex.tools.context.analysis_operations.get_managers",
+            new_callable=AsyncMock,
         ) as mock_get_managers:
             mock_get_managers.side_effect = RuntimeError("Test error")
 
@@ -407,11 +411,11 @@ class TestAnalyzeContextLogging:
         )
         with (
             patch(
-                "cortex.tools.analysis_operations.log_client",
+                "cortex.tools.context.analysis_operations.log_client",
                 new_callable=AsyncMock,
             ) as mock_log,
             patch(
-                "cortex.tools.analysis_operations.get_managers",
+                "cortex.tools.context.analysis_operations.get_managers",
                 new_callable=AsyncMock,
             ) as mock_get_managers,
         ):
@@ -442,7 +446,7 @@ class TestAnalyzeContextLogging:
         # Arrange
         mock_ctx = AsyncMock()
         with patch(
-            "cortex.tools.analysis_operations.log_client",
+            "cortex.tools.context.analysis_operations.log_client",
             new_callable=AsyncMock,
         ) as mock_log:
             # Act
@@ -469,11 +473,11 @@ class TestAnalyzeContextLogging:
         mock_ctx = AsyncMock()
         with (
             patch(
-                "cortex.tools.analysis_operations.log_client",
+                "cortex.tools.context.analysis_operations.log_client",
                 new_callable=AsyncMock,
             ) as mock_log,
             patch(
-                "cortex.tools.analysis_operations.get_managers",
+                "cortex.tools.context.analysis_operations.get_managers",
                 new_callable=AsyncMock,
                 side_effect=RuntimeError("Setup failed"),
             ),
@@ -1091,7 +1095,7 @@ class TestProcessRefactoringRequest:
         """Test processing consolidation refactoring request."""
         # Arrange
         with patch(
-            "cortex.tools.analysis_operations.get_managers"
+            "cortex.tools.context.analysis_operations.get_managers"
         ) as mock_get_managers:
             mock_detector = MagicMock()
             mock_detector.detect_opportunities = AsyncMock(return_value=[])
@@ -1130,7 +1134,7 @@ class TestProcessRefactoringRequest:
         """Test processing splits refactoring request."""
         # Arrange
         with patch(
-            "cortex.tools.analysis_operations.get_managers"
+            "cortex.tools.context.analysis_operations.get_managers"
         ) as mock_get_managers:
             mock_recommender = MagicMock()
             mock_recommender.suggest_file_splits = AsyncMock(return_value=[])
@@ -1236,7 +1240,7 @@ class TestProcessRefactoringRequest:
         """Test processing request with preview mode enabled."""
         # Arrange
         with patch(
-            "cortex.tools.analysis_operations.get_managers"
+            "cortex.tools.context.analysis_operations.get_managers"
         ) as mock_get_managers:
             mock_detector_mgr = MagicMock()
             mock_detector_mgr.get = AsyncMock(return_value=MagicMock())
@@ -1401,7 +1405,7 @@ class TestAnalyzeResource:
     ) -> None:
         """analyze_resource returns valid JSON for structure target (Phase 43)."""
         with patch(
-            "cortex.tools.analysis_operations.analyze",
+            "cortex.tools.context.analysis_operations.analyze",
             new_callable=AsyncMock,
             return_value=json.dumps(
                 {"status": "success", "target": "structure", "analysis": {}},
@@ -1430,7 +1434,7 @@ class TestAnalyzeResource:
                 return_value={},
             ),
             patch(
-                "cortex.tools.analysis_operations.analyze",
+                "cortex.tools.context.analysis_operations.analyze",
                 new_callable=AsyncMock,
                 return_value=error_json,
             ),

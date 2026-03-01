@@ -18,17 +18,7 @@ from cortex.core.session_logger import (
     read_session_log,
 )
 from cortex.core.synapse_usage_config import is_usage_writable
-from cortex.tools.context_analysis_operations_insights import (
-    extract_task_pattern,
-    generate_insights,
-)
-from cortex.tools.context_analysis_operations_io import (
-    create_empty_insights,
-    get_statistics_path,
-    load_statistics,
-    save_statistics,
-)
-from cortex.tools.models import (
+from cortex.tools.context.effectiveness_models import (
     ContextAnalysisStatus,
     ContextInsights,
     ContextStatisticsResult,
@@ -37,6 +27,16 @@ from cortex.tools.models import (
     CurrentSessionAnalysisResult,
     SessionLogsAnalysisResult,
     SessionStats,
+)
+from cortex.tools.context.effectiveness_operations_insights import (
+    extract_task_pattern,
+    generate_insights,
+)
+from cortex.tools.context.effectiveness_operations_io import (
+    create_empty_insights,
+    get_statistics_path,
+    load_statistics,
+    save_statistics,
 )
 
 

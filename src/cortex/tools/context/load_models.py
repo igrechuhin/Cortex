@@ -14,14 +14,13 @@ from typing import Annotated
 from pydantic import BeforeValidator, Field
 
 from cortex.core.models import IndexStats, JsonDict
-
-from .models_base import (
+from cortex.tools.models_base import (
     ErrorResultBase,
     StrictBaseModel,
     ToolResultBase,
     ToolResultStatus,
 )
-from .session_models import TokenBudgetStatus
+from cortex.tools.session_models import TokenBudgetStatus
 
 
 def _coerce_str_enum[E: Enum](v: str | Enum, enum_cls: type[E]) -> E:

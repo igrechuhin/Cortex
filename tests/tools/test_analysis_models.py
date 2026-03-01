@@ -5,7 +5,7 @@ from __future__ import annotations
 import pytest
 from pydantic import ValidationError
 
-from cortex.tools.analysis_models import (
+from cortex.tools.context.analysis_models import (
     AccessFrequencyData,
     AccessFrequencyPattern,
     AnalyzeErrorResult,

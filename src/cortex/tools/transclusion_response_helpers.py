@@ -11,7 +11,7 @@ from cortex.linking.transclusion_engine import (
     CircularDependencyError,
     MaxDepthExceededError,
 )
-from cortex.tools.context_auxiliary_models import (
+from cortex.tools.context.load_auxiliary_models import (
     CacheStats,
     ResolveTransclusionsErrorResult,
     ResolveTransclusionsResult,

@@ -206,7 +206,7 @@ class TestLoadContext:
                 return_value=mock_managers,
             ),
             patch(
-                "cortex.tools.context_operations.get_manager",
+                "cortex.tools.context.load_operations.get_manager",
                 side_effect=_get_manager_helper,
             ),
         ):
@@ -244,7 +244,7 @@ class TestLoadContext:
                 return_value=mock_managers,
             ),
             patch(
-                "cortex.tools.context_operations.get_manager",
+                "cortex.tools.context.load_operations.get_manager",
                 side_effect=_get_manager_helper,
             ),
         ):
@@ -279,7 +279,7 @@ class TestLoadContext:
                 return_value=mock_managers,
             ),
             patch(
-                "cortex.tools.context_operations.get_manager",
+                "cortex.tools.context.load_operations.get_manager",
                 side_effect=_get_manager_helper,
             ),
         ):
@@ -312,7 +312,7 @@ class TestLoadContext:
                 return_value=mock_managers,
             ),
             patch(
-                "cortex.tools.context_operations.get_manager",
+                "cortex.tools.context.load_operations.get_manager",
                 side_effect=_get_manager_helper,
             ),
         ):
@@ -364,7 +364,7 @@ class TestLoadContext:
                 return_value=mock_managers,
             ),
             patch(
-                "cortex.tools.context_operations.get_manager",
+                "cortex.tools.context.load_operations.get_manager",
                 side_effect=_get_manager_helper,
             ),
         ):
@@ -396,7 +396,7 @@ class TestLoadContext:
                 return_value=mock_managers,
             ),
             patch(
-                "cortex.tools.context_operations.get_manager",
+                "cortex.tools.context.load_operations.get_manager",
                 side_effect=_get_manager_helper,
             ),
         ):
@@ -616,7 +616,7 @@ class TestLoadContext:
                 return_value=mock_managers,
             ),
             patch(
-                "cortex.tools.context_operations.get_manager",
+                "cortex.tools.context.load_operations.get_manager",
                 side_effect=_get_manager_helper,
             ),
         ):
@@ -1183,7 +1183,7 @@ class TestIntegration:
                 return_value=mock_managers,
             ),
             patch(
-                "cortex.tools.context_operations.get_manager",
+                "cortex.tools.context.load_operations.get_manager",
                 side_effect=_get_manager_helper,
             ),
             patch(
@@ -1253,7 +1253,7 @@ class TestPhase4OptimizationContextLogging:
                 new=AsyncMock(return_value=mock_managers),
             ),
             patch(
-                "cortex.tools.context_operations.get_manager",
+                "cortex.tools.context.load_operations.get_manager",
                 side_effect=_get_manager_helper,
             ),
         ):
@@ -1294,7 +1294,7 @@ class TestPhase4OptimizationResources:
                 return_value=mock_managers,
             ),
             patch(
-                "cortex.tools.context_operations.get_manager",
+                "cortex.tools.context.load_operations.get_manager",
                 side_effect=_get_manager_helper,
             ),
         ):
@@ -1479,7 +1479,7 @@ class TestContextBudgetValidation:
                 return_value=mock_managers,
             ),
             patch(
-                "cortex.tools.context_operations.get_manager",
+                "cortex.tools.context.load_operations.get_manager",
                 side_effect=_get_manager_helper,
             ),
         ):

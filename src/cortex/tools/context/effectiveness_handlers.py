@@ -16,7 +16,7 @@ from cortex.core.mcp_stability import (
 )
 from cortex.core.project_root_resolver import resolve_project_root_async
 from cortex.server import mcp
-from cortex.tools.context_analysis_operations import (
+from cortex.tools.context.effectiveness_operations import (
     analyze_current_session,
     get_context_statistics,
 )

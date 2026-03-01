@@ -8,7 +8,7 @@ from pathlib import Path
 from cortex.core.models import ModelDict
 from cortex.core.session_logger import log_load_context_call
 from cortex.optimization.agent_roles import AgentRole
-from cortex.tools.context_models import FileMapEntry
+from cortex.tools.context.load_models import FileMapEntry
 from cortex.tools.metadata_helpers import (
     calculate_metadata_tokens,
     extract_selected_files_from_map,
