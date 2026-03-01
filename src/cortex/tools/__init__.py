@@ -13,14 +13,14 @@ Modules:
 - configuration_operations: Configuration management (1 tool) - Phase 9.1.1 split
 - markdown_operations: Markdown file operations (1 tool) - Markdown lint fixing
 - foundation_*: Core Memory Bank operations (4 tools split across modules)
-- phase2_linking: Link management and transclusion (4 tools)
-- phase3_validation: Validation and quality checks (5 tools)
+- linking_operations: Link management and transclusion (4 tools)
+- validation_tools: Validation and quality checks (5 tools)
 - optimization: Token optimization and context management (7 tools)
 - analysis_usage: Usage pattern and structure analysis (3 tools)
 - refactoring_tools: Refactoring suggestions (4 tools)
 - execution: Safe execution and learning (6 tools)
 - synapse_tools: Synapse repository tools for rules and prompts (5 tools)
-- phase8_structure: Project structure management (6 tools)
+- structure: Project structure management (6 tools)
 - prompts: MCP prompt templates for one-time operations (7 prompts)
 - script_capture_tools: Session script capture, analysis, promotion (5 tools)
 - usage_analytics: Tool usage statistics and optimization (4 tools) - Phase 29
@@ -54,12 +54,10 @@ from . import (
     foundation_stats,  # noqa: F401
     foundation_version,  # noqa: F401
     health_check_operations,  # noqa: F401
+    linking_operations,  # noqa: F401
     markdown_operations,  # noqa: F401
     model_benchmark,  # noqa: F401
     optimization,  # noqa: F401
-    phase2_linking,  # noqa: F401
-    phase3_validation,  # noqa: F401
-    phase8_structure,  # noqa: F401
     plan_completion,  # noqa: F401
     plan_dispatcher,  # noqa: F401
     plan_operations,  # noqa: F401
@@ -79,12 +77,14 @@ from . import (
     session_registry,  # noqa: F401
     session_start_tools,  # noqa: F401
     skill_pack_operations,  # noqa: F401
+    structure,  # noqa: F401
     synapse_prompts,  # noqa: F401  # Dynamic Synapse prompts registration
     synapse_tools,  # noqa: F401
     task_locking,  # noqa: F401
     tool_search_operations,  # noqa: F401
     usage_analytics,  # noqa: F401
     validation_operations,  # noqa: F401
+    validation_tools,  # noqa: F401
     workflow_operations,  # noqa: F401
 )
 
@@ -111,8 +111,8 @@ __all__ = [
     "foundation_rollback",
     "foundation_stats",
     "foundation_version",
-    "phase2_linking",
-    "phase3_validation",
+    "linking_operations",
+    "validation_tools",
     "optimization",
     "analysis_usage",
     "evaluation",
@@ -132,7 +132,7 @@ __all__ = [
     "session_start_tools",
     "tool_search_operations",
     "plan_operations",
-    "phase8_structure",
+    "structure",
     "pre_commit_tools",
     "prompts",
     "refactoring_operations",

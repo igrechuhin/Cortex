@@ -21,7 +21,7 @@ from cortex.linking.transclusion_engine import (
     MaxDepthExceededError,
 )
 from cortex.managers.types import ManagersDict
-from cortex.tools.phase2_linking import (
+from cortex.tools.linking_operations import (
     get_link_graph,
     get_link_graph_resource,
     parse_file_links,

@@ -16,7 +16,7 @@ _TOOL_INVOKERS: dict[
 
 def _register_get_structure_info() -> None:
     """Register get_structure_info for execution evals."""
-    from cortex.tools.phase8_structure import get_structure_info
+    from cortex.tools.structure import get_structure_info
 
     async def invoker(arguments: dict[str, object]) -> str:
         _ = arguments  # get_structure_info takes no args from payload

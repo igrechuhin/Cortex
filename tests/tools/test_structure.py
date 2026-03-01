@@ -16,7 +16,7 @@ import pytest
 
 from cortex.core.models import JsonDict, ModelDict
 from cortex.tools.models import CleanupReport
-from cortex.tools.phase8_structure import (
+from cortex.tools.structure import (
     build_health_result,
     check_structure_health,
     check_structure_health_resource,
@@ -105,12 +105,12 @@ class TestCheckStructureHealthBasic:
         # Arrange
         with (
             patch(
-                "cortex.tools.phase8_structure.resolve_project_root_async",
+                "cortex.tools.structure.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
             patch(
-                "cortex.tools.phase8_structure.StructureManager",
+                "cortex.tools.structure.StructureManager",
                 return_value=mock_structure_manager,
             ),
         ):
@@ -134,12 +134,12 @@ class TestCheckStructureHealthBasic:
         mock_structure_manager.get_path.return_value = Path("/nonexistent")
         with (
             patch(
-                "cortex.tools.phase8_structure.resolve_project_root_async",
+                "cortex.tools.structure.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
             patch(
-                "cortex.tools.phase8_structure.StructureManager",
+                "cortex.tools.structure.StructureManager",
                 return_value=mock_structure_manager,
             ),
         ):
@@ -159,12 +159,12 @@ class TestCheckStructureHealthBasic:
         # Arrange: raise inside impl so error is returned as JSON (not retried as connection)
         with (
             patch(
-                "cortex.tools.phase8_structure.resolve_project_root_async",
+                "cortex.tools.structure.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
             patch(
-                "cortex.tools.phase8_structure._check_structure_health_impl",
+                "cortex.tools.structure._check_structure_health_impl",
                 new_callable=AsyncMock,
                 side_effect=RuntimeError("Failed to get project root"),
             ),
@@ -187,12 +187,12 @@ class TestCheckStructureHealthBasic:
         custom_root = "/custom/project/root"
         with (
             patch(
-                "cortex.tools.phase8_structure.resolve_project_root_async",
+                "cortex.tools.structure.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=Path(custom_root),
             ),
             patch(
-                "cortex.tools.phase8_structure.StructureManager",
+                "cortex.tools.structure.StructureManager",
                 return_value=mock_structure_manager,
             ),
         ):
@@ -221,12 +221,12 @@ class TestCheckStructureHealthCleanup:
         # Arrange
         with (
             patch(
-                "cortex.tools.phase8_structure.resolve_project_root_async",
+                "cortex.tools.structure.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
             patch(
-                "cortex.tools.phase8_structure.StructureManager",
+                "cortex.tools.structure.StructureManager",
                 return_value=mock_structure_manager,
             ),
         ):
@@ -259,12 +259,12 @@ class TestCheckStructureHealthCleanup:
 
         with (
             patch(
-                "cortex.tools.phase8_structure.resolve_project_root_async",
+                "cortex.tools.structure.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=healthy_structure,
             ),
             patch(
-                "cortex.tools.phase8_structure.StructureManager",
+                "cortex.tools.structure.StructureManager",
                 return_value=mock_structure_manager,
             ),
         ):
@@ -288,12 +288,12 @@ class TestCheckStructureHealthCleanup:
         # Arrange
         with (
             patch(
-                "cortex.tools.phase8_structure.resolve_project_root_async",
+                "cortex.tools.structure.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
             patch(
-                "cortex.tools.phase8_structure.StructureManager",
+                "cortex.tools.structure.StructureManager",
                 return_value=mock_structure_manager,
             ),
         ):
@@ -318,12 +318,12 @@ class TestCheckStructureHealthCleanup:
         # Arrange
         with (
             patch(
-                "cortex.tools.phase8_structure.resolve_project_root_async",
+                "cortex.tools.structure.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
             patch(
-                "cortex.tools.phase8_structure.StructureManager",
+                "cortex.tools.structure.StructureManager",
                 return_value=mock_structure_manager,
             ),
         ):
@@ -354,12 +354,12 @@ class TestGetStructureInfo:
         # Arrange
         with (
             patch(
-                "cortex.tools.phase8_structure.resolve_project_root_async",
+                "cortex.tools.structure.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
             patch(
-                "cortex.tools.phase8_structure.StructureManager",
+                "cortex.tools.structure.StructureManager",
                 return_value=mock_structure_manager,
             ),
         ):
@@ -380,12 +380,12 @@ class TestGetStructureInfo:
         custom_root = "/custom/root"
         with (
             patch(
-                "cortex.tools.phase8_structure.resolve_project_root_async",
+                "cortex.tools.structure.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=Path(custom_root),
             ),
             patch(
-                "cortex.tools.phase8_structure.StructureManager",
+                "cortex.tools.structure.StructureManager",
                 return_value=mock_structure_manager,
             ),
         ):
@@ -402,7 +402,7 @@ class TestGetStructureInfo:
         """Test exception handling in get_structure_info."""
         # Arrange
         with patch(
-            "cortex.tools.phase8_structure.resolve_project_root_async",
+            "cortex.tools.structure.resolve_project_root_async",
             new_callable=AsyncMock,
             side_effect=ValueError("Invalid project root"),
         ):
@@ -432,12 +432,12 @@ class TestPhase8StructureResources:
         """get_structure_info_resource returns JSON success (Phase 43)."""
         with (
             patch(
-                "cortex.tools.phase8_structure.resolve_project_root_async",
+                "cortex.tools.structure.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
             patch(
-                "cortex.tools.phase8_structure.StructureManager",
+                "cortex.tools.structure.StructureManager",
                 return_value=mock_structure_manager,
             ),
         ):
@@ -452,21 +452,21 @@ class TestPhase8StructureResources:
         mock_structure_manager: MagicMock,
     ) -> None:
         """Second call to get_structure_info_resource returns cached result."""
-        from cortex.tools import phase8_structure
+        from cortex.tools import structure
 
-        phase8_structure.invalidate_structure_resource_cache()
+        structure.invalidate_structure_resource_cache()
         with (
             patch(
-                "cortex.tools.phase8_structure.resolve_project_root_async",
+                "cortex.tools.structure.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
             patch(
-                "cortex.tools.phase8_structure.StructureManager",
+                "cortex.tools.structure.StructureManager",
                 return_value=mock_structure_manager,
             ),
             patch(
-                "cortex.tools.phase8_structure.get_structure_info",
+                "cortex.tools.structure.get_structure_info",
                 new_callable=AsyncMock,
                 return_value='{"success": true, "structure_info": {"paths": {}}}',
             ) as mock_get_info,
@@ -484,16 +484,16 @@ class TestPhase8StructureResources:
         """check_structure_health_resource returns JSON (read-only, no cleanup)."""
         with (
             patch(
-                "cortex.tools.phase8_structure.resolve_project_root_async",
+                "cortex.tools.structure.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
             patch(
-                "cortex.tools.phase8_structure.StructureManager",
+                "cortex.tools.structure.StructureManager",
                 return_value=mock_structure_manager,
             ),
             patch(
-                "cortex.tools.phase8_structure.check_structure_initialized",
+                "cortex.tools.structure.check_structure_initialized",
                 return_value=None,
             ),
         ):
@@ -508,25 +508,25 @@ class TestPhase8StructureResources:
         mock_structure_manager: MagicMock,
     ) -> None:
         """Second call to check_structure_health_resource returns cached result."""
-        from cortex.tools import phase8_structure
+        from cortex.tools import structure
 
-        phase8_structure.invalidate_structure_resource_cache()
+        structure.invalidate_structure_resource_cache()
         with (
             patch(
-                "cortex.tools.phase8_structure.resolve_project_root_async",
+                "cortex.tools.structure.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
             patch(
-                "cortex.tools.phase8_structure.StructureManager",
+                "cortex.tools.structure.StructureManager",
                 return_value=mock_structure_manager,
             ),
             patch(
-                "cortex.tools.phase8_structure.check_structure_initialized",
+                "cortex.tools.structure.check_structure_initialized",
                 return_value=None,
             ),
             patch(
-                "cortex.tools.phase8_structure.check_structure_health",
+                "cortex.tools.structure.check_structure_health",
                 new_callable=AsyncMock,
                 return_value='{"success": true, "score": 90, "grade": "A"}',
             ) as mock_health,
@@ -542,7 +542,7 @@ class TestPhase8StructureResources:
     ) -> None:
         """get_project_root_resource returns JSON with project_root key and absolute path."""
         with patch(
-            "cortex.tools.phase8_structure.resolve_project_root_async",
+            "cortex.tools.structure.resolve_project_root_async",
             new_callable=AsyncMock,
             return_value=mock_project_root,
         ):
@@ -559,7 +559,7 @@ class TestPhase8StructureResources:
     ) -> None:
         """Two consecutive reads of project root resource return the same path."""
         with patch(
-            "cortex.tools.phase8_structure.resolve_project_root_async",
+            "cortex.tools.structure.resolve_project_root_async",
             new_callable=AsyncMock,
             return_value=mock_project_root,
         ):
@@ -574,11 +574,11 @@ class TestPhase8StructureResources:
         mock_project_root: Path,
     ) -> None:
         """get_project_root_resource invokes resolve_project_root_async and returns result."""
-        from cortex.tools import phase8_structure
+        from cortex.tools import structure
 
-        phase8_structure.invalidate_structure_resource_cache("project/root")
+        structure.invalidate_structure_resource_cache("project/root")
         with patch(
-            "cortex.tools.phase8_structure.resolve_project_root_async",
+            "cortex.tools.structure.resolve_project_root_async",
             new_callable=AsyncMock,
             return_value=mock_project_root,
         ) as resolve_mock:
@@ -598,15 +598,15 @@ class TestHelperFunctions:
 
     def test_invalidate_structure_resource_cache_with_key(self) -> None:
         """invalidate_structure_resource_cache with key invalidates that entry."""
-        from cortex.tools import phase8_structure
+        from cortex.tools import structure
 
-        phase8_structure.invalidate_structure_resource_cache("structure/info")
+        structure.invalidate_structure_resource_cache("structure/info")
 
     def test_invalidate_structure_resource_cache_clear_all(self) -> None:
         """invalidate_structure_resource_cache with None clears all."""
-        from cortex.tools import phase8_structure
+        from cortex.tools import structure
 
-        phase8_structure.invalidate_structure_resource_cache()
+        structure.invalidate_structure_resource_cache()
 
     def test_check_structure_initialized_not_exists(
         self, mock_structure_manager: MagicMock
@@ -847,12 +847,12 @@ class TestIntegration:
         """Test complete workflow: check health -> perform cleanup -> recheck."""
         with (
             patch(
-                "cortex.tools.phase8_structure.resolve_project_root_async",
+                "cortex.tools.structure.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
             patch(
-                "cortex.tools.phase8_structure.StructureManager",
+                "cortex.tools.structure.StructureManager",
                 return_value=mock_structure_manager,
             ),
         ):
@@ -898,12 +898,12 @@ class TestIntegration:
 
         with (
             patch(
-                "cortex.tools.phase8_structure.resolve_project_root_async",
+                "cortex.tools.structure.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=healthy_structure,
             ),
             patch(
-                "cortex.tools.phase8_structure.StructureManager",
+                "cortex.tools.structure.StructureManager",
                 return_value=mock_structure_manager,
             ),
         ):
@@ -1074,16 +1074,16 @@ class TestPhase8StructureContextLogging:
         mock_ctx = AsyncMock()
         with (
             patch(
-                "cortex.tools.phase8_structure.log_client",
+                "cortex.tools.structure.log_client",
                 new_callable=AsyncMock,
             ) as mock_log,
             patch(
-                "cortex.tools.phase8_structure.resolve_project_root_async",
+                "cortex.tools.structure.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
             patch(
-                "cortex.tools.phase8_structure.StructureManager",
+                "cortex.tools.structure.StructureManager",
                 return_value=mock_structure_manager,
             ),
         ):
@@ -1104,16 +1104,16 @@ class TestPhase8StructureContextLogging:
         mock_ctx = AsyncMock()
         with (
             patch(
-                "cortex.tools.phase8_structure.log_client",
+                "cortex.tools.structure.log_client",
                 new_callable=AsyncMock,
             ) as mock_log,
             patch(
-                "cortex.tools.phase8_structure.resolve_project_root_async",
+                "cortex.tools.structure.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
             patch(
-                "cortex.tools.phase8_structure.StructureManager",
+                "cortex.tools.structure.StructureManager",
                 return_value=mock_structure_manager,
             ),
         ):

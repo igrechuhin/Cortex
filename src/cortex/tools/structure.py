@@ -37,11 +37,11 @@ from cortex.core.models import ModelDict
 from cortex.core.project_root_resolver import resolve_project_root_async
 from cortex.server import mcp
 from cortex.structure.structure_manager import StructureManager
-from cortex.tools.phase8_structure_docs import (
+from cortex.tools.structure_docs import (
     CHECK_STRUCTURE_HEALTH_DOC,
     GET_STRUCTURE_INFO_DOC,
 )
-from cortex.tools.phase8_structure_operations import (
+from cortex.tools.structure_operations import (
     find_stale_plans,
     move_stale_plans,
     perform_archive_stale,
@@ -51,7 +51,7 @@ from cortex.tools.phase8_structure_operations import (
     perform_update_index,
     record_archive_action,
 )
-from cortex.tools.phase8_structure_validation import (
+from cortex.tools.structure_validation import (
     build_health_result,
     check_structure_initialized,
 )

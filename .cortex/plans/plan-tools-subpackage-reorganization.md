@@ -58,7 +58,7 @@ Create sub-packages by functional domain, move files, update all imports.
 ## Dependencies
 
 - **MUST complete first**: `plan-tools-file-size-violations.md`
-- **MUST complete first**: `plan-rename-phase-prefixed-files.md`
+- **MUST complete first**: `archive/Other/plan-rename-phase-prefixed-files.md` (COMPLETE)
 
 ## Success Criteria
 
