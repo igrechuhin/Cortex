@@ -10,7 +10,7 @@ from collections.abc import Sequence
 from typing import cast
 
 from cortex.core.models import JsonValue, ModelDict
-from cortex.tools.pre_commit_helpers_models import (
+from cortex.tools.execution.pre_commit_helpers_models import (
     DEFAULT_CHECKS,
     PreCommitCheck,
 )

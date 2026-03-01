@@ -94,12 +94,12 @@ class TestAgentWorkflowQualityCheck:
             "total_warnings": 0,
         }
         with patch(
-            "cortex.tools.pre_commit_tools.execute_pre_commit_checks",
+            "cortex.tools.execution.pre_commit_tools.execute_pre_commit_checks",
             new_callable=AsyncMock,
             return_value=pre_result,
         ):
             with patch(
-                "cortex.tools.pre_commit_tools.fix_quality_issues",
+                "cortex.tools.execution.pre_commit_tools.fix_quality_issues",
                 new_callable=AsyncMock,
             ) as mock_fix:
                 result = await run_composite_workflow(operation="quality_check")
@@ -114,12 +114,12 @@ class TestAgentWorkflowQualityCheck:
         pre_result = {"status": "error", "total_errors": 2}
         fix_result = {"status": "success", "files_modified": ["a.py"]}
         with patch(
-            "cortex.tools.pre_commit_tools.execute_pre_commit_checks",
+            "cortex.tools.execution.pre_commit_tools.execute_pre_commit_checks",
             new_callable=AsyncMock,
             return_value=pre_result,
         ):
             with patch(
-                "cortex.tools.pre_commit_tools.fix_quality_issues",
+                "cortex.tools.execution.pre_commit_tools.fix_quality_issues",
                 new_callable=AsyncMock,
                 return_value=json.dumps(fix_result),
             ) as mock_fix:

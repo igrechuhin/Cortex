@@ -955,7 +955,7 @@ class TestProvideFeedback:
                 side_effect=RuntimeError("Learning engine unavailable"),
             ),
             patch(
-                "cortex.tools.execution.resolve_project_root_async",
+                "cortex.tools.execution_feedback.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
@@ -1263,7 +1263,7 @@ class TestPhase5ExecutionContextLogging:
         mock_log = AsyncMock()
         with (
             patch(
-                "cortex.tools.execution.log_client",
+                "cortex.tools.execution.safe_execution.log_client",
                 mock_log,
             ),
             patch(

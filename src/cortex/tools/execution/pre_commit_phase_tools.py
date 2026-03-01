@@ -7,9 +7,11 @@ This module re-exports the impl functions for tests and internal use.
 
 from __future__ import annotations
 
-from cortex.tools.pre_commit_docs_memory_helpers import (
+from cortex.tools.execution.pre_commit_docs_memory_helpers import (
     run_docs_and_memory_bank_sync_impl,
 )
-from cortex.tools.pre_commit_preflight_helpers import run_preflight_checks_impl
+from cortex.tools.execution.pre_commit_preflight_helpers import (
+    run_preflight_checks_impl,
+)
 
 __all__ = ["run_preflight_checks_impl", "run_docs_and_memory_bank_sync_impl"]

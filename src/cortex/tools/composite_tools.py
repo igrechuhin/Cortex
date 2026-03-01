@@ -52,7 +52,7 @@ async def _quick_start_impl(
 
 async def _quality_check_impl() -> str:
     """Run execute_pre_commit_checks(quality) then fix_quality_issues if needed."""
-    from cortex.tools.pre_commit_tools import (
+    from cortex.tools.execution.pre_commit_tools import (
         execute_pre_commit_checks,
         fix_quality_issues,
     )

@@ -10,8 +10,7 @@ from enum import Enum
 from pydantic import ConfigDict, Field
 
 from cortex.core.models import DictLikeModel, JsonDict, OperationStatus
-
-from .models_base import (
+from cortex.tools.models_base import (
     ErrorResultBase,
     StrictBaseModel,
     ToolResultBase,

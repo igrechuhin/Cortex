@@ -8,7 +8,7 @@ import logging
 from typing import cast
 
 from cortex.services.framework_adapters.base import CheckResult
-from cortex.tools.pre_commit_helpers import PreCommitCheck
+from cortex.tools.execution.pre_commit_helpers import PreCommitCheck
 
 # Type for JSON numeric/string values that int() accepts (avoids Any)
 _IntConvertible = int | float | str

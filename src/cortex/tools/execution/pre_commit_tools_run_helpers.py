@@ -15,21 +15,23 @@ from cortex.services.framework_adapters.base import (
     TestResult,
 )
 from cortex.services.language_detector import LanguageInfo
-from cortex.tools.pre_commit_connection import (
+from cortex.tools.execution.pre_commit_connection import (
     log_connection_health_after_tests,
     log_connection_health_before_tests,
     log_test_execution_error,
 )
-from cortex.tools.pre_commit_eval import run_eval_fast_check
-from cortex.tools.pre_commit_helpers import ensure_json_serializable_for_mcp
-from cortex.tools.pre_commit_helpers_models import (
+from cortex.tools.execution.pre_commit_eval import run_eval_fast_check
+from cortex.tools.execution.pre_commit_helpers import ensure_json_serializable_for_mcp
+from cortex.tools.execution.pre_commit_helpers_models import (
     CheckStats,
     PreCommitCheck,
     PreCommitResult,
     QualityCheckResult,
 )
-from cortex.tools.pre_commit_helpers_remaining import truncate_large_logs_in_data
-from cortex.tools.pre_commit_pipeline import run_checks_pipeline
+from cortex.tools.execution.pre_commit_helpers_remaining import (
+    truncate_large_logs_in_data,
+)
+from cortex.tools.execution.pre_commit_pipeline import run_checks_pipeline
 
 
 def execute_all_checks(

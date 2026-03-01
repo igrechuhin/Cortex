@@ -32,18 +32,18 @@ from cortex.services.framework_adapters.rust_adapter import RustAdapter
 from cortex.services.framework_adapters.swift_adapter import SwiftAdapter
 from cortex.services.framework_adapters.typescript_adapter import TypeScriptAdapter
 from cortex.services.language_detector import LanguageInfo
-from cortex.tools.pre_commit_fix_quality import (
+from cortex.tools.execution.pre_commit_fix_quality import (
     create_quality_error_response,
     fix_quality_issues_impl,
 )
-from cortex.tools.pre_commit_helpers import (
+from cortex.tools.execution.pre_commit_helpers import (
     create_error_result_dict,
     determine_checks_to_perform,
     unsupported_language_result_dict,
 )
-from cortex.tools.pre_commit_helpers_language import detect_or_use_language
-from cortex.tools.pre_commit_helpers_models import PreCommitCheck
-from cortex.tools.pre_commit_tools_run_helpers import (
+from cortex.tools.execution.pre_commit_helpers_language import detect_or_use_language
+from cortex.tools.execution.pre_commit_helpers_models import PreCommitCheck
+from cortex.tools.execution.pre_commit_tools_run_helpers import (
     build_pre_commit_response,
     run_checks_with_connection_monitoring,
 )
@@ -221,7 +221,7 @@ async def execute_pre_commit_checks(
     or ["tests"] with test_timeout and coverage_threshold). Language is auto-detected.
     """
     if phase is not None:
-        from cortex.tools.pre_commit_phase_dispatch import (
+        from cortex.tools.execution.pre_commit_phase_dispatch import (
             PreCommitPhase,
             run_execute_pre_commit_checks_by_phase,
         )

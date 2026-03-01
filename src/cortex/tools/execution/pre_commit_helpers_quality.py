@@ -11,7 +11,7 @@ from cortex.core.constants import (
     MAX_FILE_LINES,
     MAX_FUNCTION_LINES,
 )
-from cortex.tools.pre_commit_helpers_models import FileSizeViolation
+from cortex.tools.execution.pre_commit_helpers_models import FileSizeViolation
 
 
 def get_docstring_range(

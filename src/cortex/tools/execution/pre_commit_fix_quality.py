@@ -12,8 +12,8 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from cortex.core.context_logging import MCPContext, log_client, report_progress_safe
 from cortex.core.models import JsonValue, ModelDict, OperationStatus
-from cortex.tools.pre_commit_helpers_models import PreCommitCheck
-from cortex.tools.pre_commit_helpers_remaining import (
+from cortex.tools.execution.pre_commit_helpers_models import PreCommitCheck
+from cortex.tools.execution.pre_commit_helpers_remaining import (
     collect_remaining_issues,
     extract_check_results,
     extract_dict_from_object,
@@ -192,7 +192,7 @@ def build_markdown_fix_output(
 
 async def _run_quality_checks() -> ModelDict | str:
     """Run quality checks and return result or error response."""
-    from cortex.tools.pre_commit_tools import execute_pre_commit_checks
+    from cortex.tools.execution.pre_commit_tools import execute_pre_commit_checks
 
     raw_result = await execute_pre_commit_checks(
         checks=[

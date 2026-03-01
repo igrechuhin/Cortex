@@ -54,7 +54,6 @@ from . import (
     linking_operations,  # noqa: F401
     model_benchmark,  # noqa: F401
     optimization,  # noqa: F401
-    pre_commit_tools,  # noqa: F401
     prompts,  # noqa: F401
     query_memory_bank_operations,  # noqa: F401
     query_usage_operations,  # noqa: F401
@@ -143,7 +142,6 @@ __all__ = [
     "register",
     "roadmap",
     "structure",
-    "pre_commit_tools",
     "prompts",
     "refactoring_operations",
     "rules_operations",

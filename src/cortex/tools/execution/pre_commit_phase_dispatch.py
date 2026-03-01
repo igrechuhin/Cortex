@@ -45,7 +45,9 @@ async def _run_phase_a(
     ctx: MCPContext | None,
 ) -> ModelDict:
     """Run Phase A preflight (lazy import)."""
-    from cortex.tools.pre_commit_preflight_helpers import run_preflight_checks_impl
+    from cortex.tools.execution.pre_commit_preflight_helpers import (
+        run_preflight_checks_impl,
+    )
 
     return await run_preflight_checks_impl(
         test_timeout=test_timeout,
@@ -58,7 +60,7 @@ async def _run_phase_a(
 
 async def _run_phase_b(ctx: MCPContext | None) -> ModelDict:
     """Run Phase B docs/memory sync (lazy import)."""
-    from cortex.tools.pre_commit_docs_memory_helpers import (
+    from cortex.tools.execution.pre_commit_docs_memory_helpers import (
         run_docs_and_memory_bank_sync_impl,
     )
 

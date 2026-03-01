@@ -10,12 +10,12 @@ from cortex.services.framework_adapters.base import (
     FrameworkAdapter,
     TestResult,
 )
-from cortex.tools.pre_commit_helpers_models import (
+from cortex.tools.execution.pre_commit_helpers_models import (
     CheckStats,
     PreCommitCheck,
     QualityCheckResult,
 )
-from cortex.tools.pre_commit_pipeline_processors import (
+from cortex.tools.execution.pre_commit_pipeline_processors import (
     process_fix_errors_check,
     process_format_check,
     process_quality_check,
@@ -25,7 +25,7 @@ from cortex.tools.pre_commit_pipeline_processors import (
     process_tests_check,
     process_type_check,
 )
-from cortex.tools.pre_commit_pipeline_quality import check_function_lengths
+from cortex.tools.execution.pre_commit_pipeline_quality import check_function_lengths
 
 # Re-export for tests (reportPrivateUsage)
 _check_function_lengths = check_function_lengths

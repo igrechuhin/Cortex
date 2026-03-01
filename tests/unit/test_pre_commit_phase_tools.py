@@ -14,18 +14,17 @@ from unittest.mock import AsyncMock, patch
 import pytest
 
 from cortex.core.models import JsonDict, ModelDict
-from cortex.tools.models import PreflightCheckSummary
-from cortex.tools.pre_commit_docs_memory_helpers import (
+from cortex.tools.execution.pre_commit_docs_memory_helpers import (
     _build_docs_memory_bank_model,  # pyright: ignore[reportPrivateUsage]
     _build_docs_memory_bank_summaries,  # pyright: ignore[reportPrivateUsage]
     _build_roadmap_sync_summary,  # pyright: ignore[reportPrivateUsage]
     _build_timestamps_summary,  # pyright: ignore[reportPrivateUsage]
     _compute_docs_memory_bank_passed,  # pyright: ignore[reportPrivateUsage]
 )
-from cortex.tools.pre_commit_phase_dispatch import (
+from cortex.tools.execution.pre_commit_phase_dispatch import (
     _ensure_dict,  # pyright: ignore[reportPrivateUsage]
 )
-from cortex.tools.pre_commit_preflight_helpers import (
+from cortex.tools.execution.pre_commit_preflight_helpers import (
     _append_markdown_summary,  # pyright: ignore[reportPrivateUsage]
     _build_check_summaries,  # pyright: ignore[reportPrivateUsage]
     _build_execute_check_summaries,  # pyright: ignore[reportPrivateUsage]
@@ -34,7 +33,8 @@ from cortex.tools.pre_commit_preflight_helpers import (
     _has_pre_commit_tool_error,  # pyright: ignore[reportPrivateUsage]
     _markdown_has_tool_error,  # pyright: ignore[reportPrivateUsage]
 )
-from cortex.tools.pre_commit_tools import execute_pre_commit_checks
+from cortex.tools.execution.pre_commit_tools import execute_pre_commit_checks
+from cortex.tools.models import PreflightCheckSummary
 
 # ---------------------------------------------------------------------------
 # Factories
@@ -110,11 +110,11 @@ class TestRunPreflightChecks:
         """Preflight passes when checks and markdown lint have no errors."""
         with (
             patch(
-                "cortex.tools.pre_commit_preflight_helpers.execute_pre_commit_checks",
+                "cortex.tools.execution.pre_commit_preflight_helpers.execute_pre_commit_checks",
                 new_callable=AsyncMock,
             ) as mock_exec,
             patch(
-                "cortex.tools.pre_commit_preflight_helpers.fix_markdown_lint",
+                "cortex.tools.execution.pre_commit_preflight_helpers.fix_markdown_lint",
                 new_callable=AsyncMock,
             ) as mock_md,
         ):
@@ -143,11 +143,11 @@ class TestRunPreflightChecks:
         """preflight_passed is False when checks report errors."""
         with (
             patch(
-                "cortex.tools.pre_commit_preflight_helpers.execute_pre_commit_checks",
+                "cortex.tools.execution.pre_commit_preflight_helpers.execute_pre_commit_checks",
                 new_callable=AsyncMock,
             ) as mock_exec,
             patch(
-                "cortex.tools.pre_commit_preflight_helpers.fix_markdown_lint",
+                "cortex.tools.execution.pre_commit_preflight_helpers.fix_markdown_lint",
                 new_callable=AsyncMock,
             ) as mock_md,
         ):
@@ -174,11 +174,11 @@ class TestRunPreflightChecks:
         """Tool-level error is surfaced with status=error."""
         with (
             patch(
-                "cortex.tools.pre_commit_preflight_helpers.execute_pre_commit_checks",
+                "cortex.tools.execution.pre_commit_preflight_helpers.execute_pre_commit_checks",
                 new_callable=AsyncMock,
             ) as mock_exec,
             patch(
-                "cortex.tools.pre_commit_preflight_helpers.fix_markdown_lint",
+                "cortex.tools.execution.pre_commit_preflight_helpers.fix_markdown_lint",
                 new_callable=AsyncMock,
             ) as mock_md,
         ):
@@ -205,11 +205,11 @@ class TestRunPreflightChecks:
         """Preflight fails when markdown lint finds files with errors."""
         with (
             patch(
-                "cortex.tools.pre_commit_preflight_helpers.execute_pre_commit_checks",
+                "cortex.tools.execution.pre_commit_preflight_helpers.execute_pre_commit_checks",
                 new_callable=AsyncMock,
             ) as mock_exec,
             patch(
-                "cortex.tools.pre_commit_preflight_helpers.fix_markdown_lint",
+                "cortex.tools.execution.pre_commit_preflight_helpers.fix_markdown_lint",
                 new_callable=AsyncMock,
             ) as mock_md,
         ):
@@ -237,11 +237,11 @@ class TestRunPreflightChecks:
         """Markdown tool-level error makes status=error."""
         with (
             patch(
-                "cortex.tools.pre_commit_preflight_helpers.execute_pre_commit_checks",
+                "cortex.tools.execution.pre_commit_preflight_helpers.execute_pre_commit_checks",
                 new_callable=AsyncMock,
             ) as mock_exec,
             patch(
-                "cortex.tools.pre_commit_preflight_helpers.fix_markdown_lint",
+                "cortex.tools.execution.pre_commit_preflight_helpers.fix_markdown_lint",
                 new_callable=AsyncMock,
             ) as mock_md,
         ):
@@ -270,11 +270,11 @@ class TestRunPreflightChecks:
         """Invalid JSON from markdown lint is treated as None result."""
         with (
             patch(
-                "cortex.tools.pre_commit_preflight_helpers.execute_pre_commit_checks",
+                "cortex.tools.execution.pre_commit_preflight_helpers.execute_pre_commit_checks",
                 new_callable=AsyncMock,
             ) as mock_exec,
             patch(
-                "cortex.tools.pre_commit_preflight_helpers.fix_markdown_lint",
+                "cortex.tools.execution.pre_commit_preflight_helpers.fix_markdown_lint",
                 new_callable=AsyncMock,
             ) as mock_md,
         ):
@@ -304,11 +304,11 @@ class TestRunPreflightChecks:
         """Valid JSON that is not a dict (e.g. array) is treated as None result."""
         with (
             patch(
-                "cortex.tools.pre_commit_preflight_helpers.execute_pre_commit_checks",
+                "cortex.tools.execution.pre_commit_preflight_helpers.execute_pre_commit_checks",
                 new_callable=AsyncMock,
             ) as mock_exec,
             patch(
-                "cortex.tools.pre_commit_preflight_helpers.fix_markdown_lint",
+                "cortex.tools.execution.pre_commit_preflight_helpers.fix_markdown_lint",
                 new_callable=AsyncMock,
             ) as mock_md,
         ):
@@ -359,12 +359,12 @@ class TestRunPreflightChecks:
         }
         with (
             patch(
-                "cortex.tools.pre_commit_preflight_helpers.execute_pre_commit_checks",
+                "cortex.tools.execution.pre_commit_preflight_helpers.execute_pre_commit_checks",
                 new_callable=AsyncMock,
                 return_value=exec_result,
             ),
             patch(
-                "cortex.tools.pre_commit_preflight_helpers.fix_markdown_lint",
+                "cortex.tools.execution.pre_commit_preflight_helpers.fix_markdown_lint",
                 new_callable=AsyncMock,
                 return_value=_make_markdown_result(files_with_errors=0),
             ),
@@ -639,7 +639,7 @@ class TestRunDocsAndMemoryBankSync:
         }
 
         with patch(
-            "cortex.tools.pre_commit_docs_memory_helpers.validate",
+            "cortex.tools.execution.pre_commit_docs_memory_helpers.validate",
             new_callable=AsyncMock,
         ) as mock_validate:
             mock_validate.side_effect = [
@@ -677,7 +677,7 @@ class TestRunDocsAndMemoryBankSync:
         }
 
         with patch(
-            "cortex.tools.pre_commit_docs_memory_helpers.validate",
+            "cortex.tools.execution.pre_commit_docs_memory_helpers.validate",
             new_callable=AsyncMock,
         ) as mock_validate:
             mock_validate.side_effect = [
@@ -712,7 +712,7 @@ class TestRunDocsAndMemoryBankSync:
         }
 
         with patch(
-            "cortex.tools.pre_commit_docs_memory_helpers.validate",
+            "cortex.tools.execution.pre_commit_docs_memory_helpers.validate",
             new_callable=AsyncMock,
         ) as mock_validate:
             mock_validate.side_effect = [
@@ -748,7 +748,7 @@ class TestRunDocsAndMemoryBankSync:
         }
 
         with patch(
-            "cortex.tools.pre_commit_docs_memory_helpers.validate",
+            "cortex.tools.execution.pre_commit_docs_memory_helpers.validate",
             new_callable=AsyncMock,
         ) as mock_validate:
             mock_validate.side_effect = [
@@ -779,7 +779,7 @@ class TestRunDocsAndMemoryBankSync:
         }
 
         with patch(
-            "cortex.tools.pre_commit_docs_memory_helpers.validate",
+            "cortex.tools.execution.pre_commit_docs_memory_helpers.validate",
             new_callable=AsyncMock,
         ) as mock_validate:
             mock_validate.side_effect = [
@@ -795,7 +795,7 @@ class TestRunDocsAndMemoryBankSync:
     async def test_invalid_json_from_validation_handled(self) -> None:
         """Invalid JSON from validate() is gracefully handled as None."""
         with patch(
-            "cortex.tools.pre_commit_docs_memory_helpers.validate",
+            "cortex.tools.execution.pre_commit_docs_memory_helpers.validate",
             new_callable=AsyncMock,
         ) as mock_validate:
             mock_validate.side_effect = ["NOT-JSON", "ALSO-NOT-JSON"]
@@ -822,7 +822,7 @@ class TestRunDocsAndMemoryBankSync:
             },
         }
         with patch(
-            "cortex.tools.pre_commit_docs_memory_helpers.validate",
+            "cortex.tools.execution.pre_commit_docs_memory_helpers.validate",
             new_callable=AsyncMock,
         ) as mock_validate:
             mock_validate.side_effect = ["[1, 2]", json.dumps(roadmap_payload)]
@@ -857,7 +857,7 @@ class TestRunDocsAndMemoryBankSync:
         }
 
         with patch(
-            "cortex.tools.pre_commit_docs_memory_helpers.validate",
+            "cortex.tools.execution.pre_commit_docs_memory_helpers.validate",
             new_callable=AsyncMock,
         ) as mock_validate:
             mock_validate.side_effect = [

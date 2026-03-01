@@ -26,6 +26,8 @@
 
 - ✅ **Tools subpackage Session 3: files/** - COMPLETE (2026-03-01) - Moved file_*and markdown_* (19 files) into src/cortex/tools/files/; updated imports project-wide; tests and quality gate pass.
 
+- ✅ **Tools subpackage Session 4 (execution/)** - COMPLETE (2026-03-01) - Moved pre_commit_* and quality_precommit_models into execution/; moved execution.py to execution/safe_execution.py; updated imports project-wide.
+
 ## Completed Work (2026-02-28)
 
 - **Summary (2026-02-28)** - 1 entries archived.

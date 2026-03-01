@@ -11,15 +11,15 @@ from cortex.services.framework_adapters.base import (
     FrameworkAdapter,
     TestResult,
 )
-from cortex.tools.pre_commit_helpers_models import (
+from cortex.tools.execution.pre_commit_helpers_models import (
     CheckStats,
     PreCommitCheck,
     QualityCheckResult,
 )
-from cortex.tools.pre_commit_pipeline_quality import (
+from cortex.tools.execution.pre_commit_pipeline_quality import (
     execute_quality,
 )
-from cortex.tools.pre_commit_synapse import run_synapse_script
+from cortex.tools.execution.pre_commit_synapse import run_synapse_script
 
 
 def process_fix_errors_check(
