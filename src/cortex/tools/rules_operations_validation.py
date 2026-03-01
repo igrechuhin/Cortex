@@ -4,7 +4,7 @@ Rules Operations - Validation Helpers
 Validation logic for rules folder configuration and existence.
 """
 
-from cortex.optimization.optimization_config import OptimizationConfig
+from cortex.optimization.config import OptimizationConfig
 from cortex.optimization.rules_manager import RulesManager
 
 

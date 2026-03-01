@@ -7,7 +7,7 @@ This document is the **generated reference** of all configuration defaults used 
 | Config file | Source | Model / constant |
 |-------------|--------|-------------------|
 | `.cortex/config/validation.json` | `cortex.validation.models` | `ValidationConfigModel` |
-| `.cortex/config/optimization.json` | `cortex.optimization.optimization_config` | `DEFAULT_OPTIMIZATION_CONFIG` + `OptimizationConfigModel` |
+| `.cortex/config/optimization.json` | `cortex.optimization.config` | `DEFAULT_OPTIMIZATION_CONFIG` + `OptimizationConfigModel` |
 | `.cortex/config/structure.json` | `cortex.structure.structure_config` | `DEFAULT_STRUCTURE`; schema: `cortex.structure.models.StructureConfigModel` |
 
 To regenerate default values from source, run from project root:

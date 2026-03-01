@@ -21,7 +21,7 @@ from cortex.core.mcp_stability import (
 from cortex.core.project_root_resolver import resolve_project_root_async
 from cortex.managers.initialization import get_managers
 from cortex.managers.manager_utils import get_manager
-from cortex.optimization.optimization_config import OptimizationConfig
+from cortex.optimization.config import OptimizationConfig
 from cortex.optimization.rules_manager import RulesManager
 from cortex.server import mcp
 from cortex.tools.rules_operation_helpers import (

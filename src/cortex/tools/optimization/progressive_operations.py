@@ -8,7 +8,7 @@ import json
 
 from cortex.managers.manager_utils import get_manager
 from cortex.managers.types import ManagersDict
-from cortex.optimization.optimization_config import OptimizationConfig
+from cortex.optimization.config import OptimizationConfig
 from cortex.optimization.progressive_loader import (
     LoadedContent,
     ProgressiveLoader,

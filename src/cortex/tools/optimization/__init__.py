@@ -1,7 +1,8 @@
-"""
+"""Optimization subpackage: progressive loading, relevance, summarization.
+
 Phase 4: Token Optimization Tools
 
-This module contains tools for context loading, content summarization,
+This package contains tools for context loading, content summarization,
 and relevance scoring.
 
 Total: 3 tools, 3 resources (rules tools moved to consolidated.py)
@@ -13,7 +14,7 @@ Note: index_rules and get_relevant_rules have been consolidated into
 rules() tool in consolidated.py
 load_progressive_context has been merged into load_context with strategy="progressive"
 
-This module now serves as a backward-compatible facade that imports
+This package serves as a backward-compatible facade that imports
 from the split modules.
 """
 

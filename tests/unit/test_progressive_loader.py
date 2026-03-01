@@ -731,7 +731,7 @@ class TestLoadProgressiveContextSkipsStaleIndexEntries:
         import json
 
         from cortex.managers.initialization import get_managers
-        from cortex.tools.progressive_operations import (
+        from cortex.tools.optimization.progressive_operations import (
             load_progressive_context_impl,
         )
         from tests.helpers.path_helpers import ensure_test_cortex_structure

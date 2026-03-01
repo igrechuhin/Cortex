@@ -12,8 +12,8 @@ from cortex.core.models import ContextDepth
 from cortex.managers.manager_utils import get_manager
 from cortex.managers.types import ManagersDict
 from cortex.optimization.agent_roles import AgentRole
+from cortex.optimization.config import OptimizationConfig
 from cortex.optimization.context_optimizer import ContextOptimizer
-from cortex.optimization.optimization_config import OptimizationConfig
 from cortex.tools.context.load_operations_content import handle_full_or_summary_depth
 from cortex.tools.context.load_operations_metadata import load_context_metadata_only
 

@@ -27,7 +27,7 @@ from cortex.core.dependency_graph import DependencyGraph
 # Import dependencies
 from cortex.core.file_system import FileSystemManager
 from cortex.core.metadata_index import MetadataIndex
-from cortex.optimization.optimization_config import OptimizationConfig
+from cortex.optimization.config import OptimizationConfig
 
 
 @pytest.fixture

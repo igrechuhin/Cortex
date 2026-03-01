@@ -176,7 +176,7 @@ Each manager/service module has a single responsibility:
 - `optimization_strategies.py` - Strategy implementations
 - `progressive_loader.py` - Load context incrementally
 - `summarization_engine.py` - Summarize content
-- `optimization_config.py` - Configuration management
+- `optimization/config.py` - Configuration management
 
 #### Phase 4 Enhancement (2 modules)
 

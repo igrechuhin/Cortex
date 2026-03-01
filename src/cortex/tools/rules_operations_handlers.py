@@ -7,8 +7,8 @@ Handlers for index and get_relevant operations.
 import json
 
 from cortex.core.models import ModelDict
+from cortex.optimization.config import OptimizationConfig
 from cortex.optimization.models import RulesManagerStatusModel
-from cortex.optimization.optimization_config import OptimizationConfig
 from cortex.optimization.rules_manager import RulesManager
 from cortex.tools.rules_operation_helpers import (
     RulesOperation,

@@ -32,6 +32,8 @@ from cortex.core.mcp_stability import (
 from cortex.core.models import ContextDepth, ResponseFormat
 from cortex.core.project_root_resolver import resolve_project_root_async
 from cortex.server import mcp
+from cortex.tools.optimization.relevance_operations import get_relevance_scores_impl
+from cortex.tools.optimization.summarization_operations import summarize_content_impl
 from cortex.tools.optimization_handlers_load import (
     check_optimization_enabled,
     execute_load_context_with_logging,
@@ -41,8 +43,6 @@ from cortex.tools.optimization_handlers_validation import (
     resolve_load_context_budget,
     validate_task_description_length,
 )
-from cortex.tools.relevance_operations import get_relevance_scores_impl
-from cortex.tools.summarization_operations import summarize_content_impl
 
 # Re-export for backward compatibility (tests import from this module)
 __all__ = ["is_non_trivial_task"]

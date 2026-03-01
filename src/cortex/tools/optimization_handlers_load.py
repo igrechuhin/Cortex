@@ -20,7 +20,7 @@ from cortex.optimization.agent_roles import (
     detect_agent_role,
     normalize_role_name,
 )
-from cortex.optimization.optimization_config import OptimizationConfig
+from cortex.optimization.config import OptimizationConfig
 from cortex.tools.context.load_operations import load_context_impl
 from cortex.tools.optimization_handlers_format import (
     format_and_add_warnings_if_needed,
@@ -78,7 +78,7 @@ async def load_context_progressive(
     loading_strategy: str | None,
 ) -> str:
     """Load context using progressive strategy."""
-    from cortex.tools.progressive_operations import (
+    from cortex.tools.optimization.progressive_operations import (
         load_progressive_context_impl,
     )
 

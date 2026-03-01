@@ -12,7 +12,7 @@ from cortex.core.metadata_index import MetadataIndex
 from cortex.core.models import ContextDepth, ModelDict
 from cortex.core.token_counter import TokenCounter
 from cortex.optimization.agent_roles import AgentRole
-from cortex.optimization.optimization_config import OptimizationConfig
+from cortex.optimization.config import OptimizationConfig
 from cortex.tools.context.load_models import FileMapEntry
 from cortex.tools.context.load_operations_result import emit_metadata_only_log
 from cortex.tools.hybrid_metadata_helpers import (

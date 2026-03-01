@@ -1107,7 +1107,7 @@ Indexes rules from directories for efficient lookup and application.
 
 ### OptimizationConfig
 
-**Location:** `src/cortex/optimization_config.py`
+**Location:** `src/cortex/optimization/config.py`
 
 **Description:**
 Configuration for optimization strategies and parameters.

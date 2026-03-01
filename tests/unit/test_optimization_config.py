@@ -12,7 +12,7 @@ import pytest
 
 from cortex.core.models import ModelDict
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
-from cortex.optimization.optimization_config import (
+from cortex.optimization.config import (
     DEFAULT_OPTIMIZATION_CONFIG,
     OptimizationConfig,
 )
@@ -157,7 +157,7 @@ class TestConfigFileOperations:
 
         with (
             patch(
-                "cortex.optimization.optimization_config.open_async_text_file",
+                "cortex.optimization.config.open_async_text_file",
                 side_effect=mock_open_async_text_file,
             ),
             caplog.at_level(logging.ERROR),

@@ -429,7 +429,7 @@ class TestLoadContext:
                 return_value=mock_managers,
             ),
             patch(
-                "cortex.tools.progressive_operations.get_manager",
+                "cortex.tools.optimization.progressive_operations.get_manager",
                 side_effect=_get_manager_helper,
             ),
         ):
@@ -462,7 +462,7 @@ class TestLoadContext:
                 return_value=mock_managers,
             ),
             patch(
-                "cortex.tools.progressive_operations.get_manager",
+                "cortex.tools.optimization.progressive_operations.get_manager",
                 side_effect=_get_manager_helper,
             ),
         ):
@@ -497,7 +497,7 @@ class TestLoadContext:
                 return_value=mock_managers,
             ),
             patch(
-                "cortex.tools.progressive_operations.get_manager",
+                "cortex.tools.optimization.progressive_operations.get_manager",
                 side_effect=_get_manager_helper,
             ),
         ):
@@ -530,7 +530,7 @@ class TestLoadContext:
                 return_value=mock_managers,
             ),
             patch(
-                "cortex.tools.progressive_operations.get_manager",
+                "cortex.tools.optimization.progressive_operations.get_manager",
                 side_effect=_get_manager_helper,
             ),
         ):
@@ -793,7 +793,7 @@ class TestSummarizeContent:
                 return_value=mock_managers,
             ),
             patch(
-                "cortex.tools.summarization_operations.get_manager",
+                "cortex.tools.optimization.summarization_operations.get_manager",
                 side_effect=_get_manager_helper,
             ),
         ):
@@ -824,7 +824,7 @@ class TestSummarizeContent:
                 return_value=mock_managers,
             ),
             patch(
-                "cortex.tools.summarization_operations.get_manager",
+                "cortex.tools.optimization.summarization_operations.get_manager",
                 side_effect=_get_manager_helper,
             ),
         ):
@@ -865,7 +865,7 @@ class TestSummarizeContent:
                 return_value=mock_managers,
             ),
             patch(
-                "cortex.tools.summarization_operations.get_manager",
+                "cortex.tools.optimization.summarization_operations.get_manager",
                 side_effect=get_manager_helper,
             ),
         ):
@@ -907,7 +907,7 @@ class TestSummarizeContent:
                 return_value=mock_managers,
             ),
             patch(
-                "cortex.tools.summarization_operations.get_manager",
+                "cortex.tools.optimization.summarization_operations.get_manager",
                 side_effect=get_manager_helper,
             ),
         ):
@@ -973,7 +973,7 @@ class TestSummarizeContent:
                 return_value=mock_managers,
             ),
             patch(
-                "cortex.tools.summarization_operations.get_manager",
+                "cortex.tools.optimization.summarization_operations.get_manager",
                 side_effect=_get_manager_helper,
             ),
         ):
@@ -1025,7 +1025,7 @@ class TestSummarizeContent:
                 return_value=mock_managers,
             ),
             patch(
-                "cortex.tools.summarization_operations.get_manager",
+                "cortex.tools.optimization.summarization_operations.get_manager",
                 side_effect=RuntimeError("Summarization failed"),
             ),
         ):
@@ -1062,7 +1062,7 @@ class TestGetRelevanceScores:
                 return_value=mock_managers,
             ),
             patch(
-                "cortex.tools.relevance_operations.get_manager",
+                "cortex.tools.optimization.relevance_operations.get_manager",
                 side_effect=_get_manager_helper,
             ),
         ):
@@ -1094,7 +1094,7 @@ class TestGetRelevanceScores:
                 return_value=mock_managers,
             ),
             patch(
-                "cortex.tools.relevance_operations.get_manager",
+                "cortex.tools.optimization.relevance_operations.get_manager",
                 side_effect=_get_manager_helper,
             ),
         ):
@@ -1126,7 +1126,7 @@ class TestGetRelevanceScores:
                 return_value=mock_managers,
             ),
             patch(
-                "cortex.tools.relevance_operations.get_manager",
+                "cortex.tools.optimization.relevance_operations.get_manager",
                 side_effect=_get_manager_helper,
             ),
         ):
@@ -1187,11 +1187,11 @@ class TestIntegration:
                 side_effect=_get_manager_helper,
             ),
             patch(
-                "cortex.tools.relevance_operations.get_manager",
+                "cortex.tools.optimization.relevance_operations.get_manager",
                 side_effect=_get_manager_helper,
             ),
             patch(
-                "cortex.tools.summarization_operations.get_manager",
+                "cortex.tools.optimization.summarization_operations.get_manager",
                 side_effect=_get_manager_helper,
             ),
         ):
@@ -1319,7 +1319,7 @@ class TestPhase4OptimizationResources:
                 return_value=mock_managers,
             ),
             patch(
-                "cortex.tools.relevance_operations.get_manager",
+                "cortex.tools.optimization.relevance_operations.get_manager",
                 side_effect=_get_manager_helper,
             ),
         ):
@@ -1345,7 +1345,7 @@ class TestPhase4OptimizationResources:
                 return_value=mock_managers,
             ),
             patch(
-                "cortex.tools.summarization_operations.get_manager",
+                "cortex.tools.optimization.summarization_operations.get_manager",
                 side_effect=_get_manager_helper,
             ),
         ):
@@ -1370,7 +1370,7 @@ class TestPhase4OptimizationResources:
                 return_value=mock_managers,
             ),
             patch(
-                "cortex.tools.summarization_operations.get_manager",
+                "cortex.tools.optimization.summarization_operations.get_manager",
                 side_effect=_get_manager_helper,
             ),
         ):

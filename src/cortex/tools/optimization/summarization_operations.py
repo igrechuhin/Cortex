@@ -10,8 +10,8 @@ from cortex.core.file_system import FileSystemManager
 from cortex.core.metadata_index import MetadataIndex
 from cortex.managers.manager_utils import get_manager
 from cortex.managers.types import ManagersDict
+from cortex.optimization.config import OptimizationConfig
 from cortex.optimization.models import SummarizationResultModel
-from cortex.optimization.optimization_config import OptimizationConfig
 from cortex.optimization.summarization_engine import SummarizationEngine
 
 

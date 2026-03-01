@@ -26,7 +26,7 @@ except Exception as e:
     raise
 
 try:
-    from cortex.optimization.optimization_config import (
+    from cortex.optimization.config import (
         DEFAULT_OPTIMIZATION_CONFIG,
         OptimizationConfig,  # noqa: F401
     )

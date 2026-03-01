@@ -14,7 +14,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from cortex.core.file_system import FileSystemManager
 from cortex.core.metadata_index import MetadataIndex
 from cortex.core.token_counter import TokenCounter
-from cortex.optimization.optimization_config import OptimizationConfig
+from cortex.optimization.config import OptimizationConfig
 from cortex.optimization.rules_manager import RulesManager
 
 

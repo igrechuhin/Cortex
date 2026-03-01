@@ -22,9 +22,9 @@ from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 
 # Import dependencies
 from cortex.core.token_counter import TokenCounter
+from cortex.optimization.config import OptimizationConfig
 from cortex.optimization.context_optimizer import ContextOptimizer
 from cortex.optimization.models import FileMetadataForScoring
-from cortex.optimization.optimization_config import OptimizationConfig
 from cortex.optimization.progressive_loader import ProgressiveLoader
 
 # Import Phase 4 modules
