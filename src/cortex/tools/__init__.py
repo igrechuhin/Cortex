@@ -15,7 +15,7 @@ Modules:
 - foundation_*: Core Memory Bank operations (4 tools split across modules)
 - phase2_linking: Link management and transclusion (4 tools)
 - phase3_validation: Validation and quality checks (5 tools)
-- phase4_optimization: Token optimization and context management (7 tools)
+- optimization: Token optimization and context management (7 tools)
 - phase5_analysis: Usage pattern and structure analysis (3 tools)
 - phase5_refactoring: Refactoring suggestions (4 tools)
 - phase5_execution: Safe execution and learning (6 tools)
@@ -50,9 +50,9 @@ from . import (
     foundation_version,  # noqa: F401
     health_check_operations,  # noqa: F401
     markdown_operations,  # noqa: F401
+    optimization,  # noqa: F401
     phase2_linking,  # noqa: F401
     phase3_validation,  # noqa: F401
-    phase4_optimization,  # noqa: F401
     phase5_analysis,  # noqa: F401
     phase5_evaluation,  # noqa: F401
     phase5_evaluation_optimization_helpers,  # noqa: F401
@@ -113,7 +113,7 @@ __all__ = [
     "foundation_version",
     "phase2_linking",
     "phase3_validation",
-    "phase4_optimization",
+    "optimization",
     "phase5_analysis",
     "phase5_evaluation",
     "phase5_evaluation_optimization_helpers",

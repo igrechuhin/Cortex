@@ -161,7 +161,7 @@ def format_and_add_warnings_if_needed(
     token_budget: int | None,
 ) -> str:
     """Format response and add zero-file warnings if needed."""
-    from cortex.tools.phase4_optimization_handlers_validation import is_non_trivial_task
+    from cortex.tools.optimization_handlers_validation import is_non_trivial_task
 
     result_str = format_load_context_response(out, response_format, role)
     if is_non_trivial_task(task_description):

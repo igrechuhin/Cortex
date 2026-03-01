@@ -16,7 +16,7 @@ import json
 from urllib.parse import unquote
 
 # Import via facade to allow test patching
-import cortex.tools.phase4_optimization as phase4_opt
+import cortex.tools.optimization as opt
 from cortex.core.constants import (
     MCP_TOOL_TIMEOUT_COMPLEX,
     MCP_TOOL_TIMEOUT_FAST,
@@ -32,17 +32,17 @@ from cortex.core.mcp_stability import (
 from cortex.core.models import ContextDepth, ResponseFormat
 from cortex.core.project_root_resolver import resolve_project_root_async
 from cortex.server import mcp
-from cortex.tools.phase4_optimization_handlers_load import (
+from cortex.tools.optimization_handlers_load import (
     check_optimization_enabled,
     execute_load_context_with_logging,
 )
-from cortex.tools.phase4_optimization_handlers_validation import (
+from cortex.tools.optimization_handlers_validation import (
     is_non_trivial_task,
     resolve_load_context_budget,
     validate_task_description_length,
 )
-from cortex.tools.phase4_relevance_operations import get_relevance_scores_impl
-from cortex.tools.phase4_summarization_operations import summarize_content_impl
+from cortex.tools.relevance_operations import get_relevance_scores_impl
+from cortex.tools.summarization_operations import summarize_content_impl
 
 # Re-export for backward compatibility (tests import from this module)
 __all__ = ["is_non_trivial_task"]
@@ -152,7 +152,7 @@ async def summarize_content(
     await log_client(ctx, "info", "summarize_content: starting", logger_name=__name__)
     try:
         root = await resolve_project_root_async(None, ctx)
-        mgrs = await phase4_opt.get_managers(root)
+        mgrs = await opt.get_managers(root)
 
         enabled_error = await check_optimization_enabled(mgrs)
         if enabled_error:
@@ -227,7 +227,7 @@ async def get_relevance_scores(
     )
     try:
         root = await resolve_project_root_async(None, ctx)
-        mgrs = await phase4_opt.get_managers(root)
+        mgrs = await opt.get_managers(root)
 
         enabled_error = await check_optimization_enabled(mgrs)
         if enabled_error:

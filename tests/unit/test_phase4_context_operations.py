@@ -12,7 +12,7 @@ import pytest
 
 from cortex.core.token_counter import TokenCounter
 from cortex.managers.initialization import get_managers
-from cortex.tools.phase4_context_operations import load_context_impl
+from cortex.tools.context_operations import load_context_impl
 from tests.helpers.path_helpers import ensure_test_cortex_structure
 
 

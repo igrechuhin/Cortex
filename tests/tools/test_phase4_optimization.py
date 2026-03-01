@@ -18,7 +18,7 @@ import pytest
 
 from cortex.core.models import DetailedFileMetadata
 from cortex.managers.types import ManagersDict
-from cortex.tools.phase4_optimization import (
+from cortex.tools.optimization import (
     get_relevance_scores,
     get_relevance_scores_resource,
     load_context,
@@ -26,7 +26,7 @@ from cortex.tools.phase4_optimization import (
     summarize_content,
     summarize_content_resource,
 )
-from cortex.tools.phase4_optimization_handlers import is_non_trivial_task
+from cortex.tools.optimization_handlers import is_non_trivial_task
 from tests.helpers.fixture_validator import validate_optimization_config_mock
 from tests.helpers.managers import make_test_managers
 
@@ -197,16 +197,16 @@ class TestLoadContext:
         # Arrange
         with (
             patch(
-                "cortex.tools.phase4_optimization_handlers.resolve_project_root_async",
+                "cortex.tools.optimization_handlers.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
             patch(
-                "cortex.tools.phase4_optimization.get_managers",
+                "cortex.tools.optimization.get_managers",
                 return_value=mock_managers,
             ),
             patch(
-                "cortex.tools.phase4_context_operations.get_manager",
+                "cortex.tools.context_operations.get_manager",
                 side_effect=_get_manager_helper,
             ),
         ):
@@ -235,16 +235,16 @@ class TestLoadContext:
         # Arrange
         with (
             patch(
-                "cortex.tools.phase4_optimization_handlers.resolve_project_root_async",
+                "cortex.tools.optimization_handlers.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
             patch(
-                "cortex.tools.phase4_optimization.get_managers",
+                "cortex.tools.optimization.get_managers",
                 return_value=mock_managers,
             ),
             patch(
-                "cortex.tools.phase4_context_operations.get_manager",
+                "cortex.tools.context_operations.get_manager",
                 side_effect=_get_manager_helper,
             ),
         ):
@@ -270,16 +270,16 @@ class TestLoadContext:
         # Arrange
         with (
             patch(
-                "cortex.tools.phase4_optimization_handlers.resolve_project_root_async",
+                "cortex.tools.optimization_handlers.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
             patch(
-                "cortex.tools.phase4_optimization.get_managers",
+                "cortex.tools.optimization.get_managers",
                 return_value=mock_managers,
             ),
             patch(
-                "cortex.tools.phase4_context_operations.get_manager",
+                "cortex.tools.context_operations.get_manager",
                 side_effect=_get_manager_helper,
             ),
         ):
@@ -303,16 +303,16 @@ class TestLoadContext:
         # Arrange
         with (
             patch(
-                "cortex.tools.phase4_optimization_handlers.resolve_project_root_async",
+                "cortex.tools.optimization_handlers.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
             patch(
-                "cortex.tools.phase4_optimization.get_managers",
+                "cortex.tools.optimization.get_managers",
                 return_value=mock_managers,
             ),
             patch(
-                "cortex.tools.phase4_context_operations.get_manager",
+                "cortex.tools.context_operations.get_manager",
                 side_effect=_get_manager_helper,
             ),
         ):
@@ -355,16 +355,16 @@ class TestLoadContext:
         # Arrange
         with (
             patch(
-                "cortex.tools.phase4_optimization_handlers.resolve_project_root_async",
+                "cortex.tools.optimization_handlers.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
             patch(
-                "cortex.tools.phase4_optimization.get_managers",
+                "cortex.tools.optimization.get_managers",
                 return_value=mock_managers,
             ),
             patch(
-                "cortex.tools.phase4_context_operations.get_manager",
+                "cortex.tools.context_operations.get_manager",
                 side_effect=_get_manager_helper,
             ),
         ):
@@ -387,16 +387,16 @@ class TestLoadContext:
         # Arrange
         with (
             patch(
-                "cortex.tools.phase4_optimization_handlers.resolve_project_root_async",
+                "cortex.tools.optimization_handlers.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
             patch(
-                "cortex.tools.phase4_optimization.get_managers",
+                "cortex.tools.optimization.get_managers",
                 return_value=mock_managers,
             ),
             patch(
-                "cortex.tools.phase4_context_operations.get_manager",
+                "cortex.tools.context_operations.get_manager",
                 side_effect=_get_manager_helper,
             ),
         ):
@@ -420,16 +420,16 @@ class TestLoadContext:
         # Arrange
         with (
             patch(
-                "cortex.tools.phase4_optimization_handlers.resolve_project_root_async",
+                "cortex.tools.optimization_handlers.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
             patch(
-                "cortex.tools.phase4_optimization.get_managers",
+                "cortex.tools.optimization.get_managers",
                 return_value=mock_managers,
             ),
             patch(
-                "cortex.tools.phase4_progressive_operations.get_manager",
+                "cortex.tools.progressive_operations.get_manager",
                 side_effect=_get_manager_helper,
             ),
         ):
@@ -453,16 +453,16 @@ class TestLoadContext:
         # Arrange
         with (
             patch(
-                "cortex.tools.phase4_optimization_handlers.resolve_project_root_async",
+                "cortex.tools.optimization_handlers.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
             patch(
-                "cortex.tools.phase4_optimization.get_managers",
+                "cortex.tools.optimization.get_managers",
                 return_value=mock_managers,
             ),
             patch(
-                "cortex.tools.phase4_progressive_operations.get_manager",
+                "cortex.tools.progressive_operations.get_manager",
                 side_effect=_get_manager_helper,
             ),
         ):
@@ -488,16 +488,16 @@ class TestLoadContext:
         # Arrange
         with (
             patch(
-                "cortex.tools.phase4_optimization_handlers.resolve_project_root_async",
+                "cortex.tools.optimization_handlers.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
             patch(
-                "cortex.tools.phase4_optimization.get_managers",
+                "cortex.tools.optimization.get_managers",
                 return_value=mock_managers,
             ),
             patch(
-                "cortex.tools.phase4_progressive_operations.get_manager",
+                "cortex.tools.progressive_operations.get_manager",
                 side_effect=_get_manager_helper,
             ),
         ):
@@ -521,16 +521,16 @@ class TestLoadContext:
         # Arrange
         with (
             patch(
-                "cortex.tools.phase4_optimization_handlers.resolve_project_root_async",
+                "cortex.tools.optimization_handlers.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
             patch(
-                "cortex.tools.phase4_optimization.get_managers",
+                "cortex.tools.optimization.get_managers",
                 return_value=mock_managers,
             ),
             patch(
-                "cortex.tools.phase4_progressive_operations.get_manager",
+                "cortex.tools.progressive_operations.get_manager",
                 side_effect=_get_manager_helper,
             ),
         ):
@@ -552,7 +552,7 @@ class TestLoadContext:
         """Test exception handling in load_context."""
         # Arrange - exception raised in load module's initialization
         with patch(
-            "cortex.tools.phase4_optimization_handlers_load.resolve_project_root_async",
+            "cortex.tools.optimization_handlers_load.resolve_project_root_async",
             new_callable=AsyncMock,
             side_effect=RuntimeError("Test error"),
         ):
@@ -581,12 +581,12 @@ class TestLoadContext:
         )
         with (
             patch(
-                "cortex.tools.phase4_optimization_handlers.resolve_project_root_async",
+                "cortex.tools.optimization_handlers.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
             patch(
-                "cortex.tools.phase4_optimization.get_managers",
+                "cortex.tools.optimization.get_managers",
                 return_value=disabled_managers,
             ),
         ):
@@ -607,16 +607,16 @@ class TestLoadContext:
         # Arrange
         with (
             patch(
-                "cortex.tools.phase4_optimization_handlers.resolve_project_root_async",
+                "cortex.tools.optimization_handlers.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
             patch(
-                "cortex.tools.phase4_optimization.get_managers",
+                "cortex.tools.optimization.get_managers",
                 return_value=mock_managers,
             ),
             patch(
-                "cortex.tools.phase4_context_operations.get_manager",
+                "cortex.tools.context_operations.get_manager",
                 side_effect=_get_manager_helper,
             ),
         ):
@@ -656,16 +656,16 @@ class TestLoadContext:
 
         with (
             patch(
-                "cortex.tools.phase4_optimization_handlers.resolve_project_root_async",
+                "cortex.tools.optimization_handlers.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
             patch(
-                "cortex.tools.phase4_optimization.get_managers",
+                "cortex.tools.optimization.get_managers",
                 return_value=mock_managers,
             ),
             patch(
-                "cortex.tools.phase4_optimization_handlers_load.load_context_impl",
+                "cortex.tools.optimization_handlers_load.load_context_impl",
                 side_effect=mock_load_context_impl,
             ),
         ):
@@ -703,16 +703,16 @@ class TestLoadContext:
 
         with (
             patch(
-                "cortex.tools.phase4_optimization_handlers.resolve_project_root_async",
+                "cortex.tools.optimization_handlers.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
             patch(
-                "cortex.tools.phase4_optimization.get_managers",
+                "cortex.tools.optimization.get_managers",
                 return_value=mock_managers,
             ),
             patch(
-                "cortex.tools.phase4_optimization_handlers_load.load_context_impl",
+                "cortex.tools.optimization_handlers_load.load_context_impl",
                 side_effect=mock_load_context_impl,
             ),
         ):
@@ -740,16 +740,16 @@ class TestLoadContext:
 
         with (
             patch(
-                "cortex.tools.phase4_optimization_handlers.resolve_project_root_async",
+                "cortex.tools.optimization_handlers.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
             patch(
-                "cortex.tools.phase4_optimization.get_managers",
+                "cortex.tools.optimization.get_managers",
                 return_value=mock_managers,
             ),
             patch(
-                "cortex.tools.phase4_optimization_handlers_load.load_context_impl",
+                "cortex.tools.optimization_handlers_load.load_context_impl",
                 side_effect=mock_load_context_impl,
             ),
         ):
@@ -784,16 +784,16 @@ class TestSummarizeContent:
         # Arrange
         with (
             patch(
-                "cortex.tools.phase4_optimization_handlers.resolve_project_root_async",
+                "cortex.tools.optimization_handlers.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
             patch(
-                "cortex.tools.phase4_optimization.get_managers",
+                "cortex.tools.optimization.get_managers",
                 return_value=mock_managers,
             ),
             patch(
-                "cortex.tools.phase4_summarization_operations.get_manager",
+                "cortex.tools.summarization_operations.get_manager",
                 side_effect=_get_manager_helper,
             ),
         ):
@@ -815,16 +815,16 @@ class TestSummarizeContent:
         # Arrange
         with (
             patch(
-                "cortex.tools.phase4_optimization_handlers.resolve_project_root_async",
+                "cortex.tools.optimization_handlers.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
             patch(
-                "cortex.tools.phase4_optimization.get_managers",
+                "cortex.tools.optimization.get_managers",
                 return_value=mock_managers,
             ),
             patch(
-                "cortex.tools.phase4_summarization_operations.get_manager",
+                "cortex.tools.summarization_operations.get_manager",
                 side_effect=_get_manager_helper,
             ),
         ):
@@ -856,16 +856,16 @@ class TestSummarizeContent:
 
         with (
             patch(
-                "cortex.tools.phase4_optimization_handlers.resolve_project_root_async",
+                "cortex.tools.optimization_handlers.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
             patch(
-                "cortex.tools.phase4_optimization.get_managers",
+                "cortex.tools.optimization.get_managers",
                 return_value=mock_managers,
             ),
             patch(
-                "cortex.tools.phase4_summarization_operations.get_manager",
+                "cortex.tools.summarization_operations.get_manager",
                 side_effect=get_manager_helper,
             ),
         ):
@@ -898,16 +898,16 @@ class TestSummarizeContent:
 
         with (
             patch(
-                "cortex.tools.phase4_optimization_handlers.resolve_project_root_async",
+                "cortex.tools.optimization_handlers.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
             patch(
-                "cortex.tools.phase4_optimization.get_managers",
+                "cortex.tools.optimization.get_managers",
                 return_value=mock_managers,
             ),
             patch(
-                "cortex.tools.phase4_summarization_operations.get_manager",
+                "cortex.tools.summarization_operations.get_manager",
                 side_effect=get_manager_helper,
             ),
         ):
@@ -934,16 +934,16 @@ class TestSummarizeContent:
 
         with (
             patch(
-                "cortex.tools.phase4_optimization_handlers.resolve_project_root_async",
+                "cortex.tools.optimization_handlers.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
             patch(
-                "cortex.tools.phase4_optimization.get_managers",
+                "cortex.tools.optimization.get_managers",
                 return_value=mock_managers,
             ),
             patch(
-                "cortex.tools.phase4_optimization_handlers_load.get_manager",
+                "cortex.tools.optimization_handlers_load.get_manager",
                 side_effect=get_manager_helper,
             ),
         ):
@@ -964,16 +964,16 @@ class TestSummarizeContent:
         # Arrange
         with (
             patch(
-                "cortex.tools.phase4_optimization_handlers.resolve_project_root_async",
+                "cortex.tools.optimization_handlers.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
             patch(
-                "cortex.tools.phase4_optimization.get_managers",
+                "cortex.tools.optimization.get_managers",
                 return_value=mock_managers,
             ),
             patch(
-                "cortex.tools.phase4_summarization_operations.get_manager",
+                "cortex.tools.summarization_operations.get_manager",
                 side_effect=_get_manager_helper,
             ),
         ):
@@ -1016,16 +1016,16 @@ class TestSummarizeContent:
         # Arrange
         with (
             patch(
-                "cortex.tools.phase4_optimization_handlers.resolve_project_root_async",
+                "cortex.tools.optimization_handlers.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
             patch(
-                "cortex.tools.phase4_optimization.get_managers",
+                "cortex.tools.optimization.get_managers",
                 return_value=mock_managers,
             ),
             patch(
-                "cortex.tools.phase4_summarization_operations.get_manager",
+                "cortex.tools.summarization_operations.get_manager",
                 side_effect=RuntimeError("Summarization failed"),
             ),
         ):
@@ -1053,16 +1053,16 @@ class TestGetRelevanceScores:
         # Arrange
         with (
             patch(
-                "cortex.tools.phase4_optimization_handlers.resolve_project_root_async",
+                "cortex.tools.optimization_handlers.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
             patch(
-                "cortex.tools.phase4_optimization.get_managers",
+                "cortex.tools.optimization.get_managers",
                 return_value=mock_managers,
             ),
             patch(
-                "cortex.tools.phase4_relevance_operations.get_manager",
+                "cortex.tools.relevance_operations.get_manager",
                 side_effect=_get_manager_helper,
             ),
         ):
@@ -1085,16 +1085,16 @@ class TestGetRelevanceScores:
         # Arrange
         with (
             patch(
-                "cortex.tools.phase4_optimization_handlers.resolve_project_root_async",
+                "cortex.tools.optimization_handlers.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
             patch(
-                "cortex.tools.phase4_optimization.get_managers",
+                "cortex.tools.optimization.get_managers",
                 return_value=mock_managers,
             ),
             patch(
-                "cortex.tools.phase4_relevance_operations.get_manager",
+                "cortex.tools.relevance_operations.get_manager",
                 side_effect=_get_manager_helper,
             ),
         ):
@@ -1117,16 +1117,16 @@ class TestGetRelevanceScores:
         # Arrange
         with (
             patch(
-                "cortex.tools.phase4_optimization_handlers.resolve_project_root_async",
+                "cortex.tools.optimization_handlers.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
             patch(
-                "cortex.tools.phase4_optimization.get_managers",
+                "cortex.tools.optimization.get_managers",
                 return_value=mock_managers,
             ),
             patch(
-                "cortex.tools.phase4_relevance_operations.get_manager",
+                "cortex.tools.relevance_operations.get_manager",
                 side_effect=_get_manager_helper,
             ),
         ):
@@ -1146,7 +1146,7 @@ class TestGetRelevanceScores:
         """Test exception handling in get_relevance_scores."""
         # Arrange
         with patch(
-            "cortex.tools.phase4_optimization_handlers.resolve_project_root_async",
+            "cortex.tools.optimization_handlers.resolve_project_root_async",
             new_callable=AsyncMock,
             side_effect=RuntimeError("Scoring failed"),
         ):
@@ -1174,24 +1174,24 @@ class TestIntegration:
         """Test complete workflow: load context -> score -> summarize."""
         with (
             patch(
-                "cortex.tools.phase4_optimization_handlers.resolve_project_root_async",
+                "cortex.tools.optimization_handlers.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
             patch(
-                "cortex.tools.phase4_optimization.get_managers",
+                "cortex.tools.optimization.get_managers",
                 return_value=mock_managers,
             ),
             patch(
-                "cortex.tools.phase4_context_operations.get_manager",
+                "cortex.tools.context_operations.get_manager",
                 side_effect=_get_manager_helper,
             ),
             patch(
-                "cortex.tools.phase4_relevance_operations.get_manager",
+                "cortex.tools.relevance_operations.get_manager",
                 side_effect=_get_manager_helper,
             ),
             patch(
-                "cortex.tools.phase4_summarization_operations.get_manager",
+                "cortex.tools.summarization_operations.get_manager",
                 side_effect=_get_manager_helper,
             ),
         ):
@@ -1236,7 +1236,7 @@ class TestPhase4OptimizationContextLogging:
         mock_log = AsyncMock()
         with (
             patch(
-                "cortex.tools.phase4_optimization_handlers.log_client",
+                "cortex.tools.optimization_handlers.log_client",
                 mock_log,
             ),
             patch(
@@ -1244,16 +1244,16 @@ class TestPhase4OptimizationContextLogging:
                 mock_log,
             ),
             patch(
-                "cortex.tools.phase4_optimization_handlers.resolve_project_root_async",
+                "cortex.tools.optimization_handlers.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
             patch(
-                "cortex.tools.phase4_optimization.get_managers",
+                "cortex.tools.optimization.get_managers",
                 new=AsyncMock(return_value=mock_managers),
             ),
             patch(
-                "cortex.tools.phase4_context_operations.get_manager",
+                "cortex.tools.context_operations.get_manager",
                 side_effect=_get_manager_helper,
             ),
         ):
@@ -1285,16 +1285,16 @@ class TestPhase4OptimizationResources:
         """load_context_resource returns JSON success for task_description."""
         with (
             patch(
-                "cortex.tools.phase4_optimization_handlers.resolve_project_root_async",
+                "cortex.tools.optimization_handlers.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
             patch(
-                "cortex.tools.phase4_optimization.get_managers",
+                "cortex.tools.optimization.get_managers",
                 return_value=mock_managers,
             ),
             patch(
-                "cortex.tools.phase4_context_operations.get_manager",
+                "cortex.tools.context_operations.get_manager",
                 side_effect=_get_manager_helper,
             ),
         ):
@@ -1310,16 +1310,16 @@ class TestPhase4OptimizationResources:
         """get_relevance_scores_resource returns JSON success."""
         with (
             patch(
-                "cortex.tools.phase4_optimization_handlers.resolve_project_root_async",
+                "cortex.tools.optimization_handlers.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
             patch(
-                "cortex.tools.phase4_optimization.get_managers",
+                "cortex.tools.optimization.get_managers",
                 return_value=mock_managers,
             ),
             patch(
-                "cortex.tools.phase4_relevance_operations.get_manager",
+                "cortex.tools.relevance_operations.get_manager",
                 side_effect=_get_manager_helper,
             ),
         ):
@@ -1336,16 +1336,16 @@ class TestPhase4OptimizationResources:
         """summarize_content_resource with file_name returns JSON success."""
         with (
             patch(
-                "cortex.tools.phase4_optimization_handlers.resolve_project_root_async",
+                "cortex.tools.optimization_handlers.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
             patch(
-                "cortex.tools.phase4_optimization.get_managers",
+                "cortex.tools.optimization.get_managers",
                 return_value=mock_managers,
             ),
             patch(
-                "cortex.tools.phase4_summarization_operations.get_manager",
+                "cortex.tools.summarization_operations.get_manager",
                 side_effect=_get_manager_helper,
             ),
         ):
@@ -1361,16 +1361,16 @@ class TestPhase4OptimizationResources:
         """summarize_content_resource with file_name '_' summarizes all files."""
         with (
             patch(
-                "cortex.tools.phase4_optimization_handlers.resolve_project_root_async",
+                "cortex.tools.optimization_handlers.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
             patch(
-                "cortex.tools.phase4_optimization.get_managers",
+                "cortex.tools.optimization.get_managers",
                 return_value=mock_managers,
             ),
             patch(
-                "cortex.tools.phase4_summarization_operations.get_manager",
+                "cortex.tools.summarization_operations.get_manager",
                 side_effect=_get_manager_helper,
             ),
         ):
@@ -1470,16 +1470,16 @@ class TestContextBudgetValidation:
         """load_context allows token_budget=0 for trivial tasks."""
         with (
             patch(
-                "cortex.tools.phase4_optimization_handlers.resolve_project_root_async",
+                "cortex.tools.optimization_handlers.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
             patch(
-                "cortex.tools.phase4_optimization.get_managers",
+                "cortex.tools.optimization.get_managers",
                 return_value=mock_managers,
             ),
             patch(
-                "cortex.tools.phase4_context_operations.get_manager",
+                "cortex.tools.context_operations.get_manager",
                 side_effect=_get_manager_helper,
             ),
         ):
@@ -1512,16 +1512,16 @@ class TestContextBudgetValidation:
 
         with (
             patch(
-                "cortex.tools.phase4_optimization_handlers.resolve_project_root_async",
+                "cortex.tools.optimization_handlers.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
             patch(
-                "cortex.tools.phase4_optimization.get_managers",
+                "cortex.tools.optimization.get_managers",
                 return_value=mock_managers,
             ),
             patch(
-                "cortex.tools.phase4_optimization_handlers_load.load_context_with_error_handling",
+                "cortex.tools.optimization_handlers_load.load_context_with_error_handling",
                 new_callable=AsyncMock,
                 return_value=mock_result,
             ),
@@ -1544,11 +1544,11 @@ class TestContextBudgetValidation:
 # ============================================================================
 
 
-def test_phase4_optimization_exports_all_public_api() -> None:
-    """Validate phase4_optimization module exports all items in __all__."""
-    import cortex.tools.phase4_optimization as m
+def test_optimization_exports_all_public_api() -> None:
+    """Validate optimization module exports all items in __all__."""
+    import cortex.tools.optimization as m
 
     for name in m.__all__:
-        assert hasattr(m, name), f"phase4_optimization.__all__ has {name!r} but missing"
+        assert hasattr(m, name), f"optimization.__all__ has {name!r} but missing"
         attr = getattr(m, name)
-        assert attr is not None, f"phase4_optimization.{name} is None"
+        assert attr is not None, f"optimization.{name} is None"

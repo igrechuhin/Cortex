@@ -21,7 +21,7 @@ from the split modules.
 # Re-export dependencies needed for testing
 from cortex.managers.initialization import get_managers, get_project_root
 from cortex.managers.manager_utils import get_manager
-from cortex.tools.phase4_optimization_handlers import (
+from cortex.tools.optimization_handlers import (
     get_relevance_scores,
     get_relevance_scores_resource,
     load_context,

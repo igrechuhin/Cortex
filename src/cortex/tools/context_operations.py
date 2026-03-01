@@ -14,8 +14,8 @@ from cortex.managers.types import ManagersDict
 from cortex.optimization.agent_roles import AgentRole
 from cortex.optimization.context_optimizer import ContextOptimizer
 from cortex.optimization.optimization_config import OptimizationConfig
-from cortex.tools.phase4_context_operations_content import handle_full_or_summary_depth
-from cortex.tools.phase4_context_operations_metadata import load_context_metadata_only
+from cortex.tools.context_operations_content import handle_full_or_summary_depth
+from cortex.tools.context_operations_metadata import load_context_metadata_only
 
 
 def _calculate_effective_budget(

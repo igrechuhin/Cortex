@@ -13,11 +13,11 @@ from cortex.core.models import ContextDepth, ModelDict
 from cortex.optimization.agent_roles import AgentRole
 from cortex.optimization.context_optimizer import ContextOptimizer
 from cortex.optimization.optimization_strategies import OptimizationResult
-from cortex.tools.phase4_context_operations_result import (
+from cortex.tools.context_operations_result import (
     format_load_context_result,
     log_context_call,
 )
-from cortex.tools.phase4_metadata_helpers import summarize_files_content
+from cortex.tools.metadata_helpers import summarize_files_content
 
 logger = logging.getLogger(__name__)
 

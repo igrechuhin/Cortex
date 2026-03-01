@@ -1,10 +1,10 @@
-"""Unit tests for phase4_optimization_handlers_format module."""
+"""Unit tests for optimization_handlers_format module."""
 
 import json
 from typing import cast
 
 from cortex.core.models import ResponseFormat
-from cortex.tools.phase4_optimization_handlers_format import (
+from cortex.tools.optimization_handlers_format import (
     add_zero_file_warning_if_needed,
     build_concise_payload,
     count_files_from_result,

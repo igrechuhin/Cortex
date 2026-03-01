@@ -9,7 +9,7 @@ import json
 from pathlib import Path
 
 # Import via facade to allow test patching
-import cortex.tools.phase4_optimization as phase4_opt
+import cortex.tools.optimization as opt
 from cortex.core.context_logging import MCPContext
 from cortex.core.models import ContextDepth, ResponseFormat
 from cortex.core.project_root_resolver import resolve_project_root_async
@@ -21,12 +21,12 @@ from cortex.optimization.agent_roles import (
     normalize_role_name,
 )
 from cortex.optimization.optimization_config import OptimizationConfig
-from cortex.tools.phase4_context_operations import load_context_impl
-from cortex.tools.phase4_optimization_handlers_format import (
+from cortex.tools.context_operations import load_context_impl
+from cortex.tools.optimization_handlers_format import (
     format_and_add_warnings_if_needed,
     format_load_context_error,
 )
-from cortex.tools.phase4_optimization_handlers_validation import (
+from cortex.tools.optimization_handlers_validation import (
     validate_explicit_budget_for_non_trivial,
 )
 
@@ -78,7 +78,7 @@ async def load_context_progressive(
     loading_strategy: str | None,
 ) -> str:
     """Load context using progressive strategy."""
-    from cortex.tools.phase4_progressive_operations import (
+    from cortex.tools.progressive_operations import (
         load_progressive_context_impl,
     )
 
@@ -149,7 +149,7 @@ async def initialize_context_loading(
 ) -> tuple[Path, ManagersDict, str | None]:
     """Initialize context loading with managers and check enabled status."""
     root = await resolve_project_root_async(None, ctx)
-    mgrs = await phase4_opt.get_managers(root)
+    mgrs = await opt.get_managers(root)
     enabled_error = await check_optimization_enabled(mgrs)
     return root, mgrs, enabled_error
 

@@ -117,7 +117,7 @@ class TestLoadContextInputSanitization:
     @pytest.mark.asyncio
     async def test_load_context_rejects_oversized_task_description(self):
         """Test load_context rejects task_description exceeding limit."""
-        from cortex.tools.phase4_optimization_handlers import load_context
+        from cortex.tools.optimization_handlers import load_context
 
         oversized = "x" * (MAX_TASK_DESCRIPTION_CHARS + 1)
 
@@ -132,16 +132,16 @@ class TestLoadContextInputSanitization:
     @pytest.mark.asyncio
     async def test_load_context_accepts_task_description_at_limit(self):
         """Test load_context accepts task_description at exactly the limit."""
-        from cortex.tools.phase4_optimization_handlers import load_context
+        from cortex.tools.optimization_handlers import load_context
 
         task_description = "x" * MAX_TASK_DESCRIPTION_CHARS
 
         with patch(
-            "cortex.tools.phase4_optimization_handlers.resolve_load_context_budget",
+            "cortex.tools.optimization_handlers.resolve_load_context_budget",
             return_value=(10_000, None),
         ):
             with patch(
-                "cortex.tools.phase4_optimization_handlers.execute_load_context_with_logging",
+                "cortex.tools.optimization_handlers.execute_load_context_with_logging",
                 new_callable=AsyncMock,
                 return_value='{"status":"success","files_map":{}}',
             ):

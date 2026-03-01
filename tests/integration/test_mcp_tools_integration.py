@@ -17,8 +17,8 @@ import pytest
 
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.tools.file_operations import manage_file
+from cortex.tools.optimization import load_context
 from cortex.tools.phase2_linking import parse_file_links, validate_links
-from cortex.tools.phase4_optimization import load_context
 from cortex.tools.query_memory_bank_operations import query_memory_bank
 from cortex.tools.validation_operations import validate
 from tests.helpers.schema_fixtures import MINIMAL_VALID_PROJECT_BRIEF_CONTENT

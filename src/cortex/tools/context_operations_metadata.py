@@ -14,13 +14,13 @@ from cortex.core.token_counter import TokenCounter
 from cortex.optimization.agent_roles import AgentRole
 from cortex.optimization.optimization_config import OptimizationConfig
 from cortex.tools.context_models import FileMapEntry
-from cortex.tools.phase4_context_operations_result import emit_metadata_only_log
-from cortex.tools.phase4_hybrid_metadata_helpers import (
+from cortex.tools.context_operations_result import emit_metadata_only_log
+from cortex.tools.hybrid_metadata_helpers import (
     calculate_always_loaded_tokens,
     filter_metadata_excluding_always_loaded,
     load_always_load_sections,
 )
-from cortex.tools.phase4_metadata_helpers import (
+from cortex.tools.metadata_helpers import (
     build_files_map_from_metadata,
     calculate_metadata_relevance_scores,
 )
