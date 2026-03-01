@@ -24,7 +24,7 @@ async def test_query_memory_bank_stats_dispatches() -> None:
         new_callable=AsyncMock,
     ):
         with patch(
-            "cortex.tools.phase1_foundation_stats.get_memory_bank_stats",
+            "cortex.tools.foundation_stats.get_memory_bank_stats",
             new_callable=AsyncMock,
             return_value=json.dumps(
                 {"status": "success", "total_files": 7, "total_tokens": 1000},

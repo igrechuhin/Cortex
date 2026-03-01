@@ -6,6 +6,8 @@
 - Commit - Phase1 foundation rollback Batch 3, tools file-size splits. Phase A passed; 4867 tests, 92.35% coverage.
 - **Plan tools file-size violations (Batch 4 continued)** - COMPLETE. Split 6 tool files: link_graph_operations → link_graph_formatters; phase4_metadata_helpers → phase4_metadata_logging_helpers; session_brief → session_brief_extraction_helpers; transclusion_operations → transclusion_response_helpers; refactoring_operation_helpers → refactoring_operation_concise; phase5_execution → phase5_execution_feedback. 3 files remain (file_operation_helpers, phase1_foundation_stats, pre_commit_pipeline).
 - **Commit: function length fix (file_operation_helpers, file_crud_flow)** - COMPLETE. Replaced `run_validate_prepare_then_execute` with `validate_and_prepare_write_content` + `execute_validated_write`; added `_WriteFlowParams` dataclass and `_run_write_flow` in file_crud_flow. Phase A passed; 4860 tests, 92.37% coverage.
+- **Empty file cleanup (2026-03-01)** - COMPLETE. Deleted 3 empty placeholder files and empty Phase63 dir per plan-empty-file-cleanup.
+- **Rename phase-prefixed files Batch 1 (2026-03-01)** - COMPLETE. Renamed 8 phase1_foundation_*files to foundation_* (dependency, rollback, stats, version, cleanup, rollback_models, rollback_helpers, stats_helpers). Updated all imports and patch paths. Tests pass, coverage 92.37%.
 
 ## 2026-02-28
 

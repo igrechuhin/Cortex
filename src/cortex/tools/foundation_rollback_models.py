@@ -1,6 +1,6 @@
 """Pydantic models for rollback operations.
 
-Extracted from phase1_foundation_rollback to keep the main module within line limits.
+Extracted from foundation_rollback to keep the main module within line limits.
 """
 
 from pydantic import BaseModel, ConfigDict, Field

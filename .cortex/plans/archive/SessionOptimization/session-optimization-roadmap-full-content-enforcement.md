@@ -70,4 +70,4 @@ Prevent roadmap truncation during plan creation by strengthening the create-plan
 ## Notes
 
 - Session report: `.cortex/reviews/session-optimization-2026-02-03T19-23.md`.
-- Phase 63: `.cortex/plans/archive/Phase63/phase-63-harden-create-plan-roadmap-writes.md`.
+- Phase 63: plan file was at `Phase63/phase-63-harden-create-plan-roadmap-writes.md` (removed in empty-file cleanup; was 0-byte placeholder).

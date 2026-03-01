@@ -13,7 +13,7 @@ from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.tools.file_operations import manage_file
 
 # Use consolidated query_memory_bank (Phase 50); rollback stays direct
-from cortex.tools.phase1_foundation_rollback import rollback_file_version
+from cortex.tools.foundation_rollback import rollback_file_version
 from cortex.tools.query_memory_bank_operations import query_memory_bank
 from tests.helpers.schema_fixtures import MINIMAL_VALID_PROJECT_BRIEF_CONTENT
 
@@ -87,22 +87,22 @@ async def test_full_workflow():
             return_value=root_path,
         )
         version_patch = patch(
-            "cortex.tools.phase1_foundation_version.resolve_project_root_async",
+            "cortex.tools.foundation_version.resolve_project_root_async",
             new_callable=AsyncMock,
             return_value=root_path,
         )
         rollback_patch = patch(
-            "cortex.tools.phase1_foundation_rollback.resolve_project_root_async",
+            "cortex.tools.foundation_rollback.resolve_project_root_async",
             new_callable=AsyncMock,
             return_value=root_path,
         )
         dependency_patch = patch(
-            "cortex.tools.phase1_foundation_dependency.resolve_project_root_async",
+            "cortex.tools.foundation_dependency.resolve_project_root_async",
             new_callable=AsyncMock,
             return_value=root_path,
         )
         stats_patch = patch(
-            "cortex.tools.phase1_foundation_stats.resolve_project_root_async",
+            "cortex.tools.foundation_stats.resolve_project_root_async",
             new_callable=AsyncMock,
             return_value=root_path,
         )

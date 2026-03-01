@@ -12,7 +12,7 @@ Modules:
 - rules_operations: Rules management (1 tool) - Phase 9.1.1 split
 - configuration_operations: Configuration management (1 tool) - Phase 9.1.1 split
 - markdown_operations: Markdown file operations (1 tool) - Markdown lint fixing
-- phase1_foundation_*: Core Memory Bank operations (4 tools split across modules)
+- foundation_*: Core Memory Bank operations (4 tools split across modules)
 - phase2_linking: Link management and transclusion (4 tools)
 - phase3_validation: Validation and quality checks (5 tools)
 - phase4_optimization: Token optimization and context management (7 tools)
@@ -44,12 +44,12 @@ from . import (
     configuration_operations,  # noqa: F401
     connection_health,  # noqa: F401
     file_operations,  # noqa: F401
+    foundation_dependency,  # noqa: F401
+    foundation_rollback,  # noqa: F401
+    foundation_stats,  # noqa: F401
+    foundation_version,  # noqa: F401
     health_check_operations,  # noqa: F401
     markdown_operations,  # noqa: F401
-    phase1_foundation_dependency,  # noqa: F401
-    phase1_foundation_rollback,  # noqa: F401
-    phase1_foundation_stats,  # noqa: F401
-    phase1_foundation_version,  # noqa: F401
     phase2_linking,  # noqa: F401
     phase3_validation,  # noqa: F401
     phase4_optimization,  # noqa: F401
@@ -107,10 +107,10 @@ __all__ = [
     "file_operations",
     "health_check_operations",
     "markdown_operations",
-    "phase1_foundation_dependency",
-    "phase1_foundation_rollback",
-    "phase1_foundation_stats",
-    "phase1_foundation_version",
+    "foundation_dependency",
+    "foundation_rollback",
+    "foundation_stats",
+    "foundation_version",
     "phase2_linking",
     "phase3_validation",
     "phase4_optimization",

@@ -1,6 +1,6 @@
 """Helper functions for rollback operations.
 
-Extracted from phase1_foundation_rollback to keep the main module within line limits.
+Extracted from foundation_rollback to keep the main module within line limits.
 """
 
 from pathlib import Path
@@ -15,7 +15,7 @@ from cortex.tools.models import (
     RollbackFileVersionResult,
 )
 
-from .phase1_foundation_rollback_models import (
+from .foundation_rollback_models import (
     RollbackManagers,
     RollbackProcessingData,
 )

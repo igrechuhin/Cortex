@@ -47,7 +47,7 @@ def _error_payload(message: str) -> str:
 
 
 async def _run_stats(params: QueryMemoryBankParams, ctx: MCPContext | None) -> str:
-    from cortex.tools.phase1_foundation_stats import get_memory_bank_stats
+    from cortex.tools.foundation_stats import get_memory_bank_stats
 
     return await get_memory_bank_stats(
         include_token_budget=params.include_token_budget,
@@ -63,7 +63,7 @@ async def _run_version_history(
 ) -> str:
     if not params.file_name:
         return _error_payload("file_name is required for query_type=version_history")
-    from cortex.tools.phase1_foundation_version import get_version_history
+    from cortex.tools.foundation_version import get_version_history
 
     return await get_version_history(
         file_name=params.file_name,
@@ -75,7 +75,7 @@ async def _run_version_history(
 async def _run_dependency_graph(
     params: QueryMemoryBankParams, ctx: MCPContext | None
 ) -> str:
-    from cortex.tools.phase1_foundation_dependency import get_dependency_graph
+    from cortex.tools.foundation_dependency import get_dependency_graph
 
     return await get_dependency_graph(format=params.format, ctx=ctx)
 

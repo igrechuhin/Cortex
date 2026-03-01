@@ -25,8 +25,6 @@
 
 ### Cleanup
 
-- **PENDING** Remove 3 empty archive files and stale history (0-byte placeholders). Plan: `.cortex/plans/plan-empty-file-cleanup.md`
-
 ### Investigation Plans (Archive / Reference)
 
 Completed investigations are recorded in [activeContext.md](activeContext.md). Plan files under `.cortex/plans/archive/` as needed.

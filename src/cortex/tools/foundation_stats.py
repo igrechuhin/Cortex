@@ -26,7 +26,7 @@ from cortex.managers.lazy_manager import LazyManager
 from cortex.managers.manager_utils import get_manager
 from cortex.managers.types import ManagersDict
 from cortex.server import mcp
-from cortex.tools.phase1_foundation_stats_helpers import (
+from cortex.tools.foundation_stats_helpers import (
     build_base_stats_result,
     build_summary_dict,
     calculate_token_status,

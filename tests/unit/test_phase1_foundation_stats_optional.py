@@ -6,7 +6,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from cortex.managers.lazy_manager import LazyManager
-from cortex.tools import phase1_foundation_stats
+from cortex.tools import foundation_stats
 from tests.helpers.managers import make_test_managers
 
 
@@ -19,7 +19,7 @@ class TestPhase1FoundationStatsOptional:
         mgrs = make_test_managers(refactoring_executor=None)
 
         # Act
-        result = await phase1_foundation_stats._build_refactoring_history_dict(  # noqa: SLF001  # type: ignore[attr-defined]
+        result = await foundation_stats._build_refactoring_history_dict(  # noqa: SLF001  # type: ignore[attr-defined]
             mgrs, refactoring_days=7
         )
 
@@ -47,7 +47,7 @@ class TestPhase1FoundationStatsOptional:
         mgrs = make_test_managers(refactoring_executor=lazy)  # type: ignore[arg-type]
 
         # Act
-        result = await phase1_foundation_stats._build_refactoring_history_dict(  # noqa: SLF001  # type: ignore[attr-defined]
+        result = await foundation_stats._build_refactoring_history_dict(  # noqa: SLF001  # type: ignore[attr-defined]
             mgrs, refactoring_days=30
         )
 
@@ -64,22 +64,22 @@ class TestPhase1FoundationStatsOptional:
         fake_mgrs = make_test_managers()
         with (
             patch(
-                "cortex.tools.phase1_foundation_stats.initialization.get_project_root",
+                "cortex.tools.foundation_stats.initialization.get_project_root",
                 return_value=tmp_path,
             ),
             patch(
-                "cortex.tools.phase1_foundation_stats.initialization.get_managers",
+                "cortex.tools.foundation_stats.initialization.get_managers",
                 return_value=fake_mgrs,
             ),
             patch(
-                "cortex.tools.phase1_foundation_stats._build_refactoring_history_dict",
+                "cortex.tools.foundation_stats._build_refactoring_history_dict",
                 new=AsyncMock(return_value={"total_refactorings": 0, "recent": []}),
             ),
         ):
             # Act
             from cortex.core.models import ModelDict
 
-            result = await phase1_foundation_stats._add_optional_stats(  # noqa: SLF001  # type: ignore[attr-defined]
+            result = await foundation_stats._add_optional_stats(  # noqa: SLF001  # type: ignore[attr-defined]
                 cast(ModelDict, base),
                 include_token_budget=False,
                 include_refactoring_history=True,

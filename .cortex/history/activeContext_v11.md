@@ -10,6 +10,10 @@
 
 - ✅ **Function length fix (file_operation_helpers, file_crud_flow)** - COMPLETE (2026-03-01) - Replaced run_validate_prepare_then_execute with validate_and_prepare_write_content + execute_validated_write; added _WriteFlowParams and_run_write_flow. Plan-tools-file-size-violations archived.
 
+- ✅ **Remove 3 empty archive files and stale history** - COMPLETE (2026-03-01) - Deleted 3 empty (0-byte) placeholder files in .cortex/, removed empty Phase63 dir, updated one archived plan reference.
+
+- ✅ **Rename phase-prefixed files Batch 1** - COMPLETE (2026-03-01) - Renamed 8 phase1_foundation_*files to foundation_* (dependency, rollback, stats, version, cleanup + helpers/models). Updated imports, **init**.py, and test patch paths. Phase A preflight passed.
+
 ## Completed Work (2026-02-28)
 
 - **Summary (2026-02-28)** - 1 entries archived.

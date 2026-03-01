@@ -1,6 +1,6 @@
 """Helper functions for Memory Bank statistics.
 
-Extracted from phase1_foundation_stats to keep that file under 400 lines.
+Extracted from foundation_stats to keep that file under 400 lines.
 """
 
 from pathlib import Path

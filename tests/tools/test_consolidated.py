@@ -478,7 +478,7 @@ class TestManageFile:
                 return_value=root,
             ):
                 with patch(
-                    "cortex.tools.phase1_foundation_rollback._execute_rollback",
+                    "cortex.tools.foundation_rollback._execute_rollback",
                     new=AsyncMock(return_value=rollback_result),
                 ):
                     result_str = await manage_file(

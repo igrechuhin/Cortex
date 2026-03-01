@@ -320,7 +320,7 @@ def validate_file_path(
 
 async def handle_rollback_operation(file_name: str, version: int, root: Path) -> str:
     """Handle rollback operation. Restores file from version snapshot."""
-    from cortex.tools.phase1_foundation_rollback import execute_rollback
+    from cortex.tools.foundation_rollback import execute_rollback
 
     result = await execute_rollback(file_name, version, root)
     if isinstance(result, dict):
