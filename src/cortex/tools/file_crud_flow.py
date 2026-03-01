@@ -5,6 +5,7 @@ file_manage_file_helpers (dispatch) and by compaction_operations.
 """
 
 import json
+from dataclasses import dataclass
 from pathlib import Path
 from typing import cast
 
@@ -29,7 +30,8 @@ from cortex.tools.file_operation_helpers import (
     build_read_error_response,
     build_schema_validation_error_response,
     build_write_error_response,
-    run_validate_prepare_then_execute,
+    execute_validated_write,
+    validate_and_prepare_write_content,
     validate_write_request,
 )
 from cortex.tools.file_section_helpers import extract_content_sections
@@ -37,6 +39,22 @@ from cortex.tools.roadmap_corruption import fix_memory_bank_content_if_needed
 from cortex.validation.schema_validator import SchemaValidator
 
 # Avoid circular import: file_lock_guard used only at runtime in _verify_write_lock
+
+
+@dataclass(frozen=True)
+class _WriteFlowParams:
+    """Bundled params for write flow to keep function length under limit."""
+
+    file_path: Path
+    file_name: str
+    content: str | None
+    change_description: str | None
+    schema_validator: SchemaValidator | None
+    project_root: Path | None
+    fs_manager: FileSystemManager
+    metadata_index: MetadataIndex
+    token_counter: TokenCounter
+    version_manager: VersionManager
 
 
 async def _build_read_response(
@@ -228,6 +246,36 @@ async def _execute_write_with_error_handling(
         return build_write_error_response(e)
 
 
+async def _run_write_flow(p: _WriteFlowParams) -> str:
+    """Validate/prepare then execute write."""
+    err, final_content = await validate_and_prepare_write_content(
+        p.file_path,
+        p.file_name,
+        p.content,
+        p.change_description,
+        p.schema_validator,
+        p.project_root,
+        validate_write_request,
+        _verify_write_lock,
+        _validate_schema_if_needed,
+        _prepare_content_for_write,
+    )
+    if err is not None:
+        return err
+    assert final_content is not None
+    return await execute_validated_write(
+        p.file_path,
+        p.file_name,
+        final_content,
+        p.change_description,
+        _execute_write_with_error_handling,
+        p.fs_manager,
+        p.metadata_index,
+        p.token_counter,
+        p.version_manager,
+    )
+
+
 async def handle_write_operation(
     file_path: Path,
     file_name: str,
@@ -241,23 +289,19 @@ async def handle_write_operation(
     project_root: Path | None = None,
 ) -> str:
     """Handle write: validate/prepare then execute."""
-    return await run_validate_prepare_then_execute(
+    p = _WriteFlowParams(
         file_path,
         file_name,
         content,
         change_description,
         schema_validator,
         project_root,
-        validate_write_request,
-        _verify_write_lock,
-        _validate_schema_if_needed,
-        _prepare_content_for_write,
-        _execute_write_with_error_handling,
         fs_manager,
         metadata_index,
         token_counter,
         version_manager,
     )
+    return await _run_write_flow(p)
 
 
 def validate_file_path(

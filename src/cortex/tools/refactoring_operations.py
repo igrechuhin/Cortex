@@ -21,8 +21,10 @@ from cortex.core.models import ResponseFormat
 from cortex.core.project_root_resolver import resolve_project_root_async
 from cortex.refactoring.models import RefactoringSuggestionType
 from cortex.server import mcp
-from cortex.tools.refactoring_operation_helpers import (
+from cortex.tools.refactoring_operation_concise import (
     format_suggest_refactoring_response,
+)
+from cortex.tools.refactoring_operation_helpers import (
     parse_refactoring_suggestion_type,
     process_refactoring_request,
     suggest_refactoring_error_json,

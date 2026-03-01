@@ -1,7 +1,7 @@
 import json
 
 from cortex.core.models import ResponseFormat
-from cortex.tools.refactoring_operation_helpers import (
+from cortex.tools.refactoring_operation_concise import (
     format_suggest_refactoring_response,
 )
 

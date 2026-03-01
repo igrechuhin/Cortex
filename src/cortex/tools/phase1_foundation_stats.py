@@ -26,7 +26,26 @@ from cortex.managers.lazy_manager import LazyManager
 from cortex.managers.manager_utils import get_manager
 from cortex.managers.types import ManagersDict
 from cortex.server import mcp
-from cortex.tools.session_models import TokenBudgetStatus
+from cortex.tools.phase1_foundation_stats_helpers import (
+    build_base_stats_result,
+    build_summary_dict,
+    calculate_token_status,
+    calculate_totals,
+    extract_last_updated,
+    format_memory_bank_stats_response,
+    sum_file_field,
+)
+
+# Re-exports for tests
+__all__ = [
+    "build_summary_dict",
+    "calculate_token_status",
+    "calculate_totals",
+    "extract_last_updated",
+    "format_memory_bank_stats_response",
+    "get_memory_bank_stats",
+    "sum_file_field",
+]
 
 
 # Tool consolidated into query_memory_bank (Phase 50); kept as callable for dispatch.
@@ -72,73 +91,6 @@ async def get_memory_bank_stats(
         - token_budget: Usage percentage, remaining tokens, status
         - refactoring_history: Recent refactorings and rollbacks (optional)
         - index_stats: Metadata index statistics
-
-    Example (Basic stats):
-        ```json
-        {
-          "status": "success",
-          "project_root": "/path/to/project",
-          "summary": {
-            "total_files": 7,
-            "total_tokens": 45120,
-            "total_size_bytes": 180480,
-            "total_size_kb": 176.25,
-            "total_reads": 142,
-            "history_size_bytes": 2048000,
-            "history_size_kb": 2000.0
-          },
-          "token_budget": {
-            "status": "healthy",
-            "total_tokens": 45120,
-            "max_tokens": 100000,
-            "remaining_tokens": 54880,
-            "usage_percentage": 45.12,
-            "warn_threshold": 80.0
-          },
-          "last_updated": "2026-01-04T10:30:00",
-          "index_stats": { ... }
-        }
-        ```
-
-    Example (Error):
-        ```json
-        {
-          "status": "error",
-          "error": "<exception message>",
-          "error_type": "OSError"
-        }
-        ```
-
-    Example (With refactoring history):
-        When include_refactoring_history=True, adds:
-        ```json
-        {
-          ...
-          "refactoring_history": {
-            "total_refactorings": 12,
-            "successful": 10,
-            "rolled_back": 2,
-            "recent": [
-              {
-                "type": "consolidation",
-                "timestamp": "2026-01-03T14:00:00",
-                "files_affected": ["file1.md", "file2.md"],
-                "status": "success"
-              }
-            ]
-          }
-        }
-        ```
-
-    Note:
-        This tool replaces the deprecated check_token_budget and
-        get_refactoring_history tools. Use include_token_budget=True and
-        include_refactoring_history=True to get all information in one call.
-
-        Token budget status values:
-        - "healthy": Usage < warning threshold (default 80%)
-        - "warning": Usage >= warning threshold but < max
-        - "over_budget": Usage >= max tokens
     """
     await log_client(
         ctx, "info", "get_memory_bank_stats: starting", logger_name=__name__
@@ -166,32 +118,11 @@ async def get_memory_bank_stats(
         )
 
 
-def format_memory_bank_stats_response(
-    result_dict: ModelDict, response_format: ResponseFormat
-) -> str:
-    """Format get_memory_bank_stats response based on response_format."""
-    if response_format == ResponseFormat.CONCISE:
-        summary_raw: JsonValue | None = result_dict.get("summary")
-        summary: ModelDict = summary_raw if isinstance(summary_raw, dict) else {}
-        token_budget_raw: JsonValue | None = result_dict.get("token_budget")
-        token_budget: ModelDict = (
-            token_budget_raw if isinstance(token_budget_raw, dict) else {}
-        )
-        concise_payload: dict[str, JsonValue] = {
-            "status": result_dict.get("status", "success"),
-            "total_files": summary.get("total_files"),
-            "total_tokens": summary.get("total_tokens"),
-            "usage_percentage": token_budget.get("usage_percentage"),
-        }
-        return json.dumps(concise_payload, indent=2)
-    return json.dumps(result_dict, indent=2)
-
-
 @mcp.resource(uri="cortex://memory-bank/stats")
 @ensure_usage_context
 @mcp_resource_wrapper(timeout=MCP_TOOL_TIMEOUT_MEDIUM)
 async def get_memory_bank_stats_resource() -> str:
-    """Resource: Memory Bank statistics (default params). Read via cortex://memory-bank/stats."""
+    """Resource: Memory Bank statistics (default params)."""
     return await get_memory_bank_stats()
 
 
@@ -220,14 +151,7 @@ async def _get_memory_bank_stats_impl(
 
 
 async def _collect_base_stats(root: Path) -> tuple[ModelDict, int]:
-    """Collect base statistics for Memory Bank.
-
-    Args:
-        root: Project root path
-
-    Returns:
-        Tuple of (result dict, total_tokens)
-    """
+    """Collect base statistics for Memory Bank."""
     mgrs = await initialization.get_managers(root)
     metadata_index = await get_manager(mgrs, "index", MetadataIndex)
     version_manager = await get_manager(mgrs, "versions", VersionManager)
@@ -238,7 +162,7 @@ async def _collect_base_stats(root: Path) -> tuple[ModelDict, int]:
     history_size = await _get_history_size(root, version_manager)
 
     totals = calculate_totals(files_metadata)
-    result_dict = _build_base_stats_result(
+    result_dict = build_base_stats_result(
         root, files_metadata, totals, history_size, cast(ModelDict, index_stats)
     )
     return result_dict, totals[0]
@@ -251,58 +175,6 @@ async def _get_history_size(root: Path, version_manager: VersionManager) -> int:
         return 0
     disk_usage = await version_manager.get_disk_usage()
     return disk_usage.total_bytes
-
-
-def sum_file_field(files_metadata: dict[str, ModelDict], field_name: str) -> int:
-    """Sum a numeric field across all files metadata."""
-    total = 0
-    for file_data in files_metadata.values():
-        value = file_data.get(field_name, 0)
-        if isinstance(value, int):
-            total += value
-        elif isinstance(value, float):
-            total += int(value)
-    return total
-
-
-def extract_last_updated(index_stats: ModelDict) -> str | None:
-    """Extract last_full_scan timestamp from index stats."""
-    totals_raw = index_stats.get("totals")
-    if not isinstance(totals_raw, dict):
-        return None
-    last_full_scan = totals_raw.get("last_full_scan")
-    return last_full_scan if isinstance(last_full_scan, str) else None
-
-
-def build_summary_dict(
-    files_metadata: dict[str, ModelDict],
-    total_tokens: int,
-    total_size: int,
-    total_reads: int,
-    history_size: int,
-) -> ModelDict:
-    """Build summary model with calculated totals."""
-    return {
-        "total_files": len(files_metadata),
-        "total_tokens": total_tokens,
-        "total_size_bytes": total_size,
-        "total_size_kb": round(total_size / 1024, 2),
-        "total_reads": total_reads,
-        "history_size_bytes": history_size,
-        "history_size_kb": round(history_size / 1024, 2),
-    }
-
-
-def calculate_token_status(
-    total_tokens: int, max_tokens: int, warn_threshold: float
-) -> TokenBudgetStatus:
-    """Calculate token budget status based on usage."""
-    warn_threshold_tokens = int(max_tokens * (warn_threshold / 100))
-    if total_tokens >= max_tokens:
-        return TokenBudgetStatus.OVER_BUDGET
-    if total_tokens >= warn_threshold_tokens:
-        return TokenBudgetStatus.WARNING
-    return TokenBudgetStatus.HEALTHY
 
 
 async def _build_token_budget_dict(root: Path, total_tokens: int) -> ModelDict:
@@ -362,61 +234,6 @@ async def _build_refactoring_history_dict(
     )
 
 
-def calculate_totals(
-    files_metadata: dict[str, ModelDict],
-) -> tuple[int, int, int]:
-    """Calculate totals for tokens, size, and reads.
-
-    Args:
-        files_metadata: Dictionary of file metadata
-
-    Returns:
-        Tuple of (total_tokens, total_size, total_reads)
-    """
-    total_tokens = sum_file_field(files_metadata, "token_count")
-    total_size = sum_file_field(files_metadata, "size_bytes")
-    total_reads = sum_file_field(files_metadata, "read_count")
-    return total_tokens, total_size, total_reads
-
-
-def _build_base_stats_result(
-    root: Path,
-    files_metadata: dict[str, ModelDict],
-    totals: tuple[int, int, int],
-    history_size: int,
-    index_stats: ModelDict,
-) -> ModelDict:
-    """Build base statistics result model.
-
-    Args:
-        root: Project root path
-        files_metadata: Dictionary of file metadata
-        totals: Tuple of (total_tokens, total_size, total_reads)
-        history_size: Size of version history in bytes
-        index_stats: Index statistics model
-
-    Returns:
-        GetMemoryBankStatsResult with base statistics
-    """
-    total_tokens, total_size, total_reads = totals
-    summary = build_summary_dict(
-        files_metadata, total_tokens, total_size, total_reads, history_size
-    )
-    last_updated = extract_last_updated(index_stats)
-
-    files_payload: dict[str, JsonValue] = {
-        file_name: cast(JsonValue, meta) for file_name, meta in files_metadata.items()
-    }
-    return {
-        "status": "success",
-        "project_root": str(root),
-        "summary": summary,
-        "last_updated": last_updated,
-        "index_stats": index_stats,
-        "files": files_payload,
-    }
-
-
 async def _add_optional_stats(
     result: ModelDict,
     include_token_budget: bool,
@@ -425,19 +242,7 @@ async def _add_optional_stats(
     total_tokens: int,
     refactoring_days: int,
 ) -> ModelDict | None:
-    """Add optional statistics to result model.
-
-    Args:
-        result: Result model to update
-        include_token_budget: Whether to include token budget
-        include_refactoring_history: Whether to include refactoring history
-        root: Project root path
-        total_tokens: Total token count
-        refactoring_days: Days of refactoring history to include
-
-    Returns:
-        Updated GetMemoryBankStatsResult with optional stats
-    """
+    """Add optional statistics to result model."""
     if include_token_budget:
         token_budget = await _build_token_budget_dict(root, total_tokens)
         result["token_budget"] = token_budget

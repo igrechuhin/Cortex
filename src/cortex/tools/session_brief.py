@@ -6,14 +6,12 @@ Extracted from session_start_tools to keep file size under 400 lines.
 from __future__ import annotations
 
 import asyncio
-import re
 from pathlib import Path
 
 from cortex.core.constants import MemoryBankFile
 from cortex.core.file_system import FileSystemManager
 from cortex.managers.types import ManagersDict
 from cortex.tools.compaction_operations import read_handoff
-from cortex.tools.file_section_helpers import extract_section_from_content
 from cortex.tools.models import (
     ConcurrentSession,
     GitStatusSummary,
@@ -23,6 +21,10 @@ from cortex.tools.models import (
     SessionStartErrorResult,
 )
 from cortex.tools.models_base import ToolResultStatus
+from cortex.tools.session_brief_extraction_helpers import (
+    extract_focus_and_completed,
+    generate_session_suggestions,
+)
 from cortex.tools.session_brief_helpers import (
     brief_from_suggestions_and_context,
     session_brief_context_kwargs,
@@ -31,124 +33,6 @@ from cortex.tools.session_health import calculate_health_summary
 from cortex.tools.session_registry import list_concurrent_sessions
 from cortex.tools.session_start_models import BriefInputs as _BriefInputs
 from cortex.tools.task_locking import list_active_locks
-
-
-def _extract_focus_and_completed(content: str) -> tuple[str, list[str]]:
-    """Extract current focus and recent completed from activeContext content."""
-    return _extract_current_focus(content), _extract_recent_completed(content)
-
-
-def _extract_current_focus(active_context_content: str) -> str:
-    """Extract current focus from activeContext.md."""
-    section_content, warning = extract_section_from_content(
-        active_context_content, "## Current Focus"
-    )
-    if warning or not section_content:
-        return ""
-    lines = section_content.split("\n")
-    if lines and lines[0].strip().startswith("#"):
-        return "\n".join(lines[1:]).strip()
-    return section_content.strip()
-
-
-def _extract_recent_completed(
-    active_context_content: str, max_items: int = 5
-) -> list[str]:
-    """Extract recent completed items from activeContext.md."""
-    completed_items: list[str] = []
-    lines = active_context_content.split("\n")
-    in_completed_section = False
-    for line in lines:
-        if line.strip().startswith("## Completed Work"):
-            in_completed_section = True
-            continue
-        if in_completed_section:
-            if line.strip().startswith("##") and not line.strip().startswith("###"):
-                break
-            if line.strip().startswith("- ✅") or line.strip().startswith("- **"):
-                item_text = line.strip()
-                item_text = re.sub(r"^-\s*(✅\s*)?\*\*", "", item_text)
-                item_text = re.sub(r"\*\*\s*-.*$", "", item_text)
-                item_text = item_text.strip()
-                if item_text:
-                    completed_items.append(item_text)
-                    if len(completed_items) >= max_items:
-                        break
-    return completed_items
-
-
-def _add_concurrency_suggestions(
-    suggestions: list[str],
-    locked_tasks: list[str] | None,
-    concurrent_sessions: list[ConcurrentSession] | None,
-) -> None:
-    """Add suggestions about concurrent sessions and locked tasks."""
-    if concurrent_sessions:
-        session_count = len(concurrent_sessions)
-        suggestions.append(
-            f"{session_count} concurrent session(s) active — check locked_tasks to avoid duplicate work"
-        )
-    if locked_tasks:
-        if len(locked_tasks) == 1:
-            suggestions.append(f"Task locked by another session: {locked_tasks[0]}")
-        else:
-            suggestions.append(
-                f"{len(locked_tasks)} tasks locked by other sessions — see locked_tasks field"
-            )
-
-
-def _add_mcp_and_git_suggestions(
-    suggestions: list[str],
-    mcp_healthy: bool,
-    git_status: GitStatusSummary | None,
-) -> None:
-    """Append MCP and git-related suggestions."""
-    if not mcp_healthy:
-        suggestions.append(
-            "Cortex MCP is disconnected or unhealthy. Reconnect the MCP server and "
-            + "re-run this command; do not proceed without MCP."
-        )
-    if git_status and git_status.has_uncommitted_changes:
-        suggestions.append(
-            f"You have uncommitted changes ({git_status.modified_files_count} modified, "
-            + f"{git_status.untracked_files_count} untracked) — consider committing first"
-        )
-
-
-def _add_budget_and_missing_suggestions(
-    suggestions: list[str], health: SessionHealthSummary
-) -> None:
-    """Append token budget and missing-files suggestions."""
-    if health.token_budget_status == "over_budget":
-        suggestions.append(
-            f"Token budget exceeded ({health.total_tokens} tokens) — consider compaction"
-        )
-    elif health.token_budget_status == "warning":
-        suggestions.append(
-            f"Token budget at {health.total_tokens / 80000 * 100:.0f}% — consider compaction"
-        )
-    if health.missing_files:
-        suggestions.append(
-            f"Missing required files: {', '.join(health.missing_files)} — run initialization"
-        )
-
-
-def _generate_session_suggestions(
-    health: SessionHealthSummary,
-    git_status: GitStatusSummary | None,
-    next_work_item: str | None,
-    locked_tasks: list[str] | None = None,
-    concurrent_sessions: list[ConcurrentSession] | None = None,
-    mcp_healthy: bool = True,
-) -> list[str]:
-    """Generate actionable suggestions for the session."""
-    suggestions: list[str] = []
-    _add_mcp_and_git_suggestions(suggestions, mcp_healthy, git_status)
-    _add_budget_and_missing_suggestions(suggestions, health)
-    _add_concurrency_suggestions(suggestions, locked_tasks, concurrent_sessions)
-    if next_work_item:
-        suggestions.append(f"Next roadmap item: {next_work_item}")
-    return suggestions
 
 
 async def _read_memory_bank_file(
@@ -219,7 +103,7 @@ async def _load_concurrency_info(
 def _compute_suggestions_and_create_brief(inp: _BriefInputs) -> SessionBrief:
     """Compute suggestions and build SessionBrief."""
     return brief_from_suggestions_and_context(
-        _generate_session_suggestions(
+        generate_session_suggestions(
             inp["health"],
             inp["git_status"],
             inp["next_work_item"],
@@ -349,7 +233,7 @@ async def _gather_brief_components(
     next_work_plan_path: str | None,
 ) -> _BriefComponents:
     """Gather components needed to build a session brief (caller provides git/next)."""
-    current_focus, recent_completed = _extract_focus_and_completed(
+    current_focus, recent_completed = extract_focus_and_completed(
         active_context_content
     )
     (

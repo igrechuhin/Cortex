@@ -11,7 +11,6 @@ Notes:
 
 from cortex.core.constants import (
     MCP_TOOL_TIMEOUT_COMPLEX,
-    MCP_TOOL_TIMEOUT_MEDIUM,
 )
 from cortex.core.context_logging import MCPContext, log_client
 from cortex.core.mcp_annotations import safe_write_annotations
@@ -21,10 +20,7 @@ from cortex.refactoring.models import RefactoringAction
 from cortex.server import mcp
 from cortex.tools.phase5_execution_helpers import parse_refactoring_action
 from cortex.tools.phase5_execution_monitoring import log_invalid_action_and_return
-from cortex.tools.phase5_execution_planning import (
-    execute_with_error_handling,
-    provide_feedback_impl,
-)
+from cortex.tools.phase5_execution_planning import execute_with_error_handling
 from cortex.tools.tool_categories import ALLOWED_CALLERS_CODE_EXECUTION
 
 
@@ -273,164 +269,3 @@ async def apply_refactoring(
         preserve_manual_changes,
         ctx,
     )
-
-
-# Internalized for tool budget reduction (2026-02-26). Kept as callable for learning engine.
-@ensure_usage_context
-@mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_MEDIUM)
-async def provide_feedback(
-    suggestion_id: str,
-    feedback_type: str,
-    comment: str | None = None,
-    adjust_preferences: bool = True,
-    ctx: MCPContext | None = None,
-) -> str:
-    """Provide feedback on refactoring suggestions to improve future recommendations.
-
-    USE WHEN: User wants to give feedback, user needs to rate suggestions,
-    user requests feedback submission, user wants to improve learning.
-
-    EXAMPLES: 'provide feedback on suggestion X', 'rate refactoring Y',
-    'submit feedback for improvement'.
-
-    RETURNS: JSON with feedback submission status and learning updates.
-
-    This tool captures user feedback on refactoring suggestions to train the learning
-    engine. The system analyzes patterns in feedback to adjust confidence thresholds,
-    identify successful refactoring patterns, and learn user preferences. Feedback
-    influences future suggestions by updating the internal pattern library and
-    preference weights.
-
-    The learning engine tracks approval rates, application success rates, and
-    feedback patterns to continuously improve suggestion quality. All feedback
-    is persisted in the learning database with full audit trail including
-    timestamps, confidence scores, and suggestion details.
-
-    Args:
-        suggestion_id: ID of the refactoring suggestion to provide feedback on.
-            Must match an existing suggestion from get_refactoring_suggestions().
-            Example: "ref-consolidate-20240115123045"
-        feedback_type: Type of feedback to provide. Must be one of:
-            - "helpful": Suggestion was valuable and appropriate
-            - "not_helpful": Suggestion was not useful but not wrong
-            - "incorrect": Suggestion was wrong or would cause issues
-        comment: Optional detailed comment explaining the feedback reason.
-            Helps the learning engine understand specific context.
-            Example: "Good consolidation but prefer different naming"
-        adjust_preferences: If True, automatically update user preferences and
-            confidence thresholds based on this feedback. If False, record
-            feedback without adjusting learning parameters.
-            Default: True
-
-    Returns:
-        JSON string with feedback confirmation and learning statistics:
-        {
-          "feedback_id": "feedback-ref-consolidate-20240115123045-20240115125030",
-          "status": "recorded",
-          "learning_enabled": true,
-          "message": "Feedback recorded and learning updated",
-          "learning_summary": {
-            "total_feedback": 42,
-            "approval_rate": 0.76,
-            "min_confidence_threshold": 0.65
-          }
-        }
-
-    Examples:
-        Example 1 - Positive feedback on helpful consolidation:
-        >>> provide_feedback(
-        ...     suggestion_id="ref-consolidate-20240115123045",
-        ...     feedback_type="helpful",
-        ...     comment=(
-        ...         "Great catch! This consolidation removed duplicate "
-        ...         "validation logic"
-        ...     )
-        ... )
-        {
-          "feedback_id": "feedback-ref-consolidate-20240115123045-20240115125030",
-          "status": "recorded",
-          "learning_enabled": true,
-          "message": "Feedback recorded and learning updated",
-          "learning_summary": {
-            "total_feedback": 15,
-            "approval_rate": 0.87,
-            "min_confidence_threshold": 0.60
-          }
-        }
-
-        Example 2 - Negative feedback on incorrect suggestion:
-        >>> provide_feedback(
-        ...     suggestion_id="ref-split-20240115130000",
-        ...     feedback_type="incorrect",
-        ...     comment=(
-        ...         "These functions should not be split - they share "
-        ...         "critical state"
-        ...     )
-        ... )
-        {
-          "feedback_id": "feedback-ref-split-20240115130000-20240115130530",
-          "status": "recorded",
-          "learning_enabled": true,
-          "message": "Feedback recorded and learning updated",
-          "learning_summary": {
-            "total_feedback": 16,
-            "approval_rate": 0.81,
-            "min_confidence_threshold": 0.65
-          }
-        }
-
-        Example 3 - Feedback without adjusting preferences:
-        >>> provide_feedback(
-        ...     suggestion_id="ref-reorganize-20240115131500",
-        ...     feedback_type="not_helpful",
-        ...     comment="Already organized well",
-        ...     adjust_preferences=False
-        ... )
-        {
-          "feedback_id": "feedback-ref-reorganize-20240115131500-20240115131530",
-          "status": "recorded",
-          "learning_enabled": true,
-          "message": "Feedback recorded and learning updated",
-          "learning_summary": {
-            "total_feedback": 17,
-            "approval_rate": 0.82,
-            "min_confidence_threshold": 0.65
-          }
-        }
-
-    Note:
-        - Feedback is automatically linked to approval and application status
-        - The learning engine adjusts confidence thresholds based on feedback patterns
-        - "helpful" feedback increases confidence in similar patterns
-        - "not_helpful" feedback reduces confidence slightly
-        - "incorrect" feedback significantly lowers confidence and may filter
-          future similar suggestions
-        - All feedback is persisted to .cortex/config/learning.json
-        - Learning statistics update after each feedback submission
-        - Feedback can be provided at any time, even after suggestion
-          approval/application
-    """
-    await log_client(ctx, "info", "provide_feedback: starting", logger_name=__name__)
-    root = await resolve_project_root_async(None, ctx)
-    try:
-        return await provide_feedback_impl(
-            suggestion_id, feedback_type, comment, adjust_preferences, str(root), ctx
-        )
-    except Exception as e:
-        await log_client(ctx, "error", f"provide_feedback: {e!s}", logger_name=__name__)
-        from cortex.tools.tool_error_formatters import format_tool_error
-
-        return format_tool_error(
-            e,
-            suggestion=(
-                "Review the error details. Ensure suggestion_id is valid and "
-                "feedback_type is one of: 'helpful', 'not_helpful', or 'incorrect'. "
-                "Check that the suggestion exists before providing feedback."
-            ),
-            example={
-                "suggestion_id": "ref-consolidate-20240115123045",
-                "feedback_type": "helpful",
-                "comment": "Great consolidation suggestion",
-            },
-            available_options=["helpful", "not_helpful", "incorrect"],
-        )

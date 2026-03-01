@@ -37,7 +37,8 @@ from cortex.refactoring.models import (
     RollbackRefactoringResult,
     RollbackRefactoringStatus,
 )
-from cortex.tools.phase5_execution import apply_refactoring, provide_feedback
+from cortex.tools.phase5_execution import apply_refactoring
+from cortex.tools.phase5_execution_feedback import provide_feedback
 from cortex.tools.phase5_execution_helpers import (
     check_approval_status,
     parse_refactoring_action,
@@ -949,7 +950,7 @@ class TestProvideFeedback:
         """Test provide_feedback catches exception from provide_feedback_impl."""
         with (
             patch(
-                "cortex.tools.phase5_execution.provide_feedback_impl",
+                "cortex.tools.phase5_execution_feedback.provide_feedback_impl",
                 new_callable=AsyncMock,
                 side_effect=RuntimeError("Learning engine unavailable"),
             ),

@@ -4,6 +4,8 @@
 
 - **Phase1 foundation rollback file-size split (2026-03-01)** - COMPLETE. Extracted phase1_foundation_rollback_models.py (RollbackManagers, RollbackProcessingData) and phase1_foundation_rollback_helpers.py (validate_rollback_file, get_rollback_snapshot, process_rollback_content, update_rollback_metadata, finalize_rollback, build_rollback_success_response, build_rollback_error_response). Main module 218 lines, all under 400.
 - Commit - Phase1 foundation rollback Batch 3, tools file-size splits. Phase A passed; 4867 tests, 92.35% coverage.
+- **Plan tools file-size violations (Batch 4 continued)** - COMPLETE. Split 6 tool files: link_graph_operations → link_graph_formatters; phase4_metadata_helpers → phase4_metadata_logging_helpers; session_brief → session_brief_extraction_helpers; transclusion_operations → transclusion_response_helpers; refactoring_operation_helpers → refactoring_operation_concise; phase5_execution → phase5_execution_feedback. 3 files remain (file_operation_helpers, phase1_foundation_stats, pre_commit_pipeline).
+- **Commit: function length fix (file_operation_helpers, file_crud_flow)** - COMPLETE. Replaced `run_validate_prepare_then_execute` with `validate_and_prepare_write_content` + `execute_validated_write`; added `_WriteFlowParams` dataclass and `_run_write_flow` in file_crud_flow. Phase A passed; 4860 tests, 92.37% coverage.
 
 ## 2026-02-28
 

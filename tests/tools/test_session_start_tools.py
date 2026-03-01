@@ -21,10 +21,10 @@ from cortex.tools.models import (
     SessionStartErrorResult,
     SessionStartResult,
 )
-from cortex.tools.session_brief import (
-    _extract_current_focus,  # type: ignore[reportPrivateUsage]
-    _extract_recent_completed,  # type: ignore[reportPrivateUsage]
-    _generate_session_suggestions,  # type: ignore[reportPrivateUsage]
+from cortex.tools.session_brief_extraction_helpers import (
+    extract_current_focus,
+    extract_recent_completed,
+    generate_session_suggestions,
 )
 from cortex.tools.session_health import (
     calculate_health_summary,
@@ -107,7 +107,7 @@ class TestParseRoadmapSections:
 
 
 class TestExtractCurrentFocus:
-    """Tests for _extract_current_focus helper."""
+    """Tests for extract_current_focus helper."""
 
     def test_extract_current_focus_found(self) -> None:
         """Test extracting current focus when section exists."""
@@ -119,7 +119,7 @@ Working on Phase 54.
 
 ## Next Steps
 """
-        focus = _extract_current_focus(content)
+        focus = extract_current_focus(content)
         assert "Working on Phase 54" in focus
 
     def test_extract_current_focus_not_found(self) -> None:
@@ -128,7 +128,7 @@ Working on Phase 54.
 
 ## Next Steps
 """
-        focus = _extract_current_focus(content)
+        focus = extract_current_focus(content)
         assert focus == ""
 
     def test_extract_current_focus_empty_section(self) -> None:
@@ -139,12 +139,12 @@ Working on Phase 54.
 
 ## Next Steps
 """
-        focus = _extract_current_focus(content)
+        focus = extract_current_focus(content)
         assert focus == ""
 
 
 class TestExtractRecentCompleted:
-    """Tests for _extract_recent_completed helper."""
+    """Tests for extract_recent_completed helper."""
 
     def test_extract_recent_completed_found(self) -> None:
         """Test extracting recent completed items."""
@@ -158,7 +158,7 @@ class TestExtractRecentCompleted:
 
 ## Next Steps
 """
-        completed = _extract_recent_completed(content)
+        completed = extract_recent_completed(content)
         assert len(completed) == 3
         assert "Item 1" in completed[0]
         assert "Item 2" in completed[1]
@@ -177,7 +177,7 @@ class TestExtractRecentCompleted:
 - ✅ Item 5 - COMPLETE
 - ✅ Item 6 - COMPLETE
 """
-        completed = _extract_recent_completed(content, max_items=3)
+        completed = extract_recent_completed(content, max_items=3)
         assert len(completed) == 3
 
     def test_extract_recent_completed_not_found(self) -> None:
@@ -186,7 +186,7 @@ class TestExtractRecentCompleted:
 
 ## Next Steps
 """
-        completed = _extract_recent_completed(content)
+        completed = extract_recent_completed(content)
         assert completed == []
 
     def test_extract_recent_completed_bold_format(self) -> None:
@@ -198,7 +198,7 @@ class TestExtractRecentCompleted:
 - **Item 1** - COMPLETE
 - **Item 2** - COMPLETE
 """
-        completed = _extract_recent_completed(content)
+        completed = extract_recent_completed(content)
         assert len(completed) == 2
         assert "Item 1" in completed[0]
         assert "Item 2" in completed[1]
@@ -494,7 +494,7 @@ class TestCalculateHealthSummary:
 
 
 class TestGenerateSessionSuggestions:
-    """Tests for _generate_session_suggestions helper."""
+    """Tests for generate_session_suggestions helper."""
 
     def test_generate_suggestions_git_changes(self) -> None:
         """Test suggestions when git has uncommitted changes."""
@@ -510,7 +510,7 @@ class TestGenerateSessionSuggestions:
             modified_files_count=2,
             untracked_files_count=1,
         )
-        suggestions = _generate_session_suggestions(health, git_status, None)
+        suggestions = generate_session_suggestions(health, git_status, None)
         assert len(suggestions) > 0
         assert any("uncommitted changes" in s.lower() for s in suggestions)
 
@@ -523,7 +523,7 @@ class TestGenerateSessionSuggestions:
             missing_files=[],
             has_errors=False,
         )
-        suggestions = _generate_session_suggestions(health, None, None)
+        suggestions = generate_session_suggestions(health, None, None)
         assert len(suggestions) > 0
         assert any("budget" in s.lower() for s in suggestions)
 
@@ -536,7 +536,7 @@ class TestGenerateSessionSuggestions:
             missing_files=["projectBrief.md", "systemPatterns.md"],
             has_errors=True,
         )
-        suggestions = _generate_session_suggestions(health, None, None)
+        suggestions = generate_session_suggestions(health, None, None)
         assert len(suggestions) > 0
         assert any("missing" in s.lower() for s in suggestions)
 
@@ -549,7 +549,7 @@ class TestGenerateSessionSuggestions:
             missing_files=[],
             has_errors=False,
         )
-        suggestions = _generate_session_suggestions(
+        suggestions = generate_session_suggestions(
             health, None, "Phase 54: Session Start"
         )
         assert len(suggestions) > 0
@@ -564,7 +564,7 @@ class TestGenerateSessionSuggestions:
             missing_files=[],
             has_errors=False,
         )
-        suggestions = _generate_session_suggestions(
+        suggestions = generate_session_suggestions(
             health, None, None, mcp_healthy=False
         )
         assert len(suggestions) > 0

@@ -57,6 +57,7 @@ from . import (
     phase5_evaluation,  # noqa: F401
     phase5_evaluation_optimization_helpers,  # noqa: F401
     phase5_execution,  # noqa: F401
+    phase5_execution_feedback,  # noqa: F401
     phase5_model_benchmark,  # noqa: F401
     phase5_refactoring,  # noqa: F401
     phase8_structure,  # noqa: F401
@@ -89,6 +90,7 @@ from . import (
 
 # Explicitly reference modules imported for side effects to satisfy type checker
 _ = append_entry_dispatcher
+_ = phase5_execution_feedback
 _ = plan_dispatcher
 _ = roadmap_dispatcher
 _ = synapse_prompts

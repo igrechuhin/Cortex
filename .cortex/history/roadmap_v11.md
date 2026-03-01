@@ -16,22 +16,11 @@
 
 ### Fixes
 
-- **PENDING** Fix gitignore gaps and remove tracked build artifacts (see plan). Plan: `.cortex/plans/plan-gitignore-coverage-cleanup.md`
-- **PENDING** Fix stale tool/test/module counts in documentation (docs say "100+ tools", actual 71). Plan: `.cortex/plans/plan-docs-fix-stale-counts.md`
-- **PENDING** Fix session function naming inconsistency in AGENTS.md (mixes session() and session_start()). Plan: `.cortex/plans/plan-docs-fix-session-naming.md`
-
 ### Documentation Cleanup (DRY)
-
-- **PENDING** Archive 7 legacy prompt docs superseded by 3 unified prompts. Plan: `.cortex/plans/plan-docs-archive-legacy-prompts.md`
-- **PENDING** Consolidate duplicate protocol documentation (2 files, same content). Plan: `.cortex/plans/plan-docs-consolidate-protocols.md`
-- **PENDING** Deduplicate token budget table (identical in CLAUDE.md and AGENTS.md). Plan: `.cortex/plans/plan-deduplicate-budget-table.md`
-- **PENDING** Compact CLAUDE.md at project root — remove ~80 lines duplicated from Synapse rules. Plan: `.cortex/plans/plan-claude-md-compaction.md`
-- **PENDING** Move docs/phase-9-completion-summary.md to docs/design/. Plan: `.cortex/plans/plan-docs-move-phase-summary.md`
-- **PENDING** Rename docs/design/roadmap-fix-temp.md to permanent name. Plan: `.cortex/plans/plan-docs-rename-roadmap-fix-temp.md`
 
 ### Refactoring
 
-- **PENDING** Fix 26 tool files exceeding 400-line limit (project rule violation). Plan: `.cortex/plans/plan-tools-file-size-violations.md`
+- **PENDING** Fix 26 tool files exceeding 400-line limit (project rule violation). Plan: `.cortex/plans/plan-tools-file-size-violations.md` — 6 more splits this session; 3 remain (file_operation_helpers, phase1_foundation_stats, pre_commit_pipeline)
 - **PENDING** Rename 47 phase-prefixed tool files to functional names (depends on file-size plan). Plan: `.cortex/plans/plan-rename-phase-prefixed-files.md`
 - **PENDING** Reorganize tools/ into domain sub-packages (depends on rename + file-size plans). Plan: `.cortex/plans/plan-tools-subpackage-reorganization.md`
 

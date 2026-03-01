@@ -20,7 +20,6 @@
 
 ### Refactoring
 
-- **PENDING** Fix 26 tool files exceeding 400-line limit (project rule violation). Plan: `.cortex/plans/plan-tools-file-size-violations.md`
 - **PENDING** Rename 47 phase-prefixed tool files to functional names (depends on file-size plan). Plan: `.cortex/plans/plan-rename-phase-prefixed-files.md`
 - **PENDING** Reorganize tools/ into domain sub-packages (depends on rename + file-size plans). Plan: `.cortex/plans/plan-tools-subpackage-reorganization.md`
 

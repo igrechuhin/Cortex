@@ -30,17 +30,13 @@ from cortex.tools.plan_operations import (
     create_plan,
     register_plan_in_roadmap,
 )
-from cortex.tools.plan_roadmap import (
-    _find_insertion_line_for_section as find_insertion_line,  # type: ignore[private-usage]
+from cortex.tools.plan_roadmap_helpers import (
+    find_insertion_line_for_section as find_insertion_line,
 )
-from cortex.tools.plan_roadmap import (
-    _is_completed_status as is_completed_status,  # type: ignore[private-usage]
-)
-from cortex.tools.plan_roadmap import (
-    _parse_roadmap_sections as parse_roadmap_sections,  # type: ignore[private-usage]
-)
-from cortex.tools.plan_roadmap import (
-    _register_plan_entry as register_plan_entry,  # type: ignore[private-usage]
+from cortex.tools.plan_roadmap_helpers import (
+    is_completed_status,
+    parse_roadmap_sections,
+    register_plan_entry,
 )
 
 

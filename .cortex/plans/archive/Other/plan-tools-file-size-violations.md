@@ -1,6 +1,6 @@
 # Fix Tool Files Exceeding 400-Line Limit
 
-**Status**: PENDING
+**Status**: COMPLETE
 **Priority**: HIGH
 **Created**: 2026-02-28
 **Type**: Refactoring
@@ -37,7 +37,7 @@ For each file, identify logical split points (helpers, models, formatters, handl
 1. **Batch 1** (largest 5): Split `compaction_operations.py` ✅, `validation_operations.py` ✅ (validation_response_formatters.py), `analysis_operations.py` ✅ (analysis_run_helpers.py), `roadmap_corruption.py` ✅ (roadmap_corruption_models.py, roadmap_corruption_detectors.py, roadmap_corruption_helpers.py), `phase5_production_monitoring_helpers.py` ✅ (phase5_production_monitoring_models.py, phase5_production_monitoring_metrics.py, phase5_production_monitoring_drift.py)
 2. **Batch 2** (next 5): Split `task_locking.py` ✅ (task_locking_helpers.py, task_locking_handlers.py), `refactoring_operations.py` ✅ (refactoring_operations_docs.py), `script_capture_tools.py` ✅ (script_capture_helpers.py, script_capture_handlers.py), `query_usage_operations.py` ✅ (query_usage_models.py), `validation_result_models.py` ✅ (validation_result_links_models.py)
 3. **Batch 3** (next 5): Split `context_models.py` ✅ (context_auxiliary_models.py), `models.py` ✅ (models_reexports.py), `plan_crud.py` ✅ (plan_crud_models.py, plan_crud_helpers.py), `phase1_foundation_rollback.py` ✅ (phase1_foundation_rollback_models.py, phase1_foundation_rollback_helpers.py), `pre_commit_tools.py` ✅ (pre_commit_tools_run_helpers.py)
-4. **Batch 4** (remaining): Split remaining files exceeding 400 lines
+4. **Batch 4** (remaining): Split query_usage_operations.py ✅ (query_usage_handlers.py), tool_error_formatters.py ✅ (tool_error_formatters_core.py, tool_error_formatters_domain.py), plan_roadmap.py ✅ (plan_roadmap_helpers.py, plan_roadmap_models.py), link_graph_operations ✅ (link_graph_formatters.py), phase4_metadata_helpers ✅ (phase4_metadata_logging_helpers.py), session_brief ✅ (session_brief_extraction_helpers.py), transclusion_operations ✅ (transclusion_response_helpers.py), refactoring_operation_helpers ✅ (refactoring_operation_concise.py), phase5_execution ✅ (phase5_execution_feedback.py), pre_commit_pipeline ✅ (pre_commit_pipeline_processors.py, pre_commit_pipeline_quality.py), phase1_foundation_stats ✅ (phase1_foundation_stats_helpers.py), file_operation_helpers ✅ (file_operation_error_responses.py)
 5. **For each file**:
    a. Read file, identify logical groupings
    b. Extract helpers/models/formatters into new submodule
