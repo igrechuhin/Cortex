@@ -32,6 +32,10 @@
 
 - ✅ **Tools subpackage Session 6: validation/** - COMPLETE (2026-03-01) - Moved validation_*, schema_* (12 files) into src/cortex/tools/validation/; updated imports project-wide; tests and quality gate pass.
 
+- ✅ **Tools subpackage Session 7** - COMPLETE (2026-03-01) - session/, linking/, synapse/, usage/, structure/ created. session_models and structure_models at root for circular-import avoidance.
+
+- ✅ **Function length fix (get_synapse_rules_impl)** - COMPLETE (2026-03-01) - Reduced get_synapse_rules_impl from 31 to 30 lines in tools/synapse/tools_impl.py. Phase A passed.
+
 ## Completed Work (2026-02-28)
 
 - **Summary (2026-02-28)** - 1 entries archived.

@@ -26,7 +26,7 @@ def _get_file_operation_enum():
 
 def build_missing_parameters_error(missing: list[str]) -> str:
     """Build error response for missing required parameters."""
-    from cortex.tools.tool_error_formatters import format_missing_parameter_error
+    from cortex.tools.error_formatters import format_missing_parameter_error
 
     example: dict[str, JsonValue] = {
         "file_name": "activeContext.md",
@@ -77,7 +77,7 @@ def build_new_file_creation_error(file_name: str, memory_bank_dir: Path) -> str:
 
 def build_read_error_response(file_name: str, root: Path) -> str:
     """Build error response for read operation when file doesn't exist."""
-    from cortex.tools.tool_error_formatters import format_file_not_found_error
+    from cortex.tools.error_formatters import format_file_not_found_error
 
     available_files = [
         f.name
@@ -163,7 +163,7 @@ def build_write_error_response(
     error: FileConflictError | FileLockTimeoutError | GitConflictError,
 ) -> str:
     """Build error response for write operation with recovery suggestions."""
-    from cortex.tools.tool_error_formatters import format_tool_error
+    from cortex.tools.error_formatters import format_tool_error
 
     if isinstance(error, FileConflictError):
         suggestion, example, context = _build_file_conflict_error_response(error)
@@ -186,7 +186,7 @@ def build_write_error_response(
 
 def build_invalid_operation_error(operation: str) -> str:
     """Build error response for invalid operation."""
-    from cortex.tools.tool_error_formatters import format_invalid_parameter_error
+    from cortex.tools.error_formatters import format_invalid_parameter_error
 
     FileOperation = _get_file_operation_enum()
     valid_operations = [op.value for op in FileOperation]
@@ -283,7 +283,7 @@ def build_schema_validation_error_response(
     file_name: str, validation_result: ValidationResult
 ) -> str:
     """Build JSON error response when pre-write schema validation fails."""
-    from cortex.tools.tool_error_formatters import format_validation_error
+    from cortex.tools.error_formatters import format_validation_error
 
     violations, fix_suggestions = _build_validation_violations(validation_result)
 

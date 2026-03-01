@@ -6,8 +6,8 @@ This module contains the implementation logic for the load_progressive_context t
 
 import json
 
-from cortex.managers.manager_utils import get_manager
 from cortex.managers.types import ManagersDict
+from cortex.managers.utils import get_manager
 from cortex.optimization.config import OptimizationConfig
 from cortex.optimization.progressive_loader import (
     LoadedContent,

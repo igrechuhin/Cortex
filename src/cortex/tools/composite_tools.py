@@ -27,7 +27,7 @@ async def _quick_start_impl(
 ) -> str:
     """Run session(operation=start) then load_context."""
     from cortex.tools.optimization_handlers import load_context
-    from cortex.tools.session_dispatcher import session
+    from cortex.tools.session.dispatcher import session
 
     brief_json = await session(operation="start", task_description=None, ctx=None)
     budget = token_budget if token_budget is not None else 10000

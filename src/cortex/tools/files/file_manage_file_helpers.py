@@ -22,8 +22,8 @@ from cortex.core.usage_context import (
     get_or_resolve_project_root,
 )
 from cortex.managers.initialization import get_managers
-from cortex.managers.manager_utils import get_manager
 from cortex.managers.types import ManagersDict
+from cortex.managers.utils import get_manager
 from cortex.tools.files.file_crud_flow import (
     handle_read_operation,
     handle_rollback_operation,

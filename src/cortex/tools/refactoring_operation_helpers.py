@@ -12,8 +12,8 @@ from cortex.core.constants import CONSOLIDATION_MIN_SIMILARITY
 from cortex.core.models import ModelDict
 from cortex.core.protocols.token import DependencyGraphProtocol
 from cortex.managers.initialization import get_managers, get_project_root
-from cortex.managers.manager_utils import get_manager
 from cortex.managers.types import ManagersDict
+from cortex.managers.utils import get_manager
 from cortex.refactoring.consolidation_detector import (
     ConsolidationDetector,
     ConsolidationOpportunity,
@@ -168,7 +168,7 @@ async def get_structure_data(mgrs: ManagersDict) -> ModelDict:
 
 def suggest_refactoring_error_json(exc: Exception) -> str:
     """Build JSON error response for suggest_refactoring failures."""
-    from cortex.tools.tool_error_formatters import format_tool_error
+    from cortex.tools.error_formatters import format_tool_error
 
     return format_tool_error(
         exc,

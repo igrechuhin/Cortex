@@ -81,7 +81,7 @@ async def _run_dependency_graph(
 
 
 async def _run_link_graph(params: QueryMemoryBankParams, ctx: MCPContext | None) -> str:
-    from cortex.tools.link_graph_operations import get_link_graph
+    from cortex.tools.linking.graph_operations import get_link_graph
 
     return await get_link_graph(
         include_transclusions=params.include_transclusions,
@@ -95,7 +95,7 @@ async def _run_parse_links(
 ) -> str:
     if not params.file_name:
         return _error_payload("file_name is required for query_type=parse_links")
-    from cortex.tools.link_parser_operations import parse_file_links
+    from cortex.tools.linking.parser_operations import parse_file_links
 
     return await parse_file_links(file_name=params.file_name, ctx=ctx)
 
@@ -105,7 +105,7 @@ async def _run_validate_links(
 ) -> str:
     if not params.file_name:
         return _error_payload("file_name is required for query_type=validate_links")
-    from cortex.tools.link_validation_operations import validate_links
+    from cortex.tools.linking.validation_operations import validate_links
 
     return await validate_links(file_name=params.file_name, ctx=ctx)
 
@@ -117,7 +117,7 @@ async def _run_resolve_transclusions(
         return _error_payload(
             "file_name is required for query_type=resolve_transclusions"
         )
-    from cortex.tools.transclusion_operations import resolve_transclusions
+    from cortex.tools.linking.transclusion_operations import resolve_transclusions
 
     return await resolve_transclusions(
         file_name=params.file_name,

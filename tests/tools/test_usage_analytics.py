@@ -7,7 +7,12 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from cortex.tools.usage_analytics import (
+from cortex.tools.usage.analytics_formatters import (
+    build_usage_report_text,
+    calls_key,
+)
+from cortex.tools.usage.analytics_models import UsageTimelineEntry
+from cortex.tools.usage.usage_analytics import (
     get_optimization_recommendations,
     get_optimization_recommendations_resource,
     get_tool_usage_report,
@@ -23,11 +28,6 @@ from cortex.tools.usage_analytics import (
     parse_date_range,
     search_usage,
 )
-from cortex.tools.usage_analytics_formatters import (
-    build_usage_report_text,
-    calls_key,
-)
-from cortex.tools.usage_analytics_models import UsageTimelineEntry
 
 
 @pytest.mark.asyncio

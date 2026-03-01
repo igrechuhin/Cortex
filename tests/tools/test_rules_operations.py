@@ -26,7 +26,7 @@ from cortex.core.models import ModelDict
 from cortex.managers.initialization import get_project_root
 from cortex.managers.types import ManagersDict
 from cortex.optimization.models import RulesManagerStatusModel
-from cortex.tools.rules_operation_helpers import (
+from cortex.tools.synapse.rules_operation_helpers import (
     RulesOperation,
     build_get_relevant_response,
     calculate_total_tokens,
@@ -34,8 +34,8 @@ from cortex.tools.rules_operation_helpers import (
     parse_rules_operation,
     resolve_config_defaults,
 )
-from cortex.tools.rules_operations import rules, rules_get_relevant_resource
-from cortex.tools.rules_operations_handlers import (
+from cortex.tools.synapse.rules_operations import rules, rules_get_relevant_resource
+from cortex.tools.synapse.rules_operations_handlers import (
     check_rules_enabled,
     dispatch_operation,
     handle_get_relevant_operation,

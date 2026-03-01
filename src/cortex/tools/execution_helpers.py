@@ -3,8 +3,8 @@
 from typing import cast
 
 from cortex.core.models import ModelDict
-from cortex.managers.manager_utils import get_manager
 from cortex.managers.types import ManagersDict
+from cortex.managers.utils import get_manager
 from cortex.refactoring.approval_manager import ApprovalManager
 from cortex.refactoring.learning_engine import LearningEngine
 from cortex.refactoring.models import (

@@ -21,7 +21,7 @@ class TestAgentWorkflowQuickStart:
         brief_data = {"status": "success", "brief": {"current_focus": "test"}}
         context_data = {"status": "success", "total_tokens": 500}
         with patch(
-            "cortex.tools.session_dispatcher.session",
+            "cortex.tools.session.dispatcher.session",
             new_callable=AsyncMock,
             return_value=json.dumps(brief_data),
         ):
@@ -47,7 +47,7 @@ class TestAgentWorkflowQuickStart:
         brief_data = {"status": "success"}
         context_data = {"status": "success"}
         with patch(
-            "cortex.tools.session_dispatcher.session",
+            "cortex.tools.session.dispatcher.session",
             new_callable=AsyncMock,
             return_value=json.dumps(brief_data),
         ):
@@ -66,7 +66,7 @@ class TestAgentWorkflowQuickStart:
         brief_data = {"status": "success"}
         context_data = {"status": "success"}
         with patch(
-            "cortex.tools.session_dispatcher.session",
+            "cortex.tools.session.dispatcher.session",
             new_callable=AsyncMock,
             return_value=json.dumps(brief_data),
         ):

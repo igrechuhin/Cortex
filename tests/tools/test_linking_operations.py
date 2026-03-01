@@ -21,7 +21,7 @@ from cortex.linking.transclusion_engine import (
     MaxDepthExceededError,
 )
 from cortex.managers.types import ManagersDict
-from cortex.tools.linking_operations import (
+from cortex.tools.linking.linking_operations import (
     get_link_graph,
     get_link_graph_resource,
     parse_file_links,
@@ -167,16 +167,16 @@ class TestParseFileLinks:
 
         with (
             patch(
-                "cortex.tools.link_parser_operations.resolve_project_root_async",
+                "cortex.tools.linking.parser_operations.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
             patch(
-                "cortex.tools.link_parser_operations.get_managers",
+                "cortex.tools.linking.parser_operations.get_managers",
                 return_value=mock_managers,
             ),
             patch(
-                "cortex.tools.link_parser_operations.get_manager",
+                "cortex.tools.linking.parser_operations.get_manager",
                 side_effect=_get_manager_helper,
             ),
         ):
@@ -202,12 +202,12 @@ class TestParseFileLinks:
 
         with (
             patch(
-                "cortex.tools.link_parser_operations.resolve_project_root_async",
+                "cortex.tools.linking.parser_operations.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
             patch(
-                "cortex.tools.link_parser_operations.get_managers",
+                "cortex.tools.linking.parser_operations.get_managers",
                 return_value=mock_managers,
             ),
         ):
@@ -229,12 +229,12 @@ class TestParseFileLinks:
 
         with (
             patch(
-                "cortex.tools.link_parser_operations.resolve_project_root_async",
+                "cortex.tools.linking.parser_operations.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
             patch(
-                "cortex.tools.link_parser_operations.get_managers",
+                "cortex.tools.linking.parser_operations.get_managers",
                 return_value=mock_managers,
             ),
         ):
@@ -250,7 +250,7 @@ class TestParseFileLinks:
         """Test exception handling in parse_file_links (root resolve raises)."""
         # Arrange
         with patch(
-            "cortex.tools.link_parser_operations.resolve_project_root_async",
+            "cortex.tools.linking.parser_operations.resolve_project_root_async",
             new_callable=AsyncMock,
             side_effect=ValueError("Test error"),
         ):
@@ -270,12 +270,12 @@ class TestParseFileLinks:
         # Arrange: _parse_file_links_impl raises inside run_or_error
         with (
             patch(
-                "cortex.tools.link_parser_operations.resolve_project_root_async",
+                "cortex.tools.linking.parser_operations.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
             patch(
-                "cortex.tools.link_parser_operations.get_managers",
+                "cortex.tools.linking.parser_operations.get_managers",
                 new_callable=AsyncMock,
                 side_effect=RuntimeError("internal error"),
             ),
@@ -309,16 +309,16 @@ class TestResolveTransclusions:
 
         with (
             patch(
-                "cortex.tools.transclusion_operations.resolve_project_root_async",
+                "cortex.tools.linking.transclusion_operations.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
             patch(
-                "cortex.tools.transclusion_operations.get_managers",
+                "cortex.tools.linking.transclusion_operations.get_managers",
                 return_value=mock_managers,
             ),
             patch(
-                "cortex.tools.transclusion_operations.get_manager",
+                "cortex.tools.linking.transclusion_operations.get_manager",
                 side_effect=_get_manager_helper,
             ),
         ):
@@ -346,16 +346,16 @@ class TestResolveTransclusions:
 
         with (
             patch(
-                "cortex.tools.transclusion_operations.resolve_project_root_async",
+                "cortex.tools.linking.transclusion_operations.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
             patch(
-                "cortex.tools.transclusion_operations.get_managers",
+                "cortex.tools.linking.transclusion_operations.get_managers",
                 return_value=mock_managers,
             ),
             patch(
-                "cortex.tools.transclusion_operations.get_manager",
+                "cortex.tools.linking.transclusion_operations.get_manager",
                 side_effect=_get_manager_helper,
             ),
         ):
@@ -384,16 +384,16 @@ class TestResolveTransclusions:
 
         with (
             patch(
-                "cortex.tools.transclusion_operations.resolve_project_root_async",
+                "cortex.tools.linking.transclusion_operations.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
             patch(
-                "cortex.tools.transclusion_operations.get_managers",
+                "cortex.tools.linking.transclusion_operations.get_managers",
                 return_value=mock_managers,
             ),
             patch(
-                "cortex.tools.transclusion_operations.get_manager",
+                "cortex.tools.linking.transclusion_operations.get_manager",
                 side_effect=_get_manager_helper,
             ),
         ):
@@ -420,16 +420,16 @@ class TestResolveTransclusions:
 
         with (
             patch(
-                "cortex.tools.transclusion_operations.resolve_project_root_async",
+                "cortex.tools.linking.transclusion_operations.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
             patch(
-                "cortex.tools.transclusion_operations.get_managers",
+                "cortex.tools.linking.transclusion_operations.get_managers",
                 return_value=mock_managers,
             ),
             patch(
-                "cortex.tools.transclusion_operations.get_manager",
+                "cortex.tools.linking.transclusion_operations.get_manager",
                 side_effect=_get_manager_helper,
             ),
         ):
@@ -453,16 +453,16 @@ class TestResolveTransclusions:
 
         with (
             patch(
-                "cortex.tools.transclusion_operations.resolve_project_root_async",
+                "cortex.tools.linking.transclusion_operations.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
             patch(
-                "cortex.tools.transclusion_operations.get_managers",
+                "cortex.tools.linking.transclusion_operations.get_managers",
                 return_value=mock_managers,
             ),
             patch(
-                "cortex.tools.transclusion_operations.get_manager",
+                "cortex.tools.linking.transclusion_operations.get_manager",
                 side_effect=_get_manager_helper,
             ),
         ):
@@ -484,12 +484,12 @@ class TestResolveTransclusions:
 
         with (
             patch(
-                "cortex.tools.transclusion_operations.resolve_project_root_async",
+                "cortex.tools.linking.transclusion_operations.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
             patch(
-                "cortex.tools.transclusion_operations.get_managers",
+                "cortex.tools.linking.transclusion_operations.get_managers",
                 return_value=mock_managers,
             ),
         ):
@@ -511,12 +511,12 @@ class TestResolveTransclusions:
 
         with (
             patch(
-                "cortex.tools.transclusion_operations.resolve_project_root_async",
+                "cortex.tools.linking.transclusion_operations.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
             patch(
-                "cortex.tools.transclusion_operations.get_managers",
+                "cortex.tools.linking.transclusion_operations.get_managers",
                 return_value=mock_managers,
             ),
         ):
@@ -548,16 +548,16 @@ class TestValidateLinks:
 
         with (
             patch(
-                "cortex.tools.link_validation_operations.resolve_project_root_async",
+                "cortex.tools.linking.validation_operations.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
             patch(
-                "cortex.tools.link_validation_operations.get_managers",
+                "cortex.tools.linking.validation_operations.get_managers",
                 return_value=mock_managers,
             ),
             patch(
-                "cortex.tools.link_validation_operations.get_manager",
+                "cortex.tools.linking.validation_operations.get_manager",
                 side_effect=_get_manager_helper,
             ),
         ):
@@ -578,16 +578,16 @@ class TestValidateLinks:
         # Arrange
         with (
             patch(
-                "cortex.tools.link_validation_operations.resolve_project_root_async",
+                "cortex.tools.linking.validation_operations.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
             patch(
-                "cortex.tools.link_validation_operations.get_managers",
+                "cortex.tools.linking.validation_operations.get_managers",
                 return_value=mock_managers,
             ),
             patch(
-                "cortex.tools.link_validation_operations.get_manager",
+                "cortex.tools.linking.validation_operations.get_manager",
                 side_effect=_get_manager_helper,
             ),
         ):
@@ -611,12 +611,12 @@ class TestValidateLinks:
 
         with (
             patch(
-                "cortex.tools.link_validation_operations.resolve_project_root_async",
+                "cortex.tools.linking.validation_operations.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
             patch(
-                "cortex.tools.link_validation_operations.get_managers",
+                "cortex.tools.linking.validation_operations.get_managers",
                 return_value=mock_managers,
             ),
         ):
@@ -638,12 +638,12 @@ class TestValidateLinks:
 
         with (
             patch(
-                "cortex.tools.link_validation_operations.resolve_project_root_async",
+                "cortex.tools.linking.validation_operations.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
             patch(
-                "cortex.tools.link_validation_operations.get_managers",
+                "cortex.tools.linking.validation_operations.get_managers",
                 return_value=mock_managers,
             ),
         ):
@@ -659,7 +659,7 @@ class TestValidateLinks:
         """Test exception handling in validate_links."""
         # Arrange
         with patch(
-            "cortex.tools.link_validation_operations.resolve_project_root_async",
+            "cortex.tools.linking.validation_operations.resolve_project_root_async",
             new_callable=AsyncMock,
             side_effect=RuntimeError("Validation failed"),
         ):
@@ -687,16 +687,16 @@ class TestGetLinkGraph:
         # Arrange
         with (
             patch(
-                "cortex.tools.link_graph_operations.resolve_project_root_async",
+                "cortex.tools.linking.graph_operations.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
             patch(
-                "cortex.tools.link_graph_operations.get_managers",
+                "cortex.tools.linking.graph_operations.get_managers",
                 return_value=mock_managers,
             ),
             patch(
-                "cortex.tools.link_graph_operations.get_manager",
+                "cortex.tools.linking.graph_operations.get_manager",
                 side_effect=_get_manager_helper,
             ),
         ):
@@ -720,16 +720,16 @@ class TestGetLinkGraph:
         # Arrange
         with (
             patch(
-                "cortex.tools.link_graph_operations.resolve_project_root_async",
+                "cortex.tools.linking.graph_operations.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
             patch(
-                "cortex.tools.link_graph_operations.get_managers",
+                "cortex.tools.linking.graph_operations.get_managers",
                 return_value=mock_managers,
             ),
             patch(
-                "cortex.tools.link_graph_operations.get_manager",
+                "cortex.tools.linking.graph_operations.get_manager",
                 side_effect=_get_manager_helper,
             ),
         ):
@@ -751,16 +751,16 @@ class TestGetLinkGraph:
         # Arrange
         with (
             patch(
-                "cortex.tools.link_graph_operations.resolve_project_root_async",
+                "cortex.tools.linking.graph_operations.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
             patch(
-                "cortex.tools.link_graph_operations.get_managers",
+                "cortex.tools.linking.graph_operations.get_managers",
                 return_value=mock_managers,
             ),
             patch(
-                "cortex.tools.link_graph_operations.get_manager",
+                "cortex.tools.linking.graph_operations.get_manager",
                 side_effect=_get_manager_helper,
             ),
         ):
@@ -784,16 +784,16 @@ class TestGetLinkGraph:
 
         with (
             patch(
-                "cortex.tools.link_graph_operations.resolve_project_root_async",
+                "cortex.tools.linking.graph_operations.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
             patch(
-                "cortex.tools.link_graph_operations.get_managers",
+                "cortex.tools.linking.graph_operations.get_managers",
                 return_value=mock_managers,
             ),
             patch(
-                "cortex.tools.link_graph_operations.get_manager",
+                "cortex.tools.linking.graph_operations.get_manager",
                 side_effect=_get_manager_helper,
             ),
         ):
@@ -814,16 +814,16 @@ class TestGetLinkGraph:
         # Arrange
         with (
             patch(
-                "cortex.tools.link_graph_operations.resolve_project_root_async",
+                "cortex.tools.linking.graph_operations.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
             patch(
-                "cortex.tools.link_graph_operations.get_managers",
+                "cortex.tools.linking.graph_operations.get_managers",
                 return_value=mock_managers,
             ),
             patch(
-                "cortex.tools.link_graph_operations.get_manager",
+                "cortex.tools.linking.graph_operations.get_manager",
                 side_effect=_get_manager_helper,
             ),
         ):
@@ -845,7 +845,7 @@ class TestGetLinkGraph:
         """Test exception handling in get_link_graph."""
         # Arrange
         with patch(
-            "cortex.tools.link_graph_operations.resolve_project_root_async",
+            "cortex.tools.linking.graph_operations.resolve_project_root_async",
             new_callable=AsyncMock,
             side_effect=ValueError("Graph build failed"),
         ):
@@ -877,20 +877,20 @@ class TestPhase2LinkingContextLogging:
         mock_ctx = AsyncMock()
         with (
             patch(
-                "cortex.tools.link_parser_operations.log_client",
+                "cortex.tools.linking.parser_operations.log_client",
                 new_callable=AsyncMock,
             ) as mock_log,
             patch(
-                "cortex.tools.link_parser_operations.resolve_project_root_async",
+                "cortex.tools.linking.parser_operations.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
             patch(
-                "cortex.tools.link_parser_operations.get_managers",
+                "cortex.tools.linking.parser_operations.get_managers",
                 return_value=mock_managers,
             ),
             patch(
-                "cortex.tools.link_parser_operations.get_manager",
+                "cortex.tools.linking.parser_operations.get_manager",
                 side_effect=_get_manager_helper,
             ),
         ):
@@ -913,16 +913,16 @@ class TestPhase2LinkingContextLogging:
         mock_ctx = AsyncMock()
         with (
             patch(
-                "cortex.tools.link_parser_operations.log_client",
+                "cortex.tools.linking.parser_operations.log_client",
                 new_callable=AsyncMock,
             ) as mock_log,
             patch(
-                "cortex.tools.link_parser_operations.resolve_project_root_async",
+                "cortex.tools.linking.parser_operations.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
             patch(
-                "cortex.tools.link_parser_operations.get_managers",
+                "cortex.tools.linking.parser_operations.get_managers",
                 return_value=mock_managers,
             ),
         ):
@@ -944,11 +944,11 @@ class TestPhase2LinkingContextLogging:
         mock_ctx = AsyncMock()
         with (
             patch(
-                "cortex.tools.link_parser_operations.log_client",
+                "cortex.tools.linking.parser_operations.log_client",
                 new_callable=AsyncMock,
             ) as mock_log,
             patch(
-                "cortex.tools.link_parser_operations.resolve_project_root_async",
+                "cortex.tools.linking.parser_operations.resolve_project_root_async",
                 new_callable=AsyncMock,
                 side_effect=RuntimeError("index error"),
             ),
@@ -969,20 +969,20 @@ class TestPhase2LinkingContextLogging:
         mock_ctx = AsyncMock()
         with (
             patch(
-                "cortex.tools.link_validation_operations.log_client",
+                "cortex.tools.linking.validation_operations.log_client",
                 new_callable=AsyncMock,
             ) as mock_log,
             patch(
-                "cortex.tools.link_validation_operations.resolve_project_root_async",
+                "cortex.tools.linking.validation_operations.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
             patch(
-                "cortex.tools.link_validation_operations.get_managers",
+                "cortex.tools.linking.validation_operations.get_managers",
                 return_value=mock_managers,
             ),
             patch(
-                "cortex.tools.link_validation_operations.get_manager",
+                "cortex.tools.linking.validation_operations.get_manager",
                 side_effect=_get_manager_helper,
             ),
         ):
@@ -1002,11 +1002,11 @@ class TestPhase2LinkingContextLogging:
         mock_ctx = AsyncMock()
         with (
             patch(
-                "cortex.tools.link_validation_operations.log_client",
+                "cortex.tools.linking.validation_operations.log_client",
                 new_callable=AsyncMock,
             ) as mock_log,
             patch(
-                "cortex.tools.link_validation_operations.resolve_project_root_async",
+                "cortex.tools.linking.validation_operations.resolve_project_root_async",
                 new_callable=AsyncMock,
                 side_effect=RuntimeError("validation failed"),
             ),
@@ -1029,20 +1029,20 @@ class TestPhase2LinkingContextLogging:
         mock_ctx = AsyncMock()
         with (
             patch(
-                "cortex.tools.transclusion_operations.log_client",
+                "cortex.tools.linking.transclusion_operations.log_client",
                 new_callable=AsyncMock,
             ) as mock_log,
             patch(
-                "cortex.tools.transclusion_operations.resolve_project_root_async",
+                "cortex.tools.linking.transclusion_operations.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
             patch(
-                "cortex.tools.transclusion_operations.get_managers",
+                "cortex.tools.linking.transclusion_operations.get_managers",
                 return_value=mock_managers,
             ),
             patch(
-                "cortex.tools.transclusion_operations.get_manager",
+                "cortex.tools.linking.transclusion_operations.get_manager",
                 side_effect=_get_manager_helper,
             ),
         ):
@@ -1063,11 +1063,11 @@ class TestPhase2LinkingContextLogging:
         mock_ctx = AsyncMock()
         with (
             patch(
-                "cortex.tools.transclusion_operations.log_client",
+                "cortex.tools.linking.transclusion_operations.log_client",
                 new_callable=AsyncMock,
             ) as mock_log,
             patch(
-                "cortex.tools.transclusion_operations.execute_tool_with_stability",
+                "cortex.tools.linking.transclusion_operations.execute_tool_with_stability",
                 new_callable=AsyncMock,
                 side_effect=RuntimeError("resolve error"),
             ),
@@ -1088,20 +1088,20 @@ class TestPhase2LinkingContextLogging:
         mock_ctx = AsyncMock()
         with (
             patch(
-                "cortex.tools.link_graph_operations.log_client",
+                "cortex.tools.linking.graph_operations.log_client",
                 new_callable=AsyncMock,
             ) as mock_log,
             patch(
-                "cortex.tools.link_graph_operations.resolve_project_root_async",
+                "cortex.tools.linking.graph_operations.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
             patch(
-                "cortex.tools.link_graph_operations.get_managers",
+                "cortex.tools.linking.graph_operations.get_managers",
                 return_value=mock_managers,
             ),
             patch(
-                "cortex.tools.link_graph_operations.get_manager",
+                "cortex.tools.linking.graph_operations.get_manager",
                 side_effect=_get_manager_helper,
             ),
         ):
@@ -1121,11 +1121,11 @@ class TestPhase2LinkingContextLogging:
         mock_ctx = AsyncMock()
         with (
             patch(
-                "cortex.tools.link_graph_operations.log_client",
+                "cortex.tools.linking.graph_operations.log_client",
                 new_callable=AsyncMock,
             ) as mock_log,
             patch(
-                "cortex.tools.link_graph_operations.resolve_project_root_async",
+                "cortex.tools.linking.graph_operations.resolve_project_root_async",
                 new_callable=AsyncMock,
                 side_effect=RuntimeError("graph build failed"),
             ),
@@ -1157,55 +1157,55 @@ class TestIntegration:
 
         with (
             patch(
-                "cortex.tools.link_parser_operations.resolve_project_root_async",
+                "cortex.tools.linking.parser_operations.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
             patch(
-                "cortex.tools.link_parser_operations.get_managers",
+                "cortex.tools.linking.parser_operations.get_managers",
                 return_value=mock_managers,
             ),
             patch(
-                "cortex.tools.link_parser_operations.get_manager",
+                "cortex.tools.linking.parser_operations.get_manager",
                 side_effect=_get_manager_helper,
             ),
             patch(
-                "cortex.tools.transclusion_operations.resolve_project_root_async",
+                "cortex.tools.linking.transclusion_operations.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
             patch(
-                "cortex.tools.transclusion_operations.get_managers",
+                "cortex.tools.linking.transclusion_operations.get_managers",
                 return_value=mock_managers,
             ),
             patch(
-                "cortex.tools.transclusion_operations.get_manager",
+                "cortex.tools.linking.transclusion_operations.get_manager",
                 side_effect=_get_manager_helper,
             ),
             patch(
-                "cortex.tools.link_validation_operations.resolve_project_root_async",
+                "cortex.tools.linking.validation_operations.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
             patch(
-                "cortex.tools.link_validation_operations.get_managers",
+                "cortex.tools.linking.validation_operations.get_managers",
                 return_value=mock_managers,
             ),
             patch(
-                "cortex.tools.link_validation_operations.get_manager",
+                "cortex.tools.linking.validation_operations.get_manager",
                 side_effect=_get_manager_helper,
             ),
             patch(
-                "cortex.tools.link_graph_operations.resolve_project_root_async",
+                "cortex.tools.linking.graph_operations.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
             patch(
-                "cortex.tools.link_graph_operations.get_managers",
+                "cortex.tools.linking.graph_operations.get_managers",
                 return_value=mock_managers,
             ),
             patch(
-                "cortex.tools.link_graph_operations.get_manager",
+                "cortex.tools.linking.graph_operations.get_manager",
                 side_effect=_get_manager_helper,
             ),
         ):
@@ -1250,30 +1250,30 @@ class TestIntegration:
 
         with (
             patch(
-                "cortex.tools.link_parser_operations.resolve_project_root_async",
+                "cortex.tools.linking.parser_operations.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
             patch(
-                "cortex.tools.link_parser_operations.get_managers",
+                "cortex.tools.linking.parser_operations.get_managers",
                 return_value=mock_managers,
             ),
             patch(
-                "cortex.tools.transclusion_operations.resolve_project_root_async",
+                "cortex.tools.linking.transclusion_operations.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
             patch(
-                "cortex.tools.transclusion_operations.get_managers",
+                "cortex.tools.linking.transclusion_operations.get_managers",
                 return_value=mock_managers,
             ),
             patch(
-                "cortex.tools.link_validation_operations.resolve_project_root_async",
+                "cortex.tools.linking.validation_operations.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
             patch(
-                "cortex.tools.link_validation_operations.get_managers",
+                "cortex.tools.linking.validation_operations.get_managers",
                 return_value=mock_managers,
             ),
         ):

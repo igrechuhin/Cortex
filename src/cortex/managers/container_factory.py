@@ -21,9 +21,9 @@ from cortex.core.models import ModelDict
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.core.token_counter import TokenCounter
 from cortex.core.version_manager import VersionManager
-from cortex.linking.link_parser import LinkParser
-from cortex.linking.link_validator import LinkValidator
+from cortex.linking.parser import LinkParser
 from cortex.linking.transclusion_engine import TransclusionEngine
+from cortex.linking.validator import LinkValidator
 from cortex.optimization.config import OptimizationConfig
 from cortex.optimization.context_optimizer import ContextOptimizer
 from cortex.optimization.progressive_loader import ProgressiveLoader

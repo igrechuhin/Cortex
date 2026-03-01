@@ -126,14 +126,14 @@ class TestConcurrentSessionStart:
         self, tmp_path: Path
     ) -> None:
         """Multiple concurrent session_start calls complete successfully."""
-        from cortex.tools.session_start_tools import session_start
+        from cortex.tools.session.start_tools import session_start
 
         memory_bank_dir = ensure_test_cortex_structure(tmp_path)
         _ = (memory_bank_dir / "roadmap.md").write_text("# Roadmap")
         _ = (memory_bank_dir / "activeContext.md").write_text("# Active")
 
         with patch(
-            "cortex.tools.session_start_tools.get_or_resolve_project_root",
+            "cortex.tools.session.start_tools.get_or_resolve_project_root",
             new_callable=AsyncMock,
             return_value=tmp_path,
         ):

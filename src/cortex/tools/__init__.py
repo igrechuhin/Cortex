@@ -51,7 +51,6 @@ from . import (
     foundation_stats,  # noqa: F401
     foundation_version,  # noqa: F401
     health_check_operations,  # noqa: F401
-    linking_operations,  # noqa: F401
     model_benchmark,  # noqa: F401
     optimization,  # noqa: F401
     prompts,  # noqa: F401
@@ -59,19 +58,12 @@ from . import (
     query_usage_operations,  # noqa: F401
     refactoring_operations,  # noqa: F401
     refactoring_tools,  # noqa: F401
-    rules_operations,  # noqa: F401
     script_capture_tools,  # noqa: F401
     sequential_thinking,  # noqa: F401
-    session_dispatcher,  # noqa: F401
-    session_registry,  # noqa: F401
-    session_start_tools,  # noqa: F401
     skill_pack_operations,  # noqa: F401
     structure,  # noqa: F401
-    synapse_prompts,  # noqa: F401  # Dynamic Synapse prompts registration
-    synapse_tools,  # noqa: F401
     task_locking,  # noqa: F401
     tool_search_operations,  # noqa: F401
-    usage_analytics,  # noqa: F401
     validation,  # noqa: F401
     workflow_operations,  # noqa: F401
 )
@@ -83,6 +75,7 @@ from .files import (
     file_operations,  # noqa: F401
     markdown_operations,  # noqa: F401
 )
+from .linking import linking_operations  # noqa: F401
 from .plans import (
     completion,  # noqa: F401
     corruption,  # noqa: F401
@@ -92,6 +85,25 @@ from .plans import (
     register,  # noqa: F401
     roadmap,  # noqa: F401
 )
+from .session import (  # noqa: F401
+    dispatcher as session_dispatcher,
+)
+from .session import (
+    registry,
+)
+from .session import (
+    start_tools as session_start_tools,
+)
+from .synapse import (  # noqa: F401
+    prompts as synapse_prompts,
+)
+from .synapse import (
+    rules_operations,
+)
+from .synapse import (
+    tools as synapse_tools,
+)
+from .usage import usage_analytics  # noqa: F401
 
 # Explicitly reference modules imported for side effects to satisfy type checker
 _ = append_entry_dispatcher
@@ -132,7 +144,7 @@ __all__ = [
     "query_usage_operations",
     "sequential_thinking",
     "session_dispatcher",
-    "session_registry",
+    "registry",
     "session_start_tools",
     "tool_search_operations",
     "operations",

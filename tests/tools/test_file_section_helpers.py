@@ -1,9 +1,9 @@
-"""Tests for file_section_helpers module.
+"""Tests for section_helpers module.
 
 Tests cover section extraction functions to achieve high coverage.
 """
 
-from cortex.tools.files.file_section_helpers import (
+from cortex.tools.files.section_helpers import (
     extract_content_sections,
     extract_nested_section,
     extract_section_from_content,

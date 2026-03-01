@@ -19,13 +19,13 @@ import pytest
 
 from cortex.core.dependency_graph import DependencyGraph
 from cortex.core.file_system import FileSystemManager
-from cortex.linking.link_parser import LinkParser
-from cortex.linking.link_validator import LinkValidator
+from cortex.linking.parser import LinkParser
 from cortex.linking.transclusion_engine import (
     CircularDependencyError,
     MaxDepthExceededError,
     TransclusionEngine,
 )
+from cortex.linking.validator import LinkValidator
 from tests.helpers.path_helpers import ensure_test_cortex_structure
 from tests.helpers.types import get_list
 

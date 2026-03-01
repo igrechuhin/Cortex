@@ -7,8 +7,8 @@ import json
 from typing import cast
 
 from cortex.core.models import JsonValue, ModelDict
-from cortex.managers.manager_utils import get_manager
 from cortex.managers.types import ManagersDict
+from cortex.managers.utils import get_manager
 from cortex.optimization.config import OptimizationConfig
 from cortex.refactoring.adaptation_config import AdaptationConfig
 from cortex.refactoring.learning_engine import LearningEngine

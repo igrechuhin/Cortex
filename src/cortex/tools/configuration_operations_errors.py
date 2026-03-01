@@ -5,7 +5,7 @@ Extracted from configuration_operations to keep main module under 400 lines.
 
 from cortex.core.models import JsonValue
 from cortex.tools.configuration_helpers import ConfigAction
-from cortex.tools.tool_error_formatters import (
+from cortex.tools.error_formatters import (
     format_invalid_parameter_error,
     format_tool_error,
 )

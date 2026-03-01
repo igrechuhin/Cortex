@@ -15,7 +15,7 @@ from typing import cast
 from cortex.core.file_system import FileSystemManager
 from cortex.core.models import JsonValue, ModelDict
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
-from cortex.tools.tool_error_formatters import (
+from cortex.tools.error_formatters import (
     format_invalid_parameter_error,
     format_tool_error,
 )

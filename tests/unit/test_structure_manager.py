@@ -20,7 +20,7 @@ from cortex.core.path_resolver import (
     get_cortex_path,
     get_cursor_path,
 )
-from cortex.structure.structure_manager import StructureManager
+from cortex.structure.manager import StructureManager
 
 # ============================================================================
 # Test StructureManager Initialization

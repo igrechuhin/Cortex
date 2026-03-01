@@ -17,8 +17,8 @@ import pytest
 
 from cortex.core.file_system import FileSystemManager
 from cortex.core.models import JsonValue, ModelDict
-from cortex.linking.link_parser import LinkParser
-from cortex.linking.link_validator import LinkValidator
+from cortex.linking.parser import LinkParser
+from cortex.linking.validator import LinkValidator
 
 
 @pytest.mark.unit

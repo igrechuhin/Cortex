@@ -15,7 +15,7 @@ from cortex.core.cache_json_access import write_cache_json
 from cortex.core.models._enums import OperationStatus
 from cortex.core.path_resolver import CortexResourceType, get_cache_path
 from cortex.managers.usage_tracker import UsageTracker
-from cortex.tools import usage_analytics
+from cortex.tools.usage import usage_analytics
 
 from ._harness import ToolEvaluationHarness, load_eval_tasks
 from ._models import (

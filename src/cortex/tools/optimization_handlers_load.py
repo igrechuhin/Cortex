@@ -13,8 +13,8 @@ import cortex.tools.optimization as opt
 from cortex.core.context_logging import MCPContext
 from cortex.core.models import ContextDepth, ResponseFormat
 from cortex.core.project_root_resolver import resolve_project_root_async
-from cortex.managers.manager_utils import get_manager
 from cortex.managers.types import ManagersDict
+from cortex.managers.utils import get_manager
 from cortex.optimization.agent_roles import (
     AgentRole,
     detect_agent_role,

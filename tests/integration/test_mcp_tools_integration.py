@@ -17,7 +17,7 @@ import pytest
 
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.tools.files.file_operations import manage_file
-from cortex.tools.linking_operations import parse_file_links, validate_links
+from cortex.tools.linking.linking_operations import parse_file_links, validate_links
 from cortex.tools.optimization import load_context
 from cortex.tools.query_memory_bank_operations import query_memory_bank
 from cortex.tools.validation.operations import validate

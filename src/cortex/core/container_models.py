@@ -18,9 +18,9 @@ from cortex.core.metadata_index import MetadataIndex
 from cortex.core.migration import MigrationManager
 from cortex.core.token_counter import TokenCounter
 from cortex.core.version_manager import VersionManager
-from cortex.linking.link_parser import LinkParser
-from cortex.linking.link_validator import LinkValidator
+from cortex.linking.parser import LinkParser
 from cortex.linking.transclusion_engine import TransclusionEngine
+from cortex.linking.validator import LinkValidator
 from cortex.optimization.config import OptimizationConfig
 from cortex.optimization.context_optimizer import ContextOptimizer
 from cortex.optimization.progressive_loader import ProgressiveLoader

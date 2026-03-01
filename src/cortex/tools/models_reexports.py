@@ -71,7 +71,7 @@ from .health_connection_models import (
     ConnectionHealthResultUnion,
     MCPHealthCheckResponse,
 )
-from .links_models import (
+from .linking.links_models import (
     LinkLocation,
     LinkSummary,
     ParsedMarkdownLink,
@@ -92,18 +92,6 @@ from .roadmap_operations_models import (
     AppendProgressEntryResult,
     RemoveRoadmapEntryResult,
     RemoveRoadmapSectionResult,
-)
-from .rules_models import (
-    RuleInfo,
-    RuleMetadata,
-    RulesContext,
-    RulesDisabledResult,
-    RulesErrorResult,
-    RulesGetRelevantResult,
-    RulesIndexOperationResult,
-    RulesIndexResult,
-    RulesManagerStatus,
-    RulesResultUnion,
 )
 from .session_models import (
     CheckTaskAvailableResult,
@@ -143,7 +131,19 @@ from .structure_models import (
     StructureSymlinks,
     SymlinkInfo,
 )
-from .synapse_models import (
+from .synapse.rules_models import (
+    RuleInfo,
+    RuleMetadata,
+    RulesContext,
+    RulesDisabledResult,
+    RulesErrorResult,
+    RulesGetRelevantResult,
+    RulesIndexOperationResult,
+    RulesIndexResult,
+    RulesManagerStatus,
+    RulesResultUnion,
+)
+from .synapse.synapse_models import (
     ContextInfo,
     CorruptionMatch,
     FixRoadmapCorruptionErrorResult,

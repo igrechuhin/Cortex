@@ -9,8 +9,8 @@ from pathlib import Path
 from cortex.core.file_system import FileSystemManager
 from cortex.core.metadata_index import MetadataIndex
 from cortex.core.models import ContextDepth
-from cortex.managers.manager_utils import get_manager
 from cortex.managers.types import ManagersDict
+from cortex.managers.utils import get_manager
 from cortex.optimization.agent_roles import AgentRole
 from cortex.optimization.config import OptimizationConfig
 from cortex.optimization.context_optimizer import ContextOptimizer

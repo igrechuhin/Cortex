@@ -619,7 +619,7 @@ class TestValidate:
                 return_value=make_test_managers(**mock_managers_dict),
             ),
             patch(
-                "cortex.managers.manager_utils.get_manager",
+                "cortex.managers.utils.get_manager",
                 side_effect=mock_get_manager,
             ),
             patch(

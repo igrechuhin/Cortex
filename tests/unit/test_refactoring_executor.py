@@ -11,7 +11,7 @@ from cortex.core.exceptions import ValidationError
 from cortex.core.file_system import FileSystemManager
 from cortex.core.metadata_index import MetadataIndex
 from cortex.core.models import ModelDict
-from cortex.linking.link_parser import LinkParser
+from cortex.linking.parser import LinkParser
 from cortex.refactoring.models import (
     ActionDetails,
     OperationParameters,
@@ -88,7 +88,7 @@ class TestRefactoringExecutorInitialization:
         """Test executor initialization creates validator."""
         # Arrange
         from cortex.core.version_manager import VersionManager
-        from cortex.linking.link_validator import LinkValidator
+        from cortex.linking.validator import LinkValidator
 
         version_manager = VersionManager(
             mock_file_system.project_root,
@@ -123,7 +123,7 @@ class TestRefactoringExecutorInitialization:
         """Test executor loads existing execution history."""
         # Arrange
         from cortex.core.version_manager import VersionManager
-        from cortex.linking.link_validator import LinkValidator
+        from cortex.linking.validator import LinkValidator
 
         version_manager = VersionManager(
             mock_file_system.project_root,
@@ -179,7 +179,7 @@ class TestExecuteRefactoring:
         """Test execution stops on validation failure."""
         # Arrange
         from cortex.core.version_manager import VersionManager
-        from cortex.linking.link_validator import LinkValidator
+        from cortex.linking.validator import LinkValidator
 
         version_manager = VersionManager(
             mock_file_system.project_root,
@@ -241,7 +241,7 @@ class TestExecuteRefactoring:
         """Test dry run execution doesn't make changes."""
         # Arrange
         from cortex.core.version_manager import VersionManager
-        from cortex.linking.link_validator import LinkValidator
+        from cortex.linking.validator import LinkValidator
 
         version_manager = VersionManager(
             mock_file_system.project_root,
@@ -296,7 +296,7 @@ class TestExecuteRefactoring:
         """Test execution creates snapshot before changes."""
         # Arrange
         from cortex.core.version_manager import VersionManager
-        from cortex.linking.link_validator import LinkValidator
+        from cortex.linking.validator import LinkValidator
 
         version_manager = VersionManager(
             mock_file_system.project_root,
@@ -368,7 +368,7 @@ class TestOperationExecution:
         """Test moving a file."""
         # Arrange
         from cortex.core.version_manager import VersionManager
-        from cortex.linking.link_validator import LinkValidator
+        from cortex.linking.validator import LinkValidator
 
         version_manager = VersionManager(
             mock_file_system.project_root,
@@ -419,7 +419,7 @@ class TestOperationExecution:
         """Test renaming a file."""
         # Arrange
         from cortex.core.version_manager import VersionManager
-        from cortex.linking.link_validator import LinkValidator
+        from cortex.linking.validator import LinkValidator
 
         version_manager = VersionManager(
             mock_file_system.project_root,
@@ -466,7 +466,7 @@ class TestOperationExecution:
         """Test creating a directory."""
         # Arrange
         from cortex.core.version_manager import VersionManager
-        from cortex.linking.link_validator import LinkValidator
+        from cortex.linking.validator import LinkValidator
 
         version_manager = VersionManager(
             mock_file_system.project_root,
@@ -509,7 +509,7 @@ class TestOperationExecution:
         """Test deleting a file."""
         # Arrange
         from cortex.core.version_manager import VersionManager
-        from cortex.linking.link_validator import LinkValidator
+        from cortex.linking.validator import LinkValidator
 
         version_manager = VersionManager(
             mock_file_system.project_root,
@@ -555,7 +555,7 @@ class TestOperationExecution:
         """Test modifying a file."""
         # Arrange
         from cortex.core.version_manager import VersionManager
-        from cortex.linking.link_validator import LinkValidator
+        from cortex.linking.validator import LinkValidator
 
         version_manager = VersionManager(
             mock_file_system.project_root,
@@ -602,7 +602,7 @@ class TestOperationExecution:
         """Test unknown operation type raises ValidationError."""
         # Arrange
         from cortex.core.version_manager import VersionManager
-        from cortex.linking.link_validator import LinkValidator
+        from cortex.linking.validator import LinkValidator
 
         version_manager = VersionManager(
             mock_file_system.project_root,
@@ -648,7 +648,7 @@ class TestExecutionHistory:
         from datetime import datetime, timedelta
 
         from cortex.core.version_manager import VersionManager
-        from cortex.linking.link_validator import LinkValidator
+        from cortex.linking.validator import LinkValidator
 
         version_manager = VersionManager(
             mock_file_system.project_root,
@@ -710,7 +710,7 @@ class TestExecutionHistory:
         """Test retrieving execution by ID."""
         # Arrange
         from cortex.core.version_manager import VersionManager
-        from cortex.linking.link_validator import LinkValidator
+        from cortex.linking.validator import LinkValidator
 
         version_manager = VersionManager(
             mock_file_system.project_root,
@@ -756,7 +756,7 @@ class TestExecutionHistory:
         """Test getting nonexistent execution returns None."""
         # Arrange
         from cortex.core.version_manager import VersionManager
-        from cortex.linking.link_validator import LinkValidator
+        from cortex.linking.validator import LinkValidator
 
         version_manager = VersionManager(
             mock_file_system.project_root,
@@ -795,7 +795,7 @@ class TestValidateRefactoring:
         """Test validating consolidation suggestion."""
         # Arrange
         from cortex.core.version_manager import VersionManager
-        from cortex.linking.link_validator import LinkValidator
+        from cortex.linking.validator import LinkValidator
 
         version_manager = VersionManager(
             mock_file_system.project_root,
@@ -859,7 +859,7 @@ class TestValidateRefactoring:
         """Test validating split suggestion."""
         # Arrange
         from cortex.core.version_manager import VersionManager
-        from cortex.linking.link_validator import LinkValidator
+        from cortex.linking.validator import LinkValidator
 
         version_manager = VersionManager(
             mock_file_system.project_root,
@@ -928,7 +928,7 @@ class TestConsolidationExecution:
         """Test consolidation merges sections from multiple files."""
         # Arrange
         from cortex.core.version_manager import VersionManager
-        from cortex.linking.link_validator import LinkValidator
+        from cortex.linking.validator import LinkValidator
 
         version_manager = VersionManager(
             mock_file_system.project_root,
@@ -988,7 +988,7 @@ class TestSplitExecution:
         """Test split operation creates new files."""
         # Arrange
         from cortex.core.version_manager import VersionManager
-        from cortex.linking.link_validator import LinkValidator
+        from cortex.linking.validator import LinkValidator
 
         version_manager = VersionManager(
             mock_file_system.project_root,
@@ -1055,7 +1055,7 @@ class TestCreateOperation:
         """Test creating a new file."""
         # Arrange
         from cortex.core.version_manager import VersionManager
-        from cortex.linking.link_validator import LinkValidator
+        from cortex.linking.validator import LinkValidator
 
         version_manager = VersionManager(
             mock_file_system.project_root,
@@ -1106,7 +1106,7 @@ class TestImpactMeasurement:
         """Test impact measurement calculates token changes."""
         # Arrange
         from cortex.core.version_manager import VersionManager
-        from cortex.linking.link_validator import LinkValidator
+        from cortex.linking.validator import LinkValidator
 
         version_manager = VersionManager(
             mock_file_system.project_root,
@@ -1159,7 +1159,7 @@ class TestExtractOperations:
         """Test extracting operations from consolidation suggestion."""
         # Arrange
         from cortex.core.version_manager import VersionManager
-        from cortex.linking.link_validator import LinkValidator
+        from cortex.linking.validator import LinkValidator
 
         version_manager = VersionManager(
             mock_file_system.project_root,
@@ -1216,7 +1216,7 @@ class TestExtractOperations:
         """Test extracting operations from split suggestion."""
         # Arrange
         from cortex.core.version_manager import VersionManager
-        from cortex.linking.link_validator import LinkValidator
+        from cortex.linking.validator import LinkValidator
 
         version_manager = VersionManager(
             mock_file_system.project_root,
@@ -1274,7 +1274,7 @@ class TestExtractOperations:
         """Test extracting operations from reorganization suggestion."""
         # Arrange
         from cortex.core.version_manager import VersionManager
-        from cortex.linking.link_validator import LinkValidator
+        from cortex.linking.validator import LinkValidator
 
         version_manager = VersionManager(
             mock_file_system.project_root,

@@ -12,7 +12,7 @@ from cortex.core.models import ResponseFormat
 
 def format_load_context_error(error: Exception) -> str:
     """Format error response for load_context failures."""
-    from cortex.tools.tool_error_formatters import format_tool_error
+    from cortex.tools.error_formatters import format_tool_error
 
     return format_tool_error(
         error,

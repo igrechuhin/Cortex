@@ -20,7 +20,7 @@ from cortex.core.mcp_stability import (
 from cortex.core.models import JsonValue, ModelDict
 from cortex.core.project_root_resolver import resolve_project_root_async
 from cortex.managers import initialization
-from cortex.managers.manager_utils import get_manager
+from cortex.managers.utils import get_manager
 from cortex.server import mcp
 
 

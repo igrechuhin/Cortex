@@ -3,7 +3,7 @@
 import json
 
 from cortex.core.models import JsonDict, JsonValue, ResponseStatus
-from cortex.tools.tool_error_formatters import (
+from cortex.tools.error_formatters import (
     ToolErrorResponse,
     format_configuration_error,
     format_external_tool_error,

@@ -9,7 +9,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from cortex.core.file_system import FileSystemManager
 from cortex.core.metadata_index import MetadataIndex
 from cortex.managers import initialization
-from cortex.managers.manager_utils import get_manager
+from cortex.managers.utils import get_manager
 from cortex.tools.validation.duplication import (
     handle_duplications_validation,
 )

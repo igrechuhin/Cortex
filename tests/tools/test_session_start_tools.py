@@ -21,18 +21,17 @@ from cortex.tools.models import (
     SessionStartErrorResult,
     SessionStartResult,
 )
-from cortex.tools.session_brief_extraction_helpers import (
+from cortex.tools.session.brief_extraction_helpers import (
     extract_current_focus,
     extract_recent_completed,
     generate_session_suggestions,
 )
-from cortex.tools.session_health import (
+from cortex.tools.session.health import (
     calculate_health_summary,
     determine_token_budget_status,
     parse_mcp_health,
 )
-from cortex.tools.session_models import TokenBudgetStatus
-from cortex.tools.session_start_tools import (
+from cortex.tools.session.start_tools import (
     _extract_next_work_item,  # type: ignore[reportPrivateUsage]
     _get_git_status,  # type: ignore[reportPrivateUsage]
     _parse_roadmap_sections,  # type: ignore[reportPrivateUsage]
@@ -40,6 +39,7 @@ from cortex.tools.session_start_tools import (
     _session_start_impl,  # type: ignore[reportPrivateUsage]
     session_start,
 )
+from cortex.tools.session_models import TokenBudgetStatus
 from tests.helpers.managers import make_test_managers
 from tests.helpers.path_helpers import ensure_test_cortex_structure
 from tests.helpers.tool_call_helpers import get_tool_fn
@@ -977,7 +977,7 @@ Test.
             _ = await tool_fn(summary="Lifecycle integration test", ctx=None)
 
         with patch(
-            "cortex.tools.session_health.check_mcp_connection_health",
+            "cortex.tools.session.health.check_mcp_connection_health",
             new_callable=AsyncMock,
             return_value=_mcp_health_json(healthy=True),
         ):
@@ -1035,7 +1035,7 @@ Test.
             fs=fs_manager, index=metadata_index, tokens=TokenCounter()
         )
         with patch(
-            "cortex.tools.session_health.check_mcp_connection_health",
+            "cortex.tools.session.health.check_mcp_connection_health",
             new_callable=AsyncMock,
             return_value=_mcp_health_json(healthy=False),
         ):
@@ -1171,10 +1171,10 @@ Working on Phase 54.
 
         with (
             patch(
-                "cortex.tools.session_start_tools.get_or_resolve_project_root"
+                "cortex.tools.session.start_tools.get_or_resolve_project_root"
             ) as mock_root,
             patch(
-                "cortex.tools.session_start_tools.get_current_managers"
+                "cortex.tools.session.start_tools.get_current_managers"
             ) as mock_managers,
         ):
             mock_root.return_value = tmp_path
@@ -1194,10 +1194,10 @@ Working on Phase 54.
         """Test session_start when managers are not initialized."""
         with (
             patch(
-                "cortex.tools.session_start_tools.get_or_resolve_project_root"
+                "cortex.tools.session.start_tools.get_or_resolve_project_root"
             ) as mock_root,
             patch(
-                "cortex.tools.session_start_tools.get_current_managers"
+                "cortex.tools.session.start_tools.get_current_managers"
             ) as mock_managers,
         ):
             mock_root.return_value = Path("/tmp/test")

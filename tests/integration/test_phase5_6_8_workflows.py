@@ -25,7 +25,7 @@ from cortex.refactoring.reorganization_planner import ReorganizationPlanner
 from cortex.refactoring.split_recommender import SplitRecommender
 from cortex.rules.context_detector import ContextDetector
 from cortex.rules.synapse_manager import SynapseManager
-from cortex.structure.structure_manager import StructureManager
+from cortex.structure.manager import StructureManager
 from cortex.structure.template_manager import TemplateManager
 
 # ============================================================================

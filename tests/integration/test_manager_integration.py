@@ -15,7 +15,7 @@ from cortex.core.file_system import FileSystemManager
 from cortex.core.metadata_index import MetadataIndex
 from cortex.core.token_counter import TokenCounter
 from cortex.core.version_manager import VersionManager
-from cortex.linking.link_parser import LinkParser
+from cortex.linking.parser import LinkParser
 
 
 @pytest.mark.integration

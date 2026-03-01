@@ -12,7 +12,7 @@ import pytest
 
 from cortex.tools.files.file_operations import manage_file
 from cortex.tools.optimization_handlers import load_context
-from cortex.tools.session_dispatcher import session
+from cortex.tools.session.dispatcher import session
 from tests.helpers.path_helpers import ensure_test_cortex_structure
 from tests.helpers.tool_call_helpers import get_tool_fn, to_dict
 

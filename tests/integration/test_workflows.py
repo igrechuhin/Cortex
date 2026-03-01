@@ -16,9 +16,9 @@ from cortex.core.metadata_index import MetadataIndex
 from cortex.core.models import ModelDict
 from cortex.core.token_counter import TokenCounter
 from cortex.core.version_manager import VersionManager
-from cortex.linking.link_parser import LinkParser
-from cortex.linking.link_validator import LinkValidator
+from cortex.linking.parser import LinkParser
 from cortex.linking.transclusion_engine import TransclusionEngine
+from cortex.linking.validator import LinkValidator
 from cortex.optimization.models import FileMetadataForScoring
 from cortex.optimization.relevance_scorer import RelevanceScorer
 from cortex.validation.quality_metrics import QualityMetrics

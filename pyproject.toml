@@ -122,9 +122,9 @@ omit = [
     # Section processing is tested via integration
     "*/section_processing.py",
     # Manager initialization modules - infrastructure (tested via integration)
-    "*/manager_initialization.py",
+    "*/factory.py",
     "*/initialization_health.py",
-    "*/manager_groups.py",
+    "*/groups.py",
     # Structure analysis modules - tested via integration
     "*/structure_analysis.py",
     "*/structure_detection.py",

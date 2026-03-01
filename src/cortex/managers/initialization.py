@@ -15,7 +15,7 @@ from cortex.core.path_resolver import (
     is_memory_bank_fully_initialized,
 )
 from cortex.managers.builder_types import ManagersBuilder
-from cortex.managers.manager_initialization import (
+from cortex.managers.factory import (
     add_analysis_managers,
     add_execution_managers,
     add_linking_managers,

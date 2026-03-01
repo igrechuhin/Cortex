@@ -25,9 +25,9 @@ from cortex.core.migration import MigrationManager
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.core.token_counter import TokenCounter
 from cortex.core.version_manager import VersionManager
-from cortex.linking.link_parser import LinkParser
-from cortex.linking.link_validator import LinkValidator
+from cortex.linking.parser import LinkParser
 from cortex.linking.transclusion_engine import TransclusionEngine
+from cortex.linking.validator import LinkValidator
 from cortex.managers.container_factory import (
     create_all_managers,
     create_analysis_managers_from_deps,

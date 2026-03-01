@@ -9,7 +9,7 @@ import pytest
 
 from cortex.core.cache_json_access import read_cache_json, write_cache_json
 from cortex.optimization.agent_roles import AgentRole
-from cortex.tools.session_registry import (
+from cortex.tools.session.registry import (
     deregister_session,
     list_concurrent_sessions,
     register_session,
@@ -354,7 +354,7 @@ class TestSessionRegistryMCPExceptionPaths:
     async def test_session_register_returns_error_on_resolve_failure(self) -> None:
         """session_register returns JSON error when project root resolution fails."""
         with patch(
-            "cortex.tools.session_registry.resolve_project_root_async",
+            "cortex.tools.session.registry.resolve_project_root_async",
             new_callable=AsyncMock,
             side_effect=RuntimeError("No project root"),
         ):
@@ -371,7 +371,7 @@ class TestSessionRegistryMCPExceptionPaths:
     async def test_session_deregister_returns_error_on_resolve_failure(self) -> None:
         """session_deregister returns JSON error when project root resolution fails."""
         with patch(
-            "cortex.tools.session_registry.resolve_project_root_async",
+            "cortex.tools.session.registry.resolve_project_root_async",
             new_callable=AsyncMock,
             side_effect=RuntimeError("No project root"),
         ):

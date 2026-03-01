@@ -34,7 +34,7 @@ from cortex.tools.files.file_operation_helpers import (
     validate_and_prepare_write_content,
     validate_write_request,
 )
-from cortex.tools.files.file_section_helpers import extract_content_sections
+from cortex.tools.files.section_helpers import extract_content_sections
 from cortex.tools.plans.corruption import fix_memory_bank_content_if_needed
 from cortex.validation.schema_validator import SchemaValidator
 

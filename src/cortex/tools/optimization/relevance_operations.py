@@ -8,8 +8,8 @@ import json
 
 from cortex.core.file_system import FileSystemManager
 from cortex.core.metadata_index import MetadataIndex
-from cortex.managers.manager_utils import get_manager
 from cortex.managers.types import ManagersDict
+from cortex.managers.utils import get_manager
 from cortex.optimization.models import FileMetadataForScoring
 from cortex.optimization.relevance_scorer import RelevanceScorer
 from cortex.tools.context.load_auxiliary_models import (

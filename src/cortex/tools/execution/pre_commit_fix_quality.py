@@ -68,7 +68,7 @@ class FixQualityResult(BaseModel):
 
 def create_quality_error_response(error_message: str) -> str:
     """Create error response for quality fixes."""
-    from cortex.tools.tool_error_formatters import format_tool_error
+    from cortex.tools.error_formatters import format_tool_error
 
     return format_tool_error(
         Exception(error_message),

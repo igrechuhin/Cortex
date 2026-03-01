@@ -88,9 +88,7 @@ def _patch_get_manager() -> (  # pyright: ignore[reportUnusedFunction]
         return get_manager_wrapper(*args, **kwargs)  # type: ignore[arg-type]
 
     with (
-        patch(
-            "cortex.managers.manager_utils.get_manager", new=get_manager_sync_wrapper
-        ),
+        patch("cortex.managers.utils.get_manager", new=get_manager_sync_wrapper),
         patch(
             "cortex.tools.execution_handlers.get_manager",
             new=get_manager_sync_wrapper,

@@ -23,8 +23,8 @@ from cortex.core.project_root_resolver import resolve_project_root_async
 from cortex.core.version_manager import VersionManager
 from cortex.managers import initialization
 from cortex.managers.lazy_manager import LazyManager
-from cortex.managers.manager_utils import get_manager
 from cortex.managers.types import ManagersDict
+from cortex.managers.utils import get_manager
 from cortex.server import mcp
 from cortex.tools.foundation_stats_helpers import (
     build_base_stats_result,

@@ -15,8 +15,8 @@ from cortex.core.usage_context import (
     get_or_resolve_project_root,
 )
 from cortex.core.version_manager import VersionManager
-from cortex.managers.manager_utils import get_manager
 from cortex.managers.types import ManagersDict
+from cortex.managers.utils import get_manager
 from cortex.tools.compaction_handoff import (
     HandoffParams,
     read_handoff,

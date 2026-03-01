@@ -26,7 +26,7 @@ def create_error_result(error: str, error_type: str = "ValueError") -> str:
 
 def create_error_result_dict(error: str, error_type: str = "ValueError") -> ModelDict:
     """Create error response as dict for MCP (avoids double JSON encoding)."""
-    from cortex.tools.tool_error_formatters import format_tool_error
+    from cortex.tools.error_formatters import format_tool_error
 
     exception: Exception
     if error_type == "ValueError":

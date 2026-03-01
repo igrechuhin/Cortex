@@ -220,7 +220,7 @@ async def run_session_continuity(
     """Session continuity score (Anthropic Step 5): turns until productive."""
     from cortex.core.project_root_resolver import resolve_project_root_async
     from cortex.tools import usage_analytics
-    from cortex.tools.session_continuity_helpers import (
+    from cortex.tools.session.continuity_helpers import (
         get_session_continuity_payload,
     )
 

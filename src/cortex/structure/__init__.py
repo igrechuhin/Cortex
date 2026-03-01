@@ -1,5 +1,6 @@
 """Structure management module for Memory Bank."""
 
+from cortex.structure.manager import StructureManager
 from cortex.structure.structure_config import (
     DEFAULT_STRUCTURE,
     PLAN_TEMPLATES,
@@ -7,7 +8,6 @@ from cortex.structure.structure_config import (
     StructureConfig,
 )
 from cortex.structure.structure_lifecycle import StructureLifecycleManager
-from cortex.structure.structure_manager import StructureManager
 from cortex.structure.structure_migration import StructureMigrationManager
 from cortex.structure.template_manager import TemplateManager
 

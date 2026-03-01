@@ -844,7 +844,7 @@ Detect files modified externally (hash mismatch with index).
 
 Parses markdown links and transclusion syntax from content.
 
-**Module:** `cortex.linking.link_parser`
+**Module:** `cortex.linking.parser`
 
 **Implements:** `LinkParserProtocol`
 
@@ -975,7 +975,7 @@ Clear resolution cache.
 
 Validates markdown links and transclusions.
 
-**Module:** `cortex.linking.link_validator`
+**Module:** `cortex.linking.validator`
 
 **Implements:** `LinkValidatorProtocol`
 
@@ -1760,7 +1760,7 @@ Merge shared and local rules based on priority strategy.
 
 Manages project structure and templates.
 
-**Module:** `cortex.structure.structure_manager`
+**Module:** `cortex.structure.manager`
 
 **Constructor:**
 

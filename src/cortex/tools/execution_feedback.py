@@ -68,7 +68,7 @@ async def provide_feedback(
         )
     except Exception as e:
         await log_client(ctx, "error", f"provide_feedback: {e!s}", logger_name=__name__)
-        from cortex.tools.tool_error_formatters import format_tool_error
+        from cortex.tools.error_formatters import format_tool_error
 
         return format_tool_error(
             e,

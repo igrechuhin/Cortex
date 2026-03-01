@@ -17,8 +17,8 @@ from cortex.core.exceptions import MemoryBankError
 from cortex.core.file_system import FileSystemManager
 from cortex.core.models import JsonValue, ModelDict
 
-from .link_parser import LinkParser
 from .models import TransclusionOptions
+from .parser import LinkParser
 
 
 def _coerce_transclusion_options(

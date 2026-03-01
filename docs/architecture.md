@@ -111,11 +111,11 @@ Total tool count is 71 (70+ tools, 7 prompts); exact count and parameters are in
 
 ### Layer 3: Manager Initialization
 
-**Files**: `managers/initialization.py`, `manager_initialization.py`, `core/manager_registry.py`
+**Files**: `managers/initialization.py`, `managers/factory.py`, `core/manager_registry.py`
 
 - Centralized manager lifecycle: `get_managers(project_root)` resolves root, then calls process-scoped `ManagerRegistry.get_managers()`; first call for a project root runs `initialize_managers()`.
 - **Lazy loading**: Core managers (e.g. FileSystemManager, MetadataIndex, path resolver) are initialized eagerly; all other managers are wrapped in `LazyManager` and created on first access.
-- Dependency injection: managers receive dependencies via constructors; built in `manager_initialization.py` (e.g. `add_linking_managers`, `add_optimization_managers`).
+- Dependency injection: managers receive dependencies via constructors; built in `managers/factory.py` (e.g. `add_linking_managers`, `add_optimization_managers`).
 - Type-safe access via `ManagersDict` (Pydantic model).
 
 **Manager initialization flow:**

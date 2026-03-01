@@ -19,7 +19,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from cortex.core.file_system import FileSystemManager
-from cortex.linking.link_parser import LinkParser
+from cortex.linking.parser import LinkParser
 from cortex.linking.transclusion_engine import (
     CircularDependencyError,
     MaxDepthExceededError,

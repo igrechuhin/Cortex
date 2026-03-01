@@ -17,7 +17,7 @@ from typing import cast
 import pytest
 
 from cortex.core.models import ModelDict
-from cortex.linking.link_parser import LinkParser
+from cortex.linking.parser import LinkParser
 from tests.helpers.types import get_list
 
 

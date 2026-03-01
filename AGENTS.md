@@ -125,6 +125,7 @@ The commit workflow is organized into phases (see `docs/design/commit-pipeline-p
 ## Learned User Preferences
 
 - When the user says to add something to a plan instead of coding (e.g. "Don't code now. Add it in plan"), add it to the plan and do not implement immediately.
+- When naming modules within a package, drop redundant package-name prefixes (e.g., in cortex.tools.linking use graph_operations not link_graph_operations).
 - When adding or changing tools, prefer consolidation and removal of redundant or poorly used tools over adding new ones; tool count should decrease as functionality improves.
 - When enforcing new coding standards (e.g., Literal→enum), update `.cortex/synapse/rules/python` so the rule is reflected there.
 - When refactoring, briefly explain why the new approach is better, especially when the change is non-obvious.

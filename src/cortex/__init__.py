@@ -9,7 +9,7 @@ from cortex.core.file_system import FileSystemManager
 from cortex.core.metadata_index import MetadataIndex
 
 # Linking (Phase 2)
-from cortex.linking.link_parser import LinkParser
+from cortex.linking.parser import LinkParser
 from cortex.linking.transclusion_engine import TransclusionEngine
 
 # Managers
@@ -27,7 +27,7 @@ from cortex.refactoring.refactoring_executor import RefactoringExecutor
 from cortex.rules.synapse_manager import SynapseManager
 
 # Structure (Phase 8)
-from cortex.structure.structure_manager import StructureManager
+from cortex.structure.manager import StructureManager
 from cortex.validation.quality_metrics import QualityMetrics
 
 # Validation (Phase 3)

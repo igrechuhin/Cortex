@@ -8,7 +8,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from cortex.core.constants import MemoryBankFile
 from cortex.core.models import ModelDict
-from cortex.linking.link_parser import LinkParser
+from cortex.linking.parser import LinkParser
 
 from .async_file_utils import open_async_text_file
 from .graph_algorithms import GraphAlgorithms

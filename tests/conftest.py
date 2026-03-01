@@ -531,7 +531,7 @@ def mock_link_parser():
     Returns:
         LinkParser: Link parser instance
     """
-    from cortex.linking.link_parser import LinkParser
+    from cortex.linking.parser import LinkParser
 
     parser = LinkParser()
     return parser

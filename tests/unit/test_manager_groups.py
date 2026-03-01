@@ -1,5 +1,5 @@
 """
-Tests for manager_groups.py - Manager initialization groups.
+Tests for groups.py - Manager initialization groups.
 
 This module tests:
 - ManagerGroup dataclass initialization and methods
@@ -7,7 +7,7 @@ This module tests:
 - Manager group priorities and manager names
 """
 
-from cortex.managers.manager_groups import MANAGER_GROUPS, ManagerGroup
+from cortex.managers.groups import MANAGER_GROUPS, ManagerGroup
 
 
 class TestManagerGroupInitialization:
