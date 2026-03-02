@@ -66,14 +66,13 @@ from .memory import (
     query_memory_bank_operations,  # noqa: F401
 )
 from .plans import (
-    append_entry_dispatcher,  # noqa: F401
     completion,  # noqa: F401
     corruption,  # noqa: F401
     entries,  # noqa: F401
     operations,  # noqa: F401
     plan,  # noqa: F401
     register,  # noqa: F401
-    roadmap,  # noqa: F401
+    update_memory_bank,  # noqa: F401
 )
 from .session import (  # noqa: F401  # noqa: F401
     connection_health,
@@ -103,14 +102,12 @@ from .synapse import (
 from .usage import query_operations, usage_analytics  # noqa: F401
 
 # Explicitly reference modules imported for side effects to satisfy type checker
-_ = append_entry_dispatcher
 _ = skill_pack
 _ = plan
-_ = roadmap
+_ = update_memory_bank
 _ = synapse_prompts
 
 __all__ = [
-    "append_entry_dispatcher",
     "analysis_operations",
     "cache_json_tools",
     "compaction_operations",
@@ -145,7 +142,7 @@ __all__ = [
     "operations",
     "plan",
     "register",
-    "roadmap",
+    "update_memory_bank",
     "structure",
     "prompts",
     "refactoring",

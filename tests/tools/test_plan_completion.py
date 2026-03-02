@@ -1,8 +1,8 @@
 """
 Tests for plan_completion module.
 
-Tests public API: complete_plan, append_entry (dispatcher consolidating
-append_progress_entry and append_active_context_entry).
+Tests public API: complete_plan, update_memory_bank (consolidates
+roadmap and append_entry operations).
 """
 
 import json
@@ -13,8 +13,8 @@ import pytest
 
 from cortex.core.models import OperationStatus
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
-from cortex.tools.plans.append_entry_dispatcher import append_entry
 from cortex.tools.plans.completion import CompletePlanResult, complete_plan
+from cortex.tools.plans.update_memory_bank import update_memory_bank
 
 
 def _patch_root(tmp_path: Path):
@@ -27,14 +27,16 @@ def _patch_root(tmp_path: Path):
 
 
 def _append_progress(date_str: str, entry_text: str):
-    """Call append_entry(operation=progress)."""
-    return append_entry(operation="progress", date_str=date_str, entry_text=entry_text)
+    """Call update_memory_bank(operation=progress_append)."""
+    return update_memory_bank(
+        operation="progress_append", date_str=date_str, entry_text=entry_text
+    )
 
 
 def _append_active_context(date_str: str, title: str, summary: str):
-    """Call append_entry(operation=active_context)."""
-    return append_entry(
-        operation="active_context",
+    """Call update_memory_bank(operation=active_context_append)."""
+    return update_memory_bank(
+        operation="active_context_append",
         date_str=date_str,
         title=title,
         summary=summary,
@@ -165,7 +167,7 @@ class TestCompletePlanCompletedWorkSection:
 
 
 class TestAppendProgressEntry:
-    """append_entry(operation=progress) public API."""
+    """update_memory_bank(operation=progress_append) public API."""
 
     @pytest.mark.asyncio
     async def test_appends_to_existing_date_section(self, tmp_path: Path) -> None:
@@ -239,7 +241,7 @@ class TestAppendProgressEntry:
 
 
 class TestAppendProgressEntryValidation:
-    """Progress entry format validation via append_entry(operation=progress)."""
+    """Progress entry format validation via update_memory_bank(operation=progress_append)."""
 
     @pytest.mark.asyncio
     async def test_valid_formats_accepted(self, tmp_path: Path) -> None:
@@ -276,7 +278,7 @@ class TestAppendProgressEntryValidation:
 
 
 class TestCompletePlanDateValidation:
-    """Date validation (YYYY-MM-DD) via complete_plan and append_entry."""
+    """Date validation (YYYY-MM-DD) via complete_plan and update_memory_bank."""
 
     @pytest.mark.asyncio
     async def test_complete_plan_rejects_invalid_date(self) -> None:
@@ -305,7 +307,7 @@ class TestCompletePlanDateValidation:
 
 
 class TestAppendActiveContextEntry:
-    """append_entry(operation=active_context) public API."""
+    """update_memory_bank(operation=active_context_append) public API."""
 
     @pytest.mark.asyncio
     async def test_appends_to_existing_section(self, tmp_path: Path) -> None:

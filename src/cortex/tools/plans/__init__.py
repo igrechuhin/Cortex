@@ -12,7 +12,7 @@ from . import (
     operations,
     plan,
     register,
-    roadmap,
+    update_memory_bank,
 )
 
 __all__ = [
@@ -21,6 +21,6 @@ __all__ = [
     "entries",
     "operations",
     "plan",
-    "roadmap",
     "register",
+    "update_memory_bank",
 ]

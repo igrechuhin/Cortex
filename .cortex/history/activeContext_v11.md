@@ -44,6 +44,8 @@
 
 - ✅ **Consolidate execute_pre_commit_checks + fix_quality_issues** - COMPLETE (2026-03-02) - Folded fix_quality_issues into execute_pre_commit_checks as checks=["fix_quality"]; removed fix_quality_issues tool; updated callers, docs, and tests.
 
+- ✅ **update_memory_bank tool implementation** - COMPLETE (2026-03-02) - Implemented update_memory_bank dispatcher consolidating roadmap and append_entry. Operations: roadmap_add, roadmap_remove, roadmap_remove_section, progress_append, active_context_append. Updated plans package, categories, tests, docs.
+
 ## Completed Work (2026-03-01)
 
 - **Summary (2026-03-01)** - 1 entries archived.

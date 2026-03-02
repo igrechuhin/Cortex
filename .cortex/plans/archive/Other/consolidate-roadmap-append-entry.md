@@ -1,6 +1,6 @@
 # Plan: Consolidate roadmap + append_entry
 
-**Status**: PENDING
+**Status**: COMPLETE
 **Priority**: P2 (medium)
 **Estimated Effort**: 6–8 hours
 

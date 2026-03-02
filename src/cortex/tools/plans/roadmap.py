@@ -1,17 +1,13 @@
 """
-Roadmap dispatcher: unified roadmap(operation=...) MCP tool.
+Roadmap operations: internal implementation for update_memory_bank.
 
-Consolidates add_roadmap_entry, remove_roadmap_entry, and remove_roadmap_section
-into a single operation-based dispatcher following the Phase 50 pattern.
+roadmap_impl is called by update_memory_bank for roadmap_add, roadmap_remove,
+roadmap_remove_section. No longer a standalone MCP tool (consolidated).
 """
 
 from __future__ import annotations
 
-from cortex.core.constants import MCP_TOOL_TIMEOUT_MEDIUM
 from cortex.core.context_logging import MCPContext
-from cortex.core.mcp_annotations import safe_write_annotations
-from cortex.core.mcp_stability import ensure_usage_context, mcp_tool_wrapper
-from cortex.server import mcp
 
 
 def _roadmap_error_invalid_operation(operation: str) -> str:
@@ -112,10 +108,7 @@ async def _roadmap_handle_remove_section(
     )
 
 
-@mcp.tool(annotations=safe_write_annotations("Roadmap (Add/Remove Entry/Section)"))
-@ensure_usage_context
-@mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_MEDIUM)
-async def roadmap(
+async def roadmap_impl(
     operation: str = "add_entry",
     # add_entry params
     section: str | None = None,
@@ -128,26 +121,9 @@ async def roadmap(
     section_heading_contains: str | None = None,
     ctx: MCPContext | None = None,
 ) -> str:
-    """Add, remove, or mutate roadmap entries and sections (single roadmap tool).
+    """Internal: add, remove, or mutate roadmap entries and sections.
 
-    USE WHEN: Adding a plan entry (operation=add_entry), removing a completed
-    entry (operation=remove_entry), or removing an orphan section after all
-    bullets are gone (operation=remove_section). Prefer over full-content
-    manage_file(write) to avoid truncation and corruption.
-
-    EXAMPLES:
-    - roadmap(operation="add_entry", section="pending", entry_text="- Plan: .cortex/plans/foo.md")
-    - roadmap(operation="remove_entry", entry_contains="Plan: .cortex/plans/foo.md")
-    - roadmap(operation="remove_section", section_heading_contains="Session Optimization")
-
-    RETURNS: JSON (AddRoadmapEntryResult, RemoveRoadmapEntryResult, or
-    RemoveRoadmapSectionResult per operation).
-
-    Parameters:
-    - operation: 'add_entry', 'remove_entry', or 'remove_section'
-    - add_entry: section, entry_text required; position (default 'last'), change_description optional
-    - remove_entry: entry_contains required (unique substring of bullet)
-    - remove_section: section_heading_contains required
+    Called by update_memory_bank. Operations: add_entry, remove_entry, remove_section.
     """
     if operation not in ("add_entry", "remove_entry", "remove_section"):
         return _roadmap_error_invalid_operation(operation)

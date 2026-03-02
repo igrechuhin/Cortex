@@ -3,7 +3,7 @@ description: End session with compaction and memory bank updates.
 steps:
   - session(operation="compact", summary="...")
   - "[memory bank updates if not done]"
-  - append_entry(operation="progress"|"active_context", ...) as needed
+  - update_memory_bank(operation="progress_append"|"active_context_append", ...) as needed
 keywords:
   - handoff
   - end session

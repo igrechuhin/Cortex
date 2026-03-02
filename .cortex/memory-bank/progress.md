@@ -25,6 +25,7 @@
 - **Remove / Unpublish Dead Tools (2026-03-02)** - COMPLETE. Unpublished benchmark_model; tool count reduced by 1; docs and tests updated.
 - **Consolidate execute_pre_commit_checks + fix_quality_issues (2026-03-02)** - COMPLETE. Folded fix_quality_issues into execute_pre_commit_checks as checks=["fix_quality"]; removed fix_quality_issues tool; updated callers, docs, and tests. Tool count reduced by 1.
 - **Commit pipeline (2026-03-02)** - Phase A passed; 4879 tests, 92.29% coverage. Memory bank, roadmap, plan archiving (0 plans in root; consolidate-execute-pre-commit-fix-quality already archived).
+- **update_memory_bank tool (2026-03-02)** - COMPLETE. Consolidated roadmap and append_entry into update_memory_bank with operations roadmap_add, roadmap_remove, roadmap_remove_section, progress_append, active_context_append. Tests and docs updated.
 
 ## 2026-03-01
 

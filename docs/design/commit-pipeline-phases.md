@@ -134,8 +134,8 @@ Memory bank updates use dedicated safe-update MCP tools to avoid
 corruption from full-content writes:
 
 - `remove_roadmap_entry()` for removing completed roadmap bullets.
-- `append_entry(operation="progress", ...)` for adding progress entries.
-- `append_entry(operation="active_context", ...)` for adding completed work entries.
+- `update_memory_bank(operation="progress_append", ...)` for adding progress entries.
+- `update_memory_bank(operation="active_context_append", ...)` for adding completed work entries.
 - `complete_plan()` for combined roadmap removal, progress/activeContext
   update, and plan archival.
 

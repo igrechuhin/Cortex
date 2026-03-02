@@ -105,14 +105,9 @@ TOOL_CATEGORIES: tuple[ToolCategoryEntry, ...] = (
         rationale="Plan lifecycle: create, list, get, complete, register (consolidates create_plan, complete_plan, register_plan_in_roadmap)",
     ),
     ToolCategoryEntry(
-        name="roadmap",
+        name="update_memory_bank",
         category=ToolCategory.ALWAYS_LOADED,
-        rationale="Roadmap mutations: add_entry, remove_entry, remove_section (consolidates 3 tools)",
-    ),
-    ToolCategoryEntry(
-        name="append_entry",
-        category=ToolCategory.ALWAYS_LOADED,
-        rationale="Append progress or active context entries (operation=progress|active_context, consolidates 2 tools)",
+        rationale="Memory bank mutations: roadmap (add/remove), progress_append, active_context_append (consolidates roadmap + append_entry)",
     ),
     ToolCategoryEntry(
         name="execute_pre_commit_checks",

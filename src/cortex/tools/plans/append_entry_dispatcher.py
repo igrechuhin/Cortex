@@ -1,17 +1,13 @@
 """
-Append Entry dispatcher: unified append_entry(operation=...) MCP tool.
+Append entry operations: internal implementation for update_memory_bank.
 
-Consolidates append_progress_entry and append_active_context_entry into
-a single operation-based dispatcher following the Phase 50 pattern.
+append_entry_impl is called by update_memory_bank for progress_append and
+active_context_append. No longer a standalone MCP tool (consolidated).
 """
 
 from __future__ import annotations
 
-from cortex.core.constants import MCP_TOOL_TIMEOUT_MEDIUM
 from cortex.core.context_logging import MCPContext
-from cortex.core.mcp_annotations import safe_write_annotations
-from cortex.core.mcp_stability import ensure_usage_context, mcp_tool_wrapper
-from cortex.server import mcp
 
 
 def _append_entry_error_invalid_operation(operation: str) -> str:
@@ -107,12 +103,7 @@ async def _append_entry_handle_active_context(
         ).model_dump_json()
 
 
-@mcp.tool(
-    annotations=safe_write_annotations("Append Entry (Progress or Active Context)")
-)
-@ensure_usage_context
-@mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_MEDIUM)
-async def append_entry(
+async def append_entry_impl(
     operation: str = "progress",
     # progress params
     date_str: str | None = None,
@@ -122,22 +113,9 @@ async def append_entry(
     summary: str | None = None,
     ctx: MCPContext | None = None,
 ) -> str:
-    """Append a single entry to progress.md or activeContext.md (single memory-bank append tool).
+    """Internal: append entry to progress or activeContext.
 
-    USE WHEN: Implement Step 5 needs to add progress or completed-work entries
-    without building or writing full content (safe update). Prefer over
-    manage_file(write) for single-bullet appends.
-
-    EXAMPLES:
-    - append_entry(operation="progress", date_str="2026-02-24", entry_text="**Phase X** - COMPLETE. Done.")
-    - append_entry(operation="active_context", date_str="2026-02-24", title="Step 1", summary="Rubric added.")
-
-    RETURNS: JSON (AppendProgressEntryResult or AppendActiveContextEntryResult per operation).
-
-    Parameters:
-    - operation: 'progress' or 'active_context'
-    - progress: date_str (YYYY-MM-DD), entry_text required
-    - active_context: date_str (YYYY-MM-DD), title, summary required
+    Called by update_memory_bank. Operations: progress, active_context.
     """
     if operation not in ("progress", "active_context"):
         return _append_entry_error_invalid_operation(operation)

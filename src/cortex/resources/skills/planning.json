@@ -5,15 +5,15 @@
   "when_to_use": "Creating or updating plans, registering plans in roadmap, completing roadmap steps, roadmap entry management.",
   "workflow_sequences": [
     "plan(operation=\"create\") → plan(operation=\"register\") → implement → plan(operation=\"complete\")",
-    "roadmap(operation=\"remove_entry\", entry_contains=...) → append_entry(operation=\"progress\"|\"active_context\", ...)"
+    "update_memory_bank(operation=\"roadmap_remove\", entry_contains=...) → update_memory_bank(operation=\"progress_append\"|\"active_context_append\", ...)"
   ],
   "example_invocations": [
     "plan(operation=\"create\", title=\"...\", content=\"...\")",
     "plan(operation=\"complete\", plan_title=\"...\", summary=\"...\", plan_file_name=\"...\")",
-    "roadmap(operation=\"remove_entry\", entry_contains=\"unique substring\")"
+    "update_memory_bank(operation=\"roadmap_remove\", entry_contains=\"unique substring\")"
   ],
   "troubleshooting_tips": [
-    "Use roadmap(operation=\"remove_entry\") with a unique substring to avoid removing the wrong bullet.",
+    "Use update_memory_bank(operation=\"roadmap_remove\") with a unique substring to avoid removing the wrong bullet.",
     "When step references a plan file, prefer plan(operation=\"complete\") so the plan is archived automatically."
   ],
   "keywords": ["plan", "roadmap", "create_plan", "register_plan", "complete_plan", "roadmap_entry", "archive"]

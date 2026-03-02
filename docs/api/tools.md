@@ -76,7 +76,8 @@ For details on adding annotations to custom tools, see the [Extension Developmen
 | `fix_roadmap_corruption` | Kept as internal callable for admin repair |
 | `sync_synapse`, `update_synapse` | **Consolidated** into `synapse(operation="sync" or "update_rule" or "update_prompt", ...)` (2026-02-27) |
 | `rollback_file_version` | **Consolidated** into `manage_file(operation="rollback", file_name="...", version=<int>)` (2026-02-27) |
-| `append_progress_entry`, `append_active_context_entry` | **Consolidated** into `append_entry(operation="progress" or "active_context", ...)` |
+| `append_progress_entry`, `append_active_context_entry` | **Consolidated** into `update_memory_bank(operation="progress_append" or "active_context_append", ...)` |
+| `roadmap`, `append_entry` | **Consolidated** into `update_memory_bank` (operations: roadmap_add, roadmap_remove, roadmap_remove_section, progress_append, active_context_append) |
 | `benchmark_model` | **Unpublished** (2026-03-02). Use `run_tool_evaluation(mode="full")` + manual store/compare in `.cortex/.cache/evals/model_benchmarks.json`. Handler kept for internal use. |
 
 These tools were removed from the published tool list in the 2026-02-26 tool budget reduction (46→40). `sync_synapse` and `update_synapse` were consolidated into `synapse` in 2026-02-27. `rollback_file_version` was consolidated into `manage_file` in 2026-02-27. See [tool-optimization-mapping](../architecture/tool-optimization-mapping.md).
@@ -449,30 +450,36 @@ Unified Memory Bank file management tool for read/write/metadata operations.
 
 ---
 
-### roadmap
+### update_memory_bank
 
-Add, remove, or mutate roadmap entries and sections (single roadmap tool). Consolidates `add_roadmap_entry`, `remove_roadmap_entry`, and `remove_roadmap_section`.
+Add/remove roadmap entries, append to progress or activeContext (single memory-bank mutation tool). Consolidates `roadmap` and `append_entry`.
 
-**USE WHEN:** Adding a plan entry (`operation="add_entry"`), removing a completed entry (`operation="remove_entry"`), or removing an orphan section after all bullets are gone (`operation="remove_section"`). Prefer over full-content `manage_file(write)` to avoid truncation and corruption.
+**USE WHEN:** Adding or removing roadmap entries, or appending a single entry to progress.md or activeContext.md. Prefer over full-content `manage_file(write)` to avoid truncation and corruption.
 
-**RETURNS:** JSON — `AddRoadmapEntryResult`, `RemoveRoadmapEntryResult`, or `RemoveRoadmapSectionResult` per operation.
+**RETURNS:** JSON per operation — `AddRoadmapEntryResult`, `RemoveRoadmapEntryResult`, `RemoveRoadmapSectionResult`, `AppendProgressEntryResult`, or `AppendActiveContextEntryResult`.
 
 **Parameters:**
 
-- `operation` (str) - `add_entry` (default), `remove_entry`, or `remove_section`.
-- **add_entry:** `section` (str), `entry_text` (str) required; `position` (default `"last"`), `change_description` optional.
-- **remove_entry:** `entry_contains` (str) required — unique substring of the bullet.
-- **remove_section:** `section_heading_contains` (str) required.
+- `operation` (str) - `roadmap_add`, `roadmap_remove`, `roadmap_remove_section`, `progress_append`, or `active_context_append`.
+- **roadmap_add:** `section` (str), `entry_text` (str) required; `position` (default `"last"`), `change_description` optional.
+- **roadmap_remove:** `entry_contains` (str) required — unique substring of the bullet.
+- **roadmap_remove_section:** `section_heading_contains` (str) required.
+- **progress_append:** `date_str` (YYYY-MM-DD), `entry_text` (str) required.
+- **active_context_append:** `date_str` (YYYY-MM-DD), `title` (str), `summary` (str) required.
 
 **Examples:**
 
 ```python
 # Add plan entry
-await roadmap(operation="add_entry", section="pending", entry_text="- Plan: .cortex/plans/foo.md")
+await update_memory_bank(operation="roadmap_add", section="pending", entry_text="- Plan: .cortex/plans/foo.md")
 # Remove completed entry
-await roadmap(operation="remove_entry", entry_contains="Plan: .cortex/plans/foo.md")
+await update_memory_bank(operation="roadmap_remove", entry_contains="Plan: .cortex/plans/foo.md")
 # Remove orphan section
-await roadmap(operation="remove_section", section_heading_contains="Session Optimization")
+await update_memory_bank(operation="roadmap_remove_section", section_heading_contains="Session Optimization")
+# Append progress entry
+await update_memory_bank(operation="progress_append", date_str="2026-02-24", entry_text="**Phase X** - COMPLETE. Done.")
+# Append activeContext entry
+await update_memory_bank(operation="active_context_append", date_str="2026-02-24", title="Step 1", summary="Rubric added.")
 ```
 
 **See also:** `plan(operation="register", ...)`, `plan`, `manage_file` (fallback for multi-entry updates).
@@ -543,7 +550,7 @@ await create_plan(operation="get", slug="phase-60-feature", response_format="con
 await create_plan(operation="get", slug="phase-60-feature", response_format="metadata")
 ```
 
-**See also:** `plan(operation="register", ...)`, `roadmap`, `get_structure_info`.
+**See also:** `plan(operation="register", ...)`, `update_memory_bank`, `get_structure_info`.
 
 ---
 
@@ -574,7 +581,7 @@ await plan(
 )
 ```
 
-**See also:** `plan`, `roadmap`, `manage_file` (fallback).
+**See also:** `plan`, `update_memory_bank`, `manage_file` (fallback).
 
 ---
 

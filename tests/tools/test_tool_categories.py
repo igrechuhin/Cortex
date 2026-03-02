@@ -37,7 +37,7 @@ _MIN_ALWAYS_LOADED = 12  # at least this many core tools
 _MIN_DEFERRED_MEDIUM = 12  # 2026-03-02: benchmark_model unpublishing reduced count
 _MIN_DEFERRED_LOW = 4  # 2026-02-27: rollback_file_version consolidated into manage_file
 _MIN_TOTAL_TOOLS = (
-    29  # 2026-03-02: fix_quality_issues consolidated into execute_pre_commit_checks
+    28  # 2026-03-02: roadmap + append_entry consolidated into update_memory_bank
 )
 
 
