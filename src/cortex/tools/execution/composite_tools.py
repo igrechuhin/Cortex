@@ -2,7 +2,7 @@
 
 Consolidates agent-skills operations into a single dispatcher:
 - quick_start: session_start + load_context
-- quality_check: execute_pre_commit_checks(quality) + optional fix_quality_issues
+- quality_check: execute_pre_commit_checks(quality) + optional fix_quality
 - safe_manage_file: validate + manage_file + validate (write with guard)
 - suggest_workflow: recommend workflow templates for task description
 """
@@ -51,26 +51,25 @@ async def _quick_start_impl(
 
 
 async def _quality_check_impl() -> str:
-    """Run execute_pre_commit_checks(quality) then fix_quality_issues if needed."""
-    from cortex.tools.execution.pre_commit_tools import (
-        execute_pre_commit_checks,
-        fix_quality_issues,
-    )
+    """Run execute_pre_commit_checks(quality) then fix_quality if needed."""
+    from cortex.tools.execution.pre_commit_tools import execute_pre_commit_checks
 
     pre_result = await execute_pre_commit_checks(checks=["quality"])
     success = (
         pre_result.get("status") == "success" and pre_result.get("total_errors", 0) == 0
     )
-    fix_result: str | None = None
+    fix_result: dict[str, object] | None = None
     if not success:
-        fix_result = await fix_quality_issues()
+        fix_result = await execute_pre_commit_checks(
+            checks=["fix_quality"], include_untracked_markdown=True
+        )
     out = {
         "status": "success",
         "pre_commit_result": pre_result,
         "fix_applied": fix_result is not None,
     }
     if fix_result is not None:
-        out["fix_result"] = json.loads(fix_result)
+        out["fix_result"] = fix_result
     return json.dumps(out, indent=2)
 
 

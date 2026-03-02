@@ -42,6 +42,8 @@
 
 - ✅ **Remove / Unpublish Dead Tools** - COMPLETE (2026-03-02) - Unpublished benchmark_model from MCP: removed @mcp.tool decorator, removed from TOOL_CATEGORIES, updated evaluation.json skill, tools.md, tool-optimization-mapping.md, model-upgrade-playbook.md. Handler kept for internal use. Added test that benchmark_model is not in get_deferred_tool_names().
 
+- ✅ **Consolidate execute_pre_commit_checks + fix_quality_issues** - COMPLETE (2026-03-02) - Folded fix_quality_issues into execute_pre_commit_checks as checks=["fix_quality"]; removed fix_quality_issues tool; updated callers, docs, and tests.
+
 ## Completed Work (2026-03-01)
 
 - **Summary (2026-03-01)** - 1 entries archived.

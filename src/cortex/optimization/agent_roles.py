@@ -92,7 +92,6 @@ ROLE_PROFILES: dict[AgentRole, AgentRoleProfile] = {
         ],
         deprioritized_tools=[
             "fix_markdown_lint",
-            "fix_quality_issues",
         ],
         context_focus=[
             MemoryBankFile.PROJECT_BRIEF,
@@ -107,7 +106,6 @@ ROLE_PROFILES: dict[AgentRole, AgentRoleProfile] = {
     AgentRole.QUALITY: _make_profile(
         priority_tools=[
             "execute_pre_commit_checks",
-            "fix_quality_issues",
             "fix_markdown_lint",
         ],
         deprioritized_tools=[
@@ -142,7 +140,6 @@ ROLE_PROFILES: dict[AgentRole, AgentRoleProfile] = {
         ],
         deprioritized_tools=[
             "execute_pre_commit_checks",
-            "fix_quality_issues",
         ],
         context_focus=[
             MemoryBankFile.PROJECT_BRIEF,
@@ -158,7 +155,6 @@ ROLE_PROFILES: dict[AgentRole, AgentRoleProfile] = {
             "manage_file",
         ],
         deprioritized_tools=[
-            "fix_quality_issues",
             "execute_pre_commit_checks",
         ],
         context_focus=[
@@ -190,7 +186,6 @@ ROLE_PROFILES: dict[AgentRole, AgentRoleProfile] = {
         ],
         deprioritized_tools=[
             "plan",
-            "fix_quality_issues",
         ],
         context_focus=[
             MemoryBankFile.ACTIVE_CONTEXT,

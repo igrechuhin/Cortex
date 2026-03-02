@@ -1,7 +1,7 @@
 """Execution subpackage: pre-commit, quality, and safe execution.
 
 Contains:
-- pre_commit_tools: execute_pre_commit_checks, fix_quality_issues
+- pre_commit_tools: execute_pre_commit_checks (includes checks=["fix_quality"] for auto-fix)
 - safe_execution: apply_refactoring
 - feedback: provide_feedback
 - configure_learning (via safe_execution)

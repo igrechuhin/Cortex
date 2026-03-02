@@ -107,9 +107,13 @@ class TestImplementPromptQualityGates:
     def test_step_4_includes_readlints_before_step_45(
         self, prompt_content: str
     ) -> None:
-        """Step 4 requires run ReadLints or fix_quality_issues before Step 4.5."""
+        """Step 4 requires run ReadLints or fix_quality before Step 4.5."""
         assert "Before Step 4.5" in prompt_content
-        assert "ReadLints" in prompt_content or "fix_quality_issues" in prompt_content
+        assert (
+            "ReadLints" in prompt_content
+            or "fix_quality" in prompt_content
+            or "execute_pre_commit_checks" in prompt_content
+        )
 
     def test_step_46_includes_implicit_concatenation_check(
         self, prompt_content: str

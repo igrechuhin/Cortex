@@ -16,6 +16,7 @@ class PreCommitCheck(str, Enum):
     """Fixed set of pre-commit check names. Use instead of raw strings."""
 
     FIX_ERRORS = "fix_errors"
+    FIX_QUALITY = "fix_quality"
     FORMAT = "format"
     FORMAT_CI_PARITY = "format_ci_parity"
     SYNAPSE_FORMAT = "synapse_format"

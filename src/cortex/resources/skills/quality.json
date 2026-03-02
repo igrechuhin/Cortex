@@ -1,20 +1,20 @@
 {
   "name": "quality",
   "description": "Code quality operations: pre-commit checks, auto-fix, and validation.",
-  "tools": ["execute_pre_commit_checks", "fix_quality_issues", "validate"],
+  "tools": ["execute_pre_commit_checks", "validate"],
   "when_to_use": "Before commit, after code changes, to fix lint/format/type errors or run validation (schema, roadmap_sync).",
   "workflow_sequences": [
-    "execute_pre_commit_checks(phase=\"A\") → fix_quality_issues if needed",
+    "execute_pre_commit_checks(phase=\"A\") → execute_pre_commit_checks(checks=[\"fix_quality\"]) if needed",
     "execute_pre_commit_checks(checks=[\"quality\"]) before memory bank updates"
   ],
   "example_invocations": [
     "execute_pre_commit_checks(checks=[\"quality\"])",
-    "fix_quality_issues()",
+    "execute_pre_commit_checks(checks=[\"fix_quality\"])",
     "validate(check_type=\"roadmap_sync\")"
   ],
   "troubleshooting_tips": [
     "Run execute_pre_commit_checks(checks=[\"quality\"]) to get lint, format, type_check in one call.",
-    "If fix_quality_issues fails with connection error, retry once; then rely on execute_pre_commit_checks."
+    "If execute_pre_commit_checks(checks=[\"fix_quality\"]) fails with connection error, retry once; then rely on execute_pre_commit_checks for gates."
   ],
   "keywords": ["quality", "pre-commit", "lint", "format", "validate", "roadmap_sync", "fix", "commit"]
 }

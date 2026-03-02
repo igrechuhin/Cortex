@@ -87,7 +87,7 @@ class TestAgentWorkflowQualityCheck:
     """Tests for run_composite_workflow(operation='quality_check')."""
 
     async def test_quality_check_skips_fix_when_pre_passes(self) -> None:
-        """fix_quality_issues not called when execute_pre_commit_checks passes."""
+        """fix_quality not called when execute_pre_commit_checks(quality) passes."""
         pre_result = {
             "status": "success",
             "total_errors": 0,
@@ -97,34 +97,28 @@ class TestAgentWorkflowQualityCheck:
             "cortex.tools.execution.pre_commit_tools.execute_pre_commit_checks",
             new_callable=AsyncMock,
             return_value=pre_result,
-        ):
-            with patch(
-                "cortex.tools.execution.pre_commit_tools.fix_quality_issues",
-                new_callable=AsyncMock,
-            ) as mock_fix:
-                result = await run_composite_workflow(operation="quality_check")
-                mock_fix.assert_not_awaited()
+        ) as mock_exec:
+            result = await run_composite_workflow(operation="quality_check")
+            mock_exec.assert_awaited_once()
         out = json.loads(result)
         assert out["status"] == "success"
         assert out["pre_commit_result"] == pre_result
         assert out["fix_applied"] is False
 
-    async def test_quality_check_calls_fix_when_pre_has_errors(self) -> None:
-        """fix_quality_issues called when execute_pre_commit_checks has errors."""
+    async def test_quality_check_calls_fix_quality_when_pre_has_errors(self) -> None:
+        """execute_pre_commit_checks(fix_quality) called when quality has errors."""
         pre_result = {"status": "error", "total_errors": 2}
         fix_result = {"status": "success", "files_modified": ["a.py"]}
         with patch(
             "cortex.tools.execution.pre_commit_tools.execute_pre_commit_checks",
             new_callable=AsyncMock,
-            return_value=pre_result,
-        ):
-            with patch(
-                "cortex.tools.execution.pre_commit_tools.fix_quality_issues",
-                new_callable=AsyncMock,
-                return_value=json.dumps(fix_result),
-            ) as mock_fix:
-                result = await run_composite_workflow(operation="quality_check")
-                mock_fix.assert_awaited_once()
+            side_effect=[pre_result, fix_result],
+        ) as mock_exec:
+            result = await run_composite_workflow(operation="quality_check")
+            assert mock_exec.await_count == 2
+            calls = mock_exec.call_args_list
+            assert calls[0][1]["checks"] == ["quality"]
+            assert calls[1][1]["checks"] == ["fix_quality"]
         out = json.loads(result)
         assert out["status"] == "success"
         assert out["fix_applied"] is True

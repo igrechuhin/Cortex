@@ -2,11 +2,9 @@
 
 MCP tools for executing pre-commit checks with language auto-detection.
 
-Total: 2 tools
+Total: 1 tool
 - execute_pre_commit_checks: Execute pre-commit checks (fix errors,
-  format, type check, quality, tests)
-- fix_quality_issues: Automatically fix quality issues on-the-go
-  (fix errors, format, type check, markdown lint)
+  format, type check, quality, tests) or fix-quality mode (checks=["fix_quality"]).
 """
 
 import json
@@ -17,7 +15,7 @@ from typing import Literal, cast
 
 from cortex.core.constants import MCP_TOOL_TIMEOUT_VERY_COMPLEX
 from cortex.core.context_logging import MCPContext, log_client
-from cortex.core.mcp_annotations import external_annotations, safe_write_annotations
+from cortex.core.mcp_annotations import external_annotations
 from cortex.core.mcp_stability import ensure_usage_context, mcp_tool_wrapper
 from cortex.core.models import ModelDict
 from cortex.core.usage_context import get_or_resolve_project_root
@@ -150,14 +148,73 @@ async def _execute_pre_commit_checks_impl(
     return out
 
 
-async def _run_execute_pre_commit_checks(
+async def _dispatch_phase(
+    phase: str,
+    test_timeout: int,
+    coverage_threshold: float,
+    strict_mode: bool,
+    include_untracked_markdown: bool,
+    ctx: MCPContext | None,
+) -> ModelDict:
+    """Dispatch to phase-based runner (A, B, or full)."""
+    from cortex.tools.execution.pre_commit_phase_dispatch import (
+        PreCommitPhase,
+        run_execute_pre_commit_checks_by_phase,
+    )
+
+    return await run_execute_pre_commit_checks_by_phase(
+        PreCommitPhase(phase),
+        test_timeout,
+        coverage_threshold,
+        strict_mode,
+        include_untracked_markdown,
+        ctx,
+    )
+
+
+async def _run_fix_quality_and_return_dict(
+    include_untracked_markdown: bool, ctx: MCPContext | None
+) -> ModelDict:
+    """Run fix_quality_issues_impl and return result as dict."""
+    root = await get_or_resolve_project_root(ctx)
+    json_str = await fix_quality_issues_impl(
+        Path(root), include_untracked_markdown, ctx
+    )
+    result = json.loads(json_str)
+    return cast(ModelDict, result)
+
+
+async def _run_fix_quality_mode(
+    include_untracked_markdown: bool, ctx: MCPContext | None
+) -> ModelDict:
+    """Run fix_quality path and return result dict."""
+    await log_client(
+        ctx,
+        "info",
+        "execute_pre_commit_checks: fix_quality mode (fix_errors, format, type_check, markdown)",
+        logger_name=__name__,
+    )
+    try:
+        return await _run_fix_quality_and_return_dict(include_untracked_markdown, ctx)
+    except Exception as e:
+        await log_client(
+            ctx,
+            "error",
+            f"execute_pre_commit_checks fix_quality: {e!s}",
+            logger_name=__name__,
+        )
+        error_json = create_quality_error_response(str(e))
+        return cast(ModelDict, json.loads(error_json))
+
+
+async def _run_standard_checks_mode(
     checks: Sequence[PreCommitCheckName],
     test_timeout: int,
     coverage_threshold: float,
     strict_mode: bool,
     ctx: MCPContext | None,
 ) -> ModelDict:
-    """Resolve root, run impl, log and handle errors."""
+    """Run standard checks path and return result dict."""
     await log_client(
         ctx,
         "info",
@@ -177,6 +234,23 @@ async def _run_execute_pre_commit_checks(
             logger_name=__name__,
         )
         return create_error_result_dict(str(e), type(e).__name__)
+
+
+async def _run_execute_pre_commit_checks(
+    checks: Sequence[PreCommitCheckName],
+    test_timeout: int,
+    coverage_threshold: float,
+    strict_mode: bool,
+    include_untracked_markdown: bool,
+    ctx: MCPContext | None,
+) -> ModelDict:
+    """Resolve root, run impl, log and handle errors."""
+    is_fix_quality_only = len(checks) == 1 and checks[0] == PreCommitCheck.FIX_QUALITY
+    if is_fix_quality_only:
+        return await _run_fix_quality_mode(include_untracked_markdown, ctx)
+    return await _run_standard_checks_mode(
+        checks, test_timeout, coverage_threshold, strict_mode, ctx
+    )
 
 
 @mcp.tool(  # pyright: ignore[reportUntypedFunctionDecorator]
@@ -218,16 +292,13 @@ async def execute_pre_commit_checks(
         test_timeout, coverage_threshold, strict_mode: Check options.
 
     When phase is None, you must pass checks (e.g. ["format"], ["type_check", "quality"],
-    or ["tests"] with test_timeout and coverage_threshold). Language is auto-detected.
+    ["fix_quality"] for auto-fix only, or ["tests"] with test_timeout and coverage_threshold).
+    Language is auto-detected. checks=["fix_quality"] runs fix_errors, format, type_check,
+    and markdown lint (no tests); returns fix-quality response shape.
     """
     if phase is not None:
-        from cortex.tools.execution.pre_commit_phase_dispatch import (
-            PreCommitPhase,
-            run_execute_pre_commit_checks_by_phase,
-        )
-
-        return await run_execute_pre_commit_checks_by_phase(
-            PreCommitPhase(phase),
+        return await _dispatch_phase(
+            phase,
             test_timeout,
             coverage_threshold,
             strict_mode,
@@ -240,69 +311,10 @@ async def execute_pre_commit_checks(
             "ValidationError",
         )
     return await _run_execute_pre_commit_checks(
-        checks, test_timeout, coverage_threshold, strict_mode, ctx
+        checks,
+        test_timeout,
+        coverage_threshold,
+        strict_mode,
+        include_untracked_markdown,
+        ctx,
     )
-
-
-@mcp.tool(  # pyright: ignore[reportUntypedFunctionDecorator]
-    annotations=safe_write_annotations(
-        "Fix Code Quality Issues",
-        open_world=True,
-    ),  # pyright: ignore[reportCallIssue]
-)
-@ensure_usage_context
-@mcp_tool_wrapper(
-    timeout=MCP_TOOL_TIMEOUT_VERY_COMPLEX,
-    enable_progress=True,
-)
-async def fix_quality_issues(
-    include_untracked_markdown: bool = True,
-    ctx: MCPContext | None = None,
-) -> str:
-    """Automatically fix code quality issues on-the-go.
-
-    USE WHEN: User wants auto-fix, user needs quality fixes, user
-    requests automatic fixes, user wants to fix code quality.
-
-    EXAMPLES: 'fix quality issues', 'auto-fix formatting', 'fix
-    linting errors', 'fix markdown issues'.
-
-    RETURNS: JSON with fixes applied, files modified, and remaining
-    issues.
-
-    This tool runs comprehensive quality fixes across the codebase:
-    1. Auto-fixes linting errors (ruff, etc.)
-    2. Formats all code files (black, isort, etc.)
-    3. Runs type checking (pyright, etc.) and reports type errors
-    4. Fixes markdown lint errors across all markdown files
-
-    NOTE: This can take several minutes on large codebases (typically
-    2-5 minutes) as it processes the entire codebase. Progress is reported
-    during execution. It does NOT run tests (tests are reserved for the
-    commit pipeline).
-
-    Call after code changes, when IDE reports errors, or before new work.
-
-    Args:
-        include_untracked_markdown: When True (default), lint and fix untracked
-            .md/.mdc files in addition to git-modified ones. Set False to limit
-            scope to modified files only.
-
-    Returns:
-        JSON with status, *_fixed counts, files_modified, remaining_issues.
-
-    Example:
-        >>> fix_quality_issues(include_untracked_markdown=True)
-        {"status": "success", "format_fixed": 2, "lint_fixed": 5, "markdown_fixed": 1,
-         "files_modified": ["src/foo.py", "tests/test_foo.py"], "remaining_issues": [],
-         "type_check_errors": []}
-    """
-    await log_client(ctx, "info", "fix_quality_issues: starting", logger_name=__name__)
-    try:
-        root = await get_or_resolve_project_root(ctx)
-        return await fix_quality_issues_impl(root, include_untracked_markdown, ctx)
-    except Exception as e:
-        await log_client(
-            ctx, "error", f"fix_quality_issues: {e!s}", logger_name=__name__
-        )
-        return create_quality_error_response(str(e))

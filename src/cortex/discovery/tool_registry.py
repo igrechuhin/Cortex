@@ -25,7 +25,6 @@ _KNOWN_TOOL_NAMES: list[str] = [
     "configure_validation",
     "execute_pre_commit_checks",
     "fix_markdown_lint",
-    "fix_quality_issues",
     "fix_roadmap_corruption",
     "generate_memory_bank_template",
     "query_memory_bank",

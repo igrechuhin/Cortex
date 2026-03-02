@@ -117,12 +117,7 @@ TOOL_CATEGORIES: tuple[ToolCategoryEntry, ...] = (
     ToolCategoryEntry(
         name="execute_pre_commit_checks",
         category=ToolCategory.ALWAYS_LOADED,
-        rationale="Quality gate mandatory before every commit",
-    ),
-    ToolCategoryEntry(
-        name="fix_quality_issues",
-        category=ToolCategory.ALWAYS_LOADED,
-        rationale="Auto-fix lint/format/type errors in every session",
+        rationale="Quality gate mandatory before every commit; use checks=['fix_quality'] for auto-fix",
     ),
     ToolCategoryEntry(
         name="check_mcp_connection_health",

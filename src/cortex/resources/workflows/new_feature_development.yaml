@@ -6,7 +6,7 @@ steps:
   - create_plan (if not already)
   - "[implement steps]"
   - execute_pre_commit_checks(checks=["quality"])
-  - fix_quality_issues (if needed)
+  - execute_pre_commit_checks(checks=["fix_quality"]) (if needed)
   - session(operation="compact") (end of session)
 keywords:
   - implement

@@ -42,14 +42,14 @@ from cortex.core.models import JsonValue
 _logger = logging.getLogger(__name__)
 
 # Tools that report their own progress; skip wrapper time-based progress.
-_TOOLS_WITH_OWN_PROGRESS = frozenset({"fix_quality_issues"})
+_TOOLS_WITH_OWN_PROGRESS: frozenset[str] = frozenset()
 # Tools that need more frequent progress to prevent client idle timeout (-32000).
 _TOOLS_NEEDING_FREQUENT_PROGRESS = frozenset(
     {"execute_pre_commit_checks", "fix_markdown_lint"}
 )
 # Long-running tools serialized (one at a time) so the connection does not break.
 _LONG_RUNNING_TOOLS_SERIALIZED = frozenset(
-    {"execute_pre_commit_checks", "fix_markdown_lint", "fix_quality_issues"}
+    {"execute_pre_commit_checks", "fix_markdown_lint"}
 )
 # Default fallback when tool has no specific recovery steps.
 _CONNECTION_ERROR_FALLBACK_DEFAULT = (
@@ -66,10 +66,6 @@ _CONNECTION_ERROR_FALLBACK: dict[str, str] = {
         " Retry once. If still failing: run markdown lint locally "
         "(node_modules/.bin/markdownlint-cli2 --fix '**/*.md' '**/*.mdc'). "
         "See commit prompt Step 12.5 fallback and docs/guides/troubleshooting.md."
-    ),
-    "fix_quality_issues": (
-        " Retry once. If still failing: run format/lint locally (black ., ruff check --fix). "
-        "See docs/guides/troubleshooting.md."
     ),
 }
 
