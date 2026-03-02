@@ -26,7 +26,7 @@ class TestAgentWorkflowQuickStart:
             return_value=json.dumps(brief_data),
         ):
             with patch(
-                "cortex.tools.optimization_handlers.load_context",
+                "cortex.tools.optimization.load_context",
                 new_callable=AsyncMock,
                 return_value=json.dumps(context_data),
             ):
@@ -52,7 +52,7 @@ class TestAgentWorkflowQuickStart:
             return_value=json.dumps(brief_data),
         ):
             with patch(
-                "cortex.tools.optimization_handlers.load_context",
+                "cortex.tools.optimization.load_context",
                 new_callable=AsyncMock,
                 return_value=json.dumps(context_data),
             ) as mock_load:
@@ -71,7 +71,7 @@ class TestAgentWorkflowQuickStart:
             return_value=json.dumps(brief_data),
         ):
             with patch(
-                "cortex.tools.optimization_handlers.load_context",
+                "cortex.tools.optimization.load_context",
                 new_callable=AsyncMock,
                 return_value=json.dumps(context_data),
             ) as mock_load:

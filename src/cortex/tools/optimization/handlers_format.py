@@ -9,6 +9,8 @@ from typing import cast
 
 from cortex.core.models import ResponseFormat
 
+from .handlers_validation import is_non_trivial_task
+
 
 def format_load_context_error(error: Exception) -> str:
     """Format error response for load_context failures."""
@@ -161,8 +163,6 @@ def format_and_add_warnings_if_needed(
     token_budget: int | None,
 ) -> str:
     """Format response and add zero-file warnings if needed."""
-    from cortex.tools.optimization_handlers_validation import is_non_trivial_task
-
     result_str = format_load_context_response(out, response_format, role)
     if is_non_trivial_task(task_description):
         result_str = add_zero_file_warning_if_needed(

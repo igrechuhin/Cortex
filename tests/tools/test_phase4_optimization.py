@@ -26,7 +26,7 @@ from cortex.tools.optimization import (
     summarize_content,
     summarize_content_resource,
 )
-from cortex.tools.optimization_handlers import is_non_trivial_task
+from cortex.tools.optimization.handlers import is_non_trivial_task
 from tests.helpers.fixture_validator import validate_optimization_config_mock
 from tests.helpers.managers import make_test_managers
 
@@ -197,7 +197,7 @@ class TestLoadContext:
         # Arrange
         with (
             patch(
-                "cortex.tools.optimization_handlers.resolve_project_root_async",
+                "cortex.tools.optimization.handlers.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
@@ -235,7 +235,7 @@ class TestLoadContext:
         # Arrange
         with (
             patch(
-                "cortex.tools.optimization_handlers.resolve_project_root_async",
+                "cortex.tools.optimization.handlers.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
@@ -270,7 +270,7 @@ class TestLoadContext:
         # Arrange
         with (
             patch(
-                "cortex.tools.optimization_handlers.resolve_project_root_async",
+                "cortex.tools.optimization.handlers.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
@@ -303,7 +303,7 @@ class TestLoadContext:
         # Arrange
         with (
             patch(
-                "cortex.tools.optimization_handlers.resolve_project_root_async",
+                "cortex.tools.optimization.handlers.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
@@ -355,7 +355,7 @@ class TestLoadContext:
         # Arrange
         with (
             patch(
-                "cortex.tools.optimization_handlers.resolve_project_root_async",
+                "cortex.tools.optimization.handlers.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
@@ -387,7 +387,7 @@ class TestLoadContext:
         # Arrange
         with (
             patch(
-                "cortex.tools.optimization_handlers.resolve_project_root_async",
+                "cortex.tools.optimization.handlers.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
@@ -420,7 +420,7 @@ class TestLoadContext:
         # Arrange
         with (
             patch(
-                "cortex.tools.optimization_handlers.resolve_project_root_async",
+                "cortex.tools.optimization.handlers.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
@@ -453,7 +453,7 @@ class TestLoadContext:
         # Arrange
         with (
             patch(
-                "cortex.tools.optimization_handlers.resolve_project_root_async",
+                "cortex.tools.optimization.handlers.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
@@ -488,7 +488,7 @@ class TestLoadContext:
         # Arrange
         with (
             patch(
-                "cortex.tools.optimization_handlers.resolve_project_root_async",
+                "cortex.tools.optimization.handlers.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
@@ -521,7 +521,7 @@ class TestLoadContext:
         # Arrange
         with (
             patch(
-                "cortex.tools.optimization_handlers.resolve_project_root_async",
+                "cortex.tools.optimization.handlers.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
@@ -552,7 +552,7 @@ class TestLoadContext:
         """Test exception handling in load_context."""
         # Arrange - exception raised in load module's initialization
         with patch(
-            "cortex.tools.optimization_handlers_load.resolve_project_root_async",
+            "cortex.tools.optimization.handlers_load.resolve_project_root_async",
             new_callable=AsyncMock,
             side_effect=RuntimeError("Test error"),
         ):
@@ -581,7 +581,7 @@ class TestLoadContext:
         )
         with (
             patch(
-                "cortex.tools.optimization_handlers.resolve_project_root_async",
+                "cortex.tools.optimization.handlers.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
@@ -607,7 +607,7 @@ class TestLoadContext:
         # Arrange
         with (
             patch(
-                "cortex.tools.optimization_handlers.resolve_project_root_async",
+                "cortex.tools.optimization.handlers.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
@@ -656,7 +656,7 @@ class TestLoadContext:
 
         with (
             patch(
-                "cortex.tools.optimization_handlers.resolve_project_root_async",
+                "cortex.tools.optimization.handlers.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
@@ -665,7 +665,7 @@ class TestLoadContext:
                 return_value=mock_managers,
             ),
             patch(
-                "cortex.tools.optimization_handlers_load.load_context_impl",
+                "cortex.tools.optimization.handlers_load.load_context_impl",
                 side_effect=mock_load_context_impl,
             ),
         ):
@@ -703,7 +703,7 @@ class TestLoadContext:
 
         with (
             patch(
-                "cortex.tools.optimization_handlers.resolve_project_root_async",
+                "cortex.tools.optimization.handlers.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
@@ -712,7 +712,7 @@ class TestLoadContext:
                 return_value=mock_managers,
             ),
             patch(
-                "cortex.tools.optimization_handlers_load.load_context_impl",
+                "cortex.tools.optimization.handlers_load.load_context_impl",
                 side_effect=mock_load_context_impl,
             ),
         ):
@@ -740,7 +740,7 @@ class TestLoadContext:
 
         with (
             patch(
-                "cortex.tools.optimization_handlers.resolve_project_root_async",
+                "cortex.tools.optimization.handlers.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
@@ -749,7 +749,7 @@ class TestLoadContext:
                 return_value=mock_managers,
             ),
             patch(
-                "cortex.tools.optimization_handlers_load.load_context_impl",
+                "cortex.tools.optimization.handlers_load.load_context_impl",
                 side_effect=mock_load_context_impl,
             ),
         ):
@@ -784,7 +784,7 @@ class TestSummarizeContent:
         # Arrange
         with (
             patch(
-                "cortex.tools.optimization_handlers.resolve_project_root_async",
+                "cortex.tools.optimization.handlers.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
@@ -815,7 +815,7 @@ class TestSummarizeContent:
         # Arrange
         with (
             patch(
-                "cortex.tools.optimization_handlers.resolve_project_root_async",
+                "cortex.tools.optimization.handlers.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
@@ -856,7 +856,7 @@ class TestSummarizeContent:
 
         with (
             patch(
-                "cortex.tools.optimization_handlers.resolve_project_root_async",
+                "cortex.tools.optimization.handlers.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
@@ -898,7 +898,7 @@ class TestSummarizeContent:
 
         with (
             patch(
-                "cortex.tools.optimization_handlers.resolve_project_root_async",
+                "cortex.tools.optimization.handlers.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
@@ -934,7 +934,7 @@ class TestSummarizeContent:
 
         with (
             patch(
-                "cortex.tools.optimization_handlers.resolve_project_root_async",
+                "cortex.tools.optimization.handlers.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
@@ -943,7 +943,7 @@ class TestSummarizeContent:
                 return_value=mock_managers,
             ),
             patch(
-                "cortex.tools.optimization_handlers_load.get_manager",
+                "cortex.tools.optimization.handlers_load.get_manager",
                 side_effect=get_manager_helper,
             ),
         ):
@@ -964,7 +964,7 @@ class TestSummarizeContent:
         # Arrange
         with (
             patch(
-                "cortex.tools.optimization_handlers.resolve_project_root_async",
+                "cortex.tools.optimization.handlers.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
@@ -1016,7 +1016,7 @@ class TestSummarizeContent:
         # Arrange
         with (
             patch(
-                "cortex.tools.optimization_handlers.resolve_project_root_async",
+                "cortex.tools.optimization.handlers.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
@@ -1053,7 +1053,7 @@ class TestGetRelevanceScores:
         # Arrange
         with (
             patch(
-                "cortex.tools.optimization_handlers.resolve_project_root_async",
+                "cortex.tools.optimization.handlers.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
@@ -1085,7 +1085,7 @@ class TestGetRelevanceScores:
         # Arrange
         with (
             patch(
-                "cortex.tools.optimization_handlers.resolve_project_root_async",
+                "cortex.tools.optimization.handlers.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
@@ -1117,7 +1117,7 @@ class TestGetRelevanceScores:
         # Arrange
         with (
             patch(
-                "cortex.tools.optimization_handlers.resolve_project_root_async",
+                "cortex.tools.optimization.handlers.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
@@ -1146,7 +1146,7 @@ class TestGetRelevanceScores:
         """Test exception handling in get_relevance_scores."""
         # Arrange
         with patch(
-            "cortex.tools.optimization_handlers.resolve_project_root_async",
+            "cortex.tools.optimization.handlers.resolve_project_root_async",
             new_callable=AsyncMock,
             side_effect=RuntimeError("Scoring failed"),
         ):
@@ -1174,7 +1174,7 @@ class TestIntegration:
         """Test complete workflow: load context -> score -> summarize."""
         with (
             patch(
-                "cortex.tools.optimization_handlers.resolve_project_root_async",
+                "cortex.tools.optimization.handlers.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
@@ -1236,7 +1236,7 @@ class TestPhase4OptimizationContextLogging:
         mock_log = AsyncMock()
         with (
             patch(
-                "cortex.tools.optimization_handlers.log_client",
+                "cortex.tools.optimization.handlers.log_client",
                 mock_log,
             ),
             patch(
@@ -1244,7 +1244,7 @@ class TestPhase4OptimizationContextLogging:
                 mock_log,
             ),
             patch(
-                "cortex.tools.optimization_handlers.resolve_project_root_async",
+                "cortex.tools.optimization.handlers.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
@@ -1285,7 +1285,7 @@ class TestPhase4OptimizationResources:
         """load_context_resource returns JSON success for task_description."""
         with (
             patch(
-                "cortex.tools.optimization_handlers.resolve_project_root_async",
+                "cortex.tools.optimization.handlers.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
@@ -1310,7 +1310,7 @@ class TestPhase4OptimizationResources:
         """get_relevance_scores_resource returns JSON success."""
         with (
             patch(
-                "cortex.tools.optimization_handlers.resolve_project_root_async",
+                "cortex.tools.optimization.handlers.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
@@ -1336,7 +1336,7 @@ class TestPhase4OptimizationResources:
         """summarize_content_resource with file_name returns JSON success."""
         with (
             patch(
-                "cortex.tools.optimization_handlers.resolve_project_root_async",
+                "cortex.tools.optimization.handlers.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
@@ -1361,7 +1361,7 @@ class TestPhase4OptimizationResources:
         """summarize_content_resource with file_name '_' summarizes all files."""
         with (
             patch(
-                "cortex.tools.optimization_handlers.resolve_project_root_async",
+                "cortex.tools.optimization.handlers.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
@@ -1470,7 +1470,7 @@ class TestContextBudgetValidation:
         """load_context allows token_budget=0 for trivial tasks."""
         with (
             patch(
-                "cortex.tools.optimization_handlers.resolve_project_root_async",
+                "cortex.tools.optimization.handlers.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
@@ -1512,7 +1512,7 @@ class TestContextBudgetValidation:
 
         with (
             patch(
-                "cortex.tools.optimization_handlers.resolve_project_root_async",
+                "cortex.tools.optimization.handlers.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
@@ -1521,7 +1521,7 @@ class TestContextBudgetValidation:
                 return_value=mock_managers,
             ),
             patch(
-                "cortex.tools.optimization_handlers_load.load_context_with_error_handling",
+                "cortex.tools.optimization.handlers_load.load_context_with_error_handling",
                 new_callable=AsyncMock,
                 return_value=mock_result,
             ),

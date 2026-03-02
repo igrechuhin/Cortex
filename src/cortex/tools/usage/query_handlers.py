@@ -9,7 +9,8 @@ from typing import cast
 
 # Import MCPContext for type hints; avoid circular import
 from cortex.core.context_logging import MCPContext
-from cortex.tools.query_usage_models import QueryUsageParams
+
+from .query_models import QueryUsageParams
 
 
 def _usage_error_payload(message: str) -> str:
@@ -21,7 +22,7 @@ def _usage_error_payload(message: str) -> str:
 
 
 async def run_usage_stats(params: QueryUsageParams, ctx: MCPContext | None) -> str:
-    from cortex.tools import usage_analytics
+    from . import usage_analytics
 
     return await usage_analytics.get_tool_usage_stats(
         start_date=params.start_date,
@@ -35,7 +36,8 @@ async def run_usage_stats(params: QueryUsageParams, ctx: MCPContext | None) -> s
 async def run_unused(params: QueryUsageParams, ctx: MCPContext | None) -> str:
     from cortex.core.project_root_resolver import resolve_project_root_async
     from cortex.managers.usage_tracker import get_tool_optimization_config
-    from cortex.tools import usage_analytics
+
+    from . import usage_analytics
 
     root = await resolve_project_root_async(None, ctx)
     config = get_tool_optimization_config(root)
@@ -47,7 +49,7 @@ async def run_unused(params: QueryUsageParams, ctx: MCPContext | None) -> str:
 
 
 async def run_report(params: QueryUsageParams, ctx: MCPContext | None) -> str:
-    from cortex.tools import usage_analytics
+    from . import usage_analytics
 
     return await usage_analytics.get_tool_usage_report(
         format=params.format,
@@ -59,7 +61,8 @@ async def run_report(params: QueryUsageParams, ctx: MCPContext | None) -> str:
 async def run_recommendations(params: QueryUsageParams, ctx: MCPContext | None) -> str:
     from cortex.core.project_root_resolver import resolve_project_root_async
     from cortex.managers.usage_tracker import get_tool_optimization_config
-    from cortex.tools import usage_analytics
+
+    from . import usage_analytics
 
     root = await resolve_project_root_async(None, ctx)
     config = get_tool_optimization_config(root)
@@ -71,7 +74,7 @@ async def run_recommendations(params: QueryUsageParams, ctx: MCPContext | None) 
 
 
 async def run_search(params: QueryUsageParams, ctx: MCPContext | None) -> str:
-    from cortex.tools import usage_analytics
+    from . import usage_analytics
 
     return await usage_analytics.search_usage(
         start_date=params.start_date,
@@ -86,7 +89,7 @@ async def run_search(params: QueryUsageParams, ctx: MCPContext | None) -> str:
 
 
 async def run_events(params: QueryUsageParams, ctx: MCPContext | None) -> str:
-    from cortex.tools import usage_analytics
+    from . import usage_analytics
 
     return await usage_analytics.get_usage_events(ids=params.ids, ctx=ctx)
 
@@ -96,7 +99,7 @@ async def run_observation(params: QueryUsageParams, ctx: MCPContext | None) -> s
         return _usage_error_payload(
             "observation_id is required for query_type=observation"
         )
-    from cortex.tools import usage_analytics
+    from . import usage_analytics
 
     return await usage_analytics.get_usage_observation(
         id=params.observation_id, ctx=ctx
@@ -106,7 +109,7 @@ async def run_observation(params: QueryUsageParams, ctx: MCPContext | None) -> s
 async def run_timeline(params: QueryUsageParams, ctx: MCPContext | None) -> str:
     if not params.around_id:
         return _usage_error_payload("around_id is required for query_type=timeline")
-    from cortex.tools import usage_analytics
+    from . import usage_analytics
 
     return await usage_analytics.get_usage_timeline(
         around_id=params.around_id,
@@ -118,11 +121,12 @@ async def run_timeline(params: QueryUsageParams, ctx: MCPContext | None) -> str:
 async def run_anomalies(params: QueryUsageParams, ctx: MCPContext | None) -> str:
     """Session tool anomalies: tools used in last N hours with retry/error flags."""
     from cortex.core.project_root_resolver import resolve_project_root_async
-    from cortex.tools import usage_analytics
     from cortex.tools.evaluation.evaluation_anomalies_helpers import (
         get_session_tool_anomalies_payload,
         unavailable_session_anomalies_response,
     )
+
+    from . import usage_analytics
 
     root = await resolve_project_root_async(None, ctx)
     tracker = await usage_analytics._get_tracker(root)  # type: ignore[attr-defined]
@@ -142,10 +146,11 @@ async def run_tool_description_optimization(
             "tool_name is required for query_type=tool_description_optimization"
         )
     from cortex.core.project_root_resolver import resolve_project_root_async
-    from cortex.tools import usage_analytics
     from cortex.tools.evaluation.evaluation_optimization_helpers import (
         get_tool_description_optimization_payload,
     )
+
+    from . import usage_analytics
 
     root = await resolve_project_root_async(None, ctx)
     tracker = await usage_analytics._get_tracker(root)  # type: ignore[attr-defined]
@@ -160,10 +165,11 @@ async def run_production_monitoring(
 ) -> str:
     """Production monitoring: rolling baseline, current metrics, drift alerts."""
     from cortex.core.project_root_resolver import resolve_project_root_async
-    from cortex.tools import usage_analytics
     from cortex.tools.production_monitoring_helpers import (
         get_production_monitoring_payload,
     )
+
+    from . import usage_analytics
 
     root = await resolve_project_root_async(None, ctx)
     tracker = await usage_analytics._get_tracker(root)  # type: ignore[attr-defined]
@@ -181,10 +187,9 @@ async def run_production_monitoring(
 async def run_token_efficiency(params: QueryUsageParams, ctx: MCPContext | None) -> str:
     """Token efficiency: top token-expensive tools by total and by avg."""
     from cortex.core.project_root_resolver import resolve_project_root_async
-    from cortex.tools import usage_analytics
-    from cortex.tools.token_efficiency_helpers import (
-        get_token_efficiency_payload,
-    )
+    from cortex.tools.token_efficiency_helpers import get_token_efficiency_payload
+
+    from . import usage_analytics
 
     root = await resolve_project_root_async(None, ctx)
     tracker = await usage_analytics._get_tracker(root)  # type: ignore[attr-defined]
@@ -196,8 +201,9 @@ async def run_token_efficiency(params: QueryUsageParams, ctx: MCPContext | None)
 async def run_redundancy(params: QueryUsageParams, ctx: MCPContext | None) -> str:
     """Redundant tool call detection (Anthropic Step 3)."""
     from cortex.core.project_root_resolver import resolve_project_root_async
-    from cortex.tools import usage_analytics
     from cortex.tools.redundancy_helpers import get_redundancy_payload
+
+    from . import usage_analytics
 
     root = await resolve_project_root_async(None, ctx)
     tracker = await usage_analytics._get_tracker(root)  # type: ignore[attr-defined]
@@ -219,10 +225,11 @@ async def run_session_continuity(
 ) -> str:
     """Session continuity score (Anthropic Step 5): turns until productive."""
     from cortex.core.project_root_resolver import resolve_project_root_async
-    from cortex.tools import usage_analytics
     from cortex.tools.session.continuity_helpers import (
         get_session_continuity_payload,
     )
+
+    from . import usage_analytics
 
     root = await resolve_project_root_async(None, ctx)
     tracker = await usage_analytics._get_tracker(root)  # type: ignore[attr-defined]
@@ -242,8 +249,9 @@ async def run_session_continuity(
 async def run_tool_frequency(params: QueryUsageParams, ctx: MCPContext | None) -> str:
     """Tool frequency (Anthropic Step 6): tools per session, tier token impact."""
     from cortex.core.project_root_resolver import resolve_project_root_async
-    from cortex.tools import usage_analytics
     from cortex.tools.tool_frequency_helpers import get_tool_frequency_payload
+
+    from . import usage_analytics
 
     root = await resolve_project_root_async(None, ctx)
     tracker = await usage_analytics._get_tracker(root)  # type: ignore[attr-defined]
@@ -332,7 +340,8 @@ async def run_tool_classification(
 ) -> str:
     """Tool classification (agent-skills Step 3): usage + category for core vs extended."""
     from cortex.core.project_root_resolver import resolve_project_root_async
-    from cortex.tools import usage_analytics
+
+    from . import usage_analytics
 
     root = await resolve_project_root_async(None, ctx)
     tracker = await usage_analytics._get_tracker(root)  # type: ignore[attr-defined]

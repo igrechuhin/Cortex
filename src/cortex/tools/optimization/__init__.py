@@ -22,9 +22,11 @@ from the split modules.
 # Re-export dependencies needed for testing
 from cortex.managers.initialization import get_managers, get_project_root
 from cortex.managers.utils import get_manager
-from cortex.tools.optimization_handlers import (
+
+from .handlers import (
     get_relevance_scores,
     get_relevance_scores_resource,
+    is_non_trivial_task,
     load_context,
     load_context_resource,
     summarize_content,
@@ -32,13 +34,14 @@ from cortex.tools.optimization_handlers import (
 )
 
 __all__ = [
+    "get_managers",
+    "get_project_root",
+    "get_manager",
+    "get_relevance_scores",
+    "get_relevance_scores_resource",
+    "is_non_trivial_task",
     "load_context",
     "load_context_resource",
     "summarize_content",
     "summarize_content_resource",
-    "get_relevance_scores",
-    "get_relevance_scores_resource",
-    "get_managers",
-    "get_project_root",
-    "get_manager",
 ]

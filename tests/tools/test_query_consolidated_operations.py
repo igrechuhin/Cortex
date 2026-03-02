@@ -9,7 +9,7 @@ import pytest
 from cortex.core.models import ResponseFormat
 from cortex.managers.usage_models import ToolUsageEvent
 from cortex.tools.memory.query_memory_bank_operations import query_memory_bank
-from cortex.tools.query_usage_operations import query_usage
+from cortex.tools.usage.query_operations import query_usage
 
 # -----------------------------------------------------------------------------
 # query_memory_bank
@@ -84,7 +84,7 @@ async def test_query_usage_stats_dispatches() -> None:
         indent=2,
     )
     with patch(
-        "cortex.tools.query_usage_operations.log_client",
+        "cortex.tools.usage.query_operations.log_client",
         new_callable=AsyncMock,
     ):
         with patch(
@@ -101,7 +101,7 @@ async def test_query_usage_stats_dispatches() -> None:
 async def test_query_usage_observation_requires_observation_id() -> None:
     """query_usage with query_type=observation and no observation_id returns error."""
     with patch(
-        "cortex.tools.query_usage_operations.log_client",
+        "cortex.tools.usage.query_operations.log_client",
         new_callable=AsyncMock,
     ):
         result = await query_usage(
@@ -118,7 +118,7 @@ async def test_query_usage_observation_requires_observation_id() -> None:
 async def test_query_usage_unknown_type_returns_error() -> None:
     """query_usage with unknown query_type returns error JSON."""
     with patch(
-        "cortex.tools.query_usage_operations.log_client",
+        "cortex.tools.usage.query_operations.log_client",
         new_callable=AsyncMock,
     ):
         result = await query_usage(query_type="invalid_type", ctx=None)
@@ -131,7 +131,7 @@ async def test_query_usage_unknown_type_returns_error() -> None:
 async def test_query_usage_timeline_requires_around_id() -> None:
     """query_usage with query_type=timeline and no around_id returns error."""
     with patch(
-        "cortex.tools.query_usage_operations.log_client",
+        "cortex.tools.usage.query_operations.log_client",
         new_callable=AsyncMock,
     ):
         result = await query_usage(
@@ -149,7 +149,7 @@ async def test_query_usage_timeline_with_around_id_dispatches() -> None:
     """query_usage with query_type=timeline and around_id calls get_usage_timeline."""
     payload = json.dumps({"status": "success", "events": []}, indent=2)
     with patch(
-        "cortex.tools.query_usage_operations.log_client",
+        "cortex.tools.usage.query_operations.log_client",
         new_callable=AsyncMock,
     ):
         with patch(
@@ -171,7 +171,7 @@ async def test_query_usage_observation_with_id_dispatches() -> None:
     """query_usage with query_type=observation and observation_id calls get_usage_observation."""
     payload = json.dumps({"status": "success", "id": "obs-1"}, indent=2)
     with patch(
-        "cortex.tools.query_usage_operations.log_client",
+        "cortex.tools.usage.query_operations.log_client",
         new_callable=AsyncMock,
     ):
         with patch(
@@ -196,7 +196,7 @@ async def test_query_usage_events_with_ids_dispatches() -> None:
         indent=2,
     )
     with patch(
-        "cortex.tools.query_usage_operations.log_client",
+        "cortex.tools.usage.query_operations.log_client",
         new_callable=AsyncMock,
     ):
         with patch(
@@ -218,7 +218,7 @@ async def test_query_usage_unused_dispatches() -> None:
     """query_usage with query_type=unused calls get_unused_tools."""
     payload = json.dumps({"status": "success", "unused": []}, indent=2)
     with patch(
-        "cortex.tools.query_usage_operations.log_client",
+        "cortex.tools.usage.query_operations.log_client",
         new_callable=AsyncMock,
     ):
         with patch(
@@ -245,7 +245,7 @@ async def test_query_usage_unused_response_structure() -> None:
         indent=2,
     )
     with patch(
-        "cortex.tools.query_usage_operations.log_client",
+        "cortex.tools.usage.query_operations.log_client",
         new_callable=AsyncMock,
     ):
         with patch(
@@ -268,7 +268,7 @@ async def test_query_usage_search_dispatches() -> None:
     """query_usage with query_type=search calls search_usage."""
     payload = json.dumps({"status": "success", "matches": []}, indent=2)
     with patch(
-        "cortex.tools.query_usage_operations.log_client",
+        "cortex.tools.usage.query_operations.log_client",
         new_callable=AsyncMock,
     ):
         with patch(
@@ -290,7 +290,7 @@ async def test_query_usage_report_dispatches() -> None:
     """query_usage with query_type=report calls get_tool_usage_report."""
     payload = json.dumps({"status": "success", "report": ""}, indent=2)
     with patch(
-        "cortex.tools.query_usage_operations.log_client",
+        "cortex.tools.usage.query_operations.log_client",
         new_callable=AsyncMock,
     ):
         with patch(
@@ -308,7 +308,7 @@ async def test_query_usage_recommendations_dispatches() -> None:
     """query_usage with query_type=recommendations calls get_optimization_recommendations."""
     payload = json.dumps({"status": "success", "recommendations": []}, indent=2)
     with patch(
-        "cortex.tools.query_usage_operations.log_client",
+        "cortex.tools.usage.query_operations.log_client",
         new_callable=AsyncMock,
     ):
         with patch(
@@ -339,7 +339,7 @@ async def test_query_usage_recommendations_response_structure() -> None:
         indent=2,
     )
     with patch(
-        "cortex.tools.query_usage_operations.log_client",
+        "cortex.tools.usage.query_operations.log_client",
         new_callable=AsyncMock,
     ):
         with patch(
@@ -377,7 +377,7 @@ async def test_query_usage_anomalies_unavailable() -> None:
         ),
     ):
         with patch(
-            "cortex.tools.query_usage_operations.log_client",
+            "cortex.tools.usage.query_operations.log_client",
             new_callable=AsyncMock,
         ):
             result = await query_usage(
@@ -418,7 +418,7 @@ async def test_query_usage_anomalies_success() -> None:
         ),
     ):
         with patch(
-            "cortex.tools.query_usage_operations.log_client",
+            "cortex.tools.usage.query_operations.log_client",
             new_callable=AsyncMock,
         ):
             result = await query_usage(
@@ -452,7 +452,7 @@ async def test_query_usage_production_monitoring_unavailable() -> None:
         ),
     ):
         with patch(
-            "cortex.tools.query_usage_operations.log_client",
+            "cortex.tools.usage.query_operations.log_client",
             new_callable=AsyncMock,
         ):
             result = await query_usage(
@@ -495,7 +495,7 @@ async def test_query_usage_production_monitoring_success() -> None:
         ),
     ):
         with patch(
-            "cortex.tools.query_usage_operations.log_client",
+            "cortex.tools.usage.query_operations.log_client",
             new_callable=AsyncMock,
         ):
             result = await query_usage(
@@ -530,7 +530,7 @@ async def test_query_usage_token_efficiency_unavailable() -> None:
         ),
     ):
         with patch(
-            "cortex.tools.query_usage_operations.log_client",
+            "cortex.tools.usage.query_operations.log_client",
             new_callable=AsyncMock,
         ):
             result = await query_usage(
@@ -572,7 +572,7 @@ async def test_query_usage_token_efficiency_success() -> None:
         ),
     ):
         with patch(
-            "cortex.tools.query_usage_operations.log_client",
+            "cortex.tools.usage.query_operations.log_client",
             new_callable=AsyncMock,
         ):
             result = await query_usage(
@@ -609,7 +609,7 @@ async def test_query_usage_tool_classification_unavailable() -> None:
         ),
     ):
         with patch(
-            "cortex.tools.query_usage_operations.log_client",
+            "cortex.tools.usage.query_operations.log_client",
             new_callable=AsyncMock,
         ):
             result = await query_usage(
@@ -648,7 +648,7 @@ async def test_query_usage_tool_classification_success() -> None:
         ),
     ):
         with patch(
-            "cortex.tools.query_usage_operations.log_client",
+            "cortex.tools.usage.query_operations.log_client",
             new_callable=AsyncMock,
         ):
             result = await query_usage(
@@ -676,7 +676,7 @@ async def test_query_usage_tool_classification_success() -> None:
 async def test_query_usage_handler_exception_returns_error_json() -> None:
     """query_usage when handler raises returns error JSON."""
     with patch(
-        "cortex.tools.query_usage_operations.log_client",
+        "cortex.tools.usage.query_operations.log_client",
         new_callable=AsyncMock,
     ):
         with patch(
@@ -698,7 +698,7 @@ async def test_query_usage_stats_with_response_format_concise() -> None:
         indent=2,
     )
     with patch(
-        "cortex.tools.query_usage_operations.log_client",
+        "cortex.tools.usage.query_operations.log_client",
         new_callable=AsyncMock,
     ):
         with patch(
@@ -726,7 +726,7 @@ async def test_query_usage_stats_with_response_format_detailed() -> None:
         indent=2,
     )
     with patch(
-        "cortex.tools.query_usage_operations.log_client",
+        "cortex.tools.usage.query_operations.log_client",
         new_callable=AsyncMock,
     ):
         with patch(
@@ -751,7 +751,7 @@ async def test_query_usage_search_with_response_format_concise() -> None:
     """query_usage passes response_format=concise to search handler."""
     payload = json.dumps({"status": "success", "matches": []}, indent=2)
     with patch(
-        "cortex.tools.query_usage_operations.log_client",
+        "cortex.tools.usage.query_operations.log_client",
         new_callable=AsyncMock,
     ):
         with patch(

@@ -14,6 +14,8 @@
 
 - ✅ **Tools sub-package reorganization Session 12** - COMPLETE (2026-03-02) - Created refactoring/ subpackage; moved 6 refactoring modules; updated imports project-wide. Tests pass.
 
+- ✅ **Tools sub-package reorganization Session 13** - COMPLETE (2026-03-02) - Moved optimization_handlers, optimization_handlers_load, optimization_handlers_validation, optimization_handlers_format into optimization/; query_usage_operations, query_usage_handlers, query_usage_models into usage/. Updated imports project-wide. Tests pass.
+
 ## Completed Work (2026-03-01)
 
 - **Summary (2026-03-01)** - 1 entries archived.

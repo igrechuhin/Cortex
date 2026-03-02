@@ -34,11 +34,12 @@ from cortex.core.project_root_resolver import resolve_project_root_async
 from cortex.server import mcp
 from cortex.tools.optimization.relevance_operations import get_relevance_scores_impl
 from cortex.tools.optimization.summarization_operations import summarize_content_impl
-from cortex.tools.optimization_handlers_load import (
+
+from .handlers_load import (
     check_optimization_enabled,
     execute_load_context_with_logging,
 )
-from cortex.tools.optimization_handlers_validation import (
+from .handlers_validation import (
     is_non_trivial_task,
     resolve_load_context_budget,
     validate_task_description_length,

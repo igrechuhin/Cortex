@@ -154,7 +154,7 @@ async def get_session_tool_anomalies(
     query_usage(query_type="anomalies", hours=hours) for the same behavior.
     Kept as a callable for tests and any internal use.
     """
-    from cortex.tools.query_usage_operations import query_usage
+    from cortex.tools.usage.query_operations import query_usage
 
     return await query_usage(query_type="anomalies", hours=hours, ctx=ctx)
 

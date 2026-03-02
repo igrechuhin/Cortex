@@ -42,7 +42,6 @@ from . import (
     health_check_operations,  # noqa: F401
     optimization,  # noqa: F401
     prompts,  # noqa: F401
-    query_usage_operations,  # noqa: F401
     refactoring,  # noqa: F401
     script_capture_tools,  # noqa: F401
     sequential_thinking,  # noqa: F401
@@ -99,7 +98,7 @@ from .synapse import (
 from .synapse import (
     tools as synapse_tools,
 )
-from .usage import usage_analytics  # noqa: F401
+from .usage import query_operations, usage_analytics  # noqa: F401
 
 # Explicitly reference modules imported for side effects to satisfy type checker
 _ = append_entry_dispatcher
@@ -134,7 +133,7 @@ __all__ = [
     "corruption",
     "entries",
     "query_memory_bank_operations",
-    "query_usage_operations",
+    "query_operations",
     "sequential_thinking",
     "session_dispatcher",
     "registry",

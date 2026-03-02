@@ -17,8 +17,9 @@ from cortex.core.mcp_stability import (
 )
 from cortex.core.models import ResponseFormat
 from cortex.server import mcp
-from cortex.tools.query_usage_handlers import USAGE_HANDLERS
-from cortex.tools.query_usage_models import QueryUsageParams
+
+from .query_handlers import USAGE_HANDLERS
+from .query_models import QueryUsageParams
 
 
 def _usage_error_payload(message: str) -> str:

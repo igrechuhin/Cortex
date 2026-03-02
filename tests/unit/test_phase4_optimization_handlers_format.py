@@ -4,7 +4,7 @@ import json
 from typing import cast
 
 from cortex.core.models import ResponseFormat
-from cortex.tools.optimization_handlers_format import (
+from cortex.tools.optimization.handlers_format import (
     add_zero_file_warning_if_needed,
     build_concise_payload,
     count_files_from_result,

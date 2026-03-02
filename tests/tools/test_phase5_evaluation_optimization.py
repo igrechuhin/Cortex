@@ -14,7 +14,7 @@ from cortex.tools.evaluation.evaluation_optimization_helpers import (
     ToolDescriptionOptimizationPayload,
     get_tool_description_optimization_payload,
 )
-from cortex.tools.query_usage_operations import query_usage
+from cortex.tools.usage.query_operations import query_usage
 
 
 @pytest.mark.asyncio

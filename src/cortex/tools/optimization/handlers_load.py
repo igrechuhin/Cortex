@@ -22,11 +22,12 @@ from cortex.optimization.agent_roles import (
 )
 from cortex.optimization.config import OptimizationConfig
 from cortex.tools.context.load_operations import load_context_impl
-from cortex.tools.optimization_handlers_format import (
+
+from .handlers_format import (
     format_and_add_warnings_if_needed,
     format_load_context_error,
 )
-from cortex.tools.optimization_handlers_validation import (
+from .handlers_validation import (
     validate_explicit_budget_for_non_trivial,
 )
 

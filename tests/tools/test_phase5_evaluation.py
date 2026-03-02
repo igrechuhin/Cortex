@@ -1169,7 +1169,7 @@ async def test_get_session_tool_anomalies_success() -> None:
 @pytest.mark.asyncio
 async def test_get_session_tool_anomalies_equivalent_to_query_usage_anomalies() -> None:
     """Deprecated get_session_tool_anomalies returns equivalent structure to query_usage(anomalies) (Plan Step 7)."""
-    from cortex.tools.query_usage_operations import query_usage
+    from cortex.tools.usage.query_operations import query_usage
 
     mock_events = [
         ToolUsageEvent(
@@ -1194,7 +1194,7 @@ async def test_get_session_tool_anomalies_equivalent_to_query_usage_anomalies() 
             return_value=mock_tracker,
         ),
         patch(
-            "cortex.tools.query_usage_operations.log_client",
+            "cortex.tools.usage.query_operations.log_client",
             new_callable=AsyncMock,
         ),
         patch(
