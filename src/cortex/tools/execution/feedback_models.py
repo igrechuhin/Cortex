@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from pydantic import Field
 
-from .models_base import (
+from cortex.tools.models_base import (
     ErrorResultBase,
     StrictBaseModel,
     ToolResultBase,

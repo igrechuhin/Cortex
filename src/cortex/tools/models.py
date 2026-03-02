@@ -11,7 +11,7 @@ All models follow Pydantic v2 best practices. See submodules for definitions:
 - rules_models: rules index, get_relevant
 - quality_precommit_models: execute_pre_commit_checks, fix_quality, preflight, etc.
 - synapse_models: get_synapse_prompts, sync_synapse, fix_roadmap_corruption, etc.
-- feedback_models: provide_feedback
+- execution.feedback_models: provide_feedback
 - files.markdown_models: fix_markdown_lint
 - session.connection_models: check_mcp_connection_health
 - links_models: parse_file_links

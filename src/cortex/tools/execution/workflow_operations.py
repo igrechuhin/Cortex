@@ -11,7 +11,7 @@ from pathlib import Path
 
 import yaml
 
-from cortex.tools.workflow_models import WorkflowTemplate
+from cortex.tools.execution.workflow_models import WorkflowTemplate
 
 _workflows_dir: Path | None = None
 
@@ -21,7 +21,7 @@ def _get_workflows_dir() -> Path:
     global _workflows_dir
     if _workflows_dir is None:
         _workflows_dir = (
-            Path(__file__).resolve().parent.parent / "resources" / "workflows"
+            Path(__file__).resolve().parent.parent.parent / "resources" / "workflows"
         )
     return _workflows_dir
 

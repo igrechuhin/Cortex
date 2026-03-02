@@ -26,6 +26,8 @@
 
 - ✅ **Tools subpackage Session 17** - COMPLETE (2026-03-02) - Moved error_formatters, error_formatters_core, error_formatters_domain to execution/ subpackage. Updated all import sites. Flat files: 27→24.
 
+- ✅ **Tools sub-package reorganization Session 18** - COMPLETE (2026-03-02) - Moved feedback_models, workflow_models, workflow_operations, composite_tools to execution/; added composite_tools shim; flat files 24→21; 4867 tests, 92.32% coverage.
+
 ## Completed Work (2026-03-01)
 
 - **Summary (2026-03-01)** - 1 entries archived.

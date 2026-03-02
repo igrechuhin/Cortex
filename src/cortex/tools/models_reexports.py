@@ -21,6 +21,12 @@ from .context.effectiveness_models import (
     SessionStats,
     TaskTypeInsight,
 )
+from .execution.feedback_models import (
+    LearningSummary,
+    ProvideFeedbackErrorResult,
+    ProvideFeedbackResult,
+    ProvideFeedbackResultUnion,
+)
 from .execution.quality_precommit_models import (
     CheckResult,
     CheckStats,
@@ -43,12 +49,6 @@ from .execution.quality_precommit_models import (
     RunPreflightChecksErrorResult,
     RunPreflightChecksResult,
     RunPreflightChecksResultUnion,
-)
-from .feedback_models import (
-    LearningSummary,
-    ProvideFeedbackErrorResult,
-    ProvideFeedbackResult,
-    ProvideFeedbackResultUnion,
 )
 from .files.markdown_models import (
     FileResult,

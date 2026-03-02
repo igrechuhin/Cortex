@@ -35,7 +35,6 @@ Total: 71 tools + 7 prompts
 from . import (
     append_entry_dispatcher,  # noqa: F401
     cache_json_tools,  # noqa: F401
-    composite_tools,  # noqa: F401
     config,  # noqa: F401 - registers configure tool and get_config_resource
     evaluation,  # noqa: F401
     execution,  # noqa: F401
@@ -48,13 +47,13 @@ from . import (
     structure,  # noqa: F401
     tool_search_operations,  # noqa: F401
     validation,  # noqa: F401
-    workflow_operations,  # noqa: F401
 )
 from .context import (
     analysis_operations,  # noqa: F401
     analysis_usage,  # noqa: F401
 )
 from .evaluation import evaluation_optimization_helpers, model_benchmark  # noqa: F401
+from .execution import composite_tools  # noqa: F401 - backward compat
 from .files import (
     markdown_operations,  # noqa: F401
 )
@@ -155,5 +154,4 @@ __all__ = [
     "task_locking",
     "usage_analytics",
     "validation",
-    "workflow_operations",
 ]
