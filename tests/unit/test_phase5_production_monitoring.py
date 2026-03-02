@@ -9,10 +9,10 @@ from unittest.mock import AsyncMock
 import pytest
 
 from cortex.managers.usage_models import ToolUsageEvent
-from cortex.tools.production_monitoring_helpers import (
+from cortex.tools.usage.production_monitoring_helpers import (
     get_production_monitoring_payload,
 )
-from cortex.tools.production_monitoring_models import (
+from cortex.tools.usage.production_monitoring_models import (
     DriftAlert,
     GlobalMetricSummary,
     ToolMetricSummary,

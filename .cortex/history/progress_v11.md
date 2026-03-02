@@ -9,6 +9,7 @@
 - **Tools sub-package reorganization Session 12 (2026-03-02)** - COMPLETE. Created refactoring/ subpackage; moved refactoring_operation_concise, refactoring_operation_helpers, refactoring_operations, refactoring_operations_docs, refactoring_result_models, refactoring_tools. Updated imports project-wide. Tests pass (4867), coverage 92.34%.
 - **Tools sub-package reorganization Session 13 (2026-03-02)** - COMPLETE. Moved optimization_handlers*into optimization/, query_usage* into usage/. All tests pass; coverage 92.34%. Top-level tools/*.py now 40.
 - **Tools sub-package reorganization Session 14 (2026-03-02)** - COMPLETE. Moved task_locking, task_locking_handlers, task_locking_helpers, health_check_operations into session/ subpackage. Broke circular import with lazy import in analysis_run_helpers and by not importing task_locking/health_check in session/**init**. Tests pass, 92.33% coverage.
+- **Tools sub-package reorganization Session 15 (2026-03-02)** - COMPLETE. Moved production_monitoring_*, redundancy_helpers, token_efficiency_helpers, tool_frequency_helpers into usage/ subpackage. Updated imports in query_handlers, evaluation modules, tests, and Synapse script. Tests 4867, coverage 92.33%.
 
 ## 2026-03-01
 

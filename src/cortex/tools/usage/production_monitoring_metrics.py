@@ -8,7 +8,7 @@ from __future__ import annotations
 import math
 
 from cortex.managers.usage_models import ToolUsageEvent
-from cortex.tools.production_monitoring_models import (
+from cortex.tools.usage.production_monitoring_models import (
     GlobalMetricSummary,
     ToolMetricSummary,
 )

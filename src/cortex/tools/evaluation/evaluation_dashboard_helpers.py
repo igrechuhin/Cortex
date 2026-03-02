@@ -7,7 +7,7 @@ from cortex.tools.evaluation._models import (
     EvalSuiteResult,
     EvalTaskResult,
 )
-from cortex.tools.redundancy_helpers import RedundancyPayload
+from cortex.tools.usage.redundancy_helpers import RedundancyPayload
 
 
 def aggregate_tool_metrics(

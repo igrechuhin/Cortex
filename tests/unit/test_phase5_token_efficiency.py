@@ -8,7 +8,7 @@ from unittest.mock import AsyncMock
 import pytest
 
 from cortex.managers.usage_models import ToolUsageEvent
-from cortex.tools.token_efficiency_helpers import (
+from cortex.tools.usage.token_efficiency_helpers import (
     TokenEfficiencyEntry,
     TokenEfficiencyPayload,
     get_token_efficiency_payload,

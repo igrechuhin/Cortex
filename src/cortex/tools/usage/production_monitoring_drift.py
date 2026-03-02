@@ -6,8 +6,8 @@ Used by production_monitoring_helpers.
 
 from __future__ import annotations
 
-from cortex.tools.production_monitoring_metrics import mean_std
-from cortex.tools.production_monitoring_models import (
+from cortex.tools.usage.production_monitoring_metrics import mean_std
+from cortex.tools.usage.production_monitoring_models import (
     DriftAlert,
     GlobalMetricSummary,
     ToolMetricSummary,

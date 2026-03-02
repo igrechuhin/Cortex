@@ -18,6 +18,8 @@
 
 - ✅ **Tools sub-package reorganization Session 14** - COMPLETE (2026-03-02) - Moved task_locking*, health_check_operations into session/ subpackage; fixed circular import.
 
+- ✅ **Tools sub-package reorganization Session 15** - COMPLETE (2026-03-02) - Moved 7 usage analytics modules into usage/ subpackage; updated imports project-wide; tests and quality gate pass.
+
 ## Completed Work (2026-03-01)
 
 - **Summary (2026-03-01)** - 1 entries archived.

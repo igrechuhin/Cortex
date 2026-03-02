@@ -59,7 +59,7 @@ async def _write_evaluation_dashboard(
     from cortex.tools.evaluation.evaluation_dashboard_helpers import (
         generate_evaluation_dashboard,
     )
-    from cortex.tools.redundancy_helpers import (
+    from cortex.tools.usage.redundancy_helpers import (
         RedundancyPayload,
         get_redundancy_payload,
     )

@@ -165,7 +165,7 @@ async def run_production_monitoring(
 ) -> str:
     """Production monitoring: rolling baseline, current metrics, drift alerts."""
     from cortex.core.project_root_resolver import resolve_project_root_async
-    from cortex.tools.production_monitoring_helpers import (
+    from cortex.tools.usage.production_monitoring_helpers import (
         get_production_monitoring_payload,
     )
 
@@ -187,7 +187,7 @@ async def run_production_monitoring(
 async def run_token_efficiency(params: QueryUsageParams, ctx: MCPContext | None) -> str:
     """Token efficiency: top token-expensive tools by total and by avg."""
     from cortex.core.project_root_resolver import resolve_project_root_async
-    from cortex.tools.token_efficiency_helpers import get_token_efficiency_payload
+    from cortex.tools.usage.token_efficiency_helpers import get_token_efficiency_payload
 
     from . import usage_analytics
 
@@ -201,7 +201,7 @@ async def run_token_efficiency(params: QueryUsageParams, ctx: MCPContext | None)
 async def run_redundancy(params: QueryUsageParams, ctx: MCPContext | None) -> str:
     """Redundant tool call detection (Anthropic Step 3)."""
     from cortex.core.project_root_resolver import resolve_project_root_async
-    from cortex.tools.redundancy_helpers import get_redundancy_payload
+    from cortex.tools.usage.redundancy_helpers import get_redundancy_payload
 
     from . import usage_analytics
 
@@ -249,7 +249,7 @@ async def run_session_continuity(
 async def run_tool_frequency(params: QueryUsageParams, ctx: MCPContext | None) -> str:
     """Tool frequency (Anthropic Step 6): tools per session, tier token impact."""
     from cortex.core.project_root_resolver import resolve_project_root_async
-    from cortex.tools.tool_frequency_helpers import get_tool_frequency_payload
+    from cortex.tools.usage.tool_frequency_helpers import get_tool_frequency_payload
 
     from . import usage_analytics
 
