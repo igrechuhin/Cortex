@@ -10,7 +10,7 @@ import pytest
 
 from cortex.core.cache_json_access import read_cache_json, write_cache_json
 from cortex.optimization.agent_roles import AgentRole
-from cortex.tools.task_locking import (
+from cortex.tools.session.task_locking import (
     check_task_available,
     check_task_available_lock,
     claim_task,
@@ -20,7 +20,7 @@ from cortex.tools.task_locking import (
     release_task,
     release_task_lock,
 )
-from cortex.tools.task_locking_helpers import generate_task_id
+from cortex.tools.session.task_locking_helpers import generate_task_id
 
 
 class TestGenerateTaskId:
@@ -605,7 +605,7 @@ class TestTaskLockingMCPExceptionPaths:
     async def test_claim_task_lock_returns_error_on_resolve_failure(self) -> None:
         """claim_task_lock returns JSON error when project root resolution fails."""
         with patch(
-            "cortex.tools.task_locking_handlers.resolve_project_root_async",
+            "cortex.tools.session.task_locking_handlers.resolve_project_root_async",
             new_callable=AsyncMock,
             side_effect=RuntimeError("No project root"),
         ):
@@ -622,7 +622,7 @@ class TestTaskLockingMCPExceptionPaths:
     async def test_release_task_lock_returns_error_on_resolve_failure(self) -> None:
         """release_task_lock returns JSON error when project root resolution fails."""
         with patch(
-            "cortex.tools.task_locking_handlers.resolve_project_root_async",
+            "cortex.tools.session.task_locking_handlers.resolve_project_root_async",
             new_callable=AsyncMock,
             side_effect=RuntimeError("No project root"),
         ):
@@ -635,7 +635,7 @@ class TestTaskLockingMCPExceptionPaths:
     async def test_list_active_tasks_returns_empty_on_resolve_failure(self) -> None:
         """list_active_tasks returns JSON with empty locks when resolution fails."""
         with patch(
-            "cortex.tools.task_locking_handlers.resolve_project_root_async",
+            "cortex.tools.session.task_locking_handlers.resolve_project_root_async",
             new_callable=AsyncMock,
             side_effect=RuntimeError("No project root"),
         ):
@@ -651,7 +651,7 @@ class TestTaskLockingMCPExceptionPaths:
     ) -> None:
         """check_task_available_lock treats task as available when resolution fails."""
         with patch(
-            "cortex.tools.task_locking_handlers.resolve_project_root_async",
+            "cortex.tools.session.task_locking_handlers.resolve_project_root_async",
             new_callable=AsyncMock,
             side_effect=RuntimeError("No project root"),
         ):

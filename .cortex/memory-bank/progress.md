@@ -8,6 +8,7 @@
 - **Tools sub-package reorganization Session 11 (2026-03-02)** - COMPLETE. Created tools/config/ subpackage; moved 7 configuration modules (config_status, configuration_helpers, configuration_hybrid, configuration_operations, configuration_operations_errors, configuration_operations_handlers, configuration_operations_response). Updated imports project-wide. Flat files reduced from ~60 to 53.
 - **Tools sub-package reorganization Session 12 (2026-03-02)** - COMPLETE. Created refactoring/ subpackage; moved refactoring_operation_concise, refactoring_operation_helpers, refactoring_operations, refactoring_operations_docs, refactoring_result_models, refactoring_tools. Updated imports project-wide. Tests pass (4867), coverage 92.34%.
 - **Tools sub-package reorganization Session 13 (2026-03-02)** - COMPLETE. Moved optimization_handlers*into optimization/, query_usage* into usage/. All tests pass; coverage 92.34%. Top-level tools/*.py now 40.
+- **Tools sub-package reorganization Session 14 (2026-03-02)** - COMPLETE. Moved task_locking, task_locking_handlers, task_locking_helpers, health_check_operations into session/ subpackage. Broke circular import with lazy import in analysis_run_helpers and by not importing task_locking/health_check in session/**init**. Tests pass, 92.33% coverage.
 
 ## 2026-03-01
 

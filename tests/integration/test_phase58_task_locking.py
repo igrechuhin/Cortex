@@ -10,7 +10,7 @@ from pathlib import Path
 
 import pytest
 
-from cortex.tools.task_locking import (
+from cortex.tools.session.task_locking import (
     check_task_available,
     claim_task,
     list_active_locks,

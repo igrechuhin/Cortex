@@ -19,12 +19,12 @@ from pathlib import Path
 
 from cortex.core.constants import MemoryBankFile
 from cortex.core.session_logger import get_session_id
-from cortex.tools.task_locking import (
+from cortex.tools.session.task_locking import (
     check_task_available,
     claim_task,
     list_active_locks,
 )
-from cortex.tools.task_locking_helpers import generate_task_id
+from cortex.tools.session.task_locking_helpers import generate_task_id
 
 logger = logging.getLogger(__name__)
 

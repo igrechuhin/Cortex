@@ -17,10 +17,6 @@ from cortex.tools.context.effectiveness_operations import (
     analyze_session_logs,
     get_context_statistics,
 )
-from cortex.tools.health_check_operations import (
-    HealthCheckAnalysisType,
-    run_health_check_analysis,
-)
 
 
 async def analyze_usage_patterns(
@@ -128,6 +124,11 @@ async def run_context_analysis(target: str, root: Path) -> str:
 
 async def run_health_analysis(root: Path) -> str:
     """Run health-check analysis using the shared engine."""
+    from cortex.tools.session.health_check_operations import (
+        HealthCheckAnalysisType,
+        run_health_check_analysis,
+    )
+
     return await run_health_check_analysis(
         analysis_type=HealthCheckAnalysisType.ALL,
         similarity_threshold=0.75,

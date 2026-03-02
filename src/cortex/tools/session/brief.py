@@ -78,7 +78,7 @@ async def _load_locked_tasks_safe(project_root: Path) -> list[str]:
     """Load locked task titles, returning empty list on error."""
     import logging
 
-    from cortex.tools.task_locking import list_active_locks
+    from cortex.tools.session.task_locking import list_active_locks
 
     logger = logging.getLogger(__name__)
     try:

@@ -16,6 +16,8 @@
 
 - ✅ **Tools sub-package reorganization Session 13** - COMPLETE (2026-03-02) - Moved optimization_handlers, optimization_handlers_load, optimization_handlers_validation, optimization_handlers_format into optimization/; query_usage_operations, query_usage_handlers, query_usage_models into usage/. Updated imports project-wide. Tests pass.
 
+- ✅ **Tools sub-package reorganization Session 14** - COMPLETE (2026-03-02) - Moved task_locking*, health_check_operations into session/ subpackage; fixed circular import.
+
 ## Completed Work (2026-03-01)
 
 - **Summary (2026-03-01)** - 1 entries archived.

@@ -10,7 +10,7 @@ from unittest.mock import AsyncMock, patch
 import pytest
 
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
-from cortex.tools.health_check_operations import (
+from cortex.tools.session.health_check_operations import (
     analyze_health_check,
     analyze_health_check_resource,
     empty_prompt_result,
@@ -40,7 +40,7 @@ class TestGetProjectRoot:
         """get_project_root with None uses resolver default."""
         with _temp_project() as root:
             with patch(
-                "cortex.tools.health_check_operations._get_project_root",
+                "cortex.tools.session.health_check_operations._get_project_root",
                 return_value=root,
             ):
                 result = get_project_root(None)
@@ -50,7 +50,7 @@ class TestGetProjectRoot:
         """get_project_root with string passes to resolver."""
         with _temp_project() as root:
             with patch(
-                "cortex.tools.health_check_operations._get_project_root",
+                "cortex.tools.session.health_check_operations._get_project_root",
                 return_value=root,
             ):
                 result = get_project_root(str(root))
@@ -177,7 +177,7 @@ class TestAnalyzeHealthCheck:
             indent=2,
         )
         with patch(
-            "cortex.tools.health_check_operations.run_health_check_analysis",
+            "cortex.tools.session.health_check_operations.run_health_check_analysis",
             new_callable=AsyncMock,
             return_value=mock_report,
         ):
@@ -199,7 +199,7 @@ class TestAnalyzeHealthCheck:
         """analyze_health_check uses resolve_project_root_async for root."""
         with _temp_project() as root:
             with patch(
-                "cortex.tools.health_check_operations.resolve_project_root_async",
+                "cortex.tools.session.health_check_operations.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=root,
             ):
@@ -236,12 +236,12 @@ class TestAnalyzeHealthCheckResource:
         with _temp_project() as root:
             with (
                 patch(
-                    "cortex.tools.health_check_operations.resolve_project_root_async",
+                    "cortex.tools.session.health_check_operations.resolve_project_root_async",
                     new_callable=AsyncMock,
                     return_value=root,
                 ),
                 patch(
-                    "cortex.tools.health_check_operations.run_health_check_analysis",
+                    "cortex.tools.session.health_check_operations.run_health_check_analysis",
                     new_callable=AsyncMock,
                     return_value=success_json,
                 ),

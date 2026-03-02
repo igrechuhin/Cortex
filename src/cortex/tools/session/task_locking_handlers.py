@@ -17,7 +17,7 @@ from cortex.tools.models import (
     ReleaseTaskResult,
     TaskLock,
 )
-from cortex.tools.task_locking_helpers import generate_task_id
+from cortex.tools.session.task_locking_helpers import generate_task_id
 
 
 async def claim_task_impl(
@@ -25,7 +25,7 @@ async def claim_task_impl(
 ) -> str:
     """Implementation of claim_task MCP tool."""
     from cortex.optimization.agent_roles import normalize_role_name
-    from cortex.tools.task_locking import claim_task
+    from cortex.tools.session.task_locking import claim_task
 
     await log_client(ctx, "info", "claim_task: starting", logger_name=__name__)
     root = await resolve_project_root_async(None, ctx)
@@ -60,7 +60,7 @@ async def claim_task_impl(
 
 async def release_task_impl(task_title: str, ctx: MCPContext | None) -> str:
     """Implementation of release_task MCP tool."""
-    from cortex.tools.task_locking import release_task
+    from cortex.tools.session.task_locking import release_task
 
     await log_client(ctx, "info", "release_task: starting", logger_name=__name__)
     root = await resolve_project_root_async(None, ctx)
@@ -95,7 +95,7 @@ async def release_task_impl(task_title: str, ctx: MCPContext | None) -> str:
 
 async def list_active_tasks_impl(ctx: MCPContext | None) -> str:
     """Implementation of list_active_tasks MCP tool."""
-    from cortex.tools.task_locking import list_active_locks
+    from cortex.tools.session.task_locking import list_active_locks
 
     await log_client(ctx, "info", "list_active_tasks: starting", logger_name=__name__)
     root = await resolve_project_root_async(None, ctx)
@@ -118,7 +118,10 @@ async def list_active_tasks_impl(ctx: MCPContext | None) -> str:
 
 async def check_task_available_impl(task_title: str, ctx: MCPContext | None) -> str:
     """Implementation of check_task_available MCP tool."""
-    from cortex.tools.task_locking import check_task_available, list_active_locks
+    from cortex.tools.session.task_locking import (
+        check_task_available,
+        list_active_locks,
+    )
 
     await log_client(
         ctx, "info", "check_task_available: starting", logger_name=__name__

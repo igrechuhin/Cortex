@@ -39,7 +39,6 @@ from . import (
     config,  # noqa: F401 - registers configure tool and get_config_resource
     evaluation,  # noqa: F401
     execution,  # noqa: F401
-    health_check_operations,  # noqa: F401
     optimization,  # noqa: F401
     prompts,  # noqa: F401
     refactoring,  # noqa: F401
@@ -47,7 +46,6 @@ from . import (
     sequential_thinking,  # noqa: F401
     skill_pack_operations,  # noqa: F401
     structure,  # noqa: F401
-    task_locking,  # noqa: F401
     tool_search_operations,  # noqa: F401
     validation,  # noqa: F401
     workflow_operations,  # noqa: F401
@@ -79,9 +77,11 @@ from .plans import (
     register,  # noqa: F401
     roadmap,  # noqa: F401
 )
-from .session import (  # noqa: F401
+from .session import (  # noqa: F401  # noqa: F401
     connection_health,
+    health_check_operations,
     registry,
+    task_locking,
 )
 from .session import (
     dispatcher as session_dispatcher,

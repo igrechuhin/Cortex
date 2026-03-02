@@ -118,7 +118,7 @@ async def _check_task_available_safe(project_root: Path | None, title: str) -> b
     """Check if task is available, returning True on error (don't block)."""
     if project_root is None:
         return True
-    from cortex.tools.task_locking import check_task_available
+    from cortex.tools.session.task_locking import check_task_available
 
     try:
         return await check_task_available(project_root, title)

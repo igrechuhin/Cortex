@@ -26,13 +26,13 @@ from cortex.tools.models import (
     ReleaseTaskResult,
     TaskLock,
 )
-from cortex.tools.task_locking_handlers import (
+from cortex.tools.session.task_locking_handlers import (
     check_task_available_impl,
     claim_task_impl,
     list_active_tasks_impl,
     release_task_impl,
 )
-from cortex.tools.task_locking_helpers import (
+from cortex.tools.session.task_locking_helpers import (
     check_existing_lock,
     cleanup_expired_locks,
     create_task_lock,
