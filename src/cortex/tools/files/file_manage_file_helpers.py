@@ -160,7 +160,7 @@ async def _log_manage_file_result(
         )
 
 
-async def _log_result_by_status(
+async def log_result_by_status(
     ctx: MCPContext | None,
     file_name: str,
     parsed_op: FileOperation,
@@ -207,14 +207,14 @@ async def _manage_file_run_or_error(
             sections,
             version,
         )
-        await _log_result_by_status(ctx, file_name, parsed_op, result)
+        await log_result_by_status(ctx, file_name, parsed_op, result)
         return result
     except Exception as e:
         await _log_manage_file_result(ctx, file_name, parsed_op, e)
         return _manage_file_error_response(e)
 
 
-async def _get_managers_for_root(root: Path) -> tuple[ManagersDict, FileSystemManager]:
+async def get_managers_for_root(root: Path) -> tuple[ManagersDict, FileSystemManager]:
     """Resolve managers for root; reuse current when root matches."""
     current_mgrs = get_current_managers()
     current_root = get_current_project_root()
@@ -258,7 +258,7 @@ async def execute_file_operation(
     version: int | None = None,
 ) -> str:
     """Execute file operation after validation. Reuses current managers when root matches."""
-    managers, fs_manager = await _get_managers_for_root(root)
+    managers, fs_manager = await get_managers_for_root(root)
     file_path_result = _validate_and_get_path(fs_manager, root, file_name)
     if file_path_result[0] is None:
         return file_path_result[1]
@@ -276,7 +276,7 @@ async def execute_file_operation(
     )
 
 
-async def _resolve_schema_validator(managers: ManagersDict) -> SchemaValidator | None:
+async def resolve_schema_validator(managers: ManagersDict) -> SchemaValidator | None:
     """Resolve schema validator from managers if available."""
     try:
         return await get_manager(managers, "schema_validator", SchemaValidator)
@@ -347,7 +347,7 @@ async def _dispatch_write_operation(
             {"status": "error", "error": "Content is required for write operation"},
             indent=2,
         )
-    schema_validator = await _resolve_schema_validator(managers)
+    schema_validator = await resolve_schema_validator(managers)
     return await handle_write_operation(
         file_path,
         file_name,

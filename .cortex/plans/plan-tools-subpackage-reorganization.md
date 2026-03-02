@@ -1,6 +1,6 @@
 # Reorganize tools/ Into Domain Sub-Packages
 
-**Status**: IN PROGRESS (Session 8 done)
+**Status**: IN PROGRESS (Session 9 done)
 **Priority**: LOW
 **Created**: 2026-02-28
 **Type**: Architecture refactoring
@@ -51,6 +51,7 @@ Create sub-packages by functional domain, move files, update all imports.
    - Session 6: `validation/` (validation_*, schema_*) ✅ COMPLETE (2026-03-01)
    - Session 7: `session/`, `linking/`, `synapse/`, `usage/`, `structure/` ✅ COMPLETE (2026-03-01)
    - Session 8: `evaluation/`, `memory/`, remaining files ✅ COMPLETE (2026-03-02)
+   - Session 9: `session/` — moved connection_health, session_models, health_connection_models ✅ COMPLETE (2026-03-02)
 4. **Update all imports** project-wide after each move
 5. **Update `__init__.py`** exports
 6. **Run full test suite** after each session

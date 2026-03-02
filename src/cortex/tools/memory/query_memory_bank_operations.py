@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import json
 from collections.abc import Awaitable, Callable
+from contextlib import contextmanager
 
 from pydantic import BaseModel, ConfigDict
 
@@ -136,6 +137,17 @@ _MEMORY_BANK_HANDLERS: dict[str, _Handler] = {
     "validate_links": _run_validate_links,
     "resolve_transclusions": _run_resolve_transclusions,
 }
+
+
+@contextmanager
+def replace_handler_for_test(query_type: str, handler: _Handler):
+    """Temporarily replace a handler for testing. Restores on exit."""
+    original = _MEMORY_BANK_HANDLERS[query_type]
+    _MEMORY_BANK_HANDLERS[query_type] = handler
+    try:
+        yield
+    finally:
+        _MEMORY_BANK_HANDLERS[query_type] = original
 
 
 def _build_memory_bank_params(

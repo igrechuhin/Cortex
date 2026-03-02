@@ -175,7 +175,7 @@ def build_write_response(
     )
 
 
-async def _write_file_with_hash_check(
+async def write_file_with_hash_check(
     file_path: Path, content: str, fs_manager: FileSystemManager
 ) -> None:
     """Write file using on-disk hash as conflict baseline."""
@@ -196,7 +196,7 @@ async def _execute_write_flow(
     version_manager: VersionManager,
 ) -> str:
     """Execute the main write flow."""
-    await _write_file_with_hash_check(file_path, content, fs_manager)
+    await write_file_with_hash_check(file_path, content, fs_manager)
 
     file_metrics = compute_file_metrics(content, fs_manager, token_counter)
     version_info = await create_version_snapshot(

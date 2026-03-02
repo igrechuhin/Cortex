@@ -11,7 +11,7 @@ from unittest.mock import AsyncMock, patch
 import pytest
 
 from cortex.core.models import ConnectionHealth
-from cortex.tools.connection_health import (
+from cortex.tools.session.connection_health import (
     check_mcp_connection_health,
     check_mcp_connection_health_resource,
 )

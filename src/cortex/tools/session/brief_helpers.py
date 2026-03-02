@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Unpack
 
-from cortex.tools.models import (
+from cortex.tools.session.models import (
     ConcurrentSession,
     GitStatusSummary,
     SessionBrief,

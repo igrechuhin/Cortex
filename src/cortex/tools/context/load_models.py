@@ -20,7 +20,7 @@ from cortex.tools.models_base import (
     ToolResultBase,
     ToolResultStatus,
 )
-from cortex.tools.session_models import TokenBudgetStatus
+from cortex.tools.session.models import TokenBudgetStatus
 
 
 def _coerce_str_enum[E: Enum](v: str | Enum, enum_cls: type[E]) -> E:

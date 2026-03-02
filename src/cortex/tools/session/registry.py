@@ -20,7 +20,7 @@ from cortex.core.models import OperationStatus
 from cortex.core.project_root_resolver import resolve_project_root_async
 from cortex.core.session_logger import get_session_id
 from cortex.optimization.agent_roles import AgentRole, normalize_role_name
-from cortex.tools.models import ConcurrentSession, SessionRegistryResult
+from cortex.tools.session.models import ConcurrentSession, SessionRegistryResult
 
 logger = logging.getLogger(__name__)
 

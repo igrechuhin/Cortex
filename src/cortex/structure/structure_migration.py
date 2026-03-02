@@ -127,7 +127,7 @@ class StructureMigrationManager:
         self._create_backup_if_requested(report, backup)
         await self._create_new_structure(report)
         self._migrate_files_by_type(legacy_type, report)
-        self._archive_legacy_files_if_requested(report, archive)
+        self.archive_legacy_files_if_requested(report, archive)
 
         return MigrationReport.model_validate(report)
 
@@ -221,7 +221,7 @@ class StructureMigrationManager:
         if handler:
             handler(report)
 
-    def _archive_legacy_files_if_requested(
+    def archive_legacy_files_if_requested(
         self, report: ModelDict, archive: bool
     ) -> None:
         """Archive legacy files if requested.
@@ -252,8 +252,8 @@ class StructureMigrationManager:
 
         migration_data = self._extract_migration_report_data(report)
         self._migrate_memory_bank_files(memory_bank_dir, migration_data)
-        self._migrate_plans(plans_dir, migration_data)
-        self._migrate_cursorrules(rules_dir, migration_data)
+        self.migrate_plans(plans_dir, migration_data)
+        self.migrate_cursorrules(rules_dir, migration_data)
         report["files_migrated"] = migration_data["files_migrated"]
         report["file_mappings"] = migration_data["file_mappings"]
         report["errors"] = migration_data["errors"]
@@ -471,7 +471,7 @@ class StructureMigrationManager:
         ]
         migration_data["errors"] = cast(list[JsonValue], errors_list)
 
-    def _migrate_plans(self, plans_dir: Path, migration_data: ModelDict) -> None:
+    def migrate_plans(self, plans_dir: Path, migration_data: ModelDict) -> None:
         """Migrate plans from .cursor/plans to plans directory.
 
         Args:
@@ -513,7 +513,7 @@ class StructureMigrationManager:
         ]
         migration_data["errors"] = cast(list[JsonValue], errors_list)
 
-    def _migrate_cursorrules(self, rules_dir: Path, migration_data: ModelDict) -> None:
+    def migrate_cursorrules(self, rules_dir: Path, migration_data: ModelDict) -> None:
         """Migrate .cursorrules to rules directory.
 
         Args:

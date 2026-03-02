@@ -3,7 +3,7 @@ Base Pydantic models and shared types for MCP tool return types.
 
 This module provides StrictBaseModel, ToolResultBase, ErrorResultBase, and
 ConfigValue type aliases. All domain-specific model modules (context_models,
-validation_result_models, refactoring_result_models, session_models,
+validation_result_models, refactoring_result_models, session.models,
 evaluation_models) import from here to avoid circular imports.
 """
 

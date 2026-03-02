@@ -1251,9 +1251,7 @@ class TestEdgeCasesForCoverage:
 
     async def test_manage_file_log_result_non_dict_response(self):
         """Test _log_result_by_status when result is not a dict (line 447)."""
-        from cortex.tools.files.file_manage_file_helpers import (
-            _log_result_by_status,  # type: ignore[reportPrivateUsage]
-        )
+        from cortex.tools.files.file_manage_file_helpers import log_result_by_status
         from cortex.tools.files.file_operation_helpers import (
             FileOperation,  # type: ignore[reportPrivateImportUsage]
         )
@@ -1270,7 +1268,7 @@ class TestEdgeCasesForCoverage:
             new_callable=AsyncMock,
         ) as mock_log_client:
             # Act - call _log_result_by_status directly with non-dict JSON
-            await _log_result_by_status(ctx, file_name, parsed_op, result_str)
+            await log_result_by_status(ctx, file_name, parsed_op, result_str)
 
             # Assert - should have logged without error (handles non-dict gracefully)
             # The function should complete without raising
@@ -1279,9 +1277,7 @@ class TestEdgeCasesForCoverage:
 
     async def test_write_file_with_hash_check_existing_file(self):
         """Test _write_file_with_hash_check when file exists (line 924-926)."""
-        from cortex.tools.files.file_crud_flow import (
-            _write_file_with_hash_check,  # type: ignore[reportPrivateUsage]
-        )
+        from cortex.tools.files.file_crud_flow import write_file_with_hash_check
 
         # Arrange
         content = "new content"
@@ -1295,7 +1291,7 @@ class TestEdgeCasesForCoverage:
         mock_path.exists.return_value = True
 
         # Act
-        await _write_file_with_hash_check(mock_path, content, mock_fs)
+        await write_file_with_hash_check(mock_path, content, mock_fs)
 
         # Assert
         mock_fs.read_file.assert_called_once_with(mock_path)
@@ -1308,9 +1304,7 @@ class TestEdgeCasesForCoverage:
         from typing import cast
 
         from cortex.managers.types import ManagersDict
-        from cortex.tools.files.file_manage_file_helpers import (
-            _resolve_schema_validator,  # type: ignore[reportPrivateUsage]
-        )
+        from cortex.tools.files.file_manage_file_helpers import resolve_schema_validator
 
         # Arrange - managers dict without schema_validator
 
@@ -1324,20 +1318,18 @@ class TestEdgeCasesForCoverage:
         )
 
         # Act
-        result = await _resolve_schema_validator(managers)  # type: ignore[reportUnknownVariableType]
+        result = await resolve_schema_validator(managers)
 
         # Assert - should return None when schema_validator not available
         assert result is None
 
     async def test_get_managers_for_root_creates_new_when_root_differs(self):
-        """Test _get_managers_for_root creates new managers when root differs."""
+        """Test get_managers_for_root creates new managers when root differs."""
         from cortex.core.usage_context import (
             set_current_managers,
             set_current_project_root,
         )
-        from cortex.tools.files.file_manage_file_helpers import (
-            _get_managers_for_root,  # type: ignore[reportPrivateUsage]
-        )
+        from cortex.tools.files.file_manage_file_helpers import get_managers_for_root
 
         # Arrange
         current_root = Path("/tmp/current")
@@ -1371,7 +1363,7 @@ class TestEdgeCasesForCoverage:
             return_value=make_test_managers(**mock_managers_dict),
         ):
             # Act
-            managers, fs = await _get_managers_for_root(new_root)  # type: ignore[reportUnknownVariableType]
+            managers, fs = await get_managers_for_root(new_root)
 
             # Assert - should create new managers
             assert managers is not None

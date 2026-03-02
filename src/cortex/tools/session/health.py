@@ -12,12 +12,9 @@ from cortex.core.constants import MemoryBankFile
 from cortex.core.metadata_index import MetadataIndex
 from cortex.managers.types import ManagersDict
 from cortex.managers.utils import get_manager
-from cortex.tools.connection_health import check_mcp_connection_health
-from cortex.tools.models import (
-    MCPHealthCheckResponse,
-    SessionHealthSummary,
-)
-from cortex.tools.session_models import TokenBudgetStatus
+from cortex.tools.session.connection_health import check_mcp_connection_health
+from cortex.tools.session.connection_models import MCPHealthCheckResponse
+from cortex.tools.session.models import SessionHealthSummary, TokenBudgetStatus
 
 logger = logging.getLogger(__name__)
 

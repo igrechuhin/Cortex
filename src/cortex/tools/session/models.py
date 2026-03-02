@@ -11,8 +11,7 @@ from enum import Enum
 from pydantic import Field
 
 from cortex.core.models import OperationStatus
-
-from .models_base import (
+from cortex.tools.models_base import (
     ErrorResultBase,
     StrictBaseModel,
     ToolResultBase,

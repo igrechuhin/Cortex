@@ -7,8 +7,7 @@ from __future__ import annotations
 
 import re
 
-from cortex.tools.files.section_helpers import extract_section_from_content
-from cortex.tools.models import (
+from cortex.tools.session.models import (
     ConcurrentSession,
     GitStatusSummary,
     SessionHealthSummary,
@@ -22,6 +21,8 @@ def extract_focus_and_completed(content: str) -> tuple[str, list[str]]:
 
 def extract_current_focus(active_context_content: str) -> str:
     """Extract current focus from activeContext.md."""
+    from cortex.tools.files.section_helpers import extract_section_from_content
+
     section_content, warning = extract_section_from_content(
         active_context_content, "## Current Focus"
     )

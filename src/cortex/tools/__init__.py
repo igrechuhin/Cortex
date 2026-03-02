@@ -40,7 +40,6 @@ from . import (
     composite_tools,  # noqa: F401
     configuration_hybrid,  # noqa: F401
     configuration_operations,  # noqa: F401
-    connection_health,  # noqa: F401
     evaluation,  # noqa: F401
     execution,  # noqa: F401
     execution_feedback,  # noqa: F401
@@ -87,10 +86,11 @@ from .plans import (
     roadmap,  # noqa: F401
 )
 from .session import (  # noqa: F401
-    dispatcher as session_dispatcher,
+    connection_health,
+    registry,
 )
 from .session import (
-    registry,
+    dispatcher as session_dispatcher,
 )
 from .session import (
     start_tools as session_start_tools,

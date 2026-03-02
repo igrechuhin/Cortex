@@ -6,6 +6,8 @@
 
 - ✅ **Tools sub-package reorganization Session 8** - COMPLETE (2026-03-02) - Created memory/ sub-package with compaction, foundation_*, query_memory_bank. Moved evaluation_* and model_benchmark into evaluation/. Updated imports and tests.
 
+- ✅ **Tools sub-package reorganization Session 9** - COMPLETE (2026-03-02) - Moved connection_health, session_models, health_connection_models into session/ sub-package. Updated models_reexports and all import sites. Broke circular imports with lazy imports in brief.py (read_handoff, list_active_locks) and brief_extraction_helpers.py (extract_section_from_content). 4867 tests, 92.36% coverage.
+
 ## Completed Work (2026-03-01)
 
 - **Summary (2026-03-01)** - 1 entries archived.

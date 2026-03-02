@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import cast
 
 from cortex.core.models import JsonValue, ModelDict, ResponseFormat
-from cortex.tools.session_models import TokenBudgetStatus
+from cortex.tools.session.models import TokenBudgetStatus
 
 
 def sum_file_field(files_metadata: dict[str, ModelDict], field_name: str) -> int:

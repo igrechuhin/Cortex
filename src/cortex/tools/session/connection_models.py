@@ -7,8 +7,7 @@ from __future__ import annotations
 from pydantic import Field
 
 from cortex.core.models import ConnectionHealth, HealthMetrics, OperationStatus
-
-from .models_base import (
+from cortex.tools.models_base import (
     ErrorResultBase,
     StrictBaseModel,
     ToolResultBase,

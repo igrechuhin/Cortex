@@ -218,7 +218,7 @@ class TestChaosScenarios:
             return_value=tmp_path,
         ):
             with patch(
-                "cortex.tools.files.file_crud_flow._write_file_with_hash_check",
+                "cortex.tools.files.file_crud_flow.write_file_with_hash_check",
                 new_callable=AsyncMock,
                 side_effect=PermissionError("Simulated permission denied"),
             ):

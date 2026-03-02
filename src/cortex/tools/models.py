@@ -13,7 +13,7 @@ All models follow Pydantic v2 best practices. See submodules for definitions:
 - synapse_models: get_synapse_prompts, sync_synapse, fix_roadmap_corruption, etc.
 - feedback_models: provide_feedback
 - markdown_models: fix_markdown_lint
-- health_connection_models: check_mcp_connection_health
+- session.connection_models: check_mcp_connection_health
 - links_models: parse_file_links
 - context_analysis_models: context usage, insights, cleanup report, etc.
 - roadmap_operations_models: add/remove roadmap entry, append progress/activeContext

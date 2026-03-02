@@ -118,7 +118,7 @@ class TestManageFile:
             "versions": AsyncMock(),
         }
 
-        # Clear usage context so _get_managers_for_root uses our patched
+        # Clear usage context so get_managers_for_root uses our patched
         # get_managers (mock index with metadata). Patch get_or_resolve_project_root
         # in file_operations so the tool uses our temp root.
         test_root = temp_memory_bank.parent.parent.parent
@@ -246,7 +246,7 @@ class TestManageFile:
         test_root = temp_memory_bank.parent.parent.parent
         with (
             patch(
-                "cortex.tools.files.file_manage_file_helpers._resolve_schema_validator",
+                "cortex.tools.files.file_manage_file_helpers.resolve_schema_validator",
                 new_callable=AsyncMock,
                 return_value=mock_schema_validator,
             ),
@@ -350,7 +350,7 @@ class TestManageFile:
             "versions": AsyncMock(),
         }
 
-        # Prevent decorator from persisting real managers so _get_managers_for_root uses our mock
+        # Prevent decorator from persisting real managers so get_managers_for_root uses our mock
         with (
             patch(
                 "cortex.core.usage_context.set_current_managers",

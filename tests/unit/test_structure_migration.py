@@ -99,9 +99,7 @@ def test_migrate_plans_copies_cursor_plans(tmp_path: Path) -> None:
     }
 
     # Act
-    manager._migrate_plans(  # type: ignore[reportPrivateUsage]
-        plans_dir, cast(ModelDict, migration_data)
-    )  # noqa: SLF001
+    manager.migrate_plans(plans_dir, cast(ModelDict, migration_data))
 
     # Assert
     assert (plans_dir / "plan.md").exists()
@@ -121,9 +119,7 @@ def test_migrate_cursorrules_copies_rules_file(tmp_path: Path) -> None:
     }
 
     # Act
-    manager._migrate_cursorrules(  # type: ignore[reportPrivateUsage]
-        rules_dir, cast(ModelDict, migration_data)
-    )  # noqa: SLF001
+    manager.migrate_cursorrules(rules_dir, cast(ModelDict, migration_data))
 
     # Assert
     assert (rules_dir / "main.cursorrules").exists()
@@ -212,9 +208,7 @@ def test_archive_legacy_files_if_requested_sets_archive_location(
     report: dict[str, object] = {"files_migrated": 1}
 
     # Act
-    manager._archive_legacy_files_if_requested(  # type: ignore[reportPrivateUsage]
-        cast(ModelDict, report), archive=True
-    )  # noqa: SLF001
+    manager.archive_legacy_files_if_requested(cast(ModelDict, report), archive=True)
 
     # Assert
     archive_location = report.get("archive_location")

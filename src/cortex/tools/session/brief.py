@@ -11,15 +11,6 @@ from pathlib import Path
 from cortex.core.constants import MemoryBankFile
 from cortex.core.file_system import FileSystemManager
 from cortex.managers.types import ManagersDict
-from cortex.tools.memory.compaction_operations import read_handoff
-from cortex.tools.models import (
-    ConcurrentSession,
-    GitStatusSummary,
-    SessionBrief,
-    SessionHandoff,
-    SessionHealthSummary,
-    SessionStartErrorResult,
-)
 from cortex.tools.models_base import ToolResultStatus
 from cortex.tools.session.brief_extraction_helpers import (
     extract_focus_and_completed,
@@ -30,9 +21,16 @@ from cortex.tools.session.brief_helpers import (
     session_brief_context_kwargs,
 )
 from cortex.tools.session.health import calculate_health_summary
+from cortex.tools.session.models import (
+    ConcurrentSession,
+    GitStatusSummary,
+    SessionBrief,
+    SessionHandoff,
+    SessionHealthSummary,
+    SessionStartErrorResult,
+)
 from cortex.tools.session.registry import list_concurrent_sessions
 from cortex.tools.session.start_models import BriefInputs as _BriefInputs
-from cortex.tools.task_locking import list_active_locks
 
 
 async def _read_memory_bank_file(
@@ -79,6 +77,8 @@ async def _load_concurrent_sessions_safe(
 async def _load_locked_tasks_safe(project_root: Path) -> list[str]:
     """Load locked task titles, returning empty list on error."""
     import logging
+
+    from cortex.tools.task_locking import list_active_locks
 
     logger = logging.getLogger(__name__)
     try:
@@ -201,6 +201,8 @@ async def _load_brief_async(
     SessionHealthSummary, str, SessionHandoff | None, list[ConcurrentSession], list[str]
 ]:
     """Load health, project name, handoff, and concurrency for brief in parallel."""
+    from cortex.tools.memory.compaction_operations import read_handoff
+
     health, project_name, last_handoff, (concurrent_sessions, locked_tasks) = (
         await asyncio.gather(
             calculate_health_summary(managers, project_root),

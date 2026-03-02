@@ -31,15 +31,15 @@ from cortex.tools.session.health import (
     determine_token_budget_status,
     parse_mcp_health,
 )
+from cortex.tools.session.models import TokenBudgetStatus
 from cortex.tools.session.start_tools import (
-    _extract_next_work_item,  # type: ignore[reportPrivateUsage]
-    _get_git_status,  # type: ignore[reportPrivateUsage]
-    _parse_roadmap_sections,  # type: ignore[reportPrivateUsage]
-    _run_git_command,  # type: ignore[reportPrivateUsage]
-    _session_start_impl,  # type: ignore[reportPrivateUsage]
+    extract_next_work_item,
+    get_git_status,
+    parse_roadmap_sections,
+    run_git_command,
     session_start,
+    session_start_impl,
 )
-from cortex.tools.session_models import TokenBudgetStatus
 from tests.helpers.managers import make_test_managers
 from tests.helpers.path_helpers import ensure_test_cortex_structure
 from tests.helpers.tool_call_helpers import get_tool_fn
@@ -65,7 +65,7 @@ def _mcp_health_json(healthy: bool) -> str:
 
 
 class TestParseRoadmapSections:
-    """Tests for _parse_roadmap_sections helper."""
+    """Tests for parse_roadmap_sections helper."""
 
     def test_parse_roadmap_sections_basic(self) -> None:
         """Test parsing roadmap with all sections."""
@@ -83,7 +83,7 @@ class TestParseRoadmapSections:
 ## Pending plans (from .cortex/plans)
 - Item 4
 """
-        sections = _parse_roadmap_sections(content)
+        sections = parse_roadmap_sections(content)
         assert "blockers" in sections
         assert "active_work" in sections
         assert "future" in sections
@@ -96,13 +96,13 @@ class TestParseRoadmapSections:
 ## Blockers (ASAP Priority)
 - Item 1
 """
-        sections = _parse_roadmap_sections(content)
+        sections = parse_roadmap_sections(content)
         assert "blockers" in sections
         assert "active_work" not in sections
 
     def test_parse_roadmap_sections_empty(self) -> None:
         """Test parsing empty roadmap."""
-        sections = _parse_roadmap_sections("")
+        sections = parse_roadmap_sections("")
         assert sections == {}
 
 
@@ -205,7 +205,7 @@ class TestExtractRecentCompleted:
 
 
 class TestExtractNextWorkItem:
-    """Tests for _extract_next_work_item helper."""
+    """Tests for extract_next_work_item helper."""
 
     @pytest.mark.asyncio
     async def test_extract_next_work_item_pending(self) -> None:
@@ -222,7 +222,7 @@ class TestExtractNextWorkItem:
 
 - **Phase 54** - PENDING - Description here
 """
-        work_item, plan_path = await _extract_next_work_item(content, project_root=None)
+        work_item, plan_path = await extract_next_work_item(content, project_root=None)
         assert work_item is not None
         assert "Phase 54" in work_item
         assert plan_path is None
@@ -236,7 +236,7 @@ class TestExtractNextWorkItem:
 
 - **Phase 54** - PENDING - Description. Plan: .cortex/plans/phase-54.md
 """
-        work_item, plan_path = await _extract_next_work_item(content, project_root=None)
+        work_item, plan_path = await extract_next_work_item(content, project_root=None)
         assert work_item is not None
         assert plan_path == ".cortex/plans/phase-54.md"
 
@@ -249,7 +249,7 @@ class TestExtractNextWorkItem:
 
 - **Phase 54** - IN PROGRESS - Description
 """
-        work_item, plan_path = await _extract_next_work_item(content, project_root=None)
+        work_item, plan_path = await extract_next_work_item(content, project_root=None)
         assert work_item is None
         assert plan_path is None
 
@@ -266,13 +266,13 @@ class TestExtractNextWorkItem:
 
 - **Phase 54** - PENDING - Description
 """
-        work_item, _ = await _extract_next_work_item(content, project_root=None)
+        work_item, _ = await extract_next_work_item(content, project_root=None)
         assert work_item is not None
         assert "Blocker" in work_item
 
 
 class TestRunGitCommand:
-    """Tests for _run_git_command helper."""
+    """Tests for run_git_command helper."""
 
     @pytest.mark.asyncio
     async def test_run_git_command_success(self, tmp_path: Path) -> None:
@@ -296,14 +296,14 @@ class TestRunGitCommand:
             capture_output=True,
         )
 
-        result = await _run_git_command(["git", "status"], cwd=tmp_path)
+        result = await run_git_command(["git", "status"], cwd=tmp_path)
         assert result.success
         assert "On branch" in result.stdout or "No commits yet" in result.stdout
 
     @pytest.mark.asyncio
     async def test_run_git_command_timeout(self) -> None:
         """Test git command timeout."""
-        result = await _run_git_command(
+        result = await run_git_command(
             ["sleep", "10"],
             timeout=0.1,  # Will timeout quickly
         )
@@ -316,17 +316,17 @@ class TestRunGitCommand:
     @pytest.mark.asyncio
     async def test_run_git_command_failure(self) -> None:
         """Test git command failure."""
-        result = await _run_git_command(["git", "nonexistent-command"])
+        result = await run_git_command(["git", "nonexistent-command"])
         assert not result.success
 
 
 class TestGetGitStatus:
-    """Tests for _get_git_status helper."""
+    """Tests for get_git_status helper."""
 
     @pytest.mark.asyncio
     async def test_get_git_status_no_git(self, tmp_path: Path) -> None:
         """Test git status when .git doesn't exist."""
-        status = await _get_git_status(tmp_path)
+        status = await get_git_status(tmp_path)
         assert status is None
 
     @pytest.mark.asyncio
@@ -350,7 +350,7 @@ class TestGetGitStatus:
             capture_output=True,
         )
 
-        status = await _get_git_status(tmp_path)
+        status = await get_git_status(tmp_path)
         assert status is not None
         assert status.has_uncommitted_changes is False
 
@@ -381,7 +381,7 @@ class TestGetGitStatus:
             ["git", "add", "test.txt"], cwd=tmp_path, check=True, capture_output=True
         )
 
-        status = await _get_git_status(tmp_path)
+        status = await get_git_status(tmp_path)
         assert status is not None
         assert status.has_uncommitted_changes is True
         assert status.modified_files_count > 0 or status.untracked_files_count > 0
@@ -638,7 +638,7 @@ class TestDetermineTokenBudgetStatus:
 
 
 class TestSessionStartImpl:
-    """Tests for _session_start_impl."""
+    """Tests for session_start_impl."""
 
     @pytest.mark.asyncio
     async def test_session_start_impl_success(self, tmp_path: Path) -> None:
@@ -712,7 +712,7 @@ Working on Phase 54.
             fs=fs_manager, index=metadata_index, tokens=token_counter
         )
 
-        result = await _session_start_impl(
+        result = await session_start_impl(
             None,
             tmp_path,
             managers,  # type: ignore[arg-type]
@@ -809,7 +809,7 @@ Working on Phase 54.
             fs=fs_manager, index=metadata_index, tokens=token_counter
         )
 
-        result = await _session_start_impl(
+        result = await session_start_impl(
             None,
             tmp_path,
             managers,  # type: ignore[arg-type]
@@ -894,7 +894,7 @@ Working on Phase 54.
             fs=fs_manager, index=metadata_index, tokens=token_counter
         )
 
-        result = await _session_start_impl(
+        result = await session_start_impl(
             None,
             tmp_path,
             managers,  # type: ignore[arg-type]
@@ -981,7 +981,7 @@ Test.
             new_callable=AsyncMock,
             return_value=_mcp_health_json(healthy=True),
         ):
-            result = await _session_start_impl(
+            result = await session_start_impl(
                 None,
                 tmp_path,
                 managers,  # type: ignore[arg-type]
@@ -1039,7 +1039,7 @@ Test.
             new_callable=AsyncMock,
             return_value=_mcp_health_json(healthy=False),
         ):
-            result = await _session_start_impl(None, tmp_path, managers)  # type: ignore[arg-type]
+            result = await session_start_impl(None, tmp_path, managers)  # type: ignore[arg-type]
         assert isinstance(result, SessionStartResult)
         assert result.brief.mcp_healthy is False
         assert result.brief.mcp_health_message == "MCP connection unhealthy"
@@ -1059,7 +1059,7 @@ Test.
         fs_manager = FileSystemManager(tmp_path)
         managers = make_test_managers(fs=fs_manager)
 
-        result = await _session_start_impl(None, tmp_path, managers)  # type: ignore[arg-type]
+        result = await session_start_impl(None, tmp_path, managers)  # type: ignore[arg-type]
 
         assert isinstance(result, SessionStartErrorResult)
         assert result.status == "error"
@@ -1074,7 +1074,7 @@ Test.
         fs_manager = FileSystemManager(tmp_path)
         managers = make_test_managers(fs=fs_manager)
 
-        result = await _session_start_impl(None, tmp_path, managers)  # type: ignore[arg-type]
+        result = await session_start_impl(None, tmp_path, managers)  # type: ignore[arg-type]
 
         assert isinstance(result, SessionStartErrorResult)
         assert result.status == "error"
@@ -1094,7 +1094,7 @@ Test.
 
         managers = make_test_managers(fs=fs_manager)
 
-        result = await _session_start_impl(None, tmp_path, managers)  # type: ignore[arg-type]
+        result = await session_start_impl(None, tmp_path, managers)  # type: ignore[arg-type]
 
         assert isinstance(result, SessionStartErrorResult)
         assert result.status == "error"

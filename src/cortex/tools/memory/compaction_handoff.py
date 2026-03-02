@@ -16,7 +16,7 @@ from cortex.tools.memory.compaction_constants import (
     SESSION_HANDOFF_SCHEMA_VERSION,
     SESSION_PROGRESS_FILENAME,
 )
-from cortex.tools.models import InProgressTask, SessionHandoff
+from cortex.tools.session.models import InProgressTask, SessionHandoff
 
 logger = logging.getLogger(__name__)
 

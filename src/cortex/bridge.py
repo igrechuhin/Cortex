@@ -40,11 +40,11 @@ WAIT_TIMEOUT_SECONDS = 30
 WAIT_POLL_INTERVAL_SECONDS = 0.25
 
 
-def _get_bridge_url() -> str:
+def get_bridge_url() -> str:
     return os.environ.get(CORTEX_BRIDGE_URL_ENV, "").strip() or DEFAULT_BRIDGE_URL
 
 
-def _get_bridge_port() -> int:
+def get_bridge_port() -> int:
     raw = os.environ.get(CORTEX_BRIDGE_PORT_ENV, "").strip()
     if not raw:
         return BRIDGE_PORT_DEFAULT
@@ -54,13 +54,13 @@ def _get_bridge_port() -> int:
         return BRIDGE_PORT_DEFAULT
 
 
-def _cortex_repo_root() -> Path:
+def cortex_repo_root() -> Path:
     """Return Cortex repo root (parent of src/)."""
     # bridge.py is at src/cortex/bridge.py
     return Path(__file__).resolve().parent.parent.parent
 
 
-def _require_server_deps() -> None:
+def require_server_deps() -> None:
     try:
         import httpx  # noqa: F401
         from mcp.client import streamable_http  # noqa: F401
@@ -79,7 +79,7 @@ def _start_cortex_subprocess(port: int) -> subprocess.Popen[bytes]:
     env["CORTEX_MCP_TRANSPORT"] = "streamable-http"
     env["CORTEX_MCP_PORT"] = str(port)
     cmd = [sys.executable, "-m", "cortex.main"]
-    cwd = _cortex_repo_root()
+    cwd = cortex_repo_root()
     return subprocess.Popen(
         cmd,
         env=env,
@@ -90,7 +90,7 @@ def _start_cortex_subprocess(port: int) -> subprocess.Popen[bytes]:
     )
 
 
-def _read_subprocess_stderr(proc: subprocess.Popen[bytes]) -> str:
+def read_subprocess_stderr(proc: subprocess.Popen[bytes]) -> str:
     """Read and return stderr from subprocess; non-blocking."""
     if proc.stderr is None:
         return ""
@@ -101,7 +101,7 @@ def _read_subprocess_stderr(proc: subprocess.Popen[bytes]) -> str:
         return ""
 
 
-def _url_to_host_port(url: str) -> tuple[str, int]:
+def url_to_host_port(url: str) -> tuple[str, int]:
     """Parse URL and return (host, port). Default port 8000."""
     from urllib.parse import urlparse
 
@@ -111,7 +111,7 @@ def _url_to_host_port(url: str) -> tuple[str, int]:
     return host, port
 
 
-def _tcp_connect(host: str, port: int) -> bool:
+def tcp_connect(host: str, port: int) -> bool:
     """Try to open a TCP connection to host:port; return True if successful."""
     import socket
 
@@ -126,14 +126,14 @@ def _tcp_connect(host: str, port: int) -> bool:
             sock.close()
 
 
-async def _wait_for_url(url: str, proc: subprocess.Popen[bytes]) -> None:
+async def wait_for_url(url: str, proc: subprocess.Popen[bytes]) -> None:
     """Wait until the server accepts TCP connections on the URL's host:port."""
-    host, port = _url_to_host_port(url)
+    host, port = url_to_host_port(url)
     deadline = time.monotonic() + WAIT_TIMEOUT_SECONDS
     loop = asyncio.get_event_loop()
     while time.monotonic() < deadline:
         if proc.poll() is not None:
-            stderr = _read_subprocess_stderr(proc)
+            stderr = read_subprocess_stderr(proc)
             msg = (
                 f"Bridge: Cortex subprocess exited with {proc.returncode} before "
                 f"server was ready. stderr:\n{stderr or '(empty)'}"
@@ -141,7 +141,7 @@ async def _wait_for_url(url: str, proc: subprocess.Popen[bytes]) -> None:
             raise RuntimeError(msg)
         try:
             if await asyncio.wait_for(
-                loop.run_in_executor(None, _tcp_connect, host, port),
+                loop.run_in_executor(None, tcp_connect, host, port),
                 timeout=2.5,
             ):
                 return
@@ -149,7 +149,7 @@ async def _wait_for_url(url: str, proc: subprocess.Popen[bytes]) -> None:
             pass
         await anyio.sleep(WAIT_POLL_INTERVAL_SECONDS)
     # Only read stderr if process exited (otherwise read would block)
-    stderr = _read_subprocess_stderr(proc) if proc.poll() is not None else ""
+    stderr = read_subprocess_stderr(proc) if proc.poll() is not None else ""
     extra = (
         f" Cortex stderr:\n{stderr}"
         if stderr
@@ -197,7 +197,7 @@ async def _run_bridge(url: str) -> None:
 
 
 async def _main(port: int, url: str, proc: subprocess.Popen[bytes]) -> None:
-    await _wait_for_url(url, proc)
+    await wait_for_url(url, proc)
     try:
         await _run_bridge(url)
     finally:
@@ -210,9 +210,9 @@ async def _main(port: int, url: str, proc: subprocess.Popen[bytes]) -> None:
 
 
 def main() -> None:
-    _require_server_deps()
-    port = _get_bridge_port()
-    url = _get_bridge_url()
+    require_server_deps()
+    port = get_bridge_port()
+    url = get_bridge_url()
     proc = _start_cortex_subprocess(port)
     try:
 

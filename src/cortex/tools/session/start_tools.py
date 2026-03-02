@@ -36,23 +36,23 @@ from cortex.core.usage_context import (
 )
 from cortex.managers.types import ManagersDict
 from cortex.managers.utils import get_manager
-from cortex.tools.models import (
-    SessionBrief,
-    SessionStartErrorResult,
-    SessionStartResult,
-    SessionStartResultUnion,
-)
 from cortex.tools.models_base import ToolResultStatus
 from cortex.tools.session.brief import (
     build_session_brief,
     load_memory_bank_files,
 )
 from cortex.tools.session.health import get_mcp_health_status
+from cortex.tools.session.models import (
+    SessionBrief,
+    SessionStartErrorResult,
+    SessionStartResult,
+    SessionStartResultUnion,
+)
 
 logger = logging.getLogger(__name__)
 
 
-def _parse_roadmap_sections(content: str) -> dict[str, tuple[int, int]]:
+def parse_roadmap_sections(content: str) -> dict[str, tuple[int, int]]:
     """Parse roadmap to get section boundaries. Returns {section_id: (start_line, end_line)}."""
     sections: dict[str, tuple[int, int]] = {}
     lines = content.split("\n")
@@ -88,7 +88,7 @@ def _create_error_result(msg: str) -> GitCommandResult:
     )
 
 
-async def _run_git_command(
+async def run_git_command(
     cmd: list[str], cwd: Path | None = None, timeout: float = 5.0
 ) -> GitCommandResult:
     """Run a git command asynchronously with timeout."""
@@ -152,11 +152,11 @@ async def _process_pending_line(
     return (None, None)
 
 
-async def _extract_next_work_item(
+async def extract_next_work_item(
     roadmap_content: str, project_root: Path | None = None
 ) -> tuple[str | None, str | None]:
     """Extract next PENDING work item from roadmap, skipping locked tasks."""
-    sections = _parse_roadmap_sections(roadmap_content)
+    sections = parse_roadmap_sections(roadmap_content)
     lines = roadmap_content.split("\n")
     for section_id in ["blockers", "active_work", "future", "pending"]:
         if section_id not in sections:
@@ -173,13 +173,13 @@ async def _extract_next_work_item(
     return (None, None)
 
 
-async def _get_git_status(project_root: Path):
+async def get_git_status(project_root: Path):
     """Get git status summary. Returns GitStatusSummary or None if git unavailable."""
-    from cortex.tools.models import GitStatusSummary
+    from cortex.tools.session.models import GitStatusSummary
 
     if not (project_root / ".git").exists():
         return None
-    result = await _run_git_command(["git", "status", "--porcelain"], cwd=project_root)
+    result = await run_git_command(["git", "status", "--porcelain"], cwd=project_root)
     if not result.success:
         return None
     modified_count = 0
@@ -224,8 +224,8 @@ async def _load_and_build_brief(
     if isinstance(memory_bank_result, SessionStartErrorResult):
         return memory_bank_result
     act, rdm = memory_bank_result
-    git_status = await _get_git_status(project_root)
-    next_work_item, next_work_plan_path = await _extract_next_work_item(
+    git_status = await get_git_status(project_root)
+    next_work_item, next_work_plan_path = await extract_next_work_item(
         rdm, project_root
     )
     brief = await build_session_brief(
@@ -262,7 +262,7 @@ async def _load_brief_and_return_result(
         )
 
 
-async def _session_start_impl(
+async def session_start_impl(
     task_description: str | None,
     project_root: Path,
     managers: ManagersDict,
@@ -334,6 +334,6 @@ async def session_start(
         ).model_dump_json(exclude_none=True)
     managers = cast(ManagersDict, managers_raw)
 
-    result = await _session_start_impl(task_description, project_root, managers)
+    result = await session_start_impl(task_description, project_root, managers)
 
     return result.model_dump_json(exclude_none=True)

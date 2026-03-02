@@ -9,10 +9,10 @@ from unittest.mock import AsyncMock, patch
 import pytest
 
 from cortex.core.context_logging import MCPContext
-from cortex.tools import query_memory_bank_operations
 from cortex.tools.memory.query_memory_bank_operations import (
     QueryMemoryBankParams,
     query_memory_bank,
+    replace_handler_for_test,
 )
 
 
@@ -77,23 +77,13 @@ async def test_query_memory_bank_dependency_graph() -> None:
     ) -> str:
         return '{"status": "success", "graph": {}}'
 
-    original_handler = query_memory_bank_operations._MEMORY_BANK_HANDLERS[  # type: ignore[reportPrivateUsage]
-        "dependency_graph"
-    ]
-    query_memory_bank_operations._MEMORY_BANK_HANDLERS["dependency_graph"] = (  # type: ignore[reportPrivateUsage]
-        mock_handler
-    )
-    try:
+    with replace_handler_for_test("dependency_graph", mock_handler):
         result_str = await query_memory_bank(
             query_type="dependency_graph",
             ctx=None,
         )
         result = json.loads(result_str)
         assert result["status"] == "success"
-    finally:
-        query_memory_bank_operations._MEMORY_BANK_HANDLERS["dependency_graph"] = (  # type: ignore[reportPrivateUsage]
-            original_handler
-        )
 
 
 @pytest.mark.asyncio
@@ -105,19 +95,13 @@ async def test_query_memory_bank_link_graph() -> None:
     ) -> str:
         return '{"status": "success", "graph": {}}'
 
-    original_handler = query_memory_bank_operations._MEMORY_BANK_HANDLERS["link_graph"]  # type: ignore[reportPrivateUsage]
-    query_memory_bank_operations._MEMORY_BANK_HANDLERS["link_graph"] = mock_handler  # type: ignore[reportPrivateUsage]
-    try:
+    with replace_handler_for_test("link_graph", mock_handler):
         result_str = await query_memory_bank(
             query_type="link_graph",
             ctx=None,
         )
         result = json.loads(result_str)
         assert result["status"] == "success"
-    finally:
-        query_memory_bank_operations._MEMORY_BANK_HANDLERS["link_graph"] = (  # type: ignore[reportPrivateUsage]
-            original_handler
-        )
 
 
 @pytest.mark.asyncio
@@ -129,11 +113,7 @@ async def test_query_memory_bank_validate_links() -> None:
     ) -> str:
         return '{"status": "success", "valid": true}'
 
-    original_handler = query_memory_bank_operations._MEMORY_BANK_HANDLERS[  # type: ignore[reportPrivateUsage]
-        "validate_links"
-    ]
-    query_memory_bank_operations._MEMORY_BANK_HANDLERS["validate_links"] = mock_handler  # type: ignore[reportPrivateUsage]
-    try:
+    with replace_handler_for_test("validate_links", mock_handler):
         result_str = await query_memory_bank(
             query_type="validate_links",
             file_name="test.md",
@@ -141,10 +121,6 @@ async def test_query_memory_bank_validate_links() -> None:
         )
         result = json.loads(result_str)
         assert result["status"] == "success"
-    finally:
-        query_memory_bank_operations._MEMORY_BANK_HANDLERS["validate_links"] = (  # type: ignore[reportPrivateUsage]
-            original_handler
-        )
 
 
 @pytest.mark.asyncio
@@ -168,9 +144,7 @@ async def test_query_memory_bank_handler_exception() -> None:
     ) -> str:
         raise ValueError("Test error")
 
-    original_handler = query_memory_bank_operations._MEMORY_BANK_HANDLERS["stats"]  # type: ignore[reportPrivateUsage]
-    query_memory_bank_operations._MEMORY_BANK_HANDLERS["stats"] = mock_handler  # type: ignore[reportPrivateUsage]
-    try:
+    with replace_handler_for_test("stats", mock_handler):
         result_str = await query_memory_bank(
             query_type="stats",
             ctx=None,
@@ -179,8 +153,6 @@ async def test_query_memory_bank_handler_exception() -> None:
         assert result["status"] == "error"
         assert result["error"] == "Test error"
         assert result["error_type"] == "ValueError"
-    finally:
-        query_memory_bank_operations._MEMORY_BANK_HANDLERS["stats"] = original_handler  # type: ignore[reportPrivateUsage]
 
 
 @pytest.mark.asyncio
@@ -193,21 +165,19 @@ async def test_query_memory_bank_logs_to_context() -> None:
     ) -> str:
         return '{"status": "success"}'
 
-    original_handler = query_memory_bank_operations._MEMORY_BANK_HANDLERS["stats"]  # type: ignore[reportPrivateUsage]
-    query_memory_bank_operations._MEMORY_BANK_HANDLERS["stats"] = mock_handler  # type: ignore[reportPrivateUsage]
-
-    with patch("cortex.tools.query_memory_bank_operations.log_client") as mock_log:
-        await query_memory_bank(
-            query_type="stats",
-            ctx=mock_ctx,
-        )
-        mock_log.assert_called_once()
-        call_args = mock_log.call_args[0]
-        assert call_args[0] == mock_ctx
-        assert call_args[1] == "info"
-        assert "query_memory_bank" in call_args[2]
-
-    query_memory_bank_operations._MEMORY_BANK_HANDLERS["stats"] = original_handler  # type: ignore[reportPrivateUsage]
+    with replace_handler_for_test("stats", mock_handler):
+        with patch(
+            "cortex.tools.memory.query_memory_bank_operations.log_client"
+        ) as mock_log:
+            await query_memory_bank(
+                query_type="stats",
+                ctx=mock_ctx,
+            )
+            mock_log.assert_called_once()
+            call_args = mock_log.call_args[0]
+            assert call_args[0] == mock_ctx
+            assert call_args[1] == "info"
+            assert "query_memory_bank" in call_args[2]
 
 
 @pytest.mark.asyncio
@@ -219,13 +189,7 @@ async def test_query_memory_bank_version_history_with_file_name() -> None:
     ) -> str:
         return '{"status": "success", "version_history": []}'
 
-    original_handler = query_memory_bank_operations._MEMORY_BANK_HANDLERS[  # type: ignore[reportPrivateUsage]
-        "version_history"
-    ]
-    query_memory_bank_operations._MEMORY_BANK_HANDLERS["version_history"] = (  # type: ignore[reportPrivateUsage]
-        mock_handler
-    )
-    try:
+    with replace_handler_for_test("version_history", mock_handler):
         result_str = await query_memory_bank(
             query_type="version_history",
             file_name="test.md",
@@ -233,10 +197,6 @@ async def test_query_memory_bank_version_history_with_file_name() -> None:
         )
         result = json.loads(result_str)
         assert result["status"] == "success"
-    finally:
-        query_memory_bank_operations._MEMORY_BANK_HANDLERS["version_history"] = (  # type: ignore[reportPrivateUsage]
-            original_handler
-        )
 
 
 @pytest.mark.asyncio
@@ -248,13 +208,7 @@ async def test_query_memory_bank_parse_links_with_file_name() -> None:
     ) -> str:
         return '{"status": "success", "links": []}'
 
-    original_handler = query_memory_bank_operations._MEMORY_BANK_HANDLERS[  # type: ignore[reportPrivateUsage]
-        "parse_links"
-    ]
-    query_memory_bank_operations._MEMORY_BANK_HANDLERS["parse_links"] = (  # type: ignore[reportPrivateUsage]
-        mock_handler
-    )
-    try:
+    with replace_handler_for_test("parse_links", mock_handler):
         result_str = await query_memory_bank(
             query_type="parse_links",
             file_name="test.md",
@@ -262,10 +216,6 @@ async def test_query_memory_bank_parse_links_with_file_name() -> None:
         )
         result = json.loads(result_str)
         assert result["status"] == "success"
-    finally:
-        query_memory_bank_operations._MEMORY_BANK_HANDLERS["parse_links"] = (  # type: ignore[reportPrivateUsage]
-            original_handler
-        )
 
 
 @pytest.mark.asyncio
@@ -277,13 +227,7 @@ async def test_query_memory_bank_resolve_transclusions_with_file_name() -> None:
     ) -> str:
         return '{"status": "success", "resolved": ""}'
 
-    original_handler = query_memory_bank_operations._MEMORY_BANK_HANDLERS[  # type: ignore[reportPrivateUsage]
-        "resolve_transclusions"
-    ]
-    query_memory_bank_operations._MEMORY_BANK_HANDLERS["resolve_transclusions"] = (  # type: ignore[reportPrivateUsage]
-        mock_handler
-    )
-    try:
+    with replace_handler_for_test("resolve_transclusions", mock_handler):
         result_str = await query_memory_bank(
             query_type="resolve_transclusions",
             file_name="test.md",
@@ -291,10 +235,6 @@ async def test_query_memory_bank_resolve_transclusions_with_file_name() -> None:
         )
         result = json.loads(result_str)
         assert result["status"] == "success"
-    finally:
-        query_memory_bank_operations._MEMORY_BANK_HANDLERS["resolve_transclusions"] = (  # type: ignore[reportPrivateUsage]
-            original_handler
-        )
 
 
 @pytest.mark.asyncio
@@ -309,9 +249,7 @@ async def test_query_memory_bank_stats_with_response_format_concise() -> None:
         assert params.response_format == ResponseFormat.CONCISE
         return '{"status": "success", "total_files": 7, "total_tokens": 1000}'
 
-    original_handler = query_memory_bank_operations._MEMORY_BANK_HANDLERS["stats"]  # type: ignore[reportPrivateUsage]
-    query_memory_bank_operations._MEMORY_BANK_HANDLERS["stats"] = mock_handler  # type: ignore[reportPrivateUsage]
-    try:
+    with replace_handler_for_test("stats", mock_handler):
         result_str = await query_memory_bank(
             query_type="stats",
             response_format="concise",
@@ -319,8 +257,6 @@ async def test_query_memory_bank_stats_with_response_format_concise() -> None:
         )
         result = json.loads(result_str)
         assert result["status"] == "success"
-    finally:
-        query_memory_bank_operations._MEMORY_BANK_HANDLERS["stats"] = original_handler  # type: ignore[reportPrivateUsage]
 
 
 @pytest.mark.asyncio
@@ -337,9 +273,7 @@ async def test_query_memory_bank_stats_with_response_format_detailed() -> None:
             '{"status": "success", "total_files": 7, "total_tokens": 1000, "files": []}'
         )
 
-    original_handler = query_memory_bank_operations._MEMORY_BANK_HANDLERS["stats"]  # type: ignore[reportPrivateUsage]
-    query_memory_bank_operations._MEMORY_BANK_HANDLERS["stats"] = mock_handler  # type: ignore[reportPrivateUsage]
-    try:
+    with replace_handler_for_test("stats", mock_handler):
         result_str = await query_memory_bank(
             query_type="stats",
             response_format="detailed",
@@ -347,8 +281,6 @@ async def test_query_memory_bank_stats_with_response_format_detailed() -> None:
         )
         result = json.loads(result_str)
         assert result["status"] == "success"
-    finally:
-        query_memory_bank_operations._MEMORY_BANK_HANDLERS["stats"] = original_handler  # type: ignore[reportPrivateUsage]
 
 
 @pytest.mark.asyncio
@@ -362,7 +294,7 @@ async def test_query_memory_bank_stats_calls_real_handler(
 
     # This test ensures the import statements inside handlers are covered
     with patch(
-        "cortex.tools.query_memory_bank_operations.log_client",
+        "cortex.tools.memory.query_memory_bank_operations.log_client",
         new_callable=AsyncMock,
     ):
         with patch(

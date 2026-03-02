@@ -65,12 +65,6 @@ from .file_operations_models import (
     RollbackFileVersionResult,
     RollbackFileVersionResultUnion,
 )
-from .health_connection_models import (
-    ConnectionHealthErrorResult,
-    ConnectionHealthResult,
-    ConnectionHealthResultUnion,
-    MCPHealthCheckResponse,
-)
 from .linking.links_models import (
     LinkLocation,
     LinkSummary,
@@ -93,7 +87,13 @@ from .roadmap_operations_models import (
     RemoveRoadmapEntryResult,
     RemoveRoadmapSectionResult,
 )
-from .session_models import (
+from .session.connection_models import (
+    ConnectionHealthErrorResult,
+    ConnectionHealthResult,
+    ConnectionHealthResultUnion,
+    MCPHealthCheckResponse,
+)
+from .session.models import (
     CheckTaskAvailableResult,
     ClaimTaskErrorResult,
     ClaimTaskResult,
