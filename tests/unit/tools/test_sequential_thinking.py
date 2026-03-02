@@ -11,7 +11,7 @@ from unittest.mock import patch
 import pytest
 from pydantic import BaseModel, Field
 
-from cortex.tools.sequential_thinking import (
+from cortex.tools.session.sequential_thinking import (
     SequentialThinkingCore,
     SequentialThinkingInput,
     reset_core_for_testing,
@@ -175,7 +175,7 @@ class TestThinkFullMode:
 
     async def test_think_full_returns_json_with_camel_case_keys(self):
         with patch(
-            "cortex.tools.sequential_thinking._get_core",
+            "cortex.tools.session.sequential_thinking._get_core",
             return_value=SequentialThinkingCore(),
         ):
             result = await think(
@@ -198,7 +198,7 @@ class TestThinkFullMode:
 
     async def test_think_full_second_call_increases_history_length(self):
         with patch(
-            "cortex.tools.sequential_thinking._get_core",
+            "cortex.tools.session.sequential_thinking._get_core",
             return_value=SequentialThinkingCore(),
         ):
             await think(
@@ -219,7 +219,7 @@ class TestThinkFullMode:
 
     async def test_think_full_with_branch_records_branch(self):
         with patch(
-            "cortex.tools.sequential_thinking._get_core",
+            "cortex.tools.session.sequential_thinking._get_core",
             return_value=SequentialThinkingCore(),
         ):
             await think(
@@ -261,7 +261,7 @@ class TestThinkFullMode:
 
     async def test_think_full_disabled_logging_skips_stderr(self):
         with patch(
-            "cortex.tools.sequential_thinking._get_core",
+            "cortex.tools.session.sequential_thinking._get_core",
             return_value=SequentialThinkingCore(),
         ):
             with patch.dict(os.environ, {"DISABLE_THOUGHT_LOGGING": "true"}):
@@ -276,7 +276,7 @@ class TestThinkFullMode:
 
     async def test_think_full_log_oserror_handled(self):
         with patch(
-            "cortex.tools.sequential_thinking._get_core",
+            "cortex.tools.session.sequential_thinking._get_core",
             return_value=SequentialThinkingCore(),
         ):
             with patch("sys.stderr") as mock_stderr:
@@ -407,7 +407,7 @@ class TestThinkLightweightMode:
         """think tool respects DISABLE_THOUGHT_LOGGING environment variable."""
         reset_core_for_testing()
         with patch(
-            "cortex.tools.sequential_thinking._get_core",
+            "cortex.tools.session.sequential_thinking._get_core",
             return_value=SequentialThinkingCore(),
         ):
             with patch.dict(os.environ, {"DISABLE_THOUGHT_LOGGING": "true"}):
@@ -419,7 +419,7 @@ class TestThinkLightweightMode:
         """think tool handles OSError during logging gracefully."""
         reset_core_for_testing()
         with patch(
-            "cortex.tools.sequential_thinking._get_core",
+            "cortex.tools.session.sequential_thinking._get_core",
             return_value=SequentialThinkingCore(),
         ):
             with patch("sys.stderr") as mock_stderr:

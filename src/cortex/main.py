@@ -221,7 +221,7 @@ def _require_http_deps() -> None:
 
 def _inject_sequential_thinking_core() -> None:
     """Inject SequentialThinkingCore at composition root (Phase 9.2 DI)."""
-    from cortex.tools.sequential_thinking import (
+    from cortex.tools.session.sequential_thinking import (
         SequentialThinkingCore,
         configure_sequential_thinking_core,
     )

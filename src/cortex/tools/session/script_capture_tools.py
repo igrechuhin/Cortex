@@ -30,8 +30,8 @@ from cortex.script_detection.script_capture import capture_script
 from cortex.script_detection.storage import get_capture_by_id, list_captures
 from cortex.script_promotion.script_validator import validate_for_promotion
 from cortex.server import mcp
-from cortex.tools.script_capture_handlers import dispatch_session_scripts
-from cortex.tools.script_capture_helpers import (
+from cortex.tools.session.script_capture_handlers import dispatch_session_scripts
+from cortex.tools.session.script_capture_helpers import (
     analysis_to_summary,
     build_promote_payload,
     record_to_summary,

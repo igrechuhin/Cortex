@@ -150,6 +150,15 @@ def _output_to_json_string(output: SequentialThinkingOutput) -> str:
     )
 
 
+def _format_think_response(lightweight: bool, out: SequentialThinkingOutput) -> str:
+    """Format think tool response (lightweight vs full mode)."""
+    if lightweight:
+        return json.dumps(
+            {"status": "thought_logged", "thought_number": out.thought_number}
+        )
+    return _output_to_json_string(out)
+
+
 def _maybe_log_thought(thought_number: int, total_thoughts: int, thought: str) -> None:
     """Log formatted thought to stderr unless DISABLE_THOUGHT_LOGGING is set."""
     if os.environ.get("DISABLE_THOUGHT_LOGGING", "").lower() in ("1", "true", "yes"):
@@ -249,8 +258,4 @@ async def think(
     )
     _maybe_log_thought(inp.thought_number, inp.total_thoughts, inp.thought)
     out = core.process_thought(inp)
-    return (
-        json.dumps({"status": "thought_logged", "thought_number": out.thought_number})
-        if lightweight
-        else _output_to_json_string(out)
-    )
+    return _format_think_response(lightweight, out)

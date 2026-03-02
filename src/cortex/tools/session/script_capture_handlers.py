@@ -26,7 +26,7 @@ async def _session_scripts_capture_handler(
             ),
         }
         return json.dumps(error_payload, indent=2)
-    from cortex.tools.script_capture_tools import capture_session_script
+    from cortex.tools.session.script_capture_tools import capture_session_script
 
     return await capture_session_script(
         script_path=script_path,
@@ -43,7 +43,7 @@ async def _session_scripts_list_handler(
     ctx: MCPContext | None = None,
     **_: object,
 ) -> str:
-    from cortex.tools.script_capture_tools import list_session_scripts
+    from cortex.tools.session.script_capture_tools import list_session_scripts
 
     return await list_session_scripts(ctx=ctx)
 
@@ -53,7 +53,7 @@ async def _session_scripts_analyze_handler(
     ctx: MCPContext | None = None,
     **_: object,
 ) -> str:
-    from cortex.tools.script_capture_tools import analyze_session_scripts
+    from cortex.tools.session.script_capture_tools import analyze_session_scripts
 
     return await analyze_session_scripts(ctx=ctx)
 
@@ -71,7 +71,7 @@ async def _session_scripts_suggest_handler(
             "error": "task_description is required for operation 'suggest'",
         }
         return json.dumps(error_payload, indent=2)
-    from cortex.tools.script_capture_tools import suggest_tool_improvements
+    from cortex.tools.session.script_capture_tools import suggest_tool_improvements
 
     return await suggest_tool_improvements(
         task_description=task_description,
@@ -93,7 +93,7 @@ async def _session_scripts_promote_handler(
             "error": "script_id is required for operation 'promote'",
         }
         return json.dumps(error_payload, indent=2)
-    from cortex.tools.script_capture_tools import promote_session_script
+    from cortex.tools.session.script_capture_tools import promote_session_script
 
     return await promote_session_script(
         script_id=script_id,

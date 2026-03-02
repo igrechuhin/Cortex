@@ -40,8 +40,6 @@ from . import (
     optimization,  # noqa: F401
     prompts,  # noqa: F401
     refactoring,  # noqa: F401
-    script_capture_tools,  # noqa: F401
-    sequential_thinking,  # noqa: F401
     skill_pack,  # noqa: F401
     structure,  # noqa: F401
     validation,  # noqa: F401
@@ -81,6 +79,8 @@ from .session import (  # noqa: F401  # noqa: F401
     connection_health,
     health_check_operations,
     registry,
+    script_capture_tools,  # noqa: F401
+    sequential_thinking,  # noqa: F401
     task_locking,
 )
 from .session import (

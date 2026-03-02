@@ -17,7 +17,7 @@ from cortex.tools.context.load_operations_result import (
     format_load_context_result,
     log_context_call,
 )
-from cortex.tools.metadata_helpers import summarize_files_content
+from cortex.tools.context.metadata_helpers import summarize_files_content
 
 logger = logging.getLogger(__name__)
 

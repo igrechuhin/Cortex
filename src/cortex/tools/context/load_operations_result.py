@@ -13,7 +13,7 @@ from cortex.core.session_logger import log_load_context_call
 from cortex.optimization.agent_roles import AgentRole
 from cortex.optimization.optimization_strategies import OptimizationResult
 from cortex.tools.context.load_models import FileMapEntry
-from cortex.tools.metadata_logging_helpers import log_metadata_context_call
+from cortex.tools.context.metadata_logging_helpers import log_metadata_context_call
 
 
 def format_load_context_result(

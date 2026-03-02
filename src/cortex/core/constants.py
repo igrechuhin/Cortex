@@ -32,7 +32,7 @@ FUNCTION_LENGTH_EXCLUDED_PATHS: tuple[str, ...] = (
     "src/cortex/tools/plans/plan.py",
     "src/cortex/tools/plans/plan_dispatcher.py",
     "src/cortex/tools/plans/roadmap_dispatcher.py",
-    "src/cortex/tools/sequential_thinking.py",
+    "src/cortex/tools/session/sequential_thinking.py",
     "src/cortex/tools/execution/pre_commit_pipeline.py",
 )
 

@@ -7,7 +7,7 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from cortex.tools.script_capture_tools import (
+from cortex.tools.session.script_capture_tools import (
     analyze_session_scripts,
     analyze_session_scripts_resource,
     capture_session_script,
@@ -29,7 +29,7 @@ class TestCaptureSessionScript:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             with patch(
-                "cortex.tools.script_capture_tools.resolve_project_root_async",
+                "cortex.tools.session.script_capture_tools.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=root,
             ):
@@ -51,7 +51,7 @@ class TestCaptureSessionScript:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             with patch(
-                "cortex.tools.script_capture_tools.resolve_project_root_async",
+                "cortex.tools.session.script_capture_tools.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=root,
             ):
@@ -81,7 +81,7 @@ class TestListSessionScripts:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             with patch(
-                "cortex.tools.script_capture_tools.resolve_project_root_async",
+                "cortex.tools.session.script_capture_tools.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=root,
             ):
@@ -97,7 +97,7 @@ class TestListSessionScripts:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             with patch(
-                "cortex.tools.script_capture_tools.resolve_project_root_async",
+                "cortex.tools.session.script_capture_tools.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=root,
             ):
@@ -133,7 +133,7 @@ class TestAnalyzeSessionScripts:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             with patch(
-                "cortex.tools.script_capture_tools.resolve_project_root_async",
+                "cortex.tools.session.script_capture_tools.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=root,
             ):
@@ -150,7 +150,7 @@ class TestAnalyzeSessionScripts:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             with patch(
-                "cortex.tools.script_capture_tools.resolve_project_root_async",
+                "cortex.tools.session.script_capture_tools.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=root,
             ):
@@ -200,7 +200,7 @@ class TestPromoteSessionScript:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             with patch(
-                "cortex.tools.script_capture_tools.resolve_project_root_async",
+                "cortex.tools.session.script_capture_tools.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=root,
             ):
@@ -217,7 +217,7 @@ class TestPromoteSessionScript:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             with patch(
-                "cortex.tools.script_capture_tools.resolve_project_root_async",
+                "cortex.tools.session.script_capture_tools.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=root,
             ):
@@ -251,7 +251,7 @@ class TestSessionScriptsDispatcher:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             with patch(
-                "cortex.tools.script_capture_tools.resolve_project_root_async",
+                "cortex.tools.session.script_capture_tools.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=root,
             ):
@@ -272,7 +272,7 @@ class TestSessionScriptsDispatcher:
             indent=2,
         )
         with patch(
-            "cortex.tools.script_capture_tools.list_session_scripts",
+            "cortex.tools.session.script_capture_tools.list_session_scripts",
             new_callable=AsyncMock,
             return_value=payload,
         ) as mocked_list:
@@ -291,7 +291,7 @@ class TestSessionScriptsDispatcher:
             indent=2,
         )
         with patch(
-            "cortex.tools.script_capture_tools.analyze_session_scripts",
+            "cortex.tools.session.script_capture_tools.analyze_session_scripts",
             new_callable=AsyncMock,
             return_value=payload,
         ) as mocked_analyze:
@@ -331,7 +331,7 @@ class TestScriptCaptureResources:
         """list_session_scripts_resource returns JSON (Phase 43)."""
         payload = json.dumps({"status": "success", "count": 0, "scripts": []}, indent=2)
         with patch(
-            "cortex.tools.script_capture_tools.list_session_scripts",
+            "cortex.tools.session.script_capture_tools.list_session_scripts",
             new_callable=AsyncMock,
             return_value=payload,
         ):
@@ -347,7 +347,7 @@ class TestScriptCaptureResources:
             {"status": "success", "count": 0, "analyses": []}, indent=2
         )
         with patch(
-            "cortex.tools.script_capture_tools.analyze_session_scripts",
+            "cortex.tools.session.script_capture_tools.analyze_session_scripts",
             new_callable=AsyncMock,
             return_value=payload,
         ) as mocked_analyze:
@@ -372,7 +372,7 @@ class TestScriptCaptureResources:
             indent=2,
         )
         with patch(
-            "cortex.tools.script_capture_tools.suggest_tool_improvements",
+            "cortex.tools.session.script_capture_tools.suggest_tool_improvements",
             new_callable=AsyncMock,
             return_value=payload,
         ):

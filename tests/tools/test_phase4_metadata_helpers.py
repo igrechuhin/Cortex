@@ -2,7 +2,7 @@
 
 from cortex.core.models import ModelDict
 from cortex.optimization.agent_roles import AgentRole
-from cortex.tools.metadata_helpers import calculate_metadata_relevance_scores
+from cortex.tools.context.metadata_helpers import calculate_metadata_relevance_scores
 
 
 class TestCalculateMetadataRelevanceScores:

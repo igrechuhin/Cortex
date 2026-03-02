@@ -17,6 +17,8 @@
 - **Tools subpackage Session 18 (2026-03-02)** - COMPLETE. Moved feedback_models, workflow_models, workflow_operations, composite_tools to execution/ subpackage. Added composite_tools shim for backward compat. Updated models_reexports. Flat files: 24→21. 4867 tests, 92.32% coverage.
 - **Tools sub-package reorganization Session 19 (2026-03-02)** - COMPLETE. Moved tool_search_operations to structure/tool_search.py; created skill_pack/ subpackage (models, operations). Flat files 21→18. 4867 tests, 92.32% coverage.
 - **Tools subpackage Session 20 (2026-03-02)** - COMPLETE. Moved structure_models and categories to structure/; roadmap_operations_models and append_entry_dispatcher to plans/. Flat files: 18→14. All tests pass, 92.32% coverage.
+- **Tools sub-package reorganization Session 21 (2026-03-02)** - COMPLETE. Moved metadata_helpers, metadata_logging_helpers, hybrid_metadata_helpers to context/; script_capture_tools, script_capture_handlers, script_capture_helpers, sequential_thinking to session/. Flat files 14→7. 4867 tests, 92.32% coverage.
+- **Commit: tools subpackage Session 21** - Phase A passed; 4867 tests, 92.32% coverage. Memory bank, roadmap, plan archiving (0 plans).
 
 ## 2026-03-01
 
