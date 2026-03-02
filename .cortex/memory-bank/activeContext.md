@@ -34,6 +34,8 @@
 
 - ✅ **Tools sub-package reorganization Session 21** - COMPLETE (2026-03-02) - Moved metadata helpers to context/, script capture and sequential_thinking to session/. Flat files 14→7.
 
+- ✅ **Reorganize tools/ into domain sub-packages** - COMPLETE (2026-03-02) - 21 sessions; flat files 185→7; all tests pass, 92.32% coverage.
+
 ## Completed Work (2026-03-01)
 
 - **Summary (2026-03-01)** - 1 entries archived.

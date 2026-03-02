@@ -19,6 +19,7 @@
 - **Tools subpackage Session 20 (2026-03-02)** - COMPLETE. Moved structure_models and categories to structure/; roadmap_operations_models and append_entry_dispatcher to plans/. Flat files: 18→14. All tests pass, 92.32% coverage.
 - **Tools sub-package reorganization Session 21 (2026-03-02)** - COMPLETE. Moved metadata_helpers, metadata_logging_helpers, hybrid_metadata_helpers to context/; script_capture_tools, script_capture_handlers, script_capture_helpers, sequential_thinking to session/. Flat files 14→7. 4867 tests, 92.32% coverage.
 - **Commit: tools subpackage Session 21** - Phase A passed; 4867 tests, 92.32% coverage. Memory bank, roadmap, plan archiving (0 plans).
+- **Tools subpackage reorganization (2026-03-02)** - COMPLETE. 21 sessions; flat files 185→7; all tests pass, 92.32% coverage.
 
 ## 2026-03-01
 
