@@ -6,7 +6,7 @@
 from unittest.mock import patch
 
 from cortex.setup import should_mount_setup
-from cortex.tools.config_status import ProjectConfigStatus
+from cortex.tools.config import ProjectConfigStatus
 
 
 def test_should_mount_setup_returns_true_when_memory_bank_not_initialized() -> None:

@@ -8,9 +8,8 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from cortex.core.models import JsonValue, ModelDict
-from cortex.tools.configuration_helpers import ConfigAction
-from cortex.tools.configuration_hybrid import get_config_resource
-from cortex.tools.configuration_operations import (
+from cortex.tools.config import ConfigAction, get_config_resource
+from cortex.tools.config.operations import (
     apply_config_updates,
     configure,
     configure_learning,
@@ -49,9 +48,7 @@ class TestConfigureMainHandler:
     async def test_configure_validation_view(self, tmp_path: Path) -> None:
         """Test viewing validation configuration."""
         # Arrange
-        with patch(
-            "cortex.tools.configuration_operations.get_managers"
-        ) as mock_get_managers:
+        with patch("cortex.tools.config.operations.get_managers") as mock_get_managers:
             mock_validation_config = MagicMock()
             mock_validation_config.config = MagicMock()
             mock_validation_config.config.model_dump.return_value = {
@@ -64,7 +61,7 @@ class TestConfigureMainHandler:
 
             # Act
             with patch(
-                "cortex.tools.configuration_operations.resolve_project_root_async",
+                "cortex.tools.config.operations.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=tmp_path,
             ):
@@ -84,9 +81,7 @@ class TestConfigureMainHandler:
     async def test_configure_optimization_view(self, tmp_path: Path) -> None:
         """Test viewing optimization configuration."""
         # Arrange
-        with patch(
-            "cortex.tools.configuration_operations.get_managers"
-        ) as mock_get_managers:
+        with patch("cortex.tools.config.operations.get_managers") as mock_get_managers:
             mock_optimization_config = MagicMock()
             mock_optimization_config.to_dict.return_value = {
                 "enabled": True,
@@ -98,7 +93,7 @@ class TestConfigureMainHandler:
 
             # Act
             with patch(
-                "cortex.tools.configuration_operations.resolve_project_root_async",
+                "cortex.tools.config.operations.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=tmp_path,
             ):
@@ -117,9 +112,7 @@ class TestConfigureMainHandler:
     async def test_configure_learning_view(self, tmp_path: Path) -> None:
         """Test viewing learning configuration."""
         # Arrange
-        with patch(
-            "cortex.tools.configuration_operations.get_managers"
-        ) as mock_get_managers:
+        with patch("cortex.tools.config.operations.get_managers") as mock_get_managers:
             mock_learning_engine = MagicMock()
             mock_learning_engine.data_manager.get_all_patterns.return_value = {}
 
@@ -133,7 +126,7 @@ class TestConfigureMainHandler:
 
             # Act
             with patch(
-                "cortex.tools.configuration_operations.resolve_project_root_async",
+                "cortex.tools.config.operations.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=tmp_path,
             ):
@@ -153,14 +146,12 @@ class TestConfigureMainHandler:
     async def test_configure_unknown_component(self, tmp_path: Path) -> None:
         """Test configure with unknown component returns error."""
         # Arrange
-        with patch(
-            "cortex.tools.configuration_operations.get_managers"
-        ) as mock_get_managers:
+        with patch("cortex.tools.config.operations.get_managers") as mock_get_managers:
             mock_get_managers.return_value = {}
 
             # Act
             with patch(
-                "cortex.tools.configuration_operations.resolve_project_root_async",
+                "cortex.tools.config.operations.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=tmp_path,
             ):
@@ -180,14 +171,12 @@ class TestConfigureMainHandler:
     async def test_configure_exception_handling(self, tmp_path: Path) -> None:
         """Test configure handles exceptions gracefully."""
         # Arrange
-        with patch(
-            "cortex.tools.configuration_operations.get_managers"
-        ) as mock_get_managers:
+        with patch("cortex.tools.config.operations.get_managers") as mock_get_managers:
             mock_get_managers.side_effect = RuntimeError("Test error")
 
             # Act
             with patch(
-                "cortex.tools.configuration_operations.resolve_project_root_async",
+                "cortex.tools.config.operations.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=tmp_path,
             ):
@@ -211,9 +200,7 @@ class TestGetConfigResourceAndUpdateConfig:
     async def test_get_config_resource_validation_returns_success(self) -> None:
         """Test get_config_resource returns view result for validation component."""
         # Arrange
-        with patch(
-            "cortex.tools.configuration_hybrid.get_managers"
-        ) as mock_get_managers:
+        with patch("cortex.tools.config.hybrid.get_managers") as mock_get_managers:
             mock_validation_config = MagicMock()
             mock_validation_config.config = MagicMock()
             mock_validation_config.config.model_dump.return_value = {
@@ -224,7 +211,7 @@ class TestGetConfigResourceAndUpdateConfig:
                 validation_config=mock_validation_config
             )
             with patch(
-                "cortex.tools.configuration_hybrid.resolve_project_root_async",
+                "cortex.tools.config.hybrid.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=Path("/tmp/test"),
             ):
@@ -241,9 +228,7 @@ class TestGetConfigResourceAndUpdateConfig:
     async def test_get_config_resource_optimization_returns_success(self) -> None:
         """Test get_config_resource returns view result for optimization component."""
         # Arrange
-        with patch(
-            "cortex.tools.configuration_hybrid.get_managers"
-        ) as mock_get_managers:
+        with patch("cortex.tools.config.hybrid.get_managers") as mock_get_managers:
             mock_optimization_config = MagicMock()
             mock_optimization_config.to_dict.return_value = {
                 "enabled": True,
@@ -253,7 +238,7 @@ class TestGetConfigResourceAndUpdateConfig:
                 optimization_config=mock_optimization_config
             )
             with patch(
-                "cortex.tools.configuration_hybrid.resolve_project_root_async",
+                "cortex.tools.config.hybrid.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=Path("/tmp/test"),
             ):
@@ -270,9 +255,7 @@ class TestGetConfigResourceAndUpdateConfig:
     async def test_get_config_resource_learning_returns_success(self) -> None:
         """Test get_config_resource returns view result for learning component."""
         # Arrange
-        with patch(
-            "cortex.tools.configuration_hybrid.get_managers"
-        ) as mock_get_managers:
+        with patch("cortex.tools.config.hybrid.get_managers") as mock_get_managers:
             mock_learning_engine = MagicMock()
             mock_learning_engine.data_manager.get_all_patterns.return_value = {}
 
@@ -284,7 +267,7 @@ class TestGetConfigResourceAndUpdateConfig:
                 optimization_config=mock_optimization_config,
             )
             with patch(
-                "cortex.tools.configuration_hybrid.resolve_project_root_async",
+                "cortex.tools.config.hybrid.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=Path("/tmp/test"),
             ):
@@ -302,11 +285,11 @@ class TestGetConfigResourceAndUpdateConfig:
     async def test_get_config_resource_unknown_component_returns_error(self) -> None:
         """Test get_config_resource with unknown component returns error."""
         with patch(
-            "cortex.tools.configuration_hybrid.get_managers",
+            "cortex.tools.config.hybrid.get_managers",
             return_value=make_test_managers(),
         ):
             with patch(
-                "cortex.tools.configuration_hybrid.resolve_project_root_async",
+                "cortex.tools.config.hybrid.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=Path("/tmp/test"),
             ):
@@ -1135,11 +1118,11 @@ class TestConfigureContextLogging:
         mock_ctx = AsyncMock()
         with (
             patch(
-                "cortex.tools.configuration_operations.log_client",
+                "cortex.tools.config.operations.log_client",
                 new_callable=AsyncMock,
             ) as mock_log,
             patch(
-                "cortex.tools.configuration_operations.get_managers",
+                "cortex.tools.config.operations.get_managers",
                 new_callable=AsyncMock,
             ) as mock_get_managers,
         ):
@@ -1155,7 +1138,7 @@ class TestConfigureContextLogging:
 
             # Act
             with patch(
-                "cortex.tools.configuration_operations.resolve_project_root_async",
+                "cortex.tools.config.operations.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=tmp_path,
             ):
@@ -1180,7 +1163,7 @@ class TestConfigureContextLogging:
         # Arrange
         mock_ctx = AsyncMock()
         with patch(
-            "cortex.tools.configuration_operations.log_client",
+            "cortex.tools.config.operations.log_client",
             new_callable=AsyncMock,
         ) as mock_log:
             # Act
@@ -1208,11 +1191,11 @@ class TestConfigureContextLogging:
         mock_ctx = AsyncMock()
         with (
             patch(
-                "cortex.tools.configuration_operations.log_client",
+                "cortex.tools.config.operations.log_client",
                 new_callable=AsyncMock,
             ) as mock_log,
             patch(
-                "cortex.tools.configuration_operations.get_managers",
+                "cortex.tools.config.operations.get_managers",
                 new_callable=AsyncMock,
             ) as mock_get_managers,
         ):
@@ -1243,11 +1226,11 @@ class TestConfigureContextLogging:
         mock_ctx = AsyncMock()
         with (
             patch(
-                "cortex.tools.configuration_operations.log_client",
+                "cortex.tools.config.operations.log_client",
                 new_callable=AsyncMock,
             ) as mock_log,
             patch(
-                "cortex.tools.configuration_operations.get_managers",
+                "cortex.tools.config.operations.get_managers",
                 new_callable=AsyncMock,
                 side_effect=RuntimeError("Setup failed"),
             ),

@@ -22,14 +22,14 @@ from cortex.core.models import JsonValue
 from cortex.core.project_root_resolver import resolve_project_root_async
 from cortex.managers.types import ManagersDict
 from cortex.server import mcp
-from cortex.tools.configuration_helpers import ConfigAction, parse_config_action
-from cortex.tools.configuration_operations_errors import (
+from cortex.tools.config.helpers import ConfigAction, parse_config_action
+from cortex.tools.config.operations_errors import (
     create_configuration_exception_error,
     create_error_response,
     create_invalid_action_error,
     create_invalid_component_error,
 )
-from cortex.tools.configuration_operations_handlers import (
+from cortex.tools.config.operations_handlers import (
     configure_learning,
     configure_optimization,
     configure_validation,
@@ -41,7 +41,7 @@ from cortex.tools.configuration_operations_handlers import (
     handle_validation_reset,
     handle_validation_update,
 )
-from cortex.tools.configuration_operations_response import (
+from cortex.tools.config.operations_response import (
     apply_config_updates,
     create_success_response,
     export_learned_patterns,

@@ -38,8 +38,7 @@ from . import (
     append_entry_dispatcher,  # noqa: F401
     cache_json_tools,  # noqa: F401
     composite_tools,  # noqa: F401
-    configuration_hybrid,  # noqa: F401
-    configuration_operations,  # noqa: F401
+    config,  # noqa: F401 - registers configure tool and get_config_resource
     evaluation,  # noqa: F401
     execution,  # noqa: F401
     health_check_operations,  # noqa: F401
@@ -116,8 +115,7 @@ __all__ = [
     "analysis_operations",
     "cache_json_tools",
     "compaction_operations",
-    "configuration_hybrid",
-    "configuration_operations",
+    "config",
     "composite_tools",
     "connection_health",
     "file_operations",

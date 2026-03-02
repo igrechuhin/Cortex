@@ -1,6 +1,6 @@
 """Unit tests for configuration_helpers."""
 
-from cortex.tools.configuration_helpers import ConfigAction, parse_config_action
+from cortex.tools.config import ConfigAction, parse_config_action
 
 
 def test_parse_config_action_returns_none_for_none() -> None:

@@ -12,9 +12,11 @@ from cortex.managers.utils import get_manager
 from cortex.optimization.config import OptimizationConfig
 from cortex.refactoring.adaptation_config import AdaptationConfig
 from cortex.refactoring.learning_engine import LearningEngine
-from cortex.tools.configuration_helpers import ConfigAction
-from cortex.tools.configuration_operations_errors import create_invalid_action_error
-from cortex.tools.configuration_operations_response import (
+from cortex.tools.config.helpers import ConfigAction
+from cortex.tools.config.operations_errors import (
+    create_invalid_action_error,
+)
+from cortex.tools.config.operations_response import (
     apply_config_updates,
     create_success_response,
     export_learned_patterns,

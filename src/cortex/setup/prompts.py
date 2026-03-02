@@ -11,7 +11,7 @@ conditionally available.
 
 from cortex.core.icon_helpers import create_emoji_icon
 from cortex.server import mcp
-from cortex.tools.config_status import get_project_config_status
+from cortex.tools.config import get_project_config_status
 
 _config_status = get_project_config_status()
 

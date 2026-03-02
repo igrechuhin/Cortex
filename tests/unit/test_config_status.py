@@ -11,7 +11,7 @@ from cortex.core.path_resolver import (
     get_cortex_path,
     get_cursor_path,
 )
-from cortex.tools.config_status import get_project_config_status
+from cortex.tools.config import get_project_config_status
 
 
 class TestGetProjectConfigStatus:
@@ -35,7 +35,7 @@ class TestGetProjectConfigStatus:
             _ = (memory_bank_dir / fname).write_text("# Test")
 
         with patch(
-            "cortex.tools.config_status.get_project_root", return_value=tmp_path
+            "cortex.tools.config.status.get_project_root", return_value=tmp_path
         ):
             # Act
             status = get_project_config_status()
@@ -52,7 +52,7 @@ class TestGetProjectConfigStatus:
         _ = (memory_bank_dir / "projectBrief.md").write_text("# Test")
 
         with patch(
-            "cortex.tools.config_status.get_project_root", return_value=tmp_path
+            "cortex.tools.config.status.get_project_root", return_value=tmp_path
         ):
             # Act
             status = get_project_config_status()
@@ -64,7 +64,7 @@ class TestGetProjectConfigStatus:
         """Test memory bank not initialized when directory missing."""
         # Arrange
         with patch(
-            "cortex.tools.config_status.get_project_root", return_value=tmp_path
+            "cortex.tools.config.status.get_project_root", return_value=tmp_path
         ):
             # Act
             status = get_project_config_status()
@@ -80,7 +80,7 @@ class TestGetProjectConfigStatus:
             (cortex_dir / subdir).mkdir(parents=True)
 
         with patch(
-            "cortex.tools.config_status.get_project_root", return_value=tmp_path
+            "cortex.tools.config.status.get_project_root", return_value=tmp_path
         ):
             # Act
             status = get_project_config_status()
@@ -97,7 +97,7 @@ class TestGetProjectConfigStatus:
         (cortex_dir / "memory-bank").mkdir()
 
         with patch(
-            "cortex.tools.config_status.get_project_root", return_value=tmp_path
+            "cortex.tools.config.status.get_project_root", return_value=tmp_path
         ):
             # Act
             status = get_project_config_status()
@@ -121,7 +121,7 @@ class TestGetProjectConfigStatus:
             symlink.symlink_to(f"../.cortex/{symlink_name}")
 
         with patch(
-            "cortex.tools.config_status.get_project_root", return_value=tmp_path
+            "cortex.tools.config.status.get_project_root", return_value=tmp_path
         ):
             # Act
             status = get_project_config_status()
@@ -137,7 +137,7 @@ class TestGetProjectConfigStatus:
         # Don't create symlinks
 
         with patch(
-            "cortex.tools.config_status.get_project_root", return_value=tmp_path
+            "cortex.tools.config.status.get_project_root", return_value=tmp_path
         ):
             # Act
             status = get_project_config_status()
@@ -156,7 +156,7 @@ class TestGetProjectConfigStatus:
         symlink.symlink_to("../wrong/path")
 
         with patch(
-            "cortex.tools.config_status.get_project_root", return_value=tmp_path
+            "cortex.tools.config.status.get_project_root", return_value=tmp_path
         ):
             # Act
             status = get_project_config_status()
@@ -171,7 +171,7 @@ class TestGetProjectConfigStatus:
         legacy_dir.mkdir(parents=True)
 
         with patch(
-            "cortex.tools.config_status.get_project_root", return_value=tmp_path
+            "cortex.tools.config.status.get_project_root", return_value=tmp_path
         ):
             # Act
             status = get_project_config_status()
@@ -187,7 +187,7 @@ class TestGetProjectConfigStatus:
         legacy_dir.mkdir()
 
         with patch(
-            "cortex.tools.config_status.get_project_root", return_value=tmp_path
+            "cortex.tools.config.status.get_project_root", return_value=tmp_path
         ):
             # Act
             status = get_project_config_status()
@@ -202,7 +202,7 @@ class TestGetProjectConfigStatus:
         legacy_dir.mkdir()
 
         with patch(
-            "cortex.tools.config_status.get_project_root", return_value=tmp_path
+            "cortex.tools.config.status.get_project_root", return_value=tmp_path
         ):
             # Act
             status = get_project_config_status()
@@ -232,7 +232,7 @@ class TestGetProjectConfigStatus:
         legacy_dir.mkdir()
 
         with patch(
-            "cortex.tools.config_status.get_project_root", return_value=tmp_path
+            "cortex.tools.config.status.get_project_root", return_value=tmp_path
         ):
             # Act
             status = get_project_config_status()
@@ -245,7 +245,7 @@ class TestGetProjectConfigStatus:
         """Test fail-safe behavior when exception occurs."""
         # Arrange
         with patch(
-            "cortex.tools.config_status.get_project_root",
+            "cortex.tools.config.status.get_project_root",
             side_effect=Exception("Test error"),
         ):
             # Act
@@ -294,7 +294,7 @@ class TestGetProjectConfigStatus:
             symlink.symlink_to(f"../.cortex/{symlink_name}")
 
         with patch(
-            "cortex.tools.config_status.get_project_root", return_value=tmp_path
+            "cortex.tools.config.status.get_project_root", return_value=tmp_path
         ):
             # Act
             status = get_project_config_status()

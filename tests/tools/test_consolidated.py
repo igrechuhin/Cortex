@@ -11,7 +11,7 @@ from cortex.core.models import DetailedFileMetadata, SectionMetadata
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.managers.lazy_manager import LazyManager
 from cortex.structure.models import HealthGrade
-from cortex.tools.configuration_operations import configure
+from cortex.tools.config import configure
 from cortex.tools.context.analysis_operations import analyze
 from cortex.tools.files.file_operations import manage_file
 from cortex.tools.refactoring_operations import suggest_refactoring
@@ -1260,7 +1260,7 @@ class TestConfigure:
 
         with (
             patch(
-                "cortex.tools.configuration_operations.resolve_project_root_async",
+                "cortex.tools.config.operations.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=Path("/tmp/test"),
             ),
@@ -1296,7 +1296,7 @@ class TestConfigure:
 
         with (
             patch(
-                "cortex.tools.configuration_operations.resolve_project_root_async",
+                "cortex.tools.config.operations.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=Path("/tmp/test"),
             ),
@@ -1334,7 +1334,7 @@ class TestConfigure:
 
         with (
             patch(
-                "cortex.tools.configuration_operations.resolve_project_root_async",
+                "cortex.tools.config.operations.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=Path("/tmp/test"),
             ),
@@ -1347,7 +1347,7 @@ class TestConfigure:
                 return_value=Path("/tmp/test"),
             ),
             patch(
-                "cortex.tools.configuration_operations_handlers.get_manager",
+                "cortex.tools.config.operations_handlers.get_manager",
                 return_value=mock_validation_config,
             ),
         ):
@@ -1371,7 +1371,7 @@ class TestConfigure:
 
         with (
             patch(
-                "cortex.tools.configuration_operations.resolve_project_root_async",
+                "cortex.tools.config.operations.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=Path("/tmp/test"),
             ),
@@ -1406,7 +1406,7 @@ class TestConfigure:
 
         with (
             patch(
-                "cortex.tools.configuration_operations.resolve_project_root_async",
+                "cortex.tools.config.operations.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=Path("/tmp/test"),
             ),
@@ -1453,7 +1453,7 @@ class TestConfigure:
 
         with (
             patch(
-                "cortex.tools.configuration_operations.resolve_project_root_async",
+                "cortex.tools.config.operations.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=Path("/tmp/test"),
             ),
@@ -1492,7 +1492,7 @@ class TestConfigure:
 
         with (
             patch(
-                "cortex.tools.configuration_operations.resolve_project_root_async",
+                "cortex.tools.config.operations.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=Path("/tmp/test"),
             ),
@@ -1540,7 +1540,7 @@ class TestConfigure:
 
         with (
             patch(
-                "cortex.tools.configuration_operations.resolve_project_root_async",
+                "cortex.tools.config.operations.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=Path("/tmp/test"),
             ),
@@ -1553,7 +1553,7 @@ class TestConfigure:
                 return_value=Path("/tmp/test"),
             ),
             patch(
-                "cortex.tools.configuration_operations_handlers.get_manager",
+                "cortex.tools.config.operations_handlers.get_manager",
                 side_effect=get_manager_side_effect,
             ),
             patch(
@@ -1576,7 +1576,7 @@ class TestConfigure:
 
         with (
             patch(
-                "cortex.tools.configuration_operations.resolve_project_root_async",
+                "cortex.tools.config.operations.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=Path("/tmp/test"),
             ),
@@ -1602,7 +1602,7 @@ class TestConfigure:
 
         with (
             patch(
-                "cortex.tools.configuration_operations.resolve_project_root_async",
+                "cortex.tools.config.operations.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=Path("/tmp/test"),
             ),
@@ -1632,7 +1632,7 @@ class TestConfigure:
 
         with (
             patch(
-                "cortex.tools.configuration_operations.resolve_project_root_async",
+                "cortex.tools.config.operations.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=Path("/tmp/test"),
             ),

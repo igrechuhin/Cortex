@@ -14,7 +14,7 @@
 
 ## Pending plans (from .cortex/plans)
 
-- **PENDING** Reorganize tools/ into domain sub-packages (Session 6 done). Plan: `.cortex/plans/plan-tools-subpackage-reorganization.md`
+- **PENDING** Reorganize tools/ into domain sub-packages (Session 11 done). Plan: `.cortex/plans/plan-tools-subpackage-reorganization.md`
 
 ### Fixes
 

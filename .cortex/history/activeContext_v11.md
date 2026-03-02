@@ -10,6 +10,8 @@
 
 - ✅ **Tools sub-package reorganization Session 10** - COMPLETE (2026-03-02) - Moved 7 execution_* modules into execution/ (errors, feedback, handlers, helpers, monitoring, planning, validation). All imports updated. Tests and quality gate pass.
 
+- ✅ **Tools sub-package reorganization Session 11** - COMPLETE (2026-03-02) - Created tools/config/ subpackage; moved 7 configuration modules. Flat files reduced from ~60 to 53.
+
 ## Completed Work (2026-03-01)
 
 - **Summary (2026-03-01)** - 1 entries archived.

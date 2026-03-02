@@ -11,8 +11,8 @@ from cortex.core.mcp_stability import (
 )
 from cortex.core.project_root_resolver import resolve_project_root_async
 from cortex.server import mcp
-from cortex.tools.configuration_helpers import ConfigAction
-from cortex.tools.configuration_operations import (
+from cortex.tools.config.helpers import ConfigAction
+from cortex.tools.config.operations import (
     create_invalid_component_error,
     get_component_handler,
     get_managers,

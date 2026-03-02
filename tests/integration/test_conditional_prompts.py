@@ -58,7 +58,7 @@ class TestConditionalPromptRegistration:
 
         # Act - Import setup prompts with mocked project root
         with patch(
-            "cortex.tools.config_status.get_project_root", return_value=tmp_path
+            "cortex.tools.config.status.get_project_root", return_value=tmp_path
         ):
             _clear_setup_prompts_cache()
             import cortex.setup.prompts as prompts_module
@@ -73,7 +73,7 @@ class TestConditionalPromptRegistration:
     def test_prompts_registered_when_not_configured(self, tmp_path: Path):
         """Test that setup prompts are registered when project is not configured."""
         with patch(
-            "cortex.tools.config_status.get_project_root", return_value=tmp_path
+            "cortex.tools.config.status.get_project_root", return_value=tmp_path
         ):
             _clear_setup_prompts_cache()
             import cortex.setup.prompts as prompts_module
@@ -91,7 +91,7 @@ class TestConditionalPromptRegistration:
         _ = (legacy_path / "old.md").write_text("# Test")
 
         with patch(
-            "cortex.tools.config_status.get_project_root", return_value=tmp_path
+            "cortex.tools.config.status.get_project_root", return_value=tmp_path
         ):
             _clear_setup_prompts_cache()
             import cortex.setup.prompts as prompts_module
@@ -122,7 +122,7 @@ class TestConditionalPromptRegistration:
             _ = (memory_bank_dir / core_file).write_text("# Test")
 
         with patch(
-            "cortex.tools.config_status.get_project_root", return_value=tmp_path
+            "cortex.tools.config.status.get_project_root", return_value=tmp_path
         ):
             _clear_setup_prompts_cache()
             import cortex.setup.prompts as prompts_module

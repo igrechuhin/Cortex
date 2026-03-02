@@ -16,7 +16,7 @@ def test_prompts_module_registers_conditional_prompts_when_needed() -> None:
     )
 
     with patch(
-        "cortex.tools.config_status.get_project_config_status",
+        "cortex.tools.config.get_project_config_status",
         return_value=fake_status_migration,
     ):
         if "cortex.setup.prompts" in sys.modules:
@@ -38,7 +38,7 @@ def test_prompts_module_registers_conditional_prompts_when_needed() -> None:
     )
 
     with patch(
-        "cortex.tools.config_status.get_project_config_status",
+        "cortex.tools.config.get_project_config_status",
         return_value=fake_status_init,
     ):
         if "cortex.setup.prompts" in sys.modules:

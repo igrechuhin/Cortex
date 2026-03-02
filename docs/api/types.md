@@ -970,7 +970,7 @@ Fixed sets of string values used at MCP tool boundaries (operation, action, type
 | Enum | Module | Values |
 |------|--------|--------|
 | `ValidationCheckType` | cortex.tools.validation_helpers | SCHEMA, DUPLICATIONS, QUALITY, INFRASTRUCTURE, TIMESTAMPS, ROADMAP_SYNC |
-| `ConfigAction` | cortex.tools.configuration_helpers | VIEW, UPDATE, RESET |
+| `ConfigAction` | cortex.tools.config | VIEW, UPDATE, RESET |
 | `AnalysisTarget` | cortex.tools.context.analysis_helpers | USAGE_PATTERNS, STRUCTURE, INSIGHTS |
 | `StubAdapterLanguage` | cortex.services.framework_adapters.stub_adapter | TYPESCRIPT, JAVASCRIPT, RUST, GO, JAVA |
 | `FileOperation` | cortex.tools.files.file_operation_helpers | READ, WRITE, METADATA |

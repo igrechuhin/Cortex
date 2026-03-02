@@ -11,7 +11,7 @@ so setup is implemented as a separate module that registers on the main server.
 setup_synapse is always available via prompts_always module.
 """
 
-from cortex.tools.config_status import (
+from cortex.tools.config import (
     ProjectConfigStatus,
     get_project_config_status,
 )
