@@ -6,7 +6,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from cortex.refactoring.models import RefactoringAction
-from cortex.tools.execution_planning import (
+from cortex.tools.execution.planning import (
     execute_validated_refactoring,
     execute_with_error_handling,
     get_suggestion_for_feedback,
@@ -69,7 +69,7 @@ class TestExecuteWithErrorHandling:
     async def test_returns_error_response_when_inner_raises(self) -> None:
         """Returns error JSON when execute_validated_refactoring raises."""
         with patch(
-            "cortex.tools.execution_planning.execute_validated_refactoring",
+            "cortex.tools.execution.planning.execute_validated_refactoring",
             new_callable=AsyncMock,
             side_effect=RuntimeError("Simulated failure"),
         ):
@@ -151,16 +151,16 @@ class TestProvideFeedbackImpl:
 
         with (
             patch(
-                "cortex.tools.execution_planning.get_project_root",
+                "cortex.tools.execution.planning.get_project_root",
                 return_value="/tmp",
             ),
             patch(
-                "cortex.tools.execution_planning.get_managers",
+                "cortex.tools.execution.planning.get_managers",
                 new_callable=AsyncMock,
                 return_value=mgrs,
             ),
             patch(
-                "cortex.tools.execution_planning.extract_feedback_managers",
+                "cortex.tools.execution.planning.extract_feedback_managers",
                 new_callable=AsyncMock,
                 return_value=(learning_engine, refactoring_engine, approval_manager),
             ),

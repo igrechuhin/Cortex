@@ -10,7 +10,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from cortex.managers.types import ManagersDict
-from cortex.tools.execution_handlers import (
+from cortex.tools.execution.handlers import (
     handle_apply_action,
     handle_approve_action,
     handle_rollback_action,
@@ -107,7 +107,7 @@ class TestHandleApplyActionSuggestionNotFound:
         self, mock_mgrs: ManagersDict
     ) -> None:
         """When get_suggestion returns None, result status is validation_failed."""
-        from cortex.tools.execution_handlers import handle_apply_action
+        from cortex.tools.execution.handlers import handle_apply_action
 
         async def get_manager_wrapper(*args: object, **kwargs: object) -> object:
             if args[1] == "refactoring_engine":
@@ -117,7 +117,7 @@ class TestHandleApplyActionSuggestionNotFound:
             return MagicMock()
 
         with patch(
-            "cortex.tools.execution_handlers.get_manager",
+            "cortex.tools.execution.handlers.get_manager",
             side_effect=get_manager_wrapper,
         ):
             result_json = await handle_apply_action(

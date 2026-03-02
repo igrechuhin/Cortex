@@ -42,7 +42,6 @@ from . import (
     configuration_operations,  # noqa: F401
     evaluation,  # noqa: F401
     execution,  # noqa: F401
-    execution_feedback,  # noqa: F401
     health_check_operations,  # noqa: F401
     optimization,  # noqa: F401
     prompts,  # noqa: F401
@@ -108,7 +107,6 @@ from .usage import usage_analytics  # noqa: F401
 
 # Explicitly reference modules imported for side effects to satisfy type checker
 _ = append_entry_dispatcher
-_ = execution_feedback
 _ = plan
 _ = roadmap
 _ = synapse_prompts

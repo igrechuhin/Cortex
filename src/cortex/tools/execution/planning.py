@@ -16,22 +16,22 @@ from cortex.refactoring.models import (
     RefactoringSuggestionModel,
 )
 from cortex.refactoring.refactoring_engine import RefactoringEngine
-from cortex.tools.execution_errors import create_invalid_action_error
-from cortex.tools.execution_handlers import (
+from cortex.tools.execution.errors import create_invalid_action_error
+from cortex.tools.execution.handlers import (
     handle_apply_action,
     handle_approve_action,
     handle_rollback_action,
 )
-from cortex.tools.execution_helpers import (
+from cortex.tools.execution.helpers import (
     check_approval_status,
     extract_feedback_managers,
     record_feedback_and_build_result,
 )
-from cortex.tools.execution_monitoring import (
+from cortex.tools.execution.monitoring import (
     log_apply_result,
     warn_suggestion_not_found_and_return,
 )
-from cortex.tools.execution_validation import validate_apply_refactoring_params
+from cortex.tools.execution.validation import validate_apply_refactoring_params
 
 
 async def execute_with_error_handling(

@@ -3,7 +3,7 @@
 import json
 
 from cortex.refactoring.models import RefactoringAction
-from cortex.tools.execution_validation import validate_apply_refactoring_params
+from cortex.tools.execution.validation import validate_apply_refactoring_params
 
 
 class TestValidateApplyRefactoringParams:

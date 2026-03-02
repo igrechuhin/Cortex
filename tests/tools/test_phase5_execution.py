@@ -38,8 +38,8 @@ from cortex.refactoring.models import (
     RollbackRefactoringStatus,
 )
 from cortex.tools.execution import apply_refactoring
-from cortex.tools.execution_feedback import provide_feedback
-from cortex.tools.execution_helpers import (
+from cortex.tools.execution.feedback import provide_feedback
+from cortex.tools.execution.helpers import (
     check_approval_status,
     parse_refactoring_action,
     record_feedback_and_build_result,
@@ -90,11 +90,11 @@ def _patch_get_manager() -> (  # pyright: ignore[reportUnusedFunction]
     with (
         patch("cortex.managers.utils.get_manager", new=get_manager_sync_wrapper),
         patch(
-            "cortex.tools.execution_handlers.get_manager",
+            "cortex.tools.execution.handlers.get_manager",
             new=get_manager_sync_wrapper,
         ),
         patch(
-            "cortex.tools.execution_helpers.get_manager",
+            "cortex.tools.execution.helpers.get_manager",
             new=get_manager_sync_wrapper,
         ),
     ):
@@ -239,7 +239,7 @@ class TestApplyRefactoringApprove:
         # Arrange
         with (
             patch(
-                "cortex.tools.execution_planning.get_project_root",
+                "cortex.tools.execution.planning.get_project_root",
                 return_value=mock_project_root,
             ),
             patch(
@@ -266,7 +266,7 @@ class TestApplyRefactoringApprove:
         # Arrange
         with (
             patch(
-                "cortex.tools.execution_planning.get_project_root",
+                "cortex.tools.execution.planning.get_project_root",
                 return_value=mock_project_root,
             ),
             patch(
@@ -292,7 +292,7 @@ class TestApplyRefactoringApprove:
         # Arrange
         with (
             patch(
-                "cortex.tools.execution_planning.get_project_root",
+                "cortex.tools.execution.planning.get_project_root",
                 return_value=mock_project_root,
             ),
             patch(
@@ -315,7 +315,7 @@ class TestApplyRefactoringApprove:
         """Test approval without suggestion_id."""
         # Arrange
         with patch(
-            "cortex.tools.execution_planning.get_project_root",
+            "cortex.tools.execution.planning.get_project_root",
             return_value=mock_project_root,
         ):
             # Act
@@ -344,7 +344,7 @@ class TestApplyRefactoringApply:
         # Arrange
         with (
             patch(
-                "cortex.tools.execution_planning.get_project_root",
+                "cortex.tools.execution.planning.get_project_root",
                 return_value=mock_project_root,
             ),
             patch(
@@ -376,7 +376,7 @@ class TestApplyRefactoringApply:
         # Arrange
         with (
             patch(
-                "cortex.tools.execution_planning.get_project_root",
+                "cortex.tools.execution.planning.get_project_root",
                 return_value=mock_project_root,
             ),
             patch(
@@ -413,7 +413,7 @@ class TestApplyRefactoringApply:
 
         with (
             patch(
-                "cortex.tools.execution_planning.get_project_root",
+                "cortex.tools.execution.planning.get_project_root",
                 return_value=mock_project_root,
             ),
             patch(
@@ -441,7 +441,7 @@ class TestApplyRefactoringApply:
 
         with (
             patch(
-                "cortex.tools.execution_planning.get_project_root",
+                "cortex.tools.execution.planning.get_project_root",
                 return_value=mock_project_root,
             ),
             patch(
@@ -473,7 +473,7 @@ class TestApplyRefactoringApply:
 
         with (
             patch(
-                "cortex.tools.execution_planning.get_project_root",
+                "cortex.tools.execution.planning.get_project_root",
                 return_value=mock_project_root,
             ),
             patch(
@@ -497,7 +497,7 @@ class TestApplyRefactoringApply:
         """Test application without suggestion_id."""
         # Arrange
         with patch(
-            "cortex.tools.execution_planning.get_project_root",
+            "cortex.tools.execution.planning.get_project_root",
             return_value=mock_project_root,
         ):
             # Act
@@ -513,7 +513,7 @@ class TestApplyRefactoringApply:
     async def test_apply_missing_approval_id(self, mock_project_root: Path) -> None:
         """Test application without approval_id."""
         with patch(
-            "cortex.tools.execution_planning.get_project_root",
+            "cortex.tools.execution.planning.get_project_root",
             return_value=mock_project_root,
         ):
             result_str = await apply_refactoring(
@@ -542,7 +542,7 @@ class TestApplyRefactoringRollback:
         # Arrange
         with (
             patch(
-                "cortex.tools.execution_planning.get_project_root",
+                "cortex.tools.execution.planning.get_project_root",
                 return_value=mock_project_root,
             ),
             patch(
@@ -573,7 +573,7 @@ class TestApplyRefactoringRollback:
         # Arrange
         with (
             patch(
-                "cortex.tools.execution_planning.get_project_root",
+                "cortex.tools.execution.planning.get_project_root",
                 return_value=mock_project_root,
             ),
             patch(
@@ -616,7 +616,7 @@ class TestApplyRefactoringRollback:
 
         with (
             patch(
-                "cortex.tools.execution_planning.get_project_root",
+                "cortex.tools.execution.planning.get_project_root",
                 return_value=mock_project_root,
             ),
             patch(
@@ -640,7 +640,7 @@ class TestApplyRefactoringRollback:
         """Test rollback without execution_id."""
         # Arrange
         with patch(
-            "cortex.tools.execution_planning.get_project_root",
+            "cortex.tools.execution.planning.get_project_root",
             return_value=mock_project_root,
         ):
             # Act
@@ -669,7 +669,7 @@ class TestApplyRefactoringEdgeCases:
         """Test apply_refactoring accepts RefactoringAction enum."""
         with (
             patch(
-                "cortex.tools.execution_planning.get_project_root",
+                "cortex.tools.execution.planning.get_project_root",
                 return_value=mock_project_root,
             ),
             patch(
@@ -691,7 +691,7 @@ class TestApplyRefactoringEdgeCases:
         # Arrange
         with (
             patch(
-                "cortex.tools.execution_planning.get_project_root",
+                "cortex.tools.execution.planning.get_project_root",
                 return_value=mock_project_root,
             ),
             patch(
@@ -713,7 +713,7 @@ class TestApplyRefactoringEdgeCases:
         """Test exception handling in apply_refactoring."""
         # Arrange
         with patch(
-            "cortex.tools.execution_planning.get_project_root",
+            "cortex.tools.execution.planning.get_project_root",
             side_effect=RuntimeError("Test error"),
         ):
             # Act
@@ -746,7 +746,7 @@ class TestProvideFeedback:
         # Arrange
         with (
             patch(
-                "cortex.tools.execution_planning.get_project_root",
+                "cortex.tools.execution.planning.get_project_root",
                 return_value=mock_project_root,
             ),
             patch(
@@ -780,7 +780,7 @@ class TestProvideFeedback:
         # Arrange
         with (
             patch(
-                "cortex.tools.execution_planning.get_project_root",
+                "cortex.tools.execution.planning.get_project_root",
                 return_value=mock_project_root,
             ),
             patch(
@@ -807,7 +807,7 @@ class TestProvideFeedback:
         # Arrange
         with (
             patch(
-                "cortex.tools.execution_planning.get_project_root",
+                "cortex.tools.execution.planning.get_project_root",
                 return_value=mock_project_root,
             ),
             patch(
@@ -834,7 +834,7 @@ class TestProvideFeedback:
         # Arrange
         with (
             patch(
-                "cortex.tools.execution_planning.get_project_root",
+                "cortex.tools.execution.planning.get_project_root",
                 return_value=mock_project_root,
             ),
             patch(
@@ -862,7 +862,7 @@ class TestProvideFeedback:
 
         with (
             patch(
-                "cortex.tools.execution_planning.get_project_root",
+                "cortex.tools.execution.planning.get_project_root",
                 return_value=mock_project_root,
             ),
             patch(
@@ -902,7 +902,7 @@ class TestProvideFeedback:
 
         with (
             patch(
-                "cortex.tools.execution_planning.get_project_root",
+                "cortex.tools.execution.planning.get_project_root",
                 return_value=mock_project_root,
             ),
             patch(
@@ -928,7 +928,7 @@ class TestProvideFeedback:
         """Test exception handling in provide_feedback (resolve_project_root)."""
         # Arrange
         with patch(
-            "cortex.tools.execution_planning.get_project_root",
+            "cortex.tools.execution.planning.get_project_root",
             side_effect=ValueError("Invalid feedback"),
         ):
             # Act
@@ -948,12 +948,12 @@ class TestProvideFeedback:
         """Test provide_feedback catches exception from provide_feedback_impl."""
         with (
             patch(
-                "cortex.tools.execution_feedback.provide_feedback_impl",
+                "cortex.tools.execution.feedback.provide_feedback_impl",
                 new_callable=AsyncMock,
                 side_effect=RuntimeError("Learning engine unavailable"),
             ),
             patch(
-                "cortex.tools.execution_feedback.resolve_project_root_async",
+                "cortex.tools.execution.feedback.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
@@ -1096,7 +1096,7 @@ class TestIntegration:
         """Test complete workflow: approve -> apply -> provide feedback."""
         with (
             patch(
-                "cortex.tools.execution_planning.get_project_root",
+                "cortex.tools.execution.planning.get_project_root",
                 return_value=mock_project_root,
             ),
             patch(
@@ -1139,7 +1139,7 @@ class TestIntegration:
         """Test rollback workflow."""
         with (
             patch(
-                "cortex.tools.execution_planning.get_project_root",
+                "cortex.tools.execution.planning.get_project_root",
                 return_value=mock_project_root,
             ),
             patch(
@@ -1191,7 +1191,7 @@ class TestHelperFunctions:
 
         with (
             patch(
-                "cortex.tools.execution_planning.get_project_root",
+                "cortex.tools.execution.planning.get_project_root",
                 return_value=mock_project_root,
             ),
             patch(
@@ -1227,7 +1227,7 @@ class TestHelperFunctions:
 
         with (
             patch(
-                "cortex.tools.execution_planning.get_project_root",
+                "cortex.tools.execution.planning.get_project_root",
                 return_value=mock_project_root,
             ),
             patch(
@@ -1265,7 +1265,7 @@ class TestPhase5ExecutionContextLogging:
                 mock_log,
             ),
             patch(
-                "cortex.tools.execution_monitoring.log_client",
+                "cortex.tools.execution.monitoring.log_client",
                 mock_log,
             ),
         ):
