@@ -7,8 +7,8 @@ from typing import cast
 
 import pytest
 
-from cortex.tools.skill_pack_operations import skill_pack
-from cortex.tools.tool_categories import get_tool_category
+from cortex.tools.categories import get_tool_category
+from cortex.tools.skill_pack.operations import skill_pack
 
 
 @pytest.mark.asyncio

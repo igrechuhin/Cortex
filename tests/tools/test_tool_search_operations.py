@@ -6,14 +6,14 @@ import json
 
 import pytest
 
-from cortex.tools.tool_categories import (
+from cortex.tools.categories import (
     ToolCategory,
     build_category_config,
     get_always_loaded_tool_names,
     get_deferred_tool_names,
     get_tool_category,
 )
-from cortex.tools.tool_search_operations import list_available_tools, search_tools
+from cortex.tools.structure.tool_search import list_available_tools, search_tools
 
 
 @pytest.mark.asyncio

@@ -1,8 +1,10 @@
 """Structure subpackage: project structure health and info.
 
-Total: 2 tools
+Total: 4 tools
 - check_structure_health (with optional perform_cleanup)
 - get_structure_info
+- search_tools
+- list_available_tools
 """
 
 from cortex.tools.structure.main import (
@@ -23,8 +25,14 @@ from cortex.tools.structure.main import (
     perform_update_index,
     record_archive_action,
 )
+from cortex.tools.structure.tool_search import (
+    list_available_tools,
+    search_tools,
+)
 
 __all__ = [
+    "list_available_tools",
+    "search_tools",
     "build_health_result",
     "check_structure_health",
     "check_structure_health_resource",

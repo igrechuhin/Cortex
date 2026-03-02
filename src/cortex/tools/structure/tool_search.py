@@ -12,7 +12,7 @@ from cortex.core.constants import MCP_TOOL_TIMEOUT_FAST
 from cortex.core.mcp_annotations import read_only_annotations
 from cortex.core.mcp_stability import ensure_usage_context, mcp_tool_wrapper
 from cortex.server import mcp
-from cortex.tools.tool_categories import (
+from cortex.tools.categories import (
     ToolCategory,
     ToolCategoryName,
     get_tools_by_category,

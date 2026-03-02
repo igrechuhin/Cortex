@@ -5,13 +5,13 @@ them via meta and that the example payloads have the expected structure.
 Also verifies programmatic tool calling (allowed_callers) constant and tool list.
 """
 
-from cortex.tools.files.operations import MANAGE_FILE_INPUT_EXAMPLES
-from cortex.tools.tool_categories import (
+from cortex.tools.categories import (
     ALLOWED_CALLERS_CODE_EXECUTION,
     TOOLS_WITH_ALLOWED_CALLERS,
     ToolCategory,
     get_tool_category,
 )
+from cortex.tools.files.operations import MANAGE_FILE_INPUT_EXAMPLES
 from cortex.tools.validation.operations import VALIDATE_INPUT_EXAMPLES
 
 

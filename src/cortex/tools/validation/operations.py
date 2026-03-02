@@ -18,7 +18,7 @@ from cortex.core.mcp_stability import (
 from cortex.core.models import ResponseFormat
 from cortex.core.project_root_resolver import resolve_project_root_async
 from cortex.server import mcp
-from cortex.tools.tool_categories import ALLOWED_CALLERS_CODE_EXECUTION
+from cortex.tools.categories import ALLOWED_CALLERS_CODE_EXECUTION
 from cortex.tools.validation.dispatch import (
     call_dispatch_validation,
     prepare_validation_managers,

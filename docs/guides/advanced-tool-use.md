@@ -47,7 +47,7 @@ Cortex uses the official **MCP SDK** (`mcp` package, `mcp.server.fastmcp.FastMCP
 
 ## Tool Categorization (Phase 49 Step 4)
 
-All 63 Cortex MCP tools are categorized into three loading priority tiers in `src/cortex/tools/tool_categories.py`:
+All 63 Cortex MCP tools are categorized into three loading priority tiers in `src/cortex/tools/categories.py`:
 
 | Tier | Count | Description | Examples |
 |------|-------|-------------|----------|
@@ -64,7 +64,7 @@ All 63 Cortex MCP tools are categorized into three loading priority tiers in `sr
 ### API
 
 ```python
-from cortex.tools.tool_categories import (
+from cortex.tools.categories import (
     get_tool_category,
     get_always_loaded_tool_names,
     get_deferred_tool_names,
@@ -112,7 +112,7 @@ When `enabled: false` (default), all tools are listed as today. When MCP SDK sup
 | `deferred_medium` | list of strings | Tools for specific workflows (refactoring, analysis, synapse, plans); discoverable via `search_tools`. |
 | `deferred_low` | list of strings | Rarely used tools (analytics, script capture, admin); discoverable via `search_tools`. |
 
-**Reading config:** Use `OptimizationConfig(project_root).get_tool_search_config()` to get the current tool_search dict (or canonical defaults if the key is missing). Use `build_category_config()` from `cortex.tools.tool_categories` for the canonical list without loading the file.
+**Reading config:** Use `OptimizationConfig(project_root).get_tool_search_config()` to get the current tool_search dict (or canonical defaults if the key is missing). Use `build_category_config()` from `cortex.tools.categories` for the canonical list without loading the file.
 
 **Token savings:** When deferred loading is enabled, initial tool list size equals `len(always_loaded)` instead of all tools; the difference is the number of tools loaded on demand via `search_tools`. Tests in `tests/tools/test_tool_search_operations.py` and `tests/unit/test_optimization_config.py` assert `always_loaded < total` so that when `defer_loading` is implemented, token savings are realized.
 
@@ -199,9 +199,9 @@ When your client and the Anthropic API support code execution with `allowed_call
 - **Phase 49 Step 5**: Tool Search infrastructure — `search_deferred_tools()` (regex over name/rationale), `search_tools` MCP tool (always_loaded), `tool_search` config in optimization default and `OptimizationConfig.get_tool_search_config()`, server comment for deferred loading. Config model `ToolSearchConfigModel` and optional `tool_search` field on `OptimizationConfigModel`.
 - **Phase 49 Step 6**: Tool Search testing — token savings potential tests (`always_loaded` &lt; total), tool discovery tests (search_tools returns only deferred tools), `get_tool_search_config()` tests, and configuration options documented in this guide.
 - **Phase 49 Step 7**: Programmatic Tool Calling analysis — tool chains identified (validation, refactoring, batch manage_file); tools recommended for `allowed_callers` (validate, suggest_refactoring, apply_refactoring, manage_file); orchestration patterns documented in this guide.
-- **Phase 49 Step 8**: Programmatic Tool Calling implementation — `allowed_callers` added to tool `meta` for validate, suggest_refactoring, apply_refactoring, and manage_file. Constant `ALLOWED_CALLERS_CODE_EXECUTION` and list `TOOLS_WITH_ALLOWED_CALLERS` in `tool_categories.py`; clients can forward meta to the API for code-execution orchestration.
+- **Phase 49 Step 8**: Programmatic Tool Calling implementation — `allowed_callers` added to tool `meta` for validate, suggest_refactoring, apply_refactoring, and manage_file. Constant `ALLOWED_CALLERS_CODE_EXECUTION` and list `TOOLS_WITH_ALLOWED_CALLERS` in `categories.py`; clients can forward meta to the API for code-execution orchestration.
 - **Tool docstrings**: High-value tools include USE WHEN, EXAMPLES, RETURNS; additional input examples are added in docstrings and, where useful, in `meta` for compatible clients.
-- **Future**: When MCP or Anthropic standardizes `defer_loading`, Cortex can filter `list_tools` using `get_tool_search_config()` and the categorization in `tool_categories.py`.
+- **Future**: When MCP or Anthropic standardizes `defer_loading`, Cortex can filter `list_tools` using `get_tool_search_config()` and the categorization in `categories.py`.
 - **Phase 49 Step 9**: Documentation and testing — API tools reference ([tools.md](../api/tools.md)) updated with Advanced Tool Use subsection; usage guide and measuring-improvements sections added to this guide; comprehensive tests extended (input_examples minimum count, allowed_callers category consistency, search_tools always_loaded).
 
 ## Related Documentation

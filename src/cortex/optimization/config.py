@@ -151,8 +151,8 @@ class OptimizationConfig:
             For performance-critical paths, consider using async alternatives.
         """
         default_config = cast(ModelDict, copy.deepcopy(DEFAULT_OPTIMIZATION_CONFIG))
-        # Inject tool_search default here to avoid circular import with tool_categories
-        from cortex.tools.tool_categories import build_category_config
+        # Inject tool_search default here to avoid circular import with categories
+        from cortex.tools.categories import build_category_config
 
         default_config["tool_search"] = build_category_config().model_dump()
 
@@ -296,7 +296,7 @@ class OptimizationConfig:
         raw = self.config.get("tool_search")
         if isinstance(raw, dict):
             return cast(ModelDict, raw)
-        from cortex.tools.tool_categories import build_category_config
+        from cortex.tools.categories import build_category_config
 
         return cast(ModelDict, build_category_config().model_dump())
 

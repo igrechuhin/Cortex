@@ -55,7 +55,7 @@ Names must clearly indicate what the tool does. Per [naming-conventions.md](nami
 For `session_scripts` → `manage_session_scripts` and `agent_workflow` → `run_composite_workflow`:
 
 - Update tool implementation (function name)
-- Update `tool_categories.py`
+- Update `categories.py`
 - Update `tool_registry.py`
 - Update `docs/api/tools.md`
 - Update prompts (e.g. commit.md references)

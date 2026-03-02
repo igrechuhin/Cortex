@@ -1,6 +1,6 @@
 """Agent Skill Pack discovery and loading (plan: agent-skills-and-composability).
 
-Single MCP tool skill_pack(operation=\"discover\"|\"load\") for dynamic skill pack
+Single MCP tool skill_pack(operation="discover"|"load") for dynamic skill pack
 discovery and loading. Manifests are read from package resources
 (cortex/resources/skills/*.json). Consolidated to keep tool count within
 MAX_REGISTERED_TOOLS without raising the limit.
@@ -12,7 +12,7 @@ from typing import Literal
 
 from cortex.core.constants import MCP_TOOL_TIMEOUT_FAST
 from cortex.core.mcp_stability import ensure_usage_context, mcp_tool_wrapper
-from cortex.tools.skill_pack_models import SkillPackManifest
+from cortex.tools.skill_pack.models import SkillPackManifest
 
 _skills_dir: Path | None = None
 
@@ -21,8 +21,10 @@ def _get_skills_dir() -> Path:
     """Return the path to the skills manifest directory (package resources)."""
     global _skills_dir
     if _skills_dir is None:
-        # cortex/tools/skill_pack_operations.py -> cortex/resources/skills
-        _skills_dir = Path(__file__).resolve().parent.parent / "resources" / "skills"
+        # cortex/tools/skill_pack/operations.py -> cortex/resources/skills
+        _skills_dir = (
+            Path(__file__).resolve().parent.parent.parent / "resources" / "skills"
+        )
     return _skills_dir
 
 

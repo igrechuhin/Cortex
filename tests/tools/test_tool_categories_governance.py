@@ -1,10 +1,10 @@
 """Governance tests for TOOL_CATEGORIES vs actual MCP tools (Phase 58/Step 8).
 
-Ensures `tool_categories.py` remains the authoritative source of truth for
+Ensures `categories.py` remains the authoritative source of truth for
 tool-search configuration by requiring a 1:1 match between:
 
 - Actual `@mcp.tool()` registrations under `src/cortex/tools`
-- `TOOL_CATEGORIES` entries in `cortex.tools.tool_categories`
+- `TOOL_CATEGORIES` entries in `cortex.tools.categories`
 """
 
 from __future__ import annotations
@@ -14,7 +14,7 @@ from pathlib import Path
 
 from cortex.health_check.tool_analyzer import ToolAnalyzer
 from cortex.managers.initialization import get_project_root
-from cortex.tools.tool_categories import (
+from cortex.tools.categories import (
     MAX_REGISTERED_TOOLS,
     TOOL_CATEGORIES,
     get_category_summary,
@@ -55,7 +55,7 @@ class TestToolCategoriesGovernance:
         assert total_tools <= MAX_REGISTERED_TOOLS, (
             "Registered tools exceed MAX_REGISTERED_TOOLS; either consolidate or "
             "remove tools, or intentionally raise MAX_REGISTERED_TOOLS in "
-            "tool_categories.py alongside an updated consolidation plan."
+            "categories.py alongside an updated consolidation plan."
         )
 
         # Sanity check: TOOL_CATEGORIES should remain the single source of truth.

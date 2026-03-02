@@ -1,4 +1,4 @@
-"""Unit tests for tool_categories module (Phase 49 Step 4).
+"""Unit tests for categories module (Phase 49 Step 4).
 
 Validates tool categorization, lookup helpers, config generation,
 and consistency with actual registered MCP tools.
@@ -12,7 +12,7 @@ from unittest.mock import patch
 import pytest
 from pydantic import ValidationError
 
-from cortex.tools.tool_categories import (
+from cortex.tools.categories import (
     ALLOWED_CALLERS_CODE_EXECUTION,
     TOOL_CATEGORIES,
     TOOLS_WITH_ALLOWED_CALLERS,
@@ -516,7 +516,7 @@ class TestSearchDeferredTools:
     def test_re_compile_error_returns_empty(self) -> None:
         """If re.compile raises (e.g. invalid pattern), search returns empty list."""
         with patch(
-            "cortex.tools.tool_categories.re.compile",
+            "cortex.tools.categories.re.compile",
             side_effect=re.error("mock invalid pattern"),
         ):
             results = search_deferred_tools("valid_query", limit=5)

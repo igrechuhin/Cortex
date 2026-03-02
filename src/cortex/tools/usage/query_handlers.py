@@ -263,8 +263,8 @@ async def run_tool_frequency(params: QueryUsageParams, ctx: MCPContext | None) -
 def _build_tool_classification_rows(
     tools_list: list[dict[str, object]],
 ) -> list[dict[str, object]]:
-    """Build classification rows from usage stats, merging with tool_categories."""
-    from cortex.tools import tool_categories
+    """Build classification rows from usage stats, merging with categories."""
+    from cortex.tools import categories
 
     rows: list[dict[str, object]] = []
     for t in tools_list:
@@ -272,9 +272,7 @@ def _build_tool_classification_rows(
         name = str(name_val) if isinstance(name_val, str) else ""
         total_val = t.get("total_calls")
         total_calls = int(total_val) if isinstance(total_val, (int, float)) else 0
-        entry = next(
-            (e for e in tool_categories.TOOL_CATEGORIES if e.name == name), None
-        )
+        entry = next((e for e in categories.TOOL_CATEGORIES if e.name == name), None)
         cat: str | None = entry.category.value if entry else None
         rationale = entry.rationale if entry else ""
         rows.append(

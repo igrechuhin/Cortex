@@ -43,9 +43,8 @@ from . import (
     refactoring,  # noqa: F401
     script_capture_tools,  # noqa: F401
     sequential_thinking,  # noqa: F401
-    skill_pack_operations,  # noqa: F401
+    skill_pack,  # noqa: F401
     structure,  # noqa: F401
-    tool_search_operations,  # noqa: F401
     validation,  # noqa: F401
 )
 from .context import (
@@ -90,6 +89,8 @@ from .session import (
 from .session import (
     start_tools as session_start_tools,
 )
+from .skill_pack import operations as skill_pack_operations  # noqa: F401
+from .structure import tool_search as tool_search_operations  # noqa: F401
 from .synapse import (  # noqa: F401
     prompts as synapse_prompts,
 )
@@ -103,6 +104,7 @@ from .usage import query_operations, usage_analytics  # noqa: F401
 
 # Explicitly reference modules imported for side effects to satisfy type checker
 _ = append_entry_dispatcher
+_ = skill_pack
 _ = plan
 _ = roadmap
 _ = synapse_prompts
@@ -139,7 +141,7 @@ __all__ = [
     "session_dispatcher",
     "registry",
     "session_start_tools",
-    "tool_search_operations",
+    "tool_search_operations",  # alias for structure.tool_search
     "operations",
     "plan",
     "register",

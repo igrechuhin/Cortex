@@ -6,8 +6,8 @@ import json
 
 import pytest
 
+from cortex.tools.categories import ToolCategory, get_tool_category
 from cortex.tools.composite_tools import run_composite_workflow
-from cortex.tools.tool_categories import ToolCategory, get_tool_category
 
 
 @pytest.mark.asyncio

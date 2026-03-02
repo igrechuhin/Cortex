@@ -9,7 +9,7 @@ Catalog current names for Cortex MCP tools, `cortex://` resources, and Synapse p
 
 ## 1. Tools
 
-**Source**: `src/cortex/tools/tool_categories.py` (TOOL_CATEGORIES). Total: 37 tools.
+**Source**: `src/cortex/tools/categories.py` (TOOL_CATEGORIES). Total: 37 tools.
 
 ### 1.1 By pattern
 
