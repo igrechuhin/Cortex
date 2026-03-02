@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from cortex.tools.refactoring_result_models import SuggestRefactoringConcisePayload
+from cortex.tools.refactoring.result_models import SuggestRefactoringConcisePayload
 
 
 class TestSuggestRefactoringConcisePayload:

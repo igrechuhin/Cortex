@@ -1,6 +1,6 @@
 """Docstrings for refactoring operations tools.
 
-Extracted to keep refactoring_operations.py under 400 lines.
+Extracted to keep refactoring operations.py under 400 lines.
 """
 
 SUGGEST_REFACTORING_DOCSTRING = """Generate intelligent refactoring suggestions to improve Memory Bank

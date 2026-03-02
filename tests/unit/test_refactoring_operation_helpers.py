@@ -1,4 +1,4 @@
-"""Unit tests for refactoring_operation_helpers."""
+"""Unit tests for refactoring.operation_helpers."""
 
 import json
 from types import SimpleNamespace
@@ -6,7 +6,7 @@ from typing import cast
 
 from cortex.refactoring.consolidation_detector import ConsolidationOpportunity
 from cortex.refactoring.split_recommender import SplitRecommendation
-from cortex.tools.refactoring_operation_helpers import (
+from cortex.tools.refactoring.operation_helpers import (
     convert_opportunities_to_dict,
     convert_recommendations_to_dict,
     handle_preview_mode,

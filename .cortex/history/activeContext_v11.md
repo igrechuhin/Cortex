@@ -12,6 +12,8 @@
 
 - ✅ **Tools sub-package reorganization Session 11** - COMPLETE (2026-03-02) - Created tools/config/ subpackage; moved 7 configuration modules. Flat files reduced from ~60 to 53.
 
+- ✅ **Tools sub-package reorganization Session 12** - COMPLETE (2026-03-02) - Created refactoring/ subpackage; moved 6 refactoring modules; updated imports project-wide. Tests pass.
+
 ## Completed Work (2026-03-01)
 
 - **Summary (2026-03-01)** - 1 entries archived.

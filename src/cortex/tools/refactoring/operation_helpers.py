@@ -1,6 +1,6 @@
 """Helper functions for refactoring operations.
 
-Extracted to keep refactoring_operations.py under 400 lines.
+Extracted to keep refactoring operations.py under 400 lines.
 """
 
 import json

@@ -6,6 +6,7 @@
 - **Tools sub-package reorganization Session 9 (2026-03-02)** - COMPLETE. Moved connection_health, session_models, health_connection_models into session/ sub-package. Resolved circular imports with lazy imports in brief.py and brief_extraction_helpers.py. 4867 tests, 92.36% coverage.
 - **Tools sub-package reorganization Session 10 (2026-03-02)** - COMPLETE. Moved execution_errors, execution_feedback, execution_handlers, execution_helpers, execution_monitoring, execution_planning, execution_validation into execution/ subpackage. Updated imports project-wide. 4867 tests, 92.34% coverage.
 - **Tools sub-package reorganization Session 11 (2026-03-02)** - COMPLETE. Created tools/config/ subpackage; moved 7 configuration modules (config_status, configuration_helpers, configuration_hybrid, configuration_operations, configuration_operations_errors, configuration_operations_handlers, configuration_operations_response). Updated imports project-wide. Flat files reduced from ~60 to 53.
+- **Tools sub-package reorganization Session 12 (2026-03-02)** - COMPLETE. Created refactoring/ subpackage; moved refactoring_operation_concise, refactoring_operation_helpers, refactoring_operations, refactoring_operations_docs, refactoring_result_models, refactoring_tools. Updated imports project-wide. Tests pass (4867), coverage 92.34%.
 
 ## 2026-03-01
 

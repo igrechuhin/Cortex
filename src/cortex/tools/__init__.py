@@ -7,8 +7,7 @@ Modules:
 - file_operations: File management operations (1 tool) - Phase 9.1.1 split
 - validation.operations: Validation operations (1 tool) - Phase 9.1.1 split
 - analysis_operations: Analysis operations (1 tool) - Phase 9.1.1 split
-- refactoring_operations: Refactoring suggestions (1 tool) - Split from
-  analysis_operations
+- refactoring: Refactoring suggestions (1 tool, 1 resource) - suggest_refactoring
 - rules_operations: Rules management (1 tool) - Phase 9.1.1 split
 - configuration_operations: Configuration management (1 tool) - Phase 9.1.1 split
 - markdown_operations: Markdown file operations (1 tool) - Markdown lint fixing
@@ -17,7 +16,6 @@ Modules:
 - validation: Validation and quality checks (validate tool)
 - optimization: Token optimization and context management (7 tools)
 - analysis_usage: Usage pattern and structure analysis (3 tools)
-- refactoring_tools: Refactoring suggestions (4 tools)
 - execution: Safe execution and learning (6 tools)
 - synapse_tools: Synapse repository tools for rules and prompts (5 tools)
 - structure: Project structure management (6 tools)
@@ -45,8 +43,7 @@ from . import (
     optimization,  # noqa: F401
     prompts,  # noqa: F401
     query_usage_operations,  # noqa: F401
-    refactoring_operations,  # noqa: F401
-    refactoring_tools,  # noqa: F401
+    refactoring,  # noqa: F401
     script_capture_tools,  # noqa: F401
     sequential_thinking,  # noqa: F401
     skill_pack_operations,  # noqa: F401
@@ -131,7 +128,6 @@ __all__ = [
     "evaluation",
     "evaluation_optimization_helpers",
     "model_benchmark",
-    "refactoring_tools",
     "execution",
     "synapse_tools",
     "completion",
@@ -150,7 +146,7 @@ __all__ = [
     "roadmap",
     "structure",
     "prompts",
-    "refactoring_operations",
+    "refactoring",
     "rules_operations",
     "script_capture_tools",
     "skill_pack_operations",

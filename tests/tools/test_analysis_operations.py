@@ -38,7 +38,11 @@ from cortex.tools.context.analysis_run_helpers import (
     dispatch_analysis_target,
     get_analysis_managers,
 )
-from cortex.tools.refactoring_operation_helpers import (
+from cortex.tools.refactoring import (
+    suggest_refactoring,
+    suggest_refactoring_resource,
+)
+from cortex.tools.refactoring.operation_helpers import (
     convert_opportunities_to_dict,
     convert_recommendations_to_dict,
     get_refactoring_managers,
@@ -49,10 +53,6 @@ from cortex.tools.refactoring_operation_helpers import (
     suggest_reorganization,
     suggest_splits,
     validate_refactoring_type,
-)
-from cortex.tools.refactoring_operations import (
-    suggest_refactoring,
-    suggest_refactoring_resource,
 )
 from tests.helpers.managers import make_test_managers
 
@@ -1173,11 +1173,11 @@ class TestProcessRefactoringRequest:
         """Test processing reorganization refactoring request."""
         # Arrange
         with patch(
-            "cortex.tools.refactoring_operation_helpers.get_managers",
+            "cortex.tools.refactoring.operation_helpers.get_managers",
             new_callable=AsyncMock,
         ) as mock_get_managers:
             with patch(
-                "cortex.tools.refactoring_operation_helpers.get_project_root",
+                "cortex.tools.refactoring.operation_helpers.get_project_root",
                 return_value=Path(str(tmp_path)),
             ):
                 mock_planner = MagicMock()
@@ -1280,7 +1280,7 @@ class TestSuggestRefactoringHandler:
     @pytest.mark.asyncio
     async def test_suggest_refactoring_consolidation(self, tmp_path: Path) -> None:
         """Test suggesting consolidation refactorings."""
-        # Arrange: patch get_managers where it is used (refactoring_operation_helpers)
+        # Arrange: patch get_managers where it is used (refactoring.operation_helpers)
         # so the real ConsolidationDetector is not used (avoids slow SequenceMatcher in CI).
         # get_manager() returns dict values as-is when they are not LazyManager, so the
         # consolidation_detector entry must implement detect_opportunities directly.
@@ -1307,7 +1307,7 @@ class TestSuggestRefactoringHandler:
             "reorganization_planner": mock_reorg_mgr,
         }
         with patch(
-            "cortex.tools.refactoring_operation_helpers.get_managers",
+            "cortex.tools.refactoring.operation_helpers.get_managers",
             new_callable=AsyncMock,
         ) as mock_get_managers:
             mock_get_managers.return_value = mock_managers
@@ -1342,7 +1342,7 @@ class TestSuggestRefactoringHandler:
         """Test exception handling in suggest_refactoring."""
         # Arrange
         with patch(
-            "cortex.tools.refactoring_operation_helpers.get_managers"
+            "cortex.tools.refactoring.operation_helpers.get_managers"
         ) as mock_get_managers:
             mock_get_managers.side_effect = RuntimeError("Test error")
 
@@ -1372,11 +1372,11 @@ class TestRefactoringOperationsContextLogging:
         )
         with (
             patch(
-                "cortex.tools.refactoring_operations.log_client",
+                "cortex.tools.refactoring.operations.log_client",
                 new_callable=AsyncMock,
             ) as mock_log,
             patch(
-                "cortex.tools.refactoring_operations.process_refactoring_request",
+                "cortex.tools.refactoring.operations.process_refactoring_request",
                 new_callable=AsyncMock,
                 return_value=success_json,
             ),
@@ -1459,7 +1459,7 @@ class TestSuggestRefactoringResource:
             indent=2,
         )
         with patch(
-            "cortex.tools.refactoring_operations.suggest_refactoring",
+            "cortex.tools.refactoring.operations.suggest_refactoring",
             new_callable=AsyncMock,
             return_value=success_json,
         ):
@@ -1486,7 +1486,7 @@ class TestSuggestRefactoringResource:
                 return_value={},
             ),
             patch(
-                "cortex.tools.refactoring_operations.suggest_refactoring",
+                "cortex.tools.refactoring.operations.suggest_refactoring",
                 new_callable=AsyncMock,
                 return_value=error_json,
             ),

@@ -1,12 +1,13 @@
 """Concise response formatting for refactoring operations.
 
-Extracted from refactoring_operation_helpers to keep the main module under 400 lines.
+Extracted from operation_helpers to keep the main module under 400 lines.
 """
 
 from typing import cast
 
 from cortex.core.models import JsonDict, JsonValue, ResponseFormat
-from cortex.tools.refactoring_result_models import (
+
+from .result_models import (
     ConciseRefactoringSuggestionEntry,
     SuggestRefactoringConcisePayload,
 )

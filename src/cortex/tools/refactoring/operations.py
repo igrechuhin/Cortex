@@ -21,17 +21,16 @@ from cortex.core.models import ResponseFormat
 from cortex.core.project_root_resolver import resolve_project_root_async
 from cortex.refactoring.models import RefactoringSuggestionType
 from cortex.server import mcp
-from cortex.tools.refactoring_operation_concise import (
-    format_suggest_refactoring_response,
-)
-from cortex.tools.refactoring_operation_helpers import (
+from cortex.tools.tool_categories import ALLOWED_CALLERS_CODE_EXECUTION
+
+from .operation_concise import format_suggest_refactoring_response
+from .operation_helpers import (
     parse_refactoring_suggestion_type,
     process_refactoring_request,
     suggest_refactoring_error_json,
     validate_suggest_refactoring_type,
 )
-from cortex.tools.refactoring_operations_docs import SUGGEST_REFACTORING_DOCSTRING
-from cortex.tools.tool_categories import ALLOWED_CALLERS_CODE_EXECUTION
+from .operations_docs import SUGGEST_REFACTORING_DOCSTRING
 
 
 async def _suggest_refactoring_impl(

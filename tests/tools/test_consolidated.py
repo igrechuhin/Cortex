@@ -14,7 +14,7 @@ from cortex.structure.models import HealthGrade
 from cortex.tools.config import configure
 from cortex.tools.context.analysis_operations import analyze
 from cortex.tools.files.file_operations import manage_file
-from cortex.tools.refactoring_operations import suggest_refactoring
+from cortex.tools.refactoring import suggest_refactoring
 from cortex.tools.validation.operations import validate
 from cortex.tools.validation.result_models import SchemaValidationResult
 from cortex.validation.models import (
@@ -1062,16 +1062,16 @@ class TestSuggestRefactoring:
         )
         with (
             patch(
-                "cortex.tools.refactoring_operations.resolve_project_root_async",
+                "cortex.tools.refactoring.operations.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=Path("/tmp/test"),
             ),
             patch(
-                "cortex.tools.refactoring_operation_helpers.get_managers",
+                "cortex.tools.refactoring.operation_helpers.get_managers",
                 return_value=managers,
             ),
             patch(
-                "cortex.tools.refactoring_operation_helpers.get_project_root",
+                "cortex.tools.refactoring.operation_helpers.get_project_root",
                 return_value=Path("/tmp/test"),
             ),
         ):
@@ -1114,16 +1114,16 @@ class TestSuggestRefactoring:
         )
         with (
             patch(
-                "cortex.tools.refactoring_operations.resolve_project_root_async",
+                "cortex.tools.refactoring.operations.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=Path("/tmp/test"),
             ),
             patch(
-                "cortex.tools.refactoring_operation_helpers.get_managers",
+                "cortex.tools.refactoring.operation_helpers.get_managers",
                 return_value=managers,
             ),
             patch(
-                "cortex.tools.refactoring_operation_helpers.get_project_root",
+                "cortex.tools.refactoring.operation_helpers.get_project_root",
                 return_value=Path("/tmp/test"),
             ),
         ):
@@ -1184,16 +1184,16 @@ class TestSuggestRefactoring:
         )
         with (
             patch(
-                "cortex.tools.refactoring_operations.resolve_project_root_async",
+                "cortex.tools.refactoring.operations.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=Path("/tmp/test"),
             ),
             patch(
-                "cortex.tools.refactoring_operation_helpers.get_managers",
+                "cortex.tools.refactoring.operation_helpers.get_managers",
                 return_value=managers,
             ),
             patch(
-                "cortex.tools.refactoring_operation_helpers.get_project_root",
+                "cortex.tools.refactoring.operation_helpers.get_project_root",
                 return_value=Path("/tmp/test"),
             ),
         ):
@@ -1218,7 +1218,7 @@ class TestSuggestRefactoring:
         }
         with (
             patch(
-                "cortex.tools.refactoring_operations.resolve_project_root_async",
+                "cortex.tools.refactoring.operations.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=Path("/tmp/test"),
             ),
