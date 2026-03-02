@@ -40,6 +40,8 @@
 
 - ✅ **Implement query_usage Resources for 11 Uncovered Query Types** - COMPLETE (2026-03-02) - Added MCP resources for anomalies, tool_description_optimization, events, search, timeline, production_monitoring, token_efficiency, redundancy, session_continuity, tool_frequency, tool_classification. All 16 query_usage query types now have cortex://usage/* resources.
 
+- ✅ **Remove / Unpublish Dead Tools** - COMPLETE (2026-03-02) - Unpublished benchmark_model from MCP: removed @mcp.tool decorator, removed from TOOL_CATEGORIES, updated evaluation.json skill, tools.md, tool-optimization-mapping.md, model-upgrade-playbook.md. Handler kept for internal use. Added test that benchmark_model is not in get_deferred_tool_names().
+
 ## Completed Work (2026-03-01)
 
 - **Summary (2026-03-01)** - 1 entries archived.

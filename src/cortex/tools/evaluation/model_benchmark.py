@@ -14,16 +14,9 @@ from typing import cast
 from pydantic import BaseModel, ConfigDict, Field
 
 from cortex.core.cache_json_access import read_cache_json, write_cache_json
-from cortex.core.constants import MCP_TOOL_TIMEOUT_COMPLEX
 from cortex.core.context_logging import MCPContext, log_client
-from cortex.core.mcp_annotations import read_only_annotations
-from cortex.core.mcp_stability import (
-    ensure_usage_context,
-    mcp_tool_wrapper,
-)
 from cortex.core.path_resolver import get_cache_path
 from cortex.core.project_root_resolver import resolve_project_root_async
-from cortex.server import mcp
 
 _MODEL_BENCHMARKS_KEY = "evals/model_benchmarks.json"
 
@@ -256,9 +249,6 @@ def _payload_to_record(
     )
 
 
-@mcp.tool(annotations=read_only_annotations("Model Benchmark"))
-@ensure_usage_context
-@mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_COMPLEX)
 async def benchmark_model(
     model_name: str,
     baseline_model_name: str | None = None,
@@ -266,7 +256,10 @@ async def benchmark_model(
 ) -> str:
     """Run the full evaluation suite and store results for model upgrade comparison.
 
-    USE WHEN: User wants to benchmark a model, user needs eval-guided
+    Unpublished from MCP tool list (2026-03-02). Use run_tool_evaluation + manual
+    store/compare for model benchmarks. Kept as callable for tests and internal use.
+
+    USE WHEN: (Internal use) User wants to benchmark a model, user needs eval-guided
     model upgrade, user requests comparison with baseline, user wants
     to store eval results by model name.
 

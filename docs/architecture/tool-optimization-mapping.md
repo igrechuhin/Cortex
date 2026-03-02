@@ -28,6 +28,7 @@ Map each tool below the usage threshold (≤5 calls in 90 days) to an action: **
 | run_tool_optimization_workflow | **removed** (pruned) | Use `query_usage(query_type="unused")` and `query_usage(query_type="recommendations")` and [tool-optimization-baseline](tool-optimization-baseline.md). No longer in MCP tool list. |
 | quick_start, quality_check, safe_manage_file, suggest_workflow | **consolidated** (2026-02-25) | Use `run_composite_workflow(operation="quick_start" or "quality_check" or "safe_manage_file" or "suggest_workflow", ...)`. Saves 3 tool slots. |
 | sync_synapse, update_synapse | **consolidated** (2026-02-27) | Use `synapse(operation="sync" or "update_rule" or "update_prompt", ...)`. Saves 1 tool slot. |
+| benchmark_model | **removed (unpublished)** (2026-03-02) | Use `run_tool_evaluation(mode="full")` + manual store/compare. Handler kept for internal use. |
 
 ### Census 2026-02-27 Additions
 

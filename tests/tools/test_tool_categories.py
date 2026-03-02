@@ -34,9 +34,11 @@ from cortex.tools.structure.categories import (
 # ---------------------------------------------------------------------------
 
 _MIN_ALWAYS_LOADED = 12  # at least this many core tools
-_MIN_DEFERRED_MEDIUM = 13  # 2026-02-27: register_plan_in_roadmap consolidated into plan
+_MIN_DEFERRED_MEDIUM = 12  # 2026-03-02: benchmark_model unpublishing reduced count
 _MIN_DEFERRED_LOW = 4  # 2026-02-27: rollback_file_version consolidated into manage_file
-_MIN_TOTAL_TOOLS = 31  # 2026-02-27: append_progress_entry+append_active_context_entry consolidated into append_entry
+_MIN_TOTAL_TOOLS = (
+    30  # 2026-03-02: dead tools unpublishing (benchmark_model, etc.) reduced count
+)
 
 
 @pytest.mark.timeout(5)
@@ -293,6 +295,13 @@ class TestGetDeferredToolNames:
         always = set(get_always_loaded_tool_names())
         overlap = deferred & always
         assert not overlap, f"Overlap: {overlap}"
+
+    def test_benchmark_model_not_registered(self) -> None:
+        """benchmark_model was unpublished (2026-03-02); not in TOOL_CATEGORIES."""
+        deferred = set(get_deferred_tool_names())
+        always = set(get_always_loaded_tool_names())
+        assert "benchmark_model" not in deferred
+        assert "benchmark_model" not in always
 
 
 @pytest.mark.timeout(5)

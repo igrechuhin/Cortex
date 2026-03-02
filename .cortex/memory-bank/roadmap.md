@@ -14,6 +14,11 @@
 
 ## Pending plans (from .cortex/plans)
 
+- **Consolidate execute_pre_commit_checks + fix_quality_issues** - PENDING - Fold fix_quality_issues into execute_pre_commit_checks as checks=["fix_quality"]; deprecate fix_quality_issues. Reduces tool count by 1.
+- **Consolidate roadmap + append_entry** - PENDING - Merge roadmap and append_entry into update_memory_bank tool with operations for roadmap add/remove and progress/activeContext append. Reduces tool count by 1.
+- **Consolidate validate + check_structure_health** - PENDING - Evaluate merging validate and check_structure_health into single project health tool. Go/no-go in Step 1 due to different domains and side-effect semantics.
+- **Consolidate suggest_refactoring + apply_refactoring** - PENDING - Evaluate merging suggest_refactoring and apply_refactoring into single refactoring tool. Go/no-go in Step 1 due to different intents (read vs write).
+
 ### Fixes
 
 ### Documentation Cleanup (DRY)

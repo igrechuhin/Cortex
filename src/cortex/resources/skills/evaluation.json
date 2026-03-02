@@ -1,18 +1,17 @@
 {
   "name": "evaluation",
-  "description": "Evaluation and optimization: run tool evals, benchmark models, analyze results.",
-  "tools": ["run_tool_evaluation", "benchmark_model"],
-  "when_to_use": "Running MCP tool evaluations, comparing model performance, eval-guided upgrades.",
+  "description": "Evaluation and optimization: run tool evals, analyze results.",
+  "tools": ["run_tool_evaluation"],
+  "when_to_use": "Running MCP tool evaluations, eval-guided model upgrades.",
   "workflow_sequences": [
     "run_tool_evaluation(...) → analyze results",
-    "benchmark_model(...) for model comparison"
+    "run_tool_evaluation(...) + manual store/compare for model benchmarking"
   ],
   "example_invocations": [
-    "run_tool_evaluation(...)",
-    "benchmark_model(...)"
+    "run_tool_evaluation(...)"
   ],
   "troubleshooting_tips": [
     "Eval results are stored under .cortex/evals or cache; use get_structure_info for paths."
   ],
-  "keywords": ["evaluation", "eval", "benchmark", "model", "run_tool_evaluation", "benchmark_model"]
+  "keywords": ["evaluation", "eval", "model", "run_tool_evaluation"]
 }

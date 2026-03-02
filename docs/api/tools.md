@@ -77,6 +77,7 @@ For details on adding annotations to custom tools, see the [Extension Developmen
 | `sync_synapse`, `update_synapse` | **Consolidated** into `synapse(operation="sync" or "update_rule" or "update_prompt", ...)` (2026-02-27) |
 | `rollback_file_version` | **Consolidated** into `manage_file(operation="rollback", file_name="...", version=<int>)` (2026-02-27) |
 | `append_progress_entry`, `append_active_context_entry` | **Consolidated** into `append_entry(operation="progress" or "active_context", ...)` |
+| `benchmark_model` | **Unpublished** (2026-03-02). Use `run_tool_evaluation(mode="full")` + manual store/compare in `.cortex/.cache/evals/model_benchmarks.json`. Handler kept for internal use. |
 
 These tools were removed from the published tool list in the 2026-02-26 tool budget reduction (46→40). `sync_synapse` and `update_synapse` were consolidated into `synapse` in 2026-02-27. `rollback_file_version` was consolidated into `manage_file` in 2026-02-27. See [tool-optimization-mapping](../architecture/tool-optimization-mapping.md).
 

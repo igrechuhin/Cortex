@@ -22,6 +22,7 @@
 - **Tools subpackage reorganization (2026-03-02)** - COMPLETE. 21 sessions; flat files 185→7; all tests pass, 92.32% coverage.
 - **Tools-to-Resources Conversion Analysis (2026-03-02)** - COMPLETE. Full tool inventory, per-tool conversion assessment, gap analysis for query_type tools, migration strategy. docs/architecture/tools-to-resources-conversion-analysis.md created; tools.md updated with Prefer Resources guidance.
 - **Implement query_usage Resources for 11 Uncovered Query Types (2026-03-02)** - COMPLETE. Added 11 MCP resources in usage_analytics.py; updated docs; 11 unit tests; quality gate passed.
+- **Remove / Unpublish Dead Tools (2026-03-02)** - COMPLETE. Unpublished benchmark_model; tool count reduced by 1; docs and tests updated.
 
 ## 2026-03-01
 
