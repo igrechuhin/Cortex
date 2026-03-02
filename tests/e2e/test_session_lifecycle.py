@@ -10,7 +10,7 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from cortex.tools.files.file_operations import manage_file
+from cortex.tools.files.operations import manage_file
 from cortex.tools.optimization import load_context
 from cortex.tools.session.dispatcher import session
 from tests.helpers.path_helpers import ensure_test_cortex_structure

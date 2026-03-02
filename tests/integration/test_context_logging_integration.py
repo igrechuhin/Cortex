@@ -14,7 +14,7 @@ import pytest
 
 from cortex.core.context_logging import log_client, report_progress_safe
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
-from cortex.tools.files.file_operations import manage_file
+from cortex.tools.files.operations import manage_file
 from cortex.tools.validation.operations import validate
 
 
@@ -38,15 +38,15 @@ class TestContextLoggingIntegration:
         mock_log = AsyncMock()
         with (
             patch(
-                "cortex.tools.files.file_manage_file_helpers.get_or_resolve_project_root",
+                "cortex.tools.files.manage_file_helpers.get_or_resolve_project_root",
                 resolve_mock,
             ),
             patch(
-                "cortex.tools.files.file_crud_operations.log_client",
+                "cortex.tools.files.crud_operations.log_client",
                 mock_log,
             ),
             patch(
-                "cortex.tools.files.file_manage_file_helpers.log_client",
+                "cortex.tools.files.manage_file_helpers.log_client",
                 mock_log,
             ),
         ):
@@ -136,15 +136,15 @@ class TestContextLoggingIntegration:
         mock_log = AsyncMock()
         with (
             patch(
-                "cortex.tools.files.file_manage_file_helpers.get_or_resolve_project_root",
+                "cortex.tools.files.manage_file_helpers.get_or_resolve_project_root",
                 resolve_mock,
             ),
             patch(
-                "cortex.tools.files.file_crud_operations.log_client",
+                "cortex.tools.files.crud_operations.log_client",
                 mock_log,
             ),
             patch(
-                "cortex.tools.files.file_manage_file_helpers.log_client",
+                "cortex.tools.files.manage_file_helpers.log_client",
                 mock_log,
             ),
         ):

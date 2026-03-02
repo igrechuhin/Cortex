@@ -13,7 +13,7 @@ from cortex.managers.lazy_manager import LazyManager
 from cortex.structure.models import HealthGrade
 from cortex.tools.config import configure
 from cortex.tools.context.analysis_operations import analyze
-from cortex.tools.files.file_operations import manage_file
+from cortex.tools.files.operations import manage_file
 from cortex.tools.refactoring import suggest_refactoring
 from cortex.tools.validation.operations import validate
 from cortex.tools.validation.result_models import SchemaValidationResult
@@ -66,7 +66,7 @@ class TestManageFile:
         }
 
         with patch(
-            "cortex.tools.files.file_manage_file_helpers.get_managers",
+            "cortex.tools.files.manage_file_helpers.get_managers",
             return_value=make_test_managers(**mock_managers_dict),
         ):
             with patch(
@@ -132,12 +132,12 @@ class TestManageFile:
                 return_value=None,
             ),
             patch(
-                "cortex.tools.files.file_manage_file_helpers.get_or_resolve_project_root",
+                "cortex.tools.files.manage_file_helpers.get_or_resolve_project_root",
                 new_callable=AsyncMock,
                 return_value=test_root,
             ),
             patch(
-                "cortex.tools.files.file_manage_file_helpers.get_managers",
+                "cortex.tools.files.manage_file_helpers.get_managers",
                 new_callable=AsyncMock,
                 return_value=make_test_managers(**mock_managers_dict),
             ),
@@ -175,7 +175,7 @@ class TestManageFile:
         }
 
         with patch(
-            "cortex.tools.files.file_manage_file_helpers.get_managers",
+            "cortex.tools.files.manage_file_helpers.get_managers",
             return_value=make_test_managers(**mock_managers_dict),
         ):
             with patch(
@@ -246,7 +246,7 @@ class TestManageFile:
         test_root = temp_memory_bank.parent.parent.parent
         with (
             patch(
-                "cortex.tools.files.file_manage_file_helpers.resolve_schema_validator",
+                "cortex.tools.files.manage_file_helpers.resolve_schema_validator",
                 new_callable=AsyncMock,
                 return_value=mock_schema_validator,
             ),
@@ -259,12 +259,12 @@ class TestManageFile:
                 return_value=None,
             ),
             patch(
-                "cortex.tools.files.file_manage_file_helpers.get_managers",
+                "cortex.tools.files.manage_file_helpers.get_managers",
                 new_callable=AsyncMock,
                 return_value=make_test_managers(**mock_managers_dict),
             ),
             patch(
-                "cortex.tools.files.file_manage_file_helpers.get_or_resolve_project_root",
+                "cortex.tools.files.manage_file_helpers.get_or_resolve_project_root",
                 new_callable=AsyncMock,
                 return_value=test_root,
             ),
@@ -304,7 +304,7 @@ class TestManageFile:
         }
 
         with patch(
-            "cortex.tools.files.file_manage_file_helpers.get_managers",
+            "cortex.tools.files.manage_file_helpers.get_managers",
             return_value=make_test_managers(**mock_managers_dict),
         ):
             with patch(
@@ -367,12 +367,12 @@ class TestManageFile:
                 return_value=None,
             ),
             patch(
-                "cortex.tools.files.file_manage_file_helpers.get_managers",
+                "cortex.tools.files.manage_file_helpers.get_managers",
                 new_callable=AsyncMock,
                 return_value=make_test_managers(**mock_managers_dict),
             ),
             patch(
-                "cortex.tools.files.file_manage_file_helpers.get_or_resolve_project_root",
+                "cortex.tools.files.manage_file_helpers.get_or_resolve_project_root",
                 new_callable=AsyncMock,
                 return_value=Path("/tmp/test"),
             ),
@@ -411,7 +411,7 @@ class TestManageFile:
         }
 
         with patch(
-            "cortex.tools.files.file_manage_file_helpers.get_managers",
+            "cortex.tools.files.manage_file_helpers.get_managers",
             return_value=make_test_managers(**mock_managers_dict),
         ):
             with patch(
@@ -431,7 +431,7 @@ class TestManageFile:
     ):
         """Rollback operation requires version parameter."""
         with patch(
-            "cortex.tools.files.file_manage_file_helpers.get_or_resolve_project_root",
+            "cortex.tools.files.manage_file_helpers.get_or_resolve_project_root",
             new_callable=AsyncMock,
             return_value=Path("/tmp/test"),
         ):
@@ -469,11 +469,11 @@ class TestManageFile:
             "token_count": 128,
         }
         with patch(
-            "cortex.tools.files.file_manage_file_helpers.get_managers",
+            "cortex.tools.files.manage_file_helpers.get_managers",
             new=AsyncMock(return_value=make_test_managers(**mock_managers_dict)),
         ):
             with patch(
-                "cortex.tools.files.file_manage_file_helpers.get_or_resolve_project_root",
+                "cortex.tools.files.manage_file_helpers.get_or_resolve_project_root",
                 new_callable=AsyncMock,
                 return_value=root,
             ):
@@ -799,7 +799,7 @@ class TestAnalyze:
                 return_value=Path("/tmp/test"),
             ),
             patch(
-                "cortex.tools.files.file_manage_file_helpers.get_managers",
+                "cortex.tools.files.manage_file_helpers.get_managers",
                 return_value=make_test_managers(**mock_managers_dict),
             ),
             patch(
@@ -971,7 +971,7 @@ class TestAnalyze:
                 return_value=Path("/tmp/test"),
             ),
             patch(
-                "cortex.tools.files.file_manage_file_helpers.get_managers",
+                "cortex.tools.files.manage_file_helpers.get_managers",
                 return_value=make_test_managers(**mock_managers_dict),
             ),
             patch(
@@ -1223,7 +1223,7 @@ class TestSuggestRefactoring:
                 return_value=Path("/tmp/test"),
             ),
             patch(
-                "cortex.tools.files.file_manage_file_helpers.get_managers",
+                "cortex.tools.files.manage_file_helpers.get_managers",
                 return_value=make_test_managers(**mock_managers_dict),
             ),
             patch(

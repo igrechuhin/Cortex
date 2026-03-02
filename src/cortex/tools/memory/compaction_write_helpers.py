@@ -22,7 +22,7 @@ from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.core.security import acquire_git_operation_slot
 from cortex.core.token_counter import TokenCounter
 from cortex.core.version_manager import VersionManager
-from cortex.tools.files.file_operations import execute_memory_bank_write
+from cortex.tools.files.operations import execute_memory_bank_write
 from cortex.tools.memory.compaction_constants import PROGRESS_TOKEN_THRESHOLD_DEFAULT
 from cortex.tools.memory.compaction_handoff import (
     HandoffParams,

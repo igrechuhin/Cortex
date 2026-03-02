@@ -13,7 +13,7 @@ from cortex.core.metadata_index import MetadataIndex
 from cortex.core.token_counter import TokenCounter
 from cortex.core.version_manager import VersionManager
 
-from .models_base import (
+from ..models_base import (
     ErrorResultBase,
     StrictBaseModel,
     ToolResultBase,

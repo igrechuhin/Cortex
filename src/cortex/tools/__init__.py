@@ -56,8 +56,10 @@ from .context import (
 )
 from .evaluation import evaluation_optimization_helpers, model_benchmark  # noqa: F401
 from .files import (
-    file_operations,  # noqa: F401
     markdown_operations,  # noqa: F401
+)
+from .files import (
+    operations as file_operations,  # noqa: F401 - alias for backward compat
 )
 from .linking import linking_operations  # noqa: F401
 from .memory import (

@@ -21,12 +21,12 @@ from cortex.core.models import JsonValue, ModelDict, VersionMetadata
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.core.token_counter import TokenCounter
 from cortex.core.version_manager import VersionManager
-from cortex.tools.files.file_metadata_operations import (
+from cortex.tools.files.metadata_operations import (
     compute_file_metrics,
     create_version_snapshot,
     update_file_metadata,
 )
-from cortex.tools.files.file_operation_helpers import (
+from cortex.tools.files.operation_helpers import (
     build_read_error_response,
     build_schema_validation_error_response,
     build_write_error_response,
@@ -125,7 +125,7 @@ async def _verify_write_lock(
     """Verify lock for write operation. Returns error JSON or None."""
     if project_root is None:
         return None
-    from cortex.tools.files.file_lock_guard import verify_lock_for_file_operation
+    from cortex.tools.files.lock_guard import verify_lock_for_file_operation
 
     is_allowed, lock_error = await verify_lock_for_file_operation(
         project_root=project_root,

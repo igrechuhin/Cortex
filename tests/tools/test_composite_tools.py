@@ -146,7 +146,7 @@ class TestAgentWorkflowSafeManageFile:
             side_effect=[json.dumps(pre_val), json.dumps(post_val)],
         ):
             with patch(
-                "cortex.tools.files.file_crud_operations.manage_file",
+                "cortex.tools.files.crud_operations.manage_file",
                 new_callable=AsyncMock,
                 return_value=json.dumps(file_result),
             ):
@@ -173,7 +173,7 @@ class TestAgentWorkflowSafeManageFile:
             side_effect=[json.dumps(pre_val), json.dumps(post_val)],
         ) as mock_validate:
             with patch(
-                "cortex.tools.files.file_crud_operations.manage_file",
+                "cortex.tools.files.crud_operations.manage_file",
                 new_callable=AsyncMock,
                 return_value=json.dumps(file_result),
             ):

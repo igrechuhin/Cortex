@@ -83,8 +83,8 @@ async def _safe_manage_file_impl(
     check_type: str,
 ) -> str:
     """Run validate, manage_file, validate (write with guard)."""
-    from cortex.tools.files.file_crud_operations import manage_file
-    from cortex.tools.files.file_operation_helpers import FileOperation
+    from cortex.tools.files.crud_operations import manage_file
+    from cortex.tools.files.operation_helpers import FileOperation
     from cortex.tools.validation.helpers import ValidationCheckType
     from cortex.tools.validation.operations import validate
 

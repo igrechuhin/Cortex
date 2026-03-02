@@ -64,7 +64,7 @@ class TestConcurrentManageFileWrites:
         self, tmp_path: Path
     ) -> None:
         """Concurrent manage_file writes to same file serialize via lock."""
-        from cortex.tools.files.file_crud_operations import manage_file
+        from cortex.tools.files.crud_operations import manage_file
 
         memory_bank_dir = ensure_test_cortex_structure(tmp_path)
         target_file = memory_bank_dir / "activeContext.md"
@@ -97,7 +97,7 @@ class TestConcurrentManageFileWrites:
             results.append(out)
 
         with patch(
-            "cortex.tools.files.file_manage_file_helpers.get_or_resolve_project_root",
+            "cortex.tools.files.manage_file_helpers.get_or_resolve_project_root",
             new_callable=AsyncMock,
             return_value=tmp_path,
         ):
@@ -206,19 +206,19 @@ class TestChaosScenarios:
         self, tmp_path: Path
     ) -> None:
         """Simulated PermissionError during write returns error response."""
-        from cortex.tools.files.file_crud_operations import manage_file
+        from cortex.tools.files.crud_operations import manage_file
 
         memory_bank_dir = ensure_test_cortex_structure(tmp_path)
         target = memory_bank_dir / "activeContext.md"
         _ = target.write_text("# Start")
 
         with patch(
-            "cortex.tools.files.file_manage_file_helpers.get_or_resolve_project_root",
+            "cortex.tools.files.manage_file_helpers.get_or_resolve_project_root",
             new_callable=AsyncMock,
             return_value=tmp_path,
         ):
             with patch(
-                "cortex.tools.files.file_crud_flow.write_file_with_hash_check",
+                "cortex.tools.files.crud_flow.write_file_with_hash_check",
                 new_callable=AsyncMock,
                 side_effect=PermissionError("Simulated permission denied"),
             ):

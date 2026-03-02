@@ -5,6 +5,8 @@ This module contains MCP tools and helpers for roadmap manipulation,
 including adding entries deterministically to avoid truncation issues.
 """
 
+from __future__ import annotations
+
 __all__ = [
     "add_roadmap_entry",
     "entry_text_looks_completed",
@@ -29,11 +31,6 @@ from cortex.core.context_logging import MCPContext, log_client
 from cortex.core.mcp_stability import ensure_usage_context, mcp_tool_wrapper
 from cortex.core.models import OperationStatus
 from cortex.core.project_root_resolver import resolve_project_root_async
-from cortex.tools.models import (
-    AddRoadmapEntryResult,
-    RemoveRoadmapEntryResult,
-    RemoveRoadmapSectionResult,
-)
 from cortex.tools.plans.entries_content import (
     entry_text_looks_completed,
     find_bullet_line_containing,
@@ -106,6 +103,8 @@ async def add_roadmap_entry(
             f"add_roadmap_entry: {e}",
             logger_name=__name__,
         )
+        from cortex.tools.models import AddRoadmapEntryResult
+
         error_result = AddRoadmapEntryResult(
             status=OperationStatus.ERROR,
             file_name=MemoryBankFile.ROADMAP,
@@ -161,6 +160,8 @@ async def remove_roadmap_entry(
             f"remove_roadmap_entry: {e}",
             logger_name=__name__,
         )
+        from cortex.tools.models import RemoveRoadmapEntryResult
+
         error_result = RemoveRoadmapEntryResult(
             status=OperationStatus.ERROR,
             file_name=MemoryBankFile.ROADMAP,
@@ -220,6 +221,8 @@ async def remove_roadmap_section(
             f"remove_roadmap_section: {e}",
             logger_name=__name__,
         )
+        from cortex.tools.models import RemoveRoadmapSectionResult
+
         error_result = RemoveRoadmapSectionResult(
             status=OperationStatus.ERROR,
             file_name=MemoryBankFile.ROADMAP,

@@ -10,6 +10,9 @@
 - **Tools sub-package reorganization Session 13 (2026-03-02)** - COMPLETE. Moved optimization_handlers*into optimization/, query_usage* into usage/. All tests pass; coverage 92.34%. Top-level tools/*.py now 40.
 - **Tools sub-package reorganization Session 14 (2026-03-02)** - COMPLETE. Moved task_locking, task_locking_handlers, task_locking_helpers, health_check_operations into session/ subpackage. Broke circular import with lazy import in analysis_run_helpers and by not importing task_locking/health_check in session/**init**. Tests pass, 92.33% coverage.
 - **Tools sub-package reorganization Session 15 (2026-03-02)** - COMPLETE. Moved production_monitoring_*, redundancy_helpers, token_efficiency_helpers, tool_frequency_helpers into usage/ subpackage. Updated imports in query_handlers, evaluation modules, tests, and Synapse script. Tests 4867, coverage 92.33%.
+- **Tools subpackage Session 16 (2026-03-02)** - Attempted move of file_operations_models, markdown_models to files/; REVERTED due to circular imports (models_reexports → files → plans → models). Documented in plan: root models must stay at tools root until import cycle resolved.
+- **Tools subpackage Session 16 (2026-03-02)** - COMPLETE. Moved file_operations_models, markdown_models to files/; resolved circular imports via lazy imports in plans/completion_ops, plans/entries, plans/entries_insert, plans/entries_removal.
+- **Tools files/ subpackage Session 16** - COMPLETE. Moved models to files/, renamed modules, lazy imports for circular resolution. 4867 tests, 92.32% coverage.
 
 ## 2026-03-01
 

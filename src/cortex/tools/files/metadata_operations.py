@@ -1,7 +1,7 @@
 """File metadata operations: metrics, version snapshots, metadata updates.
 
 Used by manage_file (read/write/metadata) and by internal write flow.
-Kept separate to keep file_crud_operations under size limits.
+Kept separate to keep crud_operations under size limits.
 """
 
 import json
@@ -13,7 +13,7 @@ from cortex.core.metadata_index import MetadataIndex
 from cortex.core.models import ModelDict, VersionMetadata
 from cortex.core.token_counter import TokenCounter
 from cortex.core.version_manager import VersionManager
-from cortex.tools.files.file_section_operations import extract_sections
+from cortex.tools.files.section_operations import extract_sections
 
 
 def compute_file_metrics(

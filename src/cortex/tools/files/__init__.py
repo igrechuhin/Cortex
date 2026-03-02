@@ -5,9 +5,9 @@ file CRUD flow, and related tools.
 """
 
 # Import for side-effect registration (MCP tools)
-from . import file_operations, markdown_operations
+from . import markdown_operations, operations
 
 __all__ = [
-    "file_operations",
     "markdown_operations",
+    "operations",
 ]

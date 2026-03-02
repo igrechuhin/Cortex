@@ -23,7 +23,7 @@ class TestManageFileInputSanitization:
     @pytest.mark.asyncio
     async def test_manage_file_rejects_oversized_content(self):
         """Test manage_file rejects content exceeding MAX_MANAGE_FILE_CONTENT_BYTES."""
-        from cortex.tools.files.file_operations import manage_file
+        from cortex.tools.files.operations import manage_file
 
         # Content 1 byte over limit (UTF-8: 1 char = 1 byte for ASCII)
         oversized = "x" * (MAX_MANAGE_FILE_CONTENT_BYTES + 1)
@@ -42,7 +42,7 @@ class TestManageFileInputSanitization:
     @pytest.mark.asyncio
     async def test_manage_file_rejects_oversized_sections_list(self):
         """Test manage_file rejects sections list exceeding MAX_SECTIONS_LIST_SIZE."""
-        from cortex.tools.files.file_operations import manage_file
+        from cortex.tools.files.operations import manage_file
 
         sections = ["## Section"] * (MAX_SECTIONS_LIST_SIZE + 1)
 
@@ -61,17 +61,17 @@ class TestManageFileInputSanitization:
     @pytest.mark.asyncio
     async def test_manage_file_accepts_content_at_limit(self):
         """Test manage_file accepts content at exactly the limit."""
-        from cortex.tools.files.file_crud_operations import manage_file
+        from cortex.tools.files.crud_operations import manage_file
 
         content = "x" * MAX_MANAGE_FILE_CONTENT_BYTES
 
         with patch(
-            "cortex.tools.files.file_manage_file_helpers.get_or_resolve_project_root",
+            "cortex.tools.files.manage_file_helpers.get_or_resolve_project_root",
             new_callable=AsyncMock,
             return_value=Path("/tmp/test"),
         ):
             with patch(
-                "cortex.tools.files.file_manage_file_helpers._manage_file_run_or_error",
+                "cortex.tools.files.manage_file_helpers._manage_file_run_or_error",
                 new_callable=AsyncMock,
                 return_value='{"status":"success","file_name":"activeContext.md"}',
             ):
@@ -87,17 +87,17 @@ class TestManageFileInputSanitization:
     @pytest.mark.asyncio
     async def test_manage_file_accepts_sections_at_limit(self):
         """Test manage_file accepts sections list at exactly the limit."""
-        from cortex.tools.files.file_crud_operations import manage_file
+        from cortex.tools.files.crud_operations import manage_file
 
         sections = ["## Section"] * MAX_SECTIONS_LIST_SIZE
 
         with patch(
-            "cortex.tools.files.file_manage_file_helpers.get_or_resolve_project_root",
+            "cortex.tools.files.manage_file_helpers.get_or_resolve_project_root",
             new_callable=AsyncMock,
             return_value=Path("/tmp/test"),
         ):
             with patch(
-                "cortex.tools.files.file_manage_file_helpers._manage_file_run_or_error",
+                "cortex.tools.files.manage_file_helpers._manage_file_run_or_error",
                 new_callable=AsyncMock,
                 return_value='{"status":"success","content":""}',
             ):

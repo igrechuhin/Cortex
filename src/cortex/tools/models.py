@@ -6,13 +6,13 @@ domain-specific submodules, enabling FastMCP 2.0 structured output with better
 schema generation, automatic validation, and improved IDE support.
 
 All models follow Pydantic v2 best practices. See submodules for definitions:
-- file_operations_models: manage_file, rollback_file_version, manager init
+- files.operations_models: manage_file, rollback_file_version, manager init
 - structure_models: check_structure_health, get_structure_info
 - rules_models: rules index, get_relevant
 - quality_precommit_models: execute_pre_commit_checks, fix_quality, preflight, etc.
 - synapse_models: get_synapse_prompts, sync_synapse, fix_roadmap_corruption, etc.
 - feedback_models: provide_feedback
-- markdown_models: fix_markdown_lint
+- files.markdown_models: fix_markdown_lint
 - session.connection_models: check_mcp_connection_health
 - links_models: parse_file_links
 - context_analysis_models: context usage, insights, cleanup report, etc.

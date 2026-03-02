@@ -1,14 +1,12 @@
 """Execution logic for plan completion tool."""
 
+from __future__ import annotations
+
 from pathlib import Path
 
 from cortex.core.constants import MemoryBankFile
 from cortex.core.models import OperationStatus
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
-from cortex.tools.models import (
-    AppendActiveContextEntryResult,
-    AppendProgressEntryResult,
-)
 from cortex.tools.plans.completion_archive import archive_plan_file
 from cortex.tools.plans.completion_content import (
     append_progress_entry_content,
@@ -27,6 +25,10 @@ from cortex.tools.plans.completion_models import CompletePlanResult
 from cortex.tools.plans.completion_validation import (
     validate_date_str,
     validate_progress_entry_text,
+)
+from cortex.tools.roadmap_operations_models import (
+    AppendActiveContextEntryResult,
+    AppendProgressEntryResult,
 )
 
 
@@ -198,6 +200,17 @@ def progress_error(message: str, error: str) -> AppendProgressEntryResult:
     )
 
 
+def _progress_success(line_inserted: int) -> AppendProgressEntryResult:
+    """Build success result for progress append."""
+    return AppendProgressEntryResult(
+        status=OperationStatus.SUCCESS,
+        file_name=MemoryBankFile.PROGRESS,
+        message=f"Appended entry at line {line_inserted}",
+        line_inserted=line_inserted,
+        error=None,
+    )
+
+
 async def execute_append_progress(
     root: Path, date_str: str, entry_text: str
 ) -> AppendProgressEntryResult:
@@ -223,13 +236,7 @@ async def execute_append_progress(
     write_err = await write_progress(progress_path, new_content, root)
     if write_err:
         return progress_error("Failed to write progress", write_err)
-    return AppendProgressEntryResult(
-        status=OperationStatus.SUCCESS,
-        file_name=MemoryBankFile.PROGRESS,
-        message=f"Appended entry at line {line_inserted}",
-        line_inserted=line_inserted,
-        error=None,
-    )
+    return _progress_success(line_inserted)
 
 
 def active_context_error(message: str, error: str) -> AppendActiveContextEntryResult:

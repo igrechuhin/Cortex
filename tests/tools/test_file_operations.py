@@ -18,7 +18,7 @@ from cortex.core.exceptions import (
     GitConflictError,
 )
 from cortex.core.models import DetailedFileMetadata, ResponseStatus
-from cortex.tools.files.file_operation_helpers import (
+from cortex.tools.files.operation_helpers import (
     FileOperation,
     build_invalid_operation_error,
     build_schema_validation_error_response,
@@ -26,7 +26,7 @@ from cortex.tools.files.file_operation_helpers import (
     parse_file_operation,
     validate_write_content,
 )
-from cortex.tools.files.file_operations import (
+from cortex.tools.files.operations import (
     build_write_response,
     compute_file_metrics,
     create_version_snapshot,
@@ -80,12 +80,12 @@ class TestManageFileEdgeCases:
         }
 
         with patch(
-            "cortex.tools.files.file_manage_file_helpers.get_managers",
+            "cortex.tools.files.manage_file_helpers.get_managers",
             new_callable=AsyncMock,
             return_value=make_test_managers(**mock_managers_dict),
         ):
             with patch(
-                "cortex.tools.files.file_manage_file_helpers.get_or_resolve_project_root",
+                "cortex.tools.files.manage_file_helpers.get_or_resolve_project_root",
                 new_callable=AsyncMock,
                 return_value=Path("/tmp/test"),
             ):
@@ -118,12 +118,12 @@ class TestManageFileEdgeCases:
             "versions": AsyncMock(),
         }
         with patch(
-            "cortex.tools.files.file_manage_file_helpers.get_managers",
+            "cortex.tools.files.manage_file_helpers.get_managers",
             new_callable=AsyncMock,
             return_value=make_test_managers(**mock_managers_dict),
         ):
             with patch(
-                "cortex.tools.files.file_manage_file_helpers.get_or_resolve_project_root",
+                "cortex.tools.files.manage_file_helpers.get_or_resolve_project_root",
                 new_callable=AsyncMock,
                 return_value=Path("/tmp/test"),
             ):
@@ -168,12 +168,12 @@ class TestManageFileEdgeCases:
             "versions": AsyncMock(),
         }
         with patch(
-            "cortex.tools.files.file_manage_file_helpers.get_managers",
+            "cortex.tools.files.manage_file_helpers.get_managers",
             new_callable=AsyncMock,
             return_value=make_test_managers(**mock_managers_dict),
         ):
             with patch(
-                "cortex.tools.files.file_manage_file_helpers.get_or_resolve_project_root",
+                "cortex.tools.files.manage_file_helpers.get_or_resolve_project_root",
                 new_callable=AsyncMock,
                 return_value=Path("/tmp/test"),
             ):
@@ -201,12 +201,12 @@ class TestManageFileEdgeCases:
         }
 
         with patch(
-            "cortex.tools.files.file_manage_file_helpers.get_managers",
+            "cortex.tools.files.manage_file_helpers.get_managers",
             new_callable=AsyncMock,
             return_value=make_test_managers(**mock_managers_dict),
         ):
             with patch(
-                "cortex.tools.files.file_manage_file_helpers.get_or_resolve_project_root",
+                "cortex.tools.files.manage_file_helpers.get_or_resolve_project_root",
                 new_callable=AsyncMock,
                 return_value=Path("/tmp/test"),
             ):
@@ -245,12 +245,12 @@ class TestManageFileEdgeCases:
         }
 
         with patch(
-            "cortex.tools.files.file_manage_file_helpers.get_managers",
+            "cortex.tools.files.manage_file_helpers.get_managers",
             new_callable=AsyncMock,
             return_value=make_test_managers(**mock_managers_dict),
         ):
             with patch(
-                "cortex.tools.files.file_manage_file_helpers.get_or_resolve_project_root",
+                "cortex.tools.files.manage_file_helpers.get_or_resolve_project_root",
                 new_callable=AsyncMock,
                 return_value=Path("/tmp/test"),
             ):
@@ -291,12 +291,12 @@ class TestManageFileEdgeCases:
         }
 
         with patch(
-            "cortex.tools.files.file_manage_file_helpers.get_managers",
+            "cortex.tools.files.manage_file_helpers.get_managers",
             new_callable=AsyncMock,
             return_value=make_test_managers(**mock_managers_dict),
         ):
             with patch(
-                "cortex.tools.files.file_manage_file_helpers.get_or_resolve_project_root",
+                "cortex.tools.files.manage_file_helpers.get_or_resolve_project_root",
                 new_callable=AsyncMock,
                 return_value=Path("/tmp/test"),
             ):
@@ -346,12 +346,12 @@ class TestManageFileEdgeCases:
         }
 
         with patch(
-            "cortex.tools.files.file_manage_file_helpers.get_managers",
+            "cortex.tools.files.manage_file_helpers.get_managers",
             new_callable=AsyncMock,
             return_value=make_test_managers(**mock_managers_dict),
         ):
             with patch(
-                "cortex.tools.files.file_manage_file_helpers.get_or_resolve_project_root",
+                "cortex.tools.files.manage_file_helpers.get_or_resolve_project_root",
                 new_callable=AsyncMock,
                 return_value=Path("/tmp/test"),
             ):
@@ -400,12 +400,12 @@ class TestManageFileEdgeCases:
         }
 
         with patch(
-            "cortex.tools.files.file_manage_file_helpers.get_managers",
+            "cortex.tools.files.manage_file_helpers.get_managers",
             new_callable=AsyncMock,
             return_value=make_test_managers(**mock_managers_dict),
         ):
             with patch(
-                "cortex.tools.files.file_manage_file_helpers.get_or_resolve_project_root",
+                "cortex.tools.files.manage_file_helpers.get_or_resolve_project_root",
                 new_callable=AsyncMock,
                 return_value=Path("/tmp/test"),
             ):
@@ -454,12 +454,12 @@ class TestManageFileEdgeCases:
         }
 
         with patch(
-            "cortex.tools.files.file_manage_file_helpers.get_managers",
+            "cortex.tools.files.manage_file_helpers.get_managers",
             new_callable=AsyncMock,
             return_value=make_test_managers(**mock_managers_dict),
         ):
             with patch(
-                "cortex.tools.files.file_manage_file_helpers.get_or_resolve_project_root",
+                "cortex.tools.files.manage_file_helpers.get_or_resolve_project_root",
                 new_callable=AsyncMock,
                 return_value=Path("/tmp/test"),
             ):
@@ -482,12 +482,12 @@ class TestManageFileEdgeCases:
         file_name = "test.md"
 
         with patch(
-            "cortex.tools.files.file_manage_file_helpers.get_or_resolve_project_root",
+            "cortex.tools.files.manage_file_helpers.get_or_resolve_project_root",
             new_callable=AsyncMock,
             return_value=Path("/tmp/test"),
         ):
             with patch(
-                "cortex.tools.files.file_manage_file_helpers.get_managers",
+                "cortex.tools.files.manage_file_helpers.get_managers",
                 new_callable=AsyncMock,
                 side_effect=RuntimeError("Unexpected error"),
             ):
@@ -503,12 +503,12 @@ class TestManageFileEdgeCases:
     async def test_manage_file_log_result_handles_invalid_json_response(self):
         """_log_result_by_status handles non-JSON result without raising."""
         with patch(
-            "cortex.tools.files.file_manage_file_helpers.get_or_resolve_project_root",
+            "cortex.tools.files.manage_file_helpers.get_or_resolve_project_root",
             new_callable=AsyncMock,
             return_value=Path("/tmp/test"),
         ):
             with patch(
-                "cortex.tools.files.file_manage_file_helpers.execute_file_operation",
+                "cortex.tools.files.manage_file_helpers.execute_file_operation",
                 new_callable=AsyncMock,
                 return_value="not valid json",
             ):
@@ -532,12 +532,12 @@ class TestManageFileEdgeCases:
         }
 
         with patch(
-            "cortex.tools.files.file_manage_file_helpers.get_managers",
+            "cortex.tools.files.manage_file_helpers.get_managers",
             new_callable=AsyncMock,
             return_value=make_test_managers(**mock_managers_dict),
         ):
             with patch(
-                "cortex.tools.files.file_manage_file_helpers.get_or_resolve_project_root",
+                "cortex.tools.files.manage_file_helpers.get_or_resolve_project_root",
                 new_callable=AsyncMock,
                 return_value=Path("/tmp/test"),
             ):
@@ -929,7 +929,7 @@ Final section
 
     def test_validate_write_request_content_none(self):
         """Test validate_write_request when content is None."""
-        from cortex.tools.files.file_operation_helpers import validate_write_request
+        from cortex.tools.files.operation_helpers import validate_write_request
 
         # Arrange
         file_path = Path("/tmp/test.md")
@@ -971,12 +971,12 @@ class TestEdgeCasesForCoverage:
         }
 
         with patch(
-            "cortex.tools.files.file_manage_file_helpers.get_managers",
+            "cortex.tools.files.manage_file_helpers.get_managers",
             new_callable=AsyncMock,
             return_value=make_test_managers(**mock_managers_dict),
         ):
             with patch(
-                "cortex.tools.files.file_manage_file_helpers.get_or_resolve_project_root",
+                "cortex.tools.files.manage_file_helpers.get_or_resolve_project_root",
                 new_callable=AsyncMock,
                 return_value=Path("/tmp/test"),
             ):
@@ -1017,12 +1017,12 @@ class TestEdgeCasesForCoverage:
         }
 
         with patch(
-            "cortex.tools.files.file_manage_file_helpers.get_managers",
+            "cortex.tools.files.manage_file_helpers.get_managers",
             new_callable=AsyncMock,
             return_value=make_test_managers(**mock_managers_dict),
         ):
             with patch(
-                "cortex.tools.files.file_manage_file_helpers.get_or_resolve_project_root",
+                "cortex.tools.files.manage_file_helpers.get_or_resolve_project_root",
                 new_callable=AsyncMock,
                 return_value=Path("/tmp/test"),
             ):
@@ -1066,12 +1066,12 @@ class TestEdgeCasesForCoverage:
         }
 
         with patch(
-            "cortex.tools.files.file_manage_file_helpers.get_managers",
+            "cortex.tools.files.manage_file_helpers.get_managers",
             new_callable=AsyncMock,
             return_value=make_test_managers(**mock_managers_dict),
         ):
             with patch(
-                "cortex.tools.files.file_manage_file_helpers.get_or_resolve_project_root",
+                "cortex.tools.files.manage_file_helpers.get_or_resolve_project_root",
                 new_callable=AsyncMock,
                 return_value=Path("/tmp/test"),
             ):
@@ -1118,12 +1118,12 @@ class TestEdgeCasesForCoverage:
         }
 
         with patch(
-            "cortex.tools.files.file_manage_file_helpers.get_managers",
+            "cortex.tools.files.manage_file_helpers.get_managers",
             new_callable=AsyncMock,
             return_value=make_test_managers(**mock_managers_dict),
         ):
             with patch(
-                "cortex.tools.files.file_manage_file_helpers.get_or_resolve_project_root",
+                "cortex.tools.files.manage_file_helpers.get_or_resolve_project_root",
                 new_callable=AsyncMock,
                 return_value=Path("/tmp/test"),
             ):
@@ -1167,12 +1167,12 @@ class TestEdgeCasesForCoverage:
         }
 
         with patch(
-            "cortex.tools.files.file_manage_file_helpers.get_managers",
+            "cortex.tools.files.manage_file_helpers.get_managers",
             new_callable=AsyncMock,
             return_value=make_test_managers(**mock_managers_dict),
         ):
             with patch(
-                "cortex.tools.files.file_manage_file_helpers.get_or_resolve_project_root",
+                "cortex.tools.files.manage_file_helpers.get_or_resolve_project_root",
                 new_callable=AsyncMock,
                 return_value=Path("/tmp/test"),
             ):
@@ -1227,12 +1227,12 @@ class TestEdgeCasesForCoverage:
         }
 
         with patch(
-            "cortex.tools.files.file_manage_file_helpers.get_managers",
+            "cortex.tools.files.manage_file_helpers.get_managers",
             new_callable=AsyncMock,
             return_value=make_test_managers(**mock_managers_dict),
         ):
             with patch(
-                "cortex.tools.files.file_manage_file_helpers.get_or_resolve_project_root",
+                "cortex.tools.files.manage_file_helpers.get_or_resolve_project_root",
                 new_callable=AsyncMock,
                 return_value=Path("/tmp/test"),
             ):
@@ -1251,8 +1251,8 @@ class TestEdgeCasesForCoverage:
 
     async def test_manage_file_log_result_non_dict_response(self):
         """Test _log_result_by_status when result is not a dict (line 447)."""
-        from cortex.tools.files.file_manage_file_helpers import log_result_by_status
-        from cortex.tools.files.file_operation_helpers import (
+        from cortex.tools.files.manage_file_helpers import log_result_by_status
+        from cortex.tools.files.operation_helpers import (
             FileOperation,  # type: ignore[reportPrivateImportUsage]
         )
 
@@ -1264,7 +1264,7 @@ class TestEdgeCasesForCoverage:
         ctx = MagicMock()
 
         with patch(
-            "cortex.tools.files.file_manage_file_helpers.log_client",
+            "cortex.tools.files.manage_file_helpers.log_client",
             new_callable=AsyncMock,
         ) as mock_log_client:
             # Act - call _log_result_by_status directly with non-dict JSON
@@ -1277,7 +1277,7 @@ class TestEdgeCasesForCoverage:
 
     async def test_write_file_with_hash_check_existing_file(self):
         """Test _write_file_with_hash_check when file exists (line 924-926)."""
-        from cortex.tools.files.file_crud_flow import write_file_with_hash_check
+        from cortex.tools.files.crud_flow import write_file_with_hash_check
 
         # Arrange
         content = "new content"
@@ -1304,7 +1304,7 @@ class TestEdgeCasesForCoverage:
         from typing import cast
 
         from cortex.managers.types import ManagersDict
-        from cortex.tools.files.file_manage_file_helpers import resolve_schema_validator
+        from cortex.tools.files.manage_file_helpers import resolve_schema_validator
 
         # Arrange - managers dict without schema_validator
 
@@ -1329,7 +1329,7 @@ class TestEdgeCasesForCoverage:
             set_current_managers,
             set_current_project_root,
         )
-        from cortex.tools.files.file_manage_file_helpers import get_managers_for_root
+        from cortex.tools.files.manage_file_helpers import get_managers_for_root
 
         # Arrange
         current_root = Path("/tmp/current")
@@ -1358,7 +1358,7 @@ class TestEdgeCasesForCoverage:
         }
 
         with patch(
-            "cortex.tools.files.file_manage_file_helpers.get_managers",
+            "cortex.tools.files.manage_file_helpers.get_managers",
             new_callable=AsyncMock,
             return_value=make_test_managers(**mock_managers_dict),
         ):
@@ -1404,12 +1404,12 @@ class TestEdgeCasesForCoverage:
         }
 
         with patch(
-            "cortex.tools.files.file_manage_file_helpers.get_managers",
+            "cortex.tools.files.manage_file_helpers.get_managers",
             new_callable=AsyncMock,
             return_value=make_test_managers(**mock_managers_dict),
         ):
             with patch(
-                "cortex.tools.files.file_manage_file_helpers.get_or_resolve_project_root",
+                "cortex.tools.files.manage_file_helpers.get_or_resolve_project_root",
                 new_callable=AsyncMock,
                 return_value=Path("/tmp/test"),
             ):
@@ -1449,12 +1449,12 @@ class TestEdgeCasesForCoverage:
         }
 
         with patch(
-            "cortex.tools.files.file_manage_file_helpers.get_managers",
+            "cortex.tools.files.manage_file_helpers.get_managers",
             new_callable=AsyncMock,
             return_value=make_test_managers(**mock_managers_dict),
         ):
             with patch(
-                "cortex.tools.files.file_manage_file_helpers.get_or_resolve_project_root",
+                "cortex.tools.files.manage_file_helpers.get_or_resolve_project_root",
                 new_callable=AsyncMock,
                 return_value=Path("/tmp/test"),
             ):
@@ -1490,12 +1490,12 @@ class TestEdgeCasesForCoverage:
         }
 
         with patch(
-            "cortex.tools.files.file_manage_file_helpers.get_managers",
+            "cortex.tools.files.manage_file_helpers.get_managers",
             new_callable=AsyncMock,
             return_value=make_test_managers(**mock_managers_dict),
         ):
             with patch(
-                "cortex.tools.files.file_manage_file_helpers.get_or_resolve_project_root",
+                "cortex.tools.files.manage_file_helpers.get_or_resolve_project_root",
                 new_callable=AsyncMock,
                 return_value=Path("/tmp/test"),
             ):
@@ -1542,12 +1542,12 @@ class TestEdgeCasesForCoverage:
         }
 
         with patch(
-            "cortex.tools.files.file_manage_file_helpers.get_managers",
+            "cortex.tools.files.manage_file_helpers.get_managers",
             new_callable=AsyncMock,
             return_value=make_test_managers(**mock_managers_dict),
         ):
             with patch(
-                "cortex.tools.files.file_manage_file_helpers.get_or_resolve_project_root",
+                "cortex.tools.files.manage_file_helpers.get_or_resolve_project_root",
                 new_callable=AsyncMock,
                 return_value=Path("/tmp/test"),
             ):
@@ -1601,17 +1601,17 @@ class TestEdgeCasesForCoverage:
         }
 
         with patch(
-            "cortex.tools.files.file_manage_file_helpers.get_managers",
+            "cortex.tools.files.manage_file_helpers.get_managers",
             new_callable=AsyncMock,
             return_value=make_test_managers(**mock_managers_dict),
         ):
             with patch(
-                "cortex.tools.files.file_manage_file_helpers.get_or_resolve_project_root",
+                "cortex.tools.files.manage_file_helpers.get_or_resolve_project_root",
                 new_callable=AsyncMock,
                 return_value=Path("/tmp/test"),
             ):
                 with patch(
-                    "cortex.tools.files.file_manage_file_helpers.get_manager",
+                    "cortex.tools.files.manage_file_helpers.get_manager",
                     new_callable=AsyncMock,
                     return_value=mock_schema_validator,
                 ):
@@ -1632,7 +1632,7 @@ class TestEdgeCasesForCoverage:
 
     async def test_handle_write_operation_schema_validation_invalid_result(self):
         """Test handle_write_operation when schema validation returns invalid result (line 647-648)."""
-        from cortex.tools.files.file_crud_flow import handle_write_operation
+        from cortex.tools.files.crud_flow import handle_write_operation
 
         # Arrange
         file_path = Path("/tmp/test/projectBrief.md")
@@ -1728,12 +1728,12 @@ class TestEdgeCasesForCoverage:
         }
 
         with patch(
-            "cortex.tools.files.file_manage_file_helpers.get_managers",
+            "cortex.tools.files.manage_file_helpers.get_managers",
             new_callable=AsyncMock,
             return_value=make_test_managers(**mock_managers_dict),
         ):
             with patch(
-                "cortex.tools.files.file_manage_file_helpers.get_or_resolve_project_root",
+                "cortex.tools.files.manage_file_helpers.get_or_resolve_project_root",
                 new_callable=AsyncMock,
                 return_value=Path("/tmp/test"),
             ):
@@ -1804,12 +1804,12 @@ class TestEdgeCasesForCoverage:
         }
 
         with patch(
-            "cortex.tools.files.file_manage_file_helpers.get_managers",
+            "cortex.tools.files.manage_file_helpers.get_managers",
             new_callable=AsyncMock,
             return_value=make_test_managers(**mock_managers_dict),
         ):
             with patch(
-                "cortex.tools.files.file_manage_file_helpers.get_or_resolve_project_root",
+                "cortex.tools.files.manage_file_helpers.get_or_resolve_project_root",
                 new_callable=AsyncMock,
                 return_value=Path("/tmp/test"),
             ):
@@ -1846,12 +1846,12 @@ class TestEdgeCasesForCoverage:
         }
 
         with patch(
-            "cortex.tools.files.file_manage_file_helpers.get_managers",
+            "cortex.tools.files.manage_file_helpers.get_managers",
             new_callable=AsyncMock,
             return_value=make_test_managers(**mock_managers_dict),
         ):
             with patch(
-                "cortex.tools.files.file_manage_file_helpers.get_or_resolve_project_root",
+                "cortex.tools.files.manage_file_helpers.get_or_resolve_project_root",
                 new_callable=AsyncMock,
                 return_value=Path("/tmp/test"),
             ):
@@ -1892,12 +1892,12 @@ class TestEdgeCasesForCoverage:
         }
 
         with patch(
-            "cortex.tools.files.file_manage_file_helpers.get_managers",
+            "cortex.tools.files.manage_file_helpers.get_managers",
             new_callable=AsyncMock,
             return_value=make_test_managers(**mock_managers_dict),
         ):
             with patch(
-                "cortex.tools.files.file_manage_file_helpers.get_or_resolve_project_root",
+                "cortex.tools.files.manage_file_helpers.get_or_resolve_project_root",
                 new_callable=AsyncMock,
                 return_value=Path("/tmp/test"),
             ):
@@ -1941,12 +1941,12 @@ class TestGetFileResource:
         }
 
         with patch(
-            "cortex.tools.files.file_manage_file_helpers.get_managers",
+            "cortex.tools.files.manage_file_helpers.get_managers",
             new_callable=AsyncMock,
             return_value=make_test_managers(**mock_managers_dict),
         ):
             with patch(
-                "cortex.tools.files.file_crud_operations.get_or_resolve_project_root",
+                "cortex.tools.files.crud_operations.get_or_resolve_project_root",
                 new_callable=AsyncMock,
                 return_value=Path("/tmp/test"),
             ):

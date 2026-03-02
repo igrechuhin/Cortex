@@ -50,7 +50,13 @@ from .feedback_models import (
     ProvideFeedbackResult,
     ProvideFeedbackResultUnion,
 )
-from .file_operations_models import (
+from .files.markdown_models import (
+    FileResult,
+    FixMarkdownLintErrorResult,
+    FixMarkdownLintResult,
+    FixMarkdownLintResultUnion,
+)
+from .files.operations_models import (
     FileMetadata,
     FileMetadataSection,
     FileMetrics,
@@ -73,12 +79,6 @@ from .linking.links_models import (
     ParseFileLinksErrorResult,
     ParseFileLinksResult,
     ParseFileLinksResultUnion,
-)
-from .markdown_models import (
-    FileResult,
-    FixMarkdownLintErrorResult,
-    FixMarkdownLintResult,
-    FixMarkdownLintResultUnion,
 )
 from .roadmap_operations_models import (
     AddRoadmapEntryResult,

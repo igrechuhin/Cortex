@@ -24,16 +24,16 @@ from cortex.core.usage_context import (
 from cortex.managers.initialization import get_managers
 from cortex.managers.types import ManagersDict
 from cortex.managers.utils import get_manager
-from cortex.tools.files.file_crud_flow import (
+from cortex.tools.files.crud_flow import (
     handle_read_operation,
     handle_rollback_operation,
     handle_write_operation,
 )
-from cortex.tools.files.file_crud_flow import (
+from cortex.tools.files.crud_flow import (
     validate_file_path as _validate_file_path_impl,
 )
-from cortex.tools.files.file_metadata_operations import handle_metadata_operation
-from cortex.tools.files.file_operation_helpers import (
+from cortex.tools.files.metadata_operations import handle_metadata_operation
+from cortex.tools.files.operation_helpers import (
     FileOperation,
     build_invalid_operation_error,
     validate_manage_file_operation,
