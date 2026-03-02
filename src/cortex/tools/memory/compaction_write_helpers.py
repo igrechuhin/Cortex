@@ -22,19 +22,19 @@ from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.core.security import acquire_git_operation_slot
 from cortex.core.token_counter import TokenCounter
 from cortex.core.version_manager import VersionManager
-from cortex.tools.compaction_constants import PROGRESS_TOKEN_THRESHOLD_DEFAULT
-from cortex.tools.compaction_handoff import (
+from cortex.tools.files.file_operations import execute_memory_bank_write
+from cortex.tools.memory.compaction_constants import PROGRESS_TOKEN_THRESHOLD_DEFAULT
+from cortex.tools.memory.compaction_handoff import (
     HandoffParams,
     compact_do_handoff,
     session_id_from_now,
     today_iso,
 )
-from cortex.tools.compaction_helpers import (
+from cortex.tools.memory.compaction_helpers import (
     apply_progress_tiers,
     compact_active_context_completed_work,
     trim_recent_changes,
 )
-from cortex.tools.files.file_operations import execute_memory_bank_write
 
 logger = logging.getLogger(__name__)
 

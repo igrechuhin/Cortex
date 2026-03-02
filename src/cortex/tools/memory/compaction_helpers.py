@@ -8,14 +8,14 @@ import re
 from datetime import datetime
 from enum import Enum
 
-from cortex.tools.compaction_constants import (
-    PROGRESS_DAYS_FULL,
-    PROGRESS_DAYS_WEEKLY_SUMMARY,
-    RECENT_CHANGES_MAX_ENTRIES,
-)
 from cortex.tools.files.section_helpers import (
     find_section_end,
     find_section_heading,
+)
+from cortex.tools.memory.compaction_constants import (
+    PROGRESS_DAYS_FULL,
+    PROGRESS_DAYS_WEEKLY_SUMMARY,
+    RECENT_CHANGES_MAX_ENTRIES,
 )
 
 # Pattern for "## Completed Work (YYYY-MM-DD)"

@@ -1,5 +1,9 @@
 # Progress Log
 
+## 2026-03-02
+
+- **Tools sub-package reorganization Session 8 (2026-03-02)** - COMPLETE. Created memory/ sub-package (compaction, foundation_*, query_memory_bank); moved evaluation_* and model_benchmark into evaluation/. Updated imports project-wide. All tests pass.
+
 ## 2026-03-01
 
 - **Phase1 foundation rollback file-size split (2026-03-01)** - COMPLETE. Extracted phase1_foundation_rollback_models.py (RollbackManagers, RollbackProcessingData) and phase1_foundation_rollback_helpers.py (validate_rollback_file, get_rollback_snapshot, process_rollback_content, update_rollback_metadata, finalize_rollback, build_rollback_success_response, build_rollback_error_response). Main module 218 lines, all under 400.
@@ -238,33 +242,7 @@
 
 ## 2026-02-22
 
-- **Phase 57: Evaluation-Driven Tool Improvement (2026-02-22)** - COMPLETE. Evaluation framework with 26 tasks, harness, error pattern analysis, A/B optimization workflow, run_tool_evaluation and get_session_tool_anomalies, evaluation dashboard; 95%+ test coverage.
-- **Code quality remediation Step 1 (2026-02-22)** - Split tools/models.py into validation_result_models, refactoring_result_models, context_models, analysis_models; models.py re-exports from all. Quality gate and tests pass.
-- **Commit (preflight, memory bank, plan archive)** - Preflight passed: fix_errors, format, markdown lint (0 errors), synapse_format, synapse_lint, type_check, quality, tests 4384 passed, 91.23% coverage. No completed plans in plans root; memory bank and roadmap consistent.
-- **Code quality remediation Step 1 (2026-02-22)** - COMPLETE. Split tools/models.py into 11 domain modules (file_operations_models, structure_models, rules_models, quality_precommit_models, synapse_models, feedback_models, markdown_models, health_connection_models, links_models, context_analysis_models, roadmap_operations_models). models.py is re-export facade ≤400 lines; all tests pass, quality gate passed.
-- Commit (ContextAnalysisStatus type fix) - Use ContextAnalysisStatus enum in context_analysis_operations.py; re-export from models.py. Preflight: fix_errors, format, markdown lint (0 errors), synapse_format, synapse_lint, type_check, quality, tests 4384 passed, 91.46% coverage. No completed plans in plans root.
-- **Code quality remediation Step 2 (2026-02-22)** - COMPLETE. Verified all functions ≤30 logical lines; quality gate passed with zero violations.
-- **Code quality remediation Step 3: Eliminate Any type (2026-02-22)** - COMPLETE. Replaced Any in file_operation_helpers (SchemaValidator, manager types), session brief (SessionBriefContextKwargs TypedDict); added session_brief_helpers; fixed context_analysis_models type.
-- **Code quality remediation Step 4 (2026-02-22)** - COMPLETE. Replaced dict[str, object] with typed models: session_start_tools (ManagersDict), phase4 (FileMapEntry, SectionSummary), refactoring (ConciseRefactoringSuggestionEntry, SuggestRefactoringConcisePayload), health_check (HealthCheckReportPayload). Moved concise-format helpers to refactoring_operation_helpers to keep refactoring_operations under 400 lines.
-- **Session optimization: load_context explicit budget for implement/refactor (2026-02-22)** - COMPLETE. Require explicit non-zero token_budget in implement/refactor flows; validation rejects omitted or zero budget for non-trivial tasks; updated implement prompt and docs; load_context_resource uses default budget.
-- **Code quality remediation Step 5: Resolve type-ignore comments (2026-02-22)** - COMPLETE. Removed type-ignore in phase1_foundation_stats, phase4_metadata_helpers; removed file-level pyright disable in phase5_evaluation and fixed load_optimization_history typing; kept two justified type: ignore in session_models (Pyright/Field limitation). Type check and quality gate pass.
-- **Code quality remediation Step 6 (file_operations split) (2026-02-22)** - COMPLETE. Split file_operations.py into file_section_operations, file_metadata_operations, file_crud_flow, file_manage_file_helpers, file_crud_operations; facade re-exports; all files ≤400 lines; tests and quality gate pass.
-- **Code quality remediation Step 6: split session_start_tools (2026-02-22)** - COMPLETE. Split session_start_tools.py (896 lines) into session_start_tools.py (main, 323 lines), session_health.py (130 lines), session_brief.py (361 lines). All ≤400 lines; function-length fixes via _extract_focus_and_completed, _assemble_brief_from_components, _load_and_build_brief. Tests updated to import from session_health and session_brief; MCP health patch path updated. Quality gate passed.
-- **Commit pipeline** - Type and quality fixes: enum literals replaced with enum types across src and tests; function-length violations fixed (health_check_operations, session_brief, consolidation_detector); test_file_operations imports updated for file_crud_flow/file_manage_file_helpers. All 4385 tests pass, 92.04% coverage.
-- **Code quality remediation Step 6: split markdown_operations (2026-02-22)** - COMPLETE. Split tools/markdown_operations.py into markdown_lint.py, markdown_lint_core.py, markdown_lint_run.py with facade; all ≤400 lines. Tests updated; quality gate passed.
-- **Commit pipeline type fixes (2026-02-22)** - COMPLETE. Resolved 10 type errors in tests (pytest.approx, dict.get); format and markdown lint; 4381 tests, 92% coverage.
-- **Code quality remediation Step 6: split plan_operations (2026-02-22)** - COMPLETE. Split plan_operations.py into plan_crud.py, plan_roadmap.py, plan_archive.py; facade re-exports; tests updated to patch implementation modules. Quality gate and tests passed.
-- **Commit pipeline** - Pre-commit checks passed (fix_errors, format, markdown lint, type_check, quality, tests 4385 pass, 92.03% coverage). Plan archiving: 0 plans to archive. Memory bank and roadmap consistent.
-- **Code quality remediation Step 6: core/metadata_index split (2026-02-22)** - COMPLETE. Split core/metadata_index.py into metadata_index.py (facade), metadata_queries.py (queries + I/O), metadata_cache.py (totals/analytics/mutations). All files ≤400 lines; tests pass; quality gate passed.
-- **Code quality remediation (P0) (2026-02-22)** - COMPLETE. All steps 1-6 done: model/file splits, refactored functions, eliminated Any, replaced dict[str,object], resolved type-ignore, split oversized tool files. Quality gate and tests pass.
-- **Test coverage Step 1a: services tests (2026-02-22)** - COMPLETE. Added tests/services/ with test_models, test_language_detector, framework_adapters/test_base, test_detection, test_stub_adapter; 32 tests, type-clean.
-- **Commit: test fixes for manage_file and get_relevance_scores** - COMPLETE. Fixed 10 failing tests: mock metadata must return DetailedFileMetadata so handlers can call model_dump. Updated test_consolidated, test_file_operations, test_phase4_optimization fixture. All 4417 tests pass; coverage 92.05%.
-- **Test coverage plan Step 1b: discovery tests (2026-02-22)** - COMPLETE. Added tests/discovery/ with 30 unit tests for tool_registry, search_interface, use_case_mapper, recommendation_engine; file-scanning edge cases (missing/empty dirs, private modules, sorted stems).
-- **Test coverage plan Step 1c (guides tests) (2026-02-22)** - COMPLETE. Added tests/guides/ with tests for setup, structure, usage, benefits and resources integration; fixed type errors in test_guide_content.py; 48 tests in tests/guides/.
-- **Test coverage plan Step 1c (guides tests) (2026-02-22)** - COMPLETE. Added tests/guides/ with test_guide_content.py and test_resources_guides.py; fixed implicit string concatenation in guides/usage.py; all tests pass, quality gate passed.
-- **Test coverage Step 1d: script_promotion tests (2026-02-22)** - COMPLETE. Added tests/script_promotion/ with 25 tests for models, script_validator, documentation_generator, script_integrator, tool_converter; all tests pass, quality gate passed.
-- **Test coverage plan Step 2: Add Parametrized Tests (P1) (2026-02-22)** - COMPLETE. Parametrized language adapter detection (7 languages), consolidated adapter init (8 adapters), manage_file operation parametrization (read/write/metadata), edge-case file_name and guide tests. ≥50 parametrized cases; 7 language detection tests in one file.
-- **Step 3: Eliminate asyncio.sleep() flakiness (plan-test-coverage-and-quality, P1) (2026-02-22)** - COMPLETE. Audited test sleeps; replaced timeout-style sleeps with Event.wait() or AsyncMock; marked timing-dependent tests (file_watcher, security, task_locking, metadata_index) with @pytest.mark.slow. All tests pass; quality gate passed.
+- **Week containing 2026-02-22** - 1 entries summarized.
 
 ## 2026-02-21
 

@@ -5,7 +5,7 @@ import asyncio
 import json
 import tempfile
 
-from cortex.tools.query_memory_bank_operations import query_memory_bank
+from cortex.tools.memory.query_memory_bank_operations import query_memory_bank
 
 # Note: check_migration_status and initialize_memory_bank have been replaced
 # by prompt templates (see docs/prompts/)

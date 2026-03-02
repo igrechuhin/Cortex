@@ -13,7 +13,7 @@ from cortex.core.file_system import FileSystemManager
 from cortex.core.metadata_index import MetadataIndex
 from cortex.core.token_counter import TokenCounter
 from cortex.core.version_manager import VersionManager
-from cortex.tools.compaction_operations import compact_session, write_handoff
+from cortex.tools.memory.compaction_operations import compact_session, write_handoff
 from cortex.tools.models import (
     GitStatusSummary,
     SessionHandoff,

@@ -9,7 +9,7 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from cortex.tools.model_benchmark import (
+from cortex.tools.evaluation.model_benchmark import (
     ModelBenchmarkComparison,
     ModelBenchmarkRecord,
     benchmark_model,
@@ -70,12 +70,12 @@ async def test_benchmark_model_stores_and_returns_payload(tmp_path: Path) -> Non
     }
     with (
         patch(
-            "cortex.tools.model_benchmark.resolve_project_root_async",
+            "cortex.tools.evaluation.model_benchmark.resolve_project_root_async",
             new_callable=AsyncMock,
             return_value=tmp_path,
         ),
         patch(
-            "cortex.tools.model_benchmark._run_full_eval",
+            "cortex.tools.evaluation.model_benchmark._run_full_eval",
             new_callable=AsyncMock,
             return_value=fake_payload,
         ),
@@ -163,12 +163,12 @@ async def test_benchmark_model_comparison_when_baseline_present(tmp_path: Path) 
     )
     with (
         patch(
-            "cortex.tools.model_benchmark.resolve_project_root_async",
+            "cortex.tools.evaluation.model_benchmark.resolve_project_root_async",
             new_callable=AsyncMock,
             return_value=tmp_path,
         ),
         patch(
-            "cortex.tools.model_benchmark._run_full_eval",
+            "cortex.tools.evaluation.model_benchmark._run_full_eval",
             new_callable=AsyncMock,
             return_value=fake_payload,
         ),
@@ -202,12 +202,12 @@ async def test_benchmark_model_comparison_note_when_baseline_missing(
     }
     with (
         patch(
-            "cortex.tools.model_benchmark.resolve_project_root_async",
+            "cortex.tools.evaluation.model_benchmark.resolve_project_root_async",
             new_callable=AsyncMock,
             return_value=tmp_path,
         ),
         patch(
-            "cortex.tools.model_benchmark._run_full_eval",
+            "cortex.tools.evaluation.model_benchmark._run_full_eval",
             new_callable=AsyncMock,
             return_value=fake_payload,
         ),

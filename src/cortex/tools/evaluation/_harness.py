@@ -11,7 +11,7 @@ from pathlib import Path
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.managers.usage_models import ToolUsageEvent
 from cortex.managers.usage_tracker import UsageTracker
-from cortex.tools.evaluation_task_loader import (
+from cortex.tools.evaluation.evaluation_task_loader import (
     build_eval_tasks,
     load_eval_task_dicts,
 )
@@ -141,7 +141,7 @@ class ToolEvaluationHarness:
 
     def analyze_results(self, suite: EvalSuiteResult) -> EvalAnalysis:
         """Analyze a completed suite and compute high-level metrics."""
-        from cortex.tools import evaluation_helpers as _eval_helpers
+        from cortex.tools.evaluation import evaluation_helpers as _eval_helpers
 
         total_tasks = len(suite.tasks)
         if total_tasks == 0:

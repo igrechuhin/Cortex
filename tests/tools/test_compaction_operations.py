@@ -15,7 +15,7 @@ from cortex.core.metadata_index import MetadataIndex
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.core.token_counter import TokenCounter
 from cortex.core.version_manager import VersionManager
-from cortex.tools.compaction_operations import (
+from cortex.tools.memory.compaction_operations import (
     compact_session,
     read_handoff,
     write_handoff,
@@ -470,7 +470,7 @@ class TestCompactSession:
                 return_value=tmp_path,
             ),
             patch(
-                "cortex.tools.compaction_write_helpers.execute_memory_bank_write",
+                "cortex.tools.memory.compaction_write_helpers.execute_memory_bank_write",
                 new_callable=AsyncMock,
                 side_effect=FileConflictError("activeContext.md", "hash1", "hash2"),
             ),
@@ -528,7 +528,7 @@ class TestCompactSession:
                 return_value=tmp_path,
             ),
             patch(
-                "cortex.tools.compaction_write_helpers.PROGRESS_TOKEN_THRESHOLD_DEFAULT",
+                "cortex.tools.memory.compaction_write_helpers.PROGRESS_TOKEN_THRESHOLD_DEFAULT",
                 10_000,
             ),
         ):
@@ -601,7 +601,7 @@ class TestCompactSession:
                 return_value=tmp_path,
             ),
             patch(
-                "cortex.tools.compaction_write_helpers.PROGRESS_TOKEN_THRESHOLD_DEFAULT",
+                "cortex.tools.memory.compaction_write_helpers.PROGRESS_TOKEN_THRESHOLD_DEFAULT",
                 0,
             ),
         ):

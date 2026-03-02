@@ -8,7 +8,7 @@ import pytest
 
 from cortex.core.models import ResponseFormat
 from cortex.managers.usage_models import ToolUsageEvent
-from cortex.tools.query_memory_bank_operations import query_memory_bank
+from cortex.tools.memory.query_memory_bank_operations import query_memory_bank
 from cortex.tools.query_usage_operations import query_usage
 
 # -----------------------------------------------------------------------------

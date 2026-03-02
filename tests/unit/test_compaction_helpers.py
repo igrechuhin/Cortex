@@ -1,6 +1,6 @@
 """Unit tests for compaction helpers (Phase 56)."""
 
-from cortex.tools.compaction_helpers import (
+from cortex.tools.memory.compaction_helpers import (
     apply_progress_tiers,
     compact_active_context_completed_work,
     get_completed_work_sections,

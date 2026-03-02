@@ -13,8 +13,8 @@ from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.tools.files.file_operations import manage_file
 
 # Use consolidated query_memory_bank (Phase 50); rollback stays direct
-from cortex.tools.foundation_rollback import rollback_file_version
-from cortex.tools.query_memory_bank_operations import query_memory_bank
+from cortex.tools.memory.foundation_rollback import rollback_file_version
+from cortex.tools.memory.query_memory_bank_operations import query_memory_bank
 from tests.helpers.schema_fixtures import MINIMAL_VALID_PROJECT_BRIEF_CONTENT
 
 

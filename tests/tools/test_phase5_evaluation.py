@@ -36,10 +36,10 @@ from cortex.tools.evaluation import (
     run_tool_evaluation,
     run_tool_optimization_workflow,
 )
-from cortex.tools.evaluation_anomalies_helpers import (
+from cortex.tools.evaluation.evaluation_anomalies_helpers import (
     aggregate_session_tool_anomalies,
 )
-from cortex.tools.evaluation_dashboard_helpers import (
+from cortex.tools.evaluation.evaluation_dashboard_helpers import (
     aggregate_tool_metrics,
     format_token_efficiency,
     generate_evaluation_dashboard,

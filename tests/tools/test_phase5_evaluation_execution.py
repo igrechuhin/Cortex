@@ -15,13 +15,13 @@ from cortex.tools.evaluation import (
     ExecutionExpectType,
     ExecutionSpec,
 )
-from cortex.tools.evaluation_execution import (
+from cortex.tools.evaluation.evaluation_execution import (
     ExecutionResult,
     build_execution_summary,
     run_execution_suite,
     run_one_execution,
 )
-from cortex.tools.evaluation_execution_registry import get_tool_invoker
+from cortex.tools.evaluation.evaluation_execution_registry import get_tool_invoker
 
 
 def _task_without_execution() -> EvalTask:
@@ -71,7 +71,7 @@ async def test_run_one_execution_passes_with_contains() -> None:
     """run_one_execution passes when tool output contains expected substring."""
     task = _task_with_execution()
     with patch(
-        "cortex.tools.evaluation_execution._invoke_tool",
+        "cortex.tools.evaluation.evaluation_execution._invoke_tool",
         new_callable=AsyncMock,
         return_value='{"success": true, "structure_info": {}}',
     ):
@@ -86,7 +86,7 @@ async def test_run_one_execution_fails_when_substring_missing() -> None:
     """run_one_execution fails when output does not contain expected substring."""
     task = _task_with_execution(substring="nonexistent_key")
     with patch(
-        "cortex.tools.evaluation_execution._invoke_tool",
+        "cortex.tools.evaluation.evaluation_execution._invoke_tool",
         new_callable=AsyncMock,
         return_value='{"success": true}',
     ):
@@ -123,7 +123,7 @@ async def test_run_execution_suite_focused_mode_filters_by_category() -> None:
         ),
     ]
     with patch(
-        "cortex.tools.evaluation_execution._invoke_tool",
+        "cortex.tools.evaluation.evaluation_execution._invoke_tool",
         new_callable=AsyncMock,
         return_value='{"structure_info": {}}',
     ):

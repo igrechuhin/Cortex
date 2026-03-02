@@ -20,13 +20,13 @@ from cortex.core.dependency_graph import FileDependencyInfo
 from cortex.core.models import ModelDict
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.managers.types import ManagersDict
-from cortex.tools.foundation_dependency import (
+from cortex.tools.memory.foundation_dependency import (
     get_dependency_graph,
     get_dependency_graph_resource,
 )
-from cortex.tools.foundation_rollback import rollback_file_version
-from cortex.tools.foundation_stats import get_memory_bank_stats
-from cortex.tools.foundation_version import (
+from cortex.tools.memory.foundation_rollback import rollback_file_version
+from cortex.tools.memory.foundation_stats import get_memory_bank_stats
+from cortex.tools.memory.foundation_version import (
     get_version_history,
     get_version_history_resource,
 )
@@ -869,7 +869,7 @@ async def test_get_memory_bank_stats_empty_metadata(
 def test_build_graph_data_with_dependencies():
     """Test _build_graph_data helper constructs correct graph structure."""
     # Arrange
-    from cortex.tools.foundation_dependency import build_graph_data
+    from cortex.tools.memory.foundation_dependency import build_graph_data
 
     static_deps: dict[str, FileDependencyInfo] = {
         "projectBrief.md": FileDependencyInfo(
@@ -900,7 +900,7 @@ def test_build_graph_data_with_dependencies():
 def test_extract_version_history_valid_list():
     """Test extract_version_history with valid version list."""
     # Arrange
-    from cortex.tools.foundation_version import extract_version_history
+    from cortex.tools.memory.foundation_version import extract_version_history
 
     file_meta = {
         "version_history": [
@@ -921,7 +921,7 @@ def test_extract_version_history_valid_list():
 def test_extract_version_history_invalid_format():
     """Test extract_version_history handles invalid format."""
     # Arrange
-    from cortex.tools.foundation_version import extract_version_history
+    from cortex.tools.memory.foundation_version import extract_version_history
 
     file_meta = {"version_history": "not a list"}
 
@@ -935,7 +935,7 @@ def test_extract_version_history_invalid_format():
 def test_extract_version_history_missing_field():
     """Test extract_version_history handles missing version_history field."""
     # Arrange
-    from cortex.tools.foundation_version import extract_version_history
+    from cortex.tools.memory.foundation_version import extract_version_history
 
     file_meta = {}
 
@@ -949,7 +949,7 @@ def test_extract_version_history_missing_field():
 def test_sort_and_limit_versions():
     """Test sort_and_limit_versions sorts and limits correctly."""
     # Arrange
-    from cortex.tools.foundation_version import sort_and_limit_versions
+    from cortex.tools.memory.foundation_version import sort_and_limit_versions
 
     versions = [
         {"version": 1},
@@ -969,7 +969,7 @@ def test_sort_and_limit_versions():
 def test_sort_and_limit_versions_with_float_versions():
     """Test sort_and_limit_versions handles float version numbers."""
     # Arrange
-    from cortex.tools.foundation_version import sort_and_limit_versions
+    from cortex.tools.memory.foundation_version import sort_and_limit_versions
 
     versions = [
         {"version": 1.5},
@@ -990,7 +990,7 @@ def test_sort_and_limit_versions_with_float_versions():
 def test_sort_and_limit_versions_with_missing_version():
     """Test sort_and_limit_versions handles missing version field."""
     # Arrange
-    from cortex.tools.foundation_version import sort_and_limit_versions
+    from cortex.tools.memory.foundation_version import sort_and_limit_versions
 
     versions = [
         {"version": 2},
@@ -1010,7 +1010,7 @@ def test_sort_and_limit_versions_with_missing_version():
 def test_format_versions_for_export_all_fields():
     """Test format_versions_for_export includes all fields."""
     # Arrange
-    from cortex.tools.foundation_version import format_versions_for_export
+    from cortex.tools.memory.foundation_version import format_versions_for_export
 
     versions = [
         {
@@ -1040,7 +1040,7 @@ def test_format_versions_for_export_all_fields():
 def test_format_versions_for_export_minimal_fields():
     """Test format_versions_for_export with minimal fields."""
     # Arrange
-    from cortex.tools.foundation_version import format_versions_for_export
+    from cortex.tools.memory.foundation_version import format_versions_for_export
 
     versions = [{"version": 1, "timestamp": "2026-01-10T10:00:00"}]
 
@@ -1058,7 +1058,7 @@ def test_format_versions_for_export_minimal_fields():
 
 def test_format_versions_for_export_skips_invalid_items():
     """format_versions_for_export skips entries with invalid version or timestamp."""
-    from cortex.tools.foundation_version import format_versions_for_export
+    from cortex.tools.memory.foundation_version import format_versions_for_export
 
     versions: list[ModelDict] = [
         {"version": "not_a_number", "timestamp": "2026-01-10T10:00:00"},
@@ -1072,7 +1072,7 @@ def test_format_versions_for_export_skips_invalid_items():
 
 def test_format_versions_for_export_change_type_non_str_defaults_to_unknown():
     """format_versions_for_export uses 'unknown' when change_type is not a string."""
-    from cortex.tools.foundation_version import format_versions_for_export
+    from cortex.tools.memory.foundation_version import format_versions_for_export
 
     versions: list[ModelDict] = [
         {"version": 1, "timestamp": "2026-01-10T10:00:00", "change_type": 123},
@@ -1085,7 +1085,7 @@ def test_format_versions_for_export_change_type_non_str_defaults_to_unknown():
 def test_sum_file_field():
     """Test sum_file_field sums numeric fields correctly."""
     # Arrange
-    from cortex.tools.foundation_stats import sum_file_field
+    from cortex.tools.memory.foundation_stats import sum_file_field
 
     files_metadata = {
         "file1.md": {"token_count": 100, "size_bytes": 400},
@@ -1108,7 +1108,7 @@ def test_sum_file_field():
 def test_sum_file_field_missing_field():
     """Test sum_file_field handles missing fields."""
     # Arrange
-    from cortex.tools.foundation_stats import sum_file_field
+    from cortex.tools.memory.foundation_stats import sum_file_field
 
     files_metadata = {
         "file1.md": {"token_count": 100},
@@ -1125,7 +1125,7 @@ def test_sum_file_field_missing_field():
 def test_sum_file_field_non_numeric():
     """Test sum_file_field ignores non-numeric values."""
     # Arrange
-    from cortex.tools.foundation_stats import sum_file_field
+    from cortex.tools.memory.foundation_stats import sum_file_field
 
     files_metadata = {
         "file1.md": {"token_count": 100},
@@ -1142,7 +1142,7 @@ def test_sum_file_field_non_numeric():
 def test_extract_last_updated_success():
     """Test extract_last_updated extracts timestamp."""
     # Arrange
-    from cortex.tools.foundation_stats import extract_last_updated
+    from cortex.tools.memory.foundation_stats import extract_last_updated
 
     index_stats = {"totals": {"last_full_scan": "2026-01-10T12:00:00"}}
 
@@ -1156,7 +1156,7 @@ def test_extract_last_updated_success():
 def test_extract_last_updated_missing_field():
     """Test extract_last_updated handles missing field."""
     # Arrange
-    from cortex.tools.foundation_stats import extract_last_updated
+    from cortex.tools.memory.foundation_stats import extract_last_updated
 
     index_stats: ModelDict = {"totals": {}}
 
@@ -1170,7 +1170,7 @@ def test_extract_last_updated_missing_field():
 def test_extract_last_updated_invalid_structure():
     """Test extract_last_updated handles invalid structure."""
     # Arrange
-    from cortex.tools.foundation_stats import extract_last_updated
+    from cortex.tools.memory.foundation_stats import extract_last_updated
 
     index_stats = {"totals": "not a dict"}
 
@@ -1184,7 +1184,7 @@ def test_extract_last_updated_invalid_structure():
 def test_build_summary_dict():
     """Test build_summary_dict constructs correct summary."""
     # Arrange
-    from cortex.tools.foundation_stats import build_summary_dict
+    from cortex.tools.memory.foundation_stats import build_summary_dict
 
     files_metadata = {
         "file1.md": {"token_count": 100},
@@ -1215,7 +1215,7 @@ def test_format_memory_bank_stats_response_concise() -> None:
     from typing import cast
 
     from cortex.core.models import ModelDict, ResponseFormat
-    from cortex.tools.foundation_stats import format_memory_bank_stats_response
+    from cortex.tools.memory.foundation_stats import format_memory_bank_stats_response
 
     result_dict = {
         "status": "success",
@@ -1244,7 +1244,7 @@ def test_format_memory_bank_stats_response_detailed_passthrough() -> None:
     from typing import cast
 
     from cortex.core.models import ModelDict, ResponseFormat
-    from cortex.tools.foundation_stats import format_memory_bank_stats_response
+    from cortex.tools.memory.foundation_stats import format_memory_bank_stats_response
 
     original = {
         "status": "success",
@@ -1263,7 +1263,7 @@ def test_format_memory_bank_stats_response_detailed_passthrough() -> None:
 def test_calculate_token_status_healthy():
     """Test calculate_token_status returns healthy status."""
     # Arrange
-    from cortex.tools.foundation_stats import calculate_token_status
+    from cortex.tools.memory.foundation_stats import calculate_token_status
 
     # Act
     result = calculate_token_status(
@@ -1277,7 +1277,7 @@ def test_calculate_token_status_healthy():
 def test_calculate_token_status_warning():
     """Test calculate_token_status returns warning status."""
     # Arrange
-    from cortex.tools.foundation_stats import calculate_token_status
+    from cortex.tools.memory.foundation_stats import calculate_token_status
 
     # Act
     result = calculate_token_status(
@@ -1291,7 +1291,7 @@ def test_calculate_token_status_warning():
 def test_calculate_token_status_over_budget():
     """Test calculate_token_status returns over_budget status."""
     # Arrange
-    from cortex.tools.foundation_stats import calculate_token_status
+    from cortex.tools.memory.foundation_stats import calculate_token_status
 
     # Act
     result = calculate_token_status(
@@ -1305,7 +1305,7 @@ def test_calculate_token_status_over_budget():
 def test_calculate_totals():
     """Test calculate_totals computes correct totals."""
     # Arrange
-    from cortex.tools.foundation_stats import calculate_totals
+    from cortex.tools.memory.foundation_stats import calculate_totals
 
     files_metadata = {
         "file1.md": {"token_count": 100, "size_bytes": 400, "read_count": 5},
@@ -1326,7 +1326,7 @@ def test_calculate_totals():
 def test_build_rollback_success_response():
     """Test build_rollback_success_response constructs correct response."""
     # Arrange
-    from cortex.tools.foundation_rollback import (
+    from cortex.tools.memory.foundation_rollback import (
         build_rollback_success_response,
     )
 
@@ -1349,7 +1349,7 @@ def test_build_rollback_success_response():
 def test_build_rollback_error_response():
     """Test build_rollback_error_response constructs correct response."""
     # Arrange
-    from cortex.tools.foundation_rollback import build_rollback_error_response
+    from cortex.tools.memory.foundation_rollback import build_rollback_error_response
 
     # Act
     result = build_rollback_error_response("Test error", "ValueError")

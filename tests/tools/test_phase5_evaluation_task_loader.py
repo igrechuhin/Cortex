@@ -6,7 +6,7 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
 
-from cortex.tools.evaluation_task_loader import (
+from cortex.tools.evaluation.evaluation_task_loader import (
     build_eval_tasks,
     load_eval_task_dicts,
 )

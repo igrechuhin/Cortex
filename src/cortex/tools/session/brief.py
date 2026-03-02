@@ -11,7 +11,7 @@ from pathlib import Path
 from cortex.core.constants import MemoryBankFile
 from cortex.core.file_system import FileSystemManager
 from cortex.managers.types import ManagersDict
-from cortex.tools.compaction_operations import read_handoff
+from cortex.tools.memory.compaction_operations import read_handoff
 from cortex.tools.models import (
     ConcurrentSession,
     GitStatusSummary,

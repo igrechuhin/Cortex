@@ -17,13 +17,13 @@ from cortex.core.usage_context import (
 from cortex.core.version_manager import VersionManager
 from cortex.managers.types import ManagersDict
 from cortex.managers.utils import get_manager
-from cortex.tools.compaction_handoff import (
+from cortex.tools.memory.compaction_handoff import (
     HandoffParams,
     read_handoff,
     to_handoff_params,
     write_handoff,
 )
-from cortex.tools.compaction_write_helpers import compact_session_run
+from cortex.tools.memory.compaction_write_helpers import compact_session_run
 
 __all__ = ["compact_session", "write_handoff", "read_handoff"]
 

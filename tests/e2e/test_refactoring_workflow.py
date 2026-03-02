@@ -10,7 +10,7 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from cortex.tools.query_memory_bank_operations import query_memory_bank
+from cortex.tools.memory.query_memory_bank_operations import query_memory_bank
 from cortex.tools.refactoring_operations import suggest_refactoring
 from cortex.tools.validation.operations import validate
 from tests.helpers.path_helpers import ensure_test_cortex_structure

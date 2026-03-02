@@ -119,7 +119,7 @@ async def run_anomalies(params: QueryUsageParams, ctx: MCPContext | None) -> str
     """Session tool anomalies: tools used in last N hours with retry/error flags."""
     from cortex.core.project_root_resolver import resolve_project_root_async
     from cortex.tools import usage_analytics
-    from cortex.tools.evaluation_anomalies_helpers import (
+    from cortex.tools.evaluation.evaluation_anomalies_helpers import (
         get_session_tool_anomalies_payload,
         unavailable_session_anomalies_response,
     )
@@ -143,7 +143,7 @@ async def run_tool_description_optimization(
         )
     from cortex.core.project_root_resolver import resolve_project_root_async
     from cortex.tools import usage_analytics
-    from cortex.tools.evaluation_optimization_helpers import (
+    from cortex.tools.evaluation.evaluation_optimization_helpers import (
         get_tool_description_optimization_payload,
     )
 

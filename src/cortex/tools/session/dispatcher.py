@@ -75,7 +75,9 @@ async def _session_handle_compact(
     ctx: MCPContext | None,
 ) -> str:
     """Handle session(operation='compact')."""
-    from cortex.tools.compaction_operations import compact_session as _compact_session
+    from cortex.tools.memory.compaction_operations import (
+        compact_session as _compact_session,
+    )
 
     await log_client(ctx, "info", "session(compact): starting", logger_name=__name__)
     return await _compact_session(

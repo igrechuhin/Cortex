@@ -37,24 +37,16 @@ Total: 71 tools + 7 prompts
 from . import (
     append_entry_dispatcher,  # noqa: F401
     cache_json_tools,  # noqa: F401
-    compaction_operations,  # noqa: F401
     composite_tools,  # noqa: F401
     configuration_hybrid,  # noqa: F401
     configuration_operations,  # noqa: F401
     connection_health,  # noqa: F401
     evaluation,  # noqa: F401
-    evaluation_optimization_helpers,  # noqa: F401
     execution,  # noqa: F401
     execution_feedback,  # noqa: F401
-    foundation_dependency,  # noqa: F401
-    foundation_rollback,  # noqa: F401
-    foundation_stats,  # noqa: F401
-    foundation_version,  # noqa: F401
     health_check_operations,  # noqa: F401
-    model_benchmark,  # noqa: F401
     optimization,  # noqa: F401
     prompts,  # noqa: F401
-    query_memory_bank_operations,  # noqa: F401
     query_usage_operations,  # noqa: F401
     refactoring_operations,  # noqa: F401
     refactoring_tools,  # noqa: F401
@@ -71,11 +63,20 @@ from .context import (
     analysis_operations,  # noqa: F401
     analysis_usage,  # noqa: F401
 )
+from .evaluation import evaluation_optimization_helpers, model_benchmark  # noqa: F401
 from .files import (
     file_operations,  # noqa: F401
     markdown_operations,  # noqa: F401
 )
 from .linking import linking_operations  # noqa: F401
+from .memory import (
+    compaction_operations,  # noqa: F401
+    foundation_dependency,  # noqa: F401
+    foundation_rollback,  # noqa: F401
+    foundation_stats,  # noqa: F401
+    foundation_version,  # noqa: F401
+    query_memory_bank_operations,  # noqa: F401
+)
 from .plans import (
     completion,  # noqa: F401
     corruption,  # noqa: F401

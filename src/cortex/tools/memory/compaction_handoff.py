@@ -11,7 +11,7 @@ from pathlib import Path
 
 from cortex.core.cache_utils import CacheType, get_cache_dir
 from cortex.core.file_system import FileSystemManager
-from cortex.tools.compaction_constants import (
+from cortex.tools.memory.compaction_constants import (
     SESSION_HANDOFF_FILENAME,
     SESSION_HANDOFF_SCHEMA_VERSION,
     SESSION_PROGRESS_FILENAME,

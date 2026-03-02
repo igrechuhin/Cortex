@@ -3,7 +3,7 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from cortex.tools.foundation_cleanup import cleanup_metadata_index
+from cortex.tools.memory.foundation_cleanup import cleanup_metadata_index
 from tests.helpers.managers import make_test_managers
 
 
@@ -18,12 +18,12 @@ class TestCleanupMetadataIndex:
 
         with (
             patch(
-                "cortex.tools.foundation_cleanup.resolve_project_root_async",
+                "cortex.tools.memory.foundation_cleanup.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=tmp_path,
             ),
             patch(
-                "cortex.tools.foundation_cleanup.get_managers",
+                "cortex.tools.memory.foundation_cleanup.get_managers",
                 return_value=make_test_managers(index=mock_index),
             ),
         ):
@@ -47,12 +47,12 @@ class TestCleanupMetadataIndex:
 
         with (
             patch(
-                "cortex.tools.foundation_cleanup.resolve_project_root_async",
+                "cortex.tools.memory.foundation_cleanup.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=tmp_path,
             ),
             patch(
-                "cortex.tools.foundation_cleanup.get_managers",
+                "cortex.tools.memory.foundation_cleanup.get_managers",
                 return_value=make_test_managers(index=mock_index),
             ),
         ):
@@ -72,12 +72,12 @@ class TestCleanupMetadataIndex:
         # Arrange
         with (
             patch(
-                "cortex.tools.foundation_cleanup.resolve_project_root_async",
+                "cortex.tools.memory.foundation_cleanup.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=tmp_path,
             ),
             patch(
-                "cortex.tools.foundation_cleanup.get_managers",
+                "cortex.tools.memory.foundation_cleanup.get_managers",
                 side_effect=RuntimeError("boom"),
             ),
         ):
@@ -104,16 +104,16 @@ class TestCleanupMetadataIndexContextLogging:
 
         with (
             patch(
-                "cortex.tools.foundation_cleanup.log_client",
+                "cortex.tools.memory.foundation_cleanup.log_client",
                 new_callable=AsyncMock,
             ) as mock_log,
             patch(
-                "cortex.tools.foundation_cleanup.resolve_project_root_async",
+                "cortex.tools.memory.foundation_cleanup.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=tmp_path,
             ),
             patch(
-                "cortex.tools.foundation_cleanup.get_managers",
+                "cortex.tools.memory.foundation_cleanup.get_managers",
                 return_value=make_test_managers(index=mock_index),
             ),
         ):
@@ -132,16 +132,16 @@ class TestCleanupMetadataIndexContextLogging:
         mock_ctx = AsyncMock()
         with (
             patch(
-                "cortex.tools.foundation_cleanup.log_client",
+                "cortex.tools.memory.foundation_cleanup.log_client",
                 new_callable=AsyncMock,
             ) as mock_log,
             patch(
-                "cortex.tools.foundation_cleanup.resolve_project_root_async",
+                "cortex.tools.memory.foundation_cleanup.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=tmp_path,
             ),
             patch(
-                "cortex.tools.foundation_cleanup.get_managers",
+                "cortex.tools.memory.foundation_cleanup.get_managers",
                 side_effect=RuntimeError("init failed"),
             ),
         ):

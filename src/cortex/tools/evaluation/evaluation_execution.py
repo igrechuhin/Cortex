@@ -86,7 +86,7 @@ def _check_expect(output: str, expect: ExecutionExpectSpec) -> tuple[bool, str]:
 
 async def _invoke_tool(tool_name: str, arguments: dict[str, object]) -> str:
     """Invoke a registered tool by name with given arguments; return output string."""
-    from cortex.tools.evaluation_execution_registry import get_tool_invoker
+    from cortex.tools.evaluation.evaluation_execution_registry import get_tool_invoker
 
     invoker = get_tool_invoker(tool_name)
     if invoker is None:

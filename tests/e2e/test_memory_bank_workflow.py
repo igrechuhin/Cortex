@@ -11,7 +11,7 @@ from unittest.mock import AsyncMock, patch
 import pytest
 
 from cortex.tools.files.file_operations import manage_file
-from cortex.tools.query_memory_bank_operations import query_memory_bank
+from cortex.tools.memory.query_memory_bank_operations import query_memory_bank
 from cortex.tools.validation.operations import validate
 from tests.helpers.path_helpers import ensure_test_cortex_structure
 from tests.helpers.tool_call_helpers import get_tool_fn, to_dict

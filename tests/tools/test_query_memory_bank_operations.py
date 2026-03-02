@@ -10,7 +10,7 @@ import pytest
 
 from cortex.core.context_logging import MCPContext
 from cortex.tools import query_memory_bank_operations
-from cortex.tools.query_memory_bank_operations import (
+from cortex.tools.memory.query_memory_bank_operations import (
     QueryMemoryBankParams,
     query_memory_bank,
 )
