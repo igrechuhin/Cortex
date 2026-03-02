@@ -13,7 +13,7 @@ import pytest
 
 from cortex.core.models import OperationStatus
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
-from cortex.tools.append_entry_dispatcher import append_entry
+from cortex.tools.plans.append_entry_dispatcher import append_entry
 from cortex.tools.plans.completion import CompletePlanResult, complete_plan
 
 

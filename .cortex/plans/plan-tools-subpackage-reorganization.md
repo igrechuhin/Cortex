@@ -1,6 +1,6 @@
 # Reorganize tools/ Into Domain Sub-Packages
 
-**Status**: IN PROGRESS (Session 19 done)
+**Status**: IN PROGRESS (Session 20 done)
 **Priority**: LOW
 **Created**: 2026-02-28
 **Type**: Architecture refactoring
@@ -63,6 +63,7 @@ Create sub-packages by functional domain, move files, update all imports.
    - Session 17: `execution/` — moved error_formatters, error_formatters_core, error_formatters_domain ✅ COMPLETE (2026-03-02). Updated imports in config, validation, synapse, files, refactoring, optimization, execution. 4867 tests, 92.32% coverage.
    - Session 18: `execution/` — moved feedback_models, workflow_models, workflow_operations, composite_tools. Added composite_tools shim at tools root for backward compat. Flat files: 24→21. 4867 tests, 92.32% coverage.
    - Session 19: `structure/` — moved tool_search_operations to structure/tool_search.py; created `skill_pack/` subpackage (models, operations). Flat files: 21→18. 4867 tests, 92.32% coverage.
+   - Session 20: `structure/` — moved structure_models, categories; `plans/` — moved roadmap_operations_models, append_entry_dispatcher. Flat files: 18→14. 4867 tests, 92.32% coverage.
 
 4. **Update all imports** project-wide after each move
 5. **Update `__init__.py`** exports

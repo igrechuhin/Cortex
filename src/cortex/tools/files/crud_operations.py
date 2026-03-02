@@ -14,12 +14,12 @@ from cortex.core.mcp_stability import (
 )
 from cortex.core.usage_context import get_or_resolve_project_root
 from cortex.server import mcp
-from cortex.tools.categories import ALLOWED_CALLERS_CODE_EXECUTION
 from cortex.tools.files.manage_file_helpers import (
     execute_file_operation,
     manage_file_validate_and_run,
 )
 from cortex.tools.files.operation_helpers import FileOperation
+from cortex.tools.structure.categories import ALLOWED_CALLERS_CODE_EXECUTION
 
 MANAGE_FILE_INPUT_EXAMPLES: list[dict[str, object]] = [
     {

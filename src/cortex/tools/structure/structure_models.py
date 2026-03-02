@@ -8,7 +8,7 @@ from enum import Enum
 
 from pydantic import ConfigDict, Field
 
-from .models_base import (
+from cortex.tools.models_base import (
     ErrorResultBase,
     StrictBaseModel,
     ToolResultBase,

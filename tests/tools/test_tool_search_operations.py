@@ -6,7 +6,7 @@ import json
 
 import pytest
 
-from cortex.tools.categories import (
+from cortex.tools.structure.categories import (
     ToolCategory,
     build_category_config,
     get_always_loaded_tool_names,

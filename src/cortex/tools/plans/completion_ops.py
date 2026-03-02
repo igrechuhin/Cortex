@@ -26,7 +26,7 @@ from cortex.tools.plans.completion_validation import (
     validate_date_str,
     validate_progress_entry_text,
 )
-from cortex.tools.roadmap_operations_models import (
+from cortex.tools.plans.roadmap_operations_models import (
     AppendActiveContextEntryResult,
     AppendProgressEntryResult,
 )

@@ -64,7 +64,7 @@ All 63 Cortex MCP tools are categorized into three loading priority tiers in `sr
 ### API
 
 ```python
-from cortex.tools.categories import (
+from cortex.tools.structure.categories import (
     get_tool_category,
     get_always_loaded_tool_names,
     get_deferred_tool_names,
@@ -112,7 +112,7 @@ When `enabled: false` (default), all tools are listed as today. When MCP SDK sup
 | `deferred_medium` | list of strings | Tools for specific workflows (refactoring, analysis, synapse, plans); discoverable via `search_tools`. |
 | `deferred_low` | list of strings | Rarely used tools (analytics, script capture, admin); discoverable via `search_tools`. |
 
-**Reading config:** Use `OptimizationConfig(project_root).get_tool_search_config()` to get the current tool_search dict (or canonical defaults if the key is missing). Use `build_category_config()` from `cortex.tools.categories` for the canonical list without loading the file.
+**Reading config:** Use `OptimizationConfig(project_root).get_tool_search_config()` to get the current tool_search dict (or canonical defaults if the key is missing). Use `build_category_config()` from `cortex.tools.structure.categories` for the canonical list without loading the file.
 
 **Token savings:** When deferred loading is enabled, initial tool list size equals `len(always_loaded)` instead of all tools; the difference is the number of tools loaded on demand via `search_tools`. Tests in `tests/tools/test_tool_search_operations.py` and `tests/unit/test_optimization_config.py` assert `always_loaded < total` so that when `defer_loading` is implemented, token savings are realized.
 

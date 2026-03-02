@@ -21,7 +21,7 @@ from cortex.core.models import ResponseFormat
 from cortex.core.project_root_resolver import resolve_project_root_async
 from cortex.refactoring.models import RefactoringSuggestionType
 from cortex.server import mcp
-from cortex.tools.categories import ALLOWED_CALLERS_CODE_EXECUTION
+from cortex.tools.structure.categories import ALLOWED_CALLERS_CODE_EXECUTION
 
 from .operation_concise import format_suggest_refactoring_response
 from .operation_helpers import (

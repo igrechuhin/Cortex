@@ -14,7 +14,7 @@
 
 ## Pending plans (from .cortex/plans)
 
-- **PENDING** Reorganize tools/ into domain sub-packages (Session 19 done). Plan: .cortex/plans/plan-tools-subpackage-reorganization.md
+- **PENDING** Reorganize tools/ into domain sub-packages (Session 20 done). Plan: .cortex/plans/plan-tools-subpackage-reorganization.md
 - **Tools-to-Resources Conversion Analysis** - PENDING - Analyze all Cortex MCP tools to determine which can be converted to resources. Plan: .cortex/plans/plan-tools-to-resources-analysis.md
 
 ### Fixes

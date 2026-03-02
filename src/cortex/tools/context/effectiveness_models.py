@@ -11,7 +11,7 @@ from pydantic import ConfigDict, Field, field_validator
 
 from cortex.core.models import JsonDict, OperationStatus
 from cortex.tools.models_base import StrictBaseModel
-from cortex.tools.structure_models import CleanupActionResult
+from cortex.tools.structure.structure_models import CleanupActionResult
 
 
 class ContextAnalysisStatus(str, Enum):

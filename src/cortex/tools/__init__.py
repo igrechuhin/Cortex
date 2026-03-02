@@ -33,7 +33,6 @@ Total: 71 tools + 7 prompts
 
 # Import all tool modules to register their decorators
 from . import (
-    append_entry_dispatcher,  # noqa: F401
     cache_json_tools,  # noqa: F401
     config,  # noqa: F401 - registers configure tool and get_config_resource
     evaluation,  # noqa: F401
@@ -69,6 +68,7 @@ from .memory import (
     query_memory_bank_operations,  # noqa: F401
 )
 from .plans import (
+    append_entry_dispatcher,  # noqa: F401
     completion,  # noqa: F401
     corruption,  # noqa: F401
     entries,  # noqa: F401

@@ -30,6 +30,8 @@
 
 - ✅ **Tools sub-package reorganization Session 19** - COMPLETE (2026-03-02) - Moved tool_search_operations to structure/tool_search.py; created skill_pack/ subpackage (models, operations). Flat files 21→18. 4867 tests, 92.32% coverage.
 
+- ✅ **Tools subpackage Session 20** - COMPLETE (2026-03-02) - Moved structure_models and categories to structure/; roadmap_operations_models and append_entry_dispatcher to plans/. Flat files: 18→14. Updated all imports project-wide.
+
 ## Completed Work (2026-03-01)
 
 - **Summary (2026-03-01)** - 1 entries archived.

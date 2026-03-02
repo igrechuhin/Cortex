@@ -18,10 +18,10 @@ from cortex.core.mcp_stability import ensure_usage_context, mcp_tool_wrapper
 from cortex.core.project_root_resolver import resolve_project_root_async
 from cortex.refactoring.models import RefactoringAction
 from cortex.server import mcp
-from cortex.tools.categories import ALLOWED_CALLERS_CODE_EXECUTION
 from cortex.tools.execution.helpers import parse_refactoring_action
 from cortex.tools.execution.monitoring import log_invalid_action_and_return
 from cortex.tools.execution.planning import execute_with_error_handling
+from cortex.tools.structure.categories import ALLOWED_CALLERS_CODE_EXECUTION
 
 
 async def _apply_refactoring_validate_and_run(

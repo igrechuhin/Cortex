@@ -4,7 +4,7 @@ Ensures `categories.py` remains the authoritative source of truth for
 tool-search configuration by requiring a 1:1 match between:
 
 - Actual `@mcp.tool()` registrations under `src/cortex/tools`
-- `TOOL_CATEGORIES` entries in `cortex.tools.categories`
+- `TOOL_CATEGORIES` entries in `cortex.tools.structure.categories`
 """
 
 from __future__ import annotations
@@ -14,7 +14,7 @@ from pathlib import Path
 
 from cortex.health_check.tool_analyzer import ToolAnalyzer
 from cortex.managers.initialization import get_project_root
-from cortex.tools.categories import (
+from cortex.tools.structure.categories import (
     MAX_REGISTERED_TOOLS,
     TOOL_CATEGORIES,
     get_category_summary,

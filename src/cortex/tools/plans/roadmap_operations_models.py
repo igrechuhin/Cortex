@@ -9,8 +9,7 @@ from pydantic import ConfigDict, Field
 
 from cortex.core.constants import MemoryBankFile
 from cortex.core.models import OperationStatus
-
-from .models_base import StrictBaseModel
+from cortex.tools.models_base import StrictBaseModel
 
 
 class AddRoadmapEntryResult(StrictBaseModel):

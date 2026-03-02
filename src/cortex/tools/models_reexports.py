@@ -80,7 +80,7 @@ from .linking.links_models import (
     ParseFileLinksResult,
     ParseFileLinksResultUnion,
 )
-from .roadmap_operations_models import (
+from .plans.roadmap_operations_models import (
     AddRoadmapEntryResult,
     AppendActiveContextEntryResult,
     AppendProgressEntryResult,
@@ -111,7 +111,7 @@ from .session.models import (
     SessionStartResultUnion,
     TaskLock,
 )
-from .structure_models import (
+from .structure.structure_models import (
     CheckStructureHealthErrorResult,
     CheckStructureHealthResult,
     CheckStructureHealthResultUnion,

@@ -13,7 +13,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from cortex.managers.usage_models import ToolUsageEvent
 from cortex.managers.usage_tracker import UsageTracker
-from cortex.tools.categories import (
+from cortex.tools.structure.categories import (
     get_always_loaded_tool_names,
     get_category_summary,
     get_deferred_tool_names,
