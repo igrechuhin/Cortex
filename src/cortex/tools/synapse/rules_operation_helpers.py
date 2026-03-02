@@ -7,7 +7,7 @@ from typing import cast
 from cortex.core.models import ModelDict
 from cortex.optimization.config import OptimizationConfig
 from cortex.optimization.models import RulesManagerStatusModel
-from cortex.tools.error_formatters import (
+from cortex.tools.execution.error_formatters import (
     format_invalid_parameter_error,
     format_missing_parameter_error,
 )

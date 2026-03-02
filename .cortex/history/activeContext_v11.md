@@ -24,6 +24,8 @@
 
 - ✅ **Tools files/ subpackage Session 16 completion** - COMPLETE (2026-03-02) - Moved file_operations_models and markdown_models to files/; renamed files/ modules (file_crud_flow→crud_flow, file_operations→operations, etc.); added markdown_models.py and operations_models.py in files/. Resolved circular imports via lazy imports in plans/completion_ops, entries, entries_insert, entries_removal. 4867 tests, 92.32% coverage.
 
+- ✅ **Tools subpackage Session 17** - COMPLETE (2026-03-02) - Moved error_formatters, error_formatters_core, error_formatters_domain to execution/ subpackage. Updated all import sites. Flat files: 27→24.
+
 ## Completed Work (2026-03-01)
 
 - **Summary (2026-03-01)** - 1 entries archived.

@@ -8,7 +8,8 @@ format_external_tool_error.
 from typing import cast
 
 from cortex.core.models import JsonValue
-from cortex.tools.error_formatters_core import format_tool_error, fuzzy_match
+
+from .error_formatters_core import format_tool_error, fuzzy_match
 
 
 def format_file_not_found_error(

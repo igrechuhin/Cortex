@@ -22,7 +22,7 @@ def validate_rules_folder_config(
     """
     rules_folder = optimization_config.get_rules_folder()
     if not rules_folder:
-        from cortex.tools.error_formatters import format_tool_error
+        from cortex.tools.execution.error_formatters import format_tool_error
 
         error = format_tool_error(
             ValueError("Rules folder not configured"),
@@ -52,7 +52,7 @@ def validate_rules_folder_exists(
     project_root = rules_manager.project_root
     rules_path = project_root / rules_folder
     if not rules_path.exists():
-        from cortex.tools.error_formatters import format_tool_error
+        from cortex.tools.execution.error_formatters import format_tool_error
 
         return format_tool_error(
             FileNotFoundError(f"Rules folder not found: {rules_folder}"),

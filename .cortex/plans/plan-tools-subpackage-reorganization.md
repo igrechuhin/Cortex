@@ -1,6 +1,6 @@
 # Reorganize tools/ Into Domain Sub-Packages
 
-**Status**: IN PROGRESS (Session 16 done)
+**Status**: IN PROGRESS (Session 17 done)
 **Priority**: LOW
 **Created**: 2026-02-28
 **Type**: Architecture refactoring
@@ -60,6 +60,7 @@ Create sub-packages by functional domain, move files, update all imports.
    - Session 14: `session/` — moved task_locking, task_locking_handlers, task_locking_helpers, health_check_operations ✅ COMPLETE (2026-03-02)
    - Session 15: `usage/` — moved production_monitoring_*, redundancy_helpers, token_efficiency_helpers, tool_frequency_helpers ✅ COMPLETE (2026-03-02)
    - Session 16: `files/` — moved file_operations_models, markdown_models to files/ ✅ COMPLETE (2026-03-02). Resolved circular imports via lazy imports in plans/completion_ops, plans/entries, plans/entries_insert, plans/entries_removal.
+   - Session 17: `execution/` — moved error_formatters, error_formatters_core, error_formatters_domain ✅ COMPLETE (2026-03-02). Updated imports in config, validation, synapse, files, refactoring, optimization, execution. 4867 tests, 92.32% coverage.
 
 4. **Update all imports** project-wide after each move
 5. **Update `__init__.py`** exports

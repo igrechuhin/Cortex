@@ -11,11 +11,11 @@ Structure:
   format_missing_parameter_error, format_validation_error, etc.
 """
 
-from cortex.tools.error_formatters_core import (
+from .error_formatters_core import (
     ToolErrorResponse,
     format_tool_error,
 )
-from cortex.tools.error_formatters_domain import (
+from .error_formatters_domain import (
     format_configuration_error,
     format_external_tool_error,
     format_file_not_found_error,

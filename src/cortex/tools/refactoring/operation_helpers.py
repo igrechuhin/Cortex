@@ -168,7 +168,7 @@ async def get_structure_data(mgrs: ManagersDict) -> ModelDict:
 
 def suggest_refactoring_error_json(exc: Exception) -> str:
     """Build JSON error response for suggest_refactoring failures."""
-    from cortex.tools.error_formatters import format_tool_error
+    from cortex.tools.execution.error_formatters import format_tool_error
 
     return format_tool_error(
         exc,

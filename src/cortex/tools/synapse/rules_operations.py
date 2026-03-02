@@ -237,7 +237,7 @@ async def _run_rules_operation_impl(
 
 def _format_rules_error(error: Exception) -> str:
     """Format error response for rules operation failures."""
-    from cortex.tools.error_formatters import format_tool_error
+    from cortex.tools.execution.error_formatters import format_tool_error
 
     return format_tool_error(
         error,

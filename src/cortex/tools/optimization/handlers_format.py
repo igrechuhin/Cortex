@@ -14,7 +14,7 @@ from .handlers_validation import is_non_trivial_task
 
 def format_load_context_error(error: Exception) -> str:
     """Format error response for load_context failures."""
-    from cortex.tools.error_formatters import format_tool_error
+    from cortex.tools.execution.error_formatters import format_tool_error
 
     return format_tool_error(
         error,

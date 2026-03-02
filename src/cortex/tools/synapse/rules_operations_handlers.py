@@ -72,7 +72,7 @@ async def handle_index_operation(
     result_payload: ModelDict = result
 
     if result_payload.get("status") == "error":
-        from cortex.tools.error_formatters import format_tool_error
+        from cortex.tools.execution.error_formatters import format_tool_error
 
         error_msg = result_payload.get("error", "Unknown error")
         return format_tool_error(

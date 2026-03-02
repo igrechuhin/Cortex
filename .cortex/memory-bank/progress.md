@@ -13,6 +13,7 @@
 - **Tools subpackage Session 16 (2026-03-02)** - Attempted move of file_operations_models, markdown_models to files/; REVERTED due to circular imports (models_reexports → files → plans → models). Documented in plan: root models must stay at tools root until import cycle resolved.
 - **Tools subpackage Session 16 (2026-03-02)** - COMPLETE. Moved file_operations_models, markdown_models to files/; resolved circular imports via lazy imports in plans/completion_ops, plans/entries, plans/entries_insert, plans/entries_removal.
 - **Tools files/ subpackage Session 16** - COMPLETE. Moved models to files/, renamed modules, lazy imports for circular resolution. 4867 tests, 92.32% coverage.
+- **Tools subpackage Session 17** - COMPLETE. Moved error_formatters, error_formatters_core, error_formatters_domain to execution/. Updated 12 import sites across config, validation, synapse, files, refactoring, optimization, execution. 4867 tests, 92.32% coverage. Flat files reduced from 27 to 24.
 
 ## 2026-03-01
 
