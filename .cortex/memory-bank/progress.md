@@ -26,6 +26,8 @@
 - **Consolidate execute_pre_commit_checks + fix_quality_issues (2026-03-02)** - COMPLETE. Folded fix_quality_issues into execute_pre_commit_checks as checks=["fix_quality"]; removed fix_quality_issues tool; updated callers, docs, and tests. Tool count reduced by 1.
 - **Commit pipeline (2026-03-02)** - Phase A passed; 4879 tests, 92.29% coverage. Memory bank, roadmap, plan archiving (0 plans in root; consolidate-execute-pre-commit-fix-quality already archived).
 - **update_memory_bank tool (2026-03-02)** - COMPLETE. Consolidated roadmap and append_entry into update_memory_bank with operations roadmap_add, roadmap_remove, roadmap_remove_section, progress_append, active_context_append. Tests and docs updated.
+- **Consolidate validate + check_structure_health (2026-03-02)** - COMPLETE. Decided against merging validate and check_structure_health to preserve clear domains and side-effect semantics.
+- **Consolidate suggest_refactoring + apply_refactoring (2026-03-02)** - COMPLETE. Closed as not recommended; keep suggest_refactoring (read-only) and apply_refactoring (state-changing approve/apply/rollback) separate.
 
 ## 2026-03-01
 

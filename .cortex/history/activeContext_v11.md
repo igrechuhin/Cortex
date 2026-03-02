@@ -46,6 +46,10 @@
 
 - ✅ **update_memory_bank tool implementation** - COMPLETE (2026-03-02) - Implemented update_memory_bank dispatcher consolidating roadmap and append_entry. Operations: roadmap_add, roadmap_remove, roadmap_remove_section, progress_append, active_context_append. Updated plans package, categories, tests, docs.
 
+- ✅ **Consolidate validate + check_structure_health** - COMPLETE (2026-03-02) - Decided not to consolidate validate and check_structure_health into a single project health tool; keeping them separate because validate focuses on Memory Bank and infrastructure checks while check_structure_health covers project structure and optional cleanup, and merging would mix read-only and write operations and produce an overly broad parameter surface.
+
+- ✅ **Consolidate suggest_refactoring + apply_refactoring** - COMPLETE (2026-03-02) - Closed as not recommended; keep suggest_refactoring (read-only suggestions) and apply_refactoring (state-changing approve/apply/rollback) as separate refactoring tools.
+
 ## Completed Work (2026-03-01)
 
 - **Summary (2026-03-01)** - 1 entries archived.
