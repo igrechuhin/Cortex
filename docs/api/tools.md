@@ -15,6 +15,7 @@ Cortex follows MCP semantics: **Resources** are GET-like (read-only, load data i
 - **Tools** use imperative verb names: `manage_file`, `apply_refactoring`, `configure`, `fix_markdown_lint`. Do not use `get_*` for operations that mutate state.
 - **Resources** are identified by `cortex://` URIs (e.g. `cortex://memory-bank/stats`, `cortex://optimization/load-context/{task_description}`). Read-only operations are exposed as both a Tool (for backward compatibility) and a Resource.
 - **Prefer Resources for read-only operations** when your client supports MCP resources: use the `cortex://` URI to load data. Use Tools for any operation that writes or changes state.
+- **Prefer Resources (client guidance)**: For read-only operations (stats, load context, validate, rules, etc.), use the corresponding `cortex://` URI to load data into context. Resources avoid tool-call overhead and can be cached. Use tools when: (1) the operation has side effects, (2) you need parameters not expressible in the URI (e.g. `token_budget`, `strategy`), or (3) your client does not support resources. See [tools-to-resources-conversion-analysis](../architecture/tools-to-resources-conversion-analysis.md) for the full URI reference.
 - **No `get_*` Tool performs writes**; all current `get_*` tools are read-only and have a corresponding Resource. See [Naming conventions](../architecture/naming-conventions.md) and Phase 43 plan (`.cortex/plans/phase-43-reconsider-tools-registration.md`) for the full inventory and naming rules.
 
 ### MCP Tool Annotations
@@ -654,6 +655,14 @@ await query_usage(query_type="stats", response_format="concise")
 await query_usage(query_type="search", query="load_context", limit=20)
 await query_usage(query_type="tool_description_optimization", tool_name="load_context", days=30)
 ```
+
+**Resources (cortex://usage/*):** All query types have corresponding resources. Use these when your client supports MCP resource fetching:
+
+- `cortex://usage/stats`, `cortex://usage/unused`, `cortex://usage/report`, `cortex://usage/optimization-recommendations`, `cortex://usage/observation/{id}`
+- `cortex://usage/anomalies/{hours}`, `cortex://usage/tool-optimization/{tool_name}`
+- `cortex://usage/events`, `cortex://usage/search/{query}`, `cortex://usage/timeline/{around_id}`
+- `cortex://usage/production-monitoring`, `cortex://usage/token-efficiency`, `cortex://usage/redundancy`
+- `cortex://usage/session-continuity`, `cortex://usage/tool-frequency`, `cortex://usage/tool-classification`
 
 ---
 

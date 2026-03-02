@@ -13,8 +13,16 @@ from cortex.tools.usage.analytics_formatters import (
 )
 from cortex.tools.usage.analytics_models import UsageTimelineEntry
 from cortex.tools.usage.usage_analytics import (
+    get_anomalies_resource,
     get_optimization_recommendations,
     get_optimization_recommendations_resource,
+    get_production_monitoring_resource,
+    get_redundancy_resource,
+    get_session_continuity_resource,
+    get_token_efficiency_resource,
+    get_tool_classification_resource,
+    get_tool_frequency_resource,
+    get_tool_optimization_resource,
     get_tool_usage_report,
     get_tool_usage_report_resource,
     get_tool_usage_stats,
@@ -22,9 +30,12 @@ from cortex.tools.usage.usage_analytics import (
     get_unused_tools,
     get_unused_tools_resource,
     get_usage_events,
+    get_usage_events_resource,
     get_usage_observation,
     get_usage_observation_resource,
+    get_usage_search_resource,
     get_usage_timeline,
+    get_usage_timeline_resource,
     parse_date_range,
     search_usage,
 )
@@ -146,6 +157,163 @@ class TestUsageAnalyticsResources:
         result = json.loads(result_str)
         assert result["status"] == "success"
         assert result["event"]["id"] == "abc"
+
+    async def test_get_anomalies_resource_returns_json(self) -> None:
+        """get_anomalies_resource returns JSON (cortex://usage/anomalies/{hours})."""
+        payload = json.dumps(
+            {"status": "success", "hours": 24, "sessions": []},
+            indent=2,
+        )
+        with patch(
+            "cortex.tools.usage.query_handlers.run_anomalies",
+            new_callable=AsyncMock,
+            return_value=payload,
+        ):
+            result_str = await get_anomalies_resource("24")
+        result = json.loads(result_str)
+        assert result["status"] == "success"
+
+    async def test_get_tool_optimization_resource_returns_json(self) -> None:
+        """get_tool_optimization_resource returns JSON (cortex://usage/tool-optimization/{tool_name})."""
+        payload = json.dumps(
+            {"status": "success", "tool_name": "manage_file", "suggestions": []},
+            indent=2,
+        )
+        with patch(
+            "cortex.tools.usage.query_handlers.run_tool_description_optimization",
+            new_callable=AsyncMock,
+            return_value=payload,
+        ):
+            result_str = await get_tool_optimization_resource("manage_file")
+        result = json.loads(result_str)
+        assert result["status"] == "success"
+
+    async def test_get_usage_events_resource_returns_json(self) -> None:
+        """get_usage_events_resource returns JSON (cortex://usage/events)."""
+        payload = json.dumps(
+            {"status": "success", "project_root": "/tmp", "results": [], "total": 0},
+            indent=2,
+        )
+        with patch(
+            "cortex.tools.usage.usage_analytics.search_usage",
+            new_callable=AsyncMock,
+            return_value=payload,
+        ):
+            result_str = await get_usage_events_resource()
+        result = json.loads(result_str)
+        assert result["status"] == "success"
+
+    async def test_get_usage_search_resource_returns_json(self) -> None:
+        """get_usage_search_resource returns JSON (cortex://usage/search/{query})."""
+        payload = json.dumps(
+            {"status": "success", "project_root": "/tmp", "results": [], "total": 0},
+            indent=2,
+        )
+        with patch(
+            "cortex.tools.usage.usage_analytics.search_usage",
+            new_callable=AsyncMock,
+            return_value=payload,
+        ):
+            result_str = await get_usage_search_resource("manage_file")
+        result = json.loads(result_str)
+        assert result["status"] == "success"
+
+    async def test_get_usage_timeline_resource_returns_json(self) -> None:
+        """get_usage_timeline_resource returns JSON (cortex://usage/timeline/{around_id})."""
+        payload = json.dumps(
+            {
+                "status": "success",
+                "project_root": "/tmp",
+                "around_id": "abc",
+                "results": [],
+                "total": 0,
+            },
+            indent=2,
+        )
+        with patch(
+            "cortex.tools.usage.usage_analytics.get_usage_timeline",
+            new_callable=AsyncMock,
+            return_value=payload,
+        ):
+            result_str = await get_usage_timeline_resource("abc")
+        result = json.loads(result_str)
+        assert result["status"] == "success"
+        assert result["around_id"] == "abc"
+
+    async def test_get_production_monitoring_resource_returns_json(self) -> None:
+        """get_production_monitoring_resource returns JSON (cortex://usage/production-monitoring)."""
+        payload = json.dumps({"status": "success", "baseline": {}}, indent=2)
+        with patch(
+            "cortex.tools.usage.query_handlers.run_production_monitoring",
+            new_callable=AsyncMock,
+            return_value=payload,
+        ):
+            result_str = await get_production_monitoring_resource()
+        result = json.loads(result_str)
+        assert result["status"] == "success"
+
+    async def test_get_token_efficiency_resource_returns_json(self) -> None:
+        """get_token_efficiency_resource returns JSON (cortex://usage/token-efficiency)."""
+        payload = json.dumps({"status": "success", "by_total": []}, indent=2)
+        with patch(
+            "cortex.tools.usage.query_handlers.run_token_efficiency",
+            new_callable=AsyncMock,
+            return_value=payload,
+        ):
+            result_str = await get_token_efficiency_resource()
+        result = json.loads(result_str)
+        assert result["status"] == "success"
+
+    async def test_get_redundancy_resource_returns_json(self) -> None:
+        """get_redundancy_resource returns JSON (cortex://usage/redundancy)."""
+        payload = json.dumps({"status": "success", "redundant_calls": []}, indent=2)
+        with patch(
+            "cortex.tools.usage.query_handlers.run_redundancy",
+            new_callable=AsyncMock,
+            return_value=payload,
+        ):
+            result_str = await get_redundancy_resource()
+        result = json.loads(result_str)
+        assert result["status"] == "success"
+
+    async def test_get_session_continuity_resource_returns_json(self) -> None:
+        """get_session_continuity_resource returns JSON (cortex://usage/session-continuity)."""
+        payload = json.dumps({"status": "success", "score": 0.8}, indent=2)
+        with patch(
+            "cortex.tools.usage.query_handlers.run_session_continuity",
+            new_callable=AsyncMock,
+            return_value=payload,
+        ):
+            result_str = await get_session_continuity_resource()
+        result = json.loads(result_str)
+        assert result["status"] == "success"
+
+    async def test_get_tool_frequency_resource_returns_json(self) -> None:
+        """get_tool_frequency_resource returns JSON (cortex://usage/tool-frequency)."""
+        payload = json.dumps({"status": "success", "tools_per_session": []}, indent=2)
+        with patch(
+            "cortex.tools.usage.query_handlers.run_tool_frequency",
+            new_callable=AsyncMock,
+            return_value=payload,
+        ):
+            result_str = await get_tool_frequency_resource()
+        result = json.loads(result_str)
+        assert result["status"] == "success"
+
+    async def test_get_tool_classification_resource_returns_json(self) -> None:
+        """get_tool_classification_resource returns JSON (cortex://usage/tool-classification)."""
+        payload = json.dumps(
+            {"status": "success", "tools": [], "by_category": {}},
+            indent=2,
+        )
+        with patch(
+            "cortex.tools.usage.query_handlers.run_tool_classification",
+            new_callable=AsyncMock,
+            return_value=payload,
+        ):
+            result_str = await get_tool_classification_resource()
+        result = json.loads(result_str)
+        assert result["status"] == "success"
 
 
 class TestParseDateRange:

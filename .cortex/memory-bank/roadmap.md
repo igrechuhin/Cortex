@@ -14,8 +14,6 @@
 
 ## Pending plans (from .cortex/plans)
 
-- **Tools-to-Resources Conversion Analysis** - PENDING - Analyze all Cortex MCP tools to determine which can be converted to resources. Plan: .cortex/plans/plan-tools-to-resources-analysis.md
-
 ### Fixes
 
 ### Documentation Cleanup (DRY)

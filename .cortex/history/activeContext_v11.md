@@ -36,6 +36,10 @@
 
 - ✅ **Reorganize tools/ into domain sub-packages** - COMPLETE (2026-03-02) - 21 sessions; flat files 185→7; all tests pass, 92.32% coverage.
 
+- ✅ **Tools-to-Resources Conversion Analysis** - COMPLETE (2026-03-02) - Analysis complete. docs/architecture/tools-to-resources-conversion-analysis.md with full inventory, per-tool assessment, gap analysis, migration strategy. tools.md updated with Prefer Resources guidance.
+
+- ✅ **Implement query_usage Resources for 11 Uncovered Query Types** - COMPLETE (2026-03-02) - Added MCP resources for anomalies, tool_description_optimization, events, search, timeline, production_monitoring, token_efficiency, redundancy, session_continuity, tool_frequency, tool_classification. All 16 query_usage query types now have cortex://usage/* resources.
+
 ## Completed Work (2026-03-01)
 
 - **Summary (2026-03-01)** - 1 entries archived.

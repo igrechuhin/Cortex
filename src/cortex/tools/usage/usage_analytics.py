@@ -336,3 +336,157 @@ async def get_optimization_recommendations_resource() -> str:
 async def get_usage_observation_resource(id: str) -> str:
     """Resource: Usage observation by ID. Read via cortex://usage/observation/{id}."""
     return await get_usage_observation(id=id, ctx=None)
+
+
+# Phase: query_usage Resources for 11 Uncovered Query Types
+@mcp.resource(uri="cortex://usage/anomalies/{hours}")
+@ensure_usage_context
+@mcp_resource_wrapper(timeout=MCP_TOOL_TIMEOUT_FAST)
+async def get_anomalies_resource(hours: str) -> str:
+    """Resource: Session tool anomalies (last N hours). Read via cortex://usage/anomalies/{hours}."""
+    from urllib.parse import unquote
+
+    from .query_handlers import run_anomalies
+    from .query_models import QueryUsageParams
+
+    try:
+        h = int(unquote(hours))
+    except (ValueError, TypeError):
+        h = 24
+    params = QueryUsageParams(hours=h)
+    return await run_anomalies(params, None)
+
+
+@mcp.resource(uri="cortex://usage/tool-optimization/{tool_name}")
+@ensure_usage_context
+@mcp_resource_wrapper(timeout=MCP_TOOL_TIMEOUT_FAST)
+async def get_tool_optimization_resource(tool_name: str) -> str:
+    """Resource: Tool description optimization. Read via cortex://usage/tool-optimization/{tool_name}."""
+    from urllib.parse import unquote
+
+    from .query_handlers import run_tool_description_optimization
+    from .query_models import QueryUsageParams
+
+    root = await resolve_project_root_async(None, None)
+    config = get_tool_optimization_config(root)
+    days = config.get("days", 90)
+    decoded = unquote(tool_name)
+    params = QueryUsageParams(tool_name=decoded, days=days)
+    return await run_tool_description_optimization(params, None)
+
+
+@mcp.resource(uri="cortex://usage/events")
+@ensure_usage_context
+@mcp_resource_wrapper(timeout=MCP_TOOL_TIMEOUT_FAST)
+async def get_usage_events_resource() -> str:
+    """Resource: Recent usage events (limit 50). Read via cortex://usage/events."""
+    return await search_usage(limit=50, ctx=None)
+
+
+@mcp.resource(uri="cortex://usage/search/{query}")
+@ensure_usage_context
+@mcp_resource_wrapper(timeout=MCP_TOOL_TIMEOUT_FAST)
+async def get_usage_search_resource(query: str) -> str:
+    """Resource: Search usage events. Read via cortex://usage/search/{query}."""
+    from urllib.parse import unquote
+
+    decoded = unquote(query) if query else ""
+    return await search_usage(query=decoded, limit=50, ctx=None)
+
+
+@mcp.resource(uri="cortex://usage/timeline/{around_id}")
+@ensure_usage_context
+@mcp_resource_wrapper(timeout=MCP_TOOL_TIMEOUT_FAST)
+async def get_usage_timeline_resource(around_id: str) -> str:
+    """Resource: Usage timeline around observation ID. Read via cortex://usage/timeline/{around_id}."""
+    from urllib.parse import unquote
+
+    decoded = unquote(around_id) if around_id else ""
+    return await get_usage_timeline(around_id=decoded, limit=20, ctx=None)
+
+
+@mcp.resource(uri="cortex://usage/production-monitoring")
+@ensure_usage_context
+@mcp_resource_wrapper(timeout=MCP_TOOL_TIMEOUT_FAST)
+async def get_production_monitoring_resource() -> str:
+    """Resource: Production monitoring metrics. Read via cortex://usage/production-monitoring."""
+    from .query_handlers import run_production_monitoring
+    from .query_models import QueryUsageParams
+
+    params = QueryUsageParams()
+    return await run_production_monitoring(params, None)
+
+
+@mcp.resource(uri="cortex://usage/token-efficiency")
+@ensure_usage_context
+@mcp_resource_wrapper(timeout=MCP_TOOL_TIMEOUT_FAST)
+async def get_token_efficiency_resource() -> str:
+    """Resource: Token efficiency metrics. Read via cortex://usage/token-efficiency."""
+    from .query_handlers import run_token_efficiency
+    from .query_models import QueryUsageParams
+
+    root = await resolve_project_root_async(None, None)
+    config = get_tool_optimization_config(root)
+    days = config.get("days", 90)
+    params = QueryUsageParams(days=days)
+    return await run_token_efficiency(params, None)
+
+
+@mcp.resource(uri="cortex://usage/redundancy")
+@ensure_usage_context
+@mcp_resource_wrapper(timeout=MCP_TOOL_TIMEOUT_FAST)
+async def get_redundancy_resource() -> str:
+    """Resource: Redundant tool call detection. Read via cortex://usage/redundancy."""
+    from .query_handlers import run_redundancy
+    from .query_models import QueryUsageParams
+
+    root = await resolve_project_root_async(None, None)
+    config = get_tool_optimization_config(root)
+    days = config.get("days", 90)
+    params = QueryUsageParams(days=days)
+    return await run_redundancy(params, None)
+
+
+@mcp.resource(uri="cortex://usage/session-continuity")
+@ensure_usage_context
+@mcp_resource_wrapper(timeout=MCP_TOOL_TIMEOUT_FAST)
+async def get_session_continuity_resource() -> str:
+    """Resource: Session continuity score. Read via cortex://usage/session-continuity."""
+    from .query_handlers import run_session_continuity
+    from .query_models import QueryUsageParams
+
+    root = await resolve_project_root_async(None, None)
+    config = get_tool_optimization_config(root)
+    days = config.get("days", 90)
+    params = QueryUsageParams(days=days)
+    return await run_session_continuity(params, None)
+
+
+@mcp.resource(uri="cortex://usage/tool-frequency")
+@ensure_usage_context
+@mcp_resource_wrapper(timeout=MCP_TOOL_TIMEOUT_FAST)
+async def get_tool_frequency_resource() -> str:
+    """Resource: Tool frequency metrics. Read via cortex://usage/tool-frequency."""
+    from .query_handlers import run_tool_frequency
+    from .query_models import QueryUsageParams
+
+    root = await resolve_project_root_async(None, None)
+    config = get_tool_optimization_config(root)
+    days = config.get("days", 90)
+    params = QueryUsageParams(days=days)
+    return await run_tool_frequency(params, None)
+
+
+@mcp.resource(uri="cortex://usage/tool-classification")
+@ensure_usage_context
+@mcp_resource_wrapper(timeout=MCP_TOOL_TIMEOUT_FAST)
+async def get_tool_classification_resource() -> str:
+    """Resource: Tool classification by usage and category. Read via cortex://usage/tool-classification."""
+    from .query_handlers import run_tool_classification
+    from .query_models import QueryUsageParams
+
+    root = await resolve_project_root_async(None, None)
+    config = get_tool_optimization_config(root)
+    days = config.get("days", 90)
+    params = QueryUsageParams(days=days)
+    return await run_tool_classification(params, None)
