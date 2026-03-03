@@ -97,9 +97,8 @@ class TestGetDefaultPriorityOrder:
 
         order = loader.get_default_priority_order()
 
-        assert len(order) == 7
-        assert order[0] == "memorybankinstructions.md"
-        assert order[1] == "projectBrief.md"
+        assert len(order) == 6
+        assert order[0] == "projectBrief.md"
         assert "activeContext.md" in order
         assert "systemPatterns.md" in order
         assert "techContext.md" in order
@@ -130,7 +129,7 @@ class TestLoadByPriority:
         )
 
         # Create test files
-        for filename in ["memorybankinstructions.md", "projectBrief.md"]:
+        for filename in ["projectBrief.md", "activeContext.md"]:
             _ = (tmp_path / filename).write_text("Test content")
 
         loader = ProgressiveLoader(
@@ -141,9 +140,8 @@ class TestLoadByPriority:
         result = await loader.load_by_priority("task description", token_budget=1000)
 
         assert len(result) > 0
-        assert result[0].file_name == "memorybankinstructions.md"
+        assert result[0].file_name == "projectBrief.md"
         assert result[0].priority == 0
-        assert result[0].tokens == 10
 
     @pytest.mark.asyncio
     async def test_load_by_priority_custom_order(

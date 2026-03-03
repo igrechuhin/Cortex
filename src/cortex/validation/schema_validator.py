@@ -24,12 +24,6 @@ SchemaDict = dict[str, list[str] | int]
 
 
 DEFAULT_SCHEMAS: dict[str, SchemaDict] = {
-    "memorybankinstructions.md": {
-        "required_sections": ["Purpose", "Guidelines", "Structure"],
-        "recommended_sections": ["Best Practices", "Examples"],
-        "heading_level": 2,
-        "max_nesting": 3,
-    },
     MemoryBankFile.PROJECT_BRIEF: {
         "required_sections": [
             "Project Overview",

@@ -31,7 +31,6 @@ class TestDependencyGraphInitialization:
         """Test STATIC_DEPENDENCIES contains expected memory bank files."""
         # Assert
         expected_files = [
-            "memorybankinstructions.md",
             "projectBrief.md",
             "productContext.md",
             "systemPatterns.md",
@@ -53,10 +52,10 @@ class TestComputeLoadingOrder:
         # Act
         order = graph.compute_loading_order()
 
-        # Assert - memorybankinstructions (priority 0) should be first
-        assert order[0] == "memorybankinstructions.md"
-        # projectBrief (priority 1) should be second
-        assert order[1] == "projectBrief.md"
+        # Assert - projectBrief (priority 0) should be first
+        assert order[0] == "projectBrief.md"
+        # activeContext (priority 3) should come before progress (priority 4)
+        assert order.index("activeContext.md") < order.index("progress.md")
         # progress (priority 4) should be last
         assert order[-1] == "progress.md"
 
@@ -64,25 +63,25 @@ class TestComputeLoadingOrder:
         """Test ordering works with subset of files."""
         # Arrange
         graph = DependencyGraph()
-        files = ["progress.md", "memorybankinstructions.md", "projectBrief.md"]
+        files = ["progress.md", "projectBrief.md", "productContext.md"]
 
         # Act
         order = graph.compute_loading_order(files)
 
         # Assert
-        assert order == ["memorybankinstructions.md", "projectBrief.md", "progress.md"]
+        assert order == ["projectBrief.md", "productContext.md", "progress.md"]
 
     def test_handles_files_not_in_static_dependencies(self):
         """Test ordering handles unknown files with default priority."""
         # Arrange
         graph = DependencyGraph()
-        files = ["unknown.md", "memorybankinstructions.md"]
+        files = ["unknown.md", "projectBrief.md"]
 
         # Act
         order = graph.compute_loading_order(files)
 
         # Assert - known file first (priority 0), unknown last (priority 999)
-        assert order[0] == "memorybankinstructions.md"
+        assert order[0] == "projectBrief.md"
         assert order[1] == "unknown.md"
 
 
@@ -106,7 +105,7 @@ class TestGetDependencies:
         graph = DependencyGraph()
 
         # Act
-        deps = graph.get_dependencies("memorybankinstructions.md")
+        deps = graph.get_dependencies("projectBrief.md")
 
         # Assert
         assert deps == []
@@ -216,10 +215,10 @@ class TestGetMinimalContext:
         graph = DependencyGraph()
 
         # Act
-        context = graph.get_minimal_context("memorybankinstructions.md")
+        context = graph.get_minimal_context("projectBrief.md")
 
         # Assert - should only contain the target file
-        assert context == ["memorybankinstructions.md"]
+        assert context == ["projectBrief.md"]
 
 
 class TestFileCategoryAndPriority:
@@ -231,7 +230,6 @@ class TestFileCategoryAndPriority:
         graph = DependencyGraph()
 
         # Act & Assert
-        assert graph.get_file_category("memorybankinstructions.md") == "meta"
         assert graph.get_file_category("projectBrief.md") == "foundation"
         assert graph.get_file_category("activeContext.md") == "active"
         assert graph.get_file_category("progress.md") == "status"
@@ -253,8 +251,7 @@ class TestFileCategoryAndPriority:
         graph = DependencyGraph()
 
         # Act & Assert
-        assert graph.get_file_priority("memorybankinstructions.md") == 0
-        assert graph.get_file_priority("projectBrief.md") == 1
+        assert graph.get_file_priority("projectBrief.md") == 0
         assert graph.get_file_priority("progress.md") == 4
 
     def test_get_file_priority_returns_default_for_unknown_file(self):
@@ -273,7 +270,7 @@ class TestGetFilesByCategory:
     """Tests for get_files_by_category method."""
 
     def test_returns_files_in_meta_category(self):
-        """Test returns files in meta category."""
+        """Test returns empty list for meta category (no files in this category)."""
         # Arrange
         graph = DependencyGraph()
 
@@ -281,7 +278,7 @@ class TestGetFilesByCategory:
         files = graph.get_files_by_category("meta")
 
         # Assert
-        assert files == ["memorybankinstructions.md"]
+        assert files == []
 
     def test_returns_files_in_foundation_category(self):
         """Test returns files in foundation category."""
@@ -445,11 +442,9 @@ class TestToDictExport:
         nodes = cast(list[dict[str, object]], result["nodes"])
         assert len(nodes) == len(STATIC_DEPENDENCIES)
         # Check a sample node
-        instructions_node = next(
-            n for n in nodes if cast(str, n["file"]) == "memorybankinstructions.md"
-        )
-        assert cast(int, instructions_node["priority"]) == 0
-        assert cast(str, instructions_node["category"]) == "meta"
+        brief_node = next(n for n in nodes if cast(str, n["file"]) == "projectBrief.md")
+        assert cast(int, brief_node["priority"]) == 0
+        assert cast(str, brief_node["category"]) == "foundation"
 
     def test_exports_edges_with_types(self):
         """Test exports edges with relationship types."""
@@ -484,7 +479,7 @@ class TestToDictExport:
         assert isinstance(progressive_order_raw, list)
         progressive_order = cast(list[str], progressive_order_raw)
         assert len(progressive_order) > 0
-        assert progressive_order[0] == "memorybankinstructions.md"
+        assert progressive_order[0] == "projectBrief.md"
 
     def test_includes_dynamic_dependencies_in_edges(self):
         """Test includes dynamic dependencies in edges."""
@@ -531,7 +526,6 @@ class TestToMermaidExport:
 
         # Assert
         assert mermaid.startswith("flowchart TD")
-        assert "memorybankinstructions" in mermaid  # Node ID
         assert "projectBrief" in mermaid
 
     def test_includes_node_styling_classes(self):
@@ -543,7 +537,6 @@ class TestToMermaidExport:
         mermaid = graph.to_mermaid()
 
         # Assert
-        assert ":::meta" in mermaid
         assert ":::foundation" in mermaid
         assert ":::active" in mermaid
 
@@ -725,7 +718,7 @@ class TestGetAllFiles:
 
         # Assert
         assert len(files) == len(STATIC_DEPENDENCIES)
-        assert "memorybankinstructions.md" in files
+        assert "projectBrief.md" in files
 
     def test_includes_dynamic_files(self):
         """Test includes files only in dynamic dependencies."""
@@ -743,13 +736,13 @@ class TestGetAllFiles:
         """Test doesn't duplicate files in both static and dynamic."""
         # Arrange
         graph = DependencyGraph()
-        graph.add_dynamic_dependency("memorybankinstructions.md", "custom.md")
+        graph.add_dynamic_dependency("projectBrief.md", "custom.md")
 
         # Act
         files = graph.get_all_files()
 
         # Assert
-        assert files.count("memorybankinstructions.md") == 1
+        assert files.count("projectBrief.md") == 1
 
 
 class TestGetTransclusionGraph:

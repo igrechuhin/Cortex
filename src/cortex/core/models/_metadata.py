@@ -46,9 +46,11 @@ class SectionMetadata(DictLikeModel):
 class DetailedFileMetadata(BaseModel):
     """Detailed file metadata including history and analytics."""
 
-    model_config = ConfigDict(extra="allow", validate_assignment=True)
+    model_config = ConfigDict(extra="forbid", validate_assignment=True)
 
-    path: str = Field(description="Absolute path to file")
+    path: str = Field(
+        description="Path to file relative to project root (index.json portability)"
+    )
     exists: bool = Field(description="Whether file exists on disk")
     size_bytes: int = Field(ge=0, description="Size in bytes")
     token_count: int = Field(ge=0, description="Token count")
@@ -67,7 +69,8 @@ class DetailedFileMetadata(BaseModel):
     current_version: int = Field(ge=0, default=0, description="Current version number")
     version_history: list[VersionMetadata] = Field(
         default_factory=lambda: list[VersionMetadata](),
-        description="Version history",
+        description="Version history (in-memory only; excluded from index.json)",
+        exclude=True,
     )
 
 

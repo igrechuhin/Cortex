@@ -11,7 +11,7 @@ This test suite provides comprehensive coverage for:
 
 import json
 from pathlib import Path
-from typing import Any, cast
+from typing import cast
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -200,7 +200,7 @@ def mock_managers(
 
 @pytest.mark.asyncio
 async def test_get_dependency_graph_success_json_format(
-    mock_project_root: Path, mock_managers: dict[str, Any]
+    mock_project_root: Path, mock_managers: ManagersDict
 ):
     """Test get_dependency_graph with JSON format returns correct structure."""
     # Arrange
@@ -231,7 +231,7 @@ async def test_get_dependency_graph_success_json_format(
 
 @pytest.mark.asyncio
 async def test_get_dependency_graph_success_mermaid_format(
-    mock_project_root: Path, mock_managers: dict[str, Any]
+    mock_project_root: Path, mock_managers: ManagersDict
 ):
     """Test get_dependency_graph with mermaid format returns diagram."""
     # Arrange
@@ -276,7 +276,7 @@ async def test_get_dependency_graph_error_handling(mock_project_root: Path):
 
 
 @pytest.mark.asyncio
-async def test_get_dependency_graph_default_project_root(mock_managers: dict[str, Any]):
+async def test_get_dependency_graph_default_project_root(mock_managers: ManagersDict):
     """Test get_dependency_graph resolves root via resolve_project_root_async."""
     # Arrange
     with patch(
@@ -298,7 +298,7 @@ async def test_get_dependency_graph_default_project_root(mock_managers: dict[str
 
 @pytest.mark.asyncio
 async def test_get_dependency_graph_resource_returns_json(
-    mock_managers: dict[str, Any],
+    mock_managers: ManagersDict,
 ):
     """Test get_dependency_graph_resource returns valid JSON (Phase 43 resource)."""
     with patch(
@@ -322,200 +322,136 @@ async def test_get_dependency_graph_resource_returns_json(
 
 
 @pytest.mark.asyncio
-async def test_get_version_history_success(
-    mock_project_root: Path, mock_managers: dict[str, Any]
-):
-    """Test get_version_history returns correct version list."""
+async def test_get_version_history_success(mock_project_root: Path) -> None:
+    """get_version_history returns correct version list from on-disk snapshots."""
+    from cortex.core.path_resolver import CortexResourceType, get_cortex_path
+
     # Arrange
-    file_metadata = {
-        "current_version": 3,
-        "version_history": [
-            {
-                "version": 3,
-                "timestamp": "2026-01-10T10:00:00",
-                "change_type": "update",
-                "change_description": "Updated content",
-                "size_bytes": 1024,
-                "token_count": 256,
-            },
-            {
-                "version": 2,
-                "timestamp": "2026-01-09T10:00:00",
-                "change_type": "rollback",
-                "size_bytes": 512,
-                "token_count": 128,
-            },
-            {
-                "version": 1,
-                "timestamp": "2026-01-08T10:00:00",
-                "change_type": "create",
-                "size_bytes": 256,
-            },
-        ],
-    }
-    # Patch the helper function directly to avoid manager setup issues
-    with patch(
-        "cortex.tools.foundation_version._get_file_metadata_for_history",
-        new=AsyncMock(return_value=file_metadata),
-    ):
-        # Act
-        result = await get_version_history(file_name="test.md", limit=10)
+    history_dir = get_cortex_path(mock_project_root, CortexResourceType.HISTORY)
+    history_dir.mkdir(parents=True, exist_ok=True)
+    # Create snapshots for versions 1-3
+    for version in range(1, 4):
+        snapshot_path = history_dir / f"test_v{version}.md"
+        _ = snapshot_path.write_text(f"Version {version}")
 
-        # Assert
-        result_dict = json.loads(result)
-        assert result_dict["status"] == "success"
-        assert result_dict["file_name"] == "test.md"
-        assert result_dict["total_versions"] == 3
-        assert len(result_dict["versions"]) == 3
-        # Verify sorted by version descending
-        assert result_dict["versions"][0]["version"] == 3
-        assert result_dict["versions"][1]["version"] == 2
-        assert result_dict["versions"][2]["version"] == 1
-
-
-@pytest.mark.asyncio
-async def test_get_version_history_with_limit(
-    mock_project_root: Path, mock_managers: dict[str, Any]
-):
-    """Test get_version_history respects limit parameter."""
-    # Arrange
-    file_metadata = {
-        "current_version": 3,
-        "version_history": [
-            {"version": 3, "timestamp": "2026-01-10T10:00:00", "change_type": "update"},
-            {
-                "version": 2,
-                "timestamp": "2026-01-09T10:00:00",
-                "change_type": "rollback",
-            },
-            {"version": 1, "timestamp": "2026-01-08T10:00:00", "change_type": "create"},
-        ],
-    }
-    with patch(
-        "cortex.tools.foundation_version._get_file_metadata_for_history",
-        new=AsyncMock(return_value=file_metadata),
-    ):
-        # Act
-        result = await get_version_history(file_name="test.md", limit=2)
-
-        # Assert
-        result_dict = json.loads(result)
-        assert result_dict["status"] == "success"
-        assert result_dict["total_versions"] == 2
-        assert len(result_dict["versions"]) == 2
-
-
-@pytest.mark.asyncio
-async def test_get_version_history_file_not_found(
-    mock_project_root: Path, mock_managers: dict[str, Any]
-):
-    """Test get_version_history handles file not found."""
-    # Arrange
-    with patch(
-        "cortex.tools.foundation_version._get_file_metadata_for_history",
-        new=AsyncMock(return_value=None),
-    ):
-        # Act
-        result = await get_version_history(file_name="nonexistent.md")
-
-        # Assert
-        result_dict = json.loads(result)
-        assert result_dict["status"] == "error"
-        assert "not found" in result_dict["error"]
-
-
-@pytest.mark.asyncio
-async def test_get_version_history_error_handling(mock_project_root: Path):
-    """Test get_version_history handles exceptions."""
-    # Arrange
-    with patch(
-        "cortex.tools.foundation_version._get_file_metadata_for_history",
-        side_effect=RuntimeError("Test error"),
-    ):
-        # Act
-        result = await get_version_history(file_name="test.md")
-
-        # Assert
-        result_dict = json.loads(result)
-        assert result_dict["status"] == "error"
-        assert "error" in result_dict
-        assert result_dict.get("error_type") == "RuntimeError"
-
-
-@pytest.mark.asyncio
-async def test_get_version_history_invalid_version_history_format(
-    mock_project_root: Path, mock_managers: dict[str, Any]
-):
-    """Test get_version_history handles invalid version_history format."""
-    # Arrange
-    file_metadata = {"version_history": "not a list"}
-    with patch(
-        "cortex.tools.foundation_version._get_file_metadata_for_history",
-        new=AsyncMock(return_value=file_metadata),
-    ):
-        # Act
-        result = await get_version_history(file_name="test.md")
-
-        # Assert
-        result_dict = json.loads(result)
-        assert result_dict["status"] == "success"
-        assert result_dict["total_versions"] == 0
-
-
-@pytest.mark.asyncio
-@pytest.mark.asyncio
-async def test_get_version_history_resource_returns_json(
-    mock_project_root: Path, mock_managers: dict[str, Any]
-):
-    """Test get_version_history_resource returns valid JSON (Phase 43 resource)."""
     with patch(
         "cortex.core.project_root_resolver.resolve_project_root_async",
         new_callable=AsyncMock,
         return_value=mock_project_root,
     ):
-        with patch(
-            "cortex.managers.initialization.get_managers",
-            new=AsyncMock(return_value=mock_managers),
-        ):
-            result = await get_version_history_resource("projectBrief.md")
+        # Act
+        result = await get_version_history(file_name="test.md", limit=10)
+
+    # Assert
+    result_dict = json.loads(result)
+    assert result_dict["status"] == "success"
+    assert result_dict["file_name"] == "test.md"
+    assert result_dict["total_versions"] == 3
+    versions = result_dict["versions"]
+    assert len(versions) == 3
+    # Sorted by version descending
+    assert [v["version"] for v in versions] == [3, 2, 1]
+    # Basic field sanity
+    for v in versions:
+        assert isinstance(v["timestamp"], str)
+        assert v["change_type"] == "unknown"
+        assert isinstance(v["size_bytes"], int)
+
+
+@pytest.mark.asyncio
+async def test_get_version_history_with_limit(mock_project_root: Path) -> None:
+    """get_version_history respects the limit parameter."""
+    from cortex.core.path_resolver import CortexResourceType, get_cortex_path
+
+    # Arrange
+    history_dir = get_cortex_path(mock_project_root, CortexResourceType.HISTORY)
+    history_dir.mkdir(parents=True, exist_ok=True)
+    for version in range(1, 4):
+        snapshot_path = history_dir / f"test_v{version}.md"
+        _ = snapshot_path.write_text(f"Version {version}")
+
+    with patch(
+        "cortex.core.project_root_resolver.resolve_project_root_async",
+        new_callable=AsyncMock,
+        return_value=mock_project_root,
+    ):
+        # Act
+        result = await get_version_history(file_name="test.md", limit=2)
+
+    # Assert
+    result_dict = json.loads(result)
+    assert result_dict["status"] == "success"
+    assert result_dict["total_versions"] == 2
+    versions = result_dict["versions"]
+    assert len(versions) == 2
+    assert [v["version"] for v in versions] == [3, 2]
+
+
+@pytest.mark.asyncio
+async def test_get_version_history_no_snapshots_returns_empty(
+    mock_project_root: Path,
+) -> None:
+    """When no snapshots exist, get_version_history returns success with empty list."""
+    with patch(
+        "cortex.core.project_root_resolver.resolve_project_root_async",
+        new_callable=AsyncMock,
+        return_value=mock_project_root,
+    ):
+        result = await get_version_history(file_name="missing.md")
+
+    result_dict = json.loads(result)
+    assert result_dict["status"] == "success"
+    assert result_dict["total_versions"] == 0
+    assert result_dict["versions"] == []
+
+
+@pytest.mark.asyncio
+async def test_get_version_history_error_handling(mock_project_root: Path) -> None:
+    """get_version_history handles exceptions from disk scan."""
+    with (
+        patch(
+            "cortex.core.project_root_resolver.resolve_project_root_async",
+            new_callable=AsyncMock,
+            return_value=mock_project_root,
+        ),
+        patch(
+            "cortex.tools.memory.foundation_version._load_version_history_from_disk",
+            side_effect=RuntimeError("Test error"),
+        ),
+    ):
+        result = await get_version_history(file_name="test.md")
+
+    result_dict = json.loads(result)
+    assert result_dict["status"] == "error"
+    assert "error" in result_dict
+    assert result_dict.get("error_type") == "RuntimeError"
+
+
+@pytest.mark.asyncio
+async def test_get_version_history_resource_returns_json(
+    mock_project_root: Path,
+) -> None:
+    """get_version_history_resource returns valid JSON (Phase 43 resource)."""
+    from cortex.core.path_resolver import CortexResourceType, get_cortex_path
+
+    history_dir = get_cortex_path(mock_project_root, CortexResourceType.HISTORY)
+    history_dir.mkdir(parents=True, exist_ok=True)
+    snapshot_path = history_dir / "projectBrief_v1.md"
+    _ = snapshot_path.write_text("Version 1")
+
+    with patch(
+        "cortex.core.project_root_resolver.resolve_project_root_async",
+        new_callable=AsyncMock,
+        return_value=mock_project_root,
+    ):
+        result = await get_version_history_resource("projectBrief.md")
+
     result_dict = json.loads(result)
     assert "status" in result_dict
     assert result_dict["status"] in ("success", "error")
     if result_dict["status"] == "success":
-        assert "file_name" in result_dict
+        assert result_dict["file_name"] == "projectBrief.md"
         assert "versions" in result_dict
-
-
-@pytest.mark.asyncio
-async def test_get_version_history_missing_optional_fields(
-    mock_project_root: Path, mock_managers: dict[str, Any]
-):
-    """Test get_version_history handles missing optional fields."""
-    # Arrange
-    file_metadata = {
-        "version_history": [
-            {
-                "version": 1,
-                "timestamp": "2026-01-08T10:00:00",
-                "change_type": "create",
-            }
-        ]
-    }
-    with patch(
-        "cortex.tools.foundation_version._get_file_metadata_for_history",
-        new=AsyncMock(return_value=file_metadata),
-    ):
-        # Act
-        result = await get_version_history(file_name="test.md")
-
-        # Assert
-        result_dict = json.loads(result)
-        assert result_dict["status"] == "success"
-        versions = result_dict["versions"]
-        assert len(versions) == 1
-        assert "change_description" not in versions[0]
-        assert "size_bytes" not in versions[0]
-        assert "token_count" not in versions[0]
 
 
 # ============================================================================
@@ -525,7 +461,7 @@ async def test_get_version_history_missing_optional_fields(
 
 @pytest.mark.asyncio
 async def test_rollback_file_version_success(
-    mock_project_root: Path, mock_managers: dict[str, Any]
+    mock_project_root: Path, mock_managers: ManagersDict
 ):
     """Test rollback_file_version successfully rolls back file."""
     # Arrange
@@ -689,7 +625,7 @@ async def test_get_memory_bank_stats_success_basic(
 
 @pytest.mark.asyncio
 async def test_get_memory_bank_stats_with_token_budget(
-    mock_project_root: Path, mock_managers: dict[str, Any]
+    mock_project_root: Path, mock_managers: ManagersDict
 ):
     """Test get_memory_bank_stats includes token budget analysis."""
     # Arrange
@@ -723,7 +659,7 @@ async def test_get_memory_bank_stats_with_token_budget(
 
 @pytest.mark.asyncio
 async def test_get_memory_bank_stats_with_refactoring_history(
-    mock_project_root: Path, mock_managers: dict[str, Any]
+    mock_project_root: Path, mock_managers: ManagersDict
 ):
     """Test get_memory_bank_stats includes refactoring history."""
     # Arrange
@@ -772,7 +708,7 @@ async def test_get_memory_bank_stats_with_refactoring_history(
 
 @pytest.mark.asyncio
 async def test_get_memory_bank_stats_refactoring_executor_unavailable(
-    mock_project_root: Path, mock_managers: dict[str, Any]
+    mock_project_root: Path, mock_managers: ManagersDict
 ):
     """Test get_memory_bank_stats handles missing refactoring executor."""
     # Arrange
@@ -895,55 +831,6 @@ def test_build_graph_data_with_dependencies():
     assert active_context["priority"] == 2
     dependencies = cast(list[object], active_context["dependencies"])
     assert "projectBrief.md" in dependencies
-
-
-def test_extract_version_history_valid_list():
-    """Test extract_version_history with valid version list."""
-    # Arrange
-    from cortex.tools.memory.foundation_version import extract_version_history
-
-    file_meta = {
-        "version_history": [
-            {"version": 1, "timestamp": "2026-01-10T10:00:00"},
-            {"version": 2, "timestamp": "2026-01-10T11:00:00"},
-        ]
-    }
-
-    # Act
-    result = extract_version_history(cast(ModelDict, file_meta))
-
-    # Assert
-    assert len(result) == 2
-    assert result[0]["version"] == 1
-    assert result[1]["version"] == 2
-
-
-def test_extract_version_history_invalid_format():
-    """Test extract_version_history handles invalid format."""
-    # Arrange
-    from cortex.tools.memory.foundation_version import extract_version_history
-
-    file_meta = {"version_history": "not a list"}
-
-    # Act
-    result = extract_version_history(cast(ModelDict, file_meta))
-
-    # Assert
-    assert result == []
-
-
-def test_extract_version_history_missing_field():
-    """Test extract_version_history handles missing version_history field."""
-    # Arrange
-    from cortex.tools.memory.foundation_version import extract_version_history
-
-    file_meta = {}
-
-    # Act
-    result = extract_version_history(cast(ModelDict, file_meta))
-
-    # Assert
-    assert result == []
 
 
 def test_sort_and_limit_versions():
@@ -1374,24 +1261,15 @@ class TestPhase1FoundationContextLogging:
     ) -> None:
         """When ctx is passed, get_version_history logs start and completion."""
         mock_ctx = AsyncMock()
-        file_meta = {
-            "current_version": 1,
-            "version_history": [
-                {
-                    "version": 1,
-                    "timestamp": "2026-01-10T10:00:00",
-                    "change_type": "create",
-                }
-            ],
-        }
         with (
             patch(
-                "cortex.tools.foundation_version.log_client",
+                "cortex.tools.memory.foundation_version.log_client",
                 new_callable=AsyncMock,
             ) as mock_log,
             patch(
-                "cortex.tools.foundation_version._get_file_metadata_for_history",
-                new=AsyncMock(return_value=file_meta),
+                "cortex.core.project_root_resolver.resolve_project_root_async",
+                new_callable=AsyncMock,
+                return_value=mock_project_root,
             ),
         ):
             result = await get_version_history(
@@ -1405,26 +1283,6 @@ class TestPhase1FoundationContextLogging:
             assert ("info", "get_version_history: starting") in levels_and_messages
             assert ("info", "get_version_history: completed") in levels_and_messages
 
-    async def test_get_version_history_calls_log_client_warning_when_file_not_found_when_ctx_passed(
-        self, mock_project_root: Path
-    ) -> None:
-        """When file not found and ctx passed, get_version_history logs warning."""
-        mock_ctx = AsyncMock()
-        with patch(
-            "cortex.tools.foundation_version.log_client",
-            new_callable=AsyncMock,
-        ) as mock_log:
-            result = await get_version_history(
-                file_name="missing.md",
-                ctx=mock_ctx,
-            )
-            _ = json.loads(result)
-            assert any(
-                c[0][1] == "warning" and "not found" in (c[0][2] or "")
-                for c in mock_log.call_args_list
-                if len(c[0]) >= 3
-            )
-
     async def test_get_version_history_calls_log_client_error_on_exception_when_ctx_passed(
         self, mock_project_root: Path
     ) -> None:
@@ -1432,12 +1290,17 @@ class TestPhase1FoundationContextLogging:
         mock_ctx = AsyncMock()
         with (
             patch(
-                "cortex.tools.foundation_version.log_client",
+                "cortex.tools.memory.foundation_version.log_client",
                 new_callable=AsyncMock,
             ) as mock_log,
             patch(
-                "cortex.tools.foundation_version._get_file_metadata_for_history",
-                new=AsyncMock(side_effect=RuntimeError("index error")),
+                "cortex.core.project_root_resolver.resolve_project_root_async",
+                new_callable=AsyncMock,
+                return_value=mock_project_root,
+            ),
+            patch(
+                "cortex.tools.memory.foundation_version._load_version_history_from_disk",
+                side_effect=RuntimeError("index error"),
             ),
         ):
             result = await get_version_history(
@@ -1452,7 +1315,7 @@ class TestPhase1FoundationContextLogging:
             )
 
     async def test_get_memory_bank_stats_calls_log_client_on_start_and_completion_when_ctx_passed(
-        self, mock_project_root: Path, mock_managers: dict[str, Any]
+        self, mock_project_root: Path, mock_managers: ManagersDict
     ) -> None:
         """When ctx is passed, get_memory_bank_stats logs start and completion."""
         mock_ctx = AsyncMock()
@@ -1506,7 +1369,7 @@ class TestPhase1FoundationContextLogging:
             )
 
     async def test_get_dependency_graph_calls_log_client_on_start_and_completion_when_ctx_passed(
-        self, mock_project_root: Path, mock_managers: dict[str, Any]
+        self, mock_project_root: Path, mock_managers: ManagersDict
     ) -> None:
         """When ctx is passed, get_dependency_graph logs start and completion."""
         mock_ctx = AsyncMock()

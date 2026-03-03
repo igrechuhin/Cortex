@@ -107,6 +107,102 @@ class MetadataIndex:
         )
         self._data: dict[str, object] | None = None
 
+    def _strip_version_history_from_index(self) -> bool:
+        """
+        Strip legacy version_history arrays from index data.
+
+        Returns True if any entries were modified.
+        """
+        if self._data is None:
+            return False
+        files = self._data.get("files", {})
+        if not isinstance(files, dict):
+            return False
+        files_typed = cast(dict[str, object], files)
+        changed = False
+        for meta in files_typed.values():
+            if not isinstance(meta, dict):
+                continue
+            meta_typed = cast(dict[str, object], meta)
+            if "version_history" in meta_typed:
+                del meta_typed["version_history"]
+                changed = True
+        return changed
+
+    def _make_path_relative(self, path: Path) -> str:
+        """
+        Normalize a filesystem path to be relative to project_root for index storage.
+
+        This keeps .cortex/index.json machine-portable across different absolute
+        locations as long as the project structure under project_root is the same.
+        """
+        try:
+            return str(path.relative_to(self.project_root))
+        except ValueError:
+            # Fallback for legacy or out-of-tree paths; store as-is.
+            return str(path)
+
+    def _normalize_paths_in_index(self) -> bool:
+        """
+        Normalize stored file paths to be relative to project_root where possible.
+
+        This migrates older indices that stored absolute paths so that
+        .cortex/index.json remains portable across machines.
+        """
+        if self._data is None:
+            return False
+        files = self._data.get("files", {})
+        if not isinstance(files, dict):
+            return False
+        files_typed = cast(dict[str, object], files)
+        changed = False
+        for meta in files_typed.values():
+            if not isinstance(meta, dict):
+                continue
+            meta_typed = cast(dict[str, object], meta)
+            raw_path = meta_typed.get("path")
+            if not isinstance(raw_path, str) or not raw_path:
+                continue
+            new_path = self._make_path_relative(Path(raw_path))
+            if new_path != raw_path:
+                meta_typed["path"] = new_path
+                changed = True
+        return changed
+
+    def _normalize_top_level_paths(self) -> bool:
+        """
+        Normalize project_root and memory_bank_dir fields to be relative.
+
+        This migrates legacy indices that stored absolute paths so that
+        .cortex/index.json stays machine-portable.
+        """
+        if self._data is None:
+            return False
+        changed = False
+
+        project_root_raw = self._data.get("project_root")
+        if (
+            isinstance(project_root_raw, str)
+            and project_root_raw
+            and project_root_raw != "."
+        ):
+            self._data["project_root"] = "."
+            changed = True
+
+        memory_bank_dir_raw = self._data.get("memory_bank_dir")
+        if isinstance(memory_bank_dir_raw, str) and memory_bank_dir_raw:
+            new_mb = memory_bank_dir_raw
+            try:
+                new_mb = str(Path(memory_bank_dir_raw).relative_to(self.project_root))
+            except ValueError:
+                # If it cannot be made relative, keep existing value.
+                new_mb = memory_bank_dir_raw
+            if new_mb != memory_bank_dir_raw:
+                self._data["memory_bank_dir"] = new_mb
+                changed = True
+
+        return changed
+
     async def load(self) -> dict[str, object]:
         """
         Load metadata index with corruption recovery.
@@ -124,7 +220,6 @@ class MetadataIndex:
                 self.project_root,
                 self.SCHEMA_VERSION,
             )
-            return self._data
         except (json.JSONDecodeError, IndexCorruptedError):
             self._data = await recover_index_async(
                 self.index_path,
@@ -132,7 +227,16 @@ class MetadataIndex:
                 self.memory_bank_dir,
                 self.SCHEMA_VERSION,
             )
-            return self._data
+        changed = False
+        if self._strip_version_history_from_index():
+            changed = True
+        if self._normalize_paths_in_index():
+            changed = True
+        if self._normalize_top_level_paths():
+            changed = True
+        if changed:
+            await self.save()
+        return self._data
 
     async def save(self):
         """Save metadata index with atomic write and retry logic."""
@@ -175,10 +279,12 @@ class MetadataIndex:
         if self._data is None:
             _ = await self.load()
         files_dict = get_files_dict_from_data(self._data)
+        # Store path relative to project_root so index.json is machine-portable.
+        relative_path = Path(self._make_path_relative(path))
         file_meta, now = prepare_and_update_file_metadata_impl(
             files_dict,
             file_name,
-            path,
+            relative_path,
             exists,
             change_source,
             [SectionMetadata.model_validate(s) for s in _normalize_sections(sections)],

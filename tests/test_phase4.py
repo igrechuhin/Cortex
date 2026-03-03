@@ -254,10 +254,10 @@ class TestProgressiveLoader:
         """Test default priority order."""
         order = loader.get_default_priority_order()
 
-        assert "memorybankinstructions.md" in order
         assert "projectBrief.md" in order
-        # memorybankinstructions should be first
-        assert order[0] == "memorybankinstructions.md"
+        assert "activeContext.md" in order
+        # projectBrief should be first
+        assert order[0] == "projectBrief.md"
 
 
 class TestSummarizationEngine:
@@ -435,16 +435,3 @@ class TestOptimizationConfig:
 
         # Should be back to default
         assert config.get_token_budget() == 80000
-
-
-def run_tests():
-    """Run all Phase 4 tests."""
-    print("Running Phase 4 Test Suite...")
-    print("=" * 60)
-
-    # Run pytest
-    _ = pytest.main([__file__, "-v", "--tb=short"])
-
-
-if __name__ == "__main__":
-    run_tests()

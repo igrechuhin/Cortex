@@ -3,6 +3,9 @@
 ## 2026-03-03
 
 - **Commit pipeline preflight** - Ran /cortex/commit Phase A; fix_errors, format (including synapse_format), synapse_lint, type_check, markdown lint, and tests (4879/4879, coverage 92.24%) all passed for current Cortex changes (memory bank, plans, reviews, and src/cortex core/services/tools).
+- **Cleanup Cortex derived-state directories (2026-03-03)** - COMPLETE. Classified all derived-state directories, documented their purposes, and aligned benchmarks and caches with the new layout.
+- **Phase XX: Fix Memory Bank index/history architecture for multi-machine safety (2026-03-03)** - COMPLETE. Removed persisted version_history from index.json, migrated get_version_history to scan .cortex/history snapshots, and aligned metadata index/tests with the new architecture.
+- **Commit pipeline (function-length fix)** - COMPLETE. Fixed optimize_context function-length violation in context_optimizer.py (extracted _log_zero_selection_if_needed). Phase A passed; 4872 tests, 92.16% coverage.
 
 ## 2026-03-02
 

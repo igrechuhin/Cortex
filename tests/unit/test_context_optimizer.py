@@ -9,6 +9,7 @@ from unittest.mock import AsyncMock
 
 import pytest
 
+from cortex.core.constants import MemoryBankFile
 from cortex.core.dependency_graph import DependencyGraph
 from cortex.core.models import ModelDict
 from cortex.core.token_counter import TokenCounter
@@ -36,7 +37,7 @@ class TestContextOptimizerInitialization:
         assert optimizer.token_counter is mock_token_counter
         assert optimizer.relevance_scorer is mock_relevance_scorer
         assert optimizer.dependency_graph is mock_dependency_graph
-        assert optimizer.mandatory_files == ["memorybankinstructions.md"]
+        assert optimizer.mandatory_files == [MemoryBankFile.PROJECT_BRIEF]
         assert optimizer.strategies is not None
 
     def test_init_with_custom_mandatory_files(

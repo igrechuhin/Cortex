@@ -206,12 +206,18 @@ def _empty_index_dict(
     schema_version: str,
 ) -> dict[str, object]:
     """Build the dict structure for an empty index."""
+    # Store project_root and memory_bank_dir as paths relative to project_root
+    # so that .cortex/index.json remains portable across machines.
+    try:
+        rel_memory_bank = memory_bank_dir.relative_to(project_root)
+    except ValueError:
+        rel_memory_bank = memory_bank_dir
     return {
         "schema_version": schema_version,
         "created_at": now,
         "last_updated": now,
-        "project_root": str(project_root),
-        "memory_bank_dir": str(memory_bank_dir),
+        "project_root": ".",
+        "memory_bank_dir": str(rel_memory_bank),
         "files": {},
         "dependency_graph": _dependency_graph_skeleton(),
         "usage_analytics": _usage_analytics_skeleton(now),

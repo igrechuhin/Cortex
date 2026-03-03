@@ -437,10 +437,10 @@ class TestVersionHistory:
     """Tests for version history management."""
 
     @pytest.mark.asyncio
-    async def test_add_version_to_history_appends_version(
+    async def test_add_version_to_history_updates_current_version_and_strips_history(
         self, temp_project_root: Path
     ) -> None:
-        """Test adding version appends to history."""
+        """Test adding version updates current_version without persisting history."""
         # Arrange
         index = MetadataIndex(temp_project_root)
         _ = await index.load()
@@ -457,7 +457,6 @@ class TestVersionHistory:
         version_meta_dict: dict[str, object] = {
             "version": 1,
             "timestamp": datetime.now().isoformat(),
-            "content_hash": "hash1",
         }
         version_meta = MagicMock()
         version_meta.version = 1
@@ -471,10 +470,10 @@ class TestVersionHistory:
         assert data is not None
         files = cast(dict[str, object], data["files"])
         file_meta = cast(dict[str, object], files["test.md"])
+        # current_version should be updated from version_meta_dict
         assert cast(int, file_meta["current_version"]) == 1
-        version_history = cast(list[dict[str, object]], file_meta["version_history"])
-        assert len(version_history) == 1
-        assert version_history[0] == version_meta_dict
+        # version_history should not be persisted in index.json (Phase XX)
+        assert "version_history" not in file_meta
 
     @pytest.mark.asyncio
     async def test_add_version_to_history_updates_version_number(

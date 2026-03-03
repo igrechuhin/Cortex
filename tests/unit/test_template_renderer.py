@@ -98,7 +98,6 @@ def test_generate_initial_files_writes_expected_files(tmp_path: Path) -> None:
     project_info = {"name": "Cortex"}
     templates = {
         "projectBrief.md": "# {name}\n",
-        "memorybankinstructions.md": "Use {name}\n",
     }
 
     # Act
@@ -108,7 +107,6 @@ def test_generate_initial_files_writes_expected_files(tmp_path: Path) -> None:
     assert report["errors"] == []
     assert (knowledge_dir / "projectBrief.md").exists()
     assert (knowledge_dir / "techContext.md").exists()
-    assert (knowledge_dir / "memorybankinstructions.md").exists()
 
 
 def test_generate_initial_files_when_write_fails_reports_errors(tmp_path: Path) -> None:
@@ -117,7 +115,6 @@ def test_generate_initial_files_when_write_fails_reports_errors(tmp_path: Path) 
     project_info = {"name": "Cortex"}
     templates = {
         "projectBrief.md": "# {name}\n",
-        "memorybankinstructions.md": "Use {name}\n",
     }
 
     # Act
@@ -125,4 +122,4 @@ def test_generate_initial_files_when_write_fails_reports_errors(tmp_path: Path) 
 
     # Assert
     assert report["generated"] == []
-    assert len(report["errors"]) == 3
+    assert len(report["errors"]) == 2

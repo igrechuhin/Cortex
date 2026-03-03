@@ -37,7 +37,6 @@ def _create_new_file_metadata_impl(
         read_count=0,
         write_count=1 if change_source == "internal" else 0,
         current_version=0,
-        version_history=[],
     )
 
 
@@ -178,7 +177,11 @@ def finalize_file_metadata_update_impl(
     """Write file_meta into files_dict and data; update totals. Caller must save."""
     if change_source == "internal":
         file_meta.last_read = now
-    files_dict[file_name] = file_meta.model_dump(mode="json", by_alias=True)
+    files_dict[file_name] = file_meta.model_dump(
+        mode="json",
+        by_alias=True,
+        exclude={"version_history"},
+    )
     if data is not None:
         data["files"] = files_dict
     recalculate_totals_impl(data)
@@ -189,7 +192,7 @@ def add_version_to_history_impl(
     file_name: str,
     version_meta_dict: dict[str, object],
 ) -> None:
-    """Append version to file's version_history and set current_version. Caller must save."""
+    """Update file's current_version without persisting version_history. Caller must save."""
     if data is None:
         return
     files = data.get("files", {})
@@ -200,17 +203,11 @@ def add_version_to_history_impl(
     if not isinstance(file_meta_raw, dict):
         return
     file_meta = cast(dict[str, object], file_meta_raw)
-    file_meta["current_version"] = version_meta_dict["version"]
-    if "version_history" not in file_meta:
-        file_meta["version_history"] = []
-    hist_raw: object = file_meta.get("version_history")
-    if isinstance(hist_raw, list):
-        version_history: list[dict[str, object]] = cast(
-            list[dict[str, object]], hist_raw
-        )
-        version_history.append(version_meta_dict)
-    else:
-        file_meta["version_history"] = [version_meta_dict]
+    file_meta["current_version"] = version_meta_dict.get("version", 0)
+    # Strip any legacy version_history data to keep index.json small and
+    # avoid storing pointers into local .cortex/history snapshots.
+    if "version_history" in file_meta:
+        del file_meta["version_history"]
 
 
 def increment_read_count_impl(data: dict[str, object] | None, file_name: str) -> bool:

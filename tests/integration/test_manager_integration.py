@@ -55,7 +55,7 @@ class TestManagerCoordination:
 
         # Assert: Metadata should exist
         assert metadata is not None
-        assert metadata.path == str(file_path)
+        assert metadata.path == str(file_path.relative_to(temp_project_root))
 
         # Act: Add file to dependency graph (as a dynamic dependency with
         # no dependencies)

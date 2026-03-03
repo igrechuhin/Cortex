@@ -3,9 +3,15 @@ Version History Tool
 
 This module provides the get_version_history tool for retrieving
 version history of Memory Bank files.
+
+Version history is now derived from local `.cortex/history/`
+snapshot files instead of being persisted in the tracked
+`.cortex/index.json`. The index keeps only current file metadata;
+history is local, ephemeral, and computed from disk when needed.
 """
 
 import json
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import cast
 
@@ -16,11 +22,9 @@ from cortex.core.mcp_stability import (
     mcp_resource_wrapper,
     mcp_tool_wrapper,
 )
-from cortex.core.metadata_index import MetadataIndex
 from cortex.core.models import ModelDict
+from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.core.project_root_resolver import resolve_project_root_async
-from cortex.managers import initialization
-from cortex.managers.utils import get_manager
 from cortex.server import mcp
 
 
@@ -127,17 +131,8 @@ async def _get_version_history_impl(
     limit: int,
     ctx: MCPContext | None,
 ) -> str:
-    """Load version history and return JSON string."""
-    file_meta = await _get_file_metadata_for_history(file_name, root)
-    if not file_meta:
-        await log_client(
-            ctx, "warning", f"get_version_history: file '{file_name}' not found"
-        )
-        return json.dumps(
-            {"status": "error", "error": f"File '{file_name}' not found in index"},
-            indent=2,
-        )
-    version_history = extract_version_history(file_meta)
+    """Load version history from on-disk snapshots and return JSON string."""
+    version_history = _load_version_history_from_disk(file_name, root)
     sorted_history = sort_and_limit_versions(version_history, limit)
     versions = format_versions_for_export(sorted_history)
     return json.dumps(
@@ -151,33 +146,43 @@ async def _get_version_history_impl(
     )
 
 
-async def _get_file_metadata_for_history(
-    file_name: str, root: Path
-) -> ModelDict | None:
-    """Get file metadata for version history.
-
-    Args:
-        file_name: Name of the file
-        root: Project root path
-
-    Returns:
-        File metadata dict or None if not found
-    """
-    mgrs = await initialization.get_managers(root)
-    metadata_index = await get_manager(mgrs, "index", MetadataIndex)
-    file_meta = await metadata_index.get_file_metadata(file_name)
-    return cast(
-        ModelDict | None,
-        file_meta.model_dump(mode="json") if file_meta else None,
-    )
-
-
-def extract_version_history(file_meta: ModelDict) -> list[ModelDict]:
-    """Extract version history list from dict-shaped file metadata."""
-    history_raw = file_meta.get("version_history", [])
-    if not isinstance(history_raw, list):
+def _load_version_history_from_disk(file_name: str, root: Path) -> list[ModelDict]:
+    """Scan `.cortex/history/` for snapshots and build version history."""
+    history_dir = get_cortex_path(root, CortexResourceType.HISTORY)
+    if not history_dir.exists():
         return []
-    return [cast(ModelDict, item) for item in history_raw if isinstance(item, dict)]
+
+    base_name = Path(file_name).name
+    base_stem = base_name[:-3] if base_name.endswith(".md") else Path(base_name).stem
+    pattern = f"{base_stem}_v*.md"
+
+    versions: list[ModelDict] = []
+    for snapshot in history_dir.glob(pattern):
+        try:
+            stat = snapshot.stat()
+        except OSError:
+            # Snapshot inaccessible; skip it.
+            continue
+
+        stem = snapshot.stem
+        parts = stem.rsplit("_v", 1)
+        if len(parts) != 2:
+            continue
+
+        try:
+            version_number = int(parts[1])
+        except ValueError:
+            continue
+
+        versions.append(
+            {
+                "version": version_number,
+                "timestamp": datetime.fromtimestamp(stat.st_mtime, tz=UTC).isoformat(),
+                "size_bytes": stat.st_size,
+            }
+        )
+
+    return versions
 
 
 def sort_and_limit_versions(

@@ -62,7 +62,7 @@ class TestCacheWarmer:
         )
         items_warmed = cast(int, mandatory_result["items_warmed"])
         assert items_warmed > 0
-        assert cache_manager.get("memorybankinstructions.md") is not None
+        assert cache_manager.get("projectBrief.md") is not None
 
     @pytest.mark.asyncio
     async def test_hot_path_strategy_uses_access_patterns(
@@ -150,7 +150,6 @@ class TestCacheWarmer:
 
         # Assert
         assert len(keys) <= 5
-        assert "memorybankinstructions.md" in keys
         assert "projectBrief.md" in keys
 
     def test_get_hot_path_keys_from_cache_manager(

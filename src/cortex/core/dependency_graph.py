@@ -42,14 +42,9 @@ class FileDependencyInfo(BaseModel):
 
 # Static dependency hierarchy based on template structure
 STATIC_DEPENDENCIES: dict[str, FileDependencyInfo] = {
-    "memorybankinstructions.md": FileDependencyInfo(
-        depends_on=[],
-        priority=0,  # Always load first
-        category="meta",
-    ),
     MemoryBankFile.PROJECT_BRIEF: FileDependencyInfo(
         depends_on=[],
-        priority=1,  # Foundation
+        priority=0,  # Foundation — always load first
         category="foundation",
     ),
     MemoryBankFile.PRODUCT_CONTEXT: FileDependencyInfo(
@@ -128,7 +123,7 @@ class DependencyGraph:
                 # Fall back to priority sort if topological sort fails
                 from cortex.core.logging_config import logger
 
-                logger.debug(f"Topological sort failed, using priority sort: {e}")
+                logger.debug("Topological sort failed, using priority sort: %s", e)
 
         # Sort by priority, then alphabetically for stability
         def _sort_key(file_name: str) -> tuple[int, str]:
@@ -434,7 +429,7 @@ class DependencyGraph:
         except Exception as e:
             from cortex.core.logging_config import logger
 
-            logger.warning(f"Failed to parse links from {file_path}: {e}")
+            logger.warning("Failed to parse links from %s: %s", file_path, e)
 
     def _process_markdown_links(self, parsed: ModelDict, file_name: str) -> None:
         """Process markdown links from parsed content."""

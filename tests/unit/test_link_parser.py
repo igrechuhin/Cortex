@@ -186,7 +186,7 @@ class TestParseFile:
         """Test that memory bank files without .md are included."""
         parser = LinkParser()
         content = """
-        [Instructions](memorybankinstructions)
+        [Patterns](systemPatterns)
         [Brief](projectBrief)
         [Context](activeContext)
         """

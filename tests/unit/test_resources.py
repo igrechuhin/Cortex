@@ -26,7 +26,6 @@ class TestTemplatesDictStructure:
         """Test that all expected template keys are present."""
         # Arrange
         expected_keys = {
-            "memorybankinstructions.md",
             "projectBrief.md",
             "productContext.md",
             "activeContext.md",

@@ -268,7 +268,6 @@ class ProgressiveLoader:
             List of file names in priority order
         """
         return [
-            "memorybankinstructions.md",
             MemoryBankFile.PROJECT_BRIEF,
             MemoryBankFile.ACTIVE_CONTEXT,
             MemoryBankFile.SYSTEM_PATTERNS,

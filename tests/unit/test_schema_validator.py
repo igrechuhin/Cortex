@@ -35,7 +35,6 @@ class TestSchemaValidatorInitialization:
 
         # Should have all default schemas
         assert len(validator.schemas) == len(DEFAULT_SCHEMAS)
-        assert "memorybankinstructions.md" in validator.schemas
         assert "projectBrief.md" in validator.schemas
         assert "activeContext.md" in validator.schemas
 
@@ -66,7 +65,7 @@ class TestSchemaValidatorInitialization:
         validator = SchemaValidator(config_path=config_path)
 
         # Should have both default and custom schemas
-        assert "memorybankinstructions.md" in validator.schemas
+        assert "projectBrief.md" in validator.schemas
         assert "custom.md" in validator.schemas
         assert validator.schemas["custom.md"].required_sections == ["Custom Section"]
 
@@ -89,18 +88,18 @@ class TestValidateFile:
         """Test validation passes for file with all required sections."""
         validator = SchemaValidator()
         content = """
-# Memory Bank Instructions
+# Active Context
 
-## Purpose
-This is the purpose section.
+## Current Focus
+This is the current focus section.
 
-## Guidelines
-These are the guidelines.
+## Recent Changes
+These are the recent changes.
 
-## Structure
-This is the structure.
+## Next Steps
+These are the next steps.
 """
-        result = await validator.validate_file("memorybankinstructions.md", content)
+        result = await validator.validate_file("activeContext.md", content)
 
         assert result.valid is True
         assert len(result.errors) == 0
@@ -111,67 +110,67 @@ This is the structure.
         """Test validation fails for file missing required sections."""
         validator = SchemaValidator()
         content = """
-# Memory Bank Instructions
+# Active Context
 
-## Purpose
-This is the purpose section.
+## Current Focus
+This is the current focus section.
 """
-        result = await validator.validate_file("memorybankinstructions.md", content)
+        result = await validator.validate_file("activeContext.md", content)
 
         assert result.valid is False
-        assert len(result.errors) >= 2  # Missing Guidelines and Structure
+        assert len(result.errors) >= 2  # Missing Recent Changes and Next Steps
 
         # Check error messages
         error_messages = [e.message for e in result.errors]
-        assert any("Guidelines" in msg for msg in error_messages)
-        assert any("Structure" in msg for msg in error_messages)
+        assert any("Recent Changes" in msg for msg in error_messages)
+        assert any("Next Steps" in msg for msg in error_messages)
 
     @pytest.mark.asyncio
     async def test_validate_file_with_missing_recommended_sections(self):
         """Test validation warns for missing recommended sections."""
         validator = SchemaValidator()
         content = """
-# Memory Bank Instructions
+# Active Context
 
-## Purpose
-This is the purpose section.
+## Current Focus
+Current focus content.
 
-## Guidelines
-These are the guidelines.
+## Recent Changes
+Recent changes content.
 
-## Structure
-This is the structure.
+## Next Steps
+Next steps content.
 """
-        result = await validator.validate_file("memorybankinstructions.md", content)
+        result = await validator.validate_file("activeContext.md", content)
 
         assert result.valid is True  # Still valid
         assert len(result.warnings) >= 2  # Missing recommended sections
 
         # Check warning messages
         warning_messages = [w.message for w in result.warnings]
-        assert any("Best Practices" in msg for msg in warning_messages)
-        assert any("Examples" in msg for msg in warning_messages)
+        assert any("Completed Work" in msg for msg in warning_messages)
+        assert any("Active Decisions" in msg for msg in warning_messages)
 
     @pytest.mark.asyncio
     async def test_validate_file_with_heading_level_skip(self):
         """Test validation catches heading level skips."""
         validator = SchemaValidator()
         content = """
-# Memory Bank Instructions
+# Active Context
 
-## Purpose
-This is the purpose section.
+## Current Focus
+Current focus content.
 
 #### Subsection
 This skips level 3.
 
-## Guidelines
-These are the guidelines.
+## Recent Changes
+Recent changes content.
 
-## Structure
-This is the structure.
+## Next Steps
+Next steps content.
 """
-        result = await validator.validate_file("memorybankinstructions.md", content)
+        result = await validator.validate_file("activeContext.md", content)
 
         assert result.valid is False
 
@@ -192,10 +191,10 @@ This is the structure.
         """Test validation warns about excessive heading nesting."""
         validator = SchemaValidator()
         content = """
-# Memory Bank Instructions
+# Active Context
 
-## Purpose
-This is the purpose section.
+## Current Focus
+Current focus content.
 
 ### Subsection
 This is fine.
@@ -206,13 +205,13 @@ This is fine.
 ##### Too deep
 This exceeds max_nesting of 3.
 
-## Guidelines
-These are the guidelines.
+## Recent Changes
+Recent changes content.
 
-## Structure
-This is the structure.
+## Next Steps
+Next steps content.
 """
-        result = await validator.validate_file("memorybankinstructions.md", content)
+        result = await validator.validate_file("activeContext.md", content)
 
         # Check for deep nesting warning
         nesting_errors = [
@@ -277,38 +276,37 @@ Success criteria section.
 
         # File with all required sections (no errors, may have warnings)
         perfect_content = """
-# Memory Bank Instructions
+# Active Context
 
-## Purpose
-Purpose content.
+## Current Focus
+Current focus content.
 
-## Guidelines
-Guidelines content.
+## Recent Changes
+Recent changes content.
 
-## Structure
-Structure content.
+## Next Steps
+Next steps content.
 
-## Best Practices
-Best practices content.
+## Completed Work
+Completed work content.
 
-## Examples
-Examples content.
+## Active Decisions
+Active decisions content.
+
+## Important Patterns
+Important patterns content.
 """
-        result = await validator.validate_file(
-            "memorybankinstructions.md", perfect_content
-        )
+        result = await validator.validate_file("activeContext.md", perfect_content)
         assert result.score == 100
 
         # File with missing required sections (errors)
         error_content = """
-# Memory Bank Instructions
+# Active Context
 
-## Purpose
-Purpose content.
+## Current Focus
+Current focus content.
 """
-        result = await validator.validate_file(
-            "memorybankinstructions.md", error_content
-        )
+        result = await validator.validate_file("activeContext.md", error_content)
         assert result.score < 80  # Should be significantly penalized
 
 

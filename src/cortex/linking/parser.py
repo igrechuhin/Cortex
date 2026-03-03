@@ -32,7 +32,6 @@ _EXTERNAL_PROTOCOLS: frozenset[str] = frozenset(["http://", "https://", "mailto:
 # Memory bank file names (set for O(1) lookup)
 _MEMORY_BANK_NAMES: frozenset[str] = frozenset(
     [
-        "memorybankinstructions",
         "projectBrief",
         "productContext",
         "techContext",

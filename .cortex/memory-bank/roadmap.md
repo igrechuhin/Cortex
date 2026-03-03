@@ -12,6 +12,8 @@
 
 ## Pending plans (from .cortex/plans)
 
+- **Phase YY: .cortex/history retention and keep_versions behavior** - PENDING - Define and implement a configurable retention policy and `keep_versions` behavior for `.cortex/history/`, including VersionManager changes, cleanup tooling, diagnostics, and tests so history growth is bounded and predictable.
+
 ### Fixes
 
 ### Documentation Cleanup (DRY)
@@ -19,8 +21,6 @@
 ### Refactoring
 
 ### Cleanup
-
-- **Cleanup Cortex derived-state directories (.cortex/.cache, .cortex/history, .cortex/rules, .cortex/script-capture, benchmark_results)** - PENDING - For each directory, either document the concrete reason to keep (owner, retention policy, consumers) or remove/consolidate it safely. Plan: `.cortex/plans/cleanup-cortex-derived-state.md`
 
 ### Investigation Plans (Archive / Reference)
 

@@ -6,9 +6,6 @@ from cortex.guides.setup import GUIDE as SETUP_GUIDE
 from cortex.guides.structure import GUIDE as STRUCTURE_GUIDE
 from cortex.guides.usage import GUIDE as USAGE_GUIDE
 from cortex.templates.active_context import TEMPLATE as ACTIVE_CONTEXT_TEMPLATE
-from cortex.templates.memory_bank_instructions import (
-    TEMPLATE as MEMORY_BANK_INSTRUCTIONS_TEMPLATE,
-)
 from cortex.templates.product_context import (
     TEMPLATE as PRODUCT_CONTEXT_TEMPLATE,
 )
@@ -20,7 +17,6 @@ from cortex.templates.system_patterns import (
 from cortex.templates.tech_context import TEMPLATE as TECH_CONTEXT_TEMPLATE
 
 TEMPLATES = {
-    "memorybankinstructions.md": MEMORY_BANK_INSTRUCTIONS_TEMPLATE,
     MemoryBankFile.PROJECT_BRIEF: PROJECTBRIEF_TEMPLATE,
     MemoryBankFile.PRODUCT_CONTEXT: PRODUCT_CONTEXT_TEMPLATE,
     MemoryBankFile.ACTIVE_CONTEXT: ACTIVE_CONTEXT_TEMPLATE,

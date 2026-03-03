@@ -528,24 +528,6 @@ class TestGenerateInitialFiles:
         assert "web" in content
         assert "Python" in content
 
-    def test_generate_initial_files_creates_memorybankinstructions(
-        self, tmp_path: Path
-    ):
-        """Test generate_initial_files creates memorybankinstructions.md."""
-        # Arrange
-        manager = TemplateManager(tmp_path)
-        knowledge_dir = tmp_path / "knowledge"
-        knowledge_dir.mkdir(parents=True, exist_ok=True)
-        project_info = cast(ModelDict, {"project_name": "Test Project"})
-        templates = {"memorybankinstructions.md": "# Instructions\n{project_name}"}
-
-        # Act
-        _ = manager.generate_initial_files(knowledge_dir, project_info, templates)
-
-        # Assert
-        instructions_path = knowledge_dir / "memorybankinstructions.md"
-        assert instructions_path.exists()
-
     def test_generate_initial_files_handles_missing_templates(self, tmp_path: Path):
         """Test generate_initial_files handles missing templates gracefully."""
         # Arrange

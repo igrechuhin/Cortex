@@ -6,8 +6,10 @@ that fit within token budgets while maximizing information value.
 Delegates strategy implementations to OptimizationStrategies.
 """
 
+import logging
 from collections.abc import Awaitable, Callable
 
+from cortex.core.constants import MemoryBankFile
 from cortex.core.dependency_graph import DependencyGraph
 from cortex.core.models import ModelDict
 from cortex.core.token_counter import TokenCounter
@@ -15,6 +17,8 @@ from cortex.optimization.models import FileMetadataForScoring
 
 from .optimization_strategies import OptimizationResult, OptimizationStrategies
 from .relevance_scorer import RelevanceScorer
+
+_logger = logging.getLogger(__name__)
 
 
 class ContextOptimizer:
@@ -49,7 +53,7 @@ class ContextOptimizer:
         self.token_counter = token_counter
         self.relevance_scorer = relevance_scorer
         self.dependency_graph = dependency_graph
-        self.mandatory_files = mandatory_files or ["memorybankinstructions.md"]
+        self.mandatory_files = mandatory_files or [MemoryBankFile.PROJECT_BRIEF]
 
         # Create strategies instance
         self.strategies = OptimizationStrategies(
@@ -105,6 +109,7 @@ class ContextOptimizer:
             token_budget,
         )
 
+        _log_zero_selection_if_needed(result, files_content, token_budget, strategy)
         return _update_result_metadata(result, strategy, relevance_scores)
 
     async def optimize_by_priority(
@@ -129,6 +134,23 @@ class ContextOptimizer:
         )
 
 
+def _log_zero_selection_if_needed(
+    result: OptimizationResult,
+    files_content: dict[str, str],
+    token_budget: int,
+    strategy: str,
+) -> None:
+    """Log a warning when optimizer selected no files despite available content."""
+    if not result.selected_files and files_content:
+        _logger.warning(
+            "Optimizer selected 0 files despite %d available"
+            + " (budget=%d, strategy=%s)",
+            len(files_content),
+            token_budget,
+            strategy,
+        )
+
+
 def _create_empty_result(strategy: str) -> OptimizationResult:
     """Create empty optimization result for no files case.
 
@@ -138,6 +160,7 @@ def _create_empty_result(strategy: str) -> OptimizationResult:
     Returns:
         OptimizationResult with empty selection
     """
+    _logger.warning("No files available for context optimization")
     return OptimizationResult(
         selected_files=[],
         selected_sections={},

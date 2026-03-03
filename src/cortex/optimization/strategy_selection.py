@@ -5,9 +5,25 @@ This module contains helper functions for selecting files and sections
 based on relevance scores, mandatory files, and token budgets.
 """
 
+import logging
 from collections.abc import Callable
 
 from cortex.core.token_counter import TokenCounter
+
+logger = logging.getLogger(__name__)
+
+
+def _warn_missing_mandatory_files(
+    mandatory_files: list[str], files_content: dict[str, str]
+) -> None:
+    """Log a warning for any mandatory files not found in files_content."""
+    for mandatory_file in mandatory_files:
+        if mandatory_file not in files_content:
+            logger.warning(
+                "Mandatory file '%s' not found in memory bank"
+                + " — context selection may be degraded",
+                mandatory_file,
+            )
 
 
 def add_mandatory_files(
@@ -31,6 +47,8 @@ def add_mandatory_files(
     Returns:
         Updated token count
     """
+    _warn_missing_mandatory_files(mandatory_files, files_content)
+
     # Pre-calculate token counts for all mandatory files
     file_token_pairs = [
         (
@@ -197,6 +215,8 @@ def process_mandatory_files_with_dependencies(
     Returns:
         Tuple of (updated selected_files, updated total_tokens)
     """
+    _warn_missing_mandatory_files(mandatory_files, files_content)
+
     for mandatory_file in mandatory_files:
         if mandatory_file in files_content:
             deps = get_all_dependencies(mandatory_file)

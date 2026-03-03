@@ -25,9 +25,8 @@ DEFAULT_OPTIMIZATION_CONFIG = {
     },
     "loading_strategy": {
         "default": "dependency_aware",
-        "mandatory_files": ["memorybankinstructions.md"],
+        "mandatory_files": [MemoryBankFile.PROJECT_BRIEF],
         "priority_order": [
-            "memorybankinstructions.md",
             MemoryBankFile.PROJECT_BRIEF,
             MemoryBankFile.ACTIVE_CONTEXT,
             MemoryBankFile.SYSTEM_PATTERNS,
@@ -166,7 +165,7 @@ class OptimizationConfig:
         except (OSError, json.JSONDecodeError) as e:
             from cortex.core.logging_config import logger
 
-            logger.warning(f"Failed to load optimization config: {e}")
+            logger.warning("Failed to load optimization config: %s", e)
             return default_config
 
         # Validate config type and parse with Pydantic
@@ -226,7 +225,7 @@ class OptimizationConfig:
         except OSError as e:
             from cortex.core.logging_config import logger
 
-            logger.error(f"Failed to save optimization config: {e}")
+            logger.error("Failed to save optimization config: %s", e)
             return False
 
     def get(self, key_path: str, default: JsonValue | None = None) -> JsonValue:

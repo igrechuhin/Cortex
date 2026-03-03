@@ -243,12 +243,12 @@ class CacheWarmer:
         # Common mandatory files in memory bank
         from cortex.core.constants import MemoryBankFile
 
-        mandatory_files = [
-            "memorybankinstructions.md",
+        mandatory_files: list[str] = [
             MemoryBankFile.PROJECT_BRIEF,
             MemoryBankFile.ACTIVE_CONTEXT,
             MemoryBankFile.SYSTEM_PATTERNS,
             MemoryBankFile.TECH_CONTEXT,
+            MemoryBankFile.PRODUCT_CONTEXT,
         ]
 
         return mandatory_files[:max_items]

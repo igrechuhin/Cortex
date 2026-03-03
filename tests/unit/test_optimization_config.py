@@ -306,8 +306,7 @@ class TestDotNotationAccess:
 
         # Assert
         # Empty string splits to [""], which creates a key with empty string
-        # This is allowed behavior, though not recommended
-        assert result is True or result is False  # Either is acceptable
+        assert result is True
 
 
 class TestConfigReset:
@@ -387,7 +386,7 @@ class TestConvenienceMethods:
 
         # Assert
         assert isinstance(files, list)
-        assert "memorybankinstructions.md" in files
+        assert "projectBrief.md" in files
 
     def test_get_priority_order_returns_ordered_list(
         self, temp_project_root: Path
@@ -401,8 +400,8 @@ class TestConvenienceMethods:
 
         # Assert
         assert isinstance(order, list)
-        assert len(order) == 7
-        assert order[0] == "memorybankinstructions.md"
+        assert len(order) == 6
+        assert order[0] == "projectBrief.md"
 
     def test_is_summarization_enabled_returns_bool(
         self, temp_project_root: Path

@@ -39,12 +39,11 @@ class LoadingStrategyConfigModel(OptimizationBaseModel):
         description="Default loading strategy",
     )
     mandatory_files: list[str] = Field(
-        default_factory=lambda: ["memorybankinstructions.md"],
+        default_factory=lambda: [MemoryBankFile.PROJECT_BRIEF],
         description="Files that must always be loaded",
     )
     priority_order: list[str] = Field(
         default_factory=lambda: [
-            "memorybankinstructions.md",
             MemoryBankFile.PROJECT_BRIEF,
             MemoryBankFile.ACTIVE_CONTEXT,
             MemoryBankFile.SYSTEM_PATTERNS,

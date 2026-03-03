@@ -441,8 +441,7 @@ class DuplicationDetector:
         """
         # Determine which file should be the source
         # Prefer files that appear earlier in typical hierarchy
-        hierarchy = [
-            "memorybankinstructions.md",
+        hierarchy: list[str] = [
             MemoryBankFile.PROJECT_BRIEF,
             MemoryBankFile.PRODUCT_CONTEXT,
             MemoryBankFile.SYSTEM_PATTERNS,

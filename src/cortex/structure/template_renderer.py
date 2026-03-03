@@ -202,9 +202,6 @@ def generate_initial_files(
     _generate_tech_context_file(
         knowledge_dir, project_info, generated_list, errors_list
     )
-    _generate_instructions_file(
-        knowledge_dir, project_info, templates, generated_list, errors_list
-    )
 
     return {"generated": generated_list, "errors": errors_list}
 
@@ -246,22 +243,3 @@ def _generate_tech_context_file(
         generated_list.append(str(file_path))
     except Exception as e:
         errors_list.append(f"Failed to generate {MemoryBankFile.TECH_CONTEXT}: {e}")
-
-
-def _generate_instructions_file(
-    knowledge_dir: Path,
-    project_info: dict[str, str],
-    templates: dict[str, str],
-    generated_list: list[str],
-    errors_list: list[str],
-) -> None:
-    """Generate memorybankinstructions.md file."""
-    try:
-        content = customize_template(
-            templates.get("memorybankinstructions.md", ""), project_info
-        )
-        file_path = knowledge_dir / "memorybankinstructions.md"
-        _ = file_path.write_text(content, encoding="utf-8")
-        generated_list.append(str(file_path))
-    except Exception as e:
-        errors_list.append(f"Failed to generate memorybankinstructions.md: {e}")
