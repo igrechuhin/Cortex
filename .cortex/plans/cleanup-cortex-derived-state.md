@@ -4,7 +4,7 @@ Cleanup Cortex derived-state directories
 
 ### Status
 
-PENDING
+IN PROGRESS
 
 ### Goal
 
@@ -103,12 +103,23 @@ A roadmap item already exists to evaluate `.cortex/history` versus git history; 
       - Consumers (tools, prompts, tests).
       - Safety of deletion (what would break).
       - Recommended action: **Keep**, **Consolidate**, or **Retire**.
-   2. Propose a target layout, e.g.:
-      - Keep `.cortex/synapse/rules` as the canonical rules location, with clear documentation, and migrate or remove any legacy `.cortex/rules` content.
-      - Keep `.cortex/synapse/.cache` as the primary shared cache with well-defined subfolders and retention rules; migrate or remove any remaining `.cortex/.cache` usage (including redundant `.cache/.cache` nesting) if it is accidental or redundant.
-      - Either keep `.cortex/history` with a clearly documented reason (session optimization, handoff, non-git data) or replace it with a lighter-weight mechanism, ensuring no loss of safety/rollback guarantees.
-      - Decide whether `benchmark_results` stays in-repo, moves under docs, or is replaced by external dashboards.
-      - Decide whether `.cortex/script-capture` should be opt-in and/or trimmed regularly, given that canonical scripts live in `.cortex/synapse/scripts`.
+
+      | Directory | Purpose / current usage | Consumers | Safe to delete? | Recommended action |
+      | --- | --- | --- | --- | --- |
+      | `.cortex/.cache/sessions` | Ephemeral multi-agent session registry used for coordination and observability between agents. | `session_register` / `session_deregister` / `session_list`, `session(operation="start")` (via `read_cache_json` / `write_cache_json`). | Yes – file is recreated on demand; deletion only loses current-session visibility. | **Keep** as an ephemeral cache; document as safe to clear and not required for core MCP correctness. |
+      | `.cortex/.cache/usage` | Usage analytics and optimization data written by `UsageTracker` and read by usage/optimization tools. | `query_usage` MCP tool family and usage analytics scripts. | Yes – directory is recreated and new events are recorded; deletion discards historical analytics only. | **Keep** as an optional analytics cache; document that it is safe to delete and not required for core behavior. |
+      | `.cortex/.cache/.cache` | Legacy or accidental double-nested cache path with no active producers/consumers in the codebase. | None identified in current code search. | Yes – no in-tree tools depend on it; out-of-tree scripts can be migrated to the unified cache layout. | **Retire** by removing any remaining filesystem artifacts and avoiding references in new tools; consolidate on the primary `.cortex/.cache` / `get_cache_dir` layout. |
+      | `.cortex/history` | Memory Bank version snapshots and rollback points beyond what git stores. | Version-management tools (`MigrationManager`, version manager APIs), tests under `tests/unit/test_version_manager.py`, migration and foundation tests. | No – deletion discards rollback history and snapshot content, even though tools can tolerate a missing directory. | **Keep** as a durable history surface with documented purpose and retention policy; future work may simplify layout but not retire it wholesale. |
+      | `.cortex/rules` | Project-local rules root used by the `rules()` MCP tool when local `.mdc` files are present. Currently empty but part of the supported directory layout. | `rules()` MCP tool, rule indexing and validation tests. | Partially – the folder must exist as the local rules root, but individual files can be added, migrated, or removed. | **Keep** as the project-local rules folder; document its role as a complement to `.cortex/synapse/rules` and avoid duplicating deprecated rule locations. |
+      | `.cortex/script-capture` | Legacy local directory used by older script-capture experiments; the current design treats `.cortex/synapse/scripts` as the cross-project, canonical home for both canonical and captured scripts. | Historical script capture/store utilities and their tests. | Yes – directory is recreated on demand; deletion removes only legacy capture history if any remains. | **Consolidate** any remaining usage into `.cortex/synapse/scripts` (or into metadata-only tracking) and then **retire** this directory so that all scripts live in the shared Synapse scripts surface and can be promoted into first-class Cortex functionality. |
+      | `benchmark_results` | Historical benchmark reports referenced from roadmap/progress entries and docs. | Documentation and manual review of past benchmark runs; no active Python consumers. | Yes – safe to move or delete after capturing any important reports in docs. | **Consolidate** by moving useful reports under a dedicated docs/benchmarks area and retiring the top-level `benchmark_results` directory. |
+
+   2. Propose a target layout based on the matrix:
+      - Keep `.cortex/history` as the durable Memory Bank history surface with clear documentation of what it stores beyond git and how long data is retained.
+      - Keep `.cortex/synapse/.cache` and the existing `.cortex/.cache` layout as the primary cache locations, with `.cortex/.cache/sessions` and `.cortex/.cache/usage` documented as safe-to-delete caches; retire any remaining `.cortex/.cache/.cache` nesting in favor of the unified layout.
+      - Keep `.cortex/synapse/rules` as the canonical shared rules location and `.cortex/rules` as the project-local rules root for overrides; avoid introducing additional ad-hoc rule directories.
+      - Consolidate `benchmark_results` into a documented benchmarks/docs area (for example under `docs/benchmarks`), then remove the top-level directory once references are updated.
+      - Treat `.cortex/script-capture` as an opt-in diagnostic surface with documented retention and size expectations, and make it clear in docs that it is safe to delete when cleaning up derived state.
 
 3. **Implement code and configuration changes**
    1. Update Cortex MCP tools, scripts, and prompts to match the target layout:

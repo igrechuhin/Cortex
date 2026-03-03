@@ -5,6 +5,7 @@
 ## Completed Work (2026-03-03)
 
 - ✅ **Commit pipeline preflight** - COMPLETE (2026-03-03) - Ran /cortex/commit Phase A. All pre-commit checks (fix_errors, format + synapse_format, synapse_lint, quality, type_check, tests with coverage 92.24%, markdown lint) passed for current Cortex changes in memory bank, plans/reviews, and src/cortex core/services/tools helpers, preparing for commit.
+- ✅ **Derived-state directory classification docs** - COMPLETE (2026-03-03) - Captured the decision matrix and target layout for `.cortex/.cache/*`, `.cortex/history`, `.cortex/rules`, `.cortex/script-capture`, and `benchmark_results` in `docs/architecture/derived-state-directories.md`, clarifying which directories are durable history vs. ephemeral caches and which are safe to delete.
 
 ## Completed Work (2026-03-02)
 
