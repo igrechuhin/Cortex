@@ -91,7 +91,12 @@ def build_pre_commit_response(
 def make_test_progress_callback(
     ctx: MCPContext | None, loop: asyncio.AbstractEventLoop
 ) -> Callable[[int, int], None] | None:
-    """Build (completed, total) callback that reports test counts to MCP."""
+    """Build (completed, total) callback that reports test counts to MCP.
+
+    This uses completed/total tests directly so that all progress
+    notifications for execute_pre_commit_checks use a single, consistent
+    scheme: number of tests completed out of total tests.
+    """
     if ctx is None:
         return None
 

@@ -11,12 +11,9 @@
 ## Future Enhancements
 
 - Phase 58 tools consolidation: merge check_task_available_lock, claim_task_lock, release_task_lock, list_active_tasks into single dispatcher (low priority)
+- **Evaluate .cortex/history vs git history** - PENDING - Evaluate whether `.cortex/history` provides unique value beyond git, and if not, simplify or phase it out while preserving safety and rollback guarantees.
 
 ## Pending plans (from .cortex/plans)
-
-- **Consolidate roadmap + append_entry** - PENDING - Merge roadmap and append_entry into update_memory_bank tool with operations for roadmap add/remove and progress/activeContext append. Reduces tool count by 1. ([plan](.cortex/plans/consolidate-roadmap-append-entry.md))
-- **Consolidate validate + check_structure_health** - PENDING - Evaluate merging validate and check_structure_health into single project health tool. Go/no-go in Step 1 due to different domains and side-effect semantics. ([plan](.cortex/plans/consolidate-validate-check-structure-health.md))
-- **Consolidate suggest_refactoring + apply_refactoring** - PENDING - Evaluate merging suggest_refactoring and apply_refactoring into single refactoring tool. Go/no-go in Step 1 due to different intents (read vs write). ([plan](.cortex/plans/consolidate-suggest-apply-refactoring.md))
 
 ### Fixes
 
@@ -25,6 +22,8 @@
 ### Refactoring
 
 ### Cleanup
+
+- **Cleanup Cortex derived-state directories (.cortex/.cache, .cortex/history, .cortex/rules, .cortex/script-capture, benchmark_results)** - PENDING - For each directory, either document the concrete reason to keep (owner, retention policy, consumers) or remove/consolidate it safely. Plan: `.cortex/plans/cleanup-cortex-derived-state.md`
 
 ### Investigation Plans (Archive / Reference)
 

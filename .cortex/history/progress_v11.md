@@ -1,5 +1,9 @@
 # Progress Log
 
+## 2026-03-03
+
+- **Commit pipeline preflight** - Ran /cortex/commit Phase A; fix_errors, format (including synapse_format), synapse_lint, type_check, markdown lint, and tests (4879/4879, coverage 92.24%) all passed for current Cortex changes (memory bank, plans, reviews, and src/cortex core/services/tools).
+
 ## 2026-03-02
 
 - **Tools sub-package reorganization Session 8 (2026-03-02)** - COMPLETE. Created memory/ sub-package (compaction, foundation_*, query_memory_bank); moved evaluation_* and model_benchmark into evaluation/. Updated imports project-wide. All tests pass.
@@ -223,47 +227,7 @@
 
 ## 2026-02-23
 
-- Commit pipeline pre-commit passed - fix_errors, format, markdown lint, type_check, quality, tests 4548/4548, coverage 92.05%.
-- **Step 4 Split tool_helpers.py (2026-02-23)** - COMPLETE. Split into tool_call_helpers, assertion_helpers, and three stubs; removed tool_helpers.py; all tests pass.
-- **Step 5 E2E Workflow Tests (plan-test-coverage-and-quality) (2026-02-23)** - COMPLETE. Added tests/e2e/ with 5 modules (session lifecycle, memory bank workflow, commit pipeline, plan workflow, refactoring workflow); 10 tests total, each exercising 3+ MCP tools in sequence. Quality gate and type check passed.
-- **Commit pipeline** - Pre-commit passed (fix_errors, format, markdown lint, type_check, quality, tests). Tests: 4548 passed, coverage 92.05%.
-- **E2E Plan Test (2026-02-23)** - COMPLETE. E2E plan placeholder used by plan workflow tests; single step done. Plan archived.
-- **Step 6 TODO/FIXME (plan-test-coverage-and-quality) (2026-02-23)** - COMPLETE. Audited test code; 0 actionable TODO/FIXME directives (all matches are test data).
-- **Workflow plan (2026-02-23)** - COMPLETE. Expanded stub into full plan; E2E workflows documented and tested.
-- **E2E Plan Test (2026-02-23)** - COMPLETE. E2E plan workflow verified; plan had single step marked Done.
-- **Session optimization improvements 2026-02-23 (2026-02-23)** - COMPLETE. Dedup activeContext entries, plan-only short path doc, roadmap_sync unlinked_plans doc.
-- **Step 7 Test coverage (plan-test-coverage-and-quality)** - IN PROGRESS. Added tests for task_locking, session_registry, query_memory_bank_operations, roadmap_operations (edge cases, malformed cache, MCP exception paths). Coverage 92.29% (target ≥93% not yet met). Quality gate passed.
-- **E2E Plan Test (2026-02-23)** - COMPLETE. E2E plan test completed; single step already done.
-- **Step 7 Test coverage (plan-test-coverage-and-quality) (2026-02-23)** - IN PROGRESS. Added tests for analysis_models, compaction_helpers, tool_error_formatters, validation_result_models, phase5_evaluation_task_loader. Coverage 92.74% (target ≥93%). Quality and type_check passed.
-- **E2E Plan Test (2026-02-23)** - COMPLETE. Plan had single step already Done; completed and archived.
-- **Commit: test coverage and tool tests** - COMPLETE. New unit tests for tools: test_analysis_models, test_phase5_evaluation_task_loader, test_validation_result_models; updates to test_compaction_helpers and test_tool_error_formatters; session optimization reviews; plan updates. All checks passed, coverage 92.74%.
-- **Plan test-coverage-and-quality Step 7 (2026-02-23)** - IN PROGRESS. Added tests for preflight/docs decode non-dict branches, session_health (determine_token_budget_status, parse_mcp_health health None), phase8 structure cache and invalidate, refactoring_result_models default suggestions. Coverage 92.78% (target ≥93%). Quality and type_check passed.
-- **E2E Plan Test (2026-02-23)** - COMPLETE. E2E plan test completed; single step already done.
-- **Plan test-coverage-and-quality Step 7 (2026-02-23)** - IN PROGRESS. Added unit tests for get_component_handler, create_invalid_component_error, create_configuration_exception_error in test_configuration_operations.py. Coverage 92.79%; target ≥93% not yet met.
-- **E2E Plan Test (2026-02-23)** - COMPLETE. Plan had one step already Done; no implementation required; archived.
-- **Test coverage and quality (P0) (2026-02-23)** - COMPLETE. All 7 steps done: untested modules, parametrized tests, asyncio.sleep reduction, tool_helpers split, E2E workflows, TODO/FIXME audit, coverage ≥93%.
-- **Documentation completeness (plan) Steps 1–2 (2026-02-23)** - COMPLETE. Fixed tool count (52→100+) in index, getting-started, architecture; added Phase 5 Evaluation and Phase 58 task locking to tools.md; added Phase 50+ section to modules.md; created docs/guides/workflows.md with 5 end-to-end workflows.
-- **Documentation completeness Step 3 (2026-02-23)** - COMPLETE. Synchronized architecture docs: Bridge transport (stdio/SSE/streamable-http), Synapse integration, health check and monitoring, manager lazy-loading flow; updated Layer 2 tool list.
-- **Documentation completeness Step 4 (2026-02-23)** - COMPLETE. Added docs/api/configuration-reference.md with full defaults for validation, optimization, structure, and env/transport; added generate_config_reference.py and config-defaults.json for sync.
-- **Documentation completeness (2026-02-23)** - COMPLETE. Steps 1–5: tool count/API docs, workflows, architecture, config reference, archived 3 plans to archive/.
-- **Plan optimize-tools-from-usage Step 5 (2026-02-23)** - COMPLETE. Consolidated get_session_tool_anomalies into query_usage(query_type="anomalies"); added deprecation and redirect; updated analyze.md and mapping doc; tests and quality gate pass.
-- **Commit** - Fixed synapse script generate_config_reference.py (E402, B009, I001); Phase A preflight and tests passed.
-- **Tool optimization Step 6 (2026-02-23)** - COMPLETE. Configurable threshold: added tool_optimization to .cortex/config/usage_tracking.json, get_tool_optimization_config() in usage_tracker, query_usage(unused/recommendations) and resources use config; documented in tool-optimization-baseline.md; unit tests added.
-- **Plan optimize-tools-from-usage Step 7 (2026-02-23)** - COMPLETE. Added tests for query_usage(unused/recommendations) response structure and deprecated-vs-consolidated equivalence (get_session_tool_anomalies vs query_usage(anomalies)); full regression and quality gate passing.
-- **Commit pipeline** - Pre-commit checks passed (fix_errors, format, markdown lint, type_check, quality, tests 4671 passed, 92.87% coverage). Memory bank and roadmap consistent; 0 plans archived.
-- **E2E Plan Test (2026-02-23)** - COMPLETE. E2E plan test; single step already done.
-- **Optimize MCP tools based on usage data (2026-02-23)** - COMPLETE. Baseline, mapping, deprecation path, query_usage extensions, configurable threshold, tests; API reference deprecation notices and roadmap/activeContext finalized.
-- **Tools set optimization (deprecate/merge/remove) (2026-02-23)** - COMPLETE. docs/api/tools.md updated with Deprecated tools subsection; both deprecated tools documented with alternatives; plan archived.
-- **Commit pipeline** - Pre-commit passed (fix_errors, format, markdown lint, type_check, quality, tests 4671 passed, 92.86% coverage). Memory bank and roadmap consistent; 0 plans archived.
-- **Evaluation framework maturation Step 1 (2026-02-23)** - COMPLETE. Failure-based eval audit: added failure_based_evals.json (26 tasks from session reviews and investigations). Total 52 tasks, 50% from real failures. Categorized by tool_errors, context_mismanagement, workflow_breakage, incorrect_results. Plan Step 1 acceptance criteria met.
-- **Evaluation framework maturation Step 2 (2026-02-23)** - COMPLETE. Implemented execution harness: load task → run tool → compare (deterministic: contains, schema_valid, exact_match) → report; Fast/Full/Focused modes; execution_summary in run_tool_evaluation; exec_fast.json (10 tasks); tests and quality gate passed.
-- **Commit pipeline** - Preflight passed (fix_errors, format, markdown lint, type_check, quality, tests 4681 passed, 92.8% coverage). Memory bank and roadmap consistent.
-- **Evaluation framework maturation Step 3 (2026-02-23)** - COMPLETE. CI/CD eval integration: eval_fast in pre-commit (PreCommitCheck.EVAL_FAST, run_preflight_checks, 85% threshold), eval-full in CI (run_eval_check.py --mode full), merge blocked on regression; Quality summary reports eval step; task-level data in run_tool_evaluation payload and .cortex/.cache/evals/.
-- **Evaluation framework maturation Step 4 (2026-02-23)** - COMPLETE. Implemented optimize_tool_description MCP tool: pulls usage/error data, suggests description improvements, returns A/B test plan. Helpers in phase5_evaluation_optimization_helpers.py; tool in phase5_tool_description_optimization.py; tests in test_phase5_evaluation_optimization.py.
-- **E2E Plan Test (2026-02-23)** - COMPLETE. E2E plan test step completed; plan archived.
-- **Session optimization 2026-02-23: tools optimization (2026-02-23)** - COMPLETE. Mapping and baseline updated (remove_roadmap_entry keep; all low-usage actions); high-error symbols documented; plan marked COMPLETE.
-- **Evaluation framework maturation Step 5 (Production Monitoring)** - COMPLETE. Implemented production monitoring and drift detection: phase5_production_monitoring_helpers.py (per-tool/global metrics, 7-day baseline, drift alerts >2σ, weekly summary, suggested eval tasks), query_usage(query_type="production_monitoring"), unit and consolidated tests.
-- **Type fix phase5_production_monitoring_helpers** - COMPLETE. Unpacked _compute_metrics_and_drift tuple at call site to resolve pyright reportCallIssue/reportUnknownVariableType; quality and tests pass.
+- **Week containing 2026-02-23** - 1 entries summarized.
 
 ## 2026-02-22
 

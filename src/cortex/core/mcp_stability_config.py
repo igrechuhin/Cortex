@@ -42,7 +42,15 @@ from cortex.core.models import JsonValue
 _logger = logging.getLogger(__name__)
 
 # Tools that report their own progress; skip wrapper time-based progress.
-_TOOLS_WITH_OWN_PROGRESS: frozenset[str] = frozenset()
+# Tools that manage their own progress reporting (test counts, etc.).
+# Wrapper time-based progress is disabled for these tools to avoid
+# conflicting or backwards progress updates on the client.
+_TOOLS_WITH_OWN_PROGRESS: frozenset[str] = frozenset(
+    {
+        # Uses test-level progress via make_test_progress_callback.
+        "execute_pre_commit_checks",
+    }
+)
 # Tools that need more frequent progress to prevent client idle timeout (-32000).
 _TOOLS_NEEDING_FREQUENT_PROGRESS = frozenset(
     {"execute_pre_commit_checks", "fix_markdown_lint"}
@@ -86,9 +94,11 @@ def get_usage_context_init_lock() -> asyncio.Lock:
 
 # Connection retry overrides per tool (Blocker: MCP disconnects). Defaults use
 # MCP_CONNECTION_RETRY_ATTEMPTS and MCP_CONNECTION_RETRY_DELAY_SECONDS from constants.
-# fix_markdown_lint: 4 attempts (1 initial + 3 retries), exponential backoff 1s, 2s, 4s.
+# - fix_markdown_lint: 4 attempts (1 initial + 3 retries), exponential backoff 1s, 2s, 4s.
+# - execute_pre_commit_checks: 4 attempts (1 initial + 3 retries), exponential backoff 1s, 2s, 4s.
 _CONNECTION_RETRY_OVERRIDES: dict[str, tuple[int, tuple[float, ...]]] = {
     "fix_markdown_lint": (4, (1.0, 2.0, 4.0)),
+    "execute_pre_commit_checks": (4, (1.0, 2.0, 4.0)),
 }
 
 

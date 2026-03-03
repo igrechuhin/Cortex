@@ -11,8 +11,11 @@ from cortex.services.framework_adapters.base import COVERAGE_ACCEPT_MIN, TestRes
 
 RUFF_DIAGNOSTIC_RE = re.compile(r"^.+?:\d+:\d+:\s+[A-Z]{1,6}\d{1,4}\b")
 TESTS_COLLECTED_RE = re.compile(r"(\d+)\s+tests?\s+collected", re.IGNORECASE)
+# Match any pytest line that reports an individual test outcome, including
+# xdist/parallel formats. We do not rely on a specific prefix/suffix shape,
+# only that a result token appears somewhere on the line.
 PYTEST_RESULT_LINE_RE = re.compile(
-    r"\s+(PASSED|FAILED|SKIPPED|ERROR)\s+\[", re.IGNORECASE
+    r"\b(PASSED|FAILED|SKIPPED|ERROR|XPASS|XFAIL)\b", re.IGNORECASE
 )
 
 
