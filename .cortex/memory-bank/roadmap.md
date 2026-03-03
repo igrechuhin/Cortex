@@ -10,10 +10,6 @@
 
 ## Future Enhancements
 
-- Phase 58 tools consolidation: merge check_task_available_lock, claim_task_lock, release_task_lock, list_active_tasks into single dispatcher (low priority)
-- **Evaluate .cortex/history vs git history** - PENDING - Evaluate whether `.cortex/history` provides unique value beyond git, and if not, simplify or phase it out while preserving safety and rollback guarantees.
-- **Evaluate .cortex/history vs git history** - PENDING - Evaluate whether `.cortex/history` provides unique value beyond git, and if not, simplify or phase it out while preserving safety and rollback guarantees. Plan: `.cortex/plans/evaluate-cortex-history-vs-git-history.md`
-
 ## Pending plans (from .cortex/plans)
 
 ### Fixes
@@ -25,7 +21,6 @@
 ### Cleanup
 
 - **Cleanup Cortex derived-state directories (.cortex/.cache, .cortex/history, .cortex/rules, .cortex/script-capture, benchmark_results)** - PENDING - For each directory, either document the concrete reason to keep (owner, retention policy, consumers) or remove/consolidate it safely. Plan: `.cortex/plans/cleanup-cortex-derived-state.md`
-- **Cleanup Cortex derived-state directories** - PENDING - Ensure each of .cortex/.cache/sessions, .cortex/.cache/usage, .cortex/.cache/.cache, .cortex/history, .cortex/rules, .cortex/script-capture, and benchmark_results is either justified (owner, purpose, retention) or removed/consolidated.
 
 ### Investigation Plans (Archive / Reference)
 

@@ -49,7 +49,44 @@ A roadmap item already exists to evaluate `.cortex/history` versus git history; 
       - Whether it is required at runtime vs. purely diagnostic/optional.
       - Whether contents are safe to regenerate.
 
-2. **Clarify unique value vs. redundancy**
+#### Step 1 inventory snapshot (2026-03-03)
+
+- **`.cortex/.cache/sessions`**
+  - **Producers/consumers**: `src/cortex/tools/session/registry.py` uses `read_cache_json` / `write_cache_json` with key `sessions/active.json` to maintain the multi-agent session registry. MCP tools such as `session_register`, `session_deregister`, and `session_list` operate on this registry; `session()` with `operation="start"` surfaces its contents in the session brief.
+  - **Runtime vs. diagnostic**: Ephemeral registry used for coordination and observability between agents; not required for correctness of core Cortex MCP behavior.
+  - **Regeneration safety**: Safe to delete; the next call to `session_register` recreates `active.json` from scratch. Deleting it only loses current-session visibility.
+
+- **`.cortex/.cache/usage`**
+  - **Producers/consumers**: `src/cortex/managers/usage_tracker.py` (`UsageTracker`) resolves `CacheType.USAGE` via `get_cache_dir` and writes usage events under a per-project cache root; MCP tools in `src/cortex/tools/usage/usage_analytics.py` (and the consolidated `query_usage` tool) read from this directory to answer usage queries and optimization reports. Docs in `docs/architecture/tool-usage-tracking.md` describe the on-disk layout (`events/`, aggregated summaries, `index.json`).
+  - **Runtime vs. diagnostic**: Pure analytics/observability; not required for correctness of tool execution, but used for optimization and analysis.
+  - **Regeneration safety**: Deleting the directory discards historical analytics but does not break the server; new usage data will be written to a fresh `.cortex/.cache/usage` tree when tracking is enabled.
+
+- **`.cortex/.cache/.cache`**
+  - **Producers/consumers**: Current code search found no producers or readers beyond this plan and related documentation; no Python modules reference `.cortex/.cache/.cache` directly.
+  - **Runtime vs. diagnostic**: Appears to be an accidental or legacy double-nested cache path rather than an intentional behavior surface.
+  - **Regeneration safety**: Candidate for consolidation/retirement in favor of the unified `.cortex/.cache` / `get_cache_dir` layout, after confirming no out-of-tree scripts depend on it.
+
+- **`.cortex/history`**
+  - **Producers/consumers**: `src/cortex/core/version_manager.py` uses `get_cortex_path(project_root, CortexResourceType.HISTORY)` for version snapshots; `src/cortex/tools/memory/foundation_stats.py` reads from the same directory to report disk usage; tests such as `tests/unit/test_version_manager.py`, `tests/unit/test_migration.py`, and `tests/tools/test_phase1_foundation.py` exercise creation, rollback, and snapshot paths under `.cortex/history`.
+  - **Runtime vs. diagnostic**: Stores Memory Bank version snapshots and rollback points that are not represented in git history; used by version-management tools and migration/rollback flows.
+  - **Regeneration safety**: Not a pure cache—deletion removes rollback history and snapshot content. `MigrationManager` tests show rollback handling when history is missing, but any cleanup must be coordinated with versioning/rollback requirements before retiring or restructuring it.
+
+- **`.cortex/rules`**
+  - **Producers/consumers**: Optimization config and rules tooling treat `.cortex/rules` as the local rules root (see `tests/tools/test_rules_operations.py`, which expects `get_rules_folder()` to return `.cortex/rules` and integration tests that skip when the folder or `.mdc` files are absent). The `rules()` MCP tool reports `.cortex/rules` as its `rules_folder` in status even though the current repo has `indexed_files=0`, implying no local rule files yet.
+  - **Runtime vs. diagnostic**: Intended as the project-local rules directory complementing Synapse rules; used by `rules()` for commit/analysis guidance when populated.
+  - **Regeneration safety**: The folder itself is part of the supported structure and should be kept. Individual contents can be added/migrated or removed, but wholesale deletion would prevent local rule overrides until recreated.
+
+- **`.cortex/script-capture`**
+  - **Producers/consumers**: `src/cortex/script_detection/storage.py` (`ensure_capture_dir`, `save_capture`, `list_captures`, `get_capture_by_id`, `ScriptCaptureStore`) writes JSON records under `.cortex/script-capture/` and reads them back; `tests/unit/test_script_detection_storage.py` and `tests/unit/test_path_resolver.py` verify path resolution and basic storage behavior.
+  - **Runtime vs. diagnostic**: Diagnostic/forensics surface for captured scripts; used for debugging and analysis rather than core MCP operation.
+  - **Regeneration safety**: Directory is recreated on demand; deleting it removes existing capture history but does not break script detection storage as long as callers tolerate missing histories.
+
+- **`benchmark_results`**
+  - **Producers/consumers**: Referenced from historical progress/roadmap entries and docs as the location for Phase 9 quality reports (e.g. `benchmark_results/phase-9-quality-report.md`). Current code search shows no active Python modules that write to or read from this directory; usage is primarily via documentation links.
+  - **Runtime vs. diagnostic**: Purely diagnostic/reporting artifacts for past benchmark runs.
+  - **Regeneration safety**: Safe to move or consolidate into a dedicated benchmarks/docs area; deleting it would only remove historical reports referenced from `.cortex/history` and roadmap entries.
+
+1. **Clarify unique value vs. redundancy**
    1. For `.cortex/history`, compare its capabilities to git history:
       - What information is stored only in `.cortex/history` (e.g., session-level optimization reports, handoff details, non-committed work)?
       - Which existing workflows (analyze, commit, plan, session handoff) depend on it?
@@ -60,7 +97,7 @@ A roadmap item already exists to evaluate `.cortex/history` versus git history; 
    4. For `.cortex/script-capture` (captured scripts, not the canonical script implementations, which live in `.cortex/synapse/scripts`), identify when and how script capture is used (e.g., debugging generated scripts, compliance) and whether retention bounds exist.
    5. For `benchmark_results`, determine whether these artifacts are still used (e.g., current benchmarking workflow) and if they should live in a dedicated performance/benchmarks area or be converted to documentation.
 
-3. **Decision matrix and target state**
+2. **Decision matrix and target state**
    1. Build a small decision matrix table per directory capturing:
       - Purpose and current usage.
       - Consumers (tools, prompts, tests).
@@ -73,7 +110,7 @@ A roadmap item already exists to evaluate `.cortex/history` versus git history; 
       - Decide whether `benchmark_results` stays in-repo, moves under docs, or is replaced by external dashboards.
       - Decide whether `.cortex/script-capture` should be opt-in and/or trimmed regularly, given that canonical scripts live in `.cortex/synapse/scripts`.
 
-4. **Implement code and configuration changes**
+3. **Implement code and configuration changes**
    1. Update Cortex MCP tools, scripts, and prompts to match the target layout:
       - Remove or gate any writes to directories marked **Retire**.
       - Consolidate cache writers under a single `.cortex/.cache` layout.
@@ -84,7 +121,7 @@ A roadmap item already exists to evaluate `.cortex/history` versus git history; 
    2. Use `manage_file` for all memory-bank-related updates (activeContext, progress, roadmap) and avoid direct edits to memory-bank paths.
    3. Update any hardcoded paths in prompts/scripts to use `get_structure_info` or configuration instead of literals.
 
-5. **Documentation and rules updates**
+4. **Documentation and rules updates**
    1. Update `AGENTS.md`, `CLAUDE.md`, and relevant docs under `docs/` to:
       - Describe the final set of “long-lived” directories and their purposes.
       - Clarify which directories are ephemeral (caches) vs. durable (rules, memory bank, selected history).
@@ -93,7 +130,7 @@ A roadmap item already exists to evaluate `.cortex/history` versus git history; 
       - New prompts/tools do not reintroduce deprecated directories.
       - Script-capture and benchmark outputs, if kept, are used consistently and do not bloat the repo.
 
-6. **Testing and validation**
+5. **Testing and validation**
    1. Run `execute_pre_commit_checks` (Phase A and Phase B) to ensure:
       - Formatting, linting, types, and tests all pass.
       - Roadmap, memory bank, and timestamps remain valid.

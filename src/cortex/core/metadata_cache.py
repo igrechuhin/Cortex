@@ -48,13 +48,24 @@ def get_or_create_file_metadata_impl(
     exists: bool,
     change_source: str,
 ) -> DetailedFileMetadata:
-    """Get existing file metadata or create new. Caller may mutate returned model."""
+    """Get existing file metadata or create new. Caller may mutate returned model.
+
+    This function is intentionally tolerant of legacy or partially invalid
+    metadata entries that may exist in .cortex/index.json. When validation
+    fails for an existing entry, we fall back to creating a fresh
+    DetailedFileMetadata instance instead of raising, so write paths such as
+    manage_file(operation="write") can repair the entry on the next update.
+    """
     if file_name in files_dict:
         raw = files_dict[file_name]
         if isinstance(raw, dict):
-            file_meta = DetailedFileMetadata.model_validate(
-                cast(dict[str, object], raw)
-            )
+            try:
+                file_meta = DetailedFileMetadata.model_validate(
+                    cast(dict[str, object], raw)
+                )
+            except Exception:
+                # Corrupted or legacy metadata; rebuild from scratch.
+                return _create_new_file_metadata_impl(path, exists, change_source)
             _update_file_counters_impl(file_meta, change_source)
             return file_meta
     return _create_new_file_metadata_impl(path, exists, change_source)
