@@ -38,6 +38,7 @@ from cortex.tools.files.operation_helpers import (
     build_invalid_operation_error,
     validate_manage_file_operation,
 )
+from cortex.tools.response_builder import error_response
 from cortex.validation.schema_validator import SchemaValidator
 
 logger = logging.getLogger(__name__)
@@ -68,26 +69,24 @@ def _validate_manage_file_input_limits(
         size_bytes = len(content.encode("utf-8"))
         if size_bytes > MAX_MANAGE_FILE_CONTENT_BYTES:
             return json.dumps(
-                {
-                    "status": "error",
-                    "error": (
+                error_response(
+                    error=(
                         f"Content too large: {size_bytes} bytes exceeds "
                         f"limit of {MAX_MANAGE_FILE_CONTENT_BYTES} bytes"
                     ),
-                    "error_type": "ValueError",
-                },
+                    error_type="ValueError",
+                ),
                 indent=2,
             )
     if sections is not None and len(sections) > MAX_SECTIONS_LIST_SIZE:
         return json.dumps(
-            {
-                "status": "error",
-                "error": (
+            error_response(
+                error=(
                     f"Sections list too long: {len(sections)} items exceeds "
                     f"limit of {MAX_SECTIONS_LIST_SIZE}"
                 ),
-                "error_type": "ValueError",
-            },
+                error_type="ValueError",
+            ),
             indent=2,
         )
     return None
@@ -132,7 +131,7 @@ async def manage_file_validate_and_run(
 def _manage_file_error_response(exc: Exception) -> str:
     """Build JSON error response for manage_file failures."""
     return json.dumps(
-        {"status": "error", "error": str(exc), "error_type": type(exc).__name__},
+        error_response(error=str(exc), error_type=type(exc).__name__),
         indent=2,
     )
 
@@ -344,7 +343,7 @@ async def _dispatch_write_operation(
     """Dispatch write operation."""
     if content is None:
         return json.dumps(
-            {"status": "error", "error": "Content is required for write operation"},
+            error_response(error="Content is required for write operation"),
             indent=2,
         )
     schema_validator = await resolve_schema_validator(managers)

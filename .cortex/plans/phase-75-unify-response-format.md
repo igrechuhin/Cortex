@@ -2,7 +2,7 @@
 
 ## Status
 
-PENDING
+IN PROGRESS
 
 ## Goal
 
@@ -78,3 +78,12 @@ None.
 ## Timeline
 
 High effort (16-24h — many tool modules to migrate)
+
+## Current Progress (2026-03-04)
+
+- Created shared `cortex.tools.response_builder` module with `success_response` and `error_response` helpers using the canonical `{"status": "success"|"error", ...}` shape.
+- Migrated `manage_file` helper logic in `manage_file_helpers` to use `error_response` for all error paths.
+- Added unit tests for `success_response` and `error_response` in `tests/unit/test_response_builder.py`.
+- Verified format, type checks, quality gate, and full test suite all pass with the new helpers.
+
+Next sessions should continue Step 3 by migrating remaining MCP tool modules to use the shared response builder and updating any tests that assert on the old inline response dictionaries.
