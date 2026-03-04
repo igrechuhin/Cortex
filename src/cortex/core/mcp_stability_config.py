@@ -8,7 +8,8 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from typing import NoReturn
+from builtins import BaseExceptionGroup
+from typing import NoReturn, cast
 
 import anyio
 
@@ -123,30 +124,45 @@ def get_connection_retry_delay(tool_name: str, attempt: int) -> float:
     return MCP_CONNECTION_RETRY_DELAY_SECONDS * attempt
 
 
-def is_connection_error(e: Exception) -> bool:
+_CONNECTION_MESSAGE_KEYWORDS: tuple[str, ...] = (
+    "-32000",
+    "connection closed",
+    "connection reset",
+    "connection refused",
+    "broken pipe",
+)
+
+
+def _matches_connection_message(message: str) -> bool:
+    msg = message.lower()
+    return any(keyword in msg for keyword in _CONNECTION_MESSAGE_KEYWORDS)
+
+
+def is_connection_error(exc: BaseException) -> bool:
     """Return True if exception is connection-related (e.g. -32000, ClosedResourceError)."""
-    connection_error_types = (
-        ConnectionError,
-        BrokenPipeError,
-        OSError,
-        anyio.BrokenResourceError,
-        anyio.ClosedResourceError,
-    )
-    if isinstance(e, connection_error_types):
+    if isinstance(exc, BaseExceptionGroup):
+        exc_group = cast(BaseExceptionGroup[BaseException], exc)
+        return any(is_connection_error(nested) for nested in exc_group.exceptions)
+
+    if isinstance(
+        exc,
+        (
+            anyio.BrokenResourceError,
+            anyio.ClosedResourceError,
+            BrokenPipeError,
+            ConnectionResetError,
+            ConnectionError,
+        ),
+    ):
         return True
-    if isinstance(e, RuntimeError):
-        msg = str(e).lower()
-        if "-32000" in str(e) or "connection closed" in msg or "connection" in msg:
-            return True
-    keywords = [
-        "connection",
-        "broken pipe",
-        "connection reset",
-        "tool not found",
-        "resource",
-        "stdio",
-    ]
-    return any(k in str(e).lower() for k in keywords)
+
+    if isinstance(exc, asyncio.CancelledError):
+        return True
+
+    if _matches_connection_message(str(exc)):
+        return True
+
+    return False
 
 
 def raise_final_error(func_name: str, last_exception: Exception | None) -> NoReturn:

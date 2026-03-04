@@ -446,18 +446,24 @@ class TestMCPStabilityConnectionErrorDetection:
         # Assert
         assert result is True
 
-    def test_oserror_is_connection_error(self) -> None:
-        """Test that OSError is recognized as connection error."""
-        # Arrange
+    def test_oserror_with_connection_message_is_connection_error(self) -> None:
+        """Test that OSError with connection-related message is recognized as connection error."""
         from cortex.core.mcp_stability_config import is_connection_error
 
-        error = OSError("OS error")
+        connection_errors = [
+            OSError("Broken pipe"),
+            OSError("Connection reset by peer"),
+        ]
 
-        # Act
-        result = is_connection_error(error)
+        for error in connection_errors:
+            assert is_connection_error(error) is True
 
-        # Assert
-        assert result is True
+    def test_oserror_without_connection_message_is_not_connection_error(self) -> None:
+        """Test that non-connection OSError is not treated as connection error."""
+        from cortex.core.mcp_stability_config import is_connection_error
+
+        error = OSError("Permission denied")
+        assert is_connection_error(error) is False
 
     def test_runtime_error_with_connection_message_is_connection_error(self) -> None:
         """RuntimeError is connection error only when message indicates closure."""
@@ -468,6 +474,15 @@ class TestMCPStabilityConnectionErrorDetection:
 
         generic = RuntimeError("Runtime error")
         assert is_connection_error(generic) is False
+
+        other_connection_messages = [
+            "Connection closed",
+            "connection reset",
+            "broken pipe",
+            "MCP ERROR -32000: CONNECTION CLOSED",
+        ]
+        for msg in other_connection_messages:
+            assert is_connection_error(RuntimeError(msg)) is True, msg
 
     def test_value_error_is_not_connection_error(self) -> None:
         """Test that ValueError is not recognized as connection error."""
@@ -481,3 +496,55 @@ class TestMCPStabilityConnectionErrorDetection:
 
         # Assert
         assert result is False
+
+    def test_resource_errors_are_not_connection_errors(self) -> None:
+        """Ensure 'resource' errors are not misclassified as connection errors."""
+        from cortex.core.mcp_stability_config import is_connection_error
+
+        errors = [
+            RuntimeError("resource not found"),
+            RuntimeError("Resource limit exceeded"),
+            RuntimeError("resource already exists"),
+        ]
+
+        for error in errors:
+            assert is_connection_error(error) is False
+
+    def test_tool_not_found_is_not_connection_error(self) -> None:
+        """Ensure 'tool not found' is not treated as connection error."""
+        from cortex.core.mcp_stability_config import is_connection_error
+
+        error = RuntimeError("tool not found")
+        assert is_connection_error(error) is False
+
+    def test_cancelled_error_is_connection_error(self) -> None:
+        """CancelledError is treated as connection-related for retry logic."""
+        import asyncio
+
+        from cortex.core.mcp_stability_config import is_connection_error
+
+        error = asyncio.CancelledError()
+        assert is_connection_error(error) is True
+
+    def test_base_exception_group_connection_detection(self) -> None:
+        """BaseExceptionGroup containing a connection error is detected."""
+        from builtins import BaseExceptionGroup
+
+        import anyio
+
+        from cortex.core.mcp_stability_config import is_connection_error
+
+        broken = anyio.BrokenResourceError("Resource broken")
+        group = BaseExceptionGroup("group", [broken])
+        assert is_connection_error(group) is True
+
+    def test_base_exception_group_without_connection_error_is_not_connection_error(
+        self,
+    ) -> None:
+        """BaseExceptionGroup with only non-connection errors is not a connection error."""
+        from builtins import BaseExceptionGroup
+
+        from cortex.core.mcp_stability_config import is_connection_error
+
+        group = BaseExceptionGroup("group", [ValueError("some error")])
+        assert is_connection_error(group) is False

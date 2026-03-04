@@ -12,7 +12,6 @@ Set CORTEX_AUTO_RESTART=1 to run an in-process restart loop (server respawns
 under the same pipe; may require reloading MCP after disconnect to restore tools).
 """
 
-import asyncio
 import logging
 import os
 import subprocess
@@ -22,6 +21,8 @@ from builtins import BaseExceptionGroup  # Python 3.11+
 from typing import cast
 
 import anyio
+
+from cortex.core.mcp_stability_config import is_connection_error
 
 # Apply Cortex transport env to FastMCP settings before server is imported
 from cortex.transport_config import apply_cortex_env_to_fastmcp
@@ -65,33 +66,6 @@ _ = cortex.tools
 logger = logging.getLogger(__name__)
 
 
-def _is_connection_error(exc: BaseException) -> bool:
-    """Check if exception is a connection-related or shutdown-related error."""
-    if isinstance(
-        exc,
-        (
-            anyio.BrokenResourceError,
-            anyio.ClosedResourceError,
-            BrokenPipeError,
-            ConnectionResetError,
-        ),
-    ):
-        return True
-    if isinstance(exc, asyncio.CancelledError):
-        return True  # Task cancellation often means client disconnect or timeout
-    if isinstance(exc, OSError) and (
-        "Broken pipe" in str(exc) or "Connection reset" in str(exc)
-    ):
-        return True
-    # Handle nested exception groups recursively
-    if isinstance(exc, BaseExceptionGroup):
-        exc_group = cast(BaseExceptionGroup[BaseException], exc)
-        for nested in exc_group.exceptions:
-            if _is_connection_error(nested):
-                return True
-    return False
-
-
 def _handle_broken_resource_in_group(eg: BaseExceptionGroup) -> bool:
     """Check if BaseExceptionGroup contains connection-related errors.
 
@@ -102,10 +76,19 @@ def _handle_broken_resource_in_group(eg: BaseExceptionGroup) -> bool:
         eg: BaseExceptionGroup to check
 
     Returns:
-        True if connection error found (graceful shutdown), False otherwise
+        True if connection error found (graceful shutdown), False otherwise.
+        Special case: RuntimeError with \"MCP error -32000: Connection closed\"
+        is treated as non-connection (failure) to ensure TaskGroup failures
+        with this message still surface as exit code 1 (see tests).
     """
     for exc in eg.exceptions:
-        if _is_connection_error(exc):
+        # Preserve existing behaviour: TaskGroup RuntimeError(\"MCP error -32000: Connection closed\")
+        # is treated as a failure (exit 1), not as a graceful connection shutdown.
+        if isinstance(
+            exc, RuntimeError
+        ) and "MCP error -32000: Connection closed" in str(exc):
+            continue
+        if is_connection_error(exc):
             holder = get_long_running_semaphore_holder()
             elapsed = get_long_running_elapsed_seconds()
             logger.info(

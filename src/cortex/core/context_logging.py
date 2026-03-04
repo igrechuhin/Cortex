@@ -11,30 +11,12 @@ import logging
 from enum import Enum
 from typing import Literal, cast
 
-import anyio
 from mcp.server.fastmcp import Context
 from mcp.server.session import ServerSession
 
+from cortex.core.mcp_stability_config import is_connection_error
+
 logger = logging.getLogger(__name__)
-
-
-def _is_connection_error(exc: BaseException) -> bool:
-    """True if exception indicates client disconnect or broken stdio."""
-    if isinstance(
-        exc,
-        (
-            anyio.BrokenResourceError,
-            anyio.ClosedResourceError,
-            BrokenPipeError,
-            ConnectionResetError,
-        ),
-    ):
-        return True
-    if isinstance(exc, OSError) and (
-        "Broken pipe" in str(exc) or "Connection reset" in str(exc)
-    ):
-        return True
-    return False
 
 
 # Public enum for use in tool signatures and callers.
@@ -82,7 +64,7 @@ async def log_client(
         except BaseException as e:
             if isinstance(e, asyncio.CancelledError):
                 raise
-            if _is_connection_error(e):
+            if is_connection_error(e):
                 logger.debug(
                     "log_client: connection closed (client disconnected); %s",
                     type(e).__name__,
@@ -113,7 +95,7 @@ async def report_progress_safe(
         except BaseException as e:
             if isinstance(e, asyncio.CancelledError):
                 raise
-            if _is_connection_error(e):
+            if is_connection_error(e):
                 logger.debug(
                     "report_progress_safe: connection closed (client disconnected); %s",
                     type(e).__name__,

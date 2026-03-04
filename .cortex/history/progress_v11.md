@@ -6,6 +6,7 @@
 - **Phase 70: Replace exec() with safe templating and add path validation (2026-03-04)** - COMPLETE. Replaced exec()-based prompt registration in synapse prompts with safe decorator-based functions, added path traversal protection for prompt file loading, and extended tests; quality gate and 4874 tests passed with ~92.15% coverage.
 - **Commit pipeline Phase A preflight** - Ran execute_pre_commit_checks(phase="A") with fix_errors, quality, format, synapse_format, synapse_lint, type_check, tests, eval_fast, markdown_lint; all checks passed with 4874 tests, 92.15%+ coverage, and zero errors/warnings.
 - **Phase 71: Fix TOCTOU race conditions in file and task locking (2026-03-04)** - COMPLETE. Implemented atomic file, cache, and task locking with PID metadata and verified via full pre-commit checks.
+- **Phase 72: Fix is_connection_error Over-Matching and Consolidate Duplicates (2026-03-04)** - COMPLETE. Consolidated connection error detection into a single helper, tightened matching to avoid resource and tool-not-found false positives, and added focused tests for true and false cases.
 
 ## 2026-03-03
 

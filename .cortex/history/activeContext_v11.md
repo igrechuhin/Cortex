@@ -13,6 +13,8 @@
 
 - ✅ **Phase 71: Fix TOCTOU race conditions in file and task locking** - COMPLETE (2026-03-04) - Implemented atomic file, cache, and task locking to eliminate TOCTOU race conditions and added full test coverage under the existing test suite.
 
+- ✅ **Phase 72: Fix is_connection_error over-matching and consolidate duplicates** - COMPLETE (2026-03-04) - Consolidated all is_connection_error implementations into cortex.core.mcp_stability_config, tightened connection message matching to avoid resource/tool-not-found false positives, and updated main/context logging callers.
+
 ## Completed Work (2026-03-03)
 
 - **Summary (2026-03-03)** - 1 entries archived.

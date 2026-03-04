@@ -6,8 +6,6 @@
 
 ## Blockers (ASAP Priority)
 
-- **Phase 72: Fix is_connection_error over-matching and consolidate duplicates** - PENDING - Replace broad "resource" keyword matching with precise connection error patterns; consolidate 3 duplicate implementations into single canonical function. Plan: `.cortex/plans/phase-72-fix-connection-error-matching.md`
-
 ## Active Work (in progress)
 
 ## Future Enhancements
