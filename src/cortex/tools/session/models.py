@@ -170,6 +170,10 @@ class TaskLock(StrictBaseModel):
     agent_role: str | None = Field(
         None, description="Agent role (feature, quality, testing, etc.)"
     )
+    agent_pid: int | None = Field(
+        default=None,
+        description="OS process ID that acquired the lock (for stale-lock diagnostics)",
+    )
 
 
 class ClaimTaskResult(StrictBaseModel):

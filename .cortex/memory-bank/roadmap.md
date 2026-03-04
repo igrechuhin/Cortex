@@ -6,7 +6,6 @@
 
 ## Blockers (ASAP Priority)
 
-- **Phase 71: Fix TOCTOU race conditions in file and task locking** - PENDING - Atomic lock acquisition to prevent data corruption under concurrent access. Plan: `.cortex/plans/phase-71-fix-toctou-locking.md`
 - **Phase 72: Fix is_connection_error over-matching and consolidate duplicates** - PENDING - Replace broad "resource" keyword matching with precise connection error patterns; consolidate 3 duplicate implementations into single canonical function. Plan: `.cortex/plans/phase-72-fix-connection-error-matching.md`
 
 ## Active Work (in progress)
@@ -15,7 +14,6 @@
 
 ## Pending plans (from .cortex/plans)
 
-- **Phase YY: .cortex/history retention and keep_versions behavior** - PENDING - Define and implement a configurable retention policy and `keep_versions` behavior for `.cortex/history/`, including VersionManager changes, cleanup tooling, diagnostics, and tests so history growth is bounded and predictable.
 - **Phase 73: Fix blocking event loop and O(n) data structures** - PENDING - Replace `time.sleep()` with async, LRU cache list with OrderedDict, `list.pop(0)` with deque. Plan: `.cortex/plans/phase-73-fix-blocking-and-data-structures.md`
 - **Phase 74: Async I/O migration for hot paths** - PENDING - Migrate sync file I/O to async in context loading, cache, and session modules; add parallel file reading. Plan: `.cortex/plans/phase-74-async-io-hot-paths.md`
 - **Phase 75: Unify tool response format** - PENDING - Standardize all MCP tool responses to `{"status": "success"|"error", ...}` with shared response builder. Plan: `.cortex/plans/phase-75-unify-response-format.md`

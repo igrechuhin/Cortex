@@ -33,9 +33,8 @@ from cortex.tools.session.task_locking_handlers import (
     release_task_impl,
 )
 from cortex.tools.session.task_locking_helpers import (
-    check_existing_lock,
+    claim_task_atomically,
     cleanup_expired_locks,
-    create_task_lock,
     generate_task_id,
     load_locks_registry,
     save_locks_registry,
@@ -71,15 +70,20 @@ async def claim_task(
     session_id = get_session_id()
     now = datetime.now(UTC)
     expires_at = now + timedelta(hours=lock_timeout_hours)
-    locks = await load_locks_registry(project_root)
-    locks = await cleanup_expired_locks(project_root, locks)
-    if await check_existing_lock(locks, task_id, task_title, now):
-        return None
-    lock = create_task_lock(
-        task_id, task_title, session_id, now, expires_at, agent_role
+
+    # Use atomic read-modify-write to avoid TOCTOU races when multiple agents
+    # attempt to claim the same task concurrently.
+    lock = await claim_task_atomically(
+        project_root=project_root,
+        task_id=task_id,
+        task_title=task_title,
+        session_id=session_id,
+        now=now,
+        expires_at=expires_at,
+        agent_role=agent_role,
     )
-    locks[task_id] = lock
-    await save_locks_registry(project_root, locks)
+    if lock is None:
+        return None
 
     logger.info(
         "Lock acquired: task_id=%s, task_title=%s, session_id=%s, expires_at=%s",

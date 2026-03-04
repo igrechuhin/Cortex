@@ -11,6 +11,8 @@
 
 - ✅ **Commit pipeline Phase A preflight** - COMPLETE (2026-03-04) - Ran execute_pre_commit_checks(phase="A") with fix_errors, quality, format, synapse_format, synapse_lint, type_check, tests, eval_fast, markdown_lint; all checks passed with 4874 tests, 92.15%+ coverage, and zero errors/warnings across formatting, types, quality, markdown, and tests, so commit pipeline can proceed to memory-bank and docs steps.
 
+- ✅ **Phase 71: Fix TOCTOU race conditions in file and task locking** - COMPLETE (2026-03-04) - Implemented atomic file, cache, and task locking to eliminate TOCTOU race conditions and added full test coverage under the existing test suite.
+
 ## Completed Work (2026-03-03)
 
 - **Summary (2026-03-03)** - 1 entries archived.

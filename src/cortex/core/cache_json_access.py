@@ -7,6 +7,7 @@ chat sessions and processes get reliable, serialized access via file locking.
 
 import asyncio
 import json
+import os
 import time
 from collections.abc import Callable
 from pathlib import Path
@@ -73,29 +74,41 @@ async def _acquire_lock(lock_path: Path, timeout_seconds: float) -> None:
     permanently blocking access to usage/cache files.
     """
     start = asyncio.get_event_loop().time()
-    while lock_path.exists():
-        # Stale-lock cleanup: if the lock file is older than 180 seconds,
-        # assume it was left behind by a crashed session and remove it.
-        try:
-            mtime = lock_path.stat().st_mtime
-        except OSError:
-            mtime = None
-        if mtime is not None and (time.time() - mtime) > 180:
-            try:
-                lock_path.unlink()
-                break
-            except OSError:
-                # If we fail to delete, fall back to normal timeout behaviour.
-                pass
-
-        if (asyncio.get_event_loop().time() - start) > timeout_seconds:
-            raise FileLockTimeoutError(
-                file_name=lock_path.stem,
-                timeout_seconds=int(timeout_seconds),
-            )
-        await asyncio.sleep(LOCK_POLL_INTERVAL_SECONDS)
+    # Ensure parent directory exists before creating lock file
     lock_path.parent.mkdir(parents=True, exist_ok=True)
-    lock_path.touch()
+
+    while True:
+        try:
+            # Atomically create the lock file. If it already exists, another
+            # process holds the lock and we should retry or time out.
+            fd = os.open(
+                lock_path,
+                os.O_CREAT | os.O_EXCL | os.O_WRONLY,
+                0o600,
+            )
+            os.close(fd)
+            return
+        except FileExistsError as exc:
+            # Stale-lock cleanup: if the lock file is older than 180 seconds,
+            # assume it was left behind by a crashed session and remove it.
+            try:
+                mtime = lock_path.stat().st_mtime
+            except OSError:
+                mtime = None
+            if mtime is not None and (time.time() - mtime) > 180:
+                try:
+                    lock_path.unlink()
+                    continue
+                except OSError:
+                    # If we fail to delete, fall back to normal timeout behaviour.
+                    pass
+
+            if (asyncio.get_event_loop().time() - start) > timeout_seconds:
+                raise FileLockTimeoutError(
+                    file_name=lock_path.stem,
+                    timeout_seconds=int(timeout_seconds),
+                ) from exc
+            await asyncio.sleep(LOCK_POLL_INTERVAL_SECONDS)
 
 
 async def _release_lock(lock_path: Path) -> None:
