@@ -25,6 +25,10 @@
 
 - ✅ **Commit pipeline: function length compliance** - COMPLETE (2026-03-04) - Fixed 2 function length violations: extracted _warnings_with_zero_file_appended in handlers_format.py and _get_session_optional_context in start_tools.py; Phase A and tests pass (4884 tests, 92.16% coverage).
 
+- ✅ **Phase 76: Replace TypedDict with BaseModel and remove type-checker suppressions** - COMPLETE (2026-03-04) - Verified zero TypedDict and TYPE_CHECKING in source; removed 2 suppressions (reportAttributeAccessIssue via setattr, reportUnusedFunction in markdown_lint_run). Remaining suppressions documented as pyright/MCP decorator limitations for follow-up. Pyright 0 errors; tests pass.
+
+- ✅ **Commit: type fix mcp_stability_finalize reportAttributeAccessIssue** - COMPLETE (2026-03-04) - Fixed Pyright reportAttributeAccessIssue in attach_attempt_to_exception by using object.**setattr**(exc, "attempt", attempt) instead of exc.attempt = attempt; Phase A and tests pass (4884 tests, 92.16% coverage).
+
 ## Completed Work (2026-03-03)
 
 - **Summary (2026-03-03)** - 1 entries archived.

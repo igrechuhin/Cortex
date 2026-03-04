@@ -32,7 +32,7 @@ def _release_lr_for_cancel(fn: str, we: bool) -> None:
 def attach_attempt_to_exception(exc: Exception | None, attempt: int) -> None:
     """Attach attempt number for Phase 57 usage recording."""
     if exc is not None:
-        exc.attempt = attempt  # pyright: ignore[reportAttributeAccessIssue]
+        object.__setattr__(exc, "attempt", attempt)
 
 
 def param_validation_failure_from_exception(e: BaseException) -> str | None:

@@ -36,7 +36,7 @@ __all__ = [
 ]
 
 
-async def _run_markdownlint_fix(  # pyright: ignore[reportUnusedFunction]
+async def _run_markdownlint_fix(
     file_path: Path,
     project_root: Path,
     markdownlint_cmd: list[str],

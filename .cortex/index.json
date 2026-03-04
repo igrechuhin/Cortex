@@ -1,7 +1,7 @@
 {
   "schema_version": "1.0.0",
   "created_at": "2026-01-25T21:38:36.940164",
-  "last_updated": "2026-03-04T21:17:11.658448",
+  "last_updated": "2026-03-04T21:56:14.175724",
   "project_root": ".",
   "memory_bank_dir": ".cortex/memory-bank",
   "files": {
@@ -34,11 +34,11 @@
     "progress.md": {
       "path": ".cortex/memory-bank/progress.md",
       "exists": true,
-      "size_bytes": 42888,
-      "token_count": 6038,
+      "size_bytes": 43077,
+      "token_count": 6067,
       "token_model": "cl100k_base",
-      "last_modified": "2026-03-04T21:17:11.657140",
-      "content_hash": "sha256:7fa0c11553c46a3ea0f9ea27cce482b9fee272765e4bb3656bac069d0b887ac1",
+      "last_modified": "2026-03-04T21:56:14.174435",
+      "content_hash": "sha256:2db3edd234d02be629ebc466f95433fa0125116900f046328ac7c8ef6625e7e4",
       "sections": [
         {
           "heading": "# Progress Log",
@@ -52,224 +52,224 @@
           "heading": "## 2026-03-04",
           "level": 2,
           "line_start": 3,
-          "line_end": 14,
-          "content_hash": "sha256:e1fbe5d75e52cb82eafa3e066ff1876dedf0601383d100c2c4a328a8559e247e",
-          "token_count": 457
+          "line_end": 15,
+          "content_hash": "sha256:547525005c1f363130ea884ef52111ce6714127d5f644802b15f9dd1dfd482da",
+          "token_count": 486
         },
         {
           "heading": "## 2026-03-03",
           "level": 2,
-          "line_start": 15,
-          "line_end": 21,
+          "line_start": 16,
+          "line_end": 22,
           "content_hash": "sha256:6c43cae29a486b37e0303cbb5ccdb3ac82450ae2c53c4d40f64d2375e5c426ee",
           "token_count": 150
         },
         {
           "heading": "## 2026-03-02",
           "level": 2,
-          "line_start": 22,
-          "line_end": 50,
+          "line_start": 23,
+          "line_end": 51,
           "content_hash": "sha256:6b0fb2ba989e12b82fa6626b2a800ead44e0e6a733d2993182ec44d2e205aa21",
           "token_count": 907
         },
         {
           "heading": "## 2026-03-01",
           "level": 2,
-          "line_start": 51,
-          "line_end": 75,
+          "line_start": 52,
+          "line_end": 76,
           "content_hash": "sha256:83d4691c5602990813e79401f968cb5e9c248cf28ec249dc1247d5a2d6888fd0",
           "token_count": 773
         },
         {
           "heading": "## 2026-02-28",
           "level": 2,
-          "line_start": 76,
-          "line_end": 101,
+          "line_start": 77,
+          "line_end": 102,
           "content_hash": "sha256:d58358986a7301139ecf65044f6b7d2e26acbfb12d18f6be44e360026042c63e",
           "token_count": 754
         },
         {
           "heading": "## 2026-02-27",
           "level": 2,
-          "line_start": 102,
-          "line_end": 112,
+          "line_start": 103,
+          "line_end": 113,
           "content_hash": "sha256:7f82f7c7bb9208e31964ec57fd9047524b96948b7a9264e54f87efe89f540198",
           "token_count": 267
         },
         {
           "heading": "## 2026-02-26",
           "level": 2,
-          "line_start": 113,
-          "line_end": 155,
+          "line_start": 114,
+          "line_end": 156,
           "content_hash": "sha256:8c65ee77469172634980c78a08932b9a6d7f18169d06aef72210e4d1c5190d77",
           "token_count": 1232
         },
         {
           "heading": "## 2026-02-25",
           "level": 2,
-          "line_start": 156,
-          "line_end": 197,
+          "line_start": 157,
+          "line_end": 198,
           "content_hash": "sha256:71a57b87d16bd4cced5d359e7de0448ce8076646f4f09f47f7e81cbf8eb9ee2d",
           "token_count": 1224
         },
         {
           "heading": "## 2026-02-24",
           "level": 2,
-          "line_start": 198,
-          "line_end": 201,
+          "line_start": 199,
+          "line_end": 202,
           "content_hash": "sha256:fa15f6ade1ea789aa57b36081b3509714457249bb490298fc966a32fa7e76d3e",
           "token_count": 13
         },
         {
           "heading": "## 2026-02-23",
           "level": 2,
-          "line_start": 202,
-          "line_end": 205,
+          "line_start": 203,
+          "line_end": 206,
           "content_hash": "sha256:16742ea0ab3ff93ab9e2952e2b7f8f7de33ec174c662d6f007d7679f83f33ad2",
           "token_count": 13
         },
         {
           "heading": "## 2026-02-22",
           "level": 2,
-          "line_start": 206,
-          "line_end": 209,
+          "line_start": 207,
+          "line_end": 210,
           "content_hash": "sha256:5f172d86dd9e047934e917cca5e17dcf0f6384b47333ed6c1ee4c975c02faefb",
           "token_count": 13
         },
         {
           "heading": "## 2026-02-21",
           "level": 2,
-          "line_start": 210,
-          "line_end": 213,
+          "line_start": 211,
+          "line_end": 214,
           "content_hash": "sha256:86ff66bfe830493302a592071711d4530eb76973ef2c187b22cadc2f357754ff",
           "token_count": 13
         },
         {
           "heading": "## 2026-02-20",
           "level": 2,
-          "line_start": 214,
-          "line_end": 217,
+          "line_start": 215,
+          "line_end": 218,
           "content_hash": "sha256:7408d38b01c6a316046b95b6c1a91ffee03eab02a57c2009bd2102185cbf76e1",
           "token_count": 13
         },
         {
           "heading": "## 2026-02-19",
           "level": 2,
-          "line_start": 218,
-          "line_end": 221,
+          "line_start": 219,
+          "line_end": 222,
           "content_hash": "sha256:f02ad27c4b2ec72f1bb1c22baf9c2da4f860f1d6a148552cf0370232169e2871",
           "token_count": 13
         },
         {
           "heading": "## 2026-02-18",
           "level": 2,
-          "line_start": 222,
-          "line_end": 225,
+          "line_start": 223,
+          "line_end": 226,
           "content_hash": "sha256:d194618306c91574f125c851607ab29ab67414fa9613e660f1f4d274864e1271",
           "token_count": 13
         },
         {
           "heading": "## 2026-02-17",
           "level": 2,
-          "line_start": 226,
-          "line_end": 229,
+          "line_start": 227,
+          "line_end": 230,
           "content_hash": "sha256:9f4059008acea08f197c3e2d3ed309ee94185feaaa4ec186f36e771b49dd8bea",
           "token_count": 13
         },
         {
           "heading": "## 2026-02-16",
           "level": 2,
-          "line_start": 230,
-          "line_end": 233,
+          "line_start": 231,
+          "line_end": 234,
           "content_hash": "sha256:43744fea09a8e66a4817a45045b343bd748f2a662fe9cbdbe0a2c8364f5b5e4b",
           "token_count": 13
         },
         {
           "heading": "## 2026-02-13",
           "level": 2,
-          "line_start": 234,
-          "line_end": 237,
+          "line_start": 235,
+          "line_end": 238,
           "content_hash": "sha256:9bc5d91767fb1ec86716298240fe2a3b1ee79ee492d30bd13e2e626324f15bc5",
           "token_count": 13
         },
         {
           "heading": "## 2026-02-12",
           "level": 2,
-          "line_start": 238,
-          "line_end": 241,
+          "line_start": 239,
+          "line_end": 242,
           "content_hash": "sha256:417af37b337b4fc4ff0c745f133890bdff213bb652a24c7733218ef50397ac37",
           "token_count": 13
         },
         {
           "heading": "## 2026-02-11",
           "level": 2,
-          "line_start": 242,
-          "line_end": 245,
+          "line_start": 243,
+          "line_end": 246,
           "content_hash": "sha256:315c6d8706aeb6855ea985cc294466764b0ad5064ce295851962049dc5477c6f",
           "token_count": 13
         },
         {
           "heading": "## 2026-02-10",
           "level": 2,
-          "line_start": 246,
-          "line_end": 249,
+          "line_start": 247,
+          "line_end": 250,
           "content_hash": "sha256:980cb03944bf1ffbd3349c49fb6edca2345cab04de009aabab1cf57f3094ee7b",
           "token_count": 13
         },
         {
           "heading": "## 2026-02-09",
           "level": 2,
-          "line_start": 250,
-          "line_end": 253,
+          "line_start": 251,
+          "line_end": 254,
           "content_hash": "sha256:88dc73ec4f36b923e87741185bd39c5b42a3adf923fb0ba4840612c039e7f3c7",
           "token_count": 13
         },
         {
           "heading": "## 2026-02-07",
           "level": 2,
-          "line_start": 254,
-          "line_end": 257,
+          "line_start": 255,
+          "line_end": 258,
           "content_hash": "sha256:2ecb1c1a863777e7134c18d3e5d7773dd15a2a68d85aa96fbceb833bb53004c3",
           "token_count": 13
         },
         {
           "heading": "## 2026-02-05",
           "level": 2,
-          "line_start": 258,
-          "line_end": 261,
+          "line_start": 259,
+          "line_end": 262,
           "content_hash": "sha256:7913e8aed73f6e3dcf32ea0a2b4cccb390e50dd31d657e7b91dfe868f3d57e3d",
           "token_count": 13
         },
         {
           "heading": "## What Works",
           "level": 2,
-          "line_start": 262,
-          "line_end": 265,
+          "line_start": 263,
+          "line_end": 266,
           "content_hash": "sha256:3b086fceb97a0cc91c3f7d1589d686ccf624174efd5b0b97d33d8d9bc801a286",
           "token_count": 52
         },
         {
           "heading": "## What's Left",
           "level": 2,
-          "line_start": 266,
-          "line_end": 269,
+          "line_start": 267,
+          "line_end": 270,
           "content_hash": "sha256:bd698cf51d2d59c2ce4333a538cddf8a4f5931df5ec383aeff37ff9c6c018f8b",
           "token_count": 6
         }
       ],
       "read_count": 0,
-      "write_count": 244,
-      "last_read": "2026-03-04T21:17:11.657140",
+      "write_count": 261,
+      "last_read": "2026-03-04T21:56:14.174435",
       "current_version": 11
     },
     "activeContext.md": {
       "path": ".cortex/memory-bank/activeContext.md",
       "exists": true,
-      "size_bytes": 5893,
-      "token_count": 1003,
+      "size_bytes": 6604,
+      "token_count": 1108,
       "token_model": "cl100k_base",
-      "last_modified": "2026-03-04T21:17:11.648576",
-      "content_hash": "sha256:cd1933e743a65410ddc83be00efecb9d4f81317c7dba6fe4089e54cf019f1d4e",
+      "last_modified": "2026-03-04T21:56:14.165375",
+      "content_hash": "sha256:d4352e36f22e0c1fa67e32748902f9c854bb816fe696675f00d699025e582adb",
       "sections": [
         {
           "heading": "# Active Context: Cortex",
@@ -283,222 +283,222 @@
           "heading": "## Completed Work (2026-03-04)",
           "level": 2,
           "line_start": 5,
-          "line_end": 27,
-          "content_hash": "sha256:9b4e62dc126c216aa27de0876dfe16d283754ad9d3f1678b607edf4d4ef608f2",
-          "token_count": 587
+          "line_end": 31,
+          "content_hash": "sha256:f81520318397e8ce82192ad4421706f25d91f17dde4ef5d144995c77982702c8",
+          "token_count": 692
         },
         {
           "heading": "## Completed Work (2026-03-03)",
           "level": 2,
-          "line_start": 28,
-          "line_end": 31,
+          "line_start": 32,
+          "line_end": 35,
           "content_hash": "sha256:0b721bd7e1adb763026960e9a9982fd7e8632df71974af73e2b9afcafa034697",
           "token_count": 14
         },
         {
           "heading": "## Completed Work (2026-03-02)",
           "level": 2,
-          "line_start": 32,
-          "line_end": 35,
+          "line_start": 36,
+          "line_end": 39,
           "content_hash": "sha256:3437855e03b6dcaa26e3f9c3f2e468e4dc57d7cdf4701644732d35e79021a598",
           "token_count": 14
         },
         {
           "heading": "## Completed Work (2026-03-01)",
           "level": 2,
-          "line_start": 36,
-          "line_end": 39,
+          "line_start": 40,
+          "line_end": 43,
           "content_hash": "sha256:0ea9ebde7a0b4fd0f80aeb24787ce064885aa6047e4ecd04345b35ed837874c3",
           "token_count": 14
         },
         {
           "heading": "## Completed Work (2026-02-28)",
           "level": 2,
-          "line_start": 40,
-          "line_end": 43,
+          "line_start": 44,
+          "line_end": 47,
           "content_hash": "sha256:494bccf6321efe14ec11b3c6451f6cbbc56f654bafd38b421190d55324ef8a8c",
           "token_count": 14
         },
         {
           "heading": "## Completed Work (2026-02-27)",
           "level": 2,
-          "line_start": 44,
-          "line_end": 47,
+          "line_start": 48,
+          "line_end": 51,
           "content_hash": "sha256:4494ee5e12a878fbe1170afda0f51fd828ef548cc52adbc55dfd1d991e5a8097",
           "token_count": 14
         },
         {
           "heading": "## Completed Work (2026-02-26)",
           "level": 2,
-          "line_start": 48,
-          "line_end": 51,
+          "line_start": 52,
+          "line_end": 55,
           "content_hash": "sha256:17522625300c16dc32cfd2c9e6a3ae09a48fbe2ffe8a38a15de4df10851d4c12",
           "token_count": 14
         },
         {
           "heading": "## Completed Work (2026-02-25)",
           "level": 2,
-          "line_start": 52,
-          "line_end": 55,
+          "line_start": 56,
+          "line_end": 59,
           "content_hash": "sha256:3ed6ae732eace3c53e8752b1bac9193d4b2d29ceba40da1664c90726c5dc74d1",
           "token_count": 14
         },
         {
           "heading": "## Completed Work (2026-02-24)",
           "level": 2,
-          "line_start": 56,
-          "line_end": 59,
+          "line_start": 60,
+          "line_end": 63,
           "content_hash": "sha256:9a04645a065d60ba9fcf9975c6d58a4937762c7a367bd0f888f5021ef8ecf0d3",
           "token_count": 14
         },
         {
           "heading": "## Completed Work (2026-02-23)",
           "level": 2,
-          "line_start": 60,
-          "line_end": 63,
+          "line_start": 64,
+          "line_end": 67,
           "content_hash": "sha256:e448dbc3948c6d772cf726047c4d94e8f99438c635cb5801f298b37cb12dea06",
           "token_count": 14
         },
         {
           "heading": "## Completed Work (2026-02-22)",
           "level": 2,
-          "line_start": 64,
-          "line_end": 67,
+          "line_start": 68,
+          "line_end": 71,
           "content_hash": "sha256:da76fc6ef9661006efe6ec97476e0d100662fcf862de78db41979b129298dede",
           "token_count": 14
         },
         {
           "heading": "## Completed Work (2026-02-21)",
           "level": 2,
-          "line_start": 68,
-          "line_end": 71,
+          "line_start": 72,
+          "line_end": 75,
           "content_hash": "sha256:d9b3a71e96695a7a9f329e90dd2be6c3f7408721d92c4c52c8f86b9a8729f773",
           "token_count": 14
         },
         {
           "heading": "## Completed Work (2026-02-20)",
           "level": 2,
-          "line_start": 72,
-          "line_end": 75,
+          "line_start": 76,
+          "line_end": 79,
           "content_hash": "sha256:af1062784c6b5c6071fe2e6d4a826e17c7b51a9de77c780441b27c9214f4eea7",
           "token_count": 14
         },
         {
           "heading": "## Completed Work (2026-02-19)",
           "level": 2,
-          "line_start": 76,
-          "line_end": 79,
+          "line_start": 80,
+          "line_end": 83,
           "content_hash": "sha256:718346fd0d7a64174dbd97c1b1997ca0485badb55fc594481cd3c06daea73791",
           "token_count": 14
         },
         {
           "heading": "## Completed Work (2026-02-18)",
           "level": 2,
-          "line_start": 80,
-          "line_end": 83,
+          "line_start": 84,
+          "line_end": 87,
           "content_hash": "sha256:7fd6ee5e0975ee9e7c700ccefef9c2fc6f645d5e67a7a0a74e47d393873a3adb",
           "token_count": 14
         },
         {
           "heading": "## Completed Work (2026-02-17)",
           "level": 2,
-          "line_start": 84,
-          "line_end": 87,
+          "line_start": 88,
+          "line_end": 91,
           "content_hash": "sha256:bc8f97c7e47db13d4caf60ae37b748f8bed6cff7c48043b913648736a137802e",
           "token_count": 14
         },
         {
           "heading": "## Completed Work (2026-02-16)",
           "level": 2,
-          "line_start": 88,
-          "line_end": 91,
+          "line_start": 92,
+          "line_end": 95,
           "content_hash": "sha256:989a691eb60fa972680015114657ec0072a9b0a67b670f543198d52c2a1214b7",
           "token_count": 14
         },
         {
           "heading": "## Completed Work (2026-02-13)",
           "level": 2,
-          "line_start": 92,
-          "line_end": 95,
+          "line_start": 96,
+          "line_end": 99,
           "content_hash": "sha256:e8bc1f0112e7257847330942d7f3c44a8482c6d34e5525546081a2658b8fb203",
           "token_count": 14
         },
         {
           "heading": "## Completed Work (2026-01-14)",
           "level": 2,
-          "line_start": 96,
-          "line_end": 99,
+          "line_start": 100,
+          "line_end": 103,
           "content_hash": "sha256:3fe31c3b16e8dc8860942a27947c0b7f9333379328964710a367cf9ee20dfda8",
           "token_count": 14
         },
         {
           "heading": "## Completed Work (2026-02-12)",
           "level": 2,
-          "line_start": 100,
-          "line_end": 103,
+          "line_start": 104,
+          "line_end": 107,
           "content_hash": "sha256:0cafb2700a23a589590ab848fcc7a4036daa98f1dcbf287ed0d152769aca2d02",
           "token_count": 14
         },
         {
           "heading": "## Completed Work (2026-02-11)",
           "level": 2,
-          "line_start": 104,
-          "line_end": 107,
+          "line_start": 108,
+          "line_end": 111,
           "content_hash": "sha256:4c64f0ccd2de8e0fdcef74f1506d047c9a3afa588113170d4e78578f002cfc5d",
           "token_count": 14
         },
         {
           "heading": "## Completed Work (2026-02-10)",
           "level": 2,
-          "line_start": 108,
-          "line_end": 111,
+          "line_start": 112,
+          "line_end": 115,
           "content_hash": "sha256:d7947ed1fef7d28b643bd8922176145e5c6ea9929358d98f39204fd3bcfc1520",
           "token_count": 14
         },
         {
           "heading": "## Completed Work (2026-02-09)",
           "level": 2,
-          "line_start": 112,
-          "line_end": 115,
+          "line_start": 116,
+          "line_end": 119,
           "content_hash": "sha256:2356c4033e4f97bec991d7e2cdbcf7b3de693f27a797ae494b5447c14bfaf9e7",
           "token_count": 14
         },
         {
           "heading": "## Completed Work (2026-02-07)",
           "level": 2,
-          "line_start": 116,
-          "line_end": 119,
+          "line_start": 120,
+          "line_end": 123,
           "content_hash": "sha256:7c47202d74e7fd62962b1ce4bfc0ac3e9766b46ef29ca1c098b385c12cd0d30e",
           "token_count": 14
         },
         {
           "heading": "## Current Focus",
           "level": 2,
-          "line_start": 120,
-          "line_end": 123,
+          "line_start": 124,
+          "line_end": 127,
           "content_hash": "sha256:590aa5bb5ab49256df65b54042e184286214768af00290735bec5e937d3011b8",
           "token_count": 11
         },
         {
           "heading": "## Recent Changes",
           "level": 2,
-          "line_start": 124,
-          "line_end": 127,
+          "line_start": 128,
+          "line_end": 131,
           "content_hash": "sha256:a836bd8f2f1eaade91e4dc9b2bb4914bb15b9d10cc3e2b6012d3431d79072ff1",
           "token_count": 45
         },
         {
           "heading": "## Next Steps",
           "level": 2,
-          "line_start": 128,
-          "line_end": 131,
+          "line_start": 132,
+          "line_end": 135,
           "content_hash": "sha256:2d95f981e9a718ee86bfe827cfd59f487d120d7f0c947e404a34fb8bca1496c1",
           "token_count": 6
         }
       ],
       "read_count": 0,
-      "write_count": 245,
-      "last_read": "2026-03-04T21:17:11.648576",
+      "write_count": 262,
+      "last_read": "2026-03-04T21:56:14.165375",
       "current_version": 11
     },
     "projectBrief.md": {
@@ -628,8 +628,8 @@
   },
   "totals": {
     "total_files": 7,
-    "total_size_bytes": 70424,
-    "total_tokens": 11940,
-    "last_full_scan": "2026-03-04T21:17:11.657184"
+    "total_size_bytes": 71324,
+    "total_tokens": 12074,
+    "last_full_scan": "2026-03-04T21:56:14.174479"
   }
 }
