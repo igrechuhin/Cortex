@@ -3,9 +3,12 @@
 from __future__ import annotations
 
 import json
+import logging
 from collections.abc import Callable
 from pathlib import Path
 from typing import cast
+
+logger = logging.getLogger(__name__)
 
 
 def load_eval_task_dicts(tasks_dir: Path) -> list[dict[str, object]]:
@@ -48,7 +51,8 @@ def build_eval_tasks[T](
     for rec in records:
         try:
             task = validate(rec)
-        except Exception:
+        except Exception as e:
+            logger.debug("build_eval_tasks: skip invalid record: %s", e)
             continue
         if task is None:
             continue

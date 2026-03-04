@@ -7,6 +7,7 @@ historical comparison. Supports the model upgrade playbook (docs/guides/model-up
 from __future__ import annotations
 
 import json
+import logging
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import cast
@@ -17,6 +18,8 @@ from cortex.core.cache_json_access import read_cache_json, write_cache_json
 from cortex.core.context_logging import MCPContext, log_client
 from cortex.core.path_resolver import get_cache_path
 from cortex.core.project_root_resolver import resolve_project_root_async
+
+logger = logging.getLogger(__name__)
 
 _MODEL_BENCHMARKS_KEY = "evals/model_benchmarks.json"
 
@@ -164,7 +167,8 @@ async def _load_benchmarks(root: Path) -> list[ModelBenchmarkRecord]:
         item = cast(dict[str, object], raw_item)
         try:
             records.append(ModelBenchmarkRecord.model_validate(item))
-        except Exception:
+        except Exception as e:
+            logger.debug("_load_benchmarks: skip invalid record: %s", e)
             continue
     return records
 

@@ -7,6 +7,7 @@ MAX_REGISTERED_TOOLS without raising the limit.
 """
 
 import json
+import logging
 from pathlib import Path
 from typing import Literal
 
@@ -14,6 +15,8 @@ from cortex.core.constants import MCP_TOOL_TIMEOUT_FAST
 from cortex.core.mcp_stability import ensure_usage_context, mcp_tool_wrapper
 from cortex.tools.response_builder import error_response, success_response
 from cortex.tools.skill_pack.models import SkillPackManifest
+
+logger = logging.getLogger(__name__)
 
 _skills_dir: Path | None = None
 
@@ -40,7 +43,8 @@ def _load_all_manifests() -> list[SkillPackManifest]:
             raw = path.read_text(encoding="utf-8")
             manifest = SkillPackManifest.model_validate_json(raw)
             manifests.append(manifest)
-        except Exception:
+        except (OSError, ValueError) as e:
+            logger.debug("_load_all_manifests: skip %s: %s", path.name, e)
             continue
     return manifests
 

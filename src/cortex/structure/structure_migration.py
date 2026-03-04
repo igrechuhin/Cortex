@@ -259,9 +259,21 @@ class StructureMigrationManager:
         report["errors"] = migration_data["errors"]
 
     def _migrate_doc_mcp_style(self, report: ModelDict) -> None:
-        """Migrate doc-mcp-style structure."""
-        # Similar to TradeWing but with docs/memory-bank source
-        pass
+        """Migrate doc-mcp-style structure (docs/memory-bank as source)."""
+        memory_bank_dir = self.get_path("memory_bank")
+        plans_dir = self.get_path("plans") / "active"
+        rules_dir = self.get_path("rules") / "local"
+        source_memory_bank = self.project_root / "docs" / "memory-bank"
+
+        migration_data = self._extract_migration_report_data(report)
+        self._migrate_memory_bank_files_from_source(
+            source_memory_bank, memory_bank_dir, migration_data
+        )
+        self.migrate_plans(plans_dir, migration_data)
+        self.migrate_cursorrules(rules_dir, migration_data)
+        report["files_migrated"] = migration_data["files_migrated"]
+        report["file_mappings"] = migration_data["file_mappings"]
+        report["errors"] = migration_data["errors"]
 
     def _migrate_scattered_files(self, report: ModelDict) -> None:
         """Migrate scattered files."""
@@ -439,6 +451,42 @@ class StructureMigrationManager:
                     errors_list.append(err)
         return errors_list
 
+    def _migrate_memory_bank_files_from_source(
+        self,
+        source_dir: Path,
+        memory_bank_dir: Path,
+        migration_data: ModelDict,
+    ) -> None:
+        """Migrate memory bank files from a source directory to memory-bank.
+
+        Args:
+            source_dir: Source directory containing memory bank files
+            memory_bank_dir: Target memory-bank directory
+            migration_data: Migration data dictionary to update
+        """
+        files_migrated_int = cast(int, migration_data["files_migrated"])
+        file_mappings_list = self._extract_file_mappings(migration_data)
+        errors_list = self._extract_errors(migration_data)
+
+        for filename in STANDARD_MEMORY_BANK_FILES:
+            source = source_dir / filename
+            if source.exists():
+                dest = memory_bank_dir / filename
+                try:
+                    _ = shutil.copy2(source, dest)
+                    files_migrated_int += 1
+                    file_mappings_list.append(
+                        {"source": str(source), "destination": str(dest)}
+                    )
+                except OSError as e:
+                    errors_list.append(f"Failed to migrate {filename}: {e}")
+
+        migration_data["files_migrated"] = files_migrated_int
+        migration_data["file_mappings"] = [
+            cast(JsonValue, m) for m in file_mappings_list
+        ]
+        migration_data["errors"] = cast(list[JsonValue], errors_list)
+
     def _migrate_memory_bank_files(
         self, memory_bank_dir: Path, migration_data: ModelDict
     ) -> None:
@@ -448,28 +496,9 @@ class StructureMigrationManager:
             memory_bank_dir: Target memory-bank directory
             migration_data: Migration data dictionary
         """
-        files_migrated_int = cast(int, migration_data["files_migrated"])
-        file_mappings_list = self._extract_file_mappings(migration_data)
-        errors_list = self._extract_errors(migration_data)
-
-        for filename in STANDARD_MEMORY_BANK_FILES:
-            source = self.project_root / filename
-            if source.exists():
-                dest = memory_bank_dir / filename
-                try:
-                    _ = shutil.copy2(source, dest)
-                    files_migrated_int += 1
-                    file_mappings_list.append(
-                        {"source": str(source), "destination": str(dest)}
-                    )
-                except Exception as e:
-                    errors_list.append(f"Failed to migrate {filename}: {e}")
-
-        migration_data["files_migrated"] = files_migrated_int
-        migration_data["file_mappings"] = [
-            cast(JsonValue, m) for m in file_mappings_list
-        ]
-        migration_data["errors"] = cast(list[JsonValue], errors_list)
+        return self._migrate_memory_bank_files_from_source(
+            self.project_root, memory_bank_dir, migration_data
+        )
 
     def migrate_plans(self, plans_dir: Path, migration_data: ModelDict) -> None:
         """Migrate plans from .cursor/plans to plans directory.

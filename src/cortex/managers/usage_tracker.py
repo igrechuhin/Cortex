@@ -1,5 +1,6 @@
 """Usage tracking manager for MCP tool analytics (Phase 29)."""
 
+import logging
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import cast
@@ -11,6 +12,8 @@ from cortex.core.models import HandlerKind
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.core.synapse_usage_config import get_usage_storage_root, is_usage_writable
 from cortex.managers.usage_models import ToolUsageEvent, ToolUsageStats
+
+logger = logging.getLogger(__name__)
 
 
 def _default_config() -> dict[str, bool | int | float | list[str]]:
@@ -551,7 +554,8 @@ def _parse_events_from_content(
         _ensure_event_id(item_d)
         try:
             out.append(ToolUsageEvent.model_validate(item_d))
-        except Exception:
+        except Exception as e:
+            logger.debug("_parse_usage_events: skip invalid event: %s", e)
             continue
     return out
 

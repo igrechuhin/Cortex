@@ -3,12 +3,16 @@
 Detects project language(s), test frameworks, and build tools from project structure.
 """
 
+import json
+import logging
 from pathlib import Path
 
 from pydantic import ConfigDict, Field
 
 from cortex.core.models import DictLikeModel
 from cortex.core.path_resolver import get_venv_bin_path
+
+logger = logging.getLogger(__name__)
 
 
 class LanguageInfo(DictLikeModel):
@@ -136,8 +140,6 @@ class LanguageDetector:
         if not package_json.exists():
             return False
         try:
-            import json
-
             with package_json.open() as f:
                 data = json.load(f)
                 return (
@@ -145,7 +147,8 @@ class LanguageDetector:
                     or "typescript" in str(data.get("devDependencies", {}))
                     or (self.project_root / "tsconfig.json").exists()
                 )
-        except Exception:
+        except (OSError, json.JSONDecodeError, TypeError) as e:
+            logger.debug("_detect_typescript: %s", e)
             return False
 
     def _detect_python_tooling(self) -> LanguageInfo:
@@ -254,8 +257,6 @@ class LanguageDetector:
         if not package_json.exists():
             return None
         try:
-            import json
-
             with package_json.open() as f:
                 data = json.load(f)
                 deps = {
@@ -268,8 +269,8 @@ class LanguageDetector:
                     return "vitest"
                 if "mocha" in deps:
                     return "mocha"
-        except Exception:
-            pass
+        except (OSError, json.JSONDecodeError, TypeError) as e:
+            logger.debug("_detect_js_test_framework: %s", e)
         return None
 
     def _has_python_tool(self, tool: str) -> bool:

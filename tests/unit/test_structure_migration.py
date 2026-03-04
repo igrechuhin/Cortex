@@ -156,6 +156,29 @@ def test_detect_legacy_structure_when_doc_mcp_style_detected(tmp_path: Path) -> 
     assert legacy == "doc-mcp-style"
 
 
+def test_migrate_doc_mcp_style_copies_from_docs_memory_bank(tmp_path: Path) -> None:
+    """Doc-mcp-style migration copies files from docs/memory-bank to .cortex memory-bank."""
+    # Arrange
+    docs_mb = tmp_path / "docs" / "memory-bank"
+    docs_mb.mkdir(parents=True, exist_ok=True)
+    _ = (docs_mb / "projectBrief.md").write_text("# Brief", encoding="utf-8")
+    manager = StructureMigrationManager(tmp_path)
+    memory_bank_dir = manager.get_path("memory_bank")
+    memory_bank_dir.mkdir(parents=True, exist_ok=True)
+    report: dict[str, object] = {
+        "files_migrated": 0,
+        "file_mappings": [],
+        "errors": [],
+    }
+
+    # Act
+    manager._migrate_doc_mcp_style(cast(ModelDict, report))  # type: ignore[attr-defined]  # noqa: SLF001
+
+    # Assert
+    assert (memory_bank_dir / "projectBrief.md").exists()
+    assert report["files_migrated"] == 1
+
+
 def test_detect_legacy_structure_when_scattered_files_detected(tmp_path: Path) -> None:
     # Arrange
     scattered_dir = tmp_path / "somewhere"

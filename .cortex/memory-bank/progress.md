@@ -12,6 +12,7 @@
 - **Phase 75: Unify tool response format - response builder migration (partial) (2026-03-04)** - COMPLETE. Migrated load_context metadata/result formatters and validation tools (schema, quality, duplications, roadmap_sync, query_usage) to use the shared response_builder helpers with canonical {"status": "success"|"error", ...} responses; fixed type issues and passed full quality gate (format, type_check, tests, quality) with 4884 tests and ~92.17% coverage.
 - **Phase 75: Unify tool response format (2026-03-04)** - COMPLETE (composite + foundation batch). Migrated composite workflow dispatcher and Phase 1 foundation tools (dependency graph and version history) to the canonical `{"status": "success"|"error", ...}` response builder, updated tests, and verified format, type checks, quality gate, and full test suite (~92.18% coverage).
 - **Phase 76 TypedDict/suppressions cleanup (2026-03-04)** - COMPLETE. Verified no TypedDict/TYPE_CHECKING; removed 2 suppressions; rest documented as follow-up. Pyright clean; tests pass.
+- **Phase 77: Fix coverage gaps (2026-03-04)** - COMPLETE. Tests for result_links_models, fixed silent exception handling, implemented doc-mcp migration.
 
 ## 2026-03-03
 

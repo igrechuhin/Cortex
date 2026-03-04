@@ -91,8 +91,8 @@ def _collect_candidate_roots(resolved: Path) -> set[Path]:
             script_root = _detect_root_from(script_path)
             if script_root is not None:
                 candidates.add(script_root)
-    except Exception:
-        pass
+    except (OSError, ValueError) as e:
+        logger.debug("_collect_candidate_roots: %s", e)
     return candidates
 
 
@@ -126,8 +126,8 @@ def _find_root_from_script() -> Path | None:
             for path in [script_path.parent, *script_path.parent.parents]:
                 if has_memory_bank(path):
                     return _reject_package_subdir_as_root(path)
-    except Exception:
-        pass
+    except (OSError, ValueError) as e:
+        logger.debug("_find_root_from_script: %s", e)
     return None
 
 
@@ -344,8 +344,8 @@ async def _post_init_setup(project_root: Path, managers: ManagersBuilder) -> Non
                 "_post_init_setup: index.load() took %.3fs",
                 time.monotonic() - t0,
             )
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug("_post_init_setup: index.load() failed: %s", e)
 
     t0 = time.monotonic()
     await fs_manager.cleanup_locks()

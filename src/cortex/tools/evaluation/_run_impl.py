@@ -7,6 +7,7 @@ Extracted for Phase 9.1.4 file size compliance.
 from __future__ import annotations
 
 import json
+import logging
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import cast
@@ -25,6 +26,8 @@ from ._models import (
     EvalTask,
     RunToolEvaluationPayload,
 )
+
+logger = logging.getLogger(__name__)
 
 
 async def get_usage_tracker(root: Path) -> UsageTracker | None:
@@ -68,8 +71,10 @@ async def _write_evaluation_dashboard(
     if tracker is not None:
         try:
             redundancy = await get_redundancy_payload(root, tracker, days=30)
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug(
+                "_write_evaluation_dashboard: get_redundancy_payload failed: %s", e
+            )
     dashboard_content = generate_evaluation_dashboard(
         analysis, suite, redundancy=redundancy
     )

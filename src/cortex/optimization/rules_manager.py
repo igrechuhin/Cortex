@@ -7,6 +7,7 @@ context optimization and relevance scoring. It delegates indexing operations
 to RulesIndexer.
 """
 
+import logging
 from pathlib import Path
 from typing import cast
 
@@ -25,6 +26,8 @@ from .models import (
     ScoredRuleModel,
 )
 from .rules_indexer import RulesIndexer
+
+logger = logging.getLogger(__name__)
 
 
 class RulesManager:
@@ -299,8 +302,8 @@ class RulesManager:
                             category=loaded_rule.category,
                         )
                     )
-                except Exception:
-                    # Skip invalid rules
+                except Exception as e:
+                    logger.debug("_get_tagged_shared_rules: skip invalid rule: %s", e)
                     continue
 
         return shared_rules
@@ -454,7 +457,8 @@ class RulesManager:
                 scored_rules.append(
                     self._create_scored_rule(file_key, indexed_rule, score)
                 )
-            except Exception:
+            except Exception as e:
+                logger.debug("_score_local_rules: skip rule: %s", e)
                 continue
 
         scored_rules.sort(key=lambda r: r.relevance_score, reverse=True)

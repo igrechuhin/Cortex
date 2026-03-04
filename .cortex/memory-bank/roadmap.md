@@ -12,7 +12,6 @@
 
 ## Pending plans (from .cortex/plans)
 
-- **Phase 77: Fix coverage gaps, silent error handling, and stub implementation** - PENDING - Add tests for 0%-coverage module, fix 11 silent `except Exception: pass` blocks, resolve migration stub. Plan: `.cortex/plans/phase-77-coverage-gaps-error-handling.md`
 - **Phase 78: Agent implementation verification protocol** - PENDING - Add mandatory post-edit re-read, full-codebase search, plan-scope verification, date validation, commit message quality enforcement, selective staging (no `git add -A`), and analyze target specification to prevent agents from declaring incomplete work as done and improve commit pipeline discipline. Plan: `.cortex/plans/phase-78-agent-implementation-verification.md`
 
 ### Fixes
