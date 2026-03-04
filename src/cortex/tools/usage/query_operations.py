@@ -17,6 +17,7 @@ from cortex.core.mcp_stability import (
 )
 from cortex.core.models import ResponseFormat
 from cortex.server import mcp
+from cortex.tools.response_builder import error_response
 
 from .query_handlers import USAGE_HANDLERS
 from .query_models import QueryUsageParams
@@ -25,7 +26,7 @@ from .query_models import QueryUsageParams
 def _usage_error_payload(message: str) -> str:
     """Return a JSON error payload for query_usage."""
     return json.dumps(
-        {"status": "error", "error": message, "error_type": "ValueError"},
+        error_response(error=message, error_type="ValueError"),
         indent=2,
     )
 
@@ -65,7 +66,7 @@ async def _query_usage_impl(
         return await handler(params, ctx)
     except Exception as e:
         return json.dumps(
-            {"status": "error", "error": str(e), "error_type": type(e).__name__},
+            error_response(error=str(e), error_type=type(e).__name__),
             indent=2,
         )
 

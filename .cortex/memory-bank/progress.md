@@ -9,6 +9,7 @@
 - **Phase 72: Fix is_connection_error Over-Matching and Consolidate Duplicates (2026-03-04)** - COMPLETE. Consolidated connection error detection into a single helper, tightened matching to avoid resource and tool-not-found false positives, and added focused tests for true and false cases.
 - **Phase 73: Fix blocking event loop and O(n) data structures (2026-03-04)** - COMPLETE. Replaced list-based LRU cache and BFS queues with O(1) data structures, removed blocking tiktoken backoff sleeps in TokenCounter, and updated tests with full quality gate.
 - **Phase 74: Async I/O migration for hot paths (2026-03-04)** - COMPLETE. Migrated context loading, token counting, and session logging hot paths to async I/O, added parallel file reading with a bounded concurrency limit, and updated tests to verify behavior.
+- **Phase 75: Unify tool response format - response builder migration (partial) (2026-03-04)** - COMPLETE. Migrated load_context metadata/result formatters and validation tools (schema, quality, duplications, roadmap_sync, query_usage) to use the shared response_builder helpers with canonical {"status": "success"|"error", ...} responses; fixed type issues and passed full quality gate (format, type_check, tests, quality) with 4884 tests and ~92.17% coverage.
 
 ## 2026-03-03
 

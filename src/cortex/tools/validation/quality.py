@@ -8,9 +8,38 @@ from cortex.core.file_system import FileSystemManager
 from cortex.core.metadata_index import MetadataIndex
 from cortex.core.models import DetailedFileMetadata, ModelDict
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
+from cortex.tools.response_builder import error_response, success_response
 from cortex.validation.duplication_detector import DuplicationDetector
 from cortex.validation.models import FileMetadataForQuality
 from cortex.validation.quality_metrics import QualityMetrics
+
+
+async def _resolve_quality_file_path(
+    fs_manager: FileSystemManager,
+    root: Path,
+    file_name: str,
+) -> tuple[Path | None, str | None]:
+    """Resolve quality file path or return error JSON."""
+    memory_bank_dir = get_cortex_path(root, CortexResourceType.MEMORY_BANK)
+    try:
+        file_path = fs_manager.construct_safe_path(memory_bank_dir, file_name)
+    except (ValueError, PermissionError) as e:
+        error_json = json.dumps(
+            error_response(
+                error=f"Invalid file name: {e}", error_type=type(e).__name__
+            ),
+            indent=2,
+        )
+        return None, error_json
+    if not file_path.exists():
+        error_json = json.dumps(
+            error_response(
+                error=f"File {file_name} does not exist", error_type="FileNotFoundError"
+            ),
+            indent=2,
+        )
+        return None, error_json
+    return file_path, None
 
 
 async def validate_quality_single_file(
@@ -21,28 +50,22 @@ async def validate_quality_single_file(
     file_name: str,
 ) -> str:
     """Calculate quality score for a single file."""
-    memory_bank_dir = get_cortex_path(root, CortexResourceType.MEMORY_BANK)
-    try:
-        file_path = fs_manager.construct_safe_path(memory_bank_dir, file_name)
-    except (ValueError, PermissionError) as e:
-        return json.dumps(
-            {"status": "error", "error": f"Invalid file name: {e}"}, indent=2
-        )
-    if not file_path.exists():
-        return json.dumps(
-            {"status": "error", "error": f"File {file_name} does not exist"}, indent=2
-        )
+    file_path, error_json = await _resolve_quality_file_path(
+        fs_manager, root, file_name
+    )
+    if error_json is not None:
+        return error_json
+    assert file_path is not None
     content, _ = await fs_manager.read_file(file_path)
     file_metadata = await metadata_index.get_file_metadata(file_name)
     metadata = file_metadata.model_dump(mode="json") if file_metadata else {}
     score = await quality_metrics.calculate_file_score(file_name, content, metadata)
     return json.dumps(
-        {
-            "status": "success",
-            "check_type": "quality",
-            "file_name": file_name,
-            "score": score.model_dump(mode="json"),
-        },
+        success_response(
+            check_type="quality",
+            file_name=file_name,
+            score=score.model_dump(mode="json"),
+        ),
         indent=2,
     )
 
@@ -88,10 +111,12 @@ async def validate_quality_all_files(
     )
     response = cast(ModelDict, overall_score.model_dump(mode="json", exclude_none=True))
     health_status = response.pop("status", None)
-    response["status"] = "success"
-    response["check_type"] = "quality"
-    response["health_status"] = health_status
-    return json.dumps(response, indent=2)
+    response_payload = success_response(
+        check_type="quality",
+        health_status=health_status,
+        **response,
+    )
+    return json.dumps(response_payload, indent=2)
 
 
 async def handle_quality_validation(

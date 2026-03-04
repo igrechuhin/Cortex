@@ -6,6 +6,7 @@ from typing import cast
 
 from cortex.core.file_system import FileSystemManager
 from cortex.core.models import JsonValue, ModelDict
+from cortex.tools.response_builder import success_response
 from cortex.tools.validation.helpers import (
     generate_duplication_fixes,
     read_all_memory_bank_files,
@@ -29,12 +30,11 @@ async def validate_duplications(
     duplications = await duplication_detector.scan_all_files(files_content)
     duplications_dict = cast(ModelDict, duplications.model_dump(mode="json"))
 
-    duplication_result: ModelDict = {
-        "status": "success",
-        "check_type": "duplications",
-        "threshold": threshold,
-    }
-    duplication_result.update(duplications_dict)
+    duplication_result: ModelDict = success_response(
+        check_type="duplications",
+        threshold=threshold,
+        **duplications_dict,
+    )
 
     if suggest_fixes and duplications.duplicates_found > 0:
         duplication_result["suggested_fixes"] = cast(

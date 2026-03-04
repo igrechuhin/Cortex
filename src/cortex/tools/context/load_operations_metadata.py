@@ -7,10 +7,11 @@ Implements metadata_only depth with hybrid retrieval and role-based scoring.
 import asyncio
 import json
 from pathlib import Path
+from typing import cast
 
 from cortex.core.file_system import FileSystemManager
 from cortex.core.metadata_index import MetadataIndex
-from cortex.core.models import ContextDepth, ModelDict
+from cortex.core.models import ContextDepth, JsonValue, ModelDict
 from cortex.core.token_counter import TokenCounter
 from cortex.optimization.agent_roles import AgentRole
 from cortex.optimization.config import OptimizationConfig
@@ -25,6 +26,7 @@ from cortex.tools.context.metadata_helpers import (
     build_files_map_from_metadata,
     calculate_metadata_relevance_scores,
 )
+from cortex.tools.response_builder import success_response
 
 
 async def collect_files_metadata(
@@ -57,22 +59,24 @@ def build_hybrid_metadata_response(
     metadata_tokens = sum(f.total_tokens for f in files_map[:10])
     total_tokens = metadata_tokens + always_loaded_tokens
 
-    response_data = {
-        "status": "success",
-        "task_description": task_description,
-        "token_budget": token_budget,
-        "strategy": strategy,
-        "depth": ContextDepth.METADATA_ONLY.value,
-        "files": [e.model_dump() for e in files_map],
-        "total_files": len(files_map),
-        "total_tokens_available": total_tokens_available,
-        "always_loaded": always_loaded_content,
-        "always_loaded_tokens": always_loaded_tokens,
-        "total_tokens": total_tokens,
-        "utilization": (
+    response_data = success_response(
+        task_description=task_description,
+        token_budget=token_budget,
+        strategy=strategy,
+        depth=ContextDepth.METADATA_ONLY.value,
+        files=cast(
+            JsonValue,
+            [e.model_dump() for e in files_map],
+        ),
+        total_files=len(files_map),
+        total_tokens_available=total_tokens_available,
+        always_loaded=cast(JsonValue, always_loaded_content),
+        always_loaded_tokens=always_loaded_tokens,
+        total_tokens=total_tokens,
+        utilization=(
             round(total_tokens / token_budget, 2) if token_budget > 0 else 0.0
         ),
-    }
+    )
 
     return json.dumps(response_data, indent=2)
 

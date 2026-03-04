@@ -3,10 +3,13 @@
 import json
 import logging
 from pathlib import Path
+from typing import cast
 
 from cortex.core.constants import MemoryBankFile
 from cortex.core.file_system import FileSystemManager
+from cortex.core.models import JsonValue
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
+from cortex.tools.response_builder import error_response, success_response
 from cortex.validation.roadmap_sync import (
     SyncValidationResult,
     validate_roadmap_sync,
@@ -22,10 +25,7 @@ def _build_roadmap_sync_error_response() -> str:
         JSON string with error response
     """
     return json.dumps(
-        {
-            "status": "error",
-            "error": "roadmap.md does not exist in memory bank",
-        },
+        error_response(error="roadmap.md does not exist in memory bank"),
         indent=2,
     )
 
@@ -53,28 +53,30 @@ def _build_roadmap_sync_success_response(
     existing_unlinked_plans = _filter_existing_unlinked_plans(result, project_root)
 
     return json.dumps(
-        {
-            "status": "success",
-            "check_type": "roadmap_sync",
-            "valid": result.valid,
-            "missing_roadmap_entries": missing_entries,
-            "invalid_references": invalid_refs,
+        success_response(
+            check_type="roadmap_sync",
+            valid=result.valid,
+            missing_roadmap_entries=cast(JsonValue, missing_entries),
+            invalid_references=cast(JsonValue, invalid_refs),
             # Expose unlinked_plans so callers can see which non-archived plans
             # are not referenced in roadmap.md (helps prevent partial updates
             # where plans are completed or removed from roadmap without proper
             # archiving or memory bank updates). Only include plans that still
             # exist on disk to avoid stale warnings from removed/archived plans.
-            "unlinked_plans": existing_unlinked_plans,
-            "completed_entries_in_roadmap": completed_entries,
-            "warnings": warnings,
-            "summary": {
-                "total_todos_found": result.total_todos_found,
-                "missing_entries_count": len(missing_entries),
-                "invalid_references_count": len(invalid_refs),
-                "completed_entries_count": len(completed_entries),
-                "warnings_count": len(warnings),
-            },
-        },
+            unlinked_plans=cast(JsonValue, existing_unlinked_plans),
+            completed_entries_in_roadmap=cast(JsonValue, completed_entries),
+            warnings=cast(JsonValue, warnings),
+            summary=cast(
+                JsonValue,
+                {
+                    "total_todos_found": result.total_todos_found,
+                    "missing_entries_count": len(missing_entries),
+                    "invalid_references_count": len(invalid_refs),
+                    "completed_entries_count": len(completed_entries),
+                    "warnings_count": len(warnings),
+                },
+            ),
+        ),
         indent=2,
     )
 

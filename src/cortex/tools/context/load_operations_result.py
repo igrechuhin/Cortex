@@ -14,6 +14,7 @@ from cortex.optimization.agent_roles import AgentRole
 from cortex.optimization.optimization_strategies import OptimizationResult
 from cortex.tools.context.load_models import FileMapEntry
 from cortex.tools.context.metadata_logging_helpers import log_metadata_context_call
+from cortex.tools.response_builder import success_response
 
 
 def format_load_context_result(
@@ -36,19 +37,18 @@ def format_load_context_result(
         JSON string with loaded context results
     """
     depth_str = depth.value
-    response_data = {
-        "status": "success",
-        "task_description": task_description,
-        "token_budget": token_budget,
-        "strategy": strategy,
-        "depth": depth_str,
-        "selected_files": result.selected_files,
-        "selected_sections": result.selected_sections,
-        "total_tokens": result.total_tokens,
-        "utilization": round(result.utilization, 2),
-        "excluded_files": result.excluded_files,
-        "relevance_scores": result.metadata.get("relevance_scores", {}),
-    }
+    response_data = success_response(
+        task_description=task_description,
+        token_budget=token_budget,
+        strategy=strategy,
+        depth=depth_str,
+        selected_files=cast(JsonValue, result.selected_files),
+        selected_sections=cast(JsonValue, result.selected_sections),
+        total_tokens=result.total_tokens,
+        utilization=round(result.utilization, 2),
+        excluded_files=cast(JsonValue, result.excluded_files),
+        relevance_scores=result.metadata.get("relevance_scores", {}),
+    )
 
     if depth == ContextDepth.METADATA_ONLY and "files" in result.metadata:
         response_data["files"] = result.metadata["files"]

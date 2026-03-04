@@ -85,5 +85,6 @@ High effort (16-24h — many tool modules to migrate)
 - Migrated `manage_file` helper logic in `manage_file_helpers` to use `error_response` for all error paths.
 - Added unit tests for `success_response` and `error_response` in `tests/unit/test_response_builder.py`.
 - Verified format, type checks, quality gate, and full test suite all pass with the new helpers.
+- Migrated `load_context` metadata/result formatting helpers and validation tools (`validate` schema/quality/duplications/roadmap_sync and `query_usage` error path) to use the shared response builder, fixed type issues, and re-verified the full quality gate (format, type_check, tests, quality) passes with ~92.17% coverage.
 
 Next sessions should continue Step 3 by migrating remaining MCP tool modules to use the shared response builder and updating any tests that assert on the old inline response dictionaries.
