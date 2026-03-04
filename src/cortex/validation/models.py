@@ -596,6 +596,11 @@ class TimestampScanResult(BaseModel):
     invalid_with_time_count: int = Field(
         ..., ge=0, description="Number of timestamps with time components"
     )
+    invalid_year_count: int = Field(
+        default=0,
+        ge=0,
+        description="Number of timestamps with year outside allowed range (current ± 1)",
+    )
     violations: list[TimestampViolationModel] = Field(
         default_factory=lambda: list[TimestampViolationModel](),
         description="Violation details (limited to 20)",

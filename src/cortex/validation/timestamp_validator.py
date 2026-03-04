@@ -2,13 +2,14 @@
 
 This module provides functions to validate timestamp formats in Memory Bank files.
 Valid timestamps use YYYY-MM-DDTHH:MM format (ISO 8601 date-time without
-seconds/timezone).
+seconds/timezone). Year must be within current year ± 1 to catch typos (e.g. 2025
+when 2026 was intended).
 """
 
 import json
 import re
 from collections.abc import Awaitable, Callable
-from datetime import datetime
+from datetime import date, datetime
 from pathlib import Path
 
 from cortex.core.file_system import FileSystemManager
@@ -207,6 +208,98 @@ def _process_line_timestamps(
     return valid_count, invalid_format_count, violations
 
 
+def _year_violation(
+    line_num: int,
+    line: str,
+    timestamp_str: str,
+    min_year: int,
+    max_year: int,
+    parsed_year: int,
+) -> TimestampViolationModel:
+    """Build a single year-range violation."""
+    return TimestampViolationModel(
+        line=line_num,
+        content=line.strip()[:80],
+        timestamp=timestamp_str,
+        issue=(
+            f"Year {parsed_year} outside allowed range "
+            f"({min_year}-{max_year}); typo likely"
+        ),
+    )
+
+
+def _check_line_datetime_years(
+    line: str, line_num: int, min_year: int, max_year: int
+) -> tuple[int, list[TimestampViolationModel]]:
+    """Check datetime pattern on one line for year range."""
+    count = 0
+    out: list[TimestampViolationModel] = []
+    for match in re.finditer(VALID_DATETIME_PATTERN, line):
+        ts = match.group(1)
+        try:
+            parsed = datetime.strptime(ts, "%Y-%m-%dT%H:%M")
+            if parsed.year < min_year or parsed.year > max_year:
+                count += 1
+                out.append(
+                    _year_violation(line_num, line, ts, min_year, max_year, parsed.year)
+                )
+        except ValueError:
+            pass
+    return count, out
+
+
+def _check_line_date_only_years(
+    line: str, line_num: int, min_year: int, max_year: int
+) -> tuple[int, list[TimestampViolationModel]]:
+    """Check date-only pattern on one line for year range (skip if part of datetime)."""
+    count = 0
+    out: list[TimestampViolationModel] = []
+    for match in re.finditer(VALID_DATE_PATTERN, line):
+        date_str = match.group(1)
+        if re.search(rf"{re.escape(date_str)}T\d", line):
+            continue
+        try:
+            parsed = datetime.strptime(date_str, "%Y-%m-%d")
+            if parsed.year < min_year or parsed.year > max_year:
+                count += 1
+                out.append(
+                    _year_violation(
+                        line_num, line, date_str, min_year, max_year, parsed.year
+                    )
+                )
+        except ValueError:
+            pass
+    return count, out
+
+
+def _check_year_range_line(
+    line: str,
+    line_num: int,
+    min_year: int,
+    max_year: int,
+) -> tuple[int, list[TimestampViolationModel]]:
+    """Check one line for dates with year outside min_year..max_year."""
+    c1, v1 = _check_line_datetime_years(line, line_num, min_year, max_year)
+    c2, v2 = _check_line_date_only_years(line, line_num, min_year, max_year)
+    return c1 + c2, v1 + v2
+
+
+def _check_year_range(
+    content: str,
+) -> tuple[int, list[TimestampViolationModel]]:
+    """Check that parsed dates have year within current year ± 1."""
+    today = date.today()
+    min_year = today.year - 1
+    max_year = today.year + 1
+    total_count = 0
+    all_violations: list[TimestampViolationModel] = []
+    for line_num, line in enumerate(content.split("\n"), start=1):
+        count, violations = _check_year_range_line(line, line_num, min_year, max_year)
+        total_count += count
+        all_violations.extend(violations)
+    return total_count, all_violations
+
+
 def scan_timestamps(content: str) -> TimestampScanResult:
     """Scan content for timestamps and validate format.
 
@@ -225,10 +318,14 @@ def scan_timestamps(content: str) -> TimestampScanResult:
         invalid_format_count += inv_count
         violations.extend(line_violations)
 
+    invalid_year_count, year_violations = _check_year_range(content)
+    violations.extend(year_violations)
+
     return TimestampScanResult(
         valid_count=valid_count,
         invalid_format_count=invalid_format_count,
         invalid_with_time_count=0,  # Deprecated: time component is now valid
+        invalid_year_count=invalid_year_count,
         violations=violations[:20],
     )
 
@@ -260,7 +357,9 @@ async def validate_timestamps_single_file(
     content, _ = await fs_manager.read_file(file_path)
     scan_result = scan_timestamps(content)
 
-    has_blocking_violations = scan_result.invalid_format_count > 0
+    has_blocking_violations = (
+        scan_result.invalid_format_count > 0 or scan_result.invalid_year_count > 0
+    )
 
     result = SingleFileTimestampResult(
         status=OperationStatus.SUCCESS,
@@ -289,7 +388,9 @@ def process_file_timestamps(
     valid_count = scan_result.valid_count
     invalid_format_count = scan_result.invalid_format_count
 
-    has_blocking_violations = invalid_format_count > 0
+    has_blocking_violations = (
+        invalid_format_count > 0 or scan_result.invalid_year_count > 0
+    )
 
     file_result = FileTimestampResultModel(
         valid_count=scan_result.valid_count,
@@ -357,7 +458,7 @@ def _build_timestamps_result(
         Result model
     """
     total_valid, total_invalid_format, total_invalid_with_time = totals
-    has_any_blocking_violations = total_invalid_format > 0
+    has_any_blocking_violations = not all(r.valid for r in results.values())
 
     return AllFilesTimestampResult(
         status=OperationStatus.SUCCESS,

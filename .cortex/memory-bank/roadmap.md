@@ -12,8 +12,6 @@
 
 ## Pending plans (from .cortex/plans)
 
-- **Phase 78: Agent implementation verification protocol** - PENDING - Add mandatory post-edit re-read, full-codebase search, plan-scope verification, date validation, commit message quality enforcement, selective staging (no `git add -A`), and analyze target specification to prevent agents from declaring incomplete work as done and improve commit pipeline discipline. Plan: `.cortex/plans/phase-78-agent-implementation-verification.md`
-
 ### Fixes
 
 ### Documentation Cleanup (DRY)

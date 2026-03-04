@@ -319,6 +319,19 @@ class TestImplementPromptRefactoringGuidance:
         assert "helper" in implement_prompt_content.lower()
         assert "Grep" in implement_prompt_content or "grep" in implement_prompt_content
 
+    def test_implement_prompt_contains_duplicate_definition_search_phase78(
+        self, implement_prompt_content: str
+    ) -> None:
+        """Implement prompt must require searching for all definitions of a function (Phase 78)."""
+        assert (
+            "Duplicate-definition search" in implement_prompt_content
+            or "duplicate-definition" in implement_prompt_content.lower()
+        )
+        assert (
+            "definitions of that function" in implement_prompt_content
+            or "all definitions" in implement_prompt_content
+        )
+
 
 class TestPythonCodingStandardsTypeNarrowing:
     """Assert Python coding standards document type narrowing pattern (2026-02-17)."""

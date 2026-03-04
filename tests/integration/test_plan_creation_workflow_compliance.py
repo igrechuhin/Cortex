@@ -233,6 +233,38 @@ class TestCreatePlanAntiTruncation:
         )
 
 
+class TestCreatePlanVerificationChecklist:
+    """Assert create-plan prompt includes Verification Checklist (Phase 78)."""
+
+    @pytest.fixture
+    def create_plan_prompt_content(self) -> str:
+        """Read create-plan prompt; skip if missing."""
+        path = _create_plan_prompt_path()
+        if not path.exists():
+            pytest.skip(
+                f"Create-plan prompt not found at {path} (e.g. synapse submodule not present)"
+            )
+        return path.read_text()
+
+    def test_prompt_includes_verification_checklist_section(
+        self, create_plan_prompt_content: str
+    ) -> None:
+        """Create-plan plan structure must include Verification Checklist for elimination steps."""
+        assert "Verification Checklist" in create_plan_prompt_content
+        assert (
+            "What to search for" in create_plan_prompt_content
+            or "search for" in create_plan_prompt_content.lower()
+        )
+        assert (
+            "Search scope" in create_plan_prompt_content
+            or "scope" in create_plan_prompt_content.lower()
+        )
+        assert (
+            "Files to re-read" in create_plan_prompt_content
+            or "re-read" in create_plan_prompt_content
+        )
+
+
 class TestMemoryBankUpdaterAntiTruncation:
     """Assert memory-bank-updater agent contains no-truncation rule and recovery instruction."""
 

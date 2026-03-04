@@ -1,5 +1,7 @@
 """Unit tests for cortex.validation.timestamp_validator."""
 
+from unittest.mock import patch
+
 from cortex.validation.timestamp_validator import scan_timestamps
 
 
@@ -33,3 +35,13 @@ class TestScanTimestamps:
         """A line with non-YYYY-MM-DD date format (e.g. DD/MM/YYYY) is invalid."""
         result = scan_timestamps("Updated 31/12/2024")
         assert result.invalid_format_count >= 1 or len(result.violations) >= 1
+
+    def test_year_outside_current_plus_minus_one_adds_violation(self) -> None:
+        """A date with year outside current year ± 1 is invalid (catches typos)."""
+        from datetime import date as date_type
+
+        with patch("cortex.validation.timestamp_validator.date") as mock_date:
+            mock_date.today.return_value = date_type(2026, 3, 4)
+            result = scan_timestamps("Completed 2024-01-15")
+        assert result.invalid_year_count >= 1
+        assert any("outside allowed range" in v.issue for v in result.violations)
