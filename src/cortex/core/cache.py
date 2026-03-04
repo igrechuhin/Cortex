@@ -6,6 +6,7 @@ to improve performance for frequently accessed data.
 """
 
 import time
+from collections import OrderedDict
 
 from cortex.core.constants import CACHE_MAX_SIZE, CACHE_TTL_SECONDS
 from cortex.core.models import JsonValue
@@ -113,8 +114,8 @@ class LRUCache[T = JsonValue]:
             max_size: Maximum number of entries to cache
         """
         self.max_size: int = max_size
-        self._cache: dict[str, T] = {}
-        self._access_order: list[str] = []
+        # Use OrderedDict to track access order in O(1) time.
+        self._cache: OrderedDict[str, T] = OrderedDict()
 
     def get(self, key: str) -> T | None:
         """
@@ -126,12 +127,12 @@ class LRUCache[T = JsonValue]:
         Returns:
             Cached value if found, None otherwise
         """
-        if key in self._cache:
-            # Move to end (most recently used)
-            self._access_order.remove(key)
-            self._access_order.append(key)
-            return self._cache[key]
-        return None
+        if key not in self._cache:
+            return None
+
+        # Move to end (most recently used)
+        self._cache.move_to_end(key)
+        return self._cache[key]
 
     def set(self, key: str, value: T) -> None:
         """
@@ -143,14 +144,15 @@ class LRUCache[T = JsonValue]:
         """
         if key in self._cache:
             # Update existing - move to end
-            self._access_order.remove(key)
-        elif len(self._cache) >= self.max_size:
-            # At capacity - evict least recently used
-            lru_key = self._access_order.pop(0)
-            del self._cache[lru_key]
+            self._cache.move_to_end(key)
+            self._cache[key] = value
+            return
+
+        if len(self._cache) >= self.max_size:
+            # At capacity - evict least recently used (first item)
+            _ = self._cache.popitem(last=False)
 
         self._cache[key] = value
-        self._access_order.append(key)
 
     def invalidate(self, key: str) -> None:
         """
@@ -161,12 +163,10 @@ class LRUCache[T = JsonValue]:
         """
         if key in self._cache:
             del self._cache[key]
-            self._access_order.remove(key)
 
     def clear(self) -> None:
         """Clear all cache entries."""
         self._cache.clear()
-        self._access_order.clear()
 
     def __len__(self) -> int:
         """Return number of cache entries."""

@@ -145,25 +145,21 @@ class TokenCounter:
         Returns:
             Tuple of (should_retry, retry_delay)
         """
-        import time
-
         if attempt < max_retries:
             retry_delay = 2.0 * (2**attempt)  # Exponential backoff: 2s, 4s
             logger.info(
                 f"Tiktoken encoding '{self.model}' load timed out after "
                 + f"{load_time:.2f}s (attempt {attempt + 1}/{max_retries + 1}). "
-                + f"Retrying in {retry_delay:.1f}s..."
+                + f"Retrying with backoff delay of {retry_delay:.1f}s..."
             )
-            time.sleep(retry_delay)
             return True, retry_delay
-        else:
-            logger.warning(
-                f"Tiktoken encoding '{self.model}' load timed out after "
-                + f"{max_retries + 1} attempts (final timeout: {load_time:.2f}s). "
-                + "Network may be unavailable. Falling back to word-based estimation."
-            )
-            self._tiktoken_available = False
-            return False, 0.0
+        logger.warning(
+            f"Tiktoken encoding '{self.model}' load timed out after "
+            + f"{max_retries + 1} attempts (final timeout: {load_time:.2f}s). "
+            + "Network may be unavailable. Falling back to word-based estimation."
+        )
+        self._tiktoken_available = False
+        return False, 0.0
 
     def _handle_network_error_retry(
         self,
@@ -183,8 +179,6 @@ class TokenCounter:
         Returns:
             Tuple of (should_retry, retry_delay)
         """
-        import time
-
         if attempt < max_retries:
             retry_delay = 2.0 * (2**attempt)
             logger.info(
@@ -192,18 +186,16 @@ class TokenCounter:
                 + f"{load_time:.2f}s (attempt {attempt + 1}/{max_retries + 1}): {e}. "
                 + f"Retrying in {retry_delay:.1f}s..."
             )
-            time.sleep(retry_delay)
             return True, retry_delay
-        else:
-            msg = (
-                f"Tiktoken encoding '{self.model}' network unavailable after "
-                + f"{max_retries + 1} attempts (final error after "
-                + f"{load_time:.2f}s): {e}. Cache may be used if available. "
-                + "Falling back to word-based estimation."
-            )
-            logger.warning(msg)
-            self._tiktoken_available = False
-            return False, 0.0
+        msg = (
+            f"Tiktoken encoding '{self.model}' network unavailable after "
+            + f"{max_retries + 1} attempts (final error after "
+            + f"{load_time:.2f}s): {e}. Cache may be used if available. "
+            + "Falling back to word-based estimation."
+        )
+        logger.warning(msg)
+        self._tiktoken_available = False
+        return False, 0.0
 
     def _log_encoding_success(self, attempt: int, load_time: float) -> None:
         """Log successful encoding load.

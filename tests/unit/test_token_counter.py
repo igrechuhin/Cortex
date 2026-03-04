@@ -939,8 +939,8 @@ class TestTiktokenTimeoutAndRetry:
             if original_tiktoken is not None:
                 sys.modules["tiktoken"] = original_tiktoken
 
-    def test_load_tiktoken_exponential_backoff_timing(self):
-        """Test that retry delays use exponential backoff."""
+    def test_load_tiktoken_does_not_block_with_sleep(self):
+        """Test that retries do not block the event loop with time.sleep."""
         # Arrange
         counter = TokenCounter()
 
@@ -967,14 +967,8 @@ class TestTiktokenTimeoutAndRetry:
                         )
 
                         # Assert
-                        # Should sleep with exponential backoff: 2.0s, 4.0s
-                        assert mock_sleep.call_count == 2
-                        assert (
-                            mock_sleep.call_args_list[0][0][0] == 2.0
-                        )  # First retry: 2s
-                        assert (
-                            mock_sleep.call_args_list[1][0][0] == 4.0
-                        )  # Second retry: 4s
+                        # New behavior: backoff delays are computed but do not call time.sleep
+                        assert mock_sleep.call_count == 0
         finally:
             if original_tiktoken is not None:
                 sys.modules["tiktoken"] = original_tiktoken

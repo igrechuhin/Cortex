@@ -7,6 +7,7 @@
 - **Commit pipeline Phase A preflight** - Ran execute_pre_commit_checks(phase="A") with fix_errors, quality, format, synapse_format, synapse_lint, type_check, tests, eval_fast, markdown_lint; all checks passed with 4874 tests, 92.15%+ coverage, and zero errors/warnings.
 - **Phase 71: Fix TOCTOU race conditions in file and task locking (2026-03-04)** - COMPLETE. Implemented atomic file, cache, and task locking with PID metadata and verified via full pre-commit checks.
 - **Phase 72: Fix is_connection_error Over-Matching and Consolidate Duplicates (2026-03-04)** - COMPLETE. Consolidated connection error detection into a single helper, tightened matching to avoid resource and tool-not-found false positives, and added focused tests for true and false cases.
+- **Phase 73: Fix blocking event loop and O(n) data structures (2026-03-04)** - COMPLETE. Replaced list-based LRU cache and BFS queues with O(1) data structures, removed blocking tiktoken backoff sleeps in TokenCounter, and updated tests with full quality gate.
 
 ## 2026-03-03
 

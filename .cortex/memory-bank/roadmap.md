@@ -12,7 +12,6 @@
 
 ## Pending plans (from .cortex/plans)
 
-- **Phase 73: Fix blocking event loop and O(n) data structures** - PENDING - Replace `time.sleep()` with async, LRU cache list with OrderedDict, `list.pop(0)` with deque. Plan: `.cortex/plans/phase-73-fix-blocking-and-data-structures.md`
 - **Phase 74: Async I/O migration for hot paths** - PENDING - Migrate sync file I/O to async in context loading, cache, and session modules; add parallel file reading. Plan: `.cortex/plans/phase-74-async-io-hot-paths.md`
 - **Phase 75: Unify tool response format** - PENDING - Standardize all MCP tool responses to `{"status": "success"|"error", ...}` with shared response builder. Plan: `.cortex/plans/phase-75-unify-response-format.md`
 - **Phase 76: Replace TypedDict with BaseModel and remove type-checker suppressions** - PENDING - Eliminate 8 TypedDict classes, 2 TYPE_CHECKING imports, ~17 suppression comments. Plan: `.cortex/plans/phase-76-typeddict-suppressions-cleanup.md`

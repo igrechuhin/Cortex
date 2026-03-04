@@ -15,6 +15,8 @@
 
 - ✅ **Phase 72: Fix is_connection_error over-matching and consolidate duplicates** - COMPLETE (2026-03-04) - Consolidated all is_connection_error implementations into cortex.core.mcp_stability_config, tightened connection message matching to avoid resource/tool-not-found false positives, and updated main/context logging callers.
 
+- ✅ **Phase 73: Fix blocking event loop and O(n) data structures** - COMPLETE (2026-03-04) - Replaced list-based LRU cache and BFS queues with O(1) data structures and removed blocking tiktoken backoff sleeps in TokenCounter while keeping existing APIs and behavior, then updated tests and ran the full quality gate.
+
 ## Completed Work (2026-03-03)
 
 - **Summary (2026-03-03)** - 1 entries archived.

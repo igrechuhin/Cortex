@@ -5,6 +5,7 @@ This module provides algorithmic operations for analyzing dependency graphs,
 including cycle detection, topological sorting, and path finding.
 """
 
+from collections import deque
 from collections.abc import Callable
 
 
@@ -122,12 +123,12 @@ class GraphAlgorithms:
                     adj_list[dep].append(file)
                     in_degree[file] += 1
 
-        # Kahn's algorithm
-        queue: list[str] = [f for f in files if in_degree[f] == 0]
+        # Kahn's algorithm (use deque for O(1) queue operations)
+        queue = deque(f for f in files if in_degree[f] == 0)
         result: list[str] = []
 
         while queue:
-            current = queue.pop(0)
+            current = queue.popleft()
             result.append(current)
 
             neighbors = adj_list[current]
@@ -158,10 +159,10 @@ class GraphAlgorithms:
             Set of reachable node names
         """
         reachable: set[str] = set()
-        to_visit: list[str] = [start_node]
+        to_visit = deque([start_node])
 
         while to_visit:
-            current = to_visit.pop(0)
+            current = to_visit.popleft()
             if current in reachable:
                 continue
             reachable.add(current)
@@ -178,7 +179,7 @@ class GraphAlgorithms:
         get_neighbors_fn: Callable[[str], list[str]],
         filter_fn: Callable[[str, str], bool] | None,
         reachable: set[str],
-        to_visit: list[str],
+        to_visit: list[str] | deque[str],
     ) -> None:
         """Add filtered neighbors to visit queue."""
         for neighbor in get_neighbors_fn(current):
@@ -201,11 +202,11 @@ class GraphAlgorithms:
             Set of all transitive dependencies (not including target)
         """
         dependencies: set[str] = set()
-        to_process: list[str] = [target]
+        to_process = deque([target])
         visited: set[str] = {target}
 
         while to_process:
-            current = to_process.pop(0)
+            current = to_process.popleft()
             deps = get_dependencies_fn(current)
 
             for dep in deps:
