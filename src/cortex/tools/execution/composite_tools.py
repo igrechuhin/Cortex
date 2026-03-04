@@ -10,11 +10,14 @@ Consolidates agent-skills operations into a single dispatcher:
 from __future__ import annotations
 
 import json
+from typing import cast
 
 from cortex.core.constants import MCP_TOOL_TIMEOUT_COMPLEX
 from cortex.core.mcp_annotations import safe_write_annotations
 from cortex.core.mcp_stability import ensure_usage_context, mcp_tool_wrapper
+from cortex.core.models import JsonValue
 from cortex.server import mcp
+from cortex.tools.response_builder import error_response, success_response
 
 # ---------------------------------------------------------------------------
 # Internal implementations (no @mcp.tool; called by run_composite_workflow)
@@ -41,11 +44,10 @@ async def _quick_start_impl(
         token_budget=budget,
     )
     return json.dumps(
-        {
-            "status": "success",
-            "session_brief": json.loads(brief_json),
-            "context": json.loads(context_json),
-        },
+        success_response(
+            session_brief=json.loads(brief_json),
+            context=json.loads(context_json),
+        ),
         indent=2,
     )
 
@@ -63,14 +65,13 @@ async def _quality_check_impl() -> str:
         fix_result = await execute_pre_commit_checks(
             checks=["fix_quality"], include_untracked_markdown=True
         )
-    out = {
-        "status": "success",
-        "pre_commit_result": pre_result,
+    payload: dict[str, JsonValue] = {
+        "pre_commit_result": cast(JsonValue, pre_result),
         "fix_applied": fix_result is not None,
     }
     if fix_result is not None:
-        out["fix_result"] = fix_result
-    return json.dumps(out, indent=2)
+        payload["fix_result"] = cast(JsonValue, fix_result)
+    return json.dumps(success_response(**payload), indent=2)
 
 
 async def _safe_manage_file_impl(
@@ -98,12 +99,11 @@ async def _safe_manage_file_impl(
     )
     post = await validate(check_type=vct)
     return json.dumps(
-        {
-            "status": "success",
-            "pre_validation": json.loads(pre),
-            "manage_file_result": json.loads(file_result),
-            "post_validation": json.loads(post),
-        },
+        success_response(
+            pre_validation=json.loads(pre),
+            manage_file_result=json.loads(file_result),
+            post_validation=json.loads(post),
+        ),
         indent=2,
     )
 
@@ -124,10 +124,9 @@ async def _run_safe_manage_file(
     """Run safe_manage_file with validation of required params."""
     if not file_name or not file_operation:
         return json.dumps(
-            {
-                "status": "error",
-                "message": "safe_manage_file requires file_name and file_operation",
-            },
+            error_response(
+                error="safe_manage_file requires file_name and file_operation",
+            ),
             indent=2,
         )
     return await _safe_manage_file_impl(
@@ -176,7 +175,7 @@ async def _dispatch_agent_workflow(
     if op == "suggest_workflow":
         return await _run_suggest_workflow(task_description, limit)
     msg = f"Unknown operation: {operation}. Use quick_start, quality_check, safe_manage_file, or suggest_workflow."
-    return json.dumps({"status": "error", "message": msg}, indent=2)
+    return json.dumps(error_response(error=msg), indent=2)
 
 
 # ---------------------------------------------------------------------------

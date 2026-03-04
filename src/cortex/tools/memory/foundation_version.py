@@ -22,10 +22,11 @@ from cortex.core.mcp_stability import (
     mcp_resource_wrapper,
     mcp_tool_wrapper,
 )
-from cortex.core.models import ModelDict
+from cortex.core.models import JsonValue, ModelDict
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.core.project_root_resolver import resolve_project_root_async
 from cortex.server import mcp
+from cortex.tools.response_builder import error_response, success_response
 
 
 # Tool consolidated into query_memory_bank (Phase 50); kept as callable for dispatch.
@@ -112,7 +113,7 @@ async def get_version_history(
             ctx, "error", f"get_version_history: failed: {e}", logger_name=__name__
         )
         return json.dumps(
-            {"status": "error", "error": str(e), "error_type": type(e).__name__},
+            error_response(error=str(e), error_type=type(e).__name__),
             indent=2,
         )
 
@@ -136,12 +137,11 @@ async def _get_version_history_impl(
     sorted_history = sort_and_limit_versions(version_history, limit)
     versions = format_versions_for_export(sorted_history)
     return json.dumps(
-        {
-            "status": "success",
-            "file_name": file_name,
-            "versions": versions,
-            "total_versions": len(versions),
-        },
+        success_response(
+            file_name=file_name,
+            versions=cast(JsonValue, versions),
+            total_versions=len(versions),
+        ),
         indent=2,
     )
 

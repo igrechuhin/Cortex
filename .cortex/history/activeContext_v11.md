@@ -21,6 +21,8 @@
 
 - ✅ **Phase 75: Unify tool response format - response builder migration (partial)** - COMPLETE (2026-03-04) - Migrated load_context metadata/result formatters and validation tools (schema, quality, duplications, roadmap_sync, query_usage) to use the shared response_builder helpers with canonical {"status": "success"|"error", ...} responses; fixed type issues and passed full quality gate (format, type_check, tests, quality) with 4884 tests and ~92.17% coverage.
 
+- ✅ **Phase 75: Unify tool response format** - COMPLETE (2026-03-04) - Migrated composite workflow dispatcher and Phase 1 foundation tools (dependency graph and version history) to the canonical response builder, with tests and quality gate passing.
+
 ## Completed Work (2026-03-03)
 
 - **Summary (2026-03-03)** - 1 entries archived.

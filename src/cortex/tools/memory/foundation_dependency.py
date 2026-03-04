@@ -22,6 +22,7 @@ from cortex.core.project_root_resolver import resolve_project_root_async
 from cortex.managers import initialization
 from cortex.managers.utils import get_manager
 from cortex.server import mcp
+from cortex.tools.response_builder import error_response, success_response
 
 
 # Tool consolidated into query_memory_bank (Phase 50); kept as callable for dispatch.
@@ -116,7 +117,7 @@ async def get_dependency_graph(
             logger_name=__name__,
         )
         return json.dumps(
-            {"status": "error", "error": str(e), "error_type": type(e).__name__},
+            error_response(error=str(e), error_type=type(e).__name__),
             indent=2,
         )
 
@@ -140,17 +141,16 @@ async def _get_dependency_graph_impl(root: Path, format: str) -> str:
     if format == "mermaid":
         diagram = dep_graph.to_mermaid()
         return json.dumps(
-            {"status": "success", "format": "mermaid", "diagram": diagram},
+            success_response(format="mermaid", diagram=diagram),
             indent=2,
         )
     graph_data = build_graph_data(dep_graph.static_deps)
     return json.dumps(
-        {
-            "status": "success",
-            "format": "json",
-            "graph": graph_data,
-            "loading_order": dep_graph.compute_loading_order(),
-        },
+        success_response(
+            format="json",
+            graph=graph_data,
+            loading_order=cast(JsonValue, dep_graph.compute_loading_order()),
+        ),
         indent=2,
     )
 

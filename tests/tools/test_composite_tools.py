@@ -186,4 +186,4 @@ class TestAgentWorkflowSafeManageFile:
         result = await run_composite_workflow(operation="safe_manage_file")
         out = json.loads(result)
         assert out["status"] == "error"
-        assert "file_name" in out["message"].lower()
+        assert "file_name" in out["error"].lower()
