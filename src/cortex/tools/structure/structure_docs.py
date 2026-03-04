@@ -88,14 +88,15 @@ GET_STRUCTURE_INFO_DOC = """Get current project structure configuration, paths, 
         None. Project root is resolved by the server (MCP roots or cwd).
 
     Returns:
-        JSON string containing structure_info (paths, version, config) and success flag.
+        JSON string containing structure_info (paths, version, config) with a canonical
+        status field.
 
     Example (success):
-        {"success": true, "structure_info": {"paths": {"memory_bank": "..."}, ...},
+        {"status": "success", "structure_info": {"paths": {"memory_bank": "..."}, ...},
          "message": "✅ Structure information retrieved successfully"}
 
     Example (error):
-        {"success": false, "error": "Project root not found", "error_type": "ValueError"}
+        {"status": "error", "error": "Project root not found", "error_type": "ValueError"}
 
     Note:
         - This is a read-only tool that does not modify any files or directories

@@ -7,7 +7,8 @@ import json
 from typing import cast
 
 from cortex.core.dependency_graph import DependencyGraph
-from cortex.core.models import ModelDict
+from cortex.core.models import JsonValue, ModelDict
+from cortex.tools.response_builder import success_response
 
 
 def generate_mermaid_response(
@@ -25,12 +26,11 @@ def generate_mermaid_response(
     mermaid = link_graph.to_mermaid()
 
     return json.dumps(
-        {
-            "status": "success",
-            "format": "mermaid",
-            "diagram": mermaid,
-            "cycles": cycles,
-        },
+        success_response(
+            format="mermaid",
+            diagram=mermaid,
+            cycles=cast(JsonValue, cycles),
+        ),
         indent=2,
     )
 
@@ -130,12 +130,11 @@ def generate_json_response(
     summary = calculate_link_summary(link_graph, cycles)
 
     return json.dumps(
-        {
-            "status": "success",
-            "format": "json",
+        success_response(
+            format="json",
             **graph_data,
-            "cycles": cycles,
-            "summary": summary,
-        },
+            cycles=cast(JsonValue, cycles),
+            summary=cast(JsonValue, summary),
+        ),
         indent=2,
     )

@@ -24,6 +24,7 @@ from cortex.tools.linking.graph_formatters import (
     generate_json_response,
     generate_mermaid_response,
 )
+from cortex.tools.response_builder import error_response
 
 
 # Tool consolidated into query_memory_bank (Phase 50); kept as callable for dispatch.
@@ -236,7 +237,7 @@ async def get_link_graph(
             ctx, "error", f"get_link_graph: failed: {e}", logger_name=__name__
         )
         return json.dumps(
-            {"status": "error", "error": str(e), "error_type": type(e).__name__},
+            error_response(error=str(e), error_type=type(e).__name__),
             indent=2,
         )
 

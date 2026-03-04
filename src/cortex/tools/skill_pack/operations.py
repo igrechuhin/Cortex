@@ -12,6 +12,7 @@ from typing import Literal
 
 from cortex.core.constants import MCP_TOOL_TIMEOUT_FAST
 from cortex.core.mcp_stability import ensure_usage_context, mcp_tool_wrapper
+from cortex.tools.response_builder import error_response, success_response
 from cortex.tools.skill_pack.models import SkillPackManifest
 
 _skills_dir: Path | None = None
@@ -67,10 +68,9 @@ def _skill_pack_discover_result(task_description: str | None, limit: int) -> str
     desc = (task_description or "").strip()
     if not desc:
         return json.dumps(
-            {
-                "status": "error",
-                "error": "task_description required when operation is discover",
-            },
+            error_response(
+                error="task_description required when operation is discover",
+            ),
             indent=2,
         )
     return _do_discover(desc, limit)
@@ -81,10 +81,9 @@ def _skill_pack_load_result(pack_name: str | None) -> str:
     name = (pack_name or "").strip()
     if not name:
         return json.dumps(
-            {
-                "status": "error",
-                "error": "pack_name required when operation is load",
-            },
+            error_response(
+                error="pack_name required when operation is load",
+            ),
             indent=2,
         )
     return _do_load(name)
@@ -104,11 +103,10 @@ def _do_discover(task_description: str, limit: int = 5) -> str:
     recommended = [s[1] for s in scored if s[0] > 0][:limit]
     if not recommended and manifests:
         recommended = [scored[0][1]] if scored else []
-    result = {
-        "status": "success",
-        "task_description": task_description,
-        "count": len(recommended),
-        "packs": [
+    result = success_response(
+        task_description=task_description,
+        count=len(recommended),
+        packs=[
             {
                 "name": m.name,
                 "description": m.description,
@@ -120,7 +118,7 @@ def _do_discover(task_description: str, limit: int = 5) -> str:
             }
             for m in recommended
         ],
-    }
+    )
     return json.dumps(result, indent=2)
 
 
@@ -131,18 +129,14 @@ def _do_load(pack_name: str) -> str:
     for m in manifests:
         if m.name.lower() == name_lower:
             return json.dumps(
-                {
-                    "status": "success",
-                    "pack": m.model_dump(mode="json"),
-                },
+                success_response(pack=m.model_dump(mode="json")),
                 indent=2,
             )
     return json.dumps(
-        {
-            "status": "error",
-            "error": f"Skill pack not found: {pack_name}",
-            "available": [m.name for m in manifests],
-        },
+        error_response(
+            error=f"Skill pack not found: {pack_name}",
+            available=[m.name for m in manifests],
+        ),
         indent=2,
     )
 
@@ -207,9 +201,8 @@ async def skill_pack(
     if op == "load":
         return _skill_pack_load_result(pack_name)
     return json.dumps(
-        {
-            "status": "error",
-            "error": f"Unknown operation: {operation!r}. Use discover or load.",
-        },
+        error_response(
+            error=f"Unknown operation: {operation!r}. Use discover or load.",
+        ),
         indent=2,
     )

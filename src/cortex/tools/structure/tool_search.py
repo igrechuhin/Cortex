@@ -7,11 +7,14 @@ This tool allows discovering deferred tools by query (regex over name and ration
 from __future__ import annotations
 
 import json
+from typing import cast
 
 from cortex.core.constants import MCP_TOOL_TIMEOUT_FAST
 from cortex.core.mcp_annotations import read_only_annotations
 from cortex.core.mcp_stability import ensure_usage_context, mcp_tool_wrapper
+from cortex.core.models import JsonValue, ModelDict
 from cortex.server import mcp
+from cortex.tools.response_builder import error_response, success_response
 from cortex.tools.structure.categories import (
     ToolCategory,
     ToolCategoryName,
@@ -67,49 +70,49 @@ async def search_tools(
         else None
     )
     matches = search_deferred_tools(query, category=cat, limit=limit)
-    return json.dumps(
-        {
-            "status": "success",
-            "query": query,
-            "count": len(matches),
-            "tools": [
-                {
-                    "name": m.name,
-                    "category": m.category.value,
-                    "rationale": m.rationale,
-                }
-                for m in matches
-            ],
-        },
-        indent=2,
+    payload = success_response(
+        query=query,
+        count=len(matches),
+        tools=[
+            {
+                "name": m.name,
+                "category": m.category.value,
+                "rationale": m.rationale,
+            }
+            for m in matches
+        ],
     )
+    return json.dumps(payload, indent=2)
 
 
 def _list_tools_invalid_category(category: str) -> str:
     """Return error JSON for invalid category."""
     return json.dumps(
-        {
-            "status": "error",
-            "error": f"Invalid category: {category!r}. Use always_loaded, deferred_medium, or deferred_low.",
-        },
+        error_response(
+            error=(
+                f"Invalid category: {category!r}. "
+                "Use always_loaded, deferred_medium, or deferred_low."
+            ),
+        ),
         indent=2,
     )
 
 
 def _list_tools_by_category_all() -> str:
     """Build JSON for list_available_tools when no category filter."""
-    by_category: dict[str, list[dict[str, str]]] = {}
-    summary: dict[str, int] = {}
+    by_category: ModelDict = {}
+    summary: ModelDict = {}
     for cat in ToolCategory:
         entries = get_tools_by_category(cat)
         by_category[cat.value] = [
             {"name": e.name, "rationale": e.rationale} for e in entries
         ]
         summary[cat.value] = len(entries)
-    return json.dumps(
-        {"status": "success", "by_category": by_category, "summary": summary},
-        indent=2,
+    payload = success_response(
+        by_category=cast(JsonValue, by_category),
+        summary=cast(JsonValue, summary),
     )
+    return json.dumps(payload, indent=2)
 
 
 # Internalized for tool budget reduction (2026-02-26). Use search_tools for discovery.
@@ -152,20 +155,17 @@ async def list_available_tools(
     if category is not None:
         cat = ToolCategory(category)
         entries = get_tools_by_category(cat)
-        return json.dumps(
-            {
-                "status": "success",
-                "category": category,
-                "count": len(entries),
-                "tools": [
-                    {
-                        "name": e.name,
-                        "category": e.category.value,
-                        "rationale": e.rationale,
-                    }
-                    for e in entries
-                ],
-            },
-            indent=2,
+        payload = success_response(
+            category=category,
+            count=len(entries),
+            tools=[
+                {
+                    "name": e.name,
+                    "category": e.category.value,
+                    "rationale": e.rationale,
+                }
+                for e in entries
+            ],
         )
+        return json.dumps(payload, indent=2)
     return _list_tools_by_category_all()
