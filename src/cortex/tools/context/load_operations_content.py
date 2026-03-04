@@ -4,6 +4,7 @@ Phase 4: Context loading full/summary content path.
 Reads files, loads content, and handles full/summary depth loading.
 """
 
+import asyncio
 import logging
 from pathlib import Path
 
@@ -21,32 +22,55 @@ from cortex.tools.context.metadata_helpers import summarize_files_content
 
 logger = logging.getLogger(__name__)
 
+MAX_CONCURRENT_FILE_READS = 10
+
+
+async def _load_single_file_for_context(
+    file_name: str,
+    metadata_index: MetadataIndex,
+    fs_manager: FileSystemManager,
+    semaphore: asyncio.Semaphore,
+) -> tuple[str, str | None, ModelDict | None]:
+    """Load a single file's content and metadata for context loading."""
+    async with semaphore:
+        file_path = metadata_index.memory_bank_dir / file_name
+        exists = await asyncio.to_thread(file_path.exists)
+        if not exists:
+            logger.warning("Skipping stale index entry: %s", file_name)
+            return file_name, None, None
+        try:
+            content, _ = await fs_manager.read_file(file_path)
+        except FileNotFoundError:
+            return file_name, None, None
+        metadata_raw = await metadata_index.get_file_metadata(file_name)
+        metadata_json: ModelDict | None = None
+        if metadata_raw is not None:
+            metadata_json = metadata_raw.model_dump(mode="json", by_alias=True)
+        return file_name, content, metadata_json
+
 
 async def read_all_files_for_context_loading(
     metadata_index: MetadataIndex,
     fs_manager: FileSystemManager,
 ) -> tuple[dict[str, str], dict[str, ModelDict]]:
-    """Read all files and their metadata for context loading."""
+    """Read all files and their metadata for context loading with parallel I/O."""
     all_files = await metadata_index.list_all_files()
     files_content: dict[str, str] = {}
     files_metadata: dict[str, ModelDict] = {}
+    semaphore = asyncio.Semaphore(MAX_CONCURRENT_FILE_READS)
 
-    for file_name in all_files:
-        file_path = metadata_index.memory_bank_dir / file_name
-        if not file_path.exists():
-            logger.warning("Skipping stale index entry: %s", file_name)
-            continue
-        try:
-            content, _ = await fs_manager.read_file(file_path)
+    tasks = [
+        _load_single_file_for_context(file_name, metadata_index, fs_manager, semaphore)
+        for file_name in all_files
+    ]
+
+    results = await asyncio.gather(*tasks)
+
+    for file_name, content, metadata_json in results:
+        if content is not None:
             files_content[file_name] = content
-
-            metadata_raw = await metadata_index.get_file_metadata(file_name)
-            if metadata_raw is not None:
-                files_metadata[file_name] = metadata_raw.model_dump(
-                    mode="json", by_alias=True
-                )
-        except FileNotFoundError:
-            continue
+        if metadata_json is not None:
+            files_metadata[file_name] = metadata_json
 
     return files_content, files_metadata
 
@@ -88,7 +112,8 @@ async def load_and_format_context_result(
 ) -> str:
     """Load context result and format with logging."""
     if project_root is not None:
-        log_context_call(
+        await asyncio.to_thread(
+            log_context_call,
             project_root,
             task_description,
             effective_budget,

@@ -4,6 +4,7 @@ Phase 4: Context loading metadata-only / hybrid retrieval.
 Implements metadata_only depth with hybrid retrieval and role-based scoring.
 """
 
+import asyncio
 import json
 from pathlib import Path
 
@@ -219,7 +220,7 @@ def _do_emit_metadata_log(
     )
 
 
-def _emit_metadata_log_if_needed(
+async def _emit_metadata_log_if_needed(
     project_root: Path | None,
     task_description: str,
     token_budget: int,
@@ -238,7 +239,8 @@ def _emit_metadata_log_if_needed(
     """Emit metadata-only log when project_root is set."""
     if project_root is None:
         return
-    _do_emit_metadata_log(
+    await asyncio.to_thread(
+        _do_emit_metadata_log,
         project_root,
         task_description,
         token_budget,
@@ -282,7 +284,7 @@ def _build_response_from_ctx(
     )
 
 
-def _finalize_metadata_response(
+async def _finalize_metadata_response(
     ctx: tuple[
         dict[str, str],
         int,
@@ -299,7 +301,7 @@ def _finalize_metadata_response(
     agent_role: AgentRole | None,
 ) -> str:
     """Emit log if needed and build response from context tuple."""
-    _emit_metadata_log_if_needed(
+    await _emit_metadata_log_if_needed(
         project_root,
         task_description,
         token_budget,
@@ -326,7 +328,7 @@ async def load_context_metadata_only(
     ctx = await prepare_hybrid_metadata_context(
         metadata_index, task_description, always_load_sections, fs_manager, agent_role
     )
-    return _finalize_metadata_response(
+    return await _finalize_metadata_response(
         ctx,
         always_load_sections,
         task_description,

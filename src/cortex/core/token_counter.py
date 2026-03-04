@@ -1,5 +1,6 @@
 """Token counting using tiktoken library for accurate context management."""
 
+import asyncio
 import hashlib
 import logging
 from pathlib import Path
@@ -486,10 +487,11 @@ class TokenCounter:
         Raises:
             FileNotFoundError: If file doesn't exist
         """
-        if not file_path.exists():
+        exists = await asyncio.to_thread(file_path.exists)
+        if not exists:
             raise FileNotFoundError(f"File not found: {file_path}")
 
-        content = file_path.read_text(encoding="utf-8")
+        content = await asyncio.to_thread(file_path.read_text, encoding="utf-8")
         return self.count_tokens(content)
 
     def parse_markdown_sections(

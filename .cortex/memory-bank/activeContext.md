@@ -17,6 +17,8 @@
 
 - ✅ **Phase 73: Fix blocking event loop and O(n) data structures** - COMPLETE (2026-03-04) - Replaced list-based LRU cache and BFS queues with O(1) data structures and removed blocking tiktoken backoff sleeps in TokenCounter while keeping existing APIs and behavior, then updated tests and ran the full quality gate.
 
+- ✅ **Phase 74: Async I/O migration for hot paths** - COMPLETE (2026-03-04) - Migrated context loading, token counting, and session logging hot paths to async I/O, added parallel file reading with a bounded concurrency limit, and updated tests to verify behavior.
+
 ## Completed Work (2026-03-03)
 
 - **Summary (2026-03-03)** - 1 entries archived.

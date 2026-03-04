@@ -5,14 +5,20 @@ Tests load_context_impl skips stale index entries (files in index but not on dis
 Tests hybrid retrieval strategy with always-load sections.
 """
 
+import asyncio
 import json
 from pathlib import Path
 
 import pytest
 
+from cortex.core.file_system import FileSystemManager
 from cortex.core.token_counter import TokenCounter
 from cortex.managers.initialization import get_managers
 from cortex.tools.context.load_operations import load_context_impl
+from cortex.tools.context.load_operations_content import (
+    MAX_CONCURRENT_FILE_READS,
+    read_all_files_for_context_loading,
+)
 from tests.helpers.path_helpers import ensure_test_cortex_structure
 
 
@@ -68,6 +74,80 @@ class TestLoadContextSkipsStaleIndexEntries:
         selected = result.get("selected_files", [])
         assert "existing.md" in selected
         assert "stale.md" not in selected
+
+
+class TestParallelFileLoading:
+    """Tests for parallel file loading with concurrency limit."""
+
+    @pytest.mark.asyncio
+    async def test_read_all_files_for_context_loading_parallel_with_limit(
+        self,
+        temp_project_root: Path,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """Ensure files are loaded in parallel and respect concurrency limit."""
+        memory_bank_dir = ensure_test_cortex_structure(temp_project_root)
+
+        file_names: list[str] = []
+        contents: dict[str, str] = {}
+        for i in range(20):
+            name = f"file{i}.md"
+            path = memory_bank_dir / name
+            content = f"# File {i}\n\nContent {i}."
+            _ = path.write_text(content)
+            file_names.append(name)
+            contents[name] = content
+
+        mgrs = await get_managers(temp_project_root)
+        metadata_index = mgrs.index
+        _ = await metadata_index.load()
+
+        for name in file_names:
+            path = memory_bank_dir / name
+            content = contents[name]
+            await metadata_index.update_file_metadata(
+                file_name=name,
+                path=path,
+                exists=True,
+                size_bytes=len(content.encode("utf-8")),
+                token_count=10,
+                content_hash=f"sha256:{name}",
+                sections=[],
+            )
+
+        max_concurrent = 0
+        current = 0
+        lock = asyncio.Lock()
+
+        async def fake_read_file(
+            self: FileSystemManager,
+            file_path: Path,
+        ) -> tuple[str, str]:
+            nonlocal current, max_concurrent
+            async with lock:
+                current += 1
+                if current > max_concurrent:
+                    max_concurrent = current
+            try:
+                await asyncio.sleep(0.01)
+                content = contents[file_path.name]
+                return content, "sha256:dummy"
+            finally:
+                async with lock:
+                    current -= 1
+
+        monkeypatch.setattr(FileSystemManager, "read_file", fake_read_file)
+
+        fs_manager = mgrs.fs
+        files_content, files_metadata = await read_all_files_for_context_loading(
+            metadata_index,
+            fs_manager,
+        )
+
+        assert set(files_content.keys()) == set(file_names)
+        assert set(files_metadata.keys()) == set(file_names)
+        assert max_concurrent > 1
+        assert max_concurrent <= MAX_CONCURRENT_FILE_READS
 
 
 class TestHybridRetrievalStrategy:

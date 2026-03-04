@@ -12,7 +12,6 @@
 
 ## Pending plans (from .cortex/plans)
 
-- **Phase 74: Async I/O migration for hot paths** - PENDING - Migrate sync file I/O to async in context loading, cache, and session modules; add parallel file reading. Plan: `.cortex/plans/phase-74-async-io-hot-paths.md`
 - **Phase 75: Unify tool response format** - PENDING - Standardize all MCP tool responses to `{"status": "success"|"error", ...}` with shared response builder. Plan: `.cortex/plans/phase-75-unify-response-format.md`
 - **Phase 76: Replace TypedDict with BaseModel and remove type-checker suppressions** - PENDING - Eliminate 8 TypedDict classes, 2 TYPE_CHECKING imports, ~17 suppression comments. Plan: `.cortex/plans/phase-76-typeddict-suppressions-cleanup.md`
 - **Phase 77: Fix coverage gaps, silent error handling, and stub implementation** - PENDING - Add tests for 0%-coverage module, fix 11 silent `except Exception: pass` blocks, resolve migration stub. Plan: `.cortex/plans/phase-77-coverage-gaps-error-handling.md`
