@@ -7,12 +7,8 @@ Extracted from roadmap_operations for maintainability.
 from __future__ import annotations
 
 from pathlib import Path
-from typing import TYPE_CHECKING
 
 from cortex.core.constants import MemoryBankFile
-
-if TYPE_CHECKING:
-    from cortex.tools.models import AddRoadmapEntryResult
 from cortex.core.models import OperationStatus
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.tools.plans.entries_content import (
@@ -25,14 +21,13 @@ from cortex.tools.plans.entries_io import (
     read_roadmap_file,
     write_roadmap_file,
 )
+from cortex.tools.plans.roadmap_operations_models import AddRoadmapEntryResult
 
 
 def _handle_read_error(
     section_id: str | None, read_error: str
 ) -> AddRoadmapEntryResult:
     """Handle read errors. Returns error result."""
-    from cortex.tools.models import AddRoadmapEntryResult
-
     return AddRoadmapEntryResult(
         status=OperationStatus.ERROR,
         file_name=MemoryBankFile.ROADMAP,
@@ -47,8 +42,6 @@ def _handle_insert_failure(
     section_id: str,
 ) -> AddRoadmapEntryResult:
     """Handle insert failures. Returns error result."""
-    from cortex.tools.models import AddRoadmapEntryResult
-
     return AddRoadmapEntryResult(
         status=OperationStatus.ERROR,
         file_name=MemoryBankFile.ROADMAP,
@@ -61,8 +54,6 @@ def _handle_insert_failure(
 
 def _handle_write_error(section_id: str, write_error: str) -> AddRoadmapEntryResult:
     """Handle write errors. Returns error result."""
-    from cortex.tools.models import AddRoadmapEntryResult
-
     return AddRoadmapEntryResult(
         status=OperationStatus.ERROR,
         file_name=MemoryBankFile.ROADMAP,
@@ -77,8 +68,6 @@ def _make_insert_success_result(
     section_id: str, line_inserted: int
 ) -> AddRoadmapEntryResult:
     """Build success result for roadmap insertion."""
-    from cortex.tools.models import AddRoadmapEntryResult
-
     return AddRoadmapEntryResult(
         status=OperationStatus.SUCCESS,
         file_name=MemoryBankFile.ROADMAP,
@@ -93,8 +82,6 @@ def _handle_section_validation_error(
     section: str, section_error: str
 ) -> AddRoadmapEntryResult:
     """Handle section validation errors."""
-    from cortex.tools.models import AddRoadmapEntryResult
-
     return AddRoadmapEntryResult(
         status=OperationStatus.ERROR,
         file_name=MemoryBankFile.ROADMAP,
@@ -107,8 +94,6 @@ def _handle_section_validation_error(
 
 def _handle_completed_entry_rejected() -> AddRoadmapEntryResult:
     """Return error result when entry looks like completed work."""
-    from cortex.tools.models import AddRoadmapEntryResult
-
     return AddRoadmapEntryResult(
         status=OperationStatus.ERROR,
         file_name=MemoryBankFile.ROADMAP,

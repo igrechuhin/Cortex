@@ -1,21 +1,31 @@
 """Data models for health-check analysis."""
 
-from typing import TypedDict
+from enum import Enum
 
 from pydantic import BaseModel, Field
 
+from cortex.core.models import DictLikeModel
 
-class MergeOpportunity(TypedDict):
+
+class QualityImpact(str, Enum):
+    """Impact classification for a potential merge."""
+
+    POSITIVE = "positive"
+    NEGATIVE = "negative"
+    NEUTRAL = "neutral"
+
+
+class MergeOpportunity(DictLikeModel):
     """Represents a merge opportunity between files."""
 
     files: list[str]
     similarity: float
     merge_suggestion: str
-    quality_impact: str
+    quality_impact: QualityImpact
     estimated_savings: str
 
 
-class OptimizationOpportunity(TypedDict):
+class OptimizationOpportunity(DictLikeModel):
     """Represents an optimization opportunity."""
 
     file: str
@@ -24,7 +34,7 @@ class OptimizationOpportunity(TypedDict):
     estimated_improvement: str
 
 
-class PromptAnalysisResult(TypedDict):
+class PromptAnalysisResult(DictLikeModel):
     """Results from prompt analysis."""
 
     total: int
@@ -32,7 +42,7 @@ class PromptAnalysisResult(TypedDict):
     optimization_opportunities: list[OptimizationOpportunity]
 
 
-class RuleAnalysisResult(TypedDict):
+class RuleAnalysisResult(DictLikeModel):
     """Results from rule analysis."""
 
     total: int
@@ -41,7 +51,7 @@ class RuleAnalysisResult(TypedDict):
     optimization_opportunities: list[OptimizationOpportunity]
 
 
-class ToolAnalysisResult(TypedDict):
+class ToolAnalysisResult(DictLikeModel):
     """Results from tool analysis."""
 
     total: int
@@ -50,15 +60,7 @@ class ToolAnalysisResult(TypedDict):
     consolidation_opportunities: list[MergeOpportunity]
 
 
-class HealthCheckReport(TypedDict):
-    """Comprehensive health-check report."""
-
-    status: str
-    analysis_type: str
-    prompts: PromptAnalysisResult
-    rules: RuleAnalysisResult
-    tools: ToolAnalysisResult
-    recommendations: list[str]
+type HealthCheckReport = dict[str, object]
 
 
 class HealthCheckReportPayload(BaseModel):

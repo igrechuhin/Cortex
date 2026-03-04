@@ -712,11 +712,16 @@ Working on Phase 54.
             fs=fs_manager, index=metadata_index, tokens=token_counter
         )
 
-        result = await session_start_impl(
-            None,
-            tmp_path,
-            managers,  # type: ignore[arg-type]
-        )
+        with patch(
+            "cortex.tools.session.health.get_mcp_health_status",
+            new_callable=AsyncMock,
+            return_value=(True, None),
+        ):
+            result = await session_start_impl(
+                None,
+                tmp_path,
+                managers,  # type: ignore[arg-type]
+            )
 
         assert isinstance(result, SessionStartResult)
         assert result.status == "success"
@@ -809,11 +814,16 @@ Working on Phase 54.
             fs=fs_manager, index=metadata_index, tokens=token_counter
         )
 
-        result = await session_start_impl(
-            None,
-            tmp_path,
-            managers,  # type: ignore[arg-type]
-        )
+        with patch(
+            "cortex.tools.session.health.get_mcp_health_status",
+            new_callable=AsyncMock,
+            return_value=(True, None),
+        ):
+            result = await session_start_impl(
+                None,
+                tmp_path,
+                managers,  # type: ignore[arg-type]
+            )
 
         assert isinstance(result, SessionStartResult)
         assert result.status == "success"
@@ -894,11 +904,16 @@ Working on Phase 54.
             fs=fs_manager, index=metadata_index, tokens=token_counter
         )
 
-        result = await session_start_impl(
-            None,
-            tmp_path,
-            managers,  # type: ignore[arg-type]
-        )
+        with patch(
+            "cortex.tools.session.health.get_mcp_health_status",
+            new_callable=AsyncMock,
+            return_value=(True, None),
+        ):
+            result = await session_start_impl(
+                None,
+                tmp_path,
+                managers,  # type: ignore[arg-type]
+            )
 
         assert isinstance(result, SessionStartResult)
         assert result.status == "success"
@@ -977,9 +992,9 @@ Test.
             _ = await tool_fn(summary="Lifecycle integration test", ctx=None)
 
         with patch(
-            "cortex.tools.session.health.check_mcp_connection_health",
+            "cortex.tools.session.health.get_mcp_health_status",
             new_callable=AsyncMock,
-            return_value=_mcp_health_json(healthy=True),
+            return_value=(True, None),
         ):
             result = await session_start_impl(
                 None,
@@ -1035,9 +1050,9 @@ Test.
             fs=fs_manager, index=metadata_index, tokens=TokenCounter()
         )
         with patch(
-            "cortex.tools.session.health.check_mcp_connection_health",
+            "cortex.tools.session.health.get_mcp_health_status",
             new_callable=AsyncMock,
-            return_value=_mcp_health_json(healthy=False),
+            return_value=(False, "MCP connection unhealthy"),
         ):
             result = await session_start_impl(None, tmp_path, managers)  # type: ignore[arg-type]
         assert isinstance(result, SessionStartResult)
@@ -1059,7 +1074,12 @@ Test.
         fs_manager = FileSystemManager(tmp_path)
         managers = make_test_managers(fs=fs_manager)
 
-        result = await session_start_impl(None, tmp_path, managers)  # type: ignore[arg-type]
+        with patch(
+            "cortex.tools.session.health.get_mcp_health_status",
+            new_callable=AsyncMock,
+            return_value=(True, None),
+        ):
+            result = await session_start_impl(None, tmp_path, managers)  # type: ignore[arg-type]
 
         assert isinstance(result, SessionStartErrorResult)
         assert result.status == "error"
@@ -1074,7 +1094,12 @@ Test.
         fs_manager = FileSystemManager(tmp_path)
         managers = make_test_managers(fs=fs_manager)
 
-        result = await session_start_impl(None, tmp_path, managers)  # type: ignore[arg-type]
+        with patch(
+            "cortex.tools.session.health.get_mcp_health_status",
+            new_callable=AsyncMock,
+            return_value=(True, None),
+        ):
+            result = await session_start_impl(None, tmp_path, managers)  # type: ignore[arg-type]
 
         assert isinstance(result, SessionStartErrorResult)
         assert result.status == "error"
@@ -1094,7 +1119,12 @@ Test.
 
         managers = make_test_managers(fs=fs_manager)
 
-        result = await session_start_impl(None, tmp_path, managers)  # type: ignore[arg-type]
+        with patch(
+            "cortex.tools.session.health.get_mcp_health_status",
+            new_callable=AsyncMock,
+            return_value=(True, None),
+        ):
+            result = await session_start_impl(None, tmp_path, managers)  # type: ignore[arg-type]
 
         assert isinstance(result, SessionStartErrorResult)
         assert result.status == "error"
@@ -1176,6 +1206,11 @@ Working on Phase 54.
             patch(
                 "cortex.tools.session.start_tools.get_current_managers"
             ) as mock_managers,
+            patch(
+                "cortex.tools.session.health.get_mcp_health_status",
+                new_callable=AsyncMock,
+                return_value=(True, None),
+            ),
         ):
             mock_root.return_value = tmp_path
             mock_managers.return_value = managers

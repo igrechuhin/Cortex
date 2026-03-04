@@ -41,8 +41,8 @@ from cortex.tools.session.brief import (
     build_session_brief,
     load_memory_bank_files,
 )
-from cortex.tools.session.health import get_mcp_health_status
 from cortex.tools.session.models import (
+    GitStatusSummary,
     SessionBrief,
     SessionStartErrorResult,
     SessionStartResult,
@@ -173,10 +173,8 @@ async def extract_next_work_item(
     return (None, None)
 
 
-async def get_git_status(project_root: Path):
+async def get_git_status(project_root: Path) -> GitStatusSummary | None:
     """Get git status summary. Returns GitStatusSummary or None if git unavailable."""
-    from cortex.tools.session.models import GitStatusSummary
-
     if not (project_root / ".git").exists():
         return None
     result = await run_git_command(["git", "status", "--porcelain"], cwd=project_root)
@@ -212,6 +210,25 @@ async def _session_start_success_result(
     )
 
 
+async def _get_session_optional_context(
+    roadmap_content: str, project_root: Path
+) -> tuple[GitStatusSummary | None, str | None, str | None]:
+    """Get git status and next work item; return (git_status, next_work_item, plan_path)."""
+    try:
+        git_status = await get_git_status(project_root)
+    except Exception as e:  # pragma: no cover - exercised indirectly via tools
+        logger.debug("get_git_status failed in session_start: %s", e)
+        git_status = None
+    try:
+        next_work_item, next_work_plan_path = await extract_next_work_item(
+            roadmap_content, project_root
+        )
+    except Exception as e:  # pragma: no cover - exercised indirectly via tools
+        logger.debug("extract_next_work_item failed in session_start: %s", e)
+        next_work_item, next_work_plan_path = (None, None)
+    return (git_status, next_work_item, next_work_plan_path)
+
+
 async def _load_and_build_brief(
     fs_manager: FileSystemManager,
     managers: ManagersDict,
@@ -224,9 +241,8 @@ async def _load_and_build_brief(
     if isinstance(memory_bank_result, SessionStartErrorResult):
         return memory_bank_result
     act, rdm = memory_bank_result
-    git_status = await get_git_status(project_root)
-    next_work_item, next_work_plan_path = await extract_next_work_item(
-        rdm, project_root
+    git_status, next_work_item, next_work_plan_path = (
+        await _get_session_optional_context(rdm, project_root)
     )
     brief = await build_session_brief(
         act,
@@ -269,7 +285,11 @@ async def session_start_impl(
 ) -> SessionStartResultUnion:
     """Implementation of session_start tool."""
     fs_manager: FileSystemManager = await get_manager(managers, "fs", FileSystemManager)
-    mcp_healthy, mcp_health_message = await get_mcp_health_status()
+    # Import inside function so tests patching cortex.tools.session.health work
+    # as expected without relying on re-importing this module.
+    from cortex.tools.session import health as session_health
+
+    mcp_healthy, mcp_health_message = await session_health.get_mcp_health_status()
     return await _load_brief_and_return_result(
         fs_manager,
         managers,

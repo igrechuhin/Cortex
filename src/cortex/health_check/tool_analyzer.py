@@ -8,6 +8,7 @@ from pydantic import BaseModel
 from cortex.health_check.models import (
     MergeOpportunity,
     OptimizationOpportunity,
+    QualityImpact,
     ToolAnalysisResult,
 )
 from cortex.health_check.similarity_engine import SimilarityEngine
@@ -212,7 +213,7 @@ class ToolAnalyzer:
                             files=[name1, name2],
                             similarity=similarity,
                             merge_suggestion=f"Consider merging {name1} and {name2}",
-                            quality_impact="positive",
+                            quality_impact=QualityImpact.POSITIVE,
                             estimated_savings=(
                                 f"{int((1 - similarity) * 100)}% reduction"
                             ),
@@ -247,7 +248,7 @@ class ToolAnalyzer:
                             files=[name1, name2],
                             similarity=(param_overlap + body_similarity) / 2,
                             merge_suggestion=f"Consider consolidating {name1} and {name2} (similar parameters and implementation)",
-                            quality_impact="positive",
+                            quality_impact=QualityImpact.POSITIVE,
                             estimated_savings="Reduced maintenance overhead",
                         )
                     )

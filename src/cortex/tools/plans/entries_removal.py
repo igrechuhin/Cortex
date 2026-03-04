@@ -8,15 +8,8 @@ from __future__ import annotations
 
 import re
 from pathlib import Path
-from typing import TYPE_CHECKING
 
 from cortex.core.constants import MemoryBankFile
-
-if TYPE_CHECKING:
-    from cortex.tools.models import (
-        RemoveRoadmapEntryResult,
-        RemoveRoadmapSectionResult,
-    )
 from cortex.core.models import OperationStatus
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.tools.plans.entries_content import (
@@ -29,6 +22,10 @@ from cortex.tools.plans.entries_content import (
 from cortex.tools.plans.entries_io import (
     read_roadmap_file,
     write_roadmap_file,
+)
+from cortex.tools.plans.roadmap_operations_models import (
+    RemoveRoadmapEntryResult,
+    RemoveRoadmapSectionResult,
 )
 
 
@@ -87,8 +84,6 @@ def _validate_plan_status_before_removal(
 
 def _removal_error(message: str, error: str) -> RemoveRoadmapEntryResult:
     """Build error result for roadmap removal."""
-    from cortex.tools.models import RemoveRoadmapEntryResult
-
     return RemoveRoadmapEntryResult(
         status=OperationStatus.ERROR,
         file_name=MemoryBankFile.ROADMAP,
@@ -100,8 +95,6 @@ def _removal_error(message: str, error: str) -> RemoveRoadmapEntryResult:
 
 def _section_removal_error(message: str, error: str) -> RemoveRoadmapSectionResult:
     """Build error result for roadmap section removal."""
-    from cortex.tools.models import RemoveRoadmapSectionResult
-
     return RemoveRoadmapSectionResult(
         status=OperationStatus.ERROR,
         file_name=MemoryBankFile.ROADMAP,
@@ -156,8 +149,6 @@ async def _perform_roadmap_removal(
     if write_error:
         return _removal_error("Failed to write roadmap", write_error)
 
-    from cortex.tools.models import RemoveRoadmapEntryResult
-
     return RemoveRoadmapEntryResult(
         status=OperationStatus.SUCCESS,
         file_name=MemoryBankFile.ROADMAP,
@@ -211,8 +202,6 @@ async def execute_roadmap_section_removal(
     write_error = await write_roadmap_file(roadmap_path, updated, root_path)
     if write_error:
         return _section_removal_error("Failed to write roadmap", write_error)
-
-    from cortex.tools.models import RemoveRoadmapSectionResult
 
     return RemoveRoadmapSectionResult(
         status=OperationStatus.SUCCESS,

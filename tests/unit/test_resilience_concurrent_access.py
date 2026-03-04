@@ -15,6 +15,9 @@ import pytest
 from cortex.core.exceptions import FileLockTimeoutError
 from cortex.core.file_system import FileSystemManager
 from cortex.core.mcp_stability_config import TrackedSemaphore
+from cortex.core.metadata_index import MetadataIndex
+from cortex.core.token_counter import TokenCounter
+from tests.helpers.managers import make_test_managers
 from tests.helpers.path_helpers import ensure_test_cortex_structure
 
 
@@ -132,10 +135,28 @@ class TestConcurrentSessionStart:
         _ = (memory_bank_dir / "roadmap.md").write_text("# Roadmap")
         _ = (memory_bank_dir / "activeContext.md").write_text("# Active")
 
-        with patch(
-            "cortex.tools.session.start_tools.get_or_resolve_project_root",
-            new_callable=AsyncMock,
-            return_value=tmp_path,
+        fs_manager = FileSystemManager(tmp_path)
+        metadata_index = MetadataIndex(tmp_path)
+        _ = await metadata_index.load()
+        managers = make_test_managers(
+            fs=fs_manager, index=metadata_index, tokens=TokenCounter()
+        )
+
+        with (
+            patch(
+                "cortex.tools.session.start_tools.get_or_resolve_project_root",
+                new_callable=AsyncMock,
+                return_value=tmp_path,
+            ),
+            patch(
+                "cortex.tools.session.start_tools.get_current_managers",
+                return_value=managers,
+            ),
+            patch(
+                "cortex.tools.session.health.get_mcp_health_status",
+                new_callable=AsyncMock,
+                return_value=(True, None),
+            ),
         ):
             gathered: tuple[str, str, str] = await asyncio.gather(
                 session_start(task_description=None),

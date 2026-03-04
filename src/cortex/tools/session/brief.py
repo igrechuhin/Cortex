@@ -104,26 +104,26 @@ def _compute_suggestions_and_create_brief(inp: _BriefInputs) -> SessionBrief:
     """Compute suggestions and build SessionBrief."""
     return brief_from_suggestions_and_context(
         generate_session_suggestions(
-            inp["health"],
-            inp["git_status"],
-            inp["next_work_item"],
-            inp["locked_tasks"],
-            inp["concurrent_sessions"],
-            mcp_healthy=inp["mcp_healthy"],
+            inp.health,
+            inp.git_status,
+            inp.next_work_item,
+            inp.locked_tasks,
+            inp.concurrent_sessions,
+            mcp_healthy=inp.mcp_healthy,
         ),
-        **session_brief_context_kwargs(
-            inp["project_name"],
-            inp["current_focus"],
-            inp["recent_completed"],
-            inp["next_work_item"],
-            inp["next_work_plan_path"],
-            inp["health"],
-            inp["git_status"],
-            inp["last_handoff"],
-            inp["concurrent_sessions"],
-            inp["locked_tasks"],
-            inp["mcp_healthy"],
-            inp["mcp_health_message"],
+        session_brief_context_kwargs(
+            inp.project_name,
+            inp.current_focus,
+            inp.recent_completed,
+            inp.next_work_item,
+            inp.next_work_plan_path,
+            inp.health,
+            inp.git_status,
+            inp.last_handoff,
+            inp.concurrent_sessions,
+            inp.locked_tasks,
+            inp.mcp_healthy,
+            inp.mcp_health_message,
         ),
     )
 
@@ -143,20 +143,20 @@ def _assemble_session_brief(
     mcp_health_message: str | None = None,
 ) -> SessionBrief:
     """Assemble session brief from collected components."""
-    inp: _BriefInputs = {
-        "project_name": project_name,
-        "current_focus": current_focus,
-        "recent_completed": recent_completed,
-        "next_work_item": next_work_item,
-        "next_work_plan_path": next_work_plan_path,
-        "health": health,
-        "git_status": git_status,
-        "last_handoff": last_handoff,
-        "concurrent_sessions": concurrent_sessions,
-        "locked_tasks": locked_tasks,
-        "mcp_healthy": mcp_healthy,
-        "mcp_health_message": mcp_health_message,
-    }
+    inp = _BriefInputs(
+        project_name=project_name,
+        current_focus=current_focus,
+        recent_completed=recent_completed,
+        next_work_item=next_work_item,
+        next_work_plan_path=next_work_plan_path,
+        health=health,
+        git_status=git_status,
+        last_handoff=last_handoff,
+        concurrent_sessions=concurrent_sessions,
+        locked_tasks=locked_tasks,
+        mcp_healthy=mcp_healthy,
+        mcp_health_message=mcp_health_message,
+    )
     return _compute_suggestions_and_create_brief(inp)
 
 

@@ -169,9 +169,9 @@ class TestAnalyzeHealthCheck:
             {
                 "status": "success",
                 "analysis_type": "prompts",
-                "prompts": empty_prompt_result(),
-                "rules": empty_rule_result(),
-                "tools": empty_tool_result(),
+                "prompts": empty_prompt_result().model_dump(),
+                "rules": empty_rule_result().model_dump(),
+                "tools": empty_tool_result().model_dump(),
                 "recommendations": [],
             },
             indent=2,

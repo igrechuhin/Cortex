@@ -23,6 +23,8 @@
 
 - ✅ **Phase 75: Unify tool response format** - COMPLETE (2026-03-04) - Migrated composite workflow dispatcher and Phase 1 foundation tools (dependency graph and version history) to the canonical response builder, with tests and quality gate passing.
 
+- ✅ **Commit pipeline: function length compliance** - COMPLETE (2026-03-04) - Fixed 2 function length violations: extracted _warnings_with_zero_file_appended in handlers_format.py and _get_session_optional_context in start_tools.py; Phase A and tests pass (4884 tests, 92.16% coverage).
+
 ## Completed Work (2026-03-03)
 
 - **Summary (2026-03-03)** - 1 entries archived.

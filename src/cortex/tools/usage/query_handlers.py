@@ -129,7 +129,7 @@ async def run_anomalies(params: QueryUsageParams, ctx: MCPContext | None) -> str
     from . import usage_analytics
 
     root = await resolve_project_root_async(None, ctx)
-    tracker = await usage_analytics._get_tracker(root)  # type: ignore[attr-defined]
+    tracker = await usage_analytics.get_usage_tracker(root)
     hours = params.hours if params.hours is not None else 24
     if tracker is None:
         return unavailable_session_anomalies_response(hours)
@@ -153,7 +153,7 @@ async def run_tool_description_optimization(
     from . import usage_analytics
 
     root = await resolve_project_root_async(None, ctx)
-    tracker = await usage_analytics._get_tracker(root)  # type: ignore[attr-defined]
+    tracker = await usage_analytics.get_usage_tracker(root)
     payload = await get_tool_description_optimization_payload(
         root, tracker, params.tool_name.strip(), days=params.days
     )
@@ -172,7 +172,7 @@ async def run_production_monitoring(
     from . import usage_analytics
 
     root = await resolve_project_root_async(None, ctx)
-    tracker = await usage_analytics._get_tracker(root)  # type: ignore[attr-defined]
+    tracker = await usage_analytics.get_usage_tracker(root)
     days_baseline = max(1, min(30, params.production_baseline_days))
     current_window_hours = max(1, min(168, params.production_window_hours))
     payload = await get_production_monitoring_payload(
@@ -192,7 +192,7 @@ async def run_token_efficiency(params: QueryUsageParams, ctx: MCPContext | None)
     from . import usage_analytics
 
     root = await resolve_project_root_async(None, ctx)
-    tracker = await usage_analytics._get_tracker(root)  # type: ignore[attr-defined]
+    tracker = await usage_analytics.get_usage_tracker(root)
     days = max(1, min(365, params.days))
     payload = await get_token_efficiency_payload(root, tracker, days=days)
     return payload.model_dump_json(indent=2)
@@ -206,7 +206,7 @@ async def run_redundancy(params: QueryUsageParams, ctx: MCPContext | None) -> st
     from . import usage_analytics
 
     root = await resolve_project_root_async(None, ctx)
-    tracker = await usage_analytics._get_tracker(root)  # type: ignore[attr-defined]
+    tracker = await usage_analytics.get_usage_tracker(root)
     if tracker is None:
         return json.dumps(
             {
@@ -232,7 +232,7 @@ async def run_session_continuity(
     from . import usage_analytics
 
     root = await resolve_project_root_async(None, ctx)
-    tracker = await usage_analytics._get_tracker(root)  # type: ignore[attr-defined]
+    tracker = await usage_analytics.get_usage_tracker(root)
     if tracker is None:
         return json.dumps(
             {
@@ -254,7 +254,7 @@ async def run_tool_frequency(params: QueryUsageParams, ctx: MCPContext | None) -
     from . import usage_analytics
 
     root = await resolve_project_root_async(None, ctx)
-    tracker = await usage_analytics._get_tracker(root)  # type: ignore[attr-defined]
+    tracker = await usage_analytics.get_usage_tracker(root)
     days = max(1, min(365, params.days))
     payload = await get_tool_frequency_payload(root, tracker, days=days)
     return payload.model_dump_json(indent=2)
@@ -342,7 +342,7 @@ async def run_tool_classification(
     from . import usage_analytics
 
     root = await resolve_project_root_async(None, ctx)
-    tracker = await usage_analytics._get_tracker(root)  # type: ignore[attr-defined]
+    tracker = await usage_analytics.get_usage_tracker(root)
     if tracker is None:
         return json.dumps(
             {

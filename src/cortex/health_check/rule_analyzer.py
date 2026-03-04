@@ -8,6 +8,7 @@ from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.health_check.models import (
     MergeOpportunity,
     OptimizationOpportunity,
+    QualityImpact,
     RuleAnalysisResult,
 )
 from cortex.health_check.similarity_engine import SimilarityEngine
@@ -149,7 +150,7 @@ class RuleAnalyzer:
                                     f"Consider merging {name1} and "
                                     f"{name2} in {category}"
                                 ),
-                                quality_impact="positive",
+                                quality_impact=QualityImpact.POSITIVE,
                                 estimated_savings=(
                                     f"{int((1 - similarity) * 100)}% reduction"
                                 ),
@@ -220,7 +221,7 @@ class RuleAnalyzer:
             merge_suggestion=(
                 f"Consider consolidating {name1} ({cat1}) and {name2} ({cat2})"
             ),
-            quality_impact="positive",
+            quality_impact=QualityImpact.POSITIVE,
             estimated_savings=f"{int((1 - similarity) * 100)}% reduction",
         )
 

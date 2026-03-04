@@ -81,6 +81,11 @@ async def _get_tracker(project_root: Path) -> UsageTracker | None:
     return raw if isinstance(raw, UsageTracker) else None
 
 
+async def get_usage_tracker(project_root: Path) -> UsageTracker | None:
+    """Public helper to resolve UsageTracker for project root."""
+    return await _get_tracker(project_root)
+
+
 # Tool consolidated into query_usage (Phase 50); kept as callable for dispatch.
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_FAST)

@@ -29,7 +29,7 @@ from ._models import (
 
 async def get_usage_tracker(root: Path) -> UsageTracker | None:
     """Resolve UsageTracker via existing usage_analytics helper."""
-    return await usage_analytics._get_tracker(root)  # type: ignore[attr-defined]
+    return await usage_analytics.get_usage_tracker(root)
 
 
 async def _persist_latest_suite(

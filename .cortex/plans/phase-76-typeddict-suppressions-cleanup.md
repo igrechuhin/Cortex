@@ -2,7 +2,7 @@
 
 ## Status
 
-PENDING
+IN PROGRESS
 
 ## Goal
 
@@ -43,6 +43,7 @@ Replace TypedDict with Pydantic BaseModel, resolve circular imports that TYPE_CH
 - For each suppression, fix the underlying type error
 - If the symbol is private but accessed cross-module, make it public (remove `_` prefix)
 - Remove the suppression comment after fixing
+- Current status (2026-03-04): attr-defined and arg-type suppressions removed in usage and optimization helpers; remaining reportUnknownVariableType suppressions in session and production monitoring models are documented pyright limitations and require separate follow-up.
 
 ### Step 4: Verify
 

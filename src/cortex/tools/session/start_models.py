@@ -1,9 +1,8 @@
-"""Private types for session_start tool (keeps session_start_tools.py under 400 lines)."""
+"""Private models for the session_start tool."""
 
 from __future__ import annotations
 
-from typing import TypedDict
-
+from cortex.core.models import DictLikeModel
 from cortex.tools.session.models import (
     ConcurrentSession,
     GitStatusSummary,
@@ -12,8 +11,7 @@ from cortex.tools.session.models import (
 )
 
 
-# Kwargs for _create_brief_with_suggestions (replaces **kwargs: Any)
-class SessionBriefContextKwargs(TypedDict):
+class SessionBriefContextKwargs(DictLikeModel):
     """Typed kwargs for building SessionBrief from suggestions and context."""
 
     project_name: str
@@ -30,8 +28,9 @@ class SessionBriefContextKwargs(TypedDict):
     mcp_health_message: str | None
 
 
-# Input bundle for _compute_suggestions_and_create_brief (keeps function under 30 lines)
-class BriefInputs(TypedDict):
+class BriefInputs(DictLikeModel):
+    """Input bundle for _compute_suggestions_and_create_brief."""
+
     project_name: str
     current_focus: str
     recent_completed: list[str]

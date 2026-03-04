@@ -92,7 +92,7 @@ async def _run_prompts_analysis(
     prompt_result = await prompt_analyzer.analyze()
     recommendations: list[str] = []
     if validate_quality:
-        _collect_quality_issues(prompt_result["merge_opportunities"], recommendations)
+        _collect_quality_issues(prompt_result.merge_opportunities, recommendations)
     prompt_deps: dict[str, list[str]] | None = None
     if include_dependencies:
         prompts = await prompt_analyzer.get_prompts_for_dependencies()
@@ -113,7 +113,7 @@ async def _run_rules_analysis(
     rule_result = await rule_analyzer.analyze()
     recommendations: list[str] = []
     if validate_quality:
-        _collect_quality_issues(rule_result["merge_opportunities"], recommendations)
+        _collect_quality_issues(rule_result.merge_opportunities, recommendations)
     rule_deps: dict[str, list[str]] | None = None
     if include_dependencies:
         rules = await rule_analyzer.get_rules_for_dependencies()
@@ -132,7 +132,7 @@ async def _run_tools_analysis(
     tool_result = await tool_analyzer.analyze()
     recommendations: list[str] = []
     if validate_quality:
-        _collect_quality_issues(tool_result["merge_opportunities"], recommendations)
+        _collect_quality_issues(tool_result.merge_opportunities, recommendations)
     return tool_result, recommendations
 
 
