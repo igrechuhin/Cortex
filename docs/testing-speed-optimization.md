@@ -38,7 +38,7 @@ When a test is slow or does too much, split it into smaller, faster tests:
 
 ### Why some tool tests are slow in the commit pipeline
 
-Tools that call **`resolve_project_root_async(None, ctx)`** (e.g. `suggest_refactoring`, `analyze_context_effectiveness`, `configure`) run the real resolver when that call is not patched. The resolver either requests roots from the MCP client (slow round-trip) or falls back to **`get_project_root(None)`** (filesystem/cwd resolution). In tests, **patch where the function is used** (e.g. `cortex.tools.refactoring_operations.resolve_project_root_async`) with `new_callable=AsyncMock, return_value=Path("/tmp/test")` so no real I/O runs. Without that patch, those tests stay slow (tens of seconds each) in the pipeline.
+Tools that call **`resolve_project_root_async(None, ctx)`** (e.g. `suggest_refactoring`, `analyze`, `configure`) run the real resolver when that call is not patched. The resolver either requests roots from the MCP client (slow round-trip) or falls back to **`get_project_root(None)`** (filesystem/cwd resolution). In tests, **patch where the function is used** (e.g. `cortex.tools.refactoring_operations.resolve_project_root_async`) with `new_callable=AsyncMock, return_value=Path("/tmp/test")` so no real I/O runs. Without that patch, those tests stay slow (tens of seconds each) in the pipeline.
 
 ## Recommended improvements
 

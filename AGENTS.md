@@ -67,7 +67,7 @@ See the implement, commit, and analyze prompts (Synapse) for detailed workflow g
 
 Zero-budget or zero-files `load_context` is only acceptable for trivial/no-op tasks. See implement prompt for full checklist and zero-budget guardrails.
 
-**AgentRole awareness**: The `load_context` tool automatically detects agent roles from task descriptions and uses role-aware context selection. Roles influence file prioritization and can inform budget recommendations. Context-effectiveness analysis (`analyze_context_effectiveness()`) tracks statistics by role and provides role-specific insights. The detected role is logged in session logs for analysis.
+**AgentRole awareness**: The `load_context` tool automatically detects agent roles from task descriptions and uses role-aware context selection. Roles influence file prioritization and can inform budget recommendations. Context-effectiveness analysis (`analyze(target="context")`) tracks statistics by role and provides role-specific insights. The detected role is logged in session logs for analysis.
 
 **Supported roles**:
 
@@ -79,7 +79,7 @@ Zero-budget or zero-files `load_context` is only acceptable for trivial/no-op ta
 - **debugging** — Bug investigation and fix/debug flows (keywords: fix, bug, error, failure, exception, debug). Default budget: 15k. Focus: activeContext.md, systemPatterns.md, techContext.md.
 - **review** — Code review and analysis (keywords: review, code review, pr, pull request). Default budget: 15k. Focus: activeContext.md, roadmap.md, projectBrief.md.
 
-Roles are automatically inferred from task descriptions using keyword heuristics; explicit role parameters are optional. The role is logged in `load_context` session logs and used for role-aware statistics in context-effectiveness analysis. See `cortex.optimization.agent_roles` for role detection logic and profiles. Role-aware budget recommendations are available in `analyze_context_effectiveness()` insights via `role_budget_recommendations` and `role_recommendations`.
+Roles are automatically inferred from task descriptions using keyword heuristics; explicit role parameters are optional. The role is logged in `load_context` session logs and used for role-aware statistics in context-effectiveness analysis. See `cortex.optimization.agent_roles` for role detection logic and profiles. Role-aware budget recommendations are available in `analyze(target="context")` insights via `role_budget_recommendations` and `role_recommendations`.
 
 1. **Think before acting** — use the `think` tool: lightweight `think(thought="...")` for quick deliberation; full mode (pass thought_number, total_thoughts, next_thought_needed) for multi-step reasoning.
 2. **Edit code** — use IDE tools (`Read`, `Write`, `Grep`, `Glob`, `LS`) for source files.

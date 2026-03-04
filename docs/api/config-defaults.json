@@ -195,7 +195,6 @@
       ],
       "deferred_medium": [
         "analyze",
-        "analyze_context_effectiveness",
         "apply_refactoring",
         "check_structure_health",
         "compact_session",
@@ -222,7 +221,6 @@
         "analyze_health_check",
         "cleanup_metadata_index",
         "fix_roadmap_corruption",
-        "get_context_usage_statistics",
         "manage_session_scripts",
         "provide_feedback",
         "query_usage",

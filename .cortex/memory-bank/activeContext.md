@@ -2,16 +2,13 @@
 
 **This file records completed work only.** For current status and upcoming work see [roadmap.md](roadmap.md).
 
+## Completed Work (2026-03-04)
+
+- ✅ **Analyze prompt integration test** - COMPLETE (2026-03-04) - Updated test_includes_context_effectiveness_step to assert on analyze(target="context") instead of deprecated analyze_context_effectiveness; Phase A and tests pass (4872 tests, 92.16% coverage).
+
 ## Completed Work (2026-03-03)
 
-- ✅ **Commit pipeline preflight** - COMPLETE (2026-03-03) - Ran /cortex/commit Phase A. All pre-commit checks (fix_errors, format + synapse_format, synapse_lint, quality, type_check, tests with coverage 92.24%, markdown lint) passed for current Cortex changes in memory bank, plans/reviews, and src/cortex core/services/tools helpers, preparing for commit.
-- ✅ **Derived-state directory classification docs** - COMPLETE (2026-03-03) - Captured the decision matrix and target layout for `.cortex/.cache/*`, `.cortex/history`, `.cortex/rules`, `.cortex/script-capture`, and `benchmark_results` in `docs/architecture/derived-state-directories.md`, clarifying which directories are durable history vs. ephemeral caches and which are safe to delete.
-
-- ✅ **Cleanup Cortex derived-state directories** - COMPLETE (2026-03-03) - Classified and documented all derived-state and history-like directories, aligned benchmark outputs with .cortex/benchmark_results, and confirmed caches and script-capture surfaces follow the new durable-vs-ephemeral rules.
-
-- ✅ **Phase XX: Fix Memory Bank index/history architecture for multi-machine safety** - COMPLETE (2026-03-03) - Stopped persisting version_history arrays in index.json, kept current_version only, and wired version history tools to derive history from local .cortex/history snapshots for multi-machine safety.
-
-- ✅ **Commit pipeline (function-length fix)** - COMPLETE (2026-03-03) - Fixed function-length violation in context_optimizer.optimize_context (34→≤30 lines) by extracting _log_zero_selection_if_needed. Phase A passed; 4872 tests, 92.16% coverage.
+- **Summary (2026-03-03)** - 1 entries archived.
 
 ## Completed Work (2026-03-02)
 

@@ -774,7 +774,7 @@ Error: Section 'NonExistent' not found in shared.md
 **Symptoms**:
 
 - End-of-session Analyze report shows "No session logs found" or "Calls Analyzed: 0"
-- `analyze_context_effectiveness()` returns `"status": "no_data"`
+- `analyze(target="context")` returns `"status": "no_data"`
 
 **Cause**:
 

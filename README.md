@@ -148,7 +148,7 @@ Cortex exposes 70+ MCP tools. Key tools by workflow:
 | **Plans & Roadmap** | `plan` – create/list/get/complete; `roadmap` – add/remove entry/section; `register_plan_in_roadmap`, `append_progress_entry`, `append_active_context_entry` |
 | **Rules & Synapse** | `rules`, `get_synapse_rules`, `get_synapse_prompts`, `synapse` (sync/update rule/prompt), `configure`, `get_structure_info` |
 | **Refactoring** | `suggest_refactoring`, `apply_refactoring`, `provide_feedback` |
-| **Analysis & Reasoning** | `analyze`, `analyze_context_effectiveness`, `think` |
+| **Analysis & Reasoning** | `analyze` (targets: context, context_all_sessions, context_stats, usage_patterns, structure, insights, health), `think` |
 | **Usage & Discovery** | `query_usage` – usage stats and analytics; `search_tools` – discover deferred tools by query |
 
 Full tool reference: [docs/api/tools.md](docs/api/tools.md).

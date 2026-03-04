@@ -228,7 +228,7 @@ Before `git add`, `git commit`, or `git push`:
 
 **Scope**: Run end-of-session analysis after a successful commit.
 
-The Analyze (End of Session) prompt (`analyze.md`) uses a lightweight phase model: (1) Context & rules load — memory bank and rules via `manage_file()` and `rules()`; (2) Analysis & insights — `analyze_context_effectiveness()`, session data, usage stats; (3) Outputs & plans — write report to reviews directory (path from `get_structure_info()`), optionally run Create Plan for improvement recommendations. Paths resolved via Cortex MCP; no hardcoded `.cortex/` paths.
+The Analyze (End of Session) prompt (`analyze.md`) uses a lightweight phase model: (1) Context & rules load — memory bank and rules via `manage_file()` and `rules()`; (2) Analysis & insights — `analyze(target="context")`, session data, usage stats; (3) Outputs & plans — write report to reviews directory (path from `get_structure_info()`), optionally run Create Plan for improvement recommendations. Paths resolved via Cortex MCP; no hardcoded `.cortex/` paths.
 
 ### Phase D — Steps Included
 

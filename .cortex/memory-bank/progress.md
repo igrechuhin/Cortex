@@ -1,5 +1,9 @@
 # Progress Log
 
+## 2026-03-04
+
+- **Analyze prompt integration test (2026-03-04)** - COMPLETE. Updated test to assert on analyze(target="context"); 4872 tests, 92.16% coverage.
+
 ## 2026-03-03
 
 - **Commit pipeline preflight** - Ran /cortex/commit Phase A; fix_errors, format (including synapse_format), synapse_lint, type_check, markdown lint, and tests (4879/4879, coverage 92.24%) all passed for current Cortex changes (memory bank, plans, reviews, and src/cortex core/services/tools).
@@ -185,48 +189,7 @@
 
 ## 2026-02-24
 
-- **Session improvements 2026-02-23 (tools optimization) (2026-02-24)** - COMPLETE. Updated tool-optimization-mapping with append_active_context_entry (keep). No further deprecations recommended.
-- **Evaluation framework maturation Step 6 (2026-02-24)** - COMPLETE. Model upgrade playbook at docs/guides/model-upgrade-playbook.md; benchmark_model tool and model_benchmarks.json storage; run_full_evaluation_payload API.
-- **Anthropic context engineering alignment Step 1 (in progress) (2026-02-24)** - Rubric doc added (docs/guides/tool-description-altitude-rubric.md), pilot: 5 tools given EXAMPLES (list_plans, get_plan, add_roadmap_entry, append_progress_entry, append_active_context_entry). Full audit pending.
-- **Anthropic alignment Step 1 (batch 2)** - COMPLETE. Added EXAMPLES to remove_roadmap_entry, remove_roadmap_section, complete_plan, compact_session, register_plan_in_roadmap (10 tools total with examples). Full audit of 101+ tools still pending.
-- **Anthropic alignment Step 1 (batch 3)** - COMPLETE. Added EXAMPLES to create_plan, run_preflight_checks, run_docs_and_memory_bank_sync, query_memory_bank, query_usage; 15 tools total with examples.
-- Commit: Fixed function length violation in query_usage_operations.query_usage; refactored to_build_query_usage_params_from_locals. Phase A and markdown lint passed.
-- **Tool consolidation (plan session-optimization-tools-set-optimization-from-usage-data)** - Step 1 and Step 2 completed. optimization.json aligned with Phase 50: removed old get_* and duplicate names from tool_search; added query_memory_bank, query_usage, remove_roadmap_section. Synapse prompts (analyze, commit, implement) updated to use query_memory_bank(query_type="stats") and consolidated validate_links wording. All pre-commit checks and tests pass.
-- **Commit pipeline markdown lint** - COMPLETE. Plan MD036 and analyze.md MD040 fixes. Preflight passed; 4704 tests, 92.76% coverage.
-- **E2E Plan Test (2026-02-24)** - COMPLETE. E2E plan workflow test; single step marked Done.
-- **Tool consolidation Step 3 (2026-02-24)** - IN PROGRESS. Internalized low-usage MCP tools session_register, session_deregister, claim_task_lock, release_task_lock, list_active_tasks, check_task_available_lock, list_plans, get_plan by removing @mcp.tool decorators; quality gate and full test suite passed (92.77% coverage).
-- **Tool consolidation Step 3 (2026-02-24)** - COMPLETE. Merged list_plans and get_plan into create_plan(operation="create"|"list"|"get"); updated tests and docs/api/tools.md. Session/task tools (session_register, list_active_tasks, etc.) already not @mcp.tool()-registered.
-- Completed `/cortex/commit` preflight: all fix_errors, format, synapse_format, synapse_lint, type_check, quality, and tests checks passed (4710 tests, 92.75% coverage) with no files modified.
-- - **Commit pipeline preflight (2026-02-24)** - COMPLETE. All pre-commit checks passing with 4710 tests and 92.75% coverage.
-- **E2E Plan Test (2026-02-24)** - COMPLETE. E2E plan test work is already done; syncing roadmap and memory bank only.
-- **Tool consolidation – Step 5 (2026-02-24)** - COMPLETED. Consolidated context and health analytics into the unified `analyze` MCP tool and removed legacy context-analysis tool registrations.
-- **Commit: tool categories, optimization config, analysis/health/context handlers, phase4_optimization, tests** - Preflight passed (fix_errors, format, type_check, quality, 4701 tests, 92.69% coverage); markdown lint fixed.
-- **Tool consolidation Step 6 — pre-commit pipeline (2026-02-24)** - COMPLETE. Merged run_preflight_checks and run_docs_and_memory_bank_sync into execute_pre_commit_checks(phase="A"|"B"|"full"); removed two MCP tools; updated tests and docs.
-- **Tool consolidation Step 7 (2026-02-24)** - COMPLETE. Audited @mcp.resource() vs @mcp.tool(); no double-registrations. Added TestNoResourceDoubleRegisteredAsTool; updated plan and tool-optimization-mapping.md.
-- **Tool consolidation Step 8 (2026-02-24)** - COMPLETE. Updated tool governance: TOOLS_CATEGORIES now covers all @mcp.tool registrations; optimization.json tool_search synced from build_category_config(); added governance test to enforce equality and fixed analyzer coverage for async tools.
-- **Anthropic context engineering alignment – Step 1 (2026-02-24)** - IN PROGRESS. Audited tool description altitude for core context/rules tools (`load_context`, `manage_file`, `query_memory_bank`, `query_usage`) and updated the plan to record this progress.
-- **Tool consolidation P1 (usage census)** - Ran `query_usage(query_type="stats", response_format="detailed")` to confirm live usage across MCP tools and documented the current counts in `session-optimization-tools-set-optimization-from-usage-data.md`.
-- **Tool consolidation P1: tool budget lock (2026-02-24)** - Added MAX_REGISTERED_TOOLS constant and governance test to enforce that the MCP tool count does not exceed 47 without an explicit consolidation change and updated plan.
-- **Tool consolidation — 64 tools → ~24 (P0) (2026-02-24)** - COMPLETE. Phase 50 + P1 usage census and budget lock; 47 tools, 15 resources; governance and docs updated.
-- **Anthropic context engineering alignment Step 1 batch 5 (2026-02-24)** - COMPLETE. Improved execute_pre_commit_checks docstring to full altitude (USE WHEN, EXAMPLES, RETURNS); corrected get_structure_info doc (no project_root param); updated plan and docs/api/tools.md.
-- **Anthropic context engineering alignment Step 1 batch 6 (2026-02-24)** - COMPLETE. Tool altitude audit: check_structure_health doc fixed (no project_root); run_tool_evaluation, analyze_error_patterns, benchmark_model full altitude; get_relevance_scores Args added.
-- **Anthropic context engineering alignment Step 1 (2026-02-24)** - Seventh batch. read_cache_json and write_cache_json brought to full altitude (EXAMPLES, RETURNS, Args); EXAMPLES added to claim_task_lock, release_task_lock, list_active_tasks, check_task_available_lock.
-- **Anthropic context engineering alignment Step 1 (2026-02-24)** - Eighth batch. analyze_health_check Args added; session_scripts full altitude (USE WHEN, EXAMPLES, RETURNS, Args). Quality gate passed.
-- **Anthropic context engineering alignment Step 1 (2026-02-24)** - Ninth batch. summarize_content, suggest_tool_improvements, analyze_session_scripts Args added; compact_session RETURNS line. Quality gate passed.
-- **Commit pipeline preflight fixes (2026-02-24)** - COMPLETE. Synapse lint, type check, quality (function length) and tests passing; 4722 tests, 92.57% coverage.
-- Commit: E402 fix in synapse_tools.py (imports at top). Phase A passed.
-- **Anthropic context engineering alignment Step 1 tenth batch (2026-02-24)** - COMPLETE. Tool description altitude audit: fix_markdown_lint (Args), quick_start (Args), quality_check (EXAMPLES), safe_manage_file (full altitude).
-- **Anthropic alignment Step 1 (batch 11)** - Tool altitude audit: get_synapse full altitude, fix_roadmap_corruption Args, update_synapse RETURNS/EXAMPLES.
-- **Anthropic context engineering alignment Step 1 batch 12 (2026-02-24)** - COMPLETE. cleanup_metadata_index brought to full altitude (Args for dry_run, RETURNS key fields). Plan updated; quality gate passed.
-- **Anthropic alignment Step 1 batch 13 (2026-02-24)** - COMPLETE. Added embedded EXAMPLES to list_available_tools, search_tools, fix_quality_issues, session_start, suggest_workflow; plan updated with thirteenth batch.
-- **Anthropic alignment Step 1 batch 14 (2026-02-24)** - COMPLETE. Tool altitude audit: added Args and Example JSON to think, sequentialthinking, capture_session_script, list_plans, get_plan. Quality gate passed.
-- **Anthropic context engineering alignment Step 1 batch 15 (2026-02-24)** - COMPLETE. Brought get_usage_observation, get_usage_events, search_usage, get_usage_timeline to full altitude (USE WHEN, EXAMPLES, RETURNS, Args); added EXAMPLES to session_register. Plan updated; 41+ tools pending audit.
-- **Anthropic context engineering alignment Step 1 (batch 16) (2026-02-24)** - COMPLETE. Added embedded Example JSON to skill_pack (discover, load, error); updated plan; 40+ tools still pending for full audit.
-- **Anthropic context engineering alignment Step 1 batch 17 (2026-02-24)** - COMPLETE. session_deregister brought to full altitude (EXAMPLES, RETURNS, embedded Example JSON for success and error). Plan still in progress; full audit of remaining 40+ tools pending.
-- **Anthropic alignment Step 1 batch 18 (2026-02-24)** - COMPLETE. cache_json brought to full altitude with embedded Example JSON (read success/missing, write success/error). Plan updated.
-- **Anthropic alignment Step 1 batch 19 (2026-02-24)** - COMPLETE. check_mcp_connection_health: added Example (success) and Example (error). configure: added Example 4 (error — invalid component). Plan updated.
-- **Anthropic alignment Step 1 batch 20 (2026-02-24)** - COMPLETE. Tool altitude audit: get_structure_info (full doc + Example success/error), suggest_workflow (Example edge case), validate (Example success + error), analyze (Example error), suggest_refactoring (Example error). Plan updated.
-- **Anthropic context engineering alignment Step 1 batch 21 (2026-02-24)** - COMPLETE. Tool altitude audit: get_version_history (Example error), quality_check (Args + Example success), apply_refactoring (Example error), summarize_content (Example success + error), get_relevance_scores (Example success + error). Plan updated; quality gate passed.
+- **Week containing 2026-02-24** - 1 entries summarized.
 
 ## 2026-02-23
 

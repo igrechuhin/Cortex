@@ -119,9 +119,9 @@ class TestUnifiedAnalyzePromptContent:
         assert "load_context" in prompt_content
 
     def test_includes_context_effectiveness_step(self, prompt_content: str) -> None:
-        """Prompt includes Step 1: Context effectiveness (tool + no_data handling)."""
+        """Prompt includes Step 1: Context effectiveness (analyze tool + no_data handling)."""
         assert "Context Effectiveness" in prompt_content
-        assert "analyze_context_effectiveness" in prompt_content
+        assert 'analyze(target="context")' in prompt_content
         assert "no_data" in prompt_content or "no data" in prompt_content
 
     def test_includes_session_optimization_step(self, prompt_content: str) -> None:

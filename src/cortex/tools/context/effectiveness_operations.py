@@ -316,7 +316,7 @@ def get_context_statistics(project_root: Path) -> ContextStatisticsResult:
             statistics=None,
             insights=None,
             recent_entries=None,
-            message="No statistics found. Run analyze_context_effectiveness first.",
+            message="No statistics found. Run analyze(target='context') first.",
         )
 
     stats = load_statistics(stats_path)
