@@ -239,6 +239,29 @@ class TestLoadPromptContent:
             # Assert
             assert result is None
 
+    def test_rejects_path_traversal_attempt(self, prompts_dir: Path) -> None:
+        """Test rejects path traversal attempts that escape prompts directory."""
+        # Act
+        result = synapse_prompts.load_prompt_content(
+            prompts_dir, "general", "../outside.md"
+        )
+
+        # Assert
+        assert result is None
+
+    def test_rejects_absolute_path(self, prompts_dir: Path, tmp_path: Path) -> None:
+        """Test rejects absolute paths outside of prompts directory."""
+        outside_file = tmp_path / "outside.md"
+        _ = outside_file.write_text("outside", encoding="utf-8")
+
+        # Act
+        result = synapse_prompts.load_prompt_content(
+            prompts_dir, "general", str(outside_file)
+        )
+
+        # Assert
+        assert result is None
+
 
 # ============================================================================
 # Tests for create_prompt_function()

@@ -6,7 +6,6 @@
 
 ## Blockers (ASAP Priority)
 
-- **Phase 70: Replace exec() with safe templating and add path validation** - PENDING - Eliminate `exec()` security vulnerability in prompt file loading; add path traversal protection. Plan: `.cortex/plans/phase-70-replace-exec-safe-templating.md`
 - **Phase 71: Fix TOCTOU race conditions in file and task locking** - PENDING - Atomic lock acquisition to prevent data corruption under concurrent access. Plan: `.cortex/plans/phase-71-fix-toctou-locking.md`
 - **Phase 72: Fix is_connection_error over-matching and consolidate duplicates** - PENDING - Replace broad "resource" keyword matching with precise connection error patterns; consolidate 3 duplicate implementations into single canonical function. Plan: `.cortex/plans/phase-72-fix-connection-error-matching.md`
 
@@ -22,7 +21,7 @@
 - **Phase 75: Unify tool response format** - PENDING - Standardize all MCP tool responses to `{"status": "success"|"error", ...}` with shared response builder. Plan: `.cortex/plans/phase-75-unify-response-format.md`
 - **Phase 76: Replace TypedDict with BaseModel and remove type-checker suppressions** - PENDING - Eliminate 8 TypedDict classes, 2 TYPE_CHECKING imports, ~17 suppression comments. Plan: `.cortex/plans/phase-76-typeddict-suppressions-cleanup.md`
 - **Phase 77: Fix coverage gaps, silent error handling, and stub implementation** - PENDING - Add tests for 0%-coverage module, fix 11 silent `except Exception: pass` blocks, resolve migration stub. Plan: `.cortex/plans/phase-77-coverage-gaps-error-handling.md`
-- **Phase 78: Agent implementation verification protocol** - PENDING - Add mandatory post-edit re-read, full-codebase search, plan-scope verification, and date validation to prevent agents from declaring incomplete work as done. Plan: `.cortex/plans/phase-78-agent-implementation-verification.md`
+- **Phase 78: Agent implementation verification protocol** - PENDING - Add mandatory post-edit re-read, full-codebase search, plan-scope verification, date validation, commit message quality enforcement, selective staging (no `git add -A`), and analyze target specification to prevent agents from declaring incomplete work as done and improve commit pipeline discipline. Plan: `.cortex/plans/phase-78-agent-implementation-verification.md`
 
 ### Fixes
 

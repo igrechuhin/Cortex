@@ -99,12 +99,32 @@ def load_prompts_manifest(prompts_path: Path) -> JsonDict | None:
 def load_prompt_content(prompts_path: Path, category: str, filename: str) -> str | None:
     """Load prompt file content synchronously."""
     # Prompts are in the root of prompts/ directory, not in category subdirectories
-    prompt_file = prompts_path / filename
-    if not prompt_file.exists():
+    # Apply path traversal protection to ensure files stay within prompts_path.
+    base_dir = prompts_path.resolve()
+
+    candidate = prompts_path / filename
+
+    # Reject absolute paths or explicit parent directory traversal segments
+    filename_path = Path(filename)
+    if filename_path.is_absolute() or ".." in filename_path.parts:
         return None
 
     try:
-        with open(prompt_file, encoding="utf-8") as f:
+        resolved = candidate.resolve()
+    except OSError:
+        return None
+
+    # Ensure the resolved path is within the prompts base directory
+    try:
+        _ = resolved.relative_to(base_dir)
+    except ValueError:
+        return None
+
+    if not resolved.exists() or not resolved.is_file():
+        return None
+
+    try:
+        with open(resolved, encoding="utf-8") as f:
             return f.read()
     except Exception:
         return None
@@ -123,8 +143,7 @@ def create_prompt_function(
 ) -> None:
     """Create and register a prompt function dynamically.
 
-    Stores content in module-level dict and creates function that references it,
-    then uses exec() to apply the decorator at module level.
+    Stores content in a module-level dict and creates a function that references it.
     """
     # Store content in module-level dict to avoid closure issues
     if "_prompt_contents" not in globals():
@@ -133,21 +152,17 @@ def create_prompt_function(
 
     emoji = icon_emoji if icon_emoji else _emoji_for_prompt(name)
     icon = create_emoji_icon(emoji)
-    globals()["_prompt_icon"] = icon
 
-    # Create function definition with decorator using exec()
-    # Function references the module-level dict to get the content
-    func_code = f'''@mcp.prompt(icons=[_prompt_icon])
-def {name}() -> str:
-    """{description}"""
-    return _prompt_contents["{name}"]
-'''
+    def prompt_func() -> str:
+        """Return prompt content."""
+        return globals()["_prompt_contents"][name]
 
-    # Execute in module globals so the function is created at module level
-    try:
-        exec(func_code, globals())
-    finally:
-        globals().pop("_prompt_icon", None)
+    # Preserve the generated function's name and description for introspection
+    prompt_func.__name__ = name
+    prompt_func.__doc__ = description
+
+    decorated = mcp.prompt(icons=[icon])(prompt_func)
+    globals()[name] = decorated
 
 
 def process_prompt_info(

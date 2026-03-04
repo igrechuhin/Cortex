@@ -22,9 +22,19 @@ An audit of a Cursor agent session (2026-03-04) revealed systemic verification f
 
 These failures have a common root cause: the implementation workflow lacks **mandatory verification gates** that agents cannot skip.
 
+### New Input (2026-03-04): Commit Pipeline Agent Discipline Issues
+
+Analysis of the 2026-03-04 commit pipeline discussion revealed additional agent discipline failures in the commit workflow itself:
+
+1. **Generic commit messages**: The agent produced the commit message "Run full Cortex commit pipeline and update memory bank for Phase A preflight" — this describes the *process* (ran a pipeline), not the *changes* (added Phase 70-78 plan files, two review files, updated activeContext). Commit messages should describe what changed and why, not what the agent did. The commit prompt Step 13 says "generate comprehensive commit message" but provides no format, examples, or anti-patterns.
+
+2. **`git add -A` used for staging**: The agent used `git add -A` (stage everything) despite AGENTS.md stating "stage only related changes." The commit prompt Step 13 says "Stage all changes" which directly contradicts the safety guidance. This risks staging sensitive files (.env, credentials) or unrelated work.
+
+3. **Invalid analyze target guessed**: The agent called `analyze(target="session")` which is not a valid target (valid: `usage_patterns`, `structure`, `insights`, `context*`, `health`). The agent recovered by guessing `usage_patterns`, but the commit prompt Step 15 only says "execute the Analyze prompt" without specifying which targets to call, leaving agents to guess.
+
 ## Approach
 
-Add verification requirements to the Synapse `implement` prompt and plan templates so that every implementation step includes a verification sub-step. Additionally, improve validation tooling to catch date errors.
+Add verification requirements to the Synapse `implement` prompt and plan templates so that every implementation step includes a verification sub-step. Additionally, improve validation tooling to catch date errors. Extend to the `commit` prompt to enforce commit message quality, selective staging, and correct analyze target usage.
 
 ## Implementation Steps
 
@@ -93,6 +103,35 @@ For each implementation step, define:
 - Test the date validator catches year typos
 - Test the duplicate-definition search finds all copies
 
+### Step 7: Enforce commit message quality in the commit prompt (Step 13)
+
+Update the commit prompt's Step 13 to include:
+
+**Commit message format requirements**:
+
+- The commit message MUST describe **what changed** (files added/modified/removed, features/fixes), not **what the agent did** (ran pipeline, executed checks)
+- Anti-pattern: "Run full Cortex commit pipeline and update memory bank" (describes process)
+- Good pattern: "Add Phase 70-78 security and performance plans, update activeContext" (describes changes)
+- Format guidance: Use conventional commit style (`feat:`, `fix:`, `docs:`, `chore:`) when applicable
+- The message MUST reference the actual content of the diff, not the commit pipeline steps
+
+### Step 8: Replace `git add -A` with selective staging in the commit prompt (Step 13)
+
+Update the commit prompt's Step 13 to:
+
+- Replace "Stage all changes" with "Stage related changes selectively"
+- Add: "Use `git add <specific-files>` instead of `git add -A`. List files from `git status` and stage only files that are part of the current work."
+- Add safety check: "Before staging, review `git status` output. Do NOT stage files matching `.env*`, `credentials*`, `*.key`, `*.pem`, or other sensitive patterns."
+- Reconcile with AGENTS.md which already says "stage only related changes"
+
+### Step 9: Fix commit prompt Step 15 analyze target specification
+
+Update the commit prompt's Step 15 to specify exact tool calls instead of just "execute the Analyze prompt":
+
+- Replace vague "execute the Analyze prompt" with specific targets: `analyze(target="context")` for context effectiveness, then `analyze(target="usage_patterns")` for session patterns
+- Add: "Valid analyze targets are: `usage_patterns`, `structure`, `insights`, `context`, `context_stats`, `context_all_sessions`, `health`. Do NOT use `session` as a target."
+- Consider whether Step 15 should read and execute `analyze.md` OR call specific analyze targets directly (the current phrasing is ambiguous)
+
 ## Dependencies
 
 None — this is a process/tooling improvement, not a code feature.
@@ -105,12 +144,17 @@ None — this is a process/tooling improvement, not a code feature.
 - Plan template includes "Verification Checklist" section
 - Date validator catches year typos in plan/roadmap files
 - Duplicate-definition search is part of the standard implement workflow
+- Commit prompt Step 13 specifies commit message format (content-descriptive, not process-descriptive)
+- Commit prompt Step 13 uses selective `git add` instead of `git add -A`
+- Commit prompt Step 15 specifies exact `analyze()` targets with valid target list
 
 ## Testing Strategy
 
-- **Unit Tests**: Date validator, template rendering
+- **Unit Tests**: Date validator, template rendering, commit message format validation
 - **Process Tests**: Create a mock plan, run implementation workflow, verify all verification gates fire
-- **Edge Cases**: Plans with no elimination steps, plans with multiple files, date edge cases (Dec 31 → Jan 1)
+- **Edge Cases**: Plans with no elimination steps, plans with multiple files, date edge cases (Dec 31 -> Jan 1)
+- **Commit Message Tests**: Verify anti-patterns are rejected (process-descriptive messages), good patterns accepted
+- **Staging Tests**: Verify selective staging excludes sensitive file patterns
 - **Coverage Target**: 95%+ for new validation code
 
 ## Risks & Mitigation
@@ -119,7 +163,9 @@ None — this is a process/tooling improvement, not a code feature.
 - **Mitigation**: Keep verification lightweight (single re-read, single search) — the cost of missing a verification is much higher than the overhead
 - **Risk**: Agents find workarounds to skip verification
 - **Mitigation**: Make verification gates produce artifacts (search results) that are visible in the plan output, not just assertions the agent can fabricate
+- **Risk**: Selective staging may miss files that should be committed
+- **Mitigation**: After staging, run `git diff --cached --stat` and compare against expected file list from the session's work
 
 ## Timeline
 
-Medium effort (6-10h) — mostly prompt engineering + one small validator
+Medium-High effort (8-14h) — prompt engineering for implement and commit prompts + date validator + staging safety
