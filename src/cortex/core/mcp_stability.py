@@ -10,12 +10,13 @@ This module provides connection stability features for MCP tool handlers:
 import asyncio
 import time
 from collections.abc import Awaitable, Callable
-from typing import cast
+from typing import TypeVar, cast
 
 from cortex.core.constants import (
     MCP_TOOL_TIMEOUT_SECONDS,
     PROGRESS_THRESHOLD_TIMEOUT_SECONDS,
 )
+from cortex.core.mcp_annotations import ToolAnnotations
 from cortex.core.mcp_async_utils import cancel_and_drain_progress_task
 from cortex.core.mcp_stability_config import (
     TrackedSemaphore,
@@ -46,6 +47,9 @@ from cortex.core.models import (
 )
 from cortex.core.protocols.mcp import SignatureAware
 
+TToolFunc = TypeVar("TToolFunc", bound=Callable[..., Awaitable[object]])
+
+
 # Re-export for backward compatibility
 __all__ = [
     "ensure_usage_context",
@@ -56,10 +60,30 @@ __all__ = [
     "check_connection_health",
     "reconnect",
     "CANCELLED_RESPONSE_JSON",
+    "typed_mcp_tool",
 ]
 
 # Returned to the client when the request was cancelled (e.g. client timeout).
 CANCELLED_RESPONSE_JSON = '{"status":"error","error":"CancelledError","message":"Tool call was cancelled by client"}'
+
+
+def typed_mcp_tool(
+    *,
+    annotations: ToolAnnotations | None,
+) -> Callable[[TToolFunc], TToolFunc]:
+    """Typed wrapper around mcp.tool to satisfy pyright.
+
+    This keeps FastMCP as the single source of truth for tool registration
+    while providing a typed decorator so tools don't need per-site suppressions.
+    """
+    from cortex.server import mcp as _mcp
+
+    decorator = _mcp.tool(annotations=annotations)
+
+    def _wrapper(func: TToolFunc) -> TToolFunc:
+        return cast(TToolFunc, decorator(func))
+
+    return _wrapper
 
 
 def _stability_params(
@@ -243,12 +267,12 @@ async def _run_with_retry_and_record[T](
 
 async def with_mcp_stability[T](
     func: Callable[..., Awaitable[T]],
-    *args: JsonValue,  # pyright: ignore[reportUnknownParameterType]
+    *args: JsonValue,
     timeout: JsonValue | None = None,
     stability_timeout: JsonValue | None = None,
     kind: HandlerKind = HandlerKind.TOOL,
     enable_progress: bool = False,
-    **kwargs: JsonValue,  # pyright: ignore[reportUnknownParameterType]
+    **kwargs: JsonValue,
 ) -> T:
     """Execute MCP tool or resource handler with stability protections."""
     health = await check_connection_health()
@@ -275,8 +299,8 @@ def _make_tool_wrapper_func[T](
 
     @functools.wraps(func)
     async def wrapper(
-        *args: JsonValue,  # pyright: ignore[reportUnknownParameterType]
-        **kwargs: JsonValue,  # pyright: ignore[reportUnknownParameterType]
+        *args: JsonValue,
+        **kwargs: JsonValue,
     ) -> T:
         from cortex.core.context_logging import MCPContext
 
@@ -334,8 +358,8 @@ def mcp_resource_wrapper[T](
     ) -> Callable[..., Awaitable[T]]:
         @functools.wraps(func)
         async def wrapper(
-            *args: JsonValue,  # pyright: ignore[reportUnknownParameterType]
-            **kwargs: JsonValue,  # pyright: ignore[reportUnknownParameterType]
+            *args: JsonValue,
+            **kwargs: JsonValue,
         ) -> T:
             kwargs_no_progress = {
                 k: v for k, v in kwargs.items() if k != "enable_progress"
@@ -358,9 +382,9 @@ def mcp_resource_wrapper[T](
 
 async def execute_tool_with_stability[T](
     func: Callable[..., Awaitable[T]],
-    *args: JsonValue,  # pyright: ignore[reportUnknownParameterType]
+    *args: JsonValue,
     timeout: float = MCP_TOOL_TIMEOUT_SECONDS,
-    **kwargs: JsonValue,  # pyright: ignore[reportUnknownParameterType]
+    **kwargs: JsonValue,
 ) -> T:
     """Execute MCP tool function with stability protections."""
     kwargs_clean = {
