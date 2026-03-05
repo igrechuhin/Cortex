@@ -61,6 +61,13 @@ async def update_memory_bank(
     to progress.md or activeContext.md. Prefer over manage_file(write) for
     targeted mutations to avoid truncation and corruption.
 
+    DO NOT:
+    - Use manage_file(write) directly on roadmap.md, progress.md, or
+      activeContext.md when you can express the change as a single bullet or
+      entry; prefer this tool instead.
+    - Use this tool for generic search/replace or bulk edits across Memory
+      Bank files; it is designed for small, structured mutations only.
+
     EXAMPLES:
     - update_memory_bank(operation="roadmap_add", section="pending", entry_text="- Plan: .cortex/plans/foo.md")
     - update_memory_bank(operation="roadmap_remove", entry_contains="Plan: .cortex/plans/foo.md")

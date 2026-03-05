@@ -12,6 +12,12 @@ CHECK_STRUCTURE_HEALTH_DOC = """Analyze project structure health and optionally 
     EXAMPLES: 'check structure health', 'fix structure issues',
     'validate project structure', 'perform structure cleanup'.
 
+    DO NOT:
+    - Pass project_root or filesystem paths; the tool resolves the project
+      root and structure configuration internally.
+    - Use this tool as a generic filesystem cleaner outside the Cortex
+      project structure; it assumes the standard .cortex layout.
+
     RETURNS: JSON with health score, issues found, and cleanup results.
 
     Performs comprehensive health checks on the MCP Memory Bank project structure,
@@ -74,6 +80,12 @@ GET_STRUCTURE_INFO_DOC = """Get current project structure configuration, paths, 
 
     EXAMPLES: 'get structure info', 'show structure paths', 'get structure
     configuration', 'get memory bank path'.
+
+    DO NOT:
+    - Pass project_root or other filesystem parameters; the tool resolves the
+      project root and structure configuration internally.
+    - Use this as a generic file discovery mechanism; it is focused on the
+      Cortex project structure, not arbitrary directories.
 
     RETURNS: JSON with structure version, paths, configuration, and
     health status.

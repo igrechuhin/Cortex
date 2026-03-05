@@ -63,9 +63,17 @@ async def manage_file(
 ) -> str:
     """Manage Memory Bank file operations: read, write, or get metadata.
 
-    USE WHEN: User needs to read/write memory bank files, user requests file
+    USE WHEN: User needs to read/write Memory Bank files, user requests file
     content, user needs file metadata, user wants to update project context
-    files.
+    files under .cortex/memory-bank/.
+
+    DO NOT:
+    - Use this tool for generic project files outside the Memory Bank (code,
+      tests, plans, or other workspace files).
+    - Pass absolute paths or directory components; file_name must be a Memory
+      Bank filename only (for example, "projectBrief.md", not a path).
+    - Perform full-file writes to roadmap.md, progress.md, or activeContext.md
+      when a targeted mutation via update_memory_bank would suffice.
 
     EXAMPLES: 'read projectBrief.md', 'update activeContext.md', 'get metadata
     for roadmap.md', 'write new content to systemPatterns.md'.

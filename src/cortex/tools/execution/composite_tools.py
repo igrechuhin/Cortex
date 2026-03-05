@@ -14,9 +14,12 @@ from typing import cast
 
 from cortex.core.constants import MCP_TOOL_TIMEOUT_COMPLEX
 from cortex.core.mcp_annotations import safe_write_annotations
-from cortex.core.mcp_stability import ensure_usage_context, mcp_tool_wrapper
-from cortex.core.models import JsonValue
-from cortex.server import mcp
+from cortex.core.mcp_stability import (
+    ensure_usage_context,
+    mcp_tool_wrapper,
+    typed_mcp_tool,
+)
+from cortex.core.models import JsonValue, ModelDict
 from cortex.tools.response_builder import error_response, success_response
 
 # ---------------------------------------------------------------------------
@@ -60,7 +63,7 @@ async def _quality_check_impl() -> str:
     success = (
         pre_result.get("status") == "success" and pre_result.get("total_errors", 0) == 0
     )
-    fix_result: dict[str, object] | None = None
+    fix_result: ModelDict | None = None
     if not success:
         fix_result = await execute_pre_commit_checks(
             checks=["fix_quality"], include_untracked_markdown=True
@@ -183,10 +186,10 @@ async def _dispatch_agent_workflow(
 # ---------------------------------------------------------------------------
 
 
-@mcp.tool(  # pyright: ignore[reportUntypedFunctionDecorator]
+@typed_mcp_tool(
     annotations=safe_write_annotations(
         "Run Composite Workflow (Session+Context, Quality, Safe File, Suggest)"
-    ),  # pyright: ignore[reportCallIssue]
+    )
 )
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_COMPLEX)
@@ -221,8 +224,9 @@ async def run_composite_workflow(
         file_name, file_operation, content: For safe_manage_file.
         check_type: For safe_manage_file (default roadmap_sync).
 
-    Example:
+    EXAMPLES:
         run_composite_workflow(operation="quick_start", task_description="Implement feature X")
+        run_composite_workflow(operation="quality_check")
     """
     return await _dispatch_agent_workflow(
         operation,

@@ -32,6 +32,7 @@ from cortex.core.mcp_stability import (
     ensure_usage_context,
     mcp_resource_wrapper,
     mcp_tool_wrapper,
+    typed_mcp_tool,
 )
 from cortex.core.models import ModelDict
 from cortex.core.project_root_resolver import resolve_project_root_async
@@ -151,11 +152,7 @@ async def _check_structure_health_with_logging(
         )
 
 
-@mcp.tool(  # pyright: ignore[reportUntypedFunctionDecorator]
-    annotations=safe_write_annotations(
-        "Check Structure Health"
-    ),  # pyright: ignore[reportCallIssue]
-)
+@typed_mcp_tool(annotations=safe_write_annotations("Check Structure Health"))
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_COMPLEX)
 async def check_structure_health(
@@ -165,7 +162,18 @@ async def check_structure_health(
     dry_run: bool = True,
     ctx: MCPContext | None = None,
 ) -> str:
-    """Analyze project structure health and optionally perform cleanup."""
+    """Analyze project structure health and optionally perform cleanup.
+
+    USE WHEN: You want a high-level structure health report or to perform
+    cleanup actions (archive stale plans, fix symlinks, update index).
+
+    EXAMPLES: 'check_structure_health()', 'check_structure_health(perform_cleanup=True)'.
+
+    DO NOT:
+    - Pass project_root or filesystem paths; the tool resolves the project root
+      and structure configuration internally.
+    - Use this as a generic filesystem cleaner for non-Cortex directories.
+    """
     await log_client(
         ctx, "info", "check_structure_health: starting", logger_name=__name__
     )
@@ -183,17 +191,25 @@ async def check_structure_health(
 check_structure_health.__doc__ = CHECK_STRUCTURE_HEALTH_DOC
 
 
-@mcp.tool(  # pyright: ignore[reportUntypedFunctionDecorator]
-    annotations=read_only_annotations(
-        "Get Structure Info"
-    ),  # pyright: ignore[reportCallIssue]
-)
+@typed_mcp_tool(annotations=read_only_annotations("Get Structure Info"))
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_FAST)
 async def get_structure_info(
     ctx: MCPContext | None = None,
 ) -> str:
-    """Get current project structure configuration, paths, and status."""
+    """Get current project structure configuration, paths, and status.
+
+    USE WHEN: You need the canonical paths for memory_bank, plans, rules, or
+    want to inspect structure.json configuration.
+
+    EXAMPLES: 'get_structure_info()' to retrieve structure paths and status.
+
+    DO NOT:
+    - Pass project_root or other filesystem parameters; the tool resolves the
+      project root and structure configuration internally.
+    - Use this as a generic file discovery helper outside the Cortex project
+      structure.
+    """
     await log_client(ctx, "info", "get_structure_info: starting", logger_name=__name__)
     try:
         root = await resolve_project_root_async(None, ctx)

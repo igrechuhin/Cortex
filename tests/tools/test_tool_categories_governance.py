@@ -12,7 +12,7 @@ from __future__ import annotations
 import asyncio
 from pathlib import Path
 
-from cortex.health_check.tool_analyzer import ToolAnalyzer
+from cortex.health_check.tool_analyzer import AnalyzedTool, ToolAnalyzer
 from cortex.managers.initialization import get_project_root
 from cortex.tools.structure.categories import (
     MAX_REGISTERED_TOOLS,
@@ -60,3 +60,72 @@ class TestToolCategoriesGovernance:
 
         # Sanity check: TOOL_CATEGORIES should remain the single source of truth.
         assert total_tools == len(TOOL_CATEGORIES)
+
+
+class TestToolDescriptionGovernance:
+    """Phase 92 governance: tool docstrings follow description rubric."""
+
+    def _get_registered_tools(self) -> dict[str, AnalyzedTool]:
+        """Helper to load registered tools using ToolAnalyzer."""
+        tools_dir = _tools_dir()
+        assert tools_dir.is_dir(), f"Tools dir not found: {tools_dir}"
+        analyzer = ToolAnalyzer(tools_dir)
+        return asyncio.run(analyzer.get_registered_tools())
+
+    def test_registered_tools_have_use_when_and_examples(self) -> None:
+        """Every registered tool docstring should include USE WHEN and EXAMPLES sections."""
+        tools = self._get_registered_tools()
+        missing_use_when: list[str] = []
+        missing_examples: list[str] = []
+
+        for name, tool in tools.items():
+            doc = (tool.docstring or "").lower()
+            if "use when" not in doc:
+                missing_use_when.append(name)
+            if "examples" not in doc:
+                missing_examples.append(name)
+
+        assert not missing_use_when and not missing_examples, (
+            "All MCP tools must document usage via USE WHEN/EXAMPLES sections. "
+            f"Missing USE WHEN: {sorted(missing_use_when)}; "
+            f"Missing EXAMPLES: {sorted(missing_examples)}."
+        )
+
+    def test_high_risk_tools_include_anti_pattern_guidance(self) -> None:
+        """High-risk tools must include explicit anti-pattern guidance (DO NOT / Prefer)."""
+        tools = self._get_registered_tools()
+        high_risk_tools = {
+            "manage_file",
+            "update_memory_bank",
+            "execute_pre_commit_checks",
+            "check_mcp_connection_health",
+            "get_structure_info",
+            "check_structure_health",
+            "query_memory_bank",
+            "query_usage",
+        }
+
+        missing_guidance: list[str] = []
+        for name in sorted(high_risk_tools):
+            tool = tools.get(name)
+            assert (
+                tool is not None
+            ), f"High-risk tool {name!r} not found in registered tools"
+            doc = (tool.docstring or "").lower()
+            if not any(
+                phrase in doc
+                for phrase in (
+                    "do not",
+                    "don't ",
+                    "prefer ",
+                    "preferred over",
+                    "preferred to",
+                )
+            ):
+                missing_guidance.append(name)
+
+        assert not missing_guidance, (
+            "High-risk tools must include at least one explicit anti-pattern callout "
+            "(DO NOT / Prefer ...). Missing guidance for: "
+            f"{sorted(missing_guidance)}."
+        )

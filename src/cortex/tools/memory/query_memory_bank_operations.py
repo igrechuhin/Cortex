@@ -218,6 +218,12 @@ async def query_memory_bank(
     'query_memory_bank(query_type="version_history", file_name="roadmap.md")',
     'get link graph', 'validate links in activeContext.md'.
 
+    DO NOT:
+    - Use this tool to mutate Memory Bank content; it is strictly read-only.
+      For writes, use manage_file or update_memory_bank instead.
+    - Treat this as a generic text search over the repository; it operates on
+      Memory Bank metadata and link structures only.
+
     RETURNS: JSON (or format) with result for query_type: stats,
     version_history, dependency_graph, link_graph, parse_links,
     validate_links, resolve_transclusions.

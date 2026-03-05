@@ -12,15 +12,16 @@ from cortex.core.mcp_stability import (
     ensure_usage_context,
     mcp_resource_wrapper,
     mcp_tool_wrapper,
+    typed_mcp_tool,
 )
 from cortex.server import mcp
 
 
-@mcp.tool(  # pyright: ignore[reportUntypedFunctionDecorator]
+@typed_mcp_tool(
     annotations=read_only_annotations(
         "Check MCP Connection Health",
         idempotent=False,
-    ),  # pyright: ignore[reportCallIssue]
+    )
 )
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_FAST)
@@ -32,6 +33,12 @@ async def check_mcp_connection_health() -> str:
 
     EXAMPLES: 'check MCP connection health', 'get connection status',
     'check server health', 'monitor MCP connection'.
+
+    DO NOT:
+    - Call this tool in tight loops or as part of every agent turn; it is a
+      diagnostics helper, not a heartbeat.
+    - Treat this as a generic HTTP or infrastructure health check; it reports
+      only on the MCP server connection.
 
     RETURNS: JSON with connection status, resource metrics, and health
     indicators.

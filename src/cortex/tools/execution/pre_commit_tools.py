@@ -16,10 +16,13 @@ from typing import Literal, cast
 from cortex.core.constants import MCP_TOOL_TIMEOUT_VERY_COMPLEX
 from cortex.core.context_logging import MCPContext, log_client
 from cortex.core.mcp_annotations import external_annotations
-from cortex.core.mcp_stability import ensure_usage_context, mcp_tool_wrapper
+from cortex.core.mcp_stability import (
+    ensure_usage_context,
+    mcp_tool_wrapper,
+    typed_mcp_tool,
+)
 from cortex.core.models import ModelDict
 from cortex.core.usage_context import get_or_resolve_project_root
-from cortex.server import mcp
 from cortex.services.framework_adapters.base import FrameworkAdapter
 from cortex.services.framework_adapters.go_adapter import GoAdapter
 from cortex.services.framework_adapters.java_adapter import JavaAdapter
@@ -253,13 +256,13 @@ async def _run_execute_pre_commit_checks(
     )
 
 
-@mcp.tool(  # pyright: ignore[reportUntypedFunctionDecorator]
+@typed_mcp_tool(
     annotations=external_annotations(
         "Execute Pre-Commit Checks",
         read_only=False,
         destructive=False,
         idempotent=False,
-    ),  # pyright: ignore[reportCallIssue]
+    )
 )
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_VERY_COMPLEX)
@@ -281,10 +284,17 @@ async def execute_pre_commit_checks(
     execute_pre_commit_checks(checks=["format", "type_check"]) for targeted checks;
     execute_pre_commit_checks(phase="B") for docs/memory validation after Step 5.
 
+    DO NOT:
+    - Run raw pytest/ruff/black commands in a shell for this project; use this MCP tool so
+      results are structured and consistent with the commit pipeline.
+    - Pass project_root or cwd-style parameters; the tool resolves the project root
+      internally.
+    - Mix phase and checks in the same call; use either a phase ("A", "B", "full") or an
+      explicit checks list.
+
     RETURNS: JSON with status; for phase "A" or "full": preflight_passed, checks (per-check
     results); for phase "B" or "full": docs_phase_passed, timestamps, roadmap_sync; for
-    explicit checks: results per check (format, type_check, quality, tests, etc.). Do not
-    pass project_root; the tool resolves it internally.
+    explicit checks: results per check (format, type_check, quality, tests, etc.).
 
     Args:
         phase: "A", "B", or "full" for pipeline phases. Optional.

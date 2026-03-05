@@ -197,7 +197,16 @@ async def plan(
     section: str = "pending",
     ctx: MCPContext | None = None,
 ) -> str:
-    """Plan lifecycle: create, list, get, complete, or register in roadmap."""
+    """Plan lifecycle: create, list, get, complete, or register in roadmap.
+
+    USE WHEN: You need to create or update plans under .cortex/plans/, mark a
+    plan as complete (with memory-bank updates), or register a plan entry in
+    roadmap.md.
+
+    EXAMPLES: 'plan(operation=\"create\", title=\"Phase 92\", content=\"...\")',
+    'plan(operation=\"complete\", plan_title=\"Phase 92\", summary=\"Done\")',
+    'plan(operation=\"register\", plan_title=\"Phase 92\", description=\"Improve tool docs\")'.
+    """
     return await _plan_dispatch(
         operation,
         title,

@@ -115,6 +115,11 @@ async def query_usage(
     'query_usage(query_type="recommendations", days=90)',
     'query_usage(query_type="anomalies", hours=24)'.
 
+    DO NOT:
+    - Use this tool to mutate logs or usage records; it is analytics-only.
+    - Call it in tight loops or for per-turn logging; prefer periodic queries
+      (for example, after a session or as part of scheduled analysis).
+
     RETURNS: JSON (or markdown when format=markdown) with result for
     query_type: stats, unused, report, recommendations, search, events,
     observation, timeline, anomalies, tool_description_optimization,

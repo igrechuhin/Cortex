@@ -11,9 +11,12 @@ from typing import cast
 
 from cortex.core.constants import MCP_TOOL_TIMEOUT_FAST
 from cortex.core.mcp_annotations import read_only_annotations
-from cortex.core.mcp_stability import ensure_usage_context, mcp_tool_wrapper
+from cortex.core.mcp_stability import (
+    ensure_usage_context,
+    mcp_tool_wrapper,
+    typed_mcp_tool,
+)
 from cortex.core.models import JsonValue, ModelDict
-from cortex.server import mcp
 from cortex.tools.response_builder import error_response, success_response
 from cortex.tools.structure.categories import (
     ToolCategory,
@@ -23,11 +26,11 @@ from cortex.tools.structure.categories import (
 )
 
 
-@mcp.tool(  # pyright: ignore[reportUntypedFunctionDecorator]
+@typed_mcp_tool(
     annotations=read_only_annotations(
         "Search Deferred Tools",
         idempotent=True,
-    ),  # pyright: ignore[reportCallIssue]
+    )
 )
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_FAST)

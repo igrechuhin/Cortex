@@ -109,7 +109,16 @@ async def suggest_refactoring(
     response_format: ResponseFormat = ResponseFormat.CONCISE,
     ctx: MCPContext | None = None,
 ) -> str:
-    """Generate refactoring suggestions. See SUGGEST_REFACTORING_DOCSTRING for full docs."""
+    """Generate refactoring suggestions to consolidate, split, or reorganize Memory Bank files.
+
+    USE WHEN: You want consolidation/split/reorganization suggestions for Memory Bank
+    documentation and index files, based on similarity, size, or structural goals.
+
+    EXAMPLES: 'suggest_refactoring(type=\"consolidation\")',
+    'suggest_refactoring(type=\"splits\", size_threshold=8000)'.
+
+    See SUGGEST_REFACTORING_DOCSTRING for full, detailed documentation.
+    """
     await log_client(ctx, "info", "suggest_refactoring: starting", logger_name=__name__)
     type_str = type.value if isinstance(type, RefactoringSuggestionType) else type
     root = await resolve_project_root_async(None, ctx)

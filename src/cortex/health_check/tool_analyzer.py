@@ -123,7 +123,7 @@ class ToolAnalyzer:
         return tools
 
     def _has_mcp_tool_decorator(self, node: ToolFuncNode) -> bool:
-        """Check if function has @mcp.tool() decorator.
+        """Check if function has an MCP tool decorator.
 
         Args:
             node: AST function node
@@ -133,13 +133,16 @@ class ToolAnalyzer:
         """
         for decorator in node.decorator_list:
             if isinstance(decorator, ast.Call):
-                if isinstance(decorator.func, ast.Attribute):
+                func = decorator.func
+                if isinstance(func, ast.Attribute):
                     if (
-                        isinstance(decorator.func.value, ast.Name)
-                        and decorator.func.value.id == "mcp"
-                        and decorator.func.attr == "tool"
+                        isinstance(func.value, ast.Name)
+                        and func.value.id == "mcp"
+                        and func.attr == "tool"
                     ):
                         return True
+                elif isinstance(func, ast.Name) and func.id == "typed_mcp_tool":
+                    return True
             elif isinstance(decorator, ast.Attribute):
                 if (
                     isinstance(decorator.value, ast.Name)
@@ -147,6 +150,8 @@ class ToolAnalyzer:
                     and decorator.attr == "tool"
                 ):
                     return True
+            elif isinstance(decorator, ast.Name) and decorator.id == "typed_mcp_tool":
+                return True
 
         return False
 
