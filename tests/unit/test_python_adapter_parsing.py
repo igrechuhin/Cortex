@@ -109,7 +109,7 @@ class TestParsePytestOutput:
         output = "\n".join(
             [
                 "============================= test session starts ==============================",
-                "platform darwin -- Python 3.13.6, pytest-9.0.2",
+                "platform darwin -- Python 3.13.7, pytest-9.0.2",
                 "FAILED tests/unit/test_foo.py::TestFoo::test_bar - AssertionError: boom",
                 "1 failed, 0 passed in 1.23s",
                 "TOTAL 95%",

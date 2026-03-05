@@ -79,17 +79,11 @@ brew install uv
 ### Set Up Development Environment
 
 ```bash
-# Install dependencies and dev tools
-uv sync --dev
-
-# Create virtual environment
-python -m venv .venv
+# Install dependencies and dev tools (creates .venv with Python 3.13.x)
+bash scripts/bootstrap.sh
 
 # Activate virtual environment
 source .venv/bin/activate  # On Windows: .venv\Scripts\activate
-
-# Install all dependencies
-uv sync --dev
 ```
 
 ### Python Version Management

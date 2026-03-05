@@ -64,8 +64,8 @@ Cortex supports several extension types:
 git clone https://github.com/igrechuhin/cortex.git
 cd cortex
 
-# Install development dependencies
-uv sync --dev
+# Install development dependencies (Python 3.13.x)
+bash scripts/bootstrap.sh
 
 # Create extension directory
 mkdir -p extensions/my-extension

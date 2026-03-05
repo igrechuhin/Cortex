@@ -54,7 +54,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          uv sync --group dev --extra dev
+          bash scripts/bootstrap.sh
 
       - name: Verify tool versions
         run: |

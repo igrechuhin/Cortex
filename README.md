@@ -100,8 +100,8 @@ Clone the repository, then from the Cortex repo root:
 # Install Node.js dependencies (required for markdownlint-cli2)
 npm install -g markdownlint-cli2
 
-# Install Python dependencies
-uv sync --dev
+# Install Python dependencies and create the virtual environment
+bash scripts/bootstrap.sh
 ```
 
 Add this to your mcp.json (use a path to the Cortex repo as the server working directory if your client supports it):

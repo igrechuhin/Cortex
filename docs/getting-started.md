@@ -48,8 +48,8 @@ cd cortex
 # Install markdownlint-cli2: run npm install (uses package.json), or npm install -g markdownlint-cli2
 npm install
 
-# Install with development dependencies
-uv sync --dev
+# Install with development dependencies (Python 3.13.x)
+bash scripts/bootstrap.sh
 
 # Run the server
 uv run cortex

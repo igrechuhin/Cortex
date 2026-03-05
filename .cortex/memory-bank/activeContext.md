@@ -2,6 +2,12 @@
 
 **This file records completed work only.** For current status and upcoming work see [roadmap.md](roadmap.md).
 
+## Completed Work (2026-03-05)
+
+- ✅ **Phase 79: Fix Python Version Pinning and Bootstrap Script** - COMPLETE (2026-03-05) - Relaxed Python version pinning to avoid patch-level lock-in, added a one-step bootstrap script wired to the new version, and updated Makefile/docs to point to the supported workflow. All pre-commit checks (format, type_check, quality, tests) passed with 4906 tests and ~92.44% coverage.
+
+- ✅ **Phase 79: Fix Python Version Pinning and Bootstrap Script** - COMPLETE (2026-03-05) - Relaxed Python version pinning to avoid patch-level lock-in, added a one-step bootstrap script wired to the new version, and updated Makefile/docs and bootstrap wiring accordingly.
+
 ## Completed Work (2026-03-04)
 
 - **Summary (2026-03-04)** - 1 entries archived.

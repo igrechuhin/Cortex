@@ -6,7 +6,6 @@
 
 ## Blockers (ASAP Priority)
 
-- **Phase 79: Fix Python Version Pinning and Bootstrap Script** — PENDING. Relax patch-level pin, add one-step bootstrap. Plan: `.cortex/plans/phase-79-python-version-pinning-and-bootstrap.md`
 - **Phase 80: Add Synapse Submodule Presence Guard** — PENDING. Fast-fail guard for missing submodule with fallback commands. Plan: `.cortex/plans/phase-80-synapse-submodule-guard.md`
 - **Phase 86: MCP Connection Resilience and Auto-Recovery** — PENDING. Auto-reconnect on transient MCP disconnections. Plan: `.cortex/plans/phase-86-mcp-connection-resilience.md`
 
