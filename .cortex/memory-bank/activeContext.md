@@ -14,6 +14,8 @@
 
 - ✅ **Phase 86: MCP Connection Resilience and Auto-Recovery** - COMPLETE (2026-03-05) - Hardened MCP retry and reconnection logic with helper functions and a clearer circuit-breaker path, stabilized timeout and pre-commit tools tests with connection-state reset fixtures, and re-ran the full pre-commit suite (4908 tests, ~92.42% coverage).
 
+- ✅ **Phase 83: Remaining Silent Exception Handlers** - COMPLETE (2026-03-05) - Eliminated the 7 remaining `except Exception: pass/continue` blocks in src/ by adding logging and restructuring handlers for CI workflow parsing, commit prompt parsing, refactoring history, workflow template loading, optimization history, and plan listing; quality gate and full tests now pass with 92.41% coverage.
+
 ## Completed Work (2026-03-04)
 
 - **Summary (2026-03-04)** - 1 entries archived.

@@ -42,8 +42,12 @@ async def progress_report_loop(
     start = time.perf_counter()
     try:
         _ = await progress_report_step(ctx, timeout_sec, start, tool_name)
-    except Exception:
-        pass
+    except Exception as e:
+        logger.debug(
+            "Initial progress report for %s failed with unexpected error: %s",
+            tool_name,
+            e,
+        )
 
     try:
         while True:

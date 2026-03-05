@@ -7,11 +7,14 @@ suggest_workflow(task_description) for workflow discovery.
 from __future__ import annotations
 
 import json
+import logging
 from pathlib import Path
 
 import yaml
 
 from cortex.tools.execution.workflow_models import WorkflowTemplate
+
+logger = logging.getLogger(__name__)
 
 _workflows_dir: Path | None = None
 
@@ -38,7 +41,8 @@ def _load_all_workflows() -> list[WorkflowTemplate]:
             data = yaml.safe_load(raw)
             if isinstance(data, dict):
                 templates.append(WorkflowTemplate.model_validate(data))
-        except Exception:
+        except Exception as e:
+            logger.debug("Skipping invalid workflow template %s: %s", path, e)
             continue
     return templates
 

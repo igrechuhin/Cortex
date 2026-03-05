@@ -7,6 +7,7 @@ Extracted for Phase 9.1.4 file size compliance.
 from __future__ import annotations
 
 import json
+import logging
 from pathlib import Path
 from typing import cast
 
@@ -20,6 +21,8 @@ from ._models import (
     OptimizationRunRecord,
     OptimizationRunWinner,
 )
+
+logger = logging.getLogger(__name__)
 
 _OPTIMIZATION_HISTORY_KEY = "evals/optimization_history.json"
 
@@ -78,7 +81,8 @@ async def load_optimization_history(
     for item in runs:
         try:
             records.append(OptimizationRunRecord.model_validate(item))
-        except Exception:
+        except Exception as e:
+            logger.debug("Skipping invalid optimization history record: %s", e)
             continue
     return records
 

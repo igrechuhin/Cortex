@@ -9,6 +9,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import cast
 
+from cortex.core.logging_config import logger
 from cortex.core.models import JsonValue, ModelDict
 
 from .models import (
@@ -40,24 +41,37 @@ def read_history_file(
         raw = cast(ModelDict, raw_obj)
 
         executions_raw = raw.get("executions", {})
-        if not isinstance(executions_raw, dict):
-            return None
-
-        records: dict[str, RefactoringExecutionModel] = {}
-        executions_dict = cast(dict[str, JsonValue], executions_raw)
-        for exec_id, exec_data in executions_dict.items():
-            try:
-                model = RefactoringExecutionModel.model_validate(exec_data)
-            except Exception:
-                continue
-            records[str(exec_id)] = model
-
-        return records
+        records = _build_history_records(history_file, executions_raw)
+        return records if records else None
     except Exception as e:
-        from cortex.core.logging_config import logger
-
-        logger.warning(f"Refactoring history corrupted, starting fresh: {e}")
+        logger.warning("Refactoring history corrupted, starting fresh: %s", e)
         return None
+
+
+def _build_history_records(
+    history_file: Path,
+    executions_raw: JsonValue,
+) -> dict[str, RefactoringExecutionModel]:
+    """Build validated execution records from raw history data."""
+    records: dict[str, RefactoringExecutionModel] = {}
+    if not isinstance(executions_raw, dict):
+        return records
+
+    executions_dict = cast(dict[str, JsonValue], executions_raw)
+    for exec_id, exec_data in executions_dict.items():
+        try:
+            model = RefactoringExecutionModel.model_validate(exec_data)
+        except Exception as e:
+            logger.debug(
+                "Skipping invalid refactoring execution %s in %s: %s",
+                exec_id,
+                history_file,
+                e,
+            )
+            continue
+        records[str(exec_id)] = model
+
+    return records
 
 
 def filter_executions_by_date(

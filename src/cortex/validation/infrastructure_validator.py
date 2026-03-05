@@ -8,6 +8,7 @@ Validates project infrastructure consistency, including:
 - Configuration consistency
 """
 
+import logging
 import re
 from collections.abc import Awaitable, Callable
 from pathlib import Path
@@ -23,6 +24,8 @@ from cortex.validation.models import JobConfigModel
 
 # Exposed for tests (they patch `cortex.validation.infrastructure_validator.yaml`)
 yaml: ModuleType | None = _yaml
+
+logger = logging.getLogger(__name__)
 
 
 class InfrastructureIssue(BaseModel):
@@ -283,8 +286,19 @@ class InfrastructureValidator:
                     continue
                 job_config = JobConfigModel.from_dict(cast(ModelDict, job_config_raw))
                 self._extract_checks_from_job(job_config, checks)
-        except Exception:
-            pass
+        except (OSError, _yaml.YAMLError, ValueError) as e:
+            logger.warning(
+                "Failed to extract CI checks from %s: %s",
+                self.ci_workflow_path,
+                e,
+            )
+            return checks
+        except Exception:  # pragma: no cover
+            logger.exception(
+                "Unexpected error extracting CI checks from %s",
+                self.ci_workflow_path,
+            )
+            return checks
 
         return checks
 
@@ -326,27 +340,50 @@ class InfrastructureValidator:
 
         try:
             content = self.commit_prompt_path.read_text()
+        except OSError as e:
+            logger.warning(
+                "Failed to read commit prompt %s: %s",
+                self.commit_prompt_path,
+                e,
+            )
+            return steps
 
-            step_pattern = r"(\d+)\.\s+\*\*([^*]+)\*\*[^\n]*\n((?:[^\n]+\n)*)"
-            matches = re.finditer(step_pattern, content)
+        try:
+            return self._parse_commit_steps(content)
+        except re.error as e:
+            logger.warning(
+                "Failed to parse commit prompt steps from %s: %s",
+                self.commit_prompt_path,
+                e,
+            )
+        except Exception:  # pragma: no cover
+            logger.exception(
+                "Unexpected error extracting commit steps from %s",
+                self.commit_prompt_path,
+            )
 
-            for match in matches:
-                step_num = match.group(1)
-                step_name = match.group(2).strip()
-                step_content = match.group(3).strip()
+        return steps
 
-                normalized_name = self._normalize_check_name(step_name)
-                steps.append(
-                    {
-                        "name": normalized_name,
-                        "description": step_name,
-                        "content": step_content,
-                        "number": step_num,
-                    }
-                )
-        except Exception:
-            pass
+    def _parse_commit_steps(self, content: str) -> list[dict[str, str]]:
+        """Parse commit prompt content into structured step dictionaries."""
+        steps: list[dict[str, str]] = []
+        step_pattern = r"(\d+)\.\s+\*\*([^*]+)\*\*[^\n]*\n((?:[^\n]+\n)*)"
+        matches = re.finditer(step_pattern, content)
 
+        for match in matches:
+            step_num = match.group(1)
+            step_name = match.group(2).strip()
+            step_content = match.group(3).strip()
+
+            normalized_name = self._normalize_check_name(step_name)
+            steps.append(
+                {
+                    "name": normalized_name,
+                    "description": step_name,
+                    "content": step_content,
+                    "number": step_num,
+                }
+            )
         return steps
 
     def _normalize_check_name(self, name: str) -> str:

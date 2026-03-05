@@ -2,6 +2,7 @@
 Helpers for plan CRUD: slug sanitization, path resolution, content extraction.
 """
 
+import logging
 import re
 from pathlib import Path
 
@@ -13,6 +14,8 @@ from cortex.tools.plans.crud_models import (
     ListPlansResult,
     PlanEntry,
 )
+
+logger = logging.getLogger(__name__)
 
 
 def sanitize_plan_slug(title: str) -> str:
@@ -157,8 +160,10 @@ def list_plans_impl(root: Path, include_archive: bool) -> ListPlansResult:
         try:
             content = path.read_text(encoding="utf-8")
             title = extract_first_heading(content)
-        except Exception:
-            pass
+        except OSError as e:
+            logger.warning("Failed to read plan %s: %s", path, e)
+        except Exception as e:  # pragma: no cover
+            logger.debug("Skipping plan %s due to unexpected error: %s", path, e)
         entries.append(PlanEntry(slug=slug, title=title))
     return ListPlansResult(
         status="success",
