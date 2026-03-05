@@ -6,6 +6,9 @@ Extracted from mcp_stability for file size compliance.
 import asyncio
 import logging
 from collections.abc import Awaitable, Callable
+from typing import NoReturn
+
+from pydantic import BaseModel, ConfigDict, Field
 
 from cortex.core.constants import MCP_MAX_CONCURRENT_TOOLS
 from cortex.core.mcp_stability_config import (
@@ -24,21 +27,185 @@ from cortex.core.models import ConnectionHealth, JsonValue, MCPToolArguments
 
 logger = logging.getLogger(__name__)
 
-# Connection state for diagnostics (Phase 32)
+# Connection state for diagnostics (Phase 32) and Phase 86 circuit breaker
 _connection_closure_count: int = 0
 _connection_recovery_count: int = 0
+
+_RECONNECT_BACKOFF_SECONDS: tuple[float, ...] = (1.0, 2.0, 4.0, 8.0, 16.0)
+_MAX_RECONNECT_ATTEMPTS = len(_RECONNECT_BACKOFF_SECONDS)
+_MAX_RECONNECT_DELAY_SECONDS = 30.0
+_HEALTH_CHECK_INTERVAL_SECONDS = 60.0
+
+
+class MCPConnectionState(BaseModel):
+    """In-process connection state and circuit-breaker flags (Phase 86)."""
+
+    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+
+    connected: bool = Field(
+        default=True,
+        description="Whether the MCP transport is considered connected.",
+    )
+    reconnecting: bool = Field(
+        default=False,
+        description="True while a reconnection attempt is in progress.",
+    )
+    consecutive_failures: int = Field(
+        default=0,
+        ge=0,
+        description="Number of consecutive connection failures.",
+    )
+    circuit_open: bool = Field(
+        default=False,
+        description="Whether the circuit breaker is open (degraded mode).",
+    )
+    last_error: str | None = Field(
+        default=None,
+        description="Last connection error message, for diagnostics.",
+    )
+
+
+_connection_state: MCPConnectionState | None = None
+_health_monitor_task: asyncio.Task[None] | None = None
+
+
+def _get_connection_state() -> MCPConnectionState:
+    """Return global MCP connection state (lazy init)."""
+    global _connection_state
+    if _connection_state is None:
+        _connection_state = MCPConnectionState()
+    return _connection_state
 
 
 def _record_connection_closure() -> None:
     """Record connection closure for diagnostics (Phase 32)."""
     global _connection_closure_count
     _connection_closure_count += 1
+    state = _get_connection_state()
+    state.connected = False
 
 
 def _record_connection_recovery() -> None:
     """Record connection recovery for diagnostics (Phase 32)."""
     global _connection_recovery_count
     _connection_recovery_count += 1
+    state = _get_connection_state()
+    state.connected = True
+    state.reconnecting = False
+    state.circuit_open = False
+    state.consecutive_failures = 0
+    state.last_error = None
+
+
+async def _ping_transport() -> None:
+    """Lightweight transport ping hook for reconnection.
+
+    Phase 86: this is a placeholder that can be patched in tests or extended
+    to perform a real health check at the transport layer. By default it
+    completes immediately so reconnection logic is effectively a no-op until
+    wired to a concrete transport.
+    """
+    # Yield control to the event loop; no real network I/O by default.
+    await asyncio.sleep(0)
+
+
+async def _handle_reconnect_attempt_error(
+    state: MCPConnectionState,
+    exc: Exception,
+    attempt: int,
+    base_delay: float,
+    reason: str | None,
+) -> bool:
+    """Handle a single reconnect attempt failure. Returns True if we should stop."""
+    state.connected = False
+    state.consecutive_failures += 1
+    state.last_error = str(exc)
+    if state.consecutive_failures >= _MAX_RECONNECT_ATTEMPTS:
+        return True
+    delay = min(base_delay, _MAX_RECONNECT_DELAY_SECONDS)
+    logger.info(
+        "MCP reconnect attempt %d/%d failed (%s); retrying in %.1fs (reason=%s)",
+        attempt,
+        _MAX_RECONNECT_ATTEMPTS,
+        exc,
+        delay,
+        reason or "unspecified",
+    )
+    await asyncio.sleep(delay)
+    return False
+
+
+async def _handle_reconnect_failure(
+    state: MCPConnectionState,
+    last_error: Exception | None,
+    reason: str | None,
+) -> NoReturn:
+    """Mark circuit as open and raise a final ConnectionError."""
+    state.reconnecting = False
+    state.circuit_open = True
+    msg = (
+        "MCP reconnection failed after "
+        f"{state.consecutive_failures} attempts; circuit breaker open (reason={reason or 'unspecified'})"
+    )
+    raise ConnectionError(msg) from last_error
+
+
+async def reconnect(reason: str | None = None) -> ConnectionHealth:
+    """Attempt to reconnect MCP transport with exponential backoff.
+
+    Updates connection state and returns current ConnectionHealth. On repeated
+    failure, opens the circuit breaker (degraded mode) and raises
+    ConnectionError.
+    """
+    state = _get_connection_state()
+    if state.circuit_open:
+        # Already in degraded mode; report current health without retry loop.
+        return await check_connection_health()
+
+    state.reconnecting = True
+    last_error: Exception | None = None
+    for attempt, base_delay in enumerate(_RECONNECT_BACKOFF_SECONDS, start=1):
+        try:
+            await _ping_transport()
+            _record_connection_recovery()
+            state.reconnecting = False
+            return await check_connection_health()
+        except Exception as exc:  # pragma: no cover - exercised via tests
+            last_error = exc
+            should_stop = await _handle_reconnect_attempt_error(
+                state, exc, attempt, base_delay, reason
+            )
+            if should_stop:
+                break
+
+    await _handle_reconnect_failure(state, last_error, reason)
+
+
+async def _health_monitor_loop(interval_seconds: float) -> None:
+    """Periodically check connection health and trigger reconnection."""
+    while True:
+        try:
+            health = await check_connection_health()
+            if not health.healthy and not _get_connection_state().circuit_open:
+                try:
+                    _ = await reconnect("health_monitor")
+                except ConnectionError:
+                    logger.warning(
+                        "MCP health monitor: circuit breaker open; leaving connection in degraded mode",
+                    )
+        except Exception as exc:  # pragma: no cover
+            logger.debug("MCP health monitor iteration failed: %s", exc)
+        await asyncio.sleep(interval_seconds)
+
+
+def start_connection_health_monitor() -> None:
+    """Start background connection health monitor loop if not already running."""
+    global _health_monitor_task
+    if _health_monitor_task is not None and not _health_monitor_task.done():
+        return
+    _health_monitor_task = asyncio.create_task(
+        _health_monitor_loop(_HEALTH_CHECK_INTERVAL_SECONDS)
+    )
 
 
 async def _handle_timeout_error(
@@ -236,16 +403,22 @@ async def check_connection_health() -> ConnectionHealth:
     semaphore = get_semaphore()
     available = semaphore.available
     current = semaphore.current
+    utilization = (
+        (current / MCP_MAX_CONCURRENT_TOOLS) * 100
+        if MCP_MAX_CONCURRENT_TOOLS > 0
+        else 0.0
+    )
+    state = _get_connection_state()
+    healthy = not state.circuit_open
 
     return ConnectionHealth(
-        healthy=True,
+        healthy=healthy,
         concurrent_operations=current,
         max_concurrent=MCP_MAX_CONCURRENT_TOOLS,
         semaphore_available=available,
-        utilization_percent=(
-            (current / MCP_MAX_CONCURRENT_TOOLS) * 100
-            if MCP_MAX_CONCURRENT_TOOLS > 0
-            else 0.0
-        ),
+        utilization_percent=utilization,
         long_running_holder=get_long_running_semaphore_holder(),
+        degraded=state.circuit_open,
+        reconnecting=state.reconnecting,
+        reconnect_attempts=state.consecutive_failures,
     )

@@ -30,6 +30,19 @@ class ConnectionHealth(DictLikeModel):
             "Name of tool currently holding the long-running semaphore, or None"
         ),
     )
+    degraded: bool = Field(
+        default=False,
+        description="Whether connection is in degraded mode (circuit breaker open).",
+    )
+    reconnecting: bool = Field(
+        default=False,
+        description="Whether a reconnection attempt is currently in progress.",
+    )
+    reconnect_attempts: int = Field(
+        default=0,
+        ge=0,
+        description="Number of reconnection attempts since last successful connection.",
+    )
 
 
 class MCPToolArguments(BaseModel):

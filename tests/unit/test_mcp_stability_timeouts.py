@@ -9,7 +9,7 @@ Tests verify that:
 - Long-running semaphore wait allows second call to succeed after first completes
 """
 
-# pyright: reportPrivateUsage=false
+# pyright: reportPrivateUsage=false, reportUnusedFunction=false
 
 import asyncio
 from pathlib import Path
@@ -17,6 +17,7 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
+from cortex.core import mcp_stability_retry
 from cortex.core.constants import (
     MCP_MAX_CONCURRENT_RESOURCES,
     MCP_TOOL_TIMEOUT_COMPLEX,
@@ -35,6 +36,13 @@ from cortex.core.mcp_stability import (
 from cortex.core.models import HandlerKind
 from cortex.core.usage_context import set_current_managers
 from cortex.managers.initialization import get_project_root
+
+
+@pytest.fixture(autouse=True)
+def _reset_connection_state() -> None:
+    """Ensure MCP connection state is healthy before each timeout test."""
+    mcp_stability_retry._connection_state = None  # type: ignore[attr-defined]
+    _ = mcp_stability_retry._get_connection_state()
 
 
 async def _block_forever() -> str:

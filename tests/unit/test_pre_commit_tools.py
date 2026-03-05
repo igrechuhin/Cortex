@@ -1,5 +1,7 @@
 """Tests for pre-commit tools."""
 
+# pyright: reportPrivateUsage=false, reportUnusedFunction=false
+
 import ast
 import json
 import tempfile
@@ -10,6 +12,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
+from cortex.core import mcp_stability_retry
 from cortex.core.constants import MAX_FILE_LINES, MAX_FUNCTION_LINES
 from cortex.core.models import ModelDict
 from cortex.core.path_resolver import (
@@ -48,6 +51,14 @@ from cortex.tools.execution.pre_commit_tools import (
     _get_adapter,  # pyright: ignore[reportPrivateUsage]
     execute_pre_commit_checks,
 )
+
+
+@pytest.fixture(autouse=True)
+def _reset_connection_state_for_pre_commit_tools() -> None:
+    """Ensure MCP connection state is healthy before each pre-commit tools test."""
+    mcp_stability_retry._connection_state = None  # type: ignore[attr-defined]
+    _ = mcp_stability_retry._get_connection_state()
+
 
 # Required parameters for execute_pre_commit_checks (tool requires all params).
 _EXECUTE_REQUIRED = {

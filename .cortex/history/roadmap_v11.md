@@ -10,20 +10,29 @@
 
 ## Future Enhancements
 
-- Phase 58 tools consolidation: merge check_task_available_lock, claim_task_lock, release_task_lock, list_active_tasks into single dispatcher (low priority)
-- **Evaluate .cortex/history vs git history** - PENDING - Evaluate whether `.cortex/history` provides unique value beyond git, and if not, simplify or phase it out while preserving safety and rollback guarantees.
-
 ## Pending plans (from .cortex/plans)
 
 ### Fixes
 
+- **Phase 83: Remaining Silent Exception Handlers** — PENDING. Fix 7 remaining `except Exception: pass/continue` blocks. Plan: `.cortex/plans/phase-83-remaining-silent-exceptions.md`
+- **Phase 84: Remaining Type-Checker Suppression Cleanup** — PENDING. Reduce 27 suppressions to ≤10. Plan: `.cortex/plans/phase-84-type-checker-suppression-cleanup.md`
+- **Phase 90: Agent Session Verbosity and "ok, proceed" Pattern** — PENDING. Eliminate unnecessary agent pauses requiring user confirmation. Plan: `.cortex/plans/phase-90-agent-session-verbosity.md`
+
 ### Documentation Cleanup (DRY)
+
+- **Phase 85: Unify Developer Command Surface** — PENDING. Consolidate README/Makefile/CI/AGENTS commands. Plan: `.cortex/plans/phase-85-unify-developer-command-surface.md`
 
 ### Refactoring
 
+- **Phase 81: Oversized Module Reduction — Wave 1 (Top 10)** — PENDING. Split top 10 files exceeding 400-line limit. Plan: `.cortex/plans/phase-81-oversized-module-reduction-wave1.md`
+- **Phase 82: Coverage Exclusion Audit and Reduction** — PENDING. Reduce coverage omit list blind spots. Plan: `.cortex/plans/phase-82-coverage-exclusion-audit.md`
+- **Phase 89: Commit Pipeline Efficiency** — PENDING. Reduce redundant check runs in commit pipeline. Plan: `.cortex/plans/phase-89-commit-pipeline-efficiency.md`
+- **Phase 91: HealthCheckReport Type Unification** — PENDING. Replace loose dict alias with Pydantic BaseModel. Plan: `.cortex/plans/phase-91-healthcheck-type-unification.md`
+
 ### Cleanup
 
-- **Cleanup Cortex derived-state directories (.cortex/.cache, .cortex/history, .cortex/rules, .cortex/script-capture, benchmark_results)** - PENDING - For each directory, either document the concrete reason to keep (owner, retention policy, consumers) or remove/consolidate it safely. Plan: `.cortex/plans/cleanup-cortex-derived-state.md`
+- **Phase 87: Stale exec() Comment and Dead Reference Cleanup** — PENDING. Remove dead comments referencing removed patterns. Plan: `.cortex/plans/phase-87-dead-reference-cleanup.md`
+- **Phase 88: Node Tooling Dependency Isolation** — PENDING. Move Node tools to project-local deps. Plan: `.cortex/plans/phase-88-node-tooling-isolation.md`
 
 ### Investigation Plans (Archive / Reference)
 

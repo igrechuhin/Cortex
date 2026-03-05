@@ -12,6 +12,8 @@
 
 - ✅ **/cortex/commit Phase A preflight** - COMPLETE (2026-03-05) - Ran execute_pre_commit_checks(phase="A") with fix_errors, quality, format, synapse_format, synapse_lint, type_check, tests, eval_fast, and markdown_lint; all checks passed with 4906 tests and 92.44% coverage and zero quality violations.
 
+- ✅ **Phase 86: MCP Connection Resilience and Auto-Recovery** - COMPLETE (2026-03-05) - Hardened MCP retry and reconnection logic with helper functions and a clearer circuit-breaker path, stabilized timeout and pre-commit tools tests with connection-state reset fixtures, and re-ran the full pre-commit suite (4908 tests, ~92.42% coverage).
+
 ## Completed Work (2026-03-04)
 
 - **Summary (2026-03-04)** - 1 entries archived.

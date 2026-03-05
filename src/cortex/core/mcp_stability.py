@@ -33,6 +33,7 @@ from cortex.core.mcp_stability_progress import (
 from cortex.core.mcp_stability_retry import (
     check_connection_health,
     execute_with_retry,
+    reconnect,
 )
 from cortex.core.mcp_stability_usage import (
     ensure_usage_context,
@@ -53,6 +54,7 @@ __all__ = [
     "mcp_resource_wrapper",
     "execute_tool_with_stability",
     "check_connection_health",
+    "reconnect",
     "CANCELLED_RESPONSE_JSON",
 ]
 

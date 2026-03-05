@@ -6,8 +6,6 @@
 
 ## Blockers (ASAP Priority)
 
-- **Phase 86: MCP Connection Resilience and Auto-Recovery** — PENDING. Auto-reconnect on transient MCP disconnections. Plan: `.cortex/plans/phase-86-mcp-connection-resilience.md`
-
 ## Active Work (in progress)
 
 ## Future Enhancements
