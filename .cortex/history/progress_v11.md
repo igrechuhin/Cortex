@@ -159,45 +159,7 @@
 
 ## 2026-02-25
 
-- **Anthropic context engineering Step 2 (Measure & Track) (2026-02-25)** - COMPLETE. Instrumented mcp_tool_wrapper with response token counting; response_tokens computed in run_execute_and_finalize, passed to record_usage_finish, and persisted in ToolUsageEvent per tool per session.
-- **Anthropic context engineering Step 2 - Analysis (2026-02-25)** - COMPLETE. Implemented query_usage(query_type="token_efficiency"): top-10 token-expensive tools by total and avg response tokens. phase5_token_efficiency_helpers.py, unit and consolidated tests.
-- **E2E Plan Test (2026-02-25)** - COMPLETE. Plan with single step Done; roadmap entry removed, activeContext/progress updated.
-- **Anthropic Step 2 - Optimization and Benchmark (2026-02-25)** - COMPLETE. Added optimization_recommendations to token_efficiency payload and run_token_benchmark.py script for before/after comparison.
-- **Commit fixes** - run_token_benchmark.py: format and UP017 (datetime.UTC) for synapse_format/synapse_lint. Pre-commit Phase A passed.
-- **Anthropic context engineering Step 3 (2026-02-25)** - COMPLETE. Redundant tool call detection: phase5_redundancy_helpers, query_usage(redundancy), dashboard section, repeated identical, sequential same-tool, error rate by param.
-- **Anthropic Step 4 (Layered Evaluation) (2026-02-25)** - COMPLETE. Implemented A/B baseline comparison in run_eval_check.py: --save-baseline, --compare-baseline, --current-results, --output-summary. CI runs compare step after eval_full using eval_results.json. Layers 1–2 and failure-based evals already present.
-- **Anthropic Step 5 - Long-Running Agent Harness (2026-02-25)** - COMPLETE. Structured progress (progress.txt), compact_session handoff params, create_checkpoint, query_usage(session_continuity).
-- **Anthropic context engineering alignment (2026-02-25)** - COMPLETE. Step 6 On-Demand Tool Loading: query_usage(tool_frequency) reports tools by session presence (core/medium/rare) and token_impact with reduction_pct_when_tiered (≥15%); infrastructure ready for MCP defer_loading.
-- **Function length fix (compaction_operations)** - COMPLETE. Extracted `_compact_write_back_from_ctx` to resolve `_compact_session_write_then_success` 31-line violation; quality gate passes.
-- **Agent skills and composability Step 2 (2026-02-25)** - COMPLETE. Implemented Tool Composition Patterns: 3 composite tools (quick_start, quality_check, safe_manage_file) in composite_tools.py, added 7 unit tests. Plan Step 2 marked Done.
-- **Agent skills and composability (P2) (2026-02-25)** - COMPLETE. Implemented tool_classification query type for usage analysis. Steps 1–4 done.
-- **Security & Resilience Step 2 (2026-02-25)** - COMPLETE. Implemented resilience concurrent access tests: TrackedSemaphore exhaustion/recovery, concurrent manage_file writes, concurrent session_start, lock timeout, chaos scenarios. tests/unit/test_resilience_concurrent_access.py.
-- **Tool consolidation from session analysis (2026-02-25)** - COMPLETE. Phase 50 verified; 2 dead tools already pruned; plan updated. Further reduction blocked by tool-optimization-mapping.md.
-- **Tool consolidation agent_workflow (2026-02-25)** - COMPLETE. Consolidated quick_start, quality_check, safe_manage_file, suggest_workflow into agent_workflow(operation=...). Tool count 49→46. Plan remains partially complete (target ≤40).
-- **Commit pipeline: markdown lint fix (MD056)** - COMPLETE. Fixed table column count in docs/architecture/tool-optimization-mapping.md (pipe in backticks). Phase A passed; 4775 tests, 92.41% coverage.
-- **Tool consolidation follow-up (2026-02-25)** - COMPLETE. Phase 50 done, 2 pruned, agent_workflow consolidated; blocked by mapping KEEP. Path forward: tool-consolidation-next-analysis.
-- **Security & Resilience Step 3 (Error Recovery Audit) (2026-02-25)** - COMPLETE. Audit in docs/security/error-recovery-audit-2026-02-25.md; CancelledError re-raise in context_logging and mcp_stability_config; test_error_recovery_audit.py.
-- **Security Step 4 Secret/Credential Protection (2026-02-25)** - COMPLETE. Added detect-secrets baseline and pre-commit hook, expanded .gitignore, MCP and logging audit doc.
-- **Compound engineering alignment (2026-02-25)** - COMPLETE. Documented compound-engineering goal and loop in project brief, CLAUDE.md, AGENTS.md; aligned implement/commit/analyze prompts; added compound checklist to commit prompt; memory bank and session optimization docs state compound role; Related plans cross-referenced.
-- **Phase 58 Step 6 (2026-02-25)** - COMPLETE. Updated implement prompt, AGENTS.md, and CLAUDE.md with claim_task_lock/release_task_lock workflow for multi-agent coordination.
-- **Phase 58 Step 7 (2026-02-25)** - COMPLETE. Added integration tests for task locking (two sessions claiming different tasks, lock conflict resolution); all Step 7 validation complete.
-- **Phase 9.4 Security section in CLAUDE.md (2026-02-25)** - COMPLETE. Added Security section to CLAUDE.md referencing docs/security/best-practices.md, threat model, and related audits.
-- **Phase 9.1.2: Split refactoring/models.py (2026-02-25)** - COMPLETE. Split refactoring/models.py (1,910 lines) into models/ package: _enums.py (133),_base.py (136), _suggestions.py (351),_execution.py (266), _results.py (433),_config.py (495), **init**.py (238). All imports preserved; tests 4780 passed, coverage 92.58%. Quality gate passed.
-- **Phase 9.1.3 Split core/models.py (2026-02-25)** - COMPLETE. Split core/models.py (1,316 lines) into models/ package with 6 submodules (_enums,_base, _version,_metadata, _structure,_responses). Max file ~350 lines. All tests pass, quality gate passed, coverage 92.7%.
-- **Phase 9.1.4 Split phase5_evaluation.py (2026-02-25)** - COMPLETE. Split phase5_evaluation.py (1,056 lines) into phase5_evaluation/ package: _models,_aggregation, _harness,_optimization, _run_impl. All tests pass, coverage 92.7%.
-- **Phase 9.1.5 optimization/models split (2026-02-25)** - COMPLETE. Split optimization/models.py (921 lines) into package with _base.py,_scoring.py, _results.py,_rules.py, _config.py, **init**.py; each file <400 lines. All tests pass, coverage 92.75%.
-- **Phase 9.1.6 Split reorganization_planner.py (2026-02-25)** - COMPLETE. Extracted preview/validation helpers to reorganization/preview.py; planner 457→386 lines (<400). All tests pass, quality gate passed.
-- **Phase 9.1.7 Split mcp_stability.py (2026-02-25)** - COMPLETE. Extracted mcp_stability_usage, mcp_stability_retry, mcp_stability_progress; reduced mcp_stability from 971 to 376 lines (<400). All tests pass, coverage 92.76%.
-- **Phase 9.1.8 mcp_stability_config split (2026-02-25)** - COMPLETE. Split mcp_stability_config.py (756→215 lines) into mcp_stability_semaphores.py, mcp_stability_finalize.py. Quality gates pass.
-- **Phase 9.1.9 refactoring_executor split (2026-02-25)** - COMPLETE. Split refactoring_executor.py 761→400 lines; extracted refactoring_executor_history, refactoring_executor_impact; all tests pass.
-- **Commit** - Phase 9.1.8 mcp_stability_config, Phase 9.1.9 refactoring_executor splits; mcp_stability_semaphores, mcp_stability_finalize, refactoring_executor_history, refactoring_executor_impact. Tests 4780 pass, coverage 92.76%.
-- **Phase 9.1.10 consolidation_detector split** - COMPLETE. Split consolidation_detector.py 815→399 lines; extracted consolidation_detector_models, consolidation_detector_similarity, consolidation_detector_opportunities. All tests pass, quality gates pass.
-- **Phase 9.1.11-9.1.12 plan update (2026-02-25)** - COMPLETE. Verified insight_engine (262 lines) and template_manager (106 lines) already under 400; marked done in phase-9-excellence-98.md. Next Phase: fix integration tests, TODOs, extract long functions.
-- **Phase 9.1.13 plan_completion split (2026-02-25)** - COMPLETE. Split plan_completion.py 890→222 lines; extracted 6 helper modules (content, archive, io, validation, models, ops).
-- **Phase 9.1.14 Split usage_analytics (2026-02-25)** - COMPLETE. Split usage_analytics.py (665→338 lines) into usage_analytics_models, usage_analytics_formatters, usage_analytics_impl. Tests pass, coverage 92.77%.
-- **Phase 9.1 verification (2026-02-25)** - Verified integration tests pass (4780/4780), quality gate passes, TODOs resolved. Updated phase-9-excellence-98 plan status.
-- **Tool consolidation — next analysis (2026-02-25)** - COMPLETE. Census and usage analysis; report with budget status, dead tools, incomplete consolidations, recommendations. Report: .cortex/reviews/tool-consolidation-analysis-2026-02-25T21-47.md
-- **Phase 9.1.16 python_adapter split (2026-02-25)** - COMPLETE. Split python_adapter.py 658→399 lines; extracted python_adapter_parsing, python_adapter_checks. All tests pass.
+- **Week containing 2026-02-25** - 1 entries summarized.
 
 ## 2026-02-24
 
