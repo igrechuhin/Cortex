@@ -52,6 +52,9 @@ jobs:
           echo "Git ref: ${{ github.ref }}"
           echo "==============================="
 
+      - name: Verify Synapse submodule
+        run: bash scripts/check_synapse.sh
+
       - name: Install dependencies
         run: |
           bash scripts/bootstrap.sh

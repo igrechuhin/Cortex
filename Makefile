@@ -1,7 +1,7 @@
 VENV_PY := ./.venv/bin/python
 TIMEOUT := $(shell command -v gtimeout >/dev/null 2>&1 && echo "gtimeout -k 5" || echo "timeout -k 5")
 
-.PHONY: help test test-full typecheck format lint compile check bootstrap env-check
+.PHONY: help test test-full typecheck format lint compile check bootstrap env-check synapse-check
 
 help:
 	@echo "Common targets:"
@@ -29,7 +29,10 @@ env-check:
 		exit 1; \
 	fi
 
-test: env-check
+synapse-check:
+	bash scripts/check_synapse.sh
+
+test: env-check synapse-check
 	$(TIMEOUT) 300 $(VENV_PY) -m pytest -q
 
 test-full: env-check
@@ -48,4 +51,4 @@ lint:
 compile:
 	$(VENV_PY) -m compileall -q src
 
-check: env-check format lint typecheck test
+check: env-check synapse-check format lint typecheck test

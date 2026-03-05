@@ -104,6 +104,14 @@ npm install -g markdownlint-cli2
 bash scripts/bootstrap.sh
 ```
 
+To enable shared rules and quality scripts, initialize the Synapse submodule (required for CI and full `make check` quality gates):
+
+```bash
+git submodule update --init --recursive
+```
+
+If you intentionally want to run a minimal local check without Synapse (for example on a constrained machine), you can set `CORTEX_ALLOW_MISSING_SYNAPSE=1` before running `make check`, but the Synapse submodule is strongly recommended for full quality coverage.
+
 Add this to your mcp.json (use a path to the Cortex repo as the server working directory if your client supports it):
 
 ```json

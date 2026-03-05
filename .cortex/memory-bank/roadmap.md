@@ -6,7 +6,6 @@
 
 ## Blockers (ASAP Priority)
 
-- **Phase 80: Add Synapse Submodule Presence Guard** — PENDING. Fast-fail guard for missing submodule with fallback commands. Plan: `.cortex/plans/phase-80-synapse-submodule-guard.md`
 - **Phase 86: MCP Connection Resilience and Auto-Recovery** — PENDING. Auto-reconnect on transient MCP disconnections. Plan: `.cortex/plans/phase-86-mcp-connection-resilience.md`
 
 ## Active Work (in progress)

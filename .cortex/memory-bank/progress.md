@@ -4,6 +4,7 @@
 
 - - **Phase 79: Fix Python Version Pinning and Bootstrap Script (2026-03-05)** - COMPLETE. Relaxed Python patch pinning, added one-step bootstrap script, and updated docs; Phase A passed with 4906 tests and 92.44% coverage.
 - - **Phase 79: Fix Python Version Pinning and Bootstrap Script (2026-03-05)** - COMPLETE. Relaxed Python patch pinning, added one-step bootstrap, and updated docs/quality workflow; Phase A checks passed with 4906 tests and ~92.44% coverage.
+- **Phase 80: Add Synapse Submodule Presence Guard (2026-03-05)** - COMPLETE. Added a Synapse submodule guard script, integrated it into CI and Makefile `make check`/`test`, and updated the README with submodule initialization instructions and a constrained-mode fallback.
 
 ## 2026-03-04
 

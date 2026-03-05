@@ -8,6 +8,10 @@
 
 - ✅ **Phase 79: Fix Python Version Pinning and Bootstrap Script** - COMPLETE (2026-03-05) - Relaxed Python version pinning to avoid patch-level lock-in, added a one-step bootstrap script wired to the new version, and updated Makefile/docs and bootstrap wiring accordingly.
 
+- ✅ **Phase 80: Add Synapse Submodule Presence Guard** - COMPLETE (2026-03-05) - Implemented a Synapse submodule guard shell script, wired it into the quality workflow and Makefile so CI and `make check` fail fast when Synapse is missing, and documented submodule initialization plus an optional minimal-check fallback in the README.
+
+- ✅ **/cortex/commit Phase A preflight** - COMPLETE (2026-03-05) - Ran execute_pre_commit_checks(phase="A") with fix_errors, quality, format, synapse_format, synapse_lint, type_check, tests, eval_fast, and markdown_lint; all checks passed with 4906 tests and 92.44% coverage and zero quality violations.
+
 ## Completed Work (2026-03-04)
 
 - **Summary (2026-03-04)** - 1 entries archived.
