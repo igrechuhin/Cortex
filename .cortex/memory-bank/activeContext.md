@@ -16,6 +16,8 @@
 
 - ✅ **Phase 83: Remaining Silent Exception Handlers** - COMPLETE (2026-03-05) - Eliminated the 7 remaining `except Exception: pass/continue` blocks in src/ by adding logging and restructuring handlers for CI workflow parsing, commit prompt parsing, refactoring history, workflow template loading, optimization history, and plan listing; quality gate and full tests now pass with 92.41% coverage.
 
+- ✅ **Blocker: GitHub Actions Quality Gate Not Running** - COMPLETE (2026-03-05) - Restored the GitHub Actions Code Quality workflow so it runs on all branches and made its failures align with the local `/cortex/commit` quality gate (format, lint, type_check over src and tests, file sizes, function lengths, tests, eval). Fixed Pyright test type errors and hardened both CI and commit prompt so skipped or partial runs cannot slip through.
+
 ## Completed Work (2026-03-04)
 
 - **Summary (2026-03-04)** - 1 entries archived.

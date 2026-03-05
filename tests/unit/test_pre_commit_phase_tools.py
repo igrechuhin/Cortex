@@ -37,6 +37,19 @@ from cortex.tools.execution.pre_commit_tools import execute_pre_commit_checks
 from cortex.tools.models import PreflightCheckSummary
 
 # ---------------------------------------------------------------------------
+# Helpers for type-safe access to ModelDict/JsonValue in tests
+# ---------------------------------------------------------------------------
+
+
+def _get_checks_list(result: ModelDict) -> list[dict[str, object]]:
+    """Extract list of check dicts from phase result; safe for Pyright (JsonValue)."""
+    raw = result.get("checks", [])
+    if not isinstance(raw, list):
+        return []
+    return cast(list[dict[str, object]], [x for x in raw if isinstance(x, dict)])
+
+
+# ---------------------------------------------------------------------------
 # Factories
 # ---------------------------------------------------------------------------
 
@@ -134,7 +147,7 @@ class TestRunPreflightChecks:
         assert result["status"] == "success"
         assert result["preflight_passed"] is True
         assert result["language"] == "python"
-        check_names = {e["name"] for e in result["checks"]}
+        check_names = {str(e.get("name", "")) for e in _get_checks_list(result)}
         assert "tests" in check_names
         assert "markdown_lint" in check_names
 
@@ -166,8 +179,11 @@ class TestRunPreflightChecks:
 
         assert result["status"] == "success"
         assert result["preflight_passed"] is False
-        tests_entry = next(e for e in result["checks"] if e["name"] == "tests")
-        assert tests_entry["status"] == "error"
+        tests_entry = next(
+            (e for e in _get_checks_list(result) if e.get("name") == "tests"), None
+        )
+        assert tests_entry is not None
+        assert tests_entry.get("status") == "error"
 
     @pytest.mark.asyncio
     async def test_reports_tool_error(self) -> None:
@@ -198,7 +214,7 @@ class TestRunPreflightChecks:
 
         assert result["status"] == "error"
         assert result["error_type"] == "PreflightToolError"
-        assert "underlying tool error" in result["error"]
+        assert "underlying tool error" in str(result.get("error", ""))
 
     @pytest.mark.asyncio
     async def test_markdown_lint_errors_fail_preflight(self) -> None:
@@ -228,9 +244,13 @@ class TestRunPreflightChecks:
 
         assert result["status"] == "success"
         assert result["preflight_passed"] is False
-        md_entry = next(e for e in result["checks"] if e["name"] == "markdown_lint")
-        assert md_entry["status"] == "error"
-        assert md_entry["errors"] == 3
+        md_entry = next(
+            (e for e in _get_checks_list(result) if e.get("name") == "markdown_lint"),
+            None,
+        )
+        assert md_entry is not None
+        assert md_entry.get("status") == "error"
+        assert md_entry.get("errors") == 3
 
     @pytest.mark.asyncio
     async def test_markdown_tool_error_surfaces(self) -> None:
@@ -296,7 +316,7 @@ class TestRunPreflightChecks:
         assert result["status"] == "success"
         assert result["preflight_passed"] is True
         # No markdown_lint entry since decode returned None
-        check_names = {e["name"] for e in result["checks"]}
+        check_names = {str(e.get("name", "")) for e in _get_checks_list(result)}
         assert "markdown_lint" not in check_names
 
     @pytest.mark.asyncio
@@ -327,7 +347,7 @@ class TestRunPreflightChecks:
 
         assert result["status"] == "success"
         assert result["preflight_passed"] is True
-        check_names = {e["name"] for e in result["checks"]}
+        check_names = {str(e.get("name", "")) for e in _get_checks_list(result)}
         assert "markdown_lint" not in check_names
 
     @pytest.mark.asyncio
@@ -376,7 +396,7 @@ class TestRunPreflightChecks:
                 strict_mode=False,
             )
 
-        check_names = {e["name"] for e in result["checks"]}
+        check_names = {str(e.get("name", "")) for e in _get_checks_list(result)}
         assert check_names == {"format", "quality", "tests", "markdown_lint"}
         assert result["preflight_passed"] is True
 
@@ -585,7 +605,7 @@ class TestEnsureDict:
         result = _ensure_dict(s)
         assert isinstance(result, dict)
         assert result["status"] == "error"
-        assert result["error"] == "CancelledError"
+        assert result.get("error") == "CancelledError"
 
     def test_ensure_dict_invalid_json_returns_error_dict(self) -> None:
         """Invalid JSON string returns error dict."""
@@ -650,7 +670,7 @@ class TestRunDocsAndMemoryBankSync:
 
         assert result["status"] == "success"
         assert result["docs_phase_passed"] is True
-        check_names = {e["name"] for e in result["checks"]}
+        check_names = {str(e.get("name", "")) for e in _get_checks_list(result)}
         assert "timestamps" in check_names
         assert "roadmap_sync" in check_names
 
@@ -688,9 +708,13 @@ class TestRunDocsAndMemoryBankSync:
 
         assert result["status"] == "success"
         assert result["docs_phase_passed"] is False
-        ts_entry = next(e for e in result["checks"] if e["name"] == "timestamps")
-        assert ts_entry["status"] == "error"
-        assert ts_entry["errors"] == 3
+        ts_entry = next(
+            (e for e in _get_checks_list(result) if e.get("name") == "timestamps"),
+            None,
+        )
+        assert ts_entry is not None
+        assert ts_entry.get("status") == "error"
+        assert ts_entry.get("errors") == 3
 
     @pytest.mark.asyncio
     async def test_reports_tool_error(self) -> None:
@@ -723,7 +747,7 @@ class TestRunDocsAndMemoryBankSync:
 
         assert result["status"] == "error"
         assert result["error_type"] == "DocsMemoryBankToolError"
-        assert "underlying validation error" in result["error"]
+        assert "underlying validation error" in str(result.get("error", ""))
 
     @pytest.mark.asyncio
     async def test_both_validations_fail(self) -> None:
@@ -760,8 +784,8 @@ class TestRunDocsAndMemoryBankSync:
         assert result["status"] == "success"
         assert result["docs_phase_passed"] is False
         # Both checks should be error
-        for entry in result["checks"]:
-            assert entry["status"] == "error"
+        for entry in _get_checks_list(result):
+            assert entry.get("status") == "error"
 
     @pytest.mark.asyncio
     async def test_roadmap_sync_error_surfaces(self) -> None:
@@ -805,7 +829,7 @@ class TestRunDocsAndMemoryBankSync:
         # (both default to True when None)
         assert result["status"] == "success"
         assert result["docs_phase_passed"] is True
-        assert result["checks"] == []
+        assert _get_checks_list(result) == []
 
     @pytest.mark.asyncio
     async def test_validation_result_not_dict_handled(self) -> None:
@@ -830,7 +854,7 @@ class TestRunDocsAndMemoryBankSync:
 
         assert result["status"] == "success"
         assert result["docs_phase_passed"] is True
-        check_names = {e["name"] for e in result["checks"]}
+        check_names = {str(e.get("name", "")) for e in _get_checks_list(result)}
         assert "roadmap_sync" in check_names
         assert "timestamps" not in check_names
 
@@ -868,9 +892,13 @@ class TestRunDocsAndMemoryBankSync:
 
         assert result["status"] == "success"
         assert result["docs_phase_passed"] is True
-        roadmap_entry = next(e for e in result["checks"] if e["name"] == "roadmap_sync")
-        assert roadmap_entry["warnings"] == 3
-        assert roadmap_entry["status"] == "success"
+        roadmap_entry = next(
+            (e for e in _get_checks_list(result) if e.get("name") == "roadmap_sync"),
+            None,
+        )
+        assert roadmap_entry is not None
+        assert roadmap_entry.get("warnings") == 3
+        assert roadmap_entry.get("status") == "success"
 
 
 # ============================================================================

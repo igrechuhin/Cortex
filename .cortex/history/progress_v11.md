@@ -7,6 +7,8 @@
 - **Phase 80: Add Synapse Submodule Presence Guard (2026-03-05)** - COMPLETE. Added a Synapse submodule guard script, integrated it into CI and Makefile `make check`/`test`, and updated the README with submodule initialization instructions and a constrained-mode fallback.
 - **Phase 86: MCP Connection Resilience and Auto-Recovery (2026-03-05)** - COMPLETE. Hardened MCP retry and reconnection logic, added helpers for circuit-breaker diagnostics, stabilized timeout and pre-commit tools tests with connection-state reset fixtures, and re-ran the full pre-commit suite (4908 tests, ~92.42% coverage).
 - **Phase 83: Remaining Silent Exception Handlers (2026-03-05)** - COMPLETE. Eliminated the 7 remaining `except Exception: pass/continue` blocks in src/ by adding logging and restructuring handlers, then re-ran quality gate and full tests (92.41% coverage).
+- **Blocker: GitHub Actions Quality Gate Not Running (2026-03-05)** - COMPLETE. Restored the Code Quality workflow, fixed test type-check failures, and hardened both CI and the commit pipeline so the quality gate and `/cortex/commit` enforce the same zero-errors, ≥90% coverage policy across src, tests, and Synapse scripts.
+- Commit pipeline (2026-03-05) - Phase A passed; 4910 tests, 92.41% coverage; quality workflow, tests, and cortex updates.
 
 ## 2026-03-04
 

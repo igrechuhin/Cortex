@@ -1,5 +1,11 @@
 name: Code Quality
 
+# HARDENING: This workflow is the single source of truth for the quality gate.
+# - Configure branch protection to require this job (e.g. "Code Quality" or "quality")
+#   so merges only happen when the gate passes. Do not allow bypassing.
+# - All critical steps must run (no conditional skips); the summary step fails
+#   if any critical step outcome is "skipped" or "failure".
+#
 # Option A (quality-issues-missed-investigation): (1) Ruff uses pyproject.toml
 # rule set only—do NOT add --select F,E,W. (2) Quality includes type_check—
 # this job runs format, lint, type_check, file sizes, function lengths, tests.
@@ -9,10 +15,8 @@ name: Code Quality
 # If quality gate fails on push, run this exact command locally before pushing again.
 
 on:
-  push:
-    branches: [main, develop]
-  pull_request:
-    branches: [main, develop]
+  push: {}  # Run on pushes to all branches to enforce quality gate on feature branches as well as main/develop
+  pull_request: {}  # Run on all PRs; branch protection should require this job
   workflow_dispatch: {}  # Run manually: Actions → Code Quality → Run workflow (if push didn't trigger)
 
 # Allow every push to complete its run (do not cancel when a newer push happens)
@@ -374,6 +378,24 @@ jobs:
              [ "${{ steps.eval_full.outcome }}" = "failure" ] || \
              [ "${{ steps.eval_compare.outcome }}" = "failure" ]; then
             echo "::error::One or more quality checks failed. See above for details."
+            exit 1
+          fi
+
+          # Fail if any critical check was skipped (hardening: no silent skips)
+          if [ "${{ steps.formatting.outcome }}" = "skipped" ] || \
+             [ "${{ steps.formatting_synapse.outcome }}" = "skipped" ] || \
+             [ "${{ steps.linting.outcome }}" = "skipped" ] || \
+             [ "${{ steps.linting_synapse.outcome }}" = "skipped" ] || \
+             [ "${{ steps.type_check_src.outcome }}" = "skipped" ] || \
+             [ "${{ steps.type_check_tests.outcome }}" = "skipped" ] || \
+             [ "${{ steps.file_sizes.outcome }}" = "skipped" ] || \
+             [ "${{ steps.function_lengths.outcome }}" = "skipped" ] || \
+             [ "${{ steps.spelling.outcome }}" = "skipped" ] || \
+             [ "${{ steps.markdown_lint.outcome }}" = "skipped" ] || \
+             [ "${{ steps.tests.outcome }}" = "skipped" ] || \
+             [ "${{ steps.eval_full.outcome }}" = "skipped" ] || \
+             [ "${{ steps.eval_compare.outcome }}" = "skipped" ]; then
+            echo "::error::One or more critical quality checks were skipped. All checks must run."
             exit 1
           fi
           

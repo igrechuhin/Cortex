@@ -41,7 +41,12 @@ from cortex.tools.execution.pre_commit_helpers_quality import (
     count_file_lines,
     get_docstring_range,
 )
-from cortex.tools.execution.pre_commit_helpers_remaining import MAX_LOG_OUTPUT_LENGTH
+from cortex.tools.execution.pre_commit_helpers_remaining import (
+    MAX_LOG_OUTPUT_LENGTH,
+    extract_dict_from_object,
+    extract_int_from_object,
+    extract_list_from_object,
+)
 from cortex.tools.execution.pre_commit_pipeline import (
     _check_function_lengths,  # pyright: ignore[reportPrivateUsage]
 )
@@ -177,7 +182,8 @@ class TestExecutePreCommitChecks:
                 )
 
             assert result["status"] == "error"
-            assert "Could not detect project language" in result["error"]
+            error_message = str(result.get("error", ""))
+            assert "Could not detect project language" in error_message
 
     @pytest.mark.asyncio
     async def test_error_for_unsupported_language(self) -> None:
@@ -209,9 +215,10 @@ class TestExecutePreCommitChecks:
             )
 
         assert result["status"] == "error"
-        assert "not yet supported" in result["error"]
-        assert "Supported languages:" in result["error"]
-        assert "python" in result["error"]
+        error_message = str(result.get("error", ""))
+        assert "not yet supported" in error_message
+        assert "Supported languages:" in error_message
+        assert "python" in error_message
 
     @pytest.mark.asyncio
     async def test_return_value_is_dict_and_json_round_trips_for_mcp(self) -> None:
@@ -282,7 +289,11 @@ class TestExecutePreCommitChecks:
 
                 assert result["status"] == "success"
                 assert result["language"] == "python"
-                assert "fix_errors" in result["checks_performed"]
+                checks_performed = extract_list_from_object(
+                    result.get("checks_performed", []),
+                    [],
+                )
+                assert "fix_errors" in checks_performed
                 assert result["total_errors"] == 0
 
     @pytest.mark.asyncio
@@ -351,14 +362,18 @@ class TestExecutePreCommitChecks:
                     )
 
                 assert result["status"] == "success"
-                assert len(result["checks_performed"]) == 7
-                assert "fix_errors" in result["checks_performed"]
-                assert "format" in result["checks_performed"]
-                assert "synapse_format" in result["checks_performed"]
-                assert "synapse_lint" in result["checks_performed"]
-                assert "type_check" in result["checks_performed"]
-                assert "quality" in result["checks_performed"]
-                assert "tests" in result["checks_performed"]
+                checks_performed = extract_list_from_object(
+                    result.get("checks_performed", []),
+                    [],
+                )
+                assert len(checks_performed) == 7
+                assert "fix_errors" in checks_performed
+                assert "format" in checks_performed
+                assert "synapse_format" in checks_performed
+                assert "synapse_lint" in checks_performed
+                assert "type_check" in checks_performed
+                assert "quality" in checks_performed
+                assert "tests" in checks_performed
 
     @pytest.mark.asyncio
     async def test_error_handling(self) -> None:
@@ -374,7 +389,8 @@ class TestExecutePreCommitChecks:
             )
 
             assert result["status"] == "error"
-            assert "Test error" in result["error"]
+            error_message = str(result.get("error", ""))
+            assert "Test error" in error_message
 
     @pytest.mark.asyncio
     async def test_eval_fast_check_passes_when_above_threshold(self) -> None:
@@ -437,9 +453,16 @@ class TestExecutePreCommitChecks:
                 )
 
             assert result["status"] == "success"
-            assert "eval_fast" in result["checks_performed"]
-            assert result["results"]["eval_fast"]["success"] is True
-            assert "90" in result["results"]["eval_fast"]["output"]
+            checks_performed = extract_list_from_object(
+                result.get("checks_performed", []),
+                [],
+            )
+            assert "eval_fast" in checks_performed
+            results_obj = result.get("results", {})
+            results = extract_dict_from_object(results_obj, {})
+            eval_result = extract_dict_from_object(results.get("eval_fast", {}), {})
+            assert eval_result["success"] is True
+            assert "90" in str(eval_result.get("output", ""))
 
     @pytest.mark.asyncio
     async def test_eval_fast_check_fails_when_below_threshold(self) -> None:
@@ -502,9 +525,16 @@ class TestExecutePreCommitChecks:
                 )
 
             assert result["status"] == "error"
-            assert "eval_fast" in result["checks_performed"]
-            assert result["results"]["eval_fast"]["success"] is False
-            assert "70" in result["results"]["eval_fast"]["output"]
+            checks_performed = extract_list_from_object(
+                result.get("checks_performed", []),
+                [],
+            )
+            assert "eval_fast" in checks_performed
+            results_obj = result.get("results", {})
+            results = extract_dict_from_object(results_obj, {})
+            eval_result = extract_dict_from_object(results.get("eval_fast", {}), {})
+            assert eval_result["success"] is False
+            assert "70" in str(eval_result.get("output", ""))
 
     @pytest.mark.asyncio
     async def test_format_ci_parity_check_when_script_missing_returns_skipped(
@@ -535,9 +565,19 @@ class TestExecutePreCommitChecks:
                     )
 
                 assert result["status"] == "success"
-                assert "format_ci_parity" in result["checks_performed"]
-                assert result["results"]["format_ci_parity"]["success"] is True
-                assert "skipped" in result["results"]["format_ci_parity"]["output"]
+                checks_performed = extract_list_from_object(
+                    result.get("checks_performed", []),
+                    [],
+                )
+                assert "format_ci_parity" in checks_performed
+                results_obj = result.get("results", {})
+                results = extract_dict_from_object(results_obj, {})
+                format_ci_parity_result = extract_dict_from_object(
+                    results.get("format_ci_parity", {}),
+                    {},
+                )
+                assert format_ci_parity_result["success"] is True
+                assert "skipped" in str(format_ci_parity_result.get("output", ""))
 
     @pytest.mark.asyncio
     async def test_test_naming_check_when_script_missing_returns_skipped(
@@ -567,9 +607,19 @@ class TestExecutePreCommitChecks:
                     )
 
                 assert result["status"] == "success"
-                assert "test_naming" in result["checks_performed"]
-                assert result["results"]["test_naming"]["success"] is True
-                assert "skipped" in result["results"]["test_naming"]["output"]
+                checks_performed = extract_list_from_object(
+                    result.get("checks_performed", []),
+                    [],
+                )
+                assert "test_naming" in checks_performed
+                results_obj = result.get("results", {})
+                results = extract_dict_from_object(results_obj, {})
+                test_naming_result = extract_dict_from_object(
+                    results.get("test_naming", {}),
+                    {},
+                )
+                assert test_naming_result["success"] is True
+                assert "skipped" in str(test_naming_result.get("output", ""))
 
     @pytest.mark.asyncio
     async def test_check_async_tests_check_when_script_missing_returns_skipped(
@@ -599,9 +649,19 @@ class TestExecutePreCommitChecks:
                     )
 
                 assert result["status"] == "success"
-                assert "check_async_tests" in result["checks_performed"]
-                assert result["results"]["check_async_tests"]["success"] is True
-                assert "skipped" in result["results"]["check_async_tests"]["output"]
+                checks_performed = extract_list_from_object(
+                    result.get("checks_performed", []),
+                    [],
+                )
+                assert "check_async_tests" in checks_performed
+                results_obj = result.get("results", {})
+                results = extract_dict_from_object(results_obj, {})
+                check_async_tests_result = extract_dict_from_object(
+                    results.get("check_async_tests", {}),
+                    {},
+                )
+                assert check_async_tests_result["success"] is True
+                assert "skipped" in str(check_async_tests_result.get("output", ""))
 
 
 class TestRunSynapseScript:
@@ -1049,11 +1109,17 @@ class TestFixQualityCheck:
 
                 assert result["status"] == "success"
                 assert result.get("error_message") is None
-                assert result["errors_fixed"] == 1
-                assert len(result["remaining_issues"]) > 0
+                errors_fixed = extract_int_from_object(
+                    result.get("errors_fixed", 0),
+                    0,
+                )
+                assert errors_fixed == 1
+                remaining_issues_obj = result.get("remaining_issues", [])
+                remaining_issues = extract_list_from_object(remaining_issues_obj, [])
+                assert len(remaining_issues) > 0
                 assert any(
                     "1 linting/formatting errors remain" in issue
-                    for issue in result["remaining_issues"]
+                    for issue in remaining_issues
                 )
 
     @pytest.mark.asyncio
@@ -1125,8 +1191,14 @@ class TestFixQualityCheck:
                     )
 
                 assert result["status"] == "success"
-                assert result.get("errors_fixed", 0) >= 0
-                assert len(result["files_modified"]) >= 0
+                errors_fixed = extract_int_from_object(
+                    result.get("errors_fixed", 0),
+                    0,
+                )
+                assert errors_fixed >= 0
+                files_modified_obj = result.get("files_modified", [])
+                files_modified = extract_list_from_object(files_modified_obj, [])
+                assert len(files_modified) >= 0
 
     @pytest.mark.asyncio
     async def test_fix_quality_clean_repo_no_remaining_issues(self) -> None:
@@ -1195,7 +1267,9 @@ class TestFixQualityCheck:
                     )
 
             assert result["status"] == "success"
-            assert result["remaining_issues"] == []
+            remaining_issues_obj = result.get("remaining_issues", [])
+            remaining_issues = extract_list_from_object(remaining_issues_obj, [])
+            assert remaining_issues == []
 
 
 class TestCountFileLines:
@@ -1579,11 +1653,20 @@ class TestQualityCheckIntegration:
                     )
 
                 assert result["status"] == "success"
-                assert "quality" in result["checks_performed"]
-                assert "type_check" in result["checks_performed"]
+                checks_performed = extract_list_from_object(
+                    result.get("checks_performed", []),
+                    [],
+                )
+                assert "quality" in checks_performed
+                assert "type_check" in checks_performed
                 # Quality result should include file_size_violations and
                 # function_length_violations
-                quality_result = result["results"]["quality"]
+                results_obj = result.get("results", {})
+                results = extract_dict_from_object(results_obj, {})
+                quality_result = extract_dict_from_object(
+                    results.get("quality", {}),
+                    {},
+                )
                 assert "file_size_violations" in quality_result
                 assert "function_length_violations" in quality_result
 
@@ -1640,8 +1723,13 @@ class TestLogTruncationBehavior:
                     )
 
                 assert result["status"] == "error"
-                quality_result = result["results"]["quality"]
-                truncated_output = quality_result["output"]
+                results_obj = result.get("results", {})
+                results = extract_dict_from_object(results_obj, {})
+                quality_result = extract_dict_from_object(
+                    results.get("quality", {}),
+                    {},
+                )
+                truncated_output = str(quality_result.get("output", ""))
                 assert isinstance(truncated_output, str)
                 assert len(truncated_output) <= MAX_LOG_OUTPUT_LENGTH + 200
                 assert "truncated" in truncated_output

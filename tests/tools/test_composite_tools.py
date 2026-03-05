@@ -56,7 +56,7 @@ class TestAgentWorkflowQuickStart:
                 new_callable=AsyncMock,
                 return_value=json.dumps(context_data),
             ) as mock_load:
-                await run_composite_workflow(operation="quick_start")
+                _ = await run_composite_workflow(operation="quick_start")
                 mock_load.assert_awaited_once()
                 call_kwargs = mock_load.call_args[1]
                 assert call_kwargs["token_budget"] == 10000
@@ -75,7 +75,7 @@ class TestAgentWorkflowQuickStart:
                 new_callable=AsyncMock,
                 return_value=json.dumps(context_data),
             ) as mock_load:
-                await run_composite_workflow(
+                _ = await run_composite_workflow(
                     operation="quick_start", task_description=""
                 )
                 call_kwargs = mock_load.call_args[1]
@@ -171,7 +171,7 @@ class TestAgentWorkflowSafeManageFile:
                 new_callable=AsyncMock,
                 return_value=json.dumps(file_result),
             ):
-                await run_composite_workflow(
+                _ = await run_composite_workflow(
                     operation="safe_manage_file",
                     file_name="activeContext.md",
                     file_operation="read",

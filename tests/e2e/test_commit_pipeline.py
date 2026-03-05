@@ -15,7 +15,7 @@ from cortex.tools.execution.pre_commit_tools import execute_pre_commit_checks
 from cortex.tools.files.operations import manage_file
 from cortex.tools.validation.operations import validate
 from tests.helpers.path_helpers import ensure_test_cortex_structure
-from tests.helpers.tool_call_helpers import get_tool_fn, to_dict
+from tests.helpers.tool_call_helpers import get_tool_fn
 
 
 def _write_minimal_memory_bank(memory_bank_dir: Path) -> None:
@@ -73,18 +73,8 @@ async def test_commit_pipeline_manage_file_validate_pre_commit(tmp_path: Path) -
             strict_mode=False,
             ctx=None,
         )
-        result_dict = cast(
-            dict[str, object],
-            (
-                pre_commit_result
-                if isinstance(pre_commit_result, dict)
-                else (
-                    pre_commit_result.model_dump()
-                    if hasattr(pre_commit_result, "model_dump")
-                    else to_dict(pre_commit_result)
-                )
-            ),
-        )
+        # execute_pre_commit_checks returns ModelDict (dict[str, JsonValue])
+        result_dict = cast(dict[str, object], pre_commit_result)
         assert "status" in result_dict or "checks" in result_dict
 
 
