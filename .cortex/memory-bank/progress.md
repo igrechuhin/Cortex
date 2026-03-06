@@ -17,6 +17,10 @@
 - **Commit pipeline (2026-03-06)** - Phase A passed (4937 tests, 91.95% coverage); Step 12 final gate and commit in progress.
 - **Phase 93: Usage Events Collection Pipeline Investigation (2026-03-06)** - COMPLETE. Default usage_writable when Synapse exists and config missing; restored event collection for query_usage.
 - **Commit pipeline (2026-03-06)** - Phase A passed (4940 tests, 91.95% coverage); Phase 93 plan in archive; Synapse .gitignore and usage config/test updates.
+- **Phase 81 Step 3: core/dependency_graph.py split (2026-03-06)** - COMPLETE. Split into dependency_graph_static.py, dependency_graph_export.py, and slim dependency_graph.py (all under 400 lines); quality gate and tests passed (4940 tests, 91.96% coverage).
+- **Phase 81 Step 4: optimization/relevance_scorer.py split (2026-03-06)** - COMPLETE. Split into relevance_keywords.py, relevance_scoring.py, and slim relevance_scorer.py (214 lines); quality gate and tests passed (4940 tests, 91.97% coverage).
+- **Phase 81 Step 5: managers/factory.py split (2026-03-06)** - COMPLETE. Split into factory_linking, factory_validation, factory_optimization, factory_analysis, factory_refactoring, factory_execution, factory_usage with slim factory.py re-exports; 4940 tests, 91.97% coverage.
+- **Phase 81 Step 6: optimization/config.py split (2026-03-06)** - COMPLETE. Split into config_defaults, config_loading, config_validation; slim config.py (308 lines); quality gate and tests passed (4940 tests, 91.97% coverage).
 
 ## 2026-03-05
 

@@ -56,18 +56,22 @@ For each file:
 ### Step 3: `core/dependency_graph.py` (683 → split)
 
 - Separate graph construction from graph analysis/traversal.
+- ✅ Completed 2026-03-06: split into `dependency_graph_static.py` (static data + build-from-links + node/edge builders), `dependency_graph_export.py` (to_dict, to_mermaid, get_transclusion_graph, get_reference_graph, get_graph_dict), and slim `dependency_graph.py` (219 lines); all under 400 lines; quality gate and tests passed (4940 tests, 91.96% coverage).
 
 ### Step 4: `optimization/relevance_scorer.py` (657 → split)
 
 - Extract scoring strategies from the scorer orchestrator.
+- ✅ Completed 2026-03-06: split into `relevance_keywords.py` (keyword extraction), `relevance_scoring.py` (keyword/dependency/recency strategies, section parsing), and slim `relevance_scorer.py` (214 lines); all under 400 lines; quality gate and tests passed (4940 tests, 91.97% coverage).
 
 ### Step 5: `managers/factory.py` (656 → split)
 
 - Extract manager creation helpers into grouped factory modules.
+- ✅ Completed 2026-03-06: split into factory_linking.py, factory_validation.py, factory_optimization.py, factory_analysis.py, factory_refactoring.py, factory_execution.py, factory_usage.py with slim factory.py re-exporting add_*; all files under 400 lines; quality gate and tests passed (4940 tests, 91.97% coverage).
 
 ### Step 6: `optimization/config.py` (655 → split)
 
 - Separate config model definitions from config loading/validation.
+- ✅ Completed 2026-03-06: split into config_defaults.py (default dict), config_loading.py (load/merge/save), config_validation.py (validate + _validate_*); slim config.py (308 lines); re-export DEFAULT_OPTIMIZATION_CONFIG; quality gate and tests passed (4940 tests, 91.97% coverage).
 
 ### Step 7: `optimization/rules_manager.py` (653 → split)
 

@@ -21,6 +21,14 @@
 
 - ✅ **Phase 93: Usage Events Collection Pipeline Investigation** - COMPLETE (2026-03-06) - Default usage_writable to True when .cortex/synapse exists and config.json is missing so usage events are written to .cortex/synapse/.cache/usage/events without requiring a config file. Added regression test.
 
+- ✅ **Phase 81 Step 3: core/dependency_graph.py split** - COMPLETE (2026-03-06) - Split dependency_graph.py (683 LOC) into dependency_graph_static.py (static data + build-from-links), dependency_graph_export.py (to_dict, to_mermaid, graph views), and slim dependency_graph.py (219 lines). All files under 400 lines; quality gate and tests passed.
+
+- ✅ **Phase 81 Step 4: optimization/relevance_scorer.py split** - COMPLETE (2026-03-06) - Split relevance_scorer.py into relevance_keywords.py (keyword extraction), relevance_scoring.py (scoring strategies + section parsing), and slim relevance_scorer.py (214 lines). All under 400 lines; quality gate and tests passed.
+
+- ✅ **Phase 81 Step 5: managers/factory.py split** - COMPLETE (2026-03-06) - Split managers/factory.py into factory_linking, factory_validation, factory_optimization, factory_analysis, factory_refactoring, factory_execution, factory_usage with slim factory.py re-exporting add_*; all under 400 lines; quality gate and tests passed (4940 tests, 91.97% coverage).
+
+- ✅ **Phase 81 Step 6: optimization/config.py split** - COMPLETE (2026-03-06) - Split optimization/config.py into config_defaults.py, config_loading.py, config_validation.py; main config.py 308 lines; all under 400; quality gate and tests passed.
+
 ## Completed Work (2026-03-05)
 
 - **Summary (2026-03-05)** - 1 entries archived.

@@ -157,7 +157,7 @@ class TestConfigFileOperations:
 
         with (
             patch(
-                "cortex.optimization.config.open_async_text_file",
+                "cortex.optimization.config_loading.open_async_text_file",
                 side_effect=mock_open_async_text_file,
             ),
             caplog.at_level(logging.ERROR),
