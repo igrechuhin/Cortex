@@ -14,7 +14,6 @@
 
 ### Fixes
 
-- **Phase 84: Remaining Type-Checker Suppression Cleanup** — PENDING. Reduce 27 suppressions to ≤10. Plan: `.cortex/plans/phase-84-type-checker-suppression-cleanup.md`
 - **Phase 90: Agent Session Verbosity and "ok, proceed" Pattern** — PENDING. Eliminate unnecessary agent pauses requiring user confirmation. Plan: `.cortex/plans/phase-90-agent-session-verbosity.md`
 
 ### Documentation Cleanup (DRY)

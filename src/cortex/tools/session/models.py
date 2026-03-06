@@ -93,6 +93,14 @@ class ConcurrentSession(StrictBaseModel):
     session_id: str = Field(description="Unique session identifier")
 
 
+def _default_concurrent_sessions() -> list[ConcurrentSession]:
+    return []
+
+
+def _default_task_locks() -> list[TaskLock]:
+    return []
+
+
 class SessionBrief(StrictBaseModel):
     """Session brief with orientation information."""
 
@@ -121,9 +129,8 @@ class SessionBrief(StrictBaseModel):
         None,
         description="Last session handoff from compact_session (if available)",
     )
-    # Pyright reports reportUnknownVariableType for list[ConcurrentSession] in Field (known limitation)
-    concurrent_sessions: list[ConcurrentSession] = Field(  # type: ignore[reportUnknownVariableType]
-        default_factory=list,
+    concurrent_sessions: list[ConcurrentSession] = Field(
+        default_factory=_default_concurrent_sessions,
         description="List of concurrent agent sessions (excluding current session)",
     )
     locked_tasks: list[str] = Field(
@@ -204,9 +211,8 @@ class ListActiveTasksResult(StrictBaseModel):
     """Result of listing active task locks."""
 
     status: OperationStatus = Field(default=OperationStatus.SUCCESS)
-    # Pyright reports reportUnknownVariableType for list[TaskLock] in Field (known limitation)
-    locks: list[TaskLock] = Field(  # type: ignore[reportUnknownVariableType]
-        default_factory=list, description="List of active task locks"
+    locks: list[TaskLock] = Field(
+        default_factory=_default_task_locks, description="List of active task locks"
     )
     count: int = Field(ge=0, description="Number of active locks")
 

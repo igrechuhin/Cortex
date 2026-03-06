@@ -50,6 +50,14 @@ class DriftAlert(BaseModel):
     z_score: float = Field(description="(current - mean) / std when std > 0")
 
 
+def _default_tool_metric_summaries() -> list[ToolMetricSummary]:
+    return []
+
+
+def _default_drift_alerts() -> list[DriftAlert]:
+    return []
+
+
 class ProductionMonitoringPayload(BaseModel):
     """Full payload for query_usage(query_type=\"production_monitoring\")."""
 
@@ -62,11 +70,13 @@ class ProductionMonitoringPayload(BaseModel):
         ge=1, le=168, description="Current window in hours"
     )
     generated_at: str = Field(description="ISO timestamp of report generation")
-    metrics_current_tools: list[ToolMetricSummary] = Field(  # type: ignore[reportUnknownVariableType]
-        default_factory=list, description="Per-tool metrics for current window"
+    metrics_current_tools: list[ToolMetricSummary] = Field(
+        default_factory=_default_tool_metric_summaries,
+        description="Per-tool metrics for current window",
     )
-    metrics_baseline_tools: list[ToolMetricSummary] = Field(  # type: ignore[reportUnknownVariableType]
-        default_factory=list, description="Per-tool metrics for baseline"
+    metrics_baseline_tools: list[ToolMetricSummary] = Field(
+        default_factory=_default_tool_metric_summaries,
+        description="Per-tool metrics for baseline",
     )
     metrics_current_global: GlobalMetricSummary = Field(
         description="Global metrics for current window"
@@ -74,8 +84,9 @@ class ProductionMonitoringPayload(BaseModel):
     metrics_baseline_global: GlobalMetricSummary = Field(
         description="Global metrics for baseline"
     )
-    drift_alerts: list[DriftAlert] = Field(  # type: ignore[reportUnknownVariableType]
-        default_factory=list, description="Alerts when metric >2σ from baseline"
+    drift_alerts: list[DriftAlert] = Field(
+        default_factory=_default_drift_alerts,
+        description="Alerts when metric >2σ from baseline",
     )
     weekly_summary_text: str = Field(
         default="", description="Human-readable weekly summary"

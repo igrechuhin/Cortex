@@ -7,6 +7,8 @@
 - ✅ **Phase 92: Improve MCP Tool Descriptions and Usage Guidance** - COMPLETE (2026-03-06) - Updated high-impact MCP tool descriptions with a consistent USE WHEN / DO NOT / EXAMPLES template, and added governance coverage so tools steer agents toward canonical entrypoints (memory bank, pre-commit, structure, usage). Verified quality gate, type checks, and full tests (4910/4910) with ~92.41% coverage.
 - ✅ **README selling doc refresh** - COMPLETE (2026-03-06) - Rewrote the README to lead with value and a clear plan → implement → commit workflow, trimmed long reference sections, and kept links to the authoritative docs.
 
+- ✅ **Phase 84: Remaining Type-Checker Suppression Cleanup** - COMPLETE (2026-03-06) - Eliminated remaining type-checker suppressions in core MCP usage-context wrapper and session/usage Pydantic models by introducing safer typing and typed default factories; pyright now passes in src without ignores.
+
 ## Completed Work (2026-03-05)
 
 - **Summary (2026-03-05)** - 1 entries archived.

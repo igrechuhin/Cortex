@@ -8,16 +8,18 @@ import logging
 import time
 from collections.abc import Awaitable, Callable
 from pathlib import Path
-from typing import cast
+from typing import ParamSpec, TypeVar, cast
 
 from cortex.core.constants import MCP_USAGE_CONTEXT_INIT_LOCK_TIMEOUT_SECONDS
 from cortex.core.context_logging import MCPContext
 from cortex.core.mcp_stability_config import get_usage_context_init_lock
-from cortex.core.models import JsonValue
 from cortex.core.protocols.mcp import SignatureAware
 from cortex.core.usage_context import get_current_managers, set_current_managers
 
 logger = logging.getLogger(__name__)
+
+_P = ParamSpec("_P")
+_R = TypeVar("_R")
 
 
 async def _resolve_root_and_managers(
@@ -89,9 +91,9 @@ async def _init_usage_context_under_lock(
         raise
 
 
-def ensure_usage_context[T](
-    func: Callable[..., Awaitable[T]],
-) -> Callable[..., Awaitable[T]]:
+def ensure_usage_context(  # noqa: UP047
+    func: Callable[_P, Awaitable[_R]],
+) -> Callable[_P, Awaitable[_R]]:
     """Decorator that sets usage context (for recording) when not already set.
 
     Wraps an async MCP tool handler so that get_current_managers() is set
@@ -106,9 +108,9 @@ def ensure_usage_context[T](
 
     @functools.wraps(func)
     async def wrapper(
-        *args: JsonValue,  # pyright: ignore[reportUnknownParameterType]
-        **kwargs: JsonValue,  # pyright: ignore[reportUnknownParameterType]
-    ) -> T:
+        *args: _P.args,
+        **kwargs: _P.kwargs,
+    ) -> _R:
         if get_current_managers() is not None:
             return await func(*args, **kwargs)
         lock = get_usage_context_init_lock()
