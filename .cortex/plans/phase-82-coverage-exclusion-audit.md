@@ -1,6 +1,6 @@
 # Phase 82: Coverage Exclusion Audit and Reduction
 
-**Status**: PENDING
+**Status**: IN PROGRESS
 **Priority**: Medium
 **Complexity**: Medium
 **Category**: Fix / Quality
@@ -83,6 +83,13 @@ Audit and reduce the coverage omit list in `pyproject.toml` to eliminate blind s
 
 - **Risk**: Coverage drops below threshold. **Mitigation**: Add tests before removing exclusions.
 - **Risk**: Some excluded code is genuinely untestable. **Mitigation**: Keep permanent exclusions documented.
+
+## Current Status (2026-03-06)
+
+- Removed coverage exclusions for `*/container.py`, `*/factory.py`, `*/initialization_health.py`, and `*/groups.py` in `pyproject.toml`.
+- Verified existing tests for container, factory, and manager groups still pass; added targeted tests for `initialization_health.handle_file_change`.
+- Ran full test suite via `execute_pre_commit_checks(checks=["tests"])`: 4916/4916 tests passing, coverage ≈ 91.18% (≥ 90% threshold).
+- Remaining work: evaluate the `*/models.py` exclusion and other model-related entries, document per-entry rationale for the final omit list, and adjust the plan status to COMPLETE when that audit is finished.
 
 ## Timeline
 

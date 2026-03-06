@@ -109,8 +109,6 @@ omit = [
     "*/templates/*.py",
     # Guide files contain only string constants for documentation
     "*/guides/*.py",
-    # Container is dependency injection infrastructure
-    "*/container.py",
     # Type alias files contain only type definitions (no runtime logic)
     "*/types.py",
     # Optimization types contain only type aliases
@@ -121,10 +119,6 @@ omit = [
     "*/strategy_selection.py",
     # Section processing is tested via integration
     "*/section_processing.py",
-    # Manager initialization modules - infrastructure (tested via integration)
-    "*/factory.py",
-    "*/initialization_health.py",
-    "*/groups.py",
     # Structure analysis modules - tested via integration
     "*/structure_analysis.py",
     "*/structure_detection.py",

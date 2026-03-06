@@ -15,6 +15,10 @@
 
 - ✅ **Phase 85: Unify Developer Command Surface** - COMPLETE (2026-03-06) - Unified the developer command surface by documenting canonical Make targets, adding a commit-check alias, and introducing a docs consistency test for README and AGENTS uv sync usage.
 
+- ✅ **Phase 81: Oversized Module Reduction — Wave 1 (Top 10) — Step 1 core/security split** - COMPLETE (2026-03-06) - Split legacy `cortex.core.security` (732 LOC) into focused `git_security.py`, `html_security.py`, and `input_validation.py` modules with a slim `security.py` aggregator re-exporting public helpers; verified format, type_check, quality, and full tests (4913 tests, 92.42% coverage).
+
+- ✅ **Phase 81 Step 2: validation/models.py split** - COMPLETE (2026-03-06) - Split cortex.validation.models into domain modules (schema_models, quality_models, roadmap_models, infrastructure_models, timestamp_models) with slim models.py re-exports; fixed pre_commit_tools function-length violations; quality gate and tests passed.
+
 ## Completed Work (2026-03-05)
 
 - **Summary (2026-03-05)** - 1 entries archived.

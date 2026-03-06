@@ -46,10 +46,12 @@ For each file:
 ### Step 1: `core/security.py` (732 → split)
 
 - Extract input validation, path security, and git security into separate modules.
+- ✅ Completed 2026-03-06: split `cortex.core.security` into `input_validation.py`, `html_security.py`, and `git_security.py` with a slim `security.py` aggregator re-exporting helpers; format, type_check, quality, and full tests passed (4913 tests, 92.42% coverage).
 
 ### Step 2: `validation/models.py` (700 → split)
 
 - Group models by validation domain (timestamp, roadmap, schema, infrastructure).
+- ✅ Completed 2026-03-06: split `cortex.validation.models` into `schema_models.py`, `quality_models.py`, `roadmap_models.py`, `infrastructure_models.py`, `timestamp_models.py` with slim `models.py` re-exports; fixed pre_commit_tools function-length violations; quality gate and tests passed (4938 tests, ~91.95% coverage).
 
 ### Step 3: `core/dependency_graph.py` (683 → split)
 

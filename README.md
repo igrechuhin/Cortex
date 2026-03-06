@@ -139,6 +139,16 @@ Add to your `mcp.json`:
 }
 ```
 
+## Developer commands
+
+For local development, use these Make targets (after running `bash scripts/bootstrap.sh` once to create the virtualenv and install dependencies):
+
+- **`make bootstrap`**: Run `scripts/bootstrap.sh` to create or update the `.venv` and install all dependencies.
+- **`make check`**: Run formatting, linting, type checking, and the fast test suite. This is the main local quality gate.
+- **`make test`**: Run the fast test suite (`pytest -q`) with timeouts.
+- **`make test-full`**: Run the full test suite (including slower tests) with a longer timeout.
+- **`make commit-check`**: Run the same checks as `make check` before using `/cortex/commit` in Cursor for the full commit pipeline.
+
 ## Key Tools
 
 Cortex exposes **27 public MCP tools**. The most important ones by workflow:

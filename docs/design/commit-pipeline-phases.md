@@ -312,6 +312,50 @@ all phases:
 
 ---
 
+## Dirty-State Optimization (Phase 89)
+
+Phase A records a fingerprint of source file state (staged, modified,
+and untracked files with source extensions). Step 12 checks can use
+`skip_if_clean=True` to skip redundant re-runs when no source files
+changed between phases.
+
+### How It Works
+
+1. After Phase A completes, `PipelineDirtyTracker` records a SHA-256
+   hash of all source-file git entries (staged, modified, untracked).
+2. When Step 12 calls `execute_pre_commit_checks(checks=[...], skip_if_clean=True)`,
+   the tool recomputes the current hash and compares.
+3. If hashes match (no source changes), the check returns a skip result
+   without running the actual check.
+4. If hashes differ, the full check runs normally.
+
+### Source vs Non-Source Extensions
+
+- **Source** (invalidate fingerprint): `.py`, `.ts`, `.tsx`, `.js`,
+  `.jsx`, `.rs`, `.go`, `.java`, `.swift`, `.kt`
+- **Non-source** (do NOT invalidate): `.md`, `.json`, `.yaml`, `.toml`,
+  `.txt`, `.cfg`, `.ini`, `.mdc`
+
+### Checks That Can Be Skipped
+
+| Check | Skippable | Reason |
+|-------|-----------|--------|
+| `type_check` | Yes | Only source files affect type checking |
+| `tests` | Yes | Only source/test files affect test results |
+| `format` | Yes | Only source files need formatting |
+| `quality` | Yes | Only source files have size/length limits |
+| `test_naming` | No | Always re-runs (convention check) |
+| `markdown_lint` | No | Always re-runs (docs may change) |
+
+### Safety Guarantees
+
+- **Conservative**: Only skips when source hash is identical.
+- **Fail-open**: If fingerprint computation fails, checks run normally.
+- **Phase A failure**: Tracker is inactive when Phase A fails, so all
+  checks run normally.
+
+---
+
 ## Future Work (Steps 2-6 of This Plan)
 
 This document serves as the foundation for subsequent plan steps:

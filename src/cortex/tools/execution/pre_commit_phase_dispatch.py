@@ -7,11 +7,16 @@ helpers import execute_pre_commit_checks from pre_commit_tools).
 from __future__ import annotations
 
 import json
+import logging
 from enum import Enum
+from pathlib import Path
 from typing import cast
 
 from cortex.core.context_logging import MCPContext
 from cortex.core.models import ModelDict
+from cortex.core.usage_context import get_or_resolve_project_root
+
+logger = logging.getLogger(__name__)
 
 
 def _ensure_dict(value: ModelDict | str) -> ModelDict:
@@ -37,6 +42,15 @@ class PreCommitPhase(str, Enum):
     FULL = "full"
 
 
+def _record_phase_a_fingerprint(result: ModelDict, project_root: Path) -> None:
+    """Record dirty-state fingerprint after Phase A if it passed."""
+    from cortex.tools.execution.pre_commit_dirty_state import PipelineDirtyTracker
+
+    passed = bool(result.get("preflight_passed", False))
+    tracker = PipelineDirtyTracker.get_instance()
+    tracker.record_phase_a(project_root, passed)
+
+
 async def _run_phase_a(
     test_timeout: int,
     coverage_threshold: float,
@@ -44,18 +58,28 @@ async def _run_phase_a(
     include_untracked_markdown: bool,
     ctx: MCPContext | None,
 ) -> ModelDict:
-    """Run Phase A preflight (lazy import)."""
+    """Run Phase A preflight (lazy import).
+
+    After completion, records a dirty-state fingerprint so Step 12 can
+    skip redundant re-runs when no source files changed.
+    """
     from cortex.tools.execution.pre_commit_preflight_helpers import (
         run_preflight_checks_impl,
     )
 
-    return await run_preflight_checks_impl(
+    result = await run_preflight_checks_impl(
         test_timeout=test_timeout,
         coverage_threshold=coverage_threshold,
         strict_mode=strict_mode,
         include_untracked_markdown=include_untracked_markdown,
         ctx=ctx,
     )
+    try:
+        root = await get_or_resolve_project_root(ctx)
+        _record_phase_a_fingerprint(result, root)
+    except Exception:
+        logger.debug("Could not record Phase A fingerprint", exc_info=True)
+    return result
 
 
 async def _run_phase_b(ctx: MCPContext | None) -> ModelDict:

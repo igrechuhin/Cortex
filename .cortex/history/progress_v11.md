@@ -11,6 +11,10 @@
 - **Phase 90: Agent Session Verbosity and "ok, proceed" Pattern (2026-03-06)** - COMPLETE. Updated prompts and guidance so agents auto-continue without waiting for "ok, proceed" and only stop for genuine clarification or unrecoverable errors.
 - Commit pipeline (2026-03-06) - Ran /cortex/commit: Phase A preflight (fix_errors, format, synapse_format, synapse_lint, type_check, tests, eval_fast, markdown_lint) all passed with 4910 tests and ~92.41% coverage; proceeding to memory bank/roadmap + docs phases.
 - **Phase 85: Unify Developer Command Surface (2026-03-06)** - COMPLETE. Documented canonical Make targets (bootstrap, check, test, commit-check), wired a small docs consistency test, and aligned AGENTS/README guidance.
+- **Phase 81: Oversized Module Reduction — Wave 1 (Top 10) Step 2 (2026-03-06)** - PARTIAL. Introduced domain-specific validation model modules (`schema_models.py`, `quality_models.py`, `roadmap_models.py`, `infrastructure_models.py`, `timestamp_models.py`) to start splitting `cortex.validation.models` by validation domain; ran format, type_check, quality, and full tests (4913 tests, 91.66% coverage) to verify behavior.
+- **Phase 81 Step 2: validation/models.py split (2026-03-06)** - COMPLETE. Split cortex.validation.models into schema_models, quality_models, roadmap_models, infrastructure_models, timestamp_models with slim models.py re-exports; fixed pre_commit_tools function-length violations; quality gate and tests passed (4938 tests, ~91.95% coverage).
+- **Commit pipeline (2026-03-06)** - Phase A passed (fix_errors, format, synapse_format, synapse_lint, type_check, quality, tests 4937/4937, coverage 91.95%); pre_commit dirty-state and validation-model changes included.
+- **Commit pipeline (2026-03-06)** - Phase A passed (4937 tests, 91.95% coverage); Step 12 final gate and commit in progress.
 
 ## 2026-03-05
 

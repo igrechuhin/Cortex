@@ -44,6 +44,7 @@ from cortex.tools.execution.pre_commit_helpers import (
 )
 from cortex.tools.execution.pre_commit_helpers_language import detect_or_use_language
 from cortex.tools.execution.pre_commit_helpers_models import PreCommitCheck
+from cortex.tools.execution.pre_commit_phase_dispatch import PreCommitPhase
 from cortex.tools.execution.pre_commit_tools_run_helpers import (
     build_pre_commit_response,
     run_checks_with_connection_monitoring,
@@ -152,7 +153,7 @@ async def _execute_pre_commit_checks_impl(
 
 
 async def _dispatch_phase(
-    phase: str,
+    phase: PreCommitPhase,
     test_timeout: int,
     coverage_threshold: float,
     strict_mode: bool,
@@ -161,12 +162,11 @@ async def _dispatch_phase(
 ) -> ModelDict:
     """Dispatch to phase-based runner (A, B, or full)."""
     from cortex.tools.execution.pre_commit_phase_dispatch import (
-        PreCommitPhase,
         run_execute_pre_commit_checks_by_phase,
     )
 
     return await run_execute_pre_commit_checks_by_phase(
-        PreCommitPhase(phase),
+        phase,
         test_timeout,
         coverage_threshold,
         strict_mode,
@@ -210,6 +210,62 @@ async def _run_fix_quality_mode(
         return cast(ModelDict, json.loads(error_json))
 
 
+def _build_skip_clean_result(
+    check_names: list[str],
+    skip_reasons: list[str],
+) -> ModelDict:
+    """Build the ModelDict returned when checks are skipped (no source changes)."""
+    return cast(
+        ModelDict,
+        {
+            "status": "success",
+            "skipped": True,
+            "skip_reason": "No source files changed since Phase A",
+            "checks_skipped": check_names,
+            "skip_details": skip_reasons,
+            "success": True,
+            "total_errors": 0,
+            "total_warnings": 0,
+            "results": {},
+            "checks_performed": [],
+            "files_modified": [],
+        },
+    )
+
+
+async def _try_skip_clean_checks(
+    checks: Sequence[PreCommitCheckName],
+    ctx: MCPContext | None,
+) -> ModelDict | None:
+    """Return a skip result if all checks can be skipped (no source changes).
+
+    Returns None if any check cannot be skipped, meaning the full run
+    must proceed.
+    """
+    from cortex.tools.execution.pre_commit_dirty_state import PipelineDirtyTracker
+
+    tracker = PipelineDirtyTracker.get_instance()
+    if not tracker.is_active:
+        return None
+
+    skip_reasons: list[str] = []
+    for check in checks:
+        check_name = check.value
+        decision = tracker.can_skip_check(check_name)
+        if not decision.can_skip:
+            return None
+        skip_reasons.append(f"{check_name}: {decision.reason}")
+
+    check_names = [c.value for c in checks]
+    await log_client(
+        ctx,
+        "info",
+        f"execute_pre_commit_checks: skipping {check_names} (no source changes since Phase A)",
+        logger_name=__name__,
+    )
+    return _build_skip_clean_result(check_names, skip_reasons)
+
+
 async def _run_standard_checks_mode(
     checks: Sequence[PreCommitCheckName],
     test_timeout: int,
@@ -245,14 +301,76 @@ async def _run_execute_pre_commit_checks(
     coverage_threshold: float,
     strict_mode: bool,
     include_untracked_markdown: bool,
+    skip_if_clean: bool,
     ctx: MCPContext | None,
 ) -> ModelDict:
     """Resolve root, run impl, log and handle errors."""
     is_fix_quality_only = len(checks) == 1 and checks[0] == PreCommitCheck.FIX_QUALITY
     if is_fix_quality_only:
         return await _run_fix_quality_mode(include_untracked_markdown, ctx)
+    if skip_if_clean:
+        skip_result = await _try_skip_clean_checks(checks, ctx)
+        if skip_result is not None:
+            return skip_result
     return await _run_standard_checks_mode(
         checks, test_timeout, coverage_threshold, strict_mode, ctx
+    )
+
+
+async def _execute_checks_for_explicit_list(
+    checks: Sequence[PreCommitCheckName] | None,
+    test_timeout: int,
+    coverage_threshold: float,
+    strict_mode: bool,
+    include_untracked_markdown: bool,
+    skip_if_clean: bool,
+    ctx: MCPContext | None,
+) -> ModelDict:
+    """Execute checks list when no phase is provided."""
+    if not checks:
+        return create_error_result_dict(
+            "checks required when phase is None; or use phase='A'/'B'/'full'",
+            "ValidationError",
+        )
+    return await _run_execute_pre_commit_checks(
+        checks,
+        test_timeout,
+        coverage_threshold,
+        strict_mode,
+        include_untracked_markdown,
+        skip_if_clean,
+        ctx,
+    )
+
+
+async def _execute_pre_commit_checks_dispatch(
+    phase: PreCommitPhase | None,
+    checks: Sequence[PreCommitCheckName] | None,
+    test_timeout: int,
+    coverage_threshold: float,
+    strict_mode: bool,
+    include_untracked_markdown: bool,
+    skip_if_clean: bool,
+    ctx: MCPContext | None,
+) -> ModelDict:
+    """Dispatch to phase or explicit checks list."""
+    if phase is not None:
+        return await _dispatch_phase(
+            phase,
+            test_timeout,
+            coverage_threshold,
+            strict_mode,
+            include_untracked_markdown,
+            ctx,
+        )
+    return await _execute_checks_for_explicit_list(
+        checks,
+        test_timeout,
+        coverage_threshold,
+        strict_mode,
+        include_untracked_markdown,
+        skip_if_clean,
+        ctx,
     )
 
 
@@ -273,6 +391,7 @@ async def execute_pre_commit_checks(
     coverage_threshold: float = 0.9,
     strict_mode: bool = False,
     include_untracked_markdown: bool = True,
+    skip_if_clean: bool = False,
     ctx: MCPContext | None = None,
 ) -> ModelDict:
     """Run pre-commit checks or a commit-pipeline phase (A, B, or full).
@@ -282,6 +401,8 @@ async def execute_pre_commit_checks(
 
     EXAMPLES: execute_pre_commit_checks(phase="A") for preflight;
     execute_pre_commit_checks(checks=["format", "type_check"]) for targeted checks;
+    execute_pre_commit_checks(checks=["tests"], skip_if_clean=True) for Step 12 re-runs
+    that skip when no source files changed since Phase A;
     execute_pre_commit_checks(phase="B") for docs/memory validation after Step 5.
 
     DO NOT:
@@ -295,36 +416,31 @@ async def execute_pre_commit_checks(
     RETURNS: JSON with status; for phase "A" or "full": preflight_passed, checks (per-check
     results); for phase "B" or "full": docs_phase_passed, timestamps, roadmap_sync; for
     explicit checks: results per check (format, type_check, quality, tests, etc.).
+    When skip_if_clean=True and no source files changed since Phase A, returns
+    {"status": "success", "skipped": true, "skip_reason": "..."}.
 
     Args:
         phase: "A", "B", or "full" for pipeline phases. Optional.
         checks: Required when phase is None. E.g. ["format"], ["type_check", "quality"].
         test_timeout, coverage_threshold, strict_mode: Check options.
+        skip_if_clean: When True, skip checks if no source files changed since Phase A.
+            Use for Step 12 re-runs to avoid redundant checks. Default False.
 
     When phase is None, you must pass checks (e.g. ["format"], ["type_check", "quality"],
     ["fix_quality"] for auto-fix only, or ["tests"] with test_timeout and coverage_threshold).
     Language is auto-detected. checks=["fix_quality"] runs fix_errors, format, type_check,
     and markdown lint (no tests); returns fix-quality response shape.
     """
-    if phase is not None:
-        return await _dispatch_phase(
-            phase,
-            test_timeout,
-            coverage_threshold,
-            strict_mode,
-            include_untracked_markdown,
-            ctx,
-        )
-    if not checks:
-        return create_error_result_dict(
-            "checks required when phase is None; or use phase='A'/'B'/'full'",
-            "ValidationError",
-        )
-    return await _run_execute_pre_commit_checks(
+    phase_enum: PreCommitPhase | None = (
+        PreCommitPhase(phase) if phase is not None else None
+    )
+    return await _execute_pre_commit_checks_dispatch(
+        phase_enum,
         checks,
         test_timeout,
         coverage_threshold,
         strict_mode,
         include_untracked_markdown,
+        skip_if_clean,
         ctx,
     )

@@ -1,17 +1,18 @@
 VENV_PY := ./.venv/bin/python
 TIMEOUT := $(shell command -v gtimeout >/dev/null 2>&1 && echo "gtimeout -k 5" || echo "timeout -k 5")
 
-.PHONY: help test test-full typecheck format lint compile check bootstrap env-check synapse-check
+.PHONY: help test test-full typecheck format lint compile check bootstrap env-check synapse-check commit-check
 
 help:
 	@echo "Common targets:"
-	@echo "  make test       - run fast test suite (timeout)"
-	@echo "  make test-full  - run full test suite (timeout)"
-	@echo "  make typecheck  - run pyright"
-	@echo "  make format     - run black + ruff import sort"
-	@echo "  make lint       - run ruff"
-	@echo "  make compile    - run compileall for src/"
-	@echo "  make check      - run format + lint + typecheck + test"
+	@echo "  make test          - run fast test suite (timeout)"
+	@echo "  make test-full     - run full test suite (timeout)"
+	@echo "  make typecheck     - run pyright"
+	@echo "  make format        - run black + ruff import sort"
+	@echo "  make lint          - run ruff"
+	@echo "  make compile       - run compileall for src/"
+	@echo "  make check         - run format + lint + typecheck + test"
+	@echo "  make commit-check  - run the same checks as 'make check' before using /cortex/commit in Cursor"
 
 bootstrap:
 	bash scripts/bootstrap.sh
@@ -52,3 +53,5 @@ compile:
 	$(VENV_PY) -m compileall -q src
 
 check: env-check synapse-check format lint typecheck test
+
+commit-check: check
