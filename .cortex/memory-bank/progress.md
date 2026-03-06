@@ -2,6 +2,7 @@
 
 ## 2026-03-06
 
+- **Commit pipeline (2026-03-06)** - Fixed 15 integration tests (implement/create-plan prompt alignment with implement-executor and create-plan); Phase A passed; 4913 tests, 92.4% coverage.
 - **Phase 92: Improve MCP Tool Descriptions and Usage Guidance (2026-03-06)** - COMPLETE. Standardized Tier 1 MCP tool descriptions with USE WHEN/DO NOT/EXAMPLES guidance and validated via governance tests; quality gate + full tests passed (4910 tests, 92.41% coverage).
 - **README selling doc refresh (2026-03-06)** - COMPLETE. Updated README to lead with value and the core plan   implement   commit workflow; condensed features/tools/prompts into concise, link-driven sections.
 - **Commit pipeline (2026-03-06)** - Ran `/cortex/commit` checks (fix_errors, format, markdown lint, type_check, quality, tests) for memory-bank, plan-archive, and README changes; 4910 tests, 92.41% coverage.
@@ -9,6 +10,7 @@
 - **Commit pipeline (2026-03-06)** - Ran `/cortex/commit` to fix Ruff UP047 in `ensure_usage_context` and re-validate full pre-commit checks; 4910 tests, 92.41% coverage.
 - **Phase 90: Agent Session Verbosity and "ok, proceed" Pattern (2026-03-06)** - COMPLETE. Updated prompts and guidance so agents auto-continue without waiting for "ok, proceed" and only stop for genuine clarification or unrecoverable errors.
 - Commit pipeline (2026-03-06) - Ran /cortex/commit: Phase A preflight (fix_errors, format, synapse_format, synapse_lint, type_check, tests, eval_fast, markdown_lint) all passed with 4910 tests and ~92.41% coverage; proceeding to memory bank/roadmap + docs phases.
+- **Phase 85: Unify Developer Command Surface (2026-03-06)** - COMPLETE. Documented canonical Make targets (bootstrap, check, test, commit-check), wired a small docs consistency test, and aligned AGENTS/README guidance.
 
 ## 2026-03-05
 

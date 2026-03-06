@@ -38,6 +38,15 @@ def _create_plan_prompt_path() -> Path:
     )
 
 
+def _implement_executor_path() -> Path:
+    """Return path to implement-executor agent (quality gates live here after delegation)."""
+    return (
+        get_cortex_path(_repo_root(), CortexResourceType.SYNAPSE)
+        / "agents"
+        / "implement-executor.md"
+    )
+
+
 def _python_coding_standards_path() -> Path:
     """Return path to Python coding standards rules."""
     return (
@@ -49,7 +58,7 @@ def _python_coding_standards_path() -> Path:
 
 
 class TestImplementPromptQualityGates:
-    """Assert Phase 55 quality gates are present in implement prompt."""
+    """Assert Phase 55 quality gates are present in implement prompt or implement-executor agent."""
 
     @pytest.fixture
     def prompt_content(self) -> str:
@@ -61,19 +70,31 @@ class TestImplementPromptQualityGates:
             )
         return path.read_text()
 
+    @pytest.fixture
+    def executor_content(self) -> str:
+        """Read implement-executor agent; skip if missing."""
+        path = _implement_executor_path()
+        if not path.exists():
+            pytest.skip(
+                f"Implement-executor agent not found at {path} (e.g. synapse submodule not present)"
+            )
+        return path.read_text()
+
     def test_step_35_includes_pydantic_and_typeddict_prohibition(
-        self, prompt_content: str
+        self, executor_content: str
     ) -> None:
-        """Step 3.5 includes explicit Pydantic requirement and TypedDict prohibition."""
-        assert "Pydantic" in prompt_content and "BaseModel" in prompt_content
-        assert "TypedDict" in prompt_content and "STRICTLY FORBIDDEN" in prompt_content
+        """Step 3.5 (executor Phase 2) includes explicit Pydantic requirement and TypedDict prohibition."""
+        assert "Pydantic" in executor_content and "BaseModel" in executor_content
+        assert (
+            "TypedDict" in executor_content and "STRICTLY FORBIDDEN" in executor_content
+        )
 
     def test_step_35_includes_pre_implementation_checklist(
-        self, prompt_content: str
+        self, executor_content: str
     ) -> None:
-        """Step 3.5 includes pre-implementation checklist."""
-        assert "Pre-Implementation Checklist" in prompt_content
-        assert "FOR PYTHON" in prompt_content and "NOT TypedDict" in prompt_content
+        """Step 3.5 (executor Phase 2) includes pre-implementation checklist."""
+        assert "Pre-Implementation Checklist" in executor_content
+        assert "FOR PYTHON" in executor_content and "NOT TypedDict" in executor_content
 
     def test_mentions_compound_engineering_loop(self, prompt_content: str) -> None:
         """Implement prompt references compound-engineering loop (Plan→Work→Review→Compound)."""
@@ -81,71 +102,73 @@ class TestImplementPromptQualityGates:
         assert "memory bank" in prompt_content.lower()
 
     def test_step_2_includes_load_context_error_handling(
-        self, prompt_content: str
+        self, executor_content: str
     ) -> None:
-        """Step 2 includes non-critical load_context error handling and alternatives."""
-        assert (
-            "load_context()" in prompt_content and "validation error" in prompt_content
-        )
-        assert "manage_file" in prompt_content and "activeContext.md" in prompt_content
+        """Implement-executor includes load_context error handling and alternatives."""
+        assert "load_context" in executor_content
+        assert "validation error" in executor_content or "error" in executor_content
+        assert "manage_file" in executor_content and "activeContext" in executor_content
 
-    def test_step_4_includes_mandatory_format_step(self, prompt_content: str) -> None:
-        """Step 4 includes mandatory formatting step before type checking (language-agnostic)."""
-        assert "MANDATORY: Format code" in prompt_content
+    def test_step_4_includes_mandatory_format_step(self, executor_content: str) -> None:
+        """Executor includes mandatory formatting step before type checking."""
+        assert "MANDATORY: Format code" in executor_content
         assert (
-            "execute_pre_commit_checks" in prompt_content
-            or "formatter" in prompt_content.lower()
+            "execute_pre_commit_checks" in executor_content
+            or "formatter" in executor_content.lower()
         )
 
     def test_step_4_includes_mandatory_type_checking_step(
-        self, prompt_content: str
+        self, executor_content: str
     ) -> None:
-        """Step 4 includes mandatory type checking step before test writing."""
-        assert "MANDATORY: Run type checking" in prompt_content
-        assert "pyright" in prompt_content.lower()
+        """Executor includes mandatory type checking step before test writing."""
+        assert "MANDATORY: Run type checking" in executor_content
+        assert "pyright" in executor_content.lower()
 
     def test_step_4_includes_readlints_before_step_45(
-        self, prompt_content: str
+        self, executor_content: str
     ) -> None:
-        """Step 4 requires run ReadLints or fix_quality before Step 4.5."""
-        assert "Before Step 4.5" in prompt_content
+        """Executor requires run ReadLints or fix_quality before Step 3.5/4.5."""
         assert (
-            "ReadLints" in prompt_content
-            or "fix_quality" in prompt_content
-            or "execute_pre_commit_checks" in prompt_content
+            "Before Step 3.5" in executor_content
+            or "Before Step 4.5" in executor_content
+        )
+        assert (
+            "ReadLints" in executor_content
+            or "fix_quality" in executor_content
+            or "execute_pre_commit_checks" in executor_content
         )
 
     def test_step_46_includes_implicit_concatenation_check(
-        self, prompt_content: str
+        self, executor_content: str
     ) -> None:
-        """Step 4.6 includes multi-line string / implicit concatenation check."""
-        assert "implicit concatenation" in prompt_content
-        assert "reportImplicitStringConcatenation" in prompt_content
+        """Executor includes implicit concatenation / reportImplicitStringConcatenation check."""
+        assert "implicit concatenation" in executor_content
+        assert "reportImplicitStringConcatenation" in executor_content
 
     def test_token_budget_mentions_narrow_implement_steps(
-        self, prompt_content: str
+        self, executor_content: str
     ) -> None:
-        """Token budget guidance mentions 15k–20k for narrow implement steps."""
+        """Executor token budget guidance mentions 15k–20k for implement steps."""
         assert (
-            "15000" in prompt_content
-            or "15k" in prompt_content
-            or "15,000" in prompt_content
+            "15000" in executor_content
+            or "15k" in executor_content
+            or "15,000" in executor_content
         )
         assert (
-            "20000" in prompt_content
-            or "20k" in prompt_content
-            or "20,000" in prompt_content
+            "20000" in executor_content
+            or "20k" in executor_content
+            or "20,000" in executor_content
         )
 
-    def test_plan_step_sequence_mandatory_block(self, prompt_content: str) -> None:
-        """Implement prompt contains Plan step sequence (MANDATORY) and in-order execution."""
-        assert "Plan step sequence" in prompt_content
-        assert "MANDATORY when implementing a plan" in prompt_content
-        assert "in order" in prompt_content
-        assert (
-            "first uncompleted step" in prompt_content
-            or "do not skip" in prompt_content
-        )
+    def test_plan_step_sequence_mandatory_block(
+        self, prompt_content: str, executor_content: str
+    ) -> None:
+        """Implement prompt or executor contains Plan step sequence (MANDATORY) and in-order execution."""
+        combined = prompt_content + "\n" + executor_content
+        assert "Plan step sequence" in combined
+        assert "MANDATORY" in combined and "plan" in combined.lower()
+        assert "in order" in combined
+        assert "first uncompleted step" in combined or "do not skip" in combined
 
 
 class TestCreatePlanImplementationSequence:

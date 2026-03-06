@@ -12,13 +12,9 @@
 
 ## Pending plans (from .cortex/plans)
 
-- **Phase 92: Improve MCP Tool Descriptions and Usage Guidance** — COMPLETE (2026-03-06).
-
 ### Fixes
 
 ### Documentation Cleanup (DRY)
-
-- **Phase 85: Unify Developer Command Surface** — PENDING. Consolidate README/Makefile/CI/AGENTS commands. Plan: `.cortex/plans/phase-85-unify-developer-command-surface.md`
 
 ### Refactoring
 

@@ -13,6 +13,8 @@
 
 - ✅ **Commit pipeline (2026-03-06)** - COMPLETE (2026-03-06) - Ran /cortex/commit: Phase A preflight (fix_errors, format, synapse_format, synapse_lint, type_check, tests, eval_fast, markdown_lint) all passed with 4910 tests and ~92.41% coverage; proceeding to memory bank/roadmap + docs phases.
 
+- ✅ **Phase 85: Unify Developer Command Surface** - COMPLETE (2026-03-06) - Unified the developer command surface by documenting canonical Make targets, adding a commit-check alias, and introducing a docs consistency test for README and AGENTS uv sync usage.
+
 ## Completed Work (2026-03-05)
 
 - **Summary (2026-03-05)** - 1 entries archived.
