@@ -1,5 +1,11 @@
 # Progress Log
 
+## 2026-03-06
+
+- **Phase 92: Improve MCP Tool Descriptions and Usage Guidance (2026-03-06)** - COMPLETE. Standardized Tier 1 MCP tool descriptions with USE WHEN/DO NOT/EXAMPLES guidance and validated via governance tests; quality gate + full tests passed (4910 tests, 92.41% coverage).
+- **README selling doc refresh (2026-03-06)** - COMPLETE. Updated README to lead with value and the core plan → implement → commit workflow; condensed features/tools/prompts into concise, link-driven sections.
+- **Commit pipeline (2026-03-06)** - Ran `/cortex/commit` checks (fix_errors, format, markdown lint, type_check, quality, tests) for memory-bank, plan-archive, and README changes; 4910 tests, 92.41% coverage.
+
 ## 2026-03-05
 
 - - **Phase 79: Fix Python Version Pinning and Bootstrap Script (2026-03-05)** - COMPLETE. Relaxed Python patch pinning, added one-step bootstrap script, and updated docs; Phase A passed with 4906 tests and 92.44% coverage.
@@ -43,16 +49,16 @@
 - **Tools sub-package reorganization Session 13 (2026-03-02)** - COMPLETE. Moved optimization_handlers*into optimization/, query_usage* into usage/. All tests pass; coverage 92.34%. Top-level tools/*.py now 40.
 - **Tools sub-package reorganization Session 14 (2026-03-02)** - COMPLETE. Moved task_locking, task_locking_handlers, task_locking_helpers, health_check_operations into session/ subpackage. Broke circular import with lazy import in analysis_run_helpers and by not importing task_locking/health_check in session/**init**. Tests pass, 92.33% coverage.
 - **Tools sub-package reorganization Session 15 (2026-03-02)** - COMPLETE. Moved production_monitoring_*, redundancy_helpers, token_efficiency_helpers, tool_frequency_helpers into usage/ subpackage. Updated imports in query_handlers, evaluation modules, tests, and Synapse script. Tests 4867, coverage 92.33%.
-- **Tools subpackage Session 16 (2026-03-02)** - Attempted move of file_operations_models, markdown_models to files/; REVERTED due to circular imports (models_reexports \\u2192 files \\u2192 plans \\u2192 models). Documented in plan: root models must stay at tools root until import cycle resolved.
+- **Tools subpackage Session 16 (2026-03-02)** - Attempted move of file_operations_models, markdown_models to files/; REVERTED due to circular imports (models_reexports → files → plans → models). Documented in plan: root models must stay at tools root until import cycle resolved.
 - **Tools subpackage Session 16 (2026-03-02)** - COMPLETE. Moved file_operations_models, markdown_models to files/; resolved circular imports via lazy imports in plans/completion_ops, plans/entries, plans/entries_insert, plans/entries_removal.
 - **Tools files/ subpackage Session 16** - COMPLETE. Moved models to files/, renamed modules, lazy imports for circular resolution. 4867 tests, 92.32% coverage.
 - **Tools subpackage Session 17** - COMPLETE. Moved error_formatters, error_formatters_core, error_formatters_domain to execution/. Updated 12 import sites across config, validation, synapse, files, refactoring, optimization, execution. 4867 tests, 92.32% coverage. Flat files reduced from 27 to 24.
-- **Tools subpackage Session 18 (2026-03-02)** - COMPLETE. Moved feedback_models, workflow_models, workflow_operations, composite_tools to execution/ subpackage. Added composite_tools shim for backward compat. Updated models_reexports. Flat files: 24\\u219221. 4867 tests, 92.32% coverage.
-- **Tools sub-package reorganization Session 19 (2026-03-02)** - COMPLETE. Moved tool_search_operations to structure/tool_search.py; created skill_pack/ subpackage (models, operations). Flat files 21\\u219218. 4867 tests, 92.32% coverage.
-- **Tools subpackage Session 20 (2026-03-02)** - COMPLETE. Moved structure_models and categories to structure/; roadmap_operations_models and append_entry_dispatcher to plans/. Flat files: 18\\u219214. All tests pass, 92.32% coverage.
-- **Tools sub-package reorganization Session 21 (2026-03-02)** - COMPLETE. Moved metadata_helpers, metadata_logging_helpers, hybrid_metadata_helpers to context/; script_capture_tools, script_capture_handlers, script_capture_helpers, sequential_thinking to session/. Flat files 14\\u21927. 4867 tests, 92.32% coverage.
+- **Tools subpackage Session 18 (2026-03-02)** - COMPLETE. Moved feedback_models, workflow_models, workflow_operations, composite_tools to execution/ subpackage. Added composite_tools shim for backward compat. Updated models_reexports. Flat files: 24→21. 4867 tests, 92.32% coverage.
+- **Tools sub-package reorganization Session 19 (2026-03-02)** - COMPLETE. Moved tool_search_operations to structure/tool_search.py; created skill_pack/ subpackage (models, operations). Flat files 21→18. 4867 tests, 92.32% coverage.
+- **Tools subpackage Session 20 (2026-03-02)** - COMPLETE. Moved structure_models and categories to structure/; roadmap_operations_models and append_entry_dispatcher to plans/. Flat files: 18→14. All tests pass, 92.32% coverage.
+- **Tools sub-package reorganization Session 21 (2026-03-02)** - COMPLETE. Moved metadata_helpers, metadata_logging_helpers, hybrid_metadata_helpers to context/; script_capture_tools, script_capture_handlers, script_capture_helpers, sequential_thinking to session/. Flat files 14→7. 4867 tests, 92.32% coverage.
 - **Commit: tools subpackage Session 21** - Phase A passed; 4867 tests, 92.32% coverage. Memory bank, roadmap, plan archiving (0 plans).
-- **Tools subpackage reorganization (2026-03-02)** - COMPLETE. 21 sessions; flat files 185\\u21927; all tests pass, 92.32% coverage.
+- **Tools subpackage reorganization (2026-03-02)** - COMPLETE. 21 sessions; flat files 185→27; all tests pass, 92.32% coverage.
 - **Tools-to-Resources Conversion Analysis (2026-03-02)** - COMPLETE. Full tool inventory, per-tool conversion assessment, gap analysis for query_type tools, migration strategy. docs/architecture/tools-to-resources-conversion-analysis.md created; tools.md updated with Prefer Resources guidance.
 - **Implement query_usage Resources for 11 Uncovered Query Types (2026-03-02)** - COMPLETE. Added 11 MCP resources in usage_analytics.py; updated docs; 11 unit tests; quality gate passed.
 - **Remove / Unpublish Dead Tools (2026-03-02)** - COMPLETE. Unpublished benchmark_model; tool count reduced by 1.
@@ -66,7 +72,7 @@
 
 - **Phase1 foundation rollback file-size split (2026-03-01)** - COMPLETE. Extracted phase1_foundation_rollback_models.py (RollbackManagers, RollbackProcessingData) and phase1_foundation_rollback_helpers.py (validate_rollback_file, get_rollback_snapshot, process_rollback_content, update_rollback_metadata, finalize_rollback, build_rollback_success_response, build_rollback_error_response). Main module 218 lines, all under 400.
 - Commit - Phase1 foundation rollback Batch 3, tools file-size splits. Phase A passed; 4867 tests, 92.35% coverage.
-- **Plan tools file-size violations (Batch 4 continued)** - COMPLETE. Split 6 tool files: link_graph_operations \\u2192 link_graph_formatters; phase4_metadata_helpers \\u2192 phase4_metadata_logging_helpers; session_brief \\u2192 session_brief_extraction_helpers; transclusion_operations \\u2192 transclusion_response_helpers; refactoring_operation_helpers \\u2192 refactoring_operation_concise; phase5_execution \\u2192 phase5_execution_feedback. 3 files remain (file_operation_helpers, phase1_foundation_stats, pre_commit_pipeline).
+- **Plan tools file-size violations (Batch 4 continued)** - COMPLETE. Split 6 tool files: link_graph_operations → link_graph_formatters; phase4_metadata_helpers → phase4_metadata_logging_helpers; session_brief → session_brief_extraction_helpers; transclusion_operations → transclusion_response_helpers; refactoring_operation_helpers → refactoring_operation_concise; phase5_execution → phase5_execution_feedback. 3 files remain (file_operation_helpers, phase1_foundation_stats, pre_commit_pipeline).
 - **Commit: function length fix (file_operation_helpers, file_crud_flow)** - COMPLETE. Replaced `run_validate_prepare_then_execute` with `validate_and_prepare_write_content` + `execute_validated_write`; added `_WriteFlowParams` dataclass and `_run_write_flow` in file_crud_flow. Phase A passed; 4860 tests, 92.37% coverage.
 - **Empty file cleanup (2026-03-01)** - COMPLETE. Deleted 3 empty placeholder files and empty Phase63 dir per plan-empty-file-cleanup.
 - **Rename phase-prefixed files Batch 1 (2026-03-01)** - COMPLETE. Renamed 8 phase1_foundation_*files to foundation_* (dependency, rollback, stats, version, cleanup, rollback_models, rollback_helpers, stats_helpers). Updated all imports and patch paths. Tests pass, coverage 92.37%.
@@ -78,7 +84,7 @@
 - **Commit: tools subpackage Session 1 (context/)** - COMPLETE. Phase A passed; 4867 tests, 92.37% coverage. Memory bank, roadmap, plan archiving (0 plans).
 - **Tools subpackage Session 2: plans/ (2026-03-01)** - COMPLETE. Moved plan_*and roadmap_* (27 files) into src/cortex/tools/plans/; kept roadmap_operations_models in tools root to avoid circular imports; updated all imports; tests and quality gate pass.
 - Commit: tools subpackage Session 2 (plans/). Phase A passed; 4867 tests, 92.36% coverage. Memory bank, roadmap, plan archiving (0 plans).
-- **Tools subpackage Session 3: files/** - COMPLETE. Moved file_*and markdown_* \\u2014 19 files \\u2014 into src/cortex/tools/files/; updated imports project-wide; tests and quality gate pass.
+- **Tools subpackage Session 3: files/** - COMPLETE. Moved file_*and markdown_* — 19 files — into src/cortex/tools/files/; updated imports project-wide; tests and quality gate pass.
 - **Tools subpackage Session 4 (execution/)** - COMPLETE. Moved pre_commit_* and quality_precommit_models into src/cortex/tools/execution/; moved execution.py to execution/safe_execution.py. Updated imports project-wide. All tests pass.
 - **Tools subpackage Session 5 (optimization/)** - COMPLETE. Moved progressive_operations, relevance_operations, summarization_operations into optimization/ subpackage. Updated imports in optimization_handlers*.py and tests. 4867 tests pass, 92.36% coverage.
 - **Tools subpackage Session 6 (validation/)** - COMPLETE. Moved validation_* files into src/cortex/tools/validation/ subpackage. Updated imports project-wide. 4867 tests pass, 92.36% coverage.
@@ -104,29 +110,29 @@
 - **Archive Legacy Prompt Docs (2026-02-28)** - COMPLETE. Archived 7 legacy prompt docs to docs/prompts/archive/ with deprecation headers; updated README and test references to unified prompts (initialize.md, migrate.md).
 - **Consolidate Duplicate Protocol Docs (2026-02-28)** - COMPLETE. Replaced architecture protocols with cross-reference to API reference.
 - **Deduplicate Token Budget Table (2026-02-28)** - COMPLETE. Replaced duplicated token budget table in CLAUDE.md with cross-reference to AGENTS.md; table retained in AGENTS.md only.
-- **Tools file-size Batch 1 (compaction_operations) (2026-02-28)** - COMPLETE. Split compaction_operations.py (670\\u2192110 lines) into compaction_handoff.py and compaction_write_helpers.py; updated tests; quality and tests pass.
+- **Tools file-size Batch 1 (compaction_operations) (2026-02-28)** - COMPLETE. Split compaction_operations.py (670→110 lines) into compaction_handoff.py and compaction_write_helpers.py; updated tests; quality and tests pass.
 - **File-size plan Batch 1 (2026-02-28)** - COMPLETE for validation_operations and analysis_operations. validation_response_formatters.py, analysis_run_helpers.py created. Tests updated. Quality gate and coverage passed.
 - **Phase5 production monitoring split (2026-02-28)** - COMPLETE. Split phase5_production_monitoring_helpers.py (580 lines) into phase5_production_monitoring_models.py, phase5_production_monitoring_metrics.py, phase5_production_monitoring_drift.py; helpers reduced to 314 lines. All files under 400-line limit; tests and quality gate pass.
-- **Tools file-size Batch 2: task_locking (2026-02-28)** - COMPLETE. Split task_locking.py (572\\u2192327 lines) into task_locking_helpers.py, task_locking_handlers.py; updated file_lock_guard and tests to import generate_task_id from helpers; tests patch task_locking_handlers.resolve_project_root_async. Quality gate and tests pass.
+- **Tools file-size Batch 2: task_locking (2026-02-28)** - COMPLETE. Split task_locking.py (572→327 lines) into task_locking_helpers.py, task_locking_handlers.py; updated file_lock_guard and tests to import generate_task_id from helpers; tests patch task_locking_handlers.resolve_project_root_async. Quality gate and tests pass.
 - **Plan-tools-file-size-violations Batch 2: refactoring_operations.py (2026-02-28)** - COMPLETE. Extracted docstring to refactoring_operations_docs.py; main module reduced from 565 to 150 lines. All refactoring tests pass.
-- **Plan tools file size violations Batch 2 (2026-02-28)** - COMPLETE. Split script_capture_tools (helpers, handlers), query_usage_operations (query_usage_models), validation_result_models (validation_result_links_models). All files now \\u2264400 lines. Tests pass, coverage 92.35%.
-- **Tools file-size Batch 3 (2026-02-28)** - Split context_models.py into context_auxiliary_models.py; context_models 498\\u2192336 lines; updated transclusion_operations, phase4_progressive_operations, phase4_relevance_operations imports.
+- **Plan tools file size violations Batch 2 (2026-02-28)** - COMPLETE. Split script_capture_tools (helpers, handlers), query_usage_operations (query_usage_models), validation_result_models (validation_result_links_models). All files now ≤400 lines. Tests pass, coverage 92.35%.
+- **Tools file-size Batch 3 (2026-02-28)** - Split context_models.py into context_auxiliary_models.py; context_models 498→336 lines; updated transclusion_operations, phase4_progressive_operations, phase4_relevance_operations imports.
 - **Plan CRUD split (Batch 3) (2026-02-28)** - COMPLETE. Extracted plan_crud_models.py and plan_crud_helpers.py from plan_crud.py; plan_crud reduced from 490 to 235 lines; all tests pass.
 
 ## 2026-02-27
 
 - **Phase 9.7 Error Handling Polish (2026-02-27)** - COMPLETE. Improved error messages (MCP connection, tool not found suggestions in tool_error_formatters), added generic connection fallback in mcp_stability_config, documented MCP connection failure in failure-modes.md and error-recovery.md; retry/graceful degradation already present.
-- **Phase 9.8 Maintainability Polish (2026-02-27)** - COMPLETE. Reduced cyclomatic complexity in tool_error_formatters (_generate_default_suggestion 13\\u21927) and validation_helpers (generate_duplication_fixes 13\\u21922); added module-level documentation. 4850 tests, 92.92% coverage.
-- **Optimize Exposed Tools from Usage Statistics (2026-02-27)** - COMPLETE. Census and mapping completed; Steps 3\\u20134 N/A (no safe consolidation candidates); documented exception for target 24 in baseline; regression passed.
-- **Consolidate Plan and Roadmap Tools (2026-02-27)** - COMPLETE. Plan+roadmap tools consolidated; 40\\u219237 registered tools; docs and callers updated.
+- **Phase 9.8 Maintainability Polish (2026-02-27)** - COMPLETE. Reduced cyclomatic complexity in tool_error_formatters (_generate_default_suggestion 13→7) and validation_helpers (generate_duplication_fixes 13→2); added module-level documentation. 4850 tests, 92.92% coverage.
+- **Optimize Exposed Tools from Usage Statistics (2026-02-27)** - COMPLETE. Census and mapping completed; Steps 3–4 N/A (no safe consolidation candidates); documented exception for target 24 in baseline; regression passed.
+- **Consolidate Plan and Roadmap Tools (2026-02-27)** - COMPLETE. Plan+roadmap tools consolidated; 40→37 registered tools; docs and callers updated.
 - **Unify and Simplify Tools, Prompts, and Resources Naming (2026-02-27)** - COMPLETE. Naming rubric, inventory, proposals; doc updates; cortex://rules/relevant deprecation note.
-- **Commit pipeline quality fixes (2026-02-27)** - COMPLETE. Synapse format (check_tool_description_altitude.py), function length (session_dispatcher), test thresholds (manage_file rollback, deferred \\u226515), markdown lint (tools.md link, table pipes). Phase A passed.
+- **Commit pipeline quality fixes (2026-02-27)** - COMPLETE. Synapse format (check_tool_description_altitude.py), function length (session_dispatcher), test thresholds (manage_file rollback, deferred ≥15), markdown lint (tools.md link, table pipes). Phase A passed.
 - Commit (2026-02-27) - Roadmap update, AGENTS update, Synapse usage storage plan added. Phase A passed; 4856 tests, 92.61% coverage.
 - Commit (2026-02-27) - MCP stability refinements (`mcp_stability_retry`, `mcp_stability_semaphores`, main); session-improvements plan, session-optimization review. Phase A passed; 4856 tests, 92.61% coverage.
 
 ## 2026-02-26
 
-- **Week containing 2026-02-25** - 1 entries summarized.
+- **Week containing 2026-02-26** - 1 entries summarized.
 
 ## 2026-02-24
 

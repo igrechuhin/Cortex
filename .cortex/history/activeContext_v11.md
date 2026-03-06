@@ -2,21 +2,14 @@
 
 **This file records completed work only.** For current status and upcoming work see [roadmap.md](roadmap.md).
 
+## Completed Work (2026-03-06)
+
+- ✅ **Phase 92: Improve MCP Tool Descriptions and Usage Guidance** - COMPLETE (2026-03-06) - Updated high-impact MCP tool descriptions with a consistent USE WHEN / DO NOT / EXAMPLES template, and added governance coverage so tools steer agents toward canonical entrypoints (memory bank, pre-commit, structure, usage). Verified quality gate, type checks, and full tests (4910/4910) with ~92.41% coverage.
+- ✅ **README selling doc refresh** - COMPLETE (2026-03-06) - Rewrote the README to lead with value and a clear plan → implement → commit workflow, trimmed long reference sections, and kept links to the authoritative docs.
+
 ## Completed Work (2026-03-05)
 
-- ✅ **Phase 79: Fix Python Version Pinning and Bootstrap Script** - COMPLETE (2026-03-05) - Relaxed Python version pinning to avoid patch-level lock-in, added a one-step bootstrap script wired to the new version, and updated Makefile/docs to point to the supported workflow. All pre-commit checks (format, type_check, quality, tests) passed with 4906 tests and ~92.44% coverage.
-
-- ✅ **Phase 79: Fix Python Version Pinning and Bootstrap Script** - COMPLETE (2026-03-05) - Relaxed Python version pinning to avoid patch-level lock-in, added a one-step bootstrap script wired to the new version, and updated Makefile/docs and bootstrap wiring accordingly.
-
-- ✅ **Phase 80: Add Synapse Submodule Presence Guard** - COMPLETE (2026-03-05) - Implemented a Synapse submodule guard shell script, wired it into the quality workflow and Makefile so CI and `make check` fail fast when Synapse is missing, and documented submodule initialization plus an optional minimal-check fallback in the README.
-
-- ✅ **/cortex/commit Phase A preflight** - COMPLETE (2026-03-05) - Ran execute_pre_commit_checks(phase="A") with fix_errors, quality, format, synapse_format, synapse_lint, type_check, tests, eval_fast, and markdown_lint; all checks passed with 4906 tests and 92.44% coverage and zero quality violations.
-
-- ✅ **Phase 86: MCP Connection Resilience and Auto-Recovery** - COMPLETE (2026-03-05) - Hardened MCP retry and reconnection logic with helper functions and a clearer circuit-breaker path, stabilized timeout and pre-commit tools tests with connection-state reset fixtures, and re-ran the full pre-commit suite (4908 tests, ~92.42% coverage).
-
-- ✅ **Phase 83: Remaining Silent Exception Handlers** - COMPLETE (2026-03-05) - Eliminated the 7 remaining `except Exception: pass/continue` blocks in src/ by adding logging and restructuring handlers for CI workflow parsing, commit prompt parsing, refactoring history, workflow template loading, optimization history, and plan listing; quality gate and full tests now pass with 92.41% coverage.
-
-- ✅ **Blocker: GitHub Actions Quality Gate Not Running** - COMPLETE (2026-03-05) - Restored the GitHub Actions Code Quality workflow so it runs on all branches and made its failures align with the local `/cortex/commit` quality gate (format, lint, type_check over src and tests, file sizes, function lengths, tests, eval). Fixed Pyright test type errors and hardened both CI and commit prompt so skipped or partial runs cannot slip through.
+- **Summary (2026-03-05)** - 1 entries archived.
 
 ## Completed Work (2026-03-04)
 

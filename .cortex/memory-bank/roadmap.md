@@ -12,8 +12,6 @@
 
 ## Pending plans (from .cortex/plans)
 
-- **Phase 92: Improve MCP Tool Descriptions and Usage Guidance** — PENDING. Strengthen descriptions and examples for high-impact MCP tools (manage_file, update_memory_bank, execute_pre_commit_checks, structure, query_usage/query_memory_bank) so agents follow the canonical usage paths and avoid anti-patterns; Plan: `.cortex/plans/phase-92-improve-tool-descriptions.md`.
-
 ### Fixes
 
 - **Phase 84: Remaining Type-Checker Suppression Cleanup** — PENDING. Reduce 27 suppressions to ≤10. Plan: `.cortex/plans/phase-84-type-checker-suppression-cleanup.md`

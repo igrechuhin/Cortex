@@ -1,13 +1,8 @@
 # Phase 92: Improve MCP Tool Descriptions and Usage Guidance
 
-Status: IN PROGRESS
+Status: DONE
 
-Current session (2026-03-05): Implemented Phase 92 governance tests and updated
-Tier 1 MCP tool docstrings (manage_file, update_memory_bank, execute_pre_commit_checks,
-structure tools, query_memory_bank, query_usage, connection health, plan/composite/refactoring).
-Tests and coverage pass; quality gate succeeds for src, but strict type_check still
-reports pre-existing issues under tests/, so final completion and roadmap/memory-bank
-updates remain for a follow-up session.
+Completed (2026-03-06): Standardized Tier 1 MCP tool descriptions with a consistent USE WHEN / DO NOT / EXAMPLES template, added governance coverage so tools steer agents toward canonical entrypoints, and verified quality gate + full tests.
 
 ## Goal
 
