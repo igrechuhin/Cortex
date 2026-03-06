@@ -20,17 +20,21 @@ def _make_project_root(tmp_path: Path) -> Path:
 class TestLoadSynapseUsageConfig:
     """Tests for load_synapse_usage_config."""
 
-    def test_returns_false_when_config_missing(self, tmp_path: Path) -> None:
-        """When .cortex/synapse/config.json is missing, returns usage_writable False."""
-        root = _make_project_root(tmp_path)
-        config = load_synapse_usage_config(root)
-        assert config.get("usage_writable") is False
-
     def test_returns_false_when_synapse_missing(self, tmp_path: Path) -> None:
         """When .cortex/synapse directory is missing, returns usage_writable False."""
         root = _make_project_root(tmp_path)
         config = load_synapse_usage_config(root)
         assert config.get("usage_writable") is False
+
+    def test_returns_true_when_synapse_exists_and_config_missing(
+        self, tmp_path: Path
+    ) -> None:
+        """When .cortex/synapse exists but config.json is missing, defaults to True."""
+        root = _make_project_root(tmp_path)
+        synapse_dir = get_cortex_path(root, CortexResourceType.SYNAPSE)
+        synapse_dir.mkdir(parents=True)
+        config = load_synapse_usage_config(root)
+        assert config.get("usage_writable") is True
 
     def test_returns_false_when_usage_writable_false(self, tmp_path: Path) -> None:
         """When config has usage_writable: false, returns False."""
@@ -76,10 +80,17 @@ class TestLoadSynapseUsageConfig:
 class TestIsUsageWritable:
     """Tests for is_usage_writable helper."""
 
-    def test_false_when_config_missing(self, tmp_path: Path) -> None:
-        """Returns False when config missing."""
+    def test_false_when_synapse_missing(self, tmp_path: Path) -> None:
+        """Returns False when .cortex/synapse directory is missing."""
         root = _make_project_root(tmp_path)
         assert is_usage_writable(root) is False
+
+    def test_true_when_synapse_exists_and_config_missing(self, tmp_path: Path) -> None:
+        """Returns True when Synapse dir exists but config.json is missing."""
+        root = _make_project_root(tmp_path)
+        synapse_dir = get_cortex_path(root, CortexResourceType.SYNAPSE)
+        synapse_dir.mkdir(parents=True)
+        assert is_usage_writable(root) is True
 
     def test_true_when_usage_writable_true(self, tmp_path: Path) -> None:
         """Returns True when usage_writable: true in config."""
@@ -110,5 +121,15 @@ class TestGetUsageStorageRoot:
         _ = (synapse_dir / "config.json").write_text(
             '{"usage_writable": true}', encoding="utf-8"
         )
+        result = get_usage_storage_root(root)
+        assert result == synapse_dir / ".cache"
+
+    def test_returns_synapse_cache_when_synapse_exists_and_config_missing(
+        self, tmp_path: Path
+    ) -> None:
+        """When Synapse exists but config missing, returns synapse/.cache."""
+        root = _make_project_root(tmp_path)
+        synapse_dir = get_cortex_path(root, CortexResourceType.SYNAPSE)
+        synapse_dir.mkdir(parents=True)
         result = get_usage_storage_root(root)
         assert result == synapse_dir / ".cache"

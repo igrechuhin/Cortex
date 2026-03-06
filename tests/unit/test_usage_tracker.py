@@ -126,6 +126,27 @@ class TestRecordToolUsage:
         assert result.get("total_events", 0) == 0
 
     @pytest.mark.asyncio
+    async def test_record_persists_when_synapse_exists_and_config_missing(
+        self, tmp_path: Path
+    ) -> None:
+        """When .cortex/synapse exists but config.json missing, events are persisted (Phase 93)."""
+        root = tmp_path / "project"
+        get_cache_dir(root).mkdir(parents=True)
+        synapse_dir = get_cortex_path(root, CortexResourceType.SYNAPSE)
+        synapse_dir.mkdir(parents=True)
+        tracker = UsageTracker(root)
+        await tracker.record_tool_usage("test_tool", 1.0, True)
+        result = await tracker.get_usage_stats()
+        total_ev = result.get("total_events", 0)
+        assert isinstance(total_ev, (int, float)) and total_ev >= 1
+        today = datetime.now(UTC).strftime("%Y-%m-%d")
+        relative_key = f"usage/events/{today}.json"
+        storage_root = get_usage_storage_root(root)
+        raw = await read_cache_json(root, relative_key, cache_root=storage_root)
+        assert isinstance(raw, list) and len(raw) >= 1
+        assert storage_root == synapse_dir / ".cache"
+
+    @pytest.mark.asyncio
     async def test_record_creates_event_file(self, tmp_path: Path) -> None:
         """Test recording creates events visible via get_usage_stats."""
         root = _make_project_root(tmp_path, usage_writable=True)

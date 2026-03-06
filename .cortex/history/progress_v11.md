@@ -15,6 +15,8 @@
 - **Phase 81 Step 2: validation/models.py split (2026-03-06)** - COMPLETE. Split cortex.validation.models into schema_models, quality_models, roadmap_models, infrastructure_models, timestamp_models with slim models.py re-exports; fixed pre_commit_tools function-length violations; quality gate and tests passed (4938 tests, ~91.95% coverage).
 - **Commit pipeline (2026-03-06)** - Phase A passed (fix_errors, format, synapse_format, synapse_lint, type_check, quality, tests 4937/4937, coverage 91.95%); pre_commit dirty-state and validation-model changes included.
 - **Commit pipeline (2026-03-06)** - Phase A passed (4937 tests, 91.95% coverage); Step 12 final gate and commit in progress.
+- **Phase 93: Usage Events Collection Pipeline Investigation (2026-03-06)** - COMPLETE. Default usage_writable when Synapse exists and config missing; restored event collection for query_usage.
+- **Commit pipeline (2026-03-06)** - Phase A passed (4940 tests, 91.95% coverage); Phase 93 plan in archive; Synapse .gitignore and usage config/test updates.
 
 ## 2026-03-05
 

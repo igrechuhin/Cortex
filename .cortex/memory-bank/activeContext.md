@@ -19,6 +19,8 @@
 
 - ✅ **Phase 81 Step 2: validation/models.py split** - COMPLETE (2026-03-06) - Split cortex.validation.models into domain modules (schema_models, quality_models, roadmap_models, infrastructure_models, timestamp_models) with slim models.py re-exports; fixed pre_commit_tools function-length violations; quality gate and tests passed.
 
+- ✅ **Phase 93: Usage Events Collection Pipeline Investigation** - COMPLETE (2026-03-06) - Default usage_writable to True when .cortex/synapse exists and config.json is missing so usage events are written to .cortex/synapse/.cache/usage/events without requiring a config file. Added regression test.
+
 ## Completed Work (2026-03-05)
 
 - **Summary (2026-03-05)** - 1 entries archived.
