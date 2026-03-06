@@ -9,6 +9,10 @@
 
 - ✅ **Phase 84: Remaining Type-Checker Suppression Cleanup** - COMPLETE (2026-03-06) - Eliminated remaining type-checker suppressions in core MCP usage-context wrapper and session/usage Pydantic models by introducing safer typing and typed default factories; pyright now passes in src without ignores.
 
+- ✅ **Phase 90: Agent Session Verbosity and "ok, proceed" Pattern** - COMPLETE (2026-03-06) - Tightened execution-continuity guidance so agents auto-continue instead of waiting for "ok, proceed", and updated Synapse prompts plus AGENTS/CLAUDE to distinguish valid vs invalid stops.
+
+- ✅ **Commit pipeline (2026-03-06)** - COMPLETE (2026-03-06) - Ran /cortex/commit: Phase A preflight (fix_errors, format, synapse_format, synapse_lint, type_check, tests, eval_fast, markdown_lint) all passed with 4910 tests and ~92.41% coverage; proceeding to memory bank/roadmap + docs phases.
+
 ## Completed Work (2026-03-05)
 
 - **Summary (2026-03-05)** - 1 entries archived.

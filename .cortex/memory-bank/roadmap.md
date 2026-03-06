@@ -12,9 +12,9 @@
 
 ## Pending plans (from .cortex/plans)
 
-### Fixes
+- **Phase 92: Improve MCP Tool Descriptions and Usage Guidance** — COMPLETE (2026-03-06).
 
-- **Phase 90: Agent Session Verbosity and "ok, proceed" Pattern** — PENDING. Eliminate unnecessary agent pauses requiring user confirmation. Plan: `.cortex/plans/phase-90-agent-session-verbosity.md`
+### Fixes
 
 ### Documentation Cleanup (DRY)
 

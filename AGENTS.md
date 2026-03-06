@@ -85,6 +85,22 @@ Roles are automatically inferred from task descriptions using keyword heuristics
 2. **Edit code** — use IDE tools (`Read`, `Write`, `Grep`, `Glob`, `LS`) for source files.
 3. **Verify** — use Cortex quality/test tools, not raw shell commands.
 
+## Execution Continuity
+
+Agents must keep going until the task is done or genuinely blocked; do not pause just to narrate or wait for "ok, proceed".
+
+- **Valid stops**:
+  - Clarification needed about ambiguous or conflicting requirements.
+  - Unrecoverable error or missing dependency outside the agent’s control.
+  - The current task is complete and a final summary is ready.
+  - Multiple viable approaches with meaningful trade-offs where the user must choose.
+
+- **Invalid stops**:
+  - After loading context or summarizing the roadmap/plan.
+  - After Phase A or other intermediate phases pass in `/cortex/commit`.
+  - After restating a plan, checklist, or next steps without new questions.
+  - Waiting for the user to say "ok, proceed" (or similar) when no new information is required.
+
 **Load context on the fix path (MANDATORY)**: When you encounter a problem and have to fix something (errors, test failures, quality issues, type/lint violations), you **must** load context and rules **before** making changes. Call `load_context(task_description="Fixing errors and issues", token_budget=15000)` and, when applicable, `rules(operation="get_relevant", task_description="...")` (or read key standards from the rules path if rules are disabled). Only after context and rules are loaded, proceed with fixes. This ensures fixes follow all project rules and guidelines. See the commit and implement prompts for concrete placement.
 
 **Multi-agent coordination (Phase 58)**: When multiple Cursor tabs or agents work on the same project, use task locking to avoid duplicate work. `session(operation="start")` returns `concurrent_sessions` and `locked_tasks`. Use `claim_task_lock(task_title, role)` before starting work on a roadmap item; use `release_task_lock(task_title)` when done. Use `list_active_tasks()` and `check_task_available_lock(task_title)` to see what other agents are working on. Locks auto-expire after 2 hours. See the implement prompt for the full claim/release workflow.

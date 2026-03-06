@@ -7,6 +7,8 @@
 - **Commit pipeline (2026-03-06)** - Ran `/cortex/commit` checks (fix_errors, format, markdown lint, type_check, quality, tests) for memory-bank, plan-archive, and README changes; 4910 tests, 92.41% coverage.
 - **Phase 84: Remaining Type-Checker Suppression Cleanup (2026-03-06)** - COMPLETE. Removed remaining type-checker suppressions in src by updating the usage-context decorator and Pydantic Field defaults for list-valued fields.
 - **Commit pipeline (2026-03-06)** - Ran `/cortex/commit` to fix Ruff UP047 in `ensure_usage_context` and re-validate full pre-commit checks; 4910 tests, 92.41% coverage.
+- **Phase 90: Agent Session Verbosity and "ok, proceed" Pattern (2026-03-06)** - COMPLETE. Updated prompts and guidance so agents auto-continue without waiting for "ok, proceed" and only stop for genuine clarification or unrecoverable errors.
+- Commit pipeline (2026-03-06) - Ran /cortex/commit: Phase A preflight (fix_errors, format, synapse_format, synapse_lint, type_check, tests, eval_fast, markdown_lint) all passed with 4910 tests and ~92.41% coverage; proceeding to memory bank/roadmap + docs phases.
 
 ## 2026-03-05
 

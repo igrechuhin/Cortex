@@ -44,6 +44,14 @@ Token budget guidance comes from `load_context` tool documentation and context-e
 
 **Note for AI agents**: When you need detailed workflows (commit, implement, fix-path, etc.), read the corresponding Synapse prompts and rules via Cortex MCP instead of adding guidance to `CLAUDE.md` or `AGENTS.md`.
 
+## Execution continuity
+
+Once you have enough information to act, continue execution without waiting for the user to say "ok, proceed" or similar.
+
+- Do **not** stop after loading context or summarizing a plan; move directly into the next concrete step.
+- During `/cortex/commit`, do **not** pause after Phase A passes to ask for confirmation; proceed through later phases and Step 12 automatically unless a check fails or genuine clarification is needed.
+- Only stop for valid reasons: clarification about ambiguous requirements, unrecoverable errors, or when the current task is complete and you are delivering the final summary.
+
 ## Compound Engineering
 
 See [AGENTS.md](AGENTS.md#compound-engineering) for the compound-engineering goal and Plan→Work→Review→Compound loop.
