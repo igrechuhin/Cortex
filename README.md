@@ -18,10 +18,11 @@ Use Cortex when you want reproducible, high-quality AI-driven development that s
 
 1. **Install prerequisites**: Python 3.13+ and Node.js with `markdownlint-cli2` (see [Prerequisites](#prerequisites)).
 2. **Run the server**: Add the config snippet from [Running the Server](#running-the-server) to your `mcp.json` (most users pick **uvx**).
-3. **Start a session**:
-   - `session_start()` — get an orientation brief.
-   - `load_context(task_description="your goal", token_budget=10000)` — load task-specific context.
-   - Follow the **plan → implement → commit** loop below.
+3. **Start with the plan → implement → commit loop** (see below).
+   In your IDE/assistant, ask the agent to orchestrate these commands:
+   - Start a session (get an orientation brief)
+   - Load task-specific context
+   - Follow the **plan → implement → commit** loop
 
 For new projects, use the **initialize** prompt to create the Memory Bank and `.cortex/` structure.
 
