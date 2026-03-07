@@ -76,6 +76,7 @@ For each file:
 ### Step 7: `optimization/rules_manager.py` (653 → split)
 
 - Extract rule loading, rule matching, and rule application into separate modules.
+- ✅ Completed 2026-03-07: split into rules_loading.py, rules_matching.py; slim rules_manager.py; quality gate and tests passed (4940 tests, 91.68% coverage).
 
 ### Step 8: `managers/usage_tracker.py` (624 → split)
 

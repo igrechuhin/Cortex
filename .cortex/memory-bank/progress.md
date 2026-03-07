@@ -1,5 +1,9 @@
 # Progress Log
 
+## 2026-03-07
+
+- **Phase 81 Step 7: optimization/rules_manager.py split (2026-03-07)** - COMPLETE. Extracted rules_loading.py and rules_matching.py; slim rules_manager.py; removed unused helpers; Phase A passed (4940 tests, 91.68% coverage).
+
 ## 2026-03-06
 
 - **Commit pipeline (2026-03-06)** - Fixed 15 integration tests (implement/create-plan prompt alignment with implement-executor and create-plan); Phase A passed; 4913 tests, 92.4% coverage.
@@ -137,14 +141,7 @@
 
 ## 2026-02-27
 
-- **Phase 9.7 Error Handling Polish (2026-02-27)** - COMPLETE. Improved error messages (MCP connection, tool not found suggestions in tool_error_formatters), added generic connection fallback in mcp_stability_config, documented MCP connection failure in failure-modes.md and error-recovery.md; retry/graceful degradation already present.
-- **Phase 9.8 Maintainability Polish (2026-02-27)** - COMPLETE. Reduced cyclomatic complexity in tool_error_formatters (_generate_default_suggestion 13 7) and validation_helpers (generate_duplication_fixes 13 2); added module-level documentation. 4850 tests, 92.92% coverage.
-- **Optimize Exposed Tools from Usage Statistics (2026-02-27)** - COMPLETE. Census and mapping completed; Steps 3 N/A (no safe consolidation candidates); documented exception for target 24 in baseline; regression passed.
-- **Consolidate Plan and Roadmap Tools (2026-02-27)** - COMPLETE. Plan+roadmap tools consolidated; 40 37 registered tools; docs and callers updated.
-- **Unify and Simplify Tools, Prompts, and Resources Naming (2026-02-27)** - COMPLETE. Naming rubric, inventory, proposals; doc updates; cortex://rules/relevant deprecation note.
-- **Commit pipeline quality fixes (2026-02-27)** - COMPLETE. Synapse format (check_tool_description_altitude.py), function length (session_dispatcher), test thresholds (manage_file rollback, deferred  15), markdown lint (tools.md link, table pipes). Phase A passed.
-- Commit (2026-02-27) - Roadmap update, AGENTS update, Synapse usage storage plan added. Phase A passed; 4856 tests, 92.61% coverage.
-- Commit (2026-02-27) - MCP stability refinements (`mcp_stability_retry`, `mcp_stability_semaphores`, main); session-improvements plan, session-optimization review. Phase A passed; 4856 tests, 92.61% coverage.
+- **Week containing 2026-02-27** - 1 entries summarized.
 
 ## 2026-02-26
 

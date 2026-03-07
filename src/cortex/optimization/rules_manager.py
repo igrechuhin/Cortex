@@ -26,6 +26,11 @@ from .models import (
     ScoredRuleModel,
 )
 from .rules_indexer import RulesIndexer
+from .rules_matching import (
+    filter_rules_by_score,
+    score_rules_if_needed,
+    select_rules_within_budget,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -495,13 +500,15 @@ class RulesManager:
         min_relevance_score: float,
     ) -> list[ScoredRuleModel]:
         """Select rules within budget returning typed models (internal)."""
-        _score_rules_if_needed(self, rules, task_description)
-        filtered_rules = _filter_rules_by_score(rules, min_relevance_score)
+        score_rules_if_needed(rules, task_description)
+        filtered_rules = filter_rules_by_score(rules, min_relevance_score)
         filtered_rules.sort(
-            key=lambda x: (x.priority, x.relevance_score),
+            key=lambda rule: (rule.priority, rule.relevance_score),
             reverse=True,
         )
-        return _select_rules_within_budget(self, filtered_rules, max_tokens)
+        return select_rules_within_budget(
+            self.token_counter, filtered_rules, max_tokens
+        )
 
     async def get_all_rules(self) -> dict[str, IndexedRuleModel]:
         """
@@ -608,46 +615,3 @@ class RulesManager:
             reindex_interval_minutes=indexer_status.reindex_interval_minutes,
             total_tokens=indexer_status.total_tokens,
         )
-
-
-def _score_rules_if_needed(
-    manager: RulesManager, rules: list[ScoredRuleModel], task_description: str
-) -> None:
-    """Score rules if they don't have a score yet."""
-    for rule in rules:
-        if rule.relevance_score == 0.0:
-            rule.relevance_score = manager.score_rule_relevance(
-                task_description, rule.content
-            )
-
-
-def _filter_rules_by_score(
-    rules: list[ScoredRuleModel], min_relevance_score: float
-) -> list[ScoredRuleModel]:
-    """Filter rules by minimum relevance score."""
-    return [r for r in rules if r.relevance_score >= min_relevance_score]
-
-
-def _select_rules_within_budget(
-    manager: RulesManager,
-    filtered_rules: list[ScoredRuleModel],
-    max_tokens: int,
-) -> list[ScoredRuleModel]:
-    """Select rules within token budget."""
-    selected_rules: list[ScoredRuleModel] = []
-    total_tokens = 0
-
-    for rule in filtered_rules:
-        rule_tokens = rule.tokens
-
-        if rule_tokens == 0:
-            rule_tokens = manager.token_counter.count_tokens(rule.content)
-            rule.tokens = rule_tokens
-
-        if total_tokens + rule_tokens <= max_tokens:
-            selected_rules.append(rule)
-            total_tokens += rule_tokens
-        else:
-            break
-
-    return selected_rules
