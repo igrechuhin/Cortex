@@ -6,6 +6,7 @@ import json
 import sys
 from pathlib import Path
 
+from cortex.health_check.models import HealthCheckReportPayload
 from cortex.health_check.report_generator import ReportGenerator
 from cortex.managers.initialization import get_project_root
 from cortex.tools.session.health_check_operations import (
@@ -87,7 +88,7 @@ def main() -> int:
         )
     )
     if args.format == "markdown":
-        report = json.loads(json_str)
+        report = HealthCheckReportPayload.model_validate(json.loads(json_str))
         content = ReportGenerator().generate_markdown_report(report)
     else:
         content = json_str

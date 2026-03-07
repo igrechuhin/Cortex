@@ -2,7 +2,13 @@
 
 **AI EXECUTION COMMAND**: Validate that roadmap.md is synchronized with the codebase **and** the plans directory, ensuring all production TODOs are tracked, all roadmap references remain valid, and all non-archived plan files are registered in roadmap.md.
 
-**CRITICAL**: These steps are for the AI to execute AUTOMATICALLY. DO NOT ask the user for permission or confirmation. Execute immediately.
+## Severity Levels
+
+- **GATE**: Blocks commit. Validation must pass.
+- **CHECK**: Requires verification. Confirm before proceeding.
+- **PREFER**: Best practice. Recommended but non-blocking.
+
+Execute all steps AUTOMATICALLY. DO NOT ask the user for permission.
 
 **CURSOR COMMAND**: This is a Cursor command (e.g. in `.cortex/prompts/validate-roadmap-sync.md`). NOT a terminal command.
 

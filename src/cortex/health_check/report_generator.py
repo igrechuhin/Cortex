@@ -20,7 +20,7 @@ class ReportGenerator:
         Returns:
             Markdown report content
         """
-        payload = HealthCheckReportPayload.model_validate(report)
+        payload = report
         lines: list[str] = []
 
         lines.extend(self._generate_header(payload))
@@ -161,8 +161,7 @@ class ReportGenerator:
         Returns:
             JSON report content
         """
-        payload = HealthCheckReportPayload.model_validate(report)
-        content = payload.model_dump_json(indent=2)
+        content = report.model_dump_json(indent=2)
 
         if output_path:
             _ = output_path.write_text(content, encoding="utf-8")

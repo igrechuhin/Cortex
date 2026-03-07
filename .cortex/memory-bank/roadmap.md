@@ -18,11 +18,6 @@
 
 ### Refactoring
 
-- **Phase 81: Oversized Module Reduction — Wave 1 (Top 10)** — PENDING. Split top 10 files exceeding 400-line limit. Plan: `.cortex/plans/phase-81-oversized-module-reduction-wave1.md`
-- **Phase 82: Coverage Exclusion Audit and Reduction** — PENDING. Reduce coverage omit list blind spots. Plan: `.cortex/plans/phase-82-coverage-exclusion-audit.md`
-- **Phase 89: Commit Pipeline Efficiency** — PENDING. Reduce redundant check runs in commit pipeline. Plan: `.cortex/plans/phase-89-commit-pipeline-efficiency.md`
-- **Phase 91: HealthCheckReport Type Unification** — PENDING. Replace loose dict alias with Pydantic BaseModel. Plan: `.cortex/plans/phase-91-healthcheck-type-unification.md`
-
 ### Cleanup
 
 - **Phase 87: Stale exec() Comment and Dead Reference Cleanup** — PENDING. Remove dead comments referencing removed patterns. Plan: `.cortex/plans/phase-87-dead-reference-cleanup.md`

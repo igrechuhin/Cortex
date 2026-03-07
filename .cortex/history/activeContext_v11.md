@@ -2,32 +2,25 @@
 
 **This file records completed work only.** For current status and upcoming work see [roadmap.md](roadmap.md).
 
+## Completed Work (2026-03-07)
+
+- **Phase 81 Step 7: optimization/rules_manager.py split** - COMPLETE (2026-03-07) - Extracted rules_loading.py and rules_matching.py; slim rules_manager.py; removed dead helpers; quality gate and tests passed (4940 tests, 91.68% coverage).
+
+- ✅ **Phase 81 Step 8: managers/usage_tracker.py split** - COMPLETE (2026-03-07) - Split into usage_tracker_config.py, usage_tracker_events.py, usage_tracker_aggregation.py; slim usage_tracker.py (340 lines); re-export UsageTracker, get_tool_optimization_config, generate_usage_event_id; quality gate and 34/34 usage_tracker tests passed.
+
+- ✅ **Phase 81 Step 9: managers/container_factory.py split** - COMPLETE (2026-03-07) - Split into container_config.py (type aliases), container_foundation, container_linking, container_optimization, container_analysis, container_refactoring, container_execution; slim container_factory.py re-exports; all under 400 lines; quality gate and tests passed.
+
+- ✅ **Phase 81: Oversized Module Reduction — Wave 1 (Top 10)** - COMPLETE (2026-03-07) - Split top 10 oversized modules to under 400 lines; Step 10 refactoring/execution_validator.py split into checks and extraction modules.
+
+- ✅ **Phase 82: Coverage Exclusion Audit and Reduction** - COMPLETE (2026-03-07) - Documented omit list rationale; evaluated */models.py (kept); aligned commit/create-plan prompts with tests.
+
+- ✅ **Phase 89: Commit Pipeline Efficiency** - COMPLETE (2026-03-07) - Documented dirty-state optimization in commit prompt and final-gate-validator; code already had PipelineDirtyTracker and skip_if_clean. Step 12 now passes skip_if_clean=True for format, type_check, quality, tests.
+
+- ✅ **Phase 91: HealthCheckReport Type Unification** - COMPLETE (2026-03-07) - Replaced dict alias with Pydantic BaseModel; all producers and consumers updated.
+
 ## Completed Work (2026-03-06)
 
-- ✅ **Phase 92: Improve MCP Tool Descriptions and Usage Guidance** - COMPLETE (2026-03-06) - Updated high-impact MCP tool descriptions with a consistent USE WHEN / DO NOT / EXAMPLES template, and added governance coverage so tools steer agents toward canonical entrypoints (memory bank, pre-commit, structure, usage). Verified quality gate, type checks, and full tests (4910/4910) with ~92.41% coverage.
-- ✅ **README selling doc refresh** - COMPLETE (2026-03-06) - Rewrote the README to lead with value and a clear plan → implement → commit workflow, trimmed long reference sections, and kept links to the authoritative docs.
-
-- ✅ **Phase 84: Remaining Type-Checker Suppression Cleanup** - COMPLETE (2026-03-06) - Eliminated remaining type-checker suppressions in core MCP usage-context wrapper and session/usage Pydantic models by introducing safer typing and typed default factories; pyright now passes in src without ignores.
-
-- ✅ **Phase 90: Agent Session Verbosity and "ok, proceed" Pattern** - COMPLETE (2026-03-06) - Tightened execution-continuity guidance so agents auto-continue instead of waiting for "ok, proceed", and updated Synapse prompts plus AGENTS/CLAUDE to distinguish valid vs invalid stops.
-
-- ✅ **Commit pipeline (2026-03-06)** - COMPLETE (2026-03-06) - Ran /cortex/commit: Phase A preflight (fix_errors, format, synapse_format, synapse_lint, type_check, tests, eval_fast, markdown_lint) all passed with 4910 tests and ~92.41% coverage; proceeding to memory bank/roadmap + docs phases.
-
-- ✅ **Phase 85: Unify Developer Command Surface** - COMPLETE (2026-03-06) - Unified the developer command surface by documenting canonical Make targets, adding a commit-check alias, and introducing a docs consistency test for README and AGENTS uv sync usage.
-
-- ✅ **Phase 81: Oversized Module Reduction — Wave 1 (Top 10) — Step 1 core/security split** - COMPLETE (2026-03-06) - Split legacy `cortex.core.security` (732 LOC) into focused `git_security.py`, `html_security.py`, and `input_validation.py` modules with a slim `security.py` aggregator re-exporting public helpers; verified format, type_check, quality, and full tests (4913 tests, 92.42% coverage).
-
-- ✅ **Phase 81 Step 2: validation/models.py split** - COMPLETE (2026-03-06) - Split cortex.validation.models into domain modules (schema_models, quality_models, roadmap_models, infrastructure_models, timestamp_models) with slim models.py re-exports; fixed pre_commit_tools function-length violations; quality gate and tests passed.
-
-- ✅ **Phase 93: Usage Events Collection Pipeline Investigation** - COMPLETE (2026-03-06) - Default usage_writable to True when .cortex/synapse exists and config.json is missing so usage events are written to .cortex/synapse/.cache/usage/events without requiring a config file. Added regression test.
-
-- ✅ **Phase 81 Step 3: core/dependency_graph.py split** - COMPLETE (2026-03-06) - Split dependency_graph.py (683 LOC) into dependency_graph_static.py (static data + build-from-links), dependency_graph_export.py (to_dict, to_mermaid, graph views), and slim dependency_graph.py (219 lines). All files under 400 lines; quality gate and tests passed.
-
-- ✅ **Phase 81 Step 4: optimization/relevance_scorer.py split** - COMPLETE (2026-03-06) - Split relevance_scorer.py into relevance_keywords.py (keyword extraction), relevance_scoring.py (scoring strategies + section parsing), and slim relevance_scorer.py (214 lines). All under 400 lines; quality gate and tests passed.
-
-- ✅ **Phase 81 Step 5: managers/factory.py split** - COMPLETE (2026-03-06) - Split managers/factory.py into factory_linking, factory_validation, factory_optimization, factory_analysis, factory_refactoring, factory_execution, factory_usage with slim factory.py re-exporting add_*; all under 400 lines; quality gate and tests passed (4940 tests, 91.97% coverage).
-
-- ✅ **Phase 81 Step 6: optimization/config.py split** - COMPLETE (2026-03-06) - Split optimization/config.py into config_defaults.py, config_loading.py, config_validation.py; main config.py 308 lines; all under 400; quality gate and tests passed.
+- **Summary (2026-03-06)** - 1 entries archived.
 
 ## Completed Work (2026-03-05)
 

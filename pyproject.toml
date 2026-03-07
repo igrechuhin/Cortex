@@ -95,15 +95,20 @@ disallow_untyped_defs = true
 
 [tool.coverage.run]
 # Coverage configuration (pytest config in pytest.ini)
+# Phase 82: Each omit entry has a rationale below; permanent = no runtime logic or tested via integration.
 source = ["src/cortex"]
 omit = [
+    # Test code and caches (not production)
     "*/tests/*",
     "*/test_*.py",
     "*/__pycache__/*",
+    # Package markers only (no runtime logic)
     "*/__init__.py",
+    # Protocol definitions (structural subtyping; tested via implementations)
     "*/protocols/*.py",
+    # Benchmark harnesses (run separately, not production paths)
     "*/benchmarks/*.py",
-    # Model files contain only Pydantic models definitions (type definitions, no runtime logic)
+    # Pydantic/re-export only; logic tested via callers (Phase 82 evaluated: kept)
     "*/models.py",
     # Template files contain only string constants
     "*/templates/*.py",

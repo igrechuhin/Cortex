@@ -81,14 +81,17 @@ For each file:
 ### Step 8: `managers/usage_tracker.py` (624 → split)
 
 - Separate tracking data models from tracking logic.
+- ✅ Completed 2026-03-07: split into usage_tracker_config.py (config loading), usage_tracker_events.py (persist/load/parse, event ID), usage_tracker_aggregation.py (aggregate/filter); slim usage_tracker.py (340 lines); re-export UsageTracker, get_tool_optimization_config, generate_usage_event_id; quality gate and usage_tracker tests passed (34/34).
 
 ### Step 9: `managers/container_factory.py` (614 → split)
 
 - Extract container configuration from container assembly.
+- ✅ Completed 2026-03-07: split into container_config.py (type aliases), container_foundation.py, container_linking.py, container_optimization.py, container_analysis.py, container_refactoring.py, container_execution.py; slim container_factory.py (78 lines) re-exports public API; all files under 400 lines; quality gate and container_factory tests passed.
 
 ### Step 10: `refactoring/execution_validator.py` (607 → split)
 
 - Separate validation rules from validation orchestration.
+- ✅ Completed 2026-03-07: split into execution_validator_checks.py (validation rules), execution_validator_extraction.py (operation extraction), slim execution_validator.py (168 lines); all under 400 lines; quality gate and 18/18 execution_validator tests passed.
 
 ## Verification Checklist
 

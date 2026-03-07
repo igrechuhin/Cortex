@@ -3,6 +3,12 @@
 ## 2026-03-07
 
 - **Phase 81 Step 7: optimization/rules_manager.py split (2026-03-07)** - COMPLETE. Extracted rules_loading.py and rules_matching.py; slim rules_manager.py; removed unused helpers; Phase A passed (4940 tests, 91.68% coverage).
+- **Phase 81 Step 8: managers/usage_tracker.py split (2026-03-07)** - COMPLETE. Split into usage_tracker_config, usage_tracker_events, usage_tracker_aggregation; slim usage_tracker.py (340 lines); re-exports preserved; quality gate and usage_tracker tests passed.
+- **Phase 81 Step 9: managers/container_factory.py split (2026-03-07)** - COMPLETE. Split into container_config, container_foundation, container_linking, container_optimization, container_analysis, container_refactoring, container_execution; slim container_factory.py (78 lines) re-exports public API; all files under 400 lines; quality gate and 10/10 container_factory tests passed.
+- **Phase 81: Oversized Module Reduction — Wave 1 (Top 10) (2026-03-07)** - COMPLETE. Step 10: refactoring/execution_validator.py split into execution_validator_checks.py, execution_validator_extraction.py, slim execution_validator.py (168 lines); all under 400 lines; 18/18 tests passed.
+- **Phase 82: Coverage Exclusion Audit and Reduction (2026-03-07)** - COMPLETE. Documented omit list rationale in pyproject.toml; evaluated models.py exclusion (kept); fixed prompt alignment tests for commit and create-plan.
+- **Phase 89: Commit Pipeline Efficiency (2026-03-07)** - COMPLETE. Documented Phase 89 skip behavior in commit prompt and final-gate-validator; code already had dirty-state tracking and skip_if_clean. All tests passed (4940), coverage 91.69%.
+- **Phase 91: HealthCheckReport Type Unification (2026-03-07)** - COMPLETE. Replaced dict alias with Pydantic BaseModel; producers build HealthCheckReportPayload, consumers use report directly; type_check and tests pass.
 
 ## 2026-03-06
 

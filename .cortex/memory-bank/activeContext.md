@@ -6,6 +6,18 @@
 
 - **Phase 81 Step 7: optimization/rules_manager.py split** - COMPLETE (2026-03-07) - Extracted rules_loading.py and rules_matching.py; slim rules_manager.py; removed dead helpers; quality gate and tests passed (4940 tests, 91.68% coverage).
 
+- ✅ **Phase 81 Step 8: managers/usage_tracker.py split** - COMPLETE (2026-03-07) - Split into usage_tracker_config.py, usage_tracker_events.py, usage_tracker_aggregation.py; slim usage_tracker.py (340 lines); re-export UsageTracker, get_tool_optimization_config, generate_usage_event_id; quality gate and 34/34 usage_tracker tests passed.
+
+- ✅ **Phase 81 Step 9: managers/container_factory.py split** - COMPLETE (2026-03-07) - Split into container_config.py (type aliases), container_foundation, container_linking, container_optimization, container_analysis, container_refactoring, container_execution; slim container_factory.py re-exports; all under 400 lines; quality gate and tests passed.
+
+- ✅ **Phase 81: Oversized Module Reduction — Wave 1 (Top 10)** - COMPLETE (2026-03-07) - Split top 10 oversized modules to under 400 lines; Step 10 refactoring/execution_validator.py split into checks and extraction modules.
+
+- ✅ **Phase 82: Coverage Exclusion Audit and Reduction** - COMPLETE (2026-03-07) - Documented omit list rationale; evaluated */models.py (kept); aligned commit/create-plan prompts with tests.
+
+- ✅ **Phase 89: Commit Pipeline Efficiency** - COMPLETE (2026-03-07) - Documented dirty-state optimization in commit prompt and final-gate-validator; code already had PipelineDirtyTracker and skip_if_clean. Step 12 now passes skip_if_clean=True for format, type_check, quality, tests.
+
+- ✅ **Phase 91: HealthCheckReport Type Unification** - COMPLETE (2026-03-07) - Replaced dict alias with Pydantic BaseModel; all producers and consumers updated.
+
 ## Completed Work (2026-03-06)
 
 - **Summary (2026-03-06)** - 1 entries archived.

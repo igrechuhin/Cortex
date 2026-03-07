@@ -60,9 +60,6 @@ class ToolAnalysisResult(DictLikeModel):
     consolidation_opportunities: list[MergeOpportunity]
 
 
-type HealthCheckReport = dict[str, object]
-
-
 class HealthCheckReportPayload(BaseModel):
     """JSON payload for health-check report (report + optional dependencies)."""
 
@@ -80,3 +77,6 @@ class HealthCheckReportPayload(BaseModel):
     rule_dependencies: dict[str, list[str]] | None = Field(
         None, description="Optional rule dependency map"
     )
+
+
+type HealthCheckReport = HealthCheckReportPayload

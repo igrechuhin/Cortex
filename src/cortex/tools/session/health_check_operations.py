@@ -142,9 +142,8 @@ def _build_report_json(
     rule_deps: dict[str, list[str]] | None,
 ) -> str:
     """Build JSON string from report and optional dependency maps."""
-    payload = HealthCheckReportPayload.model_validate(
-        {
-            **report,
+    payload = report.model_copy(
+        update={
             "prompt_dependencies": prompt_deps,
             "rule_dependencies": rule_deps,
         }
@@ -233,14 +232,16 @@ async def run_health_check_analysis(
         if isinstance(analysis_type, HealthCheckAnalysisType)
         else analysis_type
     )
-    report: HealthCheckReport = {
-        "status": "success",
-        "analysis_type": at_str,
-        "prompts": pr,
-        "rules": rr,
-        "tools": tr,
-        "recommendations": recs,
-    }
+    report: HealthCheckReport = HealthCheckReportPayload(
+        status="success",
+        analysis_type=at_str,
+        prompts=pr,
+        rules=rr,
+        tools=tr,
+        recommendations=recs,
+        prompt_dependencies=None,
+        rule_dependencies=None,
+    )
     return _build_report_json(report, pdeps, rdeps)
 
 

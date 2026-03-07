@@ -4,7 +4,15 @@ from pathlib import Path
 
 import pytest
 
-from cortex.health_check.models import HealthCheckReport, HealthCheckReportPayload
+from cortex.health_check.models import (
+    HealthCheckReport,
+    HealthCheckReportPayload,
+    MergeOpportunity,
+    PromptAnalysisResult,
+    QualityImpact,
+    RuleAnalysisResult,
+    ToolAnalysisResult,
+)
 from cortex.health_check.report_generator import ReportGenerator
 
 
@@ -19,36 +27,38 @@ class TestReportGenerator:
     @pytest.fixture
     def sample_report(self) -> HealthCheckReport:
         """Create sample health-check report."""
-        return {
-            "status": "success",
-            "analysis_type": "full",
-            "prompts": {
-                "total": 5,
-                "merge_opportunities": [
-                    {
-                        "files": ["prompt1.md", "prompt2.md"],
-                        "similarity": 0.85,
-                        "merge_suggestion": "Consider merging",
-                        "quality_impact": "positive",
-                        "estimated_savings": "15% reduction",
-                    }
+        return HealthCheckReportPayload(
+            status="success",
+            analysis_type="full",
+            prompt_dependencies=None,
+            rule_dependencies=None,
+            prompts=PromptAnalysisResult(
+                total=5,
+                merge_opportunities=[
+                    MergeOpportunity(
+                        files=["prompt1.md", "prompt2.md"],
+                        similarity=0.85,
+                        merge_suggestion="Consider merging",
+                        quality_impact=QualityImpact.POSITIVE,
+                        estimated_savings="15% reduction",
+                    )
                 ],
-                "optimization_opportunities": [],
-            },
-            "rules": {
-                "total": 10,
-                "categories": ["python", "general"],
-                "merge_opportunities": [],
-                "optimization_opportunities": [],
-            },
-            "tools": {
-                "total": 20,
-                "merge_opportunities": [],
-                "consolidation_opportunities": [],
-                "optimization_opportunities": [],
-            },
-            "recommendations": ["Recommendation 1", "Recommendation 2"],
-        }
+                optimization_opportunities=[],
+            ),
+            rules=RuleAnalysisResult(
+                total=10,
+                categories=["python", "general"],
+                merge_opportunities=[],
+                optimization_opportunities=[],
+            ),
+            tools=ToolAnalysisResult(
+                total=20,
+                merge_opportunities=[],
+                consolidation_opportunities=[],
+                optimization_opportunities=[],
+            ),
+            recommendations=["Recommendation 1", "Recommendation 2"],
+        )
 
     def test_generate_markdown_report(
         self, generator: ReportGenerator, sample_report: HealthCheckReport
@@ -97,8 +107,7 @@ class TestReportGenerator:
         self, generator: ReportGenerator, sample_report: HealthCheckReport
     ):
         """Test generating report header."""
-        payload = HealthCheckReportPayload.model_validate(sample_report)
-        lines = generator._generate_header(payload)  # type: ignore[attr-defined]
+        lines = generator._generate_header(sample_report)  # type: ignore[attr-defined]
         assert len(lines) > 0
         assert "# Health-Check Analysis Report" in lines[0]
 
@@ -106,8 +115,7 @@ class TestReportGenerator:
         self, generator: ReportGenerator, sample_report: HealthCheckReport
     ):
         """Test generating prompts section."""
-        payload = HealthCheckReportPayload.model_validate(sample_report)
-        lines = generator._generate_prompts_section(payload)  # type: ignore[attr-defined]
+        lines = generator._generate_prompts_section(sample_report)  # type: ignore[attr-defined]
         assert "## Prompts Analysis" in lines[0]
         assert "Total" in "".join(lines)
 
@@ -115,24 +123,21 @@ class TestReportGenerator:
         self, generator: ReportGenerator, sample_report: HealthCheckReport
     ):
         """Test generating rules section."""
-        payload = HealthCheckReportPayload.model_validate(sample_report)
-        lines = generator._generate_rules_section(payload)  # type: ignore[attr-defined]
+        lines = generator._generate_rules_section(sample_report)  # type: ignore[attr-defined]
         assert "## Rules Analysis" in lines[0]
 
     def test_generate_tools_section(
         self, generator: ReportGenerator, sample_report: HealthCheckReport
     ):
         """Test generating tools section."""
-        payload = HealthCheckReportPayload.model_validate(sample_report)
-        lines = generator._generate_tools_section(payload)  # type: ignore[attr-defined]
+        lines = generator._generate_tools_section(sample_report)  # type: ignore[attr-defined]
         assert "## Tools Analysis" in lines[0]
 
     def test_generate_recommendations_section(
         self, generator: ReportGenerator, sample_report: HealthCheckReport
     ):
         """Test generating recommendations section."""
-        payload = HealthCheckReportPayload.model_validate(sample_report)
-        lines = generator._generate_recommendations_section(payload)  # type: ignore[attr-defined]
+        lines = generator._generate_recommendations_section(sample_report)  # type: ignore[attr-defined]
         assert "## Recommendations" in lines[0]
         assert "Recommendation 1" in "".join(lines)
 
@@ -140,16 +145,14 @@ class TestReportGenerator:
         self, generator: ReportGenerator, sample_report: HealthCheckReport
     ):
         """Test generating recommendations section with no recommendations."""
-        sample_report["recommendations"] = []
-        payload = HealthCheckReportPayload.model_validate(sample_report)
-        lines = generator._generate_recommendations_section(payload)  # type: ignore[attr-defined]
+        report_empty = sample_report.model_copy(update={"recommendations": []})
+        lines = generator._generate_recommendations_section(report_empty)  # type: ignore[attr-defined]
         assert len(lines) == 0
 
     def test_generate_prompts_section_with_merge_opportunities(
         self, generator: ReportGenerator, sample_report: HealthCheckReport
     ):
         """Test generating prompts section with merge opportunities."""
-        payload = HealthCheckReportPayload.model_validate(sample_report)
-        lines = generator._generate_prompts_section(payload)  # type: ignore[attr-defined]
+        lines = generator._generate_prompts_section(sample_report)  # type: ignore[attr-defined]
         assert "### Merge Opportunities" in "".join(lines)
         assert "prompt1.md" in "".join(lines)
