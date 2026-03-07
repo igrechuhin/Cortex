@@ -46,6 +46,12 @@ jobs:
         with:
           version: "latest"
 
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
       - name: Display environment info
         run: |
           echo "=== Environment Information ==="
@@ -244,35 +250,31 @@ jobs:
         id: markdown_lint
         run: |
           echo "::group::Running markdown lint check"
-          # Install markdownlint-cli2 if not available
-          if ! command -v markdownlint-cli2 &> /dev/null; then
-            npm install -g markdownlint-cli2
+          MDL_BIN="node_modules/.bin/markdownlint-cli2"
+          if [ ! -x "$MDL_BIN" ]; then
+            echo "::error::markdownlint-cli2 not found. Run 'make bootstrap' or 'npm ci' from project root to install Node dependencies."
+            exit 1
           fi
-          
           # Find all markdown files (excluding node_modules, archived plans, and other common excludes)
           MD_FILES=$(find . -name "*.md" -o -name "*.mdc" | grep -v node_modules | grep -v .venv | grep -v __pycache__ | grep -v ".git" | grep -v ".cortex/plans/archive" | head -500)
-          
           if [ -n "$MD_FILES" ]; then
-            # Run markdownlint with config if it exists
-            # Prefer .markdownlint-cli2.yaml (supports ignore patterns) over .markdownlint.json
             if [ -f ".markdownlint-cli2.yaml" ]; then
-              if ! echo "$MD_FILES" | xargs markdownlint-cli2 --config .markdownlint-cli2.yaml 2>&1; then
-                echo "::error::Markdown lint issues detected. Run 'markdownlint-cli2 --fix' to fix auto-fixable issues."
+              if ! echo "$MD_FILES" | xargs "$MDL_BIN" --config .markdownlint-cli2.yaml 2>&1; then
+                echo "::error::Markdown lint issues detected. Run 'npx markdownlint-cli2 --fix' to fix auto-fixable issues."
                 exit 1
               else
                 echo "✅ Markdown lint check passed"
               fi
             elif [ -f ".markdownlint.json" ]; then
-              if ! echo "$MD_FILES" | xargs markdownlint-cli2 --config .markdownlint.json 2>&1; then
-                echo "::error::Markdown lint issues detected. Run 'markdownlint-cli2 --fix' to fix auto-fixable issues."
+              if ! echo "$MD_FILES" | xargs "$MDL_BIN" --config .markdownlint.json 2>&1; then
+                echo "::error::Markdown lint issues detected. Run 'npx markdownlint-cli2 --fix' to fix auto-fixable issues."
                 exit 1
               else
                 echo "✅ Markdown lint check passed"
               fi
             else
-              # Run without config if no config file exists
-              if ! echo "$MD_FILES" | xargs markdownlint-cli2 2>&1; then
-                echo "::error::Markdown lint issues detected. Run 'markdownlint-cli2 --fix' to fix auto-fixable issues."
+              if ! echo "$MD_FILES" | xargs "$MDL_BIN" 2>&1; then
+                echo "::error::Markdown lint issues detected. Run 'npx markdownlint-cli2 --fix' to fix auto-fixable issues."
                 exit 1
               else
                 echo "✅ Markdown lint check passed"

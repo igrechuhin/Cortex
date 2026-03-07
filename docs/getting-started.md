@@ -120,12 +120,23 @@ For the most stable MCP experience:
 2. **Optional: use the bridge** for concurrent request handling (fewer timeouts when the client does many things at once). In Cursor, set the MCP server command to the bridge instead of Cortex directly:
    - **Command**: `uv run python -m cortex.bridge` (from a clone; requires `uv sync --extra server`).
    - The bridge runs Cortex over HTTP and proxies stdio ↔ HTTP; one switch in Cursor, same tools.
-3. **Faster markdown lint** (reduces chance of client timeout during long tools): from project root run `npm install` so `fix_markdown_lint` uses `node_modules/.bin/markdownlint-cli2` and avoids slow npx/network.
+3. **Faster markdown lint** (reduces chance of client timeout during long tools): from project root run `make bootstrap` or `npm install` so `fix_markdown_lint` uses `node_modules/.bin/markdownlint-cli2` and avoids slow npx/network.
 4. **During long runs** (e.g. commit, pre-commit): avoid opening UI that triggers many MCP resource reads at once (e.g. MCP resources panel); prefer tool calls over `cortex://` resources.
 5. **Automatic recovery (no manual reload)** — Install the [Cursor MCP Refresh](https://github.com/tankmurdock/cursor-mcp-refresh) extension and set **Auto-refresh interval** (e.g. 60–300 seconds). It periodically refreshes MCP servers, so after a disconnect or "0 tools" state the next refresh restores tools without you toggling. Install from the [releases `.vsix`](https://github.com/tankmurdock/cursor-mcp-refresh/releases) via **Extensions: Install from VSIX**.
 6. **If you see "0 tools"** and don't use the extension: reload MCP manually or see [Troubleshooting: Found 0 tools](guides/troubleshooting.md#issue-mcp-0-tools).
 
 Details and troubleshooting: [MCP disconnections and connection closed](guides/troubleshooting.md#issue-mcp-server-crashes-with-brokenresourceerror), [Found 0 tools](guides/troubleshooting.md#issue-mcp-0-tools).
+
+### Offline or restricted environments (Node)
+
+If you are behind a proxy or must work offline, pre-cache Node dependencies from a machine with network access:
+
+1. From the project root, run `npm install` (or `npm ci` if `package-lock.json` exists) to populate `node_modules/`.
+2. Optionally pack the cache: `npm cache pack` or copy the `node_modules/` directory to the restricted machine (e.g. via USB or internal artifact store).
+3. On the restricted machine, if you have `node_modules/` but no network: the quality gate and `fix_markdown_lint` use the local binary `node_modules/.bin/markdownlint-cli2`; no network is needed at run time.
+4. To refresh the npm cache for later use: `npm cache add markdownlint-cli2@0.20.0` (or run `npm install` once with network).
+
+Run `make bootstrap` on the target machine so Python and Node deps are installed; for fully offline, copy both `.venv` and `node_modules` from a machine that ran bootstrap with network.
 
 ## Quick Start
 

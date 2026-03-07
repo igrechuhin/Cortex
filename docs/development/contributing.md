@@ -79,12 +79,15 @@ brew install uv
 ### Set Up Development Environment
 
 ```bash
-# Install dependencies and dev tools (creates .venv with Python 3.13.x)
+# Install dependencies and dev tools (creates .venv with Python 3.13.x and Node deps for markdownlint)
 bash scripts/bootstrap.sh
+# Or: make bootstrap
 
 # Activate virtual environment
 source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 ```
+
+Bootstrap installs Python (uv) and Node (npm) dependencies from `package.json`. For offline or restricted environments, see [Getting Started — Offline or restricted environments (Node)](../getting-started.md#offline-or-restricted-environments-node).
 
 ### Python Version Management
 

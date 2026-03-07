@@ -26,7 +26,7 @@ SYNAPSE_PROMPT_ICONS: dict[str, str] = {
 }
 DEFAULT_PROMPT_ICON = "📝"
 
-# Explicitly reference mcp to satisfy type checker (used in exec() string)
+# Explicitly reference mcp to satisfy type checker (module imported for registration side effects)
 _ = mcp
 
 

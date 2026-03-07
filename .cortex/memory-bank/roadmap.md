@@ -20,9 +20,6 @@
 
 ### Cleanup
 
-- **Phase 87: Stale exec() Comment and Dead Reference Cleanup** — PENDING. Remove dead comments referencing removed patterns. Plan: `.cortex/plans/phase-87-dead-reference-cleanup.md`
-- **Phase 88: Node Tooling Dependency Isolation** — PENDING. Move Node tools to project-local deps. Plan: `.cortex/plans/phase-88-node-tooling-isolation.md`
-
 ### Investigation Plans (Archive / Reference)
 
 Completed investigations are recorded in [activeContext.md](activeContext.md). Plan files under `.cortex/plans/archive/` as needed.

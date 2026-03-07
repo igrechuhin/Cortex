@@ -218,9 +218,8 @@ async def validate_markdown_prerequisites(
     if markdownlint_cmd is None:
         return (
             create_error_response(
-                "markdownlint-cli2 not found. "
-                + "From project root run: npm install (uses package.json), "
-                + "or: npm install -g markdownlint-cli2, or ensure npx is available."
+                "markdownlint-cli2 not found. Run 'make bootstrap' first (installs Node deps from package.json). "
+                + "Or from project root: npm install, or ensure npx is available."
             ),
             None,
             None,

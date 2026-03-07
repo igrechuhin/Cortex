@@ -18,6 +18,10 @@
 
 - ✅ **Phase 91: HealthCheckReport Type Unification** - COMPLETE (2026-03-07) - Replaced dict alias with Pydantic BaseModel; all producers and consumers updated.
 
+- ✅ **Phase 87: Stale exec() Comment and Dead Reference Cleanup** - COMPLETE (2026-03-07) - Fixed stale exec() comment in prompts.py; audited src/ for other dead comments (none found). Type checker and tests pass.
+
+- ✅ **Phase 88: Node Tooling Dependency Isolation** - COMPLETE (2026-03-07) - Pinned markdownlint-cli2 in package.json; bootstrap installs Node deps; CI uses local node_modules and Set up Node; pre-commit uses npx; clear tool-not-found message; offline docs added.
+
 ## Completed Work (2026-03-06)
 
 - **Summary (2026-03-06)** - 1 entries archived.

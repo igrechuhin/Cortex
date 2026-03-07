@@ -9,6 +9,8 @@
 - **Phase 82: Coverage Exclusion Audit and Reduction (2026-03-07)** - COMPLETE. Documented omit list rationale in pyproject.toml; evaluated models.py exclusion (kept); fixed prompt alignment tests for commit and create-plan.
 - **Phase 89: Commit Pipeline Efficiency (2026-03-07)** - COMPLETE. Documented Phase 89 skip behavior in commit prompt and final-gate-validator; code already had dirty-state tracking and skip_if_clean. All tests passed (4940), coverage 91.69%.
 - **Phase 91: HealthCheckReport Type Unification (2026-03-07)** - COMPLETE. Replaced dict alias with Pydantic BaseModel; producers build HealthCheckReportPayload, consumers use report directly; type_check and tests pass.
+- **Phase 87: Stale exec() Comment and Dead Reference Cleanup (2026-03-07)** - COMPLETE. Fixed stale exec() comment in prompts.py; audited for dead comments (none). Type checker and tests pass.
+- **Phase 88: Node Tooling Dependency Isolation (2026-03-07)** - COMPLETE. Pinned markdownlint-cli2; bootstrap installs Node deps; CI/local use project package.json; tool-not-found vs lint failure distinguished; offline guidance in getting-started.
 
 ## 2026-03-06
 
