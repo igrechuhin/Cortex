@@ -33,6 +33,8 @@ from cortex.tools.execution.pre_commit_helpers_remaining import (
 )
 from cortex.tools.execution.pre_commit_pipeline import run_checks_pipeline
 
+_HEARTBEAT_INTERVAL_SECONDS = 10
+
 
 def execute_all_checks(
     adapter: FrameworkAdapter,
@@ -147,6 +149,42 @@ def _callbacks_for_ctx(
     return phase_cb, progress_callback
 
 
+async def _heartbeat_loop(ctx: MCPContext, interval: float) -> None:
+    """Send periodic progress heartbeats to keep MCP connection alive.
+
+    Runs as a background task alongside the pipeline. Uses a fixed
+    total of 500 and increments progress each tick so Cursor sees
+    continuous activity even during long subprocess calls (pytest
+    collection, typecheck, etc.).
+    """
+    tick = 0
+    total = 500
+    while True:
+        await asyncio.sleep(interval)
+        tick = min(tick + 1, total)
+        await report_progress_safe(ctx, float(tick), float(total))
+
+
+def _setup_heartbeat_and_callbacks(
+    ctx: MCPContext | None,
+    checks_to_perform: list[PreCommitCheck],
+    language: str,
+) -> tuple[
+    Callable[[int, int], None] | None,
+    Callable[[int, int], None] | None,
+    asyncio.Task[None] | None,
+]:
+    """Build progress/phase callbacks and start heartbeat task when ctx is set."""
+    if ctx is None:
+        return None, None, None
+    loop = asyncio.get_running_loop()
+    phase_cb, progress_callback = _callbacks_for_ctx(
+        ctx, loop, checks_to_perform, language
+    )
+    heartbeat = asyncio.create_task(_heartbeat_loop(ctx, _HEARTBEAT_INTERVAL_SECONDS))
+    return progress_callback, phase_cb, heartbeat
+
+
 async def run_all_checks_off_loop(
     adapter: FrameworkAdapter,
     language_info: LanguageInfo,
@@ -156,25 +194,25 @@ async def run_all_checks_off_loop(
     coverage_threshold: float,
     ctx: MCPContext | None,
 ) -> tuple[dict[str, CheckResult | TestResult | QualityCheckResult], CheckStats]:
-    """Run checks off event loop with optional test progress callback."""
-    progress_callback: Callable[[int, int], None] | None = None
-    phase_cb: Callable[[int, int], None] | None = None
-    if ctx is not None:
-        loop = asyncio.get_running_loop()
-        phase_cb, progress_callback = _callbacks_for_ctx(
-            ctx, loop, checks_to_perform, language_info.language
-        )
-    results, stats = await asyncio.to_thread(
-        execute_all_checks,
-        adapter,
-        language_info.language,
-        checks_to_perform,
-        strict_mode,
-        timeout,
-        coverage_threshold,
-        progress_callback,
-        phase_cb,
+    """Run checks off event loop with heartbeat and progress callbacks."""
+    progress_callback, phase_cb, heartbeat = _setup_heartbeat_and_callbacks(
+        ctx, checks_to_perform, language_info.language
     )
+    try:
+        results, stats = await asyncio.to_thread(
+            execute_all_checks,
+            adapter,
+            language_info.language,
+            checks_to_perform,
+            strict_mode,
+            timeout,
+            coverage_threshold,
+            progress_callback,
+            phase_cb,
+        )
+    finally:
+        if heartbeat is not None:
+            _ = heartbeat.cancel()
     await merge_eval_fast_if_requested(checks_to_perform, results, stats, ctx)
     return results, stats
 

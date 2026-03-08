@@ -5,7 +5,7 @@
 import ast
 import json
 import tempfile
-from collections.abc import Callable
+from collections.abc import Callable, Generator
 from pathlib import Path
 from typing import cast
 from unittest.mock import AsyncMock, MagicMock, patch
@@ -71,6 +71,13 @@ _EXECUTE_REQUIRED = {
     "coverage_threshold": 0.9,
     "strict_mode": False,
 }
+
+
+@pytest.fixture(autouse=True)
+def _disable_detached_pipeline() -> Generator[None]:
+    """Disable detached pipeline for all unit tests (patches don't cross processes)."""
+    with patch("cortex.tools.execution.pre_commit_detached.DETACHED_ENABLED", False):
+        yield
 
 
 class TestExecutePreCommitChecks:

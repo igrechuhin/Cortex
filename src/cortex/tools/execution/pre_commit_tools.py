@@ -65,6 +65,8 @@ _ADAPTER_REGISTRY: dict[str, Callable[[str | None], FrameworkAdapter]] = {
     "kotlin": lambda root: KotlinAdapter(root),
 }
 SUPPORTED_LANGUAGES: tuple[str, ...] = tuple(_ADAPTER_REGISTRY.keys())
+# Public alias for pre_commit_worker subprocess (avoids reportPrivateUsage).
+ADAPTER_REGISTRY = _ADAPTER_REGISTRY
 
 # Type alias for check names (must match PreCommitCheck enum).
 PreCommitCheckName = PreCommitCheck
@@ -118,6 +120,38 @@ async def _resolve_language_and_adapter(
     return (adapter, language_info)
 
 
+async def _run_inline_pre_commit_checks(
+    root: Path,
+    language: str | None,
+    checks: Sequence[str] | None,
+    strict_mode: bool,
+    timeout: int | None,
+    coverage_threshold: float,
+    ctx: MCPContext | None,
+) -> ModelDict:
+    """Run pre-commit checks in-process (non-detached)."""
+    root_str = str(root)
+    resolved = await _resolve_language_and_adapter(ctx, root_str, language)
+    if isinstance(resolved, dict):
+        return resolved
+    adapter, language_info = resolved
+    checks_to_perform = determine_checks_to_perform(checks)
+    results, stats = await run_checks_with_connection_monitoring(
+        adapter,
+        language_info,
+        checks_to_perform,
+        strict_mode,
+        timeout,
+        coverage_threshold,
+        ctx,
+    )
+    out = build_pre_commit_response(results, stats, language_info.language)
+    await log_client(
+        ctx, "info", "execute_pre_commit_checks: completed", logger_name=__name__
+    )
+    return out
+
+
 async def _execute_pre_commit_checks_impl(
     root: Path,
     language: str | None,
@@ -128,28 +162,26 @@ async def _execute_pre_commit_checks_impl(
     ctx: MCPContext | None,
 ) -> ModelDict:
     """Run pre-commit checks and return result dict (FastMCP serializes to JSON)."""
-    root_str = str(root)
-    resolved = await _resolve_language_and_adapter(ctx, root_str, language)
-    if isinstance(resolved, dict):
-        return resolved
-    adapter, language_info = resolved
-    checks_to_perform = determine_checks_to_perform(checks)
-
-    results, stats = await run_checks_with_connection_monitoring(
-        adapter,
-        language_info,
-        checks_to_perform,
-        strict_mode,
-        timeout,
-        coverage_threshold,
-        ctx,
+    from cortex.tools.execution.pre_commit_detached import (
+        DETACHED_ENABLED,
+        run_checks_detached,
     )
 
-    out = build_pre_commit_response(results, stats, language_info.language)
-    await log_client(
-        ctx, "info", "execute_pre_commit_checks: completed", logger_name=__name__
+    if DETACHED_ENABLED:
+        return cast(
+            ModelDict,
+            await run_checks_detached(
+                root,
+                list(checks) if checks else [],
+                strict_mode,
+                timeout or 300,
+                coverage_threshold,
+                ctx,
+            ),
+        )
+    return await _run_inline_pre_commit_checks(
+        root, language, checks, strict_mode, timeout, coverage_threshold, ctx
     )
-    return out
 
 
 async def _dispatch_phase(
