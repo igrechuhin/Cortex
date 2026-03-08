@@ -295,7 +295,7 @@ Defined in `cortex.core.constants` and `cortex.core.mcp_stability_config`; not u
 | `MCP_CONNECTION_RETRY_ATTEMPTS` | `3` | Max attempts (initial + retries) for connection retries |
 | `MCP_CONNECTION_RETRY_DELAY_SECONDS` | `2` | Base delay in seconds between retries |
 | `LONG_RUNNING_SEMAPHORE_WAIT_SECONDS` | `330.0` | Max seconds to wait for long-running semaphore |
-| `LONG_RUNNING_SEMAPHORE_MAX_HOLD_SECONDS` | `60.0` | Max seconds a long-running tool may hold the semaphore |
+| `LONG_RUNNING_SEMAPHORE_MAX_HOLD_SECONDS` | `330.0` | Max seconds a long-running tool may hold the semaphore (allows one full Step 12 run) |
 
 ---
 

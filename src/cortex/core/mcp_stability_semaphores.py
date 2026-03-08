@@ -23,9 +23,10 @@ _logger = logging.getLogger(__name__)
 # Must be >= default test_timeout for execute_pre_commit_checks (300s) so sequential
 # commit-pipeline calls succeed when the first run includes tests.
 LONG_RUNNING_SEMAPHORE_WAIT_SECONDS = 330.0
-# Max seconds a long-running tool may hold the semaphore before auto-release (aligns with
-# task_locking _DEFAULT_LOCK_TIMEOUT_HOURS = 1/60 = 1 minute) to prevent stuck holders.
-LONG_RUNNING_SEMAPHORE_MAX_HOLD_SECONDS = 60.0
+# Max seconds a long-running tool may hold the semaphore before auto-release. Must allow
+# one full execute_pre_commit_checks (including tests, test_timeout up to 300s default);
+# use >= LONG_RUNNING_SEMAPHORE_WAIT_SECONDS so a single Step 12 run is not cut off mid-run.
+LONG_RUNNING_SEMAPHORE_MAX_HOLD_SECONDS = 330.0
 _LONG_RUNNING_BUSY_MSG = (
     "Another long-running tool is in progress (e.g. execute_pre_commit_checks or "
     "fix_markdown_lint). Please wait for it to finish (up to 5–6 minutes) and retry."
@@ -175,7 +176,7 @@ async def _run_auto_release_after_timeout(tool_name: str) -> None:
 
 
 def schedule_long_running_auto_release(tool_name: str) -> None:
-    """Schedule force-release of the long-running semaphore after max hold time (1 minute)."""
+    """Schedule force-release of the long-running semaphore after max hold time (330s)."""
     global _long_running_auto_release_task
     if (
         _long_running_auto_release_task is not None
