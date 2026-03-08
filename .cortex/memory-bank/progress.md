@@ -1,5 +1,9 @@
 # Progress Log
 
+## 2026-03-08
+
+- **Commit pipeline** - Phase A fixes: reportUnusedCallResult in pre_commit_pipeline.py (_ = _run_non_test_checks); function-length in pre_commit_tools_run_helpers.py (_callbacks_for_ctx extraction). Preflight passed.
+
 ## 2026-03-07
 
 - **Phase 81 Step 7: optimization/rules_manager.py split (2026-03-07)** - COMPLETE. Extracted rules_loading.py and rules_matching.py; slim rules_manager.py; removed unused helpers; Phase A passed (4940 tests, 91.68% coverage).
@@ -123,29 +127,7 @@
 
 ## 2026-02-28
 
-- **Synapse Usage Storage with usage_writable and Static Snapshot Mode (2026-02-28)** - COMPLETE. Added load_synapse_usage_config, is_usage_writable, get_usage_storage_root; gated UsageTracker.record_tool_usage and context stats save_statistics; wired Synapse .cache for usage when usage_writable=true; updated tool-usage-tracking doc.
-- Commit (2026-02-28) - Fixed function length violation in usage_tracker.record_tool_usage; extracted_build_and_persist_usage_event. Phase A passed; 4867 tests, 92.61% coverage.
-- **Session Improvements 2026-02-27 (2026-02-28)** - COMPLETE. Updated optimization.json rules_folder to .cortex/synapse/rules (17 .mdc files). Rules indexing will work after MCP restart. Added Phase 58 tools consolidation to roadmap. Context effectiveness and MCP health already in implement/commit prompts.
-- **Fix requirements.txt and Dockerfile dependency gap (2026-02-28)** - COMPLETE. Migrated Dockerfile to pip install .; updated requirements.txt with all pyproject.toml deps.
-- **Fix legacy .memory-bank/ path references (2026-02-28)** - COMPLETE. Replaced ~50 legacy path references across 15+ docs with current .cortex/ layout. Updated architecture.md diagram, Storage Layer, getting-started, index, failure-modes, troubleshooting, configuration, error-recovery, managers, modules, exceptions, tools, initialize-memory-bank, performance-tuning, design/architecture-layering. Left adr/ and migration docs as-is.
-- **Fix getting-started.md (2026-02-28)** - COMPLETE. Rewrote Quick Start to use current tools (initialize prompt, validate, get_structure_info) and .cortex/ paths; removed references to initialize_memory_bank, validate_memory_bank, get_quality_score, setup_project_structure.
-- **Fix Gitignore Gaps and Remove Tracked Build Artifacts (2026-02-28)** - COMPLETE. Added coverage.json and coverage_consolidated.json to .gitignore; removed coverage_consolidated.json from git tracking (~2.5 MB).
-- **Compact CLAUDE.md (2026-02-28)** - COMPLETE. Removed ~55 lines of duplicated Python standards from .claude/CLAUDE.md; replaced with compact summary referencing Synapse rules. File now 120 lines.
-- **Move phase-9-completion-summary to docs/design (2026-02-28)** - COMPLETE. Moved phase-9-completion-summary.md to docs/design/; updated README and internal references.
-- **Rename roadmap-fix-temp.md to Permanent Name (2026-02-28)** - COMPLETE. Renamed docs/design/roadmap-fix-temp.md to docs/design/roadmap.md; updated references.
-- **Fix stale tool/test/module counts (2026-02-28)** - COMPLETE. Updated all docs to 70+ tools, 4800+ tests, 20+ modules; removed hardcoded AGENTS.md test count.
-- **Fix Session Naming (2026-02-28)** - COMPLETE. Standardized session naming in AGENTS.md; added README equivalence note.
-- **Archive Legacy Prompt Docs (2026-02-28)** - COMPLETE. Archived 7 legacy prompt docs to docs/prompts/archive/ with deprecation headers; updated README and test references to unified prompts (initialize.md, migrate.md).
-- **Consolidate Duplicate Protocol Docs (2026-02-28)** - COMPLETE. Replaced architecture protocols with cross-reference to API reference.
-- **Deduplicate Token Budget Table (2026-02-28)** - COMPLETE. Replaced duplicated token budget table in CLAUDE.md with cross-reference to AGENTS.md; table retained in AGENTS.md only.
-- **Tools file-size Batch 1 (compaction_operations) (2026-02-28)** - COMPLETE. Split compaction_operations.py (670 110 lines) into compaction_handoff.py and compaction_write_helpers.py; updated tests; quality and tests pass.
-- **File-size plan Batch 1 (2026-02-28)** - COMPLETE for validation_operations and analysis_operations. validation_response_formatters.py, analysis_run_helpers.py created. Tests updated. Quality gate and coverage passed.
-- **Phase5 production monitoring split (2026-02-28)** - COMPLETE. Split phase5_production_monitoring_helpers.py (580 lines) into phase5_production_monitoring_models.py, phase5_production_monitoring_metrics.py, phase5_production_monitoring_drift.py; helpers reduced to 314 lines. All files under 400-line limit; tests and quality gate pass.
-- **Tools file-size Batch 2: task_locking (2026-02-28)** - COMPLETE. Split task_locking.py (572 327 lines) into task_locking_helpers.py, task_locking_handlers.py; updated file_lock_guard and tests to import generate_task_id from helpers; tests patch task_locking_handlers.resolve_project_root_async. Quality gate and tests pass.
-- **Plan-tools-file-size-violations Batch 2: refactoring_operations.py (2026-02-28)** - COMPLETE. Extracted docstring to refactoring_operations_docs.py; main module reduced from 565 to 150 lines. All refactoring tests pass.
-- **Plan tools file size violations Batch 2 (2026-02-28)** - COMPLETE. Split script_capture_tools (helpers, handlers), query_usage_operations (query_usage_models), validation_result_models (validation_result_links_models). All files now  400 lines. Tests pass, coverage 92.35%.
-- **Tools file-size Batch 3 (2026-02-28)** - Split context_models.py into context_auxiliary_models.py; context_models 498 336 lines; updated transclusion_operations, phase4_progressive_operations, phase4_relevance_operations imports.
-- **Plan CRUD split (Batch 3) (2026-02-28)** - COMPLETE. Extracted plan_crud_models.py and plan_crud_helpers.py from plan_crud.py; plan_crud reduced from 490 to 235 lines; all tests pass.
+- **Week containing 2026-02-28** - 1 entries summarized.
 
 ## 2026-02-27
 
@@ -213,7 +195,7 @@
 
 ## 2026-02-05
 
-- **Week containing 2026-02-05** - 1 entries summarized.
+- **Month containing 2026-02-05** - 1 entries summarized.
 
 ## What Works
 

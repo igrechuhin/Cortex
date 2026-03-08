@@ -232,6 +232,31 @@ def _build_markdownlint_error_result(
     )
 
 
+def _one_file_markdownlint_result(
+    rel: str,
+    success: bool,
+    result: GitCommandResult,
+    by_file: dict[str, list[str]],
+    raw_lines: list[str],
+    output_suggests_fix: bool,
+    single_file: bool,
+    dry_run: bool,
+) -> FileResult:
+    """Return FileResult for one file in a markdownlint batch."""
+    if success:
+        return _build_markdownlint_success_result(
+            rel,
+            by_file.get(rel, []),
+            raw_lines,
+            output_suggests_fix,
+            single_file,
+            dry_run,
+        )
+    if rel in by_file:
+        return _build_markdownlint_error_result(rel, by_file.get(rel, []), result)
+    return _build_markdownlint_success_result(rel, [], [], False, single_file, dry_run)
+
+
 def _build_markdownlint_batch_results(
     rel_strs: list[str],
     result: GitCommandResult,
@@ -239,26 +264,25 @@ def _build_markdownlint_batch_results(
     raw_lines: list[str],
     dry_run: bool,
 ) -> list[FileResult]:
-    """Build per-file results from markdownlint batch output."""
+    """Build per-file results from markdownlint batch output.
+
+    When the batch run fails (success=False), only files that appear in
+    by_file (parsed from stderr) have errors; other files are treated as
+    clean so we do not report 500 failures for one batch failure.
+    """
     success = _result_success(result)
     output_suggests_fix = success and bool(raw_lines)
     single_file = len(rel_strs) == 1
     return [
-        (
-            _build_markdownlint_success_result(
-                rel,
-                by_file.get(rel, []),
-                raw_lines,
-                output_suggests_fix,
-                single_file,
-                dry_run,
-            )
-            if success
-            else _build_markdownlint_error_result(
-                rel,
-                by_file.get(rel, []),
-                result,
-            )
+        _one_file_markdownlint_result(
+            rel,
+            success,
+            result,
+            by_file,
+            raw_lines,
+            output_suggests_fix,
+            single_file,
+            dry_run,
         )
         for rel in rel_strs
     ]

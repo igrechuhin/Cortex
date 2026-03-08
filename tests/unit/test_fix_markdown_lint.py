@@ -11,6 +11,7 @@ import pytest
 from cortex.core.models import GitCommandResult
 from cortex.tools.files.markdown_operations import (
     find_markdownlint_command,
+    get_all_markdown_files_for_lint,
     get_modified_markdown_files,
     run_command,
     run_markdownlint_batch,
@@ -110,6 +111,40 @@ class TestRunCommand:
             assert result.error is not None
             assert "Test error" in result.error
             assert result.returncode == -1
+
+
+class TestGetAllMarkdownFilesForLint:
+    """Test get_all_markdown_files_for_lint (CI parity)."""
+
+    def test_includes_md_and_mdc_excludes_ci_dirs(self, tmp_path: Path) -> None:
+        """All .md/.mdc are found; node_modules, .venv, .git, archive are excluded."""
+        _ = (tmp_path / "a.md").write_text("")
+        _ = (tmp_path / "b.mdc").write_text("")
+        (tmp_path / "docs" / "c.md").parent.mkdir(parents=True, exist_ok=True)
+        _ = (tmp_path / "docs" / "c.md").write_text("")
+        (tmp_path / "node_modules" / "x.md").parent.mkdir(parents=True, exist_ok=True)
+        _ = (tmp_path / "node_modules" / "x.md").write_text("")
+        (tmp_path / ".venv" / "y.md").parent.mkdir(parents=True, exist_ok=True)
+        _ = (tmp_path / ".venv" / "y.md").write_text("")
+        (tmp_path / ".cortex" / "plans" / "archive" / "z.md").parent.mkdir(
+            parents=True, exist_ok=True
+        )
+        _ = (tmp_path / ".cortex" / "plans" / "archive" / "z.md").write_text("")
+        out = get_all_markdown_files_for_lint(tmp_path)
+        paths = {str(p.relative_to(tmp_path)) for p in out}
+        assert "a.md" in paths
+        assert "b.mdc" in paths
+        assert "docs/c.md" in paths
+        assert "node_modules/x.md" not in paths
+        assert ".venv/y.md" not in paths
+        assert ".cortex/plans/archive/z.md" not in paths
+
+    def test_respects_max_files(self, tmp_path: Path) -> None:
+        """Returns at most max_files paths."""
+        for i in range(10):
+            _ = (tmp_path / f"f{i}.md").write_text("")
+        out = get_all_markdown_files_for_lint(tmp_path, max_files=5)
+        assert len(out) == 5
 
 
 class TestGetModifiedMarkdownFiles:

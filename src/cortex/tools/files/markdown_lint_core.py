@@ -22,11 +22,23 @@ from cortex.tools.files.markdown_lint_helpers import (
 )
 from cortex.tools.files.markdown_lint_responses import create_error_response
 
+# Excludes matching CI quality workflow (quality.yml markdown step)
+_ALL_MARKDOWN_EXCLUDE_DIRS = (
+    "node_modules",
+    ".venv",
+    "venv",
+    "__pycache__",
+    ".git",
+)
+_ALL_MARKDOWN_EXCLUDE_PREFIX = ".cortex/plans/archive"
+_CI_PARITY_MAX_MARKDOWN_FILES = 500
+
 __all__ = [
     "after_one_file",
     "compute_file_hashes",
     "filter_files_for_linting",
     "find_markdownlint_command",
+    "get_all_markdown_files_for_lint",
     "get_markdown_files_to_process",
     "get_modified_markdown_files",
     "is_cached_clean_entry",
@@ -226,6 +238,39 @@ async def validate_markdown_prerequisites(
         )
     config_path = _find_markdownlint_config(root_path)
     return None, markdownlint_cmd, config_path
+
+
+def get_all_markdown_files_for_lint(
+    project_root: Path,
+    max_files: int = _CI_PARITY_MAX_MARKDOWN_FILES,
+) -> list[Path]:
+    """Get all markdown files for lint (CI parity with quality.yml markdown step).
+
+    Excludes: node_modules, .venv, venv, __pycache__, .git, and paths under
+    .cortex/plans/archive. Returns up to max_files paths, sorted.
+    """
+    out: list[Path] = []
+    try:
+        for path in project_root.rglob("*"):
+            if len(out) >= max_files:
+                break
+            if not path.is_file():
+                continue
+            if path.suffix not in (".md", ".mdc"):
+                continue
+            try:
+                rel = path.relative_to(project_root)
+            except ValueError:
+                continue
+            parts = rel.parts
+            if any(d in parts for d in _ALL_MARKDOWN_EXCLUDE_DIRS):
+                continue
+            if str(rel).startswith(_ALL_MARKDOWN_EXCLUDE_PREFIX):
+                continue
+            out.append(path)
+    except OSError:
+        pass
+    return sorted(out)[:max_files]
 
 
 async def get_markdown_files_to_process(

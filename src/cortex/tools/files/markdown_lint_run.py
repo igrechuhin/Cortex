@@ -228,10 +228,12 @@ async def _run_markdownlint_for_batches(
     file_hashes: dict[str, str] | None,
     progress_ctx: MCPContext | None,
     progress_total: int,
+    current_n: list[int] | None = None,
 ) -> list[FileResult]:
     """Run markdownlint batches and return the collected results."""
     results: list[FileResult] = []
-    current_n: list[int] = [0]
+    if current_n is None:
+        current_n = [0]
     await _run_batched_markdown_loop(
         files,
         root_path,
@@ -306,6 +308,7 @@ async def _run_markdownlint_with_heartbeat(
             file_hashes,
             progress_ctx,
             progress_total,
+            current_n=current_n,
         )
     finally:
         await _cancel_heartbeat_task(heartbeat_task)

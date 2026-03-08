@@ -17,6 +17,7 @@ from cortex.server import mcp
 from cortex.tools.files.markdown_lint_cache import load_markdown_lint_index_safe
 from cortex.tools.files.markdown_lint_core import (
     filter_files_for_linting,
+    get_all_markdown_files_for_lint,
     get_markdown_files_to_process,
     update_markdown_lint_cache_safe,
     validate_markdown_prerequisites,
@@ -97,6 +98,39 @@ async def _fix_markdown_lint_impl(
     return await _run_markdownlint_with_cache(
         root_path, files, markdownlint_cmd, config_path, dry_run, ctx
     )
+
+
+async def run_markdown_lint_all_files_check(
+    root_path: Path | None = None, ctx: MCPContext | None = None
+) -> str:
+    """Run markdown lint on all repo markdown files (CI parity); check-only, no fix.
+
+    Used by commit pipeline Phase A so preflight fails if any file has lint errors,
+    matching the quality.yml markdown step. Returns same JSON shape as fix_markdown_lint.
+    """
+    if root_path is None:
+        root_path = await resolve_project_root_async(None, ctx)
+    (
+        validation_error,
+        markdownlint_cmd,
+        config_path,
+    ) = await validate_markdown_prerequisites(root_path)
+    if validation_error:
+        return apply_validation_error_hint(validation_error)
+    assert markdownlint_cmd is not None
+    files = get_all_markdown_files_for_lint(root_path)
+    if not files:
+        return create_empty_success_response()
+    results = await run_markdownlint_for_files(
+        files,
+        [],
+        root_path,
+        markdownlint_cmd,
+        config_path,
+        dry_run=True,
+        ctx=ctx,
+    )
+    return _build_fix_response(results)
 
 
 async def _run_markdownlint_with_cache(

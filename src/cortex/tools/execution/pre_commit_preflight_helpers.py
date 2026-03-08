@@ -18,7 +18,7 @@ from cortex.tools.execution.pre_commit_tools import (
     PreCommitCheckName,
     execute_pre_commit_checks,
 )
-from cortex.tools.files.markdown_operations import fix_markdown_lint
+from cortex.tools.files.markdown_lint import run_markdown_lint_all_files_check
 from cortex.tools.models import (
     PreflightCheckSummary,
     RunPreflightChecksErrorResult,
@@ -172,12 +172,9 @@ async def _run_markdown_phase(
     include_untracked_markdown: bool,
     ctx: MCPContext | None,
 ) -> JsonDict | None:
-    """Run fix_markdown_lint and parse its JSON response into a dict."""
-    markdown_json = await fix_markdown_lint(
-        include_untracked_markdown=include_untracked_markdown,
-        dry_run=False,
-        ctx=ctx,
-    )
+    """Run markdown lint on all repo files (CI parity) and parse JSON into a dict."""
+    _ = include_untracked_markdown  # Preflight always lints all files to match CI
+    markdown_json = await run_markdown_lint_all_files_check(ctx=ctx)
     try:
         decoded = json.loads(markdown_json)
     except json.JSONDecodeError as exc:

@@ -42,6 +42,7 @@ def execute_all_checks(
     timeout: int | None,
     coverage_threshold: float,
     progress_callback: Callable[[int, int], None] | None = None,
+    phase_callback: Callable[[int, int], None] | None = None,
 ) -> tuple[dict[str, CheckResult | TestResult | QualityCheckResult], CheckStats]:
     """Execute all requested checks (sync, runs off event loop via to_thread)."""
     results: dict[str, CheckResult | TestResult | QualityCheckResult] = {}
@@ -61,6 +62,7 @@ def execute_all_checks(
         progress_callback,
         results,
         stats,
+        phase_callback=phase_callback,
     )
     return results, stats
 
@@ -88,6 +90,26 @@ def build_pre_commit_response(
     return ensure_json_serializable_for_mcp(cast(ModelDict, compact))
 
 
+def make_phase_progress_callback(
+    ctx: MCPContext | None, loop: asyncio.AbstractEventLoop
+) -> Callable[[int, int], None] | None:
+    """Build (completed_checks, total_checks) callback for per-check heartbeats.
+
+    Keeps the MCP connection alive by sending progress after each non-test
+    check completes, preventing Cursor from recreating the client during
+    long-running pipelines.
+    """
+    if ctx is None:
+        return None
+
+    def report(completed: int, total: int) -> None:
+        _ = asyncio.run_coroutine_threadsafe(
+            report_progress_safe(ctx, float(completed), float(total)), loop
+        )
+
+    return report
+
+
 def make_test_progress_callback(
     ctx: MCPContext | None, loop: asyncio.AbstractEventLoop
 ) -> Callable[[int, int], None] | None:
@@ -108,6 +130,23 @@ def make_test_progress_callback(
     return report
 
 
+def _callbacks_for_ctx(
+    ctx: MCPContext,
+    loop: asyncio.AbstractEventLoop,
+    checks_to_perform: list[PreCommitCheck],
+    language: str,
+) -> tuple[
+    Callable[[int, int], None] | None,
+    Callable[[int, int], None] | None,
+]:
+    """Build phase and optional test progress callbacks when ctx is set."""
+    phase_cb = make_phase_progress_callback(ctx, loop)
+    progress_callback = None
+    if PreCommitCheck.TESTS in checks_to_perform and language == "python":
+        progress_callback = make_test_progress_callback(ctx, loop)
+    return phase_cb, progress_callback
+
+
 async def run_all_checks_off_loop(
     adapter: FrameworkAdapter,
     language_info: LanguageInfo,
@@ -119,13 +158,12 @@ async def run_all_checks_off_loop(
 ) -> tuple[dict[str, CheckResult | TestResult | QualityCheckResult], CheckStats]:
     """Run checks off event loop with optional test progress callback."""
     progress_callback: Callable[[int, int], None] | None = None
-    if (
-        ctx is not None
-        and PreCommitCheck.TESTS in checks_to_perform
-        and language_info.language == "python"
-    ):
+    phase_cb: Callable[[int, int], None] | None = None
+    if ctx is not None:
         loop = asyncio.get_running_loop()
-        progress_callback = make_test_progress_callback(ctx, loop)
+        phase_cb, progress_callback = _callbacks_for_ctx(
+            ctx, loop, checks_to_perform, language_info.language
+        )
     results, stats = await asyncio.to_thread(
         execute_all_checks,
         adapter,
@@ -135,6 +173,7 @@ async def run_all_checks_off_loop(
         timeout,
         coverage_threshold,
         progress_callback,
+        phase_cb,
     )
     await merge_eval_fast_if_requested(checks_to_perform, results, stats, ctx)
     return results, stats

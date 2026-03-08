@@ -89,11 +89,11 @@ def _make_markdown_result(
     *,
     tool_error: bool = False,
 ) -> str:
-    """Helper to build minimal fix_markdown_lint JSON string.
+    """Helper to build minimal markdown lint result JSON string.
 
     ``tool_error=True`` sets status to ``"error"`` to simulate CLI-level
     failures.  Otherwise status is always ``"success"`` (even when
-    ``files_with_errors > 0``), matching ``fix_markdown_lint`` behaviour
+    ``files_with_errors > 0``), matching markdown lint result shape
     where lint findings do not trigger a tool error.
     """
     status = "error" if tool_error else "success"
@@ -127,7 +127,7 @@ class TestRunPreflightChecks:
                 new_callable=AsyncMock,
             ) as mock_exec,
             patch(
-                "cortex.tools.execution.pre_commit_preflight_helpers.fix_markdown_lint",
+                "cortex.tools.execution.pre_commit_preflight_helpers.run_markdown_lint_all_files_check",
                 new_callable=AsyncMock,
             ) as mock_md,
         ):
@@ -160,7 +160,7 @@ class TestRunPreflightChecks:
                 new_callable=AsyncMock,
             ) as mock_exec,
             patch(
-                "cortex.tools.execution.pre_commit_preflight_helpers.fix_markdown_lint",
+                "cortex.tools.execution.pre_commit_preflight_helpers.run_markdown_lint_all_files_check",
                 new_callable=AsyncMock,
             ) as mock_md,
         ):
@@ -194,7 +194,7 @@ class TestRunPreflightChecks:
                 new_callable=AsyncMock,
             ) as mock_exec,
             patch(
-                "cortex.tools.execution.pre_commit_preflight_helpers.fix_markdown_lint",
+                "cortex.tools.execution.pre_commit_preflight_helpers.run_markdown_lint_all_files_check",
                 new_callable=AsyncMock,
             ) as mock_md,
         ):
@@ -225,7 +225,7 @@ class TestRunPreflightChecks:
                 new_callable=AsyncMock,
             ) as mock_exec,
             patch(
-                "cortex.tools.execution.pre_commit_preflight_helpers.fix_markdown_lint",
+                "cortex.tools.execution.pre_commit_preflight_helpers.run_markdown_lint_all_files_check",
                 new_callable=AsyncMock,
             ) as mock_md,
         ):
@@ -261,7 +261,7 @@ class TestRunPreflightChecks:
                 new_callable=AsyncMock,
             ) as mock_exec,
             patch(
-                "cortex.tools.execution.pre_commit_preflight_helpers.fix_markdown_lint",
+                "cortex.tools.execution.pre_commit_preflight_helpers.run_markdown_lint_all_files_check",
                 new_callable=AsyncMock,
             ) as mock_md,
         ):
@@ -294,7 +294,7 @@ class TestRunPreflightChecks:
                 new_callable=AsyncMock,
             ) as mock_exec,
             patch(
-                "cortex.tools.execution.pre_commit_preflight_helpers.fix_markdown_lint",
+                "cortex.tools.execution.pre_commit_preflight_helpers.run_markdown_lint_all_files_check",
                 new_callable=AsyncMock,
             ) as mock_md,
         ):
@@ -328,7 +328,7 @@ class TestRunPreflightChecks:
                 new_callable=AsyncMock,
             ) as mock_exec,
             patch(
-                "cortex.tools.execution.pre_commit_preflight_helpers.fix_markdown_lint",
+                "cortex.tools.execution.pre_commit_preflight_helpers.run_markdown_lint_all_files_check",
                 new_callable=AsyncMock,
             ) as mock_md,
         ):
@@ -384,7 +384,7 @@ class TestRunPreflightChecks:
                 return_value=exec_result,
             ),
             patch(
-                "cortex.tools.execution.pre_commit_preflight_helpers.fix_markdown_lint",
+                "cortex.tools.execution.pre_commit_preflight_helpers.run_markdown_lint_all_files_check",
                 new_callable=AsyncMock,
                 return_value=_make_markdown_result(files_with_errors=0),
             ),
