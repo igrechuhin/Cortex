@@ -163,8 +163,12 @@ def spawn_detached_worker(
     )
     with open(log_file, "w") as lf:
         _ = subprocess.Popen(
-            cmd, stdin=subprocess.DEVNULL, stdout=lf, stderr=lf,
-            cwd=str(project_root), start_new_session=True,
+            cmd,
+            stdin=subprocess.DEVNULL,
+            stdout=lf,
+            stderr=lf,
+            cwd=str(project_root),
+            start_new_session=True,
         )
     logger.info("Spawned detached worker: hash=%s result=%s", args_hash, rp)
     return rp

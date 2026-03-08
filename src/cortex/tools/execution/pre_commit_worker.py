@@ -11,6 +11,8 @@ Usage:
         --project-root /path/to/project
 """
 
+from __future__ import annotations
+
 import argparse
 import json
 import logging
@@ -19,11 +21,11 @@ import sys
 import tempfile
 import time
 from pathlib import Path
-from typing import TYPE_CHECKING, cast
+from typing import cast
 
-if TYPE_CHECKING:
-    from cortex.services.framework_adapters.base import FrameworkAdapter
-    from cortex.services.language_detector import LanguageInfo
+from cortex.services.framework_adapters.base import FrameworkAdapter
+from cortex.services.language_detector import LanguageInfo
+from cortex.tools.execution.pre_commit_helpers_models import PreCommitCheck
 
 logging.basicConfig(
     level=logging.INFO,
@@ -85,9 +87,9 @@ def _resolve_adapter_worker(
 
 
 def _execute_checks_and_build_response(
-    adapter: "FrameworkAdapter",
-    language_info: "LanguageInfo",
-    checks_to_perform: object,
+    adapter: FrameworkAdapter,
+    language_info: LanguageInfo,
+    checks_to_perform: list[PreCommitCheck],
     strict_mode: bool,
     timeout: int,
     coverage_threshold: float,
@@ -107,15 +109,22 @@ def _execute_checks_and_build_response(
 
     results: dict[str, CheckResult | TestResult | QualityCheckResult]
     results, stats = execute_all_checks(
-        adapter, language_info.language, checks_to_perform,
-        strict_mode, timeout, coverage_threshold,
+        adapter,
+        language_info.language,
+        checks_to_perform,
+        strict_mode,
+        timeout,
+        coverage_threshold,
     )
-    return cast(dict[str, object], build_pre_commit_response(results, stats, language_info.language))
+    return cast(
+        dict[str, object],
+        build_pre_commit_response(results, stats, language_info.language),
+    )
 
 
 def _run_checks_core(
-    adapter: "FrameworkAdapter",
-    language_info: "LanguageInfo",
+    adapter: FrameworkAdapter,
+    language_info: LanguageInfo,
     checks: list[str],
     strict_mode: bool,
     timeout: int,
