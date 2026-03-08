@@ -2,6 +2,10 @@
 
 **This file records completed work only.** For current status and upcoming work see [roadmap.md](roadmap.md).
 
+## Completed Work (2026-03-08)
+
+- **Commit pipeline (2026-03-08)** - Phase A passed (pre_commit refinements: reportUnusedCallResult fix, function-length extraction in run helpers); 4942 tests, 91.64% coverage; new plans added; 0 plans archived.
+
 ## Completed Work (2026-03-07)
 
 - **Summary (2026-03-07)** - 1 entries archived.
