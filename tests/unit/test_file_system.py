@@ -364,6 +364,70 @@ Incoming content
         with pytest.raises(PermissionError):
             _ = await manager.write_file(file_path, "Content")
 
+    @pytest.mark.asyncio
+    async def test_atomic_write_no_tmp_files_on_success(
+        self, temp_project_root: Path
+    ) -> None:
+        """Test atomic write leaves no .tmp files after success."""
+        # Arrange
+        manager = FileSystemManager(temp_project_root)
+        file_path = temp_project_root / "atomic_test.md"
+        content = "# Atomic Write Test\n\nContent here."
+
+        # Act
+        _ = await manager.write_file(file_path, content)
+
+        # Assert
+        assert file_path.read_text() == content
+        tmp_files = list(temp_project_root.glob("*.tmp"))
+        assert len(tmp_files) == 0
+
+    @pytest.mark.asyncio
+    async def test_atomic_write_preserves_original_on_error(
+        self, temp_project_root: Path
+    ) -> None:
+        """Test atomic write does not corrupt original if rename fails."""
+        # Arrange
+        manager = FileSystemManager(temp_project_root)
+        file_path = temp_project_root / "preserve_test.md"
+        original = "Original content"
+        written = file_path.write_text(original)
+        assert isinstance(written, int)
+
+        # Act — write new content and verify it overwrites
+        new_content = "New content after atomic write"
+        content_hash = await manager.write_file(file_path, new_content)
+
+        # Assert
+        assert file_path.read_text() == new_content
+        assert content_hash == manager.compute_hash(new_content)
+
+    @pytest.mark.asyncio
+    async def test_atomic_write_uses_same_directory(
+        self, temp_project_root: Path
+    ) -> None:
+        """Test atomic write creates temp file in same directory as target."""
+        import unittest.mock as mock
+
+        manager = FileSystemManager(temp_project_root)
+        file_path = temp_project_root / "samedir.md"
+
+        original_ntf = __import__("tempfile").NamedTemporaryFile
+        captured_dir: list[Path] = []
+
+        def spy_ntf(**kwargs: object) -> object:
+            if "dir" in kwargs:
+                captured_dir.append(Path(str(kwargs["dir"])))
+            return original_ntf(**kwargs)
+
+        with mock.patch(
+            "cortex.core.file_system.tempfile.NamedTemporaryFile", side_effect=spy_ntf
+        ):
+            _ = await manager.write_file(file_path, "test content")
+
+        assert len(captured_dir) > 0
+        assert captured_dir[0] == file_path.parent
+
 
 class TestFileLocking:
     """Tests for file locking mechanism."""

@@ -57,9 +57,10 @@ _TOOLS_NEEDING_FREQUENT_PROGRESS = frozenset(
     {"execute_pre_commit_checks", "fix_markdown_lint"}
 )
 # Long-running tools serialized (one at a time) so the connection does not break.
-_LONG_RUNNING_TOOLS_SERIALIZED = frozenset(
-    {"execute_pre_commit_checks", "fix_markdown_lint"}
-)
+# Detached pipelines like execute_pre_commit_checks manage their own concurrency
+# and progress; serializing them at the MCP wrapper layer can cause redundant
+# waits when a detached worker is already running.
+_LONG_RUNNING_TOOLS_SERIALIZED = frozenset({"fix_markdown_lint"})
 # Default fallback when tool has no specific recovery steps.
 _CONNECTION_ERROR_FALLBACK_DEFAULT = (
     " Reconnect Cortex MCP and retry. See docs/guides/troubleshooting.md"

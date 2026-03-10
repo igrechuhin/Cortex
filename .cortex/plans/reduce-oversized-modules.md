@@ -1,3 +1,14 @@
+---
+title: "Reduce Oversized Source Modules (>400 lines)"
+component: "src/cortex (multiple)"
+work_type: "refactor"
+status: "PENDING"
+priority: "Medium"
+created: "2026-03-07"
+execution_order: 21
+depends_on: []
+---
+
 # Reduce Oversized Source Modules (>400 lines)
 
 **Status**: PENDING

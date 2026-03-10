@@ -6,6 +6,10 @@
 
 ## Blockers (ASAP Priority)
 
+- [Phase: Investigate execute_pre_commit_checks MCP Tool Failure](.cortex/plans/phase-investigate-execute_pre_commit_checks-failure-20260308-225655.md) - ASAP (PLANNING) - Investigate and fix MCP tool failure that occurred during commit procedure - Tool: `execute_pre_commit_checks`, Error: RuntimeError - Impact: Commit procedure blocked - Target completion: 2026-03-08
+
+- [Phase: Investigate execute_pre_commit_checks MCP Tool Failure](.cortex/plans/phase-investigate-execute_pre_commit_checks-failure-20260308-222413.md) - ASAP (PLANNING) - Investigate and fix MCP tool failure that occurred during commit procedure - Tool: `execute_pre_commit_checks`, Error: RuntimeError - Impact: Commit procedure blocked - Target completion: 2026-03-08
+
 ## Active Work (in progress)
 
 ## Future Enhancements
@@ -14,22 +18,39 @@
 
 ### Fixes
 
+- **[CRI-3] Add MCP Circuit-Breaker Pattern** — Standardize circuit-breaker for consecutive MCP failures with clean abort and resume. Plan: `plans/add-mcp-circuit-breaker-pattern.md` | Priority: Critical | Order: 3
+- **[CRI-4] Add Commit Pipeline Rollback** — Pre-pipeline state snapshot and rollback offer on failure. Depends: CRI-3. Plan: `plans/add-commit-pipeline-rollback.md` | Priority: Critical | Order: 4
+- **[CRI-5] Add Plan YAML Frontmatter Schema** — Deterministic plan similarity scoring via enforced frontmatter. Plan: `plans/add-plan-frontmatter-schema.md` | Priority: Critical | Order: 5
+- **[HI-3] Persist Pipeline State Decisions** — Checkpoint similarity_decision, primary_language to survive context compression. Depends: CRI-3. Plan: `plans/persist-pipeline-state-decisions.md` | Priority: High | Order: 8
+- **[HI-5] Fix Roadmap Logging Leakage** — Replace content previews with metadata in ghost-section logs. Plan: `plans/fix-roadmap-logging-leakage.md` | Priority: High | Order: 10
+- **[MED-2] Fix Loop Convergence Detection** — Abort oscillating fix loops early when violation count not decreasing. Plan: `plans/add-fix-loop-convergence-detection.md` | Priority: Medium | Order: 14
+- **[MED-4] Extend Pre-Flight Directory Validation** — Auto-create missing operational directories (plans/, reviews/, .session/). Plan: `plans/extend-preflight-directory-validation.md` | Priority: Medium | Order: 16
+- **[MED-5] Atomic Memory Bank Writes** — Temp file + rename pattern for manage_file writes. Plan: `plans/add-atomic-memory-bank-writes.md` | Priority: Medium | Order: 17
+- **[MED-6] Schema-Define Roadmap Section Names** — Replace hardcoded strings with constants; auto-create missing sections. Plan: `plans/schema-define-roadmap-sections.md` | Priority: Medium | Order: 18
+- **[MED-1] Agent Handoff Output Validation** — Validate agent results against schema before checkpointing. Plan: `plans/add-agent-handoff-validation.md` | Priority: Medium | Order: 13
+
 ### Documentation Cleanup (DRY)
+
+- **[CRI-2] Fix Troubleshooting Docs Contradiction** — Resolve contradictory coverage config statements. Plan: `plans/fix-troubleshooting-docs-contradiction.md` | Priority: Critical | Order: 2
+- **[HI-6] Resolve Type-Checker Strategy** — Document mypy vs pyright decision; remove stale config. Plan: `plans/resolve-type-checker-strategy.md` | Priority: High | Order: 11
+- **[MED-7] Fix README Tool Count** — Update "27 public MCP tools" to actual count. Plan: `plans/fix-readme-tool-count.md` | Priority: Medium | Order: 19
+- **[MED-3] Calibrate Review Metric Scores** — Add calibration examples and evidence requirements for 9 review metrics. Plan: `plans/calibrate-review-metric-scores.md` | Priority: Medium | Order: 15
+- **[MED-10] Make Prompts Agent-Agnostic** — Replace Cursor-specific tool names with generic mapping. Plan: `plans/make-prompts-agent-agnostic.md` | Priority: Medium | Order: 22
 
 ### Refactoring
 
-- **Phase 81: Oversized Module Reduction — Wave 1 (Top 10)** — PENDING. Split top 10 files exceeding 400-line limit. Plan: `.cortex/plans/phase-81-oversized-module-reduction-wave1.md`
-- **Phase 82: Coverage Exclusion Audit and Reduction** — PENDING. Reduce coverage omit list blind spots. Plan: `.cortex/plans/phase-82-coverage-exclusion-audit.md`
-- **Phase 89: Commit Pipeline Efficiency** — PENDING. Reduce redundant check runs in commit pipeline. Plan: `.cortex/plans/phase-89-commit-pipeline-efficiency.md`
-- **Phase 91: HealthCheckReport Type Unification** — PENDING. Replace loose dict alias with Pydantic BaseModel. Plan: `.cortex/plans/phase-91-healthcheck-type-unification.md`
+- **[MED-8] Reduce Prompt-Alignment Test Fragility** — Refactor substring assertions to semantic checks. MUST complete before HI-1. Plan: `plans/reduce-prompt-alignment-test-fragility.md` | Priority: Medium | Order: 20
+- **[HI-1] Simplify Commit Pipeline Structure** — Collapse 15+ steps to 3 macro-phases with tabular sub-steps. Depends: MED-8, CRI-3, CRI-4. Plan: `plans/simplify-commit-pipeline-structure.md` | Priority: High | Order: 6
+- **[HI-4] Consolidate Roadmap Sync Models** — Remove legacy duplicates in `src/cortex/validation/roadmap_models.py`. Plan: `plans/consolidate-roadmap-sync-models.md` | Priority: High | Order: 9
+- **[HI-7] Reduce Redundant Pipeline Checks** — Dirty-state tracking to skip clean checks in final validation. Depends: CRI-3, HI-1. Plan: `plans/reduce-redundant-pipeline-checks.md` | Priority: High | Order: 12
+- **[MED-9] Reduce Oversized Modules** — Split top 5 files (>550 lines) to comply with 400-line limit. Plan: `plans/reduce-oversized-modules.md` | Priority: Medium | Order: 21
 
 ### Cleanup
-
-- **Phase 87: Stale exec() Comment and Dead Reference Cleanup** — PENDING. Remove dead comments referencing removed patterns. Plan: `.cortex/plans/phase-87-dead-reference-cleanup.md`
-- **Phase 88: Node Tooling Dependency Isolation** — PENDING. Move Node tools to project-local deps. Plan: `.cortex/plans/phase-88-node-tooling-isolation.md`
 
 ### Investigation Plans (Archive / Reference)
 
 Completed investigations are recorded in [activeContext.md](activeContext.md). Plan files under `.cortex/plans/archive/` as needed.
 
 ### Features & Enhancements
+
+- **[HI-2] Structured Quality Config** — Add structured quality config (JSON under `.cortex/config/`) replacing markdown-parsed thresholds. Plan: `plans/add-structured-quality-config.md` | Priority: High | Order: 7

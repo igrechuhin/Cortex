@@ -1,3 +1,17 @@
+---
+title: "Simplify Commit Pipeline Structure"
+component: "synapse/prompts/commit"
+work_type: "refactor"
+status: "PENDING"
+priority: "High"
+created: "2026-03-07"
+execution_order: 6
+depends_on:
+  - "add-mcp-circuit-breaker-pattern"
+  - "add-commit-pipeline-rollback"
+  - "reduce-prompt-alignment-test-fragility"
+---
+
 # Simplify Commit Pipeline Structure
 
 **Status**: PENDING

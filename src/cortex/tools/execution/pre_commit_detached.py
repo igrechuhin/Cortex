@@ -139,6 +139,19 @@ def _build_worker_cmd(
     return cmd
 
 
+def _spawn_detached_process(cmd: list[str], log_file: Path, project_root: Path) -> None:
+    """Start detached subprocess writing stdout/stderr to log_file."""
+    with open(log_file, "w") as lf:
+        _ = subprocess.Popen(
+            cmd,
+            stdin=subprocess.DEVNULL,
+            stdout=lf,
+            stderr=lf,
+            cwd=str(project_root),
+            start_new_session=True,
+        )
+
+
 def spawn_detached_worker(
     project_root: Path,
     checks: list[str],
@@ -161,15 +174,7 @@ def spawn_detached_worker(
         strict_mode,
         include_markdown_lint,
     )
-    with open(log_file, "w") as lf:
-        _ = subprocess.Popen(
-            cmd,
-            stdin=subprocess.DEVNULL,
-            stdout=lf,
-            stderr=lf,
-            cwd=str(project_root),
-            start_new_session=True,
-        )
+    _spawn_detached_process(cmd, log_file, project_root)
     logger.info("Spawned detached worker: hash=%s result=%s", args_hash, rp)
     return rp
 
@@ -280,18 +285,29 @@ async def run_checks_detached(
     cached = _cached_detached_result(existing, args_hash)
     if cached is not None:
         return cached
+
     if existing is not None and existing.get("status") == "running":
-        logger.info("Worker already running, polling: %s", args_hash)
-    else:
-        _ = spawn_detached_worker(
-            project_root,
-            checks,
-            timeout,
-            coverage_threshold,
-            strict_mode,
-            False,
+        logger.info(
+            "Worker already running for args_hash=%s; returning in-progress status",
             args_hash,
         )
+        return {
+            "status": "error",
+            "error": (
+                "execute_pre_commit_checks is already running for this configuration; "
+                "do not start a second run. Wait for the existing run to finish."
+            ),
+        }
+
+    _ = spawn_detached_worker(
+        project_root,
+        checks,
+        timeout,
+        coverage_threshold,
+        strict_mode,
+        False,
+        args_hash,
+    )
     result_path = _result_path(_session_dir(project_root), args_hash)
     data = await poll_for_result(result_path, ctx, timeout=900.0)
     return _interpret_poll_data(data)

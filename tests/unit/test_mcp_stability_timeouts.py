@@ -468,6 +468,108 @@ class TestLongRunningSemaphoreWait:
         finally:
             sem.release()
 
+    @pytest.mark.asyncio
+    async def test_second_long_running_succeeds_after_retry_when_first_releases_during_retry(
+        self,
+    ) -> None:
+        """Second call acquires semaphore on retry window when first releases at main timeout."""
+        import cortex.core.mcp_stability_semaphores as semaphores_mod
+        from cortex.core.mcp_stability import _run_and_finalize
+        from cortex.core.mcp_stability_config import get_long_running_semaphore
+
+        semaphores_mod._long_running_tools_semaphore = None
+        sem = get_long_running_semaphore()
+        await sem.acquire()
+        released_during_retry: asyncio.Event = asyncio.Event()
+
+        async def second_execute() -> (
+            tuple[str, bool, str | None, bool, int | None, str | None]
+        ):
+            return "second", True, None, False, None, None
+
+        async def release_after_main_timeout() -> None:
+            await asyncio.sleep(0.12)
+            sem.release()
+            released_during_retry.set()
+
+        with (
+            patch(
+                "cortex.core.mcp_stability_semaphores.LONG_RUNNING_SEMAPHORE_WAIT_SECONDS",
+                0.1,
+            ),
+            patch(
+                "cortex.core.mcp_stability_semaphores.LONG_RUNNING_SEMAPHORE_RETRY_AFTER_TIMEOUT_SECONDS",
+                0.5,
+            ),
+        ):
+            release_task = asyncio.create_task(release_after_main_timeout())
+            result: str = await _run_and_finalize(
+                second_execute,
+                None,
+                None,
+                "second_tool",
+                0,
+                HandlerKind.TOOL,
+                use_serial_semaphore=True,
+            )
+            await release_task
+        assert result == "second"
+        assert released_during_retry.is_set()
+
+    @pytest.mark.asyncio
+    async def test_long_running_semaphore_released_on_cancellation(self) -> None:
+        """When first long-running call is cancelled, semaphore is released so second can run."""
+        import cortex.core.mcp_stability_semaphores as semaphores_mod
+        from cortex.core.mcp_stability import _run_and_finalize
+        from cortex.core.mcp_stability_config import get_long_running_semaphore
+
+        semaphores_mod._long_running_tools_semaphore = None
+        _ = get_long_running_semaphore()
+        first_acquired: asyncio.Event = asyncio.Event()
+        never_set: asyncio.Event = asyncio.Event()
+
+        async def first_execute() -> (
+            tuple[str, bool, str | None, bool, int | None, str | None]
+        ):
+            _ = first_acquired.set()
+            _ = await never_set.wait()
+            return "first", True, None, False, None, None
+
+        async def second_execute() -> (
+            tuple[str, bool, str | None, bool, int | None, str | None]
+        ):
+            return "second", True, None, False, None, None
+
+        with patch(
+            "cortex.core.mcp_stability_semaphores.LONG_RUNNING_SEMAPHORE_WAIT_SECONDS",
+            2.0,
+        ):
+            first_task: asyncio.Task[str] = asyncio.create_task(
+                _run_and_finalize(
+                    first_execute,
+                    None,
+                    None,
+                    "first_tool",
+                    0,
+                    HandlerKind.TOOL,
+                    use_serial_semaphore=True,
+                )
+            )
+            assert await first_acquired.wait()
+            _ = first_task.cancel()
+            with pytest.raises(asyncio.CancelledError):
+                _ = await first_task
+            second_result: str = await _run_and_finalize(
+                second_execute,
+                None,
+                None,
+                "second_tool",
+                0,
+                HandlerKind.TOOL,
+                use_serial_semaphore=True,
+            )
+        assert second_result == "second"
+
 
 def _tools_dir() -> Path:
     """Return src/cortex/tools path relative to repo root."""

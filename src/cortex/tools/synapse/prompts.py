@@ -272,5 +272,82 @@ def register_synapse_prompts() -> None:
     log_registration_summary(total_registered)
 
 
-# Register prompts at import time
+def _get_cursor_agents_source() -> Path | None:
+    """Find .cortex/synapse/cursor-agents/ by walking up from CWD and module location."""
+    current = Path.cwd()
+    for path in [current, *current.parents]:
+        candidate = (
+            get_cortex_path(path, CortexResourceType.CORTEX_DIR)
+            / "synapse"
+            / "cursor-agents"
+        )
+        if candidate.exists() and candidate.is_dir():
+            return candidate
+
+    module_file = Path(__file__)
+    for path in [
+        module_file.parent.parent.parent.parent,
+        *module_file.parent.parent.parent.parent.parents,
+    ]:
+        candidate = (
+            get_cortex_path(path, CortexResourceType.CORTEX_DIR)
+            / "synapse"
+            / "cursor-agents"
+        )
+        if candidate.exists() and candidate.is_dir():
+            return candidate
+
+    return None
+
+
+def _get_cursor_agents_target(source: Path) -> Path:
+    """Resolve .cursor/agents/ from project root inferred via source path."""
+    # source is <project_root>/.cortex/synapse/cursor-agents
+    return source.parent.parent.parent / ".cursor" / "agents"
+
+
+def _sync_agent_file(agent_file: Path, target: Path) -> bool:
+    """Write agent file to target if content differs. Returns True if written."""
+    from cortex.core.logging_config import logger
+
+    content = agent_file.read_text(encoding="utf-8")
+    dest = target / agent_file.name
+    if dest.exists() and dest.read_text(encoding="utf-8") == content:
+        return False
+    try:
+        _ = dest.write_text(content, encoding="utf-8")
+        return True
+    except OSError as e:
+        logger.warning(f"sync_cursor_agents: could not write {dest}: {e}")
+        return False
+
+
+def sync_cursor_agents() -> None:
+    """Sync cursor agents from .cortex/synapse/cursor-agents/ to .cursor/agents/.
+
+    Idempotent: files are only written when content changes. Creates the
+    target directory if absent. Called at import time so agents are always
+    in sync when the MCP server starts.
+    """
+    from cortex.core.logging_config import logger
+
+    source = _get_cursor_agents_source()
+    if not source:
+        return
+
+    target = _get_cursor_agents_target(source)
+
+    try:
+        target.mkdir(parents=True, exist_ok=True)
+    except OSError as e:
+        logger.warning(f"sync_cursor_agents: could not create {target}: {e}")
+        return
+
+    synced = sum(_sync_agent_file(f, target) for f in sorted(source.glob("*.md")))
+    if synced > 0:
+        logger.info(f"Synced {synced} cursor agent(s) to {target}")
+
+
+# Register prompts and sync cursor agents at import time
 register_synapse_prompts()
+sync_cursor_agents()

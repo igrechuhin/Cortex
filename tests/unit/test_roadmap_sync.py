@@ -351,13 +351,13 @@ class TestScanCodebaseTodos:
             assert todos[0].file_path == "src/production.py"
 
     def test_scan_todos_excludes_example_files(self):
-        """Test scanning excludes example files."""
-        # Arrange
+        """Test scanning excludes files under example/examples directories."""
+        # Arrange: path-segment-aware exclusions exclude example/ or examples/
         with TemporaryDirectory() as tmpdir:
             project_root = Path(tmpdir)
-            src_dir = project_root / "src"
-            _ = src_dir.mkdir()
-            example_file = src_dir / "example.py"
+            examples_dir = project_root / "src" / "examples"
+            examples_dir.mkdir(parents=True)
+            example_file = examples_dir / "demo.py"
             _ = example_file.write_text("# TODO: This should be excluded\n")
 
             # Act

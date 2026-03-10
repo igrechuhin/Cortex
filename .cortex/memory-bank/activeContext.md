@@ -2,11 +2,13 @@
 
 **This file records completed work only.** For current status and upcoming work see [roadmap.md](roadmap.md).
 
+## Completed Work (2026-03-09)
+
+- **Summary (2026-03-09)** - 1 entries archived.
+
 ## Completed Work (2026-03-08)
 
-- **Commit pipeline (2026-03-08)** - Phase A passed (pre_commit refinements: reportUnusedCallResult fix, function-length extraction in run helpers); 4942 tests, 91.64% coverage; new plans added; 0 plans archived.
-
-- ✅ **Commit pipeline** - COMPLETE (2026-03-08) - Phase B/C: memory bank verified, 0 plans archived; final gate and commit (configuration-reference.md, mcp_stability_semaphores.py).
+- **Summary (2026-03-08)** - 1 entries archived.
 
 ## Completed Work (2026-03-07)
 
@@ -118,7 +120,7 @@
 
 ## Current Focus
 
-Commit pipeline; no active feature focus.
+Roadmap item implementation batch complete; remaining items are documentation cleanup (HI-6, MED-7, MED-3, MED-10), refactoring (MED-8, HI-1, HI-4, HI-7, MED-9), and features (HI-2).
 
 ## Recent Changes
 

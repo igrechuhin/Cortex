@@ -21,15 +21,21 @@ _logger = logging.getLogger(__name__)
 # Max seconds a second long-running tool call will wait for the first to finish
 # before failing with RuntimeError (reduces commit-blocking when calls are sequential).
 # Must be >= default test_timeout for execute_pre_commit_checks (300s) so sequential
-# commit-pipeline calls succeed when the first run includes tests.
-LONG_RUNNING_SEMAPHORE_WAIT_SECONDS = 330.0
+# commit-pipeline calls succeed when the first run includes tests. 600s allows Phase A
+# (tests up to 300s + format/quality overhead) to complete before a waiting second call times out.
+LONG_RUNNING_SEMAPHORE_WAIT_SECONDS = 600.0
 # Max seconds a long-running tool may hold the semaphore before auto-release. Must allow
 # one full execute_pre_commit_checks (including tests, test_timeout up to 300s default);
 # use >= LONG_RUNNING_SEMAPHORE_WAIT_SECONDS so a single Step 12 run is not cut off mid-run.
-LONG_RUNNING_SEMAPHORE_MAX_HOLD_SECONDS = 330.0
+LONG_RUNNING_SEMAPHORE_MAX_HOLD_SECONDS = 600.0
+# After the main wait times out, retry once for this many seconds to absorb the race when
+# the first call or auto-release releases at the same moment (reduces commit-blocking).
+LONG_RUNNING_SEMAPHORE_RETRY_AFTER_TIMEOUT_SECONDS = 5.0
 _LONG_RUNNING_BUSY_MSG = (
     "Another long-running tool is in progress (e.g. execute_pre_commit_checks or "
-    "fix_markdown_lint). Please wait for it to finish (up to 5–6 minutes) and retry."
+    "fix_markdown_lint). Please wait for it to finish (up to 10 minutes) and retry. "
+    "If running the commit pipeline, ensure Phase A has completed before Step 12; "
+    "close other tabs or agents that may be running long-running Cortex tools."
 )
 
 
@@ -132,7 +138,7 @@ def get_long_running_elapsed_seconds() -> float | None:
 
 
 def was_long_running_released_by_timeout() -> bool:
-    """Return True if the long-running semaphore was force-released by the 1-minute auto-release."""
+    """Return True if the long-running semaphore was force-released by the auto-release timeout."""
     return _long_running_released_by_timeout
 
 
@@ -143,7 +149,7 @@ def clear_long_running_released_by_timeout() -> None:
 
 
 async def _run_auto_release_after_timeout(tool_name: str) -> None:
-    """After LONG_RUNNING_SEMAPHORE_MAX_HOLD_SECONDS, force-release if still held by tool_name."""
+    """After LONG_RUNNING_SEMAPHORE_MAX_HOLD_SECONDS (600s), force-release if still held by tool_name."""
     try:
         await asyncio.sleep(LONG_RUNNING_SEMAPHORE_MAX_HOLD_SECONDS)
     except asyncio.CancelledError:
@@ -156,7 +162,6 @@ async def _run_auto_release_after_timeout(tool_name: str) -> None:
         if _long_running_start_time is not None
         else None
     )
-    global _long_running_released_by_timeout
     try:
         get_long_running_semaphore().release()
         set_long_running_semaphore_holder(None)
@@ -176,7 +181,7 @@ async def _run_auto_release_after_timeout(tool_name: str) -> None:
 
 
 def schedule_long_running_auto_release(tool_name: str) -> None:
-    """Schedule force-release of the long-running semaphore after max hold time (330s)."""
+    """Schedule force-release of the long-running semaphore after max hold time (600s)."""
     global _long_running_auto_release_task
     if (
         _long_running_auto_release_task is not None
@@ -196,21 +201,45 @@ def cancel_long_running_auto_release() -> None:
         _long_running_auto_release_task = None
 
 
-async def acquire_long_running_semaphore(func_name: str) -> bool:
-    """Acquire long-running semaphore with timeout. Returns True if acquired."""
-    sem = get_long_running_semaphore()
-    holder = get_long_running_semaphore_holder()
+async def _attempt_long_running_acquire(
+    sem: TrackedSemaphore,
+    func_name: str,
+    holder: str | None,
+) -> bool:
     _logger.info(
         "long_running_semaphore: %s waiting for semaphore (holder=%s, timeout=%.0fs)",
         func_name,
         holder or "none",
         LONG_RUNNING_SEMAPHORE_WAIT_SECONDS,
     )
-    if not await sem.try_acquire(timeout=LONG_RUNNING_SEMAPHORE_WAIT_SECONDS):
+    acquired = await sem.try_acquire(timeout=LONG_RUNNING_SEMAPHORE_WAIT_SECONDS)
+    if acquired:
+        return True
+    _logger.info(
+        "long_running_semaphore: %s main wait timed out; retrying up to %.0fs",
+        func_name,
+        LONG_RUNNING_SEMAPHORE_RETRY_AFTER_TIMEOUT_SECONDS,
+    )
+    return await sem.try_acquire(
+        timeout=LONG_RUNNING_SEMAPHORE_RETRY_AFTER_TIMEOUT_SECONDS
+    )
+
+
+async def acquire_long_running_semaphore(func_name: str) -> bool:
+    """Acquire long-running semaphore with timeout. Returns True if acquired.
+
+    If the main wait times out, one short retry is attempted to absorb the race
+    when the holder releases or auto-release runs at the same moment.
+    """
+    sem = get_long_running_semaphore()
+    holder = get_long_running_semaphore_holder()
+    acquired = await _attempt_long_running_acquire(sem, func_name, holder)
+    if not acquired:
         _logger.warning(
-            "long_running_semaphore: %s wait timed out after %.0fs (holder=%s)",
+            "long_running_semaphore: %s wait timed out after %.0fs+%.0fs retry (holder=%s)",
             func_name,
             LONG_RUNNING_SEMAPHORE_WAIT_SECONDS,
+            LONG_RUNNING_SEMAPHORE_RETRY_AFTER_TIMEOUT_SECONDS,
             get_long_running_semaphore_holder() or "unknown",
         )
         raise RuntimeError(_LONG_RUNNING_BUSY_MSG)
@@ -271,6 +300,7 @@ async def release_semaphore_and_cancel_progress_if_needed(
 
 __all__ = [
     "LONG_RUNNING_SEMAPHORE_MAX_HOLD_SECONDS",
+    "LONG_RUNNING_SEMAPHORE_RETRY_AFTER_TIMEOUT_SECONDS",
     "LONG_RUNNING_SEMAPHORE_WAIT_SECONDS",
     "TrackedSemaphore",
     "acquire_long_running_semaphore",

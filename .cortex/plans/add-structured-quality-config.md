@@ -1,3 +1,14 @@
+---
+title: "Add Structured Quality Configuration"
+component: "cortex/config"
+work_type: "feature"
+status: "PENDING"
+priority: "High"
+created: "2026-03-07"
+execution_order: 7
+depends_on: []
+---
+
 # Add Structured Quality Configuration
 
 **Status**: PENDING

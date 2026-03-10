@@ -1,3 +1,14 @@
+---
+title: "Resolve Type-Checker Strategy Ambiguity"
+component: "project-config"
+work_type: "fix"
+status: "PENDING"
+priority: "High"
+created: "2026-03-07"
+execution_order: 11
+depends_on: []
+---
+
 # Resolve Type-Checker Strategy Ambiguity
 
 **Status**: PENDING

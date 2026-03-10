@@ -155,7 +155,7 @@ HTTP/SSE or a stdio–HTTP bridge is not a supported workaround for this issue (
 - Progress and heartbeat for long tools (e.g. 2 s heartbeat and wrapper progress for `fix_markdown_lint`, frequent progress for `execute_pre_commit_checks`).
 - Automatic retry for connection errors in the tool wrapper. Most tools get one retry; `fix_markdown_lint` gets **four attempts** (1 initial + 3 retries) with exponential backoff (1 s, 2 s, 4 s) to reduce commit-pipeline disconnects.
 - Batched markdown lint to reduce total duration.
-- **Serialization with wait for long-running tools**: Only one of `execute_pre_commit_checks`, `fix_markdown_lint`, or `fix_quality_issues` can run at a time. If you call a second long-running tool while the first is still running, the second call **waits up to 330 seconds (5–6 minutes)** for the first to finish; if the first is still running after that, the server returns an error. This allows sequential commit-pipeline calls (e.g. `execute_pre_commit_checks` then `fix_markdown_lint`) to succeed when the second request arrives before the first has returned. See [Another long-running tool is in progress](#issue-another-long-running-tool-in-progress).
+- **Serialization with wait for long-running tools**: Only one of `execute_pre_commit_checks`, `fix_markdown_lint`, or `fix_quality_issues` can run at a time. If you call a second long-running tool while the first is still running, the second call **waits up to 600 seconds (10 minutes)** for the first to finish; if the first is still running after that, the server does **one short retry (5 seconds)** to absorb the race when the first call or auto-release frees the semaphore at the same moment, then returns an error if still busy. This allows sequential commit-pipeline calls (e.g. `execute_pre_commit_checks` then `fix_markdown_lint`) to succeed when the second request arrives before the first has returned. See [Another long-running tool is in progress](#issue-another-long-running-tool-in-progress).
 
 #### Issue: Found 0 tools, 0 prompts, and 0 resources {#issue-mcp-0-tools}
 
@@ -178,16 +178,17 @@ This happens when the client sends ListTools/ListPrompts/ListResources **before*
 
 **Symptoms**:
 
-- Tool call returns a `RuntimeError`: "Another long-running tool is in progress (e.g. execute_pre_commit_checks or fix_markdown_lint). Please wait for it to finish (up to 5–6 minutes) and retry."
+- Tool call returns a `RuntimeError`: "Another long-running tool is in progress (e.g. execute_pre_commit_checks or fix_markdown_lint). Please wait for it to finish (up to 10 minutes) and retry."
 
 **Cause**:
 
-Only one of `execute_pre_commit_checks`, `fix_markdown_lint`, or `fix_quality_issues` can run at a time. If the client (or agent) invokes a second long-running tool while the first is still running, the second call **waits up to 330 seconds (5–6 minutes)** for the first to finish. If the first is still running after that, the server returns this error.
+Only one of `execute_pre_commit_checks`, `fix_markdown_lint`, or `fix_quality_issues` can run at a time. If the client (or agent) invokes a second long-running tool while the first is still running, the second call **waits up to 600 seconds (10 minutes)** for the first to finish. If the first is still running after that, the server returns this error.
 
 **Fix (what to do)**:
 
-1. If you see this error, the first long-running tool took longer than 330 seconds (5–6 minutes). Wait for it to finish, then retry the tool you wanted to run.
+1. If you see this error, the first long-running tool took longer than 600 seconds (10 minutes). Wait for it to finish, then retry the tool you wanted to run.
 2. Prefer running long-running tools one after another and wait for each to complete before starting the next (e.g. run `fix_markdown_lint` only after `execute_pre_commit_checks` has completed, or vice versa). Sequential calls that arrive while the first is still running will wait automatically.
+3. If running the commit pipeline: ensure Phase A has fully completed before Step 12 runs; avoid starting another commit or long-running tool in another tab or agent session.
 
 #### MCP disconnect runbook (commit pipeline) {#mcp-disconnect-runbook-commit}
 
@@ -271,7 +272,9 @@ If you see this error in another project, either add coverage options only when 
 
 **Cause**:
 
-`pytest.ini` sets `--cov-fail-under=90` in `addopts`. When you run one test or one file from the IDE, coverage is computed over the whole codebase, so the run fails even if the tests passed.
+When coverage options are passed explicitly (by CI or `execute_pre_commit_checks`), running a single test file from the IDE while those options are active causes coverage to be computed over the whole codebase, so the run fails even if the tests passed. In this repo, `pytest.ini` addopts do **not** include coverage flags — but if you run tests via a script or CI command that adds `--cov-fail-under=90`, the same problem occurs.
+
+> **Note**: See `pytest.ini` for current addopts. Coverage is configured in CI workflows and `execute_pre_commit_checks`, not in `pytest.ini`.
 
 **Solution**:
 

@@ -5,6 +5,8 @@
 **Implementation sequence**: The implement command picks the **next** step as the **first PENDING item** when reading the roadmap in this order: (1) Blockers (ASAP Priority), (2) Active Work, (3) Future Enhancements, (4) Implementation queue (Pending plans). Order within each section is top-to-bottom. New plans are added by create-plan in the correct place so this order defines execution.
 
 ## Blockers (ASAP Priority)
+- [Phase: Investigate execute_pre_commit_checks MCP Tool Failure](.cortex/plans/phase-investigate-execute_pre_commit_checks-failure-20260310-124154.md) - ASAP (PLANNING) - Investigate and fix MCP tool failure that occurred during commit procedure - Tool: `execute_pre_commit_checks`, Error: RuntimeError - Impact: Commit procedure blocked - Target completion: 2026-03-10
+
 
 ## Active Work (in progress)
 
@@ -14,21 +16,8 @@
 
 ### Fixes
 
-- **[CRI-1] Fix TODO Scanner Exclusion Patterns** — Replace substring matching with path-segment-aware patterns to prevent false negatives on production files. Plan: `plans/fix-todo-scanner-exclusion-patterns.md` | Priority: Critical | Order: 1
-- **[CRI-3] Add MCP Circuit-Breaker Pattern** — Standardize circuit-breaker for consecutive MCP failures with clean abort and resume. Plan: `plans/add-mcp-circuit-breaker-pattern.md` | Priority: Critical | Order: 3
-- **[CRI-4] Add Commit Pipeline Rollback** — Pre-pipeline state snapshot and rollback offer on failure. Depends: CRI-3. Plan: `plans/add-commit-pipeline-rollback.md` | Priority: Critical | Order: 4
-- **[CRI-5] Add Plan YAML Frontmatter Schema** — Deterministic plan similarity scoring via enforced frontmatter. Plan: `plans/add-plan-frontmatter-schema.md` | Priority: Critical | Order: 5
-- **[HI-3] Persist Pipeline State Decisions** — Checkpoint similarity_decision, primary_language to survive context compression. Depends: CRI-3. Plan: `plans/persist-pipeline-state-decisions.md` | Priority: High | Order: 8
-- **[HI-5] Fix Roadmap Logging Leakage** — Replace content previews with metadata in ghost-section logs. Plan: `plans/fix-roadmap-logging-leakage.md` | Priority: High | Order: 10
-- **[MED-2] Fix Loop Convergence Detection** — Abort oscillating fix loops early when violation count not decreasing. Plan: `plans/add-fix-loop-convergence-detection.md` | Priority: Medium | Order: 14
-- **[MED-4] Extend Pre-Flight Directory Validation** — Auto-create missing operational directories (plans/, reviews/, .session/). Plan: `plans/extend-preflight-directory-validation.md` | Priority: Medium | Order: 16
-- **[MED-5] Atomic Memory Bank Writes** — Temp file + rename pattern for manage_file writes. Plan: `plans/add-atomic-memory-bank-writes.md` | Priority: Medium | Order: 17
-- **[MED-6] Schema-Define Roadmap Section Names** — Replace hardcoded strings with constants; auto-create missing sections. Plan: `plans/schema-define-roadmap-sections.md` | Priority: Medium | Order: 18
-- **[MED-1] Agent Handoff Output Validation** — Validate agent results against schema before checkpointing. Plan: `plans/add-agent-handoff-validation.md` | Priority: Medium | Order: 13
-
 ### Documentation Cleanup (DRY)
 
-- **[CRI-2] Fix Troubleshooting Docs Contradiction** — Resolve contradictory coverage config statements. Plan: `plans/fix-troubleshooting-docs-contradiction.md` | Priority: Critical | Order: 2
 - **[HI-6] Resolve Type-Checker Strategy** — Document mypy vs pyright decision; remove stale config. Plan: `plans/resolve-type-checker-strategy.md` | Priority: High | Order: 11
 - **[MED-7] Fix README Tool Count** — Update "27 public MCP tools" to actual count. Plan: `plans/fix-readme-tool-count.md` | Priority: Medium | Order: 19
 - **[MED-3] Calibrate Review Metric Scores** — Add calibration examples and evidence requirements for 9 review metrics. Plan: `plans/calibrate-review-metric-scores.md` | Priority: Medium | Order: 15

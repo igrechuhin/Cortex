@@ -4,6 +4,7 @@ import asyncio
 import hashlib
 import os
 import re
+import tempfile
 import time
 from collections.abc import Awaitable, Callable
 from pathlib import Path
@@ -235,10 +236,29 @@ class FileSystemManager:
                 )
 
     async def _write_file_content(self, file_path: Path, content: str) -> None:
-        """Write file content."""
+        """Write file content atomically via temp file + rename + fsync."""
         file_path.parent.mkdir(parents=True, exist_ok=True)
-        async with open_async_text_file(file_path, "w", "utf-8") as f:
-            _ = await f.write(content)
+        dir_path = file_path.parent
+        fd = tempfile.NamedTemporaryFile(
+            mode="w",
+            dir=dir_path,
+            suffix=".tmp",
+            delete=False,
+            encoding="utf-8",
+        )
+        tmp_path = Path(fd.name)
+        try:
+            written = fd.write(content)
+            fd.flush()
+            os.fsync(fd.fileno())
+            fd.close()
+            renamed_path = tmp_path.rename(file_path)
+            assert isinstance(written, int)
+            assert isinstance(renamed_path, Path)
+        except BaseException:
+            fd.close()
+            tmp_path.unlink(missing_ok=True)
+            raise
 
     def _validate_write_path(self, file_path: Path) -> None:
         """Validate file path for writing."""

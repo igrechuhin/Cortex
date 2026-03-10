@@ -3,6 +3,8 @@
 Extracted from pre_commit_tools to keep it under 400 lines.
 """
 
+# pyright: reportPrivateUsage=false
+
 import json
 import logging
 from pathlib import Path
@@ -190,19 +192,29 @@ def build_markdown_fix_output(
     )
 
 
-async def _run_quality_checks() -> ModelDict | str:
-    """Run quality checks and return result or error response."""
-    from cortex.tools.execution.pre_commit_tools import execute_pre_commit_checks
+async def _run_quality_checks(root: Path, ctx: MCPContext | None) -> ModelDict | str:
+    """Run quality checks (fix_errors, format, type_check) and return result or error JSON.
 
-    raw_result = await execute_pre_commit_checks(
+    This calls the underlying pre-commit implementation directly (not the MCP
+    tool wrapper) to avoid nested execute_pre_commit_checks tool invocations,
+    which are serialized via the long-running semaphore. Using the internal
+    implementation keeps fix_quality progress driven by real pipeline steps
+    instead of an outer time-based progress loop.
+    """
+    from cortex.tools.execution.pre_commit_tools import _execute_pre_commit_checks_impl
+
+    raw_result = await _execute_pre_commit_checks_impl(
+        root=root,
+        language=None,
         checks=[
             PreCommitCheck.FIX_ERRORS.value,
             PreCommitCheck.FORMAT.value,
             PreCommitCheck.TYPE_CHECK.value,
         ],
-        test_timeout=300,
-        coverage_threshold=0.90,
         strict_mode=False,
+        timeout=300,
+        coverage_threshold=0.90,
+        ctx=None,
     )
     fix_errors_result = _ensure_result_dict(raw_result)
     if fix_errors_result.get("status") == "error" and (
@@ -216,15 +228,26 @@ async def _run_quality_checks() -> ModelDict | str:
 
 
 async def _fix_markdown_and_update_files(
+    root: Path,
     include_untracked: bool,
     files_modified_list: list[str],
+    ctx: MCPContext | None,
 ) -> int:
-    """Fix markdown lint errors and update files_modified list."""
-    from cortex.tools.files.markdown_operations import fix_markdown_lint
+    """Fix markdown lint errors and update files_modified list.
 
-    markdown_result_json = await fix_markdown_lint(
+    Uses the internal fix_markdown_lint implementation to avoid nested MCP tool
+    invocations (which are serialized as long-running tools) while still
+    benefiting from real, file-based progress reporting inside markdown lint.
+    """
+    from cortex.tools.files.markdown_lint import (
+        _fix_markdown_lint_impl,  # pyright: ignore[reportPrivateUsage]
+    )
+
+    markdown_result_json = await _fix_markdown_lint_impl(
+        root_path=root,
         include_untracked_markdown=include_untracked,
         dry_run=False,
+        ctx=ctx,
     )
     markdown_result_raw: JsonValue = json.loads(markdown_result_json)
     if not isinstance(markdown_result_raw, dict):
@@ -240,7 +263,7 @@ async def fix_quality_issues_impl(
 ) -> str:
     """Run quality fixes and return JSON result."""
     await report_progress_safe(ctx, 10.0, 100.0)
-    fix_errors_result = await _run_quality_checks()
+    fix_errors_result = await _run_quality_checks(root, ctx)
     if isinstance(fix_errors_result, str):
         await log_client(
             ctx,
@@ -253,7 +276,10 @@ async def fix_quality_issues_impl(
     (_, _, _, _, files_modified) = extract_fix_statistics(fix_errors_result)
     await report_progress_safe(ctx, 50.0, 100.0)
     markdown_issues_fixed = await _fix_markdown_and_update_files(
-        include_untracked_markdown, files_modified
+        root,
+        include_untracked_markdown,
+        files_modified,
+        ctx,
     )
     out = build_markdown_fix_output(
         fix_errors_result, markdown_issues_fixed, files_modified

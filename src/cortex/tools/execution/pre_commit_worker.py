@@ -23,9 +23,20 @@ import time
 from pathlib import Path
 from typing import cast
 
-from cortex.services.framework_adapters.base import FrameworkAdapter
+from cortex.services.framework_adapters.base import (
+    CheckResult,
+    FrameworkAdapter,
+    TestResult,
+)
 from cortex.services.language_detector import LanguageInfo
-from cortex.tools.execution.pre_commit_helpers_models import PreCommitCheck
+from cortex.tools.execution.pre_commit_helpers_models import (
+    CheckStats,
+    PreCommitCheck,
+    QualityCheckResult,
+)
+from cortex.tools.execution.pre_commit_tools_run_helpers import (
+    build_pre_commit_response,
+)
 
 logging.basicConfig(
     level=logging.INFO,
@@ -86,6 +97,18 @@ def _resolve_adapter_worker(
     return (adapter, language_info)
 
 
+def _build_response_dict(
+    results: dict[str, CheckResult | TestResult | QualityCheckResult],
+    stats: CheckStats,
+    language: str,
+) -> dict[str, object]:
+    """Build pre-commit response dict from results and stats."""
+    return cast(
+        dict[str, object],
+        build_pre_commit_response(results, stats, language),
+    )
+
+
 def _execute_checks_and_build_response(
     adapter: FrameworkAdapter,
     language_info: LanguageInfo,
@@ -95,15 +118,7 @@ def _execute_checks_and_build_response(
     coverage_threshold: float,
 ) -> dict[str, object]:
     """Run execute_all_checks and build_pre_commit_response; return result dict."""
-    from cortex.services.framework_adapters.base import (
-        CheckResult,
-        TestResult,
-    )
-    from cortex.tools.execution.pre_commit_helpers_models import (
-        QualityCheckResult,
-    )
     from cortex.tools.execution.pre_commit_tools_run_helpers import (
-        build_pre_commit_response,
         execute_all_checks,
     )
 
@@ -116,10 +131,7 @@ def _execute_checks_and_build_response(
         timeout,
         coverage_threshold,
     )
-    return cast(
-        dict[str, object],
-        build_pre_commit_response(results, stats, language_info.language),
-    )
+    return _build_response_dict(results, stats, language_info.language)
 
 
 def _run_checks_core(

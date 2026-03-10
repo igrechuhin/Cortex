@@ -18,6 +18,7 @@ from cortex.validation.models import (
     ValidationResult,
     ValidationSeverity,
 )
+from cortex.validation.roadmap_models import RoadmapSection
 
 # Default schemas for Memory Bank files
 SchemaDict = dict[str, list[str] | int]
@@ -75,10 +76,10 @@ DEFAULT_SCHEMAS: dict[str, SchemaDict] = {
     },
     MemoryBankFile.ROADMAP: {
         "required_sections": [
-            "Blockers (ASAP Priority)",
-            "Active Work (in progress)",
-            "Future Enhancements",
-            "Pending plans (from .cortex/plans)",
+            RoadmapSection.BLOCKERS,
+            RoadmapSection.ACTIVE_WORK,
+            RoadmapSection.FUTURE,
+            RoadmapSection.PENDING,
         ],
         "recommended_sections": [],
         "heading_level": 2,

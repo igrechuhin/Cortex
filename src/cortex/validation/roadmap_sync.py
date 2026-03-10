@@ -5,6 +5,7 @@ with the codebase, ensuring all production TODOs are tracked and all roadmap
 references remain valid.
 """
 
+import logging
 import re
 from pathlib import Path
 
@@ -95,12 +96,14 @@ _TODO_PATTERNS = [
     re.compile(r"\*\s*TODO[:\s]", re.IGNORECASE),
 ]
 
-# Patterns to exclude (test/example files)
+# Path-segment-aware patterns to exclude (test/example dirs and files only)
 _EXCLUDE_PATTERNS = [
-    re.compile(r"test", re.IGNORECASE),
-    re.compile(r"example", re.IGNORECASE),
-    re.compile(r"sample", re.IGNORECASE),
-    re.compile(r"demo", re.IGNORECASE),
+    re.compile(r"(^|/)tests?/", re.IGNORECASE),  # test/ or tests/ directory
+    re.compile(r"(^|/)test_[^/]+\.py$", re.IGNORECASE),  # test_*.py files
+    re.compile(r"(^|/)conftest\.py$", re.IGNORECASE),  # conftest.py
+    re.compile(r"(^|/)examples?/", re.IGNORECASE),  # example/ or examples/
+    re.compile(r"(^|/)samples?/", re.IGNORECASE),  # sample/ or samples/
+    re.compile(r"(^|/)demos?/", re.IGNORECASE),  # demo/ or demos/
 ]
 
 
@@ -415,8 +418,6 @@ def _filter_references_from_ghost_phases(
     valid = [ref for ref in references if ref.phase not in ghost_phases]
     filtered_count = len(references) - len(valid)
     if filtered_count > 0:
-        import logging
-
         logging.getLogger(__name__).warning(
             (
                 "Filtered %d references from ghost phases (Recent Findings, "
