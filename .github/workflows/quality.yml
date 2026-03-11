@@ -391,5 +391,3 @@ jobs:
             echo "::error::One or more critical quality checks were skipped. All checks must run."
             exit 1
           fi
-          
-          echo "✅ All quality checks passed!"

@@ -2,7 +2,7 @@
 title: "Resolve Type-Checker Strategy Ambiguity"
 component: "project-config"
 work_type: "fix"
-status: "IN_PROGRESS"
+status: "COMPLETE"
 priority: "High"
 created: "2026-03-07"
 execution_order: 11
@@ -11,7 +11,7 @@ depends_on: []
 
 # Resolve Type-Checker Strategy Ambiguity
 
-**Status**: IN_PROGRESS
+**Status**: COMPLETE
 **Priority**: High
 **Complexity**: Low
 **Category**: Fix / Documentation
@@ -51,13 +51,12 @@ Document the official type-checker strategy and remove any stale configuration, 
 - Search docs, prompts, and memory bank for references to both mypy and pyright.
 - Ensure they match the chosen strategy (Pyright primary, mypy optional/local-only).
 - Update or add any missing guidance so there is a single, consistent story.
-- **Status (latest slice, 2026-03-11)**: Non-.cortex public docs, the extension development guide, and `.cortex` memory-bank entries (including `techContext.md` and roadmap) are aligned to say \"Pyright primary, optional/local mypy\"; this plan text has been updated to reflect the final strategy. Steps 1–3 are DONE.
+- **Status (latest slice, 2026-03-11)**: Non-.cortex public docs, the extension development guide, and `.cortex` memory-bank entries (including `techContext.md` and roadmap) are aligned to say "Pyright primary, optional/local mypy"; this plan text has been updated to reflect the final strategy. Steps 1–3 are DONE.
 
-### Step 4: Finalize HI-6 via quality-gate validation (PENDING)
+### Step 4: Finalize HI-6 via quality-gate validation (DONE)
 
-- Run the full Phase A quality gate/CI type-check slice with Pyright as primary to confirm the finalized strategy behaves correctly end-to-end.
-- If the quality gate passes and CI is green with the current configuration, update this plan’s status to COMPLETE and mark the HI-6 roadmap entry as COMPLETE.
-- Until that validation slice has run successfully, treat HI-6 as PARTIAL / IN PROGRESS and keep this plan in the plans root (do not archive).
+- Ran the full Phase A quality gate/CI type-check slice with Pyright as primary via the job-based pre-commit pipeline (phase "A") to confirm the finalized strategy behaves correctly end-to-end.
+- Quality gate and CI slice passed with Pyright as the enforced primary type checker and mypy as optional/local-only, so HI-6 is now fully COMPLETE and this plan can be treated as closed.
 
 ## Verification Checklist
 
@@ -78,3 +77,4 @@ Document the official type-checker strategy and remove any stale configuration, 
 ## Testing Strategy
 
 - **Coverage Target**: N/A (documentation/config)
+

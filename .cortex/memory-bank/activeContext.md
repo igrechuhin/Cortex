@@ -14,6 +14,8 @@
 
 - ✅ **[HI-6] Resolve Type-Checker Strategy (PARTIAL – docs slice)** - COMPLETE (2026-03-11) - Aligned key public docs and extension development guide so they consistently state that Pyright is the primary type checker (CI + local) and mypy is optional/local-only, and recorded that this was a docs-only session where the quality gate was effectively skipped due to tooling limitations ("Quality gate skipped — doc-only session"); remaining HI-6 work is to run a Phase A quality gate/CI validation slice for the type-checker-strategy docs/config/memory-bank changes and confirm it passes.
 
+- ✅ **[HI-6] Resolve Type-Checker Strategy (2026-03-11)** - COMPLETE (2026-03-11) - Ran the job-based Phase A preflight quality gate via Cortex MCP (phase "A") to validate that Pyright-based type checking, tests, coverage, and other quality checks all pass with the current Pyright-first configuration. This confirms that Pyright is the enforced primary type checker for Phase A and CI while mypy remains an optional/local cross-check, allowing HI-6 to be closed from the implementation side.
+
 ## Completed Work (2026-03-10)
 
 - **Summary (2026-03-10)** - 1 entries archived.
@@ -136,7 +138,7 @@
 
 ## Current Focus
 
-Roadmap item implementation batch complete; remaining items are documentation cleanup (HI-6, MED-7, MED-3, MED-10), refactoring (MED-8, HI-1, HI-4, HI-7, MED-9), and features (HI-2).
+Roadmap item implementation batch complete; remaining items are documentation cleanup (MED-7, MED-3, MED-10), refactoring (MED-8, HI-1, HI-4, HI-7, MED-9), and features (HI-2).
 
 ## Recent Changes
 
