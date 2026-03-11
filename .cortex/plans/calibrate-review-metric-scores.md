@@ -2,7 +2,7 @@
 title: "Calibrate Review Metric Scores with Examples"
 component: "synapse/prompts/review"
 work_type: "fix"
-status: "PENDING"
+status: "IN_PROGRESS"
 priority: "Medium"
 created: "2026-03-07"
 execution_order: 15
@@ -11,7 +11,7 @@ depends_on: []
 
 # Calibrate Review Metric Scores with Examples
 
-**Status**: PENDING
+**Status**: IN_PROGRESS
 **Priority**: Medium
 **Complexity**: Low
 **Category**: Fix
@@ -30,6 +30,8 @@ Add calibration examples for each of the 9 review metrics to prevent score infla
 - Review scores should be evidence-based (tool output cited) not subjective impressions.
 
 ## Implementation Steps
+
+> PARTIAL (2026-03-11): Step 3 completed — `review-output-schema.md` now exposes a `metrics` structure with `score` and `evidence` fields for all 9 review metrics. Steps 1–2 (calibration tables and evidence instructions in `review.md`) were already present before this session; a future quality gate run should verify end-to-end behavior.
 
 ### Step 1: Add calibration table to review.md
 

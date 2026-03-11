@@ -150,7 +150,7 @@ For local development, use these Make targets (after running `bash scripts/boots
 
 ## Key Tools
 
-Cortex exposes **27 public MCP tools**. The most important ones by workflow:
+Cortex exposes **30 tools, 9 prompts, and 24 resources**. The most important tools by workflow:
 
 | Workflow | Tools |
 |----------|-------|

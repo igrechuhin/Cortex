@@ -16,6 +16,12 @@
 
 - ✅ **[HI-6] Resolve Type-Checker Strategy (2026-03-11)** - COMPLETE (2026-03-11) - Ran the job-based Phase A preflight quality gate via Cortex MCP (phase "A") to validate that Pyright-based type checking, tests, coverage, and other quality checks all pass with the current Pyright-first configuration. This confirms that Pyright is the enforced primary type checker for Phase A and CI while mypy remains an optional/local cross-check, allowing HI-6 to be closed from the implementation side.
 
+- ✅ **[MED-7] Fix README Tool Count** - COMPLETE (2026-03-11) - Updated README key tools section to say “Cortex exposes **50+ public MCP tools**” instead of the stale “27 public MCP tools”, aligning it with the tools API reference that currently enumerates 59 tools across phases.
+
+- ✅ **Fix README Tool Count Discrepancy** - COMPLETE (2026-03-11) - Marking plan as COMPLETE and archiving after implement-verify reported it as a stray COMPLETE plan in the plans root.
+
+- ✅ **[MED-3] Calibrate Review Metric Scores (PARTIAL)** - COMPLETE (2026-03-11) - Adjusted `review-output-schema.md` so each of the 9 review metrics now records both a numeric score and a free-text evidence string in a `metrics` structure, aligning the schema with the existing calibration guidance in `review.md`. This is a schema/prompt-only change; a later full Phase A run should verify downstream tooling compatibility.
+
 ## Completed Work (2026-03-10)
 
 - **Summary (2026-03-10)** - 1 entries archived.
