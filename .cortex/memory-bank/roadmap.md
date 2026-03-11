@@ -12,7 +12,6 @@
 ## Future Enhancements
 
 ## Pending plans (from .cortex/plans)
-- **Make pre-commit checks job-based for Cursor MCP** - PENDING - Make pre-commit checks job-based for Cursor MCP so execute_pre_commit_checks runs via short-lived job calls instead of one long MCP call, preventing -32000 connection-closed errors inside Cursor while preserving existing pre-commit semantics. Plan: plans/make-pre-commit-checks-job-based-for-cursor-mcp.md
 
 ### Fixes
 

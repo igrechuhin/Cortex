@@ -2,6 +2,11 @@
 
 **This file records completed work only.** For current status and upcoming work see [roadmap.md](roadmap.md).
 
+## Completed Work (2026-03-11)
+
+- **Job-based pre-commit pipeline + commit orchestration migration** - COMPLETE. Fixed two interlocking issues: (1) `commit.md` hybrid mess — rewritten to delegate all phases (Preflight/A/B/C/Step 12) to dedicated cursor-agents; (2) MCP `-32000` disconnects — `start_pre_commit_job(phase=...)` and `get_pre_commit_job_status` now used by `commit-checks.md` and `commit-final-gate.md` instead of blocking `execute_pre_commit_checks`. Added `phase_to_checks()` helper to `pre_commit_phase_dispatch.py`; extended `start_pre_commit_job` with `phase` parameter. Fixed `analyze()` validation error (`target` now defaults to `"context"`). 43/43 targeted tests pass.
+- **Plan: make-pre-commit-checks-job-based-for-cursor-mcp** - COMPLETE. Archived.
+
 ## Completed Work (2026-03-10)
 
 - **Summary (2026-03-10)** - 1 entries archived.

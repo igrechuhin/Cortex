@@ -45,7 +45,7 @@ async def get_managers(root: Path) -> ManagersDict:
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_COMPLEX)
 async def analyze(
-    target: str,
+    target: str = "context",
     time_window_days: int | None = None,
     export_format: str = "json",
     categories: list[str] | None = None,
@@ -83,11 +83,11 @@ async def analyze(
        returns the consolidated report.
 
     Args:
-        target: Analysis target to perform.
+        target: Analysis target to perform. Defaults to "context".
             - "usage_patterns": Analyze file access and usage patterns
             - "structure": Analyze file organization and detect issues
             - "insights": Generate actionable optimization recommendations
-            - "context": Analyze current-session load_context effectiveness
+            - "context": Analyze current-session load_context effectiveness (default)
             - "context_all_sessions": Analyze all-session effectiveness logs
             - "context_stats": Return aggregated context usage statistics
             - "health": Run health-check analysis for prompts/rules/tools

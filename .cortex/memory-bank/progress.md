@@ -2,6 +2,7 @@
 
 ## 2026-03-11
 
+- **Job-based pre-commit pipeline + commit orchestration migration** - COMPLETE. `commit.md` rewritten to delegate all phases to cursor-agents (commit-preflight, commit-checks, commit-docs, commit-validate, commit-final-gate). `commit-checks.md` and `commit-final-gate.md` updated to use `start_pre_commit_job(phase="A") + poll get_pre_commit_job_status` instead of blocking `execute_pre_commit_checks`. Added `phase_to_checks()` helper and `phase` param to `start_pre_commit_job`. Fixed `analyze()` missing-required-`target` validation error (default to `"context"`). 43/43 targeted tests pass.
 - **Commit pipeline Phase B (documentation & state)** - Memory bank files reviewed for this session; no new completed work entries to append and no roadmap items marked complete in this Phase B run; proceeding directly to documentation validation via execute_pre_commit_checks(phase="B").
 
 ## 2026-03-10

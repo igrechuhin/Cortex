@@ -43,7 +43,7 @@ cortex-bridge = "cortex.bridge:main"
 dev = [
     "black>=25.12.0",
     "ruff>=0.1.0",
-    "pyright>=1.1.400",
+    "pyright>=1.1.400",  # Secondary type checker; mypy ([tool.mypy]) is primary
     "detect-secrets>=1.5.0",
     "rumdl>=0.1.29",
 ]

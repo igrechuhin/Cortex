@@ -9,7 +9,7 @@ from __future__ import annotations
 import json
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 from cortex.core.context_logging import MCPContext
 
@@ -76,7 +76,7 @@ def _iter_result_files(session_dir: Path) -> list[Path]:
     )
 
 
-def _load_result(path: Path) -> dict[str, Any] | None:
+def _load_result(path: Path) -> dict[str, object] | None:
     """Load a detached result JSON file."""
     try:
         text = path.read_text()
@@ -88,60 +88,75 @@ def _load_result(path: Path) -> dict[str, Any] | None:
         return None
     if not isinstance(data, dict):
         return None
-    return data
+    return cast(dict[str, object], data)
 
 
-def _summarize_result(
-    data: dict[str, Any], args_hash: str | None
+def _extract_checks_list(result_obj: dict[str, object]) -> list[str] | None:
+    """Extract checks list from a completed result object."""
+    checks = result_obj.get("checks") or result_obj.get("checks_performed")
+    if not isinstance(checks, list):
+        return None
+    return [str(item) for item in cast(list[object], checks)]
+
+
+def _extract_completed_at(data: dict[str, object]) -> float | None:
+    """Extract completed_at timestamp from result data."""
+    completed_at = data.get("completed_at")
+    if isinstance(completed_at, (int, float)):
+        return float(completed_at)
+    return None
+
+
+def _summarize_completed(
+    data: dict[str, object], args_hash: str | None
 ) -> PreCommitRunSummary:
-    """Build a PreCommitRunSummary from detached result data."""
-    status_value = str(data.get("status", "unknown"))
-    if status_value == "completed":
-        result_obj = data.get("result")
-        if isinstance(result_obj, dict):
-            checks = result_obj.get("checks") or result_obj.get("checks_performed")
-            checks_list: list[str] | None = None
-            if isinstance(checks, list):
-                checks_list = [str(c) for c in checks]
-            preflight = result_obj.get("preflight_passed")
-            docs_phase = result_obj.get("docs_phase_passed")
-            coverage = result_obj.get("coverage")
-            return PreCommitRunSummary(
-                status="completed",
-                args_hash=args_hash,
-                checks=checks_list,
-                preflight_passed=bool(preflight) if preflight is not None else None,
-                docs_phase_passed=bool(docs_phase) if docs_phase is not None else None,
-                coverage=(
-                    float(coverage) if isinstance(coverage, (int, float)) else None
-                ),
-                completed_at=(
-                    data.get("completed_at")
-                    if isinstance(data.get("completed_at"), (int, float))
-                    else None
-                ),
-            )
+    """Build summary for a completed run."""
+    raw_result = data.get("result")
+    if not isinstance(raw_result, dict):
         return PreCommitRunSummary(
             status="error",
             args_hash=args_hash,
             error="Completed worker result missing 'result' object",
         )
+    result_obj = cast(dict[str, object], raw_result)
+    preflight = result_obj.get("preflight_passed")
+    docs_phase = result_obj.get("docs_phase_passed")
+    coverage = result_obj.get("coverage")
+    return PreCommitRunSummary(
+        status="completed",
+        args_hash=args_hash,
+        checks=_extract_checks_list(result_obj),
+        preflight_passed=bool(preflight) if preflight is not None else None,
+        docs_phase_passed=bool(docs_phase) if docs_phase is not None else None,
+        coverage=float(coverage) if isinstance(coverage, (int, float)) else None,
+        completed_at=_extract_completed_at(data),
+    )
+
+
+def _summarize_result(
+    data: dict[str, object], args_hash: str | None
+) -> PreCommitRunSummary:
+    """Build a PreCommitRunSummary from detached result data."""
+    status_value = str(data.get("status") or "unknown")
+    if status_value == "completed":
+        return _summarize_completed(data, args_hash)
+    error_val = data.get("error")
     if status_value == "running":
         return PreCommitRunSummary(
             status="running",
             args_hash=args_hash,
-            error=str(data.get("error") or ""),
+            error=str(error_val) if error_val else "",
         )
     if status_value == "error":
         return PreCommitRunSummary(
             status="error",
             args_hash=args_hash,
-            error=str(data.get("error") or "Detached worker reported error"),
+            error=str(error_val) if error_val else "Detached worker reported error",
         )
     return PreCommitRunSummary(
         status="unknown",
         args_hash=args_hash,
-        error=str(data.get("error") or "Unknown detached worker status"),
+        error=str(error_val) if error_val else "Unknown detached worker status",
     )
 
 
