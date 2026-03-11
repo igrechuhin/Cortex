@@ -81,6 +81,25 @@ def _implement_prompt_path() -> Path:
     return _synapse_path() / "prompts" / "implement-next-roadmap-step.md"
 
 
+def _read_implement_pipeline_content() -> str:
+    """Read and concatenate implement prompt + all implement cursor-agents."""
+    parts: list[str] = []
+    prompt = _implement_prompt_path()
+    if prompt.exists():
+        parts.append(prompt.read_text())
+    cursor_agents_dir = _synapse_path() / "cursor-agents"
+    for name in (
+        "implement-select.md",
+        "implement-code.md",
+        "implement-finalize.md",
+        "implement-verify.md",
+    ):
+        path = cursor_agents_dir / name
+        if path.exists():
+            parts.append(path.read_text())
+    return "\n".join(parts)
+
+
 def _python_coding_standards_path() -> Path:
     """Return path to Python coding standards."""
     return _synapse_path() / "rules" / "python" / "python-coding-standards.mdc"
@@ -244,8 +263,10 @@ class TestCommitPipelineAlignment:
     def test_pipeline_contains_markdown_lint_fallback(
         self, pipeline_content: str
     ) -> None:
-        """Pipeline documents markdown lint fallback command."""
-        assert "rumdl" in pipeline_content
+        """Pipeline documents a markdown lint fallback mechanism."""
+        lower = pipeline_content.lower()
+        assert "markdown lint" in lower or "markdown_lint" in lower
+        assert any(kw in lower for kw in ("fallback", "fix", "fix_markdown"))
 
     def test_pipeline_contains_mcp_disconnect_recovery(
         self, pipeline_content: str
@@ -318,11 +339,11 @@ class TestImplementPromptRefactoringGuidance:
 
     @pytest.fixture
     def implement_prompt_content(self) -> str:
-        """Read implement prompt content; skip if missing."""
-        path = _implement_prompt_path()
-        if not path.exists():
-            pytest.skip(f"Implement prompt not found at {path}")
-        return path.read_text()
+        """Read implement prompt + all implement cursor-agents content."""
+        content = _read_implement_pipeline_content()
+        if not content.strip():
+            pytest.skip("Implement pipeline files not found")
+        return content
 
     def test_implement_prompt_contains_incremental_validation(
         self, implement_prompt_content: str

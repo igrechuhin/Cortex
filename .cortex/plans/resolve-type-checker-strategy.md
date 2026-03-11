@@ -11,7 +11,7 @@ depends_on: []
 
 # Resolve Type-Checker Strategy Ambiguity
 
-**Status**: PENDING
+**Status**: IN_PROGRESS
 **Priority**: High
 **Complexity**: Low
 **Category**: Fix / Documentation
@@ -33,20 +33,28 @@ Document the official type-checker strategy and remove any stale configuration, 
 
 ## Implementation Steps
 
-### Step 1: Check what `make typecheck` runs
+### Step 1: Clarify and document current strategy (DONE)
 
-Read `Makefile` and determine if it runs mypy, pyright, or both.
+- Clarify whether pyright or mypy is the primary type checker.
+- Update `pyproject.toml` dev dependency comments so they state the primary checker explicitly.
+- Add a clear "Type checking strategy" section to contributor docs, describing Pyright as the primary type checker and mypy as optional/secondary (if retained).
 
-### Step 2: Decide and document strategy
+### Step 2: Decide on mypy config retention vs removal (PARTIAL)
 
-If mypy is the primary (as `pyproject.toml` config suggests):
+- Decide whether to keep the `[tool.mypy]` block as an optional local check or remove it entirely.
+- If kept, ensure comments in `pyproject.toml` and docs clearly mark it as optional/local only. (CURRENT: `[tool.mypy]` is retained and explicitly documented as an optional/local cross-check, with Pyright as the primary type checker.)
+- If removed, delete the `[tool.mypy]` block and any associated mypy-specific config.
 
-- Add a comment in `pyproject.toml` dev dependencies: `"pyright>=1.1.400",  # secondary checker, mypy is primary`
-- OR remove pyright from dev dependencies if unused.
+### Step 3: Sweep and align other docs and prompts (PARTIAL)
 
-### Step 3: Document in techContext.md or CONTRIBUTING
+- Search docs, prompts, and memory bank for references to both mypy and pyright.
+- Ensure they match the chosen strategy (Pyright primary, mypy optional/removed).
+- Update or add any missing guidance so there is a single, consistent story.
 
-Add a one-liner: "Type checking: mypy is the primary type checker (configured in pyproject.toml). Pyright is [kept for cross-validation / removed]."
+### Step 4: Finalize HI-6 and plan status (TODO)
+
+- Once mypy retention/removal is decided and all docs are aligned, mark this plan as COMPLETE.
+- Ensure the roadmap entry for **[HI-6] Resolve Type-Checker Strategy** is updated from PARTIAL to COMPLETE at that time.
 
 ## Verification Checklist
 

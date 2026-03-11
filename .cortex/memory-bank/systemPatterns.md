@@ -31,6 +31,9 @@ Cortex is structured as an MCP (Model Context Protocol) server with a modular, l
 - **Observer Pattern** - File watching for external change detection
 - **Language-Agnostic Script Pattern** - All procedures use scripts from the Synapse scripts directory (path resolved via project structure or Cortex tools) instead of hardcoded commands
 - **Semantic Names and Cortex Tools** - Prompts and procedures use semantic names ("plans directory", "memory bank", "Synapse agents directory") and resolve paths via Cortex MCP tools (`get_structure_info()`, `manage_file()`, `rules()`); hardcoding `.cortex/` or `.cursor/` paths is forbidden
+- **Cursor-Agent Delegation Pattern** - Top-level prompts (`commit.md`, `implement-next-roadmap-step.md`) are thin orchestrators; all substantive logic lives in named cursor-agents (`commit-preflight`, `commit-checks`, `commit-docs`, `commit-validate`, `commit-final-gate`, `implement-select`, `implement-code`, `implement-finalize`, `implement-verify`). Agents are auto-synced from `.cortex/synapse/cursor-agents/` to `.cursor/agents/` on every MCP startup via `sync_cursor_agents()`. Presence enforced by `TestRequiredAgentFilesPresent`.
+- **Job-Based Quality Gate Pattern** - Long-running quality checks use `start_pre_commit_job(phase="A"|"B"|"full")` (returns in <5s with a `job_id`) + polling loop via `get_pre_commit_job_status(job_id)`. This avoids MCP `-32000` connection-closed timeouts from blocking stdio calls. Phase-to-checks mapping lives in `pre_commit_phase_dispatch.py`.
+- **Shared-Defaults Reference** - Quality thresholds (30 lines/fn, 400 lines/file, 90%/95% coverage, 3 fix iterations) are declared once in `cursor-agents/shared-defaults.md`. Individual agents cite this file instead of hardcoding numbers. Projects using Cortex MCP can override thresholds via their `rules()` configuration.
 
 ## Synapse Architecture (CRITICAL)
 

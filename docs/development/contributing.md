@@ -109,6 +109,17 @@ Configure your IDE to use the correct Python interpreter:
 - **Cursor/VS Code**: Open `.venv/bin/python` in the Python interpreter selection dialog
 - **Type checking**: Enable Pyright with strict mode
 
+### Type checking strategy
+
+- **Primary type checker**: Pyright (strict mode), used in CI via the `Code Quality` workflow and expected for local runs.
+- **Recommended local command**:
+
+  ```bash
+  uv run pyright src/ tests/
+  ```
+
+- **Mypy**: A strict mypy configuration remains in `pyproject.toml` for optional local cross-checking, but Pyright is the **source of truth** for the quality gate and contributor expectations.
+
 ## Project Structure
 
 ### Directory Layout

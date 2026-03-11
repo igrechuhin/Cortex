@@ -22,8 +22,8 @@
 - **pytest-cov** / **coverage** – Test coverage tracking.
 - **Black** – Code formatting.
 - **Ruff** – Linting and import sorting.
-- **mypy** – Primary type checker (configured via `[tool.mypy]` in `pyproject.toml`).
-- **Pyright** – Secondary type checker for fast incremental checks and `make typecheck`.
+- **Pyright** – Primary type checker (`make typecheck`, CI quality gate, `pyproject.toml [tool.pyright]`).
+- **mypy** – Optional/local only. Kept for compatibility; not required to pass in CI.
 
 ## Development Setup
 
@@ -40,7 +40,7 @@
 uv sync --dev
 
 # Or with pip
-pip install -e ".dev]"
+pip install -e ".[dev]"
 ```
 
 ## Virtual Environment

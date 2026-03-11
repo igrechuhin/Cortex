@@ -272,7 +272,7 @@ def register_synapse_prompts() -> None:
     log_registration_summary(total_registered)
 
 
-def _get_cursor_agents_source() -> Path | None:
+def get_cursor_agents_source() -> Path | None:
     """Find .cortex/synapse/cursor-agents/ by walking up from CWD and module location."""
     current = Path.cwd()
     for path in [current, *current.parents]:
@@ -300,17 +300,120 @@ def _get_cursor_agents_source() -> Path | None:
     return None
 
 
-def _get_cursor_agents_target(source: Path) -> Path:
+def get_cursor_agents_target(source: Path) -> Path:
     """Resolve .cursor/agents/ from project root inferred via source path."""
     # source is <project_root>/.cortex/synapse/cursor-agents
     return source.parent.parent.parent / ".cursor" / "agents"
 
 
-def _sync_agent_file(agent_file: Path, target: Path) -> bool:
+def get_claude_agents_target(source: Path) -> Path:
+    """Resolve .claude/agents/ from project root inferred via source path."""
+    # source is <project_root>/.cortex/synapse/cursor-agents
+    return source.parent.parent.parent / ".claude" / "agents"
+
+
+CLAUDE_CODE_TOOLS_FIELD = "tools: mcp__cortex__*"
+
+# All Cortex MCP tool names — used to rewrite bare `tool(` references in
+# agent instructions so Claude Code can call them as `mcp__cortex__tool(`.
+_CORTEX_TOOL_NAMES: frozenset[str] = frozenset(
+    [
+        "analyze",
+        "analyze_error_patterns",
+        "apply_refactoring",
+        "check_mcp_connection_health",
+        "check_structure_health",
+        "configure",
+        "execute_pre_commit_checks",
+        "fix_markdown_lint",
+        "fix_quality_issues",
+        "get_last_pre_commit_status",
+        "get_pre_commit_job_status",
+        "get_relevance_scores",
+        "get_structure_info",
+        "load_context",
+        "manage_file",
+        "manage_session_scripts",
+        "plan",
+        "query_memory_bank",
+        "query_usage",
+        "roadmap",
+        "rules",
+        "run_composite_workflow",
+        "run_tool_evaluation",
+        "search_tools",
+        "session",
+        "start_pre_commit_job",
+        "suggest_refactoring",
+        "summarize_content",
+        "synapse",
+        "think",
+        "update_memory_bank",
+        "validate",
+    ]
+)
+
+_MCP_PREFIX = "mcp__cortex__"
+
+
+def _rewrite_tool_refs(body: str) -> str:
+    """Replace bare `tool_name(` references with `mcp__cortex__tool_name(` in body text.
+
+    Only rewrites occurrences that are already prefixed with a backtick (i.e. inside
+    inline code spans like `tool_name(`), to avoid false-positive rewrites in prose.
+    """
+    import re
+
+    def replacer(m: re.Match[str]) -> str:
+        name = m.group(1)
+        if name in _CORTEX_TOOL_NAMES:
+            return f"`{_MCP_PREFIX}{name}("
+        return m.group(0)
+
+    return re.sub(r"`(\w+)\(", replacer, body)
+
+
+def inject_tools_into_frontmatter(content: str) -> str:
+    """Transform agent content for Claude Code: inject tools field and rewrite tool refs.
+
+    Two changes are applied to the Claude Code copy of each agent file:
+    1. `tools: mcp__cortex__*` is added to YAML frontmatter so Claude Code
+       grants the agent permission to call all Cortex MCP tools.
+    2. Bare backtick tool references like `check_mcp_connection_health(` are
+       rewritten to `mcp__cortex__check_mcp_connection_health(` so the LLM
+       unambiguously invokes the right tool without any name-to-prefix mapping.
+
+    Cursor agents do not use these fields (frontmatter `tools:` is ignored,
+    plain names work natively), so the source files stay clean.
+
+    If no frontmatter is present, only the tool-ref rewrite is applied.
+    """
+    if not content.startswith("---"):
+        return _rewrite_tool_refs(content)
+    end = content.find("\n---", 3)
+    if end == -1:
+        return _rewrite_tool_refs(content)
+    frontmatter = content[3:end]
+    closing = end + 4  # position just after "\n---"
+    body = content[closing:]
+
+    if "tools:" not in frontmatter:
+        injected_fm = (
+            content[:end] + f"\n{CLAUDE_CODE_TOOLS_FIELD}" + content[end:closing]
+        )
+    else:
+        injected_fm = content[:closing]
+
+    return injected_fm + _rewrite_tool_refs(body)
+
+
+def _sync_agent_file(agent_file: Path, target: Path, transform: bool = False) -> bool:
     """Write agent file to target if content differs. Returns True if written."""
     from cortex.core.logging_config import logger
 
     content = agent_file.read_text(encoding="utf-8")
+    if transform:
+        content = inject_tools_into_frontmatter(content)
     dest = target / agent_file.name
     if dest.exists() and dest.read_text(encoding="utf-8") == content:
         return False
@@ -322,30 +425,46 @@ def _sync_agent_file(agent_file: Path, target: Path) -> bool:
         return False
 
 
-def sync_cursor_agents() -> None:
-    """Sync cursor agents from .cortex/synapse/cursor-agents/ to .cursor/agents/.
-
-    Idempotent: files are only written when content changes. Creates the
-    target directory if absent. Called at import time so agents are always
-    in sync when the MCP server starts.
-    """
+def _sync_agents_to_target(
+    source: Path, target: Path, label: str, transform: bool = False
+) -> int:
+    """Sync all .md agent files from source to target. Returns count written."""
     from cortex.core.logging_config import logger
-
-    source = _get_cursor_agents_source()
-    if not source:
-        return
-
-    target = _get_cursor_agents_target(source)
 
     try:
         target.mkdir(parents=True, exist_ok=True)
     except OSError as e:
         logger.warning(f"sync_cursor_agents: could not create {target}: {e}")
+        return 0
+
+    synced = sum(
+        _sync_agent_file(f, target, transform=transform)
+        for f in sorted(source.glob("*.md"))
+    )
+    if synced > 0:
+        logger.info(f"Synced {synced} agent(s) to {target} ({label})")
+    return synced
+
+
+def sync_cursor_agents() -> None:
+    """Sync cursor agents to .cursor/agents/ and .claude/agents/.
+
+    Copies all .md files from .cortex/synapse/cursor-agents/ to both IDE
+    agent directories so the commit and implement pipelines work in both
+    Cursor (primary) and Claude Code (secondary).
+
+    Idempotent: files are only written when content changes. Creates target
+    directories if absent. Called at import time so agents are always in sync
+    when the MCP server starts.
+    """
+    source = get_cursor_agents_source()
+    if not source:
         return
 
-    synced = sum(_sync_agent_file(f, target) for f in sorted(source.glob("*.md")))
-    if synced > 0:
-        logger.info(f"Synced {synced} cursor agent(s) to {target}")
+    _sync_agents_to_target(source, get_cursor_agents_target(source), "cursor")
+    _sync_agents_to_target(
+        source, get_claude_agents_target(source), "claude-code", transform=True
+    )
 
 
 # Register prompts and sync cursor agents at import time

@@ -17,7 +17,7 @@
 
 ### Documentation Cleanup (DRY)
 
-- **[HI-6] Resolve Type-Checker Strategy** — PARTIAL: Pyright documented as primary and mypy marked optional/local; latest slice: mypy config explicitly marked optional/local in `pyproject.toml` and key protocol/docs updated to say "Pyright primary, optional mypy." Remaining: decide on full removal vs retention of mypy config, sweep remaining docs/prompts for consistency, and fully align the dedicated HI-6 plan. Plan: `plans/resolve-type-checker-strategy.md` | Priority: High | Order: 11
+- **[HI-6] Resolve Type-Checker Strategy** — PARTIAL: Pyright documented as primary and mypy marked optional/local; remaining: decide on full removal of mypy config, sweep other docs for consistency, and finalize/align the dedicated plan. Plan: `plans/resolve-type-checker-strategy.md` | Priority: High | Order: 11
 - **[MED-7] Fix README Tool Count** — Update "27 public MCP tools" to actual count. Plan: `plans/fix-readme-tool-count.md` | Priority: Medium | Order: 19
 - **[MED-3] Calibrate Review Metric Scores** — Add calibration examples and evidence requirements for 9 review metrics. Plan: `plans/calibrate-review-metric-scores.md` | Priority: Medium | Order: 15
 - **[MED-10] Make Prompts Agent-Agnostic** — Replace Cursor-specific tool names with generic mapping. Plan: `plans/make-prompts-agent-agnostic.md` | Priority: Medium | Order: 22
@@ -25,6 +25,7 @@
 ### Refactoring
 
 - **[MED-8] Reduce Prompt-Alignment Test Fragility** — Refactor substring assertions to semantic checks. MUST complete before HI-1. Plan: `plans/reduce-prompt-alignment-test-fragility.md` | Priority: Medium | Order: 20
+- **[HI-1] Simplify Commit Pipeline Structure** — Collapse 15+ steps to 3 macro-phases with tabular sub-steps. Depends: MED-8, CRI-3, CRI-4. Plan: `plans/simplify-commit-pipeline-structure.md` | Priority: High | Order: 6
 - **[HI-4] Consolidate Roadmap Sync Models** — Remove legacy duplicates in `src/cortex/validation/roadmap_models.py`. Plan: `plans/consolidate-roadmap-sync-models.md` | Priority: High | Order: 9
 - **[HI-7] Reduce Redundant Pipeline Checks** — Dirty-state tracking to skip clean checks in final validation. Depends: CRI-3, HI-1. Plan: `plans/reduce-redundant-pipeline-checks.md` | Priority: High | Order: 12
 - **[MED-9] Reduce Oversized Modules** — Split top 5 files (>550 lines) to comply with 400-line limit. Plan: `plans/reduce-oversized-modules.md` | Priority: Medium | Order: 21

@@ -43,7 +43,7 @@ cortex-bridge = "cortex.bridge:main"
 dev = [
     "black>=25.12.0",
     "ruff>=0.1.0",
-    "pyright>=1.1.400",  # Secondary type checker; mypy ([tool.mypy]) is primary
+    "pyright>=1.1.400",  # Primary type checker (CI + local); mypy config kept for optional local runs
     "detect-secrets>=1.5.0",
     "rumdl>=0.1.29",
 ]
@@ -72,6 +72,7 @@ ignore = [
 # Configure ruff's isort (compatible with isort's black profile by default)
 known-first-party = ["cortex"]
 
+# Optional local mypy configuration; Pyright remains the primary CI and local type checker.
 [tool.mypy]
 python_version = "3.13"
 warn_return_any = true

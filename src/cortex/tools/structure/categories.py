@@ -120,6 +120,16 @@ TOOL_CATEGORIES: tuple[ToolCategoryEntry, ...] = (
         rationale="Inspect status of the most recent detached pre-commit run without starting a new one",
     ),
     ToolCategoryEntry(
+        name="start_pre_commit_job",
+        category=ToolCategory.DEFERRED_MEDIUM,
+        rationale="Start or reuse detached pre-commit jobs for long-running quality gates",
+    ),
+    ToolCategoryEntry(
+        name="get_pre_commit_job_status",
+        category=ToolCategory.DEFERRED_MEDIUM,
+        rationale="Poll status of a specific detached pre-commit job by job_id",
+    ),
+    ToolCategoryEntry(
         name="check_mcp_connection_health",
         category=ToolCategory.ALWAYS_LOADED,
         rationale="Health check for MCP connection diagnostics",

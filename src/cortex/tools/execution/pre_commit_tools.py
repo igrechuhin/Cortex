@@ -610,7 +610,30 @@ async def get_pre_commit_job_status(
     job_id: str,
     ctx: MCPContext | None = None,
 ) -> ModelDict:
-    """Return summary for a specific detached pre-commit job by job_id."""
+    """Return summary for a specific detached pre-commit job by job_id.
+
+    USE WHEN: Polling the status of a long-running detached quality gate
+    started via start_pre_commit_job without triggering a new run. This is
+    the preferred way to monitor progress and completion of Phase A/B/full
+    or tests-only jobs from the commit pipeline.
+
+    EXAMPLES:
+    - get_pre_commit_job_status(job_id="abc123") in a loop until status != "running"
+      to wait for a detached tests run to complete.
+    - get_pre_commit_job_status(job_id="abc123") in a follow-up session to inspect
+      the final result (status, coverage, checks) of a previously started job.
+
+    RETURNS: JSON with at least:
+      - status: "no_runs" | "running" | "completed" | "error" | "unknown"
+      - args_hash: identifier of the detached run (usually derived from job_id)
+      - checks: list of checks or checks_performed when available
+      - preflight_passed / docs_phase_passed / coverage when reported
+      - error: optional error message for "error" or "unknown" status.
+
+    Args:
+        job_id: Identifier of the detached pre-commit job (from start_pre_commit_job).
+        ctx: Optional MCP context for logging and project root resolution.
+    """
     root = await get_or_resolve_project_root(ctx)
     module = __import__(
         "cortex.tools.execution.pre_commit_status",

@@ -2134,7 +2134,7 @@ assert isinstance(fs, FileSystemProtocol)  # Structural subtyping check
 1. **Loose Coupling:** No explicit inheritance dependencies
 2. **Easy Testing:** Mock implementations without complex inheritance
 3. **Flexibility:** Multiple implementations without base class constraints
-4. **Type Safety:** Static type checking with mypy/pyright
+4. **Type Safety:** Static type checking with Pyright (primary) and optional mypy
 
 ---
 
