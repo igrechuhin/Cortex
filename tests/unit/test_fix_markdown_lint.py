@@ -299,7 +299,7 @@ class TestCheckMarkdownlintAvailable:
         ) as mock_run:
             mock_run.return_value = GitCommandResult(
                 success=True,
-                stdout="markdownlint-cli2 version 1.0.0",
+                stdout="rumdl version 1.0.0",
                 stderr="",
                 returncode=0,
             )
@@ -308,8 +308,8 @@ class TestCheckMarkdownlintAvailable:
             result = await find_markdownlint_command()
 
             # Assert
-            assert result == ["markdownlint-cli2"]
-            mock_run.assert_called_once_with(["markdownlint-cli2", "--version"])
+            assert result == ["rumdl"]
+            mock_run.assert_called_once_with(["rumdl", "--version"])
 
     @pytest.mark.asyncio
     async def test_markdownlint_available_via_npx(self):
@@ -330,7 +330,7 @@ class TestCheckMarkdownlintAvailable:
                 ),
                 GitCommandResult(
                     success=True,
-                    stdout="markdownlint-cli2 version 1.0.0",
+                    stdout="rumdl version 1.0.0",
                     stderr="",
                     returncode=0,
                 ),
@@ -340,7 +340,7 @@ class TestCheckMarkdownlintAvailable:
             result = await find_markdownlint_command()
 
             # Assert
-            assert result == ["npx", "--yes", "markdownlint-cli2"]
+            assert result == ["npx", "--yes", "rumdl"]
             assert mock_run.call_count == 2
 
     @pytest.mark.asyncio
@@ -365,13 +365,13 @@ class TestCheckMarkdownlintAvailable:
 
             # Assert
             assert result is None
-            assert mock_run.call_count == 2  # Should try both markdownlint-cli2 and npx
+            assert mock_run.call_count == 2  # Should try both discovery attempts
 
     @pytest.mark.asyncio
     async def test_markdownlint_prefers_local_node_modules(self, tmp_path: Path):
-        """Test that local node_modules/.bin/markdownlint-cli2 is used when present."""
+        """Test that local rumdl CLI is used when present."""
         (tmp_path / "node_modules" / ".bin").mkdir(parents=True)
-        local_bin = tmp_path / "node_modules" / ".bin" / "markdownlint-cli2"
+        local_bin = tmp_path / "node_modules" / ".bin" / "rumdl"
         _ = local_bin.write_text("#!/bin/sh\nexit 0")
 
         with patch(
@@ -380,7 +380,7 @@ class TestCheckMarkdownlintAvailable:
         ) as mock_run:
             mock_run.return_value = GitCommandResult(
                 success=True,
-                stdout="markdownlint-cli2 version 1.0.0",
+                stdout="rumdl",
                 stderr="",
                 returncode=0,
             )
@@ -389,7 +389,7 @@ class TestCheckMarkdownlintAvailable:
 
             assert result is not None
             assert len(result) == 1
-            assert "markdownlint-cli2" in result[0]
+            assert "rumdl" in result[0]
             assert str(tmp_path) in result[0]
             mock_run.assert_called_once()
             call_args = mock_run.call_args[0][0]
@@ -418,7 +418,7 @@ class TestRunMarkdownlintFix:
 
             # Act
             result = await run_markdownlint_fix(
-                file_path, project_root, ["markdownlint-cli2"], dry_run=False
+                file_path, project_root, ["rumdl"], dry_run=False
             )
 
             # Assert
@@ -448,7 +448,7 @@ class TestRunMarkdownlintFix:
 
             # Act
             result = await run_markdownlint_fix(
-                file_path, project_root, ["markdownlint-cli2"], dry_run=True
+                file_path, project_root, ["rumdl"], dry_run=True
             )
 
             # Assert
@@ -482,7 +482,7 @@ class TestRunMarkdownlintFix:
 
             # Act
             result = await run_markdownlint_fix(
-                file_path, project_root, ["markdownlint-cli2"], dry_run=False
+                file_path, project_root, ["rumdl"], dry_run=False
             )
 
             # Assert
@@ -513,7 +513,7 @@ class TestRunMarkdownlintFix:
 
             # Act
             result = await run_markdownlint_fix(
-                file_path, project_root, ["markdownlint-cli2"], dry_run=False
+                file_path, project_root, ["rumdl"], dry_run=False
             )
 
             # Assert
@@ -548,7 +548,7 @@ class TestRunMarkdownlintFix:
 
             # Act
             result = await run_markdownlint_fix(
-                file_path, project_root, ["markdownlint-cli2"], dry_run=False
+                file_path, project_root, ["rumdl"], dry_run=False
             )
 
             # Assert
@@ -586,7 +586,7 @@ class TestFixMarkdownLintTool:
             patch(
                 "cortex.tools.files.markdown_lint_core.find_markdownlint_command",
                 new_callable=AsyncMock,
-                return_value=["markdownlint-cli2"],
+                return_value=["rumdl"],
             ),
             patch(
                 "cortex.tools.files.markdown_lint.get_markdown_files_to_process",
@@ -680,7 +680,7 @@ class TestFixMarkdownLintTool:
 
     @pytest.mark.asyncio
     async def test_fix_markdown_lint_markdownlint_not_available(self, tmp_path: Path):
-        """Test error when markdownlint-cli2 is not available."""
+        """Test error when markdownlint CLI is not available."""
         # Arrange
         from cortex.tools.files.markdown_operations import fix_markdown_lint
 
@@ -712,7 +712,7 @@ class TestFixMarkdownLintTool:
 
             # Assert
             assert result["success"] is False
-            assert "markdownlint-cli2" in result["error_message"]
+            assert "rumdl" in result["error_message"]
 
     @pytest.mark.asyncio
     async def test_fix_markdown_lint_no_files(self, tmp_path: Path):
@@ -733,7 +733,7 @@ class TestFixMarkdownLintTool:
             patch(
                 "cortex.tools.files.markdown_lint_core.find_markdownlint_command",
                 new_callable=AsyncMock,
-                return_value=["markdownlint-cli2"],
+                return_value=["rumdl"],
             ),
             patch(
                 "cortex.tools.files.markdown_lint_core.get_modified_markdown_files",
@@ -789,7 +789,7 @@ class TestFixMarkdownLintTool:
             patch(
                 "cortex.tools.files.markdown_lint.validate_markdown_prerequisites",
                 new_callable=AsyncMock,
-                return_value=(None, ["markdownlint-cli2"], None),
+                return_value=(None, ["rumdl"], None),
             ),
             patch(
                 "cortex.tools.files.markdown_lint.get_markdown_files_to_process",
@@ -839,7 +839,7 @@ class TestFixMarkdownLintContextLogging:
             patch(
                 "cortex.tools.files.markdown_lint_core.find_markdownlint_command",
                 new_callable=AsyncMock,
-                return_value=["markdownlint-cli2"],
+                return_value=["rumdl"],
             ),
             patch(
                 "cortex.tools.files.markdown_lint_core.get_markdown_files_to_process",
@@ -1006,7 +1006,7 @@ class TestFixMarkdownLintErrorHandling:
             result_str = await run_markdownlint_with_cache(
                 tmp_path,
                 [test_file],
-                ["markdownlint-cli2"],
+                ["rumdl"],
                 None,
                 False,
                 ctx=None,
@@ -1077,7 +1077,7 @@ class TestFixMarkdownLintErrorHandling:
             result_str = await run_markdownlint_with_cache(
                 tmp_path,
                 [test_file],
-                ["markdownlint-cli2"],
+                ["rumdl"],
                 None,
                 False,
                 ctx=None,
@@ -1173,7 +1173,7 @@ class TestMarkdownlintBatchHelpers:
             files_to_lint=[],
             initial_results=initial,
             root_path=tmp_path,
-            markdownlint_cmd=["markdownlint-cli2"],
+            markdownlint_cmd=["rumdl"],
             config_path=None,
             dry_run=False,
         )
@@ -1217,7 +1217,7 @@ class TestMarkdownlintBatchHelpers:
             result_json = await run_markdownlint_with_cache(
                 root_path=tmp_path,
                 files=[tmp_path / "docs" / "file.md"],
-                markdownlint_cmd=["markdownlint-cli2"],
+                markdownlint_cmd=["rumdl"],
                 config_path=None,
                 dry_run=False,
             )
@@ -1268,7 +1268,7 @@ class TestFixMarkdownLintProgressReporting:
                 files_to_lint=files_to_lint,
                 initial_results=initial_results,
                 root_path=tmp_path,
-                markdownlint_cmd=["markdownlint-cli2"],
+                markdownlint_cmd=["rumdl"],
                 config_path=None,
                 dry_run=False,
                 ctx=mock_ctx,
@@ -1314,7 +1314,7 @@ class TestFixMarkdownLintProgressReporting:
                 files_to_lint=files_to_lint,
                 initial_results=initial_results,
                 root_path=tmp_path,
-                markdownlint_cmd=["markdownlint-cli2"],
+                markdownlint_cmd=["rumdl"],
                 config_path=None,
                 dry_run=False,
                 ctx=None,
@@ -1412,7 +1412,7 @@ class TestBatchErrorReporting:
         _ = file1.write_text("# Test\n")
         _ = file2.write_text("# Test\n")
 
-        markdownlint_cmd = ["markdownlint-cli2"]
+        markdownlint_cmd = ["rumdl"]
 
         # Mock batch run that fails with unparseable stderr
         batch_call_count = 0
@@ -1422,8 +1422,8 @@ class TestBatchErrorReporting:
             cmd: list[str], cwd: Path | None = None, timeout: int = 120
         ) -> GitCommandResult:
             nonlocal batch_call_count, per_file_call_count
-            # Check if this is a markdownlint command
-            if "markdownlint" in str(cmd[0]) if cmd else False:
+            # Check if this is a rumdl markdownlint command
+            if cmd and "rumdl" in str(cmd[0]):
                 # Check if this is a batch (multiple files) or single file
                 file_args = [arg for arg in cmd if ".md" in str(arg)]
                 if len(file_args) > 1:  # Batch run (multiple files)
@@ -1483,7 +1483,7 @@ class TestBatchErrorReporting:
         _ = file1.write_text("# Test\n")
         _ = file2.write_text("# Test\n")
 
-        markdownlint_cmd = ["markdownlint-cli2"]
+        markdownlint_cmd = ["rumdl"]
 
         batch_call_count = 0
         per_file_call_count = 0
@@ -1544,7 +1544,7 @@ class TestBatchErrorReporting:
         _ = file1.write_text("# Test\n")
         _ = file2.write_text("# Test\n")
 
-        markdownlint_cmd = ["markdownlint-cli2"]
+        markdownlint_cmd = ["rumdl"]
 
         batch_call_count = 0
         per_file_call_count = 0

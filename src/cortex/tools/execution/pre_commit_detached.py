@@ -253,6 +253,98 @@ def _cached_detached_result(
     return out
 
 
+def _build_job_id(
+    checks: list[str],
+    timeout: int,
+    coverage_threshold: float,
+    strict_mode: bool,
+    include_markdown_lint: bool,
+) -> str:
+    return compute_args_hash(
+        checks, timeout, coverage_threshold, strict_mode, include_markdown_lint
+    )
+
+
+def _interpret_existing_job(
+    project_root: Path,
+    args_hash: str,
+) -> dict[str, object] | None:
+    existing = find_existing_result(project_root, args_hash)
+    if existing is not None:
+        status = existing.get("status")
+        if status == "completed":
+            return {
+                "job_id": args_hash,
+                "status": "completed",
+            }
+        if status == "running":
+            return {
+                "job_id": args_hash,
+                "status": "already_running",
+            }
+        return {
+            "job_id": args_hash,
+            "status": "error",
+            "error": str(existing.get("error") or "Detached worker reported error"),
+        }
+
+    return None
+
+
+def _spawn_new_job(
+    project_root: Path,
+    checks: list[str],
+    timeout: int,
+    coverage_threshold: float,
+    strict_mode: bool,
+    include_markdown_lint: bool,
+    args_hash: str,
+) -> dict[str, object]:
+    _ = spawn_detached_worker(
+        project_root,
+        checks,
+        timeout,
+        coverage_threshold,
+        strict_mode,
+        include_markdown_lint,
+        args_hash,
+    )
+    return {
+        "job_id": args_hash,
+        "status": "started",
+    }
+
+
+def start_pre_commit_job_impl(
+    project_root: Path,
+    checks: list[str],
+    timeout: int,
+    coverage_threshold: float,
+    strict_mode: bool,
+    include_markdown_lint: bool,
+) -> dict[str, object]:
+    """Start or reuse a detached pre-commit job and return lightweight status."""
+    args_hash = _build_job_id(
+        checks,
+        timeout,
+        coverage_threshold,
+        strict_mode,
+        include_markdown_lint,
+    )
+    existing_result = _interpret_existing_job(project_root, args_hash)
+    if existing_result is not None:
+        return existing_result
+    return _spawn_new_job(
+        project_root,
+        checks,
+        timeout,
+        coverage_threshold,
+        strict_mode,
+        include_markdown_lint,
+        args_hash,
+    )
+
+
 def _interpret_poll_data(data: dict[str, object]) -> dict[str, object]:
     """Map poll result to final result dict."""
     status = data.get("status")

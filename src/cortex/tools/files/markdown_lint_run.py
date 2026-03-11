@@ -1,4 +1,10 @@
-"""Run markdownlint in batches with heartbeat and progress reporting."""
+"""Run rumdl markdown lint in batches with heartbeat and progress reporting.
+
+The higher-level interfaces and helpers in this module keep their original
+names (``run_markdownlint_*``) for backward compatibility, but they now invoke
+the ``rumdl`` CLI under the hood via commands constructed in
+``markdown_lint_core``.
+"""
 
 # pyright: reportPrivateUsage=false
 

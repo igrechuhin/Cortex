@@ -5,7 +5,6 @@
 **Implementation sequence**: The implement command picks the **next** step as the **first PENDING item** when reading the roadmap in this order: (1) Blockers (ASAP Priority), (2) Active Work, (3) Future Enhancements, (4) Implementation queue (Pending plans). Order within each section is top-to-bottom. New plans are added by create-plan in the correct place so this order defines execution.
 
 ## Blockers (ASAP Priority)
-- [Phase: Investigate execute_pre_commit_checks MCP Tool Failure](.cortex/plans/phase-investigate-execute_pre_commit_checks-failure-20260310-124154.md) - ASAP (PLANNING) - Investigate and fix MCP tool failure that occurred during commit procedure - Tool: `execute_pre_commit_checks`, Error: RuntimeError - Impact: Commit procedure blocked - Target completion: 2026-03-10
 
 
 ## Active Work (in progress)
@@ -13,6 +12,7 @@
 ## Future Enhancements
 
 ## Pending plans (from .cortex/plans)
+- **Make pre-commit checks job-based for Cursor MCP** - PENDING - Make pre-commit checks job-based for Cursor MCP so execute_pre_commit_checks runs via short-lived job calls instead of one long MCP call, preventing -32000 connection-closed errors inside Cursor while preserving existing pre-commit semantics. Plan: plans/make-pre-commit-checks-job-based-for-cursor-mcp.md
 
 ### Fixes
 

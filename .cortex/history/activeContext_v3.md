@@ -1,138 +1,135 @@
 # Active Context: Cortex
 
-## Current Focus (2026-01-25)
+**This file records completed work only.** For current status and upcoming work see [roadmap.md](roadmap.md).
 
-See [roadmap.md](roadmap.md) for current status and milestones.
+## Completed Work (2026-03-10)
 
-### Active Work
+- ✅ **Phase: Investigate execute_pre_commit_checks MCP Tool Failure** - COMPLETE (2026-03-10) - Clarified detached pre-commit worker behavior and long-running semaphore scope, updated commit/troubleshooting guidance to enforce one-call semantics and fast-fail on duplicate runs, and confirmed execute_pre_commit_checks Phase A succeeds in Cursor.
 
-- 🟡 **Phase 53 Blockers** (2026-01-25) - Follow-up work remaining:
-  - Commit pipeline ergonomics + scoping
-  - Memory bank index staleness breaks `manage_file(write)`
-  - `fix_quality_issues` over-reporting remaining issues
+## Completed Work (2026-03-09)
 
-- ✅ **Phase 9: Excellence 9.8+ COMPLETE** (2026-01-22) - Achieved 9.6/10 overall quality score
-- ✅ **Phase 26: Unify Cache Directory Structure COMPLETE** (2026-01-22) - Unified cache directory implemented
-- ✅ **Phase 53: Type Safety Cleanup** (2026-01-25) - See roadmap.md for detailed completion notes
-- **Next milestone**: Phase 21 (Health-Check and Optimization Analysis System), Phase 27-29
+- **Summary (2026-03-09)** - 1 entries archived.
 
-### Recently Completed
+## Completed Work (2026-03-08)
 
-- ✅ **Phase 53 Blocker: Cursor MCP `user-cortex` server errored (commit pipeline blocked)** - COMPLETE (2026-01-25) - MCP server healthy again; core tool calls succeed; roadmap + plan updated
+- **Summary (2026-03-08)** - 1 entries archived.
 
-- ✅ **Phase 26: Unify Cache Directory Structure** - COMPLETE (2026-01-22) - Refactored Cortex MCP tools to use unified cache directory:
-  - Added `CACHE` to `CortexResourceType` enum and `get_cache_path()` helper
-  - Updated `SummarizationEngine` to use `.cortex/.cache/summaries` by default
-  - Created `cache_utils.py` module with utilities for cache management
-  - Added comprehensive tests (23 new tests, all passing)
-  - Updated README.md to document unified cache structure
-  - All 54 tests passing, 0 linting errors, 0 type errors
-  - Provides centralized cache management for all future caching needs
+## Completed Work (2026-03-07)
 
-- ✅ **Phase 9.9: Final Integration & Validation** - COMPLETE (2026-01-22) - Completed Phase 9 Excellence 9.8+ initiative:
-  - Comprehensive testing: 2,655 tests passing (100% pass rate), 90.15% coverage
-  - Code quality validation: All checks passing (Black, Pyright, Ruff, file sizes, function lengths)
-  - Quality report generated: Overall score 9.6/10 (exceeds 9.5/10 target)
-  - Documentation updated: README.md, memory bank files, completion summary created
-  - All sub-phases complete: 9.1-9.9 all marked as COMPLETE
-  - Key achievements: Zero file size violations, zero function length violations, zero type errors, zero linting violations
-  - Security score: 9.8/10, Maintainability score: 9.8/10, Rules compliance: 9.8/10
-  - Quality report available at `benchmark_results/phase-9-quality-report.md`
+- **Summary (2026-03-07)** - 1 entries archived.
 
-- ✅ **Commit Procedure - Function Length Fixes** (2026-01-21) - Fixed 4 function length violations in context_analysis_operations.py:
-  - **Fixed `_compute_task_insight()`**: Extracted `_compute_recommended_budget()` and `_find_essential_files()` helpers
-  - **Fixed `_generate_learned_patterns()`**: Extracted `_get_budget_efficiency_pattern()`, `_get_file_frequency_pattern()`, `_get_task_type_pattern()` helpers
-  - **Fixed `analyze_current_session()`**: Extracted `_build_current_session_result()` helper
-  - **Fixed `analyze_session_logs()`**: Extracted `_build_session_logs_result()` helper
-  - **Fixed 8 type errors**: Added `# type: ignore[reportPrivateUsage]` comments to test file imports
-  - **Result**: All 2662 tests passing, 90.15% coverage, 0 type errors, 0 function length violations
+## Completed Work (2026-03-06)
 
-- ✅ **Phase 52: Move Cortex-specific prompts out of Synapse** - COMPLETE (2026-01-21):
-  - Moved `analyze-context-effectiveness.md` to `.cortex/prompts/` (uses Cortex MCP tools)
-  - Moved `validate-roadmap-sync.md` to `.cortex/prompts/` (uses Cortex MCP tools)
-  - Moved `populate-tiktoken-cache.md` to `.cortex/prompts/` (Cortex-specific paths)
-  - Updated `commit.md` reference to new path
-  - Created `.cortex/prompts/prompts-manifest.json` for Cortex-specific prompts
-  - Synapse now only contains generic, language-agnostic prompts
+- **Summary (2026-03-06)** - 1 entries archived.
 
-- ✅ **Phase 51: Enhance Context Analysis with Actionable Insights** - COMPLETE (2026-01-21):
-  - Added task-type recommendations (recommended budget, essential files)
-  - Added file effectiveness tracking (relevance scores, recommendations)
-  - Added learned patterns and budget recommendations
-  - All 23 context analysis tests passing
+## Completed Work (2026-03-05)
 
-- ✅ **Phase 22: Fix Commit Pipeline Quality Gate** - COMPLETE (2026-01-21) - Enhanced GitHub Actions workflow:
-  - Added explicit step IDs for all quality checks
-  - Added `::group::` and `::endgroup::` for log organization
-  - Added `::error::` annotations for GitHub UI visibility
-  - Added explicit error handling with `if !` statements
-  - Added pyright output parsing to detect errors/warnings
-  - Added markdown linting step (non-blocking)
-  - Added environment info and tool version display
-  - Added quality check summary step (runs always)
-  - Added 30-minute timeout to prevent hung workflows
-  - All local checks pass: 2662 tests, 90.15% coverage
+- **Summary (2026-03-05)** - 1 entries archived.
 
-- ✅ **Phase 19: Fix MCP Server Crash** - COMPLETE (2026-01-21) - Archived to `.cortex/plans/archive/Phase19/`
+## Completed Work (2026-03-04)
 
-- ✅ **Phase 20 Step 4: Security Vulnerabilities Fixed** - COMPLETE (2026-01-21)
+- **Summary (2026-03-04)** - 1 entries archived.
 
-- ✅ **Phase 25: Fix CI Failure - Commit 302c5e2** - COMPLETE (2026-01-21)
+## Completed Work (2026-03-03)
 
-- ✅ **Phase 23: Fix CI Failure After Validation Refactor** - COMPLETE (2026-01-21)
+- **Summary (2026-03-03)** - 1 entries archived.
 
-## Project Health
+## Completed Work (2026-03-02)
 
-- **Test Coverage**: 90.15% (2662 tests passing, 2 skipped) ✅
-- **Type Errors**: 0 (pyright src/ tests/) ✅
-- **Type Warnings**: 0 (pyright src/ tests/) ✅
-- **Linting Errors**: 0 (ruff check src/ tests/) ✅
-- **Function Length Violations**: 0 ✅
-- **File Size Violations**: 0 ✅
-- **Performance Score**: 9.0/10
-- **Security Score**: 9.8/10 ✅ (up from 9.5/10 via vulnerability fixes)
-- **Overall Quality Score**: 9.6/10 ✅ (Phase 9 target achieved)
+- **Summary (2026-03-02)** - 1 entries archived.
 
-## Code Quality Standards
+## Completed Work (2026-03-01)
 
-- Maximum file length: 400 lines
-- Maximum function length: 30 logical lines
-- Type hints: 100% coverage required
-- Testing: AAA pattern, 90% minimum coverage (MANDATORY - NO EXCEPTIONS)
-- Formatting: Black + Ruff (import sorting)
+- **Summary (2026-03-01)** - 1 entries archived.
 
-## Project Structure
+## Completed Work (2026-02-28)
 
-```text
-.cortex/                    # Primary Cortex data directory
-├── memory-bank/           # Core memory bank files
-├── plans/                 # Development plans
-├── prompts/               # Cortex-specific prompts (NOT part of Synapse)
-├── synapse/               # Shared rules (Git submodule) - language-agnostic only
-├── history/               # Version history
-├── .cache/                # Unified cache directory
-│   ├── summaries/         # Summary cache files
-│   └── [future subdirs]  # Future: relevance/, patterns/, refactoring/
-└── index.json             # Metadata index
+- **Summary (2026-02-28)** - 1 entries archived.
 
-.cursor/                    # IDE compatibility (symlinks)
-├── memory-bank -> ../.cortex/memory-bank
-├── plans -> ../.cortex/plans
-└── synapse -> ../.cortex/synapse
-```
+## Completed Work (2026-02-27)
 
-## Context for AI Assistants
+- **Summary (2026-02-27)** - 1 entries archived.
 
-### Key Files
+## Completed Work (2026-02-26)
 
-- [roadmap.md](roadmap.md) - Current status and milestones
-- [progress.md](progress.md) - Detailed progress log
-- [productContext.md](productContext.md) - Product goals and architecture
-- [systemPatterns.md](systemPatterns.md) - Technical patterns
-- [techContext.md](techContext.md) - Technology stack
+- **Summary (2026-02-26)** - 1 entries archived.
 
-### Testing Approach
+## Completed Work (2026-02-25)
 
-- Run targeted tests: `pytest tests/unit/test_<module>.py`
-- Full test suite: `gtimeout -k 5 300 python -m pytest -q`
-- Performance analysis: `scripts/analyze_performance.py`
+- **Summary (2026-02-25)** - 1 entries archived.
+
+## Completed Work (2026-02-24)
+
+- **Summary (2026-02-24)** - 1 entries archived.
+
+## Completed Work (2026-02-23)
+
+- **Summary (2026-02-23)** - 1 entries archived.
+
+## Completed Work (2026-02-22)
+
+- **Summary (2026-02-22)** - 1 entries archived.
+
+## Completed Work (2026-02-21)
+
+- **Summary (2026-02-21)** - 1 entries archived.
+
+## Completed Work (2026-02-20)
+
+- **Summary (2026-02-20)** - 1 entries archived.
+
+## Completed Work (2026-02-19)
+
+- **Summary (2026-02-19)** - 1 entries archived.
+
+## Completed Work (2026-02-18)
+
+- **Summary (2026-02-18)** - 1 entries archived.
+
+## Completed Work (2026-02-17)
+
+- **Summary (2026-02-17)** - 1 entries archived.
+
+## Completed Work (2026-02-16)
+
+- **Summary (2026-02-16)** - 1 entries archived.
+
+## Completed Work (2026-02-13)
+
+- **Summary (2026-02-13)** - 1 entries archived.
+
+## Completed Work (2026-01-14)
+
+- **Summary (2026-01-14)** - 1 entries archived.
+
+## Completed Work (2026-02-12)
+
+- **Summary (2026-02-12)** - 1 entries archived.
+
+## Completed Work (2026-02-11)
+
+- **Summary (2026-02-11)** - 1 entries archived.
+
+## Completed Work (2026-02-10)
+
+- **Summary (2026-02-10)** - 1 entries archived.
+
+## Completed Work (2026-02-09)
+
+- **Summary (2026-02-09)** - 1 entries archived.
+
+## Completed Work (2026-02-07)
+
+- **Summary (2026-02-07)** - 1 entries archived.
+
+## Current Focus
+
+Roadmap item implementation batch complete; remaining items are documentation cleanup (HI-6, MED-7, MED-3, MED-10), refactoring (MED-8, HI-1, HI-4, HI-7, MED-9), and features (HI-2).
+
+## Recent Changes
+
+Blocker (2026-02-09): create-plan and memory-bank-updater now mandate register_plan_in_roadmap for new plan entry to prevent roadmap corruption. Commit (2026-02-09): rules manager initialize mock, manage_file metadata test with usage-context patches; 3702 tests, 90.36% coverage.
+
+## Next Steps
+
+See [roadmap.md](roadmap.md).

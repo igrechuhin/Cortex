@@ -1,75 +1,135 @@
 # Active Context: Cortex
 
-## Current Focus (2026-01-15)
+**This file records completed work only.** For current status and upcoming work see [roadmap.md](roadmap.md).
 
-See [roadmap.md](roadmap.md) for current status and milestones.
+## Completed Work (2026-03-10)
 
-### Active Work
+- ✅ **Phase: Investigate execute_pre_commit_checks MCP Tool Failure** - COMPLETE (2026-03-10) - Clarified detached pre-commit worker behavior and long-running semaphore scope, updated commit/troubleshooting guidance to enforce one-call semantics and fast-fail on duplicate runs, and confirmed execute_pre_commit_checks Phase A succeeds in Cursor.
 
-- Code quality maintenance: All pre-commit checks passing
+## Completed Work (2026-03-09)
 
-### Recently Completed
+- **Summary (2026-03-09)** - 1 entries archived.
 
-- ✅ **Commit Procedure** (2026-01-15) - Fixed type errors and function length violations:
-  - Fixed 5 type errors in `config_status.py` by adding missing type annotations (Path types)
-  - Fixed 1 function length violation in `config_status.py` by extracting `_get_fail_safe_status()` helper
-  - All linting errors fixed (0 remaining)
-  - All files properly formatted (Black check passed)
-  - Type checking: 0 actual type errors (excluding stub warnings)
-  - All code quality checks passing (file size, function length)
-  - All tests passing with 90.41% coverage (2,434 passed, 0 failed, 100% pass rate)
-- ✅ [Phase 18: Markdown Lint Fix Tool](../plans/archive/Phase18/phase-18-markdown-lint-fix-tool.md) - COMPLETE (2026-01-14) - Created `scripts/fix_markdown_lint.py` tool that automatically scans modified markdown files (git-based), detects markdownlint errors, and fixes them automatically - Supports dry-run mode, JSON output, includes untracked files option, and comprehensive unit tests (16 tests, all passing)
-- ✅ **Commit Procedure** (2026-01-15) - Fixed linting errors, type errors, and test failures:
-  - Fixed 8 linting errors using ruff check --fix
-  - Fixed 1 type error in `timestamp_validator.py` by casting issue to str
-  - Fixed 2 test failures by updating tests to use date-only timestamps (YYYY-MM-DD) instead of datetime format
-  - All tests passing with 90.50% coverage (2,399 passed, 2 skipped)
-  - All code quality checks passing (file size, function length)
+## Completed Work (2026-03-08)
 
-## Project Health
+- **Summary (2026-03-08)** - 1 entries archived.
 
-- **Test Coverage**: 90.41% (2,434 tests passing, 0 failed) ✅
-- **Type Errors**: 0 (actual errors, excluding stub warnings) ✅
-- **Type Warnings**: 22 (down from 48) ✅
-- **Linting Errors**: 0 ✅
-- **Performance Score**: 9.0/10
+## Completed Work (2026-03-07)
 
-## Code Quality Standards
+- **Summary (2026-03-07)** - 1 entries archived.
 
-- Maximum file length: 400 lines
-- Maximum function length: 30 logical lines
-- Type hints: 100% coverage required
-- Testing: AAA pattern, 90%+ coverage target
-- Formatting: Black + Ruff (import sorting)
+## Completed Work (2026-03-06)
 
-## Project Structure
+- **Summary (2026-03-06)** - 1 entries archived.
 
-```text
-.cortex/                    # Primary Cortex data directory
-├── memory-bank/           # Core memory bank files
-├── plans/                 # Development plans
-├── synapse/               # Shared rules (Git submodule)
-├── history/               # Version history
-└── index.json             # Metadata index
+## Completed Work (2026-03-05)
 
-.cursor/                    # IDE compatibility (symlinks)
-├── memory-bank -> ../.cortex/memory-bank
-├── plans -> ../.cortex/plans
-└── synapse -> ../.cortex/synapse
-```
+- **Summary (2026-03-05)** - 1 entries archived.
 
-## Context for AI Assistants
+## Completed Work (2026-03-04)
 
-### Key Files
+- **Summary (2026-03-04)** - 1 entries archived.
 
-- [roadmap.md](roadmap.md) - Current status and milestones
-- [progress.md](progress.md) - Detailed progress log
-- [productContext.md](productContext.md) - Product goals and architecture
-- [systemPatterns.md](systemPatterns.md) - Technical patterns
-- [techContext.md](techContext.md) - Technology stack
+## Completed Work (2026-03-03)
 
-### Testing Approach
+- **Summary (2026-03-03)** - 1 entries archived.
 
-- Run targeted tests: `pytest tests/unit/test_<module>.py`
-- Full test suite: `gtimeout -k 5 300 python -m pytest -q`
-- Performance analysis: `scripts/analyze_performance.py`
+## Completed Work (2026-03-02)
+
+- **Summary (2026-03-02)** - 1 entries archived.
+
+## Completed Work (2026-03-01)
+
+- **Summary (2026-03-01)** - 1 entries archived.
+
+## Completed Work (2026-02-28)
+
+- **Summary (2026-02-28)** - 1 entries archived.
+
+## Completed Work (2026-02-27)
+
+- **Summary (2026-02-27)** - 1 entries archived.
+
+## Completed Work (2026-02-26)
+
+- **Summary (2026-02-26)** - 1 entries archived.
+
+## Completed Work (2026-02-25)
+
+- **Summary (2026-02-25)** - 1 entries archived.
+
+## Completed Work (2026-02-24)
+
+- **Summary (2026-02-24)** - 1 entries archived.
+
+## Completed Work (2026-02-23)
+
+- **Summary (2026-02-23)** - 1 entries archived.
+
+## Completed Work (2026-02-22)
+
+- **Summary (2026-02-22)** - 1 entries archived.
+
+## Completed Work (2026-02-21)
+
+- **Summary (2026-02-21)** - 1 entries archived.
+
+## Completed Work (2026-02-20)
+
+- **Summary (2026-02-20)** - 1 entries archived.
+
+## Completed Work (2026-02-19)
+
+- **Summary (2026-02-19)** - 1 entries archived.
+
+## Completed Work (2026-02-18)
+
+- **Summary (2026-02-18)** - 1 entries archived.
+
+## Completed Work (2026-02-17)
+
+- **Summary (2026-02-17)** - 1 entries archived.
+
+## Completed Work (2026-02-16)
+
+- **Summary (2026-02-16)** - 1 entries archived.
+
+## Completed Work (2026-02-13)
+
+- **Summary (2026-02-13)** - 1 entries archived.
+
+## Completed Work (2026-01-14)
+
+- **Summary (2026-01-14)** - 1 entries archived.
+
+## Completed Work (2026-02-12)
+
+- **Summary (2026-02-12)** - 1 entries archived.
+
+## Completed Work (2026-02-11)
+
+- **Summary (2026-02-11)** - 1 entries archived.
+
+## Completed Work (2026-02-10)
+
+- **Summary (2026-02-10)** - 1 entries archived.
+
+## Completed Work (2026-02-09)
+
+- **Summary (2026-02-09)** - 1 entries archived.
+
+## Completed Work (2026-02-07)
+
+- **Summary (2026-02-07)** - 1 entries archived.
+
+## Current Focus
+
+Roadmap item implementation batch complete; remaining items are documentation cleanup (HI-6, MED-7, MED-3, MED-10), refactoring (MED-8, HI-1, HI-4, HI-7, MED-9), and features (HI-2).
+
+## Recent Changes
+
+Blocker (2026-02-09): create-plan and memory-bank-updater now mandate register_plan_in_roadmap for new plan entry to prevent roadmap corruption. Commit (2026-02-09): rules manager initialize mock, manage_file metadata test with usage-context patches; 3702 tests, 90.36% coverage.
+
+## Next Steps
+
+See [roadmap.md](roadmap.md).

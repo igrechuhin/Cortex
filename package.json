@@ -2,10 +2,8 @@
   "name": "cortex-mcp",
   "version": "0.0.0",
   "private": true,
-  "description": "Local Node dependency for markdownlint-cli2 (fix_markdown_lint MCP tool and pre-commit).",
-  "devDependencies": {
-    "markdownlint-cli2": "0.20.0"
-  },
+  "description": "Legacy Node metadata; markdown lint now uses rumdl via the Python environment.",
+  "devDependencies": {},
   "engines": {
     "node": ">=18"
   }

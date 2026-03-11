@@ -25,7 +25,7 @@ class TestSequentialProcessing:
             for f in files:
                 _ = f.write_text("# Test\n")
 
-            markdownlint_cmd = ["markdownlint-cli2"]
+            markdownlint_cmd = ["rumdl", "check"]
             call_count = 0
 
             async def mock_run_markdownlint_batch(
@@ -74,7 +74,7 @@ class TestSequentialProcessing:
             for f in files:
                 _ = f.write_text("# Test\n")
 
-            markdownlint_cmd = ["markdownlint-cli2"]
+            markdownlint_cmd = ["rumdl", "check"]
 
             async def mock_run_markdownlint_batch(
                 file_paths: list[Path],
@@ -142,7 +142,7 @@ class TestSequentialProcessing:
             _ = (project_root / "exists.md").write_text("# Test\n")
             _ = (project_root / "also_exists.md").write_text("# Test\n")
 
-            markdownlint_cmd = ["markdownlint-cli2"]
+            markdownlint_cmd = ["rumdl", "check"]
 
             async def mock_run_markdownlint_batch(
                 file_paths: list[Path],
@@ -196,7 +196,7 @@ class TestSequentialProcessing:
             ]
             for f in files:
                 _ = f.write_text("# x\n")
-            markdownlint_cmd = ["markdownlint-cli2"]
+            markdownlint_cmd = ["rumdl", "check"]
             mock_ctx = AsyncMock()
             progress_calls: list[tuple[float, float]] = []
 

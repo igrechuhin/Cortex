@@ -71,8 +71,8 @@ Generate all 7 core files from templates:
 
 **Step 5: Optional pre-commit hook for markdown lint**
 - If the project has a Git repository (.git exists):
-  - If .pre-commit-config.yaml does NOT exist: create it with a single local hook that runs markdown lint on staged .md/.mdc files (entry: markdownlint-cli2 --fix, files: \\.(md|mdc)$). This requires markdownlint-cli2 (e.g. npm install -g markdownlint-cli2) and pre-commit (e.g. pip install pre-commit).
-  - If .pre-commit-config.yaml already exists: add the same markdownlint hook to the existing local repos/hooks (id: markdownlint, name: Markdown lint (markdownlint-cli2), entry: markdownlint-cli2 --fix, language: system, files: \\.(md|mdc)$).
+ - If .pre-commit-config.yaml does NOT exist: create it with a single local hook that runs markdown lint on all .md/.mdc files (id: markdownlint, name: Markdown lint (rumdl, all files), entry: uv run rumdl check --fix ., language: system, pass_filenames: false, always_run: true). This requires rumdl (for example via uv sync --extra dev) and pre-commit (e.g. pip install pre-commit).
+ - If .pre-commit-config.yaml already exists: add the same markdownlint hook to the existing local repos/hooks so commits run markdown lint via rumdl.
   - Run `pre-commit install` to install the git hook (or instruct the user to run it once). If pre-commit is not installed, instruct the user to install it and run pre-commit install.
 - If the project is not a Git repository, skip this step.
 

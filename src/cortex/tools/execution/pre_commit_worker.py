@@ -200,7 +200,12 @@ def _collect_md_files_for_lint(root: Path, max_files: int = 500) -> list[str]:
 def _run_markdownlint_subprocess(
     root: Path, cmd: list[str], md_files: list[str]
 ) -> dict[str, object]:
-    """Run markdownlint-cli2 and return result dict."""
+    """Run rumdl markdown lint and return result dict.
+
+    The detached worker only needs a coarse signal for the commit pipeline:
+    whether any Markdown files have lint errors. We therefore treat any
+    non-zero rumdl exit code as at least one file with errors.
+    """
     import subprocess
 
     if not md_files:
@@ -215,11 +220,11 @@ def _run_markdownlint_subprocess(
         )
         if proc.returncode == 0:
             return {"files_with_errors": 0, "status": "success"}
-        error_count = sum(1 for line in proc.stdout.splitlines() if " error " in line)
+        # Rumdl reports violations on stderr/stdout; any non-zero exit means issues.
         return {
-            "files_with_errors": error_count or 1,
+            "files_with_errors": 1,
             "status": "error",
-            "output": proc.stdout[:2000],
+            "output": (proc.stdout + "\n" + proc.stderr)[:2000],
         }
     except subprocess.TimeoutExpired:
         return {"files_with_errors": 1, "status": "error", "error": "timeout"}
@@ -228,15 +233,10 @@ def _run_markdownlint_subprocess(
 
 
 def _run_markdown_lint(project_root: str) -> dict[str, object]:
-    """Run markdownlint-cli2 in check-only mode, return result dict."""
+    """Run rumdl in check-only mode, return result dict."""
     root = Path(project_root)
-    mdl_bin = root / "node_modules" / ".bin" / "markdownlint-cli2"
-    if not mdl_bin.exists():
-        return {"files_with_errors": 0, "skipped": True}
-    config = root / ".markdownlint-cli2.yaml"
-    cmd: list[str] = [str(mdl_bin)]
-    if config.exists():
-        cmd.extend(["--config", str(config)])
+    # Prefer rumdl from the Python environment (installed via pyproject dev deps).
+    cmd: list[str] = ["rumdl", "check"]
     md_files = _collect_md_files_for_lint(root)
     return _run_markdownlint_subprocess(root, cmd, md_files)
 

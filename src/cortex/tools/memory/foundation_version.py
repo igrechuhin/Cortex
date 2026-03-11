@@ -11,6 +11,7 @@ history is local, ephemeral, and computed from disk when needed.
 """
 
 import json
+import re
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import cast
@@ -153,11 +154,13 @@ def _load_version_history_from_disk(file_name: str, root: Path) -> list[ModelDic
         return []
 
     base_name = Path(file_name).name
-    base_stem = base_name[:-3] if base_name.endswith(".md") else Path(base_name).stem
-    pattern = f"{base_stem}_v*.md"
+    # Use Path.stem so ``foo.md`` → ``foo`` and ``foo.mdc`` → ``foo`` without
+    # leaving a trailing dot, then match snapshot filenames of the form
+    # ``<stem>_v<NUMBER>.md`` (for example ``test_v1.md``).
+    base_stem = Path(base_name).stem
 
     versions: list[ModelDict] = []
-    for snapshot in history_dir.glob(pattern):
+    for snapshot in history_dir.glob("*.md"):
         try:
             stat = snapshot.stat()
         except OSError:
@@ -165,13 +168,15 @@ def _load_version_history_from_disk(file_name: str, root: Path) -> list[ModelDic
             continue
 
         stem = snapshot.stem
-        parts = stem.rsplit("_v", 1)
-        if len(parts) != 2:
+        match = re.match(r"^(?P<base>.+)_v(?P<version>\d+)$", stem)
+        if not match:
+            continue
+        try:
+            version_number = int(match.group("version"))
+        except ValueError:
             continue
 
-        try:
-            version_number = int(parts[1])
-        except ValueError:
+        if match.group("base") != base_stem:
             continue
 
         versions.append(

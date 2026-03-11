@@ -16,7 +16,7 @@ Use Cortex when you want reproducible, high-quality AI-driven development that s
 
 ## How to use it
 
-1. **Install prerequisites**: Python 3.13+ and Node.js with `markdownlint-cli2` (see [Prerequisites](#prerequisites)).
+1. **Install prerequisites**: Python 3.13+ and the Rust-based `rumdl` Markdown linter (installed via the Python dev environment; see [Prerequisites](#prerequisites)).
 2. **Run the server**: Add the config snippet from [Running the Server](#running-the-server) to your `mcp.json` (most users pick **uvx**).
 3. **Start with the plan → implement → commit loop** (see below).
    In your IDE/assistant, ask the agent to orchestrate these commands:
@@ -52,7 +52,7 @@ See [docs/prompts](docs/prompts/README.md) for the implement and commit prompt d
 ## Prerequisites
 
 - **Python 3.13+**
-- **Node.js and npm** — for `markdownlint-cli2` (`npm install -g markdownlint-cli2`)
+- **rumdl** — Markdown linter/formatter installed into the Python environment (for example via `uv sync --extra dev`, which adds the `rumdl` CLI to `.venv/bin/rumdl`)
 
 ## Running the Server
 
@@ -116,7 +116,6 @@ See [docs/prompts](docs/prompts/README.md) for the implement and commit prompt d
 Clone the repository, then:
 
 ```bash
-npm install -g markdownlint-cli2
 bash scripts/bootstrap.sh
 ```
 

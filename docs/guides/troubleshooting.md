@@ -139,10 +139,10 @@ The **client** (e.g. Cursor) closed the MCP connection before the tool finished�
 1. **Retry once**  
    The client or agent should retry the same tool once. Many connection drops are transient; the second call often succeeds.
 
-2. **Use local markdownlint**  
-   For `fix_markdown_lint`, use a local install so the tool runs faster and is less likely to hit the client timeout:
-   - From project root: `npm install` (uses `package.json`). The tool prefers `node_modules/.bin/markdownlint-cli2` and avoids npx/network at run time.
-   - See [markdownlint-cli2 and npm (fix_markdown_lint)](#markdownlint-cli2-and-npm-fix_markdown_lint).
+2. **Use local rumdl**  
+   For `fix_markdown_lint`, ensure the fast Rust-based `rumdl` CLI is available in the Python environment so the tool runs faster and is less likely to hit the client timeout:
+   - From project root: run `bash scripts/bootstrap.sh` or `uv sync --extra dev` so `.venv/bin/rumdl` is installed.
+   - See [rumdl and the markdown lint tool](#rumdl-and-the-markdown-lint-tool).
 
 3. **Use documented fallbacks in the commit pipeline**  
    If a retry still fails with "Connection closed", follow the commit prompt’s fallback for that step (e.g. run markdown lint via shell for Step 12.5, or the fallback scripts for Step 12.6) and record "MCP connection closed; fallback used". Do not block the pipeline on "tool not found" after a disconnect—use the fallback.
@@ -155,7 +155,9 @@ HTTP/SSE or a stdio–HTTP bridge is not a supported workaround for this issue (
 - Progress and heartbeat for long tools (e.g. 2 s heartbeat and wrapper progress for `fix_markdown_lint`, frequent progress for `execute_pre_commit_checks`).
 - Automatic retry for connection errors in the tool wrapper. Most tools get one retry; `fix_markdown_lint` gets **four attempts** (1 initial + 3 retries) with exponential backoff (1 s, 2 s, 4 s) to reduce commit-pipeline disconnects.
 - Batched markdown lint to reduce total duration.
-- **Serialization with wait for long-running tools**: Only one of `execute_pre_commit_checks`, `fix_markdown_lint`, or `fix_quality_issues` can run at a time. If you call a second long-running tool while the first is still running, the second call **waits up to 600 seconds (10 minutes)** for the first to finish; if the first is still running after that, the server does **one short retry (5 seconds)** to absorb the race when the first call or auto-release frees the semaphore at the same moment, then returns an error if still busy. This allows sequential commit-pipeline calls (e.g. `execute_pre_commit_checks` then `fix_markdown_lint`) to succeed when the second request arrives before the first has returned. See [Another long-running tool is in progress](#issue-another-long-running-tool-in-progress).
+- **Long-running serialization and detached workers**:
+  - `fix_markdown_lint` is the only tool serialized by the long-running semaphore. If you call `fix_markdown_lint` while another `fix_markdown_lint` run is active, the second call **waits up to 600 seconds (10 minutes)** for the first to finish; if the first is still running after that, the server does **one short retry (5 seconds)** to absorb the race when the first call or auto-release frees the semaphore at the same moment, then returns an error if still busy. This allows sequential commit-pipeline calls that involve markdown lint to succeed when the second request arrives before the first has returned. See [Another long-running tool is in progress](#issue-another-long-running-tool-in-progress).
+  - `execute_pre_commit_checks` no longer uses the global long-running semaphore. It runs via a **detached worker model** keyed by `args_hash`. If a second call is made for the same configuration while a detached worker is already running, the server returns a **fast, non-retryable error** stating that checks are already running for that configuration; agents must treat this as “in progress” and **not** start a second run.
 
 #### Issue: Found 0 tools, 0 prompts, and 0 resources {#issue-mcp-0-tools}
 
@@ -182,13 +184,14 @@ This happens when the client sends ListTools/ListPrompts/ListResources **before*
 
 **Cause**:
 
-Only one of `execute_pre_commit_checks`, `fix_markdown_lint`, or `fix_quality_issues` can run at a time. If the client (or agent) invokes a second long-running tool while the first is still running, the second call **waits up to 600 seconds (10 minutes)** for the first to finish. If the first is still running after that, the server returns this error.
+- The long-running semaphore currently serializes **only** `fix_markdown_lint`. If the client (or agent) invokes a second `fix_markdown_lint` run while the first is still running, the second call **waits up to 600 seconds (10 minutes)** for the first to finish. If the first is still running after that, the server returns this error.
+- `execute_pre_commit_checks` concurrency is handled by its detached worker model, not by the long-running semaphore. A second call with the same configuration while a worker is running returns a fast, non-retryable error indicating that checks are already running; this should be treated as “in progress”, not as a signal to retry.
 
 **Fix (what to do)**:
 
-1. If you see this error, the first long-running tool took longer than 600 seconds (10 minutes). Wait for it to finish, then retry the tool you wanted to run.
-2. Prefer running long-running tools one after another and wait for each to complete before starting the next (e.g. run `fix_markdown_lint` only after `execute_pre_commit_checks` has completed, or vice versa). Sequential calls that arrive while the first is still running will wait automatically.
-3. If running the commit pipeline: ensure Phase A has fully completed before Step 12 runs; avoid starting another commit or long-running tool in another tab or agent session.
+1. If you see this error while running `fix_markdown_lint`, the first run took longer than 600 seconds (10 minutes). Wait for it to finish, then retry the tool you wanted to run.
+2. Prefer running long-running tools one after another and wait for each to complete before starting the next (e.g. run `fix_markdown_lint` only after `execute_pre_commit_checks` has completed). Sequential calls that arrive while the first is still running will wait automatically for `fix_markdown_lint`, and return a fast "already running" error for `execute_pre_commit_checks`.
+3. If running the commit pipeline: ensure Phase A has fully completed before Step 12 runs; avoid starting another commit or long-running tool in another tab or agent session, and never start a second `execute_pre_commit_checks` run while a detached worker is active for the same configuration.
 
 #### MCP disconnect runbook (commit pipeline) {#mcp-disconnect-runbook-commit}
 
@@ -1067,9 +1070,9 @@ When the GitHub Actions "Code Quality" workflow fails on push (e.g. [run #244](h
 
 **Reference**: The single source of truth for the CI test command is the "Run tests" step in [.github/workflows/quality.yml](../../.github/workflows/quality.yml); the workflow comment at the top of that file repeats the command for local parity.
 
-#### markdownlint-cli2 and npm (fix_markdown_lint)
+#### rumdl and the markdown lint tool
 
-The `fix_markdown_lint` MCP tool and the commit pipeline require `markdownlint-cli2`. The tool looks for it in this order: (1) local `node_modules/.bin/markdownlint-cli2` (if present), (2) `markdownlint-cli2` in PATH, (3) `npx --yes markdownlint-cli2`.
+The `fix_markdown_lint` MCP tool and the commit pipeline now use the Rust-based `rumdl` CLI, discovered as `rumdl` on `PATH`. In this repo, `rumdl` is installed into the Python virtual environment (for example via `bash scripts/bootstrap.sh` or `uv sync --extra dev`, which provide `.venv/bin/rumdl`).
 
 #### Issue: fix_markdown_lint returns failures without rule codes
 
@@ -1090,14 +1093,11 @@ The `fix_markdown_lint` MCP tool and the commit pipeline require `markdownlint-c
 
 1. **Retry once**: The tool now includes improved stderr parsing and per-file fallback. Retry `fix_markdown_lint` once—it may succeed on the second attempt.
 
-2. **If retry still returns no rule codes**: Run markdown lint locally to obtain rule codes:
+2. **If retry still returns no rule codes**: Run markdown lint locally with `rumdl` to obtain rule codes:
 
    ```bash
-   # From project root
-   npx --yes markdownlint-cli2 --fix '**/*.md' '**/*.mdc'
-   
-   # Or if local install exists
-   node_modules/.bin/markdownlint-cli2 --fix '**/*.md' '**/*.mdc'
+   # From project root (uses project virtualenv)
+   uv run rumdl check --fix .
    ```
 
 3. **Review output**: The local run will show rule codes (e.g. `file.md:15:3 MD036/heading-style`) and file locations.
@@ -1112,28 +1112,15 @@ The `fix_markdown_lint` MCP tool and the commit pipeline require `markdownlint-c
 - When batch fails, the tool automatically falls back to per-file runs to obtain rule codes
 - This should reduce occurrences of "no rule codes" responses
 
-##### Recommended: local install (no global install, avoids npx network at run time)
+##### Recommended: local install (no global install needed)
 
 From the project root:
 
 ```bash
-npm install
+bash scripts/bootstrap.sh
 ```
 
-This uses the repo’s `package.json` and installs `markdownlint-cli2` into `node_modules/.bin/`. The MCP tool will use that binary when present, so no global install or npx is needed when running lint.
-
-**If `npm install` fails with SSL (e.g. UNABLE_TO_GET_ISSUER_CERT_LOCALLY)**
-
-- Use the system CA bundle (same idea as for Git/uv): set `NODE_EXTRA_CA_CERTS` or `npm config set cafile /path/to/ca-bundle.crt` if you have a custom bundle, or ensure the system CA store is up to date.
-- As a last resort in controlled environments only: `npm config set strict-ssl false` (project-only: run in repo root so it writes to `.npmrc` in the project). After `npm install` succeeds, you can remove or revert `.npmrc` if desired. Do not disable strict-ssl in shared or CI config unless required by your network.
-
-##### Alternative: global install
-
-```bash
-npm install -g markdownlint-cli2
-```
-
-Then the tool will find `markdownlint-cli2` in PATH. If npm hits SSL errors, use the same SSL workarounds as above.
+This installs all Python dependencies (including `rumdl`) into `.venv/`. The MCP tool will use the `rumdl` binary from that environment when present, so no global install is needed when running lint.
 
 ### Refactoring Issues
 

@@ -41,7 +41,7 @@ Restore the GitHub Actions "Code Quality" workflow so that the Cortex repository
    - Cross-check the workflow steps against the documented commit pipeline (Phase A + Step 12), especially:
      - `uv sync --extra dev` or equivalent environment setup.
      - `execute_pre_commit_checks(phase="A")` usage (if any) vs. direct language-specific tools.
-     - Formatting (Black), linting (Ruff/markdownlint-cli2), type checking (Pyright), tests with coverage (pytest/coverage), and quality/file-size/function-length checks.
+     - Formatting (Black), linting (Ruff/markdown markdown linter), type checking (Pyright), tests with coverage (pytest/coverage), and quality/file-size/function-length checks.
    - Identify any drift: missing checks, incorrect thresholds (e.g., coverage < 90%), or outdated scripts.
    - Propose a minimal, CI-safe set of steps that mirrors the MCP-based pipeline (e.g., a single script that shells out to `uv run cortex` with a `run_composite_workflow` or `execute_pre_commit_checks` wrapper if available).
 

@@ -18,6 +18,42 @@ from cortex.core.usage_context import get_or_resolve_project_root
 
 logger = logging.getLogger(__name__)
 
+# Canonical check names for each phase, used by start_pre_commit_job(phase=...).
+# Must stay in sync with _PRE_FLIGHT_DEFAULT_CHECKS in pre_commit_preflight_helpers.py.
+_PHASE_A_CHECKS: tuple[str, ...] = (
+    "fix_errors",
+    "format",
+    "synapse_format",
+    "synapse_lint",
+    "type_check",
+    "quality",
+    "tests",
+    "eval_fast",
+    "markdown_lint",
+)
+# Phase B is handled inline by run_docs_and_memory_bank_sync_impl; expose a
+# sentinel check name so callers can form a deterministic job_id hash.
+_PHASE_B_CHECKS: tuple[str, ...] = ("docs_and_memory_sync",)
+
+
+def phase_to_checks(phase: PreCommitPhase) -> list[str]:
+    """Return canonical check name list for a phase.
+
+    Used by start_pre_commit_job(phase=...) to resolve the checks list
+    without needing to invoke the full phase runner.
+
+    Args:
+        phase: Phase enum value (A, B, or FULL).
+
+    Returns:
+        List of check name strings for the given phase.
+    """
+    if phase is PreCommitPhase.A:
+        return list(_PHASE_A_CHECKS)
+    if phase is PreCommitPhase.B:
+        return list(_PHASE_B_CHECKS)
+    return list(_PHASE_A_CHECKS + _PHASE_B_CHECKS)
+
 
 def _ensure_dict(value: ModelDict | str) -> ModelDict:
     """Ensure value is a dict; parse JSON string if needed (MCP protocol edge case).

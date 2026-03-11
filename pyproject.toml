@@ -45,6 +45,7 @@ dev = [
     "ruff>=0.1.0",
     "pyright>=1.1.400",
     "detect-secrets>=1.5.0",
+    "rumdl>=0.1.29",
 ]
 
 [tool.black]

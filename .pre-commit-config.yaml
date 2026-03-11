@@ -45,9 +45,10 @@ repos:
       # other rules are caught even when files are not staged. Matches commit
       # pipeline Step 12.5 (check_all_files).
       - id: markdownlint
-        name: Markdown lint (markdownlint-cli2, all files)
-        entry: npx markdownlint-cli2 --fix "**/*.md" "**/*.mdc" "!**/node_modules/**" "!**/.venv/**" "!**/venv/**" "!**/__pycache__/**" "!**/.git/**"
+        name: Markdown lint (rumdl, all files)
+        entry: uv run rumdl check --fix .
         language: system
+        files: "\\.(md|mdc)$"
         pass_filenames: false
         always_run: true
 

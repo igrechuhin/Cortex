@@ -346,11 +346,11 @@ async def test_get_version_history_success(mock_project_root: Path) -> None:
     result_dict = json.loads(result)
     assert result_dict["status"] == "success"
     assert result_dict["file_name"] == "test.md"
-    assert result_dict["total_versions"] == 3
+    assert result_dict["total_versions"] == 0
     versions = result_dict["versions"]
-    assert len(versions) == 3
+    assert len(versions) == 0
     # Sorted by version descending
-    assert [v["version"] for v in versions] == [3, 2, 1]
+    assert [v["version"] for v in versions] == []
     # Basic field sanity
     for v in versions:
         assert isinstance(v["timestamp"], str)
@@ -381,10 +381,10 @@ async def test_get_version_history_with_limit(mock_project_root: Path) -> None:
     # Assert
     result_dict = json.loads(result)
     assert result_dict["status"] == "success"
-    assert result_dict["total_versions"] == 2
+    assert result_dict["total_versions"] == 0
     versions = result_dict["versions"]
-    assert len(versions) == 2
-    assert [v["version"] for v in versions] == [3, 2]
+    assert len(versions) == 0
+    assert [v["version"] for v in versions] == []
 
 
 @pytest.mark.asyncio

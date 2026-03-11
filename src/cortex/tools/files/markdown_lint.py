@@ -82,7 +82,7 @@ async def _fix_markdown_lint_impl(
     """Core implementation for fix_markdown_lint MCP tool.
 
     Always scopes to git-modified (+ optionally untracked) markdown files.
-    For full-repo lint, use ``markdownlint-cli2 --fix`` directly from the shell.
+    Under the hood this now uses the rumdl CLI as the Markdown engine.
     """
     (
         validation_error,
@@ -211,7 +211,7 @@ async def fix_markdown_lint(
     check_all_files: bool = False,
     ctx: MCPContext | None = None,
 ) -> str:
-    """Fix markdownlint errors in markdown files.
+    """Fix markdown lint errors in markdown files.
 
     USE WHEN: User wants markdown fixes, user needs lint fixes, user
     requests markdown lint fix, user wants to fix markdown errors.
@@ -219,10 +219,10 @@ async def fix_markdown_lint(
     EXAMPLES: 'fix markdown lint', 'fix markdown errors', 'auto-fix
     markdown', 'fix markdown formatting'.
 
-    RETURNS: JSON with fixes applied, files modified, and lint results.
+        RETURNS: JSON with fixes applied, files modified, and lint results.
 
-    Scans markdown files in the working copy, runs `markdownlint-cli2`,
-    and optionally applies `--fix` to resolve reported issues.
+        Scans markdown files in the working copy, runs the rumdl CLI,
+        and optionally applies fixes to resolve reported issues.
 
     The return value is a JSON string encoded from `FixMarkdownLintResult`
     with aggregate counts and per-file `FileResult` entries. Project root
@@ -231,8 +231,8 @@ async def fix_markdown_lint(
     **Scope**: Always scopes to git-modified and (optionally) untracked
     markdown files. The ``check_all_files`` parameter is accepted for
     backward compatibility but **ignored** — it has no effect. For
-    full-repo lint, run ``node_modules/.bin/markdownlint-cli2 --fix``
-    directly from the shell.
+    full-repo lint, use a dedicated shell command such as
+    ``uv run rumdl check --fix .``.
 
     Args:
         include_untracked_markdown: If True, lint untracked .md/.mdc files

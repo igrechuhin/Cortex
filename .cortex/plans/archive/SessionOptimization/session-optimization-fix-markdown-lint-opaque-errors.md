@@ -27,7 +27,7 @@ During a commit run, `fix_markdown_lint` returned `success: false` and `files_wi
 ### Step 2: Document "Markdown lint failed" with no rule codes in commit and troubleshooting
 
 - **Target**: Commit prompt (Step 1.5 and Step 12.5) and `docs/guides/troubleshooting.md` (or equivalent).
-- **Change**: Add a short subsection: when `fix_markdown_lint` returns `files_with_errors` > 0 and `errors` is empty for those files, recommend running markdown lint locally (e.g. `npx --yes markdownlint-cli2 --fix '**/*.md' '**/*.mdc'` with project ignore patterns) to obtain rule codes and fix violations, then re-run commit.
+- **Change**: Add a short subsection: when `fix_markdown_lint` returns `files_with_errors` > 0 and `errors` is empty for those files, recommend running markdown lint locally (e.g. `uv run rumdl check --fix .` with project ignore patterns) to obtain rule codes and fix violations, then re-run commit.
 - **Acceptance**: Commit prompt and troubleshooting doc both describe this fallback; agents can unblock without relying solely on the MCP tool.
 
 ### Step 3 (Optional): Single-file lint fallback in fix_markdown_lint

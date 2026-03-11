@@ -115,6 +115,11 @@ TOOL_CATEGORIES: tuple[ToolCategoryEntry, ...] = (
         rationale="Quality gate mandatory before every commit; use checks=['fix_quality'] for auto-fix",
     ),
     ToolCategoryEntry(
+        name="get_last_pre_commit_status",
+        category=ToolCategory.DEFERRED_MEDIUM,
+        rationale="Inspect status of the most recent detached pre-commit run without starting a new one",
+    ),
+    ToolCategoryEntry(
         name="check_mcp_connection_health",
         category=ToolCategory.ALWAYS_LOADED,
         rationale="Health check for MCP connection diagnostics",

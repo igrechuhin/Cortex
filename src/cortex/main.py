@@ -40,6 +40,9 @@ import cortex.tools  # noqa: F401, E402
 from cortex.core.mcp_stability_semaphores import (  # noqa: E402
     get_long_running_elapsed_seconds,
     get_long_running_semaphore_holder,
+    get_resource_semaphore,
+    get_semaphore,
+    was_long_running_released_by_timeout,
 )
 from cortex.server import mcp  # noqa: E402
 from cortex.setup import should_mount_setup  # noqa: E402
@@ -89,13 +92,19 @@ def _handle_broken_resource_in_group(eg: BaseExceptionGroup) -> bool:
         ) and "MCP error -32000: Connection closed" in str(exc):
             continue
         if is_connection_error(exc):
+            # Log detailed traceback for the first connection-related sub-exception
+            _log_exception_with_traceback(exc, prefix="[connection] ")
             holder = get_long_running_semaphore_holder()
             elapsed = get_long_running_elapsed_seconds()
+            tools_sem = get_semaphore()
+            resources_sem = get_resource_semaphore()
             logger.info(
                 (
                     "MCP stdio connection broken during TaskGroup cleanup "
                     "(client disconnected); group_msg=%s sub_count=%d "
-                    "exc_type=%s exc_msg=%s long_running_holder=%s elapsed_sec=%s"
+                    "exc_type=%s exc_msg=%s long_running_holder=%s "
+                    "elapsed_sec=%s tools_in_use=%d resources_in_use=%d "
+                    "long_running_released_by_timeout=%s"
                 ),
                 eg.message,
                 len(eg.exceptions),
@@ -103,6 +112,9 @@ def _handle_broken_resource_in_group(eg: BaseExceptionGroup) -> bool:
                 str(exc),
                 holder or "none",
                 f"{elapsed:.1f}" if elapsed is not None else "n/a",
+                tools_sem.current,
+                resources_sem.current,
+                was_long_running_released_by_timeout(),
             )
             return True
     return False
@@ -113,7 +125,15 @@ def _disconnect_diag_str() -> str:
     holder = get_long_running_semaphore_holder()
     elapsed = get_long_running_elapsed_seconds()
     es = f"{elapsed:.1f}" if elapsed is not None else "n/a"
-    return f" long_running_holder={holder or 'none'} elapsed_sec={es}"
+    tools_sem = get_semaphore()
+    resources_sem = get_resource_semaphore()
+    return (
+        f" long_running_holder={holder or 'none'}"
+        f" elapsed_sec={es}"
+        f" tools_in_use={tools_sem.current}"
+        f" resources_in_use={resources_sem.current}"
+        f" long_running_released_by_timeout={was_long_running_released_by_timeout()}"
+    )
 
 
 def _handle_connection_error(e: Exception) -> None:

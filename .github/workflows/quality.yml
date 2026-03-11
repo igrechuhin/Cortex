@@ -246,39 +246,31 @@ jobs:
           echo "::endgroup::"
         continue-on-error: false
 
-      - name: Check markdown files (markdownlint)
+      - name: Check markdown files (rumdl)
         id: markdown_lint
         run: |
-          echo "::group::Running markdown lint check"
-          MDL_BIN="node_modules/.bin/markdownlint-cli2"
-          if [ ! -x "$MDL_BIN" ]; then
-            echo "::error::markdownlint-cli2 not found. Run 'make bootstrap' or 'npm ci' from project root to install Node dependencies."
+          echo "::group::Running markdown lint check (rumdl)"
+          # Use rumdl (Rust-based Markdown linter) via the Python environment.
+          # Scope and excludes mirror get_all_markdown_files_for_lint and the commit pipeline.
+          if ! uv run rumdl --version >/dev/null 2>&1; then
+            echo "::error::rumdl not found. Ensure 'uv sync --extra dev' has been run so rumdl is available in the virtualenv."
             exit 1
           fi
-          # Find all markdown files (excluding node_modules, archived plans, and other common excludes)
-          MD_FILES=$(find . -name "*.md" -o -name "*.mdc" | grep -v node_modules | grep -v .venv | grep -v __pycache__ | grep -v ".git" | grep -v ".cortex/plans/archive" | head -500)
+          # Limit to 500 files for parity with internal tooling
+          MD_FILES=$(find . \( -name "*.md" -o -name "*.mdc" \) \
+            -not -path "*/node_modules/*" \
+            -not -path "*/.venv/*" \
+            -not -path "*/venv/*" \
+            -not -path "*/__pycache__/*" \
+            -not -path "*/.git/*" \
+            -not -path "./.cortex/plans/archive/*" | head -500)
           if [ -n "$MD_FILES" ]; then
-            if [ -f ".markdownlint-cli2.yaml" ]; then
-              if ! echo "$MD_FILES" | xargs "$MDL_BIN" --config .markdownlint-cli2.yaml 2>&1; then
-                echo "::error::Markdown lint issues detected. Run 'npx markdownlint-cli2 --fix' to fix auto-fixable issues."
-                exit 1
-              else
-                echo "✅ Markdown lint check passed"
-              fi
-            elif [ -f ".markdownlint.json" ]; then
-              if ! echo "$MD_FILES" | xargs "$MDL_BIN" --config .markdownlint.json 2>&1; then
-                echo "::error::Markdown lint issues detected. Run 'npx markdownlint-cli2 --fix' to fix auto-fixable issues."
-                exit 1
-              else
-                echo "✅ Markdown lint check passed"
-              fi
+            # rumdl exits non-zero when violations are present
+            if ! echo "$MD_FILES" | xargs uv run rumdl check 2>&1; then
+              echo "::error::Markdown lint issues detected. Run 'uv run rumdl check --fix .' to fix auto-fixable issues."
+              exit 1
             else
-              if ! echo "$MD_FILES" | xargs "$MDL_BIN" 2>&1; then
-                echo "::error::Markdown lint issues detected. Run 'npx markdownlint-cli2 --fix' to fix auto-fixable issues."
-                exit 1
-              else
-                echo "✅ Markdown lint check passed"
-              fi
+              echo "✅ Markdown lint check passed"
             fi
           else
             echo "No markdown files found to check"

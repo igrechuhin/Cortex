@@ -11,7 +11,7 @@ Ensure that whenever the commit workflow (or any session) creates or executes a 
 
 ## Context
 
-During a `/commit` run, the agent ran an inline Python script (subprocess calling `npx markdownlint-cli2` on three files) to work around markdown lint results instead of using `fix_markdown_lint` or feeding the script into script tooling. The project has MCP tools for script capture and analysis (`capture_session_script`, `list_session_scripts`, `analyze_session_scripts`, `suggest_tool_improvements`, `promote_session_script`), but none were used. Scripts are therefore not captured or analyzed, and there is no promotion path or consistency with script-generation-prevention (Phase 27) or implement-next-roadmap-step guidance.
+During a `/commit` run, the agent ran an inline Python script (subprocess calling an external Markdown lint CLI via `npx` on three files) to work around markdown lint results instead of using `fix_markdown_lint` or feeding the script into script tooling. The project has MCP tools for script capture and analysis (`capture_session_script`, `list_session_scripts`, `analyze_session_scripts`, `suggest_tool_improvements`, `promote_session_script`), but none were used. Scripts are therefore not captured or analyzed, and there is no promotion path or consistency with script-generation-prevention (Phase 27) or implement-next-roadmap-step guidance.
 
 Root cause (from review): The commit prompt and related agents focus on pre-commit checks, memory bank, and plan archiving. They do not state that when the agent creates or runs a script (inline or file), it must use `capture_session_script` and/or `analyze_session_scripts` / `suggest_tool_improvements`.
 

@@ -476,3 +476,148 @@ async def execute_pre_commit_checks(
         skip_if_clean,
         ctx,
     )
+
+
+@typed_mcp_tool(
+    annotations=external_annotations(
+        "Get Last Pre-Commit Status",
+        read_only=True,
+        destructive=False,
+        idempotent=True,
+    )
+)
+@ensure_usage_context
+@mcp_tool_wrapper(timeout=60.0)
+async def get_last_pre_commit_status(
+    ctx: MCPContext | None = None,
+) -> ModelDict:
+    """Return summary of the most recent detached execute_pre_commit_checks run.
+
+    USE WHEN: You need to inspect the result of the latest pre-commit run
+    (e.g. after reconnecting following a connection-closed error) without
+    starting a new run. This tool is lightweight and safe to poll.
+
+    EXAMPLES:
+    - get_last_pre_commit_status() immediately after execute_pre_commit_checks(checks=["tests"])
+      to see whether tests are still running or have completed.
+    - get_last_pre_commit_status() in a follow-up session to inspect the outcome of a detached
+      quality gate run without starting a new one.
+
+    RETURNS: JSON with at least:
+      - status: "no_runs" | "running" | "completed" | "error" | "unknown"
+      - args_hash: identifier of the detached run (if known)
+      - checks: list of checks or checks_performed (when available)
+      - preflight_passed / docs_phase_passed / coverage when reported
+      - error: optional error message for "error" or "unknown" status.
+    """
+    root = await get_or_resolve_project_root(ctx)
+    module = __import__(
+        "cortex.tools.execution.pre_commit_status",
+        fromlist=["get_last_pre_commit_status_impl"],
+    )
+    impl = module.get_last_pre_commit_status_impl
+    return cast(
+        ModelDict,
+        await impl(Path(root), ctx),
+    )
+
+
+@typed_mcp_tool(
+    annotations=external_annotations(
+        "Start Pre-Commit Job",
+        read_only=False,
+        destructive=False,
+        idempotent=False,
+    )
+)
+@ensure_usage_context
+@mcp_tool_wrapper(timeout=60.0)
+async def start_pre_commit_job(
+    phase: Literal["A", "B", "full"] | None = None,
+    checks: Sequence[PreCommitCheckName] | None = None,
+    test_timeout: int = 300,
+    coverage_threshold: float = 0.9,
+    strict_mode: bool = False,
+    include_untracked_markdown: bool = True,
+    ctx: MCPContext | None = None,
+) -> ModelDict:
+    """Start or reuse a detached pre-commit job; return {job_id, status} quickly.
+
+    USE WHEN: Starting a long-running quality gate without blocking the MCP
+    connection. Call this once to get a job_id, then poll with
+    get_pre_commit_job_status(job_id) until status != "running".
+
+    EXAMPLES:
+    - start_pre_commit_job(phase="A") to start a full Phase A quality gate.
+    - start_pre_commit_job(checks=["tests"], coverage_threshold=0.9) for tests only.
+
+    RETURNS: {"job_id": "<hash>", "status": "started"|"already_running"|"completed"|"error"}
+    - "started": worker spawned; poll with get_pre_commit_job_status(job_id).
+    - "already_running": worker already active; poll the same job_id.
+    - "completed": fresh cached result exists; call get_pre_commit_job_status for details.
+    - "error": previous run failed; check get_pre_commit_job_status for error details.
+
+    Args:
+        phase: "A", "B", or "full". Resolves to canonical check list for the phase.
+            Mutually exclusive with checks.
+        checks: Explicit check list. Required when phase is None.
+        test_timeout, coverage_threshold, strict_mode, include_untracked_markdown:
+            Passed through to the detached worker.
+    """
+    from cortex.tools.execution.pre_commit_phase_dispatch import (
+        PreCommitPhase,
+        phase_to_checks,
+    )
+
+    if phase is not None:
+        phase_enum = PreCommitPhase(phase)
+        check_names: list[str] = phase_to_checks(phase_enum)
+    elif checks:
+        check_names = [c.value if hasattr(c, "value") else str(c) for c in checks]
+    else:
+        return create_error_result_dict(
+            "Either phase ('A', 'B', 'full') or checks list is required",
+            "ValidationError",
+        )
+    root = await get_or_resolve_project_root(ctx)
+    module = __import__(
+        "cortex.tools.execution.pre_commit_detached",
+        fromlist=["start_pre_commit_job_impl"],
+    )
+    impl = module.start_pre_commit_job_impl
+    result = impl(
+        Path(root),
+        check_names,
+        test_timeout,
+        coverage_threshold,
+        strict_mode,
+        include_untracked_markdown,
+    )
+    return cast(ModelDict, result)
+
+
+@typed_mcp_tool(
+    annotations=external_annotations(
+        "Get Pre-Commit Job Status",
+        read_only=True,
+        destructive=False,
+        idempotent=True,
+    )
+)
+@ensure_usage_context
+@mcp_tool_wrapper(timeout=30.0)
+async def get_pre_commit_job_status(
+    job_id: str,
+    ctx: MCPContext | None = None,
+) -> ModelDict:
+    """Return summary for a specific detached pre-commit job by job_id."""
+    root = await get_or_resolve_project_root(ctx)
+    module = __import__(
+        "cortex.tools.execution.pre_commit_status",
+        fromlist=["get_pre_commit_status_impl"],
+    )
+    impl = module.get_pre_commit_status_impl
+    return cast(
+        ModelDict,
+        await impl(Path(root), job_id, ctx),
+    )

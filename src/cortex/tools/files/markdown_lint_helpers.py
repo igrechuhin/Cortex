@@ -74,7 +74,14 @@ def _parse_markdownlint_errors(stderr: str) -> list[str]:
     errors: list[str] = []
     for line in stderr.strip().split("\n"):
         s = line.strip()
-        if not s or s.startswith("markdownlint-cli2"):
+        if not s:
+            continue
+
+        # Skip generic version banner lines from markdownlint/rumdl CLIs, which
+        # are not actionable lint errors and should not be counted.
+        if s.lower().startswith("markdownlint-cli2 version") or s.lower().startswith(
+            "rumdl "
+        ):
             continue
 
         # Extract rule codes (MD followed by 3 digits)

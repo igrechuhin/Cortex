@@ -1,5 +1,13 @@
 # Progress Log
 
+## 2026-03-11
+
+- **Commit pipeline Phase B (documentation & state)** - Memory bank files reviewed for this session; no new completed work entries to append and no roadmap items marked complete in this Phase B run; proceeding directly to documentation validation via execute_pre_commit_checks(phase="B").
+
+## 2026-03-10
+
+- **Phase: Investigate execute_pre_commit_checks MCP Tool Failure** - COMPLETE. Documented detached worker vs semaphore interaction, updated troubleshooting docs, and verified Phase A of execute_pre_commit_checks runs successfully with detached semantics.
+
 ## 2026-03-09
 
 - Archived 7 completed investigation plans (execute_pre_commit_checks failures and commit pipeline hang) from .cortex/plans/ to archive/Investigations/2026-03-08/; cleared both roadmap blocker entries.
@@ -34,7 +42,7 @@
 - **Phase 89: Commit Pipeline Efficiency (2026-03-07)** - COMPLETE. Documented Phase 89 skip behavior in commit prompt and final-gate-validator; code already had dirty-state tracking and skip_if_clean. All tests passed (4940), coverage 91.69%.
 - **Phase 91: HealthCheckReport Type Unification (2026-03-07)** - COMPLETE. Replaced dict alias with Pydantic BaseModel; producers build HealthCheckReportPayload, consumers use report directly; type_check and tests pass.
 - **Phase 87: Stale exec() Comment and Dead Reference Cleanup (2026-03-07)** - COMPLETE. Fixed stale exec() comment in prompts.py; audited for dead comments (none). Type checker and tests pass.
-- **Phase 88: Node Tooling Dependency Isolation (2026-03-07)** - COMPLETE. Pinned markdownlint-cli2; bootstrap installs Node deps; CI/local use project package.json; tool-not-found vs lint failure distinguished; offline guidance in getting-started.
+- **Phase 88: Node Tooling Dependency Isolation (2026-03-07)** - COMPLETE. Isolated legacy Node-based markdown lint tooling; bootstrap installed Node deps; CI/local used the project package.json; tool-not-found vs lint failure distinguished; offline guidance added to getting-started.
 
 ## 2026-03-06
 
@@ -86,10 +94,7 @@
 
 ## 2026-03-03
 
-- **Commit pipeline preflight** - Ran /cortex/commit Phase A; fix_errors, format (including synapse_format), synapse_lint, type_check, markdown lint, and tests (4879/4879, coverage 92.24%) all passed for current Cortex changes (memory bank, plans, reviews, and src/cortex core/services/tools).
-- **Cleanup Cortex derived-state directories (2026-03-03)** - COMPLETE. Classified all derived-state directories, documented their purposes, and aligned benchmarks and caches with the new layout.
-- **Phase XX: Fix Memory Bank index/history architecture for multi-machine safety (2026-03-03)** - COMPLETE. Removed persisted version_history from index.json, migrated get_version_history to scan .cortex/history snapshots, and aligned metadata index/tests with the new architecture.
-- **Commit pipeline (function-length fix)** - COMPLETE. Fixed optimize_context function-length violation in context_optimizer.py (extracted _log_zero_selection_if_needed). Phase A passed; 4872 tests, 92.16% coverage.
+- **Week containing 2026-03-03** - 1 entries summarized.
 
 ## 2026-03-02
 

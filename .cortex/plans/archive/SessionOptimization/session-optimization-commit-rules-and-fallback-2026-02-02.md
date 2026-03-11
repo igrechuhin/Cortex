@@ -32,7 +32,7 @@ All changes are prompt/docs only; no production code changes. Verification via e
 ### Step 2: Add Example Fallback Command for Step 12.6 Markdown Lint
 
 - **Target**: `.cortex/synapse/prompts/commit.md` — Step 12.6 and "Connection Closed During Long Tool (Retry Then Fallback)" / fallbacks for `fix_markdown_lint`.
-- **Change**: After the sentence "Run markdown lint via shell with the same scope", add: "Example (match CI scope): `npx markdownlint-cli2 '**/*.md' '**/*.mdc' !**/node_modules/** !**/.venv/** !**/venv/** !**/__pycache__/** !**/.git/**` with `--fix` to fix, or without `--fix` for check-only. Record 'MCP connection closed; fallback used' in the commit output."
+- **Change**: After the sentence "Run markdown lint via shell with the same scope", add: "Example (match CI scope): `uv run rumdl check --fix .` with appropriate ignore patterns. Record 'MCP connection closed; fallback used' in the commit output."
 - **Verification**: Re-read the commit prompt; confirm the example command appears in Step 12.6 and/or the Connection Closed fallback section.
 
 ### Step 3: Document Tool Unavailability After Connection Closed

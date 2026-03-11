@@ -73,8 +73,8 @@ _CONNECTION_ERROR_FALLBACK: dict[str, str] = {
         "See commit prompt Step 12 and docs/guides/troubleshooting.md."
     ),
     "fix_markdown_lint": (
-        " Retry once. If still failing: run markdown lint locally "
-        "(node_modules/.bin/markdownlint-cli2 --fix '**/*.md' '**/*.mdc'). "
+        " Retry once. If still failing: run markdown lint locally with rumdl "
+        "(for example: uv run rumdl check --fix .). "
         "See commit prompt Step 12.5 fallback and docs/guides/troubleshooting.md."
     ),
 }

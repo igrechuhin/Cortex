@@ -8,16 +8,12 @@ This guide will help you install and start using Cortex.
 
 - Python 3.13 or later
 - `uv` package manager (recommended) or `pip`
-- Node.js and npm (for markdownlint-cli2, required by `fix_markdown_lint` MCP tool and commit pipeline; optional if you use the repo’s local install—see below)
+- `rumdl` Markdown linter/formatter installed into the Python environment (typically via `uv sync --extra dev`, which adds the `rumdl` CLI to `.venv/bin/rumdl`)
 
 ### Install via uv (Recommended)
 
 ```bash
-# Optional: install markdownlint-cli2 for fix_markdown_lint and commit pipeline.
-# Option A (recommended): from a clone, run in repo root: npm install
-# Option B: global install: npm install -g markdownlint-cli2
-
-# Run from git repository
+# Run from git repository (installs Python deps including rumdl when needed)
 uvx --from git+https://github.com/igrechuhin/cortex.git cortex
 ```
 
@@ -27,9 +23,6 @@ uvx --from git+https://github.com/igrechuhin/cortex.git cortex
 # Clone the repository
 git clone https://github.com/igrechuhin/cortex.git
 cd cortex
-
-# Install markdownlint-cli2: run npm install (uses package.json), or npm install -g markdownlint-cli2
-npm install
 
 # Install dependencies
 pip install -r requirements.txt
@@ -45,10 +38,7 @@ python -m cortex.main
 git clone https://github.com/igrechuhin/cortex.git
 cd cortex
 
-# Install markdownlint-cli2: run npm install (uses package.json), or npm install -g markdownlint-cli2
-npm install
-
-# Install with development dependencies (Python 3.13.x)
+# Install with development dependencies (Python 3.13.x), including rumdl
 bash scripts/bootstrap.sh
 
 # Run the server
@@ -70,7 +60,7 @@ pre-commit install
 
 When you run `git commit`, pre-commit will:
 
-- Run **markdown lint** on staged `.md` and `.mdc` files (`markdownlint-cli2 --fix`). Fixable issues are auto-fixed and re-staged; the commit is blocked if unfixable errors remain.
+- Run **markdown lint** on all `.md` and `.mdc` files using `rumdl` (`uv run rumdl check --fix .`). Fixable issues are auto-fixed and re-staged; the commit is blocked if unfixable errors remain.
 - Run other configured checks (formatting, file sizes, function lengths, type check, etc.).
 
 To run all hooks manually without committing: `pre-commit run --all-files`.
@@ -120,23 +110,20 @@ For the most stable MCP experience:
 2. **Optional: use the bridge** for concurrent request handling (fewer timeouts when the client does many things at once). In Cursor, set the MCP server command to the bridge instead of Cortex directly:
    - **Command**: `uv run python -m cortex.bridge` (from a clone; requires `uv sync --extra server`).
    - The bridge runs Cortex over HTTP and proxies stdio ↔ HTTP; one switch in Cursor, same tools.
-3. **Faster markdown lint** (reduces chance of client timeout during long tools): from project root run `make bootstrap` or `npm install` so `fix_markdown_lint` uses `node_modules/.bin/markdownlint-cli2` and avoids slow npx/network.
+3. **Faster markdown lint** (reduces chance of client timeout during long tools): from project root run `make bootstrap` so `fix_markdown_lint` uses the local `rumdl` binary from the Python virtualenv instead of relying on external tooling.
 4. **During long runs** (e.g. commit, pre-commit): avoid opening UI that triggers many MCP resource reads at once (e.g. MCP resources panel); prefer tool calls over `cortex://` resources.
 5. **Automatic recovery (no manual reload)** — Install the [Cursor MCP Refresh](https://github.com/tankmurdock/cursor-mcp-refresh) extension and set **Auto-refresh interval** (e.g. 60–300 seconds). It periodically refreshes MCP servers, so after a disconnect or "0 tools" state the next refresh restores tools without you toggling. Install from the [releases `.vsix`](https://github.com/tankmurdock/cursor-mcp-refresh/releases) via **Extensions: Install from VSIX**.
 6. **If you see "0 tools"** and don't use the extension: reload MCP manually or see [Troubleshooting: Found 0 tools](guides/troubleshooting.md#issue-mcp-0-tools).
 
 Details and troubleshooting: [MCP disconnections and connection closed](guides/troubleshooting.md#issue-mcp-server-crashes-with-brokenresourceerror), [Found 0 tools](guides/troubleshooting.md#issue-mcp-0-tools).
 
-### Offline or restricted environments (Node)
+### Offline or restricted environments
 
-If you are behind a proxy or must work offline, pre-cache Node dependencies from a machine with network access:
+If you are behind a proxy or must work offline, pre-create the Python virtual environment (including `rumdl`) from a machine with network access:
 
-1. From the project root, run `npm install` (or `npm ci` if `package-lock.json` exists) to populate `node_modules/`.
-2. Optionally pack the cache: `npm cache pack` or copy the `node_modules/` directory to the restricted machine (e.g. via USB or internal artifact store).
-3. On the restricted machine, if you have `node_modules/` but no network: the quality gate and `fix_markdown_lint` use the local binary `node_modules/.bin/markdownlint-cli2`; no network is needed at run time.
-4. To refresh the npm cache for later use: `npm cache add markdownlint-cli2@0.20.0` (or run `npm install` once with network).
-
-Run `make bootstrap` on the target machine so Python and Node deps are installed; for fully offline, copy both `.venv` and `node_modules` from a machine that ran bootstrap with network.
+1. From the project root, run `bash scripts/bootstrap.sh` (or `uv sync --extra dev`) on a machine with network to create `.venv` and install all dependencies, including `rumdl`.
+2. Copy the `.venv` directory to the restricted machine (e.g. via USB or internal artifact store).
+3. On the restricted machine, ensure the project uses that `.venv` (e.g. via `uv run cortex` or IDE interpreter selection). The quality gate and `fix_markdown_lint` use the local `rumdl` binary; no network is needed at run time.
 
 ## Quick Start
 

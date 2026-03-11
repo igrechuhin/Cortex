@@ -6,11 +6,11 @@ required quality gates, tooling references, and workflow guidance.
 
 The commit pipeline is split across:
 - .cortex/synapse/prompts/commit.md (orchestrator)
-- .cortex/synapse/agents/commit-phase-a.md (pre-commit checks)
-- .cortex/synapse/agents/commit-phase-b.md (docs/memory bank)
-- .cortex/synapse/agents/commit-phase-c.md (validation/submodule)
-- .cortex/synapse/agents/commit-preflight.md (preflight)
-- .cortex/synapse/agents/final-gate-validator.md (Step 12)
+- .cortex/synapse/cursor-agents/commit-preflight.md
+- .cortex/synapse/cursor-agents/commit-checks.md (Phase A, job-based)
+- .cortex/synapse/cursor-agents/commit-docs.md (Phase B)
+- .cortex/synapse/cursor-agents/commit-validate.md (Phase C)
+- .cortex/synapse/cursor-agents/commit-final-gate.md (Step 12, job-based)
 
 Tests search across all pipeline files for semantic requirements,
 not exact substring matches in a single file.
@@ -49,14 +49,14 @@ def _commit_prompt_path() -> Path:
 
 
 def _pipeline_agent_paths() -> list[Path]:
-    """Return paths to all commit pipeline agent files."""
-    agents_dir = _synapse_path() / "agents"
+    """Return paths to all commit pipeline agent files (cursor-agents)."""
+    cursor_agents_dir = _synapse_path() / "cursor-agents"
     return [
-        agents_dir / "commit-preflight.md",
-        agents_dir / "commit-phase-a.md",
-        agents_dir / "commit-phase-b.md",
-        agents_dir / "commit-phase-c.md",
-        agents_dir / "final-gate-validator.md",
+        cursor_agents_dir / "commit-preflight.md",
+        cursor_agents_dir / "commit-checks.md",
+        cursor_agents_dir / "commit-docs.md",
+        cursor_agents_dir / "commit-validate.md",
+        cursor_agents_dir / "commit-final-gate.md",
     ]
 
 
@@ -147,19 +147,68 @@ class TestCommitPipelineAlignment:
             kw in lower for kw in ("sequential", "strictly", "in order", "each phase")
         )
 
+    def test_orchestrator_delegates_all_phases_to_subagents(
+        self, commit_prompt_content: str
+    ) -> None:
+        """Orchestrator delegates every major phase to a named subagent."""
+        for subagent in (
+            "commit-preflight",
+            "commit-checks",
+            "commit-docs",
+            "commit-validate",
+            "commit-final-gate",
+        ):
+            assert (
+                subagent in commit_prompt_content
+            ), f"commit.md must reference subagent: {subagent}"
+
+    def test_orchestrator_has_no_direct_execute_pre_commit_checks_calls(
+        self, commit_prompt_content: str
+    ) -> None:
+        """Orchestrator must not call execute_pre_commit_checks directly (delegated to agents)."""
+        assert (
+            "execute_pre_commit_checks" not in commit_prompt_content
+        ), "commit.md must delegate to cursor-agents, not call execute_pre_commit_checks directly"
+
+    def test_phase_a_agent_uses_job_api(self, pipeline_content: str) -> None:
+        """Phase A agent uses start_pre_commit_job + get_pre_commit_job_status."""
+        assert "start_pre_commit_job" in pipeline_content
+        assert "get_pre_commit_job_status" in pipeline_content
+
+    def test_phase_a_agent_has_no_blocking_execute_call(self) -> None:
+        """commit-checks.md must not use blocking execute_pre_commit_checks."""
+        checks_agent = _synapse_path() / "cursor-agents" / "commit-checks.md"
+        if not checks_agent.exists():
+            pytest.skip("commit-checks.md not found")
+        content = checks_agent.read_text()
+        assert (
+            "execute_pre_commit_checks" not in content
+        ), "commit-checks.md must use job API (start_pre_commit_job), not blocking execute_pre_commit_checks"
+
+    def test_final_gate_agent_uses_job_api(self) -> None:
+        """commit-final-gate.md uses start_pre_commit_job + poll pattern."""
+        gate_agent = _synapse_path() / "cursor-agents" / "commit-final-gate.md"
+        if not gate_agent.exists():
+            pytest.skip("commit-final-gate.md not found")
+        content = gate_agent.read_text()
+        assert "start_pre_commit_job" in content
+        assert "get_pre_commit_job_status" in content
+        assert (
+            "execute_pre_commit_checks" not in content
+        ), "commit-final-gate.md must use job API, not blocking execute_pre_commit_checks"
+
     # -- Quality checks --
 
     def test_pipeline_covers_all_quality_checks(self, pipeline_content: str) -> None:
         """Pipeline references all required check types."""
         lower = pipeline_content.lower()
-        for check in ("format", "type check", "quality", "test", "markdown"):
+        for check in ("format", "type", "quality", "test", "markdown"):
             assert check in lower, f"Missing check: {check}"
 
     def test_pipeline_defines_final_gate(self, pipeline_content: str) -> None:
         """Pipeline has a final validation gate before commit."""
         lower = pipeline_content.lower()
         assert "final" in lower and ("gate" in lower or "validation" in lower)
-        assert "skip_if_clean" in pipeline_content
 
     # -- Compound engineering --
 
@@ -196,7 +245,7 @@ class TestCommitPipelineAlignment:
         self, pipeline_content: str
     ) -> None:
         """Pipeline documents markdown lint fallback command."""
-        assert "markdownlint-cli2" in pipeline_content
+        assert "rumdl" in pipeline_content
 
     def test_pipeline_contains_mcp_disconnect_recovery(
         self, pipeline_content: str
@@ -229,7 +278,7 @@ class TestCommitPipelineAlignment:
         lower = pipeline_content.lower()
         assert "re-run" in lower or "re_run" in lower
         assert "format" in lower and "quality" in lower
-        assert "12.2" in pipeline_content or "type" in lower
+        assert "type" in lower
 
     # -- Plan status / side-effect guidance --
 

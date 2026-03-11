@@ -149,6 +149,7 @@ The commit workflow is organized into phases (see `docs/design/commit-pipeline-p
 - Tool names must reflect the purpose of the tool.
 - Use emojis in responses if applicable.
 - Keep final summaries concise (typically at most four sentences) and avoid heavy code blocks there; use headings and bolded bullet labels per the markdown formatting guide.
+- When a roadmap item is large, always make concrete partial progress in the current session (smallest meaningful subtask plus tests/quality) and update plans/status as PARTIAL instead of stopping with no changes.
 
 ## Learned Workspace Facts
 
@@ -159,7 +160,7 @@ The commit workflow is organized into phases (see `docs/design/commit-pipeline-p
 
 ### Prerequisites
 
-The VM update script handles: `uv sync --extra dev`, `git submodule update --init --recursive`, and `npm install -g markdownlint-cli2`. Python 3.13+ and `uv` must be pre-installed as system dependencies (the update script does not install them).
+The VM update script handles: `uv sync --extra dev` (which also installs the `rumdl` CLI), and `git submodule update --init --recursive`. Python 3.13+ and `uv` must be pre-installed as system dependencies (the update script does not install them).
 
 ### Running the Cortex MCP server
 

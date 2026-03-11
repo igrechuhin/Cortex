@@ -1,4 +1,10 @@
-"""Git, command discovery, config, file hashes, and cache filtering for markdown lint."""
+"""Git, command discovery, config, file hashes, and cache filtering for markdown lint.
+
+This module was originally implemented for a Node-based markdown linter and now
+uses ``rumdl`` as the underlying Markdown linter/formatter. Public function
+names are kept stable (e.g. ``find_markdownlint_command``) for backward
+compatibility so callers do not need to change imports when tooling is upgraded.
+"""
 
 # pyright: reportPrivateUsage=false
 
@@ -37,6 +43,7 @@ __all__ = [
     "after_one_file",
     "compute_file_hashes",
     "filter_files_for_linting",
+    # Backward-compatible name: now discovers rumdl instead of the legacy Node-based linter
     "find_markdownlint_command",
     "get_all_markdown_files_for_lint",
     "get_markdown_files_to_process",
@@ -171,50 +178,48 @@ async def get_modified_markdown_files(
     return sorted(set(files))
 
 
-def _local_markdownlint_path(project_root: Path) -> Path | None:
-    """Return path to local node_modules/.bin/markdownlint-cli2 if present."""
-    local_bin = project_root / "node_modules" / ".bin" / "markdownlint-cli2"
-    if local_bin.exists():
-        return local_bin.resolve()
-    win_cmd = project_root / "node_modules" / ".bin" / "markdownlint-cli2.cmd"
-    if win_cmd.exists():
-        return win_cmd.resolve()
-    return None
-
-
 async def find_markdownlint_command(
     project_root: Path | None = None,
 ) -> list[str] | None:
-    """Find available markdownlint-cli2 command."""
+    """Find available rumdl command (backward-compatible name).
+
+    Discovery order (to preserve historical expectations from tests/tools):
+
+    1. Local ``node_modules/.bin/rumdl`` when ``project_root`` is provided.
+    2. ``rumdl`` on PATH (installed into the Python environment).
+    3. ``npx --yes rumdl`` as a final fallback.
+    """
+    # 1) Prefer a project-local CLI when project_root is known.
     if project_root is not None:
-        local = _local_markdownlint_path(project_root)
-        if local is not None:
-            result = await run_command([str(local), "--version"], cwd=project_root)
-            if _result_success(result) or "markdownlint-cli2" in _result_stdout(result):
-                return [str(local)]
+        local_bin = project_root / "node_modules" / ".bin" / "rumdl"
+        if local_bin.exists():
+            result = await run_command([str(local_bin.resolve()), "--version"])
+            if _result_success(result) or "rumdl" in _result_stdout(result):
+                return [str(local_bin.resolve())]
 
-    result = await run_command(["markdownlint-cli2", "--version"])
-    if _result_success(result) or "markdownlint-cli2" in _result_stdout(result):
-        return ["markdownlint-cli2"]
+    # 2) Try rumdl on PATH.
+    result = await run_command(["rumdl", "--version"])
+    if _result_success(result) or "rumdl" in _result_stdout(result):
+        return ["rumdl"]
 
-    result = await run_command(
-        ["npx", "--yes", "markdownlint-cli2", "--version"],
-        cwd=project_root if project_root is not None else None,
-    )
-    if _result_success(result) or "markdownlint-cli2" in _result_stdout(result):
-        return ["npx", "--yes", "markdownlint-cli2"]
+    # 3) Fallback to npx-based invocation.
+    result = await run_command(["npx", "--yes", "rumdl", "--version"])
+    if _result_success(result) or "rumdl" in _result_stdout(result):
+        return ["npx", "--yes", "rumdl"]
 
     return None
 
 
 def _find_markdownlint_config(project_root: Path) -> Path | None:
-    """Find markdownlint config file in project root."""
-    yaml_config = project_root / ".markdownlint-cli2.yaml"
-    if yaml_config.exists():
-        return yaml_config
-    json_config = project_root / ".markdownlint.json"
-    if json_config.exists():
-        return json_config
+    """Find Markdown lint config file in project root.
+
+    For rumdl we prefer ``rumdl.toml``. Legacy markdownlint configuration files
+    from earlier tooling are ignored by the Python integration after migration,
+    but can remain on disk if external tools still rely on them.
+    """
+    rumdl_config = project_root / "rumdl.toml"
+    if rumdl_config.exists():
+        return rumdl_config
     return None
 
 
@@ -228,14 +233,12 @@ async def validate_markdown_prerequisites(
 
     markdownlint_cmd = await find_markdownlint_command(root_path)
     if markdownlint_cmd is None:
-        return (
-            create_error_response(
-                "markdownlint-cli2 not found. Run 'make bootstrap' first (installs Node deps from package.json). "
-                + "Or from project root: npm install, or ensure npx is available."
-            ),
-            None,
-            None,
+        message = (
+            "rumdl not found. Install it into the Python environment for example via "
+            "'uv sync --extra dev' (adds rumdl CLI), or ensure a compatible rumdl "
+            "binary is on PATH."
         )
+        return (create_error_response(message), None, None)
     config_path = _find_markdownlint_config(root_path)
     return None, markdownlint_cmd, config_path
 

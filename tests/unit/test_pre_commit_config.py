@@ -32,12 +32,10 @@ def test_pre_commit_config_has_markdownlint_hook() -> None:
     assert (
         markdownlint is not None
     ), "Pre-commit config must include hook with id=markdownlint"
-    assert "markdownlint-cli2" in str(
-        markdownlint.get("entry", "")
-    ), "Markdownlint hook entry must run markdownlint-cli2"
+    entry_str = str(markdownlint.get("entry", ""))
+    assert "rumdl" in entry_str, "Markdownlint hook entry must run rumdl"
     files_val = markdownlint.get("files")
     types_val = markdownlint.get("types")
-    entry_str = str(markdownlint.get("entry", ""))
     has_files_match = files_val == r"\.(md|mdc)$"
     has_types_match = isinstance(types_val, list) and any(
         "md" in str(t) for t in cast(list[Any], types_val)
