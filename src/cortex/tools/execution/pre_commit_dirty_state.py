@@ -61,6 +61,15 @@ class SkipDecision:
     reason: str
 
 
+@dataclass(frozen=True)
+class CheckCleanResult:
+    """Last known clean result metadata for a single check."""
+
+    passed: bool
+    step: str
+    timestamp: str
+
+
 def _parse_diff_lines(
     stdout: str,
     source_entries: list[str],
@@ -164,6 +173,8 @@ class PipelineDirtyTracker:
     project_root: Path | None = None
     phase_a_fingerprint: PipelineFingerprint | None = None
     phase_a_passed: bool = False
+    dirty_checks: dict[str, bool] = field(default_factory=dict)
+    last_clean_results: dict[str, CheckCleanResult] = field(default_factory=dict)
     _active: bool = field(default=False, init=False)
 
     @classmethod
@@ -194,8 +205,32 @@ class PipelineDirtyTracker:
             self.phase_a_fingerprint = None
             self._active = False
 
+    def mark_dirty(self, check_name: str) -> None:
+        """Mark a check as dirty, forcing it to re-run in final validation."""
+        self.dirty_checks[check_name] = True
+
+    def mark_clean(
+        self,
+        check_name: str,
+        *,
+        step: str,
+        timestamp: str,
+    ) -> None:
+        """Mark a check as clean and record last clean result metadata."""
+        self.dirty_checks[check_name] = False
+        self.last_clean_results[check_name] = CheckCleanResult(
+            passed=True,
+            step=step,
+            timestamp=timestamp,
+        )
+
     def can_skip_check(self, check_name: str) -> SkipDecision:
         """Determine if a Step 12 check can be skipped."""
+        if self.dirty_checks.get(check_name, False):
+            return SkipDecision(
+                can_skip=False,
+                reason="Check explicitly marked dirty in pipeline state",
+            )
         if not self._active or self.phase_a_fingerprint is None:
             return SkipDecision(
                 can_skip=False,

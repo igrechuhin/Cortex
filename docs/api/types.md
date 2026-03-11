@@ -1013,8 +1013,8 @@ class MyType(TypedDict):
 # Usage
 data: MyType = {"field1": "value", "field2": 42}
 
-# Type checking will catch errors
-data["field3"] = "error"  # mypy error: unexpected key
+# Type checking will catch errors (Pyright as primary; mypy optional/local-only)
+data["field3"] = "error"  # type checker error: unexpected key
 ```
 
 ### Using Dataclasses

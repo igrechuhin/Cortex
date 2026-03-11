@@ -10,7 +10,9 @@
 - **CI fix: npm cache** - COMPLETE. Removed `cache: "npm"` from `actions/setup-node@v4`; was causing all CI steps to be skipped when `package-lock.json` absent.
 - **Pyright fixes: pre_commit_status.py** - COMPLETE. 14 errors fixed via `dict[str, object]` + `cast()` + helper extraction.
 - **Synapse cursor-agents: project/language agnostic** - COMPLETE. Created `shared-defaults.md` for quality thresholds; removed hardcoded numbers from `implement-code.md`, `commit-checks.md`; made archive categories project-supplied via `get_structure_info()` in `commit-docs.md`, `implement-finalize.md`; removed Python-specific `rumdl` fallback from `commit.md`.
-- ✅ **[HI-6] Resolve Type-Checker Strategy (PARTIAL)** - Pyright is primary type checker (configuration + contributor docs); mypy kept as explicitly-optional local check; remaining: decide on full mypy config removal, sweep other docs.
+- ✅ **[HI-6] Resolve Type-Checker Strategy (PARTIAL)** - Pyright is primary type checker (configuration + contributor docs); mypy kept as explicitly-optional local check; remaining: run a Phase A quality gate/CI validation slice for the type-checker-strategy docs/config/memory-bank changes.
+
+- ✅ **[HI-6] Resolve Type-Checker Strategy (PARTIAL – docs slice)** - COMPLETE (2026-03-11) - Aligned key public docs and extension development guide so they consistently state that Pyright is the primary type checker (CI + local) and mypy is optional/local-only, and recorded that this was a docs-only session where the quality gate was effectively skipped due to tooling limitations ("Quality gate skipped — doc-only session"); remaining HI-6 work is to run a Phase A quality gate/CI validation slice for the type-checker-strategy docs/config/memory-bank changes and confirm it passes.
 
 ## Completed Work (2026-03-10)
 

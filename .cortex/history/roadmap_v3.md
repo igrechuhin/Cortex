@@ -17,7 +17,7 @@
 
 ### Documentation Cleanup (DRY)
 
-- **[HI-6] Resolve Type-Checker Strategy** — PARTIAL / IN PROGRESS: Pyright is documented and configured as the primary type checker (CI + local), with mypy retained as an optional/local-only cross-check. `pyproject.toml`, the Pyright configuration, contributor docs, `.cortex` memory-bank entries (including `techContext.md` and this roadmap entry), and the dedicated HI-6 plan are all aligned to say "Pyright primary, optional/local mypy." Only the Phase A quality-gate/CI validation slice remains before HI-6 can be closed. Plan: `plans/resolve-type-checker-strategy.md` | Priority: High | Order: 11
+- **[HI-6] Resolve Type-Checker Strategy** — PARTIAL: Pyright documented as primary and mypy marked optional/local; latest slice: mypy config explicitly marked optional/local in `pyproject.toml` and key non-.cortex docs updated to say "Pyright primary, optional mypy." Remaining: decide on full removal vs retention of mypy config, align remaining `.cortex` memory-bank/docs/prompts and the dedicated HI-6 plan/roadmap entry, and run a future slice with a successful quality gate once tooling is available. Plan: `plans/resolve-type-checker-strategy.md` | Priority: High | Order: 11
 - **[MED-7] Fix README Tool Count** — Update "27 public MCP tools" to actual count. Plan: `plans/fix-readme-tool-count.md` | Priority: Medium | Order: 19
 - **[MED-3] Calibrate Review Metric Scores** — Add calibration examples and evidence requirements for 9 review metrics. Plan: `plans/calibrate-review-metric-scores.md` | Priority: Medium | Order: 15
 - **[MED-10] Make Prompts Agent-Agnostic** — Replace Cursor-specific tool names with generic mapping. Plan: `plans/make-prompts-agent-agnostic.md` | Priority: Medium | Order: 22

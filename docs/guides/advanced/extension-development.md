@@ -1611,7 +1611,8 @@ dev = [
     "pytest>=7.0.0",
     "pytest-asyncio>=0.21.0",
     "black>=23.0.0",
-    "mypy>=1.0.0",
+    "pyright>=1.1.400",  # Primary type checker for CI and local runs
+    "mypy>=1.0.0",       # Optional/local-only cross-check if you prefer
 ]
 
 [project.urls]
@@ -1633,6 +1634,9 @@ asyncio_mode = "auto"
 [tool.black]
 line-length = 88
 target-version = ["py313"]
+
+[tool.pyright]
+pythonVersion = "3.13"
 
 [tool.mypy]
 python_version = "3.13"

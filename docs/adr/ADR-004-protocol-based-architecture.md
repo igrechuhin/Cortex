@@ -57,7 +57,7 @@ class RefactoringEngine:
 
 **Type Safety**:
 
-- Catch missing methods at type-check time (Pyright as primary, with optional mypy)
+- Catch missing methods at type-check time (Pyright as the primary type checker for CI and local runs, with mypy available as an optional/local-only cross-check)
 - Detect incorrect method signatures early
 - Support IDE autocomplete and refactoring
 - No runtime surprises from missing attributes
@@ -577,7 +577,7 @@ if isinstance(obj, FileSystemProtocol):
 
 **5. Tool Support**:
 
-- Requires modern type checker (Pyright as primary, with optional mypy 0.9+)
+- Requires a modern type checker (Pyright as the primary type checker for CI and local runs, with mypy available as an optional/local-only cross-check)
 - Some tools don't understand protocols
 - Documentation generation may be limited
 - CI must run type checker

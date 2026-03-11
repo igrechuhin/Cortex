@@ -17,6 +17,7 @@ import pytest
 
 from cortex.core.models import ModelDict
 from cortex.tools.execution.pre_commit_dirty_state import (
+    CheckCleanResult,
     PipelineDirtyTracker,
     PipelineFingerprint,
     SkipDecision,
@@ -139,6 +140,22 @@ class TestPipelineDirtyTracker:
 
     def test_inactive_after_fail(self, tmp_path: Path) -> None:
         assert not _make_tracker(tmp_path, passed=False).is_active
+
+    def test_mark_dirty_and_clean_metadata(self, tmp_path: Path) -> None:
+        tracker = _make_tracker(tmp_path)
+        tracker.mark_dirty("tests")
+        assert tracker.dirty_checks.get("tests") is True
+
+        tracker.mark_clean(
+            "tests",
+            step="A.5",
+            timestamp="2026-03-11T00:00:00Z",
+        )
+        assert tracker.dirty_checks.get("tests") is False
+        result = tracker.last_clean_results.get("tests")
+        assert isinstance(result, CheckCleanResult)
+        assert result.passed is True
+        assert result.step == "A.5"
 
 
 # --- Skip decisions --------------------------------------------------------

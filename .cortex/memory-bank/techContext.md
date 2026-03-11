@@ -79,7 +79,8 @@ pip install -e ".[dev]"
 - `pytest-cov` – Coverage tracking
 - `black` – Code formatting
 - `ruff` – Linting and import sorting
-- `pyright` – Secondary type checker (fast incremental checks; mypy is primary)
+- `pyright` – Primary type checker (used by `make typecheck`, CI quality gate, and local checks)
+- `mypy` – Optional/local-only cross-check; can be run via `uv run mypy` but is not required in CI
 
 ## Tool Usage Patterns
 
@@ -96,14 +97,14 @@ pip install -e ".[dev]"
 
 Type checking strategy for this project:
 
-- **Primary**: `mypy` (configured via `[tool.mypy]` in `pyproject.toml` for strict type checking).
-- **Secondary**: `pyright` (used by `make typecheck` for fast, developer-friendly incremental checks).
+- **Primary**: `pyright` (configured via `pyrightconfig.json`, used by `make typecheck` and the CI quality gate for fast, developer-friendly checks).
+- **Optional/Secondary**: `mypy` (retained as an optional local-only strict cross-check; not required to pass in CI).
 
 ```bash
-# Fast incremental checks (pyright)
+# Primary checks (pyright, recommended)
 ./.venv/bin/pyright src/ tests/
 
-# Strict checks (mypy)
+# Optional strict cross-check (mypy; local only)
 uv run mypy
 ```
 
