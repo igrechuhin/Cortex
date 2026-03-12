@@ -9,7 +9,7 @@ execution_order: 7
 depends_on: []
 ---
 
-# Add Structured Quality Configuration
+## Add Structured Quality Configuration
 
 **Status**: PENDING
 **Priority**: High

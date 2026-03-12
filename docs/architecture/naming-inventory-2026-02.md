@@ -122,4 +122,4 @@ Catalog current names for Cortex MCP tools, `cortex://` resources, and Synapse p
 - [Tools vs Resources](../api/tools.md) — Phase 43 conventions
 - [Tool optimization mapping](tool-optimization-mapping.md)
 - [Tool optimization baseline](tool-optimization-baseline.md)
-- Plan: [unify-simplify-tools-prompts-resources-naming](../../.cortex/plans/unify-simplify-tools-prompts-resources-naming.md)
+- Plan: [unify-simplify-tools-prompts-resources-naming](../../.cortex/plans/archive/Other/unify-simplify-tools-prompts-resources-naming.md)

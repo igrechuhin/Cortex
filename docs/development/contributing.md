@@ -87,7 +87,7 @@ bash scripts/bootstrap.sh
 source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 ```
 
-Bootstrap installs Python (uv) and Node (npm) dependencies from `package.json`. For offline or restricted environments, see [Getting Started — Offline or restricted environments (Node)](../getting-started.md#offline-or-restricted-environments-node).
+Bootstrap installs Python (uv) and Node (npm) dependencies from `package.json`. For offline or restricted environments, see [Getting Started — Offline or restricted environments](../getting-started.md#offline-or-restricted-environments).
 
 ### Python Version Management
 
@@ -817,28 +817,34 @@ def test_validate_with_mocked_schema_validator(mock_validator):
 
    ```markdown
    ## Description
+
    Brief description of changes
 
    ## Related Issues
+
    Closes #123
 
    ## Type of Change
+
    - [ ] New feature
    - [ ] Bug fix
    - [ ] Documentation update
    - [ ] Refactoring
 
    ## Changes Made
+
    - Point 1
    - Point 2
    - Point 3
 
    ## Testing
+
    - Unit tests added/updated
    - Integration tests added/updated
    - Manual testing performed
 
    ## Checklist
+
    - [ ] Code is formatted (black, isort)
    - [ ] Tests pass (pytest)
    - [ ] Coverage >= 90%
@@ -1093,7 +1099,7 @@ black . && isort .
 
 - Ensure all parameters and returns have type hints
 - Use concrete types instead of `object`
-- Check [python-coding-standards.mdc](../../.cursor/rules/python-coding-standards.mdc)
+- Check `python-coding-standards.mdc` (load via `rules(operation="get_relevant", task_description="python coding standards")`)
 
 #### "Tests are failing"
 

@@ -47,4 +47,4 @@ Naming: use `*_helpers.py` for extracted modules. Full pattern and examples are 
 ## Related
 
 - [Testing guide](testing.md) – coverage and tests
-- [Commit pipeline](../../design/commit-pipeline-phases.md) – Phase A and Step 12.6
+- [Commit pipeline](../design/commit-pipeline-phases.md) – Phase A and Step 12.6

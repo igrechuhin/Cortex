@@ -260,17 +260,20 @@ async def validate_memory_bank() -> dict[str, object]:
 2. MetadataIndex
 
 **Tier 2: Common (initialized for most tools)**:
+
 3. DependencyGraph
 4. LinkParser
 5. TransclusionEngine
 
 **Tier 3: Validation (initialized for validation tools)**:
+
 6. SchemaValidator
 7. LinkValidator
 8. DuplicationDetector
 9. QualityMetrics
 
 **Tier 4: Optimization (initialized for optimization tools)**:
+
 10. TokenCounter
 11. RelevanceScorer
 12. ContextOptimizer
@@ -278,16 +281,19 @@ async def validate_memory_bank() -> dict[str, object]:
 14. SummarizationEngine
 
 **Tier 5: Analysis (initialized for analysis tools)**:
+
 15. PatternAnalyzer
 16. StructureAnalyzer
 17. InsightEngine
 
 **Tier 6: Refactoring (initialized for refactoring tools)**:
+
 18. RefactoringEngine
 19. RefactoringExecutor
 20. RollbackManager
 
 **Tier 7: Advanced (initialized rarely)**:
+
 21. VersionManager
 22. MigrationManager
 23. FileWatcher

@@ -115,8 +115,8 @@ async def my_custom_tool(
     Returns:
         JSON string with tool results.
 
-    Example:
-        ```json
+    Example::
+
         {
           "status": "success",
           "result": {
@@ -124,7 +124,7 @@ async def my_custom_tool(
             "param2": 42
           }
         }
-```text
+
     """
     try:
         # Get project root and managers

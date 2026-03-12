@@ -174,7 +174,7 @@ This happens when the client sends ListTools/ListPrompts/ListResources **before*
 
 - **Default (no CORTEX_AUTO_RESTART)**: Cortex exits on disconnect; the client starts a new process when it next needs MCP, so you get a fresh Initialize with no user action. You should not see 0 tools.
 - **Automatic recovery**: Install the [Cursor MCP Refresh](https://github.com/tankmurdock/cursor-mcp-refresh) extension and set **Auto-refresh interval** (e.g. 60–300 seconds). It refreshes MCP servers on a timer, so "0 tools" is cleared on the next refresh without manual toggle. [Install from VSIX](https://github.com/tankmurdock/cursor-mcp-refresh/releases).
-- **If you set CORTEX_AUTO_RESTART=1** and don't use the extension: reload MCP manually (disable/enable Cortex in MCP Servers, or restart Cursor). Retry once first; optional: `CORTEX_USE_FALLBACK_ROOT=1`; see [mcp-tool-timeouts](mcp-tool-timeouts.md).
+- **If you set CORTEX_AUTO_RESTART=1** and don't use the extension: reload MCP manually (disable/enable Cortex in MCP Servers, or restart Cursor). Retry once first; optional: `CORTEX_USE_FALLBACK_ROOT=1`; see [mcp-tool-timeouts](../mcp-tool-timeouts.md).
 
 #### Issue: Another long-running tool is in progress {#issue-another-long-running-tool-in-progress}
 
@@ -216,7 +216,7 @@ Use this runbook when the Cortex MCP connection is lost **during** `/cortex/comm
 - **Steps with fallback (12.1, 12.5, 12.6)**: Retry once → if still failing, use documented shell/script fallback → record "MCP connection closed; fallback used" → continue pipeline. Never skip these steps based on Phase A.
 - **Step 12.7 (no fallback)**: Retry once → if still failing, **block commit**, report connection failure, and instruct user to **reconnect Cortex MCP and re-run the commit command**. Do not proceed with Phase A test results.
 
-**References**: Commit prompt "Connection closed" and "Step 12" sections; [MCP error -32000: Connection closed](#issue-mcp-error-32000-connection-closed); [Client connection closed during long tools](../../mcp-tool-timeouts.md#client-connection-closed-during-long-tools) in mcp-tool-timeouts.
+**References**: Commit prompt "Connection closed" and "Step 12" sections; [MCP error -32000: Connection closed](#issue-mcp-error-32000-connection-closed); [Client connection closed during long tools](../mcp-tool-timeouts.md#client-connection-closed-during-long-tools) in mcp-tool-timeouts.
 
 ### Development and Testing
 
@@ -547,6 +547,7 @@ Use transclusion to eliminate duplication:
    ```markdown
    <!-- shared.md -->
    ## Authentication
+
    Users authenticate via OAuth 2.0...
    ```
 
@@ -646,7 +647,7 @@ Error: Circular transclusion detected: fileA.md -> fileB.md -> fileA.md
    {{include:fileB.md}}
 
    <!-- fileB.md -->
-   {{include:fileA.md}}  <!-- Circular! -->
+   {{include:fileA.md}} <!-- Circular! -->
    ```
 
 2. Restructure to eliminate the cycle:

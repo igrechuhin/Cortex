@@ -905,6 +905,7 @@ ${RESPONSE_SCHEMA}
 {{aggregate:roles/*/progress.md#Current Sprint | format:table}}
 
 <!-- Result: -->
+
 | Role | Current Sprint |
 |------|----------------|
 | Frontend | Component Library |

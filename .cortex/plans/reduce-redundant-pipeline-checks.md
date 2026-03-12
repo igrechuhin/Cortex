@@ -11,7 +11,7 @@ depends_on:
   - "simplify-commit-pipeline-structure"
 ---
 
-# Reduce Redundant Pipeline Checks in Commit Pipeline
+## Reduce Redundant Pipeline Checks in Commit Pipeline
 
 **Status**: PENDING
 **Priority**: High

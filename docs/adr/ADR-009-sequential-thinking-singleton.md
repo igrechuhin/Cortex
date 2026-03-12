@@ -70,4 +70,4 @@ If Cortex needs multi-tenant or per-session cores (e.g., HTTP with concurrent re
 ## Related
 
 - Phase 9.2: Architecture Refinement (protocol boundaries, DI audit)
-- [Architecture Layering](../../design/architecture-layering.md)
+- [Architecture Layering](../design/architecture-layering.md)

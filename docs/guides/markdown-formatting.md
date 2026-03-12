@@ -27,6 +27,7 @@ Use proper heading syntax: `#`, `##`, `###`, etc.
 
 ```markdown
 **Section Title**
+
 - List item
 
 **Overall Code Quality Score: 8.3/10**

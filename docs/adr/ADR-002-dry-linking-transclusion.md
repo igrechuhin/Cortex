@@ -20,12 +20,14 @@ When the same information is needed in multiple files, developers tend to copy-p
 ```markdown
 <!-- projectBrief.md -->
 ## Tech Stack
+
 - Python 3.13+
 - MCP SDK
 - aiofiles for async I/O
 
 <!-- techContext.md -->
 ## Tech Stack
+
 - Python 3.13+
 - MCP SDK
 - aiofiles for async I/O
@@ -126,9 +128,11 @@ Transclusion (coined by Ted Nelson) is the inclusion of content from one documen
 ```markdown
 <!-- README.md -->
 ## Quick Start
+
 {{include:docs/getting-started.md}}
 
 ## Architecture
+
 {{include:docs/architecture-overview.md}}
 ```
 
@@ -137,9 +141,11 @@ Transclusion (coined by Ted Nelson) is the inclusion of content from one documen
 ```markdown
 <!-- systemPatterns.md -->
 ## Storage Layer
+
 {{include:patterns/storage.md}}
 
 ## API Layer
+
 {{include:patterns/api.md}}
 ```
 
@@ -148,6 +154,7 @@ Transclusion (coined by Ted Nelson) is the inclusion of content from one documen
 ```markdown
 <!-- migration-guide.md -->
 ## Version 1.0 to 2.0
+
 {{include:migrations/v1-to-v2.md}}
 ```
 

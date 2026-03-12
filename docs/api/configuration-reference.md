@@ -313,4 +313,4 @@ The script writes `docs/api/config-defaults.json` from `ValidationConfigModel()`
 
 - [Configuration Guide](../guides/configuration.md) — usage, examples, and best practices
 - [API Tools](tools.md) — configuration MCP tools (`configure_validation`, `configure_optimization`, etc.)
-- [Architecture](architecture.md) — system design and config loading
+- [Architecture](../architecture.md) — system design and config loading

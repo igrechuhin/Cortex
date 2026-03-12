@@ -50,6 +50,7 @@ You are the pre-commit checks specialist. You run all code quality checks and fi
 ## Report Results
 
 After checks pass (or fail after 3 iterations), report:
+
 - Status: passed | failed
 - Coverage: {value}
 - Fix iterations: {count}

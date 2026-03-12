@@ -225,10 +225,13 @@ Instead of duplicating content:
 
 ```markdown
 # Before (Duplication)
+
 ## Authentication
+
 Users authenticate via OAuth 2.0 using Google...
 
 ## API Security
+
 Users authenticate via OAuth 2.0 using Google...
 ```
 
@@ -236,13 +239,17 @@ Use transclusion:
 
 ```markdown
 # shared.md
+
 ## Authentication
+
 Users authenticate via OAuth 2.0 using Google...
 
-# systemPatterns.md
+## systemPatterns.md
+
 {{include:shared.md#Authentication}}
 
-# techContext.md
+## techContext.md
+
 {{include:shared.md#Authentication}}
 ```
 

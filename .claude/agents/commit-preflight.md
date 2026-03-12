@@ -16,6 +16,7 @@ You are the commit pipeline preflight specialist. You prepare all prerequisites 
 **Step 3**: Try to load rules by calling `mcp__cortex__rules(operation="get_relevant", task_description="Commit pipeline, test coverage, type fixes, and visibility rules")`.
 
 If the `rules` tool fails or returns `disabled`/`indexed_files=0`:
+
 1. Call `mcp__cortex__get_structure_info()` to get the project structure.
 2. Read key rule files directly from `.cortex/synapse/rules/` directory (this is where rules live — NOT `.cortex/rules/`). Read at least:
    - `.cortex/synapse/rules/general/commit-pipeline.mdc`
@@ -31,6 +32,7 @@ If the `rules` tool fails or returns `disabled`/`indexed_files=0`:
 ## Report Results
 
 After all steps complete, report:
+
 - MCP health: healthy
 - Context loaded: yes/no
 - Rules loaded: yes (source: MCP | file read | shared-conventions)
@@ -39,5 +41,6 @@ After all steps complete, report:
 - Status: complete
 
 Only report failure and STOP if:
+
 - Step 1 (MCP health) fails — MCP is required for later phases
 - Step 4 (git status) shows no changes — nothing to commit

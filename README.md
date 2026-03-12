@@ -152,16 +152,15 @@ For local development, use these Make targets (after running `bash scripts/boots
 
 Cortex exposes **30 tools, 9 prompts, and 24 resources**. The most important tools by workflow:
 
-| Workflow | Tools |
-|----------|-------|
-| **Session** | `session_start`, `load_context`, `compact_session` |
-| **Memory Bank** | `manage_file`, `query_memory_bank` |
-| **Quality** | `validate`, `execute_pre_commit_checks`, `fix_quality_issues` |
-| **Plans** | `plan`, `roadmap`, `register_plan_in_roadmap` |
-| **Rules** | `rules`, `get_synapse_rules`, `synapse` |
-| **Analysis** | `analyze`, `think` |
-
-Full reference: [docs/api/tools.md](docs/api/tools.md) | Discovery: `search_tools(query="...")`
+| Workflow                                               | Tools                                                         |
+| ------------------------------------------------------ | ------------------------------------------------------------- |
+| **Session**                                            | `session_start`, `load_context`, `compact_session`            |
+| **Memory Bank**                                        | `manage_file`, `query_memory_bank`                            |
+| **Quality**                                            | `validate`, `execute_pre_commit_checks`, `fix_quality_issues` |
+| **Plans**                                              | `plan`, `roadmap`, `register_plan_in_roadmap`                 |
+| **Rules**                                              | `rules`, `get_synapse_rules`, `synapse`                       |
+| **Analysis**                                           | `analyze`, `think`                                            |
+| Full reference: [docs/api/tools.md](docs/api/tools.md) | Discovery: `search_tools(query="...")`                        |
 
 ## Prompts
 

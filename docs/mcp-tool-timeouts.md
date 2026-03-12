@@ -275,11 +275,11 @@ The commit pipeline (e.g. `/cortex/commit`) uses these MCP tools that can run fo
 | Tool | Typical duration | Server behavior | Client timeout recommendation |
 |------|------------------|-----------------|-------------------------------|
 | `execute_pre_commit_checks` (Step 12.7: tests) | 300–600 s (driven by `test_timeout` param, often 300–600) | Very-complex timeout (960 s); frequent progress reports to reduce idle timeout | If the client exposes a tool-call timeout, set it to **≥ test_timeout + buffer** (e.g. 600 + 60 s). Otherwise rely on retry and runbook. |
-| `fix_markdown_lint` (Step 12.5) | 30–120 s (depends on repo size; scoped to git-modified when possible) | Batched runs, 5 s heartbeat, progress after each file | Same as above; use local markdownlint for faster runs (see [troubleshooting](../guides/troubleshooting.md#issue-mcp-error-32000-connection-closed)). |
+| `fix_markdown_lint` (Step 12.5) | 30–120 s (depends on repo size; scoped to git-modified when possible) | Batched runs, 5 s heartbeat, progress after each file | Same as above; use local markdownlint for faster runs (see [troubleshooting](guides/troubleshooting.md#issue-mcp-error-32000-connection-closed)). |
 | `fix_quality_issues` (pre-flight / Step 12.1) | 30–120 s | Progress and timeout; serialized with other long tools | Retry once; then use fallback scripts per commit prompt. |
 
 - **Keepalive / progress**: The server sends progress or heartbeat for all of these (see "Tools that need more frequent progress" in `mcp_stability_config` and "Client connection closed during long tools" below). This reduces the chance of client idle timeout (-32000).
-- **If Cursor or the MCP client exposes a configurable tool-call timeout**: Set it to at least the longest expected run (e.g. `test_timeout` + 60 s for Step 12.7). For Cursor IDE, community-documented settings (`mcp.server.timeout`, `mcp.elicitation.timeout` in milliseconds) and recommended values are in [Cursor IDE: MCP tool timeout configuration](../guides/troubleshooting.md#cursor-ide-mcp-tool-timeout-configuration). If the client does not expose a configurable timeout, the only mitigations are server-side progress and the pipeline retry/fallback behavior; see [MCP disconnect runbook (commit pipeline)](../guides/troubleshooting.md#mcp-disconnect-runbook-commit).
+- **If Cursor or the MCP client exposes a configurable tool-call timeout**: Set it to at least the longest expected run (e.g. `test_timeout` + 60 s for Step 12.7). For Cursor IDE, community-documented settings (`mcp.server.timeout`, `mcp.elicitation.timeout` in milliseconds) and recommended values are in [Cursor IDE: MCP tool timeout configuration](guides/troubleshooting.md#cursor-ide-mcp-tool-timeout-configuration). If the client does not expose a configurable timeout, the only mitigations are server-side progress and the pipeline retry/fallback behavior; see [MCP disconnect runbook (commit pipeline)](guides/troubleshooting.md#mcp-disconnect-runbook-commit).
 
 ## Client connection closed during long tools
 
@@ -316,7 +316,7 @@ When the client (e.g. Cursor) fetches many MCP **resources** in parallel (e.g. w
 Cortex can run with **SSE** or **Streamable HTTP** transport in addition to the default **stdio**. HTTP-based transports allow the server to handle multiple requests concurrently (e.g. ReadResource while a long CallTool runs), which avoids resource read timeouts and "unknown message ID" when clients use a URL to connect.
 
 - **When it helps**: Use HTTP/SSE or Streamable HTTP when you run Cortex as a long-lived server and connect from Cursor (or another client) via URL instead of a shell command. Same tools and resources; only the transport and concurrency behavior change.
-- **Analysis and plan**: See [docs/mcp-transport-http-sse-analysis.md](mcp-transport-http-sse-analysis.md) for the design and [.cortex/plans/mcp-transport-http-sse-implementation.md](../.cortex/plans/mcp-transport-http-sse-implementation.md) for the implementation plan.
+- **Analysis and plan**: See [docs/mcp-transport-http-sse-analysis.md](mcp-transport-http-sse-analysis.md) for the design and [.cortex/plans/mcp-transport-http-sse-implementation.md](../.cortex/plans/archive/Transport/mcp-transport-http-sse-implementation.md) for the implementation plan.
 
 ### Stdio–Streamable HTTP bridge (one switch, concurrent requests)
 

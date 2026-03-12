@@ -573,7 +573,7 @@ fileA.md -> fileB.md -> fileA.md -->
 1. **Retry once** – Many connection drops are transient; the second call often succeeds.
 2. **Reconnect MCP** – Cortex exits on disconnect by default; client starts a new process when needed.
 3. **Use documented fallbacks** – For commit pipeline steps (e.g. Step 12.5, 12.6), use shell fallbacks when retry fails.
-4. **See troubleshooting** – Full runbook: [MCP error -32000: Connection closed](../troubleshooting.md#issue-mcp-error-32000-connection-closed).
+4. **See troubleshooting** – Full runbook: [MCP error -32000: Connection closed](troubleshooting.md#issue-mcp-error-32000-connection-closed).
 
 **Retry behavior:**
 

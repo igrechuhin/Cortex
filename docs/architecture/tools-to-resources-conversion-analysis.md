@@ -251,4 +251,4 @@ All query_usage gaps have been implemented (plan-query-usage-resources-implement
 
 - [docs/api/tools.md](../api/tools.md) — Tools vs Resources semantics
 - [docs/architecture/naming-conventions.md](naming-conventions.md) — URI scheme
-- [plan-tools-to-resources-analysis](../../.cortex/plans/plan-tools-to-resources-analysis.md) — Source plan
+- [plan-tools-to-resources-analysis](../../.cortex/plans/archive/Other/plan-tools-to-resources-analysis.md) — Source plan

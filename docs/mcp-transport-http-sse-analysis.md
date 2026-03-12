@@ -1,7 +1,7 @@
 # MCP Transport HTTP/SSE Analysis
 
 **Status**: Completed (2026-02-07)  
-**Plan**: [.cortex/plans/mcp-transport-http-sse-analysis.md](../.cortex/plans/mcp-transport-http-sse-analysis.md)
+**Plan**: [.cortex/plans/mcp-transport-http-sse-analysis.md](../.cortex/plans/archive/Design/mcp-transport-http-sse-analysis.md)
 
 ## Summary
 
@@ -135,7 +135,7 @@ Had the recommendation been no-go, the next step would be to update `docs/mcp-to
 
 ## References
 
-- Plan: [.cortex/plans/mcp-transport-http-sse-analysis.md](../.cortex/plans/mcp-transport-http-sse-analysis.md)
+- Plan: [.cortex/plans/mcp-transport-http-sse-analysis.md](../.cortex/plans/archive/Design/mcp-transport-http-sse-analysis.md)
 - Current timeout and connection behavior: [docs/mcp-tool-timeouts.md](mcp-tool-timeouts.md)
 - Connection-closed investigation (archived): `.cortex/plans/archive/Investigations/2026-02-07/investigate-mcp-connection-closed-2026-02-07.md`
 - MCP Python SDK: [modelcontextprotocol.github.io/python-sdk](https://modelcontextprotocol.github.io/python-sdk/)

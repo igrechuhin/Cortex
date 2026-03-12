@@ -1001,7 +1001,7 @@ For security concerns or to report vulnerabilities:
 
 - **Security Team:** <security@example.com>
 - **Issue Tracker:** [GitHub Issues](https://github.com/username/cortex/issues)
-- **Security Policy:** [SECURITY.md](../../SECURITY.md)
+- **Security Policy:** SECURITY.md (see repository root)
 
 ---
 

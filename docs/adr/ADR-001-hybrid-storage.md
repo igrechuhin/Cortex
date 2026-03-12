@@ -173,6 +173,7 @@ MetadataIndex updated
 Content here...
 
 Dependencies:
+
 - {{include:docs/architecture.md}}
 ```
 

@@ -6,11 +6,11 @@
 
 Cortex is structured as an MCP (Model Context Protocol) server with a modular, layered architecture:
 
-- **Layer 1MCP Server** - Entry point with52 across 10 phases
+- **Layer 1: MCP Server** - Entry point with tools across phases
 - **Layer 2: Tool Modules** - Phase-specific tool implementations
-- **Layer 3nager Initialization** - Centralized lifecycle management with dependency injection
-- **Layer 4: Business Logic** -41 modules with single responsibilities
-- **Layer5e** - Git-tracked files and metadata indexes
+- **Layer 3: Manager Initialization** - Centralized lifecycle management with dependency injection
+- **Layer 4: Business Logic** - Modules with single responsibilities
+- **Layer 5: Storage** - Git-tracked files and metadata indexes
 
 ## Key Technical Decisions
 
@@ -99,25 +99,29 @@ Scripts in `scripts/{language}/` contain language-specific implementations:
 
 ### Core Services Stack (Initialization Order)
 
-1ileSystemManager → File I/O, locking, hashing
+1. FileSystemManager → File I/O, locking, hashing
 2. MetadataIndex → JSON index for file metadata
 3. TokenCounter → tiktoken integration
-4dencyGraph → Static and dynamic dependency tracking
-5. VersionManager → Snapshots and version history6nkParser → Parse links and transclusions
-7. TransclusionEngine → Resolve `{{include:}}` references8. SchemaValidator → File schema validation9QualityMetrics → Calculate quality scores
-10 ContextOptimizer → Optimize context within token budgets
+4. DependencyGraph → Static and dynamic dependency tracking
+5. VersionManager → Snapshots and version history
+6. LinkParser → Parse links and transclusions
+7. TransclusionEngine → Resolve `{{include:}}` references
+8. SchemaValidator → File schema validation
+9. QualityMetrics → Calculate quality scores
+10. ContextOptimizer → Optimize context within token budgets
 
 ### Module Dependencies
 
 - **Phase 1 (Foundation)**: FileSystemManager, MetadataIndex, TokenCounter, DependencyGraph
 - **Phase 2 (Linking)**: Depends on Phase 1, adds LinkParser, TransclusionEngine
-- **Phase3dation)**: Depends on Phase 1-2, adds SchemaValidator, QualityMetrics
+- **Phase 3 (Validation)**: Depends on Phase 1-2, adds SchemaValidator, QualityMetrics
 - **Phase 4 (Optimization)**: Depends on Phase 1-3, adds RelevanceScorer, ContextOptimizer
-- **Phase 5alysis/Refactoring)**: Depends on Phase 1-4, adds PatternAnalyzer, RefactoringEngine
+- **Phase 5 (Analysis/Refactoring)**: Depends on Phase 1-4, adds PatternAnalyzer, RefactoringEngine
 
-## Critical Implementation Paths1*File Operations** - All file operations go through FileSystemManager with locking
+## Critical Implementation Paths
 
-2t Loading** - Progressive loading with token budget management
+1. **File Operations** - All file operations go through FileSystemManager with locking
+2. **Context Loading** - Progressive loading with token budget management
 3. **Transclusion Resolution** - Recursive resolution with cycle detection
 4. **Validation Pipeline** - Schema → Duplication → Quality metrics
 5. **Refactoring Execution** - Approval → Validation → Execution → Rollback capability

@@ -152,4 +152,4 @@ No prompt renames recommended; current mapping is acceptable.
 - [Naming inventory](naming-inventory-2026-02.md) — Current state and inconsistencies
 - [Tools API](../api/tools.md) — Tools vs resources semantics
 - [Tool optimization mapping](tool-optimization-mapping.md)
-- Plan: [unify-simplify-tools-prompts-resources-naming](../../.cortex/plans/unify-simplify-tools-prompts-resources-naming.md)
+- Plan: [unify-simplify-tools-prompts-resources-naming](../../.cortex/plans/archive/Other/unify-simplify-tools-prompts-resources-naming.md)

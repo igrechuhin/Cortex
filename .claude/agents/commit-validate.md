@@ -23,6 +23,7 @@ You are the pre-commit validation specialist. You verify timestamps, state consi
 ### Step 2: State Consistency
 
 Using the files read in Step 1:
+
 - Verify: **roadmap** contains future/upcoming work only, **activeContext** contains completed work only.
 - If completed items are in roadmap: move them to activeContext using `Edit`.
 - If future work is in activeContext: move it to roadmap using `Edit`.

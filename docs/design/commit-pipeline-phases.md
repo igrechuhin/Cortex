@@ -220,7 +220,7 @@ Before `git add`, `git commit`, or `git push`:
 2. All validation gates (Steps 0-12) passed.
 3. Step 12.2 type check was executed and returned success with 0 errors.
 4. Step 12.7 (tests with coverage) was executed and passed in this run
-   (not assumed from Phase A). See [Quality gate failed on push](../../guides/troubleshooting.md#quality-gate-failed-on-push-tests-or-coverage) if CI fails after push.
+   (not assumed from Phase A). See [Quality gate failed on push](../guides/troubleshooting.md#quality-gate-failed-on-push-tests-or-coverage) if CI fails after push.
 
 ---
 

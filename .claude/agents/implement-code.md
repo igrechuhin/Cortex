@@ -18,6 +18,7 @@ You are the implementation specialist. You write code, tests, and run the qualit
 ### Step 1: Scope the Subtask
 
 If the selected roadmap step is large (multi-session scope), identify the **smallest meaningful subtask** that:
+
 - Moves the plan forward concretely
 - Can be finished end-to-end (including tests and quality gate) in this session
 - Is independently verifiable (has clear success criteria)
@@ -25,6 +26,7 @@ If the selected roadmap step is large (multi-session scope), identify the **smal
 Use the `think` tool for complex steps to break down into 1–3 concrete subtasks for this session plus follow-ups for later.
 
 Examples of smallest meaningful subtasks:
+
 - Adding one new helper function with tests
 - Exposing one new MCP tool with tests
 - Updating one prompt/agent file with validation
@@ -33,6 +35,7 @@ Examples of smallest meaningful subtasks:
 ### Step 2: Implement
 
 Write the code changes:
+
 - Follow coding standards from loaded rules — see `shared-defaults.md` for Synapse defaults
 - Use dependency injection for external dependencies
 - Write tests alongside implementation (AAA pattern — see `shared-defaults.md`)
@@ -51,6 +54,7 @@ Override `coverage_threshold` if project rules specify a different threshold.
 - If `status="error"` or `"no_runs"`: report failure and STOP.
 
 Parse the completed result:
+
 - If `preflight_passed: true`: record coverage, proceed.
 - If `preflight_passed: false`: call `mcp__cortex__fix_quality_issues()`, then re-run (start new job + poll). Max iterations and convergence rule per `shared-defaults.md`.
 
@@ -73,6 +77,7 @@ Parse the completed result:
 ## Report Results
 
 After quality gate passes (or fails per `shared-defaults.md` max iterations), report:
+
 - Subtask completed: {description}
 - Files changed: {list}
 - Tests added: {count}

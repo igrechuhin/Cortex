@@ -25,6 +25,7 @@ You are the memory bank and state management specialist for the implement pipeli
 Call `mcp__cortex__plan(operation="complete", plan_title="{exact roadmap title}", summary="{summary}", plan_file_name="{filename}.md", progress_entry="**{step_title}** - COMPLETE. {summary}", completion_date="YYYY-MM-DD")`.
 
 This single call does everything atomically:
+
 - Removes the roadmap entry
 - Appends to activeContext under Completed Work
 - Appends to progress.md

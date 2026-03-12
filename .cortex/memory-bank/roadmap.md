@@ -6,7 +6,6 @@
 
 ## Blockers (ASAP Priority)
 
-
 ## Active Work (in progress)
 
 ## Future Enhancements
@@ -16,7 +15,6 @@
 ### Fixes
 
 ### Documentation Cleanup (DRY)
-
 
 ### Refactoring
 

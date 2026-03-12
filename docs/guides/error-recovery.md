@@ -355,9 +355,11 @@ See [Failure Modes: MCP Connection Closed](failure-modes.md#8-mcp-connection-clo
 
    ```markdown
    # Before (incorrect case)
+
    {{include:techContext.md#api reference}}
 
-   # After (correct case)
+   ## After (correct case)
+
    {{include:techContext.md#API Reference}}
    ```
 

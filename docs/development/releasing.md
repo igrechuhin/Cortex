@@ -231,35 +231,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+
 - New feature description
 
 ### Changed
+
 - Changed feature description
 
 ### Fixed
+
 - Bug fix description
 
 ### Removed
+
 - Removed feature description
 
 ## [0.3.0] - 2024-12-25
 
 ### Added
+
 - New refactoring analysis tools
 - Support for pattern-based refactoring suggestions
 - Progressive loading optimization
 
 ### Changed
+
 - Improved token counter performance
 - Updated transclusion engine for faster resolution
 
 ### Fixed
+
 - Fixed race condition in file watcher
 - Corrected schema validation edge cases
 
 ## [0.2.0] - 2024-12-20
 
 ### Added
+
 - Initial release with core functionality
 ```
 
@@ -408,7 +416,7 @@ git push origin :refs/tags/v0.3.0
 
 ### Build Prerequisites
 
-- `uv` installed (see [CLAUDE.md](../../CLAUDE.md#building--distribution))
+- `uv` installed (see [CLAUDE.md](../../CLAUDE.md))
 - Python 3.10+ available
 - All dependencies in `pyproject.toml` correct
 

@@ -1,6 +1,6 @@
 # Active Context: Cortex
 
-**This file records completed work only.** For current status and upcoming work see [roadmap.md](roadmap.md).
+**This file records completed work only.** For current status and upcoming work see [roadmap.md](../memory-bank/roadmap.md).
 
 ## Completed Work (2026-03-10)
 
@@ -132,4 +132,4 @@ Blocker (2026-02-09): create-plan and memory-bank-updater now mandate register_p
 
 ## Next Steps
 
-See [roadmap.md](roadmap.md).
+See [roadmap.md](../memory-bank/roadmap.md).

@@ -528,4 +528,4 @@ rm -rf ~/.config/Cursor/Cache/
 - [Getting Started](../getting-started.md) - Initial setup
 - [Configuration Guide](./configuration.md) - Configure after migration
 - [Troubleshooting](./troubleshooting.md) - Common issues
-- [Project Structure](../architecture.md#project-structure) - Standard structure details
+- [Project Structure](../architecture.md) - Standard structure details

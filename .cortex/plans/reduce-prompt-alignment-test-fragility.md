@@ -9,7 +9,7 @@ execution_order: 20
 depends_on: []
 ---
 
-# Reduce Prompt-Alignment Test Fragility
+## Reduce Prompt-Alignment Test Fragility
 
 **Status**: PENDING
 **Priority**: Medium

@@ -2,8 +2,8 @@
 
 ## 2026-03-12
 
-- - **Commit pipeline Phase B** - Ran `/cortex/commit` Phase B (docs/memory validation) for current changes; no new implementation work beyond existing roadmap items, memory bank and roadmap remained consistent.
-- - **Commit pipeline Phase B** - Ran `/cortex/commit` Phase B (docs/memory validation) for current workspace changes; memory bank and roadmap were already in sync so no additional roadmap mutations were required in this pass.
+- **Commit pipeline Phase B** - Ran `/cortex/commit` Phase B (docs/memory validation) for current changes; no new implementation work beyond existing roadmap items, memory bank and roadmap remained consistent.
+- **Commit pipeline Phase B** - Ran `/cortex/commit` Phase B (docs/memory validation) for current workspace changes; memory bank and roadmap were already in sync so no additional roadmap mutations were required in this pass.
 - **[MED-3] Calibrate Review Metric Scores** - COMPLETE. Verified all 9 review metrics in `review.md` have calibration tables and evidence requirements, and that `review-output-schema.md` defines an evidence field for each metric; Phase A pre-commit job was started via Cortex MCP but its result is still pending/unavailable.
 - **[MED-10] Make Prompts Agent-Agnostic** - PARTIAL. Added an agent-agnostic Agent Tool Mapping section to shared-conventions and updated the create-plan prompt to refer to generic file operation tools instead of Cursor-specific names for roadmap writes; additional prompt and tool description updates remain.
 
@@ -55,7 +55,7 @@
 
 - **Commit pipeline (2026-03-06)** - Fixed 15 integration tests (implement/create-plan prompt alignment with implement-executor and create-plan); Phase A passed; 4913 tests, 92.4% coverage.
 - **Phase 92: Improve MCP Tool Descriptions and Usage Guidance (2026-03-06)** - COMPLETE. Standardized Tier 1 MCP tool descriptions with USE WHEN/DO NOT/EXAMPLES guidance and validated via governance tests; quality gate + full tests passed (4910 tests, 92.41% coverage).
-- **README selling doc refresh (2026-03-06)** - COMPLETE. Updated README to lead with value and the core plan   implement   commit workflow; condensed features/tools/prompts into concise, link-driven sections.
+- **README selling doc refresh (2026-03-06)** - COMPLETE. Updated README to lead with value and the core plan implement commit workflow; condensed features/tools/prompts into concise, link-driven sections.
 - **Commit pipeline (2026-03-06)** - Ran `/cortex/commit` checks (fix_errors, format, markdown lint, type_check, quality, tests) for memory-bank, plan-archive, and README changes; 4910 tests, 92.41% coverage.
 - **Phase 84: Remaining Type-Checker Suppression Cleanup (2026-03-06)** - COMPLETE. Verified no TypedDict/TYPE_CHECKING; removed 2 suppressions; rest documented as follow-up. Pyright clean; tests pass.
 - **Commit pipeline (2026-03-06)** - Ran `/cortex/commit` to fix Ruff UP047 in `ensure_usage_context` and re-validate full pre-commit checks; 4910 tests, 92.41% coverage.
@@ -75,12 +75,12 @@
 
 ## 2026-03-05
 
-- - **Phase 79: Fix Python Version Pinning and Bootstrap Script (2026-03-05)** - COMPLETE. Relaxed Python patch pinning, added one-step bootstrap script, and updated docs; Phase A passed with 4906 tests and 92.44% coverage.
-- - **Phase 79: Fix Python Version Pinning and Bootstrap Script (2026-03-05)** - COMPLETE. Relaxed Python patch pinning, added one-step bootstrap, and updated docs/quality workflow; Phase A checks passed with 4906 tests and ~92.44% coverage.
+- **Phase 79: Fix Python Version Pinning and Bootstrap Script (2026-03-05)** - COMPLETE. Relaxed Python patch pinning, added one-step bootstrap script, and updated docs; Phase A passed with 4906 tests and 92.44% coverage.
+- **Phase 79: Fix Python Version Pinning and Bootstrap Script (2026-03-05)** - COMPLETE. Relaxed Python patch pinning, added one-step bootstrap, and updated docs/quality workflow; Phase A checks passed with 4906 tests and ~92.44% coverage.
 - **Phase 80: Add Synapse Submodule Presence Guard (2026-03-05)** - COMPLETE. Added a Synapse submodule guard script, integrated it into CI and Makefile `make check`/`test`, and updated the README with submodule initialization instructions and a constrained-mode fallback.
 - **Phase 86: MCP Connection Resilience and Auto-Recovery (2026-03-05)** - COMPLETE. Hardened MCP retry and reconnection logic, added helpers for circuit-breaker diagnostics, stabilized timeout and pre-commit tools tests with connection-state reset fixtures, and re-ran the full pre-commit suite (4908 tests, ~92.42% coverage).
 - **Phase 83: Remaining Silent Exception Handlers (2026-03-05)** - COMPLETE. Eliminated the 7 remaining `except Exception: pass/continue` blocks in src/ by adding logging and restructuring handlers, then re-ran quality gate and full tests (92.41% coverage).
-- **Blocker: GitHub Actions Quality Gate Not Running (2026-03-05)** - COMPLETE. Restored the Code Quality workflow, fixed test type-check failures, and hardened both CI and the commit pipeline so the quality gate and `/cortex/commit` enforce the same zero-errors,  =90% coverage policy across src, tests, and Synapse scripts.
+- **Blocker: GitHub Actions Quality Gate Not Running (2026-03-05)** - COMPLETE. Restored the Code Quality workflow, fixed test type-check failures, and hardened both CI and the commit pipeline so the quality gate and `/cortex/commit` enforce the same zero-errors, =90% coverage policy across src, tests, and Synapse scripts.
 - Commit pipeline (2026-03-05) - Phase A passed; 4910 tests, 92.41% coverage; quality workflow, tests, and cortex updates.
 
 ## 2026-03-04

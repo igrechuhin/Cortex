@@ -1462,6 +1462,7 @@ Markdown format:
 ## High Impact (3)
 
 ### Frequently co-accessed files should be consolidated
+
 **Category:** Usage | **Impact Score:** 0.85
 
 systemPatterns.md and techContext.md are accessed together 85% of the time.
@@ -2777,12 +2778,15 @@ String with template content:
 # Project Brief
 
 ## Overview
+
 [Brief description of the project]
 
 ## Goals
+
 [Key objectives and goals]
 
 ## Scope
+
 [What's in scope and out of scope]
 ...
 ```

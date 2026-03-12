@@ -9,7 +9,7 @@ execution_order: 21
 depends_on: []
 ---
 
-# Reduce Oversized Source Modules (>400 lines)
+## Reduce Oversized Source Modules (>400 lines)
 
 **Status**: PENDING
 **Priority**: Medium
