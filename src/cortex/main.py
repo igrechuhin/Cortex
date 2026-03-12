@@ -69,6 +69,31 @@ _ = cortex.tools
 logger = logging.getLogger(__name__)
 
 
+def _log_broken_resource_group_diag(eg: BaseExceptionGroup, exc: BaseException) -> None:
+    holder = get_long_running_semaphore_holder()
+    elapsed = get_long_running_elapsed_seconds()
+    tools_sem = get_semaphore()
+    resources_sem = get_resource_semaphore()
+    logger.info(
+        (
+            "MCP stdio connection broken during TaskGroup cleanup "
+            "(client disconnected); group_msg=%s sub_count=%d "
+            "exc_type=%s exc_msg=%s long_running_holder=%s "
+            "elapsed_sec=%s tools_in_use=%d resources_in_use=%d "
+            "long_running_released_by_timeout=%s"
+        ),
+        eg.message,
+        len(eg.exceptions),
+        type(exc).__name__,
+        str(exc),
+        holder or "none",
+        f"{elapsed:.1f}" if elapsed is not None else "n/a",
+        tools_sem.current,
+        resources_sem.current,
+        was_long_running_released_by_timeout(),
+    )
+
+
 def _handle_broken_resource_in_group(eg: BaseExceptionGroup) -> bool:
     """Check if BaseExceptionGroup contains connection-related errors.
 
@@ -94,28 +119,7 @@ def _handle_broken_resource_in_group(eg: BaseExceptionGroup) -> bool:
         if is_connection_error(exc):
             # Log detailed traceback for the first connection-related sub-exception
             _log_exception_with_traceback(exc, prefix="[connection] ")
-            holder = get_long_running_semaphore_holder()
-            elapsed = get_long_running_elapsed_seconds()
-            tools_sem = get_semaphore()
-            resources_sem = get_resource_semaphore()
-            logger.info(
-                (
-                    "MCP stdio connection broken during TaskGroup cleanup "
-                    "(client disconnected); group_msg=%s sub_count=%d "
-                    "exc_type=%s exc_msg=%s long_running_holder=%s "
-                    "elapsed_sec=%s tools_in_use=%d resources_in_use=%d "
-                    "long_running_released_by_timeout=%s"
-                ),
-                eg.message,
-                len(eg.exceptions),
-                type(exc).__name__,
-                str(exc),
-                holder or "none",
-                f"{elapsed:.1f}" if elapsed is not None else "n/a",
-                tools_sem.current,
-                resources_sem.current,
-                was_long_running_released_by_timeout(),
-            )
+            _log_broken_resource_group_diag(eg, exc)
             return True
     return False
 

@@ -70,6 +70,14 @@ class CheckCleanResult:
     timestamp: str
 
 
+def _bool_dict() -> dict[str, bool]:
+    return {}
+
+
+def _clean_result_dict() -> dict[str, CheckCleanResult]:
+    return {}
+
+
 def _parse_diff_lines(
     stdout: str,
     source_entries: list[str],
@@ -173,8 +181,10 @@ class PipelineDirtyTracker:
     project_root: Path | None = None
     phase_a_fingerprint: PipelineFingerprint | None = None
     phase_a_passed: bool = False
-    dirty_checks: dict[str, bool] = field(default_factory=dict)
-    last_clean_results: dict[str, CheckCleanResult] = field(default_factory=dict)
+    dirty_checks: dict[str, bool] = field(default_factory=_bool_dict)
+    last_clean_results: dict[str, CheckCleanResult] = field(
+        default_factory=_clean_result_dict
+    )
     _active: bool = field(default=False, init=False)
 
     @classmethod
@@ -228,37 +238,26 @@ class PipelineDirtyTracker:
         """Determine if a Step 12 check can be skipped."""
         if self.dirty_checks.get(check_name, False):
             return SkipDecision(
-                can_skip=False,
-                reason="Check explicitly marked dirty in pipeline state",
+                False, "Check explicitly marked dirty in pipeline state"
             )
         if not self._active or self.phase_a_fingerprint is None:
-            return SkipDecision(
-                can_skip=False,
-                reason="No Phase A fingerprint recorded",
-            )
+            return SkipDecision(False, "No Phase A fingerprint recorded")
         if self.project_root is None:
-            return SkipDecision(can_skip=False, reason="No project root")
+            return SkipDecision(False, "No project root")
+
         current = _compute_git_file_hash(self.project_root)
-        if check_name in _SOURCE_DEPENDENT_CHECKS:
-            if current.source_hash == self.phase_a_fingerprint.source_hash:
-                return SkipDecision(
-                    can_skip=True,
-                    reason=(
-                        f"No source files changed since Phase A "
-                        f"(hash={current.source_hash[:8]})"
-                    ),
-                )
+        if check_name not in _SOURCE_DEPENDENT_CHECKS:
+            return SkipDecision(False, f"Check '{check_name}' always re-runs")
+
+        phase_a_hash = self.phase_a_fingerprint.source_hash[:8]
+        current_hash = current.source_hash[:8]
+        if current.source_hash == self.phase_a_fingerprint.source_hash:
             return SkipDecision(
-                can_skip=False,
-                reason=(
-                    f"Source files changed: "
-                    f"Phase A={self.phase_a_fingerprint.source_hash[:8]}, "
-                    f"current={current.source_hash[:8]}"
-                ),
+                True, f"No source files changed since Phase A (hash={current_hash})"
             )
         return SkipDecision(
-            can_skip=False,
-            reason=f"Check '{check_name}' always re-runs",
+            False,
+            f"Source files changed: Phase A={phase_a_hash}, current={current_hash}",
         )
 
     @property

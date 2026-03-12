@@ -139,19 +139,16 @@ def _insert_plan_entry(
 ) -> tuple[str, int | None]:
     """Insert a plan entry into the given section."""
     lines = content.split("\n")
-
     entry_text = _build_entry_text(plan_title, status, description)
     plan_path = extract_plan_path_from_bullet(entry_text)
-    if (
-        _find_existing_plan_line(
-            lines=lines,
-            section_start=section_start,
-            section_end=section_end,
-            plan_path=plan_path,
-            entry_text=entry_text,
-        )
-        is not None
-    ):
+    existing_line = _find_existing_plan_line(
+        lines=lines,
+        section_start=section_start,
+        section_end=section_end,
+        plan_path=plan_path,
+        entry_text=entry_text,
+    )
+    if existing_line is not None:
         return (content, None)
 
     insert_line = find_insertion_line_for_section(
@@ -161,9 +158,7 @@ def _insert_plan_entry(
         position=position,
     )
     lines.insert(insert_line, entry_text)
-    updated_content = "\n".join(lines)
-
-    return (updated_content, insert_line + 1)
+    return ("\n".join(lines), insert_line + 1)
 
 
 def register_plan_entry(

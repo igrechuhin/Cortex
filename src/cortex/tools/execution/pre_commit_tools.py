@@ -522,6 +522,27 @@ async def get_last_pre_commit_status(
     )
 
 
+def _resolve_pre_commit_check_names(
+    *,
+    phase: Literal["A", "B", "full"] | None,
+    checks: Sequence[PreCommitCheckName] | None,
+) -> list[str]:
+    from cortex.tools.execution.pre_commit_phase_dispatch import (
+        PreCommitPhase,
+        phase_to_checks,
+    )
+
+    if phase is not None:
+        phase_enum = PreCommitPhase(phase)
+        return phase_to_checks(phase_enum)
+    if checks:
+        return [c.value if hasattr(c, "value") else str(c) for c in checks]
+    # Cursor MCP wrapper cannot currently pass args to tools, so default
+    # to Phase A when neither phase nor checks are provided. This ensures
+    # commit-checks and commit-final-gate agents can start the quality job.
+    return phase_to_checks(PreCommitPhase("A"))
+
+
 @typed_mcp_tool(
     annotations=external_annotations(
         "Start Pre-Commit Job",
@@ -539,6 +560,7 @@ async def start_pre_commit_job(
     coverage_threshold: float = 0.9,
     strict_mode: bool = False,
     include_untracked_markdown: bool = True,
+    force_fresh: bool = False,
     ctx: MCPContext | None = None,
 ) -> ModelDict:
     """Start or reuse a detached pre-commit job; return {job_id, status} quickly.
@@ -550,6 +572,8 @@ async def start_pre_commit_job(
     EXAMPLES:
     - start_pre_commit_job(phase="A") to start a full Phase A quality gate.
     - start_pre_commit_job(checks=["tests"], coverage_threshold=0.9) for tests only.
+    - start_pre_commit_job(phase="A", force_fresh=True) for Step 12 final gate —
+      always spawns a new worker even when a recent cached result exists.
 
     RETURNS: {"job_id": "<hash>", "status": "started"|"already_running"|"completed"|"error"}
     - "started": worker spawned; poll with get_pre_commit_job_status(job_id).
@@ -563,22 +587,11 @@ async def start_pre_commit_job(
         checks: Explicit check list. Required when phase is None.
         test_timeout, coverage_threshold, strict_mode, include_untracked_markdown:
             Passed through to the detached worker.
+        force_fresh: When True, bypass any cached result and always spawn a fresh worker.
+            Use for Step 12 (final gate) where Phase B/C may have modified files since
+            Phase A completed.
     """
-    from cortex.tools.execution.pre_commit_phase_dispatch import (
-        PreCommitPhase,
-        phase_to_checks,
-    )
-
-    if phase is not None:
-        phase_enum = PreCommitPhase(phase)
-        check_names: list[str] = phase_to_checks(phase_enum)
-    elif checks:
-        check_names = [c.value if hasattr(c, "value") else str(c) for c in checks]
-    else:
-        return create_error_result_dict(
-            "Either phase ('A', 'B', 'full') or checks list is required",
-            "ValidationError",
-        )
+    check_names = _resolve_pre_commit_check_names(phase=phase, checks=checks)
     root = await get_or_resolve_project_root(ctx)
     module = __import__(
         "cortex.tools.execution.pre_commit_detached",
@@ -592,6 +605,7 @@ async def start_pre_commit_job(
         coverage_threshold,
         strict_mode,
         include_untracked_markdown,
+        force_fresh,
     )
     return cast(ModelDict, result)
 
@@ -607,7 +621,7 @@ async def start_pre_commit_job(
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=30.0)
 async def get_pre_commit_job_status(
-    job_id: str,
+    job_id: str = "",
     ctx: MCPContext | None = None,
 ) -> ModelDict:
     """Return summary for a specific detached pre-commit job by job_id.
@@ -622,6 +636,8 @@ async def get_pre_commit_job_status(
       to wait for a detached tests run to complete.
     - get_pre_commit_job_status(job_id="abc123") in a follow-up session to inspect
       the final result (status, coverage, checks) of a previously started job.
+    - get_pre_commit_job_status() with no args: falls back to get_last_pre_commit_status
+      (most recent run). Use when the MCP wrapper cannot pass job_id.
 
     RETURNS: JSON with at least:
       - status: "no_runs" | "running" | "completed" | "error" | "unknown"
@@ -632,9 +648,20 @@ async def get_pre_commit_job_status(
 
     Args:
         job_id: Identifier of the detached pre-commit job (from start_pre_commit_job).
+            When empty or omitted, falls back to the most recent run (same as
+            get_last_pre_commit_status). This allows environments where the MCP
+            wrapper cannot pass arguments to still poll the running job.
         ctx: Optional MCP context for logging and project root resolution.
     """
     root = await get_or_resolve_project_root(ctx)
+    if not job_id:
+        # Cursor MCP wrapper cannot pass args; fall back to most recent run.
+        module = __import__(
+            "cortex.tools.execution.pre_commit_status",
+            fromlist=["get_last_pre_commit_status_impl"],
+        )
+        impl = module.get_last_pre_commit_status_impl
+        return cast(ModelDict, await impl(Path(root), ctx))
     module = __import__(
         "cortex.tools.execution.pre_commit_status",
         fromlist=["get_pre_commit_status_impl"],

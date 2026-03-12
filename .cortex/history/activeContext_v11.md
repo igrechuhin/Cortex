@@ -2,25 +2,15 @@
 
 **This file records completed work only.** For current status and upcoming work see [roadmap.md](roadmap.md).
 
+## Completed Work (2026-03-12)
+
+- ✅ **Summary (2026-03-12)** - COMPLETE (2026-03-12) - Ran commit pipeline Phase B (documentation and state validation) for current diff; verified timestamps and roadmap sync passed with no additional implementation or roadmap changes required.
+
+- ✅ **Commit pipeline Phase B docs/memory validation** - COMPLETE (2026-03-12) - Ran `/cortex/commit` Phase B for the current diff; verified memory bank (activeContext, progress, roadmap) was consistent with recent work and did not require additional roadmap edits beyond existing documentation cleanup and refactoring items.
+
 ## Completed Work (2026-03-11)
 
-- **Job-based pre-commit pipeline + commit orchestration migration** - COMPLETE. Fixed two interlocking issues: (1) `commit.md` hybrid mess — rewritten to delegate all phases (Preflight/A/B/C/Step 12) to dedicated cursor-agents; (2) MCP `-32000` disconnects — `start_pre_commit_job(phase=...)` and `get_pre_commit_job_status` now used by `commit-checks.md` and `commit-final-gate.md` instead of blocking `execute_pre_commit_checks`. Added `phase_to_checks()` helper to `pre_commit_phase_dispatch.py`; extended `start_pre_commit_job` with `phase` parameter. Fixed `analyze()` validation error (`target` now defaults to `"context"`). 43/43 targeted tests pass.
-- **Plan: make-pre-commit-checks-job-based-for-cursor-mcp** - COMPLETE. Archived.
-- **Implement pipeline cursor-agent delegation** - COMPLETE. `implement-next-roadmap-step.md` rewritten as thin orchestrator. Created 4 new cursor-agents: `implement-select.md`, `implement-code.md`, `implement-finalize.md`, `implement-verify.md`. Auto-synced on MCP startup; `TestRequiredAgentFilesPresent` enforces presence of all 10 required agent files.
-- **CI fix: npm cache** - COMPLETE. Removed `cache: "npm"` from `actions/setup-node@v4`; was causing all CI steps to be skipped when `package-lock.json` absent.
-- **Pyright fixes: pre_commit_status.py** - COMPLETE. 14 errors fixed via `dict[str, object]` + `cast()` + helper extraction.
-- **Synapse cursor-agents: project/language agnostic** - COMPLETE. Created `shared-defaults.md` for quality thresholds; removed hardcoded numbers from `implement-code.md`, `commit-checks.md`; made archive categories project-supplied via `get_structure_info()` in `commit-docs.md`, `implement-finalize.md`; removed Python-specific `rumdl` fallback from `commit.md`.
-- ✅ **[HI-6] Resolve Type-Checker Strategy (PARTIAL)** - Pyright is primary type checker (configuration + contributor docs); mypy kept as explicitly-optional local check; remaining: run a Phase A quality gate/CI validation slice for the type-checker-strategy docs/config/memory-bank changes.
-
-- ✅ **[HI-6] Resolve Type-Checker Strategy (PARTIAL – docs slice)** - COMPLETE (2026-03-11) - Aligned key public docs and extension development guide so they consistently state that Pyright is the primary type checker (CI + local) and mypy is optional/local-only, and recorded that this was a docs-only session where the quality gate was effectively skipped due to tooling limitations ("Quality gate skipped — doc-only session"); remaining HI-6 work is to run a Phase A quality gate/CI validation slice for the type-checker-strategy docs/config/memory-bank changes and confirm it passes.
-
-- ✅ **[HI-6] Resolve Type-Checker Strategy (2026-03-11)** - COMPLETE (2026-03-11) - Ran the job-based Phase A preflight quality gate via Cortex MCP (phase "A") to validate that Pyright-based type checking, tests, coverage, and other quality checks all pass with the current Pyright-first configuration. This confirms that Pyright is the enforced primary type checker for Phase A and CI while mypy remains an optional/local cross-check, allowing HI-6 to be closed from the implementation side.
-
-- ✅ **[MED-7] Fix README Tool Count** - COMPLETE (2026-03-11) - Updated README key tools section to say “Cortex exposes **50+ public MCP tools**” instead of the stale “27 public MCP tools”, aligning it with the tools API reference that currently enumerates 59 tools across phases.
-
-- ✅ **Fix README Tool Count Discrepancy** - COMPLETE (2026-03-11) - Marking plan as COMPLETE and archiving after implement-verify reported it as a stray COMPLETE plan in the plans root.
-
-- ✅ **[MED-3] Calibrate Review Metric Scores (PARTIAL)** - COMPLETE (2026-03-11) - Adjusted `review-output-schema.md` so each of the 9 review metrics now records both a numeric score and a free-text evidence string in a `metrics` structure, aligning the schema with the existing calibration guidance in `review.md`. This is a schema/prompt-only change; a later full Phase A run should verify downstream tooling compatibility.
+- **Summary (2026-03-11)** - 1 entries archived.
 
 ## Completed Work (2026-03-10)
 

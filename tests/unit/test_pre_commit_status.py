@@ -6,7 +6,6 @@ import json
 import os
 import time
 from pathlib import Path
-from typing import Any
 
 import pytest
 
@@ -23,11 +22,11 @@ from cortex.tools.execution.pre_commit_tools import (
 def _write_result(
     dir_path: Path,
     name: str,
-    payload: dict[str, Any],
+    payload: dict[str, object],
 ) -> Path:
     dir_path.mkdir(parents=True, exist_ok=True)
     path = dir_path / name
-    path.write_text(json.dumps(payload))
+    _ = path.write_text(json.dumps(payload))
     return path
 
 
@@ -45,7 +44,7 @@ async def test_completed_result_summarized_correctly(tmp_path: Path) -> None:
     project_root = tmp_path
     session_dir = project_root / ".cortex" / ".session"
     now = time.time()
-    payload: dict[str, Any] = {
+    payload: dict[str, object] = {
         "version": 1,
         "status": "completed",
         "completed_at": now,
@@ -64,8 +63,8 @@ async def test_completed_result_summarized_correctly(tmp_path: Path) -> None:
     assert result["args_hash"] == "abc123456789"
     assert result["preflight_passed"] is True
     assert result["docs_phase_passed"] is False
-    assert result["coverage"] == pytest.approx(0.95)
-    assert result["completed_at"] == pytest.approx(now)
+    assert abs(float(result["coverage"]) - 0.95) < 1e-9
+    assert abs(float(result["completed_at"]) - now) < 1e-6
     assert result["checks"] == ["tests"]
 
 
@@ -74,7 +73,7 @@ async def test_running_result_reports_running_status(tmp_path: Path) -> None:
     """Running result is reported as 'running'."""
     project_root = tmp_path
     session_dir = project_root / ".cortex" / ".session"
-    payload: dict[str, Any] = {
+    payload: dict[str, object] = {
         "version": 1,
         "status": "running",
         "pid": os.getpid(),
@@ -92,7 +91,7 @@ async def test_error_result_reports_error_status(tmp_path: Path) -> None:
     """Error result is summarized with error message."""
     project_root = tmp_path
     session_dir = project_root / ".cortex" / ".session"
-    payload: dict[str, Any] = {
+    payload: dict[str, object] = {
         "version": 1,
         "status": "error",
         "error": "Worker process died",
@@ -112,7 +111,7 @@ async def test_mcp_tool_wrapper_returns_dict(
     """MCP tool get_last_pre_commit_status returns a ModelDict."""
     project_root = tmp_path
     session_dir = project_root / ".cortex" / ".session"
-    payload: dict[str, Any] = {
+    payload: dict[str, object] = {
         "version": 1,
         "status": "completed",
         "completed_at": time.time(),
@@ -135,9 +134,8 @@ async def test_mcp_tool_wrapper_returns_dict(
     )
     result = await get_last_pre_commit_status(ctx=None)
     assert isinstance(result, dict)
-    model_result = result  # type: ModelDict
-    assert model_result["status"] == "completed"
-    assert model_result["args_hash"] == "pre_commit_result_tooltest".replace(
+    assert result["status"] == "completed"
+    assert result["args_hash"] == "pre_commit_result_tooltest".replace(
         "pre_commit_result_", ""
     )
 
@@ -163,7 +161,7 @@ async def test_get_pre_commit_job_status_mcp_tool(
     project_root = tmp_path
     session_dir = project_root / ".cortex" / ".session"
     now = time.time()
-    payload: dict[str, Any] = {
+    payload: dict[str, object] = {
         "version": 1,
         "status": "completed",
         "completed_at": now,

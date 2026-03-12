@@ -11,40 +11,35 @@ You are the final validation gate specialist. You re-verify ALL quality checks b
 
 **Step 1**: Call `mcp__cortex__check_mcp_connection_health()`. If unhealthy after retry, report failure and STOP.
 
-**Step 2**: Call `mcp__cortex__get_last_pre_commit_status()` to check for a fresh Phase A result.
+**Step 2**: Call `mcp__cortex__start_pre_commit_job(phase="A", test_timeout=600, coverage_threshold=0.90, strict_mode=False, force_fresh=True)`.
 
-- If `status="completed"` AND `completed_at` is recent (within the last 5 minutes): use the `args_hash` from the response as `job_id` and skip to Step 4.
-- Otherwise: continue to Step 3 to start a new run.
-
-**Step 3**: Call `mcp__cortex__start_pre_commit_job(phase="A", test_timeout=600, coverage_threshold=0.90, strict_mode=False)`.
-
+- `force_fresh=True` is **mandatory** — Phase B/C may have modified files since Phase A ran. The cached result must never be reused for the final gate.
 - Returns `{job_id, status}` immediately.
-- Record `job_id`.
-- If `status="completed"`: go to Step 4 directly.
-- If `status="already_running"`: go to Step 4 (poll the existing job).
+- Record `job_id` if provided.
+- If `status="already_running"`: go to Step 3.
 - If `status="error"`: report failure and STOP.
-- If `status="started"`: continue to Step 4.
+- If `status="started"`: continue to Step 3.
 
-**Step 4**: Poll loop — call `mcp__cortex__get_pre_commit_job_status(job_id=<job_id>)` repeatedly.
+**Step 3**: Poll loop — call `mcp__cortex__get_pre_commit_job_status(job_id=<job_id>)` if `job_id` is available; otherwise call `mcp__cortex__get_pre_commit_job_status()` with no arguments (falls back to most recent run).
 
 - Wait approximately 5 seconds between each call.
 - Continue while `status="running"`.
 - Stop when `status` is `"completed"`, `"error"`, or `"no_runs"`.
 - If `status="error"` or `"no_runs"`: report failure and STOP.
 
-**Step 5**: Parse the completed result.
+**Step 4**: Parse the completed result.
 
 - If all checks pass: Report "passed" with coverage value. Done.
 - If any check fails: Continue to fix loop.
 
-**Step 6** (fix loop): Fix the failing checks:
+**Step 5** (fix loop): Fix the failing checks:
 
 - Format failures: run `mcp__cortex__fix_quality_issues()`, then restart job + poll
 - Type errors: fix type issues, then restart job + poll
 - Quality failures: fix violations, then restart job + poll
 - Test failures: fix tests, then restart job + poll
 
-After each fix, call `mcp__cortex__start_pre_commit_job(phase="A", test_timeout=600, coverage_threshold=0.90)` and poll (Steps 3-4).
+After each fix, call `mcp__cortex__start_pre_commit_job(phase="A", test_timeout=600, coverage_threshold=0.90, force_fresh=True)` and poll (Steps 2-3).
 
 **Max 3 iterations**. If iteration 2 violations >= iteration 1: STOP ("Fix loop not converging").
 

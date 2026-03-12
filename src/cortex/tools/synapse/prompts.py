@@ -461,8 +461,8 @@ def sync_cursor_agents() -> None:
     if not source:
         return
 
-    _sync_agents_to_target(source, get_cursor_agents_target(source), "cursor")
-    _sync_agents_to_target(
+    _ = _sync_agents_to_target(source, get_cursor_agents_target(source), "cursor")
+    _ = _sync_agents_to_target(
         source, get_claude_agents_target(source), "claude-code", transform=True
     )
 

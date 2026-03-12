@@ -1,0 +1,13 @@
+{
+  "script_id": "7755b04b-0fc8-4586-87a3-5fe519af6c98",
+  "timestamp": "2026-03-11T18:51:04Z",
+  "task_description": "Commit pipeline Phase B docs/memory validation for current commit.",
+  "script_path": ".cortex/.session/scripts/phase-b-docs-validation.py",
+  "script_content": "from cortex.tools.execution.pre_commit_tools import execute_pre_commit_checks\n\nif __name__ == \"__main__\":\n    execute_pre_commit_checks(phase=\"B\")\n",
+  "script_type": "python",
+  "purpose": "commit_pipeline",
+  "usage_context": null,
+  "promotion_status": "pending",
+  "agent_session": null,
+  "dependencies": []
+}

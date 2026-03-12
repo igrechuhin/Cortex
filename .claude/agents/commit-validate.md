@@ -37,7 +37,10 @@ Using the files read in Step 1:
    - Run `git -C .cortex/synapse push`. If push fails, continue (non-blocking).
    - Run `git add .cortex/synapse` to update parent pointer.
 3. If Synapse is clean: no action needed.
-4. Verify: run `git -C .cortex/synapse status --porcelain` — must be empty after commit. If still dirty: report failure.
+4. Verify: run `git -C .cortex/synapse status --porcelain`:
+   - If it is empty: submodule status is `clean` or `committed`.
+   - If it has entries **only under `.cache/usage/`** (for example `.cache/usage/events/YYYY-MM-DD.json`): treat this as **non-blocking** analytics dirt and report submodule status as `committed`.
+   - If it has any other remaining changes: report failure with submodule status `dirty_after_commit`.
 
 ## Report Results
 

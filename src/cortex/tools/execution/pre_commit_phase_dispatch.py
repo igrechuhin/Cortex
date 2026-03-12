@@ -35,6 +35,11 @@ _PHASE_A_CHECKS: tuple[str, ...] = (
 # sentinel check name so callers can form a deterministic job_id hash.
 _PHASE_B_CHECKS: tuple[str, ...] = ("docs_and_memory_sync",)
 
+# Public aliases for tests and external callers that should not rely on
+# underscored module internals.
+PHASE_A_CHECKS: tuple[str, ...] = _PHASE_A_CHECKS
+PHASE_B_CHECKS: tuple[str, ...] = _PHASE_B_CHECKS
+
 
 def phase_to_checks(phase: PreCommitPhase) -> list[str]:
     """Return canonical check name list for a phase.

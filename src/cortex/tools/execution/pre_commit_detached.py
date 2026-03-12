@@ -322,8 +322,14 @@ def start_pre_commit_job_impl(
     coverage_threshold: float,
     strict_mode: bool,
     include_markdown_lint: bool,
+    force_fresh: bool = False,
 ) -> dict[str, object]:
-    """Start or reuse a detached pre-commit job and return lightweight status."""
+    """Start or reuse a detached pre-commit job and return lightweight status.
+
+    When force_fresh=True, any cached completed result is deleted before
+    checking so a new worker is always spawned. Use this for Step 12 (final
+    gate) where files may have changed since Phase A completed.
+    """
     args_hash = _build_job_id(
         checks,
         timeout,
@@ -331,6 +337,12 @@ def start_pre_commit_job_impl(
         strict_mode,
         include_markdown_lint,
     )
+    if force_fresh:
+        rp = _result_path(_session_dir(project_root), args_hash)
+        rp.unlink(missing_ok=True)
+        logger.info(
+            "force_fresh=True: cleared cached result for args_hash=%s", args_hash
+        )
     existing_result = _interpret_existing_job(project_root, args_hash)
     if existing_result is not None:
         return existing_result
@@ -356,6 +368,16 @@ def _interpret_poll_data(data: dict[str, object]) -> dict[str, object]:
     return {"status": "error", "error": str(data.get("error", "Unknown worker error"))}
 
 
+def _already_running_error() -> dict[str, object]:
+    return {
+        "status": "error",
+        "error": (
+            "execute_pre_commit_checks is already running for this configuration; "
+            "do not start a second run. Wait for the existing run to finish."
+        ),
+    }
+
+
 async def run_checks_detached(
     project_root: Path,
     checks: list[str],
@@ -364,12 +386,7 @@ async def run_checks_detached(
     coverage_threshold: float,
     ctx: MCPContext | None,
 ) -> dict[str, object]:
-    """Run pre-commit checks via detached worker subprocess.
-
-    Spawns a detached worker, polls for result with heartbeat.
-    If a fresh result already exists, returns it immediately.
-    Returns the same ModelDict shape as build_pre_commit_response.
-    """
+    """Run pre-commit checks via detached worker subprocess."""
     args_hash = compute_args_hash(
         checks, timeout, coverage_threshold, strict_mode, False
     )
@@ -377,28 +394,15 @@ async def run_checks_detached(
     cached = _cached_detached_result(existing, args_hash)
     if cached is not None:
         return cached
-
     if existing is not None and existing.get("status") == "running":
         logger.info(
             "Worker already running for args_hash=%s; returning in-progress status",
             args_hash,
         )
-        return {
-            "status": "error",
-            "error": (
-                "execute_pre_commit_checks is already running for this configuration; "
-                "do not start a second run. Wait for the existing run to finish."
-            ),
-        }
+        return _already_running_error()
 
     _ = spawn_detached_worker(
-        project_root,
-        checks,
-        timeout,
-        coverage_threshold,
-        strict_mode,
-        False,
-        args_hash,
+        project_root, checks, timeout, coverage_threshold, strict_mode, False, args_hash
     )
     result_path = _result_path(_session_dir(project_root), args_hash)
     data = await poll_for_result(result_path, ctx, timeout=900.0)

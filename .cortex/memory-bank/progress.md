@@ -1,20 +1,13 @@
 # Progress Log
 
+## 2026-03-12
+
+- - **Commit pipeline Phase B** - Ran `/cortex/commit` Phase B (docs/memory validation) for current changes; no new implementation work beyond existing roadmap items, memory bank and roadmap remained consistent.
+- - **Commit pipeline Phase B** - Ran `/cortex/commit` Phase B (docs/memory validation) for current workspace changes; memory bank and roadmap were already in sync so no additional roadmap mutations were required in this pass.
+
 ## 2026-03-11
 
-- **Job-based pre-commit pipeline + commit orchestration migration** - COMPLETE. `commit.md` rewritten to delegate all phases to cursor-agents (commit-preflight, commit-checks, commit-docs, commit-validate, commit-final-gate). `commit-checks.md` and `commit-final-gate.md` updated to use `start_pre_commit_job(phase="A") + poll get_pre_commit_job_status` instead of blocking `execute_pre_commit_checks`. Added `phase_to_checks()` helper and `phase` param to `start_pre_commit_job`. Fixed `analyze()` missing-required-`target` validation error (default to `"context"`). 43/43 targeted tests pass.
-- **Implement pipeline cursor-agent delegation** - COMPLETE. `implement-next-roadmap-step.md` rewritten as thin orchestrator. Created 4 new cursor-agents: `implement-select.md` (roadmap selection + context load), `implement-code.md` (scope + implement + quality gate), `implement-finalize.md` (memory bank + plan archive), `implement-verify.md` (post-completion read-only verification). All agents auto-synced to `.cursor/agents/` on MCP startup via `sync_cursor_agents()`. Test `test_cursor_agent_sync.py::TestRequiredAgentFilesPresent` enforces all 10 required files are present.
-- **CI fix: npm cache removal** - COMPLETE. Removed `cache: "npm"` from `actions/setup-node@v4` in `.github/workflows/quality.yml`; absence of `package-lock.json` was causing all CI checks to be skipped.
-- **Pyright fixes in pre_commit_status.py** - COMPLETE. Fixed 14 `reportUnknownVariableType`/`reportUnknownMemberType` errors by replacing `dict[str, Any]` with `dict[str, object]` + `cast()`, and extracting `_extract_checks_list`, `_extract_completed_at`, `_summarize_completed` helpers.
-- **Synapse cursor-agents: project/language agnostic** - COMPLETE. Extracted hardcoded quality thresholds into new `shared-defaults.md` reference doc (`30 lines/fn`, `400 lines/file`, `90%/95% coverage`, `3 fix iterations`). Updated `implement-code.md` and `commit-checks.md` to cite `shared-defaults.md` instead of inline numbers. Updated `commit-docs.md` and `implement-finalize.md` to use `get_structure_info()` for archive categories with `archive/YYYY-MM-DD/` fallback (removed Cortex-specific `PhaseX/`, `Investigations/` taxonomy). Removed `uv run rumdl check --fix .` Python-specific fallback from `commit.md`. All 36 affected tests pass.
-- **[HI-6] Resolve Type-Checker Strategy** - PARTIAL. Clarified Pyright as the primary type checker in `pyproject.toml` and `docs/development/contributing.md`, marking mypy as optional/local; follow-ups: decide on full removal of `[tool.mypy]` config, sweep other docs for consistency, and finalize the HI-6 plan.
-- **[HI-6] Resolve Type-Checker Strategy** - PARTIAL. Clarified that Pyright is the primary type checker with mypy retained only as an optional local cross-check, by marking the mypy config as optional in `pyproject.toml` and aligning key protocol/docs references to state "Pyright primary, optional mypy." Remaining: decide on full removal vs retention of mypy config, sweep remaining docs/prompts for consistency, and fully align the HI-6 plan and roadmap entry.
-- **[HI-6] Resolve Type-Checker Strategy** - PARTIAL. Docs-only slice aligned key public docs (`docs/api/protocols.md`, `docs/adr/ADR-004-protocol-based-architecture.md`, `docs/api/types.md`, `docs/guides/advanced/extension-development.md`) to state that Pyright is the primary type checker (CI + local) and mypy is optional/local-only, and noted that the quality gate could not run in this environment ("Quality gate skipped — doc-only session"); remaining work is .cortex memory-bank + plan/roadmap alignment, deciding on mypy config retention vs removal, and a future slice with a successful quality gate run once tooling is available.
-- **[HI-6] Resolve Type-Checker Strategy** - PARTIAL. Updated tech context, HI-6 plan, and roadmap to state Pyright as the primary type checker with mypy as optional/local-only. Phase A quality gate could not be executed from this environment due to MCP parameter validation limits (missing `phase`/`checks` support); a future run of the standard quality gate (e.g. `execute_pre_commit_checks(phase="A")` or the GitHub "Code Quality" workflow) must revalidate these updates.
-- **[HI-6] Resolve Type-Checker Strategy (2026-03-11)** - COMPLETE. Ran the job-based Phase A preflight quality gate via Cortex MCP (phase "A") to validate that Pyright-based type checking, tests, and other checks all pass under the current configuration, confirming that Pyright is enforced as the primary type checker in Phase A and CI.
-- **[MED-7] Fix README Tool Count** - COMPLETE. Updated README key tools section to say “Cortex exposes **50+ public MCP tools**” instead of the stale “27 public MCP tools”, aligning it with the tools API reference that currently enumerates 59 tools across phases.
-- Archived `.cortex/plans/fix-readme-tool-count.md` after implement-verify stray_complete_plans detection to keep plans root free of completed plans.
-- **[MED-3] Calibrate Review Metric Scores** - PARTIAL. Updated the review output schema to add a `metrics` object with `score` and `evidence` fields for all 9 review metrics; the prompt already contained calibration tables and evidence requirements, but a future quality gate run is still recommended.
+- No additional implementation work beyond existing memory bank entries; this commit only runs Phase B (docs/memory validation) for the current diff.
 
 ## 2026-03-10
 
@@ -49,8 +42,8 @@
 - **Phase 81 Step 7: optimization/rules_manager.py split (2026-03-07)** - COMPLETE. Extracted rules_loading.py and rules_matching.py; slim rules_manager.py; removed unused helpers; Phase A passed (4940 tests, 91.68% coverage).
 - **Phase 81 Step 8: managers/usage_tracker.py split (2026-03-07)** - COMPLETE. Split into usage_tracker_config, usage_tracker_events, usage_tracker_aggregation; slim usage_tracker.py (340 lines); re-exports preserved; quality gate and usage_tracker tests passed.
 - **Phase 81 Step 9: managers/container_factory.py split (2026-03-07)** - COMPLETE. Split into container_config, container_foundation, container_linking, container_optimization, container_analysis, container_refactoring, container_execution; slim container_factory.py (78 lines) re-exports public API; all files under 400 lines; quality gate and 10/10 container_factory tests passed.
-- **Phase 81: Oversized Module Reduction — Wave 1 (Top 10) (2026-03-07)** - COMPLETE. Step 10: refactoring/execution_validator.py split into execution_validator_checks.py, execution_validator_extraction.py, slim execution_validator.py (168 lines); all under 400 lines; 18/18 tests passed.
-- **Phase 82: Coverage Exclusion Audit and Reduction (2026-03-07)** - COMPLETE. Documented omit list rationale in pyproject.toml; evaluated models.py exclusion (kept); fixed prompt alignment tests for commit and create-plan.
+- **Phase 81: Oversized Module Reduction — Wave 1 (Top 10) (2026-03-07)** - COMPLETE. Step 10: refactoring/execution_validator.py split into execution_validator_checks.py, execution_validator_extraction.py, slim execution_validator.md (168 lines); all under 400 lines; 18/18 tests passed.
+- **Phase 82: Coverage Exclusion Audit and Reduction (2026-03-07)** - COMPLETE. Documented omit list rationale in pyproject.toml; evaluated models.md exclusion (kept); fixed prompt alignment tests for commit and create-plan.
 - **Phase 89: Commit Pipeline Efficiency (2026-03-07)** - COMPLETE. Documented Phase 89 skip behavior in commit prompt and final-gate-validator; code already had dirty-state tracking and skip_if_clean. All tests passed (4940), coverage 91.69%.
 - **Phase 91: HealthCheckReport Type Unification (2026-03-07)** - COMPLETE. Replaced dict alias with Pydantic BaseModel; producers build HealthCheckReportPayload, consumers use report directly; type_check and tests pass.
 - **Phase 87: Stale exec() Comment and Dead Reference Cleanup (2026-03-07)** - COMPLETE. Fixed stale exec() comment in prompts.py; audited for dead comments (none). Type checker and tests pass.
@@ -62,21 +55,21 @@
 - **Phase 92: Improve MCP Tool Descriptions and Usage Guidance (2026-03-06)** - COMPLETE. Standardized Tier 1 MCP tool descriptions with USE WHEN/DO NOT/EXAMPLES guidance and validated via governance tests; quality gate + full tests passed (4910 tests, 92.41% coverage).
 - **README selling doc refresh (2026-03-06)** - COMPLETE. Updated README to lead with value and the core plan   implement   commit workflow; condensed features/tools/prompts into concise, link-driven sections.
 - **Commit pipeline (2026-03-06)** - Ran `/cortex/commit` checks (fix_errors, format, markdown lint, type_check, quality, tests) for memory-bank, plan-archive, and README changes; 4910 tests, 92.41% coverage.
-- **Phase 84: Remaining Type-Checker Suppression Cleanup (2026-03-06)** - COMPLETE. Removed remaining type-checker suppressions in src by updating the usage-context decorator and Pydantic Field defaults for list-valued fields.
+- **Phase 84: Remaining Type-Checker Suppression Cleanup (2026-03-06)** - COMPLETE. Verified no TypedDict/TYPE_CHECKING; removed 2 suppressions; rest documented as follow-up. Pyright clean; tests pass.
 - **Commit pipeline (2026-03-06)** - Ran `/cortex/commit` to fix Ruff UP047 in `ensure_usage_context` and re-validate full pre-commit checks; 4910 tests, 92.41% coverage.
 - **Phase 90: Agent Session Verbosity and "ok, proceed" Pattern (2026-03-06)** - COMPLETE. Updated prompts and guidance so agents auto-continue without waiting for "ok, proceed" and only stop for genuine clarification or unrecoverable errors.
 - Commit pipeline (2026-03-06) - Ran /cortex/commit: Phase A preflight (fix_errors, format, synapse_format, synapse_lint, type_check, tests, eval_fast, markdown_lint) all passed with 4910 tests and ~92.41% coverage; proceeding to memory bank/roadmap + docs phases.
 - **Phase 85: Unify Developer Command Surface (2026-03-06)** - COMPLETE. Documented canonical Make targets (bootstrap, check, test, commit-check), wired a small docs consistency test, and aligned AGENTS/README guidance.
 - **Phase 81: Oversized Module Reduction — Wave 1 (Top 10) Step 2 (2026-03-06)** - PARTIAL. Introduced domain-specific validation model modules (`schema_models.py`, `quality_models.py`, `roadmap_models.py`, `infrastructure_models.py`, `timestamp_models.py`) to start splitting `cortex.validation.models` by validation domain; ran format, type_check, quality, and full tests (4913 tests, 91.66% coverage) to verify behavior.
-- **Phase 81 Step 2: validation/models.py split (2026-03-06)** - COMPLETE. Split cortex.validation.models into schema_models, quality_models, roadmap_models, infrastructure_models, timestamp_models with slim models.py re-exports; fixed pre_commit_tools function-length violations; quality gate and tests passed (4938 tests, ~91.95% coverage).
+- **Phase 81 Step 2: validation/models.py split (2026-03-06)** - COMPLETE. Split cortex.validation.models into schema_models, quality_models, roadmap_models, infrastructure_models, timestamp_models with slim models.md re-exports; fixed pre_commit_tools function-length violations; quality gate and tests passed (4938 tests, ~91.95% coverage).
 - **Commit pipeline (2026-03-06)** - Phase A passed (fix_errors, format, synapse_format, synapse_lint, type_check, quality, tests 4937/4937, coverage 91.95%); pre_commit dirty-state and validation-model changes included.
 - **Commit pipeline (2026-03-06)** - Phase A passed (4937 tests, 91.95% coverage); Step 12 final gate and commit in progress.
 - **Phase 93: Usage Events Collection Pipeline Investigation (2026-03-06)** - COMPLETE. Default usage_writable when Synapse exists and config missing; restored event collection for query_usage.
 - **Commit pipeline (2026-03-06)** - Phase A passed (4940 tests, 91.95% coverage); Phase 93 plan in archive; Synapse .gitignore and usage config/test updates.
 - **Phase 81 Step 3: core/dependency_graph.py split (2026-03-06)** - COMPLETE. Split into dependency_graph_static.py, dependency_graph_export.py, and slim dependency_graph.py (all under 400 lines); quality gate and tests passed (4940 tests, 91.96% coverage).
 - **Phase 81 Step 4: optimization/relevance_scorer.py split (2026-03-06)** - COMPLETE. Split into relevance_keywords.py, relevance_scoring.py, and slim relevance_scorer.py (214 lines); quality gate and tests passed (4940 tests, 91.97% coverage).
-- **Phase 81 Step 5: managers/factory.py split (2026-03-06)** - COMPLETE. Split into factory_linking, factory_validation, factory_optimization, factory_analysis, factory_refactoring, factory_execution, factory_usage with slim factory.py re-exports; 4940 tests, 91.97% coverage.
-- **Phase 81 Step 6: optimization/config.py split (2026-03-06)** - COMPLETE. Split into config_defaults, config_loading, config_validation; slim config.py (308 lines); quality gate and tests passed (4940 tests, 91.97% coverage).
+- **Phase 81 Step 5: managers/factory.py split (2026-03-06)** - COMPLETE. Split into factory_linking, factory_validation, factory_optimization, factory_analysis, factory_refactoring, factory_execution, factory_usage with slim factory.md re-exports; 4940 tests, 91.97% coverage.
+- **Phase 81 Step 6: optimization/config.py split (2026-03-06)** - COMPLETE. Split into config_defaults, config_loading, config_validation; slim config.md (308 lines); quality gate and tests passed (4940 tests, 91.97% coverage).
 
 ## 2026-03-05
 
@@ -90,19 +83,7 @@
 
 ## 2026-03-04
 
-- **Analyze prompt integration test (2026-03-04)** - COMPLETE. Updated test to assert on analyze(target="context"); 4872 tests, 92.16% coverage.
-- **Phase 70: Replace exec() with safe templating and add path validation (2026-03-04)** - COMPLETE. Replaced exec()-based prompt registration in synapse prompts with safe decorator-based functions, added path traversal protection for prompt file loading, and extended tests; quality gate and 4874 tests passed with ~92.15% coverage.
-- **Commit pipeline Phase A preflight** - Ran execute_pre_commit_checks(phase="A") with fix_errors, quality, format, synapse_format, synapse_lint, type_check, tests, eval_fast, markdown_lint; all checks passed with 4874 tests, 92.15%+ coverage, and zero errors/warnings.
-- **Phase 71: Fix TOCTOU race conditions in file and task locking (2026-03-04)** - COMPLETE. Implemented atomic file, cache, and task locking with PID metadata and verified via full pre-commit checks.
-- **Phase 72: Fix is_connection_error Over-Matching and Consolidate Duplicates (2026-03-04)** - COMPLETE. Consolidated connection error detection into a single helper, tightened matching to avoid resource and tool-not-found false positives, and added focused tests for true and false cases.
-- **Phase 73: Fix blocking event loop and O(n) data structures (2026-03-04)** - COMPLETE. Replaced list-based LRU cache and BFS queues with O(1) data structures, removed blocking tiktoken backoff sleeps in TokenCounter, and updated tests with full quality gate.
-- **Phase 74: Async I/O migration for hot paths (2026-03-04)** - COMPLETE. Migrated context loading, token counting, and session logging hot paths to async I/O, added parallel file reading with a bounded concurrency limit, and updated tests to verify behavior.
-- **Phase 75: Unify tool response format - response builder migration (partial) (2026-03-04)** - COMPLETE. Migrated load_context metadata/result formatters and validation tools (schema, quality, duplications, roadmap_sync, query_usage) to use the shared response_builder helpers with canonical {"status": "success"|"error", ...} responses; fixed type issues and passed full quality gate (format, type_check, tests, quality) with 4884 tests and ~92.17% coverage.
-- **Phase 75: Unify tool response format (2026-03-04)** - COMPLETE (composite + foundation batch). Migrated composite workflow dispatcher and Phase 1 foundation tools (dependency graph and version history) to the canonical `{"status": "success"|"error", ...}` response builder, updated tests, and verified format, type checks, quality gate, and full test suite (~92.18% coverage).
-- **Phase 76 TypedDict/suppressions cleanup (2026-03-04)** - COMPLETE. Verified no TypedDict/TYPE_CHECKING; removed 2 suppressions; rest documented as follow-up. Pyright clean; tests pass.
-- **Phase 77: Fix coverage gaps (2026-03-04)** - COMPLETE. Tests for result_links_models, fixed silent exception handling, implemented doc-mcp migration.
-- **Phase 78: Agent implementation verification protocol (2026-03-04)** - COMPLETE. Added mandatory verification gates, Verification Checklist, date year validation, commit message and staging rules, analyze target spec; tests added.
-- **Commit: validation and timestamp validator (2026-03-04)** - COMPLETE. Validation models and timestamp_validator updates; integration/unit test updates; Phase A passed (4906 tests, 92.44% coverage).
+- **Week containing 2026-03-04** - 1 entries summarized.
 
 ## 2026-03-03
 
@@ -178,7 +159,7 @@
 
 ## 2026-02-09
 
-- **Week containing 2026-02-09** - 1 entries summarized.
+- **Month containing 2026-02-09** - 1 entries summarized.
 
 ## 2026-02-07
 

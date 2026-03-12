@@ -22,8 +22,8 @@ from cortex.tools.execution.pre_commit_detached import (
     start_pre_commit_job_impl,
 )
 from cortex.tools.execution.pre_commit_phase_dispatch import (
-    _PHASE_A_CHECKS,
-    _PHASE_B_CHECKS,
+    PHASE_A_CHECKS,
+    PHASE_B_CHECKS,
     PreCommitPhase,
     phase_to_checks,
 )
@@ -37,7 +37,7 @@ def _write_result_file(
     session_dir = project_root / ".cortex" / ".session"
     session_dir.mkdir(parents=True, exist_ok=True)
     result_path = session_dir / f"pre_commit_result_{args_hash}.json"
-    result_path.write_text(json.dumps(payload))
+    _ = result_path.write_text(json.dumps(payload))
     return result_path
 
 
@@ -62,7 +62,7 @@ async def test_cached_completed_result_is_reused(tmp_path: Path) -> None:
             "checks": ["tests"],
         },
     }
-    _write_result_file(project_root, args_hash, payload)
+    _ = _write_result_file(project_root, args_hash, payload)
 
     existing = find_existing_result(project_root, args_hash)
     assert existing is not None
@@ -101,7 +101,7 @@ async def test_running_status_returns_fast_error_for_second_call(
         "pid": os.getpid(),
         "started_at": time.time(),
     }
-    _write_result_file(project_root, args_hash, running_payload)
+    _ = _write_result_file(project_root, args_hash, running_payload)
 
     existing = find_existing_result(project_root, args_hash)
     assert existing is not None
@@ -135,7 +135,7 @@ def test_start_pre_commit_job_impl_reuses_completed_result(tmp_path: Path) -> No
         "completed_at": time.time(),
         "result": {"status": "success"},
     }
-    _write_result_file(project_root, args_hash, payload)
+    _ = _write_result_file(project_root, args_hash, payload)
 
     result = start_pre_commit_job_impl(
         project_root=project_root,
@@ -165,7 +165,7 @@ def test_start_pre_commit_job_impl_reports_already_running(tmp_path: Path) -> No
         "pid": os.getpid(),
         "started_at": time.time(),
     }
-    _write_result_file(project_root, args_hash, running_payload)
+    _ = _write_result_file(project_root, args_hash, running_payload)
 
     result = start_pre_commit_job_impl(
         project_root=project_root,
@@ -183,8 +183,8 @@ def test_phase_to_checks_phase_a_returns_canonical_list() -> None:
     """phase_to_checks(A) returns all Phase A check names."""
     checks = phase_to_checks(PreCommitPhase.A)
     assert isinstance(checks, list)
-    assert len(checks) == len(_PHASE_A_CHECKS)
-    assert set(checks) == set(_PHASE_A_CHECKS)
+    assert len(checks) == len(PHASE_A_CHECKS)
+    assert set(checks) == set(PHASE_A_CHECKS)
     # Required checks must be present
     for required in ("fix_errors", "format", "type_check", "quality", "tests"):
         assert required in checks, f"Missing required check: {required}"
@@ -194,14 +194,14 @@ def test_phase_to_checks_phase_b_returns_canonical_list() -> None:
     """phase_to_checks(B) returns Phase B check names."""
     checks = phase_to_checks(PreCommitPhase.B)
     assert isinstance(checks, list)
-    assert len(checks) == len(_PHASE_B_CHECKS)
-    assert set(checks) == set(_PHASE_B_CHECKS)
+    assert len(checks) == len(PHASE_B_CHECKS)
+    assert set(checks) == set(PHASE_B_CHECKS)
 
 
 def test_phase_to_checks_full_combines_a_and_b() -> None:
     """phase_to_checks(FULL) returns combined A + B check names."""
     checks = phase_to_checks(PreCommitPhase.FULL)
-    expected = list(_PHASE_A_CHECKS + _PHASE_B_CHECKS)
+    expected = list(PHASE_A_CHECKS + PHASE_B_CHECKS)
     assert checks == expected
     # Full must be a superset of both A and B
     a_checks = phase_to_checks(PreCommitPhase.A)
