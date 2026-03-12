@@ -4,6 +4,8 @@
 
 - - **Commit pipeline Phase B** - Ran `/cortex/commit` Phase B (docs/memory validation) for current changes; no new implementation work beyond existing roadmap items, memory bank and roadmap remained consistent.
 - - **Commit pipeline Phase B** - Ran `/cortex/commit` Phase B (docs/memory validation) for current workspace changes; memory bank and roadmap were already in sync so no additional roadmap mutations were required in this pass.
+- **[MED-3] Calibrate Review Metric Scores** - COMPLETE. Verified all 9 review metrics in `review.md` have calibration tables and evidence requirements, and that `review-output-schema.md` defines an evidence field for each metric; Phase A pre-commit job was started via Cortex MCP but its result is still pending/unavailable.
+- **[MED-10] Make Prompts Agent-Agnostic** - PARTIAL. Added an agent-agnostic Agent Tool Mapping section to shared-conventions and updated the create-plan prompt to refer to generic file operation tools instead of Cursor-specific names for roadmap writes; additional prompt and tool description updates remain.
 
 ## 2026-03-11
 

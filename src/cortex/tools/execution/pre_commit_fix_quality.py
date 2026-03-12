@@ -193,13 +193,16 @@ def build_markdown_fix_output(
 
 
 async def _run_quality_checks(root: Path, ctx: MCPContext | None) -> ModelDict | str:
-    """Run quality checks (fix_errors, format, type_check) and return result or error JSON.
+    """Run quality checks (fix_errors, format, type_check, quality) and return result.
 
     This calls the underlying pre-commit implementation directly (not the MCP
     tool wrapper) to avoid nested execute_pre_commit_checks tool invocations,
     which are serialized via the long-running semaphore. Using the internal
     implementation keeps fix_quality progress driven by real pipeline steps
     instead of an outer time-based progress loop.
+
+    Includes PreCommitCheck.QUALITY so function-length and file-size violations
+    are surfaced in remaining_issues and not silently missed.
     """
     from cortex.tools.execution.pre_commit_tools import _execute_pre_commit_checks_impl
 
@@ -210,6 +213,7 @@ async def _run_quality_checks(root: Path, ctx: MCPContext | None) -> ModelDict |
             PreCommitCheck.FIX_ERRORS.value,
             PreCommitCheck.FORMAT.value,
             PreCommitCheck.TYPE_CHECK.value,
+            PreCommitCheck.QUALITY.value,
         ],
         strict_mode=False,
         timeout=300,

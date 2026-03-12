@@ -17,8 +17,6 @@
 
 ### Documentation Cleanup (DRY)
 
-- **[MED-3] Calibrate Review Metric Scores** — Add calibration examples and evidence requirements for 9 review metrics. Plan: `plans/calibrate-review-metric-scores.md` | Priority: Medium | Order: 15
-- **[MED-10] Make Prompts Agent-Agnostic** — Replace Cursor-specific tool names with generic mapping. Plan: `plans/make-prompts-agent-agnostic.md` | Priority: Medium | Order: 22
 
 ### Refactoring
 

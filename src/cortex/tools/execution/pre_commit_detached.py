@@ -315,6 +315,13 @@ def _spawn_new_job(
     }
 
 
+def _clear_cached_result(project_root: Path, args_hash: str) -> None:
+    """Delete cached result file so a fresh worker is always spawned."""
+    rp = _result_path(_session_dir(project_root), args_hash)
+    rp.unlink(missing_ok=True)
+    logger.info("force_fresh: cleared cached result for args_hash=%s", args_hash)
+
+
 def start_pre_commit_job_impl(
     project_root: Path,
     checks: list[str],
@@ -324,12 +331,7 @@ def start_pre_commit_job_impl(
     include_markdown_lint: bool,
     force_fresh: bool = False,
 ) -> dict[str, object]:
-    """Start or reuse a detached pre-commit job and return lightweight status.
-
-    When force_fresh=True, any cached completed result is deleted before
-    checking so a new worker is always spawned. Use this for Step 12 (final
-    gate) where files may have changed since Phase A completed.
-    """
+    """Start or reuse a detached pre-commit job; return lightweight status."""
     args_hash = _build_job_id(
         checks,
         timeout,
@@ -338,11 +340,7 @@ def start_pre_commit_job_impl(
         include_markdown_lint,
     )
     if force_fresh:
-        rp = _result_path(_session_dir(project_root), args_hash)
-        rp.unlink(missing_ok=True)
-        logger.info(
-            "force_fresh=True: cleared cached result for args_hash=%s", args_hash
-        )
+        _clear_cached_result(project_root, args_hash)
     existing_result = _interpret_existing_job(project_root, args_hash)
     if existing_result is not None:
         return existing_result

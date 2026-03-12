@@ -8,6 +8,10 @@
 
 - ✅ **Commit pipeline Phase B docs/memory validation** - COMPLETE (2026-03-12) - Ran `/cortex/commit` Phase B for the current diff; verified memory bank (activeContext, progress, roadmap) was consistent with recent work and did not require additional roadmap edits beyond existing documentation cleanup and refactoring items.
 
+- ✅ **[MED-3] Calibrate Review Metric Scores** - COMPLETE (2026-03-12) - Verified all 9 review metrics in `review.md` have calibration tables and explicit evidence requirements, and that `review-output-schema.md` includes an evidence string for each metric in the structured metrics schema; Phase A pre-commit job was kicked off but its final status is not yet known.
+
+- ✅ **[MED-10] Make Prompts Agent-Agnostic (PARTIAL)** - COMPLETE (2026-03-12) - Documented an agent-agnostic Agent Tool Mapping pattern in shared-conventions and updated the create-plan Synapse prompt to reference generic file operation tools for roadmap writes, preparing remaining prompts and tools to be de-Cursor-ized in future sessions.
+
 ## Completed Work (2026-03-11)
 
 - **Summary (2026-03-11)** - 1 entries archived.

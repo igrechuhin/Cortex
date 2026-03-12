@@ -33,7 +33,9 @@ Using the files read in Step 1:
 1. Run `git status --porcelain` and check for dirty Synapse submodule (line containing `.cortex/synapse`).
 2. If Synapse is dirty:
    - Run `git -C .cortex/synapse status --porcelain` to check submodule working tree.
-   - If non-empty: run `git -C .cortex/synapse add -A` then `git -C .cortex/synapse commit -m "Update Synapse prompts/rules"`.
+   - If non-empty:
+     - **Lock handling**: If `git -C .cortex/synapse add -A` fails with `index.lock` error, delete the lock file with `rm -f .git/modules/.cortex/synapse/index.lock` then retry `git -C .cortex/synapse add -A`. Repeat up to 2 times.
+     - Run `git -C .cortex/synapse add -A` then `git -C .cortex/synapse commit -m "Update Synapse prompts/rules"`.
    - Run `git -C .cortex/synapse push`. If push fails, continue (non-blocking).
    - Run `git add .cortex/synapse` to update parent pointer.
 3. If Synapse is clean: no action needed.

@@ -112,6 +112,17 @@ def _check_type_warnings_remaining(type_check_result: ModelDict) -> str | None:
     return None
 
 
+def _check_quality_remaining(quality_result: ModelDict) -> str | None:
+    """Check if quality check has remaining violations (function length, file size)."""
+    quality_success_obj = quality_result.get("success")
+    if isinstance(quality_success_obj, bool) and quality_success_obj:
+        return None
+    quality_errors = extract_list_from_object(quality_result.get("errors", []), [])
+    if quality_errors:
+        return f"{len(quality_errors)} quality violation(s) remain (function length / file size)"
+    return None
+
+
 def _check_warnings_remaining(fix_errors_check: ModelDict) -> str | None:
     """Check if fix_errors check has remaining warnings."""
     fix_warnings_list = extract_list_from_object(
@@ -182,5 +193,11 @@ def collect_remaining_issues(fix_errors_result: ModelDict) -> list[str]:
     issue = _check_warnings_remaining(fix_errors_check)
     if issue:
         remaining_issues.append(issue)
+
+    quality_result_raw = results.get("quality")
+    if isinstance(quality_result_raw, dict):
+        issue = _check_quality_remaining(cast(ModelDict, quality_result_raw))
+        if issue:
+            remaining_issues.append(issue)
 
     return remaining_issues

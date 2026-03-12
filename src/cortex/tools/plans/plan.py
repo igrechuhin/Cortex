@@ -20,7 +20,10 @@ def _plan_error_invalid_operation(operation: str) -> str:
     return CreatePlanResult(
         status="error",
         file_path=None,
-        message=f"Invalid operation '{operation}'. Use create, list, get, complete, or register.",
+        message=(
+            "Invalid operation "
+            f"'{operation}'. Use create, list, get, complete, or register."
+        ),
         error="Invalid operation",
     ).model_dump_json()
 
@@ -197,15 +200,21 @@ async def plan(
     section: str = "pending",
     ctx: MCPContext | None = None,
 ) -> str:
-    """Plan lifecycle: create, list, get, complete, or register in roadmap.
+    """Plan lifecycle: create, list, get, complete (with archive), or register in roadmap.
 
     USE WHEN: You need to create or update plans under .cortex/plans/, mark a
-    plan as complete (with memory-bank updates), or register a plan entry in
-    roadmap.md.
+    plan as complete (removes from roadmap, adds to activeContext, archives plan
+    file), or register a plan entry in roadmap.md.
 
-    EXAMPLES: 'plan(operation=\"create\", title=\"Phase 92\", content=\"...\")',
-    'plan(operation=\"complete\", plan_title=\"Phase 92\", summary=\"Done\")',
-    'plan(operation=\"register\", plan_title=\"Phase 92\", description=\"Improve tool docs\")'.
+    To complete a plan and archive its file in one call:
+      plan(operation="complete", plan_title="...", summary="...",
+           plan_file_name="filename.md", progress_entry="...")
+
+    EXAMPLES:
+      plan(operation="create", title="Phase 92", content="...")
+      plan(operation="complete", plan_title="Phase 92", summary="Done",
+           plan_file_name="phase-92-foo.md", progress_entry="Phase 92 - COMPLETE. ...")
+      plan(operation="register", plan_title="Phase 92", description="Improve tool docs")
     """
     return await _plan_dispatch(
         operation,

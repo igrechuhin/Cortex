@@ -2,7 +2,7 @@
 title: "Make Synapse Prompts Agent-Agnostic"
 component: "synapse/prompts"
 work_type: "fix"
-status: "PENDING"
+status: "IN_PROGRESS"
 priority: "Medium"
 created: "2026-03-07"
 execution_order: 22
@@ -11,7 +11,7 @@ depends_on: []
 
 # Make Synapse Prompts Agent-Agnostic
 
-**Status**: PENDING
+**Status**: IN_PROGRESS
 **Priority**: Medium
 **Complexity**: Low
 **Category**: Fix
@@ -50,7 +50,7 @@ Or use a mapping note: "Standard IDE tools for file operations (Read, Edit/Apply
 
 **File**: `.cortex/synapse/agents/shared-conventions.md`
 
-Add a section:
+Add a section and mark this step as DONE:
 
 ```markdown
 ## Agent Tool Mapping
@@ -66,11 +66,17 @@ Add a section:
 Prompts use generic names. Agents should map to their available tools.
 ```
 
+Status: DONE in this session (2026-03-12).
+
 ### Step 3: Update the three prompt files
 
 **Files**: `create-plan.md`, `commit.md`, `implement-next-roadmap-step.md`
 
 Replace all Cursor-specific tool references with generic names per the mapping.
+
+- `create-plan.md`: UPDATED in this session (2026-03-12) to refer to generic file operation tools instead of Cursor-specific names for roadmap writes.
+- `commit.md`: TODO.
+- `implement-next-roadmap-step.md`: TODO.
 
 ## Verification Checklist
 
@@ -79,7 +85,7 @@ Replace all Cursor-specific tool references with generic names per the mapping.
 | `ApplyPatch` | `.cortex/synapse/prompts/` | Zero matches |
 | `StrReplace` | `.cortex/synapse/prompts/` | Zero matches (except prohibition notes) |
 | `LS` (as tool name) | `.cortex/synapse/prompts/` | Zero matches |
-| `Agent Tool Mapping` | `shared-conventions.md` | Present |
+| `Agent Tool Mapping` | `shared-conventions.md` | Present (ADDED 2026-03-12) |
 
 ## Dependencies
 
