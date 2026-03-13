@@ -81,6 +81,8 @@ async def get_dependency_graph(project_root: str | None = None, format: str = "j
         JSON string with dependency graph in requested format.
 
     Example (JSON format):
+```
+
         ```json
         {
           "status": "success",
@@ -114,7 +116,8 @@ async def get_dependency_graph(project_root: str | None = None, format: str = "j
         The loading order is computed using topological sort and respects
         both static priorities and dependency relationships.
     """
-```
+
+```text
 
 ### 2. Protocol Docstrings (22 Protocols)
 
@@ -154,6 +157,8 @@ async def get_dependency_graph(project_root: str | None = None, format: str = "j
 
 Before:
 
+```
+
 ```python
 class FileSystemProtocol(Protocol):
     """Protocol for file system operations."""
@@ -177,6 +182,8 @@ class FileSystemProtocol(Protocol):
         - ValidationTools: For reading and validating file content
 
     Example implementation:
+```
+
         ```python
         class CustomFileSystem:
             def validate_path(self, file_path: Path) -> bool:
@@ -197,7 +204,8 @@ class FileSystemProtocol(Protocol):
         - All protocol methods must be implemented for full compatibility
         - Used throughout the system for loose coupling and testability
     """
-```
+
+```text
 
 ---
 
@@ -408,6 +416,8 @@ The following Phase 9.6 tasks remain incomplete:
 ## Verification
 
 ### Syntax Validation
+
+```
 
 ```bash
 # All Python files pass syntax check

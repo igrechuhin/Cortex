@@ -513,7 +513,7 @@ from typing import Literal, Optional
 class ToolResultBase(BaseModel):
     """Base class for tool results."""
     status: Literal["success", "error"]
-    
+
     class Config:
         """Pydantic configuration."""
         # Allow JSON serialization

@@ -77,6 +77,7 @@ from .plans import (
 from .session import (  # noqa: F401  # noqa: F401
     connection_health,
     health_check_operations,
+    pipeline_handoff,  # noqa: F401
     registry,
     script_capture_tools,  # noqa: F401
     sequential_thinking,  # noqa: F401
@@ -114,6 +115,7 @@ __all__ = [
     "config",
     "composite_tools",
     "connection_health",
+    "pipeline_handoff",
     "file_operations",
     "health_check_operations",
     "markdown_operations",

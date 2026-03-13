@@ -2,8 +2,11 @@
 
 ## 2026-03-13
 
+- **Blocker: Fix MCP Plan Tool Argument Wiring/Bridging and Audit Similar Gaps** - PARTIAL. Step 7 guardrail tests: added tests for plan payload builders (complete, register, create) in test_plan_payloads.py; fixed pyright reportUnusedCallResult in pytest.raises blocks. Smoke tests and optional metrics remain. Blocker still IN_PROGRESS.
 - **Commit pipeline Phase B** - Memory bank verified (activeContext, progress, roadmap); 0 plans archived; documentation validation run.
 - **Blocker: Fix MCP Plan Tool Argument Wiring/Bridging and Audit Similar Gaps** - PARTIAL. Guardrail test test_create_missing_title_and_content added for plan(operation='create') missing title/content; pre-existing type/quality fixes in pre_commit_status.py and test_plan_completion.py. Blocker still IN_PROGRESS.
+- **Blocker: Fix MCP Plan Tool Argument Wiring/Bridging and Audit Similar Gaps** - PARTIAL. Step 1 audit: added docs/development/mcp-tool-call-audit.md with inventory of MCP tool call sites (implement, commit, other agents), argument style, Safe/Unsafe classification; all documented call sites use full payloads (Safe). Step 7 test: added TestPlanToolHappyPath and test_plan_operation_list_returns_success in tests/tools/test_plan_tool_dispatch.py. Type fixes in src/cortex/tools/session/pipeline_handoff.py (unnecessary isinstance, unused write_text return, dict typing for json.loads/update). Blocker remains IN_PROGRESS.
+- **Blocker: Fix MCP Plan Tool Argument Wiring/Bridging and Audit Similar Gaps** - PARTIAL. Step 7: added lightweight logging in plan tool (operation + required_args_present); added test in tests/tools/test_plan_payloads.py for build_plan_create_arguments validation. Blocker remains IN_PROGRESS.
 
 ## 2026-03-12
 
@@ -12,7 +15,6 @@
 - **[MED-3] Calibrate Review Metric Scores** - COMPLETE. Verified all 9 review metrics in `review.md` have calibration tables and evidence requirements, and that `review-output-schema.md` defines an evidence field for each metric; Phase A pre-commit job was started via Cortex MCP but its result is still pending/unavailable.
 - **[MED-10] Make Prompts Agent-Agnostic** - PARTIAL. Added an agent-agnostic Agent Tool Mapping section to shared-conventions and updated the create-plan prompt to refer to generic file operation tools instead of Cursor-specific names for roadmap writes; additional prompt and tool description updates remain.
 - **[MED-8] Reduce Prompt-Alignment Test Fragility** - PARTIAL. Relaxed the `TestImplementPromptRefactoringGuidance` tests in `tests/integration/test_commit_workflow_prompt_alignment.py` to assert semantic concepts for incremental validation and duplicate-detection guidance in the implement pipeline using lowercased content and synonym lists instead of single fragile substrings; pre-commit job remained running and should be re-run in a live environment; remaining fragile substring assertions still need semantic refactors in later subtasks.
-
 - **Blocker: Implement-Select Must Respect Explicit Plan Targets** - PARTIAL. Implemented explicit-plan-first selection behavior at the prompt/orchestration level so `implement-select` prefers an `explicit_plan_path` hint when the referenced plan exists and is eligible, and added prompt-level tests covering (A) no explicit plan → roadmap ordering, (B) valid explicit plan → preferred over roadmap, and (C) invalid or ineligible explicit plan → fallback with a clear explanatory note; deeper runtime wiring and eligibility checks remain for future work.
 
 ## 2026-03-11

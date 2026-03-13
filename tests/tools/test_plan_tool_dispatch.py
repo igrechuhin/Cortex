@@ -66,3 +66,16 @@ class TestPlanToolRequiredFieldValidation:
         assert result["status"] == "error"
         message = (result.get("message") or "").lower()
         assert "title and content are required" in message
+
+
+class TestPlanToolHappyPath:
+    """Happy-path: plan() with full payload for operations that need no extra args."""
+
+    @pytest.mark.asyncio
+    async def test_plan_operation_list_returns_success(self) -> None:
+        """plan(operation='list') with no other required args returns success and plans list."""
+        result_str = await plan(operation="list")
+        result = json.loads(result_str)
+        assert result.get("status") == "success"
+        assert "plans" in result
+        assert isinstance(result["plans"], list)

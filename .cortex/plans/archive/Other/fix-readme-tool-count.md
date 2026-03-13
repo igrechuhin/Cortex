@@ -9,7 +9,7 @@ execution_order: 19
 depends_on: []
 ---
 
-# Fix README Tool Count Discrepancy
+## Fix README Tool Count Discrepancy
 
 **Status**: COMPLETE
 **Priority**: Medium

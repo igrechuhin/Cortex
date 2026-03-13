@@ -1077,7 +1077,7 @@ def get_suggestions(...) -> list[RefactoringSuggestion]:
 
 - **[CLAUDE.md](../../CLAUDE.md)** - Project overview, architecture, and development instructions
 - **[README.md](../../README.md)** - Project features and running the server
-- **[.cursor/rules/](../../.cursor/rules/)** - Specific coding rules and standards
+- **[CLAUDE.md](../../CLAUDE.md) and [AGENTS.md](../../AGENTS.md)** - Coding rules and standards (see also `.cursor/rules/` locally if present)
 - **[PyProject.toml](../../pyproject.toml)** - Project configuration and dependencies
 
 ### Discussion and Questions

@@ -147,7 +147,9 @@ async def count_tokens(self, text: str) -> int:
 
 ```markdown
 ## Critical Failures
+
 ### Memory Bank Index Corruption
+
 **Symptoms:** IndexCorruptionError on startup
 **Causes:** Disk failure, concurrent modification
 **Impact:** File operations may fail
@@ -156,7 +158,9 @@ async def count_tokens(self, text: str) -> int:
 **RTO:** < 5 minutes
 
 ## Non-Critical Failures
+
 ### Shared Rules Sync Failure
+
 **Symptoms:** GitOperationError during sync
 **Impact:** Shared rules may be outdated
 **Degradation:** System continues with local rules only

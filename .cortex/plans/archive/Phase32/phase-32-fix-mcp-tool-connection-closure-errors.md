@@ -136,15 +136,15 @@ async def execute_tool_with_connection_check(
     **kwargs: object,
 ) -> T:
     """Execute tool with connection health check.
-    
+
     Args:
         func: Tool function to execute
         *args: Positional arguments
         **kwargs: Keyword arguments
-        
+
     Returns:
         Tool execution result
-        
+
     Raises:
         ConnectionError: If connection is closed
     """
@@ -154,7 +154,7 @@ async def execute_tool_with_connection_check(
         raise ConnectionError(
             f"Connection not healthy before tool execution: {health}"
         )
-    
+
     # Execute with stability wrapper
     return await with_mcp_stability(func, *args, **kwargs)
 ```
@@ -177,12 +177,12 @@ async def _handle_connection_closure(
     attempt: int,
 ) -> tuple[bool, Exception | None]:
     """Handle connection closure during tool execution.
-    
+
     Args:
         func_name: Name of tool function
         e: Exception that occurred
         attempt: Current retry attempt
-        
+
     Returns:
         Tuple of (should_retry, exception_to_store)
     """
@@ -201,7 +201,7 @@ async def _handle_connection_closure(
                 f"(attempt {attempt}), connection not recoverable"
             )
             return False, e  # Don't retry, connection is dead
-    
+
     return False, e  # Not a connection error
 ```
 
@@ -224,22 +224,22 @@ async def execute_tool_with_stability(
     **kwargs: object,
 ) -> T:
     """Execute MCP tool with connection stability and health checks.
-    
+
     Enhanced version that:
     - Checks connection health before execution
     - Detects connection closure during execution
     - Recovers connection before retries
     - Provides clear error messages
-    
+
     Args:
         func: Tool function to execute
         *args: Positional arguments
         timeout: Maximum execution time
         **kwargs: Keyword arguments
-        
+
     Returns:
         Tool execution result
-        
+
     Raises:
         ConnectionError: If connection is closed and not recoverable
         TimeoutError: If execution exceeds timeout
@@ -250,11 +250,11 @@ async def execute_tool_with_stability(
         raise ConnectionError(
             f"Connection not healthy before tool execution: {health}"
         )
-    
+
     # Execute with enhanced retry logic
     last_exception: Exception | None = None
     func_name = func.__name__
-    
+
     for attempt in range(1, MCP_CONNECTION_RETRY_ATTEMPTS + 1):
         try:
             return await _execute_single_attempt(
@@ -265,25 +265,25 @@ async def execute_tool_with_stability(
             should_retry, stored_exception = await _handle_connection_closure(
                 func_name, e, attempt
             )
-            
+
             if not should_retry:
                 if stored_exception:
                     last_exception = stored_exception
                 else:
                     raise  # Non-retryable error
-            
+
             # Connection recovered, retry
             if attempt < MCP_CONNECTION_RETRY_ATTEMPTS:
                 await asyncio.sleep(0.1 * attempt)  # Exponential backoff
                 continue
-    
+
     # All retries exhausted
     if last_exception:
         raise ConnectionError(
             f"Tool {func_name} failed after {MCP_CONNECTION_RETRY_ATTEMPTS} "
             f"attempts due to connection issues"
         ) from last_exception
-    
+
     raise ConnectionError(f"Tool {func_name} failed unexpectedly")
 ```
 
@@ -301,25 +301,25 @@ async def execute_tool_with_stability(
 ```python
 class ConnectionState:
     """Track connection state for diagnostics."""
-    
+
     def __init__(self) -> None:
         self.last_check: float = 0.0
         self.is_healthy: bool = True
         self.closure_count: int = 0
         self.recovery_count: int = 0
-    
+
     async def check_health(self) -> dict[str, object]:
         """Check connection health and update state."""
         health = await check_connection_health()
         self.last_check = time.time()
         self.is_healthy = health.get("healthy", False)
         return health
-    
+
     def record_closure(self) -> None:
         """Record connection closure event."""
         self.closure_count += 1
         self.is_healthy = False
-    
+
     def record_recovery(self) -> None:
         """Record connection recovery event."""
         self.recovery_count += 1

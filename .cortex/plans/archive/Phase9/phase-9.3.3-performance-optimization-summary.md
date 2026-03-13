@@ -18,21 +18,21 @@
 async def acquire_lock(self, lock_path: Path):
     """Acquire file lock with timeout."""
     start_time = asyncio.get_event_loop().time()
-    
+
     # Cache the lock path existence check to avoid repeated I/O
     # Check once before entering loop
     lock_exists = lock_path.exists()
-    
+
     while lock_exists:
         if (asyncio.get_event_loop().time() - start_time) > float(self.lock_timeout):
             raise FileLockTimeoutError(lock_path.stem, self.lock_timeout)
         await asyncio.sleep(0.1)
         # Only check existence after sleep
         lock_exists = lock_path.exists()
-    
+
     # Ensure parent directory exists before creating lock file
     lock_path.parent.mkdir(parents=True, exist_ok=True)
-    
+
     # Create lock file
     lock_path.touch()
 ```
@@ -52,7 +52,7 @@ def parse_markdown_sections(self, content: str) -> list[dict[str, str | int]]:
     """Parse markdown content into sections based on headings."""
     sections: list[dict[str, str | int]] = []
     lines = content.splitlines()
-    
+
     for line_num, line in enumerate(lines):
         stripped = line.lstrip()
         if stripped.startswith("#"):
@@ -61,7 +61,7 @@ def parse_markdown_sections(self, content: str) -> list[dict[str, str | int]]:
             if hash_start >= 0:
                 # Calculate level directly (was: nested loop counting #)
                 level = len(line) - len(line.lstrip("#"))
-                
+
                 if 1 <= level <= 6:
                     title = stripped.lstrip("#").strip()
                     sections.append(
@@ -94,7 +94,7 @@ def _extract_duplicates_from_hash_map(
 ) -> list[dict[str, object]]:
     """Extract duplicate pairs from hash map."""
     duplicates: list[dict[str, object]] = []
-    
+
     for _content_hash, entries in hash_map.items():
         if len(entries) > 1:
             # Use itertools.combinations for efficient pairwise comparison
@@ -117,11 +117,11 @@ def _compare_within_groups(
 ) -> list[dict[str, object]]:
     """Compare sections within signature groups."""
     similar: list[dict[str, object]] = []
-    
+
     for group_sections in signature_groups.values():
         if len(group_sections) <= 1:
             continue
-        
+
         # Use itertools.combinations for efficient pairwise comparison
         for (file1, section1_name, content1), (
             file2,
@@ -129,7 +129,7 @@ def _compare_within_groups(
             content2,
         ) in itertools.combinations(group_sections, 2):
             similarity = self.compare_sections(content1, content2)
-            
+
             if self.threshold <= similarity < 1.0:
                 similar.append(
                     {

@@ -43,6 +43,7 @@ Replace detailed sections with a compact summary + Synapse reference. Keep uniqu
    ## Python Standards
 
    Loaded from Synapse rules. Key constraints:
+
    - No `Any` type; 100% type hints; Pydantic 2 mandatory
    - Functions <=30 lines; files <=400 lines
    - AAA test pattern; 90%+ coverage

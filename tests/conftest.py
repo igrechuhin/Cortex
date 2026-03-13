@@ -9,29 +9,54 @@ This module provides comprehensive fixtures for:
 - Test data for various scenarios
 """
 
-import asyncio
-import json
-import tempfile
-from collections.abc import Generator, ItemsView, KeysView, ValuesView
-from datetime import datetime
+# Patch get_cursor_path before any other cortex import so structure_migration etc. see _cursor.
 from pathlib import Path
 
-import pytest
+import cortex.core.path_resolver as _path_resolver_module  # noqa: E402, I001
+from cortex.core.path_resolver import (
+    CursorResourceType as _CursorResourceType,  # noqa: E402
+)
 
-from cortex.core.dependency_graph import DependencyGraph
-from cortex.core.metadata_index import MetadataIndex
-from cortex.core.models import JsonValue, ModelDict
-from cortex.core.token_counter import TokenCounter
-from cortex.managers.types import ManagersDict
-from cortex.optimization.relevance_scorer import RelevanceScorer
-from tests.helpers.path_helpers import (
+
+def _get_cursor_path_test(
+    project_root: Path, resource_type: _CursorResourceType
+) -> Path:
+    """Return cursor path using _cursor dir so tests can create it without permission issues."""
+    base = project_root / "_cursor"
+    if resource_type == _CursorResourceType.CURSOR_DIR:
+        return base
+    return base / resource_type.value
+
+
+_path_resolver_module.get_cursor_path = _get_cursor_path_test  # type: ignore[method-assign]
+
+import asyncio  # noqa: E402
+import json  # noqa: E402
+import tempfile  # noqa: E402
+from collections.abc import Generator, ItemsView, KeysView, ValuesView  # noqa: E402
+from datetime import datetime  # noqa: E402
+from typing import cast  # noqa: E402
+
+import pytest  # noqa: E402
+
+# Use _cursor as default symlink_location in tests so structure managers can create the dir.
+import cortex.structure.structure_config as _structure_config  # noqa: E402
+from cortex.core.dependency_graph import DependencyGraph  # noqa: E402
+from cortex.core.metadata_index import MetadataIndex  # noqa: E402
+from cortex.core.models import JsonValue, ModelDict  # noqa: E402
+from cortex.core.token_counter import TokenCounter  # noqa: E402
+from cortex.managers.types import ManagersDict  # noqa: E402
+from cortex.optimization.relevance_scorer import RelevanceScorer  # noqa: E402
+from tests.helpers.path_helpers import (  # noqa: E402
     ensure_test_cortex_structure,
     get_test_memory_bank_dir,
 )
 
-# ============================================================================
-# Global Mocking for Integration Tests
-# ============================================================================
+_cursor_integration: ModelDict = dict(
+    cast(ModelDict, _structure_config.DEFAULT_STRUCTURE["cursor_integration"])
+)
+_cursor_integration["symlink_location"] = "_cursor"
+_structure_config.DEFAULT_STRUCTURE["cursor_integration"] = _cursor_integration
 
 
 @pytest.fixture(autouse=True, scope="session")

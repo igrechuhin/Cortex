@@ -94,30 +94,30 @@ Create an end-of-session prompt that guides the AI to:
 ```python
 class ContextFeedbackRecord(BaseModel):
     """Record of context optimization feedback."""
-    
+
     session_id: str  # Unique session identifier
     timestamp: str  # ISO format (YYYY-MM-DDTHH:MM)
     task_description: str  # What task was being performed
-    
+
     # What optimize_context provided
     provided_files: list[str]
     provided_sections: dict[str, list[str]]
     relevance_scores: dict[str, float]
     total_tokens_provided: int
-    
+
     # What was actually used (AI analysis)
     files_read: list[str]
     files_modified: list[str]
     files_mentioned: list[str]
     files_needed_but_missing: list[str]
     files_provided_but_unused: list[str]
-    
+
     # Scoring
     precision: float
     recall: float
     f1_score: float
     token_efficiency: float
-    
+
     # Feedback
     feedback_type: str  # helpful, over_provisioned, under_provisioned, etc.
     suggestions: list[str]

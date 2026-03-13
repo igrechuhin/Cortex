@@ -10,7 +10,7 @@ depends_on:
   - "add-mcp-circuit-breaker-pattern"
 ---
 
-# Persist Pipeline State Decisions via Checkpoints
+## Persist Pipeline State Decisions via Checkpoints
 
 **Status**: COMPLETED
 **Priority**: High

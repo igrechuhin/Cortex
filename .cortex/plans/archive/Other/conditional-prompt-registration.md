@@ -36,7 +36,7 @@ Create a synchronous function to check project configuration status at import ti
 ```python
 def get_project_config_status() -> dict[str, bool]:
     """Check project configuration status synchronously at import time.
-    
+
     Returns:
         Dictionary with status flags:
         - memory_bank_initialized: bool
@@ -94,11 +94,11 @@ if _config_status["migration_needed"]:
     @mcp.prompt()
     def check_migration_status() -> str:
         ...
-    
+
     @mcp.prompt()
     def migrate_memory_bank() -> str:
         ...
-    
+
     @mcp.prompt()
     def migrate_project_structure() -> str:
         ...

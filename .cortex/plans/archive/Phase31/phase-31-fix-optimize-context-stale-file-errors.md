@@ -83,7 +83,7 @@ From the MCP server logs (lines 98-176), the `optimize_context` tool is failing 
    ```python
    for file_name in all_files:
        file_path = metadata_index.memory_bank_dir / file_name
-       
+
        # Check if file exists before attempting to read
        if not file_path.exists():
            # Check metadata to see if file was marked as non-existent
@@ -93,7 +93,7 @@ From the MCP server logs (lines 98-176), the `optimize_context` tool is failing 
                # Log warning and skip
                logger.warning(f"Skipping stale index entry: {file_name}")
            continue
-       
+
        try:
            content, _ = await fs_manager.read_file(file_path)
            files_content[file_name] = content
@@ -125,27 +125,27 @@ From the MCP server logs (lines 98-176), the `optimize_context` tool is failing 
        check_exists: bool = False
    ) -> tuple[str, str]:
        """Read file content and compute hash with retry logic.
-       
+
        Args:
            file_path: Path to file to read
            check_exists: If True, check existence before retrying FileNotFoundError
-       
+
        Returns:
            Tuple of (content, sha256_hash)
        """
        # Check existence if requested
        if check_exists and not file_path.exists():
            raise FileNotFoundError(f"File not found: {file_path}")
-       
+
        async def read_operation() -> tuple[str, str]:
            # ... existing logic
-       
+
        # Exclude FileNotFoundError from retries if check_exists was True
        exceptions = (OSError, IOError, PermissionError)
        if check_exists:
            # Filter out FileNotFoundError from retries
            exceptions = tuple(e for e in exceptions if e is not FileNotFoundError)
-       
+
        return await retry_async(
            read_operation,
            max_retries=3,
@@ -190,47 +190,47 @@ From the MCP server logs (lines 98-176), the `optimize_context` tool is failing 
 ```python
 async def validate_index_consistency(self) -> list[str]:
     """Validate index consistency with filesystem.
-    
+
     Returns:
         List of stale file names (in index but not on disk)
     """
     if self._data is None:
         await self.load()
-    
+
     stale_files: list[str] = []
     files_dict = self._data.get("files", {})
-    
+
     for file_name in files_dict.keys():
         file_path = self.memory_bank_dir / file_name
         if not file_path.exists():
             stale_files.append(file_name)
-    
+
     return stale_files
 
 async def cleanup_stale_entries(self, dry_run: bool = False) -> int:
     """Remove stale entries from index.
-    
+
     Args:
         dry_run: If True, only report what would be cleaned
-    
+
     Returns:
         Number of entries cleaned
     """
     stale_files = await self.validate_index_consistency()
-    
+
     if not stale_files:
         return 0
-    
+
     if dry_run:
         logger.info(f"Would clean {len(stale_files)} stale entries: {stale_files}")
         return len(stale_files)
-    
+
     # Remove stale entries
     for file_name in stale_files:
         if file_name in self._data.get("files", {}):
             del self._data["files"][file_name]
             logger.info(f"Removed stale index entry: {file_name}")
-    
+
     await self.save()
     return len(stale_files)
 ```
@@ -267,15 +267,15 @@ async def update_file_metadata(
     # ... other parameters
 ):
     """Update metadata for a file.
-    
+
     If exists is None, check filesystem.
     """
     if exists is None:
         exists = path.exists()
-    
+
     if not exists:
         logger.warning(f"Updating metadata for non-existent file: {file_name}")
-    
+
     # ... rest of update logic
 ```
 
@@ -326,11 +326,11 @@ async def cleanup_metadata_index(
     dry_run: bool = False,
 ) -> str:
     """Clean up stale entries from metadata index.
-    
+
     Args:
         project_root: Project root directory
         dry_run: If True, only report what would be cleaned
-    
+
     Returns:
         JSON string with cleanup results
     """

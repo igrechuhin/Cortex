@@ -126,17 +126,17 @@ description: 'Get a list of all components by platform'
    ```python
    DESCRIPTION_TEMPLATE = """
    {Brief summary of what the tool does.}
-   
+
    USE WHEN: {3+ specific trigger patterns}
          - User asks about {pattern 1}
          - User requests {pattern 2}
          - User needs {pattern 3}
-   
+
    EXAMPLES: {3+ concrete query examples}
          - '{example 1}'
          - '{example 2}'
          - '{example 3}'
-   
+
    RETURNS: {Clear description of output format}
    """
    ```
@@ -685,13 +685,13 @@ async def load_progressive_context(
     project_root: str | None = None,
 ) -> str:
     """Load context progressively based on relevance, loading files incrementally as needed.
-    
+
     USE WHEN: User needs incremental context loading, user wants progressive file loading,
     user requests staged context, user needs context in batches.
-    
+
     EXAMPLES: 'load progressive context for task', 'get context progressively',
     'load context in stages'.
-    
+
     RETURNS: JSON with progressive context batches, each with files and relevance scores.
     """
 ```

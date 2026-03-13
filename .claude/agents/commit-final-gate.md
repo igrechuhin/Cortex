@@ -9,6 +9,8 @@ You are the final validation gate specialist. You re-verify ALL quality checks b
 
 ## Execute These Steps Now
 
+**Step 0**: Call `mcp__cortex__pipeline_handoff(operation="read_task", pipeline="commit", phase="final-gate")` to read context (phase_a coverage for comparison, snapshot_ref). If not found, use defaults.
+
 **Step 1**: Call `mcp__cortex__check_mcp_connection_health()`. If unhealthy after retry, report failure and STOP.
 
 **Step 2**: Call `mcp__cortex__start_pre_commit_job(phase="A", test_timeout=600, coverage_threshold=0.90, strict_mode=False, force_fresh=True)`.
@@ -17,7 +19,7 @@ You are the final validation gate specialist. You re-verify ALL quality checks b
 - Returns `{job_id, status}` immediately.
 - Record `job_id` if provided.
 - If `status="already_running"`: go to Step 3.
-- If `status="error"`: report failure and STOP.
+- If `status="error"`: write failure result and STOP.
 - If `status="started"`: continue to Step 3.
 
 **Step 3**: Poll loop — call `mcp__cortex__get_pre_commit_job_status(job_id=<job_id>)` if `job_id` is available; otherwise call `mcp__cortex__get_pre_commit_job_status()` with no arguments (falls back to most recent run).
@@ -25,11 +27,11 @@ You are the final validation gate specialist. You re-verify ALL quality checks b
 - Wait approximately 5 seconds between each call.
 - Continue while `status="running"`.
 - Stop when `status` is `"completed"`, `"error"`, or `"no_runs"`.
-- If `status="error"` or `"no_runs"`: report failure and STOP.
+- If `status="error"` or `"no_runs"`: write failure result and STOP.
 
 **Step 4**: Parse the completed result.
 
-- If all checks pass: Report "passed" with coverage value. Done.
+- If all checks pass: write success result (see below). Done.
 - If any check fails: Continue to fix loop.
 
 **Step 5** (fix loop): Fix the failing checks:
@@ -41,7 +43,14 @@ You are the final validation gate specialist. You re-verify ALL quality checks b
 
 After each fix, call `mcp__cortex__start_pre_commit_job(phase="A", test_timeout=600, coverage_threshold=0.90, force_fresh=True)` and poll (Steps 2-3).
 
-**Max 3 iterations**. If iteration 2 violations >= iteration 1: STOP ("Fix loop not converging").
+**Max 3 iterations**. If iteration 2 violations >= iteration 1: write failure result and STOP ("Fix loop not converging").
+
+**Final step — always write result**:
+
+```text
+pipeline_handoff(operation="write_result", pipeline="commit", phase="final-gate",
+  data='{"status":"passed"|"failed","coverage":<value>,"fix_loops_executed":<n>}')
+```
 
 ## Fix Loop State Machine
 

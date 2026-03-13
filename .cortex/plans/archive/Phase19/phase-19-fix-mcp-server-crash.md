@@ -178,7 +178,7 @@ def main() -> None:
                     f"(client disconnected): {exc}"
                 )
                 break
-        
+
         if broken_resource_found:
             sys.exit(0)  # Graceful shutdown
         else:

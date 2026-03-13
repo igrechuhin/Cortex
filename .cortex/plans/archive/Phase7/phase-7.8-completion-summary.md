@@ -60,19 +60,19 @@ Successfully converted all 22 remaining synchronous file I/O operations to async
 #### Pattern C: Content Reading Modules (3 modules)
 
 1. ✅ **split_recommender.py**
-    - Converted `_read_file()` to async
+   - Converted `_read_file()` to async
 
 2. ✅ **dependency_graph.py**
-    - Converted file reading in `rebuild_from_links()` to async
+   - Converted file reading in `rebuild_from_links()` to async
 
 3. ✅ **consolidation_detector.py**
-    - Converted `read_file()` to async
+   - Converted `read_file()` to async
 
 #### Pattern D: Cache Module (1 module)
 
 1. ✅ **summarization_engine.py**
-    - Converted `_cache_summary()` to async
-    - Kept `_get_cached_summary()` sync
+   - Converted `_cache_summary()` to async
+   - Kept `_get_cached_summary()` sync
 
 ---
 

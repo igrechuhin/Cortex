@@ -80,6 +80,16 @@ from .linking.links_models import (
     ParseFileLinksResult,
     ParseFileLinksResultUnion,
 )
+from .plans.plan_payloads import (
+    PlanCompletePayload,
+    PlanCreatePayload,
+    PlanOperation,
+    PlanRegisterPayload,
+    build_plan_complete_arguments,
+    build_plan_create_arguments,
+    build_plan_register_arguments,
+    to_plan_arguments,
+)
 from .plans.roadmap_operations_models import (
     AddRoadmapEntryResult,
     AppendActiveContextEntryResult,
@@ -261,6 +271,14 @@ __all__ = [
     "AppendProgressEntryResult",
     "RemoveRoadmapEntryResult",
     "RemoveRoadmapSectionResult",
+    "PlanCompletePayload",
+    "PlanCreatePayload",
+    "PlanOperation",
+    "PlanRegisterPayload",
+    "build_plan_complete_arguments",
+    "build_plan_create_arguments",
+    "build_plan_register_arguments",
+    "to_plan_arguments",
     "RuleInfo",
     "RuleMetadata",
     "RulesContext",

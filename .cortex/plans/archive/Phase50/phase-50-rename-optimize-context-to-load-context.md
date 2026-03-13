@@ -114,18 +114,18 @@ Based on grep results, 55 files reference `optimize_context`:
        project_root: str | None = None,
    ) -> str:
        """Load relevant context for a task within token budget.
-       
+
        This tool should be called at the START of any task to:
        - Load memory bank files relevant to the task
        - Load applicable rules and patterns
        - Provide project context before making changes
-       
+
        Args:
            task_description: Description of the task to perform
            token_budget: Maximum tokens to include (default from config)
            strategy: Loading strategy (dependency_aware, priority, hybrid)
            project_root: Project root path (default: current directory)
-       
+
        Returns:
            JSON with selected files, their content, and relevance scores
        """

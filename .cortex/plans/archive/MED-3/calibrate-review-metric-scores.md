@@ -9,7 +9,7 @@ execution_order: 15
 depends_on: []
 ---
 
-# Calibrate Review Metric Scores with Examples
+## Calibrate Review Metric Scores with Examples
 
 **Status**: COMPLETE
 **Priority**: Medium
@@ -41,6 +41,7 @@ Add for each metric a calibration table. Example for Test Coverage:
 
 ```markdown
 #### Test Coverage Calibration
+
 | Score | Meaning | Evidence Required |
 |---|---|---|
 | 0-2 | No tests or < 30% coverage | `pytest --cov` output showing < 30% |

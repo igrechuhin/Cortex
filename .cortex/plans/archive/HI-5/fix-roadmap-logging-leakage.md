@@ -9,7 +9,7 @@ execution_order: 10
 depends_on: []
 ---
 
-# Fix Sensitive Data Leakage in Roadmap Logging
+## Fix Sensitive Data Leakage in Roadmap Logging
 
 **Status**: COMPLETED
 **Priority**: High

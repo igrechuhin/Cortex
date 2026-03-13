@@ -8,7 +8,7 @@ operation-based dispatcher following the Phase 50 pattern (query_memory_bank, qu
 from __future__ import annotations
 
 from cortex.core.constants import MCP_TOOL_TIMEOUT_MEDIUM
-from cortex.core.context_logging import MCPContext
+from cortex.core.context_logging import MCPContext, log_client
 from cortex.core.mcp_annotations import destructive_annotations
 from cortex.core.mcp_stability import ensure_usage_context, mcp_tool_wrapper
 from cortex.server import mcp
@@ -181,6 +181,21 @@ async def _plan_dispatch(
         return _plan_error_missing_operation()
     if operation not in ("create", "list", "get", "complete", "register"):
         return _plan_error_invalid_operation(operation)
+    # Lightweight logging for MCP argument-passing diagnostics (no sensitive content).
+    if operation == "complete":
+        has_required = bool(plan_title and summary)
+    elif operation == "register":
+        has_required = bool(plan_title and description)
+    elif operation == "create":
+        has_required = bool(title and content)
+    else:
+        has_required = True  # list/get have no required payload fields
+    await log_client(
+        ctx,
+        "info",
+        f"plan: operation={operation}, required_args_present={has_required}",
+        logger_name=__name__,
+    )
     if operation == "complete":
         return await _plan_dispatch_complete(
             plan_title, summary, completion_date, progress_entry, plan_file_name, ctx

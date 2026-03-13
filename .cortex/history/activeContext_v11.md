@@ -6,6 +6,10 @@
 
 - ✅ **Blocker: Fix MCP Plan Tool Argument Wiring/Bridging (PARTIAL)** - COMPLETE (2026-03-13) - Added guardrail test test_create_missing_title_and_content in test_plan_tool_dispatch.py for plan(operation="create") with missing title/content; fixed pre-existing quality: type cast in pre_commit_status _build_checks_summary, explicit string concat in test_plan_completion, extracted _summarize_result_error_or_unknown in pre_commit_status for function-length. Blocker remains IN_PROGRESS.
 
+- ✅ **MCP Plan Tool Blocker — Audit doc, Step 7 test, pipeline_handoff types (PARTIAL)** - COMPLETE (2026-03-13) - Step 1: added docs/development/mcp-tool-call-audit.md (inventory of MCP tool call sites, Safe/Unsafe classification). Step 7: TestPlanToolHappyPath and test_plan_operation_list_returns_success in test_plan_tool_dispatch.py. Type fixes in pipeline_handoff.py. Blocker remains IN_PROGRESS.
+- ✅ **Blocker: Fix MCP Plan Tool Argument Wiring/Bridging — Step 7 partial (logging + create-payload test)** - COMPLETE (2026-03-13) - Added lightweight logging in plan tool (operation + required_args_present). Added test in tests/tools/test_plan_payloads.py for build_plan_create_arguments validation (create payload). Blocker remains IN_PROGRESS.
+- ✅ **Blocker: Fix MCP Plan Tool Argument Wiring/Bridging — Step 7 guardrail tests (PARTIAL)** - COMPLETE (2026-03-13) - Added guardrail tests for plan payload builders (complete, register, create) in test_plan_payloads.py; fixed pyright reportUnusedCallResult in pytest.raises blocks. Step 7 guardrail tests done; smoke/optional metrics remain. Blocker remains IN_PROGRESS.
+
 ## Completed Work (2026-03-12)
 
 - **Summary (2026-03-12)** - 1 entries archived.

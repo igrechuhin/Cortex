@@ -419,7 +419,7 @@ async def get_memory_bank_stats(
     refactoring_days: int = 90,
 ) -> dict[str, object]:
     """Get overall Memory Bank statistics and analytics.
-    
+
     This is a Resource (GET endpoint) that loads information into LLM context.
     No side effects, read-only operation.
     """
@@ -437,7 +437,7 @@ async def rollback_file_version(
     project_root: str | None = None,
 ) -> dict[str, object]:
     """Rollback a Memory Bank file to a previous version.
-    
+
     This is a Tool (POST endpoint) that executes code and produces side effects.
     Modifies file system, creates new version.
     """
@@ -484,7 +484,7 @@ async def manage_file(
     project_root: str | None = None,
 ) -> dict[str, object]:
     """Manage Memory Bank file operations.
-    
+
     When operation="read" or "metadata": Resource (read-only)
     When operation="write": Tool (side effects)
     """

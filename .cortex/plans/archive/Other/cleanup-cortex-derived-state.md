@@ -105,6 +105,7 @@ A roadmap item already exists to evaluate `.cortex/history` versus git history; 
       - Recommended action: **Keep**, **Consolidate**, or **Retire**.
 
       | Directory | Purpose / current usage | Consumers | Safe to delete? | Recommended action |
+
       | --- | --- | --- | --- | --- |
       | `.cortex/.cache/sessions` | Ephemeral multi-agent session registry used for coordination and observability between agents. | `session_register` / `session_deregister` / `session_list`, `session(operation="start")` (via `read_cache_json` / `write_cache_json`). | Yes – file is recreated on demand; deletion only loses current-session visibility. | **Keep** as an ephemeral cache; document as safe to clear and not required for core MCP correctness. |
       | `.cortex/.cache/usage` | Usage analytics and optimization data written by `UsageTracker` and read by usage/optimization tools. | `query_usage` MCP tool family and usage analytics scripts. | Yes – directory is recreated and new events are recorded; deletion discards historical analytics only. | **Keep** as an optional analytics cache; document that it is safe to delete and not required for core behavior. |

@@ -58,15 +58,19 @@
 
 ```markdown
 # Basic transclusion - include entire file
+
 {{include: projectBrief.md}}
 
-# Include specific section
+## Include specific section
+
 {{include: systemPatterns.md#Architecture}}
 
-# Include with line limit
+## Include with line limit
+
 {{include: activeContext.md#Recent Changes|lines=10}}
 
-# Disable nested transclusion
+## Disable nested transclusion
+
 {{include: file.md#section|recursive=false}}
 ```
 

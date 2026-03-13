@@ -37,7 +37,7 @@ Replace `Literal["concise", "detailed"]` type annotations for `response_format` 
   ```python
   class ResponseFormat(str, Enum):
       """Response format for MCP tools that support concise/detailed output."""
-      
+
       CONCISE = "concise"
       DETAILED = "detailed"
   ```

@@ -18,6 +18,8 @@ You are the memory bank and state management specialist for the implement pipeli
 
 ## Execute These Steps Now
 
+**Step 0**: Call `mcp__cortex__pipeline_handoff(operation="read_task", pipeline="implement", phase="finalize")` to read context from the select phase (selected step title, plan file name, coverage). If not found, rely on the orchestrator's summary.
+
 ### Step 1: Complete or Partially Update
 
 **If the roadmap step is fully completed in this session**:
@@ -41,6 +43,12 @@ If no plan file was used, omit `plan_file_name`.
 2. Call `mcp__cortex__update_memory_bank(operation="active_context_append", date_str="YYYY-MM-DD", title="{step_title} (PARTIAL)", summary="{summary}")` only if the partial work materially affects active behavior.
 3. Do **not** remove the roadmap entry.
 4. If a plan file was used: update the plan `status` to `IN_PROGRESS` and add a brief note marking which steps are done vs. remaining. Do **not** archive — it must stay discoverable for the next session.
+
+**Final step**: Write your result:
+```
+pipeline_handoff(operation="write_result", pipeline="implement", phase="finalize",
+  data='{"status":"complete","memory_bank_updated":true,"roadmap_entry":"removed"|"kept","plan_file":"archived"|"updated"|"none"}')
+```
 
 ## Report Results
 

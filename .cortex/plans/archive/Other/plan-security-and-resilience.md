@@ -91,7 +91,7 @@ Comprehensive review (2026-02-21) identified resilience and security areas needi
 **Action:**
 
 1. Verify no secrets in codebase (`git secrets --scan`) — DONE: detect-secrets scan + baseline; pre-commit hook
-2. Verify `.gitignore` covers all sensitive file patterns — DONE: .env, *.pem, *.key, credentials*.json, secrets*.json
+2. Verify `.gitignore` covers all sensitive file patterns — DONE: .env, *.pem,*.key, credentials*.json, secrets*.json
 3. Verify MCP tool responses never include credentials or tokens — DONE: audit in docs/security/secret-credential-protection-2026-02-25.md
 4. Add pre-commit hook for secret detection if not present — DONE: detect-secrets hook + detect-private-key
 5. Audit logging to ensure no secrets in log output — DONE: no config dumps; exception messages only

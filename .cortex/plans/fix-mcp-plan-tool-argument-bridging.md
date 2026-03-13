@@ -155,6 +155,8 @@ This indicates a gap in the **integration layer** between high-level orchestrato
    - `/user-cortex/implement` Finalize marking a plan complete via `plan(operation="complete")`.
 3. Add lightweight logging/metrics around MCP tool calls (without leaking sensitive data) so that future gaps in argument passing are easier to detect and diagnose.
 
+**Step 7 progress (2026-03-13)**: Partial — added lightweight logging in plan tool (operation + required_args_present); added test in tests/tools/test_plan_payloads.py for build_plan_create_arguments (create payload validation). Guardrail tests added for plan payload builders (complete, register, create) in test_plan_payloads.py; pyright fix for pytest.raises blocks. Remaining: smoke tests and optional metrics.
+
 ## Verification Checklist
 
 | What to search for | Search scope | Expected result |
@@ -329,4 +331,3 @@ This indicates a gap in the **integration layer** between high-level orchestrato
   - The Cursor bridge must *never* strip or ignore the `arguments` payload; it must be forwarded exactly as provided.
   - IDE/agent prompts (e.g., `/user-cortex/fix`, `/user-cortex/plan`, `/user-cortex/implement`) are responsible for constructing valid payloads that match each tool’s schema (for example, `operation` required for `plan`, `check_type` required for `validate`, `checks` or `phase` required for `execute_pre_commit_checks`).
   - Any name-only tool invocation for tools with required parameters (`plan`, `rules`, `execute_pre_commit_checks`, `validate`, `manage_file`) should be treated as a bug in the orchestrator or bridge, not as a supported usage pattern.
-

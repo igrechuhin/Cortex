@@ -1,13 +1,11 @@
 from pathlib import Path
 from typing import cast
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 from cortex.core.models import ModelDict
 from cortex.core.path_resolver import (
     CortexResourceType,
-    CursorResourceType,
     get_cortex_path,
-    get_cursor_path,
 )
 from cortex.structure.structure_migration import StructureMigrationManager
 
@@ -85,10 +83,10 @@ def test_migrate_memory_bank_files_copies_standard_files(tmp_path: Path) -> None
 
 
 def test_migrate_plans_copies_cursor_plans(tmp_path: Path) -> None:
-    # Arrange
-    cursor_plans_dir = get_cursor_path(tmp_path, CursorResourceType.PLANS)
-    cursor_plans_dir.mkdir(parents=True, exist_ok=True)
-    _ = (cursor_plans_dir / "plan.md").write_text("# Plan", encoding="utf-8")
+    # Arrange: use a source dir under tmp_path (sandbox may block .cursor)
+    source_plans = tmp_path / "source_plans"
+    source_plans.mkdir(parents=True, exist_ok=True)
+    _ = (source_plans / "plan.md").write_text("# Plan", encoding="utf-8")
     manager = StructureMigrationManager(tmp_path)
     plans_dir = manager.get_path("plans") / "active"
     plans_dir.mkdir(parents=True, exist_ok=True)
@@ -97,11 +95,11 @@ def test_migrate_plans_copies_cursor_plans(tmp_path: Path) -> None:
         "file_mappings": [],
         "errors": [],
     }
-
-    # Act
-    manager.migrate_plans(plans_dir, cast(ModelDict, migration_data))
-
-    # Assert
+    with patch(
+        "cortex.structure.structure_migration.get_cursor_path",
+        return_value=source_plans,
+    ):
+        manager.migrate_plans(plans_dir, cast(ModelDict, migration_data))
     assert (plans_dir / "plan.md").exists()
     assert migration_data["files_migrated"] == 1
 
@@ -127,32 +125,26 @@ def test_migrate_cursorrules_copies_rules_file(tmp_path: Path) -> None:
 
 
 def test_detect_legacy_structure_when_tradewing_style_detected(tmp_path: Path) -> None:
-    # Arrange
-    get_cursor_path(tmp_path, CursorResourceType.PLANS).mkdir(
-        parents=True, exist_ok=True
-    )
+    # Arrange: .cursor/plans may not be creatable in sandbox, so mock its existence
     _ = (tmp_path / "projectBrief.md").write_text("# Brief", encoding="utf-8")
     manager = StructureMigrationManager(tmp_path)
-
-    # Act
-    legacy = manager.detect_legacy_structure()
-
-    # Assert
+    with patch(
+        "cortex.structure.structure_migration.get_cursor_path",
+        return_value=MagicMock(exists=MagicMock(return_value=True)),
+    ):
+        legacy = manager.detect_legacy_structure()
     assert legacy == "tradewing-style"
 
 
 def test_detect_legacy_structure_when_doc_mcp_style_detected(tmp_path: Path) -> None:
-    # Arrange
-    get_cursor_path(tmp_path, CursorResourceType.PLANS).mkdir(
-        parents=True, exist_ok=True
-    )
+    # Arrange: docs/memory-bank; .cursor/plans existence mocked (sandbox-safe)
     (tmp_path / "docs" / "memory-bank").mkdir(parents=True, exist_ok=True)
     manager = StructureMigrationManager(tmp_path)
-
-    # Act
-    legacy = manager.detect_legacy_structure()
-
-    # Assert
+    with patch(
+        "cortex.structure.structure_migration.get_cursor_path",
+        return_value=MagicMock(exists=MagicMock(return_value=True)),
+    ):
+        legacy = manager.detect_legacy_structure()
     assert legacy == "doc-mcp-style"
 
 
@@ -194,16 +186,13 @@ def test_detect_legacy_structure_when_scattered_files_detected(tmp_path: Path) -
 
 
 def test_detect_legacy_structure_when_cursor_default_detected(tmp_path: Path) -> None:
-    # Arrange
-    get_cursor_path(tmp_path, CursorResourceType.CURSOR_DIR).mkdir(
-        parents=True, exist_ok=True
-    )
+    # Arrange: .cursor existence mocked (sandbox may block creating .cursor)
     manager = StructureMigrationManager(tmp_path)
-
-    # Act
-    legacy = manager.detect_legacy_structure()
-
-    # Assert
+    with patch(
+        "cortex.structure.structure_migration.get_cursor_path",
+        return_value=MagicMock(exists=MagicMock(return_value=True)),
+    ):
+        legacy = manager.detect_legacy_structure()
     assert legacy == "cursor-default"
 
 

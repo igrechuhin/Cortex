@@ -283,10 +283,11 @@ class TestRequiredAgentFilesPresent:
         ), f"Required cursor-agent files missing from {source}: {missing}"
 
     def test_target_path_helpers_return_correct_directories(self) -> None:
-        """Target path helpers resolve .cursor/agents/ and .claude/agents/ correctly."""
+        """Target path helpers resolve cursor/agents and .claude/agents correctly."""
         source = get_cursor_agents_source()
         if source is None:
             pytest.skip("cursor-agents source directory not found")
         project_root = source.parent.parent.parent
-        assert get_cursor_agents_target(source) == project_root / ".cursor" / "agents"
+        # In tests, get_cursor_path is patched to use _cursor (conftest)
+        assert get_cursor_agents_target(source) == project_root / "_cursor" / "agents"
         assert get_claude_agents_target(source) == project_root / ".claude" / "agents"

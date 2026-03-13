@@ -95,7 +95,7 @@ Pyright reports 0 errors, 0 warnings on src and tests.
    ```python
    # Before:
    os.makedirs(path)  # Warning: unused call result
-   
+
    # After:
    _ = os.makedirs(path)  # Explicitly ignore return value
    ```

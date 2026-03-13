@@ -9,7 +9,7 @@ execution_order: 14
 depends_on: []
 ---
 
-# Add Fix Loop Non-Convergence Detection
+## Add Fix Loop Non-Convergence Detection
 
 **Status**: COMPLETED
 **Priority**: Medium
@@ -42,6 +42,7 @@ Add instruction:
 ```markdown
 **Fix Loop Convergence Check**:
 After each fix iteration, record the total violation count.
+
 - Iteration 1: N1 violations
 - Iteration 2: N2 violations
 - If N2 >= N1: **ABORT** — "Fix loop not converging (N1→N2 violations). Likely oscillation. Commit blocked. Manual intervention required."

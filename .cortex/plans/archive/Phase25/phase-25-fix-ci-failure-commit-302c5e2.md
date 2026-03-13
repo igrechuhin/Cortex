@@ -134,19 +134,19 @@ Systematically investigate the CI failure by:
    ```bash
    # Step 1: Check formatting
    uv run black --check src/ tests/ .cortex/synapse/scripts/
-   
+
    # Step 2: Check linting
    uv run ruff check src/ tests/ .cortex/synapse/scripts/
-   
+
    # Step 3: Check types
    uv run pyright src/
-   
+
    # Step 4: Check file sizes
    uv run python .cortex/synapse/scripts/python/check_file_sizes.py
-   
+
    # Step 5: Check function lengths
    uv run python .cortex/synapse/scripts/python/check_function_lengths.py
-   
+
    # Step 6: Run tests with coverage
    uv run python -m pytest tests/ -v --cov=src/cortex --cov-report=xml --cov-report=term --cov-fail-under=90
    ```

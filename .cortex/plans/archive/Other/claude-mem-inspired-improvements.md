@@ -8,7 +8,7 @@
 
 ## Goal
 
-Improve Cortex MCP with token-efficient usage search, observation-level storage with citations, progressive disclosure in docs and prompts, and  privacy/convention improvements—inspired by claude-mem’s persistent memory and context injection patterns.
+Improve Cortex MCP with token-efficient usage search, observation-level storage with citations, progressive disclosure in docs and prompts, and privacy/convention improvements—inspired by claude-mem’s persistent memory and context injection patterns.
 
 ## Context
 
@@ -29,8 +29,8 @@ claude-mem captures tool usage, compresses it with AI, and injects relevant cont
 ## Approach
 
 1. **Short-term (docs/convention)**: Progressive disclosure section in CLAUDE.md/docs; document `<private>` convention; no new tools.
-2. **With Phase 43**: Observation IDs for usage events; resource `cortex://usage/observation/{id}`; search_usage (compact index) + get_usage_events(ids=[...]);  get_usage_timeline(around_id, limit).
-3. **Later**:  keyword/semantic search over usage; context injection config;  HTTP API or “query usage with jq” docs.
+2. **With Phase 43**: Observation IDs for usage events; resource `cortex://usage/observation/{id}`; search_usage (compact index) + get_usage_events(ids=[...]); get_usage_timeline(around_id, limit).
+3. **Later**: keyword/semantic search over usage; context injection config; HTTP API or “query usage with jq” docs.
 
 ## Implementation Steps
 
@@ -57,7 +57,7 @@ Implementation order: execute steps in sequence. Dependencies between steps are 
 **Deliverable**: Convention for excluding sensitive content from storage and repetition.
 
 - Document a convention (e.g. `<private>...</private>` or `<!-- private -->`) in memory bank docs or Synapse prompts so agents know not to persist or repeat sensitive blocks.
-- In tools that persist user content (e.g. session scripts, summaries), add  stripping/redaction of content between these tags before writing. Keep scope minimal (convention first; stripping behind config if implemented).
+- In tools that persist user content (e.g. session scripts, summaries), add stripping/redaction of content between these tags before writing. Keep scope minimal (convention first; stripping behind config if implemented).
 
 **Success**: Convention documented; stripping implemented only if scoped and tested.
 
@@ -166,9 +166,9 @@ Implementation order: execute steps in sequence. Dependencies between steps are 
 **Deliverable**: Search usage/context by keyword (task_description, tool_name, error_type); ly add semantic search (embeddings + vector DB) behind feature flag.
 
 - Keyword: implement search over existing persisted fields (e.g. task_description, tool_name, error_type) via simple filter or FTS if available.
-- Semantic: only if needed; use  dependency (e.g. Chroma) and feature flag; document in techContext.
+- Semantic: only if needed; use dependency (e.g. Chroma) and feature flag; document in techContext.
 
-**Success**: Keyword search returns relevant observations; semantic layer, if added, is  and documented.
+**Success**: Keyword search returns relevant observations; semantic layer, if added, is and documented.
 
 **Dependencies**: Step 3, Step 5; Step 8 helpful for semantic.
 

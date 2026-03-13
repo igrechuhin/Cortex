@@ -9,7 +9,7 @@ execution_order: 16
 depends_on: []
 ---
 
-# Extend Pre-Flight Directory Validation
+## Extend Pre-Flight Directory Validation
 
 **Status**: COMPLETED
 **Priority**: Medium
@@ -42,11 +42,13 @@ Add Phase 2.2:
 ### Phase 2.2: Operational Directory Validation
 
 Verify these paths from `get_structure_info()` exist as directories:
+
 - `structure_info.paths.plans`
 - `structure_info.paths.reviews` (if present)
 - `.cortex/.session/`
 
 For each missing directory:
+
 1. Report: "Missing directory: {path}"
 2. Create it: `mkdir -p {path}`
 3. Log: "Created missing directory: {path}"

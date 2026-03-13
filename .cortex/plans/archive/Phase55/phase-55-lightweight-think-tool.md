@@ -60,14 +60,17 @@ The article also shows that domain-specific thinking examples in prompts dramati
 
   ```markdown
   ## Using the think tool
+
   Before taking action after receiving tool results, use think to:
+
   - List which pre-commit checks apply to the current changes
   - Verify all files are staged and no secrets included
   - Check if memory bank updates are needed
-  
+
   Example:
   <think_example>
   Changes include: 3 Python files, 1 markdown file
+
   - Need: fix_errors, format, type_check, quality, tests
   - Markdown changed: need markdown lint
   - Memory bank: activeContext needs update for completed work
@@ -80,6 +83,7 @@ The article also shows that domain-specific thinking examples in prompts dramati
   ```markdown
   <think_example>
   Reading plan step: "Add response_format parameter to manage_file"
+
   - Dependencies: manage_file handler exists in file_operations.py
   - Need to: add parameter to schema, handler logic, tests
   - Risks: backward compatibility — default must be "detailed" for existing callers

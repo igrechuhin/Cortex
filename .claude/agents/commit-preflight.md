@@ -9,6 +9,8 @@ You are the commit pipeline preflight specialist. You prepare all prerequisites 
 
 ## Execute These Steps Now
 
+**Step 0**: Call `mcp__cortex__pipeline_handoff(operation="read_task", pipeline="commit", phase="preflight")` to read your task from the orchestrator. If the result has `status="not_found"`, continue with defaults — the orchestrator may not have written a task yet.
+
 **Step 1**: Call `mcp__cortex__check_mcp_connection_health()`. If unhealthy, report failure and STOP.
 
 **Step 2**: Call `mcp__cortex__load_context(task_description="Commit pipeline: pre-commit checks, memory bank, git", token_budget=4000)`. If this fails, continue — context loading is helpful but not blocking.
@@ -25,9 +27,21 @@ If the `rules` tool fails or returns `disabled`/`indexed_files=0`:
 
 **Rules loading is non-blocking**: The pipeline can proceed without rules because `execute_pre_commit_checks` enforces all quality gates regardless.
 
-**Step 4**: Run `git status --porcelain`. If empty output, report "Nothing to commit" and STOP.
+**Step 4**: Run `git status --porcelain`. If empty output, write failure result and STOP:
+
+```text
+pipeline_handoff(operation="write_result", pipeline="commit", phase="preflight",
+  data='{"status":"failed","reason":"nothing_to_commit"}')
+```
 
 **Step 5**: Run `git stash create`. If a hash is returned, run `git stash store -m "cortex-commit-pipeline-snapshot" <hash>` to create a rollback point. If `git stash create` returns empty (clean working tree), record snapshot_ref as "HEAD".
+
+**Step 6**: Write your result:
+
+```text
+pipeline_handoff(operation="write_result", pipeline="commit", phase="preflight",
+  data='{"status":"complete","snapshot_ref":"<hash or HEAD>","rules_loaded":<true/false>,"context_loaded":<true/false>}')
+```
 
 ## Report Results
 

@@ -9,7 +9,7 @@ execution_order: 5
 depends_on: []
 ---
 
-# Add YAML Frontmatter Schema for Plan Files
+## Add YAML Frontmatter Schema for Plan Files
 
 **Status**: COMPLETED
 **Priority**: Critical
@@ -62,11 +62,13 @@ Replace the subjective questions with:
 
 ```markdown
 For each existing plan with YAML frontmatter, compute similarity score:
+
 - Same `component` value: +2
 - Same `work_type` value: +1
 - Title keyword overlap (>50% shared words): +1
 
 **Decision**:
+
 - Score >= 3: **enrich** the existing plan
 - Score 1-2: **ask user** whether to enrich or create new
 - Score 0: **create new** plan

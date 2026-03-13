@@ -232,6 +232,11 @@ TOOL_CATEGORIES: tuple[ToolCategoryEntry, ...] = (
         category=ToolCategory.DEFERRED_LOW,
         rationale="Evaluation error-pattern analysis for optimization debugging",
     ),
+    ToolCategoryEntry(
+        name="pipeline_handoff",
+        category=ToolCategory.DEFERRED_MEDIUM,
+        rationale="Structured inter-agent communication via session-scoped JSON files; init/write_task/read_task/write_result/read_state/clear",
+    ),
 )
 
 

@@ -276,14 +276,14 @@ Enforce mandatory stopping when Cortex MCP tools fail during commit procedure, e
 ```python
 class MCPToolFailureHandler:
     """Handles MCP tool failures and enforces protocol."""
-    
+
     def detect_failure(self, error: Exception, tool_name: str, step_name: str) -> bool:
         """Detect if error is an MCP tool failure."""
         # Check for JSON parsing errors
         # Check for connection errors
         # Check for unexpected behavior
         # Return True if tool failure detected
-    
+
     def handle_failure(self, tool_name: str, error: Exception, step_name: str) -> None:
         """Handle MCP tool failure according to protocol."""
         # Stop commit procedure
@@ -291,13 +291,13 @@ class MCPToolFailureHandler:
         # Add to roadmap
         # Notify user
         # Raise exception to prevent continuation
-    
+
     def create_investigation_plan(self, tool_name: str, error: Exception, step_name: str) -> str:
         """Create investigation plan for tool failure."""
         # Generate plan content
         # Save to plans directory
         # Return plan file path
-    
+
     def add_to_roadmap(self, plan_path: str, tool_name: str) -> None:
         """Add investigation plan to roadmap as blocker."""
         # Read roadmap

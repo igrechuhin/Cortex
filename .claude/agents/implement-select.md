@@ -9,11 +9,13 @@ You are the roadmap selection and context-loading specialist. You identify what 
 
 ## Execute These Steps Now
 
+**Step 0**: Call `mcp__cortex__pipeline_handoff(operation="read_task", pipeline="implement", phase="select")` to get any hint from the orchestrator (e.g. `explicit_plan_path`). If not found, proceed with defaults.
+
 **Step 1**: Call `mcp__cortex__check_mcp_connection_health()`. If unhealthy, report failure and STOP.
 
 **Step 2**: Call `mcp__cortex__manage_file(file_name="roadmap.md", operation="read")` to read the roadmap.
 
-**Step 2a**: If you receive an explicit plan hint from the orchestrator (for example, an `explicit_plan_path` derived from `/user-cortex/implement @.cortex/plans/<slug>.md` or an equivalent slug/title hint):
+**Step 2a**: If the task from Step 0 contains an `explicit_plan_path` (or equivalent slug/title hint):
 
 - Use `mcp__cortex__get_structure_info()` to locate the plans root and resolve the referenced plan.
 - Verify that the plan exists, is not archived/COMPLETE, and is eligible for work (for example, status is `PENDING` or `IN_PROGRESS` and dependencies are not blocked).
@@ -42,6 +44,12 @@ If no pending steps exist in any section: report "Roadmap complete" and STOP.
 - Which steps are already done (if status is IN_PROGRESS)
 
 If no plan file exists, note "No plan file — implementation based on roadmap description".
+
+**Step 7**: Write your result:
+```
+pipeline_handoff(operation="write_result", pipeline="implement", phase="select",
+  data='{"status":"complete","selected_step":"<title>","plan_file":"<path or null>","selection_source":"explicit_plan"|"roadmap_priority","roadmap_section":"<section>"}')
+```
 
 ## Report Results
 

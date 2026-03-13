@@ -196,13 +196,13 @@ And 3 migration prompts:
 @mcp.prompt()
 def initialize() -> str:
     """Complete project initialization.
-    
+
     Creates:
     - .cortex/ directory structure (memory-bank, plans, config)
     - Memory bank with 7 core files
     - Cursor integration (symlinks + mcp.json)
     - Optional Synapse setup with default URL
-    
+
     Returns:
         Prompt message guiding complete initialization
     """
@@ -217,12 +217,12 @@ def initialize() -> str:
 @mcp.prompt()
 def migrate() -> str:
     """Migrate legacy structure to new .cortex/ structure.
-    
+
     Steps:
     1. Initialize new .cortex/ structure
     2. Migrate legacy files
     3. Remove legacy directories
-    
+
     Returns:
         Prompt message guiding migration process
     """
@@ -237,10 +237,10 @@ def migrate() -> str:
 @mcp.prompt()
 def setup_synapse(synapse_repo_url: str = "https://github.com/igrechuhin/Synapse.git") -> str:
     """Setup Synapse repository (always available).
-    
+
     Args:
         synapse_repo_url: URL of Synapse repository (default provided)
-    
+
     Returns:
         Prompt message guiding Synapse setup
     """

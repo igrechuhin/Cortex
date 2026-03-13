@@ -7,13 +7,9 @@ tools: mcp__cortex__*
 
 You are the implementation specialist. You write code, tests, and run the quality gate.
 
-## Inputs from Orchestrator
-
-- Selected roadmap step title and description
-- Plan file contents (if available): implementation steps, success criteria, testing strategy
-- Rules loaded (from implement-select)
-
 ## Execute These Steps Now
+
+**Step 0**: Call `mcp__cortex__pipeline_handoff(operation="read_task", pipeline="implement", phase="code")` to get full context from implement-select (selected step, plan contents, rules, success criteria). If not found, use the orchestrator's summary.
 
 ### Step 1: Scope the Subtask
 
@@ -59,6 +55,13 @@ Parse the completed result:
 - If `preflight_passed: false`: call `mcp__cortex__fix_quality_issues()`, then re-run (start new job + poll). Max iterations and convergence rule per `shared-defaults.md`.
 
 **GATE**: Quality gate must pass before reporting completion.
+
+### Step 4: Write result
+
+```
+pipeline_handoff(operation="write_result", pipeline="implement", phase="code",
+  data='{"status":"passed"|"failed","subtask":"<description>","files_changed":["..."],"tests_added":<n>,"coverage":<value>,"step_fully_complete":true|false,"fix_iterations":<n>}')
+```
 
 ## Fix Guidelines
 

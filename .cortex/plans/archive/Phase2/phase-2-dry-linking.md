@@ -949,12 +949,14 @@ Phase 2 is complete when:
 ```markdown
 <!-- projectBrief.md -->
 ## Goals
+
 - Implement feature X
 - Improve performance
 - Add tests
 
 <!-- productContext.md -->
 ## Goals (duplicated)
+
 - Implement feature X
 - Improve performance
 - Add tests
@@ -965,12 +967,14 @@ Phase 2 is complete when:
 ```markdown
 <!-- projectBrief.md -->
 ## Goals
+
 - Implement feature X
 - Improve performance
 - Add tests
 
 <!-- productContext.md -->
 ## Project Goals
+
 {{include: projectBrief.md#Goals}}
 ```
 
@@ -979,12 +983,14 @@ Phase 2 is complete when:
 ```markdown
 <!-- techContext.md -->
 ## Tech Stack
+
 - Python 3.11+
 - FastMCP
 - Asyncio
 
 <!-- systemPatterns.md -->
 ## Technologies Used
+
 {{include: techContext.md#Tech Stack}}
 ```
 
@@ -993,6 +999,7 @@ Phase 2 is complete when:
 ```markdown
 <!-- progress.md -->
 ## Recent Accomplishments
+
 {{include: activeContext.md#Recent Changes|lines=5}}
 
 Shows the 5 most recent changes from activeContext.md

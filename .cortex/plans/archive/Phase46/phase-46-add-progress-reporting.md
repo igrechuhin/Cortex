@@ -125,21 +125,21 @@ import time
 
 class ProgressReporter:
     """Helper for reporting progress in MCP tools."""
-    
+
     def __init__(self, total_steps: int = 100, tool_name: str = ""):
         self.total_steps = total_steps
         self.current_step = 0
         self.tool_name = tool_name
         self._start_time: Optional[float] = None
-    
+
     async def start(self) -> None:
         """Start progress reporting."""
         self._start_time = time.perf_counter()
         await self.report(0, "Starting operation...")
-    
+
     async def report(self, progress: int, message: str = "") -> None:
         """Report progress.
-        
+
         Args:
             progress: Progress value (0-100) or step number (0-total_steps)
             message: Optional progress message
@@ -152,7 +152,7 @@ class ProgressReporter:
                     progress_pct = 100
                 else:
                     progress_pct = int((progress / self.total_steps) * 100)
-                
+
                 await ctx.report_progress(
                     progress=progress_pct,
                     total=100,
@@ -161,12 +161,12 @@ class ProgressReporter:
         except Exception:
             # Context not available (tests, non-MCP contexts) - silently ignore
             pass
-    
+
     async def step(self, message: str = "") -> None:
         """Report next step."""
         self.current_step += 1
         await self.report(self.current_step, message)
-    
+
     async def complete(self, message: str = "Complete") -> None:
         """Report completion."""
         await self.report(100, message)
@@ -200,7 +200,7 @@ def mcp_tool_wrapper(
     enable_progress: bool | None = None,  # None = auto-detect based on timeout
 ) -> Callable[[Callable[..., Awaitable[T]]], Callable[..., Awaitable[T]]]:
     """Decorator for MCP tools with optional progress reporting.
-    
+
     Args:
         timeout: Maximum execution time in seconds
         enforce_failure_protocol: If True, enforce MCP tool failure protocol
@@ -210,19 +210,19 @@ def mcp_tool_wrapper(
     # Auto-enable progress for long-running tools
     if enable_progress is None:
         enable_progress = timeout >= 120
-    
+
     # ... existing wrapper code ...
-    
+
     @functools.wraps(underlying_func)
     async def wrapper(*args: object, **kwargs: object) -> T:
         """Wrapped function with stability protections and progress reporting."""
         tool_name = underlying_func.__name__
-        
+
         if enable_progress:
             # Start progress reporting
             start_time = time.perf_counter()
             progress_interval = 10  # Report every 10 seconds
-            
+
             async def report_progress_task():
                 """Background task to report progress periodically."""
                 try:
@@ -233,7 +233,7 @@ def mcp_tool_wrapper(
                             elapsed = time.perf_counter() - start_time
                             if elapsed >= timeout:
                                 break
-                            
+
                             # Calculate progress based on elapsed time
                             progress_pct = min(int((elapsed / timeout) * 100), 95)
                             await ctx.report_progress(
@@ -244,14 +244,14 @@ def mcp_tool_wrapper(
                 except Exception:
                     # Context not available or operation completed
                     pass
-            
+
             # Start progress reporting task
             progress_task = asyncio.create_task(report_progress_task())
-        
+
         try:
             # Execute tool with stability protections
             result = await with_mcp_stability(func_with_timeout, timeout=timeout)
-            
+
             # Report completion
             if enable_progress:
                 try:
@@ -266,7 +266,7 @@ def mcp_tool_wrapper(
                     pass
                 finally:
                     progress_task.cancel()
-            
+
             # ... existing validation and error handling ...
             return result
         finally:
@@ -313,10 +313,10 @@ async def optimize_context_impl(
 ) -> OptimizeContextResult | OptimizeContextErrorResult:
     """Implementation logic for optimize_context tool."""
     from cortex.core.progress import ProgressReporter
-    
+
     progress = ProgressReporter(total_steps=4, tool_name="optimize_context")
     await progress.start()
-    
+
     try:
         # Step 1: Setup managers (0-25%)
         await progress.report(0, "Setting up managers...")
@@ -326,16 +326,16 @@ async def optimize_context_impl(
             metadata_index,
             fs_manager,
         ) = await _setup_optimization_managers(mgrs)
-        
+
         # Step 2: Read files (25-50%)
         await progress.report(25, "Reading files...")
         if token_budget is None:
             token_budget = optimization_config.get_token_budget()
-        
+
         files_content, files_metadata = await _read_all_files_for_optimization(
             metadata_index, fs_manager
         )
-        
+
         # Step 3: Optimize context (50-90%)
         await progress.report(50, "Optimizing context...")
         result = await context_optimizer.optimize_context(
@@ -345,13 +345,13 @@ async def optimize_context_impl(
             token_budget=token_budget,
             strategy=strategy,
         )
-        
+
         # Step 4: Format results (90-100%)
         await progress.report(90, "Formatting results...")
         formatted = _format_optimization_result(
             task_description, token_budget, strategy, result
         )
-        
+
         await progress.complete("Optimization complete")
         return formatted
     except Exception as e:
@@ -399,7 +399,7 @@ async def test_progress_reporter():
     reporter = ProgressReporter(total_steps=4, tool_name="test_tool")
     # Mock CurrentContext()
     # Verify report_progress() calls
-    
+
 # Test mcp_tool_wrapper progress
 async def test_wrapper_progress():
     @mcp.tool()
@@ -407,9 +407,9 @@ async def test_wrapper_progress():
     async def slow_tool():
         await asyncio.sleep(15)  # Trigger progress reports
         return {"status": "success"}
-    
+
     # Mock context and verify progress reports
-    
+
 # Test tool implementation progress
 async def test_optimize_context_progress():
     # Mock managers and verify progress stages

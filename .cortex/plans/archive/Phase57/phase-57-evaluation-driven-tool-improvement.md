@@ -48,17 +48,17 @@ Cortex currently tracks basic usage stats (call counts, success rates) via `get_
   - "Load context for a bug fix in the validation module"
   - "Load context for adding a new MCP tool"
   - "Load context for architectural review of the tool registration system"
-  
+
   **Pre-commit tasks (5+):**
   - "Run pre-commit checks after adding a new Python module with tests"
   - "Run quality fixes after modifying 3 files across different packages"
   - "Execute full commit pipeline for a feature addition"
-  
+
   **Plan management tasks (5+):**
   - "Create a plan for adding dark mode support to a web app"
   - "Register a completed plan and update roadmap"
   - "Find and implement the next pending roadmap item"
-  
+
   **Memory bank tasks (5+):**
   - "Read activeContext, update completed work, add next steps"
   - "Validate all memory bank files and fix any issues"

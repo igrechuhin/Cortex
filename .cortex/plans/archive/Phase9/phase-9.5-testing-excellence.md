@@ -412,10 +412,10 @@ async def test_behavior_when_condition(self):
     # Arrange - Set up test fixtures and state
     manager = MockManager()
     test_input = create_test_input()
-    
+
     # Act - Perform the action under test
     result = await manager.perform_action(test_input)
-    
+
     # Assert - Verify expected outcomes
     assert result.success is True
     assert result.data == expected_data

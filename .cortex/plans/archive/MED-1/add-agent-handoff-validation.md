@@ -9,7 +9,7 @@ execution_order: 13
 depends_on: []
 ---
 
-# Add Schema Validation for Agent Handoff Outputs
+## Add Schema Validation for Agent Handoff Outputs
 
 **Status**: PENDING
 **Priority**: Medium

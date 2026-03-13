@@ -303,7 +303,10 @@ def get_cursor_agents_source() -> Path | None:
 def get_cursor_agents_target(source: Path) -> Path:
     """Resolve .cursor/agents/ from project root inferred via source path."""
     # source is <project_root>/.cortex/synapse/cursor-agents
-    return source.parent.parent.parent / ".cursor" / "agents"
+    from cortex.core.path_resolver import CursorResourceType, get_cursor_path
+
+    project_root = source.parent.parent.parent
+    return get_cursor_path(project_root, CursorResourceType.CURSOR_DIR) / "agents"
 
 
 def get_claude_agents_target(source: Path) -> Path:
@@ -334,6 +337,7 @@ _CORTEX_TOOL_NAMES: frozenset[str] = frozenset(
         "load_context",
         "manage_file",
         "manage_session_scripts",
+        "pipeline_handoff",
         "plan",
         "query_memory_bank",
         "query_usage",

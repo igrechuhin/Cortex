@@ -234,31 +234,31 @@ class InputValidator:
     @staticmethod
     def validate_git_url(url: str) -> str:
         """Validate git repository URL.
-        
+
         Args:
             url: Git URL to validate
-            
+
         Returns:
             Validated URL
-            
+
         Raises:
             ValueError: If URL is invalid
         """
         if not url:
             raise ValueError("Git URL cannot be empty")
-        
+
         # Allow HTTPS and SSH protocols only
         if not (url.startswith("https://") or url.startswith("git@")):
             raise ValueError(f"Invalid git URL protocol: {url}")
-        
+
         # Block localhost and private IPs
         if "localhost" in url or "127.0.0.1" in url:
             raise ValueError("Git URL cannot reference localhost")
-        
+
         # Block file:// protocol
         if url.startswith("file://"):
             raise ValueError("File protocol not allowed for git URLs")
-        
+
         return url
 ```
 
@@ -287,12 +287,12 @@ async def run_git_command(self, cmd: list[str], timeout: int = 30) -> dict[str, 
             ),
             timeout=timeout
         )
-        
+
         stdout, stderr = await asyncio.wait_for(
             process.communicate(),
             timeout=timeout
         )
-        
+
         return {
             "success": process.returncode == 0,
             "stdout": stdout.decode("utf-8", errors="replace"),
@@ -334,7 +334,7 @@ async def write_file(
         raise ValueError(
             f"File size {len(content_bytes)} exceeds limit {max_size_bytes}"
         )
-    
+
     # ... rest of write logic
 ```
 

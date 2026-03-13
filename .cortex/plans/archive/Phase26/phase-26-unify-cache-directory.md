@@ -89,13 +89,13 @@ Create utility functions for cache management:
 ```python
 def get_cache_dir(project_root: Path, cache_type: str | None = None) -> Path:
     """Get cache directory path."""
-    
+
 def clear_cache(project_root: Path, cache_type: str | None = None) -> int:
     """Clear cache files. Returns number of files deleted."""
-    
+
 def get_cache_size(project_root: Path, cache_type: str | None = None) -> int:
     """Get total cache size in bytes."""
-    
+
 def list_cache_files(project_root: Path, cache_type: str | None = None) -> list[Path]:
     """List all cache files."""
 ```

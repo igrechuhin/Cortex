@@ -77,32 +77,32 @@ Current Cortex limitations:
   - `load_context(task_description="...", role="quality")` — loads quality-focused context
   - If role not specified, auto-detect from task_description
 - [x] Role-specific context selection (relevance score adjustments implemented):
-  
+
   **Implementation:**
   - Added `agent_role` parameter propagation through the context loading call chain
   - Implemented `_apply_role_based_adjustments` to boost files in role's `context_focus` (+0.3) and apply slight penalty (×0.9) to others
   - Added unit tests for role-based relevance scoring
   - Note: Two functions in `phase4_context_operations.py` are 3 lines over the 30-line limit due to long parameter lists from adding `agent_role`. These are thin wrapper functions and the excess is acceptable.
-  
+
   **FEATURE role:**
   - Always load: projectBrief, systemPatterns, activeContext
   - Relevant tools: manage_file, validate, suggest_refactoring, load_context
-  
+
   **QUALITY role:**
   - Always load: techContext, systemPatterns (coding patterns section)
   - Relevant tools: fix_quality_issues, execute_pre_commit_checks, fix_markdown_lint
   - Skip: refactoring tools, plan tools, usage analytics
-  
+
   **TESTING role:**
   - Always load: techContext (test patterns), systemPatterns
   - Relevant tools: execute_pre_commit_checks(checks=["tests"]), manage_file
   - Skip: plan tools, docs tools, refactoring tools
-  
+
   **PLANNING role:**
   - Always load: roadmap, activeContext, projectBrief
   - Relevant tools: create_plan, register_plan_in_roadmap, manage_file
   - Skip: quality tools, testing tools
-  
+
   **DOCS role:**
   - Always load: projectBrief, productContext
   - Relevant tools: manage_file, fix_markdown_lint

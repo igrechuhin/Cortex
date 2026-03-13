@@ -9,7 +9,7 @@ execution_order: 11
 depends_on: []
 ---
 
-# Resolve Type-Checker Strategy Ambiguity
+## Resolve Type-Checker Strategy Ambiguity
 
 **Status**: COMPLETE
 **Priority**: High
@@ -77,4 +77,3 @@ Document the official type-checker strategy and remove any stale configuration, 
 ## Testing Strategy
 
 - **Coverage Target**: N/A (documentation/config)
-

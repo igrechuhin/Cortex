@@ -9,7 +9,7 @@ execution_order: 2
 depends_on: []
 ---
 
-# Fix Contradictory Coverage Documentation in Troubleshooting Guide
+## Fix Contradictory Coverage Documentation in Troubleshooting Guide
 
 **Status**: PENDING
 **Priority**: Critical

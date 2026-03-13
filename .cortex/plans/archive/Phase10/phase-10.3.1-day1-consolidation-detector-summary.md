@@ -86,7 +86,7 @@ def _compute_content_hash(self, content: str) -> str:
 
 #### 5. Optimized Method: `_calculate_average_similarity()`
 
-**Original Complexity:** O(contents²  × content_length)
+**Original Complexity:** O(contents² × content_length)
 **Optimized Complexity:** O(contents) for exact matches, O(contents²) with caching
 
 **Key Optimizations:**

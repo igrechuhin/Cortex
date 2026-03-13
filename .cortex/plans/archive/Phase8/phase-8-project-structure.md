@@ -152,16 +152,20 @@ git submodule update --init --recursive
 [Metadata Block]: # (version: 1.0, created: 2025-01-01, modified: 2025-01-15)
 
 ## Purpose
+
 Brief description of this file's role
 
 ## Content
+
 [Main content sections]
 
 ## Links
+
 - [[related-file.md#section]] - Description
 - {{include: shared-context.md#intro}}
 
 ## Metadata
+
 - Category: [context|progress|architecture|guide]
 - Priority: [high|medium|low]
 - Status: [active|archived]
@@ -173,22 +177,28 @@ Brief description of this file's role
 # [Rule Name]
 
 ## Context
+
 When this rule applies (languages, frameworks, task types)
 
 ## Standards
+
 Specific coding standards or practices
 
 ## Examples
+
 ✅ Good: [example]
 ❌ Bad: [example]
 
 ## Rationale
+
 Why this rule exists
 
 ## Exceptions
+
 When to deviate from this rule
 
 ## Metadata
+
 - Category: [coding-style|architecture|testing|security]
 - Languages: [python, swift, javascript]
 - Frameworks: [django, react, swiftui]
@@ -201,49 +211,61 @@ When to deviate from this rule
 # [Plan Name]
 
 ## Status
+
 - Phase: [Planning|In Progress|Complete]
 - Progress: X%
 - Created: YYYY-MM-DD
 - Last Updated: YYYY-MM-DD
 
 ## Goal
+
 Clear statement of what this plan achieves
 
 ## Context
+
 Why this plan is needed
 
 ## Approach
+
 High-level strategy
 
 ## Implementation Steps
+
 1. [ ] Step one
 2. [ ] Step two
 3. [ ] Step three
 
 ## Dependencies
+
 - Depends on: [other-plan.md]
 - Blocks: [future-plan.md]
 
 ## Success Criteria
+
 - [ ] Criterion 1
 - [ ] Criterion 2
 
 ## Timeline
+
 - Sprint 1: [scope]
 - Sprint 2: [scope]
 
 ## Risks & Mitigation
+
 | Risk | Impact | Mitigation |
 |------|--------|------------|
 | ... | ... | ... |
 
 ## Testing Strategy
+
 How to verify completion
 
 ## Rollback Plan
+
 How to undo if needed
 
 ## Notes
+
 Additional context, decisions made
 ```
 

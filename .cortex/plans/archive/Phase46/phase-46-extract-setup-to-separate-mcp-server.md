@@ -118,7 +118,7 @@ from cortex.tools.config_status import get_project_config_status
 def mount_setup_server_if_needed():
     """Mount setup server if project needs initialization or migration."""
     config_status = get_project_config_status()
-    
+
     needs_setup = (
         not config_status["memory_bank_initialized"]
         or not config_status["structure_configured"]
@@ -126,7 +126,7 @@ def mount_setup_server_if_needed():
         or config_status["migration_needed"]
         or not config_status["tiktoken_cache_available"]
     )
-    
+
     if needs_setup:
         mcp.mount(setup_mcp, prefix="setup")
         return True
@@ -142,7 +142,7 @@ def main() -> None:
     """Entry point for the application when run with uvx."""
     # Mount setup server if needed
     mount_setup_server_if_needed()
-    
+
     try:
         mcp.run(transport="stdio")
     # ... existing error handling ...

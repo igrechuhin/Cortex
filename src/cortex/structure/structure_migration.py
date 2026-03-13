@@ -73,7 +73,8 @@ class StructureMigrationManager:
         ):
             return "doc-mcp-style"
 
-        # Check for scattered files
+        # Check for scattered files (only when .cursor/plans not present, so
+        # tradewing-style and doc-mcp-style take precedence)
         from cortex.core.constants import MemoryBankFile
 
         scattered_files = list(self.project_root.rglob(MemoryBankFile.PROJECT_BRIEF))
@@ -82,6 +83,7 @@ class StructureMigrationManager:
             and not get_cortex_path(
                 self.project_root, CortexResourceType.CORTEX_DIR
             ).exists()
+            and not cursor_plans_dir.exists()
         ):
             return "scattered-files"
 

@@ -76,6 +76,7 @@ Update the plan template (in `create-plan.md` or equivalent) to include a new ma
 ## Verification Checklist
 
 For each implementation step, define:
+
 - **What to search for**: Pattern that should be eliminated (e.g., `exec(`)
 - **Search scope**: Full repo, specific directory, or specific files
 - **Expected result**: Zero matches, specific count, etc.

@@ -48,11 +48,11 @@ def test_setup_cursor_integration_when_invalid_symlink_location_returns_error_re
 
 
 def test_setup_cursor_integration_creates_memory_bank_symlink(tmp_path: Path) -> None:
-    # Arrange
+    # Arrange (use _cursor so tests can create dir when .cursor is restricted, e.g. sandbox)
     config = StructureConfig(tmp_path)
     config.structure_config["cursor_integration"] = {
         "enabled": True,
-        "symlink_location": ".cursor",
+        "symlink_location": "_cursor",
         "symlinks": {"memory_bank": True, "rules": False, "plans": False},
     }
     # Ensure target exists
@@ -227,11 +227,11 @@ def test_setup_cursor_integration_when_validation_has_no_dict_error_response_ret
 
 
 def test_setup_cursor_integration_creates_rules_symlink(tmp_path: Path) -> None:
-    # Arrange
+    # Arrange (use _cursor so tests can create dir when .cursor is restricted, e.g. sandbox)
     config = StructureConfig(tmp_path)
     config.structure_config["cursor_integration"] = {
         "enabled": True,
-        "symlink_location": ".cursor",
+        "symlink_location": "_cursor",
         "symlinks": {"memory_bank": False, "rules": True, "plans": False},
     }
     config.get_path("rules").mkdir(parents=True, exist_ok=True)

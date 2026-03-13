@@ -9,7 +9,7 @@ execution_order: 22
 depends_on: []
 ---
 
-# Make Synapse Prompts Agent-Agnostic
+## Make Synapse Prompts Agent-Agnostic
 
 **Status**: IN_PROGRESS
 **Priority**: Medium

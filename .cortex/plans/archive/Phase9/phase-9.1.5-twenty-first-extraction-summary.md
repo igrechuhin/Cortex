@@ -161,7 +161,7 @@ async def generate_suggestions(
             ):
                 refactoring_type = RefactoringType.REORGANIZATION
             # ... more type determination logic ...
-            
+
             # Generate suggestion if type determined
             if refactoring_type:
                 suggestion = await self.generate_from_insight(

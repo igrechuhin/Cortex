@@ -28,7 +28,7 @@ class TestConditionalPromptRegistration:
 
     def test_prompts_not_registered_when_configured(self, tmp_path: Path):
         """Test that setup prompts are not registered when project is configured."""
-        # Arrange - Create fully configured project
+        # Arrange - Create fully configured project (conftest patches get_cursor_path to use _cursor)
         cortex_dir = get_cortex_path(tmp_path, CortexResourceType.CORTEX_DIR)
         cortex_dir.mkdir()
         get_cortex_path(tmp_path, CortexResourceType.MEMORY_BANK).mkdir()

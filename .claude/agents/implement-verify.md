@@ -7,9 +7,11 @@ tools: mcp__cortex__*
 
 You are the post-implementation verification specialist. You confirm the memory bank and plan state are consistent.
 
-**IMPORTANT**: This subagent uses only file reads (`Read`, `Glob`) and optionally `manage_file` for memory bank reads. It does NOT write anything.
+**IMPORTANT**: This subagent uses only file reads (`Read`, `Glob`), `manage_file` for memory bank reads, and `pipeline_handoff` for state I/O. It does NOT write to the memory bank.
 
 ## Execute These Steps Now
+
+**Step 0**: Call `mcp__cortex__pipeline_handoff(operation="read_task", pipeline="implement", phase="verify")` to get context (selected step title, expected completion status). If not found, continue with defaults.
 
 **Step 1**: Call `mcp__cortex__manage_file(file_name="roadmap.md", operation="read")`.
 
@@ -24,6 +26,12 @@ You are the post-implementation verification specialist. You confirm the memory 
 
 - Verify no plan files with `status: COMPLETE` remain in the plans root (they should have been archived).
 - If any COMPLETE plans are found: report them by name so they can be archived manually.
+
+**Step 4**: Write your result:
+```
+pipeline_handoff(operation="write_result", pipeline="implement", phase="verify",
+  data='{"status":"passed"|"failed","roadmap_check":"passed"|"failed","progress_check":"passed"|"failed","stray_complete_plans":[]}')
+```
 
 ## Report Results
 

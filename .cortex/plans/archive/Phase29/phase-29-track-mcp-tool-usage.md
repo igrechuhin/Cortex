@@ -101,14 +101,14 @@ class UsageTracker:
         error_type: str | None = None,
         params_hash: str | None = None
     ) -> None
-    
+
     async def get_usage_stats(
         self,
         start_date: datetime | None = None,
         end_date: datetime | None = None,
         tool_name: str | None = None
     ) -> dict[str, object]
-    
+
     async def get_unused_tools(
         self,
         days: int = 90,

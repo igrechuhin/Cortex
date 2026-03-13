@@ -1,6 +1,6 @@
 # Roadmap: MCP Memory Bank
 
-**This file records future/upcoming work only.** Completed work is recorded in [activeContext.md](activeContext.md). Do not duplicate entries between the two files.
+**This file records future/upcoming work only.** Completed work is recorded in [activeContext.md](../memory-bank/activeContext.md). Do not duplicate entries between the two files.
 
 **Implementation sequence**: The implement command picks the **next step as the **first PENDING item** when reading the roadmap in this order: (1) Blockers (ASAP Priority), (2) Active Work, (3) Future Enhancements, (4) Implementation queue (Pending plans). Order within each section is top-to-bottom. New plans are added by create-plan in the correct place so this order defines execution.
 
@@ -12,6 +12,7 @@
 - **Blocker: Keep Finalize and Verify Memory-Bank State in Sync** - PENDING - Plan: `plans/blocker-finalize-verify-memory-bank-sync.md` — Fix implement-finalize and implement-verify so that roadmap/progress/activeContext updates are consistent and verification never fails due to finalize reporting changes that aren't visible to verify.
 
 ## Active Work (in progress)
+
 - **[MED-8] Reduce Prompt-Alignment Test Fragility** ":" IN_PROGRESS (PARTIAL). Implemented semantic relaxation for implement-prompt guidance tests in `tests/integration/test_commit_workflow_prompt_alignment.py` using lowercased content and synonym lists; remaining fragile substring assertions in other prompt-alignment tests will be refactored in later subtasks.
 
 ## Future Enhancements
@@ -33,7 +34,7 @@
 
 ### Investigation Plans (Archive / Reference)
 
-Completed investigations are recorded in [activeContext.md](activeContext.md). Plan files under `.cortex/plans/archive/` as needed.
+Completed investigations are recorded in [activeContext.md](../memory-bank/activeContext.md). Plan files under `.cortex/plans/archive/` as needed.
 
 ### Features & Enhancements
 

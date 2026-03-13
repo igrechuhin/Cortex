@@ -46,7 +46,7 @@ def _load_tiktoken_with_timeout(
     """Load tiktoken encoding with a timeout to prevent network hangs."""
     import concurrent.futures
     import tiktoken
-    
+
     with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
         future = executor.submit(tiktoken.get_encoding, self.model)
         try:

@@ -116,15 +116,19 @@ raise MemoryBankError(
 ### File Operations
 
 #### FileNotFoundError
+
 **Cause:** The requested file doesn't exist.
 **Solutions:**
+
 1. Run `initialize_memory_bank()` to create default files
 2. Check the file path for typos
 3. Verify the memory-bank directory location
 
 #### PermissionError
+
 **Cause:** Insufficient permissions to access the file.
 **Solutions:**
+
 1. Check file permissions: `ls -la <file>`
 2. Change ownership: `chown <user> <file>`
 3. Run with elevated privileges if needed
@@ -132,8 +136,10 @@ raise MemoryBankError(
 ### Index Errors
 
 #### IndexCorruptionError
+
 **Cause:** The metadata index JSON is invalid.
 **Solutions:**
+
 1. Delete `.memory-bank-index` file
 2. Run any read operation to trigger rebuild
 3. If persists, check disk space and file system health
@@ -141,8 +147,10 @@ raise MemoryBankError(
 ### Git Operations
 
 #### GitOperationError
+
 **Cause:** Git command failed during shared rules sync.
 **Solutions:**
+
 1. Check network connectivity
 2. Verify git is installed: `git --version`
 3. Check repository permissions
@@ -397,26 +405,31 @@ their causes, impacts, and recovery procedures.
 ### Memory Bank Index Corruption
 
 **Symptoms:**
+
 - `IndexCorruptionError` on startup
 - Missing or incorrect file metadata
 - Inconsistent dependency graph
 
 **Causes:**
+
 - Disk failure during write
 - Concurrent modification
 - Invalid JSON in index file
 
 **Impact:**
+
 - File operations may fail
 - Metadata may be stale
 - Dependencies may be incorrect
 
 **Recovery:**
+
 1. Delete `.memory-bank-index`
 2. Run `get_memory_bank_stats()` to trigger rebuild
 3. Verify with `validate_memory_bank()`
 
 **Prevention:**
+
 - Enable atomic writes (default)
 - Use file locking (default)
 - Regular backups
@@ -424,25 +437,30 @@ their causes, impacts, and recovery procedures.
 ### File Lock Deadlock
 
 **Symptoms:**
+
 - Operations hang indefinitely
 - `LockTimeoutError` after 30 seconds
 - Stale `.lock` files in locks directory
 
 **Causes:**
+
 - Process crash during locked operation
 - Network file system issues
 - Concurrent access from multiple processes
 
 **Impact:**
+
 - File operations blocked
 - Server may become unresponsive
 
 **Recovery:**
+
 1. Identify stale locks: `ls .memory-bank-locks/`
 2. Remove locks older than 1 minute
 3. Restart server if needed
 
 **Prevention:**
+
 - Use single server instance
 - Configure appropriate timeout
 - Enable stale lock cleanup
@@ -452,24 +470,29 @@ their causes, impacts, and recovery procedures.
 ### Shared Rules Sync Failure
 
 **Symptoms:**
+
 - `GitOperationError` during sync
 - Stale shared rules
 - Network timeout errors
 
 **Causes:**
+
 - Network unavailable
 - Git repository unreachable
 - Authentication failure
 
 **Impact:**
+
 - Shared rules may be outdated
 - Local rules still work
 
 **Degradation:**
+
 - System continues with local rules only
 - Warning logged for visibility
 
 **Recovery:**
+
 1. Check network connectivity
 2. Verify git credentials
 3. Run `sync_shared_rules()` manually
@@ -477,22 +500,27 @@ their causes, impacts, and recovery procedures.
 ### Token Count Estimation
 
 **Symptoms:**
+
 - Warning about word-based estimation
 - Less accurate token counts
 
 **Causes:**
+
 - tiktoken not installed
 - Encoding download failed
 
 **Impact:**
+
 - Token budgets may be less accurate
 - Optimization may be suboptimal
 
 **Degradation:**
+
 - Uses word-based estimation (4 chars/token)
 - Accuracy ~80% of tiktoken
 
 **Recovery:**
+
 1. Install tiktoken: `pip install tiktoken`
 2. Clear token count cache
 3. Re-run operations

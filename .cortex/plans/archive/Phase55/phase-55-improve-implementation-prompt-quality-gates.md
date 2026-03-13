@@ -68,7 +68,7 @@ Update `implement-next-roadmap-step.md` prompt with mandatory quality gates at c
    - Check language-specific rules for required model types
    - Ensure new models follow project's data modeling standards
    - Verify model type compliance per language-specific coding standards
-   - **CRITICAL FOR PYTHON**: 
+   - **CRITICAL FOR PYTHON**:
      - **ALL structured data MUST use Pydantic `BaseModel`** - NO EXCEPTIONS
      - **TypedDict is STRICTLY FORBIDDEN** for new code
      - **Example**: Use `class MergeOpportunity(BaseModel):` NOT `class MergeOpportunity(TypedDict):`
@@ -210,6 +210,7 @@ Update `implement-next-roadmap-step.md` prompt with mandatory quality gates at c
 - [ ] Checked for similar existing models to reuse
 
 **If creating new models, verify**:
+
 - [ ] Using `pydantic.BaseModel` (NOT `TypedDict`)
 - [ ] Using Pydantic 2 API (`model_validate()`, `model_dump()`, `ConfigDict`)
 - [ ] All fields have explicit type hints

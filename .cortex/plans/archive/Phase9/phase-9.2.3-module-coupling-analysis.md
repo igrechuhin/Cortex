@@ -99,20 +99,20 @@ Level 11: main          (Entry point)
 #### Other Significant Cycles
 
 1. **managers ↔ analysis**
-    - `managers → analysis → core → managers`
-    - Impact: Manager initialization depends on analysis
+   - `managers → analysis → core → managers`
+   - Impact: Manager initialization depends on analysis
 
 2. **optimization ↔ rules**
-    - `optimization → rules → core → managers → optimization`
-    - Impact: Optimization and rules are tightly coupled
+   - `optimization → rules → core → managers → optimization`
+   - Impact: Optimization and rules are tightly coupled
 
 3. **refactoring ↔ linking**
-    - `refactoring → linking → core → managers → refactoring`
-    - Impact: Refactoring depends on linking
+   - `refactoring → linking → core → managers → refactoring`
+   - Impact: Refactoring depends on linking
 
 4. **validation ↔ managers**
-    - `validation → core → managers → validation`
-    - Impact: Validation coupled with managers
+   - `validation → core → managers → validation`
+   - Impact: Validation coupled with managers
 
 ---
 
