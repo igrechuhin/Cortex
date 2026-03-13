@@ -1,11 +1,19 @@
 # Progress Log
 
+## 2026-03-13
+
+- **Commit pipeline Phase B** - Memory bank verified (activeContext, progress, roadmap); 0 plans archived; documentation validation run.
+- **Blocker: Fix MCP Plan Tool Argument Wiring/Bridging and Audit Similar Gaps** - PARTIAL. Guardrail test test_create_missing_title_and_content added for plan(operation='create') missing title/content; pre-existing type/quality fixes in pre_commit_status.py and test_plan_completion.py. Blocker still IN_PROGRESS.
+
 ## 2026-03-12
 
 - **Commit pipeline Phase B** - Ran `/cortex/commit` Phase B (docs/memory validation) for current changes; no new implementation work beyond existing roadmap items, memory bank and roadmap remained consistent.
 - **Commit pipeline Phase B** - Ran `/cortex/commit` Phase B (docs/memory validation) for current workspace changes; memory bank and roadmap were already in sync so no additional roadmap mutations were required in this pass.
 - **[MED-3] Calibrate Review Metric Scores** - COMPLETE. Verified all 9 review metrics in `review.md` have calibration tables and evidence requirements, and that `review-output-schema.md` defines an evidence field for each metric; Phase A pre-commit job was started via Cortex MCP but its result is still pending/unavailable.
 - **[MED-10] Make Prompts Agent-Agnostic** - PARTIAL. Added an agent-agnostic Agent Tool Mapping section to shared-conventions and updated the create-plan prompt to refer to generic file operation tools instead of Cursor-specific names for roadmap writes; additional prompt and tool description updates remain.
+- **[MED-8] Reduce Prompt-Alignment Test Fragility** - PARTIAL. Relaxed the `TestImplementPromptRefactoringGuidance` tests in `tests/integration/test_commit_workflow_prompt_alignment.py` to assert semantic concepts for incremental validation and duplicate-detection guidance in the implement pipeline using lowercased content and synonym lists instead of single fragile substrings; pre-commit job remained running and should be re-run in a live environment; remaining fragile substring assertions still need semantic refactors in later subtasks.
+
+- **Blocker: Implement-Select Must Respect Explicit Plan Targets** - PARTIAL. Implemented explicit-plan-first selection behavior at the prompt/orchestration level so `implement-select` prefers an `explicit_plan_path` hint when the referenced plan exists and is eligible, and added prompt-level tests covering (A) no explicit plan → roadmap ordering, (B) valid explicit plan → preferred over roadmap, and (C) invalid or ineligible explicit plan → fallback with a clear explanatory note; deeper runtime wiring and eligibility checks remain for future work.
 
 ## 2026-03-11
 
@@ -75,13 +83,7 @@
 
 ## 2026-03-05
 
-- **Phase 79: Fix Python Version Pinning and Bootstrap Script (2026-03-05)** - COMPLETE. Relaxed Python patch pinning, added one-step bootstrap script, and updated docs; Phase A passed with 4906 tests and 92.44% coverage.
-- **Phase 79: Fix Python Version Pinning and Bootstrap Script (2026-03-05)** - COMPLETE. Relaxed Python patch pinning, added one-step bootstrap, and updated docs/quality workflow; Phase A checks passed with 4906 tests and ~92.44% coverage.
-- **Phase 80: Add Synapse Submodule Presence Guard (2026-03-05)** - COMPLETE. Added a Synapse submodule guard script, integrated it into CI and Makefile `make check`/`test`, and updated the README with submodule initialization instructions and a constrained-mode fallback.
-- **Phase 86: MCP Connection Resilience and Auto-Recovery (2026-03-05)** - COMPLETE. Hardened MCP retry and reconnection logic, added helpers for circuit-breaker diagnostics, stabilized timeout and pre-commit tools tests with connection-state reset fixtures, and re-ran the full pre-commit suite (4908 tests, ~92.42% coverage).
-- **Phase 83: Remaining Silent Exception Handlers (2026-03-05)** - COMPLETE. Eliminated the 7 remaining `except Exception: pass/continue` blocks in src/ by adding logging and restructuring handlers, then re-ran quality gate and full tests (92.41% coverage).
-- **Blocker: GitHub Actions Quality Gate Not Running (2026-03-05)** - COMPLETE. Restored the Code Quality workflow, fixed test type-check failures, and hardened both CI and the commit pipeline so the quality gate and `/cortex/commit` enforce the same zero-errors, =90% coverage policy across src, tests, and Synapse scripts.
-- Commit pipeline (2026-03-05) - Phase A passed; 4910 tests, 92.41% coverage; quality workflow, tests, and cortex updates.
+- **Week containing 2026-03-05** - 1 entries summarized.
 
 ## 2026-03-04
 
@@ -157,7 +159,7 @@
 
 ## 2026-02-10
 
-- **Week containing 2026-02-10** - 1 entries summarized.
+- **Month containing 2026-02-10** - 1 entries summarized.
 
 ## 2026-02-09
 

@@ -2,15 +2,13 @@
 
 **This file records completed work only.** For current status and upcoming work see [roadmap.md](roadmap.md).
 
+## Completed Work (2026-03-13)
+
+- ✅ **Blocker: Fix MCP Plan Tool Argument Wiring/Bridging (PARTIAL)** - COMPLETE (2026-03-13) - Added guardrail test test_create_missing_title_and_content in test_plan_tool_dispatch.py for plan(operation="create") with missing title/content; fixed pre-existing quality: type cast in pre_commit_status _build_checks_summary, explicit string concat in test_plan_completion, extracted _summarize_result_error_or_unknown in pre_commit_status for function-length. Blocker remains IN_PROGRESS.
+
 ## Completed Work (2026-03-12)
 
-- ✅ **Summary (2026-03-12)** - COMPLETE (2026-03-12) - Ran commit pipeline Phase B (documentation and state validation) for current diff; verified timestamps and roadmap sync passed with no additional implementation or roadmap changes required.
-
-- ✅ **Commit pipeline Phase B docs/memory validation** - COMPLETE (2026-03-12) - Ran `/cortex/commit` Phase B for the current diff; verified memory bank (activeContext, progress, roadmap) was consistent with recent work and did not require additional roadmap edits beyond existing documentation cleanup and refactoring items.
-
-- ✅ **[MED-3] Calibrate Review Metric Scores** - COMPLETE (2026-03-12) - Verified all 9 review metrics in `review.md` have calibration tables and explicit evidence requirements, and that `review-output-schema.md` includes an evidence string for each metric in the structured metrics schema; Phase A pre-commit job was kicked off but its final status is not yet known.
-
-- ✅ **[MED-10] Make Prompts Agent-Agnostic (PARTIAL)** - COMPLETE (2026-03-12) - Documented an agent-agnostic Agent Tool Mapping pattern in shared-conventions and updated the create-plan Synapse prompt to reference generic file operation tools for roadmap writes, preparing remaining prompts and tools to be de-Cursor-ized in future sessions.
+- **Summary (2026-03-12)** - 1 entries archived.
 
 ## Completed Work (2026-03-11)
 

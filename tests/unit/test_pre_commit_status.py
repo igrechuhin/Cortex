@@ -54,6 +54,12 @@ async def test_completed_result_summarized_correctly(tmp_path: Path) -> None:
             "docs_phase_passed": False,
             "coverage": 0.95,
             "checks": ["tests"],
+            "results": {
+                "tests": {"success": True},
+                "format": {"success": True},
+                "type_check": {"success": True},
+                "quality": {"success": True},
+            },
         },
     }
     _ = _write_result(session_dir, "pre_commit_result_abc123456789.json", payload)
@@ -66,6 +72,14 @@ async def test_completed_result_summarized_correctly(tmp_path: Path) -> None:
     assert abs(float(result["coverage"]) - 0.95) < 1e-9
     assert abs(float(result["completed_at"]) - now) < 1e-6
     assert result["checks"] == ["tests"]
+    # Per-category summary and log path should be present
+    assert result["checks_summary"] == {
+        "tests": True,
+        "format": True,
+        "type_check": True,
+        "quality": True,
+    }
+    assert isinstance(result.get("log_path"), str)
 
 
 @pytest.mark.asyncio
@@ -102,6 +116,53 @@ async def test_error_result_reports_error_status(tmp_path: Path) -> None:
     assert result["status"] == "error"
     assert result["args_hash"] == "err123"
     assert "Worker process died" in str(result.get("error", ""))
+
+
+@pytest.mark.asyncio
+async def test_running_result_older_than_max_age_reports_timeout(
+    tmp_path: Path,
+) -> None:
+    """Long-running job beyond max age is summarized as timeout."""
+    project_root = tmp_path
+    session_dir = project_root / ".cortex" / ".session"
+    # Create a running payload with a started_at far in the past so age > _MAX_RUNNING_AGE_SECONDS
+    past = time.time() - 2000.0
+    payload: dict[str, object] = {
+        "version": 1,
+        "status": "running",
+        "pid": os.getpid(),
+        "started_at": past,
+    }
+    _ = _write_result(session_dir, "pre_commit_result_timeout1.json", payload)
+
+    result = await get_last_pre_commit_status_impl(project_root, ctx=None)
+    assert result["status"] == "timeout"
+    assert result["args_hash"] == "timeout1"
+    assert "maximum allowed duration" in str(result.get("error", ""))
+    assert isinstance(result.get("log_path"), str)
+
+
+@pytest.mark.asyncio
+async def test_explicit_timeout_status_in_result_file_is_preserved(
+    tmp_path: Path,
+) -> None:
+    """Result files marked with status 'timeout' are surfaced as timeout."""
+    project_root = tmp_path
+    session_dir = project_root / ".cortex" / ".session"
+    now = time.time()
+    payload: dict[str, object] = {
+        "version": 1,
+        "status": "timeout",
+        "completed_at": now,
+        "error": "Timeout waiting for worker result after 900s",
+    }
+    _ = _write_result(session_dir, "pre_commit_result_timeout2.json", payload)
+
+    result = await get_last_pre_commit_status_impl(project_root, ctx=None)
+    assert result["status"] == "timeout"
+    assert result["args_hash"] == "timeout2"
+    assert "Timeout waiting for worker result" in str(result.get("error", ""))
+    assert abs(float(result["completed_at"]) - now) < 1e-6
 
 
 @pytest.mark.asyncio
@@ -154,6 +215,46 @@ async def test_get_pre_commit_status_impl_no_runs(tmp_path: Path) -> None:
 
 
 @pytest.mark.asyncio
+async def test_get_pre_commit_status_impl_completed_failure_flags(
+    tmp_path: Path,
+) -> None:
+    """Completed job with failing checks is summarized with failure flags."""
+    project_root = tmp_path
+    session_dir = project_root / ".cortex" / ".session"
+    now = time.time()
+    payload: dict[str, object] = {
+        "version": 1,
+        "status": "completed",
+        "completed_at": now,
+        "result": {
+            "status": "failed",
+            "preflight_passed": False,
+            "docs_phase_passed": False,
+            "coverage": 0.75,
+            "checks": ["tests"],
+            "results": {
+                "tests": {"success": False},
+            },
+        },
+    }
+    _ = _write_result(session_dir, "pre_commit_result_failjob.json", payload)
+
+    result = await get_pre_commit_status_impl(
+        project_root=project_root,
+        job_id="failjob",
+        ctx=None,
+    )
+    assert result["status"] == "completed"
+    assert result["args_hash"] == "failjob"
+    assert result["preflight_passed"] is False
+    assert result["docs_phase_passed"] is False
+    assert abs(float(result["coverage"]) - 0.75) < 1e-9
+    assert result["checks"] == ["tests"]
+    # checks_summary should reflect failing tests
+    assert result["checks_summary"] == {"tests": False}
+
+
+@pytest.mark.asyncio
 async def test_get_pre_commit_job_status_mcp_tool(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -186,3 +287,39 @@ async def test_get_pre_commit_job_status_mcp_tool(
     assert isinstance(result, dict)
     assert result["status"] == "completed"
     assert result["args_hash"] == "job123"
+
+
+@pytest.mark.asyncio
+async def test_queued_result_reports_queued_status(tmp_path: Path) -> None:
+    """Queued result is reported as 'queued'."""
+    project_root = tmp_path
+    session_dir = project_root / ".cortex" / ".session"
+    payload: dict[str, object] = {
+        "version": 1,
+        "status": "queued",
+    }
+    _ = _write_result(session_dir, "pre_commit_result_queue1.json", payload)
+
+    result = await get_last_pre_commit_status_impl(project_root, ctx=None)
+    assert result["status"] == "queued"
+    assert result["args_hash"] == "queue1"
+
+
+@pytest.mark.asyncio
+async def test_get_pre_commit_status_impl_queued(tmp_path: Path) -> None:
+    """get_pre_commit_status_impl returns queued when job_id has queued result."""
+    project_root = tmp_path
+    session_dir = project_root / ".cortex" / ".session"
+    payload: dict[str, object] = {
+        "version": 1,
+        "status": "queued",
+    }
+    _ = _write_result(session_dir, "pre_commit_result_queue2.json", payload)
+
+    result = await get_pre_commit_status_impl(
+        project_root=project_root,
+        job_id="queue2",
+        ctx=None,
+    )
+    assert result["status"] == "queued"
+    assert result["args_hash"] == "queue2"

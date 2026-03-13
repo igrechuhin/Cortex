@@ -7,21 +7,34 @@ returns a compact status summary suitable for MCP tools and prompts.
 from __future__ import annotations
 
 import json
+import time
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, cast
+from typing import Any, Literal, cast
 
 from cortex.core.context_logging import MCPContext
 
 _RESULT_PREFIX = "pre_commit_result_"
 _RESULT_SUFFIX = ".json"
+_MAX_RUNNING_AGE_SECONDS = 1800.0
+
+
+PreCommitJobStatus = Literal[
+    "no_runs",
+    "queued",
+    "running",
+    "completed",
+    "error",
+    "timeout",
+    "unknown",
+]
 
 
 @dataclass
 class PreCommitRunSummary:
     """Summary of the most recent detached pre-commit run."""
 
-    status: str
+    status: PreCommitJobStatus
     args_hash: str | None = None
     checks: list[str] | None = None
     preflight_passed: bool | None = None
@@ -29,6 +42,8 @@ class PreCommitRunSummary:
     coverage: float | None = None
     completed_at: float | None = None
     error: str | None = None
+    log_path: str | None = None
+    checks_summary: dict[str, bool] | None = None
 
     def to_dict(self) -> dict[str, Any]:
         """Convert summary to a JSON-serializable dict."""
@@ -49,6 +64,10 @@ class PreCommitRunSummary:
             out["completed_at"] = self.completed_at
         if self.error is not None:
             out["error"] = self.error
+        if self.log_path is not None:
+            out["log_path"] = self.log_path
+        if self.checks_summary is not None:
+            out["checks_summary"] = self.checks_summary
         return out
 
 
@@ -107,8 +126,25 @@ def _extract_completed_at(data: dict[str, object]) -> float | None:
     return None
 
 
+def _build_checks_summary(result_obj: dict[str, object]) -> dict[str, bool] | None:
+    """Build a coarse per-category checks summary from a completed result object."""
+    raw_results = result_obj.get("results")
+    if not isinstance(raw_results, dict):
+        return None
+    results_dict = cast(dict[str, object], raw_results)
+    summary: dict[str, bool] = {}
+    for key in ("tests", "format", "type_check", "quality"):
+        value = results_dict.get(key)
+        if isinstance(value, dict):
+            inner = cast(dict[str, object], value)
+            success_value = inner.get("success")
+            if isinstance(success_value, bool):
+                summary[key] = success_value
+    return summary or None
+
+
 def _summarize_completed(
-    data: dict[str, object], args_hash: str | None
+    data: dict[str, object], args_hash: str | None, log_path: str | None
 ) -> PreCommitRunSummary:
     """Build summary for a completed run."""
     raw_result = data.get("result")
@@ -122,6 +158,7 @@ def _summarize_completed(
     preflight = result_obj.get("preflight_passed")
     docs_phase = result_obj.get("docs_phase_passed")
     coverage = result_obj.get("coverage")
+    checks_summary = _build_checks_summary(result_obj)
     return PreCommitRunSummary(
         status="completed",
         args_hash=args_hash,
@@ -130,34 +167,101 @@ def _summarize_completed(
         docs_phase_passed=bool(docs_phase) if docs_phase is not None else None,
         coverage=float(coverage) if isinstance(coverage, (int, float)) else None,
         completed_at=_extract_completed_at(data),
+        log_path=log_path,
+        checks_summary=checks_summary,
+    )
+
+
+def _summarize_timeout_status(
+    data: dict[str, object],
+    args_hash: str | None,
+    log_path: str | None,
+    default_message: str,
+) -> PreCommitRunSummary:
+    """Build summary for timeout-like statuses."""
+    error_val = data.get("error")
+    return PreCommitRunSummary(
+        status="timeout",
+        args_hash=args_hash,
+        completed_at=_extract_completed_at(data),
+        error=str(error_val) if error_val else default_message,
+        log_path=log_path,
+    )
+
+
+def _summarize_running_status(
+    data: dict[str, object],
+    args_hash: str | None,
+    log_path: str | None,
+) -> PreCommitRunSummary:
+    """Build summary for a running job, with timeout promotion."""
+    error_val = data.get("error")
+    started_at = data.get("started_at")
+    if isinstance(started_at, (int, float)):
+        age = time.time() - float(started_at)
+        if age >= _MAX_RUNNING_AGE_SECONDS:
+            return _summarize_timeout_status(
+                data=data,
+                args_hash=args_hash,
+                log_path=log_path,
+                default_message=(
+                    "Pre-commit job exceeded maximum allowed duration "
+                    f"of {_MAX_RUNNING_AGE_SECONDS:.0f}s"
+                ),
+            )
+    return PreCommitRunSummary(
+        status="running",
+        args_hash=args_hash,
+        error=str(error_val) if error_val else "",
+        log_path=log_path,
+    )
+
+
+def _summarize_result_error_or_unknown(
+    status_value: str,
+    data: dict[str, object],
+    args_hash: str | None,
+    log_path: str | None,
+) -> PreCommitRunSummary:
+    """Build summary for error or unknown status."""
+    error_val = data.get("error")
+    if status_value == "error":
+        msg = str(error_val) if error_val else "Detached worker reported error"
+    else:
+        msg = str(error_val) if error_val else "Unknown detached worker status"
+    return PreCommitRunSummary(
+        status="error" if status_value == "error" else "unknown",
+        args_hash=args_hash,
+        error=msg,
+        log_path=log_path,
     )
 
 
 def _summarize_result(
-    data: dict[str, object], args_hash: str | None
+    data: dict[str, object], args_hash: str | None, log_path: str | None
 ) -> PreCommitRunSummary:
     """Build a PreCommitRunSummary from detached result data."""
     status_value = str(data.get("status") or "unknown")
+    if status_value == "queued":
+        error_val = data.get("error")
+        return PreCommitRunSummary(
+            status="queued",
+            args_hash=args_hash,
+            error=str(error_val) if error_val else None,
+            log_path=log_path,
+        )
     if status_value == "completed":
-        return _summarize_completed(data, args_hash)
-    error_val = data.get("error")
+        return _summarize_completed(data, args_hash, log_path)
+    if status_value == "timeout":
+        return _summarize_timeout_status(
+            data=data,
+            args_hash=args_hash,
+            log_path=log_path,
+            default_message="Pre-commit job exceeded configured timeout",
+        )
     if status_value == "running":
-        return PreCommitRunSummary(
-            status="running",
-            args_hash=args_hash,
-            error=str(error_val) if error_val else "",
-        )
-    if status_value == "error":
-        return PreCommitRunSummary(
-            status="error",
-            args_hash=args_hash,
-            error=str(error_val) if error_val else "Detached worker reported error",
-        )
-    return PreCommitRunSummary(
-        status="unknown",
-        args_hash=args_hash,
-        error=str(error_val) if error_val else "Unknown detached worker status",
-    )
+        return _summarize_running_status(data, args_hash, log_path)
+    return _summarize_result_error_or_unknown(status_value, data, args_hash, log_path)
 
 
 async def get_last_pre_commit_status_impl(
@@ -187,7 +291,10 @@ async def get_last_pre_commit_status_impl(
     name = latest.name
     if name.startswith(_RESULT_PREFIX) and name.endswith(_RESULT_SUFFIX):
         args_hash = name[len(_RESULT_PREFIX) : -len(_RESULT_SUFFIX)]
-    summary = _summarize_result(data, args_hash=args_hash)
+    log_path: str | None = None
+    if args_hash is not None:
+        log_path = str(session_dir / f"pre_commit_worker_{args_hash}.log")
+    summary = _summarize_result(data, args_hash=args_hash, log_path=log_path)
     return summary.to_dict()
 
 
@@ -209,5 +316,6 @@ async def get_pre_commit_status_impl(
             args_hash=job_id,
             error=f"Failed to read or parse result file: {path.name}",
         ).to_dict()
-    summary = _summarize_result(data, args_hash=job_id)
+    log_path = str(session_dir / f"pre_commit_worker_{job_id}.log")
+    summary = _summarize_result(data, args_hash=job_id, log_path=log_path)
     return summary.to_dict()

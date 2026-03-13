@@ -2,7 +2,7 @@
 title: "Reduce Prompt-Alignment Test Fragility"
 component: "tests/integration"
 work_type: "refactor"
-status: "PENDING"
+status: "IN_PROGRESS"
 priority: "Medium"
 created: "2026-03-07"
 execution_order: 20
@@ -11,7 +11,7 @@ depends_on: []
 
 ## Reduce Prompt-Alignment Test Fragility
 
-**Status**: PENDING
+**Status**: IN_PROGRESS
 **Priority**: Medium
 **Complexity**: Medium
 **Category**: Refactoring
@@ -31,8 +31,8 @@ Refactor `test_commit_workflow_prompt_alignment.py` from exact substring asserti
   - `test_parallel_block_is_nine_ten_eleven()` — checks steps 9, 10, 11 are parallel
   - `test_sequential_ranges_are_zero_eight_and_twelve_fourteen()` — checks sequential ranges
   - `test_steps_9_10_11_have_parallel_metadata()` — checks `can_run_in_parallel=True`
-  - `test_prompt_contains_intermediate_validation_during_refactoring()` — Step 3.5 guidance
-  - `test_commit_prompt_contains_duplicate_detection_before_creating_helpers()` — Step 3.6 guidance
+  - `test_prompt_contains_intermediate_validation_during_refactoring()` — Step 3.5 guidance, now relaxed to semantic variants using lowercased content and synonym lists
+  - `test_commit_prompt_contains_duplicate_detection_before_creating_helpers()` — Step 3.6 guidance, partially relaxed in this session; remaining brittle assertions will be handled in later subtasks
 - **CRITICAL**: This plan MUST complete BEFORE `simplify-commit-pipeline-structure` to avoid double refactoring.
 
 ## Implementation Steps
@@ -98,3 +98,10 @@ Ensure all refactored tests pass against the current (unchanged) prompts.
 - **Coverage Target**: 95% (these ARE the tests — they must pass)
 - Run against current prompts: all pass
 - Run after hypothetical prompt reformatting: still pass
+
+## Notes from 2026-03-12 session
+
+- Implemented partial semantic relaxation for implement-prompt guidance tests (`TestImplementPromptRefactoringGuidance`) focusing on intermediate validation and duplicate-detection guidance using lowercased content and synonym lists.
+- No new tests were added; coverage still centers on guidance semantics rather than exact phrasing.
+- Pre-commit job remained in `running` state in this environment; rerun and confirm completion in a live environment.
+- Remaining fragile substring assertions (especially in non-implement-prompt tests) are still pending and should be refactored in follow-up work.

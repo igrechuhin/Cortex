@@ -145,8 +145,22 @@ async def _plan_dispatch_register(
     return await _plan_handle_register(plan_title, description, status, section, ctx)
 
 
+def _plan_error_missing_operation() -> str:
+    from cortex.tools.plans.crud import CreatePlanResult
+
+    return CreatePlanResult(
+        status="error",
+        file_path=None,
+        message=(
+            "operation is required for plan tool; expected "
+            "'create', 'list', 'get', 'complete', or 'register'"
+        ),
+        error="Missing operation",
+    ).model_dump_json()
+
+
 async def _plan_dispatch(
-    operation: str,
+    operation: str | None,
     title: str | None,
     content: str | None,
     slug: str | None,
@@ -163,6 +177,8 @@ async def _plan_dispatch(
     ctx: MCPContext | None,
 ) -> str:
     """Dispatch plan(operation=...) to the appropriate handler."""
+    if not operation:
+        return _plan_error_missing_operation()
     if operation not in ("create", "list", "get", "complete", "register"):
         return _plan_error_invalid_operation(operation)
     if operation == "complete":
@@ -184,7 +200,7 @@ async def _plan_dispatch(
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_MEDIUM)
 async def plan(
-    operation: str = "create",
+    operation: str | None = None,
     title: str | None = None,
     content: str | None = None,
     slug: str | None = None,

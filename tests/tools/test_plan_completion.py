@@ -14,6 +14,7 @@ import pytest
 from cortex.core.models import OperationStatus
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.tools.plans.completion import CompletePlanResult, complete_plan
+from cortex.tools.plans.plan import plan as plan_tool
 from cortex.tools.plans.update_memory_bank import update_memory_bank
 
 
@@ -635,3 +636,45 @@ class TestCompletePlanIntegration:
         assert archive_path.exists()
         assert "COMPLETE" in archive_path.read_text()
         assert result.get("progress_line_inserted") is not None
+
+
+class TestPlanToolCompleteSmoke:
+    """Smoke tests for plan(operation='complete') MCP tool wrapper."""
+
+    @pytest.mark.asyncio
+    async def test_plan_tool_complete_delegates_to_complete_plan(
+        self, tmp_path: Path
+    ) -> None:
+        """plan(operation='complete', ...) updates roadmap and activeContext like complete_plan."""
+        mem = get_cortex_path(tmp_path, CortexResourceType.MEMORY_BANK)
+        mem.mkdir(parents=True)
+        roadmap = mem / "roadmap.md"
+        _ = roadmap.write_text(
+            "# Roadmap\n\n## Pending\n\n"
+            + "- **Wire optimization** - PENDING - Connect config.\n"
+        )
+        active = mem / "activeContext.md"
+        _ = active.write_text("# Active Context\n\n## Completed Work (2026-02-05)\n\n")
+
+        with _patch_root(tmp_path):
+            result_str = await plan_tool(
+                operation="complete",
+                plan_title="Wire optimization",
+                summary="Connected config to runtime.",
+                completion_date="2026-02-05",
+                progress_entry=None,
+                plan_file_name=None,
+            )
+
+        outer = json.loads(result_str)
+        inner_raw = outer.get("result", outer)
+        wrapper_result = (
+            json.loads(inner_raw) if isinstance(inner_raw, str) else inner_raw
+        )
+        assert wrapper_result["status"] == "success"
+        assert wrapper_result["roadmap_line_removed"] is not None
+        assert wrapper_result["active_context_line_inserted"] is not None
+        assert "Wire optimization" not in roadmap.read_text()
+        active_text = active.read_text()
+        assert "Wire optimization" in active_text
+        assert "Connected config to runtime." in active_text

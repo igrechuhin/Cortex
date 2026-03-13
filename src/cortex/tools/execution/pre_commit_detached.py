@@ -232,7 +232,7 @@ def _timeout_error(timeout: float) -> dict[str, object]:
     """Build error dict for poll timeout."""
     return {
         "version": 1,
-        "status": "error",
+        "status": "timeout",
         "error": f"Timeout waiting for worker result after {timeout}s",
     }
 
