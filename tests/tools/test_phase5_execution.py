@@ -709,6 +709,7 @@ class TestApplyRefactoringEdgeCases:
             assert result["status"] == "error"
             assert "Invalid action" in result["error"]
 
+    @pytest.mark.timeout(20)
     async def test_exception_handling(self, mock_project_root: Path) -> None:
         """Test exception handling in apply_refactoring."""
         # Arrange

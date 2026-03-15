@@ -20,6 +20,8 @@ from cortex.core.context_logging import MCPContext, report_progress_safe
 
 logger = logging.getLogger(__name__)
 
+_DetachedResult = dict[str, object]
+
 _RESULT_FRESHNESS_SECONDS = 300  # 5 minutes
 _POLL_INTERVAL_SECONDS = 2
 _HEARTBEAT_TOTAL = 500
@@ -355,8 +357,10 @@ def start_pre_commit_job_impl(
     )
 
 
-def _interpret_poll_data(data: dict[str, object]) -> dict[str, object]:
-    """Map poll result to final result dict."""
+def _interpret_poll_data(  # pyright: ignore[reportUnusedFunction]
+    data: dict[str, object],
+) -> dict[str, object]:
+    """Map poll result to final result dict (reserved for poll-response mapping)."""
     status = data.get("status")
     if status == "completed":
         result = data.get("result")
@@ -366,7 +370,9 @@ def _interpret_poll_data(data: dict[str, object]) -> dict[str, object]:
     return {"status": "error", "error": str(data.get("error", "Unknown worker error"))}
 
 
-def _already_running_error() -> dict[str, object]:
+def _already_running_error() -> (  # pyright: ignore[reportUnusedFunction]
+    _DetachedResult
+):
     return {
         "status": "error",
         "error": (
@@ -382,9 +388,15 @@ async def run_checks_detached(
     strict_mode: bool,
     timeout: int,
     coverage_threshold: float,
-    ctx: MCPContext | None,
+    ctx: MCPContext | None,  # noqa: ARG001 — retained for call-site compatibility
 ) -> dict[str, object]:
-    """Run pre-commit checks via detached worker subprocess."""
+    """Spawn detached worker and return immediately with lightweight status.
+
+    Returns the inner result dict for cached hits (so execute_pre_commit_checks
+    still delivers a full result without polling). For new or already-running
+    jobs returns {job_id, status} so the MCP connection is not held open.
+    Callers should poll with get_pre_commit_job_status(job_id).
+    """
     args_hash = compute_args_hash(
         checks, timeout, coverage_threshold, strict_mode, False
     )
@@ -394,14 +406,12 @@ async def run_checks_detached(
         return cached
     if existing is not None and existing.get("status") == "running":
         logger.info(
-            "Worker already running for args_hash=%s; returning in-progress status",
+            "Worker already running for args_hash=%s; returning already_running",
             args_hash,
         )
-        return _already_running_error()
+        return {"job_id": args_hash, "status": "already_running"}
 
     _ = spawn_detached_worker(
         project_root, checks, timeout, coverage_threshold, strict_mode, False, args_hash
     )
-    result_path = _result_path(_session_dir(project_root), args_hash)
-    data = await poll_for_result(result_path, ctx, timeout=900.0)
-    return _interpret_poll_data(data)
+    return {"job_id": args_hash, "status": "started"}

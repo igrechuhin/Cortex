@@ -774,6 +774,7 @@ class TestLoadContext:
 # ============================================================================
 
 
+@pytest.mark.timeout(15)
 class TestSummarizeContent:
     """Tests for summarize_content() tool."""
 
@@ -1355,6 +1356,7 @@ class TestPhase4OptimizationResources:
         assert result["target_reduction"] == 0.5
         assert result["strategy"] == "extract_key_sections"
 
+    @pytest.mark.timeout(20)
     async def test_summarize_content_resource_all_files_with_underscore(
         self, mock_project_root: Path, mock_managers: dict[str, Any]
     ) -> None:

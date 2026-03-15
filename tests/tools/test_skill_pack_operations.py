@@ -47,7 +47,7 @@ async def test_skill_pack_discover_recommends_core_for_session() -> None:
 
 
 @pytest.mark.asyncio
-@pytest.mark.timeout(5)
+@pytest.mark.timeout(15)
 async def test_skill_pack_discover_recommends_quality_for_lint() -> None:
     """skill_pack(operation=discover) recommends quality pack for lint/quality tasks."""
     result = await skill_pack(

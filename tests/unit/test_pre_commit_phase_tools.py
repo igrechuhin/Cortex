@@ -36,6 +36,17 @@ from cortex.tools.execution.pre_commit_preflight_helpers import (
 from cortex.tools.execution.pre_commit_tools import execute_pre_commit_checks
 from cortex.tools.models import PreflightCheckSummary
 
+
+@pytest.fixture(autouse=True)
+def _disable_detached_mode():  # type: ignore[misc]  # noqa: ANN202
+    """Phase tests exercise the inline runners; disable detached mode."""
+    with patch(
+        "cortex.tools.execution.pre_commit_detached.DETACHED_ENABLED",
+        False,
+    ):
+        yield
+
+
 # ---------------------------------------------------------------------------
 # Helpers for type-safe access to ModelDict/JsonValue in tests
 # ---------------------------------------------------------------------------

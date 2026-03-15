@@ -2,7 +2,7 @@
 title: "Blocker: Keep Finalize and Verify Memory-Bank State in Sync"
 component: "Cortex MCP implement pipeline - finalize/verify phases"
 work_type: "bugfix"
-status: "PENDING"
+status: "COMPLETE"
 priority: "Blocker"
 created: "2026-03-12"
 execution_order: 3
@@ -11,13 +11,22 @@ depends_on: []
 
 ## Blocker: Keep Finalize and Verify Memory-Bank State in Sync
 
-**Status**: PENDING  
+**Status**: COMPLETE (2026-03-14)
 **Priority**: Blocker  
 **Complexity**: Medium  
 **Category**: Implement pipeline / Memory-bank consistency  
 **Component**: Cortex MCP implement pipeline - finalize/verify phases  
 **Work Type**: bugfix  
 **Execution Order**: 3
+
+## Completion Summary (2026-03-14)
+
+Root cause identified and resolved: the original finalize/verify mismatch was caused by the MCP argument-bridging bug (now fixed by `fix-mcp-plan-tool-argument-bridging.md`). The agent implementations are now consistent:
+
+- **`implement-finalize`** uses `plan(operation="complete")` atomically for full completions — one call updates roadmap, activeContext, progress, and archives the plan. For partial work, it uses `update_memory_bank(progress_append)` and optionally `update_memory_bank(active_context_append)`. An explicit rule prevents mixing these paths (a VIOLATION marker is in the agent).
+- **`implement-verify`** reads roadmap, progress, and the plans root to verify consistent state, using the same memory bank files finalize wrote.
+- No separate helpers needed — the `plan(complete)` atomicity guarantees consistency. Verify’s file reads see the same state finalize wrote.
+- Regression tests: `tests/tools/test_plan_tool_dispatch.py` covers the complete/register argument paths that were the original failure mode.
 
 ## Goal
 

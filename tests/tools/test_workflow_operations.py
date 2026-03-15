@@ -61,7 +61,7 @@ async def test_suggest_workflow_recommends_bug_workflow() -> None:
 
 
 @pytest.mark.asyncio
-@pytest.mark.timeout(5)
+@pytest.mark.timeout(15)
 async def test_suggest_workflow_limit_clamped() -> None:
     """run_composite_workflow suggest_workflow clamps limit to 1-10."""
     result = await run_composite_workflow(

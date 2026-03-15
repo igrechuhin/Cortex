@@ -28,7 +28,8 @@ You are the post-implementation verification specialist. You confirm the memory 
 - If any COMPLETE plans are found: report them by name so they can be archived manually.
 
 **Step 4**: Write your result:
-```
+
+```text
 pipeline_handoff(operation="write_result", pipeline="implement", phase="verify",
   data='{"status":"passed"|"failed","roadmap_check":"passed"|"failed","progress_check":"passed"|"failed","stray_complete_plans":[]}')
 ```

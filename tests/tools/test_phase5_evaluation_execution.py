@@ -99,6 +99,7 @@ async def test_run_one_execution_fails_when_substring_missing() -> None:
 
 
 @pytest.mark.asyncio
+@pytest.mark.timeout(60)
 async def test_run_execution_suite_fast_mode_limits_tasks() -> None:
     """run_execution_suite in fast mode runs at most fast_cap tasks with execution."""
     project_root = get_project_root()

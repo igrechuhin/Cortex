@@ -58,7 +58,7 @@ Parse the completed result:
 
 ### Step 4: Write result
 
-```
+```text
 pipeline_handoff(operation="write_result", pipeline="implement", phase="code",
   data='{"status":"passed"|"failed","subtask":"<description>","files_changed":["..."],"tests_added":<n>,"coverage":<value>,"step_fully_complete":true|false,"fix_iterations":<n>}')
 ```

@@ -2,7 +2,7 @@
 title: "Blocker: Make Pre-Commit Job Status Observable and Bounded"
 component: "Commit/implement pipelines - pre-commit job orchestration"
 work_type: "infra"
-status: "PENDING"
+status: "COMPLETE"
 priority: "Blocker"
 created: "2026-03-12"
 execution_order: 2
@@ -11,13 +11,23 @@ depends_on: []
 
 ## Blocker: Make Pre-Commit Job Status Observable and Bounded
 
-**Status**: PENDING  
+**Status**: COMPLETE (2026-03-14)
 **Priority**: Blocker  
 **Complexity**: Medium  
 **Category**: Infra / Reliability  
 **Component**: Commit/implement pipelines - pre-commit job orchestration  
 **Work Type**: infra  
 **Execution Order**: 2
+
+## Completion Summary (2026-03-14)
+
+All implementation steps were already completed prior to this audit:
+
+- **Step 1**: `PreCommitJobStatus` literal type with all states (`queued`, `running`, `completed`, `error`, `timeout`, `no_runs`, `unknown`) defined in `pre_commit_status.py`.
+- **Step 2**: `_MAX_RUNNING_AGE_SECONDS = 1800.0` in `pre_commit_status.py`; running jobs older than 30 min auto-promoted to `timeout`; `_timeout_error()` in `pre_commit_detached.py` with 900s poll cap.
+- **Step 3**: `get_pre_commit_job_status` returns `checks_summary`, `coverage`, `preflight_passed`, `docs_phase_passed`, `log_path` in all terminal states.
+- **Step 4**: Not applicable — prompts already handle terminal states; no hanging in `running` once bounded.
+- **Step 5**: Full test coverage in `tests/unit/test_pre_commit_status.py` — `no_runs`, `running`, `completed`, `error`, `timeout` (age-promoted + explicit), `queued`, and both MCP tool wrappers tested.
 
 ## Goal
 

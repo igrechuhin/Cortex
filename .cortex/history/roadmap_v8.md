@@ -6,7 +6,7 @@
 
 ## Blockers (ASAP Priority)
 
-### No active blockers (all resolved as of 2026-03-14)
+_(No active blockers — all resolved as of 2026-03-14)_
 
 ## Active Work (in progress)
 
@@ -36,4 +36,4 @@ Completed investigations are recorded in [activeContext.md](activeContext.md). P
 ### Features & Enhancements
 
 - **[HI-2] Structured Quality Config** — Add structured quality config (JSON under `.cortex/config/`) replacing markdown-parsed thresholds. Plan: `plans/add-structured-quality-config.md` | Priority: High | Order: 7
-- **Test Plan** - PENDING - Description
+- **Test Plan** — PENDING - Description. Plan: `plans/test-plan.md` | Priority: Low | Order: 99

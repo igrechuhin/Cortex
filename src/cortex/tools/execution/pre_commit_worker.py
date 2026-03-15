@@ -232,11 +232,18 @@ def _run_markdownlint_subprocess(
         return {"files_with_errors": 0, "status": "error", "error": str(e)}
 
 
+def _resolve_rumdl_path() -> str:
+    """Resolve rumdl binary from the same venv as the running Python."""
+    venv_bin = Path(sys.executable).parent / "rumdl"
+    if venv_bin.is_file():
+        return str(venv_bin)
+    return "rumdl"
+
+
 def _run_markdown_lint(project_root: str) -> dict[str, object]:
     """Run rumdl in check-only mode, return result dict."""
     root = Path(project_root)
-    # Prefer rumdl from the Python environment (installed via pyproject dev deps).
-    cmd: list[str] = ["rumdl", "check"]
+    cmd: list[str] = [_resolve_rumdl_path(), "check"]
     md_files = _collect_md_files_for_lint(root)
     return _run_markdownlint_subprocess(root, cmd, md_files)
 

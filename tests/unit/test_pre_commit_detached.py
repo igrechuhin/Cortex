@@ -115,8 +115,8 @@ async def test_running_status_returns_fast_error_for_second_call(
         coverage_threshold=0.9,
         ctx=None,
     )
-    assert result["status"] == "error"
-    assert "already running for this configuration" in str(result["error"])
+    assert result["status"] == "already_running"
+    assert "job_id" in result
 
 
 def test_start_pre_commit_job_impl_reuses_completed_result(tmp_path: Path) -> None:

@@ -22,7 +22,10 @@ from cortex.core.mcp_stability import (
     typed_mcp_tool,
 )
 from cortex.core.models import ModelDict
-from cortex.core.usage_context import get_or_resolve_project_root
+from cortex.core.usage_context import (
+    get_current_project_root,
+    get_or_resolve_project_root,
+)
 from cortex.services.framework_adapters.base import FrameworkAdapter
 from cortex.services.framework_adapters.go_adapter import GoAdapter
 from cortex.services.framework_adapters.java_adapter import JavaAdapter
@@ -168,6 +171,8 @@ async def _execute_pre_commit_checks_impl(
     )
 
     if DETACHED_ENABLED:
+        # Returns {job_id, status} immediately (or cached result). Does NOT poll.
+        # Use get_pre_commit_job_status(job_id) to check completion.
         return cast(
             ModelDict,
             await run_checks_detached(
@@ -184,6 +189,27 @@ async def _execute_pre_commit_checks_impl(
     )
 
 
+async def _run_phase_detached(
+    phase: PreCommitPhase,
+    test_timeout: int,
+    coverage_threshold: float,
+    strict_mode: bool,
+    ctx: MCPContext | None,
+) -> ModelDict:
+    """Run phase via detached worker; used when DETACHED_ENABLED."""
+    from cortex.tools.execution.pre_commit_detached import run_checks_detached
+    from cortex.tools.execution.pre_commit_phase_dispatch import phase_to_checks
+
+    checks = phase_to_checks(phase)
+    root = get_current_project_root() or await get_or_resolve_project_root(ctx)
+    return cast(
+        ModelDict,
+        await run_checks_detached(
+            root, checks, strict_mode, test_timeout, coverage_threshold, ctx
+        ),
+    )
+
+
 async def _dispatch_phase(
     phase: PreCommitPhase,
     test_timeout: int,
@@ -192,7 +218,17 @@ async def _dispatch_phase(
     include_untracked_markdown: bool,
     ctx: MCPContext | None,
 ) -> ModelDict:
-    """Dispatch to phase-based runner (A, B, or full)."""
+    """Dispatch to phase-based runner (A, B, or full).
+
+    When detached mode is enabled, resolves the phase to its check list and
+    spawns a detached worker so the MCP connection is not held open.
+    """
+    from cortex.tools.execution.pre_commit_detached import DETACHED_ENABLED
+
+    if DETACHED_ENABLED:
+        return await _run_phase_detached(
+            phase, test_timeout, coverage_threshold, strict_mode, ctx
+        )
     from cortex.tools.execution.pre_commit_phase_dispatch import (
         run_execute_pre_commit_checks_by_phase,
     )
@@ -305,25 +341,27 @@ async def _run_standard_checks_mode(
     strict_mode: bool,
     ctx: MCPContext | None,
 ) -> ModelDict:
-    """Run standard checks path and return result dict."""
-    await log_client(
-        ctx,
-        "info",
-        f"execute_pre_commit_checks: checks={list(checks)}, timeout={test_timeout}, cov={coverage_threshold}, strict={strict_mode}",
-        logger_name=__name__,
+    """Run standard checks path and return result dict.
+
+    Avoids MCP stream writes (log_client / list_roots) so the tool returns
+    as fast as possible when detached mode is enabled.
+    """
+    logger.info(
+        "execute_pre_commit_checks: checks=%s, timeout=%s, cov=%s, strict=%s",
+        list(checks),
+        test_timeout,
+        coverage_threshold,
+        strict_mode,
     )
     try:
-        root = await get_or_resolve_project_root(ctx)
+        # Use the synchronous cached root (set by ensure_usage_context) to avoid
+        # a list_roots round-trip that can race with concurrent tool responses.
+        root = get_current_project_root() or await get_or_resolve_project_root(ctx)
         return await _execute_pre_commit_checks_impl(
             root, None, checks, strict_mode, test_timeout, coverage_threshold, ctx
         )
     except Exception as e:
-        await log_client(
-            ctx,
-            "error",
-            f"execute_pre_commit_checks: {e!s}",
-            logger_name=__name__,
-        )
+        logger.error("execute_pre_commit_checks: %s", e)
         return create_error_result_dict(str(e), type(e).__name__)
 
 
@@ -415,7 +453,7 @@ async def _execute_pre_commit_checks_dispatch(
     )
 )
 @ensure_usage_context
-@mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_VERY_COMPLEX)
+@mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_VERY_COMPLEX, enable_progress=False)
 async def execute_pre_commit_checks(
     phase: Literal["A", "B", "full"] | None = None,
     checks: Sequence[PreCommitCheckName] | None = None,

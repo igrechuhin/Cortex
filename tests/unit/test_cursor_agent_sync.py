@@ -14,6 +14,7 @@ from pathlib import Path
 
 import pytest
 
+from cortex.core.path_resolver import CursorResourceType, get_cursor_path
 from cortex.tools.synapse.prompts import (
     CLAUDE_CODE_TOOLS_FIELD,
     get_claude_agents_target,
@@ -288,6 +289,9 @@ class TestRequiredAgentFilesPresent:
         if source is None:
             pytest.skip("cursor-agents source directory not found")
         project_root = source.parent.parent.parent
-        # In tests, get_cursor_path is patched to use _cursor (conftest)
-        assert get_cursor_agents_target(source) == project_root / "_cursor" / "agents"
+        # In tests, get_cursor_path is patched (conftest): repo root -> session temp; tmp_path -> _cursor
+        expected_cursor_agents = (
+            get_cursor_path(project_root, CursorResourceType.CURSOR_DIR) / "agents"
+        )
+        assert get_cursor_agents_target(source) == expected_cursor_agents
         assert get_claude_agents_target(source) == project_root / ".claude" / "agents"

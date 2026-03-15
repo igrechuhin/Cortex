@@ -81,36 +81,32 @@ async def get_dependency_graph(project_root: str | None = None, format: str = "j
         JSON string with dependency graph in requested format.
 
     Example (JSON format):
+
 ```
 
-        ```json
-        {
-          "status": "success",
-          "format": "json",
-          "graph": {
-            "files": {
-              "projectBrief.md": {
-                "priority": 1,
-                "dependencies": []
-              },
-              "activeContext.md": {
-                "priority": 2,
-                "dependencies": ["projectBrief.md"]
-              }
-            }
-          },
-          "loading_order": ["projectBrief.md", "activeContext.md", ...]
+    ```json
+    {
+      "status": "success",
+      "format": "json",
+      "graph": {
+        "files": {
+          "projectBrief.md": {"priority": 1, "dependencies": []},
+          "activeContext.md": {"priority": 2, "dependencies": ["projectBrief.md"]}
         }
-        ```
+      },
+      "loading_order": ["projectBrief.md", "activeContext.md", ...]
+    }
+    ```
 
     Example (Mermaid format):
-        ```json
+
+    ```json
         {
           "status": "success",
           "format": "mermaid",
           "diagram": "graph TD\n  projectBrief.md --> activeContext.md\n  ..."
-        }
-        ```
+    }
+    ```
 
     Note:
         The loading order is computed using topological sort and respects
@@ -182,22 +178,23 @@ class FileSystemProtocol(Protocol):
         - ValidationTools: For reading and validating file content
 
     Example implementation:
+
 ```
 
-        ```python
-        class CustomFileSystem:
-            def validate_path(self, file_path: Path) -> bool:
-                return file_path.is_relative_to(self.project_root)
+    ```python
+    class CustomFileSystem:
+        def validate_path(self, file_path: Path) -> bool:
+            return file_path.is_relative_to(self.project_root)
 
-            async def read_file(self, file_path: Path) -> tuple[str, str]:
-                content = await aiofiles.read(file_path)
-                content_hash = hashlib.sha256(content.encode()).hexdigest()
-                return (content, content_hash)
+        async def read_file(self, file_path: Path) -> tuple[str, str]:
+            content = await aiofiles.read(file_path)
+            content_hash = hashlib.sha256(content.encode()).hexdigest()
+            return (content, content_hash)
 
-            # ... other methods ...
+        # ... other methods ...
 
-        # CustomFileSystem automatically satisfies FileSystemProtocol
-        ```
+    # CustomFileSystem automatically satisfies FileSystemProtocol
+    ```
 
     Note:
         - Structural subtyping means no explicit inheritance needed

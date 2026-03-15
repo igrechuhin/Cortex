@@ -2,9 +2,11 @@
 Tests for the unified plan MCP tool dispatcher.
 
 Focus: argument validation/guardrails for operation and required fields.
+Smoke tests: full-payload get/create to verify argument bridging end-to-end.
 """
 
 import json
+from pathlib import Path
 
 import pytest
 
@@ -79,3 +81,42 @@ class TestPlanToolHappyPath:
         assert result.get("status") == "success"
         assert "plans" in result
         assert isinstance(result["plans"], list)
+
+
+class TestPlanToolSmoke:
+    """Smoke tests: full-payload get/create to verify MCP argument bridging."""
+
+    # Slug of an existing plan file in this repo (used for get smoke test).
+    EXISTING_PLAN_SLUG = "fix-mcp-plan-tool-argument-bridging"
+    # Slug used for create smoke test; file is created then removed.
+    SMOKE_CREATE_SLUG = "smoke-test-plan-bridge-arg"
+
+    @pytest.mark.asyncio
+    async def test_plan_operation_get_with_full_payload_returns_success(self) -> None:
+        """plan(operation='get', slug=...) with full payload returns success and content."""
+        result_str = await plan(
+            operation="get",
+            slug=self.EXISTING_PLAN_SLUG,
+            response_format="content",
+        )
+        result = json.loads(result_str)
+        assert result.get("status") == "success", result.get("message")
+        assert result.get("slug") == self.EXISTING_PLAN_SLUG
+        assert result.get("content") or result.get("title"), "expect content or title"
+
+    @pytest.mark.asyncio
+    async def test_plan_operation_create_with_full_payload_creates_file(self) -> None:
+        """plan(operation='create', title=..., content=..., slug=...) creates plan file."""
+        result_str = await plan(
+            operation="create",
+            title="Smoke Test Plan",
+            content="# Smoke Test\nBody for argument-bridging smoke test.",
+            slug=self.SMOKE_CREATE_SLUG,
+        )
+        result = json.loads(result_str)
+        assert result.get("status") == "success", result.get("message")
+        file_path = result.get("file_path")
+        assert file_path, "create success should return file_path"
+        path = Path(file_path)
+        assert path.is_file(), f"created plan file should exist: {file_path}"
+        path.unlink(missing_ok=True)

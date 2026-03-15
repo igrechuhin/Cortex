@@ -1095,6 +1095,7 @@ class TestPhase8StructureContextLogging:
         assert ("info", "get_structure_info: starting") in levels_and_messages
         assert ("info", "get_structure_info: completed") in levels_and_messages
 
+    @pytest.mark.timeout(20)
     async def test_check_structure_health_calls_log_client_when_ctx_passed(
         self,
         mock_project_root: Path,

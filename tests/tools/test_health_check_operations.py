@@ -220,6 +220,7 @@ class TestAnalyzeHealthCheck:
 class TestAnalyzeHealthCheckResource:
     """Tests for analyze_health_check_resource (Phase 43 cortex://health/analyze)."""
 
+    @pytest.mark.timeout(15)
     async def test_analyze_health_check_resource_returns_json(self) -> None:
         """analyze_health_check_resource returns JSON (Phase 43)."""
         success_json = json.dumps(

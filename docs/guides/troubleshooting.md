@@ -125,10 +125,14 @@ If the **client** shows `MCP error -32000: Connection closed` during a tool call
 
 - Tool call returns: `{"error":"MCP error -32000: Connection closed"}`
 - Occurs during long-running tools (e.g. `fix_markdown_lint`, `execute_pre_commit_checks`, `fix_quality_issues`)
+- Occurs when **multiple subagents call MCP tools concurrently** (e.g. parallel fix quality + fix tests + fix docs)
 
 **Cause**:
 
-The **client** (e.g. Cursor) closed the MCP connection before the tool finished—usually due to client-side tool timeout or IDE lifecycle, not a server bug. The tool may have completed on the server; the connection was already closed when the response was sent.
+The **client** (e.g. Cursor) closed the MCP connection before the tool finished. Two known triggers:
+
+1. **Client-side tool timeout** — a single long-running tool exceeds the client timeout (~10-20s).
+2. **Concurrent subagent tool calls** — when 3-4 tool calls are in-flight simultaneously from parallel subagents, Cursor's aggregate pending-call timeout kills the shared MCP stdio connection even if individual tools are fast. This is the most common cause when using orchestration prompts (e.g. `/cortex/fix`) that launch parallel agents.
 
 **Why it matters**: After a disconnect the agent may keep running **without MCP**. It will not use Cortex tools (memory bank, rules, quality checks). Reconnect so the server restarts; for important work, re-run the task so the agent runs with MCP control. For disconnects **during the commit pipeline**, see the [MCP disconnect runbook (commit pipeline)](#mcp-disconnect-runbook-commit).
 
@@ -147,11 +151,15 @@ The **client** (e.g. Cursor) closed the MCP connection before the tool finished�
 3. **Use documented fallbacks in the commit pipeline**  
    If a retry still fails with "Connection closed", follow the commit prompt’s fallback for that step (e.g. run markdown lint via shell for Step 12.5, or the fallback scripts for Step 12.6) and record "MCP connection closed; fallback used". Do not block the pipeline on "tool not found" after a disconnect—use the fallback.
 
+4. **Never run parallel subagents that call MCP tools**
+   Concurrent subagents sharing one MCP stdio connection will cause disconnects. Orchestration prompts (e.g. `fix.md`) must run targets **sequentially**, not in parallel. If you write a new prompt that calls MCP tools from multiple agents, ensure they run one at a time. See the `fix.md` Sequential Execution section for the pattern.
+
 HTTP/SSE or a stdio–HTTP bridge is not a supported workaround for this issue (it has been tried and does not resolve connection closed during long tools).
 
 **Server-side mitigations (already in place)**:
 
-- **Client cancel no longer disconnects**: When the client cancels a request (e.g. timeout), the server returns a structured error response instead of propagating cancellation. The connection stays open, so you avoid disconnect and "0 tools" from cancels.
+- **Client cancel no longer crashes the server**: The server patches `_handle_request` to catch `ClosedResourceError` on `message.respond()`. When the client disconnects mid-response, the exception is absorbed instead of propagating to the anyio TaskGroup (which previously cancelled all in-flight tasks and killed the server process). The response is lost (the client is gone) but the server stays alive for the next connection.
+- **Minimal MCP stream writes in fast tools**: `execute_pre_commit_checks` (standard checks path) uses server-side `logger.info` instead of `log_client` and `get_current_project_root()` (cached, sync) instead of `list_roots` round-trips, minimizing stream contention with concurrent tool responses.
 - Progress and heartbeat for long tools (e.g. 2 s heartbeat and wrapper progress for `fix_markdown_lint`, frequent progress for `execute_pre_commit_checks`).
 - Automatic retry for connection errors in the tool wrapper. Most tools get one retry; `fix_markdown_lint` gets **four attempts** (1 initial + 3 retries) with exponential backoff (1 s, 2 s, 4 s) to reduce commit-pipeline disconnects.
 - Batched markdown lint to reduce total duration.

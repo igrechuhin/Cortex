@@ -9,7 +9,8 @@ This module provides comprehensive fixtures for:
 - Test data for various scenarios
 """
 
-# Patch get_cursor_path before any other cortex import so structure_migration etc. see _cursor.
+# Patch get_cursor_path before any other cortex import so structure_migration etc. see it.
+import tempfile  # noqa: I001
 from pathlib import Path
 
 import cortex.core.path_resolver as _path_resolver_module  # noqa: E402, I001
@@ -17,12 +18,24 @@ from cortex.core.path_resolver import (
     CursorResourceType as _CursorResourceType,  # noqa: E402
 )
 
+# Repo root (tests/conftest.py -> tests/ -> repo root). When project_root is this,
+# we use a session temp dir so the workspace is not polluted with _cursor.
+_REPO_ROOT = Path(__file__).resolve().parent.parent
+_SESSION_CURSOR_BASE = tempfile.mkdtemp(prefix="cortex_cursor_")
+
 
 def _get_cursor_path_test(
     project_root: Path, resource_type: _CursorResourceType
 ) -> Path:
-    """Return cursor path using _cursor dir so tests can create it without permission issues."""
-    base = project_root / "_cursor"
+    """Return cursor path: session temp when project is repo root, else project_root/_cursor."""
+    try:
+        resolved = project_root.resolve()
+    except OSError:
+        resolved = project_root
+    if resolved == _REPO_ROOT:
+        base = Path(_SESSION_CURSOR_BASE)
+    else:
+        base = project_root / "_cursor"
     if resource_type == _CursorResourceType.CURSOR_DIR:
         return base
     return base / resource_type.value
@@ -32,7 +45,6 @@ _path_resolver_module.get_cursor_path = _get_cursor_path_test  # type: ignore[me
 
 import asyncio  # noqa: E402
 import json  # noqa: E402
-import tempfile  # noqa: E402
 from collections.abc import Generator, ItemsView, KeysView, ValuesView  # noqa: E402
 from datetime import datetime  # noqa: E402
 from typing import cast  # noqa: E402

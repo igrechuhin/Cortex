@@ -2,7 +2,7 @@
 title: "Fix MCP Plan Tool Argument Wiring/Bridging and Audit Similar Gaps"
 component: "Cortex MCP integration and tool orchestration (implement/commit/docs pipelines)"
 work_type: "internal_tooling"
-status: "IN_PROGRESS"
+status: "COMPLETE"
 priority: "High"
 created: "2026-03-12"
 execution_order: 0
@@ -11,7 +11,7 @@ depends_on: []
 
 ## Fix MCP Plan Tool Argument Wiring/Bridging and Audit Similar Gaps
 
-**Status**: IN_PROGRESS  
+**Status**: COMPLETE
 **Priority**: High  
 **Complexity**: Medium  
 **Category**: Internal tooling / Refactoring / Reliability  
@@ -155,7 +155,7 @@ This indicates a gap in the **integration layer** between high-level orchestrato
    - `/user-cortex/implement` Finalize marking a plan complete via `plan(operation="complete")`.
 3. Add lightweight logging/metrics around MCP tool calls (without leaking sensitive data) so that future gaps in argument passing are easier to detect and diagnose.
 
-**Step 7 progress (2026-03-13)**: Partial — added lightweight logging in plan tool (operation + required_args_present); added test in tests/tools/test_plan_payloads.py for build_plan_create_arguments (create payload validation). Guardrail tests added for plan payload builders (complete, register, create) in test_plan_payloads.py; pyright fix for pytest.raises blocks. Remaining: smoke tests and optional metrics.
+**Step 7 progress (2026-03-14)**: COMPLETE. Smoke tests done; optional metrics deferred as non-blocking. Completed: lightweight logging in plan tool (operation + required_args_present); build_plan_create_arguments test in test_plan_payloads.py; guardrail tests for plan payload builders (complete, register, create); TestPlanToolSmoke in test_plan_tool_dispatch.py — test_plan_operation_get_with_full_payload_returns_success and test_plan_operation_create_with_full_payload_creates_file (get/create with full payload). Optional metrics not required for success criteria — all other criteria met.
 
 ## Verification Checklist
 

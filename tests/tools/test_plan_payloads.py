@@ -285,6 +285,7 @@ class TestPlanPayloadGuardrails:
             _ = build_plan_create_arguments("Title", "")
 
 
+@pytest.mark.timeout(15)
 class TestPlanToolAcceptsBuiltPayloads:
     """Built payloads are accepted by the plan tool (past validation)."""
 

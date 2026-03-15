@@ -110,6 +110,10 @@ class TestExecutePreCommitChecks:
                     "cortex.tools.execution.pre_commit_tools.PythonAdapter",
                 ) as mock_adapter_class,
                 patch(
+                    "cortex.tools.execution.pre_commit_tools.get_current_project_root",
+                    return_value=project_root,
+                ),
+                patch(
                     "cortex.tools.execution.pre_commit_tools.get_or_resolve_project_root",
                     new_callable=AsyncMock,
                     return_value=project_root,
@@ -384,11 +388,17 @@ class TestExecutePreCommitChecks:
 
     @pytest.mark.asyncio
     async def test_error_handling(self) -> None:
-        """Test error handling in tool."""
-        with patch(
-            "cortex.tools.execution.pre_commit_tools.get_or_resolve_project_root",
-            new_callable=AsyncMock,
-            side_effect=Exception("Test error"),
+        """Test error handling in tool when project root resolution fails."""
+        with (
+            patch(
+                "cortex.tools.execution.pre_commit_tools.get_current_project_root",
+                return_value=None,
+            ),
+            patch(
+                "cortex.tools.execution.pre_commit_tools.get_or_resolve_project_root",
+                new_callable=AsyncMock,
+                side_effect=Exception("Test error"),
+            ),
         ):
             result = await execute_pre_commit_checks(
                 checks=["fix_errors"],
@@ -1749,7 +1759,11 @@ class TestPreCommitToolsContextLogging:
     async def test_execute_pre_commit_checks_calls_log_client_when_ctx_passed(
         self,
     ) -> None:
-        """When ctx is passed, execute_pre_commit_checks logs start and completion."""
+        """When ctx is passed, execute_pre_commit_checks logs completion via log_client.
+
+        Note: the start log was moved from log_client to server-side logger.info
+        to avoid MCP stream writes that race with concurrent tool responses.
+        """
         mock_ctx = AsyncMock()
         with tempfile.TemporaryDirectory() as tmpdir:
             project_root = Path(tmpdir)
@@ -1763,6 +1777,10 @@ class TestPreCommitToolsContextLogging:
                 patch(
                     "cortex.tools.execution.pre_commit_tools.PythonAdapter",
                 ) as mock_adapter_class,
+                patch(
+                    "cortex.tools.execution.pre_commit_tools.get_current_project_root",
+                    return_value=project_root,
+                ),
                 patch(
                     "cortex.tools.execution.pre_commit_tools.get_or_resolve_project_root",
                     new_callable=AsyncMock,
@@ -1831,13 +1849,8 @@ class TestPreCommitToolsContextLogging:
             assert result["status"] == "success"
             args_list = [c[0] for c in mock_log.call_args_list]
             levels_and_messages = [(a[1], a[2]) for a in args_list]
-            has_start_log = any(
-                level == "info"
-                and "execute_pre_commit_checks" in msg
-                and "checks=" in msg
-                for level, msg in levels_and_messages
-            )
-            assert has_start_log, f"Expected start log; got {levels_and_messages}"
+            # Start log now uses server-side logger.info (not log_client),
+            # so only the completion log is sent to the MCP client.
             assert (
                 "info",
                 "execute_pre_commit_checks: completed",

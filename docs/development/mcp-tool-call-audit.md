@@ -1,6 +1,6 @@
 # MCP tool call audit (argument wiring / bridging)
 
-This document is the **Step 1 audit** for the plan [Fix MCP Plan Tool Argument Wiring/Bridging and Audit Similar Gaps](../../.cortex/plans/fix-mcp-plan-tool-argument-bridging.md). It inventories MCP tool call sites in orchestration layers and classifies each as **Safe** (full JSON payload instructed) or **Unsafe** (name-only or underspecified).
+This document is the **Step 1 audit** for the plan [Fix MCP Plan Tool Argument Wiring/Bridging and Audit Similar Gaps](../../.cortex/plans/archive/Blocker/fix-mcp-plan-tool-argument-bridging.md). It inventories MCP tool call sites in orchestration layers and classifies each as **Safe** (full JSON payload instructed) or **Unsafe** (name-only or underspecified).
 
 ## Scope
 
@@ -67,6 +67,6 @@ Synapse cursor-agents (`.cortex/synapse/cursor-agents/`) mirror the same pattern
 
 ## References
 
-- Plan: [fix-mcp-plan-tool-argument-bridging.md](../../.cortex/plans/fix-mcp-plan-tool-argument-bridging.md)
+- Plan: [fix-mcp-plan-tool-argument-bridging.md](../../.cortex/plans/archive/Blocker/fix-mcp-plan-tool-argument-bridging.md)
 - Cursor `CallMcpTool` contract: see “Developer Notes” in the plan.
 - Tool payload contracts: `docs/api/tools.md` and plan Step 2.

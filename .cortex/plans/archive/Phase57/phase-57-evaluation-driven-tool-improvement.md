@@ -69,6 +69,7 @@ Cortex currently tracks basic usage stats (call counts, success rates) via `get_
   - Expected outcome (success criteria)
   - Token budget baseline (expected token consumption)
   - Common failure modes
+
 - [x] Store tasks in `.cortex/evals/tasks/` as JSON (initial `core_workflows.json` seeded; extend with additional tasks in follow-up work). Extended to 26 tasks with 5+ in each category (context 8, pre_commit 5, plan 5, memory_bank 8).
 
 ### Step 2: Build Evaluation Harness

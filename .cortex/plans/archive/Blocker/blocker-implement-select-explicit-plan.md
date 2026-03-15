@@ -2,7 +2,7 @@
 title: "Blocker: Implement-Select Must Respect Explicit Plan Targets"
 component: "Cortex MCP implement pipeline (selection phase)"
 work_type: "bugfix"
-status: "IN_PROGRESS"
+status: "COMPLETE"
 priority: "Blocker"
 created: "2026-03-12"
 execution_order: 1
@@ -11,7 +11,7 @@ depends_on: []
 
 ## Blocker: Implement-Select Must Respect Explicit Plan Targets
 
-**Status**: IN_PROGRESS (PARTIAL)  
+**Status**: COMPLETE (2026-03-14)
 **Priority**: Blocker  
 **Complexity**: Medium  
 **Category**: Implement pipeline / Selection correctness  
@@ -31,16 +31,14 @@ Ensure that `/user-cortex/implement` honors an explicitly referenced plan (for e
 
 We need a clear, deterministic contract for how explicit plan references interact with roadmap priority ordering.
 
-## Current Progress (2026-03-12)
+## Completion Summary (2026-03-14)
 
-- **Completed**:
-  - Defined and documented explicit-plan-first selection precedence for `/user-cortex/implement` at the prompt/orchestration layer, including how to pass `explicit_plan_path` hints and how fallback to roadmap ordering should be reported.
-  - Updated implement pipeline prompts so `implement-select` accepts and prefers an `explicit_plan_path` hint when the referenced plan exists and is eligible, and reports a clear note when the explicit plan is invalid or ineligible.
-  - Added prompt-level tests (`tests/tools/test_implement_select_explicit_plan_prompt.py`) covering three core scenarios: (A) no explicit plan → roadmap priority ordering, (B) valid explicit plan → preferred over roadmap, and (C) invalid or ineligible explicit plan → documented fallback behavior.
+All implementation steps are complete:
 
-- **Remaining**:
-  - Wire explicit-plan precedence and eligibility checks more deeply into the runtime selection logic beyond the prompt layer, ensuring the MCP subagent and orchestration enforce the same contract as the prompts.
-  - Extend tests to cover the full end-to-end implement pipeline for explicit plan selection, including eligibility/blocking conditions at runtime.
+- **Prompt/docs layer**: Explicit-plan-first selection precedence documented; `implement-select` accepts and prefers `explicit_plan_path` hints.
+- **Runtime layer** (`.claude/agents/implement-select.md`): Step 0 reads `pipeline_handoff` for `explicit_plan_path`; Step 2a resolves the plan, validates eligibility (not archived/COMPLETE, dependencies not blocked), selects it as primary if eligible, falls back to roadmap ordering with a note if not.
+- **Tests**: `tests/tools/test_implement_select_explicit_plan_prompt.py` covers all three scenarios (no explicit plan, valid explicit plan, invalid/ineligible).
+- **No additional wiring needed**: The agent file fully enforces the contract at runtime.
 
 ## Implementation Steps
 

@@ -46,7 +46,8 @@ If no pending steps exist in any section: report "Roadmap complete" and STOP.
 If no plan file exists, note "No plan file — implementation based on roadmap description".
 
 **Step 7**: Write your result:
-```
+
+```text
 pipeline_handoff(operation="write_result", pipeline="implement", phase="select",
   data='{"status":"complete","selected_step":"<title>","plan_file":"<path or null>","selection_source":"explicit_plan"|"roadmap_priority","roadmap_section":"<section>"}')
 ```

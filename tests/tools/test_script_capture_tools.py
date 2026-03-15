@@ -327,6 +327,7 @@ class TestSessionScriptsDispatcher:
 class TestScriptCaptureResources:
     """Tests for Phase 43 script capture resources (cortex://scripts/...)."""
 
+    @pytest.mark.timeout(20)
     async def test_list_session_scripts_resource_returns_json(self) -> None:
         """list_session_scripts_resource returns JSON (Phase 43)."""
         payload = json.dumps({"status": "success", "count": 0, "scripts": []}, indent=2)

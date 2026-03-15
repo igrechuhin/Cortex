@@ -11,6 +11,7 @@ MCP, so the next session gets a fresh Initialize handshake with no user action.
 Set CORTEX_AUTO_RESTART=1 to run an in-process restart loop (server respawns
 under the same pipe; may require reloading MCP after disconnect to restore tools).
 """
+# pyright: reportPrivateUsage=false
 
 import logging
 import os
@@ -236,9 +237,53 @@ def _inject_sequential_thinking_core() -> None:
     configure_sequential_thinking_core(SequentialThinkingCore())
 
 
+def _patch_mcp_server_handle_request() -> None:
+    """Wrap _handle_request to absorb ClosedResourceError on message.respond().
+
+    When the MCP client disconnects while two tool calls are in-flight, the
+    second tool's response write raises ClosedResourceError.  Without this
+    patch that exception propagates into the anyio TaskGroup, which then
+    cancels all remaining tasks and tears down the whole session.  Catching it
+    here turns a fatal server crash into a silent no-op: the response is lost
+    (the client is gone anyway) but the server process stays alive.
+    """
+    import types as _types
+
+    from anyio import ClosedResourceError
+
+    lowlevel = mcp._mcp_server  # type: ignore[attr-defined]
+    _original_handle_request = lowlevel._handle_request
+
+    async def _patched(
+        _self: object,
+        message: object,
+        req: object,
+        session: object,
+        lifespan_context: object,
+        raise_exceptions: bool = False,
+    ) -> None:
+        try:
+            # Forward to MCP server; params typed as object to avoid coupling to mcp internals
+            await _original_handle_request(
+                message,  # pyright: ignore[reportArgumentType]
+                req,  # pyright: ignore[reportArgumentType]
+                session,  # pyright: ignore[reportArgumentType]
+                lifespan_context,
+                raise_exceptions,
+            )
+        except ClosedResourceError:
+            logger.debug(
+                "Response for request %s dropped: client already disconnected",
+                getattr(message, "request_id", "?"),
+            )
+
+    lowlevel._handle_request = _types.MethodType(_patched, lowlevel)
+
+
 def _run_server_once() -> None:
     """Run the MCP server once (stdio or HTTP). Exits on disconnect or error."""
     _inject_sequential_thinking_core()
+    _patch_mcp_server_handle_request()
     transport = get_effective_transport()
     if transport in (TRANSPORT_SSE, TRANSPORT_STREAMABLE_HTTP):
         _require_http_deps()

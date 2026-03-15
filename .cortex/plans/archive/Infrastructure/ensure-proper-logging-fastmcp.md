@@ -58,9 +58,7 @@ According to [FastMCP Context documentation](https://gofastmcp.com/servers/conte
    - Warning logging: `await ctx.warning("Non-critical issue: ...")`
    - Error logging: `await ctx.error("Operation failed: ...")` or `ToolError` for fatal errors
 2. **Helper functions** use `get_context()` for logging when not passed `ctx` parameter
-
 3. **Structured logging** with metadata (request_id, tool_name, etc.) where applicable
-
 4. **No ad-hoc print statements** or discarded exception traces
 5. **Consistent logging format** across all tools
 6. **Tests updated** to verify Context logging behavior
@@ -150,7 +148,6 @@ This allows:
 #### Step 1.3: Define Logging Guidelines — DONE
 
 - [x] Create `docs/development/logging-guidelines.md` with:
-
 - When to use each log level
 - Required metadata fields (request_id, tool_name, etc.)
 - Message format standards

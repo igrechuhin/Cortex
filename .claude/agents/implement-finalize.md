@@ -45,7 +45,8 @@ If no plan file was used, omit `plan_file_name`.
 4. If a plan file was used: update the plan `status` to `IN_PROGRESS` and add a brief note marking which steps are done vs. remaining. Do **not** archive — it must stay discoverable for the next session.
 
 **Final step**: Write your result:
-```
+
+```text
 pipeline_handoff(operation="write_result", pipeline="implement", phase="finalize",
   data='{"status":"complete","memory_bank_updated":true,"roadmap_entry":"removed"|"kept","plan_file":"archived"|"updated"|"none"}')
 ```

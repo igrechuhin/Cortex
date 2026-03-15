@@ -46,16 +46,11 @@ _logger = logging.getLogger(__name__)
 # Tools that manage their own progress reporting (test counts, etc.).
 # Wrapper time-based progress is disabled for these tools to avoid
 # conflicting or backwards progress updates on the client.
-_TOOLS_WITH_OWN_PROGRESS: frozenset[str] = frozenset(
-    {
-        # Uses test-level progress via make_test_progress_callback.
-        "execute_pre_commit_checks",
-    }
-)
+# Note: execute_pre_commit_checks was removed after switching to detached mode
+# (run_checks_detached returns immediately; no in-process progress needed).
+_TOOLS_WITH_OWN_PROGRESS: frozenset[str] = frozenset()
 # Tools that need more frequent progress to prevent client idle timeout (-32000).
-_TOOLS_NEEDING_FREQUENT_PROGRESS = frozenset(
-    {"execute_pre_commit_checks", "fix_markdown_lint"}
-)
+_TOOLS_NEEDING_FREQUENT_PROGRESS = frozenset({"fix_markdown_lint"})
 # Long-running tools serialized (one at a time) so the connection does not break.
 # Detached pipelines like execute_pre_commit_checks manage their own concurrency
 # and progress; serializing them at the MCP wrapper layer can cause redundant
@@ -97,10 +92,10 @@ def get_usage_context_init_lock() -> asyncio.Lock:
 # Connection retry overrides per tool (Blocker: MCP disconnects). Defaults use
 # MCP_CONNECTION_RETRY_ATTEMPTS and MCP_CONNECTION_RETRY_DELAY_SECONDS from constants.
 # - fix_markdown_lint: 4 attempts (1 initial + 3 retries), exponential backoff 1s, 2s, 4s.
-# - execute_pre_commit_checks: 4 attempts (1 initial + 3 retries), exponential backoff 1s, 2s, 4s.
+# Note: execute_pre_commit_checks was removed — it now returns immediately (detached mode)
+# so retrying would spawn duplicate workers and is no longer needed.
 _CONNECTION_RETRY_OVERRIDES: dict[str, tuple[int, tuple[float, ...]]] = {
     "fix_markdown_lint": (4, (1.0, 2.0, 4.0)),
-    "execute_pre_commit_checks": (4, (1.0, 2.0, 4.0)),
 }
 
 
