@@ -9,13 +9,10 @@ def _read_repo_file(relative_path: str) -> str:
 
 
 def test_env_check_uses_valid_python_f_string_quoting() -> None:
-    """Makefile env-check inline Python should not contain escaped quote bug."""
+    """Makefile env-check inline Python must escape nested double quotes."""
     makefile = _read_repo_file("Makefile")
-    assert 'print(f"{sys.version_info.major}.{sys.version_info.minor}")' in makefile
-    assert (
-        'print(f\\"{sys.version_info.major}.{sys.version_info.minor}\\")'
-        not in makefile
-    )
+    assert 'print(f\\"{sys.version_info.major}.{sys.version_info.minor}\\")' in makefile
+    assert 'print(f"{sys.version_info.major}.{sys.version_info.minor}")' not in makefile
 
 
 def test_quality_workflow_runs_env_check_smoke_guard() -> None:

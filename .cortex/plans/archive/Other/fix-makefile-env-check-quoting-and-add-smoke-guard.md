@@ -2,7 +2,7 @@
 title: "Fix Makefile env-check quoting and add smoke guard"
 component: "build-tooling/Makefile"
 work_type: "fix"
-status: "PENDING"
+status: "COMPLETE"
 priority: "HIGH"
 created: "2026-03-20"
 depends_on: []

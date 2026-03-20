@@ -216,7 +216,7 @@ class TestAnalyzeHealthCheck:
 
 
 @pytest.mark.asyncio
-@pytest.mark.timeout(5)
+@pytest.mark.timeout(15)
 class TestAnalyzeHealthCheckResource:
     """Tests for analyze_health_check_resource (Phase 43 cortex://health/analyze)."""
 

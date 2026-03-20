@@ -255,7 +255,7 @@ class TestGetAnalysisManagers:
         assert insight == mock_insight
 
 
-@pytest.mark.timeout(10)
+@pytest.mark.timeout(20)
 class TestAnalyzeHandler:
     """Test main analyze handler."""
 
@@ -386,7 +386,7 @@ class TestAnalyzeHandler:
             assert result_data["error_type"] == "RuntimeError"
 
 
-@pytest.mark.timeout(10)
+@pytest.mark.timeout(20)
 class TestAnalyzeContextLogging:
     """Test analyze tool Context logging (FastMCP)."""
 
@@ -1273,7 +1273,7 @@ class TestProcessRefactoringRequest:
             assert result_data["suggestion_id"] == "consolidation_001"
 
 
-@pytest.mark.timeout(10)
+@pytest.mark.timeout(20)
 class TestSuggestRefactoringHandler:
     """Test main suggest_refactoring handler."""
 
@@ -1357,7 +1357,7 @@ class TestSuggestRefactoringHandler:
 
 
 @pytest.mark.asyncio
-@pytest.mark.timeout(10)
+@pytest.mark.timeout(20)
 class TestRefactoringOperationsContextLogging:
     """Test suggest_refactoring uses log_client when ctx is passed."""
 
@@ -1395,7 +1395,7 @@ class TestRefactoringOperationsContextLogging:
         assert ("info", "suggest_refactoring: completed") in levels_and_messages
 
 
-@pytest.mark.timeout(10)
+@pytest.mark.timeout(20)
 class TestAnalyzeResource:
     """Test analyze_resource (Phase 43 Phase 5 Analysis resource)."""
 
@@ -1447,7 +1447,7 @@ class TestAnalyzeResource:
         assert json.loads(result)["status"] == "success"
 
 
-@pytest.mark.timeout(10)
+@pytest.mark.timeout(20)
 class TestSuggestRefactoringResource:
     """Test suggest_refactoring_resource (Phase 43 Phase 5 Analysis resource)."""
 

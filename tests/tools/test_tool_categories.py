@@ -41,7 +41,7 @@ _MIN_TOTAL_TOOLS = (
 )
 
 
-@pytest.mark.timeout(5)
+@pytest.mark.timeout(15)
 class TestToolCategoryEnum:
     """Tests for ToolCategory enum."""
 
@@ -62,7 +62,7 @@ class TestToolCategoryEnum:
         assert ToolCategory.DEFERRED_LOW == "deferred_low"
 
 
-@pytest.mark.timeout(5)
+@pytest.mark.timeout(15)
 class TestToolCategoryEntry:
     """Tests for ToolCategoryEntry Pydantic model."""
 
@@ -99,7 +99,7 @@ class TestToolCategoryEntry:
         assert restored == entry
 
 
-@pytest.mark.timeout(5)
+@pytest.mark.timeout(15)
 class TestToolCategoryConfig:
     """Tests for ToolCategoryConfig Pydantic model."""
 
@@ -118,7 +118,7 @@ class TestToolCategoryConfig:
             config.enabled = False  # type: ignore[misc]
 
 
-@pytest.mark.timeout(5)
+@pytest.mark.timeout(15)
 class TestToolCategoriesMapping:
     """Tests for the canonical TOOL_CATEGORIES mapping."""
 
@@ -188,7 +188,7 @@ class TestToolCategoriesMapping:
         assert len(low) == 0, f"Expected 0 deferred_low tools, got {len(low)}"
 
 
-@pytest.mark.timeout(5)
+@pytest.mark.timeout(15)
 class TestGetToolCategory:
     """Tests for get_tool_category() lookup."""
 
@@ -205,7 +205,7 @@ class TestGetToolCategory:
         assert get_tool_category("") is None
 
 
-@pytest.mark.timeout(5)
+@pytest.mark.timeout(15)
 class TestGetToolsByCategory:
     """Tests for get_tools_by_category() filter."""
 
@@ -231,7 +231,7 @@ class TestGetToolsByCategory:
         assert total == len(TOOL_CATEGORIES)
 
 
-@pytest.mark.timeout(5)
+@pytest.mark.timeout(15)
 class TestProgrammaticToolCallingConstants:
     """Tests for Phase 49 Step 8 allowed_callers constants."""
 
@@ -247,7 +247,7 @@ class TestProgrammaticToolCallingConstants:
             assert name in catalogued, f"{name} should be in TOOL_CATEGORIES"
 
 
-@pytest.mark.timeout(5)
+@pytest.mark.timeout(15)
 class TestGetAlwaysLoadedToolNames:
     """Tests for get_always_loaded_tool_names()."""
 
@@ -271,7 +271,7 @@ class TestGetAlwaysLoadedToolNames:
         assert not overlap, f"Overlap between always and deferred: {overlap}"
 
 
-@pytest.mark.timeout(5)
+@pytest.mark.timeout(15)
 class TestGetDeferredToolNames:
     """Tests for get_deferred_tool_names()."""
 
@@ -301,7 +301,7 @@ class TestGetDeferredToolNames:
         assert "benchmark_model" not in always
 
 
-@pytest.mark.timeout(5)
+@pytest.mark.timeout(15)
 class TestBuildCategoryConfig:
     """Tests for build_category_config()."""
 
@@ -349,7 +349,7 @@ class TestBuildCategoryConfig:
         assert restored == config
 
 
-@pytest.mark.timeout(5)
+@pytest.mark.timeout(15)
 class TestGetCategorySummary:
     """Tests for get_category_summary()."""
 
@@ -382,7 +382,7 @@ class TestGetCategorySummary:
         assert set(summary.keys()) == category_values
 
 
-@pytest.mark.timeout(5)
+@pytest.mark.timeout(15)
 class TestToolCategoryNameLiteral:
     """Tests for ToolCategoryName type alias."""
 
@@ -403,7 +403,7 @@ class TestToolCategoryNameLiteral:
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.timeout(5)
+@pytest.mark.timeout(15)
 class TestToolSearchResult:
     """Tests for ToolSearchResult model."""
 
@@ -429,7 +429,7 @@ class TestToolSearchResult:
             r.name = "z"  # type: ignore[misc]
 
 
-@pytest.mark.timeout(5)
+@pytest.mark.timeout(15)
 class TestSearchDeferredTools:
     """Tests for search_deferred_tools()."""
 

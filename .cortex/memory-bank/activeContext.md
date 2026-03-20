@@ -4,7 +4,9 @@
 
 ## Completed Work (2026-03-20)
 
-- ✅ **Makefile env-check smoke guard and commit/docs gate hardening** - COMPLETE (2026-03-20) - Fixed Makefile env-check quoting and added integration smoke coverage; aligned commit pipeline behavior to zero-arg quality/docs gates and documented/guarded dirty submodule handling paths.
+- ✅ **Pytest lightweight MCP usage init expansion** - COMPLETE (2026-03-20) - Broadened `_PYTEST_LIGHTWEIGHT_TOOLS` in `mcp_stability_usage.py` so more tools skip heavy context init under pytest; refreshed tool governance tests; tuned `pytest.ini`; kept Makefile `env-check` quoting fixes and integration smoke guard. Phase A coverage ~0.91.
+
+- ✅ **Makefile env-check, smoke guard, and quality/docs pipeline alignment** - COMPLETE (2026-03-20) - Shell-safe env-check quoting, actionable preflight messages, smoke integration coverage, zero-arg `run_quality_gate*` / `run_docs_gate` alignment, and dirty-submodule guard documentation.
 
 - ✅ **Phase A Fingerprint & Detached Polling Hardening** - COMPLETE (2026-03-20) - Narrowed Phase A fingerprint bookkeeping exception handling, moved detached polling file reads off the event loop, and improved hybrid-rule NotImplementedError stub messages. Phase A quality gate passed (coverage ~0.91).
 

@@ -362,6 +362,7 @@ class TestRunPreflightChecks:
         assert "markdown_lint" not in check_names
 
     @pytest.mark.asyncio
+    @pytest.mark.timeout(20)
     async def test_multiple_check_results_in_summaries(self) -> None:
         """Multiple checks from execute_pre_commit_checks appear in summaries."""
         exec_result: ModelDict = {

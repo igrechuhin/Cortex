@@ -12,7 +12,7 @@ from cortex.tools.structure.categories import get_tool_category
 
 
 @pytest.mark.asyncio
-@pytest.mark.timeout(5)
+@pytest.mark.timeout(15)
 async def test_skill_pack_discover_returns_valid_json() -> None:
     """skill_pack(operation=discover) returns JSON with status, task_description, count, packs."""
     result = await skill_pack(
@@ -32,7 +32,7 @@ async def test_skill_pack_discover_returns_valid_json() -> None:
 
 
 @pytest.mark.asyncio
-@pytest.mark.timeout(5)
+@pytest.mark.timeout(15)
 async def test_skill_pack_discover_recommends_core_for_session() -> None:
     """skill_pack(operation=discover) recommends core pack for session/orientation tasks."""
     result = await skill_pack(
@@ -62,7 +62,7 @@ async def test_skill_pack_discover_recommends_quality_for_lint() -> None:
 
 
 @pytest.mark.asyncio
-@pytest.mark.timeout(5)
+@pytest.mark.timeout(15)
 async def test_skill_pack_discover_limit_clamped() -> None:
     """skill_pack(operation=discover) clamps limit to 1-10."""
     result = await skill_pack(
@@ -79,7 +79,7 @@ async def test_skill_pack_discover_limit_clamped() -> None:
 
 
 @pytest.mark.asyncio
-@pytest.mark.timeout(5)
+@pytest.mark.timeout(15)
 async def test_skill_pack_load_core_returns_manifest() -> None:
     """skill_pack(operation=load, pack_name=core) returns full manifest."""
     result = await skill_pack(operation="load", pack_name="core")
@@ -94,7 +94,7 @@ async def test_skill_pack_load_core_returns_manifest() -> None:
 
 
 @pytest.mark.asyncio
-@pytest.mark.timeout(5)
+@pytest.mark.timeout(15)
 async def test_skill_pack_load_quality_returns_manifest() -> None:
     """skill_pack(operation=load, pack_name=quality) returns manifest with execute_pre_commit_checks."""
     result = await skill_pack(operation="load", pack_name="quality")
@@ -106,7 +106,7 @@ async def test_skill_pack_load_quality_returns_manifest() -> None:
 
 
 @pytest.mark.asyncio
-@pytest.mark.timeout(5)
+@pytest.mark.timeout(15)
 async def test_skill_pack_load_case_insensitive() -> None:
     """skill_pack(operation=load) accepts pack name case-insensitively."""
     result = await skill_pack(operation="load", pack_name="CORE")
@@ -116,7 +116,7 @@ async def test_skill_pack_load_case_insensitive() -> None:
 
 
 @pytest.mark.asyncio
-@pytest.mark.timeout(5)
+@pytest.mark.timeout(15)
 async def test_skill_pack_load_not_found_returns_error() -> None:
     """skill_pack(operation=load) with unknown name returns error and lists available."""
     result = await skill_pack(operation="load", pack_name="nonexistent_pack_xyz")

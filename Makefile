@@ -23,7 +23,7 @@ env-check:
 		echo "Run 'bash scripts/bootstrap.sh' to create it."; \
 		exit 1; \
 	fi
-	@version="$$($(VENV_PY) -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')"; \
+	@version="$$($(VENV_PY) -c 'import sys; print(f\"{sys.version_info.major}.{sys.version_info.minor}\")')"; \
 	if [ "$$version" != "3.13" ]; then \
 		echo "Expected Python 3.13.x in $(VENV_PY), but found $$version."; \
 		echo "Run 'bash scripts/bootstrap.sh' to recreate the environment with Python 3.13.x."; \

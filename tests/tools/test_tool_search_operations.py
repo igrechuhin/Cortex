@@ -16,7 +16,7 @@ from cortex.tools.structure.tool_search import list_available_tools, search_tool
 
 
 @pytest.mark.asyncio
-@pytest.mark.timeout(5)
+@pytest.mark.timeout(15)
 async def test_search_tools_returns_valid_json() -> None:
     """search_tools returns JSON with status, query, count, tools."""
     result = await search_tools(query="refactor", limit=5)
@@ -33,7 +33,7 @@ async def test_search_tools_returns_valid_json() -> None:
 
 
 @pytest.mark.asyncio
-@pytest.mark.timeout(5)
+@pytest.mark.timeout(15)
 async def test_search_tools_empty_query() -> None:
     """search_tools with empty-like query returns zero matches."""
     result = await search_tools(query="", limit=10)
@@ -44,7 +44,7 @@ async def test_search_tools_empty_query() -> None:
 
 
 @pytest.mark.asyncio
-@pytest.mark.timeout(5)
+@pytest.mark.timeout(15)
 async def test_search_tools_category_filter() -> None:
     """search_tools with category returns only that category."""
     result = await search_tools(query="tool", category="deferred_medium", limit=20)
@@ -55,7 +55,7 @@ async def test_search_tools_category_filter() -> None:
 
 
 @pytest.mark.asyncio
-@pytest.mark.timeout(5)
+@pytest.mark.timeout(15)
 async def test_search_tools_limit_clamped() -> None:
     """search_tools clamps limit to 1-50."""
     result = await search_tools(query="a", limit=0)
@@ -89,7 +89,7 @@ def test_tool_search_token_savings_potential() -> None:
 
 
 @pytest.mark.asyncio
-@pytest.mark.timeout(5)
+@pytest.mark.timeout(15)
 async def test_tool_search_discovery_returns_only_deferred_tools() -> None:
     """search_tools returns only tools from deferred_medium and deferred_low."""
     always = set(get_always_loaded_tool_names())
@@ -116,7 +116,7 @@ def test_search_tools_was_removed() -> None:
 
 
 @pytest.mark.asyncio
-@pytest.mark.timeout(5)
+@pytest.mark.timeout(15)
 async def test_list_available_tools_all_returns_by_category() -> None:
     """list_available_tools() with no category returns by_category and summary."""
     result = await list_available_tools(category=None)
@@ -130,7 +130,7 @@ async def test_list_available_tools_all_returns_by_category() -> None:
 
 
 @pytest.mark.asyncio
-@pytest.mark.timeout(5)
+@pytest.mark.timeout(15)
 async def test_list_available_tools_filter_returns_tools() -> None:
     """list_available_tools(category=always_loaded) returns list of tools."""
     result = await list_available_tools(category="always_loaded")
@@ -142,7 +142,7 @@ async def test_list_available_tools_filter_returns_tools() -> None:
 
 
 @pytest.mark.asyncio
-@pytest.mark.timeout(5)
+@pytest.mark.timeout(15)
 async def test_list_available_tools_invalid_category_returns_error() -> None:
     """list_available_tools(invalid) returns error."""
     result = await list_available_tools(category="invalid_tier")

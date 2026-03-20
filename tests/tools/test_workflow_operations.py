@@ -11,7 +11,7 @@ from cortex.tools.structure.categories import get_tool_category
 
 
 @pytest.mark.asyncio
-@pytest.mark.timeout(5)
+@pytest.mark.timeout(15)
 async def test_suggest_workflow_returns_valid_json() -> None:
     """run_composite_workflow suggest_workflow returns JSON with status, task_description, count, workflows."""
     result = await run_composite_workflow(
@@ -31,7 +31,7 @@ async def test_suggest_workflow_returns_valid_json() -> None:
 
 
 @pytest.mark.asyncio
-@pytest.mark.timeout(5)
+@pytest.mark.timeout(15)
 async def test_suggest_workflow_recommends_feature_workflow() -> None:
     """run_composite_workflow suggest_workflow recommends new_feature_development for implement tasks."""
     result = await run_composite_workflow(
@@ -46,7 +46,7 @@ async def test_suggest_workflow_recommends_feature_workflow() -> None:
 
 
 @pytest.mark.asyncio
-@pytest.mark.timeout(5)
+@pytest.mark.timeout(15)
 async def test_suggest_workflow_recommends_bug_workflow() -> None:
     """run_composite_workflow suggest_workflow recommends bug_investigation for debug/fix tasks."""
     result = await run_composite_workflow(

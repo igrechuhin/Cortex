@@ -25,9 +25,18 @@ _R = TypeVar("_R")
 
 _PYTEST_LIGHTWEIGHT_TOOLS: frozenset[str] = frozenset(
     {
+        "execute_pre_commit_checks",
         "fix_markdown_lint",
+        "get_link_graph",
+        "get_relevance_scores",
+        "load_context",
+        "pipeline_handoff",
+        "parse_file_links",
+        "resolve_transclusions",
         "run_composite_workflow",
+        "summarize_content",
         "skill_pack",
+        "validate_links",
     }
 )
 

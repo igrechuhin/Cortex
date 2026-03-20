@@ -44,6 +44,11 @@ def _get_manager_helper(mgrs: ManagersDict, key: str, _: object) -> object:
     return getattr(mgrs, key)
 
 
+async def _stability_passthrough(func: Any, *args: Any, **kwargs: Any) -> object:
+    """Run wrapped tool implementation directly in tests."""
+    return await func(*args, **kwargs)
+
+
 # ============================================================================
 # Fixtures
 # ============================================================================
@@ -312,6 +317,11 @@ class TestResolveTransclusions:
                 "cortex.tools.linking.transclusion_operations.resolve_project_root_async",
                 new_callable=AsyncMock,
                 return_value=mock_project_root,
+            ),
+            patch(
+                "cortex.tools.linking.transclusion_operations.execute_tool_with_stability",
+                new_callable=AsyncMock,
+                side_effect=_stability_passthrough,
             ),
             patch(
                 "cortex.tools.linking.transclusion_operations.get_managers",

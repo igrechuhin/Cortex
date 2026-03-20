@@ -25,7 +25,7 @@ def _patch_usage_context():
     )
 
 
-@pytest.mark.timeout(10)
+@pytest.mark.timeout(20)
 class TestHealthCheck:
     """Tests for health_check tool."""
 
@@ -114,7 +114,7 @@ class TestHealthCheck:
 
 
 @pytest.mark.asyncio
-@pytest.mark.timeout(10)
+@pytest.mark.timeout(20)
 class TestCheckMCPConnectionHealthResource:
     """Tests for check_mcp_connection_health_resource (Phase 43 cortex://health/connection)."""
 

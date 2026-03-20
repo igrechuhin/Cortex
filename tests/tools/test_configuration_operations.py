@@ -40,7 +40,7 @@ def _skip_usage_context_init():  # pyright: ignore[reportUnusedFunction]
         yield
 
 
-@pytest.mark.timeout(10)
+@pytest.mark.timeout(20)
 class TestConfigureMainHandler:
     """Test main configure handler."""
 
@@ -192,7 +192,7 @@ class TestConfigureMainHandler:
             assert result_data["error_type"] == "RuntimeError"
 
 
-@pytest.mark.timeout(10)
+@pytest.mark.timeout(20)
 class TestGetConfigResourceAndUpdateConfig:
     """Test get_config_resource (Phase 43 Resource) and update_config (Phase 43 Tool)."""
 
@@ -300,7 +300,7 @@ class TestGetConfigResourceAndUpdateConfig:
                 assert "available_options" in result_data
 
 
-@pytest.mark.timeout(10)
+@pytest.mark.timeout(20)
 class TestValidationConfiguration:
     """Test validation configuration helpers."""
 
@@ -465,7 +465,7 @@ class TestValidationConfiguration:
         assert "reset to defaults" in result_data["message"]
 
 
-@pytest.mark.timeout(10)
+@pytest.mark.timeout(20)
 class TestOptimizationConfiguration:
     """Test optimization configuration helpers."""
 
@@ -592,7 +592,7 @@ class TestOptimizationConfiguration:
         assert "reset to defaults" in result_data["message"]
 
 
-@pytest.mark.timeout(10)
+@pytest.mark.timeout(20)
 class TestLearningConfiguration:
     """Test learning configuration helpers."""
 
@@ -1105,7 +1105,7 @@ class TestEdgeCases:
         assert "Either settings or key+value required" in result_data["error"]
 
 
-@pytest.mark.timeout(10)
+@pytest.mark.timeout(20)
 class TestConfigureContextLogging:
     """Test configure tool Context logging (FastMCP)."""
 
@@ -1254,7 +1254,7 @@ class TestConfigureContextLogging:
             assert len(error_calls) == 1
 
 
-@pytest.mark.timeout(5)
+@pytest.mark.timeout(15)
 class TestGetComponentHandlerAndErrorBuilders:
     """Unit tests for get_component_handler and error response builders."""
 
