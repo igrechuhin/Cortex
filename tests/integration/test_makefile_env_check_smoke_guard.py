@@ -8,11 +8,13 @@ def _read_repo_file(relative_path: str) -> str:
     return (get_project_root() / relative_path).read_text(encoding="utf-8")
 
 
-def test_env_check_uses_valid_python_f_string_quoting() -> None:
-    """Makefile env-check inline Python must escape nested double quotes."""
+def test_env_check_uses_valid_python_version_snippet() -> None:
+    """Makefile env-check must pass a valid -c snippet to bash (no stray backslashes)."""
     makefile = _read_repo_file("Makefile")
-    assert 'print(f\\"{sys.version_info.major}.{sys.version_info.minor}\\")' in makefile
-    assert 'print(f"{sys.version_info.major}.{sys.version_info.minor}")' not in makefile
+    assert (
+        'print("%d.%d" % (sys.version_info.major, sys.version_info.minor))' in makefile
+    )
+    assert 'print(f\\"' not in makefile
 
 
 def test_quality_workflow_runs_env_check_smoke_guard() -> None:

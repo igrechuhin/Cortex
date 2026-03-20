@@ -71,7 +71,7 @@ This guide documents common workflows as sequences of Cortex MCP tool calls, wit
 
    **Example output:** `file_names`, `total_tokens`, optional section content. Then use **manage_file** with `sections=[...]` to drill into specific sections.
 
-3. **Work** – Use **manage_file**, **rules**, **execute_pre_commit_checks**, and other tools as needed.
+3. **Work** – Use **manage_file**, **rules**, **`run_quality_gate()`** (and related zero-arg quality tools), and other tools as needed.
 
 4. **compact_session** (end of session) – Summarize progress and create handoff.
 
@@ -97,22 +97,14 @@ This guide documents common workflows as sequences of Cortex MCP tool calls, wit
 
 **Tool sequence:**
 
-1. **execute_pre_commit_checks(phase="A")** – Single entry for Phase A (fix_errors, format, type_check, quality, tests, markdown lint).
-
-   ```json
-   {
-     "test_timeout": 300,
-     "coverage_threshold": 0.9,
-     "strict_mode": false
-   }
-   ```
+1. **`run_quality_gate()`** – Zero-arg Phase A gate (fix_errors, format, type_check, quality, tests, markdown lint). Optional `test_timeout` / `coverage_threshold` come from the `pipeline_handoff` task file for `commit` / `checks`, not from JSON the client must forward.
 
    **Example output:** `preflight_passed`, `checks` with per-check success/failure.
 
 2. If a check fails:
-   - **execute_pre_commit_checks**(`checks=["fix_errors"]`) or `["format"]` or `["quality"]` to fix.
-   - **fix_markdown_lint**(`include_untracked_markdown`: true) for markdown.
-   - Re-run **execute_pre_commit_checks(phase="A")** or the specific check until all pass.
+   - **`fix_quality_issues()`** for the bundled auto-fix pass, then re-run **`run_quality_gate()`**.
+   - **fix_markdown_lint**(`include_untracked_markdown`: true) for markdown-only follow-ups.
+   - Re-run **`run_quality_gate()`** until all pass.
 
 3. **validate** – Optional: `check_type="timestamps"` or `"roadmap_sync"` for memory bank consistency.
 
@@ -121,7 +113,7 @@ This guide documents common workflows as sequences of Cortex MCP tool calls, wit
 **Decision points:**
 
 - If `preflight_passed` is false, inspect `checks` and fix the failing check before re-running.
-- For coverage below threshold, add tests and re-run **execute_pre_commit_checks**(`checks=["tests"]`, ...).
+- For coverage below threshold, add tests and re-run **`run_quality_gate()`** (Phase A includes tests).
 
 **Error recovery:**
 
@@ -148,7 +140,7 @@ This guide documents common workflows as sequences of Cortex MCP tool calls, wit
 
    **Parameters:** `suggestions` (from previous step), optional `dry_run`.
 
-4. **execute_pre_commit_checks**(`checks=["type_check", "quality", "tests"]`) – Ensure no regressions.
+4. **`run_quality_gate()`** – Ensure no regressions (Phase A bundle includes type, quality, tests).
 
 5. **validate** – Optional structure or roadmap sync check.
 

@@ -2022,7 +2022,7 @@ Later phases and tool layers built on the foundation. Documented briefly; see [M
 
 ### Pre-commit and configuration
 
-- **pre_commit_tools** – `execute_pre_commit_checks` (phase A/B/full or explicit checks; format, type_check, quality, tests).
+- **pre_commit_tools** – Phase A/B execution helpers; agent-facing zero-arg entrypoints are `run_quality_gate`, `run_quality_gate_fresh`, `run_docs_gate`, and `fix_quality_issues` (format, type_check, quality, tests, docs sync).
 - **pre_commit_phase_tools** – Phase helpers (e.g. docs/memory-bank sync).
 - **configuration_operations** – `configure` for memory bank config updates.
 

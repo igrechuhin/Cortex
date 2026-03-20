@@ -2,7 +2,7 @@
 title: "Align docs to zero-arg quality pipeline and deprecate stale entrypoints"
 component: "README + docs/guides + AGENTS workflow docs"
 work_type: "docs"
-status: "PENDING"
+status: "COMPLETE"
 priority: "HIGH"
 created: "2026-03-20"
 depends_on: []

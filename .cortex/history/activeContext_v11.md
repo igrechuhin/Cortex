@@ -6,11 +6,13 @@
 
 - ✅ **Pytest lightweight MCP usage init expansion** - COMPLETE (2026-03-20) - Broadened `_PYTEST_LIGHTWEIGHT_TOOLS` in `mcp_stability_usage.py` so more tools skip heavy context init under pytest; refreshed tool governance tests; tuned `pytest.ini`; kept Makefile `env-check` quoting fixes and integration smoke guard. Phase A coverage ~0.91.
 
-- ✅ **Makefile env-check, smoke guard, and quality/docs pipeline alignment** - COMPLETE (2026-03-20) - Shell-safe env-check quoting, actionable preflight messages, smoke integration coverage, zero-arg `run_quality_gate*` / `run_docs_gate` alignment, and dirty-submodule guard documentation.
+- ✅ **Makefile env-check, smoke guard, and quality/docs pipeline alignment** - COMPLETE (2026-03-20) - Shell-safe env-check quoting, actionable preflight messages, smoke integration coverage, zero-arg `run_quality_gate*` / `run_docs_gate` alignment, and dirty-submodule guard documentation. Follow-up: `env-check` version probe uses `print("%d.%d" % (...))` in `python -c` so Linux/GitHub Actions does not receive stray backslashes from nested f-string escapes; integration smoke test updated accordingly.
 
 - ✅ **Phase A Fingerprint & Detached Polling Hardening** - COMPLETE (2026-03-20) - Narrowed Phase A fingerprint bookkeeping exception handling, moved detached polling file reads off the event loop, and improved hybrid-rule NotImplementedError stub messages. Phase A quality gate passed (coverage ~0.91).
 
 - ✅ **Harden pipeline_handoff path safety & async IO** - COMPLETE (2026-03-20) - Secured `pipeline_handoff` against path traversal and moved blocking FS operations off the event loop via `asyncio.to_thread`; tightened pre-commit exception handling and improved container init logging; added negative and async-offload tests (Phase A stayed green).
+
+- ✅ **Align docs to zero-arg quality pipeline and deprecate stale entrypoints** - COMPLETE (2026-03-20) - Canonical zero-arg quality pipeline documented in docs/api/tools.md with legacy section; README/AGENTS/troubleshooting and broad docs/** aligned; pytest guard test_docs_zero_arg_quality_consistency.py prevents drift.
 
 ## Completed Work (2026-03-16)
 
@@ -154,7 +156,7 @@
 
 ## Current Focus
 
-Next pending roadmap item is **Align docs to zero-arg quality pipeline and deprecate stale entrypoints**, followed by quality-flow split and read-only fallback documentation updates.
+Next pending roadmap item is **Split make quality flows into non-mutating check and fix modes**, followed by MCP-unavailable fallback documentation and dirty-submodule commit guards.
 
 ## Recent Changes
 

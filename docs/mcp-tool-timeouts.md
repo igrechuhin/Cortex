@@ -147,8 +147,8 @@ MCP_TOOL_TIMEOUT_QUALITY_FIXES = 60  # Quality auto-fix tools (e.g. fix_quality_
 - `validate`
 - `summarize_content`
 - `get_relevance_scores`
-- `execute_pre_commit_checks(phase="A")` (Phase A preflight)
-- `execute_pre_commit_checks(phase="B")` (Phase B docs/memory sync)
+- `run_quality_gate()` (Phase A preflight)
+- `run_docs_gate()` (Phase B docs/memory sync)
 
 ### Very Complex Operations (960 seconds / 16 minutes)
 
@@ -186,7 +186,7 @@ MCP_TOOL_TIMEOUT_QUALITY_FIXES = 60  # Quality auto-fix tools (e.g. fix_quality_
 - `synapse` (sync, update_rule, update_prompt)
 - `get_synapse_rules`
 - `get_synapse_prompts`
-- `execute_pre_commit_checks`
+- `run_quality_gate` / `run_quality_gate_fresh`
 - `fix_quality_issues`
 
 ## How to Add Timeout to a New Tool
@@ -274,7 +274,7 @@ The commit pipeline (e.g. `/cortex/commit`) uses these MCP tools that can run fo
 
 | Tool | Typical duration | Server behavior | Client timeout recommendation |
 |------|------------------|-----------------|-------------------------------|
-| `execute_pre_commit_checks` (Step 12.7: tests) | 300–600 s (driven by `test_timeout` param, often 300–600) | Very-complex timeout (960 s); frequent progress reports to reduce idle timeout | If the client exposes a tool-call timeout, set it to **≥ test_timeout + buffer** (e.g. 600 + 60 s). Otherwise rely on retry and runbook. |
+| `run_quality_gate` / `run_quality_gate_fresh` (Step 12.7: tests inside Phase A) | 300–600 s (driven by `test_timeout` from the pipeline task file, often 300–600) | Very-complex timeout (960 s); frequent progress reports to reduce idle timeout | If the client exposes a tool-call timeout, set it to **≥ test_timeout + buffer** (e.g. 600 + 60 s). Otherwise rely on retry and runbook. |
 | `fix_markdown_lint` (Step 12.5) | 30–120 s (depends on repo size; scoped to git-modified when possible) | Batched runs, 5 s heartbeat, progress after each file | Same as above; use local markdownlint for faster runs (see [troubleshooting](guides/troubleshooting.md#issue-mcp-error-32000-connection-closed)). |
 | `fix_quality_issues` (pre-flight / Step 12.1) | 30–120 s | Progress and timeout; serialized with other long tools | Retry once; then use fallback scripts per commit prompt. |
 

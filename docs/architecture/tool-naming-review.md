@@ -38,7 +38,7 @@ Names must clearly indicate what the tool does. Per [naming-conventions.md](nami
 | `configure` | Configure validation/optimization/learning | ✓ |
 | `analyze` | Analyze Memory Bank, context, health | ✓ |
 | `fix_quality_issues`, `fix_markdown_lint` | Fix quality/lint issues | ✓ |
-| `execute_pre_commit_checks` | Run pre-commit checks | ✓ |
+| `run_quality_gate` | Phase A quality gate (zero-arg) | ✓ |
 | `get_structure_info`, `get_relevance_scores` | Project structure; file relevance | Deferred per naming-conventions.md |
 
 ### Tools deferred (future consideration)

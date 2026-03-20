@@ -32,7 +32,7 @@ Cortex uses the official **MCP SDK** (`mcp` package, `mcp.server.fastmcp.FastMCP
 
 ### 1. Tool Use Examples (Accuracy)
 
-- **Docstrings**: Cortex tools already include USE WHEN, EXAMPLES, and RETURNS. For complex tools (`manage_file`, `validate`, `execute_pre_commit_checks`, `suggest_refactoring`, etc.), add concrete **input examples** in the docstring (e.g. "Example inputs" with sample parameter combinations). This improves model accuracy when the model reads the tool description, without requiring SDK support.
+- **Docstrings**: Cortex tools already include USE WHEN, EXAMPLES, and RETURNS. For complex tools (`manage_file`, `validate`, `run_quality_gate`, `suggest_refactoring`, etc.), add concrete **input examples** in the docstring (e.g. "Example inputs" with sample parameter combinations). This improves model accuracy when the model reads the tool description, without requiring SDK support.
 - **meta field**: The MCP SDK supports `@mcp.tool(meta={"input_examples": [...]})`. If your MCP client forwards `meta` to Anthropic and Anthropic supports `input_examples` in tool definitions, adding `meta` with example payloads can improve tool selection. Use the same structure as in docstrings (e.g. list of dicts with parameter names and values).
 
 ### 2. Tool Search (Defer Loading)
@@ -51,13 +51,13 @@ All 63 Cortex MCP tools are categorized into three loading priority tiers in `sr
 
 | Tier | Count | Description | Examples |
 |------|-------|-------------|----------|
-| **always_loaded** | 15 | Core tools used in nearly every session | `manage_file`, `validate`, `load_context`, `execute_pre_commit_checks`, `rules` |
+| **always_loaded** | 15 | Core tools used in nearly every session | `manage_file`, `validate`, `load_context`, `run_quality_gate`, `rules` |
 | **deferred_medium** | 26 | Tools for specific workflows (refactoring, analysis, synapse, link ops) | `suggest_refactoring`, `analyze`, `sync_synapse`, `create_plan` |
 | **deferred_low** | 22 | Rarely used admin/analytics tools | `rollback_file_version`, `fix_roadmap_corruption`, usage analytics (8 tools), script capture (5 tools) |
 
 ### Categorization Rationale
 
-- **always_loaded**: Tools that appear in the implement-prompt workflow, session startup (`load_context`), quality gates (`execute_pre_commit_checks`, `fix_quality_issues`), and memory bank updates (`complete_plan`, `append_entry`, etc.).
+- **always_loaded**: Tools that appear in the implement-prompt workflow, session startup (`load_context`), quality gates (`run_quality_gate`, `fix_quality_issues`), and memory bank updates (`complete_plan`, `append_entry`, etc.).
 - **deferred_medium**: Tools used in specific workflows (plan creation, refactoring, synapse sync, commit pipeline phases) but not every session.
 - **deferred_low**: Usage analytics, script capture/promotion, admin operations (rollback, corruption fix, cleanup). These are used infrequently and can be loaded on-demand.
 
@@ -160,7 +160,7 @@ When the API supports it, the following tools are the best candidates for `allow
 | `apply_refactoring` | Used after `suggest_refactoring`; same code block can run approve then apply. |
 | `manage_file` | Batch reads or writes (e.g. all memory bank files, or multi-file updates) are natural in a loop in one code block. |
 
-Other tools (e.g. `load_context`, `execute_pre_commit_checks`, `rules`) are typically used once per step or with branching; they benefit less from code orchestration and can remain non-code-callable unless a concrete multi-call pattern emerges.
+Other tools (e.g. `load_context`, `run_quality_gate`, `rules`) are typically used once per step or with branching; they benefit less from code orchestration and can remain non-code-callable unless a concrete multi-call pattern emerges.
 
 ### Implementation note
 

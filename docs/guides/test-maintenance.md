@@ -10,7 +10,7 @@ When you change a method or function from sync to async (or introduce new async 
 
 - When making a method or function async, search tests for call sites and add `await`.
 - Verify no test calls an async function without `await` (or without being in an async test).
-- Run the async test validation check: `execute_pre_commit_checks(checks=["check_async_tests"])` (or rely on Step 12 of the commit pipeline, which includes `check_async_tests`).
+- Run the async test validation check via Phase A (`run_quality_gate()` includes `check_async_tests`) or rely on Step 12 of the commit pipeline, which includes `check_async_tests`.
 
 ### Correct async test usage (pytest)
 

@@ -552,7 +552,7 @@ fileA.md -> fileB.md -> fileA.md -->
 
 - Error: `MCP error -32000: Connection closed`
 - Error: `Connection closed` or `ClosedResourceError`
-- Occurs during long-running tools (e.g. `fix_markdown_lint`, `execute_pre_commit_checks`)
+- Occurs during long-running tools (e.g. `fix_markdown_lint`, `run_quality_gate`)
 
 **Causes:**
 

@@ -18,6 +18,25 @@ Cortex follows MCP semantics: **Resources** are GET-like (read-only, load data i
 - **Prefer Resources (client guidance)**: For read-only operations (stats, load context, validate, rules, etc.), use the corresponding `cortex://` URI to load data into context. Resources avoid tool-call overhead and can be cached. Use tools when: (1) the operation has side effects, (2) you need parameters not expressible in the URI (e.g. `token_budget`, `strategy`), or (3) your client does not support resources. See [tools-to-resources-conversion-analysis](../architecture/tools-to-resources-conversion-analysis.md) for the full URI reference.
 - **No `get_*` Tool performs writes**; all current `get_*` tools are read-only and have a corresponding Resource. See [Naming conventions](../architecture/naming-conventions.md) and Phase 43 plan (`.cortex/plans/phase-43-reconsider-tools-registration.md`) for the full inventory and naming rules.
 
+---
+
+## Commit and quality pipeline (zero-arg MCP tools)
+
+Contributor and agent workflows should use these **zero-argument** Cortex MCP tools for the quality pipeline. Cursor-class clients often strip JSON tool parameters, so these tools read optional overrides from pipeline task files written by `pipeline_handoff()` instead of requiring call-time arguments.
+
+| Use case | Tool |
+|----------|------|
+| Phase A (format, lint, types, tests, coverage) | `run_quality_gate()` |
+| Step 12 final gate after Phase B/C edits | `run_quality_gate_fresh()` |
+| Phase B docs / memory-bank / timestamps / roadmap sync | `run_docs_gate()` |
+| Auto-fix formatting, lint, types, markdown | `fix_quality_issues()` |
+
+Source of truth for behavior and timeouts: `src/cortex/tools/execution/pre_commit_zero_arg_tools.py`. The sections below list the full tool catalog.
+
+## Deprecated agent entrypoints (legacy names)
+
+`execute_pre_commit_checks`, `start_quality_job`, and `get_quality_job_status` remain in the codebase for specialized programmatic callers. Agent prompts, README-style onboarding, and troubleshooting should **not** tell users to invoke them when the MCP bridge cannot forward parameters. Use the zero-arg tools in the [Commit and quality pipeline (zero-arg MCP tools)](#commit-and-quality-pipeline-zero-arg-mcp-tools) section instead.
+
 ### MCP Tool Annotations
 
 All Cortex MCP tools include **annotations** that provide metadata about tool behavior without consuming token context in LLM prompts. Annotations help client applications categorize and discover tools more effectively.

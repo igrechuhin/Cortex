@@ -335,7 +335,7 @@ Summarization cache (summarize_content with `cache_summaries` enabled) is stored
 
 ### Quality/check scripts (`.cortex/synapse/scripts/{language}/`)
 
-Canonical location for quality and check scripts (e.g. `check_formatting.py`, `check_types.py`, `check_file_sizes.py`) is `.cortex/synapse/scripts/{language}/` (e.g. `python/`). CI and `execute_pre_commit_checks` use these paths. Root `scripts/` is **restricted legacy**: use only for project-specific utilities; do not place Synapse check scripts there.
+Canonical location for quality and check scripts (e.g. `check_formatting.py`, `check_types.py`, `check_file_sizes.py`) is `.cortex/synapse/scripts/{language}/` (e.g. `python/`). CI and the Phase A gate (`run_quality_gate`) use these paths. Root `scripts/` is **restricted legacy**: use only for project-specific utilities; do not place Synapse check scripts there.
 
 ### `.cortex/approvals.json`
 

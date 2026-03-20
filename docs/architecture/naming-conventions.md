@@ -20,7 +20,7 @@ Define a unified naming rubric for Cortex MCP **tools**, **`cortex://` resources
 | Rule | Example |
 |------|---------|
 | snake_case | manage_file, query_memory_bank |
-| Verb-first for actions | fix_quality_issues, execute_pre_commit_checks |
+| Verb-first for actions | fix_quality_issues, run_quality_gate |
 | Noun for dispatchers (when established) | plan, roadmap, rules — acceptable for consolidated dispatchers with operation parameter |
 | No get_* for writes | ❌ get_file (if it wrote); ✓ manage_file |
 
@@ -94,7 +94,7 @@ Action prompts use verb-first names: `commit`, `implement`, `analyze`, `fix-test
 | query_* | query_memory_bank, query_usage |
 | fix_* | fix_quality_issues, fix_markdown_lint |
 | append_* | append_entry |
-| execute_* | execute_pre_commit_checks |
+| execute_* | Legacy pre-commit helpers (prefer run_quality_gate zero-arg) |
 
 ### Resources
 
@@ -124,7 +124,7 @@ Action prompts use verb-first names: `commit`, `implement`, `analyze`, `fix-test
 | sequentialthinking | Consider `sequential_thinking` | snake_case consistency. | Breaking; requires client updates. Defer. |
 | think | **Keep** | Short, established. | — |
 
-**Altitude rubric**: For each tool, ensure description includes Purpose, USE WHEN, input expectations, RETURNS. Add Examples for 20+ high-use tools (manage_file, load_context, query_memory_bank, rules, execute_pre_commit_checks, get_structure_info, session_start, plan, roadmap, etc.).
+**Altitude rubric**: For each tool, ensure description includes Purpose, USE WHEN, input expectations, RETURNS. Add Examples for 20+ high-use tools (manage_file, load_context, query_memory_bank, rules, run_quality_gate, get_structure_info, session_start, plan, roadmap, etc.).
 
 **Consolidation candidates** (from tool-optimization plans): No additional renames recommended this cycle. Plan/roadmap already consolidated.
 

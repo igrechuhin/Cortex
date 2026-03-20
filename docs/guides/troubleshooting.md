@@ -124,7 +124,7 @@ If the **client** shows `MCP error -32000: Connection closed` during a tool call
 **Symptoms**:
 
 - Tool call returns: `{"error":"MCP error -32000: Connection closed"}`
-- Occurs during long-running tools (e.g. `fix_markdown_lint`, `execute_pre_commit_checks`, `fix_quality_issues`)
+- Occurs during long-running tools (e.g. `fix_markdown_lint`, `run_quality_gate`, `fix_quality_issues`)
 - Occurs when **multiple subagents call MCP tools concurrently** (e.g. parallel fix quality + fix tests + fix docs)
 
 **Cause**:
@@ -159,13 +159,13 @@ HTTP/SSE or a stdio–HTTP bridge is not a supported workaround for this issue (
 **Server-side mitigations (already in place)**:
 
 - **Client cancel no longer crashes the server**: The server patches `_handle_request` to catch `ClosedResourceError` on `message.respond()`. When the client disconnects mid-response, the exception is absorbed instead of propagating to the anyio TaskGroup (which previously cancelled all in-flight tasks and killed the server process). The response is lost (the client is gone) but the server stays alive for the next connection.
-- **Minimal MCP stream writes in fast tools**: `execute_pre_commit_checks` (standard checks path) uses server-side `logger.info` instead of `log_client` and `get_current_project_root()` (cached, sync) instead of `list_roots` round-trips, minimizing stream contention with concurrent tool responses.
-- Progress and heartbeat for long tools (e.g. 2 s heartbeat and wrapper progress for `fix_markdown_lint`, frequent progress for `execute_pre_commit_checks`).
+- **Minimal MCP stream writes in fast tools**: Phase A quality tooling (invoked via `run_quality_gate` and related zero-arg tools) uses server-side `logger.info` instead of `log_client` and `get_current_project_root()` (cached, sync) instead of `list_roots` round-trips, minimizing stream contention with concurrent tool responses.
+- Progress and heartbeat for long tools (e.g. 2 s heartbeat and wrapper progress for `fix_markdown_lint`, frequent progress for `run_quality_gate`).
 - Automatic retry for connection errors in the tool wrapper. Most tools get one retry; `fix_markdown_lint` gets **four attempts** (1 initial + 3 retries) with exponential backoff (1 s, 2 s, 4 s) to reduce commit-pipeline disconnects.
 - Batched markdown lint to reduce total duration.
 - **Long-running serialization and detached workers**:
   - `fix_markdown_lint` is the only tool serialized by the long-running semaphore. If you call `fix_markdown_lint` while another `fix_markdown_lint` run is active, the second call **waits up to 600 seconds (10 minutes)** for the first to finish; if the first is still running after that, the server does **one short retry (5 seconds)** to absorb the race when the first call or auto-release frees the semaphore at the same moment, then returns an error if still busy. This allows sequential commit-pipeline calls that involve markdown lint to succeed when the second request arrives before the first has returned. See [Another long-running tool is in progress](#issue-another-long-running-tool-in-progress).
-  - `execute_pre_commit_checks` no longer uses the global long-running semaphore. It runs via a **detached worker model** keyed by `args_hash`. If a second call is made for the same configuration while a detached worker is already running, the server returns a **fast, non-retryable error** stating that checks are already running for that configuration; agents must treat this as “in progress” and **not** start a second run.
+  - `run_quality_gate` (Phase A) no longer uses the global long-running semaphore for the underlying worker. It runs via a **detached worker model** keyed by `args_hash`. If a second call is made for the same configuration while a detached worker is already running, the server returns a **fast, non-retryable error** stating that checks are already running for that configuration; agents must treat this as “in progress” and **not** start a second run.
 
 #### Issue: Found 0 tools, 0 prompts, and 0 resources {#issue-mcp-0-tools}
 
@@ -188,18 +188,18 @@ This happens when the client sends ListTools/ListPrompts/ListResources **before*
 
 **Symptoms**:
 
-- Tool call returns a `RuntimeError`: "Another long-running tool is in progress (e.g. execute_pre_commit_checks or fix_markdown_lint). Please wait for it to finish (up to 10 minutes) and retry."
+- Tool call returns a `RuntimeError` (example paraphrase; exact wording varies): another long-running tool is already in progress (often `fix_markdown_lint` or the Phase A quality gate). Wait for it to finish (up to 10 minutes) and retry.
 
 **Cause**:
 
 - The long-running semaphore currently serializes **only** `fix_markdown_lint`. If the client (or agent) invokes a second `fix_markdown_lint` run while the first is still running, the second call **waits up to 600 seconds (10 minutes)** for the first to finish. If the first is still running after that, the server returns this error.
-- `execute_pre_commit_checks` concurrency is handled by its detached worker model, not by the long-running semaphore. A second call with the same configuration while a worker is running returns a fast, non-retryable error indicating that checks are already running; this should be treated as “in progress”, not as a signal to retry.
+- Phase A (`run_quality_gate`) concurrency is handled by its detached worker model, not by the long-running semaphore. A second call with the same configuration while a worker is running returns a fast, non-retryable error indicating that checks are already running; this should be treated as “in progress”, not as a signal to retry.
 
 **Fix (what to do)**:
 
 1. If you see this error while running `fix_markdown_lint`, the first run took longer than 600 seconds (10 minutes). Wait for it to finish, then retry the tool you wanted to run.
-2. Prefer running long-running tools one after another and wait for each to complete before starting the next (e.g. run `fix_markdown_lint` only after `execute_pre_commit_checks` has completed). Sequential calls that arrive while the first is still running will wait automatically for `fix_markdown_lint`, and return a fast "already running" error for `execute_pre_commit_checks`.
-3. If running the commit pipeline: ensure Phase A has fully completed before Step 12 runs; avoid starting another commit or long-running tool in another tab or agent session, and never start a second `execute_pre_commit_checks` run while a detached worker is active for the same configuration.
+2. Prefer running long-running tools one after another and wait for each to complete before starting the next (e.g. run `fix_markdown_lint` only after `run_quality_gate` has completed). Sequential calls that arrive while the first is still running will wait automatically for `fix_markdown_lint`, and return a fast "already running" error for a second Phase A gate call with the same configuration.
+3. If running the commit pipeline: ensure Phase A has fully completed before Step 12 runs; avoid starting another commit or long-running tool in another tab or agent session, and never start a second `run_quality_gate` run while a detached worker is active for the same configuration.
 
 #### MCP disconnect runbook (commit pipeline) {#mcp-disconnect-runbook-commit}
 
@@ -213,7 +213,7 @@ Use this runbook when the Cortex MCP connection is lost **during** `/cortex/comm
 | During Step 12.1 (format) | Format fix or check | Client timeout during formatting tool | Retry once; if retry fails, use fallback scripts (`fix_formatting.py` then `check_formatting.py`) per commit prompt; record "MCP connection closed; fallback used". Do not skip Step 12.1. |
 | During Step 12.5 (markdown lint) | `fix_markdown_lint` or check | Client timeout (markdown lint can be slow) | Retry once; if retry fails, run markdown lint via shell (see commit prompt) and record "MCP connection closed; fallback used". |
 | During Step 12.6 (file size / function length) | Quality checks | Client timeout | Retry once; if retry fails, use shell script fallbacks for file size and function length checks; record "MCP connection closed; fallback used". Do not skip Step 12.6. |
-| During Step 12.7 (tests with coverage) | `execute_pre_commit_checks(checks=["tests"], ...)` | Client timeout (tests can run 5–10+ minutes) | Retry once. **There is no fallback for Step 12.7.** If retry fails, **block commit** and tell the user: "Reconnect Cortex MCP and re-run the commit command." Do not proceed with Phase A results. |
+| During Step 12.7 (tests with coverage) | `run_quality_gate_fresh()` (Step 12 final Phase A pass, includes tests) | Client timeout (tests can run 5–10+ minutes) | Retry once. **There is no fallback for Step 12.7.** If retry fails, **block commit** and tell the user: "Reconnect Cortex MCP and re-run the commit command." Do not proceed with Phase A results. |
 
 **Likely cause**: In most cases the **client** (e.g. Cursor) closed the connection—due to client-side tool-call timeout or IDE lifecycle—not a server crash. The tool may have completed on the server; the connection was already closed when the response was sent. To increase Cursor’s timeout, see [Cursor IDE: MCP tool timeout configuration](#cursor-ide-mcp-tool-timeout-configuration). See also [MCP error -32000: Connection closed](#issue-mcp-error-32000-connection-closed).
 
@@ -253,7 +253,7 @@ Use this runbook when the Cortex MCP connection is lost **during** `/cortex/comm
 4. **If the Test view is empty or discovery fails**  
    Cursor’s bundled Python extension can have pytest discovery issues. Try:
    - **Cursor Pytest** extension: Extensions → search **"Cursor Pytest"** (by Arun Dev) → Install. It adds inline Run/Debug buttons and test discovery.
-   - Or run tests from the terminal: `uv run pytest tests/ -k "test_name"` for a single test, or use Cortex MCP `execute_pre_commit_checks(checks=["tests"], ...)` for the full suite.
+   - Or run tests from the terminal: `uv run pytest tests/ -k "test_name"` for a single test, or call Cortex MCP `run_quality_gate()` for the full Phase A suite (includes tests) when the client supports zero-arg tools.
 
 5. **Ensure `.vscode/settings.json` exists** (see next subsection) so that when tests do run from the UI, the correct interpreter is used.
 
@@ -270,7 +270,7 @@ The Microsoft Python extension runs pytest for discovery. If `pytest.ini` has `-
 
 **Solution** (applied in this repo):
 
-Coverage is **not** in the default `pytest.ini` addopts. CI and `execute_pre_commit_checks` pass `--cov=src/cortex`, `--cov-report=...`, and `--cov-fail-under=90` explicitly, so full runs still enforce coverage. IDE discovery no longer sees coverage options and no longer requires `pytest-cov` for discovery.
+Coverage is **not** in the default `pytest.ini` addopts. CI and the Phase A quality gate (`run_quality_gate`) pass `--cov=src/cortex`, `--cov-report=...`, and `--cov-fail-under=90` explicitly, so full runs still enforce coverage. IDE discovery no longer sees coverage options and no longer requires `pytest-cov` for discovery.
 
 If you see this error in another project, either add coverage options only when running tests (e.g. via CI or a script), or install dev deps so `pytest-cov` is present: `uv sync --group dev --extra dev`.
 
@@ -283,9 +283,9 @@ If you see this error in another project, either add coverage options only when 
 
 **Cause**:
 
-When coverage options are passed explicitly (by CI or `execute_pre_commit_checks`), running a single test file from the IDE while those options are active causes coverage to be computed over the whole codebase, so the run fails even if the tests passed. In this repo, `pytest.ini` addopts do **not** include coverage flags — but if you run tests via a script or CI command that adds `--cov-fail-under=90`, the same problem occurs.
+When coverage options are passed explicitly (by CI or the Phase A gate), running a single test file from the IDE while those options are active causes coverage to be computed over the whole codebase, so the run fails even if the tests passed. In this repo, `pytest.ini` addopts do **not** include coverage flags — but if you run tests via a script or CI command that adds `--cov-fail-under=90`, the same problem occurs.
 
-> **Note**: See `pytest.ini` for current addopts. Coverage is configured in CI workflows and `execute_pre_commit_checks`, not in `pytest.ini`.
+> **Note**: See `pytest.ini` for current addopts. Coverage is configured in CI workflows and the Phase A MCP gate (`run_quality_gate`), not in `pytest.ini`.
 
 **Solution**:
 
@@ -322,7 +322,7 @@ Sandboxed environments may block or limit subprocess execution, network, or long
 **What to do**:
 
 1. **Commit remains blocked** until Step 12.7 executes successfully. Phase A (Step 4) test results are not acceptable in place of Step 12.7, because code or memory-bank changes in Steps 5–11 can affect test results.
-2. **Run tests outside the sandbox**: Run the full test suite locally or in a non-sandboxed CI job (e.g. `execute_pre_commit_checks(checks=["tests"], ...)` or `uv run pytest tests/` with coverage). Ensure tests pass and coverage ≥ 90%.
+2. **Run tests outside the sandbox**: Run the full test suite locally or in a non-sandboxed CI job (e.g. `run_quality_gate()` or `uv run pytest tests/` with coverage). Ensure tests pass and coverage ≥ 90%.
 3. **Re-run the commit pipeline** after tests pass outside the sandbox, so Step 12.7 can complete (or run the pipeline in an environment where Step 12.7 is allowed).
 4. **Document the limitation**: If your environment routinely runs in a sandbox, document that commit must be run in an environment where test execution is allowed, or run tests manually before invoking commit.
 
@@ -345,7 +345,7 @@ Sandboxed environments may block or limit subprocess execution, network, or long
 
 **Enhanced retry logic with exponential backoff**:
 
-- **First retry**: If `execute_pre_commit_checks(checks=["tests"])` fails with connection error (e.g., "Connection closed", MCP error -32000), wait 2 seconds and retry
+- **First retry**: If `run_quality_gate()` / `run_quality_gate_fresh()` fails with connection error during the test step (e.g., "Connection closed", MCP error -32000), wait 2 seconds and retry
 - **Second retry**: If first retry fails, wait 5 seconds and retry again
 - **If both retries fail**: Block commit immediately. Do not proceed to Step 13. Report error and instruct user to reconnect Cortex MCP and re-run the commit command
 - **No fallback**: Unlike Step 12.6, there is no shell script fallback for tests. Step 12.7 must execute successfully via MCP
@@ -370,7 +370,7 @@ Sandboxed environments may block or limit subprocess execution, network, or long
 
 #### Cursor IDE: MCP tool timeout configuration {#cursor-ide-mcp-tool-timeout-configuration}
 
-Cursor IDE may apply a **client-side tool-call timeout**; when that is shorter than a long-running MCP tool (e.g. `fix_markdown_lint`, `execute_pre_commit_checks`), the client can close the connection and you see `MCP error -32000: Connection closed`. Reported behavior varies by version: some users see ~60 s or 2 minutes (e.g. Cursor 1.5.1+), others see longer defaults; in one log (MCP log 1-18553), disconnect occurred **≈10 s** after `fix_markdown_lint` started, which may indicate a separate shorter limit in some builds or environments.
+Cursor IDE may apply a **client-side tool-call timeout**; when that is shorter than a long-running MCP tool (e.g. `fix_markdown_lint`, `run_quality_gate`), the client can close the connection and you see `MCP error -32000: Connection closed`. Reported behavior varies by version: some users see ~60 s or 2 minutes (e.g. Cursor 1.5.1+), others see longer defaults; in one log (MCP log 1-18553), disconnect occurred **≈10 s** after `fix_markdown_lint` started, which may indicate a separate shorter limit in some builds or environments.
 
 **Configurable timeout (community-documented)**:
 
@@ -1002,7 +1002,7 @@ fatal: unable to access '...': SSL certificate problem: self signed certificate 
 
 ### Quality gate unavailable in environment
 
-When the implement step or commit pipeline runs the quality gate (`execute_pre_commit_checks(checks=["quality"])`), it may fail due to environment issues rather than code issues.
+When the implement step or commit pipeline runs the quality gate via `run_quality_gate()` (Phase A, includes quality checks), it may fail due to environment issues rather than code issues.
 
 **Symptoms**:
 
@@ -1063,7 +1063,7 @@ When the GitHub Actions "Code Quality" workflow fails on push (e.g. [run #244](h
    uv run black --check src/ tests/
    ```
 
-   Fix any reformatting, then commit and push again. Prefer re-running the commit pipeline with Cortex MCP connected so Step 12 runs via `execute_pre_commit_checks` (which uses Black). See [commit-pipeline-phases.md](../design/commit-pipeline-phases.md) and the commit prompt Step 12.1 fallback rules.
+   Fix any reformatting, then commit and push again. Prefer re-running the commit pipeline with Cortex MCP connected so Step 12 runs via `run_quality_gate_fresh()` (which drives the same Black-backed checks as CI). See [commit-pipeline-phases.md](../design/commit-pipeline-phases.md) and the commit prompt Step 12.1 fallback rules.
 
 2. **Run the exact CI test command locally** (from repo root, with same Python/uv as CI):
 

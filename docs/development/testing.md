@@ -163,7 +163,7 @@ python_classes = Test*               # Test class pattern
 python_functions = test_*            # Test function pattern
 
 # Output options (coverage is NOT in addopts so IDE test discovery works without
-# requiring pytest-cov; CI and execute_pre_commit_checks pass --cov explicitly)
+# requiring pytest-cov; CI and run_quality_gate pass --cov explicitly)
 addopts =
     -v                               # Verbose output
     --strict-markers                 # Error on unknown markers
@@ -216,11 +216,11 @@ skip_covered = false
 
 **When to use coverage**:
 
-- **CI/CD pipelines**: Coverage is automatically enabled via `execute_pre_commit_checks` tool
+- **CI/CD pipelines**: Coverage is automatically enabled via the Phase A quality gate (`run_quality_gate`)
 - **Manual full runs**: Pass `--cov` explicitly: `pytest --cov=src/cortex --cov-report=term-missing`
-- **Pre-commit checks**: The commit pipeline automatically includes coverage via `execute_pre_commit_checks(checks=["tests"])`
+- **Pre-commit checks**: The commit pipeline automatically includes coverage via `run_quality_gate()` (Phase A includes tests)
 
-**Reminder for implement/commit workflows**: When running full test suites (not just IDE discovery), remember to pass `--cov` explicitly if coverage reporting is needed. The commit pipeline handles this automatically via `execute_pre_commit_checks`.
+**Reminder for implement/commit workflows**: When running full test suites (not just IDE discovery), remember to pass `--cov` explicitly if coverage reporting is needed. The commit pipeline handles this automatically via `run_quality_gate()`.
 
 ### Running with Different Options
 
@@ -1293,14 +1293,14 @@ def test_parse_config_with_missing_file():
 ### Coverage expectations and prioritization
 
 - **90%+**: Minimum required for CI and release; enforced in the commit pipeline.
-- **89.5%+ with warning**: The pre-commit quality gate accepts 89.5–90% coverage but reports a warning (e.g. when running `execute_pre_commit_checks(checks=["tests"])`). Use this as a temporary buffer; aim for 90%+ before merge/release.
+- **89.5%+ with warning**: The pre-commit quality gate accepts 89.5–90% coverage but reports a warning (e.g. when running Phase A tests via `run_quality_gate()`). Use this as a temporary buffer; aim for 90%+ before merge/release.
 - **95%+**: Ideal for new or high-impact modules; aim here when adding features or refactoring.
 - **Prioritization**: Use the [coverage gap script](#coverage-gap-analysis) to list files by uncovered line count; tackle the top files first for the biggest impact.
 - **Quick gains**: Add tests for error paths (`except` blocks, validation failures), edge cases (empty input, boundary values), and public entry points before drilling into internal helpers.
 
 ### Integration test patterns for handler-dispatch tools
 
-Consolidated tools that dispatch to handlers (e.g. `query_memory_bank`, `execute_pre_commit_checks`) often need both unit tests (mocked, 80–90% coverage) and integration-style tests that call the real handler to reach 95%+. See the “Handler dispatch and coverage” section in this guide for patterns and examples.
+Consolidated tools that dispatch to handlers (e.g. `query_memory_bank`, `run_quality_gate`) often need both unit tests (mocked, 80–90% coverage) and integration-style tests that call the real handler to reach 95%+. See the “Handler dispatch and coverage” section in this guide for patterns and examples.
 
 ### Coverage Best Practices
 

@@ -248,7 +248,7 @@ Each manager/service module has a single responsibility:
 - **prompts/** – Prompt templates (e.g. commit, implement, analyze, create-plan); registered with the MCP server for Cursor/IDE.
 - **rules/** – Rule files (`.mdc`): `general/`, `python/`, `markdown/`; loaded by the rules manager and `get_synapse_rules()`.
 - **agents/** – Synapse agents (e.g. plan-archiver, quality-checker, memory-bank-updater); referenced by orchestration prompts.
-- **scripts/** – Language-specific scripts (e.g. `python/check_formatting.py`, `run_tests.py`); used by `execute_pre_commit_checks` and CI.
+- **scripts/** – Language-specific scripts (e.g. `python/check_formatting.py`, `run_tests.py`); used by the Phase A quality gate (`run_quality_gate`) and CI.
 
 **Rule loading**: The rules manager indexes `.mdc` files under the rules directory. Tools such as `rules(operation="get_relevant", task_description="...")` and `get_synapse_rules(task_description="...")` return relevant rules for a task. Paths are resolved via `get_structure_info()` (e.g. `structure_info.paths.rules`); the Synapse submodule is the canonical source for shared rules and prompts.
 

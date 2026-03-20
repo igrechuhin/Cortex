@@ -8,7 +8,7 @@ Ways to speed up the test suite (4800+ tests, `-m "not slow"`).
 - **Slow tests excluded**: `-m "not slow"` in CI and commit pipeline; two long integration tests are skipped.
 - **Per-test timeout**: 5–10s in `pytest.ini` so slow tests fail fast.
 - **Usage context bypass**: Tool tests that call decorated handlers patch `get_current_managers` so `ensure_usage_context` does not run `resolve_project_root_async` / `get_managers()` (avoids multi-second stalls).
-- **Progress heartbeat**: When `execute_pre_commit_checks` runs tests with progress (e.g. 300/4800+), a heartbeat thread reports progress every 20s even when pytest emits no output (e.g. one long test). The UI no longer appears stuck during those gaps.
+- **Progress heartbeat**: When `run_quality_gate` runs tests with progress (e.g. 300/4800+), a heartbeat thread reports progress every 20s even when pytest emits no output (e.g. one long test). The UI no longer appears stuck during those gaps.
 
 ## Finding slow tests that cause long progress gaps
 

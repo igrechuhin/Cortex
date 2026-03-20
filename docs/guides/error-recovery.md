@@ -14,7 +14,7 @@ This guide provides solutions for common errors in Cortex.
 **Causes:**
 
 - Client closed connection before tool finished (often due to timeout)
-- Occurs most during `fix_markdown_lint`, `execute_pre_commit_checks`, `fix_quality_issues`
+- Occurs most during `fix_markdown_lint`, `run_quality_gate`, `fix_quality_issues`
 
 **Solutions:**
 

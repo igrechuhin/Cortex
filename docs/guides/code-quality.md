@@ -8,7 +8,7 @@ Standards and tooling for code quality in Cortex (file size, formatting, linting
 - **Warning**: Files between 350 and 400 lines trigger a **warning** in the file size check; the check still passes.
 - **Error**: Files over 400 lines fail the quality gate and block commit/CI.
 
-The quality gate runs the file size check via `execute_pre_commit_checks(checks=["quality"])` or the script:
+The quality gate runs the file size check via `run_quality_gate()` (Phase A includes quality) or the script:
 
 ```bash
 uv run python .cortex/synapse/scripts/python/check_file_sizes.py

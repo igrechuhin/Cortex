@@ -146,7 +146,7 @@ For local development, use these Make targets (after running `bash scripts/boots
 - **`make check`**: Run formatting, linting, type checking, and the fast test suite. This is the main local quality gate.
 - **`make test`**: Run the fast test suite (`pytest -q`) with timeouts.
 - **`make test-full`**: Run the full test suite (including slower tests) with a longer timeout.
-- **`make commit-check`**: Run the same checks as `make check` before using `/cortex/commit` in Cursor for the full commit pipeline.
+- **`make commit-check`**: Run the same checks as `make check` before using `/cortex/commit` in Cursor for the full commit pipeline. With Cortex MCP connected, Phase A / Step 12 use the zero-arg tools documented in [docs/api/tools.md](docs/api/tools.md#commit-and-quality-pipeline-zero-arg-mcp-tools).
 
 ## Key Tools
 
@@ -156,11 +156,11 @@ Cortex exposes **30 tools, 9 prompts, and 24 resources**. The most important too
 | ------------------------------------------------------ | ------------------------------------------------------------- |
 | **Session**                                            | `session_start`, `load_context`, `compact_session`            |
 | **Memory Bank**                                        | `manage_file`, `query_memory_bank`                            |
-| **Quality**                                            | `validate`, `execute_pre_commit_checks`, `fix_quality_issues` |
+| **Quality (commit / implement)**                       | `run_quality_gate`, `run_quality_gate_fresh`, `run_docs_gate`, `fix_quality_issues` |
 | **Plans**                                              | `plan`, `roadmap`, `register_plan_in_roadmap`                 |
 | **Rules**                                              | `rules`, `get_synapse_rules`, `synapse`                       |
 | **Analysis**                                           | `analyze`, `think`                                            |
-| Full reference: [docs/api/tools.md](docs/api/tools.md) | Discovery: `search_tools(query="...")`                        |
+| Full reference: [docs/api/tools.md](docs/api/tools.md) (see [zero-arg quality pipeline](docs/api/tools.md#commit-and-quality-pipeline-zero-arg-mcp-tools)) | Discovery: `search_tools(query="...")`                        |
 
 ## Prompts
 

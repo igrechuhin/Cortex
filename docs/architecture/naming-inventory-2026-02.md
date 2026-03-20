@@ -20,7 +20,7 @@ Catalog current names for Cortex MCP tools, `cortex://` resources, and Synapse p
 | `get_*` | get_structure_info, get_relevance_scores | Read-only; Phase 43: get_*only for read-only. Consider query_* or resource-only for consistency. |
 | `*_file` | manage_file | ✓ |
 | `append_*` | append_entry | Imperative; side effects. ✓ (consolidates append_progress_entry, append_active_context_entry) |
-| `execute_*` | execute_pre_commit_checks | ✓ |
+| `execute_*` | run_quality_gate (Phase A; legacy `execute_*` helpers) | ✓ |
 | `fix_*` | fix_quality_issues, fix_markdown_lint | Imperative. ✓ |
 | `check_*` | check_mcp_connection_health, check_structure_health | Read-only checks. ✓ |
 | `validate` | validate | Dispatcher; imperative. ✓ |
@@ -56,7 +56,7 @@ Catalog current names for Cortex MCP tools, `cortex://` resources, and Synapse p
 
 **Criteria**: Purpose, USE WHEN, input expectations, RETURNS, Examples (for score 5).
 
-**Action**: Audit each tool's docstring against the rubric. Flag tools below score 4. Suggested tools to prioritize (high-use): manage_file, load_context, query_memory_bank, rules, execute_pre_commit_checks, get_structure_info, session_start, plan, roadmap.
+**Action**: Audit each tool's docstring against the rubric. Flag tools below score 4. Suggested tools to prioritize (high-use): manage_file, load_context, query_memory_bank, rules, run_quality_gate, get_structure_info, session_start, plan, roadmap.
 
 ## 2. Resources (cortex:// URIs)
 

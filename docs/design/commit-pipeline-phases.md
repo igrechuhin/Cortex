@@ -45,8 +45,8 @@ direct file read) before any code-modifying step runs.
 
 - Clean codebase: zero lint errors, zero type errors/warnings, zero
   quality violations, all tests passing with coverage >= 90%.
-- Structured JSON results from `execute_pre_commit_checks()` for each
-  check category.
+- Structured JSON results from `run_quality_gate()` (Phase A, zero-arg)
+  for the bundled check categories.
 
 ### Phase A — Failure Semantics
 
@@ -160,16 +160,11 @@ corruption from full-content writes:
 The final validation gate re-runs all checks to catch issues introduced
 during Phase B (documentation updates, new files, code changes):
 
-| Sub-step | Check | Tool Call |
-|----------|-------|-----------|
+| Sub-step | Check | Tool call / orchestration |
+|----------|-------|---------------------------|
 | 12.0 | Markdown re-validation | `fix_markdown_lint(include_untracked_markdown=True)` |
-| 12.1 | Format fix + check + CI parity | `execute_pre_commit_checks(checks=["format"])` then `checks=["format_ci_parity"]` |
-| 12.2 | Type check | `execute_pre_commit_checks(checks=["type_check"])` |
-| 12.3 | Quality (lint + type_check) | `execute_pre_commit_checks(checks=["quality"])` |
-| 12.4 | Test naming | `execute_pre_commit_checks(checks=["test_naming"])` |
-| 12.5 | Markdown lint | `fix_markdown_lint(include_untracked_markdown=True)` |
-| 12.6 | Quality re-check (sizes, lengths) | `execute_pre_commit_checks(checks=["quality"])` |
-| 12.7 | Tests with coverage | `execute_pre_commit_checks(checks=["tests"])` |
+| 12.1–12.7 | Format through tests with coverage | `run_quality_gate_fresh()` (zero-arg Phase A re-run). Individual checks (format, type, quality, tests, etc.) run inside that gate; when MCP is unavailable, use the commit prompt’s shell/script fallbacks per sub-step (Black for 12.1; no test fallback for 12.7). |
+| 12.5 | Markdown lint (within Step 12) | `fix_markdown_lint(include_untracked_markdown=True)` (may run inside or adjacent to the gate per prompt) |
 
 **Step 12.1 fallback (CI parity)**: If MCP is unavailable, Step 12.1 fallback
 MUST use the same formatter as CI. The Code Quality workflow uses **Black**
@@ -323,8 +318,8 @@ changed between phases.
 
 1. After Phase A completes, `PipelineDirtyTracker` records a SHA-256
    hash of all source-file git entries (staged, modified, untracked).
-2. When Step 12 calls `execute_pre_commit_checks(checks=[...], skip_if_clean=True)`,
-   the tool recomputes the current hash and compares.
+2. When Step 12 runs Phase A checks with `skip_if_clean=True` on eligible steps,
+   the worker recomputes the current hash and compares.
 3. If hashes match (no source changes), the check returns a skip result
    without running the actual check.
 4. If hashes differ, the full check runs normally.
@@ -360,9 +355,9 @@ changed between phases.
 
 This document serves as the foundation for subsequent plan steps:
 
-- **Step 2**: Introduce phase-level MCP tools or helpers that
-  encapsulate phase logic (e.g., `execute_pre_commit_checks(phase="A")`,
-  `execute_pre_commit_checks(phase="B")`).
+- **Step 2**: Phase-level MCP tools are available as zero-arg entrypoints
+  (`run_quality_gate`, `run_docs_gate`, `run_quality_gate_fresh`); keep
+  prompts aligned with those names as the bridge-safe surface.
 - **Step 3**: Refactor `/cortex/commit` prompt to orchestrate phase
   tools instead of micromanaging individual checks.
 - **Step 4**: Add focused helper commands for common failure modes

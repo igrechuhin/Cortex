@@ -42,6 +42,7 @@ This project has a **Cortex MCP server** that provides tools for everything agen
 | Markdown formatting | [docs/guides/markdown-formatting.md](docs/guides/markdown-formatting.md) | Use bold for section titles (use `#`/`##`/`###` instead) |
 | Quality fixes | `fix_quality_issues()` | Run language-specific formatters/linters manually |
 | Tests and pre-commit | `run_quality_gate()` | Run pytest/ruff/black/pyright directly |
+| Quality pipeline reference | [docs/api/tools.md — zero-arg quality tools](docs/api/tools.md#commit-and-quality-pipeline-zero-arg-mcp-tools) | Legacy parameterized pre-commit tools or job polling when the bridge strips args |
 | Memory bank, roadmap, plans | `manage_file()`, `plan()`, `update_memory_bank()` | Edit `.cortex/` files directly |
 | Project structure, paths | `cortex://structure` resource | Hardcode `.cortex/` paths |
 
@@ -114,7 +115,7 @@ All pipelines (commit, implement) run **inline** in the orchestrator — no suba
 
 ## Commit pipeline
 
-All phases run inline. Use zero-arg tools — do NOT use `execute_pre_commit_checks(phase=...)` or `start_quality_job + get_quality_job_status` (Cursor strips their args).
+All phases run inline. Use zero-arg tools — do NOT use legacy pre-commit tools that require explicit phase/check arguments or async job polling (Cursor strips their args). See [docs/api/tools.md](docs/api/tools.md#deprecated-agent-entrypoints-legacy-names) for names to avoid.
 
 - **Phase A**: `run_quality_gate()` — runs all quality checks end-to-end
 - **Phase B**: `run_docs_gate()` — validates timestamps and sync

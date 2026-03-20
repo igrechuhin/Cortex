@@ -14,7 +14,6 @@
 
 ## Pending plans (from .cortex/plans)
 
-- **Align docs to zero-arg quality pipeline and deprecate stale entrypoints** - PENDING - Plan: `.cortex/plans/align-docs-to-zero-arg-quality-pipeline-and-deprecate-stale-entrypoints.md` - Unify README/AGENTS/troubleshooting on the zero-arg quality entrypoints and detect stale references.
 - **Split make quality flows into non-mutating check and fix modes** - PENDING - Plan: `.cortex/plans/split-make-quality-flows-into-non-mutating-check-and-fix-modes.md` - Refactor Makefile targets into clear check/fix modes and add CI-parity local target.
 - **Document MCP-unavailable fallback for read-only audits** - PENDING - Plan: `.cortex/plans/document-mcp-unavailable-fallback-for-read-only-audits.md` - Define audited read-only fallback behavior and connectivity remediation when MCP is unavailable.
 - **Block dirty submodule references in commit workflow** - PENDING - Plan: `.cortex/plans/block-dirty-submodule-references-in-commit-workflow.md` - Add commit/quality guard that blocks dirty submodule references and gives remediation.
