@@ -1,7 +1,7 @@
 """
 Unit tests for connection_health.py MCP tool.
 
-Tests the check_mcp_connection_health tool which monitors
+Tests the health_check tool which monitors
 MCP connection health and resource utilization.
 """
 
@@ -12,8 +12,8 @@ import pytest
 
 from cortex.core.models import ConnectionHealth
 from cortex.tools.session.connection_health import (
-    check_mcp_connection_health,
     check_mcp_connection_health_resource,
+    health_check,
 )
 
 
@@ -26,11 +26,11 @@ def _patch_usage_context():
 
 
 @pytest.mark.timeout(10)
-class TestCheckMCPConnectionHealth:
-    """Tests for check_mcp_connection_health tool."""
+class TestHealthCheck:
+    """Tests for health_check tool."""
 
     @pytest.mark.asyncio
-    async def test_check_connection_health_success(self) -> None:
+    async def test_health_check_success(self) -> None:
         """Test successful connection health check."""
         # Arrange
         expected_health = ConnectionHealth(
@@ -50,7 +50,7 @@ class TestCheckMCPConnectionHealth:
             ),
         ):
             # Act
-            result_str = await check_mcp_connection_health()
+            result_str = await health_check()
             result = json.loads(result_str)
 
             # Assert
@@ -64,7 +64,7 @@ class TestCheckMCPConnectionHealth:
             assert health_data["utilization_percent"] == 40.0
 
     @pytest.mark.asyncio
-    async def test_check_connection_health_error(self) -> None:
+    async def test_health_check_error(self) -> None:
         """Test connection health check with error."""
         # Arrange
         error_message = "Connection failed"
@@ -79,7 +79,7 @@ class TestCheckMCPConnectionHealth:
             ),
         ):
             # Act
-            result_str = await check_mcp_connection_health()
+            result_str = await health_check()
             result = json.loads(result_str)
 
             # Assert
@@ -89,7 +89,7 @@ class TestCheckMCPConnectionHealth:
             assert result["error_type"] == "RuntimeError"
 
     @pytest.mark.asyncio
-    async def test_check_connection_health_value_error(self) -> None:
+    async def test_health_check_value_error(self) -> None:
         """Test connection health check with ValueError."""
         # Arrange
         error_message = "Invalid value"
@@ -104,7 +104,7 @@ class TestCheckMCPConnectionHealth:
             ),
         ):
             # Act
-            result_str = await check_mcp_connection_health()
+            result_str = await health_check()
             result = json.loads(result_str)
 
             # Assert
@@ -118,7 +118,7 @@ class TestCheckMCPConnectionHealth:
 class TestCheckMCPConnectionHealthResource:
     """Tests for check_mcp_connection_health_resource (Phase 43 cortex://health/connection)."""
 
-    async def test_check_mcp_connection_health_resource_returns_json(
+    async def test_health_check_resource_returns_json(
         self,
     ) -> None:
         """check_mcp_connection_health_resource returns JSON (Phase 43)."""
@@ -132,7 +132,7 @@ class TestCheckMCPConnectionHealthResource:
         with (
             _patch_usage_context(),
             patch(
-                "cortex.tools.connection_health.check_mcp_connection_health",
+                "cortex.tools.connection_health.health_check",
                 new_callable=AsyncMock,
                 return_value=json.dumps(
                     {"status": "success", "health": expected_health.model_dump()},

@@ -16,12 +16,10 @@ from typing import Protocol
 
 from cortex.core.constants import MCP_TOOL_TIMEOUT_MEDIUM
 from cortex.core.context_logging import MCPContext, log_client
-from cortex.core.mcp_annotations import safe_write_annotations
 from cortex.core.mcp_stability import ensure_usage_context, mcp_tool_wrapper
 from cortex.core.models import JsonValue
 from cortex.core.project_root_resolver import resolve_project_root_async
 from cortex.managers.types import ManagersDict
-from cortex.server import mcp
 from cortex.tools.config.helpers import ConfigAction, parse_config_action
 from cortex.tools.config.operations_errors import (
     create_configuration_exception_error,
@@ -109,7 +107,7 @@ class ConfigureActionName(str, Enum):
     RESET = "reset"
 
 
-@mcp.tool(annotations=safe_write_annotations("Configure Memory Bank"))
+# MCP registration removed — config editable directly
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_MEDIUM)
 async def configure(

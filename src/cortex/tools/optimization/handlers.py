@@ -23,7 +23,6 @@ from cortex.core.constants import (
     MCP_TOOL_TIMEOUT_MEDIUM,
 )
 from cortex.core.context_logging import MCPContext, log_client
-from cortex.core.mcp_annotations import read_only_annotations
 from cortex.core.mcp_stability import (
     ensure_usage_context,
     mcp_resource_wrapper,
@@ -49,11 +48,52 @@ from .handlers_validation import (
 __all__ = ["is_non_trivial_task"]
 
 
-@mcp.tool(annotations=read_only_annotations("Load Context"))
+def _resolve_load_context_inputs(
+    task_description: str | None,
+    token_budget: int | None,
+) -> tuple[str, int | None]:
+    """Resolve zero-arg defaults from session config."""
+    if task_description:
+        return task_description, token_budget
+    from cortex.core.session_config import read_session_config
+
+    cfg = read_session_config()
+    resolved_task = str(cfg.get("task_description", "session context"))
+    if token_budget is None:
+        raw_budget = cfg.get("token_budget")
+        if isinstance(raw_budget, int):
+            token_budget = raw_budget
+    return resolved_task, token_budget
+
+
+async def _execute_load_context(
+    resolved_task: str,
+    effective_budget: int | None,
+    strategy: str,
+    loading_strategy: str | None,
+    depth: ContextDepth | None,
+    response_format: ResponseFormat,
+    role: str | None,
+    ctx: MCPContext | None,
+) -> str:
+    """Call execute_load_context_with_logging with the resolved args."""
+    return await execute_load_context_with_logging(
+        resolved_task,
+        effective_budget,
+        strategy,
+        loading_strategy,
+        depth,
+        response_format,
+        role,
+        ctx,
+    )
+
+
+# MCP tool removed — exposed as resource cortex://context/{task_description}
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_COMPLEX)
 async def load_context(
-    task_description: str,
+    task_description: str | None = None,
     token_budget: int | None = None,
     strategy: str = "dependency_aware",
     loading_strategy: str | None = None,
@@ -80,16 +120,18 @@ async def load_context(
         JSON with selected files, their content, and relevance scores
     """
     await log_client(ctx, "info", "load_context: starting", logger_name=__name__)
-    length_error = validate_task_description_length(task_description)
+    resolved = _resolve_load_context_inputs(task_description, token_budget)
+    resolved_task, resolved_budget = resolved
+    length_error = validate_task_description_length(resolved_task)
     if length_error:
         return length_error
     effective_budget, budget_error = resolve_load_context_budget(
-        task_description, token_budget
+        resolved_task, resolved_budget
     )
     if budget_error:
         return budget_error
-    return await execute_load_context_with_logging(
-        task_description,
+    return await _execute_load_context(
+        resolved_task,
         effective_budget,
         strategy,
         loading_strategy,
@@ -100,7 +142,7 @@ async def load_context(
     )
 
 
-@mcp.tool(annotations=read_only_annotations("Summarize Content"))
+# MCP registration removed — unused tool
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_MEDIUM)
 async def summarize_content(
@@ -174,11 +216,11 @@ async def summarize_content(
         )
 
 
-@mcp.tool(annotations=read_only_annotations("Get Relevance Scores"))
+# MCP registration removed — internal to load_context
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_FAST)
 async def get_relevance_scores(
-    task_description: str,
+    task_description: str | None = None,
     include_sections: bool = False,
     ctx: MCPContext | None = None,
 ) -> str:
@@ -226,6 +268,12 @@ async def get_relevance_scores(
     await log_client(
         ctx, "info", "get_relevance_scores: starting", logger_name=__name__
     )
+    # Zero-arg fallback
+    if not task_description:
+        from cortex.core.session_config import read_session_config
+
+        cfg = read_session_config()
+        task_description = str(cfg.get("task_description", "session context"))
     try:
         root = await resolve_project_root_async(None, ctx)
         mgrs = await opt.get_managers(root)
@@ -254,20 +302,32 @@ async def get_relevance_scores(
 _LOAD_CONTEXT_RESOURCE_DEFAULT_BUDGET = 10000
 
 
-@mcp.resource(uri="cortex://optimization/load-context/{task_description}")
+@mcp.resource(uri="cortex://context")
 @ensure_usage_context
 @mcp_resource_wrapper(timeout=MCP_TOOL_TIMEOUT_COMPLEX)
-async def load_context_resource(task_description: str) -> str:
-    """Resource: Load context for task (default budget/strategy). Read via cortex://optimization/load-context/{task_description}. Task description may be URL-encoded."""
-    decoded = unquote(task_description)
+async def load_context_resource() -> str:
+    """Resource: Load context for current task. Zero-arg — reads task from session config.
+
+    Falls back to "general session context" if no session config exists.
+    """
+    from cortex.core.session_config import read_session_config
+
+    cfg = read_session_config()
+    task = str(cfg.get("task_description", "general session context"))
+    raw_budget = cfg.get("token_budget", _LOAD_CONTEXT_RESOURCE_DEFAULT_BUDGET)
+    budget = (
+        raw_budget
+        if isinstance(raw_budget, int)
+        else _LOAD_CONTEXT_RESOURCE_DEFAULT_BUDGET
+    )
     return await load_context(
-        task_description=decoded,
-        token_budget=_LOAD_CONTEXT_RESOURCE_DEFAULT_BUDGET,
+        task_description=task,
+        token_budget=budget,
         strategy="dependency_aware",
     )
 
 
-@mcp.resource(uri="cortex://optimization/relevance-scores/{task_description}")
+# MCP resource registration removed
 @ensure_usage_context
 @mcp_resource_wrapper(timeout=MCP_TOOL_TIMEOUT_FAST)
 async def get_relevance_scores_resource(task_description: str) -> str:
@@ -279,7 +339,7 @@ async def get_relevance_scores_resource(task_description: str) -> str:
     )
 
 
-@mcp.resource(uri="cortex://optimization/summarize/{file_name}")
+# MCP resource registration removed
 @ensure_usage_context
 @mcp_resource_wrapper(timeout=MCP_TOOL_TIMEOUT_MEDIUM)
 async def summarize_content_resource(file_name: str) -> str:

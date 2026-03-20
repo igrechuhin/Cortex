@@ -8,6 +8,7 @@ from enum import Enum
 
 from pydantic import ConfigDict, Field
 
+from cortex.core.models import JsonDict
 from cortex.tools.models_base import (
     ErrorResultBase,
     StrictBaseModel,
@@ -74,6 +75,27 @@ class CleanupActionResult(StrictBaseModel):
         extra="forbid",
         validate_assignment=True,
     )
+
+
+class CleanupReport(StrictBaseModel):
+    """Complete cleanup operation report."""
+
+    dry_run: bool = Field(description="Whether this was a dry run")
+    actions_performed: list[CleanupActionResult] = Field(
+        default_factory=lambda: list[CleanupActionResult](),
+        description="List of actions performed",
+    )
+    files_modified: list[str] = Field(
+        default_factory=list, description="List of files modified"
+    )
+    recommendations: list[str] = Field(
+        default_factory=list, description="Recommendations for further cleanup"
+    )
+    post_cleanup_health: JsonDict = Field(
+        description="Health check result after cleanup"
+    )
+
+    model_config = ConfigDict(extra="forbid", validate_assignment=True)
 
 
 class PostCleanupHealth(StrictBaseModel):

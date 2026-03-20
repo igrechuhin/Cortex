@@ -1,10 +1,13 @@
 from __future__ import annotations
 
 import logging
+from collections.abc import Sequence
 from pathlib import Path
-from typing import TYPE_CHECKING, cast
+from typing import cast
 
 from cortex.core.models import ModelDict
+from cortex.core.token_counter import TokenCounter
+from cortex.rules.models import LoadedRule
 
 from .models import (
     DetectedContextModel,
@@ -12,16 +15,13 @@ from .models import (
     RulesResultModel,
     ScoredRuleModel,
 )
+from .rules_manager import RulesManager
 from .rules_matching import (
     filter_rules_by_score,
     score_rule_relevance,
     score_rules_if_needed,
     select_rules_within_budget,
 )
-
-if TYPE_CHECKING:
-    from .rules_manager import RulesManager
-
 
 logger = logging.getLogger(__name__)
 
@@ -60,6 +60,7 @@ async def load_shared_rules(
 ) -> list[ScoredRuleModel]:
     """Load shared rules based on detected context."""
     assert manager.synapse_manager is not None
+    assert manager.token_counter is not None
     categories = await manager.synapse_manager.get_relevant_categories(
         cast(ModelDict, context.model_dump(mode="json"))
     )
@@ -67,26 +68,39 @@ async def load_shared_rules(
     shared_rules: list[ScoredRuleModel] = []
     for category in categories:
         category_rules = await manager.synapse_manager.load_category(category)
-        for loaded_rule in category_rules:
-            try:
-                tokens = manager.token_counter.count_tokens(loaded_rule.content)
-                shared_rules.append(
-                    ScoredRuleModel(
-                        file=loaded_rule.file,
-                        name=loaded_rule.file,
-                        content=loaded_rule.content,
-                        tokens=tokens,
-                        relevance_score=0.0,
-                        sections=[],
-                        source="shared",
-                        priority=loaded_rule.priority,
-                        category=loaded_rule.category,
-                    )
-                )
-            except Exception as exc:
-                logger.debug("load_shared_rules: skip invalid rule: %s", exc)
-                continue
+        shared_rules.extend(
+            _build_shared_rule_models(manager, category_rules),
+        )
 
+    return shared_rules
+
+
+def _build_shared_rule_models(
+    manager: RulesManager,
+    category_rules: Sequence[LoadedRule],
+) -> list[ScoredRuleModel]:
+    """Convert loaded shared rules into scored rule models."""
+    assert manager.token_counter is not None
+    shared_rules: list[ScoredRuleModel] = []
+    for loaded_rule in category_rules:
+        try:
+            tokens = manager.token_counter.count_tokens(loaded_rule.content)
+            shared_rules.append(
+                ScoredRuleModel(
+                    file=loaded_rule.file,
+                    name=loaded_rule.file,
+                    content=loaded_rule.content,
+                    tokens=tokens,
+                    relevance_score=0.0,
+                    sections=[],
+                    source="shared",
+                    priority=loaded_rule.priority,
+                    category=loaded_rule.category,
+                )
+            )
+        except Exception as exc:
+            logger.debug("load_shared_rules: skip invalid rule: %s", exc)
+            continue
     return shared_rules
 
 
@@ -178,7 +192,8 @@ async def load_and_merge_rules(
         key=lambda rule: (rule.priority, rule.relevance_score),
         reverse=True,
     )
-    return select_rules_within_budget(manager.token_counter, filtered_rules, max_tokens)
+    token_counter = cast("TokenCounter", manager.token_counter)
+    return select_rules_within_budget(token_counter, filtered_rules, max_tokens)
 
 
 def categorize_rules(

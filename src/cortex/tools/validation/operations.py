@@ -9,7 +9,6 @@ Total: 1 tool
 
 from cortex.core.constants import MCP_TOOL_TIMEOUT_COMPLEX, MemoryBankFile
 from cortex.core.context_logging import MCPContext, log_client
-from cortex.core.mcp_annotations import read_only_annotations
 from cortex.core.mcp_stability import (
     ensure_usage_context,
     mcp_resource_wrapper,
@@ -18,7 +17,6 @@ from cortex.core.mcp_stability import (
 from cortex.core.models import ResponseFormat
 from cortex.core.project_root_resolver import resolve_project_root_async
 from cortex.server import mcp
-from cortex.tools.structure.categories import ALLOWED_CALLERS_CODE_EXECUTION
 from cortex.tools.validation.dispatch import (
     call_dispatch_validation,
     prepare_validation_managers,
@@ -43,17 +41,47 @@ VALIDATE_INPUT_EXAMPLES: list[dict[str, object]] = [
 ]
 
 
-@mcp.tool(
-    annotations=read_only_annotations("Validate Memory Bank"),
-    meta={
-        "input_examples": VALIDATE_INPUT_EXAMPLES,
-        "allowed_callers": list(ALLOWED_CALLERS_CODE_EXECUTION),
-    },
-)
+def _get_session_default_check_type() -> ValidateCheckTypeName:
+    """Resolve zero-arg validate() default from session config."""
+    from cortex.core.session_config import read_session_config
+
+    cfg = read_session_config()
+    raw = str(cfg.get("check_type", "timestamps"))
+    parsed = parse_validation_check_type(raw)
+    return parsed or ValidationCheckType("timestamps")
+
+
+async def _validate_impl(
+    parsed: ValidateCheckTypeName,
+    file_name: str | None,
+    similarity_threshold: float | None,
+    suggest_fixes: bool,
+    check_commit_ci_alignment: bool,
+    check_code_quality_consistency: bool,
+    check_documentation_consistency: bool,
+    check_config_consistency: bool,
+    ctx: MCPContext | None,
+    response_format: ResponseFormat,
+) -> str:
+    raw = await _execute_validation_with_error_handling(
+        parsed,
+        file_name,
+        similarity_threshold,
+        suggest_fixes,
+        check_commit_ci_alignment,
+        check_code_quality_consistency,
+        check_documentation_consistency,
+        check_config_consistency,
+        ctx,
+    )
+    return format_validate_response(raw, parsed, response_format)
+
+
+# MCP tool removed — exposed as resource cortex://validation/{check_type}
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_COMPLEX)
 async def validate(
-    check_type: ValidateCheckTypeName,
+    check_type: ValidateCheckTypeName | None = None,
     file_name: str | None = None,
     strict_mode: bool = False,
     similarity_threshold: float | None = None,
@@ -173,11 +201,12 @@ async def validate(
         - All validation operations are read-only and do not modify files
     """
     await log_client(ctx, "info", "validate: starting", logger_name=__name__)
+    check_type = check_type or _get_session_default_check_type()
     parsed = parse_validation_check_type(check_type)
     if parsed is None:
         await log_client(ctx, "warning", "validate: invalid check_type")
         return create_invalid_check_type_error(check_type or "null")
-    raw = await _execute_validation_with_error_handling(
+    return await _validate_impl(
         parsed,
         file_name,
         similarity_threshold,
@@ -187,8 +216,8 @@ async def validate(
         check_documentation_consistency,
         check_config_consistency,
         ctx,
+        response_format,
     )
-    return format_validate_response(raw, parsed, response_format)
 
 
 async def _execute_validation_with_error_handling(
@@ -225,20 +254,22 @@ async def _execute_validation_with_error_handling(
         return create_validation_error_response(e)
 
 
-@mcp.resource(uri="cortex://validation/validate/{check_type}")
+@mcp.resource(uri="cortex://validation")
 @ensure_usage_context
 @mcp_resource_wrapper(timeout=MCP_TOOL_TIMEOUT_COMPLEX)
-async def validate_resource(check_type: str) -> str:
-    """Resource: Run validation by check type. Read via cortex://validation/validate/{check_type}.
+async def validate_resource() -> str:
+    """Resource: Run validation. Zero-arg — reads check_type from session config.
 
-    Runs the same validation as the validate tool with default parameters
-    (file_name=None, suggest_fixes=True, infrastructure checks enabled).
-    Project root is resolved by the server. check_type must be one of: schema, duplications,
-    quality, infrastructure, timestamps, roadmap_sync.
+    Falls back to "timestamps" if no session config exists. check_type must be
+    one of: schema, duplications, quality, infrastructure, timestamps, roadmap_sync.
     """
-    parsed = parse_validation_check_type(check_type)
+    from cortex.core.session_config import read_session_config
+
+    cfg = read_session_config()
+    ct = str(cfg.get("check_type", "timestamps"))
+    parsed = parse_validation_check_type(ct)
     if parsed is None:
-        return create_invalid_check_type_error(check_type or "null")
+        return create_invalid_check_type_error(ct)
     return await _execute_validation_with_error_handling(
         parsed,
         None,

@@ -2,7 +2,7 @@
 title: "Reduce Prompt-Alignment Test Fragility"
 component: "tests/integration"
 work_type: "refactor"
-status: "IN_PROGRESS"
+status: "COMPLETE"
 priority: "Medium"
 created: "2026-03-07"
 execution_order: 20

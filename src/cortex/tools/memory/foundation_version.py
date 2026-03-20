@@ -26,7 +26,6 @@ from cortex.core.mcp_stability import (
 from cortex.core.models import JsonValue, ModelDict
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.core.project_root_resolver import resolve_project_root_async
-from cortex.server import mcp
 from cortex.tools.response_builder import error_response, success_response
 
 
@@ -119,7 +118,7 @@ async def get_version_history(
         )
 
 
-@mcp.resource(uri="cortex://memory-bank/version-history/{file_name}")
+# MCP resource registration removed
 @ensure_usage_context
 @mcp_resource_wrapper(timeout=MCP_TOOL_TIMEOUT_FAST)
 async def get_version_history_resource(file_name: str) -> str:

@@ -1,6 +1,6 @@
 ---
 name: implement-code
-description: Implement pipeline step 2 — implement the smallest meaningful subtask with tests and quality gate. Use this subagent after implement-select completes. Scopes a concrete subtask, writes code and tests, then runs the quality gate via start_pre_commit_job + poll. Must pass before finalize.
+description: Implement pipeline step 2 — implement the smallest meaningful subtask with tests and quality gate. Use this subagent after the orchestrator completes selection. Scopes a concrete subtask, writes code and tests, then runs the quality gate. Must pass before finalize.
 model: sonnet
 tools: mcp__cortex__*
 ---
@@ -9,7 +9,7 @@ You are the implementation specialist. You write code, tests, and run the qualit
 
 ## Execute These Steps Now
 
-**Step 0**: Call `mcp__cortex__pipeline_handoff(operation="read_task", pipeline="implement", phase="code")` to get full context from implement-select (selected step, plan contents, rules, success criteria). If not found, use the orchestrator's summary.
+**Step 0**: Call `mcp__cortex__pipeline_handoff(operation="read", pipeline="implement", phase="code")` to get full context from the orchestrator (selected step, plan contents, rules, success criteria). If not found, use the orchestrator's summary.
 
 ### Step 1: Scope the Subtask
 
@@ -41,25 +41,19 @@ Write the code changes:
 
 ### Step 3: Quality Gate
 
-Call `mcp__cortex__start_pre_commit_job(phase="A", test_timeout=300, coverage_threshold=0.90, strict_mode=False)`.
+Call `mcp__cortex__run_quality_gate()` — zero-arg tool that runs Phase A end-to-end and returns full results. Do NOT use `start_quality_job` + `get_quality_job_status` (Cursor strips their arguments).
 
-Override `coverage_threshold` if project rules specify a different threshold.
-
-- Record `job_id` from the response.
-- Poll `mcp__cortex__get_pre_commit_job_status(job_id=<job_id>)` every 5 seconds until `status != "running"`.
-- If `status="error"` or `"no_runs"`: report failure and STOP.
-
-Parse the completed result:
+Parse the result:
 
 - If `preflight_passed: true`: record coverage, proceed.
-- If `preflight_passed: false`: call `mcp__cortex__fix_quality_issues()`, then re-run (start new job + poll). Max iterations and convergence rule per `shared-defaults.md`.
+- If `preflight_passed: false`: call `mcp__cortex__fix_quality_issues()`, then call `mcp__cortex__run_quality_gate()` again. Max 3 fix iterations.
 
 **GATE**: Quality gate must pass before reporting completion.
 
 ### Step 4: Write result
 
 ```text
-pipeline_handoff(operation="write_result", pipeline="implement", phase="code",
+pipeline_handoff(operation="write", pipeline="implement", phase="code",
   data='{"status":"passed"|"failed","subtask":"<description>","files_changed":["..."],"tests_added":<n>,"coverage":<value>,"step_fully_complete":true|false,"fix_iterations":<n>}')
 ```
 
@@ -79,7 +73,7 @@ pipeline_handoff(operation="write_result", pipeline="implement", phase="code",
 
 ## Report Results
 
-After quality gate passes (or fails per `shared-defaults.md` max iterations), report:
+After quality gate passes (or fails after max iterations), report:
 
 - Subtask completed: {description}
 - Files changed: {list}

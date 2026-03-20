@@ -1403,46 +1403,48 @@ class TestAnalyzeResource:
     async def test_analyze_resource_returns_json_for_valid_target(
         self, tmp_path: Path
     ) -> None:
-        """analyze_resource returns valid JSON for structure target (Phase 43)."""
-        with patch(
-            "cortex.tools.context.analysis_operations.analyze",
-            new_callable=AsyncMock,
-            return_value=json.dumps(
-                {"status": "success", "target": "structure", "analysis": {}},
-                indent=2,
+        """analyze_resource returns valid JSON (zero-arg, reads session config)."""
+        with (
+            patch(
+                "cortex.core.session_config.read_session_config",
+                return_value={"analysis_target": "structure"},
+            ),
+            patch(
+                "cortex.tools.context.analysis_operations.analyze",
+                new_callable=AsyncMock,
+                return_value=json.dumps(
+                    {"status": "success", "target": "structure", "analysis": {}},
+                    indent=2,
+                ),
             ),
         ):
-            result = await analyze_resource("structure")
+            result = await analyze_resource()
         result_data = json.loads(result)
         assert result_data["status"] == "success"
         assert result_data["target"] == "structure"
 
     @pytest.mark.asyncio
-    async def test_analyze_resource_invalid_target_returns_error(self) -> None:
-        """analyze_resource returns error JSON for invalid target (Phase 43)."""
-        error_json = json.dumps(
-            {
-                "status": "error",
-                "error": "Invalid target: invalid",
-                "valid_targets": [],
-            },
-            indent=2,
-        )
+    async def test_analyze_resource_default_target_is_context(self) -> None:
+        """analyze_resource defaults to 'context' when no session config."""
         with (
             patch(
-                "cortex.core.mcp_stability_usage.get_current_managers",
+                "cortex.core.session_config.read_session_config",
                 return_value={},
             ),
             patch(
                 "cortex.tools.context.analysis_operations.analyze",
                 new_callable=AsyncMock,
-                return_value=error_json,
-            ),
+                return_value=json.dumps({"status": "success", "target": "context"}),
+            ) as mock_analyze,
         ):
-            result = await analyze_resource("invalid")
-        result_data = json.loads(result)
-        assert result_data["status"] == "error"
-        assert "valid_targets" in result_data
+            result = await analyze_resource()
+        mock_analyze.assert_called_once_with(
+            target="context",
+            time_window_days=None,
+            export_format="json",
+            categories=None,
+        )
+        assert json.loads(result)["status"] == "success"
 
 
 @pytest.mark.timeout(10)

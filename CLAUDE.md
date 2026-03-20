@@ -8,39 +8,23 @@ This project runs a **Cortex MCP server**. All project knowledge, rules, and wor
 
 **At the start of every non-trivial task:**
 
-**For session orientation** (recommended first step):
+1. Call `session()` for orientation (< 1000 tokens)
+2. Read `cortex://context` resource for project context
+3. Read `cortex://rules` resource for coding standards
 
-```text
-session(operation="start", task_description=None)  # Get orientation brief (< 1000 tokens)
-```
+**Pattern**: `session()` → read resources → work
 
-**For task-specific context**:
+**Zero-arg tools**: All MCP tools work when called with empty `{}` arguments (Cursor's MCP bridge strips args). Tools read defaults from session config files or use sensible fallbacks. See [AGENTS.md](AGENTS.md#use-cortex-mcp-mandatory) for the full tool/resource reference.
 
-```text
-load_context(task_description="<your goal>", token_budget=<appropriate>)
-```
+**On the fix path**: When you encounter a problem and have to fix something (errors, test failures, quality/type issues), you **must** read `cortex://context` and `cortex://rules` resources before making changes. This ensures fixes follow all project rules and guidelines.
 
-**Pattern**: `session(operation="start")` → review brief → `load_context(task_description=brief.next_work_item, ...)` → work
+**For thinking and reasoning:** Use `think()`. Lightweight for quick deliberation; full mode with `thought_number`, `total_thoughts`, `next_thought_needed` for multi-step reasoning.
 
-**Parallel agents (Phase 58)**: See AGENTS.md (Multi-agent coordination) for task locking when multiple Cursor tabs work on the same project.
+**For rules and standards:** Read `cortex://rules` resource — do not read `.cortex/rules/` or `.cortex/synapse/` directly. For tool parameters and structured dispatch data use Pydantic BaseModel, not `dict[str, Any]`.
 
-Token budget guidance comes from `load_context` tool documentation and context-effectiveness analysis. Use task-appropriate budgets.
+**For quality and tests:** Use zero-arg tools: `run_quality_gate()`, `run_docs_gate()`, `fix_quality_issues()`. Do not run language-specific formatters/linters/test runners directly.
 
-**Context budget defaults**: See [AGENTS.md](AGENTS.md#workflow) for the token budget table by task type. See implement prompt for full checklist and zero-budget guardrails.
-
-**AgentRole awareness**: The `load_context` tool automatically detects agent roles (feature/quality/testing/docs/planning/debugging/review) from task descriptions and uses role-aware context selection. Roles influence file prioritization and context-effectiveness analysis provides role-specific budget recommendations. The detected role is logged in session logs for analysis. See AGENTS.md for role descriptions, detection keywords, default budgets, and file focus preferences. Role-aware budget recommendations are available in `analyze(target="context")` insights.
-
-**On the fix path**: When you encounter a problem and have to fix something (errors, test failures, quality/type issues), you **must** load context and rules before making changes—e.g. `load_context(task_description="Fixing errors and issues", token_budget=15000)` and get relevant rules—so fixes follow all project rules and guidelines. See AGENTS.md and the commit/implement prompts for details.
-
-**For thinking and reasoning:** Use the `think` tool. Lightweight: `think(thought="...")` for quick deliberation. Full mode: pass `thought_number`, `total_thoughts`, `next_thought_needed` for multi-step reasoning with revisions and branches.
-
-**For rules and standards:** Use Cortex rules/validation tools — do not read `.cortex/rules/` or `.cortex/synapse/` directly. Get structured data standards via `get_synapse_rules(task_description="[language] models, structured data")` or `rules(operation="get_relevant", task_description="structured data, tool parameters")`. For tool parameters and structured dispatch data use Pydantic BaseModel, not `dict[str, Any]`.
-
-**For quality and tests:** Use `fix_quality_issues` and `execute_pre_commit_checks` — do not run language-specific formatters/linters/test runners directly (get standards via `get_synapse_rules`).
-
-**For memory bank, plans, reviews:** Use dedicated Cortex MCP helpers — do not edit `.cortex/` files directly.
-
-**Workflow and compound-engineering guidance:** Delivered by Cortex MCP (e.g. `load_context`, memory bank). Do not duplicate here — fetch from MCP.
+**For memory bank, plans, reviews:** Use dedicated Cortex MCP helpers (`manage_file()`, `plan()`, `update_memory_bank()`) — do not edit `.cortex/` files directly.
 
 **Note for AI agents**: When you need detailed workflows (commit, implement, fix-path, etc.), read the corresponding Synapse prompts and rules via Cortex MCP instead of adding guidance to `CLAUDE.md` or `AGENTS.md`.
 

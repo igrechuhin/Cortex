@@ -32,7 +32,6 @@ from cortex.health_check.rule_analyzer import RuleAnalyzer
 from cortex.health_check.similarity_engine import SimilarityEngine
 from cortex.health_check.tool_analyzer import ToolAnalyzer
 from cortex.managers.initialization import get_project_root as _get_project_root
-from cortex.server import mcp
 
 
 def get_project_root(project_root: str | None) -> Path:
@@ -291,7 +290,7 @@ async def analyze_health_check(
 # Phase 43: Health check resource (read-only, template param)
 
 
-@mcp.resource(uri="cortex://health/analyze/{analysis_type}")
+# MCP resource registration removed
 @ensure_usage_context
 @mcp_resource_wrapper(timeout=MCP_TOOL_TIMEOUT_COMPLEX)
 async def analyze_health_check_resource(analysis_type: str) -> str:

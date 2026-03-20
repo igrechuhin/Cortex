@@ -1,9 +1,9 @@
 """
-Integration tests for Phase 66: Plan creation workflow compliance.
+Integration tests for plan creation workflow compliance.
 
 Verifies that the create-plan prompt enforces:
-- Path resolution via structure_info.paths.plans (absolute path; no hardcoding).
-- Roadmap updates for new plan entry via plan(operation="register") (or roadmap(operation="add_entry")); manage_file(write) only as fallback; no StrReplace/direct Write.
+- Path resolution via .cortex/plans/ directory with Glob (zero-arg friendly).
+- Roadmap updates via plan(operation="register"); manage_file(write) only as fallback; no StrReplace/direct Write.
 """
 
 from pathlib import Path
@@ -29,7 +29,7 @@ def _create_plan_prompt_path() -> Path:
 
 
 class TestCreatePlanPathResolution:
-    """Assert create-plan prompt requires canonical path resolution for plans."""
+    """Assert create-plan prompt uses correct path resolution for plans."""
 
     @pytest.fixture
     def create_plan_prompt_content(self) -> str:
@@ -41,36 +41,28 @@ class TestCreatePlanPathResolution:
             )
         return path.read_text()
 
-    def test_prompt_requires_structure_info_paths_plans(
-        self, create_plan_prompt_content: str
-    ) -> None:
-        """Create-plan prompt must use structure_info.paths.plans for plans directory."""
-        assert "structure_info.paths.plans" in create_plan_prompt_content
+    def test_prompt_uses_plans_directory(self, create_plan_prompt_content: str) -> None:
+        """Create-plan prompt must reference .cortex/plans/ directory."""
+        assert ".cortex/plans/" in create_plan_prompt_content
 
-    def test_prompt_requires_absolute_path_for_plans(
+    def test_prompt_uses_glob_for_plan_listing(
         self, create_plan_prompt_content: str
     ) -> None:
-        """Create-plan prompt must require absolute path from tool, not inferred."""
-        assert "absolute path" in create_plan_prompt_content
-        assert "structure_info.paths.plans" in create_plan_prompt_content
+        """Create-plan prompt must use Glob for listing plans."""
+        assert "Glob" in create_plan_prompt_content
+        assert ".cortex/plans/*.md" in create_plan_prompt_content
 
-    def test_prompt_prohibits_hardcoding_plans_path(
+    def test_prompt_uses_manage_file_for_memory_bank(
         self, create_plan_prompt_content: str
     ) -> None:
-        """Create-plan prompt must prohibit hardcoding .cortex/plans or inferring from root."""
-        assert (
-            "Do not hardcode" in create_plan_prompt_content
-            or "hardcode" in create_plan_prompt_content.lower()
-        )
-        assert (
-            "structure_info.root" in create_plan_prompt_content
-            or "canonical" in create_plan_prompt_content.lower()
-        )
+        """Create-plan prompt must use manage_file() for memory bank reads."""
+        assert "manage_file()" in create_plan_prompt_content
+        assert ".cortex/memory-bank/" in create_plan_prompt_content
 
     def test_prompt_path_resolution_violation_language(
         self, create_plan_prompt_content: str
     ) -> None:
-        """Create-plan prompt must state that hardcoding/inferring plans path is a violation."""
+        """Create-plan prompt must state that roadmap corruption is a violation."""
         assert "VIOLATION" in create_plan_prompt_content
         assert (
             "path" in create_plan_prompt_content.lower()
@@ -94,7 +86,7 @@ class TestCreatePlanPrefersCreatePlanTool:
     def test_prompt_prefers_create_plan_for_new_plan_file(
         self, create_plan_prompt_content: str
     ) -> None:
-        """Create-plan Step 5 must prefer plan(operation='create') when creating a new plan file."""
+        """Create-plan Step 7 must prefer plan(operation='create') for new plans."""
         assert "plan" in create_plan_prompt_content
         assert (
             "Prefer" in create_plan_prompt_content
@@ -104,7 +96,7 @@ class TestCreatePlanPrefersCreatePlanTool:
     def test_prompt_mentions_fallback_write_for_plan_file(
         self, create_plan_prompt_content: str
     ) -> None:
-        """Create-plan Step 5 must mention fallback (Write) when plan(operation='create') unavailable."""
+        """Create-plan Step 7 must mention fallback (Write) when plan(operation='create') unavailable."""
         assert (
             "Fallback" in create_plan_prompt_content
             or "fallback" in create_plan_prompt_content
@@ -131,7 +123,7 @@ class TestCreatePlanRoadmapUpdate:
     def test_prompt_requires_register_plan_in_roadmap_for_new_plan(
         self, create_plan_prompt_content: str
     ) -> None:
-        """Create-plan Step 6 must require plan(operation='register', ...) for adding a new plan entry."""
+        """Create-plan Step 8 must require plan(operation='register')."""
         assert 'plan(operation="register"' in create_plan_prompt_content
         assert "REQUIRED" in create_plan_prompt_content
         assert "roadmap" in create_plan_prompt_content.lower()
@@ -139,7 +131,7 @@ class TestCreatePlanRoadmapUpdate:
     def test_prompt_contains_prohibited_for_roadmap(
         self, create_plan_prompt_content: str
     ) -> None:
-        """Create-plan Step 6 must explicitly PROHIBIT StrReplace/direct Write for roadmap."""
+        """Create-plan Step 8 must explicitly PROHIBIT StrReplace/direct Write for roadmap."""
         assert "PROHIBITED" in create_plan_prompt_content
         assert "roadmap" in create_plan_prompt_content.lower()
         assert (
@@ -150,7 +142,7 @@ class TestCreatePlanRoadmapUpdate:
     def test_prompt_mentions_fallback_manage_file_for_roadmap(
         self, create_plan_prompt_content: str
     ) -> None:
-        """Create-plan Step 6 must mention manage_file only as fallback for roadmap writes."""
+        """Create-plan Step 8 must mention manage_file only as fallback."""
         assert "roadmap.md" in create_plan_prompt_content
         assert "manage_file" in create_plan_prompt_content
         assert (
@@ -161,7 +153,7 @@ class TestCreatePlanRoadmapUpdate:
     def test_prompt_contains_violation_for_str_replace_or_direct_write(
         self, create_plan_prompt_content: str
     ) -> None:
-        """Create-plan must state that StrReplace or direct Write for roadmap is a critical violation."""
+        """Create-plan must state StrReplace or direct Write for roadmap is a violation."""
         assert "VIOLATION" in create_plan_prompt_content
         assert (
             "StrReplace" in create_plan_prompt_content
@@ -171,7 +163,7 @@ class TestCreatePlanRoadmapUpdate:
     def test_prompt_requires_full_content_when_using_fallback_write(
         self, create_plan_prompt_content: str
     ) -> None:
-        """Create-plan must require full, unabridged roadmap content when using fallback manage_file write."""
+        """Create-plan must require full, unabridged roadmap content for fallback write."""
         assert (
             "full" in create_plan_prompt_content.lower()
             and "content" in create_plan_prompt_content.lower()
@@ -192,7 +184,7 @@ def _memory_bank_updater_agent_path() -> Path:
 
 
 class TestCreatePlanAntiTruncation:
-    """Assert create-plan Step 6 contains anti-truncation and pre-write length check (roadmap full-content enforcement)."""
+    """Assert create-plan Step 8 contains anti-truncation and pre-write length check."""
 
     @pytest.fixture
     def create_plan_prompt_content(self) -> str:
@@ -207,7 +199,7 @@ class TestCreatePlanAntiTruncation:
     def test_prompt_prohibits_shortened_or_summarized_roadmap(
         self, create_plan_prompt_content: str
     ) -> None:
-        """Create-plan Step 6 must prohibit passing shortened or summarized roadmap content."""
+        """Create-plan Step 8 must prohibit shortened or summarized roadmap content."""
         assert (
             "never truncate" in create_plan_prompt_content.lower()
             or "never pass" in create_plan_prompt_content.lower()
@@ -220,7 +212,7 @@ class TestCreatePlanAntiTruncation:
     def test_prompt_requires_pre_write_content_length_check(
         self, create_plan_prompt_content: str
     ) -> None:
-        """Create-plan Step 6 must require pre-write check that content length >= roadmap as read."""
+        """Create-plan Step 8 must require pre-write check that content >= roadmap as read."""
         assert (
             "pre-write" in create_plan_prompt_content.lower()
             or "content length" in create_plan_prompt_content.lower()
@@ -234,7 +226,7 @@ class TestCreatePlanAntiTruncation:
 
 
 class TestCreatePlanVerificationChecklist:
-    """Assert create-plan prompt includes Verification Checklist (Phase 78)."""
+    """Assert create-plan prompt includes Verification Checklist."""
 
     @pytest.fixture
     def create_plan_prompt_content(self) -> str:
@@ -249,7 +241,7 @@ class TestCreatePlanVerificationChecklist:
     def test_prompt_includes_verification_checklist_section(
         self, create_plan_prompt_content: str
     ) -> None:
-        """Create-plan plan structure must include Verification Checklist for elimination steps."""
+        """Create-plan plan structure must include Verification Checklist."""
         assert "Verification Checklist" in create_plan_prompt_content
         assert (
             "What to search for" in create_plan_prompt_content
@@ -281,7 +273,7 @@ class TestMemoryBankUpdaterAntiTruncation:
     def test_agent_prohibits_truncated_roadmap_content(
         self, memory_bank_updater_content: str
     ) -> None:
-        """Memory-bank-updater must state never pass truncated or summarized roadmap content."""
+        """Memory-bank-updater must state never pass truncated or summarized content."""
         assert (
             "never pass truncated" in memory_bank_updater_content.lower()
             or "never truncate" in memory_bank_updater_content.lower()

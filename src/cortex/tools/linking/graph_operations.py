@@ -19,7 +19,6 @@ from cortex.core.project_root_resolver import resolve_project_root_async
 from cortex.linking.parser import LinkParser
 from cortex.managers.initialization import get_managers, get_project_root
 from cortex.managers.utils import get_manager
-from cortex.server import mcp
 from cortex.tools.linking.graph_formatters import (
     generate_json_response,
     generate_mermaid_response,
@@ -242,7 +241,7 @@ async def get_link_graph(
         )
 
 
-@mcp.resource(uri="cortex://links/graph")
+# MCP resource registration removed
 @ensure_usage_context
 @mcp_resource_wrapper(timeout=MCP_TOOL_TIMEOUT_MEDIUM)
 async def get_link_graph_resource() -> str:

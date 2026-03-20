@@ -1,0 +1,10 @@
+{
+  "$schema": "cortex-quality-config-v1",
+  "coverage_threshold": 90,
+  "max_file_lines": 400,
+  "max_function_lines": 30,
+  "test_timeout_seconds": 120,
+  "todo_patterns": ["TODO", "FIXME", "HACK", "XXX"],
+  "exclude_from_todo_scan": ["tests/", "examples/", "samples/", "demos/"],
+  "markdown_line_length": 120
+}

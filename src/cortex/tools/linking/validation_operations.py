@@ -20,7 +20,6 @@ from cortex.core.project_root_resolver import resolve_project_root_async
 from cortex.linking.validator import LinkValidator
 from cortex.managers.initialization import get_managers
 from cortex.managers.utils import get_manager
-from cortex.server import mcp
 
 
 # Tool consolidated into query_memory_bank (Phase 50); kept as callable for dispatch.
@@ -208,7 +207,7 @@ async def validate_links(
         )
 
 
-@mcp.resource(uri="cortex://links/validate")
+# MCP resource registration removed
 @ensure_usage_context
 @mcp_resource_wrapper(timeout=MCP_TOOL_TIMEOUT_MEDIUM)
 async def validate_links_resource() -> str:

@@ -28,7 +28,7 @@ _ORIENTATION_TOOLS: frozenset[str] = frozenset(
         "load_context",
         "get_relevance_scores",
         "get_structure_info",
-        "check_mcp_connection_health",
+        "health_check",
         "think",
         "query_memory_bank",
         "query_usage",

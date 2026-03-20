@@ -7,7 +7,6 @@ import json
 import pytest
 
 from cortex.tools.structure.categories import (
-    ToolCategory,
     build_category_config,
     get_always_loaded_tool_names,
     get_deferred_tool_names,
@@ -48,11 +47,11 @@ async def test_search_tools_empty_query() -> None:
 @pytest.mark.timeout(5)
 async def test_search_tools_category_filter() -> None:
     """search_tools with category returns only that category."""
-    result = await search_tools(query="tool", category="deferred_low", limit=20)
+    result = await search_tools(query="tool", category="deferred_medium", limit=20)
     data = json.loads(result)
     assert data["status"] == "success"
     for t in data["tools"]:
-        assert t["category"] == "deferred_low"
+        assert t["category"] == "deferred_medium"
 
 
 @pytest.mark.asyncio
@@ -85,8 +84,8 @@ def test_tool_search_token_savings_potential() -> None:
     deferred = len(config.deferred_medium) + len(config.deferred_low)
     total = always + deferred
     assert always < total, "always_loaded must be a subset to achieve token savings"
-    assert always >= 10, "enough core tools for session start and quality gates"
-    assert deferred >= 15, "enough deferred tools for on-demand discovery"
+    assert always >= 8, "enough core tools for session start and quality gates"
+    assert deferred >= 2, "enough deferred tools for on-demand discovery"
 
 
 @pytest.mark.asyncio
@@ -106,9 +105,9 @@ async def test_tool_search_discovery_returns_only_deferred_tools() -> None:
     ), "search_tools must not return always_loaded"
 
 
-def test_search_tools_is_always_loaded() -> None:
-    """search_tools must be always_loaded so it is available when deferred loading is on."""
-    assert get_tool_category("search_tools") == ToolCategory.ALWAYS_LOADED
+def test_search_tools_was_removed() -> None:
+    """search_tools was removed from registration (2026-03-18)."""
+    assert get_tool_category("search_tools") is None
 
 
 # ---------------------------------------------------------------------------

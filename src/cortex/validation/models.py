@@ -32,11 +32,6 @@ from cortex.validation.quality_models import (
     ValidationResult,
     ValidationSeverity,
 )
-from cortex.validation.roadmap_models import (
-    RoadmapReferenceModel,
-    SyncValidationResultModel,
-    TodoItemModel,
-)
 from cortex.validation.schema_models import (
     DuplicationConfigModel,
     FileSchemaModel,
@@ -81,14 +76,11 @@ __all__ = [
     "QualityHealthStatus",
     "QualityScoreResult",
     "QualityWeightsModel",
-    "RoadmapReferenceModel",
     "SchemasConfigModel",
     "SectionEntry",
     "SingleFileTimestampResult",
-    "SyncValidationResultModel",
     "TimestampScanResult",
     "TimestampViolationModel",
-    "TodoItemModel",
     "TokenBudgetConfigModel",
     "TransclusionFix",
     "ValidationConfigModel",

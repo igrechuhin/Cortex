@@ -10,10 +10,8 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from cortex.core.constants import MCP_TOOL_TIMEOUT_VERY_COMPLEX
 from cortex.core.context_logging import MCPContext, log_client
-from cortex.core.mcp_annotations import safe_write_annotations
 from cortex.core.mcp_stability import ensure_usage_context, mcp_tool_wrapper
 from cortex.core.project_root_resolver import resolve_project_root_async
-from cortex.server import mcp
 from cortex.tools.files.markdown_lint_cache import load_markdown_lint_index_safe
 from cortex.tools.files.markdown_lint_core import (
     filter_files_for_linting,
@@ -202,7 +200,7 @@ async def _fix_markdown_lint_run_or_error(
         return (create_error_response(f"Fatal markdown lint error: {e!r}"), False)
 
 
-@mcp.tool(annotations=safe_write_annotations("Fix Markdown Lint"))
+# MCP registration removed — fix_quality_issues includes markdown auto-fix
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_VERY_COMPLEX, enable_progress=False)
 async def fix_markdown_lint(

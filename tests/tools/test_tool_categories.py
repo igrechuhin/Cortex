@@ -33,11 +33,11 @@ from cortex.tools.structure.categories import (
 # Constants for expected counts (update when tools are added/removed)
 # ---------------------------------------------------------------------------
 
-_MIN_ALWAYS_LOADED = 12  # at least this many core tools
-_MIN_DEFERRED_MEDIUM = 12  # 2026-03-02: benchmark_model unpublishing reduced count
-_MIN_DEFERRED_LOW = 4  # 2026-02-27: rollback_file_version consolidated into manage_file
+_MIN_ALWAYS_LOADED = 8  # 2026-03-19: 8 always_loaded after resource conversion
+_MIN_DEFERRED_MEDIUM = 2  # 2026-03-19: 2 deferred_medium after resource conversion
+_MIN_DEFERRED_LOW = 0  # 2026-03-18: no deferred_low tools after consolidation
 _MIN_TOTAL_TOOLS = (
-    28  # 2026-03-02: roadmap + append_entry consolidated into update_memory_bank
+    10  # 2026-03-19: 10 registered tools after converting 6 tools to resources
 )
 
 
@@ -168,13 +168,13 @@ class TestToolCategoriesMapping:
 
     def test_core_tools_are_always_loaded(self) -> None:
         """Critical tools that appear in every session are always_loaded."""
+        # validate, load_context, get_structure_info, rules, analyze,
+        # health_check are now MCP resources, not tools.
         core_tools = {
             "manage_file",
-            "validate",
-            "load_context",
-            "execute_pre_commit_checks",
-            "get_structure_info",
-            "rules",
+            "run_quality_gate",
+            "session",
+            "think",
         }
         for name in core_tools:
             cat = get_tool_category(name)
@@ -182,13 +182,10 @@ class TestToolCategoriesMapping:
                 cat == ToolCategory.ALWAYS_LOADED
             ), f"Core tool {name!r} should be ALWAYS_LOADED, got {cat}"
 
-    def test_analytics_tools_are_deferred_low(self) -> None:
-        """Usage analytics consolidated tool should be deferred_low (Phase 50)."""
-        analytics_tool = "query_usage"
-        cat = get_tool_category(analytics_tool)
-        assert (
-            cat == ToolCategory.DEFERRED_LOW
-        ), f"Analytics tool {analytics_tool!r} should be DEFERRED_LOW, got {cat}"
+    def test_deferred_low_category_is_empty(self) -> None:
+        """No tools remain in deferred_low after consolidation (2026-03-18)."""
+        low = [e for e in TOOL_CATEGORIES if e.category == ToolCategory.DEFERRED_LOW]
+        assert len(low) == 0, f"Expected 0 deferred_low tools, got {len(low)}"
 
 
 @pytest.mark.timeout(5)
@@ -263,8 +260,8 @@ class TestGetAlwaysLoadedToolNames:
         """Contains essential core tools."""
         names = get_always_loaded_tool_names()
         assert "manage_file" in names
-        assert "validate" in names
-        assert "load_context" in names
+        assert "run_quality_gate" in names
+        assert "session" in names
 
     def test_no_deferred_tools(self) -> None:
         """No deferred tools appear in always_loaded list."""
@@ -283,11 +280,11 @@ class TestGetDeferredToolNames:
         names = get_deferred_tool_names()
         assert names == sorted(names)
 
-    def test_includes_medium_and_low(self) -> None:
-        """Contains tools from both deferred_medium and deferred_low."""
+    def test_includes_medium_tools(self) -> None:
+        """Contains tools from deferred_medium."""
         names = set(get_deferred_tool_names())
-        assert "suggest_refactoring" in names  # medium
-        assert "query_usage" in names  # low
+        assert "run_docs_gate" in names  # medium
+        assert "pipeline_handoff" in names  # medium
 
     def test_no_always_loaded_tools(self) -> None:
         """No always_loaded tools appear in deferred list."""
@@ -365,11 +362,13 @@ class TestGetCategorySummary:
             "deferred_low",
         }
 
-    def test_counts_are_positive(self) -> None:
-        """Every category has at least one tool."""
+    def test_counts_are_non_negative(self) -> None:
+        """Every category has a non-negative count; deferred_low may be 0."""
         summary = get_category_summary()
         for cat, count in summary.items():
-            assert count > 0, f"Category {cat} has 0 tools"
+            assert count >= 0, f"Category {cat} has negative count"
+        assert summary["always_loaded"] > 0
+        assert summary["deferred_medium"] > 0
 
     def test_counts_sum_to_total(self) -> None:
         """Sum of counts equals total catalogued tools."""
@@ -441,21 +440,21 @@ class TestSearchDeferredTools:
 
     def test_query_matches_name(self) -> None:
         """Query matching a tool name returns that tool."""
-        results = search_deferred_tools("suggest_refactoring", limit=5)
+        results = search_deferred_tools("pipeline", limit=5)
         assert len(results) >= 1
         names = [r.name for r in results]
-        assert "suggest_refactoring" in names
+        assert "pipeline_handoff" in names
 
     def test_query_matches_rationale(self) -> None:
         """Query matching rationale text returns those tools."""
-        results = search_deferred_tools("refactoring", limit=10)
+        results = search_deferred_tools("docs", limit=10)
         assert len(results) >= 1
-        assert any("refactor" in r.rationale.lower() for r in results)
+        assert any("docs" in r.rationale.lower() for r in results)
 
     def test_case_insensitive(self) -> None:
         """Search is case-insensitive."""
-        lower = search_deferred_tools("REFACTOR", limit=5)
-        mixed = search_deferred_tools("Refactor", limit=5)
+        lower = search_deferred_tools("PIPELINE", limit=5)
+        mixed = search_deferred_tools("Pipeline", limit=5)
         assert len(lower) >= 1 and len(mixed) >= 1
         assert {r.name for r in lower} == {r.name for r in mixed}
 
@@ -467,11 +466,11 @@ class TestSearchDeferredTools:
         assert all(r.category == ToolCategory.DEFERRED_MEDIUM for r in results)
 
     def test_category_filter_low(self) -> None:
-        """Filtering by deferred_low returns only low tools."""
+        """Filtering by deferred_low returns empty (no deferred_low tools)."""
         results = search_deferred_tools(
-            "usage", category=ToolCategory.DEFERRED_LOW, limit=50
+            "tool", category=ToolCategory.DEFERRED_LOW, limit=50
         )
-        assert all(r.category == ToolCategory.DEFERRED_LOW for r in results)
+        assert results == []
 
     def test_limit_caps_results(self) -> None:
         """Limit parameter caps the number of results."""
@@ -489,10 +488,10 @@ class TestSearchDeferredTools:
         results = search_deferred_tools("(", limit=5)
         assert isinstance(results, list)
 
-    def test_search_tools_is_always_loaded(self) -> None:
-        """search_tools is catalogued as always_loaded for discovery."""
+    def test_search_tools_was_removed(self) -> None:
+        """search_tools was removed from registration (2026-03-18)."""
         cat = get_tool_category("search_tools")
-        assert cat == ToolCategory.ALWAYS_LOADED
+        assert cat is None
 
     def test_category_filter_with_empty_results(self) -> None:
         """Category filter works even when no matches found."""
@@ -503,12 +502,12 @@ class TestSearchDeferredTools:
         assert results == []
 
     def test_search_with_deferred_low_category_filter(self) -> None:
-        """Search with deferred_low category filter returns only low-priority tools."""
+        """Search with deferred_low category filter returns empty (no deferred_low tools)."""
         results = search_deferred_tools(
             "usage", category=ToolCategory.DEFERRED_LOW, limit=10
         )
         assert all(r.category == ToolCategory.DEFERRED_LOW for r in results)
-        assert len(results) > 0
+        assert len(results) == 0
 
     def test_limit_zero_returns_empty(self) -> None:
         """Limit of 0 returns empty list even if matches exist."""

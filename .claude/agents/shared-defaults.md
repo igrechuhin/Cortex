@@ -7,7 +7,7 @@ tools: mcp__cortex__*
 
 # Shared Defaults
 
-These are the Synapse defaults. Projects override via their rules loaded by `mcp__cortex__rules()` at runtime.
+These are the Synapse defaults. Projects override via their rules loaded by `rules()` at runtime.
 
 ## Quality Thresholds
 

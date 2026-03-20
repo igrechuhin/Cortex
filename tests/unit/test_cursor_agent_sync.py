@@ -26,19 +26,9 @@ from cortex.tools.synapse.prompts import (
 
 # All cursor-agents that must exist in .cortex/synapse/cursor-agents/
 # so they are synced to .cursor/agents/ on MCP server startup.
+# Commit phases run inline (no subagents). Only implement-code delegates.
 _REQUIRED_AGENT_FILES: tuple[str, ...] = (
-    # Commit pipeline
-    "commit-preflight.md",
-    "commit-checks.md",
-    "commit-docs.md",
-    "commit-validate.md",
-    "commit-final-gate.md",
-    # Implement pipeline
-    "implement-select.md",
     "implement-code.md",
-    "implement-finalize.md",
-    "implement-verify.md",
-    # Shared reference documents
     "shared-defaults.md",
 )
 
@@ -200,6 +190,33 @@ class TestSyncCursorAgents:
             assert (target / "agent.md").exists()
             assert not (target / "README.txt").exists()
 
+    def test_removes_stale_files_from_targets(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Files in target that no longer exist in source are removed."""
+        # Arrange: sync two files, then remove one from source
+        source = self._make_source(tmp_path)
+        _ = (source / "keep.md").write_text("keep", encoding="utf-8")
+        _ = (source / "remove.md").write_text("remove", encoding="utf-8")
+        monkeypatch.setattr(
+            "cortex.tools.synapse.prompts.get_cursor_agents_source", lambda: source
+        )
+        sync_cursor_agents()
+        cursor_target = get_cursor_agents_target(source)
+        claude_target = get_claude_agents_target(source)
+        assert (cursor_target / "remove.md").exists()
+        assert (claude_target / "remove.md").exists()
+
+        # Act: remove from source and re-sync
+        (source / "remove.md").unlink()
+        sync_cursor_agents()
+
+        # Assert: stale file removed from both targets
+        assert not (cursor_target / "remove.md").exists()
+        assert not (claude_target / "remove.md").exists()
+        assert (cursor_target / "keep.md").exists()
+        assert (claude_target / "keep.md").exists()
+
 
 class TestInjectToolsIntoFrontmatter:
     """Unit tests for inject_tools_into_frontmatter()."""
@@ -212,20 +229,20 @@ class TestInjectToolsIntoFrontmatter:
 
     def test_rewrites_backtick_tool_refs_in_body(self) -> None:
         """Backtick-quoted Cortex tool calls get the mcp__cortex__ prefix."""
-        content = "---\nname: test\n---\n\nCall `check_mcp_connection_health()` first."
+        content = "---\nname: test\n---\n\nCall `run_quality_gate()` first."
         result = inject_tools_into_frontmatter(content)
-        assert "`mcp__cortex__check_mcp_connection_health(" in result
-        assert "`check_mcp_connection_health(" not in result
+        assert "`mcp__cortex__run_quality_gate(" in result
+        assert "`run_quality_gate(" not in result
 
     def test_rewrites_multiple_tool_refs(self) -> None:
         """All Cortex tool references in the body are rewritten."""
         content = (
             "---\nname: test\n---\n\n"
-            'Call `start_pre_commit_job(phase="A")` then `get_pre_commit_job_status(job_id=x)`.'
+            "Call `run_quality_gate()` then `fix_quality_issues()`."
         )
         result = inject_tools_into_frontmatter(content)
-        assert "`mcp__cortex__start_pre_commit_job(" in result
-        assert "`mcp__cortex__get_pre_commit_job_status(" in result
+        assert "`mcp__cortex__run_quality_gate(" in result
+        assert "`mcp__cortex__fix_quality_issues(" in result
 
     def test_non_cortex_tool_refs_unchanged(self) -> None:
         """Backtick calls to non-Cortex names are not rewritten in the body."""
@@ -238,16 +255,16 @@ class TestInjectToolsIntoFrontmatter:
 
     def test_no_double_inject(self) -> None:
         """Running transform twice does not duplicate the tools field or prefixes."""
-        content = "---\nname: test\n---\n\nCall `load_context(task_description='x')`."
+        content = "---\nname: test\n---\n\nCall `pipeline_handoff(operation='read')`."
         once = inject_tools_into_frontmatter(content)
         twice = inject_tools_into_frontmatter(once)
         assert once == twice
 
     def test_no_frontmatter_still_rewrites_tool_refs(self) -> None:
         """Even without frontmatter, tool refs in body are rewritten."""
-        content = "Call `check_mcp_connection_health()` here."
+        content = "Call `fix_quality_issues()` here."
         result = inject_tools_into_frontmatter(content)
-        assert "`mcp__cortex__check_mcp_connection_health(" in result
+        assert "`mcp__cortex__fix_quality_issues(" in result
 
     def test_existing_tools_field_preserved(self) -> None:
         """Content that already has a tools field is not double-injected."""

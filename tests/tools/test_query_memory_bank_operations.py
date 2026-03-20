@@ -169,7 +169,7 @@ async def test_query_memory_bank_logs_to_context() -> None:
         with patch(
             "cortex.tools.memory.query_memory_bank_operations.log_client"
         ) as mock_log:
-            await query_memory_bank(
+            _ = await query_memory_bank(
                 query_type="stats",
                 ctx=mock_ctx,
             )

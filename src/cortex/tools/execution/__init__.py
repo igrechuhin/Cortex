@@ -8,7 +8,13 @@ Contains:
 """
 
 # Import for side-effect registration (MCP tools)
-from . import composite_tools, feedback, pre_commit_tools, safe_execution
+from . import (
+    composite_tools,
+    feedback,
+    pre_commit_tools,
+    pre_commit_zero_arg_tools,
+    safe_execution,
+)
 from .safe_execution import apply_refactoring
 
 __all__ = [
@@ -16,5 +22,6 @@ __all__ = [
     "composite_tools",
     "feedback",
     "pre_commit_tools",
+    "pre_commit_zero_arg_tools",
     "safe_execution",
 ]

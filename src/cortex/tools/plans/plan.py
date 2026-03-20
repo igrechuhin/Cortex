@@ -22,7 +22,7 @@ def _plan_error_invalid_operation(operation: str) -> str:
         file_path=None,
         message=(
             "Invalid operation "
-            f"'{operation}'. Use create, list, get, complete, or register."
+            f"'{operation}'. Use create, list, get, complete, register, or archive_completed."
         ),
         error="Invalid operation",
     ).model_dump_json()
@@ -145,18 +145,36 @@ async def _plan_dispatch_register(
     return await _plan_handle_register(plan_title, description, status, section, ctx)
 
 
-def _plan_error_missing_operation() -> str:
-    from cortex.tools.plans.crud import CreatePlanResult
+async def _plan_handle_archive_completed(ctx: MCPContext | None) -> str:
+    """Scan .cortex/plans/ for status: COMPLETE and archive each one."""
+    import json
+    import re
 
-    return CreatePlanResult(
-        status="error",
-        file_path=None,
-        message=(
-            "operation is required for plan tool; expected "
-            "'create', 'list', 'get', 'complete', or 'register'"
-        ),
-        error="Missing operation",
-    ).model_dump_json()
+    from cortex.core.path_resolver import CortexResourceType, get_cortex_path
+    from cortex.core.usage_context import get_or_resolve_project_root
+    from cortex.tools.plans.completion_archive import archive_plan_file
+
+    root_str = await get_or_resolve_project_root(ctx)
+    from pathlib import Path
+
+    root = Path(root_str)
+    plans_dir = get_cortex_path(root, CortexResourceType.PLANS)
+    archived: list[str] = []
+    errors: list[str] = []
+    for plan_path in sorted(plans_dir.glob("*.md")):
+        try:
+            head = plan_path.read_text(encoding="utf-8")[:500]
+        except OSError:
+            continue
+        if re.search(r'status:\s*["\']?COMPLETE', head, re.IGNORECASE):
+            dest, err = archive_plan_file(root, plan_path.name)
+            if err:
+                errors.append(f"{plan_path.name}: {err}")
+            elif dest:
+                archived.append(plan_path.name)
+    return json.dumps(
+        {"status": "ok", "archived": archived, "errors": errors, "count": len(archived)}
+    )
 
 
 async def _plan_dispatch(
@@ -177,9 +195,11 @@ async def _plan_dispatch(
     ctx: MCPContext | None,
 ) -> str:
     """Dispatch plan(operation=...) to the appropriate handler."""
+    # Zero-arg fallback: default to listing plans
     if not operation:
-        return _plan_error_missing_operation()
-    if operation not in ("create", "list", "get", "complete", "register"):
+        operation = "list"
+    valid_ops = ("create", "list", "get", "complete", "register", "archive_completed")
+    if operation not in valid_ops:
         return _plan_error_invalid_operation(operation)
     # Lightweight logging for MCP argument-passing diagnostics (no sensitive content).
     if operation == "complete":
@@ -196,6 +216,8 @@ async def _plan_dispatch(
         f"plan: operation={operation}, required_args_present={has_required}",
         logger_name=__name__,
     )
+    if operation == "archive_completed":
+        return await _plan_handle_archive_completed(ctx)
     if operation == "complete":
         return await _plan_dispatch_complete(
             plan_title, summary, completion_date, progress_entry, plan_file_name, ctx
@@ -231,21 +253,18 @@ async def plan(
     section: str = "pending",
     ctx: MCPContext | None = None,
 ) -> str:
-    """Plan lifecycle: create, list, get, complete (with archive), or register in roadmap.
+    """Plan lifecycle: create, list, get, complete, register, or archive_completed.
 
     USE WHEN: You need to create or update plans under .cortex/plans/, mark a
-    plan as complete (removes from roadmap, adds to activeContext, archives plan
-    file), or register a plan entry in roadmap.md.
-
-    To complete a plan and archive its file in one call:
-      plan(operation="complete", plan_title="...", summary="...",
-           plan_file_name="filename.md", progress_entry="...")
+    plan as complete, register a plan in roadmap, or bulk-archive all completed plans.
 
     EXAMPLES:
-      plan(operation="create", title="Phase 92", content="...")
-      plan(operation="complete", plan_title="Phase 92", summary="Done",
-           plan_file_name="phase-92-foo.md", progress_entry="Phase 92 - COMPLETE. ...")
-      plan(operation="register", plan_title="Phase 92", description="Improve tool docs")
+    - plan(operation="create", title="Phase 92", content="...")
+    - plan(operation="complete", plan_title="Phase 92", summary="Done",
+        plan_file_name="phase-92-foo.md", progress_entry="Phase 92 - COMPLETE. ...")
+    - plan(operation="register", plan_title="Phase 92", description="Improve tool docs")
+    - plan(operation="archive_completed") — scans plans/ for status: COMPLETE,
+        archives each to plans/archive/, removes roadmap entries. Zero-arg safe.
     """
     return await _plan_dispatch(
         operation,

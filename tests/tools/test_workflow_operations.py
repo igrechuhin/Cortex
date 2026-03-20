@@ -7,7 +7,7 @@ import json
 import pytest
 
 from cortex.tools.composite_tools import run_composite_workflow
-from cortex.tools.structure.categories import ToolCategory, get_tool_category
+from cortex.tools.structure.categories import get_tool_category
 
 
 @pytest.mark.asyncio
@@ -81,6 +81,6 @@ async def test_suggest_workflow_limit_clamped() -> None:
     assert len(data2["workflows"]) <= 10
 
 
-def test_run_composite_workflow_is_deferred_medium() -> None:
-    """run_composite_workflow is catalogued as deferred_medium."""
-    assert get_tool_category("run_composite_workflow") == ToolCategory.DEFERRED_MEDIUM
+def test_run_composite_workflow_was_removed() -> None:
+    """run_composite_workflow was removed from registration (2026-03-18)."""
+    assert get_tool_category("run_composite_workflow") is None

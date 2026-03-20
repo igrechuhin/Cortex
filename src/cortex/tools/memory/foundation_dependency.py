@@ -21,7 +21,6 @@ from cortex.core.models import JsonValue, ModelDict
 from cortex.core.project_root_resolver import resolve_project_root_async
 from cortex.managers import initialization
 from cortex.managers.utils import get_manager
-from cortex.server import mcp
 from cortex.tools.response_builder import error_response, success_response
 
 
@@ -122,7 +121,7 @@ async def get_dependency_graph(
         )
 
 
-@mcp.resource(uri="cortex://memory-bank/dependency-graph")
+# MCP resource registration removed
 @ensure_usage_context
 @mcp_resource_wrapper(timeout=MCP_TOOL_TIMEOUT_MEDIUM)
 async def get_dependency_graph_resource() -> str:

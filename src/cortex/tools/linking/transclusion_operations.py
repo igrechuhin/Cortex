@@ -25,7 +25,6 @@ from cortex.linking.transclusion_engine import TransclusionEngine
 from cortex.managers.initialization import get_managers
 from cortex.managers.types import ManagersDict
 from cortex.managers.utils import get_manager
-from cortex.server import mcp
 from cortex.tools.context.load_auxiliary_models import (
     ResolveTransclusionsErrorResult,
     ResolveTransclusionsResult,
@@ -175,7 +174,7 @@ async def resolve_transclusions(
     return await _resolve_transclusions_run_or_error(ctx, file_name, root, max_depth)
 
 
-@mcp.resource(uri="cortex://links/transclusions/{file_name}")
+# MCP resource registration removed
 @ensure_usage_context
 @mcp_resource_wrapper(timeout=MCP_TOOL_TIMEOUT_MEDIUM)
 async def resolve_transclusions_resource(file_name: str) -> str:

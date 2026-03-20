@@ -247,6 +247,12 @@ class CleanupMetadataIndexResult(ToolResultBase):
 class CleanupMetadataIndexErrorResult(ErrorResultBase):
     """Error result for cleanup_metadata_index operations."""
 
+    dry_run: bool | None = None
+    stale_files_found: int | None = None
+    stale_files: list[str] = Field(default_factory=list)
+    entries_cleaned: int | None = None
+    message: str | None = None
+
 
 CleanupMetadataIndexResultUnion = (
     CleanupMetadataIndexResult | CleanupMetadataIndexErrorResult

@@ -43,7 +43,10 @@ def setup_logging(level: str | None = None) -> logging.Logger:
         >>> logger.info("Server started")
     """
     if level is None:
-        level = os.getenv("CORTEX_LOG_LEVEL", "INFO")
+        # Default to WARNING for stderr to avoid duplicating messages that
+        # log_client() already sends via MCP ctx.log() to the Cursor client.
+        # Set CORTEX_LOG_LEVEL=INFO (or DEBUG) to re-enable verbose stderr output.
+        level = os.getenv("CORTEX_LOG_LEVEL", "WARNING")
 
     logger = logging.getLogger("cortex")
     logger.setLevel(getattr(logging, level.upper()))
@@ -67,7 +70,7 @@ def setup_logging(level: str | None = None) -> logging.Logger:
     # Ensure root has our formatter so loggers that propagate to root use it.
     root = logging.getLogger()
     if not root.handlers:
-        root.setLevel(logging.INFO)
+        root.setLevel(logging.WARNING)
         root_handler = logging.StreamHandler(sys.stderr)
         root_handler.setFormatter(_CortexFormatter())
         root.addHandler(root_handler)
@@ -81,11 +84,20 @@ def apply_cortex_format_to_third_party_loggers() -> None:
     Call after the MCP package is imported so their loggers exist. Clears
     their handlers and enables propagation to root so messages are formatted
     by the root handler (same style as cortex logs).
+
+    The low-level server logger emits an INFO for every request type, which
+    Cursor's MCP log panel renders as two lines (message + "undefined" for the
+    missing stack-trace field). Raising it to WARNING suppresses the noise.
     """
     for name in ("mcp", "mcp.server"):
         log = logging.getLogger(name)
         log.handlers.clear()
         log.propagate = True
+    # Suppress high-frequency INFO messages from the low-level request handler
+    # (e.g. "Processing request of type ListToolsRequest") — they appear as
+    # "[error] [info] mcp.server.lowlevel.server - ... undefined" in Cursor.
+    for name in ("mcp.server.lowlevel", "mcp.server.lowlevel.server"):
+        logging.getLogger(name).setLevel(logging.WARNING)
 
 
 # Global logger instance (acceptable exception - Python logging convention)

@@ -6,13 +6,14 @@ more focused components for better context management and maintainability.
 Delegates analysis operations to SplitAnalyzer.
 """
 
+from __future__ import annotations
+
 import re
-from dataclasses import dataclass
 from pathlib import Path
 from typing import cast
 
 from cortex.core.async_file_utils import open_async_text_file
-from cortex.core.models import JsonValue, ModelDict
+from cortex.core.models import ModelDict
 from cortex.refactoring.models import (
     NewSplitStructure,
     SplitFileInfo,
@@ -21,54 +22,15 @@ from cortex.refactoring.models import (
 )
 
 from .split_analyzer import SplitAnalyzer
+from .split_generators import SplitAnalyzerProtocol, generate_split_points
+from .split_models import SplitPoint, SplitRecommendation
 
-
-@dataclass
-class SplitPoint:
-    """Represents a potential point to split a file"""
-
-    section_heading: str
-    start_line: int
-    end_line: int
-    token_count: int
-    independence_score: float  # How independent this section is (0-1)
-    suggested_filename: str
-
-
-@dataclass
-class SplitRecommendation:
-    """Represents a recommendation to split a file"""
-
-    recommendation_id: str
-    file_path: str
-    reason: str
-    split_strategy: str  # "by_size", "by_sections", "by_topics", "by_dependencies"
-    split_points: list[SplitPoint]
-    estimated_impact: ModelDict
-    new_structure: ModelDict  # Proposed new file structure
-    maintain_dependencies: bool = True
-
-    def to_dict(self) -> ModelDict:
-        """Convert to dictionary"""
-        return {
-            "recommendation_id": self.recommendation_id,
-            "file_path": self.file_path,
-            "reason": self.reason,
-            "split_strategy": self.split_strategy,
-            "split_points": [
-                {
-                    "heading": sp.section_heading,
-                    "lines": f"{sp.start_line}-{sp.end_line}",
-                    "tokens": sp.token_count,
-                    "independence": sp.independence_score,
-                    "target_file": sp.suggested_filename,
-                }
-                for sp in self.split_points
-            ],
-            "estimated_impact": self.estimated_impact,
-            "new_structure": self.new_structure,
-            "maintain_dependencies": self.maintain_dependencies,
-        }
+# Re-export for backwards compatibility
+__all__ = [
+    "SplitPoint",
+    "SplitRecommendation",
+    "SplitRecommender",
+]
 
 
 class SplitRecommender:
@@ -101,7 +63,7 @@ class SplitRecommender:
         self.min_section_independence: float = min_section_independence
 
         # Create analyzer for file analysis
-        self.analyzer: SplitAnalyzer = SplitAnalyzer(
+        self.analyzer: SplitAnalyzerProtocol = SplitAnalyzer(
             max_file_size=max_file_size,
             max_sections=max_sections,
             min_section_independence=min_section_independence,
@@ -129,7 +91,10 @@ class SplitRecommender:
         return f"SPLIT-{self.recommendation_counter:04d}"
 
     async def analyze_file(
-        self, file_path: str, content: str | None = None, token_count: int | None = None
+        self,
+        file_path: str,
+        content: str | None = None,
+        token_count: int | None = None,
     ) -> SplitRecommendation | None:
         """
         Analyze a file and recommend splitting if needed.
@@ -160,8 +125,8 @@ class SplitRecommender:
         split_strategy = self.analyzer.determine_split_strategy(
             token_count, len(sections), sections
         )
-        split_points = await self.generate_split_points(
-            file_path, content, sections, split_strategy
+        split_points = await generate_split_points(
+            self, file_path, content, sections, split_strategy
         )
 
         if not split_points:
@@ -260,179 +225,6 @@ class SplitRecommender:
             return "\n".join(str(item) for item in content if item is not None)
         return str(content) if content is not None else ""
 
-    async def _generate_split_by_topics(
-        self,
-        file_path: str,
-        content: str,
-        sections: list[ModelDict],
-    ) -> list[SplitPoint]:
-        """Generate split points by top-level topics."""
-        split_points: list[SplitPoint] = []
-        top_level_sections = [
-            s for s in sections if self.get_section_int(s, "level", 0) == 1
-        ]
-
-        for section in top_level_sections:
-            independence = self.analyzer.calculate_section_independence(
-                section, sections, content
-            )
-
-            if independence >= self.min_section_independence:
-                section_heading = self.get_section_str(section, "heading", "")
-                start_line = self.get_section_int(section, "start_line", 0)
-                end_line = self.get_section_int(section, "end_line", 0)
-                section_content = self.get_section_content(section)
-
-                split_point = SplitPoint(
-                    section_heading=section_heading,
-                    start_line=start_line,
-                    end_line=end_line,
-                    token_count=len(section_content) // 4,
-                    independence_score=independence,
-                    suggested_filename=self.generate_split_filename(
-                        file_path, section_heading
-                    ),
-                )
-                split_points.append(split_point)
-
-        return split_points
-
-    async def _generate_split_by_sections(
-        self,
-        file_path: str,
-        content: str,
-        sections: list[ModelDict],
-    ) -> list[SplitPoint]:
-        """Generate split points by grouping related sections."""
-        split_points: list[SplitPoint] = []
-        section_groups_raw = self.analyzer.group_related_sections(sections)
-
-        for group_name, group_sections_raw in section_groups_raw.items():
-            group_sections = _normalize_group_sections(group_sections_raw)
-            if not group_sections:
-                continue
-
-            split_point = self._create_split_point_from_group(
-                file_path, content, sections, group_name, group_sections
-            )
-            if split_point:
-                split_points.append(split_point)
-
-        return split_points
-
-    def _create_split_point_from_group(
-        self,
-        file_path: str,
-        content: str,
-        sections: list[ModelDict],
-        group_name: str,
-        group_sections: list[ModelDict],
-    ) -> SplitPoint | None:
-        """Create split point from section group."""
-        combined_content = "\n".join(
-            self.get_section_content(s) for s in group_sections
-        )
-        start_line = self.get_section_int(group_sections[0], "start_line", 0)
-        end_line = self.get_section_int(group_sections[-1], "end_line", 0)
-
-        independence = self.analyzer.calculate_group_independence(
-            group_sections, sections, content
-        )
-
-        if independence < self.min_section_independence:
-            return None
-
-        group_name_str = str(group_name)
-        return SplitPoint(
-            section_heading=group_name_str,
-            start_line=start_line,
-            end_line=end_line,
-            token_count=len(combined_content) // 4,
-            independence_score=independence,
-            suggested_filename=self.generate_split_filename(file_path, group_name_str),
-        )
-
-    async def _generate_split_by_size(
-        self,
-        file_path: str,
-        sections: list[ModelDict],
-    ) -> list[SplitPoint]:
-        """Generate split points by size, creating roughly equal chunks."""
-        split_points: list[SplitPoint] = []
-        target_chunk_size = self.max_file_size
-        current_chunk_sections: list[ModelDict] = []
-        current_chunk_tokens = 0
-
-        for section in sections:
-            section_content = self.get_section_content(section)
-            section_tokens = len(section_content) // 4
-
-            if (
-                current_chunk_tokens + section_tokens > target_chunk_size
-                and current_chunk_sections
-            ):
-                split_point = self._create_chunk_split_point(
-                    file_path, current_chunk_sections, current_chunk_tokens
-                )
-                split_points.append(split_point)
-
-                # Start new chunk
-                current_chunk_sections = [section]
-                current_chunk_tokens = section_tokens
-            else:
-                current_chunk_sections.append(section)
-                current_chunk_tokens += section_tokens
-
-        # Add last chunk
-        if current_chunk_sections:
-            split_point = self._create_chunk_split_point(
-                file_path, current_chunk_sections, current_chunk_tokens
-            )
-            split_points.append(split_point)
-
-        return split_points
-
-    def _create_chunk_split_point(
-        self,
-        file_path: str,
-        chunk_sections: list[ModelDict],
-        chunk_tokens: int,
-    ) -> SplitPoint:
-        """Create a split point for a size-based chunk."""
-        chunk_heading = self.get_section_str(chunk_sections[0], "heading", "")
-        start_line = self.get_section_int(chunk_sections[0], "start_line", 0)
-        end_line = self.get_section_int(chunk_sections[-1], "end_line", 0)
-
-        return SplitPoint(
-            section_heading=chunk_heading,
-            start_line=start_line,
-            end_line=end_line,
-            token_count=chunk_tokens,
-            independence_score=0.7,  # Moderate independence for size-based splits
-            suggested_filename=self.generate_split_filename(file_path, chunk_heading),
-        )
-
-    async def generate_split_points(
-        self,
-        file_path: str,
-        content: str,
-        sections: list[ModelDict],
-        strategy: str,
-    ) -> list[SplitPoint]:
-        """
-        Generate specific split points based on strategy.
-
-        Uses analyzer for independence calculations.
-        """
-        if strategy == "by_topics":
-            return await self._generate_split_by_topics(file_path, content, sections)
-        elif strategy == "by_sections":
-            return await self._generate_split_by_sections(file_path, content, sections)
-        elif strategy == "by_size":
-            return await self._generate_split_by_size(file_path, sections)
-        else:
-            return []
-
     def generate_split_filename(self, original_file: str, section_heading: str) -> str:
         """Generate a filename for a split section"""
         original_path = Path(original_file)
@@ -444,8 +236,25 @@ class SplitRecommender:
 
         return f"{original_path.parent}/{base_name}-{slug}.md"
 
+    async def generate_split_points(
+        self,
+        file_path: str,
+        content: str,
+        sections: list[ModelDict],
+        strategy: str,
+    ) -> list[SplitPoint]:
+        """
+        Generate specific split points based on strategy.
+
+        Delegates to split_generators module.
+        """
+        return await generate_split_points(self, file_path, content, sections, strategy)
+
     def calculate_split_impact(
-        self, file_path: str, original_tokens: int, split_points: list[SplitPoint]
+        self,
+        file_path: str,
+        original_tokens: int,
+        split_points: list[SplitPoint],
     ) -> SplitImpactMetrics:
         """Calculate the impact of applying a split"""
         new_file_count = len(split_points) + 1  # +1 for index/main file
@@ -505,7 +314,9 @@ class SplitRecommender:
 
 
 async def _read_and_validate_content(
-    recommender: SplitRecommender, file_path: str, content: str | None
+    recommender: SplitRecommender,
+    file_path: str,
+    content: str | None,
 ) -> str | None:
     """Read and validate file content.
 
@@ -566,24 +377,3 @@ def _build_recommendation(
         new_structure=new_structure,
         maintain_dependencies=True,
     )
-
-
-def _normalize_group_sections(
-    group_sections_raw: JsonValue | list[ModelDict],
-) -> list[ModelDict]:
-    """Normalize group sections to a list of dictionaries.
-
-    Args:
-        group_sections_raw: Raw group sections from analyzer
-
-    Returns:
-        Normalized list of section dictionaries
-    """
-    if isinstance(group_sections_raw, list):
-        return [cast(ModelDict, s) for s in group_sections_raw if isinstance(s, dict)]
-    else:
-        return (
-            [cast(ModelDict, group_sections_raw)]
-            if isinstance(group_sections_raw, dict)
-            else []
-        )

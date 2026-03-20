@@ -93,6 +93,36 @@ class TestRulesManagerInitialization:
         # Assert
         assert manager.synapse_manager == mock_synapse
 
+    def test_initialization_fails_with_none_token_counter(
+        self,
+        tmp_path: Path,
+        mock_file_system: FileSystemManager,
+        mock_metadata_index: MetadataIndex,
+    ):
+        """RulesManager raises TypeError when token_counter is None."""
+        with pytest.raises(TypeError, match="token_counter must provide"):
+            RulesManager(
+                project_root=tmp_path,
+                file_system=mock_file_system,
+                metadata_index=mock_metadata_index,
+                token_counter=None,  # type: ignore[arg-type]
+            )
+
+    def test_initialization_fails_with_invalid_token_counter(
+        self,
+        tmp_path: Path,
+        mock_file_system: FileSystemManager,
+        mock_metadata_index: MetadataIndex,
+    ):
+        """RulesManager raises TypeError for objects without count_tokens."""
+        with pytest.raises(TypeError, match="token_counter must provide"):
+            RulesManager(
+                project_root=tmp_path,
+                file_system=mock_file_system,
+                metadata_index=mock_metadata_index,
+                token_counter="not_a_counter",  # type: ignore[arg-type]
+            )
+
 
 class TestInitialize:
     """Tests for initialize method."""
@@ -376,6 +406,188 @@ class TestGetRelevantRules:
         # Type cast for Pyright: local_rules is a list of rule dicts
         local_rules_typed = cast(list[dict[str, object]], local_rules)
         assert len(local_rules_typed) >= 0  # At least some rules match
+
+    @pytest.mark.asyncio
+    async def test_get_relevant_rules_zero_max_tokens_returns_empty(
+        self,
+        tmp_path: Path,
+        mock_file_system: FileSystemManager,
+        mock_metadata_index: MetadataIndex,
+        mock_token_counter: TokenCounter,
+    ):
+        """Test get_relevant_rules with max_tokens=0 returns no rules."""
+        # Arrange
+        rules_dir = tmp_path / ".cursorrules"
+        _ = rules_dir.mkdir()
+        _ = (rules_dir / "python.md").write_text(
+            "# Python Rules\nUse Python 3.12 syntax"
+        )
+
+        manager = RulesManager(
+            project_root=tmp_path,
+            file_system=mock_file_system,
+            metadata_index=mock_metadata_index,
+            token_counter=mock_token_counter,
+            rules_folder=".cursorrules",
+        )
+        _ = await manager.index_rules()
+
+        # Act
+        result = await manager.get_relevant_rules(
+            task_description="Python programming", max_tokens=0
+        )
+
+        # Assert
+        local_rules = result.get("local_rules", [])
+        assert isinstance(local_rules, list)
+        assert local_rules == []
+        assert result.get("total_tokens", 0) == 0
+
+    @pytest.mark.asyncio
+    async def test_get_relevant_rules_max_score_filters_all_out(
+        self,
+        tmp_path: Path,
+        mock_file_system: FileSystemManager,
+        mock_metadata_index: MetadataIndex,
+        mock_token_counter: TokenCounter,
+    ):
+        """Test get_relevant_rules with min_relevance_score=1.0 returns no rules."""
+        # Arrange
+        rules_dir = tmp_path / ".cursorrules"
+        _ = rules_dir.mkdir()
+        _ = (rules_dir / "python.md").write_text(
+            "# Python Rules\nUse Python 3.12 syntax"
+        )
+
+        manager = RulesManager(
+            project_root=tmp_path,
+            file_system=mock_file_system,
+            metadata_index=mock_metadata_index,
+            token_counter=mock_token_counter,
+            rules_folder=".cursorrules",
+        )
+        _ = await manager.index_rules()
+
+        # Act
+        result = await manager.get_relevant_rules(
+            task_description="Python programming", min_relevance_score=1.0
+        )
+
+        # Assert — score_rule_relevance returns at most 1.0 but rarely exactly 1.0
+        local_rules = result.get("local_rules", [])
+        assert isinstance(local_rules, list)
+        # Each returned rule must satisfy min_relevance_score=1.0
+        local_rules_typed = cast(list[dict[str, object]], local_rules)
+        for rule in local_rules_typed:
+            score = rule.get("relevance_score", 0.0)
+            assert isinstance(score, float)
+            assert score >= 1.0
+
+    @pytest.mark.asyncio
+    async def test_get_relevant_rules_zero_min_score_returns_all_indexed_rules(
+        self,
+        tmp_path: Path,
+        mock_file_system: FileSystemManager,
+        mock_metadata_index: MetadataIndex,
+        mock_token_counter: TokenCounter,
+    ):
+        """Test get_relevant_rules with min_relevance_score=0.0 returns all indexed rules."""
+        # Arrange
+        rules_dir = tmp_path / ".cursorrules"
+        _ = rules_dir.mkdir()
+        _ = (rules_dir / "rule_a.md").write_text(
+            "# Rule A\ncompletely unrelated content"
+        )
+        _ = (rules_dir / "rule_b.md").write_text(
+            "# Rule B\nalso unrelated content here"
+        )
+
+        manager = RulesManager(
+            project_root=tmp_path,
+            file_system=mock_file_system,
+            metadata_index=mock_metadata_index,
+            token_counter=mock_token_counter,
+            rules_folder=".cursorrules",
+        )
+        _ = await manager.index_rules()
+
+        # Act — task description shares no words with rule content; score will be 0
+        result = await manager.get_relevant_rules(
+            task_description="zzz", min_relevance_score=0.0, max_tokens=100_000
+        )
+
+        # Assert — both rules included because min_relevance_score=0.0
+        local_rules = result.get("local_rules", [])
+        assert isinstance(local_rules, list)
+        assert len(local_rules) == 2
+
+    @pytest.mark.asyncio
+    async def test_get_relevant_rules_uninitialized_folder_returns_empty(
+        self,
+        tmp_path: Path,
+        mock_file_system: FileSystemManager,
+        mock_metadata_index: MetadataIndex,
+        mock_token_counter: TokenCounter,
+    ):
+        """Test get_relevant_rules returns empty results when rules are not indexed."""
+        # Arrange — manager created without rules_folder; index is empty
+        manager = RulesManager(
+            project_root=tmp_path,
+            file_system=mock_file_system,
+            metadata_index=mock_metadata_index,
+            token_counter=mock_token_counter,
+        )
+
+        # Act
+        result = await manager.get_relevant_rules(task_description="Python programming")
+
+        # Assert
+        local_rules = result.get("local_rules", [])
+        assert isinstance(local_rules, list)
+        assert local_rules == []
+        assert result.get("total_tokens", 0) == 0
+
+    @pytest.mark.asyncio
+    async def test_get_relevant_rules_hybrid_no_shared_match_returns_local(
+        self,
+        tmp_path: Path,
+        mock_file_system: FileSystemManager,
+        mock_metadata_index: MetadataIndex,
+        mock_token_counter: TokenCounter,
+    ):
+        """Test hybrid path when synapse_manager is configured but shared rules don't match."""
+        # Arrange
+        rules_dir = tmp_path / ".cursorrules"
+        _ = rules_dir.mkdir()
+        _ = (rules_dir / "python.md").write_text(
+            "# Python Rules\nUse Python 3.12 syntax"
+        )
+
+        synapse_manager = MagicMock()
+        # Simulate: context detection returns empty context, categories present but no rules
+        synapse_manager.detect_context = AsyncMock(return_value={})
+        synapse_manager.get_relevant_categories = AsyncMock(return_value=["category_a"])
+        synapse_manager.load_category = AsyncMock(return_value=[])
+        synapse_manager.merge_rules = AsyncMock(return_value=[])
+
+        manager = RulesManager(
+            project_root=tmp_path,
+            file_system=mock_file_system,
+            metadata_index=mock_metadata_index,
+            token_counter=mock_token_counter,
+            rules_folder=".cursorrules",
+            synapse_manager=synapse_manager,
+        )
+        _ = await manager.index_rules()
+
+        # Act
+        result = await manager.get_relevant_rules(
+            task_description="Python programming", context_aware=True
+        )
+
+        # Assert — result has the expected structure; no crash on empty shared rules
+        assert "local_rules" in result or "generic_rules" in result
+        assert "total_tokens" in result
 
 
 class TestScoreRuleRelevance:

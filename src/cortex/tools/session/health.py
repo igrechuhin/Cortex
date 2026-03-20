@@ -12,7 +12,7 @@ from cortex.core.constants import MemoryBankFile
 from cortex.core.metadata_index import MetadataIndex
 from cortex.managers.types import ManagersDict
 from cortex.managers.utils import get_manager
-from cortex.tools.session.connection_health import check_mcp_connection_health
+from cortex.tools.session.connection_health import health_check
 from cortex.tools.session.connection_models import MCPHealthCheckResponse
 from cortex.tools.session.models import SessionHealthSummary, TokenBudgetStatus
 
@@ -97,7 +97,7 @@ async def calculate_health_summary(
 
 
 def parse_mcp_health(health_json: str) -> tuple[bool, str | None]:
-    """Parse check_mcp_connection_health JSON; return (healthy, message)."""
+    """Parse health_check JSON; return (healthy, message)."""
     import json
 
     from pydantic import ValidationError
@@ -118,7 +118,7 @@ def parse_mcp_health(health_json: str) -> tuple[bool, str | None]:
 async def get_mcp_health_status() -> tuple[bool, str | None]:
     """Run MCP health check; return (healthy, message)."""
     try:
-        health_json = await check_mcp_connection_health()
+        health_json = await health_check()
         return parse_mcp_health(health_json)
     except Exception as e:
         logger.debug("MCP health check failed: %s", e)

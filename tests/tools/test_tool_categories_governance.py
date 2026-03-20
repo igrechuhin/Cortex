@@ -94,15 +94,10 @@ class TestToolDescriptionGovernance:
     def test_high_risk_tools_include_anti_pattern_guidance(self) -> None:
         """High-risk tools must include explicit anti-pattern guidance (DO NOT / Prefer)."""
         tools = self._get_registered_tools()
+        # health_check and get_structure_info are now MCP resources, not tools.
         high_risk_tools = {
             "manage_file",
             "update_memory_bank",
-            "execute_pre_commit_checks",
-            "check_mcp_connection_health",
-            "get_structure_info",
-            "check_structure_health",
-            "query_memory_bank",
-            "query_usage",
         }
 
         missing_guidance: list[str] = []

@@ -24,7 +24,6 @@ from cortex.core.project_root_resolver import resolve_project_root_async
 from cortex.managers.initialization import get_managers
 from cortex.managers.lazy_manager import LazyManager
 from cortex.managers.usage_tracker import UsageTracker, get_tool_optimization_config
-from cortex.server import mcp
 from cortex.tools.usage.analytics_formatters import (
     format_search_usage_response,
     format_tool_usage_stats_response,
@@ -291,7 +290,7 @@ async def get_optimization_recommendations(
 
 
 # Phase 43: Usage analytics resources (read-only, default params)
-@mcp.resource(uri="cortex://usage/stats")
+# MCP resource registration removed
 @ensure_usage_context
 @mcp_resource_wrapper(timeout=MCP_TOOL_TIMEOUT_FAST)
 async def get_tool_usage_stats_resource() -> str:
@@ -299,7 +298,7 @@ async def get_tool_usage_stats_resource() -> str:
     return await get_tool_usage_stats(start_date=None, end_date=None, tool_name=None)
 
 
-@mcp.resource(uri="cortex://usage/unused")
+# MCP resource registration removed
 @ensure_usage_context
 @mcp_resource_wrapper(timeout=MCP_TOOL_TIMEOUT_FAST)
 async def get_unused_tools_resource() -> str:
@@ -313,7 +312,7 @@ async def get_unused_tools_resource() -> str:
     )
 
 
-@mcp.resource(uri="cortex://usage/report")
+# MCP resource registration removed
 @ensure_usage_context
 @mcp_resource_wrapper(timeout=MCP_TOOL_TIMEOUT_FAST)
 async def get_tool_usage_report_resource() -> str:
@@ -321,7 +320,7 @@ async def get_tool_usage_report_resource() -> str:
     return await get_tool_usage_report(format="markdown", include_recommendations=True)
 
 
-@mcp.resource(uri="cortex://usage/optimization-recommendations")
+# MCP resource registration removed
 @ensure_usage_context
 @mcp_resource_wrapper(timeout=MCP_TOOL_TIMEOUT_FAST)
 async def get_optimization_recommendations_resource() -> str:
@@ -335,7 +334,7 @@ async def get_optimization_recommendations_resource() -> str:
     )
 
 
-@mcp.resource(uri="cortex://usage/observation/{id}")
+# MCP resource registration removed
 @ensure_usage_context
 @mcp_resource_wrapper(timeout=MCP_TOOL_TIMEOUT_FAST)
 async def get_usage_observation_resource(id: str) -> str:
@@ -344,7 +343,7 @@ async def get_usage_observation_resource(id: str) -> str:
 
 
 # Phase: query_usage Resources for 11 Uncovered Query Types
-@mcp.resource(uri="cortex://usage/anomalies/{hours}")
+# MCP resource registration removed
 @ensure_usage_context
 @mcp_resource_wrapper(timeout=MCP_TOOL_TIMEOUT_FAST)
 async def get_anomalies_resource(hours: str) -> str:
@@ -362,7 +361,7 @@ async def get_anomalies_resource(hours: str) -> str:
     return await run_anomalies(params, None)
 
 
-@mcp.resource(uri="cortex://usage/tool-optimization/{tool_name}")
+# MCP resource registration removed
 @ensure_usage_context
 @mcp_resource_wrapper(timeout=MCP_TOOL_TIMEOUT_FAST)
 async def get_tool_optimization_resource(tool_name: str) -> str:
@@ -380,7 +379,7 @@ async def get_tool_optimization_resource(tool_name: str) -> str:
     return await run_tool_description_optimization(params, None)
 
 
-@mcp.resource(uri="cortex://usage/events")
+# MCP resource registration removed
 @ensure_usage_context
 @mcp_resource_wrapper(timeout=MCP_TOOL_TIMEOUT_FAST)
 async def get_usage_events_resource() -> str:
@@ -388,7 +387,7 @@ async def get_usage_events_resource() -> str:
     return await search_usage(limit=50, ctx=None)
 
 
-@mcp.resource(uri="cortex://usage/search/{query}")
+# MCP resource registration removed
 @ensure_usage_context
 @mcp_resource_wrapper(timeout=MCP_TOOL_TIMEOUT_FAST)
 async def get_usage_search_resource(query: str) -> str:
@@ -399,7 +398,7 @@ async def get_usage_search_resource(query: str) -> str:
     return await search_usage(query=decoded, limit=50, ctx=None)
 
 
-@mcp.resource(uri="cortex://usage/timeline/{around_id}")
+# MCP resource registration removed
 @ensure_usage_context
 @mcp_resource_wrapper(timeout=MCP_TOOL_TIMEOUT_FAST)
 async def get_usage_timeline_resource(around_id: str) -> str:
@@ -410,7 +409,7 @@ async def get_usage_timeline_resource(around_id: str) -> str:
     return await get_usage_timeline(around_id=decoded, limit=20, ctx=None)
 
 
-@mcp.resource(uri="cortex://usage/production-monitoring")
+# MCP resource registration removed
 @ensure_usage_context
 @mcp_resource_wrapper(timeout=MCP_TOOL_TIMEOUT_FAST)
 async def get_production_monitoring_resource() -> str:
@@ -422,7 +421,7 @@ async def get_production_monitoring_resource() -> str:
     return await run_production_monitoring(params, None)
 
 
-@mcp.resource(uri="cortex://usage/token-efficiency")
+# MCP resource registration removed
 @ensure_usage_context
 @mcp_resource_wrapper(timeout=MCP_TOOL_TIMEOUT_FAST)
 async def get_token_efficiency_resource() -> str:
@@ -437,7 +436,7 @@ async def get_token_efficiency_resource() -> str:
     return await run_token_efficiency(params, None)
 
 
-@mcp.resource(uri="cortex://usage/redundancy")
+# MCP resource registration removed
 @ensure_usage_context
 @mcp_resource_wrapper(timeout=MCP_TOOL_TIMEOUT_FAST)
 async def get_redundancy_resource() -> str:
@@ -452,7 +451,7 @@ async def get_redundancy_resource() -> str:
     return await run_redundancy(params, None)
 
 
-@mcp.resource(uri="cortex://usage/session-continuity")
+# MCP resource registration removed
 @ensure_usage_context
 @mcp_resource_wrapper(timeout=MCP_TOOL_TIMEOUT_FAST)
 async def get_session_continuity_resource() -> str:
@@ -467,7 +466,7 @@ async def get_session_continuity_resource() -> str:
     return await run_session_continuity(params, None)
 
 
-@mcp.resource(uri="cortex://usage/tool-frequency")
+# MCP resource registration removed
 @ensure_usage_context
 @mcp_resource_wrapper(timeout=MCP_TOOL_TIMEOUT_FAST)
 async def get_tool_frequency_resource() -> str:
@@ -482,7 +481,7 @@ async def get_tool_frequency_resource() -> str:
     return await run_tool_frequency(params, None)
 
 
-@mcp.resource(uri="cortex://usage/tool-classification")
+# MCP resource registration removed
 @ensure_usage_context
 @mcp_resource_wrapper(timeout=MCP_TOOL_TIMEOUT_FAST)
 async def get_tool_classification_resource() -> str:

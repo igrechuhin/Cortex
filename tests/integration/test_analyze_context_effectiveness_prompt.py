@@ -114,20 +114,21 @@ class TestUnifiedAnalyzePromptContent:
         return path.read_text()
 
     def test_includes_pre_analysis_checklist(self, prompt_content: str) -> None:
-        """Prompt includes Pre-Analysis Checklist (memory bank, rules, context recall)."""
+        """Prompt includes Pre-Analysis Checklist (session health, manage_file)."""
         assert "Pre-Analysis Checklist" in prompt_content
-        assert "load_context" in prompt_content
+        assert "session()" in prompt_content
+        assert "manage_file()" in prompt_content
 
     def test_includes_context_effectiveness_step(self, prompt_content: str) -> None:
-        """Prompt includes Step 1: Context effectiveness (analyze tool + no_data handling)."""
+        """Prompt includes context effectiveness (cortex://analysis resource + no_data handling)."""
         assert "Context Effectiveness" in prompt_content
-        assert 'analyze(target="context")' in prompt_content
+        assert "cortex://analysis" in prompt_content
         assert "no_data" in prompt_content or "no data" in prompt_content
 
     def test_includes_session_optimization_step(self, prompt_content: str) -> None:
-        """Prompt includes Step 2: Session optimization (mistake patterns, report save)."""
+        """Prompt includes Session optimization (usage patterns, report save)."""
         assert "Session Optimization" in prompt_content
-        assert "get_structure_info" in prompt_content
+        assert "usage_patterns" in prompt_content or "usage patterns" in prompt_content
         assert "reviews" in prompt_content
 
     def test_includes_unified_output_format(self, prompt_content: str) -> None:

@@ -96,7 +96,7 @@ def test_migrate_plans_copies_cursor_plans(tmp_path: Path) -> None:
         "errors": [],
     }
     with patch(
-        "cortex.structure.structure_migration.get_cursor_path",
+        "cortex.structure.migration_strategies.get_cursor_path",
         return_value=source_plans,
     ):
         manager.migrate_plans(plans_dir, cast(ModelDict, migration_data))

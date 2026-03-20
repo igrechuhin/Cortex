@@ -6,26 +6,19 @@ This module provides tools for monitoring MCP connection health and stability.
 import json
 
 from cortex.core.constants import MCP_TOOL_TIMEOUT_FAST
-from cortex.core.mcp_annotations import read_only_annotations
 from cortex.core.mcp_stability import (
     check_connection_health,
     ensure_usage_context,
     mcp_resource_wrapper,
     mcp_tool_wrapper,
-    typed_mcp_tool,
 )
 from cortex.server import mcp
 
 
-@typed_mcp_tool(
-    annotations=read_only_annotations(
-        "Check MCP Connection Health",
-        idempotent=False,
-    )
-)
+@mcp.resource(uri="cortex://health/connection")
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_FAST)
-async def check_mcp_connection_health() -> str:
+async def health_check() -> str:
     """Check MCP connection health and resource utilization.
 
     USE WHEN: User wants connection status, user needs health check,
@@ -67,12 +60,12 @@ async def check_mcp_connection_health() -> str:
         }
 
     Example (success):
-        check_mcp_connection_health()
+        health_check()
         → {"status": "success", "health": {"healthy": true, "concurrent_operations": 1,
            "max_concurrent": 5, "semaphore_available": 4, "utilization_percent": 20.0}}
 
     Example (error):
-        check_mcp_connection_health() (when MCP disconnected or check fails)
+        health_check() (when MCP disconnected or check fails)
         → {"status": "error", "error": "Connection closed", "error_type": "ConnectionError"}
     """
     try:
@@ -98,9 +91,9 @@ async def check_mcp_connection_health() -> str:
 # Phase 43: Connection health resource (read-only)
 
 
-@mcp.resource(uri="cortex://health/connection")
+# MCP resource registration removed
 @ensure_usage_context
 @mcp_resource_wrapper(timeout=MCP_TOOL_TIMEOUT_FAST)
 async def check_mcp_connection_health_resource() -> str:
     """Resource: MCP connection health. Read via cortex://health/connection."""
-    return await check_mcp_connection_health()
+    return await health_check()

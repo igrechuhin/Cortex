@@ -13,15 +13,12 @@ from cortex.core.constants import (
     MCP_TOOL_TIMEOUT_COMPLEX,
 )
 from cortex.core.context_logging import MCPContext, log_client
-from cortex.core.mcp_annotations import safe_write_annotations
 from cortex.core.mcp_stability import ensure_usage_context, mcp_tool_wrapper
 from cortex.core.project_root_resolver import resolve_project_root_async
 from cortex.refactoring.models import RefactoringAction
-from cortex.server import mcp
 from cortex.tools.execution.helpers import parse_refactoring_action
 from cortex.tools.execution.monitoring import log_invalid_action_and_return
 from cortex.tools.execution.planning import execute_with_error_handling
-from cortex.tools.structure.categories import ALLOWED_CALLERS_CODE_EXECUTION
 
 
 async def _apply_refactoring_validate_and_run(
@@ -58,10 +55,7 @@ async def _apply_refactoring_validate_and_run(
     )
 
 
-@mcp.tool(
-    annotations=safe_write_annotations("Apply Refactoring"),
-    meta={"allowed_callers": list(ALLOWED_CALLERS_CODE_EXECUTION)},
-)
+# MCP registration removed — unused tool
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_COMPLEX)
 async def apply_refactoring(

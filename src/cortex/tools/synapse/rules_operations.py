@@ -8,11 +8,9 @@ Total: 1 tool
 """
 
 from pathlib import Path
-from urllib.parse import unquote
 
 from cortex.core.constants import MCP_TOOL_TIMEOUT_MEDIUM
 from cortex.core.context_logging import MCPContext, log_client
-from cortex.core.mcp_annotations import safe_write_annotations
 from cortex.core.mcp_stability import (
     ensure_usage_context,
     mcp_resource_wrapper,
@@ -27,7 +25,6 @@ from cortex.server import mcp
 from cortex.tools.synapse.rules_operation_helpers import (
     RulesOperation,
     build_invalid_operation_error,
-    build_missing_rules_parameters_error,
     parse_rules_operation,
 )
 from cortex.tools.synapse.rules_operations_handlers import (
@@ -39,7 +36,7 @@ from cortex.tools.synapse.rules_operations_handlers import (
 RulesOperationName = RulesOperation
 
 
-@mcp.tool(annotations=safe_write_annotations("Rules"))
+# MCP tool removed — exposed as resource cortex://rules/{task_description}
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_MEDIUM)
 async def rules(
@@ -189,11 +186,19 @@ async def rules(
           of available token budget
     """
     await log_client(ctx, "info", "rules: starting", logger_name=__name__)
+    # Zero-arg fallback: default to get_relevant with session task description
+    if operation is None:
+        from cortex.core.session_config import read_session_config
+
+        cfg = read_session_config()
+        operation = RulesOperation("get_relevant")  # type: ignore[assignment]
+        if task_description is None:
+            task_description = str(
+                cfg.get("task_description", "general coding standards")
+            )
     parsed = parse_rules_operation(operation)
     if parsed is None:
         await log_client(ctx, "warning", "rules: invalid or missing operation")
-        if operation is None:
-            return build_missing_rules_parameters_error()
         return build_invalid_operation_error(operation)
     root = await resolve_project_root_async(None, ctx)
     return await _execute_rules_operation(
@@ -272,16 +277,22 @@ async def _execute_rules_operation(
         return _format_rules_error(e)
 
 
-@mcp.resource(uri="cortex://rules/relevant/{task_description}")
+@mcp.resource(uri="cortex://rules")
 @ensure_usage_context
 @mcp_resource_wrapper(timeout=MCP_TOOL_TIMEOUT_MEDIUM)
-async def rules_get_relevant_resource(task_description: str) -> str:
-    """Resource: Rules relevant to task (default params). Read via cortex://rules/relevant/{task_description}. Task description may be URL-encoded. Prefer cortex://synapse/rules/{task_description} for canonical rules resource (see docs/architecture/naming-conventions.md)."""
-    decoded = unquote(task_description)
+async def rules_get_relevant_resource() -> str:
+    """Resource: Rules relevant to current task. Zero-arg — reads task from session config.
+
+    Falls back to "general coding standards" if no session config exists.
+    """
+    from cortex.core.session_config import read_session_config
+
+    cfg = read_session_config()
+    task = str(cfg.get("task_description", "general coding standards"))
     return await rules(
         operation="get_relevant",
         force=False,
-        task_description=decoded,
+        task_description=task,
         max_tokens=None,
         min_relevance_score=None,
     )

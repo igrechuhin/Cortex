@@ -1,5 +1,5 @@
 """
-Models for check_mcp_connection_health tool results.
+Models for health_check tool results.
 """
 
 from __future__ import annotations
@@ -23,7 +23,7 @@ class ConnectionHealthResult(ToolResultBase):
 
 
 class MCPHealthCheckResponse(StrictBaseModel):
-    """Parsed response from check_mcp_connection_health (for parsing only)."""
+    """Parsed response from health_check (for parsing only)."""
 
     status: OperationStatus
     health: ConnectionHealth | None = None
@@ -32,7 +32,7 @@ class MCPHealthCheckResponse(StrictBaseModel):
 
 
 class ConnectionHealthErrorResult(ErrorResultBase):
-    """Error result for check_mcp_connection_health operations."""
+    """Error result for health_check operations."""
 
 
 ConnectionHealthResultUnion = ConnectionHealthResult | ConnectionHealthErrorResult

@@ -207,7 +207,7 @@ def _resolve_think_mode(
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_MEDIUM)
 async def think(
-    thought: str,
+    thought: str | None = None,
     thought_number: int | None = None,
     total_thoughts: int | None = None,
     next_thought_needed: bool | None = None,
@@ -242,6 +242,12 @@ async def think(
         needs_more_thoughts: Optional full-mode params.
     """
     core = _get_core()
+    # Zero-arg fallback: read thought from session config or use placeholder
+    if not thought:
+        from cortex.core.session_config import read_session_config
+
+        cfg = read_session_config()
+        thought = str(cfg.get("task_description", "Reflect on current task"))
     thought_number, total_thoughts, next_thought_needed_val, lightweight = (
         _resolve_think_mode(core, thought_number, total_thoughts, next_thought_needed)
     )

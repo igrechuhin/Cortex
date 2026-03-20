@@ -17,6 +17,7 @@ from pathlib import Path
 from typing import cast
 
 from cortex.core.context_logging import MCPContext, report_progress_safe
+from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 
 logger = logging.getLogger(__name__)
 
@@ -31,7 +32,7 @@ DETACHED_ENABLED = os.environ.get("CORTEX_DETACHED_PIPELINE", "1") != "0"
 
 def _session_dir(project_root: Path) -> Path:
     """Return session directory for result files."""
-    d = project_root / ".cortex" / ".session"
+    d = get_cortex_path(project_root, CortexResourceType.SESSION)
     d.mkdir(parents=True, exist_ok=True)
     return d
 
@@ -181,14 +182,16 @@ def spawn_detached_worker(
     return rp
 
 
-def _read_result_file(
+async def _read_result_file(
     result_path: Path,
 ) -> tuple[dict[str, object] | None, str | None]:
     """Read result JSON if present. Returns (data, status) or (None, None)."""
     if not result_path.exists():
         return None, None
     try:
-        data = json.loads(result_path.read_text())
+        # Avoid blocking the async event loop: file I/O runs on a worker thread.
+        text = await asyncio.to_thread(result_path.read_text)
+        data = json.loads(text)
         return cast(dict[str, object], data), data.get("status")
     except (json.JSONDecodeError, OSError):
         return None, None
@@ -209,7 +212,7 @@ async def poll_for_result(
             await report_progress_safe(
                 ctx, float(min(tick, _HEARTBEAT_TOTAL)), float(_HEARTBEAT_TOTAL)
             )
-        data, status = _read_result_file(result_path)
+        data, status = await _read_result_file(result_path)
         if data is None:
             continue
         if status == "completed" or status == "error":
@@ -324,6 +327,43 @@ def _clear_cached_result(project_root: Path, args_hash: str) -> None:
     logger.info("force_fresh: cleared cached result for args_hash=%s", args_hash)
 
 
+def clear_all_cached_results(project_root: Path) -> int:
+    """Delete all pre-commit result cache files and return count removed.
+
+    Call before re-running checks after code changes so stale cached
+    worker results are not returned to the caller.
+    """
+    sd = _session_dir(project_root)
+    removed = 0
+    for p in sd.glob("pre_commit_result_*.json"):
+        p.unlink(missing_ok=True)
+        removed += 1
+    if removed:
+        logger.info("clear_all_cached_results: removed %d result file(s)", removed)
+    return removed
+
+
+async def poll_job_to_completion(
+    project_root: Path,
+    job_id: str,
+    timeout: float = 900.0,
+) -> dict[str, object]:
+    """Poll a detached job until completed/error, then return its inner result dict.
+
+    Use after execute_pre_commit_checks returns {job_id, status} in detached mode
+    to wait for the worker to finish and get the full result with output/errors fields.
+    Returns the inner result on success, or an error dict on timeout/failure.
+    """
+    rp = _result_path(_session_dir(project_root), job_id)
+    envelope = await poll_for_result(rp, ctx=None, timeout=timeout)
+    if envelope.get("status") != "completed":
+        return envelope
+    inner = envelope.get("result")
+    if isinstance(inner, dict):
+        return cast(dict[str, object], inner)
+    return {"status": "error", "error": "Worker result missing 'result' key"}
+
+
 def start_pre_commit_job_impl(
     project_root: Path,
     checks: list[str],
@@ -395,7 +435,7 @@ async def run_checks_detached(
     Returns the inner result dict for cached hits (so execute_pre_commit_checks
     still delivers a full result without polling). For new or already-running
     jobs returns {job_id, status} so the MCP connection is not held open.
-    Callers should poll with get_pre_commit_job_status(job_id).
+    Callers should poll with get_quality_job_status(job_id).
     """
     args_hash = compute_args_hash(
         checks, timeout, coverage_threshold, strict_mode, False

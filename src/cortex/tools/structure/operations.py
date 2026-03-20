@@ -11,7 +11,7 @@ from cortex.core.metadata_index import MetadataIndex
 from cortex.core.models import JsonDict
 from cortex.core.token_counter import TokenCounter
 from cortex.structure.manager import StructureManager
-from cortex.tools.models import CleanupActionResult, CleanupReport
+from cortex.tools.structure.structure_models import CleanupActionResult, CleanupReport
 
 
 def _get_default_cleanup_actions() -> list[str]:

@@ -949,5 +949,5 @@ class TestGetToolSearchConfig:
         low = cast(list[str], ts["deferred_low"])
         total = len(always) + len(medium) + len(low)
         assert len(always) < total
-        assert len(always) >= 10
-        assert len(medium) + len(low) >= 15
+        assert len(always) >= 8
+        assert len(medium) + len(low) >= 2

@@ -9,11 +9,9 @@ Total: 1 tool, 1 resource
 
 import json
 from pathlib import Path
-from urllib.parse import unquote
 
 from cortex.core.constants import MCP_TOOL_TIMEOUT_COMPLEX
 from cortex.core.context_logging import MCPContext, log_client
-from cortex.core.mcp_annotations import read_only_annotations
 from cortex.core.mcp_stability import (
     ensure_usage_context,
     mcp_resource_wrapper,
@@ -41,7 +39,7 @@ async def get_managers(root: Path) -> ManagersDict:
     return await initialization.get_managers(root)
 
 
-@mcp.tool(annotations=read_only_annotations("Analyze Memory Bank and Tools"))
+# MCP tool registration removed — exposed as resource below
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_COMPLEX)
 async def analyze(
@@ -171,19 +169,21 @@ async def _analyze_run_or_error(
         )
 
 
-@mcp.resource(uri="cortex://analysis/analyze/{target}")
+@mcp.resource(uri="cortex://analysis")
 @ensure_usage_context
 @mcp_resource_wrapper(timeout=MCP_TOOL_TIMEOUT_COMPLEX)
-async def analyze_resource(target: str) -> str:
-    """Resource: Run analysis by target. Read via cortex://analysis/analyze/{target}.
+async def analyze_resource() -> str:
+    """Resource: Run analysis. Zero-arg — reads target from session config.
 
-    target may be URL-encoded. Must be one of: usage_patterns, structure,
-    insights. Uses default parameters (time_window_days=None, export_format=json,
-    categories=None). Project root is resolved by the server.
+    Falls back to "context" if no session config exists. Target must be one of:
+    usage_patterns, structure, insights, context.
     """
-    decoded = unquote(target)
+    from cortex.core.session_config import read_session_config
+
+    cfg = read_session_config()
+    target = str(cfg.get("analysis_target", "context"))
     return await analyze(
-        target=decoded,
+        target=target,
         time_window_days=None,
         export_format="json",
         categories=None,

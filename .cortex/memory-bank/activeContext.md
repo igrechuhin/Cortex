@@ -2,6 +2,18 @@
 
 **This file records completed work only.** For current status and upcoming work see [roadmap.md](roadmap.md).
 
+## Completed Work (2026-03-20)
+
+- ✅ **Phase A Fingerprint & Detached Polling Hardening** - COMPLETE (2026-03-20) - Narrowed Phase A fingerprint bookkeeping exception handling, moved detached polling file reads off the event loop, and improved hybrid-rule NotImplementedError stub messages. Phase A quality gate passed (coverage ~0.91).
+
+## Completed Work (2026-03-16)
+
+- **Summary (2026-03-16)** - 1 entries archived.
+
+## Completed Work (2026-03-16)
+
+- **Summary (2026-03-16)** - 1 entries archived.
+
 ## Completed Work (2026-03-14)
 
 - **Summary (2026-03-14)** - 1 entries archived.

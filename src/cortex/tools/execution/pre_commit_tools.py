@@ -2,9 +2,12 @@
 
 MCP tools for executing pre-commit checks with language auto-detection.
 
-Total: 1 tool
-- execute_pre_commit_checks: Execute pre-commit checks (fix errors,
-  format, type check, quality, tests) or fix-quality mode (checks=["fix_quality"]).
+Tools:
+- execute_pre_commit_checks: Run checks with explicit list or phase.
+- start_quality_job / get_quality_job_status: Non-blocking detached job API.
+- get_last_pre_commit_status: Last run summary (internal fallback).
+- run_quality_gate / run_quality_gate_fresh / run_docs_gate: Zero-arg pipeline tools.
+- fix_quality_issues: Zero-arg auto-fix (format, lint, type, markdown).
 """
 
 import json
@@ -15,11 +18,9 @@ from typing import Literal, cast
 
 from cortex.core.constants import MCP_TOOL_TIMEOUT_VERY_COMPLEX
 from cortex.core.context_logging import MCPContext, log_client
-from cortex.core.mcp_annotations import external_annotations
 from cortex.core.mcp_stability import (
     ensure_usage_context,
     mcp_tool_wrapper,
-    typed_mcp_tool,
 )
 from cortex.core.models import ModelDict
 from cortex.core.usage_context import (
@@ -172,7 +173,7 @@ async def _execute_pre_commit_checks_impl(
 
     if DETACHED_ENABLED:
         # Returns {job_id, status} immediately (or cached result). Does NOT poll.
-        # Use get_pre_commit_job_status(job_id) to check completion.
+        # Use get_quality_job_status(job_id) to check completion.
         return cast(
             ModelDict,
             await run_checks_detached(
@@ -444,14 +445,7 @@ async def _execute_pre_commit_checks_dispatch(
     )
 
 
-@typed_mcp_tool(
-    annotations=external_annotations(
-        "Execute Pre-Commit Checks",
-        read_only=False,
-        destructive=False,
-        idempotent=False,
-    )
-)
+# MCP registration removed — use run_quality_gate / run_docs_gate instead
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_VERY_COMPLEX, enable_progress=False)
 async def execute_pre_commit_checks(
@@ -516,14 +510,6 @@ async def execute_pre_commit_checks(
     )
 
 
-@typed_mcp_tool(
-    annotations=external_annotations(
-        "Get Last Pre-Commit Status",
-        read_only=True,
-        destructive=False,
-        idempotent=True,
-    )
-)
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=60.0)
 async def get_last_pre_commit_status(
@@ -581,17 +567,10 @@ def _resolve_pre_commit_check_names(
     return phase_to_checks(PreCommitPhase("A"))
 
 
-@typed_mcp_tool(
-    annotations=external_annotations(
-        "Start Pre-Commit Job",
-        read_only=False,
-        destructive=False,
-        idempotent=False,
-    )
-)
+# MCP registration removed — use run_quality_gate instead
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=60.0)
-async def start_pre_commit_job(
+async def start_quality_job(
     phase: Literal["A", "B", "full"] | None = None,
     checks: Sequence[PreCommitCheckName] | None = None,
     test_timeout: int = 300,
@@ -605,19 +584,19 @@ async def start_pre_commit_job(
 
     USE WHEN: Starting a long-running quality gate without blocking the MCP
     connection. Call this once to get a job_id, then poll with
-    get_pre_commit_job_status(job_id) until status != "running".
+    get_quality_job_status(job_id) until status != "running".
 
     EXAMPLES:
-    - start_pre_commit_job(phase="A") to start a full Phase A quality gate.
-    - start_pre_commit_job(checks=["tests"], coverage_threshold=0.9) for tests only.
-    - start_pre_commit_job(phase="A", force_fresh=True) for Step 12 final gate —
+    - start_quality_job(phase="A") to start a full Phase A quality gate.
+    - start_quality_job(checks=["tests"], coverage_threshold=0.9) for tests only.
+    - start_quality_job(phase="A", force_fresh=True) for Step 12 final gate —
       always spawns a new worker even when a recent cached result exists.
 
     RETURNS: {"job_id": "<hash>", "status": "started"|"already_running"|"completed"|"error"}
-    - "started": worker spawned; poll with get_pre_commit_job_status(job_id).
+    - "started": worker spawned; poll with get_quality_job_status(job_id).
     - "already_running": worker already active; poll the same job_id.
-    - "completed": fresh cached result exists; call get_pre_commit_job_status for details.
-    - "error": previous run failed; check get_pre_commit_job_status for error details.
+    - "completed": fresh cached result exists; call get_quality_job_status for details.
+    - "error": previous run failed; check get_quality_job_status for error details.
 
     Args:
         phase: "A", "B", or "full". Resolves to canonical check list for the phase.
@@ -648,33 +627,26 @@ async def start_pre_commit_job(
     return cast(ModelDict, result)
 
 
-@typed_mcp_tool(
-    annotations=external_annotations(
-        "Get Pre-Commit Job Status",
-        read_only=True,
-        destructive=False,
-        idempotent=True,
-    )
-)
+# MCP registration removed — use run_quality_gate instead
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=30.0)
-async def get_pre_commit_job_status(
+async def get_quality_job_status(
     job_id: str = "",
     ctx: MCPContext | None = None,
 ) -> ModelDict:
     """Return summary for a specific detached pre-commit job by job_id.
 
     USE WHEN: Polling the status of a long-running detached quality gate
-    started via start_pre_commit_job without triggering a new run. This is
+    started via start_quality_job without triggering a new run. This is
     the preferred way to monitor progress and completion of Phase A/B/full
     or tests-only jobs from the commit pipeline.
 
     EXAMPLES:
-    - get_pre_commit_job_status(job_id="abc123") in a loop until status != "running"
+    - get_quality_job_status(job_id="abc123") in a loop until status != "running"
       to wait for a detached tests run to complete.
-    - get_pre_commit_job_status(job_id="abc123") in a follow-up session to inspect
+    - get_quality_job_status(job_id="abc123") in a follow-up session to inspect
       the final result (status, coverage, checks) of a previously started job.
-    - get_pre_commit_job_status() with no args: falls back to get_last_pre_commit_status
+    - get_quality_job_status() with no args: falls back to get_last_pre_commit_status
       (most recent run). Use when the MCP wrapper cannot pass job_id.
 
     RETURNS: JSON with at least:
@@ -685,7 +657,7 @@ async def get_pre_commit_job_status(
       - error: optional error message for "error" or "unknown" status.
 
     Args:
-        job_id: Identifier of the detached pre-commit job (from start_pre_commit_job).
+        job_id: Identifier of the detached pre-commit job (from start_quality_job).
             When empty or omitted, falls back to the most recent run (same as
             get_last_pre_commit_status). This allows environments where the MCP
             wrapper cannot pass arguments to still poll the running job.

@@ -1941,10 +1941,14 @@ class TestValidateResource:
 
     @pytest.mark.asyncio
     async def test_validate_resource_returns_json_success(self, tmp_path: Path) -> None:
-        """Test validate_resource returns valid JSON for schema check (Phase 43)."""
+        """Test validate_resource returns valid JSON (zero-arg, session config)."""
         memory_bank_dir = get_cortex_path(tmp_path, CortexResourceType.MEMORY_BANK)
         memory_bank_dir.mkdir(parents=True)
         with (
+            patch(
+                "cortex.core.session_config.read_session_config",
+                return_value={"check_type": "schema"},
+            ),
             patch(
                 "cortex.tools.validation.operations.prepare_validation_managers"
             ) as mock_prepare,
@@ -1956,7 +1960,7 @@ class TestValidateResource:
             mock_dispatch.return_value = json.dumps(
                 {"status": "success", "check_type": "schema"}
             )
-            result = await validate_resource("schema")
+            result = await validate_resource()
         result_data = json.loads(result)
         assert "status" in result_data
         assert result_data["status"] in ("success", "error")
@@ -1964,10 +1968,16 @@ class TestValidateResource:
             assert result_data["check_type"] == "schema"
 
     @pytest.mark.asyncio
-    async def test_validate_resource_invalid_check_type_returns_error(self) -> None:
-        """Test validate_resource returns error JSON for invalid check_type (Phase 43)."""
-        result = await validate_resource("invalid")
+    async def test_validate_resource_defaults_to_timestamps(self) -> None:
+        """Test validate_resource defaults to timestamps when no session config."""
+        with patch(
+            "cortex.core.session_config.read_session_config",
+            return_value={},
+        ):
+            # Should not error — "timestamps" is a valid check_type
+            result = await validate_resource()
+        # The call may fail due to missing project root, but the check_type
+        # should be valid (not "invalid check_type" error)
         result_data = json.loads(result)
-        assert result_data["status"] == "error"
-        assert "Invalid check_type" in result_data["error"]
-        assert "invalid" in result_data["error"]
+        if result_data.get("status") == "error":
+            assert "Invalid check_type" not in result_data.get("error", "")

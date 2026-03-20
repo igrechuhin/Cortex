@@ -42,6 +42,21 @@ MANAGE_FILE_INPUT_EXAMPLES: list[dict[str, object]] = [
 ]
 
 
+def _resolve_manage_file_defaults(
+    file_name: str | None,
+    operation: FileOperation | None,
+) -> tuple[str, FileOperation]:
+    """Resolve missing params from session config defaults."""
+    if file_name is None:
+        from cortex.core.session_config import read_session_config
+
+        cfg = read_session_config()
+        file_name = str(cfg.get("file_name", "activeContext.md"))
+    if operation is None:
+        operation = FileOperation.READ
+    return file_name, operation
+
+
 @mcp.tool(
     annotations=safe_write_annotations("Manage Memory Bank Files"),
     meta={
@@ -235,6 +250,7 @@ async def manage_file(
         - Write operations update both the file content and metadata index
           atomically
     """
+    file_name, operation = _resolve_manage_file_defaults(file_name, operation)
     await log_client(
         ctx,
         "info",
@@ -253,7 +269,7 @@ async def manage_file(
     )
 
 
-@mcp.resource(uri="cortex://memory-bank/file/{file_name}")
+# MCP resource registration removed
 @ensure_usage_context
 @mcp_resource_wrapper(timeout=MCP_TOOL_TIMEOUT_MEDIUM)
 async def get_file_resource(file_name: str) -> str:

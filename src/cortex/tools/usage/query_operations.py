@@ -10,13 +10,11 @@ import json
 
 from cortex.core.constants import MCP_TOOL_TIMEOUT_FAST
 from cortex.core.context_logging import MCPContext, log_client
-from cortex.core.mcp_annotations import read_only_annotations
 from cortex.core.mcp_stability import (
     ensure_usage_context,
     mcp_tool_wrapper,
 )
 from cortex.core.models import ResponseFormat
-from cortex.server import mcp
 from cortex.tools.response_builder import error_response
 
 from .query_handlers import USAGE_HANDLERS
@@ -81,7 +79,7 @@ async def _log_query_usage_start(ctx: MCPContext | None, query_type: str) -> Non
     )
 
 
-@mcp.tool(annotations=read_only_annotations("Query Usage"))
+# MCP registration removed — analytics only, no agent usage
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_FAST)
 async def query_usage(

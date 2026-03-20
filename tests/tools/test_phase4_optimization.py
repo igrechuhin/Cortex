@@ -1283,8 +1283,12 @@ class TestPhase4OptimizationResources:
     async def test_load_context_resource_returns_success(
         self, mock_project_root: Path, mock_managers: dict[str, Any]
     ) -> None:
-        """load_context_resource returns JSON success for task_description."""
+        """load_context_resource returns JSON success (zero-arg, session config)."""
         with (
+            patch(
+                "cortex.core.session_config.read_session_config",
+                return_value={"task_description": "Test task"},
+            ),
             patch(
                 "cortex.tools.optimization.handlers.resolve_project_root_async",
                 new_callable=AsyncMock,
@@ -1299,7 +1303,7 @@ class TestPhase4OptimizationResources:
                 side_effect=_get_manager_helper,
             ),
         ):
-            result_str = await load_context_resource(task_description="Test%20task")
+            result_str = await load_context_resource()
             result = json.loads(result_str)
         assert result["status"] == "success"
         assert result["task_description"] == "Test task"

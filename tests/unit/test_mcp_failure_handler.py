@@ -193,6 +193,23 @@ class TestProtocolEnforcement:
         assert exc_info.value.step_name == "test_step"
         assert exc_info.value.error == error
 
+    async def test_handle_failure_still_raises_when_roadmap_missing(
+        self, tmp_path: Path
+    ) -> None:
+        """handle_failure raises MCPToolFailure even without a roadmap file."""
+        # No roadmap file — add_to_roadmap will log warning but not raise
+        handler = MCPToolFailureHandler(tmp_path)
+        error = json.JSONDecodeError("Expecting value", "", 0)
+
+        with pytest.raises(MCPToolFailure) as exc_info:
+            await handler.handle_failure("test_tool", error, "test_step")
+
+        assert exc_info.value.tool_name == "test_tool"
+        # Plan should still be created
+        plans_dir = get_cortex_path(tmp_path, CortexResourceType.PLANS)
+        plan_files = list(plans_dir.glob("phase-investigate-test_tool-failure-*.md"))
+        assert len(plan_files) == 1
+
     async def test_handle_failure_creates_plan(self, tmp_path: Path) -> None:
         """Test that handle_failure creates investigation plan."""
         # Create memory bank directory and roadmap

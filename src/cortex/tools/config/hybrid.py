@@ -10,7 +10,6 @@ from cortex.core.mcp_stability import (
     mcp_resource_wrapper,
 )
 from cortex.core.project_root_resolver import resolve_project_root_async
-from cortex.server import mcp
 from cortex.tools.config.helpers import ConfigAction
 from cortex.tools.config.operations import (
     create_invalid_component_error,
@@ -19,7 +18,7 @@ from cortex.tools.config.operations import (
 )
 
 
-@mcp.resource(uri="cortex://config/{component}")
+# MCP resource registration removed
 @ensure_usage_context
 @mcp_resource_wrapper(timeout=MCP_TOOL_TIMEOUT_MEDIUM)
 async def get_config_resource(component: str) -> str:

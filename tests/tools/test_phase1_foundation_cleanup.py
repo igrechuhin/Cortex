@@ -1,8 +1,12 @@
 from pathlib import Path
+from typing import cast
 from unittest.mock import AsyncMock, patch
 
 import pytest
 
+from cortex.tools.execution.quality_precommit_models import (
+    CleanupMetadataIndexErrorResult,
+)
 from cortex.tools.memory.foundation_cleanup import cleanup_metadata_index
 from tests.helpers.managers import make_test_managers
 
@@ -34,7 +38,7 @@ class TestCleanupMetadataIndex:
         assert result.status == "success"
         assert result.stale_files_found == 0
         assert result.entries_cleaned == 0
-        assert "No stale entries found" in result.message
+        assert "No stale entries found" in (result.message or "")
 
     async def test_cleanup_metadata_index_when_stale_files_and_dry_run_reports_no_changes(  # noqa: E501
         self, tmp_path: Path
@@ -64,7 +68,7 @@ class TestCleanupMetadataIndex:
         assert result.dry_run is True
         assert result.stale_files_found == 2
         assert result.stale_files == stale_files
-        assert "Would clean 2 stale entries" in result.message
+        assert "Would clean 2 stale entries" in (result.message or "")
 
     async def test_cleanup_metadata_index_when_exception_returns_error(
         self, tmp_path: Path
@@ -86,8 +90,9 @@ class TestCleanupMetadataIndex:
 
         # Assert
         assert result.status == "error"
-        assert result.error == "boom"
-        assert result.error_type == "RuntimeError"
+        error_result = cast(CleanupMetadataIndexErrorResult, result)
+        assert error_result.error == "boom"
+        assert error_result.error_type == "RuntimeError"
 
 
 @pytest.mark.asyncio

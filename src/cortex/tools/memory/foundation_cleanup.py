@@ -9,12 +9,10 @@ from pathlib import Path
 
 from cortex.core.constants import MCP_TOOL_TIMEOUT_MEDIUM
 from cortex.core.context_logging import MCPContext, log_client
-from cortex.core.mcp_annotations import destructive_annotations
 from cortex.core.mcp_stability import ensure_usage_context, mcp_tool_wrapper
 from cortex.core.metadata_index import MetadataIndex
 from cortex.core.project_root_resolver import resolve_project_root_async
 from cortex.managers.initialization import get_managers
-from cortex.server import mcp
 from cortex.tools.models import (
     CleanupMetadataIndexErrorResult,
     CleanupMetadataIndexResult,
@@ -41,7 +39,6 @@ async def _process_stale_entries(
     )
 
 
-@mcp.tool(annotations=destructive_annotations("Cleanup Metadata Index"))
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_MEDIUM)
 async def cleanup_metadata_index(

@@ -5,6 +5,8 @@ This module provides a centralized container for all manager instances,
 enabling better testability and dependency management.
 """
 
+from __future__ import annotations
+
 from pathlib import Path
 from typing import Self
 
@@ -14,15 +16,9 @@ from pydantic import BaseModel, ConfigDict, Field
 from cortex.analysis.insight_engine import InsightEngine
 from cortex.analysis.pattern_analyzer import PatternAnalyzer
 from cortex.analysis.structure_analyzer import StructureAnalyzer
-from cortex.core.container_models import (
-    AnalysisKwargs,
-    ContainerKwargs,
-    ExecutionKwargs,
-    FoundationKwargs,
-    LinkingKwargs,
-    OptimizationKwargs,
-    RefactoringKwargs,
-    UnpackedManagers,
+from cortex.core.container_helpers import (
+    build_container_kwargs,
+    unpack_all_managers,
 )
 from cortex.core.dependency_graph import DependencyGraph
 from cortex.core.file_system import FileSystemManager
@@ -120,58 +116,88 @@ class ManagerContainer(BaseModel):
     file_system: FileSystemManager = Field(description="File I/O operations")
     metadata_index: MetadataIndex = Field(description="Metadata tracking")
     token_counter: TokenCounter = Field(description="Token counting")
-    dependency_graph: DependencyGraph = Field(description="Dependency management")
+    dependency_graph: DependencyGraph = Field(
+        description="Dependency management",
+    )
     version_manager: VersionManager = Field(description="Version control")
-    migration_manager: MigrationManager = Field(description="Format migration")
-    file_watcher: FileWatcherManager = Field(description="External change detection")
+    migration_manager: MigrationManager = Field(
+        description="Format migration",
+    )
+    file_watcher: FileWatcherManager = Field(
+        description="External change detection",
+    )
 
     # Phase 2: DRY Linking
     link_parser: LinkParser = Field(description="Link parsing")
-    transclusion_engine: TransclusionEngine = Field(description="Content transclusion")
+    transclusion_engine: TransclusionEngine = Field(
+        description="Content transclusion",
+    )
     link_validator: LinkValidator = Field(description="Link validation")
 
     # Phase 4: Optimization
     optimization_config: OptimizationConfig = Field(
-        description="Configuration management"
+        description="Configuration management",
     )
-    relevance_scorer: RelevanceScorer = Field(description="Relevance scoring")
-    context_optimizer: ContextOptimizer = Field(description="Context optimization")
-    progressive_loader: ProgressiveLoader = Field(description="Progressive loading")
+    relevance_scorer: RelevanceScorer = Field(
+        description="Relevance scoring",
+    )
+    context_optimizer: ContextOptimizer = Field(
+        description="Context optimization",
+    )
+    progressive_loader: ProgressiveLoader = Field(
+        description="Progressive loading",
+    )
     summarization_engine: SummarizationEngine = Field(
-        description="Content summarization"
+        description="Content summarization",
     )
     rules_manager: RulesManager = Field(description="Rules indexing")
 
     # Phase 5.1: Pattern Analysis
-    pattern_analyzer: PatternAnalyzer = Field(description="Usage pattern analysis")
-    structure_analyzer: StructureAnalyzer = Field(description="Structure analysis")
+    pattern_analyzer: PatternAnalyzer = Field(
+        description="Usage pattern analysis",
+    )
+    structure_analyzer: StructureAnalyzer = Field(
+        description="Structure analysis",
+    )
     insight_engine: InsightEngine = Field(description="AI insights")
 
     # Phase 5.2: Refactoring Suggestions
-    refactoring_engine: RefactoringEngine = Field(description="Refactoring suggestions")
-    consolidation_detector: ConsolidationDetector = Field(
-        description="Consolidation detection"
+    refactoring_engine: RefactoringEngine = Field(
+        description="Refactoring suggestions",
     )
-    split_recommender: SplitRecommender = Field(description="File splitting")
+    consolidation_detector: ConsolidationDetector = Field(
+        description="Consolidation detection",
+    )
+    split_recommender: SplitRecommender = Field(
+        description="File splitting",
+    )
     reorganization_planner: ReorganizationPlanner = Field(
-        description="Structure reorganization"
+        description="Structure reorganization",
     )
 
     # Phase 5.3-5.4: Execution & Learning
     refactoring_executor: RefactoringExecutor = Field(
-        description="Safe refactoring execution"
+        description="Safe refactoring execution",
     )
-    approval_manager: ApprovalManager = Field(description="User approval workflow")
-    rollback_manager: RollbackManager = Field(description="Rollback support")
-    learning_engine: LearningEngine = Field(description="Learning from feedback")
-    adaptation_config: AdaptationConfig = Field(description="Adaptation configuration")
+    approval_manager: ApprovalManager = Field(
+        description="User approval workflow",
+    )
+    rollback_manager: RollbackManager = Field(
+        description="Rollback support",
+    )
+    learning_engine: LearningEngine = Field(
+        description="Learning from feedback",
+    )
+    adaptation_config: AdaptationConfig = Field(
+        description="Adaptation configuration",
+    )
 
     @classmethod
     async def create(cls, project_root: Path) -> Self:
         """Factory method to create fully initialized container.
 
-        This method initializes all managers in the correct dependency order,
-        ensuring that each manager has access to its required dependencies.
+        This method initializes all managers in the correct dependency
+        order, ensuring each manager has access to its dependencies.
 
         Args:
             project_root: Project root directory
@@ -210,22 +236,26 @@ class ManagerContainer(BaseModel):
 
         return container
 
-    async def _post_init_setup(self, project_root: Path):
+    async def _post_init_setup(self, project_root: Path) -> None:
         """Perform post-initialization setup tasks.
 
         Args:
             project_root: Project root directory
         """
         # Load metadata index if it exists
-        index_path = get_cortex_path(project_root, CortexResourceType.INDEX)
+        index_path = get_cortex_path(
+            project_root,
+            CortexResourceType.INDEX,
+        )
         if index_path.exists():
             try:
                 _ = await self.metadata_index.load()
             except Exception as e:
-                # If load fails, metadata_index will auto-rebuild
                 from cortex.core.logging_config import logger
 
-                logger.info(f"Metadata index load failed, will rebuild: {e}")
+                logger.info(
+                    f"Metadata index load failed, will rebuild: {e}",
+                )
 
         # Clean up stale locks
         await self.file_system.cleanup_locks()
@@ -235,7 +265,6 @@ class ManagerContainer(BaseModel):
             try:
                 _ = await self.rules_manager.index_rules()
             except Exception as e:
-                # Don't fail if rules initialization fails
                 from cortex.core.logging_config import logger
 
                 logger.warning(f"Rules initialization failed: {e}")
@@ -250,7 +279,7 @@ class ManagerContainer(BaseModel):
         refactoring_managers: RefactoringManagers,
         execution_managers: ExecutionManagers,
     ) -> Self:
-        """Create container instance with protocol casts.
+        """Create container instance from manager tuples.
 
         Args:
             foundation_managers: Phase 1 managers
@@ -263,7 +292,7 @@ class ManagerContainer(BaseModel):
         Returns:
             Fully initialized container
         """
-        unpacked = cls._unpack_all_managers(
+        unpacked = unpack_all_managers(
             foundation_managers,
             linking_managers,
             optimization_managers,
@@ -271,284 +300,14 @@ class ManagerContainer(BaseModel):
             refactoring_managers,
             execution_managers,
         )
-        return cls._instantiate_container(unpacked)
-
-    @classmethod
-    def _unpack_all_managers(
-        cls: type[Self],
-        foundation_managers: FoundationManagers,
-        linking_managers: LinkingManagers,
-        optimization_managers: OptimizationManagers,
-        analysis_managers: AnalysisManagers,
-        refactoring_managers: RefactoringManagers,
-        execution_managers: ExecutionManagers,
-    ) -> UnpackedManagers:
-        """Unpack all manager tuples into a model.
-
-        Args:
-            foundation_managers: Phase 1 managers
-            linking_managers: Phase 2 managers
-            optimization_managers: Phase 4 managers
-            analysis_managers: Phase 5.1 managers
-            refactoring_managers: Phase 5.2 managers
-            execution_managers: Phase 5.3-5.4 managers
-
-        Returns:
-            UnpackedManagers model with all managers
-        """
-        foundation_kwargs = cls._unpack_foundation_managers(foundation_managers)
-        linking_kwargs = cls._unpack_linking_managers(linking_managers)
-        optimization_kwargs = cls._unpack_optimization_managers(optimization_managers)
-        analysis_kwargs = cls._unpack_analysis_managers(analysis_managers)
-        refactoring_kwargs = cls._unpack_refactoring_managers(refactoring_managers)
-        execution_kwargs = cls._unpack_execution_managers(execution_managers)
-
-        # Combine all kwargs into UnpackedManagers
-        return UnpackedManagers.model_construct(
-            **foundation_kwargs.model_dump(),
-            **linking_kwargs.model_dump(),
-            **optimization_kwargs.model_dump(),
-            **analysis_kwargs.model_dump(),
-            **refactoring_kwargs.model_dump(),
-            **execution_kwargs.model_dump(),
-        )
-
-    @classmethod
-    def _unpack_foundation_managers(
-        cls: type[Self], foundation_managers: FoundationManagers
-    ) -> FoundationKwargs:
-        """Unpack Phase 1 foundation managers."""
-        (
-            file_system,
-            metadata_index,
-            token_counter,
-            dependency_graph,
-            version_manager,
-            migration_manager,
-            file_watcher,
-        ) = foundation_managers
-        return FoundationKwargs(
-            file_system=file_system,
-            metadata_index=metadata_index,
-            token_counter=token_counter,
-            dependency_graph=dependency_graph,
-            version_manager=version_manager,
-            migration_manager=migration_manager,
-            file_watcher=file_watcher,
-        )
-
-    @classmethod
-    def _unpack_linking_managers(
-        cls: type[Self], linking_managers: LinkingManagers
-    ) -> LinkingKwargs:
-        """Unpack Phase 2 linking managers."""
-        link_parser, transclusion_engine, link_validator = linking_managers
-        return LinkingKwargs(
-            link_parser=link_parser,
-            transclusion_engine=transclusion_engine,
-            link_validator=link_validator,
-        )
-
-    @classmethod
-    def _unpack_optimization_managers(
-        cls: type[Self],
-        optimization_managers: OptimizationManagers,
-    ) -> OptimizationKwargs:
-        """Unpack Phase 4 optimization managers."""
-        (
-            optimization_config,
-            relevance_scorer,
-            context_optimizer,
-            progressive_loader,
-            summarization_engine,
-            rules_manager,
-        ) = optimization_managers
-        return OptimizationKwargs(
-            optimization_config=optimization_config,
-            relevance_scorer=relevance_scorer,
-            context_optimizer=context_optimizer,
-            progressive_loader=progressive_loader,
-            summarization_engine=summarization_engine,
-            rules_manager=rules_manager,
-        )
-
-    @classmethod
-    def _unpack_analysis_managers(
-        cls: type[Self], analysis_managers: AnalysisManagers
-    ) -> AnalysisKwargs:
-        """Unpack Phase 5.1 analysis managers."""
-        pattern_analyzer, structure_analyzer, insight_engine = analysis_managers
-        return AnalysisKwargs(
-            pattern_analyzer=pattern_analyzer,
-            structure_analyzer=structure_analyzer,
-            insight_engine=insight_engine,
-        )
-
-    @classmethod
-    def _unpack_refactoring_managers(
-        cls: type[Self], refactoring_managers: RefactoringManagers
-    ) -> RefactoringKwargs:
-        """Unpack Phase 5.2 refactoring managers."""
-        (
-            refactoring_engine,
-            consolidation_detector,
-            split_recommender,
-            reorganization_planner,
-        ) = refactoring_managers
-        return RefactoringKwargs(
-            refactoring_engine=refactoring_engine,
-            consolidation_detector=consolidation_detector,
-            split_recommender=split_recommender,
-            reorganization_planner=reorganization_planner,
-        )
-
-    @classmethod
-    def _unpack_execution_managers(
-        cls: type[Self], execution_managers: ExecutionManagers
-    ) -> ExecutionKwargs:
-        """Unpack Phase 5.3-5.4 execution managers."""
-        (
-            refactoring_executor,
-            approval_manager,
-            rollback_manager,
-            learning_engine,
-            adaptation_config,
-        ) = execution_managers
-        return ExecutionKwargs(
-            refactoring_executor=refactoring_executor,
-            approval_manager=approval_manager,
-            rollback_manager=rollback_manager,
-            learning_engine=learning_engine,
-            adaptation_config=adaptation_config,
-        )
-
-    @classmethod
-    def _instantiate_container(cls: type[Self], unpacked: UnpackedManagers) -> Self:
-        """Instantiate container from unpacked managers.
-
-        Args:
-            unpacked: UnpackedManagers model with all managers
-
-        Returns:
-            Fully initialized container
-        """
-        kwargs_model = cls._build_container_kwargs(unpacked)
+        kwargs_model = build_container_kwargs(unpacked)
         return cls.model_validate(kwargs_model, from_attributes=True)
-
-    @classmethod
-    def _build_container_kwargs(
-        cls: type[Self], unpacked: UnpackedManagers
-    ) -> ContainerKwargs:
-        """Build keyword arguments for container instantiation.
-
-        Args:
-            unpacked: UnpackedManagers model with all managers
-
-        Returns:
-            Dictionary of keyword arguments
-        """
-        foundation_kwargs = cls._build_foundation_kwargs(unpacked)
-        linking_kwargs = cls._build_linking_kwargs(unpacked)
-        optimization_kwargs = cls._build_optimization_kwargs(unpacked)
-        analysis_kwargs = cls._build_analysis_kwargs(unpacked)
-        refactoring_kwargs = cls._build_refactoring_kwargs(unpacked)
-        execution_kwargs = cls._build_execution_kwargs(unpacked)
-
-        # Combine all kwargs into a single model
-        # Use model_dump() which returns a plain dict internally,
-        # but we validate it into ContainerKwargs immediately.
-        combined_data = {
-            **foundation_kwargs.model_dump(),
-            **linking_kwargs.model_dump(),
-            **optimization_kwargs.model_dump(),
-            **analysis_kwargs.model_dump(),
-            **refactoring_kwargs.model_dump(),
-            **execution_kwargs.model_dump(),
-        }
-
-        return ContainerKwargs.model_validate(combined_data)
-
-    @classmethod
-    def _build_foundation_kwargs(
-        cls: type[Self], unpacked: UnpackedManagers
-    ) -> FoundationKwargs:
-        """Build Phase 1 foundation keyword arguments."""
-        return FoundationKwargs(
-            file_system=unpacked.file_system,
-            metadata_index=unpacked.metadata_index,
-            token_counter=unpacked.token_counter,
-            dependency_graph=unpacked.dependency_graph,
-            version_manager=unpacked.version_manager,
-            migration_manager=unpacked.migration_manager,
-            file_watcher=unpacked.file_watcher,
-        )
-
-    @classmethod
-    def _build_linking_kwargs(
-        cls: type[Self], unpacked: UnpackedManagers
-    ) -> LinkingKwargs:
-        """Build Phase 2 linking keyword arguments."""
-        return LinkingKwargs(
-            link_parser=unpacked.link_parser,
-            transclusion_engine=unpacked.transclusion_engine,
-            link_validator=unpacked.link_validator,
-        )
-
-    @classmethod
-    def _build_optimization_kwargs(
-        cls: type[Self], unpacked: UnpackedManagers
-    ) -> OptimizationKwargs:
-        """Build Phase 4 optimization keyword arguments."""
-        return OptimizationKwargs(
-            optimization_config=unpacked.optimization_config,
-            relevance_scorer=unpacked.relevance_scorer,
-            context_optimizer=unpacked.context_optimizer,
-            progressive_loader=unpacked.progressive_loader,
-            summarization_engine=unpacked.summarization_engine,
-            rules_manager=unpacked.rules_manager,
-        )
-
-    @classmethod
-    def _build_analysis_kwargs(
-        cls: type[Self], unpacked: UnpackedManagers
-    ) -> AnalysisKwargs:
-        """Build Phase 5.1 analysis keyword arguments."""
-        return AnalysisKwargs(
-            pattern_analyzer=unpacked.pattern_analyzer,
-            structure_analyzer=unpacked.structure_analyzer,
-            insight_engine=unpacked.insight_engine,
-        )
-
-    @classmethod
-    def _build_refactoring_kwargs(
-        cls: type[Self], unpacked: UnpackedManagers
-    ) -> RefactoringKwargs:
-        """Build Phase 5.2 refactoring keyword arguments."""
-        return RefactoringKwargs(
-            refactoring_engine=unpacked.refactoring_engine,
-            consolidation_detector=unpacked.consolidation_detector,
-            split_recommender=unpacked.split_recommender,
-            reorganization_planner=unpacked.reorganization_planner,
-        )
-
-    @classmethod
-    def _build_execution_kwargs(
-        cls: type[Self], unpacked: UnpackedManagers
-    ) -> ExecutionKwargs:
-        """Build Phase 5.3-5.4 execution keyword arguments."""
-        return ExecutionKwargs(
-            refactoring_executor=unpacked.refactoring_executor,
-            approval_manager=unpacked.approval_manager,
-            rollback_manager=unpacked.rollback_manager,
-            learning_engine=unpacked.learning_engine,
-            adaptation_config=unpacked.adaptation_config,
-        )
 
     def to_legacy_dict(self) -> ManagersDict:
         """Convert container to ManagersDict model.
 
-        This method provides backward compatibility with code that expects
-        a ManagersDict model instead of a container instance.
+        This method provides backward compatibility with code that
+        expects a ManagersDict model instead of a container instance.
 
         Returns:
             ManagersDict model with manager instances

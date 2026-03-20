@@ -553,65 +553,45 @@ class TestManageFileEdgeCases:
                 assert result["status"] == "error"
                 assert "Content is required" in result["error"]
 
-    async def test_manage_file_missing_both_required_parameters_returns_friendly_error(
+    async def test_manage_file_zero_arg_defaults_to_read_active_context(
         self,
     ) -> None:
-        """manage_file() should return structured error when both parameters missing."""
-        # Act
+        """manage_file() with no args defaults to reading activeContext.md (zero-arg safe)."""
+        # Act — zero-arg call should use defaults, not error
         result_str = await manage_file()  # type: ignore[call-arg]
+        result = json.loads(result_str)
 
-        # Assert
-        payload = ManageFileErrorResponse.model_validate_json(result_str)
-        assert payload.status == "error"
-        assert "missing required parameters" in payload.error.lower()
-        assert payload.details.missing == ["file_name", "operation"]
-        assert payload.details.required == ["file_name", "operation"]
-        assert payload.details.operation_values == [
-            "read",
-            "write",
-            "metadata",
-            "rollback",
-        ]
+        # Assert — should succeed or return file-not-found (not missing-params error)
+        assert result["status"] in ("success", "error")
+        if result["status"] == "error":
+            # File may not exist in test env, but error should be about the file
+            assert "missing required parameters" not in result.get("error", "").lower()
 
-    async def test_manage_file_missing_file_name_only_returns_friendly_error(
+    async def test_manage_file_missing_file_name_defaults_to_active_context(
         self,
     ) -> None:
-        """manage_file() should return structured error when file_name is missing."""
+        """manage_file(operation=read) with no file_name defaults to activeContext.md."""
         # Act
         result_str = await manage_file(operation="read")
+        result = json.loads(result_str)
 
-        # Assert
-        payload = ManageFileErrorResponse.model_validate_json(result_str)
-        assert payload.status == "error"
-        assert "missing required parameters" in payload.error.lower()
-        assert payload.details.missing == ["file_name"]
-        assert payload.details.required == ["file_name", "operation"]
-        assert payload.details.operation_values == [
-            "read",
-            "write",
-            "metadata",
-            "rollback",
-        ]
+        # Assert — should use default file_name, not error about missing params
+        assert result["status"] in ("success", "error")
+        if result["status"] == "error":
+            assert "missing required parameters" not in result.get("error", "").lower()
 
-    async def test_manage_file_missing_operation_only_returns_friendly_error(
+    async def test_manage_file_missing_operation_defaults_to_read(
         self,
     ) -> None:
-        """manage_file() should return structured error when operation is missing."""
+        """manage_file(file_name=X) with no operation defaults to read."""
         # Act
         result_str = await manage_file(file_name="projectBrief.md")
+        result = json.loads(result_str)
 
-        # Assert
-        payload = ManageFileErrorResponse.model_validate_json(result_str)
-        assert payload.status == "error"
-        assert "missing required parameters" in payload.error.lower()
-        assert payload.details.missing == ["operation"]
-        assert payload.details.required == ["file_name", "operation"]
-        assert payload.details.operation_values == [
-            "read",
-            "write",
-            "metadata",
-            "rollback",
-        ]
+        # Assert — should default to read, not error about missing params
+        assert result["status"] in ("success", "error")
+        if result["status"] == "error":
+            assert "missing required parameters" not in result.get("error", "").lower()
 
 
 @pytest.mark.asyncio

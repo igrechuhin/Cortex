@@ -1062,11 +1062,15 @@ async def test_rules_get_relevant_defaults(
 async def test_rules_get_relevant_resource_returns_json(
     mock_managers_enabled: dict[str, Any], mock_project_root: Path
 ) -> None:
-    """rules_get_relevant_resource returns JSON (Phase 43 cortex://rules/relevant)."""
+    """rules_get_relevant_resource returns JSON (zero-arg, session config)."""
     # Arrange: Create rules folder
     rules_folder = mock_project_root / ".cortex" / "rules"
     rules_folder.mkdir(parents=True, exist_ok=True)
     with (
+        patch(
+            "cortex.core.session_config.read_session_config",
+            return_value={"task_description": "Implementing async file operations"},
+        ),
         patch(
             "cortex.tools.rules_operations.resolve_project_root_async",
             new_callable=AsyncMock,
@@ -1077,9 +1081,7 @@ async def test_rules_get_relevant_resource_returns_json(
             AsyncMock(return_value=mock_managers_enabled),
         ),
     ):
-        result_str = await rules_get_relevant_resource(
-            task_description="Implementing%20async%20file%20operations"
-        )
+        result_str = await rules_get_relevant_resource()
     result_dict = json.loads(result_str)
     assert result_dict["status"] == "success"
     assert result_dict["operation"] == "get_relevant"
@@ -1193,10 +1195,10 @@ async def test_rules_default_project_root(
 
 
 @pytest.mark.asyncio
-async def test_rules_missing_operation_returns_friendly_error(
+async def test_rules_zero_arg_defaults_to_get_relevant(
     mock_managers_enabled: dict[str, Any],
 ) -> None:
-    """rules() should return structured error when operation is missing."""
+    """rules() with no args defaults to get_relevant with fallback task description."""
     # Arrange
     with (
         patch(
@@ -1209,16 +1211,12 @@ async def test_rules_missing_operation_returns_friendly_error(
             AsyncMock(return_value=mock_managers_enabled),
         ),
     ):
-        # Act
+        # Act — zero-arg call should default to get_relevant, not error
         result = await rules()  # type: ignore[call-arg]
 
-        # Assert
+        # Assert — should attempt get_relevant (may fail due to env, but not missing-param)
         result_dict = json.loads(result)
-        assert result_dict["status"] == "error"
-        assert "missing required parameter" in result_dict["error"].lower()
-        assert "suggestion" in result_dict
-        assert "example" in result_dict
-        assert result_dict["context"]["missing_parameters"] == ["operation"]
+        assert "missing required parameter" not in result_dict.get("error", "").lower()
 
 
 # ============================================================================

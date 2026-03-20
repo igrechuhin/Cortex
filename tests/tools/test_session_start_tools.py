@@ -45,9 +45,9 @@ from tests.helpers.path_helpers import ensure_test_cortex_structure
 from tests.helpers.tool_call_helpers import get_tool_fn
 
 
-# ConnectionHealth (cortex.core.models) shape matching check_mcp_connection_health
+# ConnectionHealth (cortex.core.models) shape matching health_check
 def _mcp_health_json(healthy: bool) -> str:
-    """Build valid check_mcp_connection_health-style JSON for tests."""
+    """Build valid health_check-style JSON for tests."""
     health = {
         "healthy": healthy,
         "concurrent_operations": 0,

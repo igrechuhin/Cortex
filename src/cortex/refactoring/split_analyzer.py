@@ -202,8 +202,8 @@ class SplitAnalyzer:
     def calculate_section_independence(
         self,
         section: ModelDict,
-        all_sections: list[ModelDict],
-        full_content: str,
+        sections: list[ModelDict],
+        content: str,
     ) -> float:
         """
         Calculate how independent a section is.
@@ -213,8 +213,8 @@ class SplitAnalyzer:
 
         Args:
             section: Section to evaluate
-            all_sections: All sections in file
-            full_content: Full file content
+            sections: All sections in file
+            content: Full file content
 
         Returns:
             Independence score (0.0 - 1.0)
@@ -247,16 +247,16 @@ class SplitAnalyzer:
     def calculate_group_independence(
         self,
         group_sections: list[ModelDict],
-        all_sections: list[ModelDict],
-        full_content: str,
+        sections: list[ModelDict],
+        content: str,
     ) -> float:
         """
         Calculate independence score for a group of sections.
 
         Args:
             group_sections: Sections in the group
-            all_sections: All sections in file
-            full_content: Full file content
+            sections: All sections in file
+            content: Full file content
 
         Returns:
             Average independence score for the group
@@ -266,7 +266,7 @@ class SplitAnalyzer:
 
         # Average independence of individual sections
         scores = [
-            self.calculate_section_independence(s, all_sections, full_content)
+            self.calculate_section_independence(s, sections, content)
             for s in group_sections
         ]
 

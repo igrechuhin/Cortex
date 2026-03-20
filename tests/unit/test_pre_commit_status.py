@@ -15,7 +15,7 @@ from cortex.tools.execution.pre_commit_status import (
 )
 from cortex.tools.execution.pre_commit_tools import (
     get_last_pre_commit_status,
-    get_pre_commit_job_status,
+    get_quality_job_status,
 )
 
 
@@ -255,10 +255,10 @@ async def test_get_pre_commit_status_impl_completed_failure_flags(
 
 
 @pytest.mark.asyncio
-async def test_get_pre_commit_job_status_mcp_tool(
+async def test_get_quality_job_status_mcp_tool(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """MCP tool get_pre_commit_job_status returns a ModelDict for specific job."""
+    """MCP tool get_quality_job_status returns a ModelDict for specific job."""
     project_root = tmp_path
     session_dir = project_root / ".cortex" / ".session"
     now = time.time()
@@ -283,7 +283,7 @@ async def test_get_pre_commit_job_status_mcp_tool(
     monkeypatch.setattr(
         tools_mod, "get_or_resolve_project_root", _fake_root, raising=True
     )
-    result = await get_pre_commit_job_status(job_id="job123", ctx=None)
+    result = await get_quality_job_status(job_id="job123", ctx=None)
     assert isinstance(result, dict)
     assert result["status"] == "completed"
     assert result["args_hash"] == "job123"

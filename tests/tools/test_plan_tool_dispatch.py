@@ -17,16 +17,15 @@ class TestPlanToolOperationValidation:
     """Validation for operation argument."""
 
     @pytest.mark.asyncio
-    async def test_no_arguments_returns_missing_operation_error(self) -> None:
-        """Calling plan() with no arguments returns clear missing-operation error."""
+    async def test_no_arguments_defaults_to_list(self) -> None:
+        """Calling plan() with no arguments defaults to list operation (zero-arg safe)."""
         result_str = await plan()
         result = json.loads(result_str)
-        assert result["status"] == "error"
-        # Message should mention that operation is required and list expected values.
-        message = (result.get("message") or "").lower()
-        assert "operation is required" in message
-        assert "create" in message
-        assert "complete" in message
+        # Zero-arg now defaults to "list" operation instead of returning error
+        assert result["status"] in ("success", "error")
+        if result["status"] == "error":
+            # May fail if plans dir doesn't exist, but should not be missing-operation
+            assert "operation is required" not in (result.get("message") or "").lower()
 
     @pytest.mark.asyncio
     async def test_invalid_operation_returns_invalid_operation_error(self) -> None:

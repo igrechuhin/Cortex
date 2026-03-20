@@ -18,10 +18,8 @@ from pathlib import Path
 
 from cortex.core.constants import MCP_TOOL_TIMEOUT_COMPLEX
 from cortex.core.context_logging import MCPContext, log_client
-from cortex.core.mcp_annotations import read_only_annotations
 from cortex.core.mcp_stability import ensure_usage_context, mcp_tool_wrapper
 from cortex.core.project_root_resolver import resolve_project_root_async
-from cortex.server import mcp
 
 from ._harness import ToolEvaluationHarness, load_eval_tasks
 from ._models import (
@@ -57,7 +55,6 @@ from ._optimization import (
 from ._run_impl import analyze_error_patterns_impl, run_tool_evaluation_impl
 
 
-@mcp.tool(annotations=read_only_annotations("Tool Evaluation"))
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_COMPLEX)
 async def run_tool_evaluation(
@@ -109,7 +106,6 @@ async def run_full_evaluation_payload(root: Path) -> dict[str, object]:
     )
 
 
-@mcp.tool(annotations=read_only_annotations("Tool Error Pattern Analysis"))
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_COMPLEX)
 async def analyze_error_patterns(

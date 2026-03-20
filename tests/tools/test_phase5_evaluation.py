@@ -582,7 +582,7 @@ async def test_analyze_error_patterns_passes_task_ids_to_load_tasks() -> None:
             new_callable=AsyncMock,
         ),
     ):
-        await analyze_error_patterns(task_ids=["t1", "t2"], ctx=None)
+        _ = await analyze_error_patterns(task_ids=["t1", "t2"], ctx=None)
 
     _ = mock_load.assert_awaited_once()
     assert mock_load.call_args[0][1] == ["t1", "t2"]

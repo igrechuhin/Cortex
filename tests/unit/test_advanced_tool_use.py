@@ -107,16 +107,13 @@ class TestAllowedCallersProgrammaticToolCalling:
         """ALLOWED_CALLERS_CODE_EXECUTION is the Anthropic code execution caller."""
         assert ALLOWED_CALLERS_CODE_EXECUTION == ("code_execution_20250825",)
 
-    def test_tools_with_allowed_callers_has_four_tools(self) -> None:
-        """Exactly four tools support programmatic calling per Phase 49 analysis."""
-        assert len(TOOLS_WITH_ALLOWED_CALLERS) == 4
+    def test_tools_with_allowed_callers_has_one_tool(self) -> None:
+        """Exactly one tool supports programmatic calling (validate is now a resource)."""
+        assert len(TOOLS_WITH_ALLOWED_CALLERS) == 1
 
     def test_tools_with_allowed_callers_matches_documented_list(self) -> None:
-        """TOOLS_WITH_ALLOWED_CALLERS matches advanced-tool-use.md recommendation."""
+        """TOOLS_WITH_ALLOWED_CALLERS matches the registered tool set."""
         expected = {
-            "validate",
-            "suggest_refactoring",
-            "apply_refactoring",
             "manage_file",
         }
         assert set(TOOLS_WITH_ALLOWED_CALLERS) == expected

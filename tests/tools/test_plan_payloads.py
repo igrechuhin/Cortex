@@ -6,6 +6,10 @@ to_plan_arguments, and build_*_arguments helpers.
 """
 
 import json
+import tempfile
+from collections.abc import Generator
+from pathlib import Path
+from unittest.mock import AsyncMock, patch
 
 import pytest
 from pydantic import ValidationError
@@ -287,7 +291,39 @@ class TestPlanPayloadGuardrails:
 
 @pytest.mark.timeout(15)
 class TestPlanToolAcceptsBuiltPayloads:
-    """Built payloads are accepted by the plan tool (past validation)."""
+    """Built payloads are accepted by the plan tool (past validation).
+
+    Uses a temp directory as project root so tests don't pollute the real
+    .cortex/plans/ or roadmap.md.
+    """
+
+    @pytest.fixture(autouse=True)
+    def _isolate_project_root(self) -> Generator[None]:
+        """Redirect resolve_project_root_async to a temp dir."""
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            # Create the directory structure plan operations expect
+            (tmp_path / ".cortex" / "plans").mkdir(parents=True)
+            (tmp_path / ".cortex" / "memory-bank").mkdir(parents=True)
+            # Provide a minimal roadmap so register doesn't fail on missing file
+            _ = (tmp_path / ".cortex" / "memory-bank" / "roadmap.md").write_text(
+                "# Roadmap\n\n## Pending plans (from .cortex/plans)\n\n### Features & Enhancements\n"
+            )
+            mock_root = AsyncMock(return_value=tmp_path)
+            # Patch at every import site used by plan operations
+            targets = [
+                "cortex.tools.plans.crud.resolve_project_root_async",
+                "cortex.tools.plans.register.resolve_project_root_async",
+                "cortex.tools.plans.completion.resolve_project_root_async",
+                "cortex.tools.plans.entries.resolve_project_root_async",
+                "cortex.tools.plans.corruption.resolve_project_root_async",
+            ]
+            patches = [patch(t, mock_root) for t in targets]
+            for p in patches:
+                _ = p.start()
+            yield
+            for p in patches:
+                p.stop()
 
     @pytest.mark.asyncio
     async def test_complete_built_payload_passes_validation(self) -> None:

@@ -25,7 +25,6 @@ from cortex.managers import initialization
 from cortex.managers.lazy_manager import LazyManager
 from cortex.managers.types import ManagersDict
 from cortex.managers.utils import get_manager
-from cortex.server import mcp
 from cortex.tools.memory.foundation_stats_helpers import (
     build_base_stats_result,
     build_summary_dict,
@@ -118,7 +117,7 @@ async def get_memory_bank_stats(
         )
 
 
-@mcp.resource(uri="cortex://memory-bank/stats")
+# MCP resource registration removed
 @ensure_usage_context
 @mcp_resource_wrapper(timeout=MCP_TOOL_TIMEOUT_MEDIUM)
 async def get_memory_bank_stats_resource() -> str:

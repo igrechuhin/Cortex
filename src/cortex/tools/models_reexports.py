@@ -7,7 +7,6 @@ cortex.tools.models to keep the main models module under the 400-line limit.
 from cortex.managers.types import ManagersDict
 
 from .context.effectiveness_models import (
-    CleanupReport,
     ContextAnalysisStatus,
     ContextInsights,
     ContextStatisticsResult,
@@ -127,6 +126,7 @@ from .structure.structure_models import (
     CheckStructureHealthResultUnion,
     CleanupActionResult,
     CleanupInfo,
+    CleanupReport,
     GetStructureInfoErrorResult,
     GetStructureInfoResult,
     GetStructureInfoResultUnion,

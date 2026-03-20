@@ -108,7 +108,10 @@ class TestAgentWorkflowQualityCheck:
     async def test_quality_check_calls_fix_quality_when_pre_has_errors(self) -> None:
         """execute_pre_commit_checks(fix_quality) called when quality has errors."""
         pre_result = {"status": "error", "total_errors": 2}
-        fix_result = {"status": "success", "files_modified": ["a.py"]}
+        fix_result: dict[str, object] = {
+            "status": "success",
+            "files_modified": ["a.py"],
+        }
         with patch(
             "cortex.tools.execution.pre_commit_tools.execute_pre_commit_checks",
             new_callable=AsyncMock,
@@ -187,3 +190,154 @@ class TestAgentWorkflowSafeManageFile:
         out = json.loads(result)
         assert out["status"] == "error"
         assert "file_name" in out["error"].lower()
+
+
+@pytest.mark.asyncio
+class TestAgentWorkflowFixAll:
+    """Tests for run_composite_workflow(operation='fix_all')."""
+
+    async def test_fix_all_returns_all_targets(self) -> None:
+        """fix_all returns quality_fix, quality_verify, tests, docs_phase_b, timestamps, roadmap_sync."""
+        fix_result = {"status": "success", "files_modified": ["a.py"]}
+        verify_result = {"status": "success", "total_errors": 0}
+        tests_result = {"status": "success", "coverage": 0.95}
+        docs_result = {"status": "success", "docs_phase_passed": True}
+        validate_result = json.dumps({"status": "success", "valid": True})
+
+        with patch(
+            "cortex.tools.execution.pre_commit_tools.execute_pre_commit_checks",
+            new_callable=AsyncMock,
+            side_effect=[fix_result, verify_result, tests_result, docs_result],
+        ):
+            with patch(
+                "cortex.tools.validation.operations.validate",
+                new_callable=AsyncMock,
+                return_value=validate_result,
+            ):
+                result = await run_composite_workflow(operation="fix_all")
+
+        out = json.loads(result)
+        assert out["status"] == "success"
+        assert "quality_fix" in out
+        assert "quality_verify" in out
+        assert "tests" in out
+        assert "docs_phase_b" in out
+        assert "timestamps" in out
+        assert "roadmap_sync" in out
+
+    async def test_fix_all_no_args_runs_fix_all(self) -> None:
+        """run_composite_workflow() with no args defaults to fix_all (Cursor bridge sends {})."""
+        ok: dict[str, object] = {"status": "success", "total_errors": 0}
+        validate_result_dict: dict[str, object] = {"status": "success"}
+        _ = json.dumps(validate_result_dict)
+        validate_result = json.dumps({"status": "success"})
+
+        with patch(
+            "cortex.tools.execution.pre_commit_tools.execute_pre_commit_checks",
+            new_callable=AsyncMock,
+            return_value=ok,
+        ):
+            with patch(
+                "cortex.tools.validation.operations.validate",
+                new_callable=AsyncMock,
+                return_value=validate_result,
+            ):
+                result = await run_composite_workflow()
+
+        out = json.loads(result)
+        assert out["status"] == "success"
+        assert "quality_fix" in out
+        assert "tests" in out
+
+    async def test_fix_all_clears_cache_before_verify(self) -> None:
+        """fix_all clears result cache after fix_quality so verify sees fresh results."""
+        ok: dict[str, object] = {"status": "success", "total_errors": 0}
+        validate_result = json.dumps({"status": "success"})
+        from pathlib import Path
+
+        with patch(
+            "cortex.tools.execution.pre_commit_tools.execute_pre_commit_checks",
+            new_callable=AsyncMock,
+            return_value=ok,
+        ):
+            with patch(
+                "cortex.tools.validation.operations.validate",
+                new_callable=AsyncMock,
+                return_value=validate_result,
+            ):
+                with patch(
+                    "cortex.core.usage_context.get_current_project_root",
+                    return_value=Path("/fake/root"),
+                ):
+                    with patch(
+                        "cortex.tools.execution.pre_commit_detached.clear_all_cached_results"
+                    ) as mock_clear:
+                        _ = await run_composite_workflow(operation="fix_all")
+
+        mock_clear.assert_called_once_with(Path("/fake/root"))
+
+    async def test_fix_all_calls_correct_check_sequences(self) -> None:
+        """fix_all calls fix_quality, then type_check/quality/format/markdown, then tests, then phase B."""
+        ok: dict[str, object] = {"status": "success", "total_errors": 0}
+        validate_result = json.dumps({"status": "success"})
+
+        with patch(
+            "cortex.tools.execution.pre_commit_tools.execute_pre_commit_checks",
+            new_callable=AsyncMock,
+            return_value=ok,
+        ) as mock_exec:
+            with patch(
+                "cortex.tools.validation.operations.validate",
+                new_callable=AsyncMock,
+                return_value=validate_result,
+            ):
+                _ = await run_composite_workflow(operation="fix_all")
+
+        assert mock_exec.await_count == 4
+        calls = mock_exec.call_args_list
+        assert calls[0][1]["checks"] == ["fix_quality"]
+        assert calls[1][1]["checks"] == ["type_check", "quality", "format", "markdown"]
+        assert calls[2][1]["checks"] == ["tests"]
+        assert calls[3][1].get("phase") == "B"
+
+    async def test_fix_all_polls_detached_jobs_to_completion(self) -> None:
+        """fix_all polls job stubs to completion so quality_verify contains output/errors."""
+        from pathlib import Path
+
+        fix_result: dict[str, object] = {"status": "success", "files_modified": []}
+        job_stub: dict[str, object] = {"job_id": "abc123", "status": "started"}
+        full_result: dict[str, object] = {
+            "status": "success",
+            "results": {"type_check": {"success": False, "output": "error: no attr"}},
+        }
+        validate_result = json.dumps({"status": "success"})
+
+        with patch(
+            "cortex.tools.execution.pre_commit_tools.execute_pre_commit_checks",
+            new_callable=AsyncMock,
+            side_effect=[fix_result, job_stub, job_stub, job_stub],
+        ):
+            with patch(
+                "cortex.tools.validation.operations.validate",
+                new_callable=AsyncMock,
+                return_value=validate_result,
+            ):
+                with patch(
+                    "cortex.core.usage_context.get_current_project_root",
+                    return_value=Path("/fake/root"),
+                ):
+                    with patch(
+                        "cortex.tools.execution.pre_commit_detached.clear_all_cached_results"
+                    ):
+                        with patch(
+                            "cortex.tools.execution.pre_commit_detached.poll_job_to_completion",
+                            new_callable=AsyncMock,
+                            return_value=full_result,
+                        ) as mock_poll:
+                            result = await run_composite_workflow(operation="fix_all")
+
+        out = json.loads(result)
+        assert out["status"] == "success"
+        # poll_job_to_completion called once per detached job (verify, tests, docs)
+        assert mock_poll.await_count == 3
+        assert mock_poll.call_args_list[0][0] == (Path("/fake/root"), "abc123")

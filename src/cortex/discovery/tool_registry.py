@@ -61,7 +61,7 @@ _KNOWN_TOOL_NAMES: list[str] = [
     "check_token_budget",
     "get_quality_score",
     "preview_refactoring",
-    "check_mcp_connection_health",
+    "health_check",
     "skill_pack",
     "cache_json",
     "synapse",

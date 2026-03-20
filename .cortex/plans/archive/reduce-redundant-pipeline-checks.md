@@ -2,7 +2,7 @@
 title: "Reduce Redundant Pipeline Checks in Commit Pipeline"
 component: "synapse/prompts/commit"
 work_type: "optimize"
-status: "PENDING"
+status: "COMPLETE"
 priority: "High"
 created: "2026-03-07"
 execution_order: 12

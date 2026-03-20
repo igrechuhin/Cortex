@@ -1,41 +1,26 @@
-"""Pipeline handoff tool — structured inter-agent communication via session files.
+"""Pipeline handoff tool — structured inter-phase communication via session files.
 
-Each pipeline run (commit, implement, review, …) creates a session-scoped
-subfolder under .cortex/.session/{session_id}/ and exchanges structured
-JSON between the orchestrator and its subagents through that folder.
+Each pipeline run (commit, implement, …) creates a session-scoped subfolder
+under .cortex/.session/{session_id}/ and exchanges structured JSON between
+pipeline phases through that folder.
 
-## How it works
+## Simplified API (4 operations)
 
-Orchestrator (before invoking each subagent):
-    pipeline_handoff(operation="write_task", pipeline="commit", phase="checks",
-                     data='{"coverage_threshold": 0.9, "snapshot_ref": "abc123"}')
+    pipeline_handoff(operation="init",  pipeline="commit")
+    pipeline_handoff(operation="write", pipeline="commit", phase="checks",
+                     data='{"status": "passed", "coverage": 0.94}')
+    pipeline_handoff(operation="read",  pipeline="commit", phase="checks")
+    pipeline_handoff(operation="read",  pipeline="commit")  # full state
+    pipeline_handoff(operation="clear", pipeline="commit")
 
-Subagent (first thing it does):
-    pipeline_handoff(operation="read_task", pipeline="commit", phase="checks")
-    → {"coverage_threshold": 0.9, "snapshot_ref": "abc123", ...}
-
-Subagent (when done):
-    pipeline_handoff(operation="write_result", pipeline="commit", phase="checks",
-                     data='{"status": "passed", "coverage": 0.94, "fix_iterations": 1}')
-
-Orchestrator (to check all completed phase results / debug):
-    pipeline_handoff(operation="read_state", pipeline="commit")
-    → {"session_id": "...", "phases": {"preflight": {...}, "checks": {...}}, ...}
+Legacy operation names (write_task, read_task, write_result, read_state) are
+mapped to the simplified API automatically.
 
 ## Files on disk
 
 .cortex/.session/{session_id}/{pipeline}/
-    pipeline.json             — cumulative state updated after each write_result
-    {phase}-task.json         — task data written by orchestrator for each phase
-    {phase}-result.json       — result data written by each subagent
-
-## Benefits
-
-- No argument size limit: subagent receives a read_task call, gets all data
-- Fully persistent: inspect any pipeline run after the fact for debugging
-- Resumable: orchestrator reads read_state to know what already ran
-- Environment-portable: works identically in Cursor and Claude Code
-- Decoupled: orchestrator need not hold inter-phase data in its context window
+    pipeline.json             — cumulative state updated after each write
+    {phase}-result.json       — per-phase data
 """
 
 from __future__ import annotations
@@ -324,8 +309,19 @@ def _unknown_op_error(operation: str) -> str:
     return json.dumps(
         {
             "status": "error",
-            "error": f"Unknown operation '{operation}'. Use: init, write_task, read_task, write_result, read_state, clear",
+            "error": (
+                f"Unknown operation '{operation}'. "
+                "Use: init, write, read, clear "
+                "(aliases: write_task, read_task, write_result, read_state)"
+            ),
         },
+        indent=2,
+    )
+
+
+def _phase_required_error(operation: str) -> str:
+    return json.dumps(
+        {"status": "error", "error": f"phase is required for {operation}"},
         indent=2,
     )
 
@@ -337,22 +333,32 @@ def _dispatch_sync(
     phase: str | None,
     data_str: str | None,
 ) -> str:
-    """Route operation to the correct handler. Call after resolving project root."""
-    if operation in ("write_task", "read_task", "write_result") and not phase:
-        return json.dumps(
-            {"status": "error", "error": f"phase is required for {operation}"}, indent=2
-        )
+    """Route operation to the correct handler. Call after resolving project root.
+
+    Simplified API (preferred):
+        init, write (needs phase), read (phase optional), clear
+    Legacy operations (still supported):
+        write_task, read_task, write_result, read_state
+    """
+    if operation in ("write_task", "read_task", "write_result", "write") and not phase:
+        return _phase_required_error(operation)
     ph = phase or ""
     if operation == "init":
         return _op_init(project_root, pipeline, data_str)
     if operation == "write_task":
         return _op_write_task(project_root, pipeline, ph, data_str)
+    if operation in ("write_result", "write"):
+        return _op_write_result(project_root, pipeline, ph, data_str)
     if operation == "read_task":
         return _op_read_task(project_root, pipeline, ph)
-    if operation == "write_result":
-        return _op_write_result(project_root, pipeline, ph, data_str)
     if operation == "read_state":
         return _op_read_state(project_root, pipeline)
+    if operation == "read":
+        return (
+            _op_read_task(project_root, pipeline, ph)
+            if phase
+            else _op_read_state(project_root, pipeline)
+        )
     if operation == "clear":
         return _op_clear(project_root, pipeline)
     return _unknown_op_error(operation)
@@ -388,48 +394,39 @@ async def pipeline_handoff(
 ) -> str:
     """Structured inter-agent communication for pipeline workflows.
 
-    USE WHEN: Orchestrators and subagents need to exchange structured data
-    without relying on context-window relay. Each phase writes its output;
-    the next phase reads it. All data persists in .cortex/.session/{id}/{pipeline}/.
+    USE WHEN: Orchestrators need to exchange structured data between pipeline
+    phases. Each phase writes its output; the next phase reads it. All data
+    persists in .cortex/.session/{id}/{pipeline}/.
 
-    WORKFLOW:
-    1. Orchestrator: pipeline_handoff(operation="init", pipeline="commit")
-    2. Orchestrator: pipeline_handoff(operation="write_task", pipeline="commit",
-         phase="preflight", data='{"snapshot_ref": null}')
-    3. Subagent starts → pipeline_handoff(operation="read_task", pipeline="commit",
-         phase="preflight") → reads its task
-    4. Subagent finishes → pipeline_handoff(operation="write_result", pipeline="commit",
-         phase="preflight", data='{"status":"complete","snapshot_ref":"abc123"}')
-    5. Orchestrator: pipeline_handoff(operation="read_state", pipeline="commit")
-         → sees all completed phases; uses result from step 4 for step 5's task
-    6. After commit: pipeline_handoff(operation="clear", pipeline="commit")
+    WORKFLOW (simplified):
+    1. pipeline_handoff(operation="init", pipeline="commit")
+    2. pipeline_handoff(operation="write", pipeline="commit", phase="preflight",
+         data='{"status":"complete","snapshot_ref":"abc123"}')
+    3. pipeline_handoff(operation="read", pipeline="commit", phase="preflight")
+         → reads phase data
+    4. pipeline_handoff(operation="read", pipeline="commit")
+         → reads full pipeline state (all phases)
+    5. pipeline_handoff(operation="clear", pipeline="commit")
 
     EXAMPLES:
     - pipeline_handoff(operation="init", pipeline="commit")
-    - pipeline_handoff(operation="write_task", pipeline="commit", phase="checks",
-        data='{"coverage_threshold":0.9,"snapshot_ref":"abc"}')
-    - pipeline_handoff(operation="read_task", pipeline="commit", phase="checks")
-    - pipeline_handoff(operation="write_result", pipeline="commit", phase="checks",
+    - pipeline_handoff(operation="write", pipeline="commit", phase="checks",
         data='{"status":"passed","coverage":0.94}')
-    - pipeline_handoff(operation="read_state", pipeline="commit")
+    - pipeline_handoff(operation="read", pipeline="commit", phase="checks")
+    - pipeline_handoff(operation="read", pipeline="commit")
     - pipeline_handoff(operation="clear", pipeline="commit")
 
-    FILES CREATED:
-    .cortex/.session/{session_id}/{pipeline}/
-      pipeline.json          — cumulative state (all phase results)
-      {phase}-task.json      — per-phase task written by orchestrator
-      {phase}-result.json    — per-phase result written by subagent
+    Legacy aliases (write_task, read_task, write_result, read_state) still work.
 
     RETURNS: JSON with {status, ...} for write ops; JSON file content for reads.
 
     Args:
-        operation: init | write_task | read_task | write_result | read_state | clear
-        pipeline: Pipeline name (e.g. "commit", "implement", "review"). Default: "default".
-        phase: Phase/subagent name (e.g. "preflight", "checks", "docs"). Required for
-            write_task, read_task, write_result.
-        data: Payload for write_task, write_result, and init. Accepts either a JSON
-            string ('{"key":"val"}') or a native JSON object ({"key":"val"}) — both
-            are normalised internally. Optional; pass null/None to omit.
+        operation: init | write | read | clear (legacy: write_task, read_task,
+            write_result, read_state)
+        pipeline: Pipeline name (e.g. "commit", "implement"). Default: "default".
+        phase: Phase name (e.g. "preflight", "checks"). Required for write.
+            For read: if given, reads that phase; if omitted, reads full state.
+        data: Payload for write and init. Accepts JSON string or native object.
         ctx: MCP context (auto-provided).
     """
     await log_client(

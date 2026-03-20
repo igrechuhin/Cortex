@@ -11,7 +11,6 @@ from urllib.parse import unquote
 
 from cortex.core.constants import MCP_TOOL_TIMEOUT_COMPLEX
 from cortex.core.context_logging import MCPContext, log_client
-from cortex.core.mcp_annotations import read_only_annotations
 from cortex.core.mcp_stability import (
     ensure_usage_context,
     mcp_resource_wrapper,
@@ -20,8 +19,6 @@ from cortex.core.mcp_stability import (
 from cortex.core.models import ResponseFormat
 from cortex.core.project_root_resolver import resolve_project_root_async
 from cortex.refactoring.models import RefactoringSuggestionType
-from cortex.server import mcp
-from cortex.tools.structure.categories import ALLOWED_CALLERS_CODE_EXECUTION
 
 from .operation_concise import format_suggest_refactoring_response
 from .operation_helpers import (
@@ -92,10 +89,7 @@ async def _suggest_refactoring_run(
         return suggest_refactoring_error_json(e)
 
 
-@mcp.tool(
-    annotations=read_only_annotations("Suggest Refactoring"),
-    meta={"allowed_callers": list(ALLOWED_CALLERS_CODE_EXECUTION)},
-)
+# MCP registration removed — unused tool
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_COMPLEX)
 async def suggest_refactoring(
@@ -137,7 +131,7 @@ async def suggest_refactoring(
 suggest_refactoring.__doc__ = SUGGEST_REFACTORING_DOCSTRING
 
 
-@mcp.resource(uri="cortex://analysis/suggest-refactoring/{type}")
+# MCP resource registration removed
 @ensure_usage_context
 @mcp_resource_wrapper(timeout=MCP_TOOL_TIMEOUT_COMPLEX)
 async def suggest_refactoring_resource(type: str) -> str:

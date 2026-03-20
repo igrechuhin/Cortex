@@ -27,12 +27,10 @@ from cortex.core.constants import (
     MCP_TOOL_TIMEOUT_FAST,
 )
 from cortex.core.context_logging import MCPContext, log_client
-from cortex.core.mcp_annotations import read_only_annotations, safe_write_annotations
 from cortex.core.mcp_stability import (
     ensure_usage_context,
     mcp_resource_wrapper,
     mcp_tool_wrapper,
-    typed_mcp_tool,
 )
 from cortex.core.models import ModelDict
 from cortex.core.project_root_resolver import resolve_project_root_async
@@ -152,7 +150,7 @@ async def _check_structure_health_with_logging(
         )
 
 
-@typed_mcp_tool(annotations=safe_write_annotations("Check Structure Health"))
+# MCP registration removed — get_structure_info covers structure needs
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_COMPLEX)
 async def check_structure_health(
@@ -191,7 +189,6 @@ async def check_structure_health(
 check_structure_health.__doc__ = CHECK_STRUCTURE_HEALTH_DOC
 
 
-@typed_mcp_tool(annotations=read_only_annotations("Get Structure Info"))
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_FAST)
 async def get_structure_info(
@@ -244,11 +241,11 @@ async def get_structure_info(
 get_structure_info.__doc__ = GET_STRUCTURE_INFO_DOC
 
 
-@mcp.resource(uri="cortex://structure/info")
+@mcp.resource(uri="cortex://structure")
 @ensure_usage_context
 @mcp_resource_wrapper(timeout=MCP_TOOL_TIMEOUT_FAST)
 async def get_structure_info_resource() -> str:
-    """Resource: Project structure info (default params). Read via cortex://structure/info."""
+    """Resource: Project structure info. Zero-arg with caching."""
     cached = _structure_resource_cache.get("structure/info")
     if cached is not None:
         return cached
@@ -257,7 +254,7 @@ async def get_structure_info_resource() -> str:
     return result
 
 
-@mcp.resource(uri="cortex://structure/health")
+# MCP resource registration removed
 @ensure_usage_context
 @mcp_resource_wrapper(timeout=MCP_TOOL_TIMEOUT_COMPLEX)
 async def check_structure_health_resource() -> str:
@@ -275,7 +272,7 @@ async def check_structure_health_resource() -> str:
     return result
 
 
-@mcp.resource(uri="cortex://project/root")
+# MCP resource registration removed
 @ensure_usage_context
 @mcp_resource_wrapper(timeout=MCP_TOOL_TIMEOUT_FAST)
 async def get_project_root_resource() -> str:

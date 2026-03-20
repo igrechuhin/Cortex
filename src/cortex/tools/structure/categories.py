@@ -28,10 +28,10 @@ from pydantic import BaseModel, ConfigDict
 # MAX_REGISTERED_TOOLS is enforced by governance tests; if new tools are added,
 # either consolidate/remove other tools or explicitly raise this constant in
 # tandem with the consolidation plans and documentation.
-MAX_REGISTERED_TOOLS = 40
+MAX_REGISTERED_TOOLS = 16
 
 # Long-term target from consolidation plans (not enforced in tests).
-TARGET_REGISTERED_TOOLS = 24
+TARGET_REGISTERED_TOOLS = 10
 
 
 # Type alias for category names used in function signatures.
@@ -73,171 +73,67 @@ class ToolCategoryConfig(BaseModel):
 # ---------------------------------------------------------------------------
 
 TOOL_CATEGORIES: tuple[ToolCategoryEntry, ...] = (
-    # ── Always loaded (core workflow) ─────────────────────────────────
+    # ── Always loaded tools (core workflow — 8 tools) ─────────────────
     ToolCategoryEntry(
         name="manage_file",
         category=ToolCategory.ALWAYS_LOADED,
         rationale="Core file read/write/metadata used every session",
     ),
     ToolCategoryEntry(
-        name="validate",
-        category=ToolCategory.ALWAYS_LOADED,
-        rationale="Core validation (schema, quality, roadmap_sync) in workflow",
-    ),
-    ToolCategoryEntry(
-        name="load_context",
-        category=ToolCategory.ALWAYS_LOADED,
-        rationale="Called at session start for every task",
-    ),
-    ToolCategoryEntry(
-        name="query_memory_bank",
-        category=ToolCategory.ALWAYS_LOADED,
-        rationale="Memory bank stats, version history, graphs, links, validation (Phase 50)",
-    ),
-    ToolCategoryEntry(
-        name="rules",
-        category=ToolCategory.ALWAYS_LOADED,
-        rationale="Loaded at start of implement workflow for coding standards",
-    ),
-    ToolCategoryEntry(
         name="plan",
         category=ToolCategory.ALWAYS_LOADED,
-        rationale="Plan lifecycle: create, list, get, complete, register (consolidates create_plan, complete_plan, register_plan_in_roadmap)",
+        rationale="Plan lifecycle: create, list, get, complete, register",
     ),
     ToolCategoryEntry(
         name="update_memory_bank",
         category=ToolCategory.ALWAYS_LOADED,
-        rationale="Memory bank mutations: roadmap (add/remove), progress_append, active_context_append (consolidates roadmap + append_entry)",
-    ),
-    ToolCategoryEntry(
-        name="execute_pre_commit_checks",
-        category=ToolCategory.ALWAYS_LOADED,
-        rationale="Quality gate mandatory before every commit; use checks=['fix_quality'] for auto-fix",
-    ),
-    ToolCategoryEntry(
-        name="get_last_pre_commit_status",
-        category=ToolCategory.DEFERRED_MEDIUM,
-        rationale="Inspect status of the most recent detached pre-commit run without starting a new one",
-    ),
-    ToolCategoryEntry(
-        name="start_pre_commit_job",
-        category=ToolCategory.DEFERRED_MEDIUM,
-        rationale="Start or reuse detached pre-commit jobs for long-running quality gates",
-    ),
-    ToolCategoryEntry(
-        name="get_pre_commit_job_status",
-        category=ToolCategory.DEFERRED_MEDIUM,
-        rationale="Poll status of a specific detached pre-commit job by job_id",
-    ),
-    ToolCategoryEntry(
-        name="check_mcp_connection_health",
-        category=ToolCategory.ALWAYS_LOADED,
-        rationale="Health check for MCP connection diagnostics",
-    ),
-    ToolCategoryEntry(
-        name="get_structure_info",
-        category=ToolCategory.ALWAYS_LOADED,
-        rationale="Project path discovery used in every implement session",
-    ),
-    ToolCategoryEntry(
-        name="search_tools",
-        category=ToolCategory.ALWAYS_LOADED,
-        rationale="Discover deferred tools by query when tool search is enabled",
+        rationale="Memory bank mutations: roadmap, progress_append, active_context_append",
     ),
     ToolCategoryEntry(
         name="session",
         category=ToolCategory.ALWAYS_LOADED,
-        rationale="Session lifecycle: start (orientation), register, deregister, compact (consolidates session_start, session_register, session_deregister, compact_session)",
-    ),
-    # ── Deferred medium (specific workflows) ──────────────────────────
-    ToolCategoryEntry(
-        name="analyze",
-        category=ToolCategory.DEFERRED_MEDIUM,
-        rationale="Periodic memory bank analysis (usage, structure, insights)",
+        rationale="Session lifecycle: start, register, deregister, compact",
     ),
     ToolCategoryEntry(
-        name="summarize_content",
-        category=ToolCategory.DEFERRED_MEDIUM,
-        rationale="Token reduction when budget is tight",
+        name="run_quality_gate",
+        category=ToolCategory.ALWAYS_LOADED,
+        rationale="Zero-arg Phase A quality gate",
     ),
     ToolCategoryEntry(
-        name="run_tool_evaluation",
-        category=ToolCategory.DEFERRED_MEDIUM,
-        rationale="Evaluation framework for MCP tools (Phase 57)",
+        name="run_quality_gate_fresh",
+        category=ToolCategory.ALWAYS_LOADED,
+        rationale="Zero-arg fresh Phase A gate for Step 12 final validation",
     ),
     ToolCategoryEntry(
-        name="get_relevance_scores",
-        category=ToolCategory.DEFERRED_MEDIUM,
-        rationale="File prioritization before loading context",
-    ),
-    ToolCategoryEntry(
-        name="suggest_refactoring",
-        category=ToolCategory.DEFERRED_MEDIUM,
-        rationale="Refactoring workflow (consolidation, splits, reorg)",
-    ),
-    ToolCategoryEntry(
-        name="apply_refactoring",
-        category=ToolCategory.DEFERRED_MEDIUM,
-        rationale="Execute approved refactoring suggestions",
-    ),
-    ToolCategoryEntry(
-        name="configure",
-        category=ToolCategory.DEFERRED_MEDIUM,
-        rationale="View/update validation/optimization/learning config",
-    ),
-    ToolCategoryEntry(
-        name="fix_markdown_lint",
-        category=ToolCategory.DEFERRED_MEDIUM,
-        rationale="Markdown formatting fixes (part of quality workflow)",
-    ),
-    ToolCategoryEntry(
-        name="synapse",
-        category=ToolCategory.DEFERRED_MEDIUM,
-        rationale="Synapse: sync (pull/push) or update rule/prompt",
-    ),
-    ToolCategoryEntry(
-        name="check_structure_health",
-        category=ToolCategory.DEFERRED_MEDIUM,
-        rationale="Project structure health check and cleanup",
+        name="fix_quality_issues",
+        category=ToolCategory.ALWAYS_LOADED,
+        rationale="Zero-arg auto-fix for formatting, linting, type, and markdown errors",
     ),
     ToolCategoryEntry(
         name="think",
+        category=ToolCategory.ALWAYS_LOADED,
+        rationale="Reasoning scratchpad: lightweight or full sequential mode",
+    ),
+    # ── Deferred medium tools (2 tools) ───────────────────────────────
+    ToolCategoryEntry(
+        name="run_docs_gate",
         category=ToolCategory.DEFERRED_MEDIUM,
-        rationale="Thinking: lightweight (thought only) or full sequential mode (optional params)",
-    ),
-    ToolCategoryEntry(
-        name="run_composite_workflow",
-        category=ToolCategory.DEFERRED_MEDIUM,
-        rationale="Run composite workflows: quick_start, quality_check, safe_manage_file, suggest_workflow",
-    ),
-    # ── Deferred low (admin / analytics / rare) ───────────────────────
-    # rollback_file_version: consolidated into manage_file(operation="rollback", ...)
-    ToolCategoryEntry(
-        name="query_usage",
-        category=ToolCategory.DEFERRED_LOW,
-        rationale="Usage stats, unused tools, report, search, events, timeline (Phase 50)",
-    ),
-    ToolCategoryEntry(
-        name="manage_session_scripts",
-        category=ToolCategory.DEFERRED_LOW,
-        rationale="Manage session scripts: capture, list, analyze, suggest, promote",
-    ),
-    ToolCategoryEntry(
-        name="cleanup_metadata_index",
-        category=ToolCategory.DEFERRED_LOW,
-        rationale="One-time metadata index cleanup (admin)",
-    ),
-    ToolCategoryEntry(
-        name="analyze_error_patterns",
-        category=ToolCategory.DEFERRED_LOW,
-        rationale="Evaluation error-pattern analysis for optimization debugging",
+        rationale="Zero-arg Phase B docs/memory-bank validation",
     ),
     ToolCategoryEntry(
         name="pipeline_handoff",
         category=ToolCategory.DEFERRED_MEDIUM,
-        rationale="Structured inter-agent communication via session-scoped JSON files; init/write_task/read_task/write_result/read_state/clear",
+        rationale="Inter-phase state exchange via session-scoped JSON files",
     ),
 )
+
+# Resources (read-only, all static/zero-arg, not tracked in TOOL_CATEGORIES):
+# cortex://health/connection — health_check
+# cortex://structure         — get_structure_info
+# cortex://context           — load_context (reads task from session config)
+# cortex://rules             — rules (reads task from session config)
+# cortex://validation        — validate (reads check_type from session config)
+# cortex://analysis          — analyze (reads target from session config)
 
 
 # ---------------------------------------------------------------------------
@@ -250,12 +146,7 @@ ALLOWED_CALLERS_CODE_EXECUTION: tuple[str, ...] = ("code_execution_20250825",)
 
 # Tools that support programmatic calling (validation, refactoring, batch file).
 # Used in @mcp.tool(meta={"allowed_callers": list(ALLOWED_CALLERS_CODE_EXECUTION)}).
-TOOLS_WITH_ALLOWED_CALLERS: tuple[str, ...] = (
-    "validate",
-    "suggest_refactoring",
-    "apply_refactoring",
-    "manage_file",
-)
+TOOLS_WITH_ALLOWED_CALLERS: tuple[str, ...] = ("manage_file",)
 
 
 # ---------------------------------------------------------------------------

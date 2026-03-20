@@ -321,39 +321,16 @@ CLAUDE_CODE_TOOLS_FIELD = "tools: mcp__cortex__*"
 # agent instructions so Claude Code can call them as `mcp__cortex__tool(`.
 _CORTEX_TOOL_NAMES: frozenset[str] = frozenset(
     [
-        "analyze",
-        "analyze_error_patterns",
-        "apply_refactoring",
-        "check_mcp_connection_health",
-        "check_structure_health",
-        "configure",
-        "execute_pre_commit_checks",
-        "fix_markdown_lint",
         "fix_quality_issues",
-        "get_last_pre_commit_status",
-        "get_pre_commit_job_status",
-        "get_relevance_scores",
-        "get_structure_info",
-        "load_context",
         "manage_file",
-        "manage_session_scripts",
         "pipeline_handoff",
         "plan",
-        "query_memory_bank",
-        "query_usage",
-        "roadmap",
-        "rules",
-        "run_composite_workflow",
-        "run_tool_evaluation",
-        "search_tools",
+        "run_docs_gate",
+        "run_quality_gate",
+        "run_quality_gate_fresh",
         "session",
-        "start_pre_commit_job",
-        "suggest_refactoring",
-        "summarize_content",
-        "synapse",
         "think",
         "update_memory_bank",
-        "validate",
     ]
 )
 
@@ -383,8 +360,8 @@ def inject_tools_into_frontmatter(content: str) -> str:
     Two changes are applied to the Claude Code copy of each agent file:
     1. `tools: mcp__cortex__*` is added to YAML frontmatter so Claude Code
        grants the agent permission to call all Cortex MCP tools.
-    2. Bare backtick tool references like `check_mcp_connection_health(` are
-       rewritten to `mcp__cortex__check_mcp_connection_health(` so the LLM
+    2. Bare backtick tool references like `health_check(` are
+       rewritten to `mcp__cortex__health_check(` so the LLM
        unambiguously invokes the right tool without any name-to-prefix mapping.
 
     Cursor agents do not use these fields (frontmatter `tools:` is ignored,
@@ -432,7 +409,10 @@ def _sync_agent_file(agent_file: Path, target: Path, transform: bool = False) ->
 def _sync_agents_to_target(
     source: Path, target: Path, label: str, transform: bool = False
 ) -> int:
-    """Sync all .md agent files from source to target. Returns count written."""
+    """Sync all .md agent files from source to target. Returns count written.
+
+    Also removes stale .md files in target that no longer exist in source.
+    """
     from cortex.core.logging_config import logger
 
     try:
@@ -441,10 +421,19 @@ def _sync_agents_to_target(
         logger.warning(f"sync_cursor_agents: could not create {target}: {e}")
         return 0
 
+    source_names = {f.name for f in source.glob("*.md")}
     synced = sum(
         _sync_agent_file(f, target, transform=transform)
         for f in sorted(source.glob("*.md"))
     )
+    # Remove stale agent files that no longer exist in source
+    for stale in sorted(target.glob("*.md")):
+        if stale.name not in source_names:
+            try:
+                stale.unlink()
+                logger.info(f"Removed stale agent {stale.name} from {target}")
+            except OSError:
+                pass
     if synced > 0:
         logger.info(f"Synced {synced} agent(s) to {target} ({label})")
     return synced

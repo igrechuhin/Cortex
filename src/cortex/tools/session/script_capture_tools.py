@@ -16,7 +16,6 @@ from urllib.parse import unquote
 
 from cortex.core.constants import MCP_TOOL_TIMEOUT_FAST, MCP_TOOL_TIMEOUT_MEDIUM
 from cortex.core.context_logging import MCPContext, log_client
-from cortex.core.mcp_annotations import safe_write_annotations
 from cortex.core.mcp_stability import (
     ensure_usage_context,
     mcp_resource_wrapper,
@@ -29,7 +28,6 @@ from cortex.script_analysis.script_analyzer import analyze_script
 from cortex.script_detection.script_capture import capture_script
 from cortex.script_detection.storage import get_capture_by_id, list_captures
 from cortex.script_promotion.script_validator import validate_for_promotion
-from cortex.server import mcp
 from cortex.tools.session.script_capture_handlers import dispatch_session_scripts
 from cortex.tools.session.script_capture_helpers import (
     analysis_to_summary,
@@ -224,7 +222,7 @@ async def suggest_tool_improvements(
 # Phase 43: Script capture resources (read-only, default params)
 
 
-@mcp.resource(uri="cortex://scripts/list")
+# MCP resource registration removed
 @ensure_usage_context
 @mcp_resource_wrapper(timeout=MCP_TOOL_TIMEOUT_FAST)
 async def list_session_scripts_resource() -> str:
@@ -232,7 +230,7 @@ async def list_session_scripts_resource() -> str:
     return await list_session_scripts()
 
 
-@mcp.resource(uri="cortex://scripts/analyze")
+# MCP resource registration removed
 @ensure_usage_context
 @mcp_resource_wrapper(timeout=MCP_TOOL_TIMEOUT_MEDIUM)
 async def analyze_session_scripts_resource() -> str:
@@ -240,7 +238,7 @@ async def analyze_session_scripts_resource() -> str:
     return await analyze_session_scripts()
 
 
-@mcp.resource(uri="cortex://scripts/suggest-improvements/{task_description}")
+# MCP resource registration removed
 @ensure_usage_context
 @mcp_resource_wrapper(timeout=MCP_TOOL_TIMEOUT_FAST)
 async def suggest_tool_improvements_resource(task_description: str) -> str:
@@ -308,7 +306,7 @@ async def promote_session_script(
     return json.dumps(payload, indent=2)
 
 
-@mcp.tool(annotations=safe_write_annotations("Manage Session Scripts"))
+# MCP registration removed — minimal agent usage
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_MEDIUM)
 async def manage_session_scripts(

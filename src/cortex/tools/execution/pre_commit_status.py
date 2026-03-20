@@ -13,6 +13,7 @@ from pathlib import Path
 from typing import Any, Literal, cast
 
 from cortex.core.context_logging import MCPContext
+from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 
 _RESULT_PREFIX = "pre_commit_result_"
 _RESULT_SUFFIX = ".json"
@@ -73,7 +74,7 @@ class PreCommitRunSummary:
 
 def _session_dir(project_root: Path) -> Path:
     """Return session directory for result files."""
-    d = project_root / ".cortex" / ".session"
+    d = get_cortex_path(project_root, CortexResourceType.SESSION)
     d.mkdir(parents=True, exist_ok=True)
     return d
 

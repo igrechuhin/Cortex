@@ -18,7 +18,7 @@ from cortex.core.usage_context import get_or_resolve_project_root
 
 logger = logging.getLogger(__name__)
 
-# Canonical check names for each phase, used by start_pre_commit_job(phase=...).
+# Canonical check names for each phase, used by start_quality_job(phase=...).
 # Must stay in sync with _PRE_FLIGHT_DEFAULT_CHECKS in pre_commit_preflight_helpers.py.
 _PHASE_A_CHECKS: tuple[str, ...] = (
     "fix_errors",
@@ -44,7 +44,7 @@ PHASE_B_CHECKS: tuple[str, ...] = _PHASE_B_CHECKS
 def phase_to_checks(phase: PreCommitPhase) -> list[str]:
     """Return canonical check name list for a phase.
 
-    Used by start_pre_commit_job(phase=...) to resolve the checks list
+    Used by start_quality_job(phase=...) to resolve the checks list
     without needing to invoke the full phase runner.
 
     Args:
@@ -92,6 +92,34 @@ def _record_phase_a_fingerprint(result: ModelDict, project_root: Path) -> None:
     tracker.record_phase_a(project_root, passed)
 
 
+async def _best_effort_record_phase_a_fingerprint(
+    result: ModelDict,
+    ctx: MCPContext | None,
+) -> None:
+    """Best-effort Phase A fingerprint bookkeeping (never changes Phase A result)."""
+    root: Path | None = None
+    preflight_passed: bool | None = None
+    try:
+        root = await get_or_resolve_project_root(ctx)
+        candidate = result.get("preflight_passed", None)
+        if not isinstance(candidate, bool):
+            logger.warning(
+                "Skipping Phase A fingerprint bookkeeping due to invalid result shape; preflight_passed=%r (type=%s)",
+                candidate,
+                type(candidate).__name__,
+            )
+            return
+        preflight_passed = candidate
+        _record_phase_a_fingerprint(result, root)
+    except (OSError, ValueError, TypeError, RuntimeError):
+        logger.warning(
+            "Phase A fingerprint bookkeeping failed (best-effort); preflight_passed=%s project_root=%s",
+            preflight_passed,
+            root,
+            exc_info=True,
+        )
+
+
 async def _run_phase_a(
     test_timeout: int,
     coverage_threshold: float,
@@ -115,11 +143,7 @@ async def _run_phase_a(
         include_untracked_markdown=include_untracked_markdown,
         ctx=ctx,
     )
-    try:
-        root = await get_or_resolve_project_root(ctx)
-        _record_phase_a_fingerprint(result, root)
-    except Exception:
-        logger.debug("Could not record Phase A fingerprint", exc_info=True)
+    await _best_effort_record_phase_a_fingerprint(result, ctx)
     return result
 
 

@@ -5,7 +5,6 @@ This module provides validation logic for refactoring suggestions before executi
 """
 
 from pathlib import Path
-from typing import TYPE_CHECKING
 
 from cortex.core.file_system import FileSystemManager
 from cortex.core.metadata_index import MetadataIndex
@@ -31,13 +30,11 @@ from .execution_validator_extraction import (
     run_legacy_impact_checks,
 )
 from .models import (
+    RefactoringOperationModel,
     RefactoringSuggestionModel,
     RefactoringType,
     RefactoringValidationResult,
 )
-
-if TYPE_CHECKING:
-    from .models import RefactoringOperationModel
 
 
 class ExecutionValidator:
