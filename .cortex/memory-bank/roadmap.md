@@ -13,7 +13,7 @@
 ## Future Enhancements
 
 ## Pending plans (from .cortex/plans)
-- **Harden pipeline_handoff path safety & async IO** (`.cortex/plans/harden-pipeline-handoff-path-safety-async-io.md`) - PENDING - Fix security path traversal risk in `pipeline_handoff`, move async FS operations off the event loop, narrow pre-commit exception handling, and improve container init diagnosability; add tests and keep Phase A green.
+
 
 ### Fixes
 

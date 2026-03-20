@@ -5,8 +5,11 @@ read_state, clear. Tests verify file creation, content, and error cases.
 """
 
 import json
+import uuid
+from collections.abc import Callable
 from pathlib import Path
-from unittest.mock import AsyncMock
+from typing import Any
+from unittest.mock import AsyncMock, patch
 
 import pytest
 
@@ -301,6 +304,78 @@ class TestClear:
             await pipeline_handoff(operation="read_state", pipeline="commit")
         )
         assert result["status"] == "not_found"
+
+
+# ---------------------------------------------------------------------------
+# Token validation & async-to-thread offload
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+class TestTokenValidation:
+    async def test_init_rejects_pipeline_path_traversal(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        _resolve_root(monkeypatch, tmp_path)
+
+        outside_name = f"outside_sentinel_{uuid.uuid4().hex}"
+        outside_path = tmp_path.parent / outside_name
+        assert not outside_path.exists()
+        assert list(tmp_path.iterdir()) == []
+
+        result = json.loads(
+            await pipeline_handoff(
+                operation="init",
+                pipeline=f"../../../../{outside_name}",
+            )
+        )
+        assert result["status"] == "error"
+        assert not outside_path.exists()
+        assert list(tmp_path.iterdir()) == []
+
+    async def test_write_result_rejects_phase_path_traversal(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        _resolve_root(monkeypatch, tmp_path)
+
+        outside_name = f"outside_sentinel_{uuid.uuid4().hex}"
+        outside_path = tmp_path.parent / outside_name
+        assert not outside_path.exists()
+        assert list(tmp_path.iterdir()) == []
+
+        result = json.loads(
+            await pipeline_handoff(
+                operation="write_result",
+                pipeline="commit",
+                phase=f"../../../../{outside_name}",
+                data='{"status":"passed"}',
+            )
+        )
+        assert result["status"] == "error"
+        assert not outside_path.exists()
+        assert list(tmp_path.iterdir()) == []
+
+
+@pytest.mark.asyncio
+class TestAsyncToThreadOffload:
+    async def test_pipeline_handoff_offloads_dispatch_to_thread(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        _resolve_root(monkeypatch, tmp_path)
+
+        async def run_sync(func: Callable[..., Any], *args: Any, **kwargs: Any) -> Any:
+            return func(*args, **kwargs)
+
+        with patch(
+            "cortex.tools.session.pipeline_handoff.asyncio.to_thread",
+            new_callable=AsyncMock,
+        ) as mock_to_thread:
+            mock_to_thread.side_effect = run_sync
+            result = json.loads(
+                await pipeline_handoff(operation="init", pipeline="commit")
+            )
+        assert result["status"] == "ok"
+        assert mock_to_thread.call_count >= 1
 
 
 # ---------------------------------------------------------------------------

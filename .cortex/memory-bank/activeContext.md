@@ -6,9 +6,7 @@
 
 - ✅ **Phase A Fingerprint & Detached Polling Hardening** - COMPLETE (2026-03-20) - Narrowed Phase A fingerprint bookkeeping exception handling, moved detached polling file reads off the event loop, and improved hybrid-rule NotImplementedError stub messages. Phase A quality gate passed (coverage ~0.91).
 
-## Completed Work (2026-03-16)
-
-- **Summary (2026-03-16)** - 1 entries archived.
+- ✅ **Harden pipeline_handoff path safety & async IO** - COMPLETE (2026-03-20) - Secured `pipeline_handoff` against path traversal and moved blocking FS operations off the event loop via `asyncio.to_thread`; tightened pre-commit exception handling and improved container init logging; added negative and async-offload tests (Phase A stayed green).
 
 ## Completed Work (2026-03-16)
 

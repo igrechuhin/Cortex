@@ -268,13 +268,17 @@ async def _run_fix_quality_mode(
     )
     try:
         return await _run_fix_quality_and_return_dict(include_untracked_markdown, ctx)
-    except Exception as e:
+    except (OSError, ValueError, RuntimeError, TimeoutError, json.JSONDecodeError) as e:
         await log_client(
             ctx,
             "error",
             f"execute_pre_commit_checks fix_quality: {e!s}",
             logger_name=__name__,
         )
+        error_json = create_quality_error_response(str(e))
+        return cast(ModelDict, json.loads(error_json))
+    except Exception as e:
+        logger.exception("execute_pre_commit_checks fix_quality: unexpected exception")
         error_json = create_quality_error_response(str(e))
         return cast(ModelDict, json.loads(error_json))
 
@@ -361,8 +365,11 @@ async def _run_standard_checks_mode(
         return await _execute_pre_commit_checks_impl(
             root, None, checks, strict_mode, test_timeout, coverage_threshold, ctx
         )
-    except Exception as e:
+    except (OSError, ValueError, RuntimeError, TimeoutError, json.JSONDecodeError) as e:
         logger.error("execute_pre_commit_checks: %s", e)
+        return create_error_result_dict(str(e), type(e).__name__)
+    except Exception as e:
+        logger.exception("execute_pre_commit_checks: unexpected exception")
         return create_error_result_dict(str(e), type(e).__name__)
 
 

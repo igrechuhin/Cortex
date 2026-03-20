@@ -25,8 +25,10 @@ mapped to the simplified API automatically.
 
 from __future__ import annotations
 
+import asyncio
 import json
 import os
+import re
 import uuid
 from datetime import datetime
 from pathlib import Path
@@ -62,6 +64,26 @@ def _now_iso() -> str:
 # ---------------------------------------------------------------------------
 # Path helpers
 # ---------------------------------------------------------------------------
+
+_SAFE_TOKEN_RE = re.compile(r"^[A-Za-z0-9_-]+$")
+
+
+def _validate_safe_token(token: str, name: str) -> str | None:
+    """Validate tokens used in filesystem paths.
+
+    Only allow A-Za-z0-9_- to prevent path separators and traversal patterns.
+    Returns an error JSON string when invalid, otherwise None.
+    """
+
+    if not token or not _SAFE_TOKEN_RE.fullmatch(token):
+        return json.dumps(
+            {
+                "status": "error",
+                "error": (f"Invalid {name} token. Allowed characters: A-Za-z0-9_-"),
+            },
+            indent=2,
+        )
+    return None
 
 
 def _pipeline_dir(project_root: Path, pipeline: str) -> Path:
@@ -372,9 +394,22 @@ async def _dispatch(
     ctx: MCPContext | None,
 ) -> str:
     data_str = _coerce_data(data)
+
+    # Validate tokens before any filesystem path construction.
+    pipeline_error = _validate_safe_token(pipeline, "pipeline")
+    if pipeline_error is not None:
+        return pipeline_error
+    if phase is not None:
+        phase_error = _validate_safe_token(phase, "phase")
+        if phase_error is not None:
+            return phase_error
+
     root = await get_or_resolve_project_root(ctx)
     project_root = Path(root)
-    return _dispatch_sync(project_root, operation, pipeline, phase, data_str)
+    # Offload all blocking filesystem operations in _dispatch_sync.
+    return await asyncio.to_thread(
+        _dispatch_sync, project_root, operation, pipeline, phase, data_str
+    )
 
 
 # ---------------------------------------------------------------------------

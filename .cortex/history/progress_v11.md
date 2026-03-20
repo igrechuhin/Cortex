@@ -3,28 +3,26 @@
 ## 2026-03-20
 
 - **Phase A Fingerprint & Detached Polling Hardening** - COMPLETE. Narrowed Phase A fingerprint bookkeeping exception handling, moved detached polling file reads off the event loop, and improved hybrid-rule NotImplementedError stub messages. Phase A quality gate passed.
+- **Harden pipeline_handoff path safety & async IO** - COMPLETE. Secured `pipeline_handoff` against path traversal and moved blocking FS operations off the event loop via `asyncio.to_thread`; tightened exception handling and improved container init logging; added negative and async-offload tests; Phase A green.
 
 ## 2026-03-16
 
-- **Commit pipeline Phase B re-validation** 
+- **Commit pipeline Phase B re-validation**
   - Re-ran commit pipeline Phase B (docs/state) for the current rules and composite tools batch using Phase A coverage 0.90 from pipeline handoff as context.
   - Confirmed `activeContext.md`, `progress.md`, and `roadmap.md` already reflected the rules-hybrid categorization fix and migration helper directory-creation changes; no new roadmap items or plan archive moves were required.
-
-## 2026-03-16
-
-- **Code review bug fixes** 
+- **Code review bug fixes**
   - Fixed `_categorize_non_generic_rule` in `rules_hybrid.py` to use mutually exclusive `if/elif` branching so a non-generic rule cannot be classified into multiple buckets (e.g., `language_rules` and `local_rules`) in the same pass, and updated Synapse coding standards with guidance on avoiding overlapping branches.
   - Updated structure migration helpers (`migrate_memory_bank_files_from_source`, `migrate_single_file`, `migrate_plans`) to create destination directories with `mkdir(parents=True, exist_ok=True)` before calling `shutil.copy2`, preventing `FileNotFoundError` when running migrations on a fresh workspace.
   - Ran commit pipeline Phase B (docs/state) for this batch using Phase A coverage 0.90 from pipeline handoff; verified memory bank (`activeContext.md`, `progress.md`, `roadmap.md`) and plans archive are already consistent with these changes.
 
 ## 2026-03-15
 
-- **Commit pipeline Phase B** 
+- **Commit pipeline Phase B**
   - Memory bank verified (activeContext, progress, roadmap); 0 plans archived; documentation validation run.
 
 ## 2026-03-14
 
-- **MCP Connection Stability Fix** 
+- **MCP Connection Stability Fix**
   - COMPLETE. Root-caused `ClosedResourceError` crash when concurrent tool calls from parallel subagents raced on shared stdio write stream. Fix: (1) monkeypatched `_handle_request` in `main.py` to catch `ClosedResourceError` on `message.respond()`; (2) removed `log_client` stream writes from `_run_standard_checks_mode`; (3) used cached `get_current_project_root()` to avoid `list_roots` round-trips; (4) made `_dispatch_phase` use detached mode; (5) changed `fix.md` from parallel to sequential subagent execution. Root cause: Cursor kills connection when 3-4 concurrent tool calls pending >10-15s. Sequential execution eliminated all disconnections. All 5102 tests pass.
 
 ## 2026-03-13

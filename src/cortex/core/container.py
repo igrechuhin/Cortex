@@ -57,6 +57,24 @@ from cortex.refactoring.rollback_manager import RollbackManager
 from cortex.refactoring.split_recommender import SplitRecommender
 
 
+def _log_metadata_index_load_failed(exc: Exception) -> None:
+    from cortex.core.logging_config import logger
+
+    logger.info(
+        f"Metadata index load failed, will rebuild: {exc}",
+        exc_info=True,
+    )
+
+
+def _log_rules_initialization_failed(exc: Exception) -> None:
+    from cortex.core.logging_config import logger
+
+    logger.warning(
+        f"Rules initialization failed: {exc}",
+        exc_info=True,
+    )
+
+
 class ManagerContainer(BaseModel):
     """Container for all manager instances.
 
@@ -237,12 +255,7 @@ class ManagerContainer(BaseModel):
         return container
 
     async def _post_init_setup(self, project_root: Path) -> None:
-        """Perform post-initialization setup tasks.
-
-        Args:
-            project_root: Project root directory
-        """
-        # Load metadata index if it exists
+        """Best-effort post-init setup."""
         index_path = get_cortex_path(
             project_root,
             CortexResourceType.INDEX,
@@ -250,24 +263,20 @@ class ManagerContainer(BaseModel):
         if index_path.exists():
             try:
                 _ = await self.metadata_index.load()
+            except (OSError, ValueError) as e:
+                _log_metadata_index_load_failed(e)
             except Exception as e:
-                from cortex.core.logging_config import logger
+                _log_metadata_index_load_failed(e)
 
-                logger.info(
-                    f"Metadata index load failed, will rebuild: {e}",
-                )
-
-        # Clean up stale locks
         await self.file_system.cleanup_locks()
 
-        # Initialize rules manager if enabled
         if self.optimization_config.is_rules_enabled():
             try:
                 _ = await self.rules_manager.index_rules()
+            except (OSError, ValueError, RuntimeError) as e:
+                _log_rules_initialization_failed(e)
             except Exception as e:
-                from cortex.core.logging_config import logger
-
-                logger.warning(f"Rules initialization failed: {e}")
+                _log_rules_initialization_failed(e)
 
     @classmethod
     def _create_container_instance(

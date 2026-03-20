@@ -104,6 +104,7 @@ Agents must keep going until the task is done or genuinely blocked; do not pause
 All pipelines (commit, implement) run **inline** in the orchestrator — no subagents for commit phases, and only `implement-code` uses a subagent (for context isolation during heavy coding). This eliminates concurrent MCP access issues with Cursor.
 
 **Zero-arg tools**: All MCP tools work with empty `{}` arguments (Cursor's MCP bridge strips args). Tools read config from session files or use sensible defaults. Key zero-arg tools:
+
 - `run_quality_gate()` — Phase A quality gate
 - `run_quality_gate_fresh()` — Phase A with cache clear (Step 12)
 - `run_docs_gate()` — Phase B docs validation
