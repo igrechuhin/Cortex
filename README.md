@@ -38,6 +38,8 @@ This is the daily workflow:
 
 See [docs/prompts](docs/prompts/README.md) for the implement and commit prompt details.
 
+If Cortex MCP cannot be reached in your environment, you can still do a **read-only audit** of the repo under the boundaries in [AGENTS.md](AGENTS.md) (**MCP unavailable: read-only audit fallback**) and the runbook [MCP unavailable: read-only audits](docs/guides/troubleshooting.md#mcp-unavailable-read-only-audits).
+
 ## Features
 
 - **Memory Bank** — structured project context that persists across sessions

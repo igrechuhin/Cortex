@@ -53,6 +53,38 @@ pyenv global 3.13.0
 
 For a **stable MCP connection**, see [Getting started: Stable MCP setup](../getting-started.md#stable-mcp-setup-recommended): Cortex exits on disconnect by default (client starts a new process when needed, so you get fresh Initialize with no user action), optional bridge, faster markdown lint, and usage tips. The sections below cover individual issues and causes.
 
+#### MCP unavailable: read-only audits {#mcp-unavailable-read-only-audits}
+
+Use this when the agent **cannot** rely on Cortex MCP for a full session (e.g. server not configured, Initialize never completes, persistent "0 tools", or connection closed on every tool call after one retry). Goal: stay **auditable** and **safe** — review code and docs without pretending Memory Bank or quality gates ran.
+
+**Policy (authoritative summary)**: [AGENTS.md](../../AGENTS.md) — section **MCP unavailable: read-only audit fallback**.
+
+**Connectivity and diagnostics (run in order)**:
+
+1. **Client configuration** — Confirm MCP config points at the right command (e.g. `uv run cortex` from repo root or `uvx` from published package). Paths: Cursor project `.cursor/mcp*.json`; Claude Desktop `claude_desktop_config.json`. See [MCP server not found by client](#issue-mcp-server-not-found-by-client).
+2. **Manual server smoke test** — From the repo: `uv sync --extra dev` then `uv run cortex`. stderr should show a successful MCP startup; Ctrl+C to stop. If this fails, fix Python/uv/environment first ([Installation and Setup](#installation-and-setup)).
+3. **Handshake and tool listing** — After the client starts the server, confirm tools/resources are listed (not [0 tools](#issue-mcp-0-tools)). If you see 0 tools after a disconnect, reload MCP or follow that section’s recovery steps.
+4. **Transient disconnects** — If tools work intermittently, use [MCP error -32000: Connection closed](#issue-mcp-error-32000-connection-closed) (retry once, avoid parallel subagents on one connection, timeouts).
+
+**Read-only audit scope (allowed)**:
+
+- Inspect `src/`, `tests/`, `docs/`, and `.cortex/` **as plain files** for security, style, or architecture review.
+- Run **non-mutating** checks the environment supports (e.g. `make check`, `uv run pytest …`) when the user’s shell is trusted — document exact commands in the audit output. This is **not** a substitute for the commit pipeline’s MCP-driven gates unless the user explicitly accepts that parity.
+- Output a short **audit record**: date, environment, MCP status, files reviewed, commands run, and explicit note that Memory Bank / `run_quality_gate` / `run_docs_gate` were **not** executed via Cortex MCP.
+
+**Out of scope without MCP (do not do)**:
+
+- Updating `roadmap.md`, `activeContext.md`, `progress.md`, or plan status via direct file edits to "finish" compound-engineering steps.
+- Staging commits that assert Phase A/B/Step 12 passed when those steps did not run in that session.
+
+**Escalation — restoring MCP**:
+
+1. Fix config and environment per steps above.
+2. Restart the MCP client or toggle the Cortex server entry.
+3. Re-run `session()` and a zero-arg tool (e.g. `run_quality_gate()` or `run_docs_gate()`) to confirm health before resuming implement/commit prompts.
+
+Related: [Quality gate unavailable in environment](#quality-gate-unavailable-in-environment) (tooling missing vs MCP missing), [MCP disconnect runbook (commit pipeline)](#mcp-disconnect-runbook-commit) (disconnect **during** a gated run).
+
 #### Issue: MCP server crashes with BrokenResourceError
 
 **Symptoms**:

@@ -48,6 +48,30 @@ This project has a **Cortex MCP server** that provides tools for everything agen
 
 **Tools vs Resources:** Use resources (`cortex://` URIs) for read-only operations. Use tools for writes and actions. All tools and resources are zero-arg safe (Cursor's MCP bridge strips args). See [docs/api/tools.md](docs/api/tools.md) for details.
 
+### MCP unavailable: read-only audit fallback
+
+MCP-first operation is mandatory for normal work. In **constrained or broken MCP environments** (no tools listed, repeated connection errors, client cannot start `uv run cortex`), agents may still perform a **read-only audit** if the scope and boundaries below are respected. Full procedure: [Troubleshooting — MCP unavailable: read-only audits](docs/guides/troubleshooting.md#mcp-unavailable-read-only-audits).
+
+**Connectivity preflight (before treating MCP as down)**:
+
+1. Confirm the Cortex server process can start: from repo root, `uv run cortex` (or your configured MCP command) and check client logs for a clean Initialize handshake.
+2. In the client, verify tools/resources appear (not "0 tools") and optionally fetch `cortex://health/connection` when resources work.
+3. If the failure is mid-session (e.g. `MCP error -32000: Connection closed`), retry once, then follow [MCP error -32000](docs/guides/troubleshooting.md#issue-mcp-error-32000-connection-closed) before declaring MCP unavailable.
+
+**Allowed in read-only fallback (audits only)**:
+
+- Read and analyze repository files with normal IDE tools (`Read`, `Grep`, `Glob`, terminal **read-only** commands such as `git status`, `git diff`, viewing logs).
+- Produce findings, diffs, or review notes for a human or for a later MCP-enabled session.
+- Load coding standards from checked-in docs that are already in the tree (e.g. `AGENTS.md`, `CLAUDE.md`) when `cortex://rules` is unreachable — **do not** bypass Synapse or `.cortex/synapse/rules/` policy by inventing standards; cite only what you can read from the repo.
+
+**Prohibited in read-only fallback (unsafe without MCP)**:
+
+- Any **stateful Memory Bank or pipeline writes**: `manage_file()`, `update_memory_bank()`, `plan()` mutations, `pipeline_handoff()` writes, `session(operation="compact")`, or **direct edits** under `.cortex/memory-bank/`, `.cortex/.session/`, or plan files to simulate compound-engineering updates.
+- Invoking **implement** or **commit** pipelines as if Phase A/B passed when quality or docs gates did not run via MCP (or documented shell parity) in that environment.
+- Claiming roadmap, progress, or validation sync without `run_docs_gate()` / `cortex://validation` in a healthy MCP session.
+
+**After the audit**: Record in the deliverable that the session ran **without Cortex MCP** and list what was read-only vs blocked. Restore MCP (see troubleshooting runbook), then re-run gated workflows.
+
 **Note for AI agents**: Do not add detailed workflow guides to `AGENTS.md` or `CLAUDE.md`; fetch commit/implement/fix-path behavior from Cortex MCP (Synapse prompts, rules, and memory bank).
 
 ## Type Annotations and Data Modeling

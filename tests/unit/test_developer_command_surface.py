@@ -36,3 +36,17 @@ def test_uv_sync_variants_are_canonical() -> None:
     # If uv sync is referenced at all, it must be the canonical variant.
     if "uv sync" in joined:
         assert "uv sync --extra dev" in joined
+
+
+def test_mcp_unavailable_read_only_fallback_docs_wired() -> None:
+    """AGENTS policy, troubleshooting runbook, and README cross-link stay in sync."""
+    root = pathlib.Path(__file__).resolve().parents[2]
+    agents = _read(root / "AGENTS.md")
+    readme = _read(root / "README.md")
+    troubleshooting = _read(root / "docs" / "guides" / "troubleshooting.md")
+
+    assert "### MCP unavailable: read-only audit fallback" in agents
+    assert "docs/guides/troubleshooting.md#mcp-unavailable-read-only-audits" in agents
+    assert "{#mcp-unavailable-read-only-audits}" in troubleshooting
+    assert "MCP unavailable: read-only audits" in troubleshooting
+    assert "docs/guides/troubleshooting.md#mcp-unavailable-read-only-audits" in readme
