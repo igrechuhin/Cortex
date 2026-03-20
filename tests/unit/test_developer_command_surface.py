@@ -11,6 +11,8 @@ def test_readme_mentions_canonical_commands() -> None:
 
     assert "bash scripts/bootstrap.sh" in readme
     assert "make check" in readme
+    assert "make fix" in readme
+    assert "make check-ci-parity" in readme
     assert "make test" in readme
 
 

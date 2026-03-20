@@ -23,3 +23,15 @@ def test_quality_workflow_runs_env_check_smoke_guard() -> None:
     workflow_text = workflow_path.read_text(encoding="utf-8")
     assert "Smoke-check local environment preflight" in workflow_text
     assert "make env-check" in workflow_text
+
+
+def test_make_check_is_non_mutating_and_uses_black_check() -> None:
+    """make check must not invoke mutating formatters; Black is verify-only on src/tests."""
+    makefile = _read_repo_file("Makefile")
+    check_line = next(
+        line for line in makefile.splitlines() if line.startswith("check:")
+    )
+    deps = check_line.split(":", maxsplit=1)[1].strip().split()
+    assert "format-check" in deps
+    assert "format" not in deps
+    assert "black --check src/ tests/" in makefile

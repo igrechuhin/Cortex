@@ -14,6 +14,8 @@
 
 - ✅ **Align docs to zero-arg quality pipeline and deprecate stale entrypoints** - COMPLETE (2026-03-20) - Canonical zero-arg quality pipeline documented in docs/api/tools.md with legacy section; README/AGENTS/troubleshooting and broad docs/** aligned; pytest guard test_docs_zero_arg_quality_consistency.py prevents drift.
 
+- ✅ **Split make quality flows into non-mutating check and fix modes** - COMPLETE (2026-03-20) - make check is non-mutating (format-check, lint, typecheck, test); make fix mutates; make check-ci-parity mirrors more of quality.yml via uv run; docs and smoke tests updated.
+
 ## Completed Work (2026-03-16)
 
 - **Summary (2026-03-16)** - 1 entries archived.

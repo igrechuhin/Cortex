@@ -8,6 +8,7 @@
 - **Harden pipeline_handoff path safety & async IO** - COMPLETE. Secured `pipeline_handoff` against path traversal and moved blocking FS operations off the event loop via `asyncio.to_thread`; tightened exception handling and improved container init logging; added negative and async-offload tests; Phase A green.
 - **Align docs to zero-arg quality pipeline and deprecate stale entrypoints (2026-03-20)** - COMPLETE. Canonical tools.md section + cross-links; README/AGENTS/troubleshooting and broad docs/** aligned; tests/unit/test_docs_zero_arg_quality_consistency.py (4 tests) guards deprecated quality entrypoint strings.
 - **Makefile env-check Python -c quoting for GitHub Actions (2026-03-20)** - COMPLETE. Replaced broken f-string escapes in `make env-check` with percent-format `print` so Ubuntu CI passes; refreshed `test_makefile_env_check_smoke_guard.py`.
+- **Split make quality flows into non-mutating check and fix modes** - COMPLETE. make check uses Black --check + ruff + pyright + fast tests; make fix applies Black/ruff fixes; check-ci-parity adds synapse scripts, sizes, rumdl, pytest with coverage; README, AGENTS, troubleshooting, tests.
 
 ## 2026-03-16
 

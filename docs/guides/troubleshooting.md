@@ -1079,6 +1079,14 @@ When the GitHub Actions "Code Quality" workflow fails on push (e.g. [run #244](h
 
 **Reference**: The single source of truth for the CI test command is the "Run tests" step in [.github/workflows/quality.yml](../../.github/workflows/quality.yml); the workflow comment at the top of that file repeats the command for local parity.
 
+#### Local `make check` vs CI parity
+
+- **`make check`** verifies formatting with **Black `--check`** on `src/` and `tests/` (no writes), then Ruff, Pyright, and the **fast** pytest target from the Makefile (`pytest -q` with a timeout). It is a quick, safe pre-flight that will not mutate your tree.
+- **`make fix`** applies Black, Ruff import sorting (`I`), and Ruff `--fix` on `src/` and `tests/` when you need to remediate after a failed check.
+- **`make check-ci-parity`** runs a **broader** set of commands aligned with the "Code Quality" workflow (synapse `check_formatting` / `check_linting`, `pyright` on `src/`, `check_types.py`, file/function size scripts, `rumdl`, and pytest with **coverage** and `-m "not slow"`). It requires **`uv` on `PATH`** and uses `uv run …` like CI.
+
+**Still CI-only or environment-dependent** (not reproduced by `make check-ci-parity`): spell check via **cspell** (installed with npm in Actions), the **eval** suite and baseline compare steps, **Codecov** upload, and optional health-check artifact steps. If CI fails on one of those, use the workflow log and the corresponding script or job name as the source of truth.
+
 #### rumdl and the markdown lint tool
 
 The `fix_markdown_lint` MCP tool and the commit pipeline now use the Rust-based `rumdl` CLI, discovered as `rumdl` on `PATH`. In this repo, `rumdl` is installed into the Python virtual environment (for example via `bash scripts/bootstrap.sh` or `uv sync --extra dev`, which provide `.venv/bin/rumdl`).
