@@ -1,15 +1,22 @@
 import json
+from inspect import unwrap
 from pathlib import Path
 from unittest.mock import AsyncMock, patch
 
 import pytest
 
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
+from cortex.tools.plans import corruption as corruption_module
 from cortex.tools.plans.corruption import (
     fix_memory_bank_content_if_needed,
     fix_roadmap_content_if_needed,
     fix_roadmap_corruption,
 )
+
+
+def _unwrap_fix_roadmap_corruption():
+    """Get undecorated coroutine to avoid wrapper-level timeout flakiness in tests."""
+    return unwrap(corruption_module.fix_roadmap_corruption)
 
 
 @pytest.mark.asyncio
@@ -203,7 +210,8 @@ class TestFixRoadmapCorruptionContextLogging:
             ),
         ):
             # Act
-            result_str = await fix_roadmap_corruption(dry_run=True, ctx=mock_ctx)
+            inner_fix = _unwrap_fix_roadmap_corruption()
+            result_str = await inner_fix(dry_run=True, ctx=mock_ctx)
             result = json.loads(result_str)
 
             # Assert
@@ -238,7 +246,8 @@ class TestFixRoadmapCorruptionContextLogging:
             ),
         ):
             # Act
-            result_str = await fix_roadmap_corruption(dry_run=True, ctx=mock_ctx)
+            inner_fix = _unwrap_fix_roadmap_corruption()
+            result_str = await inner_fix(dry_run=True, ctx=mock_ctx)
             result = json.loads(result_str)
 
             # Assert

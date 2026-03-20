@@ -308,7 +308,7 @@ class TestCheckMarkdownlintAvailable:
             result = await find_markdownlint_command()
 
             # Assert
-            assert result == ["rumdl"]
+            assert result == ["rumdl", "check"]
             mock_run.assert_called_once_with(["rumdl", "--version"])
 
     @pytest.mark.asyncio
@@ -340,7 +340,7 @@ class TestCheckMarkdownlintAvailable:
             result = await find_markdownlint_command()
 
             # Assert
-            assert result == ["npx", "--yes", "rumdl"]
+            assert result == ["npx", "--yes", "rumdl", "check"]
             assert mock_run.call_count == 2
 
     @pytest.mark.asyncio
@@ -388,9 +388,10 @@ class TestCheckMarkdownlintAvailable:
             result = await find_markdownlint_command(tmp_path)
 
             assert result is not None
-            assert len(result) == 1
+            assert len(result) == 2
             assert "rumdl" in result[0]
             assert str(tmp_path) in result[0]
+            assert result[1] == "check"
             mock_run.assert_called_once()
             call_args = mock_run.call_args[0][0]
             assert call_args[0] == str(local_bin.resolve())
@@ -586,7 +587,7 @@ class TestFixMarkdownLintTool:
             patch(
                 "cortex.tools.files.markdown_lint_core.find_markdownlint_command",
                 new_callable=AsyncMock,
-                return_value=["rumdl"],
+                return_value=["rumdl", "check"],
             ),
             patch(
                 "cortex.tools.files.markdown_lint.get_markdown_files_to_process",
@@ -733,7 +734,7 @@ class TestFixMarkdownLintTool:
             patch(
                 "cortex.tools.files.markdown_lint_core.find_markdownlint_command",
                 new_callable=AsyncMock,
-                return_value=["rumdl"],
+                return_value=["rumdl", "check"],
             ),
             patch(
                 "cortex.tools.files.markdown_lint_core.get_modified_markdown_files",
@@ -839,7 +840,7 @@ class TestFixMarkdownLintContextLogging:
             patch(
                 "cortex.tools.files.markdown_lint_core.find_markdownlint_command",
                 new_callable=AsyncMock,
-                return_value=["rumdl"],
+                return_value=["rumdl", "check"],
             ),
             patch(
                 "cortex.tools.files.markdown_lint_core.get_markdown_files_to_process",
@@ -1173,7 +1174,7 @@ class TestMarkdownlintBatchHelpers:
             files_to_lint=[],
             initial_results=initial,
             root_path=tmp_path,
-            markdownlint_cmd=["rumdl"],
+            markdownlint_cmd=["rumdl", "check"],
             config_path=None,
             dry_run=False,
         )
@@ -1217,7 +1218,7 @@ class TestMarkdownlintBatchHelpers:
             result_json = await run_markdownlint_with_cache(
                 root_path=tmp_path,
                 files=[tmp_path / "docs" / "file.md"],
-                markdownlint_cmd=["rumdl"],
+                markdownlint_cmd=["rumdl", "check"],
                 config_path=None,
                 dry_run=False,
             )
@@ -1268,7 +1269,7 @@ class TestFixMarkdownLintProgressReporting:
                 files_to_lint=files_to_lint,
                 initial_results=initial_results,
                 root_path=tmp_path,
-                markdownlint_cmd=["rumdl"],
+                markdownlint_cmd=["rumdl", "check"],
                 config_path=None,
                 dry_run=False,
                 ctx=mock_ctx,
@@ -1314,7 +1315,7 @@ class TestFixMarkdownLintProgressReporting:
                 files_to_lint=files_to_lint,
                 initial_results=initial_results,
                 root_path=tmp_path,
-                markdownlint_cmd=["rumdl"],
+                markdownlint_cmd=["rumdl", "check"],
                 config_path=None,
                 dry_run=False,
                 ctx=None,
@@ -1412,7 +1413,7 @@ class TestBatchErrorReporting:
         _ = file1.write_text("# Test\n")
         _ = file2.write_text("# Test\n")
 
-        markdownlint_cmd = ["rumdl"]
+        markdownlint_cmd = ["rumdl", "check"]
 
         # Mock batch run that fails with unparseable stderr
         batch_call_count = 0
@@ -1483,7 +1484,7 @@ class TestBatchErrorReporting:
         _ = file1.write_text("# Test\n")
         _ = file2.write_text("# Test\n")
 
-        markdownlint_cmd = ["rumdl"]
+        markdownlint_cmd = ["rumdl", "check"]
 
         batch_call_count = 0
         per_file_call_count = 0
@@ -1544,7 +1545,7 @@ class TestBatchErrorReporting:
         _ = file1.write_text("# Test\n")
         _ = file2.write_text("# Test\n")
 
-        markdownlint_cmd = ["rumdl"]
+        markdownlint_cmd = ["rumdl", "check"]
 
         batch_call_count = 0
         per_file_call_count = 0

@@ -68,6 +68,10 @@ jobs:
         run: |
           bash scripts/bootstrap.sh
 
+      - name: Smoke-check local environment preflight
+        run: |
+          make env-check
+
       - name: Verify tool versions
         run: |
           echo "=== Tool Versions ==="

@@ -183,7 +183,10 @@ async def find_markdownlint_command(
 ) -> list[str] | None:
     """Find available rumdl command (backward-compatible name).
 
-    Discovery order (to preserve historical expectations from tests/tools):
+    Returns a base command including the ``check`` subcommand so callers
+    can append ``--fix`` and file paths directly.
+
+    Discovery order:
 
     1. Local ``node_modules/.bin/rumdl`` when ``project_root`` is provided.
     2. ``rumdl`` on PATH (installed into the Python environment).
@@ -195,17 +198,17 @@ async def find_markdownlint_command(
         if local_bin.exists():
             result = await run_command([str(local_bin.resolve()), "--version"])
             if _result_success(result) or "rumdl" in _result_stdout(result):
-                return [str(local_bin.resolve())]
+                return [str(local_bin.resolve()), "check"]
 
     # 2) Try rumdl on PATH.
     result = await run_command(["rumdl", "--version"])
     if _result_success(result) or "rumdl" in _result_stdout(result):
-        return ["rumdl"]
+        return ["rumdl", "check"]
 
     # 3) Fallback to npx-based invocation.
     result = await run_command(["npx", "--yes", "rumdl", "--version"])
     if _result_success(result) or "rumdl" in _result_stdout(result):
-        return ["npx", "--yes", "rumdl"]
+        return ["npx", "--yes", "rumdl", "check"]
 
     return None
 

@@ -1217,14 +1217,14 @@ class TestValidateMainFunction:
 
         with (
             patch(
-                "cortex.tools.validation.dispatch.setup_validation_managers"
-            ) as mock_setup,
+                "cortex.tools.validation.operations.prepare_validation_managers"
+            ) as mock_prepare,
             patch(
-                "cortex.tools.validation.dispatch.handle_schema_validation_wrapper"
-            ) as mock_handle,
+                "cortex.tools.validation.operations.call_dispatch_validation"
+            ) as mock_dispatch,
         ):
-            mock_setup.return_value = {}
-            mock_handle.return_value = json.dumps({"status": "success"})
+            mock_prepare.return_value = (tmp_path, {})
+            mock_dispatch.return_value = json.dumps({"status": "success"})
 
             # Act
             result = await validate(check_type="schema")
@@ -1232,7 +1232,7 @@ class TestValidateMainFunction:
             # Assert
             result_data = json.loads(result)
             assert result_data["status"] == "success"
-            mock_handle.assert_called_once()
+            mock_dispatch.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_validate_duplications_check(self, tmp_path: Path) -> None:
