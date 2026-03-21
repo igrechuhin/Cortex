@@ -37,7 +37,7 @@ Source of truth for behavior and timeouts: `src/cortex/tools/execution/pre_commi
 
 ## Current published MCP surface (canonical)
 
-**Code sources**
+### Code sources
 
 - **Tools:** `TOOL_CATEGORIES` in `src/cortex/tools/structure/categories.py` (must match every `@mcp.tool()` registration under `src/cortex/tools/` — enforced by `tests/tools/test_tool_categories_governance.py`).
 - **Static resources:** `PUBLISHED_STATIC_RESOURCE_URIS` in `src/cortex/discovery/published_inventory.py` (must match each `@mcp.resource(uri="cortex://...")` in `src/cortex/tools/`).

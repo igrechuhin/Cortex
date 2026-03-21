@@ -547,3 +547,34 @@ def test_session_log_integration_mixed_quality(tmp_path: Path) -> None:
     stats_result = get_context_statistics(tmp_path)
     assert stats_result.status == "success"
     assert stats_result.total_calls == 1
+
+
+def test_load_statistics_defaults_schema_version_when_omitted(tmp_path: Path) -> None:
+    stats_path = get_statistics_path(tmp_path)
+    stats_path.parent.mkdir(parents=True, exist_ok=True)
+    insights_json = json.dumps(create_empty_insights().model_dump(mode="json"))
+    raw = (
+        '{"last_updated":"2026-03-21T12:00","total_sessions_analyzed":0,'
+        '"total_load_context_calls":0,"avg_token_utilization":0.0,'
+        '"avg_files_selected":0.0,"avg_relevance_score":0.0,'
+        f'"common_task_patterns":{{}},"insights":{insights_json},"entries":[]}}'
+    )
+    _ = stats_path.write_text(raw, encoding="utf-8")
+    loaded = load_statistics(stats_path)
+    assert loaded.schema_version == 1
+
+
+def test_load_statistics_accepts_explicit_schema_version(tmp_path: Path) -> None:
+    stats_path = get_statistics_path(tmp_path)
+    stats_path.parent.mkdir(parents=True, exist_ok=True)
+    insights_json = json.dumps(create_empty_insights().model_dump(mode="json"))
+    raw = (
+        '{"schema_version":1,"last_updated":"2026-03-21T12:00",'
+        '"total_sessions_analyzed":0,"total_load_context_calls":0,'
+        '"avg_token_utilization":0.0,"avg_files_selected":0.0,'
+        '"avg_relevance_score":0.0,"common_task_patterns":{},'
+        f'"insights":{insights_json},"entries":[]}}'
+    )
+    _ = stats_path.write_text(raw, encoding="utf-8")
+    loaded = load_statistics(stats_path)
+    assert loaded.schema_version == 1

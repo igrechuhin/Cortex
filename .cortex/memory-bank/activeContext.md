@@ -14,6 +14,10 @@
 
 - ✅ **Offline / network-restricted verification bootstrap and triage docs** - COMPLETE (2026-03-21) - Added troubleshooting section for offline/air-gap uv bootstrap (wheelhouse, UV_OFFLINE, frozen sync, mirrors), verification preflight, CI parity pointers, and symptom triage matrix; linked from README Developer commands and AGENTS Cursor Cloud prerequisites.
 
+- ✅ **Telemetry — Synapse usage cache policy and context-usage-statistics semantics** - COMPLETE (2026-03-21) - Documented superproject vs Synapse .cache/usage commit policy; expanded context-usage-statistics.json field semantics and reconcile behavior; added schema_version (default 1) to ContextUsageStatistics with loader tests; PR checklist in contributing.md.
+
+- ✅ **Phase A markdown lint scope and preflight markdown merge** - COMPLETE (2026-03-21) - `collect_pre_commit_markdown_paths` in `pre_commit_worker.py` excludes `.cortex/history/` and `.cortex/.cache/` from the detached worker rumdl file list (snapshots keep sibling-only links); merged `markdown_result` into `_poll_phase_a_result` in `pre_commit_zero_arg_tools.py` so `preflight_passed` reflects rumdl. Tests: `test_pre_commit_worker_md_collect.py`, `test_poll_phase_a_markdown_merge.py`.
+
 ## Completed Work (2026-03-20)
 
 - **Summary (2026-03-20)** - 1 entries archived.

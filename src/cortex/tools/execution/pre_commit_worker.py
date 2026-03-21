@@ -176,10 +176,20 @@ def _run_checks(
     )
 
 
-def _collect_md_files_for_lint(root: Path, max_files: int = 500) -> list[str]:
-    """Collect markdown file paths under root, excluding common dirs and archive."""
+def collect_pre_commit_markdown_paths(root: Path, max_files: int = 500) -> list[str]:
+    """Collect markdown file paths under root, excluding common dirs and archive.
+
+    Versioned memory-bank snapshots under ``.cortex/history/`` and session cache
+    markdown under ``.cortex/.cache/`` are excluded: they copy canonical
+    memory-bank text with sibling-relative links that are invalid from those
+    locations and are not hand-edited sources of truth.
+    """
     exclude_dirs = {"node_modules", ".venv", "venv", "__pycache__", ".git"}
-    exclude_prefix = ".cortex/plans/archive"
+    exclude_prefixes = (
+        ".cortex/plans/archive",
+        ".cortex/history/",
+        ".cortex/.cache/",
+    )
     md_files: list[str] = []
     for path in sorted(root.rglob("*")):
         if len(md_files) >= max_files:
@@ -192,7 +202,8 @@ def _collect_md_files_for_lint(root: Path, max_files: int = 500) -> list[str]:
             continue
         if any(d in rel.parts for d in exclude_dirs):
             continue
-        if str(rel).startswith(exclude_prefix):
+        rel_str = str(rel).replace("\\", "/")
+        if any(rel_str.startswith(p) for p in exclude_prefixes):
             continue
         md_files.append(str(path))
     return md_files
@@ -245,7 +256,7 @@ def _run_markdown_lint(project_root: str) -> dict[str, object]:
     """Run rumdl in check-only mode, return result dict."""
     root = Path(project_root)
     cmd: list[str] = [_resolve_rumdl_path(), "check"]
-    md_files = _collect_md_files_for_lint(root)
+    md_files = collect_pre_commit_markdown_paths(root)
     return _run_markdownlint_subprocess(root, cmd, md_files)
 
 

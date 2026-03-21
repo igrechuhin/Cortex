@@ -177,6 +177,11 @@ class ContextInsights(StrictBaseModel):
 class ContextUsageStatistics(StrictBaseModel):
     """Structure for aggregated context usage statistics."""
 
+    schema_version: int = Field(
+        default=1,
+        ge=1,
+        description="Document format version for context-usage-statistics.json",
+    )
     last_updated: str = Field(..., description="Last update timestamp")
     total_sessions_analyzed: int = Field(
         ..., ge=0, description="Total sessions analyzed"

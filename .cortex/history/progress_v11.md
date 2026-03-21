@@ -18,6 +18,9 @@
 - **Harden session telemetry against synthetic data pollution** - COMPLETE. `ContextTelemetryRecordQuality`, synthetic/pytest and invalid zero-budget classification, production-only rollups, exclusion logs, in-process counters, internal-consistency rules, `reconcile_context_usage_statistics_entries` + load-time backfill when `usage_writable`, env-gated debounced POST export of `ContextTelemetryExclusionCountersSnapshot` (optional Authorization header); `docs/architecture/tool-usage-tracking.md`, `docs/guides/troubleshooting.md`; `test_effectiveness_telemetry_quality.py`.
 - **MCP docs, README, and CI — single source of truth for published tool surface** - COMPLETE. Canonical inventory module, generated JSON, CI drift tests, README markers, tools.md current vs legacy sections, prompts README cross-link.
 - **Convert tests/test_phase5_3_4.py to pytest and guard script-only test files** - COMPLETE. Pytest module for Phase 5.3–5.4; guard for script-only test_*.py; legacy tests converted.
+- **Offline / network-restricted verification bootstrap and triage docs** - COMPLETE. Added offline/bootstrap and preflight docs, triage matrix, README and AGENTS cross-links; optional devcontainer deferred per plan.
+- **Telemetry — Synapse usage cache policy and context-usage-statistics semantics** - COMPLETE. Documented VC policy, stats JSON semantics, schema_version + tests, contributor checklist.
+- **Phase A markdown lint scope and preflight markdown merge** - COMPLETE. `collect_pre_commit_markdown_paths` excludes history and session cache trees from worker rumdl; zero-arg Phase A polling merges markdown lint into `preflight_passed`; unit tests for collection and merge helpers.
 
 ## 2026-03-16
 

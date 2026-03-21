@@ -102,13 +102,30 @@ def _start_phase_a_job(
     return cast(ModelDict, job)
 
 
+def _markdown_result_has_errors(md: dict[str, object]) -> bool:
+    """Return True when the detached worker's markdown_result indicates failures."""
+    files_err = md.get("files_with_errors", 0)
+    if isinstance(files_err, (int, str)) and int(files_err) > 0:
+        return True
+    if str(md.get("status", "success")) == "error" and md.get("error") != "timeout":
+        return True
+    return False
+
+
 async def _poll_phase_a_result(
     root: Path,
     job_id: str,
     timeout: int,
     ctx: MCPContext | None,
 ) -> ModelDict:
-    """Poll detached Phase A result envelope and return inner dict."""
+    """Poll detached Phase A result envelope and return inner dict.
+
+    The detached worker stores two top-level keys in the result envelope:
+    ``result`` (language checks) and ``markdown_result`` (rumdl lint).
+    This function merges them so that ``preflight_passed`` reflects
+    **both** — preventing markdown-lint failures from being silently
+    dropped before the commit orchestrator sees the quality-gate output.
+    """
     from cortex.tools.execution.pre_commit_detached import poll_for_result
 
     rp = (
@@ -119,9 +136,18 @@ async def _poll_phase_a_result(
     if envelope.get("status") != "completed":
         return cast(ModelDict, envelope)
     inner = envelope.get("result")
-    if isinstance(inner, dict):
-        return cast(ModelDict, inner)
-    return cast(ModelDict, {"status": "error", "error": "Missing result key"})
+    if not isinstance(inner, dict):
+        return cast(ModelDict, {"status": "error", "error": "Missing result key"})
+
+    # Merge markdown lint result so callers see it and preflight_passed is correct.
+    md_raw = envelope.get("markdown_result")
+    if isinstance(md_raw, dict):
+        md_result = cast(dict[str, object], md_raw)
+        inner["markdown_result"] = md_result
+        if _markdown_result_has_errors(md_result):
+            inner["preflight_passed"] = False
+
+    return cast(ModelDict, inner)
 
 
 async def _spawn_and_poll_phase_a(

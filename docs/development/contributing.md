@@ -789,6 +789,9 @@ def test_validate_with_mocked_schema_validator(mock_validator):
    - Run Pyright with strict mode
    - Fix all type errors
 
+6. **Telemetry and usage caches**
+   - If the diff touches `.cortex/synapse/.cache/usage/events/`, `.cortex/.session/context-usage-statistics.json`, or other aggregate telemetry JSON, confirm the change is intentional (shared analytics rollup, not accidental local noise). See [Tool usage tracking](../architecture/tool-usage-tracking.md).
+
 ### Create a Pull Request
 
 1. **Push your branch**
