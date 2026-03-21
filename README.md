@@ -154,17 +154,19 @@ For local development, use these Make targets (after running `bash scripts/boots
 
 ## Key Tools
 
-Cortex exposes **30 tools, 9 prompts, and 24 resources**. The most important tools by workflow:
+<!-- cortex-published-inventory: tools=10 resources=6 prompts-max=4 -->
 
-| Workflow                                               | Tools                                                         |
-| ------------------------------------------------------ | ------------------------------------------------------------- |
-| **Session**                                            | `session_start`, `load_context`, `compact_session`            |
-| **Memory Bank**                                        | `manage_file`, `query_memory_bank`                            |
-| **Quality (commit / implement)**                       | `run_quality_gate`, `run_quality_gate_fresh`, `run_docs_gate`, `fix_quality_issues` |
-| **Plans**                                              | `plan`, `roadmap`, `register_plan_in_roadmap`                 |
-| **Rules**                                              | `rules`, `get_synapse_rules`, `synapse`                       |
-| **Analysis**                                           | `analyze`, `think`                                            |
-| Full reference: [docs/api/tools.md](docs/api/tools.md) (see [zero-arg quality pipeline](docs/api/tools.md#commit-and-quality-pipeline-zero-arg-mcp-tools)) | Discovery: `search_tools(query="...")`                        |
+Cortex exposes **10 MCP tools**, **6 static `cortex://` resources**, and **up to 4 setup prompts** (one always-on plus up to three configuration-dependent). Machine-readable inventory: [docs/_generated/tool-inventory.json](docs/_generated/tool-inventory.json) (must match `cortex.discovery.published_inventory`; CI enforces parity).
+
+| Workflow                                                                 | Tools / entrypoints                                                                 |
+| ------------------------------------------------------------------------ | ----------------------------------------------------------------------------------- |
+| **Session & handoff**                                                    | `session()`, `pipeline_handoff()`                                                   |
+| **Memory Bank**                                                          | `manage_file()`, `update_memory_bank()`                                             |
+| **Quality (commit / implement)**                                         | `run_quality_gate()`, `run_quality_gate_fresh()`, `run_docs_gate()`, `fix_quality_issues()` |
+| **Plans**                                                                | `plan()`                                                                            |
+| **Rules & context (read-only)**                                          | `cortex://rules`, `cortex://context`, `cortex://analysis`, `cortex://validation`   |
+| **Reasoning**                                                            | `think()`                                                                           |
+| Full reference: [docs/api/tools.md](docs/api/tools.md#current-published-mcp-surface-canonical) | Same as [AGENTS.md](AGENTS.md) quick reference                                      |
 
 ## Prompts
 

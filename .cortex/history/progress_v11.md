@@ -16,6 +16,8 @@
 
 - **Pre-commit submodule hygiene guard** - COMPLETE. Landed `pre_commit_submodule_guard` (dirty/out-of-sync submodule detection with remediation), integrated Phase A inline and detached worker paths, added unit tests, and archived plan `block-dirty-submodule-references-in-commit-workflow` to `.cortex/plans/archive/Other/`.
 - **Harden session telemetry against synthetic data pollution** - COMPLETE. `ContextTelemetryRecordQuality`, synthetic/pytest and invalid zero-budget classification, production-only rollups, exclusion logs, in-process counters, internal-consistency rules, `reconcile_context_usage_statistics_entries` + load-time backfill when `usage_writable`, env-gated debounced POST export of `ContextTelemetryExclusionCountersSnapshot` (optional Authorization header); `docs/architecture/tool-usage-tracking.md`, `docs/guides/troubleshooting.md`; `test_effectiveness_telemetry_quality.py`.
+- **MCP docs, README, and CI — single source of truth for published tool surface** - COMPLETE. Canonical inventory module, generated JSON, CI drift tests, README markers, tools.md current vs legacy sections, prompts README cross-link.
+- **Convert tests/test_phase5_3_4.py to pytest and guard script-only test files** - COMPLETE. Pytest module for Phase 5.3–5.4; guard for script-only test_*.py; legacy tests converted.
 
 ## 2026-03-16
 

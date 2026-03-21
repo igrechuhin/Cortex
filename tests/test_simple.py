@@ -1,27 +1,26 @@
 #!/usr/bin/env python3
-"""Simple test to check MCP tool functions."""
+"""Lightweight pytest module; former script-only harness for MCP smoke ideas."""
+
+from __future__ import annotations
 
 import asyncio
 import tempfile
-
-# Note: check_migration_status and initialize_memory_bank have been replaced
-# by prompt templates (see docs/prompts/)
+from pathlib import Path
 
 
-async def main():
+def test_temp_directory_usable() -> None:
+    with tempfile.TemporaryDirectory() as tmpdir:
+        assert Path(tmpdir).is_dir()
+
+
+async def _manual_main() -> None:
     print("Testing basic MCP tool invocation...")
-
     with tempfile.TemporaryDirectory() as tmpdir:
         print(f"Project root: {tmpdir}")
-
-        # Test 1: Check migration status (skipped - replaced by prompt templates)
         print("\n1. Skipping check_migration_status (replaced by prompt templates)")
-
-        # Test 2: Initialize (skipped - replaced by prompt templates)
         print("\n2. Skipping initialize_memory_bank (replaced by prompt templates)")
-
-        print("\n✅ Test complete")
+        print("\nTest complete")
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    asyncio.run(_manual_main())

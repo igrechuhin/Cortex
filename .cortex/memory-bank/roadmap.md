@@ -14,6 +14,10 @@
 
 ## Pending plans (from .cortex/plans)
 
+- **Offline / network-restricted verification bootstrap and triage docs** - PENDING - Document wheelhouse/mirror preflight; triage matrix for fetch vs test failures. Plan: .cortex/plans/phase-2026-03-21-offline-verification-bootstrap.md
+- **Telemetry — Synapse usage cache policy and context-usage-statistics semantics** - PENDING - Policy for .cache/usage commits; document stats JSON semantics. Plan: .cortex/plans/phase-2026-03-21-telemetry-cache-and-stats-governance.md
+- **Narrow broad exception handlers — plans completion I/O and migration** - PENDING - Replace except Exception with specific types in `src/cortex/tools/plans/completion_io.py` and `src/cortex/core/migration.py`; add tests. Plan: .cortex/plans/phase-2026-03-21-narrow-exception-plans-migration.md
+
 ### Fixes
 
 ### Documentation Cleanup (DRY)

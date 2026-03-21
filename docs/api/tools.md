@@ -1,10 +1,12 @@
 # MCP Tools API Reference
 
-Complete reference for all MCP tools provided by Cortex.
+Reference for Cortex MCP tools, resources, and related APIs.
 
 ## Overview
 
-Cortex provides tools organized by functionality phases. Tools return JSON responses with consistent error handling.
+The live MCP server exposes **10 tools** and **6 static resources** (see [Current published MCP surface](#current-published-mcp-surface-canonical)). The phase-grouped sections later in this file are a **historical catalog** retained for migration and archaeology; they are not the current `tools/list` surface.
+
+Tools return JSON responses with consistent error handling.
 
 **Project root:** Tools do **not** accept a `project_root` parameter. Each tool resolves the project root internally (via MCP roots when available, or current working directory). Do not pass `project_root` when calling tools.
 
@@ -31,7 +33,47 @@ Contributor and agent workflows should use these **zero-argument** Cortex MCP to
 | Phase B docs / memory-bank / timestamps / roadmap sync | `run_docs_gate()` |
 | Auto-fix formatting, lint, types, markdown | `fix_quality_issues()` |
 
-Source of truth for behavior and timeouts: `src/cortex/tools/execution/pre_commit_zero_arg_tools.py`. The sections below list the full tool catalog.
+Source of truth for behavior and timeouts: `src/cortex/tools/execution/pre_commit_zero_arg_tools.py`.
+
+## Current published MCP surface (canonical)
+
+**Code sources**
+
+- **Tools:** `TOOL_CATEGORIES` in `src/cortex/tools/structure/categories.py` (must match every `@mcp.tool()` registration under `src/cortex/tools/` — enforced by `tests/tools/test_tool_categories_governance.py`).
+- **Static resources:** `PUBLISHED_STATIC_RESOURCE_URIS` in `src/cortex/discovery/published_inventory.py` (must match each `@mcp.resource(uri="cortex://...")` in `src/cortex/tools/`).
+- **Machine-readable snapshot:** `docs/_generated/tool-inventory.json` (regenerate with `published_inventory_json()` from `cortex.discovery.published_inventory`; tests fail on drift).
+
+### Published tools (MCP `tools/list`)
+
+| Tool | Tier (loading) |
+|------|----------------|
+| `manage_file` | always_loaded |
+| `plan` | always_loaded |
+| `update_memory_bank` | always_loaded |
+| `session` | always_loaded |
+| `run_quality_gate` | always_loaded |
+| `run_quality_gate_fresh` | always_loaded |
+| `fix_quality_issues` | always_loaded |
+| `think` | always_loaded |
+| `run_docs_gate` | deferred_medium |
+| `pipeline_handoff` | deferred_medium |
+
+### Published static resources
+
+| URI | Role |
+|-----|------|
+| `cortex://health/connection` | Connection health |
+| `cortex://structure` | Path / structure discovery |
+| `cortex://context` | Context loading (task from session config) |
+| `cortex://rules` | Coding standards (task from session config) |
+| `cortex://validation` | Timestamps / roadmap sync |
+| `cortex://analysis` | End-of-session analysis (target from session config) |
+
+### Prompts
+
+Setup prompts are defined in `src/cortex/setup/prompts.py` and `src/cortex/setup/prompts_always.py`. **`setup_synapse`** is always registered; **`initialize`**, **`migrate`**, and **`populate_tiktoken_cache`** mount only when their configuration gates apply (so clients never see all four at once). See [docs/prompts](../prompts/README.md).
+
+Day-to-day agent workflows should follow [AGENTS.md](../../AGENTS.md) and the [Commit and quality pipeline (zero-arg MCP tools)](#commit-and-quality-pipeline-zero-arg-mcp-tools) section above.
 
 ## Deprecated agent entrypoints (legacy names)
 
@@ -56,6 +98,10 @@ All Cortex MCP tools include **annotations** that provide metadata about tool be
 - **External tools**: `openWorldHint=True` (subprocess execution, network calls)
 
 For details on adding annotations to custom tools, see the [Extension Development Guide](../guides/advanced/extension-development.md#mcp-tool-annotations).
+
+## Historical / legacy phase catalog (pre-consolidation)
+
+**Last reviewed:** 2026-03-21. The tables and phase sections below describe the **pre-consolidation** tool surface (many names now map to internal handlers, consolidated tools, or resources). Do not treat phase counts or tool names here as the live MCP inventory — use [Current published MCP surface](#current-published-mcp-surface-canonical) and `docs/_generated/tool-inventory.json`.
 
 **Total Tools by Phase:**
 

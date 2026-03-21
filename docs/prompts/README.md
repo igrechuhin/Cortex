@@ -29,6 +29,18 @@ Cortex registers each prompt with an **emoji icon** (per MCP spec): setup prompt
 
 1. **[migrate](migrate.md)** - Migrate legacy structure to new `.cortex/` structure (detects, initializes, migrates, validates, cleans up)
 
+## Quality and pre-commit in Cursor prompts
+
+When authoring or reviewing Synapse prompts (for example under `.cortex/synapse/prompts/`), prefer zero-arg **`fix_quality_issues()`** and **`run_quality_gate()`** when targeting Cursor — the MCP bridge may strip JSON tool parameters. Do not treat the legacy parameterized trio (names in the block below) as the primary Cursor path:
+
+```text
+execute_pre_commit_checks
+start_quality_job
+get_quality_job_status
+```
+
+See [Commit and quality pipeline (zero-arg MCP tools)](../api/tools.md#commit-and-quality-pipeline-zero-arg-mcp-tools).
+
 ## When to Use Prompts vs. MCP Tools
 
 ### Use Prompts For

@@ -1,34 +1,11 @@
 """
-Tools Package
+MCP tool implementations and related modules under ``src/cortex/tools``.
 
-This package contains all MCP tool implementations organized by phase.
-
-Modules:
-- file_operations: File management operations (1 tool) - Phase 9.1.1 split
-- validation.operations: Validation operations (1 tool) - Phase 9.1.1 split
-- analysis_operations: Analysis operations (1 tool) - Phase 9.1.1 split
-- refactoring: Refactoring suggestions (1 tool, 1 resource) - suggest_refactoring
-- rules_operations: Rules management (1 tool) - Phase 9.1.1 split
-- configuration_operations: Configuration management (1 tool) - Phase 9.1.1 split
-- markdown_operations: Markdown file operations (1 tool) - Markdown lint fixing
-- foundation_*: Core Memory Bank operations (4 tools split across modules)
-- linking_operations: Link management and transclusion (4 tools)
-- validation: Validation and quality checks (validate tool)
-- optimization: Token optimization and context management (7 tools)
-- analysis_usage: Usage pattern and structure analysis (3 tools)
-- execution: Safe execution and learning (6 tools)
-- synapse_tools: Synapse repository tools for rules and prompts (5 tools)
-- structure: Project structure management (6 tools)
-- prompts: MCP prompt templates for one-time operations (7 prompts)
-- script_capture_tools: Session script capture, analysis, promotion (5 tools)
-- usage_analytics: Tool usage statistics and optimization (4 tools) - Phase 29
-- cache_json_tools: Concurrent-safe read/write of .cortex/.cache JSON (1 tool: cache_json)
-- roadmap_operations: Roadmap entry management (1 tool)
-- plan_operations: Structured plan creation and roadmap registration (2 tools)
-- plan_completion: Complete plan (move from roadmap to activeContext) (1 tool)
-- sequential_thinking: Unified think tool (lightweight + full sequential mode)
-- compaction_operations: Session compaction and handoff (1 tool) - Phase 56
-Total: 71 tools + 7 prompts
+**Published MCP surface:** the tools the server registers for clients are listed in
+:data:`~cortex.tools.structure.categories.TOOL_CATEGORIES` (see also
+:mod:`cortex.discovery.published_inventory`). Submodules here include handlers
+that are internal, consolidated, or exposed only via resources — do not infer
+the live ``tools/list`` from this package layout alone.
 """
 
 # Import all tool modules to register their decorators

@@ -127,13 +127,9 @@ TOOL_CATEGORIES: tuple[ToolCategoryEntry, ...] = (
     ),
 )
 
-# Resources (read-only, all static/zero-arg, not tracked in TOOL_CATEGORIES):
-# cortex://health/connection — health_check
-# cortex://structure         — get_structure_info
-# cortex://context           — load_context (reads task from session config)
-# cortex://rules             — rules (reads task from session config)
-# cortex://validation        — validate (reads check_type from session config)
-# cortex://analysis          — analyze (reads target from session config)
+# Static MCP resources (read-only, not in TOOL_CATEGORIES): see
+# cortex.discovery.published_inventory.PUBLISHED_STATIC_RESOURCE_URIS (must match
+# @mcp.resource registrations).
 
 
 # ---------------------------------------------------------------------------

@@ -4,7 +4,9 @@ from pathlib import Path
 
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 
-# Canonical MCP tool names for discovery (keep in sync with docs/api/tools.md).
+# Broad name list for script capture / gap heuristics — not the published MCP
+# ``tools/list`` (see :mod:`cortex.discovery.published_inventory` and
+# :data:`~cortex.tools.structure.categories.TOOL_CATEGORIES`).
 _KNOWN_TOOL_NAMES: list[str] = [
     "analyze",
     "analyze_health_check",

@@ -8,6 +8,10 @@
 
 - ✅ **Session telemetry hardening against synthetic pollution** - COMPLETE (2026-03-21) - `ContextTelemetryRecordQuality` classification; production-only rollups; exclusion logging; in-process counters with optional env-gated debounced POST export (`CORTEX_CONTEXT_TELEMETRY_EXCLUSION_METRICS_*`); internal-consistency rules and `reconcile_context_usage_statistics_entries` with load-time backfill when `usage_writable`. Docs: `docs/architecture/tool-usage-tracking.md`, `docs/guides/troubleshooting.md`. Tests: `test_effectiveness_telemetry_quality.py`.
 
+- ✅ **MCP docs, README, and CI — single source of truth for published tool surface** - COMPLETE (2026-03-21) - Added cortex.discovery.published_inventory, docs/_generated/tool-inventory.json, README drift markers, tests for JSON/README parity, split docs/api/tools.md into canonical vs historical catalog, clarified tool_registry scope, docs/prompts guidance for zero-arg quality tools.
+
+- ✅ **Convert tests/test_phase5_3_4.py to pytest and guard script-only test files** - COMPLETE (2026-03-21) - Converted Phase 5.3–5.4 script tests to pytest (tmp_path memory-bank layout, async tests). Added AST guard test_script_only_pytest_files_guard for tests/**/test_*.py. Migrated test_phase6_imports, test_quick, and test_simple from script-only to collected tests so the guard passes.
+
 ## Completed Work (2026-03-20)
 
 - **Summary (2026-03-20)** - 1 entries archived.
