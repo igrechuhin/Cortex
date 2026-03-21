@@ -66,6 +66,8 @@
 
 - ✅ **pre_commit_tools decomposition (PARTIAL)** - COMPLETE (2026-03-21) - pre_commit_tools.py split into pre_commit_tools_inline_execution.py and pre_commit_tools_execute_checks.py; MCP surface unchanged; re-exports for worker/tests; unit test mocks target inline/execute modules.
 
+- ✅ **Decompose oversized tool modules (PARTIAL)** - COMPLETE (2026-03-21) - Health-check similarity stack split: `SimilarityCore` + stop words module; `SimilarityEngine` inherits. Remaining plan work: function-length audit, CONTRIBUTING guardrails.
+
 ## Completed Work (2026-03-20)
 
 - **Summary (2026-03-20)** - 1 entries archived.

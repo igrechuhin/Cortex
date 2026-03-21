@@ -12,7 +12,8 @@ depends_on: []
 
 - **Batch 1 (partial):** Split `models_reexports.py` into `models_reexports_workflows.py` (context, execution, files, linking, plans) and `models_reexports_system.py` (managers, session, structure, synapse); thin `models_reexports.py` preserves `__all__` order and `from cortex.tools.models` API.
 - **Batch 2 (partial):** Split `pre_commit_tools.py` into `pre_commit_tools_inline_execution.py` (adapter registry, submodule gate, inline run path) and `pre_commit_tools_execute_checks.py` (dispatch, fix_quality/skip-clean modes, `execute_pre_commit_checks_impl`); slim `pre_commit_tools.py` holds MCP tools and re-exports for worker/tests. Updated unit test patch paths to match new binding sites.
-- **Remaining:** Third oversized module if needed (e.g. `similarity_engine.py` in health_check), function-length audit, contributing-doc guardrails (plan steps 4–5).
+- **Batch 3 (partial):** Split `similarity_engine.py` into `similarity_core.py` (`SimilarityCore`: token/text/cosine/Jaccard, section weighting), `similarity_stop_words.py` (shared stop-word set), and `SimilarityEngine` subclass (semantic/functional APIs). Imports (`cortex.health_check.similarity_engine.SimilarityEngine`) unchanged.
+- **Remaining:** Function-length audit on touched areas, contributing-doc guardrails (plan steps 4–5); optional further splits if other modules still violate size limits.
 
 ## Goal
 
