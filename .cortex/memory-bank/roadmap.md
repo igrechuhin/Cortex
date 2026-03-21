@@ -14,7 +14,6 @@
 
 ## Pending plans (from .cortex/plans)
 
-- **Block dirty submodule references in commit workflow** - PENDING - Plan: `.cortex/plans/block-dirty-submodule-references-in-commit-workflow.md` - Add commit/quality guard that blocks dirty submodule references and gives remediation.
 - **Harden session telemetry against synthetic data pollution** - PENDING - Plan: `.cortex/plans/harden-session-telemetry-against-synthetic-data-pollution.md` - Filter synthetic telemetry and validate record quality to preserve accurate optimization signals.
 
 ### Fixes

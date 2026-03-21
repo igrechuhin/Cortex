@@ -76,7 +76,13 @@ _EXECUTE_REQUIRED = {
 @pytest.fixture(autouse=True)
 def _disable_detached_pipeline() -> Generator[None]:
     """Disable detached pipeline for all unit tests (patches don't cross processes)."""
-    with patch("cortex.tools.execution.pre_commit_detached.DETACHED_ENABLED", False):
+    with (
+        patch("cortex.tools.execution.pre_commit_detached.DETACHED_ENABLED", False),
+        patch(
+            "cortex.tools.execution.pre_commit_tools.precommit_block_response",
+            return_value=None,
+        ),
+    ):
         yield
 
 

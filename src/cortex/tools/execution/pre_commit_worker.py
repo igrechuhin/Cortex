@@ -34,6 +34,7 @@ from cortex.tools.execution.pre_commit_helpers_models import (
     PreCommitCheck,
     QualityCheckResult,
 )
+from cortex.tools.execution.pre_commit_submodule_guard import precommit_block_response
 from cortex.tools.execution.pre_commit_tools_run_helpers import (
     build_pre_commit_response,
 )
@@ -290,6 +291,13 @@ def _run_worker_once(
     pid: int,
 ) -> None:
     """Run checks and write success result; raises on failure."""
+    blocked = precommit_block_response(Path(args.project_root))
+    if blocked is not None:
+        _write_success_result(
+            result_path, started, pid, cast(dict[str, object], blocked), None
+        )
+        logger.info("Worker stopped early: submodule hygiene check failed")
+        return
     checks_result = _run_checks(
         args.project_root,
         args.checks,

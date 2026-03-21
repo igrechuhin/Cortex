@@ -2,21 +2,13 @@
 
 **This file records completed work only.** For current status and upcoming work see [roadmap.md](roadmap.md).
 
+## Completed Work (2026-03-21)
+
+- ✅ **Pre-commit submodule hygiene guard** - COMPLETE (2026-03-21) - Added `pre_commit_submodule_guard.py` (submodule status scan, dirty/out-of-sync violations, remediation text), wired into `pre_commit_tools.py` and `pre_commit_worker.py`, with `test_pre_commit_submodule_guard.py` and updates to `test_pre_commit_tools.py`. Plan `block-dirty-submodule-references-in-commit-workflow` archived under `.cortex/plans/archive/Other/`.
+
 ## Completed Work (2026-03-20)
 
-- ✅ **Pytest lightweight MCP usage init expansion** - COMPLETE (2026-03-20) - Broadened `_PYTEST_LIGHTWEIGHT_TOOLS` in `mcp_stability_usage.py` so more tools skip heavy context init under pytest; refreshed tool governance tests; tuned `pytest.ini`; kept Makefile `env-check` quoting fixes and integration smoke guard. Phase A coverage ~0.91.
-
-- ✅ **Makefile env-check, smoke guard, and quality/docs pipeline alignment** - COMPLETE (2026-03-20) - Shell-safe env-check quoting, actionable preflight messages, smoke integration coverage, zero-arg `run_quality_gate*` / `run_docs_gate` alignment, and dirty-submodule guard documentation. Follow-up: `env-check` version probe uses `print("%d.%d" % (...))` in `python -c` so Linux/GitHub Actions does not receive stray backslashes from nested f-string escapes; integration smoke test updated accordingly.
-
-- ✅ **Phase A Fingerprint & Detached Polling Hardening** - COMPLETE (2026-03-20) - Narrowed Phase A fingerprint bookkeeping exception handling, moved detached polling file reads off the event loop, and improved hybrid-rule NotImplementedError stub messages. Phase A quality gate passed (coverage ~0.91).
-
-- ✅ **Harden pipeline_handoff path safety & async IO** - COMPLETE (2026-03-20) - Secured `pipeline_handoff` against path traversal and moved blocking FS operations off the event loop via `asyncio.to_thread`; tightened pre-commit exception handling and improved container init logging; added negative and async-offload tests (Phase A stayed green).
-
-- ✅ **Align docs to zero-arg quality pipeline and deprecate stale entrypoints** - COMPLETE (2026-03-20) - Canonical zero-arg quality pipeline documented in docs/api/tools.md with legacy section; README/AGENTS/troubleshooting and broad docs/** aligned; pytest guard test_docs_zero_arg_quality_consistency.py prevents drift.
-
-- ✅ **Split make quality flows into non-mutating check and fix modes** - COMPLETE (2026-03-20) - make check is non-mutating (format-check, lint, typecheck, test); make fix mutates; make check-ci-parity mirrors more of quality.yml via uv run; docs and smoke tests updated.
-
-- ✅ **Document MCP-unavailable fallback for read-only audits** - COMPLETE (2026-03-20) - Added AGENTS read-only audit policy (preflight, allowed/prohibited scope), troubleshooting runbook with diagnostics and escalation, README cross-link, and a unit test that wires the three docs together.
+- **Summary (2026-03-20)** - 1 entries archived.
 
 ## Completed Work (2026-03-16)
 
@@ -160,9 +152,11 @@
 
 ## Current Focus
 
-Next pending roadmap item is **Split make quality flows into non-mutating check and fix modes**, followed by MCP-unavailable fallback documentation and dirty-submodule commit guards.
+Next pending roadmap item is **Harden session telemetry against synthetic data pollution** (see [roadmap.md](roadmap.md)).
 
 ## Recent Changes
+
+Submodule hygiene for commits (2026-03-20): `pre_commit_submodule_guard` blocks Phase A when a submodule worktree is dirty or the gitlink is out of sync; covered by `test_pre_commit_submodule_guard.py` and pre-commit tool fixture patches.
 
 Blocker (2026-02-09): create-plan and memory-bank-updater now mandate register_plan_in_roadmap for new plan entry to prevent roadmap corruption. Commit (2026-02-09): rules manager initialize mock, manage_file metadata test with usage-context patches; 3702 tests, 90.36% coverage.
 

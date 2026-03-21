@@ -2,7 +2,7 @@
 title: "Block dirty submodule references in commit workflow"
 component: "commit pipeline / git hygiene"
 work_type: "fix"
-status: "PENDING"
+status: "COMPLETE"
 priority: "HIGH"
 created: "2026-03-20"
 depends_on: []

@@ -10,6 +10,11 @@
 - **Makefile env-check Python -c quoting for GitHub Actions (2026-03-20)** - COMPLETE. Replaced broken f-string escapes in `make env-check` with percent-format `print` so Ubuntu CI passes; refreshed `test_makefile_env_check_smoke_guard.py`.
 - **Split make quality flows into non-mutating check and fix modes** - COMPLETE. make check uses Black --check + ruff + pyright + fast tests; make fix applies Black/ruff fixes; check-ci-parity adds synapse scripts, sizes, rumdl, pytest with coverage; README, AGENTS, troubleshooting, tests.
 - **Document MCP-unavailable fallback for read-only audits** - COMPLETE. Added AGENTS policy, troubleshooting runbook, README link, and test_mcp_unavailable_read_only_fallback_docs_wired.
+- **Block dirty submodule references in commit workflow** - COMPLETE. Phase A and detached worker now fail fast with remediation when submodules are dirty or gitlink is out of sync.
+
+## 2026-03-21
+
+- **Pre-commit submodule hygiene guard** - COMPLETE. Landed `pre_commit_submodule_guard` (dirty/out-of-sync submodule detection with remediation), integrated Phase A inline and detached worker paths, added unit tests, and archived plan `block-dirty-submodule-references-in-commit-workflow` to `.cortex/plans/archive/Other/`.
 
 ## 2026-03-16
 
@@ -33,13 +38,7 @@
 
 ## 2026-03-13
 
-- **Blocker: Fix MCP Plan Tool Argument Wiring/Bridging and Audit Similar Gaps** - PARTIAL. Implement finalize (session f3f88e7c190b): Step 7 smoke tests (get/create with full payload) documented in activeContext and roadmap; optional metrics remain. Blocker still IN_PROGRESS.
-- **Blocker: Fix MCP Plan Tool Argument Wiring/Bridging and Audit Similar Gaps** - PARTIAL. Step 7 smoke tests: added smoke tests for plan(operation='get') and plan(operation='create') with full payload in tests/tools/test_plan_tool_dispatch.py. Optional metrics remain. Blocker still IN_PROGRESS.
-- **Blocker: Fix MCP Plan Tool Argument Wiring/Bridging and Audit Similar Gaps** - PARTIAL. Step 7 guardrail tests: added tests for plan payload builders (complete, register, create) in test_plan_payloads.py; fixed pyright reportUnusedCallResult in pytest.raises blocks. Smoke tests and optional metrics remain. Blocker still IN_PROGRESS.
-- **Commit pipeline Phase B** - Memory bank verified (activeContext, progress, roadmap); 0 plans archived; documentation validation run.
-- **Blocker: Fix MCP Plan Tool Argument Wiring/Bridging and Audit Similar Gaps** - PARTIAL. Guardrail test test_create_missing_title_and_content added for plan(operation='create') missing title/content; pre-existing type/quality fixes in pre_commit_status.py and test_plan_completion.py. Blocker still IN_PROGRESS.
-- **Blocker: Fix MCP Plan Tool Argument Wiring/Bridging and Audit Similar Gaps** - PARTIAL. Step 1 audit: added docs/development/mcp-tool-call-audit.md with inventory of MCP tool call sites (implement, commit, other agents), argument style, Safe/Unsafe classification; all documented call sites use full payloads (Safe). Step 7 test: added TestPlanToolHappyPath and test_plan_operation_list_returns_success in tests/tools/test_plan_tool_dispatch.py. Type fixes in src/cortex/tools/session/pipeline_handoff.py (unnecessary isinstance, unused write_text return, dict typing for json.loads/update). Blocker remains IN_PROGRESS.
-- **Blocker: Fix MCP Plan Tool Argument Wiring/Bridging and Audit Similar Gaps** - PARTIAL. Step 7: added lightweight logging in plan tool (operation + required_args_present); added test in tests/tools/test_plan_payloads.py for build_plan_create_arguments validation. Blocker remains IN_PROGRESS.
+- **Week containing 2026-03-13** - 1 entries summarized.
 
 ## 2026-03-12
 

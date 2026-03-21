@@ -10,6 +10,7 @@ Tools:
 - fix_quality_issues: Zero-arg auto-fix (format, lint, type, markdown).
 """
 
+import asyncio
 import json
 import logging
 from collections.abc import Callable, Sequence
@@ -49,6 +50,7 @@ from cortex.tools.execution.pre_commit_helpers import (
 from cortex.tools.execution.pre_commit_helpers_language import detect_or_use_language
 from cortex.tools.execution.pre_commit_helpers_models import PreCommitCheck
 from cortex.tools.execution.pre_commit_phase_dispatch import PreCommitPhase
+from cortex.tools.execution.pre_commit_submodule_guard import precommit_block_response
 from cortex.tools.execution.pre_commit_tools_run_helpers import (
     build_pre_commit_response,
     run_checks_with_connection_monitoring,
@@ -124,7 +126,22 @@ async def _resolve_language_and_adapter(
     return (adapter, language_info)
 
 
-async def _run_inline_pre_commit_checks(
+async def _submodule_hygiene_gate(
+    root: Path, ctx: MCPContext | None
+) -> ModelDict | None:
+    blocked = await asyncio.to_thread(precommit_block_response, root)
+    if blocked is None:
+        return None
+    await log_client(
+        ctx,
+        "warning",
+        "execute_pre_commit_checks: blocked — submodule hygiene check failed",
+        logger_name=__name__,
+    )
+    return blocked
+
+
+async def _execute_inline_checks_after_hygiene(
     root: Path,
     language: str | None,
     checks: Sequence[str] | None,
@@ -133,7 +150,6 @@ async def _run_inline_pre_commit_checks(
     coverage_threshold: float,
     ctx: MCPContext | None,
 ) -> ModelDict:
-    """Run pre-commit checks in-process (non-detached)."""
     root_str = str(root)
     resolved = await _resolve_language_and_adapter(ctx, root_str, language)
     if isinstance(resolved, dict):
@@ -154,6 +170,30 @@ async def _run_inline_pre_commit_checks(
         ctx, "info", "execute_pre_commit_checks: completed", logger_name=__name__
     )
     return out
+
+
+async def _run_inline_pre_commit_checks(
+    root: Path,
+    language: str | None,
+    checks: Sequence[str] | None,
+    strict_mode: bool,
+    timeout: int | None,
+    coverage_threshold: float,
+    ctx: MCPContext | None,
+) -> ModelDict:
+    """Run pre-commit checks in-process (non-detached)."""
+    blocked = await _submodule_hygiene_gate(root, ctx)
+    if blocked is not None:
+        return blocked
+    return await _execute_inline_checks_after_hygiene(
+        root,
+        language,
+        checks,
+        strict_mode,
+        timeout,
+        coverage_threshold,
+        ctx,
+    )
 
 
 async def _execute_pre_commit_checks_impl(
