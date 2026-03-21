@@ -37,6 +37,8 @@
 - **Add CI markdown link validation for non-archive docs** - COMPLETE. Internal link checker for docs + policy files, CI step, local preflight via markdown lint merge, unit tests.
 - **Markdown link validation — Pyright and test typing** - COMPLETE. Public helper names in `markdown_link_validation.py`, unused-result cleanup, typed `read_text` test double; Phase A typecheck clean for module and `test_check_markdown_links.py`.
 - **Tighten tool-count guardrail from MAX=16 to MAX=12** - COMPLETE. MAX_REGISTERED_TOOLS=12, Adding new tools section in tools.md, governance test for cap; plan `tool-budget-tightening` archived to `.cortex/plans/archive/Other/`.
+- **Improve submodule preflight resilience and error messaging** - COMPLETE. TTY prompt in check_synapse.sh, bootstrap auto-init, MCP remediation on submodule hygiene block.
+- **Rumdl scope parity and submodule MCP remediation (2026-03-21)** - COMPLETE. Excluded `.cortex/.cache/` in CI/Makefile rumdl find; aligned `markdown_lint_core` excludes (history, cache, POSIX rel paths); submodule guard `precommit_block_response` includes `remediation`; archived `submodule-resilience` plan under `.cortex/plans/archive/Other/`; unit tests refreshed.
 
 ## 2026-03-16
 

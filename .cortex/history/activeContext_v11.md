@@ -46,6 +46,10 @@
 
 - ✅ **Tighten tool-count guardrail from MAX=16 to MAX=12** - COMPLETE (2026-03-21) - Reduced MAX_REGISTERED_TOOLS to 12; documented escalation in docs/api/tools.md; added test_max_registered_tools_cap. Plan `tool-budget-tightening` archived under `.cortex/plans/archive/Other/`.
 
+- ✅ **Improve submodule preflight resilience and error messaging** - COMPLETE (2026-03-21) - Interactive submodule init prompt in check_synapse.sh (TTY only); bootstrap.sh runs git submodule update before uv sync when scripts dir missing; precommit_block_response adds remediation git submodule update --init --recursive.
+
+- ✅ **Rumdl scope parity and submodule MCP remediation** - COMPLETE (2026-03-21) - CI `quality.yml` and `make check-ci-parity` exclude `.cortex/.cache/` from rumdl discovery; `markdown_lint_core.get_all_markdown_files_for_lint` mirrors `.cortex/history/` and `.cortex/.cache/` excludes with POSIX-normalized relative paths; `precommit_block_response` adds explicit `remediation` (`git submodule update --init --recursive`). Plan `submodule-resilience.md` moved to `.cortex/plans/archive/Other/`. Tests updated for lint paths and guard behavior.
+
 ## Completed Work (2026-03-20)
 
 - **Summary (2026-03-20)** - 1 entries archived.

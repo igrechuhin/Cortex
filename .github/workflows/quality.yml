@@ -269,7 +269,8 @@ jobs:
             -not -path "*/__pycache__/*" \
             -not -path "*/.git/*" \
             -not -path "./.cortex/plans/archive/*" \
-            -not -path "./.cortex/history/*" | head -500)
+            -not -path "./.cortex/history/*" \
+            -not -path "./.cortex/.cache/*" | head -500)
           if [ -n "$MD_FILES" ]; then
             # rumdl exits non-zero when violations are present
             if ! echo "$MD_FILES" | xargs uv run rumdl check 2>&1; then

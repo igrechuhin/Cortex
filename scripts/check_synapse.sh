@@ -6,15 +6,19 @@ REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 SYNAPSE_DIR="${REPO_ROOT}/.cortex/synapse"
 SYNAPSE_SCRIPTS_DIR="${SYNAPSE_DIR}/scripts"
 
-# If the Synapse scripts directory exists and is non-empty, we're good.
-if [ -d "${SYNAPSE_SCRIPTS_DIR}" ] && [ "$(ls -A "${SYNAPSE_SCRIPTS_DIR}" 2>/dev/null | wc -l)" -gt 0 ]; then
-  exit 0
-fi
+_synapse_scripts_ready() {
+  [ -d "${SYNAPSE_SCRIPTS_DIR}" ] && [ "$(ls -A "${SYNAPSE_SCRIPTS_DIR}" 2>/dev/null | wc -l)" -gt 0 ]
+}
 
-# Allow an explicit escape hatch for environments that want to run with
-# minimal checks but no Synapse (e.g., constrained local setups).
-if [ "${CORTEX_ALLOW_MISSING_SYNAPSE:-0}" != "0" ]; then
-  cat <<'EOF'
+while true; do
+  if _synapse_scripts_ready; then
+    exit 0
+  fi
+
+  # Allow an explicit escape hatch for environments that want to run with
+  # minimal checks but no Synapse (e.g., constrained local setups).
+  if [ "${CORTEX_ALLOW_MISSING_SYNAPSE:-0}" != "0" ]; then
+    cat <<'EOF'
 [WARNING] Cortex Synapse submodule is not initialized, but CORTEX_ALLOW_MISSING_SYNAPSE is set.
 Continuing without Synapse-specific quality checks (formatting, linting, type checks, eval).
 Native checks (Black, Ruff, Pyright, pytest) will still run, but Synapse scripts are preferred.
@@ -23,10 +27,10 @@ To fully enable all quality checks, initialize the Synapse submodule:
 
   git submodule update --init --recursive
 EOF
-  exit 0
-fi
+    exit 0
+  fi
 
-cat <<'EOF'
+  cat <<'EOF'
 [ERROR] Cortex Synapse submodule is not initialized.
 
 This repository uses the .cortex/synapse submodule for shared quality checks and rules.
@@ -41,5 +45,16 @@ If you intentionally want to run without Synapse (for minimal local checks), set
 and re-run the command. Synapse is still strongly recommended for full quality gates.
 EOF
 
-exit 1
+  if [ -t 0 ]; then
+    read -r -p "Run 'git submodule update --init --recursive' now? [y/N] " reply || reply=""
+    case "${reply}" in
+      [yY] | [yY][eE][sS])
+        git -C "${REPO_ROOT}" submodule update --init --recursive
+        continue
+        ;;
+      *) ;;
+    esac
+  fi
 
+  exit 1
+done

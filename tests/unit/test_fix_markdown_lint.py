@@ -130,6 +130,14 @@ class TestGetAllMarkdownFilesForLint:
             parents=True, exist_ok=True
         )
         _ = (tmp_path / ".cortex" / "plans" / "archive" / "z.md").write_text("")
+        (tmp_path / ".cortex" / "history" / "snap.md").parent.mkdir(
+            parents=True, exist_ok=True
+        )
+        _ = (tmp_path / ".cortex" / "history" / "snap.md").write_text("")
+        (tmp_path / ".cortex" / ".cache" / "session" / "pre.md").parent.mkdir(
+            parents=True, exist_ok=True
+        )
+        _ = (tmp_path / ".cortex" / ".cache" / "session" / "pre.md").write_text("")
         out = get_all_markdown_files_for_lint(tmp_path)
         paths = {str(p.relative_to(tmp_path)) for p in out}
         assert "a.md" in paths
@@ -138,6 +146,8 @@ class TestGetAllMarkdownFilesForLint:
         assert "node_modules/x.md" not in paths
         assert ".venv/y.md" not in paths
         assert ".cortex/plans/archive/z.md" not in paths
+        assert ".cortex/history/snap.md" not in paths
+        assert ".cortex/.cache/session/pre.md" not in paths
 
     def test_respects_max_files(self, tmp_path: Path) -> None:
         """Returns at most max_files paths."""

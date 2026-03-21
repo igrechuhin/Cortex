@@ -82,7 +82,8 @@ check-ci-parity: env-check synapse-check
 		-not -path "*/__pycache__/*" \
 		-not -path "*/.git/*" \
 		-not -path "./.cortex/plans/archive/*" \
-		-not -path "./.cortex/history/*" 2>/dev/null | head -500); \
+		-not -path "./.cortex/history/*" \
+		-not -path "./.cortex/.cache/*" 2>/dev/null | head -500); \
 		if [ -n "$$MD_FILES" ]; then echo "$$MD_FILES" | xargs uv run rumdl check; else echo "No markdown files matched rumdl scope; skipping rumdl."; fi
 	uv run python -m pytest tests/ -m "not slow" -n auto -v --cov=src/cortex --cov-report=xml --cov-report=term --cov-fail-under=90
 

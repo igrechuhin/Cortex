@@ -135,3 +135,4 @@ def test_precommit_block_response_shape_when_dirty(tmp_path: Path) -> None:
     sub = results.get("submodule_hygiene")
     assert isinstance(sub, dict)
     assert sub.get("success") is False
+    assert blocked.get("remediation") == "git submodule update --init --recursive"

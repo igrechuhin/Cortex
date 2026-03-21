@@ -36,7 +36,11 @@ _ALL_MARKDOWN_EXCLUDE_DIRS = (
     "__pycache__",
     ".git",
 )
-_ALL_MARKDOWN_EXCLUDE_PREFIX = ".cortex/plans/archive"
+_ALL_MARKDOWN_EXCLUDE_PREFIXES = (
+    ".cortex/plans/archive",
+    ".cortex/history/",
+    ".cortex/.cache/",
+)
 _CI_PARITY_MAX_MARKDOWN_FILES = 500
 
 __all__ = [
@@ -253,7 +257,9 @@ def get_all_markdown_files_for_lint(
     """Get all markdown files for lint (CI parity with quality.yml markdown step).
 
     Excludes: node_modules, .venv, venv, __pycache__, .git, and paths under
-    .cortex/plans/archive. Returns up to max_files paths, sorted.
+    ``.cortex/plans/archive``, ``.cortex/history/``, and ``.cortex/.cache/``
+    (mirrors detached worker markdown collection and CI/Makefile rumdl scope).
+    Returns up to max_files paths, sorted.
     """
     out: list[Path] = []
     try:
@@ -271,7 +277,8 @@ def get_all_markdown_files_for_lint(
             parts = rel.parts
             if any(d in parts for d in _ALL_MARKDOWN_EXCLUDE_DIRS):
                 continue
-            if str(rel).startswith(_ALL_MARKDOWN_EXCLUDE_PREFIX):
+            rel_posix = str(rel).replace("\\", "/")
+            if any(rel_posix.startswith(p) for p in _ALL_MARKDOWN_EXCLUDE_PREFIXES):
                 continue
             out.append(path)
     except OSError:

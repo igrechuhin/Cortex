@@ -37,6 +37,8 @@ REMEDIATION = (
     "stage the new gitlink before committing the parent."
 )
 
+SUBMODULE_INIT_REMEDIATION = "git submodule update --init --recursive"
+
 
 class SubmoduleHygieneCode(StrEnum):
     """Why the submodule failed the hygiene gate."""
@@ -245,11 +247,15 @@ def precommit_block_response(project_root: Path) -> ModelDict | None:
     )
     data = result.model_dump(mode="json")
     compact = truncate_large_logs_in_data(data)
-    return ensure_json_serializable_for_mcp(cast(ModelDict, compact))
+    serialized = ensure_json_serializable_for_mcp(cast(ModelDict, compact))
+    merged: dict[str, object] = dict(serialized)
+    merged["remediation"] = SUBMODULE_INIT_REMEDIATION
+    return cast(ModelDict, merged)
 
 
 __all__ = [
     "REMEDIATION",
+    "SUBMODULE_INIT_REMEDIATION",
     "SubmoduleHygieneCode",
     "SubmoduleHygieneReport",
     "SubmoduleHygieneViolation",

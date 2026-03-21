@@ -27,5 +27,3 @@
 Completed investigations are recorded in [activeContext.md](activeContext.md). Plan files under `.cortex/plans/archive/` as needed.
 
 ### Features & Enhancements
-
-- **PENDING** — [Improve submodule preflight resilience and error messaging](../plans/submodule-resilience.md) — Auto-init in bootstrap, interactive prompt in check_synapse, remediation in quality gate output. Priority: Medium.
