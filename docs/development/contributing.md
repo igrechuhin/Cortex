@@ -120,6 +120,14 @@ Configure your IDE to use the correct Python interpreter:
 
 - **Mypy**: A strict mypy configuration remains in `pyproject.toml` for optional local cross-checking, but Pyright is the **source of truth** for the quality gate and contributor expectations.
 
+### Runtime dependency declarations
+
+Runtime dependencies are listed in both `pyproject.toml` (`[project.dependencies]`) and the repo-root `requirements.txt` (for environments that install from that file). The **Code Quality** workflow runs `scripts/check_dep_parity.py` so these two sources cannot drift. Before pushing, you can run the same check locally:
+
+```bash
+make check-dep-parity
+```
+
 ## Project Structure
 
 ### Directory Layout

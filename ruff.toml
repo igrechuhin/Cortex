@@ -1,0 +1,3 @@
+# F405 on star-import re-exports: static ``__all__`` lists names from split modules.
+[lint.per-file-ignores]
+"src/cortex/tools/models_reexports.py" = ["F405"]

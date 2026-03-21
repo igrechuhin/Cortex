@@ -17,7 +17,7 @@ from pathlib import Path
 from typing import cast
 
 from cortex.core.context_logging import MCPContext, report_progress_safe
-from cortex.core.path_resolver import CortexResourceType, get_cortex_path
+from cortex.tools.execution.session_paths import session_dir
 
 logger = logging.getLogger(__name__)
 
@@ -28,13 +28,6 @@ _POLL_INTERVAL_SECONDS = 2
 _HEARTBEAT_TOTAL = 500
 
 DETACHED_ENABLED = os.environ.get("CORTEX_DETACHED_PIPELINE", "1") != "0"
-
-
-def _session_dir(project_root: Path) -> Path:
-    """Return session directory for result files."""
-    d = get_cortex_path(project_root, CortexResourceType.SESSION)
-    d.mkdir(parents=True, exist_ok=True)
-    return d
 
 
 def compute_args_hash(
@@ -80,7 +73,7 @@ def find_existing_result(
     args_hash: str,
 ) -> dict[str, object] | None:
     """Check for a fresh, completed result file. Return data or None."""
-    rp = _result_path(_session_dir(project_root), args_hash)
+    rp = _result_path(session_dir(project_root), args_hash)
     if not rp.exists():
         return None
     try:
@@ -165,7 +158,7 @@ def spawn_detached_worker(
     args_hash: str,
 ) -> Path:
     """Spawn a detached worker subprocess. Returns result file path."""
-    sd = _session_dir(project_root)
+    sd = session_dir(project_root)
     rp = _result_path(sd, args_hash)
     log_file = _log_path(sd, args_hash)
     cmd = _build_worker_cmd(
@@ -322,7 +315,7 @@ def _spawn_new_job(
 
 def _clear_cached_result(project_root: Path, args_hash: str) -> None:
     """Delete cached result file so a fresh worker is always spawned."""
-    rp = _result_path(_session_dir(project_root), args_hash)
+    rp = _result_path(session_dir(project_root), args_hash)
     rp.unlink(missing_ok=True)
     logger.info("force_fresh: cleared cached result for args_hash=%s", args_hash)
 
@@ -333,7 +326,7 @@ def clear_all_cached_results(project_root: Path) -> int:
     Call before re-running checks after code changes so stale cached
     worker results are not returned to the caller.
     """
-    sd = _session_dir(project_root)
+    sd = session_dir(project_root)
     removed = 0
     for p in sd.glob("pre_commit_result_*.json"):
         p.unlink(missing_ok=True)
@@ -354,7 +347,7 @@ async def poll_job_to_completion(
     to wait for the worker to finish and get the full result with output/errors fields.
     Returns the inner result on success, or an error dict on timeout/failure.
     """
-    rp = _result_path(_session_dir(project_root), job_id)
+    rp = _result_path(session_dir(project_root), job_id)
     envelope = await poll_for_result(rp, ctx=None, timeout=timeout)
     if envelope.get("status") != "completed":
         return envelope

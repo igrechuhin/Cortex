@@ -215,7 +215,9 @@ class TestMainErrorHandling:
         self, mock_mcp: MagicMock, mock_get_transport: MagicMock
     ) -> None:
         """Test that TaskGroup error with MCP -32000 Connection closed is
-        treated as a failure (exit 1), not ignored."""
+        treated as a graceful disconnect (exit 0) so the auto-restart loop
+        can recover. A client disconnecting while tools are in-flight should
+        not permanently kill the server."""
         # Arrange - e.g. when fix_markdown_lint completes after client disconnected
         connection_closed_error = RuntimeError("MCP error -32000: Connection closed")
         exception_group = BaseExceptionGroup(
@@ -228,8 +230,8 @@ class TestMainErrorHandling:
         with pytest.raises(SystemExit) as exc_info:
             main()
 
-        # Assert - treat as failure; exit 1
-        assert exc_info.value.code == 1
+        # Assert - graceful shutdown; exit 0 (is_connection_error recognises this)
+        assert exc_info.value.code == 0
         mock_mcp.run.assert_called_once_with(transport="stdio")
 
     @patch("cortex.main.mcp")

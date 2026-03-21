@@ -2,11 +2,16 @@
 title: "Decompose oversized tool modules by responsibility boundaries"
 component: tools
 work_type: refactoring
-status: PENDING
+status: IN_PROGRESS
 priority: medium
 created: 2026-03-21
 depends_on: []
 ---
+
+## Progress (2026-03-21)
+
+- **Batch 1 (partial):** Split `models_reexports.py` into `models_reexports_workflows.py` (context, execution, files, linking, plans) and `models_reexports_system.py` (managers, session, structure, synapse); thin `models_reexports.py` preserves `__all__` order and `from cortex.tools.models` API.
+- **Remaining:** Second high-line module (e.g. `similarity_engine.py`), function-length audit, and contributing-doc guardrails (plan steps 3–5).
 
 ## Goal
 

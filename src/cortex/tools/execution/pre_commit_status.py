@@ -13,7 +13,7 @@ from pathlib import Path
 from typing import Any, Literal, cast
 
 from cortex.core.context_logging import MCPContext
-from cortex.core.path_resolver import CortexResourceType, get_cortex_path
+from cortex.tools.execution.session_paths import session_dir
 
 _RESULT_PREFIX = "pre_commit_result_"
 _RESULT_SUFFIX = ".json"
@@ -70,13 +70,6 @@ class PreCommitRunSummary:
         if self.checks_summary is not None:
             out["checks_summary"] = self.checks_summary
         return out
-
-
-def _session_dir(project_root: Path) -> Path:
-    """Return session directory for result files."""
-    d = get_cortex_path(project_root, CortexResourceType.SESSION)
-    d.mkdir(parents=True, exist_ok=True)
-    return d
 
 
 def _iter_result_files(session_dir: Path) -> list[Path]:
@@ -277,8 +270,8 @@ async def get_last_pre_commit_status_impl(
     """
     # Avoid unused-variable warning for ctx; reserved for future logging.
     _ = ctx
-    session_dir = _session_dir(project_root)
-    result_files = _iter_result_files(session_dir)
+    sd = session_dir(project_root)
+    result_files = _iter_result_files(sd)
     if not result_files:
         return PreCommitRunSummary(status="no_runs").to_dict()
     latest = result_files[0]
@@ -294,7 +287,7 @@ async def get_last_pre_commit_status_impl(
         args_hash = name[len(_RESULT_PREFIX) : -len(_RESULT_SUFFIX)]
     log_path: str | None = None
     if args_hash is not None:
-        log_path = str(session_dir / f"pre_commit_worker_{args_hash}.log")
+        log_path = str(sd / f"pre_commit_worker_{args_hash}.log")
     summary = _summarize_result(data, args_hash=args_hash, log_path=log_path)
     return summary.to_dict()
 
@@ -306,8 +299,8 @@ async def get_pre_commit_status_impl(
 ) -> dict[str, Any]:
     """Return summary of a specific detached pre-commit job by job_id."""
     _ = ctx
-    session_dir = _session_dir(project_root)
-    path = session_dir / f"{_RESULT_PREFIX}{job_id}{_RESULT_SUFFIX}"
+    sd = session_dir(project_root)
+    path = sd / f"{_RESULT_PREFIX}{job_id}{_RESULT_SUFFIX}"
     if not path.exists():
         return PreCommitRunSummary(status="no_runs", args_hash=job_id).to_dict()
     data = _load_result(path)
@@ -317,6 +310,6 @@ async def get_pre_commit_status_impl(
             args_hash=job_id,
             error=f"Failed to read or parse result file: {path.name}",
         ).to_dict()
-    log_path = str(session_dir / f"pre_commit_worker_{job_id}.log")
+    log_path = str(sd / f"pre_commit_worker_{job_id}.log")
     summary = _summarize_result(data, args_hash=job_id, log_path=log_path)
     return summary.to_dict()

@@ -58,6 +58,12 @@
 
 - ✅ **Remove redundant asserts in plan tool** - COMPLETE (2026-03-21) - Removed dead assert lines after guard returns in _plan_dispatch_complete and _plan_dispatch_register; existing falsy checks suffice for pyright narrowing.
 
+- ✅ **Automate dependency parity between pyproject.toml and requirements.txt** - COMPLETE (2026-03-21) - Added scripts/check_dep_parity.py validating [project.dependencies] against requirements.txt (PEP 503 names); unit tests; quality.yml step; make check-dep-parity; contributing.md note.
+
+- ✅ **Deduplicate _session_dir helper across pre-commit modules** - COMPLETE (2026-03-21) - Added cortex.tools.execution.session_paths.session_dir (single get_cortex_path+mkdir); pre_commit_detached and pre_commit_status import it; removed duplicate _session_dir; added tests/unit/test_session_paths.py.
+
+- ✅ **MCP TaskGroup connection error classification (-32000)** - COMPLETE (2026-03-21) - `_handle_broken_resource_in_group` no longer skips `RuntimeError("MCP error -32000: Connection closed")`; nested TaskGroup failures use `is_connection_error` for graceful shutdown classification. Hardened `mcp_stability_retry` test isolation; added `tests/unit/test_mcp_crash_fixes.py`; aligned `test_main_error_handling`.
+
 ## Completed Work (2026-03-20)
 
 - **Summary (2026-03-20)** - 1 entries archived.

@@ -43,6 +43,10 @@
 - **Narrow broad exception handlers in markdown lint core** - COMPLETE. Narrowed subprocess/I/O and cache exceptions; added tests for OSError handling, TypeError/RuntimeError propagation, and FileLockTimeoutError logging.
 - **Handle subprocess.TimeoutExpired in pre_commit_submodule_guard** - COMPLETE. Wrapped submodule status and porcelain git calls with TimeoutExpired handling; warn and fail-soft; tests cover both paths.
 - **Remove redundant asserts in plan tool** - COMPLETE. Removed redundant asserts after guard returns in plan dispatch helpers.
+- **Automate dependency parity between pyproject.toml and requirements.txt** - COMPLETE. Validation script, tests, CI, Makefile target, and docs.
+- **Deduplicate _session_dir helper across pre-commit modules** - COMPLETE. Shared session_dir in session_paths.py; both pre-commit modules consume it; unit test for path creation.
+- **Decompose oversized tool modules** - PARTIAL. Split `models_reexports` into `models_reexports_workflows.py` and `models_reexports_system.py` with thin aggregator + static `__all__`; added `pyproject.toml` per-file Ruff F405 ignore for the aggregator; plan marked IN_PROGRESS. Remaining: second module, function-length pass, contributing docs.
+- **MCP TaskGroup -32000 connection classification** - COMPLETE. `main._handle_broken_resource_in_group` treats nested MCP connection RuntimeErrors consistently; circuit-breaker test resets; `test_mcp_crash_fixes.py` coverage.
 
 ## 2026-03-16
 

@@ -51,7 +51,7 @@ def _get_session_default_check_type() -> ValidateCheckTypeName:
     return parsed or ValidationCheckType("timestamps")
 
 
-async def _validate_impl(
+async def validate_impl(
     parsed: ValidateCheckTypeName,
     file_name: str | None,
     similarity_threshold: float | None,
@@ -206,7 +206,7 @@ async def validate(
     if parsed is None:
         await log_client(ctx, "warning", "validate: invalid check_type")
         return create_invalid_check_type_error(check_type or "null")
-    return await _validate_impl(
+    return await validate_impl(
         parsed,
         file_name,
         similarity_threshold,

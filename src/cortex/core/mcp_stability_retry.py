@@ -67,6 +67,15 @@ class MCPConnectionState(BaseModel):
 
 _connection_state: MCPConnectionState | None = None
 _health_monitor_task: asyncio.Task[None] | None = None
+_connection_state_lock: asyncio.Lock | None = None
+
+
+def _get_connection_state_lock() -> asyncio.Lock:
+    """Return global asyncio.Lock for connection state mutations (lazy init)."""
+    global _connection_state_lock
+    if _connection_state_lock is None:
+        _connection_state_lock = asyncio.Lock()
+    return _connection_state_lock
 
 
 def _get_connection_state() -> MCPConnectionState:
@@ -83,8 +92,9 @@ def reset_connection_state_for_testing() -> None:
     Tests that open the circuit breaker (e.g. reconnect exhaustion) must not
     leave degraded mode for unrelated tests on the same pytest-xdist worker.
     """
-    global _connection_state
+    global _connection_state, _connection_state_lock
     _connection_state = None
+    _connection_state_lock = None
 
 
 def ensure_clean_connection_state_for_testing() -> None:
@@ -93,24 +103,34 @@ def ensure_clean_connection_state_for_testing() -> None:
     _ = _get_connection_state()
 
 
-def _record_connection_closure() -> None:
-    """Record connection closure for diagnostics (Phase 32)."""
+async def _record_connection_closure() -> None:
+    """Record connection closure for diagnostics (Phase 32).
+
+    Protected by asyncio.Lock to prevent inconsistent state when multiple
+    concurrent tool calls encounter connection errors simultaneously.
+    """
     global _connection_closure_count
-    _connection_closure_count += 1
-    state = _get_connection_state()
-    state.connected = False
+    async with _get_connection_state_lock():
+        _connection_closure_count += 1
+        state = _get_connection_state()
+        state.connected = False
 
 
-def _record_connection_recovery() -> None:
-    """Record connection recovery for diagnostics (Phase 32)."""
+async def _record_connection_recovery() -> None:
+    """Record connection recovery for diagnostics (Phase 32).
+
+    Protected by asyncio.Lock to prevent inconsistent state when multiple
+    concurrent reconnect attempts complete near-simultaneously.
+    """
     global _connection_recovery_count
-    _connection_recovery_count += 1
-    state = _get_connection_state()
-    state.connected = True
-    state.reconnecting = False
-    state.circuit_open = False
-    state.consecutive_failures = 0
-    state.last_error = None
+    async with _get_connection_state_lock():
+        _connection_recovery_count += 1
+        state = _get_connection_state()
+        state.connected = True
+        state.reconnecting = False
+        state.circuit_open = False
+        state.consecutive_failures = 0
+        state.last_error = None
 
 
 async def _ping_transport() -> None:
@@ -183,7 +203,7 @@ async def reconnect(reason: str | None = None) -> ConnectionHealth:
     for attempt, base_delay in enumerate(_RECONNECT_BACKOFF_SECONDS, start=1):
         try:
             await _ping_transport()
-            _record_connection_recovery()
+            await _record_connection_recovery()
             state.reconnecting = False
             return await check_connection_health()
         except Exception as exc:  # pragma: no cover - exercised via tests
@@ -269,7 +289,7 @@ async def _handle_connection_error(
     func_name: str, attempt: int, e: Exception
 ) -> tuple[ConnectionError | RuntimeError | None, Exception | None]:
     """Handle connection error during retry."""
-    _record_connection_closure()
+    await _record_connection_closure()
     max_attempts = get_connection_retry_attempts(func_name)
     holder_str, elapsed_str = _connection_error_diag()
     logger.warning(
@@ -322,7 +342,7 @@ async def _retry_path_health_and_recovery(
             f"Connection not healthy before retry {attempt} for {func_name}"
         ) from last_exception
     if last_exception and is_connection_error(last_exception):
-        _record_connection_recovery()
+        await _record_connection_recovery()
 
 
 async def _handle_retry_exception(

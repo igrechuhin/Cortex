@@ -99,24 +99,16 @@ def _handle_broken_resource_in_group(eg: BaseExceptionGroup) -> bool:
     """Check if BaseExceptionGroup contains connection-related errors.
 
     Handles BrokenResourceError, ClosedResourceError, BrokenPipeError,
-    ConnectionResetError, and nested exception groups that may contain these.
+    ConnectionResetError, RuntimeError("MCP error -32000: Connection closed"),
+    and nested exception groups that may contain these.
 
     Args:
         eg: BaseExceptionGroup to check
 
     Returns:
         True if connection error found (graceful shutdown), False otherwise.
-        Special case: RuntimeError with \"MCP error -32000: Connection closed\"
-        is treated as non-connection (failure) to ensure TaskGroup failures
-        with this message still surface as exit code 1 (see tests).
     """
     for exc in eg.exceptions:
-        # Preserve existing behaviour: TaskGroup RuntimeError(\"MCP error -32000: Connection closed\")
-        # is treated as a failure (exit 1), not as a graceful connection shutdown.
-        if isinstance(
-            exc, RuntimeError
-        ) and "MCP error -32000: Connection closed" in str(exc):
-            continue
         if is_connection_error(exc):
             # Log detailed traceback for the first connection-related sub-exception
             _log_exception_with_traceback(exc, prefix="[connection] ")

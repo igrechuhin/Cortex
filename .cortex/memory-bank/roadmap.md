@@ -16,13 +16,10 @@
 
 ### Fixes
 
-- **Automate dependency parity between pyproject.toml and requirements.txt** — PENDING (medium) — CI validation step to prevent manual sync drift. Plan: `.cortex/plans/dependency-declaration-parity.md`
-
 ### Documentation Cleanup (DRY)
 
 ### Refactoring
 
-- **Deduplicate _session_dir helper across pre-commit modules** — PENDING (low) — Extract shared `session_dir` from `pre_commit_detached` and `pre_commit_status`. Plan: `.cortex/plans/deduplicate-session-dir-helper.md`
 - **Decompose oversized tool modules by responsibility boundaries** — PENDING (medium) — Split largest files/functions to comply with 400-line/30-line limits. Plan: `.cortex/plans/decompose-oversized-tool-modules.md`
 
 ### Cleanup

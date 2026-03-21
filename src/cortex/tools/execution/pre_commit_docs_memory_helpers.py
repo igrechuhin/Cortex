@@ -12,7 +12,13 @@ import json
 from typing import cast
 
 from cortex.core.context_logging import MCPContext, log_client
-from cortex.core.models import JsonDict, JsonValue, ModelDict, OperationStatus
+from cortex.core.models import (
+    JsonDict,
+    JsonValue,
+    ModelDict,
+    OperationStatus,
+    ResponseFormat,
+)
 from cortex.tools.models import (
     DocsAndMemoryBankSyncErrorResult,
     DocsAndMemoryBankSyncResult,
@@ -20,7 +26,7 @@ from cortex.tools.models import (
 )
 from cortex.tools.validation.operations import (
     ValidateCheckTypeName,
-    validate,
+    validate_impl,
 )
 
 
@@ -55,11 +61,17 @@ async def _run_single_validation(
     check_type_name: ValidateCheckTypeName,
     ctx: MCPContext | None,
 ) -> JsonDict | None:
-    """Run validate() for a single check_type and decode JSON result."""
-    raw = await validate(
-        check_type=check_type_name,
+    """Run validation for a single check_type and decode JSON result.
+
+    Calls ``validate_impl`` directly instead of the ``validate`` MCP tool
+    wrapper to avoid nested semaphore acquisition.  ``run_docs_gate`` already
+    holds one tool-semaphore slot; calling ``validate`` (which is wrapped with
+    ``@mcp_tool_wrapper``) would acquire additional slots from the same 5-slot
+    pool, creating a deadlock when two ``run_docs_gate`` calls run concurrently.
+    """
+    raw = await validate_impl(
+        parsed=check_type_name,
         file_name=None,
-        strict_mode=False,
         similarity_threshold=None,
         suggest_fixes=True,
         check_commit_ci_alignment=True,
@@ -67,6 +79,7 @@ async def _run_single_validation(
         check_documentation_consistency=True,
         check_config_consistency=True,
         ctx=ctx,
+        response_format=ResponseFormat.CONCISE,
     )
     return await _decode_validation_result(raw, check_type_name, ctx)
 
