@@ -158,7 +158,7 @@ cortex/
 - **Flat structure**: Keep package structure reasonably flat
 - **One public type per file**: Each file should expose one main public class/function
 - **Clear naming**: Module names should describe their responsibility
-- **Size limits**: No file should exceed 400 lines
+- **Size limits**: Production files must stay within **400 logical lines** per file (see [Code Constraints](#code-constraints)); raw `wc -l` can be much higher when docstrings dominate
 
 ### Core Modules
 
@@ -410,25 +410,34 @@ def build_response(
 
 ## Code Constraints
 
-### File Size Limit: 400 Lines
+### File and function size limits (logical lines)
 
-All production code files MUST NOT exceed 400 lines (excluding license headers).
+CI, pre-commit, and `make check` enforce **logical** line counts for Python under `src/`, not editor or `wc -l` **total** lines. A line counts toward the limit only when it is treated as code by the check scripts: **blank lines, full-line comments, and docstring lines are excluded**. Details: `.cortex/synapse/scripts/python/check_file_sizes.py` and `check_function_lengths.py`.
+
+| Check | Limit | Source of truth |
+| ----- | ----- | ---------------- |
+| Per-file | **400** logical lines | `MAX_FILE_LINES` in [`src/cortex/core/constants.py`](../../src/cortex/core/constants.py) |
+| Per-function | **30** logical lines | `MAX_FUNCTION_LINES` in the same module |
+
+**Exclusions (must match CI):**
+
+- **File size**: files named `models.py` (`FILE_SIZE_EXCLUDED_FILENAMES`) — Pydantic schema-heavy modules.
+- **Function length**: paths listed in `FUNCTION_LENGTH_EXCLUDED_PATHS` (e.g. selected plan/roadmap dispatchers, `sequential_thinking.py`, `pre_commit_pipeline.py`).
+
+**Check locally (same logic as GitHub Actions):**
 
 ```bash
-# Check file line count
-wc -l src/cortex/my_module.py
-
-# If a file exceeds 400 lines:
-# 1. Identify logical groupings
-# 2. Extract helper functions to separate modules
-# 3. Move related functionality to dedicated files
+uv run python .cortex/synapse/scripts/python/check_file_sizes.py
+uv run python .cortex/synapse/scripts/python/check_function_lengths.py
 ```
 
-> **Note:** Exceeding 400 lines will result in rejection in code review.
+**Why a file can look “huge” but still pass:** Heavy docstrings and comments do not count. Split or refactor when **logical** lines approach the cap, not only when totals cross 400.
 
-### Function Size Limit: 30 Lines
+> **Note:** Exceeding **logical** limits fails CI and will result in rejection in code review.
 
-All functions MUST NOT exceed 30 logical lines (excluding docstrings and blank lines).
+### Function size: examples (30 logical lines)
+
+All functions MUST NOT exceed 30 logical lines unless the file is on `FUNCTION_LENGTH_EXCLUDED_PATHS`.
 
 ```python
 # ✅ CORRECT - Concise function
@@ -773,16 +782,13 @@ def test_validate_with_mocked_schema_validator(mock_validator):
    pytest --cov=src --cov-report=term-missing --cov-fail-under=90
    ```
 
-4. **Check file sizes**
+4. **Check file and function size limits**
+
+   Use the same scripts as CI (logical lines, not `wc -l`):
 
    ```bash
-   # Find files exceeding 400 lines
-   for f in src/cortex/*.py; do
-      lines=$(wc -l < "$f")
-      if [ $lines -gt 400 ]; then
-         echo "$f: $lines lines (EXCEEDS LIMIT)"
-      fi
-   done
+   uv run python .cortex/synapse/scripts/python/check_file_sizes.py
+   uv run python .cortex/synapse/scripts/python/check_function_lengths.py
    ```
 
 5. **Verify type hints**
@@ -880,8 +886,8 @@ If any check fails, the PR will be automatically rejected.
    - No bare `except:`
 
 2. **Code Constraints**
-   - File size < 400 lines
-   - Function size < 30 lines
+   - File size within 400 **logical** lines (see [Code Constraints](#code-constraints))
+   - Function size within 30 **logical** lines (unless path excluded in constants)
    - One public type per file
    - Dependency injection
 
@@ -1052,12 +1058,12 @@ async def load_memory_bank(path: Path) -> dict:
 ### 9. Lines Exceeding Code Constraints
 
 ```bash
-# ❌ WRONG - File exceeds 400 lines
-src/cortex/huge_module.py: 850 lines
+# ❌ WRONG - File exceeds 400 *logical* lines (check with check_file_sizes.py)
+src/cortex/huge_module.py: fails CI file-size check
 
-# ✅ CORRECT - Split into separate modules
-src/cortex/validator.py: 250 lines
-src/cortex/formatter.py: 200 lines
+# ✅ CORRECT - Split into separate modules so each stays under the logical limit
+src/cortex/validator.py: passes
+src/cortex/formatter.py: passes
 ```
 
 ### 10. Not Using Concrete Types
@@ -1118,9 +1124,9 @@ black . && isort .
 
 #### "File exceeds 400 lines"
 
-- Identify logical groupings
-- Move code to separate modules
-- Follow single responsibility principle
+- Run `uv run python .cortex/synapse/scripts/python/check_file_sizes.py` — the failure is **logical** lines, not necessarily `wc -l`
+- Identify logical groupings of code (not just comments/docstrings)
+- Move code to separate modules; follow single responsibility principle
 
 ### Getting Started with Your First Contribution
 

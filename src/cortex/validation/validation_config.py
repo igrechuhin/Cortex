@@ -9,6 +9,8 @@ import json
 from pathlib import Path
 from typing import cast
 
+from pydantic import ValidationError
+
 from cortex.core.async_file_utils import open_async_text_file
 from cortex.core.models import JsonValue, ModelDict
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
@@ -60,7 +62,7 @@ class ValidationConfig:
         try:
             with open(self.config_path) as f:
                 return cast(JsonValue, json.load(f))
-        except Exception as e:
+        except (OSError, json.JSONDecodeError) as e:
             from cortex.core.logging_config import logger
 
             error_detail = str(e)
@@ -72,7 +74,8 @@ class ValidationConfig:
                     "Cause: Invalid JSON format or file read error. "
                     "Try: Fix JSON syntax errors, check file permissions, "
                 )
-                + ("or delete config file to use default values.")
+                + ("or delete config file to use default values."),
+                exc_info=True,
             )
             return None
 
@@ -89,8 +92,18 @@ class ValidationConfig:
                 default_dict, cast(ModelDict, user_config_raw)
             )
             return ValidationConfigModel.model_validate(merged_dict)
-        except Exception:
-            # If validation fails, return defaults
+        except ValidationError as e:
+            from cortex.core.logging_config import logger
+
+            logger.warning(
+                (
+                    "Failed to parse validation config structure; "
+                    f"using defaults. Cause: {e}. "
+                    "Try: Align '.cortex/config/validation.json' with the "
+                    "expected schema or remove invalid keys."
+                ),
+                exc_info=True,
+            )
             return ValidationConfigModel()
 
     def _merge_dicts(self, default: ModelDict, user: ModelDict) -> ModelDict:
@@ -187,7 +200,7 @@ class ValidationConfig:
             async with open_async_text_file(self.config_path, "w", "utf-8") as f:
                 config_dict = self.config.model_dump(mode="json")
                 _ = await f.write(json.dumps(config_dict, indent=2))
-        except Exception as e:
+        except OSError as e:
             msg = (
                 "Failed to save validation config to "
                 + f"{self.config_path}: {type(e).__name__}: {e}. "

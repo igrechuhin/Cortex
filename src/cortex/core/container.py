@@ -7,10 +7,11 @@ enabling better testability and dependency management.
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 from typing import Self
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
 # Runtime imports - only protocols and core layer dependencies
 from cortex.analysis.insight_engine import InsightEngine
@@ -263,9 +264,7 @@ class ManagerContainer(BaseModel):
         if index_path.exists():
             try:
                 _ = await self.metadata_index.load()
-            except (OSError, ValueError) as e:
-                _log_metadata_index_load_failed(e)
-            except Exception as e:
+            except (OSError, ValueError, json.JSONDecodeError, ValidationError) as e:
                 _log_metadata_index_load_failed(e)
 
         await self.file_system.cleanup_locks()
@@ -273,9 +272,13 @@ class ManagerContainer(BaseModel):
         if self.optimization_config.is_rules_enabled():
             try:
                 _ = await self.rules_manager.index_rules()
-            except (OSError, ValueError, RuntimeError) as e:
-                _log_rules_initialization_failed(e)
-            except Exception as e:
+            except (
+                OSError,
+                ValueError,
+                RuntimeError,
+                json.JSONDecodeError,
+                ValidationError,
+            ) as e:
                 _log_rules_initialization_failed(e)
 
     @classmethod

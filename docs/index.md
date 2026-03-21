@@ -24,6 +24,8 @@ Cortex provides a powerful set of tools for managing structured documentation (M
 
 ## Key Features
 
+Capabilities below follow the same historical phase labels used in the codebase and deep-dive docs. The **live MCP surface** is **10 tools**, **6 static resources**, and **up to 4 setup prompts** — see [MCP Tools Reference](./api/tools.md#current-published-mcp-surface-canonical).
+
 ### Phase 1: Foundation
 
 - Hybrid storage architecture (files + metadata index)
@@ -58,14 +60,13 @@ Cortex provides a powerful set of tools for managing structured documentation (M
 - Content summarization with multiple strategies
 - Custom rules integration
 
-### Phase 5: Self-Evolution
+### Phase 5: Workflows, quality, and discovery
 
-- Pattern analysis for tracking file access patterns
-- Structure analysis for detecting anti-patterns
-- AI-driven insight generation with recommendations
-- Refactoring suggestions (consolidation, splitting, reorganization)
-- Safe execution with rollback support
-- Learning from user feedback
+- Consolidated published MCP tools for session, Memory Bank, plans, pipeline handoff, quality gates, and reasoning (`think`)
+- Zero-arg quality pipeline tools (`run_quality_gate`, `run_quality_gate_fresh`, `run_docs_gate`, `fix_quality_issues`) aligned with CI
+- Plan and roadmap lifecycle via `plan()`; compound-engineering handoff via `pipeline_handoff`
+- Usage and discovery helpers (`query_usage`, resource URIs such as `cortex://context`) for telemetry and orientation
+- Deeper analysis and refactoring capabilities remain in the codebase; phase-grouped sections in [api/tools.md](./api/tools.md) are a historical catalog, not the current `tools/list` surface
 
 ### Phase 6: Shared Rules
 
@@ -90,9 +91,11 @@ To get started with Cortex, see the [Getting Started Guide](./getting-started.md
 
 ## API Documentation
 
+<!-- cortex-published-inventory: tools=10 resources=6 prompts-max=4 -->
+
 For detailed API documentation, see:
 
-- [MCP Tools Reference](./api/tools.md) - 70+ MCP tools
+- [MCP Tools Reference](./api/tools.md) - 10 MCP tools, 6 static resources
 - [Module Documentation](./api/modules.md) - All modules
 - [Exception Reference](./api/exceptions.md) - Exception hierarchy
 

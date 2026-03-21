@@ -16,13 +16,17 @@ from enum import StrEnum
 # =============================================================================
 
 MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024  # 10 MB - Maximum file size for processing
-MAX_FILE_LINES = 400  # Maximum lines per file (maintainability rule)
+# Logical lines only: blanks, comments, and docstrings excluded (see
+# .cortex/synapse/scripts/python/check_file_sizes.py). Same limit as CI.
+MAX_FILE_LINES = 400
 
 # MCP tool input limits (security: prevent resource exhaustion)
 MAX_MANAGE_FILE_CONTENT_BYTES = MAX_FILE_SIZE_BYTES  # Same as processing limit
 MAX_TASK_DESCRIPTION_CHARS = 50_000  # Max chars for load_context task_description
 MAX_SECTIONS_LIST_SIZE = 100  # Max sections list length for manage_file
-MAX_FUNCTION_LINES = 30  # Maximum logical lines per function
+# Logical lines in the function body: blanks, comments, and docstrings
+# excluded (see .cortex/synapse/scripts/python/check_function_lengths.py).
+MAX_FUNCTION_LINES = 30
 
 # Filenames excluded from file-size check (must match CI and local quality gate)
 FILE_SIZE_EXCLUDED_FILENAMES: tuple[str, ...] = ("models.py",)  # Pydantic schema-heavy

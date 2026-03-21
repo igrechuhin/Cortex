@@ -32,6 +32,14 @@
 
 - ✅ **Fix review prompt to track issues across reviews** - COMPLETE (2026-03-21) - Updated Synapse review.md: mandatory Issue Tracker with REV- IDs; telemetry-only diff scope expansion; Step 4 regression check; score deltas and stale-metric flag; improvement suggestions require file:line, before/after, max 3 files; success criteria aligned.
 
+- ✅ **Targeted exception narrowing in validation and config paths** - COMPLETE (2026-03-21) - Narrowed validation_config reads/parses/save and container post-init catches; completion_io already used specific exceptions; added tests ensuring TypeError propagates from validate/save paths.
+
+- ✅ **Replace sync file I/O with async in pipeline_handoff** - COMPLETE (2026-03-21) - All pipeline_handoff filesystem work runs inside asyncio.to_thread via _dispatch_sync offload; tests assert to_thread is invoked (TestAsyncToThreadOffload). Quality gate green.
+
+- ✅ **Align docs/index.md with canonical 10-tool inventory** - COMPLETE (2026-03-21) - Removed stale 70+ tool claims; docs/index.md now matches README inventory marker and describes the live 10-tool/6-resource surface; Key Features Phase 5 updated for quality gates and pipelines; architecture.md and getting-started.md aligned. rumdl + quality gate green.
+
+- ✅ **Clarify file/function size governance: document logical-line counting** - COMPLETE (2026-03-21) - Documented logical-line file/function limits in contributing.md with CI script commands and exclusion lists; quality.yml step names and errors say logical lines; MAX_* comments in constants.py point to check scripts. Step 4 optional dashboard not added (check_file_sizes already warns near limit).
+
 ## Completed Work (2026-03-20)
 
 - **Summary (2026-03-20)** - 1 entries archived.

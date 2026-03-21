@@ -16,13 +16,7 @@
 
 ### Fixes
 
-- **PENDING** — [Targeted exception narrowing in validation and config paths](../plans/exception-narrowing-targeted.md) — Replace `except Exception` with specific types in 5 highest-impact locations (validation_config, completion_io, container). Priority: Medium.
-- **PENDING** — [Replace sync file I/O with async in pipeline_handoff](../plans/async-io-pipeline-handoff.md) — Wrap `write_text`/`read_text` in `asyncio.to_thread()` to prevent event-loop blocking. Priority: Medium.
-
 ### Documentation Cleanup (DRY)
-
-- **PENDING** — [Align docs/index.md with canonical 10-tool inventory](../plans/docs-surface-alignment.md) — Remove stale "70+ MCP tools" claim and align all top-level docs with the published surface. Priority: High.
-- **PENDING** — [Clarify file/function size governance: document logical-line counting](../plans/file-size-governance-clarity.md) — Document that enforcement uses logical lines (excluding blanks, comments, docstrings) to eliminate confusion. Priority: High.
 
 ### Refactoring
 

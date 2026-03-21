@@ -211,22 +211,24 @@ jobs:
           echo "✅ Pyright type check passed (tests and scripts)"
           echo "::endgroup::"
 
-      - name: Check file sizes (max 400 lines)
+      # Logical lines: blanks, comments, and docstrings excluded (not wc -l).
+      - name: Check file sizes (max 400 logical lines)
         id: file_sizes
         run: |
           echo "::group::Running file size check"
           if ! uv run python .cortex/synapse/scripts/python/check_file_sizes.py; then
-            echo "::error::File size check failed. Files exceeding 400 lines must be split."
+            echo "::error::File size check failed. Files exceeding 400 logical lines must be split."
             exit 1
           fi
           echo "::endgroup::"
 
-      - name: Check function lengths (max 30 lines)
+      # Logical lines per function body (same exclusion rules as file check).
+      - name: Check function lengths (max 30 logical lines)
         id: function_lengths
         run: |
           echo "::group::Running function length check"
           if ! uv run python .cortex/synapse/scripts/python/check_function_lengths.py; then
-            echo "::error::Function length check failed. Functions exceeding 30 lines must be refactored."
+            echo "::error::Function length check failed. Functions exceeding 30 logical lines must be refactored."
             exit 1
           fi
           echo "::endgroup::"

@@ -4,7 +4,7 @@ This document describes the high-level architecture of Cortex.
 
 ## Overview
 
-Cortex is structured as an MCP (Model Context Protocol) server that provides 70+ tools for managing structured documentation (Memory Bank files). The system is built with a modular, layered architecture designed for:
+Cortex is structured as an MCP (Model Context Protocol) server that exposes **10 tools** and **6 static resources** on the live surface (plus setup prompts), while managing structured documentation (Memory Bank files). The system is built with a modular, layered architecture designed for:
 
 - **Extensibility**: Easy to add new phases and features
 - **Maintainability**: Each module has a single, well-defined responsibility
@@ -23,7 +23,7 @@ Cortex is structured as an MCP (Model Context Protocol) server that provides 70+
                          ▼
 ┌─────────────────────────────────────────────────────────────┐
 │                    MCP Server (FastMCP)                     │
-│                  70+ tools (multiple phases)                │
+│           10 tools + 6 resources (published MCP surface)    │
 └────────────┬────────────────────────────────────────────────┘
              │
              ▼
@@ -91,9 +91,11 @@ Cortex supports multiple MCP transports for different deployment scenarios.
 
 ### Layer 2: Tool Modules
 
-**Files**: `tools/` (many modules; see [API tools](api/tools.md) for the full list)
+**Files**: `tools/` (many modules; see [API tools](api/tools.md))
 
-Tool modules are grouped by phase and responsibility. Representative groups:
+**Published MCP surface**: clients see **10 tools** and **6 static resources** — [Current published MCP surface](api/tools.md#current-published-mcp-surface-canonical). Inventory parity is enforced in CI (`docs/_generated/tool-inventory.json`, `cortex.discovery.published_inventory`).
+
+Implementation code remains grouped by historical phase and domain for maintainability (not a 1:1 map to MCP tool names):
 
 - **Phase 1** – Foundation: file operations, version, rollback, dependency, stats (split across `phase1_foundation_*`, `file_operations`, etc.)
 - **Phase 2** – Linking and transclusion
@@ -107,7 +109,7 @@ Tool modules are grouped by phase and responsibility. Representative groups:
 - **Synapse** – `synapse_tools`, Synapse prompts registration
 - **Other** – `query_memory_bank_operations`, `query_usage_operations`, `cache_json_tools`, `script_capture_tools`, `sequential_thinking`, `task_locking`, and others
 
-Total tool count is 71 (70+ tools, 7 prompts); exact count and parameters are in `docs/api/tools.md` and `src/cortex/tools/__init__.py`. Naming rules: [naming conventions](architecture/naming-conventions.md).
+Setup prompts and parameters are documented in `docs/api/tools.md` and `README.md` (see `<!-- cortex-published-inventory -->` marker). Naming rules: [naming conventions](architecture/naming-conventions.md).
 
 ### Layer 3: Manager Initialization
 

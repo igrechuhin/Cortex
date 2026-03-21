@@ -30,6 +30,10 @@
 - **Quality gate CI parity** - COMPLETE. Verified parity matrix and preflight/Phase A alignment; typing cleanup in markdown-merge tests; dispatch comment for markdown_lint; run_quality_gate passed.
 - **Sanitize pipeline/phase path parameters in pipeline_handoff** - COMPLETE. Allowlist for pipeline/phase plus unit tests; integration tests updated.
 - **Fix review prompt to track issues across reviews** - COMPLETE. Review prompt now carries forward OPEN issues, expands scope on telemetry-only diffs, requires concrete suggestions and score deltas, and adds regression checks.
+- **Targeted exception narrowing in validation and config paths** - COMPLETE. Narrowed validation_config and container handlers; verified completion_io; added propagation tests.
+- **Replace sync file I/O with async in pipeline_handoff** - COMPLETE. Dispatch runs in asyncio.to_thread; tests verify offload.
+- **Align docs/index.md with canonical 10-tool inventory** - COMPLETE. Canonical 10/6/4 surface documented; 70+ removed from top-level docs.
+- **Clarify file/function size governance: document logical-line counting** - COMPLETE. Docs, CI labels, and constant comments aligned with check_file_sizes/check_function_lengths.
 
 ## 2026-03-16
 

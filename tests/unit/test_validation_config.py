@@ -227,6 +227,42 @@ class TestSaveConfig:
                 await config.save()
 
 
+class TestExceptionNarrowing:
+    """Programming errors propagate; expected failures stay defensive."""
+
+    def test_initialization_propagates_type_error_from_validate(
+        self, tmp_path: Path
+    ) -> None:
+        """TypeError from model_validate must not be swallowed during load."""
+        config_path = (
+            get_cortex_path(tmp_path, CortexResourceType.CONFIG) / "validation.json"
+        )
+        config_path.parent.mkdir(parents=True, exist_ok=True)
+        with open(config_path, "w") as f:
+            json.dump({"enabled": True}, f)
+        with patch.object(
+            ValidationConfigModel,
+            "model_validate",
+            side_effect=TypeError("simulated bug"),
+        ):
+            with pytest.raises(TypeError, match="simulated bug"):
+                _ = ValidationConfig(project_root=tmp_path)
+
+    @pytest.mark.asyncio
+    async def test_save_propagates_type_error_from_dumps(self, tmp_path: Path) -> None:
+        """Non-IO failures during save must propagate."""
+        get_cortex_path(tmp_path, CortexResourceType.CONFIG).mkdir(
+            parents=True, exist_ok=True
+        )
+        config = ValidationConfig(project_root=tmp_path)
+        with patch(
+            "cortex.validation.validation_config.json.dumps",
+            side_effect=TypeError("not serializable"),
+        ):
+            with pytest.raises(TypeError, match="not serializable"):
+                await config.save()
+
+
 class TestLoadConfigInvalidStructure:
     """Tests for loading config with invalid structure."""
 
