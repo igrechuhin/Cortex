@@ -83,33 +83,49 @@ def _parse_submodule_status_line(line: str) -> tuple[str, str] | None:
 
 def _submodule_porcelain_non_empty(sub_abs: Path, timeout: float) -> bool:
     """True when the submodule has unstaged/untracked changes outside ignored noise paths."""
-    proc = subprocess.run(
-        [
-            "git",
-            "-C",
-            str(sub_abs),
-            "status",
-            "--porcelain",
-            "--",
-            ":/",
-            ":(exclude).cache",
-        ],
-        capture_output=True,
-        text=True,
-        timeout=timeout,
-        check=False,
-    )
+    try:
+        proc = subprocess.run(
+            [
+                "git",
+                "-C",
+                str(sub_abs),
+                "status",
+                "--porcelain",
+                "--",
+                ":/",
+                ":(exclude).cache",
+            ],
+            capture_output=True,
+            text=True,
+            timeout=timeout,
+            check=False,
+        )
+    except subprocess.TimeoutExpired:
+        logger.warning(
+            "submodule_hygiene: git status --porcelain timed out after %ss for %s",
+            timeout,
+            sub_abs,
+        )
+        return False
     return proc.returncode == 0 and bool(proc.stdout.strip())
 
 
 def _git_submodule_status_text(project_root: Path, status_timeout: float) -> str | None:
-    proc = subprocess.run(
-        ["git", "-C", str(project_root), "submodule", "status", "--recursive"],
-        capture_output=True,
-        text=True,
-        timeout=status_timeout,
-        check=False,
-    )
+    try:
+        proc = subprocess.run(
+            ["git", "-C", str(project_root), "submodule", "status", "--recursive"],
+            capture_output=True,
+            text=True,
+            timeout=status_timeout,
+            check=False,
+        )
+    except subprocess.TimeoutExpired:
+        logger.warning(
+            "submodule_hygiene: git submodule status timed out after %ss (root=%s)",
+            status_timeout,
+            project_root,
+        )
+        return None
     if proc.returncode == 0:
         return proc.stdout
     logger.warning(

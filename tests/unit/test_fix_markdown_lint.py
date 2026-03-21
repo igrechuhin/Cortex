@@ -96,21 +96,150 @@ class TestRunCommand:
             assert result.returncode == -1
 
     @pytest.mark.asyncio
-    async def test_run_command_exception(self):
-        """Test command execution exception handling."""
-        # Arrange
+    async def test_run_command_oserror_returns_error_result(self):
+        """Expected subprocess/setup failures map to GitCommandResult error."""
         with patch(
             "cortex.tools.files.markdown_lint_core.asyncio.create_subprocess_exec",
-            side_effect=Exception("Test error"),
+            side_effect=OSError("Test error"),
         ):
-            # Act
             result = await run_command(["test", "command"])
 
-            # Assert
-            assert result.success is False
-            assert result.error is not None
-            assert "Test error" in result.error
-            assert result.returncode == -1
+        assert result.success is False
+        assert result.error is not None
+        assert "Test error" in result.error
+        assert result.returncode == -1
+
+    @pytest.mark.asyncio
+    async def test_run_command_unexpected_exception_propagates(self):
+        """Unexpected bugs are not swallowed as a generic command error."""
+        with (
+            patch(
+                "cortex.tools.files.markdown_lint_core.asyncio.create_subprocess_exec",
+                side_effect=RuntimeError("bug"),
+            ),
+            pytest.raises(RuntimeError, match="bug"),
+        ):
+            _ = await run_command(["test", "command"])
+
+
+class TestMarkdownLintCoreNarrowExceptions:
+    """Narrow exception handling in markdown_lint_core (no bare except Exception)."""
+
+    @pytest.mark.asyncio
+    async def test_calculate_file_hash_oserror_returns_none(
+        self, tmp_path: Path
+    ) -> None:
+        """I/O failures yield None so callers can treat the file as needing work."""
+        from cortex.tools.files import markdown_lint_core as mlc
+
+        path = tmp_path / "x.md"
+        _ = path.write_text("hi", encoding="utf-8")
+        with patch(
+            "cortex.tools.files.markdown_lint_core.aiofiles.open",
+            side_effect=OSError("read failed"),
+        ):
+            assert await mlc.calculate_file_hash(path) is None
+
+    @pytest.mark.asyncio
+    async def test_calculate_file_hash_typeerror_propagates(
+        self, tmp_path: Path
+    ) -> None:
+        """Unexpected errors from hashing are not masked as a silent None."""
+        from cortex.tools.files import markdown_lint_core as mlc
+
+        path = tmp_path / "x.md"
+        _ = path.write_text("hi", encoding="utf-8")
+
+        class _BadFile:
+            async def __aenter__(self) -> "_BadFile":
+                return self
+
+            async def __aexit__(self, *args: object) -> None:
+                return None
+
+            async def read(self, _n: int) -> bytes:
+                raise TypeError("unexpected")
+
+        with (
+            patch(
+                "cortex.tools.files.markdown_lint_core.aiofiles.open",
+                return_value=_BadFile(),
+            ),
+            pytest.raises(TypeError, match="unexpected"),
+        ):
+            _ = await mlc.calculate_file_hash(path)
+
+    @pytest.mark.asyncio
+    async def test_update_markdown_lint_cache_safe_lock_timeout_logs(
+        self, tmp_path: Path
+    ) -> None:
+        """FileLockTimeoutError from cache update is logged, not re-raised."""
+        from cortex.core.exceptions import FileLockTimeoutError
+        from cortex.tools.files import markdown_lint_core as mlc
+        from cortex.tools.files.markdown_lint_cache import MarkdownLintIndex
+        from cortex.tools.files.markdown_lint_helpers import FileResult
+
+        index = MarkdownLintIndex()
+        results = [
+            FileResult(
+                file="a.md",
+                fixed=False,
+                errors=[],
+                error_message=None,
+            )
+        ]
+        hashes = {"a.md": "sha256:abc"}
+
+        with (
+            patch.object(
+                mlc,
+                "_update_markdown_lint_cache_from_results",
+                new_callable=AsyncMock,
+                side_effect=FileLockTimeoutError("markdown-lint-index.json", 30),
+            ),
+            patch.object(mlc, "log_client", new_callable=AsyncMock) as mock_log,
+        ):
+            await mlc.update_markdown_lint_cache_safe(
+                index, tmp_path, results, hashes, ctx=None
+            )
+
+        mock_log.assert_awaited_once()
+        assert "Failed to update markdown lint cache" in str(
+            mock_log.await_args_list[0]
+        )
+
+    @pytest.mark.asyncio
+    async def test_update_markdown_lint_cache_safe_runtime_error_propagates(
+        self, tmp_path: Path
+    ) -> None:
+        """Programming errors during cache update are not swallowed."""
+        from cortex.tools.files import markdown_lint_core as mlc
+        from cortex.tools.files.markdown_lint_cache import MarkdownLintIndex
+        from cortex.tools.files.markdown_lint_helpers import FileResult
+
+        index = MarkdownLintIndex()
+        results = [
+            FileResult(
+                file="a.md",
+                fixed=False,
+                errors=[],
+                error_message=None,
+            )
+        ]
+        hashes = {"a.md": "sha256:abc"}
+
+        with (
+            patch.object(
+                mlc,
+                "_update_markdown_lint_cache_from_results",
+                new_callable=AsyncMock,
+                side_effect=RuntimeError("bug"),
+            ),
+            pytest.raises(RuntimeError, match="bug"),
+        ):
+            await mlc.update_markdown_lint_cache_safe(
+                index, tmp_path, results, hashes, ctx=None
+            )
 
 
 class TestGetAllMarkdownFilesForLint:

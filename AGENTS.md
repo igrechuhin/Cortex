@@ -192,6 +192,7 @@ All phases run inline. Use zero-arg tools — do NOT use legacy pre-commit tools
 - Respect the project's defined structure; do not introduce new top-level directories or concepts (e.g., `scripts`) that deviate from it; avoid workflow or automation artifacts that pollute the project layout.
 - When tests need cursor/agent paths and project_root is the repo root, use a session-scoped temp directory instead of creating `_cursor` in the workspace.
 - Archived plans must live under `.cortex/plans/archive` (not `.cortex/archived/plans`) so completed plans stay in the canonical archive tree.
+- When editing `roadmap.md` pending bullets, avoid bare dotted Python filenames, backticked paths such as `pre_commit_foo`/`pre_commit_bar`, and the root Node manifest name written as one token; the roadmap file-reference scanner can treat those as real paths and fail `roadmap_sync`.
 
 ## Cursor Cloud specific instructions
 

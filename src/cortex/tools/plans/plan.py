@@ -126,7 +126,6 @@ async def _plan_dispatch_complete(
 ) -> str:
     if not plan_title or not summary:
         return _plan_error_missing_complete_params()
-    assert plan_title is not None and summary is not None
     return await _plan_handle_complete(
         plan_title, summary, completion_date, progress_entry, plan_file_name, ctx
     )
@@ -141,7 +140,6 @@ async def _plan_dispatch_register(
 ) -> str:
     if not plan_title or not description:
         return _plan_error_missing_register_params()
-    assert plan_title is not None and description is not None
     return await _plan_handle_register(plan_title, description, status, section, ctx)
 
 

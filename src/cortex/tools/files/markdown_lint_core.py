@@ -10,12 +10,14 @@ compatibility so callers do not need to change imports when tooling is upgraded.
 
 import asyncio
 import hashlib
+import subprocess
 from pathlib import Path
 
 import aiofiles
 
 from cortex.core.constants import GIT_OPERATION_TIMEOUT_SECONDS
 from cortex.core.context_logging import MCPContext, log_client, report_progress_safe
+from cortex.core.exceptions import FileLockTimeoutError
 from cortex.core.models import GitCommandResult
 from cortex.tools.files.markdown_lint_cache import (
     MarkdownLintIndex,
@@ -59,6 +61,7 @@ __all__ = [
     "_update_markdown_lint_cache_from_results",
     "update_markdown_lint_cache_safe",
     "validate_markdown_prerequisites",
+    "calculate_file_hash",
 ]
 
 
@@ -105,7 +108,7 @@ async def run_command(
             )
     except TimeoutError:
         return _create_error_result(f"Command timed out after {timeout}s")
-    except Exception as e:
+    except (subprocess.SubprocessError, OSError, ValueError) as e:
         return _create_error_result(str(e))
 
 
@@ -144,7 +147,7 @@ async def _calculate_file_hash(file_path: Path) -> str | None:
                     break
                 digest.update(chunk)
         return f"sha256:{digest.hexdigest()}"
-    except Exception:
+    except (OSError, UnicodeDecodeError):
         return None
 
 
@@ -411,6 +414,7 @@ async def _after_one_file(
 is_cached_clean_entry = _is_cached_clean_entry
 compute_file_hashes = _compute_file_hashes
 after_one_file = _after_one_file
+calculate_file_hash = _calculate_file_hash
 
 
 async def _update_markdown_lint_cache_from_results(
@@ -444,7 +448,7 @@ async def update_markdown_lint_cache_safe(
         await _update_markdown_lint_cache_from_results(
             index, root_path, results, file_hashes
         )
-    except Exception as e:
+    except (OSError, ValueError, KeyError, FileLockTimeoutError) as e:
         await log_client(
             ctx,
             "warning",

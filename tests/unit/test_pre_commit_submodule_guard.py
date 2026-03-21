@@ -82,6 +82,54 @@ def test_scan_reports_dirty_worktree_when_porcelain_nonempty(tmp_path: Path) -> 
     assert report.violations[0].code is SubmoduleHygieneCode.DIRTY_WORKTREE
 
 
+def test_scan_empty_when_submodule_status_times_out(tmp_path: Path) -> None:
+    (tmp_path / ".git").mkdir()
+    cmd = ["git", "-C", str(tmp_path), "submodule", "status", "--recursive"]
+    with (
+        patch(
+            "cortex.tools.execution.pre_commit_submodule_guard.logger.warning"
+        ) as mock_warn,
+        patch(
+            "cortex.tools.execution.pre_commit_submodule_guard.subprocess.run",
+            side_effect=subprocess.TimeoutExpired(cmd, 120.0),
+        ),
+    ):
+        report = scan_submodule_hygiene(tmp_path)
+    assert report.violations == ()
+    mock_warn.assert_called_once()
+    assert "submodule status timed out" in mock_warn.call_args[0][0].lower()
+
+
+def test_scan_skips_dirty_when_porcelain_times_out(tmp_path: Path) -> None:
+    (tmp_path / ".git").mkdir()
+    (tmp_path / "sub").mkdir(parents=True)
+    (tmp_path / "sub" / ".git").mkdir()
+
+    def fake_run(
+        cmd: list[str],
+        **_kwargs: object,
+    ) -> subprocess.CompletedProcess[str]:
+        if "submodule" in cmd:
+            return subprocess.CompletedProcess(cmd, 0, " abcd1234abcdef12 sub\n", "")
+        if "--porcelain" in cmd:
+            raise subprocess.TimeoutExpired(cmd, 60.0)
+        return subprocess.CompletedProcess(cmd, 1, "", "unexpected")
+
+    with (
+        patch(
+            "cortex.tools.execution.pre_commit_submodule_guard.logger.warning"
+        ) as mock_warn,
+        patch(
+            "cortex.tools.execution.pre_commit_submodule_guard.subprocess.run",
+            side_effect=fake_run,
+        ),
+    ):
+        report = scan_submodule_hygiene(tmp_path)
+    assert report.violations == ()
+    mock_warn.assert_called_once()
+    assert "porcelain timed out" in mock_warn.call_args[0][0].lower()
+
+
 def test_scan_ignores_git_submodule_failure(tmp_path: Path) -> None:
     (tmp_path / ".git").mkdir()
     fake = subprocess.CompletedProcess(

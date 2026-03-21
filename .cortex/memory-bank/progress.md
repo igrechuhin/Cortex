@@ -40,6 +40,9 @@
 - **Improve submodule preflight resilience and error messaging** - COMPLETE. TTY prompt in check_synapse.sh, bootstrap auto-init, MCP remediation on submodule hygiene block.
 - **Rumdl scope parity and submodule MCP remediation (2026-03-21)** - COMPLETE. Excluded `.cortex/.cache/` in CI/Makefile rumdl find; aligned `markdown_lint_core` excludes (history, cache, POSIX rel paths); submodule guard `precommit_block_response` includes `remediation`; archived `submodule-resilience` plan under `.cortex/plans/archive/Other/`; unit tests refreshed.
 - **Align bootstrap.sh Synapse readiness check with check_synapse.sh** - COMPLETE. Shared _synapse_lib.sh; bootstrap aligns with check_synapse empty-dir semantics; pytest regression tests.
+- **Narrow broad exception handlers in markdown lint core** - COMPLETE. Narrowed subprocess/I/O and cache exceptions; added tests for OSError handling, TypeError/RuntimeError propagation, and FileLockTimeoutError logging.
+- **Handle subprocess.TimeoutExpired in pre_commit_submodule_guard** - COMPLETE. Wrapped submodule status and porcelain git calls with TimeoutExpired handling; warn and fail-soft; tests cover both paths.
+- **Remove redundant asserts in plan tool** - COMPLETE. Removed redundant asserts after guard returns in plan dispatch helpers.
 
 ## 2026-03-16
 

@@ -52,6 +52,12 @@
 
 - ✅ **Align bootstrap.sh Synapse readiness check with check_synapse.sh** - COMPLETE (2026-03-21) - Added scripts/_synapse_lib.sh with _synapse_scripts_ready(); bootstrap.sh and check_synapse.sh source it. Bootstrap prints remediation text then runs git submodule update when scripts dir missing or empty. Added tests/unit/test_synapse_scripts_readiness.py for empty/missing/non-empty cases and bootstrap wiring.
 
+- ✅ **Narrow broad exception handlers in markdown lint core** - COMPLETE (2026-03-21) - Replaced broad except Exception in run_command, _calculate_file_hash, and update_markdown_lint_cache_safe with specific types; added FileLockTimeoutError for cache path; exported calculate_file_hash for tests; added unit tests for propagation and logging.
+
+- ✅ **Handle subprocess.TimeoutExpired in pre_commit_submodule_guard** - COMPLETE (2026-03-21) - Wrapped both git subprocess calls in try/except for TimeoutExpired; log warnings and return safe empty/skip behavior; added unit tests for status and porcelain timeouts.
+
+- ✅ **Remove redundant asserts in plan tool** - COMPLETE (2026-03-21) - Removed dead assert lines after guard returns in _plan_dispatch_complete and _plan_dispatch_register; existing falsy checks suffice for pyright narrowing.
+
 ## Completed Work (2026-03-20)
 
 - **Summary (2026-03-20)** - 1 entries archived.
