@@ -29,6 +29,7 @@
 - **Quality gate CI parity** - PARTIAL. Extended docs/api/tools.md CI parity section with full blocking-quality matrix, CI-only rows, local-only fix_errors, and .cortex/.cache rumdl exclusion note; file/function governance cross-checked vs CI.
 - **Quality gate CI parity** - COMPLETE. Verified parity matrix and preflight/Phase A alignment; typing cleanup in markdown-merge tests; dispatch comment for markdown_lint; run_quality_gate passed.
 - **Sanitize pipeline/phase path parameters in pipeline_handoff** - COMPLETE. Allowlist for pipeline/phase plus unit tests; integration tests updated.
+- **Fix review prompt to track issues across reviews** - COMPLETE. Review prompt now carries forward OPEN issues, expands scope on telemetry-only diffs, requires concrete suggestions and score deltas, and adds regression checks.
 
 ## 2026-03-16
 

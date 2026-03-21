@@ -30,6 +30,8 @@
 
 - ✅ **Sanitize pipeline/phase path parameters in pipeline_handoff** - COMPLETE (2026-03-21) - Added allowlisted pipeline and phase names on top of safe-token regex validation; unknown alphanumeric tokens return JSON errors without touching the filesystem. Adjusted integration tests to use allowlisted pipeline names for empty-state cases; added unit tests for allowlist rejection and happy path.
 
+- ✅ **Fix review prompt to track issues across reviews** - COMPLETE (2026-03-21) - Updated Synapse review.md: mandatory Issue Tracker with REV- IDs; telemetry-only diff scope expansion; Step 4 regression check; score deltas and stale-metric flag; improvement suggestions require file:line, before/after, max 3 files; success criteria aligned.
+
 ## Completed Work (2026-03-20)
 
 - **Summary (2026-03-20)** - 1 entries archived.
