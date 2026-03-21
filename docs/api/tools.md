@@ -35,6 +35,46 @@ Contributor and agent workflows should use these **zero-argument** Cortex MCP to
 
 Source of truth for behavior and timeouts: `src/cortex/tools/execution/pre_commit_zero_arg_tools.py`.
 
+### CI parity guarantee (`run_quality_gate` vs `quality.yml`)
+
+**Goal:** If the GitHub Actions **Code Quality** workflow would fail on a change, `run_quality_gate()` should fail locally first for the same categories of issues, so dirty commits are less likely to reach the remote.
+
+**Source files:** `.github/workflows/quality.yml`; Phase A check list in `pre_commit_phase_dispatch.py` (`PHASE_A_CHECKS`); execution in `pre_commit_worker.py` (detached worker) and `pre_commit_tools_run_helpers.execute_all_checks`.
+
+#### Blocking quality matrix (audit 2026-03-21)
+
+| CI step (`quality.yml`) | Local Phase A check | Parity notes |
+|-------------------------|---------------------|--------------|
+| Black `src/` + `tests/` | `format` | Python adapter runs Black on the same paths. |
+| Ruff `src/` + `tests/` | `quality` | Adapter runs `ruff check --fix` then a verification `ruff check` on `src/` + `tests/` (end state matches CI `ruff check`). |
+| Pyright `src/` (standalone step) | `type_check` | CI runs this before `check_types.py`. When `check_types.py` is present, local `type_check` runs that script only; the script loops **src**, **tests**, and **`.cortex/synapse/scripts/python`**, so `src/` is still type-checked with the same strict policy as the dedicated CI step (see `python_adapter.py` + `python_adapter_checks.py`). |
+| Synapse Black (`check_formatting.py`) | `synapse_format` | Same script as CI. |
+| Synapse Ruff (`check_linting.py`) | `synapse_lint` | Same script as CI. |
+| Pyright tests/scripts (`check_types.py`) | `type_check` | Same script as CI; single local check covers the CI “tests and scripts” step (and includes `src/` as above). |
+| File sizes (`check_file_sizes.py`) | `quality` (Python) | **Not** invoked as a subprocess in the adapter. Local path: `pre_commit_helpers_quality.check_file_sizes` + `pre_commit_pipeline_quality.execute_quality`. Same limits and exclusions as CI: `MAX_FILE_LINES` and `FILE_SIZE_EXCLUDED_FILENAMES` from `cortex/core/constants.py` (synapse script imports these when run from this repo). Same glob rules: `src/**/*.py`, skip `__pycache__`, `test_*.py`, excluded filenames. CI prints **warnings** between 350–400 logical lines; local gate only fails above max—failure threshold matches. |
+| Function lengths (`check_function_lengths.py`) | `quality` (Python) | Same as file sizes: in-process `check_function_lengths` in `pre_commit_pipeline_quality.py` + `pre_commit_helpers_quality.check_function_lengths_in_file`, aligned with synapse script logic and `MAX_FUNCTION_LINES` / `FUNCTION_LENGTH_EXCLUDED_PATHS` from `cortex/core/constants.py`. |
+| cSpell (`check_spelling.py`) | `spelling` | Same script as CI (Phase A default checks). |
+| rumdl markdown | `markdown_lint` | Worker runs `rumdl check` on a capped file list (`pre_commit_worker.collect_pre_commit_markdown_paths`, max 500). Excludes match CI for `node_modules`, `.venv`, `venv`, `__pycache__`, `.git`, `.cortex/plans/archive`, `.cortex/history/`. **Gap:** local also excludes `.cortex/.cache/` (generated/session markdown); CI `find` does not—rumdl violations under `.cortex/.cache/` could fail CI while the local gate skips those paths. |
+| pytest `-m "not slow"`, `-n auto`, coverage | `tests` | `python_adapter._build_test_command` mirrors the workflow command documented in `quality.yml` (`tests/`, markers, xdist when available, `--cov=src/cortex`, `--cov-fail-under` from gate threshold default 0.9). |
+
+#### CI-only or non-local gate steps
+
+| CI step | Local gate | Notes |
+|---------|------------|--------|
+| Verify Synapse submodule (`scripts/check_synapse.sh`) | — | Bootstrap on clean clones; not re-run inside `run_quality_gate()`. |
+| `make env-check` | — | CI smoke for toolchain; developers run separately if needed. |
+| Eval full + baseline compare (`run_eval_check.py`) | `eval_fast` only | Local Phase A runs a fast eval smoke; full thresholded eval and baseline compare are **CI blocking** only. |
+| Codecov upload | — | `continue-on-error: true`; not part of the job’s hard failure set. |
+| Health-check analysis / artifact | — | `continue-on-error: true`; informational. |
+
+#### Local-only Phase A behavior
+
+| Local check | CI | Notes |
+|-------------|-----|-------|
+| `fix_errors` | No separate step | Runs first in Phase A to apply fixable issues before other checks complete. |
+
+**Process:** New **blocking** steps added to `quality.yml` need a local equivalent wired into `_PRE_FLIGHT_DEFAULT_CHECKS` and `PHASE_A_CHECKS` in `pre_commit_preflight_helpers.py` / `pre_commit_phase_dispatch.py`, unless documented here as CI-only with justification.
+
 ## Current published MCP surface (canonical)
 
 ### Code sources

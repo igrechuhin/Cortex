@@ -186,7 +186,14 @@ def test_phase_to_checks_phase_a_returns_canonical_list() -> None:
     assert len(checks) == len(PHASE_A_CHECKS)
     assert set(checks) == set(PHASE_A_CHECKS)
     # Required checks must be present
-    for required in ("fix_errors", "format", "type_check", "quality", "tests"):
+    for required in (
+        "fix_errors",
+        "format",
+        "type_check",
+        "quality",
+        "spelling",
+        "tests",
+    ):
         assert required in checks, f"Missing required check: {required}"
 
 

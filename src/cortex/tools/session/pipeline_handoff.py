@@ -67,19 +67,66 @@ def _now_iso() -> str:
 
 _SAFE_TOKEN_RE = re.compile(r"^[A-Za-z0-9_-]+$")
 
+# Allowlisted names only — derived from Synapse prompts and orchestrators.
+_VALID_PIPELINES: frozenset[str] = frozenset(
+    {"commit", "implement", "fix", "review", "default"}
+)
+_VALID_PHASES: frozenset[str] = frozenset(
+    {
+        "preflight",
+        "checks",
+        "docs",
+        "validate",
+        "final-gate",
+        "select",
+        "code",
+        "finalize",
+        "verify",
+        "fix",
+    }
+)
 
-def _validate_safe_token(token: str, name: str) -> str | None:
-    """Validate tokens used in filesystem paths.
 
-    Only allow A-Za-z0-9_- to prevent path separators and traversal patterns.
-    Returns an error JSON string when invalid, otherwise None.
-    """
+def _validate_pipeline(pipeline: str) -> str | None:
+    """Validate pipeline token shape and allowlist before any path use."""
 
-    if not token or not _SAFE_TOKEN_RE.fullmatch(token):
+    if not pipeline or not _SAFE_TOKEN_RE.fullmatch(pipeline):
         return json.dumps(
             {
                 "status": "error",
-                "error": (f"Invalid {name} token. Allowed characters: A-Za-z0-9_-"),
+                "error": "Invalid pipeline token. Allowed characters: A-Za-z0-9_-",
+            },
+            indent=2,
+        )
+    if pipeline not in _VALID_PIPELINES:
+        allowed = ", ".join(sorted(_VALID_PIPELINES))
+        return json.dumps(
+            {
+                "status": "error",
+                "error": (f"Unknown pipeline '{pipeline}'. Allowed values: {allowed}."),
+            },
+            indent=2,
+        )
+    return None
+
+
+def _validate_phase(phase: str) -> str | None:
+    """Validate phase token shape and allowlist before any path use."""
+
+    if not phase or not _SAFE_TOKEN_RE.fullmatch(phase):
+        return json.dumps(
+            {
+                "status": "error",
+                "error": "Invalid phase token. Allowed characters: A-Za-z0-9_-",
+            },
+            indent=2,
+        )
+    if phase not in _VALID_PHASES:
+        allowed = ", ".join(sorted(_VALID_PHASES))
+        return json.dumps(
+            {
+                "status": "error",
+                "error": f"Unknown phase '{phase}'. Allowed values: {allowed}.",
             },
             indent=2,
         )
@@ -396,11 +443,11 @@ async def _dispatch(
     data_str = _coerce_data(data)
 
     # Validate tokens before any filesystem path construction.
-    pipeline_error = _validate_safe_token(pipeline, "pipeline")
+    pipeline_error = _validate_pipeline(pipeline)
     if pipeline_error is not None:
         return pipeline_error
     if phase is not None:
-        phase_error = _validate_safe_token(phase, "phase")
+        phase_error = _validate_phase(phase)
         if phase_error is not None:
             return phase_error
 

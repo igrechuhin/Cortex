@@ -32,6 +32,7 @@ _PRE_FLIGHT_DEFAULT_CHECKS: tuple[PreCommitCheckName, ...] = (
     PreCommitCheckName.SYNAPSE_LINT,
     PreCommitCheckName.TYPE_CHECK,
     PreCommitCheckName.QUALITY,
+    PreCommitCheckName.SPELLING,
     PreCommitCheckName.TESTS,
     PreCommitCheckName.EVAL_FAST,
 )

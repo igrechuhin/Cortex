@@ -16,8 +16,6 @@
 
 ### Fixes
 
-- **PENDING** — [Quality gate CI parity: close remaining gaps between local and CI checks](../plans/quality-gate-ci-parity.md) — Audit and close all gaps between `run_quality_gate()` and CI `quality.yml` to prevent "local passes, CI fails" incidents. Priority: High.
-- **PENDING** — [Sanitize pipeline/phase path parameters in pipeline_handoff](../plans/pipeline-handoff-path-safety.md) — Add allowlist validation for `pipeline` and `phase` strings to prevent path traversal. Priority: High.
 - **PENDING** — [Fix review prompt to track issues across reviews](../plans/review-prompt-effectiveness.md) — Restructure the review prompt with issue tracking, score deltas, and concrete suggestions to break the 7.2-7.9 score plateau. Priority: High.
 - **PENDING** — [Targeted exception narrowing in validation and config paths](../plans/exception-narrowing-targeted.md) — Replace `except Exception` with specific types in 5 highest-impact locations (validation_config, completion_io, container). Priority: Medium.
 - **PENDING** — [Replace sync file I/O with async in pipeline_handoff](../plans/async-io-pipeline-handoff.md) — Wrap `write_text`/`read_text` in `asyncio.to_thread()` to prevent event-loop blocking. Priority: Medium.

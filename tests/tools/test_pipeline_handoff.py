@@ -242,10 +242,10 @@ class TestWriteResultReadState:
     ) -> None:
         _resolve_root(monkeypatch, tmp_path)
         result = json.loads(
-            await pipeline_handoff(operation="read_state", pipeline="nonexistent")
+            await pipeline_handoff(operation="read_state", pipeline="fix")
         )
         assert result["status"] == "not_found"
-        assert "nonexistent" in result["message"]
+        assert "fix" in result["message"]
 
     async def test_write_result_without_phase_returns_error(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
@@ -285,7 +285,7 @@ class TestClear:
     ) -> None:
         _resolve_root(monkeypatch, tmp_path)
         result = json.loads(
-            await pipeline_handoff(operation="clear", pipeline="never_existed")
+            await pipeline_handoff(operation="clear", pipeline="review")
         )
         assert result["status"] == "ok"
 

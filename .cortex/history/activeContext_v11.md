@@ -24,6 +24,12 @@
 
 - ✅ **Phase A markdown error coercion and run_quality_gate markdown merge test** - COMPLETE (2026-03-21) - `_markdown_result_has_errors` now treats non-numeric `files_with_errors` strings as failures (try/except around int coercion). Added `TestRunQualityGateMarkdownMerge` with mocked detached worker envelope so `run_quality_gate()` returns `preflight_passed: false` when markdown reports errors. Synapse `prompts/commit.md` Phase A markdown remediation text updated; submodule commits record usage analytics.
 
+- ✅ **Quality gate CI parity (PARTIAL)** - COMPLETE (2026-03-21) - Local Phase A now runs synapse `check_spelling.py` by default. `docs/api/tools.md` adds CI parity table; full parity plan still open.
+
+- ✅ **Quality gate CI parity: close remaining gaps between local and CI checks** - COMPLETE (2026-03-21) - Verified CI/local parity deliverables; removed Any from markdown-merge tests; clarified PHASE_A vs preflight markdown_lint in dispatch; quality gate green (5259 tests, ~91.4% coverage).
+
+- ✅ **Sanitize pipeline/phase path parameters in pipeline_handoff** - COMPLETE (2026-03-21) - Added allowlisted pipeline and phase names on top of safe-token regex validation; unknown alphanumeric tokens return JSON errors without touching the filesystem. Adjusted integration tests to use allowlisted pipeline names for empty-state cases; added unit tests for allowlist rejection and happy path.
+
 ## Completed Work (2026-03-20)
 
 - **Summary (2026-03-20)** - 1 entries archived.

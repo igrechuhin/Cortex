@@ -7,8 +7,8 @@ markdown lint reports errors — preventing silent CI failures.
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from pathlib import Path
-from typing import Any
 from unittest.mock import AsyncMock, patch
 
 import pytest
@@ -78,11 +78,11 @@ class TestMarkdownResultHasErrors:
 
 
 def _fake_result_file(
-    checks_result: dict[str, Any],
-    markdown_result: dict[str, Any] | None = None,
-) -> dict[str, Any]:
+    checks_result: Mapping[str, object],
+    markdown_result: Mapping[str, object] | None = None,
+) -> dict[str, object]:
     """Build a detached-worker result envelope."""
-    envelope: dict[str, Any] = {
+    envelope: dict[str, object] = {
         "version": 1,
         "status": "completed",
         "result": checks_result,

@@ -19,7 +19,9 @@ from cortex.core.usage_context import get_or_resolve_project_root
 logger = logging.getLogger(__name__)
 
 # Canonical check names for each phase, used by start_quality_job(phase=...).
-# Must stay in sync with _PRE_FLIGHT_DEFAULT_CHECKS in pre_commit_preflight_helpers.py.
+# Language checks (all but markdown_lint) must match _PRE_FLIGHT_DEFAULT_CHECKS in
+# pre_commit_preflight_helpers.py; markdown_lint is listed for job hashing but run
+# separately in preflight / detached worker (same as CI rumdl step).
 _PHASE_A_CHECKS: tuple[str, ...] = (
     "fix_errors",
     "format",
@@ -27,6 +29,7 @@ _PHASE_A_CHECKS: tuple[str, ...] = (
     "synapse_lint",
     "type_check",
     "quality",
+    "spelling",
     "tests",
     "eval_fast",
     "markdown_lint",

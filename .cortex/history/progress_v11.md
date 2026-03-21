@@ -25,6 +25,10 @@
 - **Pytest isolation for MCP circuit breaker (xdist)** - COMPLETE. Reset/prime helpers in `mcp_stability_retry.py`, autouse fixture in `tests/conftest.py`, reconnect test cleanup; fixes `Connection not healthy before tool execution` flakes after circuit-open reconnect tests under parallel pytest.
 - **Quality gate CI parity** - PARTIAL. Added `TestRunQualityGateMarkdownMerge` so `run_quality_gate()` under mocked detached worker returns `preflight_passed: false` when `markdown_result` reports errors (Step 4). Remaining: CI/local matrix audit, cSpell parity, file/function script parity verification, docs in tools.md.
 - **Phase A markdown coercion and run_quality_gate integration test** - COMPLETE. Hardened markdown error detection for non-numeric files_with_errors strings; added async integration test with mocked poll_for_result; Synapse commit prompt updates; Phase A worker coverage about 91 percent.
+- **Quality gate CI parity** - PARTIAL. Added `spelling` to `_PRE_FLIGHT_DEFAULT_CHECKS` and `PHASE_A_CHECKS` (cSpell parity with CI). Documented CI ↔ local matrix and eval gap in `docs/api/tools.md`. Plan remains IN_PROGRESS (Step 1 audit matrix, file-size script parity verification).
+- **Quality gate CI parity** - PARTIAL. Extended docs/api/tools.md CI parity section with full blocking-quality matrix, CI-only rows, local-only fix_errors, and .cortex/.cache rumdl exclusion note; file/function governance cross-checked vs CI.
+- **Quality gate CI parity** - COMPLETE. Verified parity matrix and preflight/Phase A alignment; typing cleanup in markdown-merge tests; dispatch comment for markdown_lint; run_quality_gate passed.
+- **Sanitize pipeline/phase path parameters in pipeline_handoff** - COMPLETE. Allowlist for pipeline/phase plus unit tests; integration tests updated.
 
 ## 2026-03-16
 

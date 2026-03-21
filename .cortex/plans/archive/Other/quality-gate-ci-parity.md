@@ -20,12 +20,13 @@ Audit and close all gaps between the local quality gate (`run_quality_gate()`) a
 
 - CI checks (from `quality.yml`): formatting, synapse formatting, ruff lint, synapse lint, pyright (source), pyright (tests/scripts), file sizes, function lengths, cSpell spelling, rumdl markdown, tests (separate workflow).
 
-- Local gate checks (from `pre_commit_phase_dispatch.py` Phase A): fix_errors, format, synapse_format, synapse_lint, type_check, quality, tests, eval_fast, markdown_lint.
+- Local gate checks (from `pre_commit_phase_dispatch.py` Phase A): fix_errors, format, synapse_format, synapse_lint, type_check, quality, spelling, tests, eval_fast, markdown_lint.
 
 ## Implementation Steps
 
 ### Step 1: Audit CI vs local check coverage matrix
 
+- **2026-03-21 (done):** Blocking matrix, CI-only rows, and local-only `fix_errors` documented under **CI parity guarantee** in `docs/api/tools.md` (dated audit: Ruff flow, dual pyright vs local `type_check`, file/function governance, rumdl scope).
 - **Files to read**: `.github/workflows/quality.yml`, `src/cortex/tools/execution/pre_commit_phase_dispatch.py`, `src/cortex/tools/execution/pre_commit_worker.py`
 - Create a matrix: each CI step → corresponding local check name → verified working?
 - Identify any CI steps that have no local equivalent or are running differently
@@ -40,9 +41,8 @@ Audit and close all gaps between the local quality gate (`run_quality_gate()`) a
 
 ### Step 2: Verify cSpell parity
 
-- CI runs cSpell (`quality.yml` step "Check spelling") — does the local gate include spelling?
-- If not, assess whether to add it or document it as CI-only
-- Spelling errors that only CI catches create the same "local passes, CI fails" problem
+- **2026-03-21 (done):** Added `PreCommitCheck.SPELLING` to `_PRE_FLIGHT_DEFAULT_CHECKS` and `spelling` to `PHASE_A_CHECKS` so preflight / detached Phase A run `check_spelling.py` (same script as CI).
+- CI runs cSpell (`quality.yml` step "Check spelling"); local gate now includes spelling in the default Phase A list.
 
 #### Verification Checklist
 
@@ -53,6 +53,7 @@ Audit and close all gaps between the local quality gate (`run_quality_gate()`) a
 
 ### Step 3: Verify file-size and function-length check parity
 
+- **2026-03-21 (done):** Documented in `docs/api/tools.md`: local `quality` uses in-process limits aligned with `cortex.core.constants`; CI invokes synapse `check_file_sizes.py` / `check_function_lengths.py` — same thresholds/exclusions, different invocation path.
 - CI runs `check_file_sizes.py` and `check_function_lengths.py` — the local gate's `quality` check includes these via the Python adapter
 - Verify the local adapter runs the exact same scripts with the same exclusions
 
@@ -78,9 +79,7 @@ Audit and close all gaps between the local quality gate (`run_quality_gate()`) a
 
 ### Step 5: Document CI parity expectations
 
-- **File**: `docs/api/tools.md` (quality gate section)
-- Add subsection: "CI parity guarantee" — document that `run_quality_gate()` must catch everything CI catches, and the process for adding new CI checks (must also add local equivalent)
-- Reference the parity matrix from Step 1
+- **2026-03-21 (done for doc slice):** **CI parity guarantee** in `docs/api/tools.md` extended with full audit matrix, rumdl `.cortex/.cache/` exclusion gap, CI-only vs local-only rows, `eval_fast` vs full eval, and process note for new workflow steps.
 
 #### Verification Checklist
 
