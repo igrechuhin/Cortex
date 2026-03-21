@@ -284,6 +284,18 @@ jobs:
           echo "::endgroup::"
         continue-on-error: false
 
+      - name: Check markdown links
+        id: markdown_links
+        run: |
+          echo "::group::Checking internal markdown links (docs + policy files)"
+          if ! uv run python .cortex/synapse/scripts/python/check_markdown_links.py; then
+            echo "::error::Broken internal markdown links detected. Fix targets or use inline code for examples."
+            exit 1
+          fi
+          echo "✅ Markdown link check passed"
+          echo "::endgroup::"
+        continue-on-error: false
+
       - name: Run tests
         id: tests
         run: |
@@ -358,6 +370,7 @@ jobs:
           echo "Function Lengths: ${{ steps.function_lengths.outcome }}"
           echo "Spelling: ${{ steps.spelling.outcome }}"
           echo "Markdown Lint: ${{ steps.markdown_lint.outcome }}"
+          echo "Markdown Links: ${{ steps.markdown_links.outcome }}"
           echo "Tests: ${{ steps.tests.outcome }}"
           echo "Eval (full): ${{ steps.eval_full.outcome }}"
           echo "Eval (A/B compare): ${{ steps.eval_compare.outcome }}"
@@ -374,6 +387,7 @@ jobs:
              [ "${{ steps.function_lengths.outcome }}" = "failure" ] || \
              [ "${{ steps.spelling.outcome }}" = "failure" ] || \
              [ "${{ steps.markdown_lint.outcome }}" = "failure" ] || \
+             [ "${{ steps.markdown_links.outcome }}" = "failure" ] || \
              [ "${{ steps.tests.outcome }}" = "failure" ] || \
              [ "${{ steps.eval_full.outcome }}" = "failure" ] || \
              [ "${{ steps.eval_compare.outcome }}" = "failure" ]; then
@@ -392,6 +406,7 @@ jobs:
              [ "${{ steps.function_lengths.outcome }}" = "skipped" ] || \
              [ "${{ steps.spelling.outcome }}" = "skipped" ] || \
              [ "${{ steps.markdown_lint.outcome }}" = "skipped" ] || \
+             [ "${{ steps.markdown_links.outcome }}" = "skipped" ] || \
              [ "${{ steps.tests.outcome }}" = "skipped" ] || \
              [ "${{ steps.eval_full.outcome }}" = "skipped" ] || \
              [ "${{ steps.eval_compare.outcome }}" = "skipped" ]; then

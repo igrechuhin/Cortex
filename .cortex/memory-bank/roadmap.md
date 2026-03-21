@@ -28,6 +28,5 @@ Completed investigations are recorded in [activeContext.md](activeContext.md). P
 
 ### Features & Enhancements
 
-- **PENDING** — [Add CI markdown link validation for non-archive docs](../plans/ci-markdown-link-validation.md) — Automated validation that internal markdown links resolve to existing files. Priority: Medium.
 - **PENDING** — [Tighten tool-count guardrail from MAX=16 to MAX=12](../plans/tool-budget-tightening.md) — Reduce headroom from 60% to 20% above target; require explicit ADR to raise. Priority: Medium.
 - **PENDING** — [Improve submodule preflight resilience and error messaging](../plans/submodule-resilience.md) — Auto-init in bootstrap, interactive prompt in check_synapse, remediation in quality gate output. Priority: Medium.

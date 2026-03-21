@@ -12,6 +12,7 @@ from cortex.core.constants import MCP_TOOL_TIMEOUT_VERY_COMPLEX
 from cortex.core.context_logging import MCPContext, log_client
 from cortex.core.mcp_stability import ensure_usage_context, mcp_tool_wrapper
 from cortex.core.project_root_resolver import resolve_project_root_async
+from cortex.tools.files.markdown_link_validation import find_broken_links
 from cortex.tools.files.markdown_lint_cache import load_markdown_lint_index_safe
 from cortex.tools.files.markdown_lint_core import (
     filter_files_for_linting,
@@ -98,6 +99,37 @@ async def _fix_markdown_lint_impl(
     )
 
 
+def _merge_internal_link_errors(
+    results: list[FileResult], root_path: Path
+) -> list[FileResult]:
+    """Append markdown link validation errors to rumdl file results."""
+    broken = find_broken_links(root_path)
+    if not broken:
+        return results
+    by_file: dict[str, FileResult] = {r.file: r for r in results}
+    for item in broken:
+        msg = f"line {item.line}: broken link `{item.target}`"
+        if item.source_file in by_file:
+            cur = by_file[item.source_file]
+            new_errs = list(cur.errors) + [msg]
+            joined = "; ".join(new_errs[:5])
+            by_file[item.source_file] = cur.model_copy(
+                update={
+                    "errors": new_errs,
+                    "fixed": False,
+                    "error_message": joined,
+                }
+            )
+        else:
+            by_file[item.source_file] = FileResult(
+                file=item.source_file,
+                fixed=False,
+                errors=[msg],
+                error_message=msg,
+            )
+    return sorted(by_file.values(), key=lambda r: r.file)
+
+
 async def run_markdown_lint_all_files_check(
     root_path: Path | None = None, ctx: MCPContext | None = None
 ) -> str:
@@ -128,6 +160,7 @@ async def run_markdown_lint_all_files_check(
         dry_run=True,
         ctx=ctx,
     )
+    results = _merge_internal_link_errors(results, root_path)
     return _build_fix_response(results)
 
 

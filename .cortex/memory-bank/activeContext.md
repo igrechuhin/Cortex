@@ -40,6 +40,10 @@
 
 - ✅ **Clarify file/function size governance: document logical-line counting** - COMPLETE (2026-03-21) - Documented logical-line file/function limits in contributing.md with CI script commands and exclusion lists; quality.yml step names and errors say logical lines; MAX_* comments in constants.py point to check scripts. Step 4 optional dashboard not added (check_file_sizes already warns near limit).
 
+- ✅ **Add CI markdown link validation for non-archive docs** - COMPLETE (2026-03-21) - Added markdown_link_validation module, Synapse check_markdown_links.py CLI, quality.yml step, merged link results into run_markdown_lint_all_files_check for Phase A parity.
+
+- ✅ **Markdown link validation — Pyright and test typing** - COMPLETE (2026-03-21) - Renamed link-check helpers to public names for lawful test imports; consumed `Path.relative_to` and `write_text` results; typed `Path.read_text` monkeypatch in `test_check_markdown_links.py` so pyright passes under strict unused-result and private-usage rules.
+
 ## Completed Work (2026-03-20)
 
 - **Summary (2026-03-20)** - 1 entries archived.

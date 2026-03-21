@@ -34,6 +34,8 @@
 - **Replace sync file I/O with async in pipeline_handoff** - COMPLETE. Dispatch runs in asyncio.to_thread; tests verify offload.
 - **Align docs/index.md with canonical 10-tool inventory** - COMPLETE. Canonical 10/6/4 surface documented; 70+ removed from top-level docs.
 - **Clarify file/function size governance: document logical-line counting** - COMPLETE. Docs, CI labels, and constant comments aligned with check_file_sizes/check_function_lengths.
+- **Add CI markdown link validation for non-archive docs** - COMPLETE. Internal link checker for docs + policy files, CI step, local preflight via markdown lint merge, unit tests.
+- **Markdown link validation — Pyright and test typing** - COMPLETE. Public helper names in `markdown_link_validation.py`, unused-result cleanup, typed `read_text` test double; Phase A typecheck clean for module and `test_check_markdown_links.py`.
 
 ## 2026-03-16
 
