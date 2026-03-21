@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
-# pyright: reportPrivateUsage=false
+# pyright: reportPrivateUsage=false, reportUnusedFunction=false
 import json
+from collections.abc import Generator
 from pathlib import Path
 from typing import cast
 from unittest.mock import MagicMock, patch
@@ -13,6 +14,7 @@ import pytest
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.core.session_logger import LoadContextLogEntry
 from cortex.tools.context.effectiveness_models import (
+    ContextTelemetryExclusionBreakdown,
     ContextTelemetryRecordQuality,
     ContextUsageEntry,
     ContextUsageStatistics,
@@ -28,7 +30,10 @@ from cortex.tools.context.effectiveness_operations_io import create_empty_insigh
 from cortex.tools.context.effectiveness_telemetry_quality import (
     classify_context_telemetry_log_entry,
     is_synthetic_telemetry_task,
+    log_and_classify_context_telemetry_entry,
     log_telemetry_rollup_exclusion,
+    reset_context_telemetry_exclusion_counters,
+    snapshot_context_telemetry_exclusion_counters,
 )
 
 
@@ -136,6 +141,61 @@ def test_classify_production() -> None:
     quality, note = classify_context_telemetry_log_entry(entry)
     assert quality == ContextTelemetryRecordQuality.PRODUCTION
     assert note is None
+
+
+@pytest.fixture(autouse=True)
+def reset_telemetry_exclusion_counters_autouse() -> Generator[None]:
+    reset_context_telemetry_exclusion_counters()
+    yield None
+    reset_context_telemetry_exclusion_counters()
+
+
+def test_snapshot_context_telemetry_exclusion_counters_empty() -> None:
+    snap = snapshot_context_telemetry_exclusion_counters()
+    assert snap.breakdown == []
+    assert snap.total_excluded == 0
+
+
+def test_snapshot_context_telemetry_exclusion_counters_tracks_reasons() -> None:
+    log_telemetry_rollup_exclusion(
+        session_id="a",
+        task_description="Test task",
+        quality=ContextTelemetryRecordQuality.SYNTHETIC,
+        reason="synthetic_or_test_task_marker",
+    )
+    log_telemetry_rollup_exclusion(
+        session_id="b",
+        task_description="x",
+        quality=ContextTelemetryRecordQuality.INVALID_DATA,
+        reason="zero_token_budget_with_context_payload",
+    )
+    log_telemetry_rollup_exclusion(
+        session_id="c",
+        task_description="y",
+        quality=ContextTelemetryRecordQuality.SYNTHETIC,
+        reason="synthetic_or_test_task_marker",
+    )
+    snap = snapshot_context_telemetry_exclusion_counters()
+    assert snap.total_excluded == 3
+    assert snap.breakdown == [
+        ContextTelemetryExclusionBreakdown(
+            record_quality="invalid_data",
+            reason="zero_token_budget_with_context_payload",
+            count=1,
+        ),
+        ContextTelemetryExclusionBreakdown(
+            record_quality="synthetic",
+            reason="synthetic_or_test_task_marker",
+            count=2,
+        ),
+    ]
+
+
+def test_log_and_classify_increments_exclusion_counter() -> None:
+    entry = _log_entry(task_description="Test task")
+    q, _ = log_and_classify_context_telemetry_entry("sid", entry)
+    assert q == ContextTelemetryRecordQuality.SYNTHETIC
+    assert snapshot_context_telemetry_exclusion_counters().total_excluded == 1
 
 
 def test_log_telemetry_rollup_exclusion_logs() -> None:

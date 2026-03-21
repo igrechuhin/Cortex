@@ -15,8 +15,7 @@
 ## 2026-03-21
 
 - **Pre-commit submodule hygiene guard** - COMPLETE. Landed `pre_commit_submodule_guard` (dirty/out-of-sync submodule detection with remediation), integrated Phase A inline and detached worker paths, added unit tests, and archived plan `block-dirty-submodule-references-in-commit-workflow` to `.cortex/plans/archive/Other/`.
-- **Harden session telemetry against synthetic data pollution** - PARTIAL. Added `ContextTelemetryRecordQuality`, synthetic/pytest task detection and invalid zero-budget classification, production-only optimization rollups in effectiveness operations, INFO logging for rollup exclusions; new `effectiveness_telemetry_quality` module and `test_effectiveness_telemetry_quality.py`. Remaining: richer observability (metrics/counters), optional write-time validators on `LoadContextLogEntry`, legacy JSON rows default to production until migrated.
-- **Telemetry quality wiring (commit)** - COMPLETE (2026-03-21). Landed `effectiveness_telemetry_quality.py`, effectiveness model/operation updates, `models_reexports` wiring, and `test_effectiveness_telemetry_quality.py`; complements the PARTIAL hardening entry above and the IN_PROGRESS plan.
+- **Harden session telemetry against synthetic data pollution** - PARTIAL. `ContextTelemetryRecordQuality`, synthetic/pytest and invalid zero-budget classification, production-only optimization rollups, structured INFO exclusion logs, `effectiveness_telemetry_quality` + tests, `models_reexports` wiring, and in-process exclusion counters (`snapshot_context_telemetry_exclusion_counters` / `reset_context_telemetry_exclusion_counters`) with Pydantic snapshot models. Remaining: optional write-path validation on `LoadContextLogEntry`, legacy row backfill/migration, optional external metrics export.
 
 ## 2026-03-16
 

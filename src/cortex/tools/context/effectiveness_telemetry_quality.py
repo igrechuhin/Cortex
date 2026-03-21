@@ -8,11 +8,20 @@ aggregates that drive recommendations.
 from __future__ import annotations
 
 import logging
+import threading
 
 from cortex.core.session_logger import LoadContextLogEntry
-from cortex.tools.context.effectiveness_models import ContextTelemetryRecordQuality
+from cortex.tools.context.effectiveness_models import (
+    ContextTelemetryExclusionBreakdown,
+    ContextTelemetryExclusionCountersSnapshot,
+    ContextTelemetryRecordQuality,
+)
 
 logger = logging.getLogger(__name__)
+
+_exclusion_counter_lock = threading.Lock()
+# Keys: (record_quality.value, reason or "")
+_exclusion_counts: dict[tuple[str, str], int] = {}
 
 # Normalized task titles that are almost always test/synthetic fixtures.
 _SYNTHETIC_EXACT_TASKS: frozenset[str] = frozenset(
@@ -70,6 +79,45 @@ def classify_context_telemetry_log_entry(
     return ContextTelemetryRecordQuality.PRODUCTION, None
 
 
+def _increment_rollup_exclusion_counter(
+    quality: ContextTelemetryRecordQuality,
+    reason: str | None,
+) -> None:
+    key = (quality.value, reason or "")
+    with _exclusion_counter_lock:
+        _exclusion_counts[key] = _exclusion_counts.get(key, 0) + 1
+
+
+def snapshot_context_telemetry_exclusion_counters() -> (
+    ContextTelemetryExclusionCountersSnapshot
+):
+    """Return a copy of in-process rollup-exclusion counters (metrics-style observability)."""
+    with _exclusion_counter_lock:
+        items = sorted(
+            _exclusion_counts.items(),
+            key=lambda kv: (kv[0][0], kv[0][1]),
+        )
+    breakdown = [
+        ContextTelemetryExclusionBreakdown(
+            record_quality=quality,
+            reason=reason,
+            count=count,
+        )
+        for (quality, reason), count in items
+    ]
+    total = sum(b.count for b in breakdown)
+    return ContextTelemetryExclusionCountersSnapshot(
+        breakdown=breakdown,
+        total_excluded=total,
+    )
+
+
+def reset_context_telemetry_exclusion_counters() -> None:
+    """Clear in-process exclusion counters (intended for tests)."""
+    with _exclusion_counter_lock:
+        _exclusion_counts.clear()
+
+
 def log_telemetry_rollup_exclusion(
     *,
     session_id: str,
@@ -80,6 +128,7 @@ def log_telemetry_rollup_exclusion(
     """Emit a single structured log line when a record is excluded from rollups."""
     if quality == ContextTelemetryRecordQuality.PRODUCTION:
         return
+    _increment_rollup_exclusion_counter(quality, reason)
     snippet = task_description.strip().replace("\n", " ")
     if len(snippet) > 120:
         snippet = snippet[:117] + "..."

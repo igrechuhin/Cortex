@@ -28,6 +28,42 @@ class ContextTelemetryRecordQuality(str, Enum):
     INVALID_DATA = "invalid_data"
 
 
+class ContextTelemetryExclusionBreakdown(StrictBaseModel):
+    """Single bucket of rollup-exclusion counts (in-process observability)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    record_quality: str = Field(
+        ...,
+        description="Telemetry quality label for excluded rows",
+    )
+    reason: str = Field(
+        ...,
+        description="Machine-oriented exclusion reason (empty when none)",
+    )
+    count: int = Field(..., ge=0, description="Number of exclusions in this bucket")
+
+
+def _empty_telemetry_exclusion_breakdown() -> list[ContextTelemetryExclusionBreakdown]:
+    return []
+
+
+class ContextTelemetryExclusionCountersSnapshot(StrictBaseModel):
+    """Point-in-time view of context telemetry rollup exclusions."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    breakdown: list[ContextTelemetryExclusionBreakdown] = Field(
+        default_factory=_empty_telemetry_exclusion_breakdown,
+        description="Per (quality, reason) counts, sorted for stable output",
+    )
+    total_excluded: int = Field(
+        ...,
+        ge=0,
+        description="Sum of all non-production exclusions since process start or last reset",
+    )
+
+
 class ContextUsageEntry(StrictBaseModel):
     """Structure for a single context usage analysis entry."""
 

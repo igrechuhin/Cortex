@@ -10,8 +10,8 @@ depends_on: []
 
 ## Progress (2026-03-21)
 
-- Done: schema field `record_quality` / `ContextTelemetryRecordQuality`; classification module; production-only rollups and exclusion logging; unit tests for classification and rollup behavior.
-- Remaining: metrics-level observability (step 4); optional stricter write-path validation; consider migration/backfill for existing persisted rows.
+- Done: schema field `record_quality` / `ContextTelemetryRecordQuality`; classification module; production-only rollups and exclusion logging; in-process exclusion counters and `snapshot_context_telemetry_exclusion_counters()` (step 4 metrics-style observability alongside structured logs); unit tests for classification, rollup behavior, and counters.
+- Remaining: optional stricter write-path validation; consider migration/backfill for existing persisted rows; optional export of counter snapshots to an external metrics backend.
 
 ## Goal
 
