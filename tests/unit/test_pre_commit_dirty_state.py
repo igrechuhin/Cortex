@@ -186,7 +186,7 @@ class TestSkipDecisions:
         assert not PipelineDirtyTracker.get_instance().can_skip_check("tests").can_skip
 
 
-# --- _try_skip_clean_checks ------------------------------------------------
+# --- try_skip_clean_checks ------------------------------------------------
 
 
 class TestTrySkipCleanChecks:
@@ -194,11 +194,13 @@ class TestTrySkipCleanChecks:
     @pytest.mark.asyncio()
     async def test_skip_result(self, tmp_path: Path) -> None:
         from cortex.tools.execution.pre_commit_helpers_models import PreCommitCheck
-        from cortex.tools.execution.pre_commit_tools import _try_skip_clean_checks
+        from cortex.tools.execution.pre_commit_tools_execute_checks import (
+            try_skip_clean_checks,
+        )
 
         _ = _make_tracker(tmp_path)
         with patch(_HASH_TARGET, return_value=_FP_DOCS_ONLY):
-            result = await _try_skip_clean_checks(
+            result = await try_skip_clean_checks(
                 [PreCommitCheck.TYPE_CHECK, PreCommitCheck.QUALITY],
                 None,
             )
@@ -207,27 +209,33 @@ class TestTrySkipCleanChecks:
     @pytest.mark.asyncio()
     async def test_no_skip_source_changed(self, tmp_path: Path) -> None:
         from cortex.tools.execution.pre_commit_helpers_models import PreCommitCheck
-        from cortex.tools.execution.pre_commit_tools import _try_skip_clean_checks
+        from cortex.tools.execution.pre_commit_tools_execute_checks import (
+            try_skip_clean_checks,
+        )
 
         _ = _make_tracker(tmp_path)
         with patch(_HASH_TARGET, return_value=_FP_SRC_CHANGED):
-            assert await _try_skip_clean_checks([PreCommitCheck.TESTS], None) is None
+            assert await try_skip_clean_checks([PreCommitCheck.TESTS], None) is None
 
     @pytest.mark.asyncio()
     async def test_no_skip_inactive(self) -> None:
         from cortex.tools.execution.pre_commit_helpers_models import PreCommitCheck
-        from cortex.tools.execution.pre_commit_tools import _try_skip_clean_checks
+        from cortex.tools.execution.pre_commit_tools_execute_checks import (
+            try_skip_clean_checks,
+        )
 
-        assert await _try_skip_clean_checks([PreCommitCheck.FORMAT], None) is None
+        assert await try_skip_clean_checks([PreCommitCheck.FORMAT], None) is None
 
     @pytest.mark.asyncio()
     async def test_no_skip_mixed_checks(self, tmp_path: Path) -> None:
         from cortex.tools.execution.pre_commit_helpers_models import PreCommitCheck
-        from cortex.tools.execution.pre_commit_tools import _try_skip_clean_checks
+        from cortex.tools.execution.pre_commit_tools_execute_checks import (
+            try_skip_clean_checks,
+        )
 
         _ = _make_tracker(tmp_path)
         with patch(_HASH_TARGET, return_value=_FP_BASE):
-            result = await _try_skip_clean_checks(
+            result = await try_skip_clean_checks(
                 [PreCommitCheck.TYPE_CHECK, PreCommitCheck.TEST_NAMING],
                 None,
             )

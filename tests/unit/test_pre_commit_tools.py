@@ -53,9 +53,9 @@ from cortex.tools.execution.pre_commit_pipeline import (
 from cortex.tools.execution.pre_commit_synapse import run_synapse_script
 from cortex.tools.execution.pre_commit_tools import (
     SUPPORTED_LANGUAGES,
-    _get_adapter,  # pyright: ignore[reportPrivateUsage]
     execute_pre_commit_checks,
 )
+from cortex.tools.execution.pre_commit_tools_inline_execution import get_adapter
 
 
 @pytest.fixture(autouse=True)
@@ -79,7 +79,7 @@ def _disable_detached_pipeline() -> Generator[None]:
     with (
         patch("cortex.tools.execution.pre_commit_detached.DETACHED_ENABLED", False),
         patch(
-            "cortex.tools.execution.pre_commit_tools.precommit_block_response",
+            "cortex.tools.execution.pre_commit_tools_inline_execution.precommit_block_response",
             return_value=None,
         ),
     ):
@@ -113,14 +113,14 @@ class TestExecutePreCommitChecks:
 
             with (
                 patch(
-                    "cortex.tools.execution.pre_commit_tools.PythonAdapter",
+                    "cortex.tools.execution.pre_commit_tools_inline_execution.PythonAdapter",
                 ) as mock_adapter_class,
                 patch(
-                    "cortex.tools.execution.pre_commit_tools.get_current_project_root",
+                    "cortex.tools.execution.pre_commit_tools_execute_checks.get_current_project_root",
                     return_value=project_root,
                 ),
                 patch(
-                    "cortex.tools.execution.pre_commit_tools.get_or_resolve_project_root",
+                    "cortex.tools.execution.pre_commit_tools_execute_checks.get_or_resolve_project_root",
                     new_callable=AsyncMock,
                     return_value=project_root,
                 ),
@@ -188,7 +188,7 @@ class TestExecutePreCommitChecks:
                     return_value=None,
                 ),
                 patch(
-                    "cortex.tools.execution.pre_commit_tools.get_or_resolve_project_root",
+                    "cortex.tools.execution.pre_commit_tools_execute_checks.get_or_resolve_project_root",
                     new_callable=AsyncMock,
                     return_value=Path(tmpdir).resolve(),
                 ),
@@ -217,12 +217,12 @@ class TestExecutePreCommitChecks:
 
         with (
             patch(
-                "cortex.tools.execution.pre_commit_tools.get_or_resolve_project_root",
+                "cortex.tools.execution.pre_commit_tools_execute_checks.get_or_resolve_project_root",
                 new_callable=AsyncMock,
                 return_value=Path("/some/root"),
             ),
             patch(
-                "cortex.tools.execution.pre_commit_tools.detect_or_use_language",
+                "cortex.tools.execution.pre_commit_tools_inline_execution.detect_or_use_language",
                 return_value=(haskell_info, "/some/root"),
             ),
         ):
@@ -251,12 +251,12 @@ class TestExecutePreCommitChecks:
         )
         with (
             patch(
-                "cortex.tools.execution.pre_commit_tools.get_or_resolve_project_root",
+                "cortex.tools.execution.pre_commit_tools_execute_checks.get_or_resolve_project_root",
                 new_callable=AsyncMock,
                 return_value=Path("/some/root"),
             ),
             patch(
-                "cortex.tools.execution.pre_commit_tools.detect_or_use_language",
+                "cortex.tools.execution.pre_commit_tools_inline_execution.detect_or_use_language",
                 return_value=(haskell_info, "/some/root"),
             ),
         ):
@@ -279,10 +279,10 @@ class TestExecutePreCommitChecks:
 
             with (
                 patch(
-                    "cortex.tools.execution.pre_commit_tools.PythonAdapter"
+                    "cortex.tools.execution.pre_commit_tools_inline_execution.PythonAdapter"
                 ) as mock_adapter_class,
                 patch(
-                    "cortex.tools.execution.pre_commit_tools.get_or_resolve_project_root",
+                    "cortex.tools.execution.pre_commit_tools_execute_checks.get_or_resolve_project_root",
                     new_callable=AsyncMock,
                     return_value=project_root,
                 ),
@@ -340,7 +340,7 @@ class TestExecutePreCommitChecks:
             get_project_path(project_root, ProjectResourceType.VENV).mkdir()
 
             with patch(
-                "cortex.tools.execution.pre_commit_tools.PythonAdapter"
+                "cortex.tools.execution.pre_commit_tools_inline_execution.PythonAdapter"
             ) as mock_adapter_class:
                 mock_adapter = MagicMock()
                 mock_adapter_class.return_value = mock_adapter
@@ -369,7 +369,7 @@ class TestExecutePreCommitChecks:
                 )
 
                 with patch(
-                    "cortex.tools.execution.pre_commit_tools.get_or_resolve_project_root",
+                    "cortex.tools.execution.pre_commit_tools_execute_checks.get_or_resolve_project_root",
                     new_callable=AsyncMock,
                     return_value=project_root,
                 ):
@@ -397,11 +397,11 @@ class TestExecutePreCommitChecks:
         """Test error handling in tool when project root resolution fails."""
         with (
             patch(
-                "cortex.tools.execution.pre_commit_tools.get_current_project_root",
+                "cortex.tools.execution.pre_commit_tools_execute_checks.get_current_project_root",
                 return_value=None,
             ),
             patch(
-                "cortex.tools.execution.pre_commit_tools.get_or_resolve_project_root",
+                "cortex.tools.execution.pre_commit_tools_execute_checks.get_or_resolve_project_root",
                 new_callable=AsyncMock,
                 side_effect=Exception("Test error"),
             ),
@@ -444,12 +444,12 @@ class TestExecutePreCommitChecks:
             )
             with (
                 patch(
-                    "cortex.tools.execution.pre_commit_tools.get_or_resolve_project_root",
+                    "cortex.tools.execution.pre_commit_tools_execute_checks.get_or_resolve_project_root",
                     new_callable=AsyncMock,
                     return_value=project_root,
                 ),
                 patch(
-                    "cortex.tools.execution.pre_commit_tools.detect_or_use_language",
+                    "cortex.tools.execution.pre_commit_tools_inline_execution.detect_or_use_language",
                     return_value=(python_info, str(project_root)),
                 ),
                 patch(
@@ -516,12 +516,12 @@ class TestExecutePreCommitChecks:
             )
             with (
                 patch(
-                    "cortex.tools.execution.pre_commit_tools.get_or_resolve_project_root",
+                    "cortex.tools.execution.pre_commit_tools_execute_checks.get_or_resolve_project_root",
                     new_callable=AsyncMock,
                     return_value=project_root,
                 ),
                 patch(
-                    "cortex.tools.execution.pre_commit_tools.detect_or_use_language",
+                    "cortex.tools.execution.pre_commit_tools_inline_execution.detect_or_use_language",
                     return_value=(python_info, str(project_root)),
                 ),
                 patch(
@@ -571,14 +571,14 @@ class TestExecutePreCommitChecks:
             # No .cortex/synapse/scripts/python/check_formatting_ci_parity.py
 
             with patch(
-                "cortex.tools.execution.pre_commit_tools.PythonAdapter"
+                "cortex.tools.execution.pre_commit_tools_inline_execution.PythonAdapter"
             ) as mock_adapter_class:
                 mock_adapter = MagicMock()
                 mock_adapter_class.return_value = mock_adapter
                 mock_adapter.project_root = project_root
 
                 with patch(
-                    "cortex.tools.execution.pre_commit_tools.get_or_resolve_project_root",
+                    "cortex.tools.execution.pre_commit_tools_execute_checks.get_or_resolve_project_root",
                     new_callable=AsyncMock,
                     return_value=project_root,
                 ):
@@ -613,14 +613,14 @@ class TestExecutePreCommitChecks:
             get_project_path(project_root, ProjectResourceType.VENV).mkdir()
 
             with patch(
-                "cortex.tools.execution.pre_commit_tools.PythonAdapter"
+                "cortex.tools.execution.pre_commit_tools_inline_execution.PythonAdapter"
             ) as mock_adapter_class:
                 mock_adapter = MagicMock()
                 mock_adapter_class.return_value = mock_adapter
                 mock_adapter.project_root = project_root
 
                 with patch(
-                    "cortex.tools.execution.pre_commit_tools.get_or_resolve_project_root",
+                    "cortex.tools.execution.pre_commit_tools_execute_checks.get_or_resolve_project_root",
                     new_callable=AsyncMock,
                     return_value=project_root,
                 ):
@@ -655,14 +655,14 @@ class TestExecutePreCommitChecks:
             get_project_path(project_root, ProjectResourceType.VENV).mkdir()
 
             with patch(
-                "cortex.tools.execution.pre_commit_tools.PythonAdapter"
+                "cortex.tools.execution.pre_commit_tools_inline_execution.PythonAdapter"
             ) as mock_adapter_class:
                 mock_adapter = MagicMock()
                 mock_adapter_class.return_value = mock_adapter
                 mock_adapter.project_root = project_root
 
                 with patch(
-                    "cortex.tools.execution.pre_commit_tools.get_or_resolve_project_root",
+                    "cortex.tools.execution.pre_commit_tools_execute_checks.get_or_resolve_project_root",
                     new_callable=AsyncMock,
                     return_value=project_root,
                 ):
@@ -888,7 +888,7 @@ class TestAdapterRegistry:
             build_tool=None,
             confidence=1.0,
         )
-        adapter = _get_adapter(info, None)
+        adapter = get_adapter(info, None)
         assert adapter is not None
         assert isinstance(adapter, FrameworkAdapter)
 
@@ -903,7 +903,7 @@ class TestAdapterRegistry:
             build_tool=None,
             confidence=0.8,
         )
-        adapter = _get_adapter(info, "/some/root")
+        adapter = get_adapter(info, "/some/root")
         assert adapter is None
 
     def test_supported_languages_includes_stub_languages(self) -> None:
@@ -935,7 +935,7 @@ class TestAdapterRegistry:
             build_tool=None,
             confidence=0.8,
         )
-        adapter = _get_adapter(info, "/some/root")
+        adapter = get_adapter(info, "/some/root")
         assert adapter is not None
         assert isinstance(adapter, TypeScriptAdapter)
 
@@ -954,7 +954,7 @@ class TestAdapterRegistry:
             build_tool=None,
             confidence=0.8,
         )
-        adapter = _get_adapter(info, "/some/root")
+        adapter = get_adapter(info, "/some/root")
         assert adapter is not None
         assert isinstance(adapter, JavaScriptAdapter)
 
@@ -971,7 +971,7 @@ class TestAdapterRegistry:
             build_tool=None,
             confidence=0.8,
         )
-        adapter = _get_adapter(info, "/some/root")
+        adapter = get_adapter(info, "/some/root")
         assert adapter is not None
         assert isinstance(adapter, RustAdapter)
 
@@ -988,7 +988,7 @@ class TestAdapterRegistry:
             build_tool=None,
             confidence=0.8,
         )
-        adapter = _get_adapter(info, "/some/root")
+        adapter = get_adapter(info, "/some/root")
         assert adapter is not None
         assert isinstance(adapter, GoAdapter)
 
@@ -1005,7 +1005,7 @@ class TestAdapterRegistry:
             build_tool=None,
             confidence=0.8,
         )
-        adapter = _get_adapter(info, "/some/root")
+        adapter = get_adapter(info, "/some/root")
         assert adapter is not None
         assert isinstance(adapter, JavaAdapter)
 
@@ -1022,7 +1022,7 @@ class TestAdapterRegistry:
             build_tool=None,
             confidence=0.8,
         )
-        adapter = _get_adapter(info, "/some/root")
+        adapter = get_adapter(info, "/some/root")
         assert adapter is not None
         assert isinstance(adapter, SwiftAdapter)
 
@@ -1039,7 +1039,7 @@ class TestAdapterRegistry:
             build_tool=None,
             confidence=0.8,
         )
-        adapter = _get_adapter(info, "/some/root")
+        adapter = get_adapter(info, "/some/root")
         assert adapter is not None
         assert isinstance(adapter, KotlinAdapter)
 
@@ -1061,7 +1061,7 @@ class TestFixQualityCheck:
             return_value=error_json,
         ):
             with patch(
-                "cortex.tools.execution.pre_commit_tools.get_or_resolve_project_root",
+                "cortex.tools.execution.pre_commit_tools_execute_checks.get_or_resolve_project_root",
                 new_callable=AsyncMock,
                 return_value=Path("/tmp"),
             ):
@@ -1121,7 +1121,7 @@ class TestFixQualityCheck:
                 )
 
                 with patch(
-                    "cortex.tools.execution.pre_commit_tools.get_or_resolve_project_root",
+                    "cortex.tools.execution.pre_commit_tools_execute_checks.get_or_resolve_project_root",
                     new_callable=AsyncMock,
                     return_value=project_root,
                 ):
@@ -1149,7 +1149,7 @@ class TestFixQualityCheck:
     async def test_fix_quality_exception_handling(self) -> None:
         """Test exception handling in fix_quality mode."""
         with patch(
-            "cortex.tools.execution.pre_commit_tools.get_or_resolve_project_root",
+            "cortex.tools.execution.pre_commit_tools_execute_checks.get_or_resolve_project_root",
             new_callable=AsyncMock,
             side_effect=Exception("Root error"),
         ):
@@ -1204,7 +1204,7 @@ class TestFixQualityCheck:
                 )
 
                 with patch(
-                    "cortex.tools.execution.pre_commit_tools.get_or_resolve_project_root",
+                    "cortex.tools.execution.pre_commit_tools_execute_checks.get_or_resolve_project_root",
                     new_callable=AsyncMock,
                     return_value=project_root,
                 ):
@@ -1280,7 +1280,7 @@ class TestFixQualityCheck:
                 )
 
                 with patch(
-                    "cortex.tools.execution.pre_commit_tools.get_or_resolve_project_root",
+                    "cortex.tools.execution.pre_commit_tools_execute_checks.get_or_resolve_project_root",
                     new_callable=AsyncMock,
                     return_value=project_root,
                 ):
@@ -1641,7 +1641,7 @@ class TestQualityCheckIntegration:
             _ = (src_dir / "module.py").write_text("x = 1\n")
 
             with patch(
-                "cortex.tools.execution.pre_commit_tools.PythonAdapter"
+                "cortex.tools.execution.pre_commit_tools_inline_execution.PythonAdapter"
             ) as mock_adapter_class:
                 mock_adapter = MagicMock()
                 mock_adapter_class.return_value = mock_adapter
@@ -1666,7 +1666,7 @@ class TestQualityCheckIntegration:
                 )
 
                 with patch(
-                    "cortex.tools.execution.pre_commit_tools.get_or_resolve_project_root",
+                    "cortex.tools.execution.pre_commit_tools_execute_checks.get_or_resolve_project_root",
                     new_callable=AsyncMock,
                     return_value=project_root,
                 ):
@@ -1711,7 +1711,7 @@ class TestLogTruncationBehavior:
             large_output = "X" * (MAX_LOG_OUTPUT_LENGTH * 2)
 
             with patch(
-                "cortex.tools.execution.pre_commit_tools.PythonAdapter"
+                "cortex.tools.execution.pre_commit_tools_inline_execution.PythonAdapter"
             ) as mock_adapter_class:
                 mock_adapter = MagicMock()
                 mock_adapter_class.return_value = mock_adapter
@@ -1736,7 +1736,7 @@ class TestLogTruncationBehavior:
                 )
 
                 with patch(
-                    "cortex.tools.execution.pre_commit_tools.get_or_resolve_project_root",
+                    "cortex.tools.execution.pre_commit_tools_execute_checks.get_or_resolve_project_root",
                     new_callable=AsyncMock,
                     return_value=project_root,
                 ):
@@ -1777,18 +1777,18 @@ class TestPreCommitToolsContextLogging:
             get_project_path(project_root, ProjectResourceType.VENV).mkdir()
             with (
                 patch(
-                    "cortex.tools.execution.pre_commit_tools.log_client",
+                    "cortex.tools.execution.pre_commit_tools_inline_execution.log_client",
                     new_callable=AsyncMock,
                 ) as mock_log,
                 patch(
-                    "cortex.tools.execution.pre_commit_tools.PythonAdapter",
+                    "cortex.tools.execution.pre_commit_tools_inline_execution.PythonAdapter",
                 ) as mock_adapter_class,
                 patch(
-                    "cortex.tools.execution.pre_commit_tools.get_current_project_root",
+                    "cortex.tools.execution.pre_commit_tools_execute_checks.get_current_project_root",
                     return_value=project_root,
                 ),
                 patch(
-                    "cortex.tools.execution.pre_commit_tools.get_or_resolve_project_root",
+                    "cortex.tools.execution.pre_commit_tools_execute_checks.get_or_resolve_project_root",
                     new_callable=AsyncMock,
                     return_value=project_root,
                 ),

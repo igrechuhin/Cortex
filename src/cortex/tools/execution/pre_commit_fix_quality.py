@@ -204,9 +204,11 @@ async def _run_quality_checks(root: Path, ctx: MCPContext | None) -> ModelDict |
     Includes PreCommitCheck.QUALITY so function-length and file-size violations
     are surfaced in remaining_issues and not silently missed.
     """
-    from cortex.tools.execution.pre_commit_tools import _execute_pre_commit_checks_impl
+    from cortex.tools.execution.pre_commit_tools_execute_checks import (
+        execute_pre_commit_checks_impl,
+    )
 
-    raw_result = await _execute_pre_commit_checks_impl(
+    raw_result = await execute_pre_commit_checks_impl(
         root=root,
         language=None,
         checks=[

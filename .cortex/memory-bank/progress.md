@@ -47,6 +47,7 @@
 - **Deduplicate _session_dir helper across pre-commit modules** - COMPLETE. Shared session_dir in session_paths.py; both pre-commit modules consume it; unit test for path creation.
 - **Decompose oversized tool modules** - PARTIAL. Split `models_reexports` into `models_reexports_workflows.py` and `models_reexports_system.py` with thin aggregator + static `__all__`; added `pyproject.toml` per-file Ruff F405 ignore for the aggregator; plan marked IN_PROGRESS. Remaining: second module, function-length pass, contributing docs.
 - **MCP TaskGroup -32000 connection classification** - COMPLETE. `main._handle_broken_resource_in_group` treats nested MCP connection RuntimeErrors consistently; circuit-breaker test resets; `test_mcp_crash_fixes.py` coverage.
+- **Decompose oversized tool modules** - PARTIAL. Split pre_commit_tools into inline_execution + execute_checks modules; tests updated for patch targets; full pytest -n0 green.
 
 ## 2026-03-16
 

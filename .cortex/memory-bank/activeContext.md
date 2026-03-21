@@ -64,6 +64,8 @@
 
 - ✅ **MCP TaskGroup connection error classification (-32000)** - COMPLETE (2026-03-21) - `_handle_broken_resource_in_group` no longer skips `RuntimeError("MCP error -32000: Connection closed")`; nested TaskGroup failures use `is_connection_error` for graceful shutdown classification. Hardened `mcp_stability_retry` test isolation; added `tests/unit/test_mcp_crash_fixes.py`; aligned `test_main_error_handling`.
 
+- ✅ **pre_commit_tools decomposition (PARTIAL)** - COMPLETE (2026-03-21) - pre_commit_tools.py split into pre_commit_tools_inline_execution.py and pre_commit_tools_execute_checks.py; MCP surface unchanged; re-exports for worker/tests; unit test mocks target inline/execute modules.
+
 ## Completed Work (2026-03-20)
 
 - **Summary (2026-03-20)** - 1 entries archived.

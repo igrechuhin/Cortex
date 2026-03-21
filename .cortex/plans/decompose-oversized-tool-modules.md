@@ -11,7 +11,8 @@ depends_on: []
 ## Progress (2026-03-21)
 
 - **Batch 1 (partial):** Split `models_reexports.py` into `models_reexports_workflows.py` (context, execution, files, linking, plans) and `models_reexports_system.py` (managers, session, structure, synapse); thin `models_reexports.py` preserves `__all__` order and `from cortex.tools.models` API.
-- **Remaining:** Second high-line module (e.g. `similarity_engine.py`), function-length audit, and contributing-doc guardrails (plan steps 3–5).
+- **Batch 2 (partial):** Split `pre_commit_tools.py` into `pre_commit_tools_inline_execution.py` (adapter registry, submodule gate, inline run path) and `pre_commit_tools_execute_checks.py` (dispatch, fix_quality/skip-clean modes, `execute_pre_commit_checks_impl`); slim `pre_commit_tools.py` holds MCP tools and re-exports for worker/tests. Updated unit test patch paths to match new binding sites.
+- **Remaining:** Third oversized module if needed (e.g. `similarity_engine.py` in health_check), function-length audit, contributing-doc guardrails (plan steps 4–5).
 
 ## Goal
 
