@@ -26,7 +26,11 @@ from cortex.tools.context.effectiveness_operations import (
     analyze_session_logs,
     get_context_statistics,
 )
-from cortex.tools.context.effectiveness_operations_io import create_empty_insights
+from cortex.tools.context.effectiveness_operations_io import (
+    create_empty_insights,
+    get_statistics_path,
+    load_statistics,
+)
 from cortex.tools.context.effectiveness_telemetry_quality import (
     classify_context_telemetry_log_entry,
     is_synthetic_telemetry_task,
@@ -141,6 +145,62 @@ def test_classify_production() -> None:
     quality, note = classify_context_telemetry_log_entry(entry)
     assert quality == ContextTelemetryRecordQuality.PRODUCTION
     assert note is None
+
+
+def test_classify_positive_tokens_without_selected_files() -> None:
+    entry = _log_entry(
+        task_description="Real feature work",
+        selected_files=[],
+        relevance_scores={},
+        total_tokens=500,
+        token_budget=8000,
+        utilization=0.05,
+    )
+    quality, note = classify_context_telemetry_log_entry(entry)
+    assert quality == ContextTelemetryRecordQuality.INVALID_DATA
+    assert note == "positive_tokens_without_selected_files"
+
+
+def test_classify_relevance_without_selected_files() -> None:
+    entry = _log_entry(
+        task_description="Real feature work",
+        selected_files=[],
+        relevance_scores={"ghost.py": 0.5},
+        total_tokens=0,
+        token_budget=8000,
+        utilization=0.0,
+    )
+    quality, note = classify_context_telemetry_log_entry(entry)
+    assert quality == ContextTelemetryRecordQuality.INVALID_DATA
+    assert note == "relevance_scores_without_selected_files"
+
+
+def test_load_statistics_backfills_legacy_production_synthetic(tmp_path: Path) -> None:
+    _enable_usage_writable(tmp_path)
+    stats_path = get_statistics_path(tmp_path)
+    stats_path.parent.mkdir(parents=True, exist_ok=True)
+    legacy_json = (
+        '{"last_updated":"2026-01-21T10:00","total_sessions_analyzed":1,'
+        '"total_load_context_calls":1,"avg_token_utilization":0.2,'
+        '"avg_files_selected":1.0,"avg_relevance_score":0.8,'
+        '"common_task_patterns":{"test":1},'
+        '"insights":{"task_type_recommendations":{},"file_effectiveness":{},'
+        '"learned_patterns":[],"budget_recommendations":{},'
+        '"role_recommendations":{},"role_budget_recommendations":{}},'
+        '"entries":[{"session_id":"s1","timestamp":"2026-01-21T10:00",'
+        '"task_description":"Test task","token_budget":5000,"total_tokens":100,'
+        '"utilization":0.02,"files_selected":1,"files_excluded":0,'
+        '"avg_relevance_score":0.8,"files_with_high_relevance":1,'
+        '"files_with_low_relevance":0,"selected_file_names":["a.md"],'
+        '"relevance_by_file":{"a.md":0.8}}]}'
+    )
+    _ = stats_path.write_text(legacy_json, encoding="utf-8")
+    stats = load_statistics(stats_path)
+    assert stats.entries[0].record_quality == ContextTelemetryRecordQuality.SYNTHETIC
+    # Persisted backfill rewrites file when usage_writable
+    round_trip = json.loads(stats_path.read_text(encoding="utf-8"))
+    assert round_trip["entries"][0]["record_quality"] == "synthetic"
+    assert round_trip["total_load_context_calls"] == 0
 
 
 @pytest.fixture(autouse=True)

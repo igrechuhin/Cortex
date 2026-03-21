@@ -40,6 +40,7 @@ from cortex.tools.context.effectiveness_operations_io import (
     save_statistics,
 )
 from cortex.tools.context.effectiveness_telemetry_quality import (
+    classify_persisted_context_usage_entry,
     log_and_classify_context_telemetry_entry,
 )
 
@@ -134,6 +135,31 @@ def _update_aggregates(stats: ContextUsageStatistics) -> None:
         _reset_optimization_aggregates(stats)
         return
     _apply_rollup_totals(stats, rollup)
+
+
+def reconcile_context_usage_statistics_entries(stats: ContextUsageStatistics) -> bool:
+    """Re-classify persisted rows and refresh aggregates when quality labels change."""
+    changed = False
+    new_entries: list[ContextUsageEntry] = []
+    for entry in stats.entries:
+        rq, note = classify_persisted_context_usage_entry(entry)
+        if rq != entry.record_quality or note != entry.telemetry_quality_note:
+            changed = True
+            new_entries.append(
+                entry.model_copy(
+                    update={
+                        "record_quality": rq,
+                        "telemetry_quality_note": note,
+                    },
+                )
+            )
+        else:
+            new_entries.append(entry)
+    if not changed:
+        return False
+    stats.entries = new_entries
+    _update_aggregates(stats)
+    return True
 
 
 def _calculate_session_stats(

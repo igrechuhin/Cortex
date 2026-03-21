@@ -6,7 +6,7 @@
 
 - ✅ **Pre-commit submodule hygiene guard** - COMPLETE (2026-03-21) - Added `pre_commit_submodule_guard.py` (submodule status scan, dirty/out-of-sync violations, remediation text), wired into `pre_commit_tools.py` and `pre_commit_worker.py`, with `test_pre_commit_submodule_guard.py` and updates to `test_pre_commit_tools.py`. Plan `block-dirty-submodule-references-in-commit-workflow` archived under `.cortex/plans/archive/Other/`.
 
-- ✅ **Session telemetry hardening (PARTIAL)** - COMPLETE (2026-03-21) - Context usage rows are classified as production/synthetic/invalid_data; only production rows feed session averages, patterns, and `generate_insights`. Exclusions log structured INFO lines and increment in-process counters (`snapshot_context_telemetry_exclusion_counters` / `reset_context_telemetry_exclusion_counters`) for observability. Optional write-path validation and legacy backfill remain.
+- ✅ **Session telemetry hardening (PARTIAL)** - COMPLETE (2026-03-21) - Context usage rows are classified as production/synthetic/invalid_data; only production rows feed session averages, patterns, and `generate_insights`. Exclusions log structured INFO lines and increment in-process counters (`snapshot_context_telemetry_exclusion_counters` / `reset_context_telemetry_exclusion_counters`). Added internal-consistency invalid rules (tokens without selected files, relevance without files), `reconcile_context_usage_statistics_entries` with load-time backfill/persist when `usage_writable`. Optional external metrics export remains.
 
 ## Completed Work (2026-03-20)
 

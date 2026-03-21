@@ -15,6 +15,7 @@ from cortex.tools.context.effectiveness_models import (
     ContextTelemetryExclusionBreakdown,
     ContextTelemetryExclusionCountersSnapshot,
     ContextTelemetryRecordQuality,
+    ContextUsageEntry,
 )
 
 logger = logging.getLogger(__name__)
@@ -61,6 +62,21 @@ def _has_context_payload(entry: LoadContextLogEntry) -> bool:
     return bool(entry.selected_files) or entry.total_tokens > 0
 
 
+def _non_synthetic_internal_inconsistency_log_entry(
+    entry: LoadContextLogEntry,
+) -> str | None:
+    """Detect impossible or internally inconsistent non-synthetic log rows."""
+    files_n = len(entry.selected_files)
+    rel_n = len(entry.relevance_scores)
+    if entry.token_budget == 0 and _has_context_payload(entry):
+        return "zero_token_budget_with_context_payload"
+    if entry.token_budget > 0 and entry.total_tokens > 0 and files_n == 0:
+        return "positive_tokens_without_selected_files"
+    if rel_n > 0 and files_n == 0:
+        return "relevance_scores_without_selected_files"
+    return None
+
+
 def classify_context_telemetry_log_entry(
     entry: LoadContextLogEntry,
 ) -> tuple[ContextTelemetryRecordQuality, str | None]:
@@ -71,10 +87,37 @@ def classify_context_telemetry_log_entry(
     """
     if is_synthetic_telemetry_task(entry.task_description):
         return ContextTelemetryRecordQuality.SYNTHETIC, "synthetic_or_test_task_marker"
-    if entry.token_budget == 0 and _has_context_payload(entry):
+    reason = _non_synthetic_internal_inconsistency_log_entry(entry)
+    if reason is not None:
+        return ContextTelemetryRecordQuality.INVALID_DATA, reason
+    return ContextTelemetryRecordQuality.PRODUCTION, None
+
+
+def classify_persisted_context_usage_entry(
+    entry: ContextUsageEntry,
+) -> tuple[ContextTelemetryRecordQuality, str | None]:
+    """Re-classify a persisted statistics row (backfill / load-time validation).
+
+    Uses the same eligibility rules as log ingestion, derived from stored fields.
+    """
+    if is_synthetic_telemetry_task(entry.task_description):
+        return ContextTelemetryRecordQuality.SYNTHETIC, "synthetic_or_test_task_marker"
+    files_n = entry.files_selected
+    rel_n = len(entry.relevance_by_file or {})
+    if entry.token_budget == 0 and (entry.total_tokens > 0 or files_n > 0):
         return (
             ContextTelemetryRecordQuality.INVALID_DATA,
             "zero_token_budget_with_context_payload",
+        )
+    if entry.token_budget > 0 and entry.total_tokens > 0 and files_n == 0:
+        return (
+            ContextTelemetryRecordQuality.INVALID_DATA,
+            "positive_tokens_without_selected_files",
+        )
+    if rel_n > 0 and files_n == 0:
+        return (
+            ContextTelemetryRecordQuality.INVALID_DATA,
+            "relevance_scores_without_selected_files",
         )
     return ContextTelemetryRecordQuality.PRODUCTION, None
 

@@ -15,7 +15,7 @@
 ## 2026-03-21
 
 - **Pre-commit submodule hygiene guard** - COMPLETE. Landed `pre_commit_submodule_guard` (dirty/out-of-sync submodule detection with remediation), integrated Phase A inline and detached worker paths, added unit tests, and archived plan `block-dirty-submodule-references-in-commit-workflow` to `.cortex/plans/archive/Other/`.
-- **Harden session telemetry against synthetic data pollution** - PARTIAL. `ContextTelemetryRecordQuality`, synthetic/pytest and invalid zero-budget classification, production-only optimization rollups, structured INFO exclusion logs, `effectiveness_telemetry_quality` + tests, `models_reexports` wiring, and in-process exclusion counters (`snapshot_context_telemetry_exclusion_counters` / `reset_context_telemetry_exclusion_counters`) with Pydantic snapshot models. Remaining: optional write-path validation on `LoadContextLogEntry`, legacy row backfill/migration, optional external metrics export.
+- **Harden session telemetry against synthetic data pollution** - PARTIAL. `ContextTelemetryRecordQuality`, synthetic/pytest and invalid zero-budget classification, production-only rollups, exclusion logs, in-process counters, internal-consistency invalid rules (tokens vs files, relevance without files), `reconcile_context_usage_statistics_entries` + load-time backfill when usage_writable, tests including legacy JSON. Remaining: optional external metrics export; operator note when usage_writable is false (reconcile in memory only).
 
 ## 2026-03-16
 
