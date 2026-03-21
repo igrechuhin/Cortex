@@ -22,6 +22,8 @@
 
 - ✅ **Pytest isolation for MCP circuit breaker (xdist)** - COMPLETE (2026-03-21) - Added `reset_connection_state_for_testing` / `ensure_clean_connection_state_for_testing` in `mcp_stability_retry.py`, autouse `isolate_mcp_connection_state` in `tests/conftest.py`, and aligned reconnect tests so `test_reconnect_opens_circuit_after_max_failures` cannot leave the global circuit open for unrelated tests on the same pytest-xdist worker.
 
+- ✅ **Phase A markdown error coercion and run_quality_gate markdown merge test** - COMPLETE (2026-03-21) - `_markdown_result_has_errors` now treats non-numeric `files_with_errors` strings as failures (try/except around int coercion). Added `TestRunQualityGateMarkdownMerge` with mocked detached worker envelope so `run_quality_gate()` returns `preflight_passed: false` when markdown reports errors. Synapse `prompts/commit.md` Phase A markdown remediation text updated; submodule commits record usage analytics.
+
 ## Completed Work (2026-03-20)
 
 - **Summary (2026-03-20)** - 1 entries archived.

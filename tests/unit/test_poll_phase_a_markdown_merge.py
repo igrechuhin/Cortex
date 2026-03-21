@@ -16,6 +16,7 @@ import pytest
 from cortex.tools.execution.pre_commit_zero_arg_tools import (
     _markdown_result_has_errors,  # pyright: ignore[reportPrivateUsage]
     _poll_phase_a_result,  # pyright: ignore[reportPrivateUsage]
+    run_quality_gate,
 )
 
 # ---------------------------------------------------------------------------
@@ -63,6 +64,12 @@ class TestMarkdownResultHasErrors:
 
     def test_missing_status_with_zero_errors(self) -> None:
         assert _markdown_result_has_errors({"files_with_errors": 0}) is False
+
+    def test_non_numeric_files_with_errors_treated_as_error(self) -> None:
+        """Non-numeric string in files_with_errors is treated as error signal."""
+        assert (
+            _markdown_result_has_errors({"files_with_errors": "not-a-number"}) is True
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -198,3 +205,53 @@ class TestPollPhaseAMarkdownMerge:
             )
 
         assert result["preflight_passed"] is False
+
+
+# ---------------------------------------------------------------------------
+# run_quality_gate — markdown merge integration (detached path)
+# ---------------------------------------------------------------------------
+
+
+class TestRunQualityGateMarkdownMerge:
+    """End-to-end: quality gate sees merged markdown failures from worker envelope."""
+
+    @pytest.mark.asyncio()
+    async def test_run_quality_gate_false_when_markdown_errors_in_envelope(
+        self, tmp_path: Path
+    ) -> None:
+        checks = {"preflight_passed": True, "status": "success"}
+        md = {"files_with_errors": 1, "status": "error", "output": "MD036"}
+        envelope = _fake_result_file(checks, md)
+        session_dir = tmp_path / ".cortex" / ".session"
+        session_dir.mkdir(parents=True)
+
+        with (
+            patch(
+                "cortex.tools.execution.pre_commit_zero_arg_tools.get_current_project_root",
+                return_value=tmp_path,
+            ),
+            patch(
+                "cortex.tools.execution.pre_commit_zero_arg_tools._read_pipeline_phase_config",
+                return_value={
+                    "coverage_threshold": 0.90,
+                    "test_timeout": 300,
+                },
+            ),
+            patch(
+                "cortex.tools.execution.pre_commit_zero_arg_tools._start_phase_a_job",
+                return_value={"job_id": "test-job", "status": "started"},
+            ),
+            patch(
+                "cortex.tools.execution.pre_commit_zero_arg_tools.get_cortex_path",
+                return_value=session_dir,
+            ),
+            patch(
+                "cortex.tools.execution.pre_commit_detached.poll_for_result",
+                new_callable=AsyncMock,
+                return_value=envelope,
+            ),
+        ):
+            result = await run_quality_gate(ctx=None)
+
+        assert result["preflight_passed"] is False
+        assert isinstance(result.get("markdown_result"), dict)

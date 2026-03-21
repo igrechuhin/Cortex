@@ -105,7 +105,11 @@ def _start_phase_a_job(
 def _markdown_result_has_errors(md: dict[str, object]) -> bool:
     """Return True when the detached worker's markdown_result indicates failures."""
     files_err = md.get("files_with_errors", 0)
-    if isinstance(files_err, (int, str)) and int(files_err) > 0:
+    try:
+        if isinstance(files_err, (int, str)) and int(files_err) > 0:
+            return True
+    except (ValueError, TypeError):
+        # Non-numeric string — treat as error signal.
         return True
     if str(md.get("status", "success")) == "error" and md.get("error") != "timeout":
         return True
