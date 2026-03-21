@@ -2,7 +2,7 @@
 title: "Tighten tool-count guardrail from MAX=16 to MAX=12"
 component: governance
 work_type: fix
-status: PENDING
+status: COMPLETE
 priority: medium
 created: 2026-03-21
 depends_on: []

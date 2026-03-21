@@ -25,10 +25,10 @@ from enum import Enum
 from pydantic import BaseModel, ConfigDict
 
 # Tool budget constraints (see tool consolidation plans).
-# MAX_REGISTERED_TOOLS is enforced by governance tests; if new tools are added,
-# either consolidate/remove other tools or explicitly raise this constant in
-# tandem with the consolidation plans and documentation.
-MAX_REGISTERED_TOOLS = 16
+# MAX_REGISTERED_TOOLS is enforced by governance tests. Hard cap: to raise it,
+# create a plan documenting why the new tool cannot be consolidated into an
+# existing one, then bump this constant in the same change as the registration.
+MAX_REGISTERED_TOOLS = 12
 
 # Long-term target from consolidation plans (not enforced in tests).
 TARGET_REGISTERED_TOOLS = 10

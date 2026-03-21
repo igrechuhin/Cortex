@@ -16,6 +16,7 @@ from cortex.health_check.tool_analyzer import AnalyzedTool, ToolAnalyzer
 from cortex.managers.initialization import get_project_root
 from cortex.tools.structure.categories import (
     MAX_REGISTERED_TOOLS,
+    TARGET_REGISTERED_TOOLS,
     TOOL_CATEGORIES,
     get_category_summary,
 )
@@ -60,6 +61,11 @@ class TestToolCategoriesGovernance:
 
         # Sanity check: TOOL_CATEGORIES should remain the single source of truth.
         assert total_tools == len(TOOL_CATEGORIES)
+
+    def test_max_registered_tools_cap(self) -> None:
+        """Budget cap stays tight above the consolidation target (see docs/api/tools.md)."""
+        assert MAX_REGISTERED_TOOLS == 12
+        assert TARGET_REGISTERED_TOOLS <= MAX_REGISTERED_TOOLS
 
 
 class TestToolDescriptionGovernance:

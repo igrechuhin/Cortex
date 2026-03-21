@@ -44,6 +44,8 @@
 
 - ✅ **Markdown link validation — Pyright and test typing** - COMPLETE (2026-03-21) - Renamed link-check helpers to public names for lawful test imports; consumed `Path.relative_to` and `write_text` results; typed `Path.read_text` monkeypatch in `test_check_markdown_links.py` so pyright passes under strict unused-result and private-usage rules.
 
+- ✅ **Tighten tool-count guardrail from MAX=16 to MAX=12** - COMPLETE (2026-03-21) - Reduced MAX_REGISTERED_TOOLS to 12; documented escalation in docs/api/tools.md; added test_max_registered_tools_cap. Plan `tool-budget-tightening` archived under `.cortex/plans/archive/Other/`.
+
 ## Completed Work (2026-03-20)
 
 - **Summary (2026-03-20)** - 1 entries archived.

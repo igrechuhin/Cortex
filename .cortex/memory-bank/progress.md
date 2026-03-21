@@ -36,6 +36,7 @@
 - **Clarify file/function size governance: document logical-line counting** - COMPLETE. Docs, CI labels, and constant comments aligned with check_file_sizes/check_function_lengths.
 - **Add CI markdown link validation for non-archive docs** - COMPLETE. Internal link checker for docs + policy files, CI step, local preflight via markdown lint merge, unit tests.
 - **Markdown link validation — Pyright and test typing** - COMPLETE. Public helper names in `markdown_link_validation.py`, unused-result cleanup, typed `read_text` test double; Phase A typecheck clean for module and `test_check_markdown_links.py`.
+- **Tighten tool-count guardrail from MAX=16 to MAX=12** - COMPLETE. MAX_REGISTERED_TOOLS=12, Adding new tools section in tools.md, governance test for cap; plan `tool-budget-tightening` archived to `.cortex/plans/archive/Other/`.
 
 ## 2026-03-16
 

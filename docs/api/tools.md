@@ -83,6 +83,14 @@ Source of truth for behavior and timeouts: `src/cortex/tools/execution/pre_commi
 - **Static resources:** `PUBLISHED_STATIC_RESOURCE_URIS` in `src/cortex/discovery/published_inventory.py` (must match each `@mcp.resource(uri="cortex://...")` in `src/cortex/tools/`).
 - **Machine-readable snapshot:** `docs/_generated/tool-inventory.json` (regenerate with `published_inventory_json()` from `cortex.discovery.published_inventory`; tests fail on drift).
 
+### Adding new tools
+
+The long-term consolidation goal is **`TARGET_REGISTERED_TOOLS = 10`** in `src/cortex/tools/structure/categories.py`. **`MAX_REGISTERED_TOOLS`** is a hard cap (currently **12**) enforced by `tests/tools/test_tool_categories_governance.py`.
+
+1. **Prefer consolidation** — extend an existing tool or workflow before adding a new `@mcp.tool()` registration.
+2. **If a separate tool is required** — add a plan under `.cortex/plans/` that justifies why the behavior cannot live in an existing tool, and get review approval.
+3. **In the same PR** as the new registration — update `TOOL_CATEGORIES`, bump `MAX_REGISTERED_TOOLS` only if the total would exceed the cap, and keep documentation (this file and governance tests) aligned.
+
 ### Published tools (MCP `tools/list`)
 
 | Tool | Tier (loading) |
