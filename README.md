@@ -144,6 +144,8 @@ Add to your `mcp.json`:
 
 For local development, use these Make targets (after running `bash scripts/bootstrap.sh` once to create the virtualenv and install dependencies):
 
+- **Restricted network / offline**: If `uv sync` or installs fail (proxy, air-gap, SSL), use [Offline and network-restricted verification](docs/guides/troubleshooting.md#offline-and-network-restricted-verification) to bootstrap a test-running environment and triage fetch vs test failures.
+
 - **`make bootstrap`**: Run `scripts/bootstrap.sh` to create or update the `.venv` and install all dependencies.
 - **`make check`**: Non-mutating local gate: verify Black on `src/` and `tests/`, Ruff lint, Pyright, then the fast test suite. Does not rewrite files; use `make fix` when checks fail for formatting or auto-fixable lint.
 - **`make fix`**: Apply Black, Ruff import sorting (`I`), and Ruff `--fix` on `src/` and `tests/` (mutating).

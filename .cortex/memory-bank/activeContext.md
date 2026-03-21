@@ -12,6 +12,8 @@
 
 - ✅ **Convert tests/test_phase5_3_4.py to pytest and guard script-only test files** - COMPLETE (2026-03-21) - Converted Phase 5.3–5.4 script tests to pytest (tmp_path memory-bank layout, async tests). Added AST guard test_script_only_pytest_files_guard for tests/**/test_*.py. Migrated test_phase6_imports, test_quick, and test_simple from script-only to collected tests so the guard passes.
 
+- ✅ **Offline / network-restricted verification bootstrap and triage docs** - COMPLETE (2026-03-21) - Added troubleshooting section for offline/air-gap uv bootstrap (wheelhouse, UV_OFFLINE, frozen sync, mirrors), verification preflight, CI parity pointers, and symptom triage matrix; linked from README Developer commands and AGENTS Cursor Cloud prerequisites.
+
 ## Completed Work (2026-03-20)
 
 - **Summary (2026-03-20)** - 1 entries archived.

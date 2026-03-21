@@ -53,6 +53,63 @@ pyenv global 3.13.0
 
 For a **stable MCP connection**, see [Getting started: Stable MCP setup](../getting-started.md#stable-mcp-setup-recommended): Cortex exits on disconnect by default (client starts a new process when needed, so you get fresh Initialize with no user action), optional bridge, faster markdown lint, and usage tips. The sections below cover individual issues and causes.
 
+#### Offline and network-restricted verification {#offline-and-network-restricted-verification}
+
+Use this when tunnels, proxies, air-gaps, or corporate filters block PyPI (or when you must separate **“the environment never finished installing”** from **“pytest failed”**).
+
+**Requirements (check first)**:
+
+- **Python** 3.13 or later (see [Issue: Python version too old](#issue-python-version-too-old)).
+- **`uv`** on `PATH` (see [Issue: `uv` command not found](#issue-uv-command-not-found)).
+- **Synapse submodule** (shared rules and hook scripts): from repo root run `git submodule update --init --recursive`. Submodule fetch is a **Git** operation to the submodule remote; it can fail independently of PyPI.
+
+**Bootstrap (connected machine, normal path)**:
+
+1. From the repository root: `uv sync --extra dev` (or `bash scripts/bootstrap.sh`, which drives the same idea). This creates/updates `.venv/` and installs dev tools including `rumdl`.
+2. Smoke-check imports: `uv run python -c "import cortex"` (optional but fast).
+3. Run tests when you care about correctness: `uv run pytest tests/ -q` (see [Development and Testing](#development-and-testing)).
+
+**Offline / air-gap patterns** (repo must contain a current `uv.lock`):
+
+- **`uv sync --frozen`** — install strictly from the lockfile; does not re-resolve dependencies. Prefer for reproducible and CI-like installs when the lockfile is the source of truth.
+- **`uv sync`** (no `--frozen`) — may refresh the lockfile and **needs network** to PyPI or your mirror when metadata or versions are missing locally.
+- **`UV_OFFLINE=1`** — uv must not hit the network; use only when wheels (and any required metadata) are already available via cache or local paths. Example: `UV_OFFLINE=1 uv sync --frozen`.
+- **Wheelhouse or internal index** — organization-specific. Typical levers: `UV_FIND_LINKS` (directory or URL of pre-downloaded wheels), `UV_INDEX_URL` / `UV_EXTRA_INDEX_URL` for an internal Simple API mirror. Coordinate with IT for approved air-gap procedures.
+- **Greenfield air-gap** — usually build a wheelhouse (and lockfile) on a connected machine, transfer artifacts into the restricted zone, then run `UV_OFFLINE=1 uv sync --frozen` (or your platform’s equivalent). `python -m compileall` alone is **not** a substitute for pytest.
+
+Environment variable reference: [Astral uv — Environment variables](https://docs.astral.sh/uv/reference/environment/).
+
+**Verification preflight** (before blaming tests):
+
+1. Run `uv sync --frozen` from repo root. If it fails, you are still in **dependency / network / trust store** territory.
+2. Classify the error:
+   - **SSL, certificate, `UnknownIssuer`, peer certificate** → [Git and SSL certificate issues](#git-and-ssl-certificate-issues) and **Fixing uv SSL / certificate errors** under [Quality gate unavailable in environment](#quality-gate-unavailable-in-environment).
+   - **Resolution errors, HTTP 4xx/5xx to an index, timeouts, DNS** → routing, proxy, mirror, or offline snapshot — not a pytest assertion failure.
+   - **Git submodule / fetch** → credentials, firewall, or uninitialized submodule (see requirements above).
+3. After a successful sync, run the smallest check that matches your question:
+   - Syntax-only (does **not** replace tests): `uv run python -m compileall -q src/cortex`
+   - Tests: `uv run pytest tests/ -q`, `make check`, or `make check-ci-parity` depending on how close you need to be to CI (next subsection).
+
+**CI vs local parity**:
+
+- **`make check`** — quick, non-mutating gate (Black check, Ruff, Pyright, fast pytest). See [Local `make check` vs CI parity](#local-make-check-vs-ci-parity).
+- **`make check-ci-parity`** — broader alignment with [.github/workflows/quality.yml](../../.github/workflows/quality.yml); still skips some CI-only steps (npm `cspell`, eval jobs, Codecov, optional artifacts). GitHub Actions **does** download and install dependencies each job unless your org caches them; mirror offline workflows accordingly.
+
+**Triage matrix (symptom → cause → next step)**:
+
+| What you see | Likely cause | Next step |
+|--------------|--------------|-----------|
+| SSL / certificate / `UnknownIssuer` during `uv sync` | CA bundle or corporate MITM | `SSL_CERT_FILE`, `UV_NATIVE_TLS=true`, or IT-provided CA; see SSL sections above |
+| Connection timeout, DNS failure, proxy errors to PyPI or mirror | No path to package index | VPN, proxy settings, internal mirror, or wheelhouse |
+| “No solution” / missing distribution at locked version (offline) | Lock not satisfiable from local wheels | Regenerate lock and wheelhouse on a connected machine; expand `UV_FIND_LINKS` |
+| `uv sync` succeeds; pytest shows failed tests with tracebacks | Code, test, or local expectation issue | Debug failing tests; fix implementation or test data |
+| `pytest: command not found` or wrong Python version | Shell not using project venv | Use `uv run pytest …` or select `.venv` (see [Development and Testing](#development-and-testing)) |
+| Errors referencing `.cortex/synapse` paths during hooks | Submodule missing | `git submodule update --init --recursive` |
+
+**Optional (follow-up)**: A devcontainer or pre-built image with dependencies resolved can reduce friction; treat as a separate change if your team standardizes on containers.
+
+**Related**: [Quality gate unavailable in environment](#quality-gate-unavailable-in-environment), [Step 12.7 and sandboxed environments](#step-127-and-sandboxed-environments).
+
 #### MCP unavailable: read-only audits {#mcp-unavailable-read-only-audits}
 
 Use this when the agent **cannot** rely on Cortex MCP for a full session (e.g. server not configured, Initialize never completes, persistent "0 tools", or connection closed on every tool call after one retry). Goal: stay **auditable** and **safe** — review code and docs without pretending Memory Bank or quality gates ran.

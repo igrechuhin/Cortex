@@ -199,6 +199,8 @@ All phases run inline. Use zero-arg tools — do NOT use legacy pre-commit tools
 
 The VM update script handles: `uv sync --extra dev` (which also installs the `rumdl` CLI), and `git submodule update --init --recursive`. Python 3.13+ and `uv` must be pre-installed as system dependencies (the update script does not install them).
 
+If dependency download fails (network, proxy, air-gap, or SSL), use the preflight and triage flow in [Offline and network-restricted verification](docs/guides/troubleshooting.md#offline-and-network-restricted-verification) before treating failures as test regressions.
+
 ### Running the Cortex MCP server
 
 - Default transport is **stdio** (reads JSON-RPC from stdin, writes to stdout): `uv run cortex`
