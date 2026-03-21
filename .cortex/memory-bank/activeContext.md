@@ -50,6 +50,8 @@
 
 - ✅ **Rumdl scope parity and submodule MCP remediation** - COMPLETE (2026-03-21) - CI `quality.yml` and `make check-ci-parity` exclude `.cortex/.cache/` from rumdl discovery; `markdown_lint_core.get_all_markdown_files_for_lint` mirrors `.cortex/history/` and `.cortex/.cache/` excludes with POSIX-normalized relative paths; `precommit_block_response` adds explicit `remediation` (`git submodule update --init --recursive`). Plan `submodule-resilience.md` moved to `.cortex/plans/archive/Other/`. Tests updated for lint paths and guard behavior.
 
+- ✅ **Align bootstrap.sh Synapse readiness check with check_synapse.sh** - COMPLETE (2026-03-21) - Added scripts/_synapse_lib.sh with _synapse_scripts_ready(); bootstrap.sh and check_synapse.sh source it. Bootstrap prints remediation text then runs git submodule update when scripts dir missing or empty. Added tests/unit/test_synapse_scripts_readiness.py for empty/missing/non-empty cases and bootstrap wiring.
+
 ## Completed Work (2026-03-20)
 
 - **Summary (2026-03-20)** - 1 entries archived.

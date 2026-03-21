@@ -3,9 +3,17 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
-SYNAPSE_SCRIPTS_DIR="${REPO_ROOT}/.cortex/synapse/scripts"
+# shellcheck source=_synapse_lib.sh
+source "${SCRIPT_DIR}/_synapse_lib.sh"
 
-if [ ! -d "${SYNAPSE_SCRIPTS_DIR}" ]; then
+if ! _synapse_scripts_ready; then
+  cat <<'EOF'
+[Synapse] Cortex Synapse scripts are missing or the scripts directory is empty.
+Initializing submodules (equivalent to):
+
+  git submodule update --init --recursive
+
+EOF
   git -C "${REPO_ROOT}" submodule update --init --recursive
 fi
 

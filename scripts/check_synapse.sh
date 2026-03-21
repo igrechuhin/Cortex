@@ -3,12 +3,8 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
-SYNAPSE_DIR="${REPO_ROOT}/.cortex/synapse"
-SYNAPSE_SCRIPTS_DIR="${SYNAPSE_DIR}/scripts"
-
-_synapse_scripts_ready() {
-  [ -d "${SYNAPSE_SCRIPTS_DIR}" ] && [ "$(ls -A "${SYNAPSE_SCRIPTS_DIR}" 2>/dev/null | wc -l)" -gt 0 ]
-}
+# shellcheck source=_synapse_lib.sh
+source "${SCRIPT_DIR}/_synapse_lib.sh"
 
 while true; do
   if _synapse_scripts_ready; then

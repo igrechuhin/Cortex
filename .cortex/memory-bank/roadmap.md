@@ -16,11 +16,21 @@
 
 ### Fixes
 
+- **Narrow broad exception handlers in markdown lint core** — PENDING (medium) — Replace three broad exception catches with specific types. Plan: `.cortex/plans/narrow-markdown-lint-exceptions.md`
+- **Handle subprocess.TimeoutExpired in pre_commit_submodule_guard** — PENDING (medium) — Catch timeout in both subprocess call sites to prevent Phase A abort. Plan: `.cortex/plans/submodule-guard-timeout-handling.md`
+- **Remove redundant asserts in plan tool** — PENDING (low) — Remove unreachable `assert` after guard returns at lines 129, 144. Plan: `.cortex/plans/remove-redundant-plan-asserts.md`
+- **Automate dependency parity between pyproject.toml and requirements.txt** — PENDING (medium) — CI validation step to prevent manual sync drift. Plan: `.cortex/plans/dependency-declaration-parity.md`
+
 ### Documentation Cleanup (DRY)
 
 ### Refactoring
 
+- **Deduplicate _session_dir helper across pre-commit modules** — PENDING (low) — Extract shared `session_dir` from `pre_commit_detached` and `pre_commit_status`. Plan: `.cortex/plans/deduplicate-session-dir-helper.md`
+- **Decompose oversized tool modules by responsibility boundaries** — PENDING (medium) — Split largest files/functions to comply with 400-line/30-line limits. Plan: `.cortex/plans/decompose-oversized-tool-modules.md`
+
 ### Cleanup
+
+- **Clean up legacy Node package manifest and clarify Node dependency** — PENDING (low) — Remove or formalize legacy Node metadata; document exact CI Node usage. Plan: `.cortex/plans/clean-up-legacy-package-json.md`
 
 ### Investigation Plans (Archive / Reference)
 
