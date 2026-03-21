@@ -22,6 +22,7 @@ from cortex.tools.context.effectiveness_models import (
     ContextAnalysisStatus,
     ContextInsights,
     ContextStatisticsResult,
+    ContextTelemetryRecordQuality,
     ContextUsageEntry,
     ContextUsageStatistics,
     CurrentSessionAnalysisResult,
@@ -38,17 +39,71 @@ from cortex.tools.context.effectiveness_operations_io import (
     load_statistics,
     save_statistics,
 )
+from cortex.tools.context.effectiveness_telemetry_quality import (
+    log_and_classify_context_telemetry_entry,
+)
+
+
+def _production_rollup_entries(
+    entries: list[ContextUsageEntry],
+) -> list[ContextUsageEntry]:
+    return [
+        e
+        for e in entries
+        if e.record_quality == ContextTelemetryRecordQuality.PRODUCTION
+    ]
+
+
+def _reset_optimization_aggregates(stats: ContextUsageStatistics) -> None:
+    stats.total_load_context_calls = 0
+    stats.avg_token_utilization = 0.0
+    stats.avg_files_selected = 0.0
+    stats.avg_relevance_score = 0.0
+    stats.common_task_patterns = {}
+    stats.insights = create_empty_insights()
+
+
+def _rollup_task_patterns(entries: list[ContextUsageEntry]) -> dict[str, int]:
+    patterns: dict[str, int] = {}
+    for entry in entries:
+        pattern = extract_task_pattern(entry.task_description)
+        patterns[pattern] = patterns.get(pattern, 0) + 1
+    return patterns
+
+
+def _relevance_aggregates_from_log_entry(
+    entry: LoadContextLogEntry,
+) -> tuple[list[float], float, int, int]:
+    scores = list(entry.relevance_scores.values())
+    if not scores:
+        return [], 0.0, 0, 0
+    avg = sum(scores) / len(scores)
+    hi = sum(1 for s in scores if s > 0.7)
+    lo = sum(1 for s in scores if s < 0.3)
+    return scores, avg, hi, lo
+
+
+def _apply_rollup_totals(
+    stats: ContextUsageStatistics, rollup: list[ContextUsageEntry]
+) -> None:
+    total = len(rollup)
+    stats.total_load_context_calls = total
+    stats.avg_token_utilization = round(sum(e.utilization for e in rollup) / total, 3)
+    stats.avg_files_selected = round(sum(e.files_selected for e in rollup) / total, 2)
+    stats.avg_relevance_score = round(
+        sum(e.avg_relevance_score for e in rollup) / total, 3
+    )
+    stats.common_task_patterns = _rollup_task_patterns(rollup)
+    stats.insights = generate_insights(rollup, create_empty_insights)
 
 
 def _analyze_log_entry(
     session_id: str, entry: LoadContextLogEntry
 ) -> ContextUsageEntry:
     """Analyze a single log entry and create usage entry."""
-    relevance_scores = list(entry.relevance_scores.values())
-    avg_score = sum(relevance_scores) / len(relevance_scores) if relevance_scores else 0
-    selected_files = entry.selected_files
-    relevance_by_file = entry.relevance_scores
-
+    rq, qnote = log_and_classify_context_telemetry_entry(session_id, entry)
+    _, avg_r, hi_r, lo_r = _relevance_aggregates_from_log_entry(entry)
+    files = entry.selected_files
     return ContextUsageEntry(
         session_id=session_id,
         timestamp=entry.timestamp,
@@ -56,14 +111,16 @@ def _analyze_log_entry(
         token_budget=entry.token_budget,
         total_tokens=entry.total_tokens,
         utilization=entry.utilization,
-        files_selected=len(selected_files),
+        files_selected=len(files),
         files_excluded=len(entry.excluded_files),
-        avg_relevance_score=round(avg_score, 3),
-        files_with_high_relevance=sum(1 for s in relevance_scores if s > 0.7),
-        files_with_low_relevance=sum(1 for s in relevance_scores if s < 0.3),
-        selected_file_names=selected_files,
-        relevance_by_file=relevance_by_file,
+        avg_relevance_score=round(avg_r, 3),
+        files_with_high_relevance=hi_r,
+        files_with_low_relevance=lo_r,
+        selected_file_names=files,
+        relevance_by_file=entry.relevance_scores,
         role=entry.role,
+        record_quality=rq,
+        telemetry_quality_note=qnote,
     )
 
 
@@ -72,40 +129,36 @@ def _update_aggregates(stats: ContextUsageStatistics) -> None:
     entries = stats.entries
     if not entries:
         return
-
-    total = len(entries)
-    stats.total_load_context_calls = total
-    stats.avg_token_utilization = round(sum(e.utilization for e in entries) / total, 3)
-    stats.avg_files_selected = round(sum(e.files_selected for e in entries) / total, 2)
-    stats.avg_relevance_score = round(
-        sum(e.avg_relevance_score for e in entries) / total, 3
-    )
-
-    patterns: dict[str, int] = {}
-    for entry in entries:
-        pattern = extract_task_pattern(entry.task_description)
-        patterns[pattern] = patterns.get(pattern, 0) + 1
-    stats.common_task_patterns = patterns
-    stats.insights = generate_insights(entries, create_empty_insights)
+    rollup = _production_rollup_entries(entries)
+    if not rollup:
+        _reset_optimization_aggregates(stats)
+        return
+    _apply_rollup_totals(stats, rollup)
 
 
 def _calculate_session_stats(
     entries: list[ContextUsageEntry],
 ) -> SessionStats:
     """Calculate statistics for a list of context usage entries."""
-    total = len(entries)
-    patterns: dict[str, int] = {}
-    for entry in entries:
-        pattern = extract_task_pattern(entry.task_description)
-        patterns[pattern] = patterns.get(pattern, 0) + 1
+    calls_count = len(entries)
+    rollup = _production_rollup_entries(entries)
+    if not rollup:
+        return SessionStats(
+            calls_count=calls_count,
+            avg_token_utilization=0.0,
+            avg_files_selected=0.0,
+            avg_relevance_score=0.0,
+            task_patterns={},
+        )
+    total = len(rollup)
     return SessionStats(
-        calls_count=total,
-        avg_token_utilization=round(sum(e.utilization for e in entries) / total, 3),
-        avg_files_selected=round(sum(e.files_selected for e in entries) / total, 2),
+        calls_count=calls_count,
+        avg_token_utilization=round(sum(e.utilization for e in rollup) / total, 3),
+        avg_files_selected=round(sum(e.files_selected for e in rollup) / total, 2),
         avg_relevance_score=round(
-            sum(e.avg_relevance_score for e in entries) / total, 3
+            sum(e.avg_relevance_score for e in rollup) / total, 3
         ),
-        task_patterns=patterns,
+        task_patterns=_rollup_task_patterns(rollup),
     )
 
 

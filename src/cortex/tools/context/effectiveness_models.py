@@ -20,6 +20,14 @@ class ContextAnalysisStatus(str, Enum):
     NO_DATA = "no_data"
 
 
+class ContextTelemetryRecordQuality(str, Enum):
+    """How a context-usage row is treated in optimization rollups."""
+
+    PRODUCTION = "production"
+    SYNTHETIC = "synthetic"
+    INVALID_DATA = "invalid_data"
+
+
 class ContextUsageEntry(StrictBaseModel):
     """Structure for a single context usage analysis entry."""
 
@@ -52,6 +60,24 @@ class ContextUsageEntry(StrictBaseModel):
         default=None,
         description="Agent role (feature/quality/testing/docs/planning/debugging/review)",
     )
+    record_quality: ContextTelemetryRecordQuality = Field(
+        default=ContextTelemetryRecordQuality.PRODUCTION,
+        description="Eligibility for optimization aggregates (production only)",
+    )
+    telemetry_quality_note: str | None = Field(
+        default=None,
+        description="Machine-oriented reason when record is not production quality",
+    )
+
+    @field_validator("record_quality", mode="before")
+    @classmethod
+    def _coerce_record_quality(
+        cls, v: ContextTelemetryRecordQuality | str
+    ) -> ContextTelemetryRecordQuality:
+        """Allow JSON persistence under StrictBaseModel (strict=True)."""
+        if isinstance(v, ContextTelemetryRecordQuality):
+            return v
+        return ContextTelemetryRecordQuality(v)
 
 
 class TaskTypeInsight(StrictBaseModel):

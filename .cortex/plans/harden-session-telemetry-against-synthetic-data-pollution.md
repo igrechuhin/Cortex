@@ -2,11 +2,16 @@
 title: "Harden session telemetry against synthetic data pollution"
 component: "session analytics / context-usage statistics"
 work_type: "fix"
-status: "PENDING"
+status: "IN_PROGRESS"
 priority: "MEDIUM"
 created: "2026-03-20"
 depends_on: []
 ---
+
+## Progress (2026-03-21)
+
+- Done: schema field `record_quality` / `ContextTelemetryRecordQuality`; classification module; production-only rollups and exclusion logging; unit tests for classification and rollup behavior.
+- Remaining: metrics-level observability (step 4); optional stricter write-path validation; consider migration/backfill for existing persisted rows.
 
 ## Goal
 
