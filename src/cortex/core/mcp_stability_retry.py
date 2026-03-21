@@ -77,6 +77,22 @@ def _get_connection_state() -> MCPConnectionState:
     return _connection_state
 
 
+def reset_connection_state_for_testing() -> None:
+    """Clear process-global MCP connection state for test isolation.
+
+    Tests that open the circuit breaker (e.g. reconnect exhaustion) must not
+    leave degraded mode for unrelated tests on the same pytest-xdist worker.
+    """
+    global _connection_state
+    _connection_state = None
+
+
+def ensure_clean_connection_state_for_testing() -> None:
+    """Reset connection state and re-init defaults (pytest autouse hook)."""
+    reset_connection_state_for_testing()
+    _ = _get_connection_state()
+
+
 def _record_connection_closure() -> None:
     """Record connection closure for diagnostics (Phase 32)."""
     global _connection_closure_count

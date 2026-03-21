@@ -14,8 +14,6 @@
 
 ## Pending plans (from .cortex/plans)
 
-- **Narrow broad exception handlers — plans completion I/O and migration** - PENDING - Replace except Exception with specific types in `src/cortex/tools/plans/completion_io.py` and `src/cortex/core/migration.py`; add tests. Plan: .cortex/plans/phase-2026-03-21-narrow-exception-plans-migration.md
-
 ### Fixes
 
 ### Documentation Cleanup (DRY)

@@ -1,14 +1,17 @@
 """Automatic migration from template-only to hybrid storage format."""
 
+import json
 import shutil
 from datetime import datetime
 from pathlib import Path
 from typing import cast
 
+from pydantic import ValidationError
+
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 
 from .dependency_graph import DependencyGraph
-from .exceptions import MigrationFailedError
+from .exceptions import IndexCorruptedError, MemoryBankError, MigrationFailedError
 from .file_system import FileSystemManager
 from .metadata_index import MetadataIndex
 from .models import (
@@ -147,7 +150,7 @@ class MigrationManager:
                 )
 
             return self._build_migration_result(md_files, backup_dir, verification)
-        except Exception as e:
+        except (OSError, shutil.Error, MemoryBankError) as e:
             if backup_dir:
                 await self._handle_migration_error(e, backup_dir)
             raise
@@ -300,21 +303,26 @@ class MigrationManager:
         await metadata_index.update_dependency_graph(graph_dict)
 
     async def _handle_migration_error(
-        self, error: Exception, backup_dir: Path | None
+        self, error: BaseException, backup_dir: Path | None
     ) -> None:
         """Handle migration error with rollback.
 
         Args:
-            error: Exception that occurred
+            error: Exception that occurred during migration
             backup_dir: Backup directory path if available
         """
         if backup_dir and backup_dir.exists():
             try:
                 await self.rollback(backup_dir)
-            except Exception as rollback_error:
+            except (OSError, shutil.Error) as rollback_error:
                 from cortex.core.logging_config import logger
 
-                logger.warning(f"Rollback failed: {rollback_error}")
+                logger.warning(
+                    "Rollback failed after migration error (primary=%r): %s",
+                    error,
+                    rollback_error,
+                    exc_info=True,
+                )
 
         raise MigrationFailedError(
             str(error), str(backup_dir) if backup_dir else None
@@ -365,18 +373,21 @@ class MigrationManager:
         Returns:
             VerificationResult with verification status
         """
-        # Check index exists
         if not self.index_path.exists():
             return VerificationResult(success=False, error="Index file not created")
 
-        # Check history directory exists
         history_dir = self.cortex_dir / "history"
         if not history_dir.exists():
             return VerificationResult(
                 success=False, error="History directory not created"
             )
 
-        # Load and validate index
+        return await self._verify_index_load_and_snapshots(md_files)
+
+    async def _verify_index_load_and_snapshots(
+        self, md_files: list[Path]
+    ) -> VerificationResult:
+        """Load index and verify file entries and snapshots."""
         try:
             metadata_index = MetadataIndex(self.project_root)
             _ = await metadata_index.load()
@@ -396,7 +407,14 @@ class MigrationManager:
                 snapshots_created=True,
             )
 
-        except Exception as e:
+        except (
+            OSError,
+            json.JSONDecodeError,
+            UnicodeDecodeError,
+            ValidationError,
+            IndexCorruptedError,
+            KeyError,
+        ) as e:
             return VerificationResult(
                 success=False,
                 error=f"Verification failed: {e}",

@@ -54,6 +54,10 @@ import pytest  # noqa: E402
 # Use _cursor as default symlink_location in tests so structure managers can create the dir.
 import cortex.structure.structure_config as _structure_config  # noqa: E402
 from cortex.core.dependency_graph import DependencyGraph  # noqa: E402
+from cortex.core.mcp_stability_retry import (  # noqa: E402
+    ensure_clean_connection_state_for_testing,
+    reset_connection_state_for_testing,
+)
 from cortex.core.metadata_index import MetadataIndex  # noqa: E402
 from cortex.core.models import JsonValue, ModelDict  # noqa: E402
 from cortex.core.token_counter import TokenCounter  # noqa: E402
@@ -69,6 +73,14 @@ _cursor_integration: ModelDict = dict(
 )
 _cursor_integration["symlink_location"] = "_cursor"
 _structure_config.DEFAULT_STRUCTURE["cursor_integration"] = _cursor_integration
+
+
+@pytest.fixture(autouse=True)
+def isolate_mcp_connection_state() -> Generator[None]:
+    """Reset MCP circuit-breaker globals so tests cannot leak degraded mode (xdist)."""
+    ensure_clean_connection_state_for_testing()
+    yield
+    reset_connection_state_for_testing()
 
 
 @pytest.fixture(autouse=True, scope="session")

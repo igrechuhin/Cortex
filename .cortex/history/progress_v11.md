@@ -21,6 +21,8 @@
 - **Offline / network-restricted verification bootstrap and triage docs** - COMPLETE. Added offline/bootstrap and preflight docs, triage matrix, README and AGENTS cross-links; optional devcontainer deferred per plan.
 - **Telemetry — Synapse usage cache policy and context-usage-statistics semantics** - COMPLETE. Documented VC policy, stats JSON semantics, schema_version + tests, contributor checklist.
 - **Phase A markdown lint scope and preflight markdown merge** - COMPLETE. `collect_pre_commit_markdown_paths` excludes history and session cache trees from worker rumdl; zero-arg Phase A polling merges markdown lint into `preflight_passed`; unit tests for collection and merge helpers.
+- **Narrow broad exception handlers — plans completion I/O and migration** - COMPLETE. Replaced broad except Exception in completion_io and migration with specific exception tuples; added tests for I/O, JSON, validation, and rollback paths.
+- **Pytest isolation for MCP circuit breaker (xdist)** - COMPLETE. Reset/prime helpers in `mcp_stability_retry.py`, autouse fixture in `tests/conftest.py`, reconnect test cleanup; fixes `Connection not healthy before tool execution` flakes after circuit-open reconnect tests under parallel pytest.
 
 ## 2026-03-16
 

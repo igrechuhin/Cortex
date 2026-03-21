@@ -19,6 +19,7 @@ from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+from pydantic import ValidationError
 
 from cortex.core.exceptions import MigrationFailedError
 from cortex.core.migration import MigrationManager
@@ -528,10 +529,9 @@ class TestMigrate:
         ) as mock_backup:
             mock_backup.return_value = backup_dir
 
-            # Mock FileSystemManager to raise exception during instantiation
+            # Mock FileSystemManager to raise OSError during instantiation
             with patch("cortex.core.migration.FileSystemManager") as mock_fs_class:
-                mock_fs_class.side_effect = Exception("Migration error")
-                mock_fs_class.side_effect = Exception("Migration error")
+                mock_fs_class.side_effect = OSError("Migration error")
 
                 with patch.object(
                     manager, "rollback", new_callable=AsyncMock
@@ -540,6 +540,46 @@ class TestMigrate:
                         _ = await manager.migrate()
 
                     mock_rollback.assert_called_once_with(backup_dir)
+
+    @pytest.mark.asyncio
+    async def test_migrate_logs_when_rollback_after_error_fails(
+        self, tmp_path: Path
+    ) -> None:
+        """If rollback raises OSError, primary failure is still MigrationFailedError."""
+        manager = MigrationManager(tmp_path)
+        manager.memory_bank_dir.mkdir(parents=True)
+        _ = (manager.memory_bank_dir / "test.md").write_text("# Test")
+
+        backup_dir = tmp_path / ".cortex-backup-test"
+        backup_dir.mkdir()
+
+        with patch.object(
+            manager, "create_backup", new_callable=AsyncMock
+        ) as mock_backup:
+            mock_backup.return_value = backup_dir
+
+            with patch("cortex.core.migration.FileSystemManager") as mock_fs_class:
+                mock_fs_class.side_effect = OSError("Migration error")
+
+                with patch.object(
+                    manager, "rollback", new_callable=AsyncMock
+                ) as mock_rollback:
+                    mock_rollback.side_effect = OSError("rollback failed")
+                    with patch(
+                        "cortex.core.logging_config.logger.warning"
+                    ) as mock_warn:
+                        with pytest.raises(MigrationFailedError) as exc_info:
+                            _ = await manager.migrate()
+
+        mock_warn.assert_called_once()
+        call_args = mock_warn.call_args
+        assert call_args is not None
+        fmt, logged_primary, logged_rollback = call_args[0]
+        assert "Rollback failed" in fmt
+        assert isinstance(logged_primary, OSError)
+        assert isinstance(logged_rollback, OSError)
+        assert call_args[1].get("exc_info") is True
+        assert exc_info.value.__cause__ is logged_primary
 
 
 class TestVerifyMigration:
@@ -678,6 +718,66 @@ class TestVerifyMigration:
             assert result.files_verified == 1
             assert result.index_valid is True
             assert result.snapshots_created is True
+
+    @pytest.mark.asyncio
+    async def test_verify_migration_fails_when_load_raises_oserror(
+        self, tmp_path: Path
+    ) -> None:
+        """Verification returns failure when index load raises OSError."""
+        manager = MigrationManager(tmp_path)
+        manager.index_path.parent.mkdir(parents=True, exist_ok=True)
+        manager.index_path.touch()
+        get_cortex_path(tmp_path, CortexResourceType.HISTORY).mkdir(
+            parents=True, exist_ok=True
+        )
+        md_files: list[Path] = []
+
+        with patch("cortex.core.migration.MetadataIndex") as mock_index_class:
+            mock_index = AsyncMock()
+            mock_index.load = AsyncMock(side_effect=OSError("index read failed"))
+            mock_index_class.return_value = mock_index
+
+            result = await manager.verify_migration(md_files)
+
+        assert result.success is False
+        assert result.error is not None
+        assert "Verification failed" in (result.error or "")
+        assert "index read failed" in (result.error or "")
+
+    @pytest.mark.asyncio
+    async def test_verify_migration_fails_when_load_raises_validation_error(
+        self, tmp_path: Path
+    ) -> None:
+        """Verification maps ValidationError from load to a failed VerificationResult."""
+        manager = MigrationManager(tmp_path)
+        manager.index_path.parent.mkdir(parents=True, exist_ok=True)
+        manager.index_path.touch()
+        get_cortex_path(tmp_path, CortexResourceType.HISTORY).mkdir(
+            parents=True, exist_ok=True
+        )
+        md_files: list[Path] = []
+
+        validation_exc = ValidationError.from_exception_data(
+            "IndexModel",
+            [
+                {
+                    "type": "int_parsing",
+                    "loc": ("x",),
+                    "input": "not-int",
+                }
+            ],
+        )
+
+        with patch("cortex.core.migration.MetadataIndex") as mock_index_class:
+            mock_index = AsyncMock()
+            mock_index.load = AsyncMock(side_effect=validation_exc)
+            mock_index_class.return_value = mock_index
+
+            result = await manager.verify_migration(md_files)
+
+        assert result.success is False
+        assert result.error is not None
+        assert "Verification failed" in (result.error or "")
 
 
 class TestCleanupOldBackups:

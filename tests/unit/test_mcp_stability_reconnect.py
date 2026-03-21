@@ -9,16 +9,14 @@ import pytest
 from cortex.core.mcp_stability_retry import (
     _get_connection_state,
     check_connection_health,
+    ensure_clean_connection_state_for_testing,
     reconnect,
 )
 
 
 def _reset_connection_state() -> None:
     """Reset global connection state for test isolation."""
-    # Reset the cached state so each test starts from a clean slate.
-    global _connection_state  # type: ignore[assignment]
-    _connection_state = None  # type: ignore[assignment]
-    _ = _get_connection_state()
+    ensure_clean_connection_state_for_testing()
 
 
 @pytest.mark.asyncio

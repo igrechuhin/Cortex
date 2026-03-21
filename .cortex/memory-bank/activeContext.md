@@ -18,6 +18,10 @@
 
 - ✅ **Phase A markdown lint scope and preflight markdown merge** - COMPLETE (2026-03-21) - `collect_pre_commit_markdown_paths` in `pre_commit_worker.py` excludes `.cortex/history/` and `.cortex/.cache/` from the detached worker rumdl file list (snapshots keep sibling-only links); merged `markdown_result` into `_poll_phase_a_result` in `pre_commit_zero_arg_tools.py` so `preflight_passed` reflects rumdl. Tests: `test_pre_commit_worker_md_collect.py`, `test_poll_phase_a_markdown_merge.py`.
 
+- ✅ **Narrow broad exception handlers — plans completion I/O and migration** - COMPLETE (2026-03-21) - Replaced broad except Exception in completion_io and migration with specific exception tuples; added tests for I/O, JSON, validation, and rollback paths.
+
+- ✅ **Pytest isolation for MCP circuit breaker (xdist)** - COMPLETE (2026-03-21) - Added `reset_connection_state_for_testing` / `ensure_clean_connection_state_for_testing` in `mcp_stability_retry.py`, autouse `isolate_mcp_connection_state` in `tests/conftest.py`, and aligned reconnect tests so `test_reconnect_opens_circuit_after_max_failures` cannot leave the global circuit open for unrelated tests on the same pytest-xdist worker.
+
 ## Completed Work (2026-03-20)
 
 - **Summary (2026-03-20)** - 1 entries archived.

@@ -16,7 +16,7 @@ def read_file(path: Path) -> tuple[str | None, str | None]:
         return (None, f"File not found: {path}")
     try:
         return (path.read_text(encoding="utf-8"), None)
-    except Exception as e:
+    except (OSError, UnicodeDecodeError) as e:
         return (None, str(e))
 
 
@@ -42,7 +42,7 @@ async def write_progress(
         return None
     except (FileConflictError, FileLockTimeoutError) as e:
         return str(e)
-    except Exception as e:
+    except OSError as e:
         return str(e)
 
 
@@ -69,7 +69,7 @@ async def write_roadmap(
         return None
     except (FileConflictError, FileLockTimeoutError) as e:
         return str(e)
-    except Exception as e:
+    except OSError as e:
         return str(e)
 
 
@@ -95,5 +95,5 @@ async def write_active_context(
         return None
     except (FileConflictError, FileLockTimeoutError) as e:
         return str(e)
-    except Exception as e:
+    except OSError as e:
         return str(e)
