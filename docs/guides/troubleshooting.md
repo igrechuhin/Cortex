@@ -849,6 +849,22 @@ For non-trivial tasks (refactor, fix, debug, implement), an **explicit non-zero*
 2. Do not omit `token_budget` or pass `token_budget=0` for refactor/fix/debug/implement; the tool returns a validation error for non-trivial tasks.
 3. If context-effectiveness reporting flags zero-budget or zero-files in historical sessions, treat it as a configuration error and document the recommendation to use task-appropriate explicit budgets in future runs.
 
+#### Issue: Context usage statistics on disk never reflect new telemetry quality rules
+
+**Symptoms**:
+
+- After upgrading Cortex, `cortex://optimization/context-usage-statistics` or related tools show updated rollups during a run, but `.cortex/.session/context-usage-statistics.json` still has old `record_quality` values on disk
+- You expected reconciliation to rewrite the JSON file after a classification change
+
+**Cause**:
+
+Reconciliation (`reconcile_context_usage_statistics_entries`) runs when statistics are loaded. Persisting the reconciled file requires `usage_writable: true` in `.cortex/synapse/config.json`. When `usage_writable` is false, Cortex keeps a static snapshot on disk while in-process views may still reflect reconciled data until the process exits.
+
+**Solution**:
+
+1. See [Tool Usage Tracking: Context usage statistics file](../architecture/tool-usage-tracking.md#context-usage-statistics-file-context-usage-statisticsjson) for the full behavior and paths.
+2. To allow persistence, set `"usage_writable": true` in `.cortex/synapse/config.json` (and ensure the Synapse directory exists if you rely on the default-writable behavior documented in `synapse_usage_config.py`).
+
 #### Issue: Rules indexing returns no rules (get_relevant)
 
 **Symptoms**:

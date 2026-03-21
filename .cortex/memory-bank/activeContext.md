@@ -6,7 +6,7 @@
 
 - ✅ **Pre-commit submodule hygiene guard** - COMPLETE (2026-03-21) - Added `pre_commit_submodule_guard.py` (submodule status scan, dirty/out-of-sync violations, remediation text), wired into `pre_commit_tools.py` and `pre_commit_worker.py`, with `test_pre_commit_submodule_guard.py` and updates to `test_pre_commit_tools.py`. Plan `block-dirty-submodule-references-in-commit-workflow` archived under `.cortex/plans/archive/Other/`.
 
-- ✅ **Session telemetry hardening (PARTIAL)** - COMPLETE (2026-03-21) - Context usage rows are classified as production/synthetic/invalid_data; only production rows feed session averages, patterns, and `generate_insights`. Exclusions log structured INFO lines and increment in-process counters (`snapshot_context_telemetry_exclusion_counters` / `reset_context_telemetry_exclusion_counters`). Added internal-consistency invalid rules (tokens without selected files, relevance without files), `reconcile_context_usage_statistics_entries` with load-time backfill/persist when `usage_writable`. Optional external metrics export remains.
+- ✅ **Session telemetry hardening against synthetic pollution** - COMPLETE (2026-03-21) - `ContextTelemetryRecordQuality` classification; production-only rollups; exclusion logging; in-process counters with optional env-gated debounced POST export (`CORTEX_CONTEXT_TELEMETRY_EXCLUSION_METRICS_*`); internal-consistency rules and `reconcile_context_usage_statistics_entries` with load-time backfill when `usage_writable`. Docs: `docs/architecture/tool-usage-tracking.md`, `docs/guides/troubleshooting.md`. Tests: `test_effectiveness_telemetry_quality.py`.
 
 ## Completed Work (2026-03-20)
 
@@ -154,7 +154,7 @@
 
 ## Current Focus
 
-Next pending roadmap item is **Harden session telemetry against synthetic data pollution** (see [roadmap.md](roadmap.md)).
+No queued pending plans under `.cortex/plans` in [roadmap.md](roadmap.md); next slice is chosen from Future Enhancements or the implement command.
 
 ## Recent Changes
 

@@ -14,8 +14,6 @@
 
 ## Pending plans (from .cortex/plans)
 
-- **Harden session telemetry against synthetic data pollution** - PENDING - Plan: `.cortex/plans/harden-session-telemetry-against-synthetic-data-pollution.md` - Filter synthetic telemetry and validate record quality to preserve accurate optimization signals.
-
 ### Fixes
 
 ### Documentation Cleanup (DRY)

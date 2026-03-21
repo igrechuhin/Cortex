@@ -7,8 +7,13 @@ aggregates that drive recommendations.
 
 from __future__ import annotations
 
+import json
 import logging
+import os
 import threading
+import time
+from urllib.error import HTTPError, URLError
+from urllib.request import Request, urlopen
 
 from cortex.core.session_logger import LoadContextLogEntry
 from cortex.tools.context.effectiveness_models import (
@@ -23,6 +28,10 @@ logger = logging.getLogger(__name__)
 _exclusion_counter_lock = threading.Lock()
 # Keys: (record_quality.value, reason or "")
 _exclusion_counts: dict[tuple[str, str], int] = {}
+
+_export_debounce_lock = threading.Lock()
+# None until first successful debounce gate passes (avoids skipping the first export when monotonic ~ 0).
+_last_exclusion_metrics_export_monotonic: float | None = None
 
 # Normalized task titles that are almost always test/synthetic fixtures.
 _SYNTHETIC_EXACT_TASKS: frozenset[str] = frozenset(
@@ -159,6 +168,69 @@ def reset_context_telemetry_exclusion_counters() -> None:
     """Clear in-process exclusion counters (intended for tests)."""
     with _exclusion_counter_lock:
         _exclusion_counts.clear()
+    with _export_debounce_lock:
+        global _last_exclusion_metrics_export_monotonic
+        _last_exclusion_metrics_export_monotonic = None
+
+
+def _exclusion_metrics_export_url() -> str | None:
+    raw = os.environ.get("CORTEX_CONTEXT_TELEMETRY_EXCLUSION_METRICS_URL", "").strip()
+    return raw or None
+
+
+def _exclusion_metrics_export_interval_sec() -> float:
+    raw = os.environ.get(
+        "CORTEX_CONTEXT_TELEMETRY_EXCLUSION_METRICS_EXPORT_INTERVAL_SEC", "10"
+    ).strip()
+    try:
+        interval = float(raw)
+    except ValueError:
+        return 10.0
+    return max(0.0, interval)
+
+
+def _post_exclusion_snapshot_to_metrics_url(
+    url: str,
+    snapshot: ContextTelemetryExclusionCountersSnapshot,
+) -> None:
+    """POST JSON snapshot to operator-configured metrics sink (best-effort)."""
+    body = json.dumps(snapshot.model_dump(mode="json")).encode("utf-8")
+    req = Request(  # noqa: S310
+        url,
+        data=body,
+        method="POST",
+        headers={"Content-Type": "application/json; charset=utf-8"},
+    )
+    auth = os.environ.get(
+        "CORTEX_CONTEXT_TELEMETRY_EXCLUSION_METRICS_AUTHORIZATION", ""
+    ).strip()
+    if auth:
+        req.add_header("Authorization", auth)
+    try:
+        with urlopen(req, timeout=5.0) as resp:
+            _ = resp.read(4096)
+    except (HTTPError, OSError, TimeoutError, URLError) as exc:
+        logger.debug("Context telemetry exclusion metrics export failed: %s", exc)
+
+
+def _maybe_export_exclusion_counters_snapshot() -> None:
+    """If metrics URL is set, POST a debounced snapshot for external backends."""
+    url = _exclusion_metrics_export_url()
+    if url is None:
+        return
+    now = time.monotonic()
+    interval = _exclusion_metrics_export_interval_sec()
+    with _export_debounce_lock:
+        global _last_exclusion_metrics_export_monotonic
+        if (
+            interval > 0
+            and _last_exclusion_metrics_export_monotonic is not None
+            and (now - _last_exclusion_metrics_export_monotonic) < interval
+        ):
+            return
+        _last_exclusion_metrics_export_monotonic = now
+    snap = snapshot_context_telemetry_exclusion_counters()
+    _post_exclusion_snapshot_to_metrics_url(url, snap)
 
 
 def log_telemetry_rollup_exclusion(
@@ -177,6 +249,7 @@ def log_telemetry_rollup_exclusion(
         snippet = snippet[:117] + "..."
     fmt = "Excluded context telemetry from optimization rollup: session_id=%s record_quality=%s reason=%s task_snippet=%r"
     logger.info(fmt, session_id, quality.value, reason, snippet)
+    _maybe_export_exclusion_counters_snapshot()
 
 
 def log_and_classify_context_telemetry_entry(

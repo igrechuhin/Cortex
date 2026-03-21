@@ -309,6 +309,93 @@ def test_log_telemetry_rollup_exclusion_skips_production() -> None:
     mock_logger.info.assert_not_called()
 
 
+def test_exclusion_metrics_export_posts_when_url_configured(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv(
+        "CORTEX_CONTEXT_TELEMETRY_EXCLUSION_METRICS_URL",
+        "http://example.invalid/metrics",
+    )
+    monkeypatch.setenv(
+        "CORTEX_CONTEXT_TELEMETRY_EXCLUSION_METRICS_EXPORT_INTERVAL_SEC", "0"
+    )
+    posted: list[bytes] = []
+
+    def fake_urlopen(req: object, timeout: float = 0) -> object:
+        assert getattr(req, "full_url", "") == "http://example.invalid/metrics"
+        posted.append(getattr(req, "data", b""))
+        cm = MagicMock()
+        cm.read.return_value = b"ok"
+        cm.__enter__ = MagicMock(return_value=cm)
+        cm.__exit__ = MagicMock(return_value=False)
+        return cm
+
+    with patch(
+        "cortex.tools.context.effectiveness_telemetry_quality.urlopen",
+        side_effect=fake_urlopen,
+    ):
+        log_telemetry_rollup_exclusion(
+            session_id="a",
+            task_description="Test task",
+            quality=ContextTelemetryRecordQuality.SYNTHETIC,
+            reason="synthetic_or_test_task_marker",
+        )
+    assert len(posted) == 1
+    payload = json.loads(posted[0].decode("utf-8"))
+    assert payload["total_excluded"] == 1
+    assert len(payload["breakdown"]) == 1
+
+
+def test_exclusion_metrics_export_debounced(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv(
+        "CORTEX_CONTEXT_TELEMETRY_EXCLUSION_METRICS_URL",
+        "http://example.invalid/metrics",
+    )
+    monkeypatch.setenv(
+        "CORTEX_CONTEXT_TELEMETRY_EXCLUSION_METRICS_EXPORT_INTERVAL_SEC", "10"
+    )
+    calls = 0
+
+    def fake_urlopen(req: object, timeout: float = 0) -> object:
+        nonlocal calls
+        calls += 1
+        cm = MagicMock()
+        cm.read.return_value = b"ok"
+        cm.__enter__ = MagicMock(return_value=cm)
+        cm.__exit__ = MagicMock(return_value=False)
+        return cm
+
+    with patch(
+        "cortex.tools.context.effectiveness_telemetry_quality.urlopen",
+        side_effect=fake_urlopen,
+    ):
+        with patch(
+            "cortex.tools.context.effectiveness_telemetry_quality.time.monotonic",
+            side_effect=[0.0, 1.0, 15.0],
+        ):
+            log_telemetry_rollup_exclusion(
+                session_id="a",
+                task_description="Test task",
+                quality=ContextTelemetryRecordQuality.SYNTHETIC,
+                reason="synthetic_or_test_task_marker",
+            )
+            log_telemetry_rollup_exclusion(
+                session_id="b",
+                task_description="Test task",
+                quality=ContextTelemetryRecordQuality.SYNTHETIC,
+                reason="synthetic_or_test_task_marker",
+            )
+            log_telemetry_rollup_exclusion(
+                session_id="c",
+                task_description="Test task",
+                quality=ContextTelemetryRecordQuality.SYNTHETIC,
+                reason="synthetic_or_test_task_marker",
+            )
+    assert calls == 2
+
+
 def test_analyze_log_entry_sets_quality_fields() -> None:
     entry = _log_entry(task_description="pytest integration")
     row = _analyze_log_entry("sid", entry)

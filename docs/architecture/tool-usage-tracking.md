@@ -43,6 +43,27 @@ When `usage_writable` is `false` or absent (default):
 - **Static snapshot**: Cortex does not write any usage statistics (tools, context stats, prompts, resources). No population of usage stores.
 - **Read-only**: `query_usage` and `get_tool_usage_stats` may still read from project-local cache if present (backward compat).
 
+### Context usage statistics file (`context-usage-statistics.json`)
+
+Load-context effectiveness aggregates persist at `.cortex/.session/context-usage-statistics.json` (see `get_statistics_path` in `effectiveness_operations_io.py`). That file is separate from tool-usage event JSON under `.cortex/.cache/usage/`.
+
+On each load, `load_statistics` may run `reconcile_context_usage_statistics_entries` to re-apply telemetry quality labels (`record_quality`, `telemetry_quality_note`) to existing rows and refresh rollups (production-only averages and insights). When reconciliation changes data, the updated statistics object is written back **only if** `is_usage_writable(project_root)` is true (same `usage_writable` flag in `.cortex/synapse/config.json` as for MCP tool usage).
+
+Implications for operators:
+
+- With **`usage_writable: true`**: reconciliation fixes persisted JSON when classification rules change (e.g., after upgrades).
+- With **`usage_writable: false`**: reconciliation still runs **in memory** for the lifetime of the process that loaded the file (so MCP responses and tools see corrected aggregates for that session), but the file on disk is **not** rewritten. To persist fixes, set `usage_writable` to `true` temporarily or run a small in-repo script that loads and saves statistics with writes enabled (same guard as production code).
+
+#### Context telemetry rollup exclusion metrics (optional)
+
+When rows are excluded from optimization rollups (synthetic or invalid-data classifications), Cortex maintains in-process counters and structured logs. Operators may optionally push **debounced JSON snapshots** of those counters to an HTTP endpoint (for example a metrics gateway or log pipeline that accepts POST bodies):
+
+- **`CORTEX_CONTEXT_TELEMETRY_EXCLUSION_METRICS_URL`**: If set (non-empty), after each rollup exclusion the server may `POST` a `ContextTelemetryExclusionCountersSnapshot` JSON document to this URL. Default unset (no export).
+- **`CORTEX_CONTEXT_TELEMETRY_EXCLUSION_METRICS_EXPORT_INTERVAL_SEC`**: Minimum seconds between POSTs when the URL is set (default `10`). Use `0` to disable debouncing (each exclusion can trigger a POST; use only when the sink can handle the volume).
+- **`CORTEX_CONTEXT_TELEMETRY_EXCLUSION_METRICS_AUTHORIZATION`**: Optional full `Authorization` header value (for example `Bearer <token>`). Omit when the endpoint does not require auth.
+
+Exports are best-effort: failures are logged at DEBUG only and do not affect MCP behavior.
+
 ### Querying Usage JSON with jq (Step 11)
 
 Power users can inspect raw usage events directly from the JSON files for ad-hoc analysis or dashboards without adding an HTTP API.

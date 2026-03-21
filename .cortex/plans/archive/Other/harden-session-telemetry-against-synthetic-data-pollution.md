@@ -12,7 +12,8 @@ depends_on: []
 
 - Done: schema field `record_quality` / `ContextTelemetryRecordQuality`; classification module; production-only rollups and exclusion logging; in-process exclusion counters and `snapshot_context_telemetry_exclusion_counters()` (step 4 metrics-style observability alongside structured logs); unit tests for classification, rollup behavior, and counters.
 - Done (this session): stricter non-synthetic consistency rules (`positive_tokens_without_selected_files`, `relevance_scores_without_selected_files`); `classify_persisted_context_usage_entry()`; `reconcile_context_usage_statistics_entries()` + load-time backfill/persist when `usage_writable`; tests for new branches and legacy JSON rewrite.
-- Remaining: optional export of counter snapshots to an external metrics backend; optional one-shot CLI or docs for operators who keep `usage_writable` false (reconcile runs in memory only).
+- Done (2026-03-21): operator documentation for `usage_writable` false vs reconciliation persistence — `docs/architecture/tool-usage-tracking.md` (context statistics subsection) and `docs/guides/troubleshooting.md` (symptoms/cause/solution).
+- Remaining: optional export of counter snapshots to an external metrics backend.
 
 ## Goal
 
