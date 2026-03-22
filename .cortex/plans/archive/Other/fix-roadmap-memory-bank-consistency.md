@@ -2,13 +2,18 @@
 title: "Reconstruct roadmap backlog and enforce docs-gate consistency invariant"
 component: memory-bank
 work_type: fix
-status: PENDING
+status: IN_PROGRESS
 priority: high
 created: 2026-03-22
 depends_on: []
 sources:
   - "Codex audit: Planning & Memory-Bank Consistency (High)"
 ---
+
+## Session notes (2026-03-22)
+
+- **Done**: Step 4 — `check_roadmap_progress_consistency()` in `src/cortex/validation/roadmap_progress_consistency.py`; integrated into `run_docs_and_memory_bank_sync_impl` with `roadmap_progress_consistency` check in Phase B summaries; unit tests (`tests/unit/test_roadmap_progress_consistency.py`, extended `test_pre_commit_phase_tools.py`). Removed invalid blocker link from `roadmap.md` (MD057).
+- **Remaining**: Steps 1–3 reconciliation if audits still find drift; Step 5 full gate + activeContext entry when the plan completes.
 
 ## Goal
 

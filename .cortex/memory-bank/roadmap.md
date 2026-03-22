@@ -16,7 +16,6 @@
 
 ### Fixes
 
-- **Reconstruct roadmap backlog and enforce docs-gate consistency invariant** - PENDING - Restore deterministic planning by reconciling empty roadmap vs PARTIAL progress entries. Add docs-gate check that fails when PARTIAL progress exists without a corresponding roadmap item. Plan: `.cortex/plans/fix-roadmap-memory-bank-consistency.md`
 - **Add offline mode and preflight network/test failure differentiation for bootstrap** - PENDING - Make project bootstrappable in restricted-network environments. Add preflight command distinguishing network failure (exit 2) from test failure (exit 1). Document offline wheelhouse path in the contributing guide. Add restricted-egress CI job. Plan: `.cortex/plans/fix-bootstrap-offline-preflight-reliability.md`
 
 ### Documentation Cleanup (DRY)
@@ -24,6 +23,8 @@
 - **Resolve contributor documentation drift and conflicting quality workflow instructions** - PENDING - Replace stale `.cursor/memory-bank` path references with `.cortex/memory-bank`. Create single canonical human/agent workflow matrix in the contributing guide. Add regression tests for stale paths and matrix presence. Plan: `.cortex/plans/cleanup-contributor-docs-drift.md`
 
 ### Refactoring
+
+- **Decompose oversized tool modules (remainder)** - PENDING - Continue module splits and function-length work per `docs/development/contributing.md` policy. Archived reference: `.cortex/plans/archive/Other/decompose-oversized-tool-modules.md`
 
 ### Cleanup
 

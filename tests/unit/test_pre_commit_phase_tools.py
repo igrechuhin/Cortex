@@ -8,6 +8,7 @@ tool-error, and edge-case scenarios.
 from __future__ import annotations
 
 import json
+from pathlib import Path
 from typing import cast
 from unittest.mock import AsyncMock, patch
 
@@ -685,6 +686,7 @@ class TestRunDocsAndMemoryBankSync:
         check_names = {str(e.get("name", "")) for e in _get_checks_list(result)}
         assert "timestamps" in check_names
         assert "roadmap_sync" in check_names
+        assert "roadmap_progress_consistency" in check_names
 
     @pytest.mark.asyncio
     async def test_sets_flag_when_timestamps_invalid(self) -> None:
@@ -795,9 +797,10 @@ class TestRunDocsAndMemoryBankSync:
 
         assert result["status"] == "success"
         assert result["docs_phase_passed"] is False
-        # Both checks should be error
-        for entry in _get_checks_list(result):
-            assert entry.get("status") == "error"
+        by_name = {str(e.get("name", "")): e for e in _get_checks_list(result)}
+        assert by_name["timestamps"].get("status") == "error"
+        assert by_name["roadmap_sync"].get("status") == "error"
+        assert by_name["roadmap_progress_consistency"].get("status") == "success"
 
     @pytest.mark.asyncio
     async def test_roadmap_sync_error_surfaces(self) -> None:
@@ -841,7 +844,8 @@ class TestRunDocsAndMemoryBankSync:
         # (both default to True when None)
         assert result["status"] == "success"
         assert result["docs_phase_passed"] is True
-        assert _get_checks_list(result) == []
+        names = [e.get("name") for e in _get_checks_list(result)]
+        assert names == ["roadmap_progress_consistency"]
 
     @pytest.mark.asyncio
     async def test_validation_result_not_dict_handled(self) -> None:
@@ -868,7 +872,68 @@ class TestRunDocsAndMemoryBankSync:
         assert result["docs_phase_passed"] is True
         check_names = {str(e.get("name", "")) for e in _get_checks_list(result)}
         assert "roadmap_sync" in check_names
+        assert "roadmap_progress_consistency" in check_names
         assert "timestamps" not in check_names
+
+    @pytest.mark.asyncio
+    async def test_docs_phase_fails_when_partial_without_pending(
+        self, tmp_path: Path
+    ) -> None:
+        """Synthetic memory bank: PARTIAL progress and no PENDING roadmap fails gate."""
+        mb = tmp_path / ".cortex" / "memory-bank"
+        mb.mkdir(parents=True)
+        _ = (mb / "progress.md").write_text(
+            "- **Orphan** - PARTIAL. Needs roadmap.\n",
+            encoding="utf-8",
+        )
+        _ = (mb / "roadmap.md").write_text(
+            "# Roadmap\n\n## Future\n\n(no pending bullets)\n",
+            encoding="utf-8",
+        )
+        timestamps_payload = {
+            "status": "success",
+            "check_type": "timestamps",
+            "valid": True,
+            "total_invalid_format": 0,
+            "total_invalid_with_time": 0,
+        }
+        roadmap_payload = {
+            "status": "success",
+            "check_type": "roadmap_sync",
+            "valid": True,
+            "summary": {
+                "missing_entries_count": 0,
+                "invalid_references_count": 0,
+                "completed_entries_count": 0,
+                "warnings_count": 0,
+            },
+        }
+        with (
+            patch(
+                "cortex.tools.execution.pre_commit_docs_memory_helpers.validate_impl",
+                new_callable=AsyncMock,
+            ) as mock_validate,
+            patch(
+                "cortex.tools.execution.pre_commit_docs_memory_helpers.resolve_project_root_async",
+                new_callable=AsyncMock,
+            ) as mock_root,
+        ):
+            mock_root.return_value = tmp_path
+            mock_validate.side_effect = [
+                json.dumps(timestamps_payload),
+                json.dumps(roadmap_payload),
+            ]
+            result = await execute_pre_commit_checks(phase="B")
+
+        assert result["status"] == "success"
+        assert result["docs_phase_passed"] is False
+        cons = next(
+            e
+            for e in _get_checks_list(result)
+            if e.get("name") == "roadmap_progress_consistency"
+        )
+        assert cons.get("status") == "error"
+        assert cons.get("errors") == 1
 
     @pytest.mark.asyncio
     async def test_roadmap_sync_with_warnings_only(self) -> None:
@@ -923,17 +988,21 @@ class TestDocsMemoryHelperFunctions:
 
     def test_compute_passed_both_none(self) -> None:
         """Both None results default to passed."""
-        assert _compute_docs_memory_bank_passed(None, None) is True
+        assert _compute_docs_memory_bank_passed(None, None, []) is True
 
     def test_compute_passed_timestamps_invalid(self) -> None:
         """Fails when timestamps are invalid."""
         ts = cast(JsonDict, {"valid": False})
-        assert _compute_docs_memory_bank_passed(ts, None) is False
+        assert _compute_docs_memory_bank_passed(ts, None, []) is False
 
     def test_compute_passed_roadmap_invalid(self) -> None:
         """Fails when roadmap_sync is invalid."""
         rm = cast(JsonDict, {"valid": False})
-        assert _compute_docs_memory_bank_passed(None, rm) is False
+        assert _compute_docs_memory_bank_passed(None, rm, []) is False
+
+    def test_compute_passed_consistency_violation(self) -> None:
+        """Fails when roadmap/progress consistency violations are present."""
+        assert _compute_docs_memory_bank_passed(None, None, ["drift"]) is False
 
     def test_build_timestamps_summary_none(self) -> None:
         """Returns None when timestamps_result is None."""
@@ -1020,9 +1089,12 @@ class TestDocsMemoryHelperFunctions:
         assert summary.status == "error"
         assert summary.errors is None
 
-    def test_build_docs_memory_bank_summaries_empty(self) -> None:
-        """Returns empty list when both results are None."""
-        assert _build_docs_memory_bank_summaries(None, None) == []
+    def test_build_docs_memory_bank_summaries_includes_consistency(self) -> None:
+        """Always appends roadmap_progress_consistency summary."""
+        summaries = _build_docs_memory_bank_summaries(None, None, [])
+        assert len(summaries) == 1
+        assert summaries[0].name == "roadmap_progress_consistency"
+        assert summaries[0].status == "success"
 
     def test_build_docs_memory_bank_model_success(self) -> None:
         """Builds success model with correct shape."""
@@ -1048,20 +1120,57 @@ class TestDocsMemoryHelperFunctions:
                 },
             },
         )
-        model = _build_docs_memory_bank_model(ts, rm)
+        model = _build_docs_memory_bank_model(ts, rm, [])
         assert model["status"] == "success"
         assert model["docs_phase_passed"] is True
+        checks_raw = cast(JsonDict, model).get("checks")
+        assert isinstance(checks_raw, list)
+        assert len(checks_raw) == 3
 
     def test_build_docs_memory_bank_model_error(self) -> None:
         """Builds error model when tool error detected."""
         ts = cast(JsonDict, {"status": "error", "error": "crash"})
-        model = _build_docs_memory_bank_model(ts, None)
+        model = _build_docs_memory_bank_model(ts, None, [])
         assert model["status"] == "error"
         assert model["error_type"] == "DocsMemoryBankToolError"
 
     def test_build_docs_memory_bank_model_both_none(self) -> None:
         """Builds success model when both inputs are None."""
-        model = _build_docs_memory_bank_model(None, None)
+        model = _build_docs_memory_bank_model(None, None, [])
         assert model["status"] == "success"
         assert model["docs_phase_passed"] is True
-        assert model["checks"] == []
+        checks_raw = cast(JsonDict, model).get("checks")
+        assert isinstance(checks_raw, list)
+        assert len(checks_raw) == 1
+        row0 = checks_raw[0]
+        assert isinstance(row0, dict)
+        assert row0.get("name") == "roadmap_progress_consistency"
+
+    def test_build_docs_memory_bank_model_consistency_failure(self) -> None:
+        """Consistency violations fail the phase while validations are green."""
+        ts = cast(JsonDict, {"status": "success", "valid": True})
+        rm = cast(
+            JsonDict,
+            {
+                "status": "success",
+                "valid": True,
+                "summary": {
+                    "missing_entries_count": 0,
+                    "invalid_references_count": 0,
+                    "completed_entries_count": 0,
+                    "warnings_count": 0,
+                },
+            },
+        )
+        model = _build_docs_memory_bank_model(ts, rm, ["roadmap drift"])
+        assert model["status"] == "success"
+        assert model["docs_phase_passed"] is False
+        checks_raw = cast(JsonDict, model).get("checks")
+        assert isinstance(checks_raw, list)
+        cons_row = next(
+            cast(JsonDict, c)
+            for c in checks_raw
+            if isinstance(c, dict) and c.get("name") == "roadmap_progress_consistency"
+        )
+        assert cons_row.get("status") == "error"
+        assert cons_row.get("errors") == 1

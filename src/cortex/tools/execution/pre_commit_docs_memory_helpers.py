@@ -8,9 +8,12 @@ type safety.
 
 from __future__ import annotations
 
+import asyncio
 import json
+from pathlib import Path
 from typing import cast
 
+from cortex.core.constants import MemoryBankFile
 from cortex.core.context_logging import MCPContext, log_client
 from cortex.core.models import (
     JsonDict,
@@ -19,6 +22,8 @@ from cortex.core.models import (
     OperationStatus,
     ResponseFormat,
 )
+from cortex.core.path_resolver import CortexResourceType, get_cortex_path
+from cortex.core.project_root_resolver import resolve_project_root_async
 from cortex.tools.models import (
     DocsAndMemoryBankSyncErrorResult,
     DocsAndMemoryBankSyncResult,
@@ -27,6 +32,9 @@ from cortex.tools.models import (
 from cortex.tools.validation.operations import (
     ValidateCheckTypeName,
     validate_impl,
+)
+from cortex.validation.roadmap_progress_consistency import (
+    check_roadmap_progress_consistency,
 )
 
 
@@ -84,6 +92,24 @@ async def _run_single_validation(
     return await _decode_validation_result(raw, check_type_name, ctx)
 
 
+async def _read_utf8_if_exists(path: Path) -> str:
+    """Read file as UTF-8 text, or empty string when missing."""
+    if not path.exists():
+        return ""
+    return await asyncio.to_thread(path.read_text, encoding="utf-8")
+
+
+async def _roadmap_progress_consistency_violations(ctx: MCPContext | None) -> list[str]:
+    """Load memory-bank progress/roadmap and run backlog consistency rules."""
+    root = await resolve_project_root_async(None, ctx)
+    mb = get_cortex_path(root, CortexResourceType.MEMORY_BANK)
+    progress_text, roadmap_text = await asyncio.gather(
+        _read_utf8_if_exists(mb / MemoryBankFile.PROGRESS),
+        _read_utf8_if_exists(mb / MemoryBankFile.ROADMAP),
+    )
+    return check_roadmap_progress_consistency(progress_text, roadmap_text)
+
+
 async def _run_docs_and_memory_bank_phase_tools(
     ctx: MCPContext | None,
 ) -> tuple[JsonDict | None, JsonDict | None]:
@@ -108,6 +134,7 @@ def _docs_memory_bank_has_tool_error(result: JsonDict | None) -> bool:
 def _compute_docs_memory_bank_passed(
     timestamps_result: JsonDict | None,
     roadmap_result: JsonDict | None,
+    consistency_violations: list[str],
 ) -> bool:
     """Determine whether docs/memory validations passed with zero errors."""
     ts_valid = True
@@ -116,7 +143,8 @@ def _compute_docs_memory_bank_passed(
     roadmap_valid = True
     if roadmap_result is not None:
         roadmap_valid = bool(roadmap_result.get("valid", False))
-    return ts_valid and roadmap_valid
+    consistency_ok = not consistency_violations
+    return ts_valid and roadmap_valid and consistency_ok
 
 
 def _build_timestamps_summary(
@@ -176,9 +204,23 @@ def _build_roadmap_sync_summary(
     )
 
 
+def _build_roadmap_progress_consistency_summary(
+    violations: list[str],
+) -> PreflightCheckSummary:
+    """Summary for progress-vs-roadmap backlog invariant."""
+    status = OperationStatus.SUCCESS if not violations else OperationStatus.ERROR
+    return PreflightCheckSummary(
+        name="roadmap_progress_consistency",
+        status=status,
+        errors=len(violations) if violations else None,
+        message="; ".join(violations) if violations else None,
+    )
+
+
 def _build_docs_memory_bank_summaries(
     timestamps_result: JsonDict | None,
     roadmap_result: JsonDict | None,
+    consistency_violations: list[str],
 ) -> list[PreflightCheckSummary]:
     """Build summaries for docs/memory validations."""
     summaries: list[PreflightCheckSummary] = []
@@ -188,18 +230,47 @@ def _build_docs_memory_bank_summaries(
     roadmap_summary = _build_roadmap_sync_summary(roadmap_result)
     if roadmap_summary is not None:
         summaries.append(roadmap_summary)
+    summaries.append(
+        _build_roadmap_progress_consistency_summary(consistency_violations),
+    )
     return summaries
+
+
+def _build_docs_memory_bank_success_model(
+    timestamps_result: JsonDict | None,
+    roadmap_result: JsonDict | None,
+    consistency_violations: list[str],
+) -> ModelDict:
+    """Assemble the success payload after validate() results are decoded."""
+    passed = _compute_docs_memory_bank_passed(
+        timestamps_result,
+        roadmap_result,
+        consistency_violations,
+    )
+    summaries = _build_docs_memory_bank_summaries(
+        timestamps_result,
+        roadmap_result,
+        consistency_violations,
+    )
+    ok = DocsAndMemoryBankSyncResult(
+        docs_phase_passed=passed,
+        checks=summaries,
+        timestamps_result=timestamps_result,
+        roadmap_sync_result=roadmap_result,
+    )
+    return cast(ModelDict, ok.model_dump(mode="json"))
 
 
 def _build_docs_memory_bank_model(
     timestamps_result: JsonDict | None,
     roadmap_result: JsonDict | None,
+    consistency_violations: list[str],
 ) -> ModelDict:
     """Build success or error model for run_docs_and_memory_bank_sync."""
     if _docs_memory_bank_has_tool_error(timestamps_result) or (
         _docs_memory_bank_has_tool_error(roadmap_result)
     ):
-        error_model = DocsAndMemoryBankSyncErrorResult(
+        err = DocsAndMemoryBankSyncErrorResult(
             error=(
                 "run_docs_and_memory_bank_sync: underlying validation error during "
                 "docs/memory bank phase"
@@ -208,20 +279,12 @@ def _build_docs_memory_bank_model(
             timestamps_result=timestamps_result,
             roadmap_sync_result=roadmap_result,
         )
-        return cast(ModelDict, error_model.model_dump(mode="json"))
-
-    docs_phase_passed = _compute_docs_memory_bank_passed(
+        return cast(ModelDict, err.model_dump(mode="json"))
+    return _build_docs_memory_bank_success_model(
         timestamps_result,
         roadmap_result,
+        consistency_violations,
     )
-    summaries = _build_docs_memory_bank_summaries(timestamps_result, roadmap_result)
-    result_model = DocsAndMemoryBankSyncResult(
-        docs_phase_passed=docs_phase_passed,
-        checks=summaries,
-        timestamps_result=timestamps_result,
-        roadmap_sync_result=roadmap_result,
-    )
-    return cast(ModelDict, result_model.model_dump(mode="json"))
 
 
 async def run_docs_and_memory_bank_sync_impl(
@@ -231,7 +294,12 @@ async def run_docs_and_memory_bank_sync_impl(
     timestamps_result, roadmap_result = await _run_docs_and_memory_bank_phase_tools(
         ctx,
     )
-    return _build_docs_memory_bank_model(timestamps_result, roadmap_result)
+    violations = await _roadmap_progress_consistency_violations(ctx)
+    return _build_docs_memory_bank_model(
+        timestamps_result,
+        roadmap_result,
+        violations,
+    )
 
 
 __all__ = ["run_docs_and_memory_bank_sync_impl"]

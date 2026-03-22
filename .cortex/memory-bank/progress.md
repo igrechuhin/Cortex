@@ -3,11 +3,11 @@
 ## 2026-03-22
 
 - **Clean up legacy Node package manifest** - COMPLETE. Removed unused root `package.json`; documented CI/global `cspell` and Node usage in contributor docs and AGENTS; archived plan `clean-up-legacy-package-json` to `.cortex/plans/archive/`.
-- **Decompose oversized tool modules by responsibility boundaries** - PARTIAL. Added architecture guardrails to docs/development/contributing.md (400/30 line policy, exemption path via constants.py, quarterly exclusion review). Remaining: function-length audit on touched areas, Step 4 test/coverage verification, further module splits per audit.
-- **Decompose oversized tool modules by responsibility boundaries** - COMPLETE. Batches 1–4 done; quality gate and size checks verified; boundary tests cover facades.
+- **Decompose oversized tool modules by responsibility boundaries** - COMPLETE. Batches 1–4 done; quality gate and size checks verified; boundary tests cover facades. (Earlier PARTIAL note on architecture guardrails folded into contributing.md policy; remaining splits tracked under roadmap Refactoring.)
 - **Project root resolver — roots capability gate** - COMPLETE. Skip `list_roots()` unless the client advertises MCP roots (`ClientCapabilities` / `RootsCapability`); prevents Cursor MCP bridge transport failures; `test_project_root_resolver.py` extended.
 - **Decomposed tool module boundary governance** - COMPLETE. Added `tests/unit/test_decomposed_tool_module_boundaries.py` for stable imports and logical-line caps on split tool modules.
 - **Fix broad exception handling and subprocess log fd comment** - COMPLETE. Documented exception surfaces, subprocess log fd, central MCP wrappers; REV items resolved; `cortex.tools` package initializer side effects inventoried for follow-up.
+- **Reconstruct roadmap backlog and enforce docs-gate consistency invariant** - COMPLETE. Docs-gate PARTIAL/PENDING invariant, progress/roadmap reconciliation, refactoring backlog entry for remaining module splits.
 
 ## 2026-03-20
 
@@ -32,11 +32,8 @@
 - **Phase A markdown lint scope and preflight markdown merge** - COMPLETE. `collect_pre_commit_markdown_paths` excludes history and session cache trees from worker rumdl; zero-arg Phase A polling merges markdown lint into `preflight_passed`; unit tests for collection and merge helpers.
 - **Narrow broad exception handlers — plans completion I/O and migration** - COMPLETE. Replaced broad except Exception in completion_io and migration with specific exception tuples; added tests for I/O, JSON, validation, and rollback paths.
 - **Pytest isolation for MCP circuit breaker (xdist)** - COMPLETE. Reset/prime helpers in `mcp_stability_retry.py`, autouse fixture in `tests/conftest.py`, reconnect test cleanup; fixes `Connection not healthy before tool execution` flakes after circuit-open reconnect tests under parallel pytest.
-- **Quality gate CI parity** - PARTIAL. Added `TestRunQualityGateMarkdownMerge` so `run_quality_gate()` under mocked detached worker returns `preflight_passed: false` when `markdown_result` reports errors (Step 4). Remaining: CI/local matrix audit, cSpell parity, file/function script parity verification, docs in tools.md.
 - **Phase A markdown coercion and run_quality_gate integration test** - COMPLETE. Hardened markdown error detection for non-numeric files_with_errors strings; added async integration test with mocked poll_for_result; Synapse commit prompt updates; Phase A worker coverage about 91 percent.
-- **Quality gate CI parity** - PARTIAL. Added `spelling` to `_PRE_FLIGHT_DEFAULT_CHECKS` and `PHASE_A_CHECKS` (cSpell parity with CI). Documented CI ↔ local matrix and eval gap in `docs/api/tools.md`. Plan remains IN_PROGRESS (Step 1 audit matrix, file-size script parity verification).
-- **Quality gate CI parity** - PARTIAL. Extended docs/api/tools.md CI parity section with full blocking-quality matrix, CI-only rows, local-only fix_errors, and .cortex/.cache rumdl exclusion note; file/function governance cross-checked vs CI.
-- **Quality gate CI parity** - COMPLETE. Verified parity matrix and preflight/Phase A alignment; typing cleanup in markdown-merge tests; dispatch comment for markdown_lint; run_quality_gate passed.
+- **Quality gate CI parity** - COMPLETE. Verified parity matrix and preflight/Phase A alignment; typing cleanup in markdown-merge tests; dispatch comment for markdown_lint; run_quality_gate passed. (Intermediate PARTIAL checkpoints on markdown merge, spelling in Phase A, and docs matrix were superseded by this completion.)
 - **Sanitize pipeline/phase path parameters in pipeline_handoff** - COMPLETE. Allowlist for pipeline/phase plus unit tests; integration tests updated.
 - **Fix review prompt to track issues across reviews** - COMPLETE. Review prompt now carries forward OPEN issues, expands scope on telemetry-only diffs, requires concrete suggestions and score deltas, and adds regression checks.
 - **Targeted exception narrowing in validation and config paths** - COMPLETE. Narrowed validation_config and container handlers; verified completion_io; added propagation tests.

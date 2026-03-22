@@ -8,6 +8,7 @@
 - **Project root resolver — roots capability gate** - COMPLETE. Skip `list_roots()` unless the client advertises MCP roots (`ClientCapabilities` / `RootsCapability`); prevents Cursor MCP bridge transport failures; `test_project_root_resolver.py` extended.
 - **Decomposed tool module boundary governance** - COMPLETE. Added `tests/unit/test_decomposed_tool_module_boundaries.py` for stable imports and logical-line caps on split tool modules.
 - **Fix broad exception handling and subprocess log fd comment** - COMPLETE. Documented exception surfaces, subprocess log fd, central MCP wrappers; REV items resolved; `cortex.tools` package initializer side effects inventoried for follow-up.
+- **Reconstruct roadmap backlog and enforce docs-gate consistency invariant** - PARTIAL. Added `check_roadmap_progress_consistency` and Phase B `roadmap_progress_consistency` summary; synthetic tmp-path integration test; removed broken roadmap MD057 link. Remaining: plan Steps 1–3 audit/reconcile and final Step 5 when completing the plan.
 
 ## 2026-03-20
 
