@@ -24,9 +24,6 @@
 
 ### Refactoring
 
-- **Add narrative doc for preflight HEAD→GET fallback and http:// allowance** - PENDING - Write a narrative section in docs/offline-bootstrap-preflight.md explaining the HEAD→GET probe fallback design and the deliberate http:// allowance for internal mirrors. Closes the Documentation plateau at 7/10. Plan: `.cortex/plans/preflight-narrative-doc.md`.
-- **Profile and verify performance of context loading and preflight hot paths** - PENDING - Profile cortex://context resource load time and tiktoken cache hot/cold paths. Add timing regression tests asserting <100ms context load. Move Performance score from assumed-7 to evidence-based-8. Plan: `.cortex/plans/preflight-performance-profiling.md`.
-
 ### Cleanup
 
 ### Investigation Plans (Archive / Reference)

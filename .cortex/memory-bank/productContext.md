@@ -95,6 +95,6 @@ The Memory Bank pattern addresses this by maintaining structured documentation t
 - **Quality Scores:** 9.5/10+ in all categories (Architecture, Test Coverage, Documentation, Code Style, Error Handling, Performance, Security, Maintainability, Rules Compliance)
 - **Test Coverage:** 90%+ for all 47 modules
 - **Code Quality:** All files ≤400 lines, all functions ≤30 lines
-- **Performance:** Context loading <100ms for typical projects
+- **Performance:** Context loading <100ms for typical projects (evidence and regression tests: [Performance baselines](../../docs/architecture/performance-baselines.md))
 - **Adoption:** Easy migration from legacy structures
 - **Maintainability:** Automated housekeeping reduces manual work by 80%+

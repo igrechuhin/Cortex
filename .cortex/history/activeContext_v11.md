@@ -54,6 +54,14 @@
 
 - ✅ **Decompose oversized tool modules — remainder** - COMPLETE (2026-03-22) - All src/cortex/tools/**/*.py files are at or under 400 logical lines; function_length_violations empty. Final trim: moved build_statistics_dict into effectiveness_operations_insights.py. Earlier batches split pipeline_handoff, usage_analytics, synapse prompts, markdown_lint cache/core, and pre_commit_detached/process. Quality gate passed (5412 tests, coverage ~91.6%).
 
+- ✅ **Add narrative doc for preflight HEAD→GET fallback and http:// allowance** - COMPLETE (2026-03-22) - Added narrative subsections: Why http:// is allowed under scheme validation; Probe strategy with HEAD→GET fallback prose and step-by-step list. Linked ALLOWED_SCHEMES to preflight.py. Docs and quality gates pass.
+
+- ✅ **Context/preflight performance tests** - COMPLETE (2026-03-22) - Timing regression tests for load_context_impl (<100ms median) and TokenCounter warm cache (<5ms median); tests in tests/unit/test_context_load_perf.py and test_tiktoken_cache_perf.py; baselines in docs/architecture/performance-baselines.md.
+
+- ✅ **Profile and verify performance of context loading and preflight hot paths** - COMPLETE (2026-03-22) - Added docs/architecture/performance-baselines.md with targets, test enforcement, sample medians (~5.5ms context load, sub-microsecond warm tiktoken on maintainer laptop), and preflight note. Linked from productContext success metrics and tool-usage-tracking Performance section. Timing regression tests already in tree.
+
+- ✅ **Perf regression tests — pyright unused call results** - COMPLETE (2026-03-22) - Assigned `_ =` to warmup `load_context_impl` and `count_tokens_with_cache` in tests/unit/test_context_load_perf.py and test_tiktoken_cache_perf.py so reportUnusedCallResult passes; use run_quality_gate_fresh when Phase A pyright output looks stale versus local fixes (per AGENTS.md).
+
 ## Completed Work (2026-03-21)
 
 - **Summary (2026-03-21)** - 1 entries archived.

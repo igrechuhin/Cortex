@@ -144,3 +144,5 @@ These examples operate on the same underlying data that powers the `query_usage`
 
 - Recording is async and non-blocking; failures in recording do not affect tool results.
 - Target overhead: &lt; 1 ms per tool call.
+
+Context loading and token-counting latency targets (100ms / 5ms warm path) are documented with measured samples in [Performance baselines](performance-baselines.md).

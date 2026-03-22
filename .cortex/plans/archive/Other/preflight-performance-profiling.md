@@ -2,11 +2,15 @@
 title: "Profile and verify performance of context loading and preflight hot paths"
 component: tools/context
 work_type: quality
-status: PENDING
+status: IN_PROGRESS
 priority: medium
 created: 2026-03-22
 depends_on: []
 ---
+
+## Progress notes
+
+- **2026-03-22**: Implemented plan steps 2–3: `tests/unit/test_tiktoken_cache_perf.py` (cold ~5k-token count + warm hash-cache median under 5ms) and `tests/unit/test_context_load_perf.py` (`test_context_load_meets_100ms_target` against repo `.cortex/memory-bank`). Remaining: Step 5 documentation with measured numbers; Step 4 only if a future run fails the timing assertions.
 
 ## Goal
 

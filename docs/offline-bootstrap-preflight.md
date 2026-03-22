@@ -35,18 +35,43 @@ otherwise the default applies.
 ### Scheme validation
 
 Only URLs whose scheme prefix is `https://` or `http://` are accepted (tuple
-`ALLOWED_SCHEMES`). Any other scheme (for example `file://`, `ftp://`) causes
-`resolve_registry_url()` to raise `ValueError`, which the CLI turns into a `[FAIL]`
-message and **exit code 2**. This avoids passing unintended schemes to
-`urllib.request.urlopen`.
+`ALLOWED_SCHEMES` in [`preflight.py`](../src/cortex/cli/preflight.py)). Any other
+scheme (for example `file://`, `ftp://`) causes `resolve_registry_url()` to raise
+`ValueError`, which the CLI turns into a `[FAIL]` message and **exit code 2**. This
+avoids passing unintended schemes to `urllib.request.urlopen`.
 
-## Probe strategy: HEAD then GET
+#### Why `http://` is allowed
+
+Internal mirrors and some air-gapped lab setups still serve the Simple API over plain
+HTTP. Rejecting `http://` in preflight would make Cortex unusable in those
+environments even when operators deliberately point `UV_INDEX_URL` at an internal
+endpoint. The **default** index when `UV_INDEX_URL` is unset remains
+`https://pypi.org/simple/`, so stock installs never downgrade to HTTP unless the
+operator opts in via the environment variable. Teams that must enforce HTTPS-only
+index URLs can still do so outside this module (for example CI policy on
+`UV_INDEX_URL`, egress rules, or private CA requirements).
+
+## Probe strategy
+
+### HEAD → GET fallback
+
+PyPI and most index servers support `HEAD` for a cheap reachability check: you learn
+whether the endpoint responds without downloading a full index page. That matches how
+operators think about “is the registry up?” before a heavy `uv sync`.
+
+Not every deployment honors `HEAD` the same way. Some private Simple API mirrors,
+and some combinations of reverse proxies with registries such as Nexus, answer
+`HEAD` with **HTTP 405 Method Not Allowed** while `GET` on the same URL still works.
+The implementation in `_probe_with_method()` therefore tries `HEAD` first; on **405**
+it retries once with `GET`. On that `GET` path it reads **one byte** from the body
+so the connection and TLS stack are exercised without pulling the entire index.
+
+### Step-by-step behavior
 
 1. **Primary request:** `HEAD` against the resolved URL (lightweight; no response body
    required for success).
 2. **Fallback:** If the server responds with **HTTP 405** (Method Not Allowed) on
-   `HEAD`, the same URL is probed again with **GET**. Some private Simple API mirrors
-   reject `HEAD` even though `GET` works.
+   `HEAD`, the same URL is probed again with **GET**.
 3. **GET success path:** On `GET`, the client reads **one byte** of the body so the
    connection is exercised without downloading the full index.
 4. **Timeout:** Default **10.0** seconds (`DEFAULT_TIMEOUT_SEC`). Callers using

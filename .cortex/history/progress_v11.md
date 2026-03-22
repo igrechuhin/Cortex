@@ -21,6 +21,9 @@
 - **Narrow exceptions in python_adapter_checks** - COMPLETE. Pyright timeout parity, TimeoutExpired branch, ruff command timeouts with `test_timeout_returns_lint_error`, tests in `test_python_adapter_checks.py`; review-report markdown preflight fixes.
 - **Pipeline handoff + usage analytics decomposition** - COMPLETE. Split `pipeline_handoff` into `pipeline_handoff_io` and `pipeline_handoff_validation`; split usage analytics into `analytics_collection` and `usage_analytics_resources` with thin facades; `test_analytics_collection`, `test_python_adapter_checks`, `test_phase_a_lock`; boundary governance and pre-commit zero-arg wiring updated; Phase A ~0.916 coverage.
 - **Decompose oversized tool modules (prompts, markdown cache, pre-commit process, effectiveness)** - COMPLETE. Split Synapse prompts into `prompts_content`, `prompts_paths`, `prompts_registration`, and `prompts_agents` with a thin `prompts.py` facade; moved markdown lint cache updates and `after_one_file` to `markdown_lint_cache_updates.py`; moved detached spawn/poll/result I/O to `pre_commit_process.py`; moved `build_statistics_dict` into `effectiveness_operations_insights.py`; updated prompt, markdown lint, cursor-agent sync, and boundary tests. Remainder plan archived under `.cortex/plans/archive/Other/`.
+- **Add narrative doc for preflight HEAD→GET fallback and http:// allowance** - COMPLETE. Documented HEAD→GET 405 fallback and intentional http:// for internal mirrors in docs/offline-bootstrap-preflight.md.
+- **Profile and verify performance of context loading and preflight hot paths** - COMPLETE. Documented performance baselines with measured samples and links from productContext and tool-usage-tracking; context/tiktoken paths remain guarded by unit perf tests.
+- **Perf regression tests — pyright reportUnusedCallResult** - COMPLETE. Warmup `load_context_impl` and `count_tokens_with_cache` calls assign `_ =` for intentional discard; Phase A used `run_quality_gate_fresh` when cached typecheck lagged the working tree.
 
 ## 2026-03-20
 
@@ -64,10 +67,10 @@
 - **Remove redundant asserts in plan tool** - COMPLETE. Removed redundant asserts after guard returns in plan dispatch helpers.
 - **Automate dependency parity between pyproject.toml and requirements.txt** - COMPLETE. Validation script, tests, CI, Makefile target, and docs.
 - **Deduplicate _session_dir helper across pre-commit modules** - COMPLETE. Shared session_dir in session_paths.py; both pre-commit modules consume it; unit test for path creation.
-- **Decompose oversized tool modules** - PARTIAL. Split `models_reexports` into `models_reexports_workflows.py` and `models_reexports_system.py` with thin aggregator + static `__all__`; added `pyproject.toml` per-file Ruff F405 ignore for the aggregator; plan marked IN_PROGRESS. Remaining: second module, function-length pass, contributing docs.
+- **Decompose oversized tool modules** - Note (2026-03-21). Split `models_reexports` into `models_reexports_workflows.py` and `models_reexports_system.py` with thin aggregator + static `__all__`; added `pyproject.toml` per-file Ruff F405 ignore for the aggregator. Later 2026-03-22 batches completed related decomposition work; treat this line as historical context only.
 - **MCP TaskGroup -32000 connection classification** - COMPLETE. `main._handle_broken_resource_in_group` treats nested MCP connection RuntimeErrors consistently; circuit-breaker test resets; `test_mcp_crash_fixes.py` coverage.
-- **Decompose oversized tool modules** - PARTIAL. Split pre_commit_tools into inline_execution + execute_checks modules; tests updated for patch targets; full pytest -n0 green.
-- **Decompose oversized tool modules by responsibility boundaries** - PARTIAL. Split `similarity_engine.py` into `similarity_core.py` (content/section metrics), `similarity_stop_words.py`, and a slimmer `SimilarityEngine` (semantic/functional); public API unchanged; quality gate green.
+- **Decompose oversized tool modules** - Note (2026-03-21). Split pre_commit_tools into inline_execution + execute_checks modules; tests updated for patch targets; full pytest -n0 green. Superseded by subsequent decomposition COMPLETE entries on 2026-03-22.
+- **Decompose oversized tool modules by responsibility boundaries** - Note (2026-03-21). Split `similarity_engine.py` into `similarity_core.py` (content/section metrics), `similarity_stop_words.py`, and a slimmer `SimilarityEngine` (semantic/functional); public API unchanged; quality gate green. Follow-up completion recorded under 2026-03-22 COMPLETE entries.
 
 ## 2026-03-16
 
