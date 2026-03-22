@@ -57,6 +57,7 @@ class TestTestResult:
         assert r.output == "ok"
         assert r.errors == []
         assert r.warnings == []
+        assert r["skipped_tests"] == 0
 
     def test_with_warnings(self) -> None:
         """warnings default to empty but can be set."""

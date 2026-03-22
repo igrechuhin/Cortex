@@ -11,6 +11,8 @@
 - **Add offline mode and preflight network/test failure differentiation for bootstrap** - COMPLETE. Preflight CLI/`make preflight`; `make bootstrap-offline` with `WHEELHOUSE`; contributing.md offline/restricted-network section; path-gated `bootstrap-offline.yml` (Docker `--network none`, preflight exit 2); regression tests; quality gate passed; plan archived.
 - **Resolve contributor documentation drift and conflicting quality workflow instructions** - COMPLETE. Contributing guide, repo Markdown, and regression tests aligned with .cortex/memory-bank and MCP-first quality workflow.
 - **Decompose oversized tool modules (remainder)** - COMPLETE. Verified file/function size checks and quality gate; no remaining violations; archived plan work done.
+- **Remove permanently skipped legacy tests and establish skip expiration policy** - COMPLETE. Legacy skip-only modules removed; `skip_reference_policy` enforces ref/issue/see on `@pytest.mark.skip` and AST-scans runtime `pytest.skip`; inventory `docs/development/test-skip-inventory.md`; `skipped_tests` and skip-count trend in quality pipeline; plan archived.
+- **Python framework adapter parsing** - COMPLETE. Hardened `python_adapter_parsing.py` and base adapter integration; `pre_commit_pipeline_processors` aligned with skip summary reporting; unit tests refreshed in `test_python_adapter.py` and `test_python_adapter_parsing.py`.
 
 ## 2026-03-20
 

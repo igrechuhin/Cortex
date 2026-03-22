@@ -43,6 +43,11 @@ class TestResult(DictLikeModel):
     tests_run: int = Field(ge=0, description="Number of tests run")
     tests_passed: int = Field(ge=0, description="Number of tests passed")
     tests_failed: int = Field(ge=0, description="Number of tests failed")
+    skipped_tests: int = Field(
+        default=0,
+        ge=0,
+        description="Pytest skipped count from session summary line",
+    )
     pass_rate: float = Field(ge=0.0, le=1.0, description="Pass rate (0-1)")
     coverage: float | None
     output: str

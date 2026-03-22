@@ -113,7 +113,9 @@ class TestCommitPipelineAlignment:
         """Read all commit pipeline content."""
         content = _read_commit_pipeline_content()
         if not content.strip():
-            pytest.skip("Commit pipeline files not found")
+            pytest.skip(
+                "Commit pipeline files not found (ref: cleanup-skipped-legacy-tests)"
+            )
         return content
 
     @pytest.fixture
@@ -121,7 +123,9 @@ class TestCommitPipelineAlignment:
         """Read commit prompt content only."""
         path = _commit_prompt_path()
         if not path.exists():
-            pytest.skip(f"Commit prompt not found at {path}")
+            pytest.skip(
+                f"Commit prompt not found at {path} (ref: cleanup-skipped-legacy-tests)"
+            )
         return path.read_text()
 
     # -- Structure --
@@ -298,7 +302,9 @@ class TestImplementPromptRefactoringGuidance:
         """Read implement prompt + all implement cursor-agents content."""
         content = _read_implement_pipeline_content()
         if not content.strip():
-            pytest.skip("Implement pipeline files not found")
+            pytest.skip(
+                "Implement pipeline files not found (ref: cleanup-skipped-legacy-tests)"
+            )
         return content
 
     def test_implement_prompt_contains_incremental_validation(
@@ -332,7 +338,9 @@ class TestPythonCodingStandardsTypeNarrowing:
         """Read Python coding standards; skip if missing."""
         path = _python_coding_standards_path()
         if not path.exists():
-            pytest.skip(f"Python standards not found at {path}")
+            pytest.skip(
+                f"Python standards not found at {path} (ref: cleanup-skipped-legacy-tests)"
+            )
         return path.read_text()
 
     def test_python_standards_contain_type_narrowing(

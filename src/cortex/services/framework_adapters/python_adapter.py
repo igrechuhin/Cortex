@@ -244,7 +244,12 @@ class PythonAdapter(FrameworkAdapter):
             output = "".join(lines)
             if proc.returncode == 0 and total > 0:
                 progress_callback(total, total)
-            return parse_pytest_output(output, proc.returncode == 0, coverage_threshold)
+            return parse_pytest_output(
+                output,
+                proc.returncode == 0,
+                coverage_threshold,
+                self.project_root,
+            )
         except subprocess.TimeoutExpired:
             if proc is not None and proc.poll() is None:
                 proc.kill()
@@ -266,7 +271,10 @@ class PythonAdapter(FrameworkAdapter):
             )
             output = result.stdout + result.stderr
             return parse_pytest_output(
-                output, result.returncode == 0, coverage_threshold
+                output,
+                result.returncode == 0,
+                coverage_threshold,
+                self.project_root,
             )
         except subprocess.TimeoutExpired:
             return self._create_timeout_result()

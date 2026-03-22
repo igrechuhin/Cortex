@@ -1,9 +1,11 @@
 """Tests for Python adapter parsing helpers."""
 
+from pathlib import Path
 from typing import cast
 
 from cortex.services.framework_adapters.python_adapter_parsing import (
     build_test_errors,
+    merge_skip_trend_warnings,
     parse_coverage,
     parse_lint_errors,
     parse_pytest_output,
@@ -84,9 +86,10 @@ class TestParseTestCounts:
         summary = (
             "=========== 3698 passed, 2 skipped, 20 warnings in 57.17s ============"
         )
-        passed, failed = parse_test_counts(summary)
+        passed, failed, skipped = parse_test_counts(summary)
         assert passed == 3698
         assert failed == 0
+        assert skipped == 2
 
     def test_ignores_stray_failed_line_without_timing(self) -> None:
         """parse_test_counts ignores lines with '2 failed' that lack timing."""
@@ -94,9 +97,10 @@ class TestParseTestCounts:
             "Some assertion message: 2 failed\n"
             "=========== 3698 passed, 2 skipped, 20 warnings in 57.17s ============"
         )
-        passed, failed = parse_test_counts(output)
+        passed, failed, skipped = parse_test_counts(output)
         assert passed == 3698
         assert failed == 0
+        assert skipped == 2
 
 
 class TestParsePytestOutput:
@@ -147,3 +151,39 @@ class TestParsePytestOutput:
         )
         assert result["tests_run"] == 0
         assert result["pass_rate"] == 0.0
+        assert result["skipped_tests"] == 0
+
+    def test_skipped_tests_parsed(self) -> None:
+        """parse_pytest_output records skipped_tests from summary line."""
+        from cortex.services.framework_adapters.base import TestResult
+
+        output = (
+            "=========== 10 passed, 3 skipped, 1 warning in 1.00s ============\n"
+            "Required test coverage of 90% reached. Total coverage: 92.00%"
+        )
+        result: TestResult = parse_pytest_output(
+            output, success=True, coverage_threshold=0.90
+        )
+        assert result["skipped_tests"] == 3
+        assert result["success"] is True
+
+
+class TestMergeSkipTrendWarnings:
+    """Tests for merge_skip_trend_warnings."""
+
+    def test_warns_when_skip_count_increases(self, tmp_path: Path) -> None:
+        """Emits warning when new skipped count exceeds cached value."""
+        root = tmp_path / "proj"
+        cache = root / ".cortex" / ".cache" / "last_pytest_skipped_count.json"
+        cache.parent.mkdir(parents=True)
+        _ = cache.write_text('{"skipped_tests": 2}\n', encoding="utf-8")
+        w = merge_skip_trend_warnings(5, root, [])
+        assert len(w) == 1
+        assert "increased from 2 to 5" in w[0]
+
+    def test_no_warning_on_first_or_equal_run(self, tmp_path: Path) -> None:
+        """No warning when cache missing or count did not increase."""
+        root = tmp_path / "proj2"
+        assert merge_skip_trend_warnings(3, root, ["keep"]) == ["keep"]
+        w2 = merge_skip_trend_warnings(3, root, [])
+        assert w2 == []

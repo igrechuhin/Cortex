@@ -24,6 +24,18 @@
 
 - ✅ **Decompose oversized tool modules (remainder)** - COMPLETE (2026-03-22) - Verified governance: all src files ≤400 logical lines and functions ≤30 lines; quality gate clean with no file/function length violations. Archived decomposition plan batches 1–4 complete; remainder closed.
 
+- ✅ **Skip cleanup (PARTIAL)** - COMPLETE (2026-03-22) - Deleted `tests/test_init.py` and `tests/test_ultra_simple.py` (only skipped no-ops). README updated. Next: inventory remaining skips, add enforcement + CI trend per plan.
+
+- ✅ **Skip reference enforcement (PARTIAL)** - COMPLETE (2026-03-22) - Collection-time policy for @pytest.mark.skip; all runtime pytest.skip strings cite ref: cleanup-skipped-legacy-tests. Next: CI skip count + inventory doc.
+
+- ✅ **Skip inventory + skipped_tests summary (PARTIAL)** - COMPLETE (2026-03-22) - TestResult.skipped_tests + trend file; docs/development/test-skip-inventory.md. Re-run quality gate after MCP refresh if needed.
+
+- ✅ **Skip policy — runtime pytest.skip AST enforcement (PARTIAL)** - COMPLETE (2026-03-22) - Collection now scans all test modules for pytest.skip calls and requires the same tracked-reference patterns as @pytest.mark.skip, with tests for literals and f-strings.
+
+- ✅ **Remove permanently skipped legacy tests and establish skip expiration policy** - COMPLETE (2026-03-22) - Removed legacy skip-only modules; conftest enforces ref/issue/see on @pytest.mark.skip and AST-scans runtime pytest.skip; skip inventory doc; quality pipeline reports skipped_tests with trend warning; pyright-clean skip_reference_policy strings.
+
+- ✅ **Python framework adapter parsing hardening** - COMPLETE (2026-03-22) - Refined python_adapter_parsing and base adapter wiring; pre_commit processor touch for skipped_tests reporting; tests updated. Lands with skip-reference policy work in the same commit batch.
+
 ## Completed Work (2026-03-21)
 
 - **Summary (2026-03-21)** - 1 entries archived.

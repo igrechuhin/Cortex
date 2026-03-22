@@ -64,7 +64,7 @@ class TestUnifiedAnalyzeInManifest:
         path = _manifest_path()
         if not path.exists():
             pytest.skip(
-                f"Manifest not found at {path} (e.g. synapse submodule not present)"
+                f"Manifest not found at {path} (e.g. synapse submodule not present) (ref: cleanup-skipped-legacy-tests)"
             )
         import json
 
@@ -109,7 +109,7 @@ class TestUnifiedAnalyzePromptContent:
         path = _analyze_prompt_path()
         if not path.exists():
             pytest.skip(
-                f"Prompt not found at {path} (e.g. synapse submodule not present)"
+                f"Prompt not found at {path} (e.g. synapse submodule not present) (ref: cleanup-skipped-legacy-tests)"
             )
         return path.read_text()
 

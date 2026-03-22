@@ -193,6 +193,9 @@ All phases run inline. Use zero-arg tools — do NOT use legacy pre-commit tools
 - When tests need cursor/agent paths and project_root is the repo root, use a session-scoped temp directory instead of creating `_cursor` in the workspace.
 - Archived plans must live under `.cortex/plans/archive` (not `.cortex/archived/plans`) so completed plans stay in the canonical archive tree.
 - When editing `roadmap.md` pending bullets, avoid bare dotted Python filenames, backticked paths such as `pre_commit_foo`/`pre_commit_bar`, and the root Node manifest name written as one token; the roadmap file-reference scanner can treat those as real paths and fail `roadmap_sync`.
+- Synapse Python standards forbid `from typing import TYPE_CHECKING` and `if TYPE_CHECKING:` conditional imports; use normal imports (including under `tests/`) instead of that pattern.
+- Phase A `run_quality_gate()` can reuse cached fingerprints so typecheck output may not match the current working tree; if pyright errors look stale versus local `pyright`, run `run_quality_gate_fresh()` once before treating results as ground truth.
+- The docs gate `roadmap_progress_consistency` check fails when `progress.md` contains any `PARTIAL` line but `roadmap.md` has no `PENDING` backlog bullet; keep at least one real `PENDING` item while unfinished work remains in progress, or resolve the PARTIAL entries.
 
 ## Cursor Cloud specific instructions
 

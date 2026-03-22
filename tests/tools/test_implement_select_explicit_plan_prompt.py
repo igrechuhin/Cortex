@@ -34,7 +34,9 @@ def implement_select_content() -> str:
     """Read implement-select cursor-agent content."""
     path = _implement_select_path()
     if not path.exists():
-        pytest.skip(f"implement-select prompt not found at {path}")
+        pytest.skip(
+            f"implement-select prompt not found at {path} (ref: cleanup-skipped-legacy-tests)"
+        )
     return path.read_text()
 
 
@@ -43,7 +45,9 @@ def implement_prompt_content() -> str:
     """Read implement orchestrator prompt content."""
     path = _implement_prompt_path()
     if not path.exists():
-        pytest.skip(f"implement prompt not found at {path}")
+        pytest.skip(
+            f"implement prompt not found at {path} (ref: cleanup-skipped-legacy-tests)"
+        )
     return path.read_text()
 
 

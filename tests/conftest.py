@@ -842,6 +842,19 @@ def pytest_configure(config: object) -> None:  # type: ignore[type-arg]
         )
 
 
+def pytest_collection_modifyitems(items: list[object], config: object) -> None:
+    """Require ref:/issue:/see <token> in every unconditional @pytest.mark.skip."""
+    del config
+    from tests.skip_reference_policy import (
+        enforce_runtime_pytest_skip_in_tests_tree,
+        enforce_unconditional_skip_markers,
+    )
+
+    tests_root = Path(__file__).resolve().parent
+    enforce_runtime_pytest_skip_in_tests_tree(tests_root)
+    enforce_unconditional_skip_markers(items)  # type: ignore[arg-type]
+
+
 @pytest.fixture(scope="session")
 def event_loop_policy():
     """

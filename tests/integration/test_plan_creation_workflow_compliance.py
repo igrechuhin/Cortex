@@ -37,7 +37,7 @@ class TestCreatePlanPathResolution:
         path = _create_plan_prompt_path()
         if not path.exists():
             pytest.skip(
-                f"Create-plan prompt not found at {path} (e.g. synapse submodule not present)"
+                f"Create-plan prompt not found at {path} (e.g. synapse submodule not present) (ref: cleanup-skipped-legacy-tests)"
             )
         return path.read_text()
 
@@ -79,7 +79,7 @@ class TestCreatePlanPrefersCreatePlanTool:
         path = _create_plan_prompt_path()
         if not path.exists():
             pytest.skip(
-                f"Create-plan prompt not found at {path} (e.g. synapse submodule not present)"
+                f"Create-plan prompt not found at {path} (e.g. synapse submodule not present) (ref: cleanup-skipped-legacy-tests)"
             )
         return path.read_text()
 
@@ -116,7 +116,7 @@ class TestCreatePlanRoadmapUpdate:
         path = _create_plan_prompt_path()
         if not path.exists():
             pytest.skip(
-                f"Create-plan prompt not found at {path} (e.g. synapse submodule not present)"
+                f"Create-plan prompt not found at {path} (e.g. synapse submodule not present) (ref: cleanup-skipped-legacy-tests)"
             )
         return path.read_text()
 
@@ -192,7 +192,7 @@ class TestCreatePlanAntiTruncation:
         path = _create_plan_prompt_path()
         if not path.exists():
             pytest.skip(
-                f"Create-plan prompt not found at {path} (e.g. synapse submodule not present)"
+                f"Create-plan prompt not found at {path} (e.g. synapse submodule not present) (ref: cleanup-skipped-legacy-tests)"
             )
         return path.read_text()
 
@@ -234,7 +234,7 @@ class TestCreatePlanVerificationChecklist:
         path = _create_plan_prompt_path()
         if not path.exists():
             pytest.skip(
-                f"Create-plan prompt not found at {path} (e.g. synapse submodule not present)"
+                f"Create-plan prompt not found at {path} (e.g. synapse submodule not present) (ref: cleanup-skipped-legacy-tests)"
             )
         return path.read_text()
 
@@ -266,7 +266,7 @@ class TestMemoryBankUpdaterAntiTruncation:
         path = _memory_bank_updater_agent_path()
         if not path.exists():
             pytest.skip(
-                f"Memory-bank-updater agent not found at {path} (e.g. synapse submodule not present)"
+                f"Memory-bank-updater agent not found at {path} (e.g. synapse submodule not present) (ref: cleanup-skipped-legacy-tests)"
             )
         return path.read_text()
 

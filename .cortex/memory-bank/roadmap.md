@@ -20,9 +20,9 @@
 
 ### Refactoring
 
-### Cleanup
+- **Decompose oversized tool modules** - PENDING - Remaining module splits and function-length cleanup; partial batches recorded in progress.md under 2026-03-21.
 
-- **Remove permanently skipped legacy tests and establish skip expiration policy** - PENDING - Remove or convert legacy permanently-skipped test modules (historical init and ultra-simple suites). Enforce skip expiration policy (every skip must have a plan/issue ref). Add skip count trend to CI quality summary. Plan: `.cortex/plans/cleanup-skipped-legacy-tests.md`
+### Cleanup
 
 ### Investigation Plans (Archive / Reference)
 

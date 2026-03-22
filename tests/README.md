@@ -23,8 +23,6 @@ This directory contains comprehensive tests for all phases of the Cortex project
 - `test_minimal.py` - Minimal smoke tests
 - `test_simple.py` - Simple functionality tests
 - `test_quick.py` - Quick validation tests
-- `test_ultra_simple.py` - Ultra-minimal tests
-- `test_init.py` - Initialization tests
 
 ## Running Tests
 

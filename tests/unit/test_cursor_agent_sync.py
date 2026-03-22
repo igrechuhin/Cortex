@@ -292,7 +292,9 @@ class TestRequiredAgentFilesPresent:
         """Every required agent file exists in .cortex/synapse/cursor-agents/."""
         source = get_cursor_agents_source()
         if source is None:
-            pytest.skip("cursor-agents source directory not found")
+            pytest.skip(
+                "cursor-agents source directory not found (ref: cleanup-skipped-legacy-tests)"
+            )
         missing = [
             name for name in _REQUIRED_AGENT_FILES if not (source / name).exists()
         ]
@@ -304,7 +306,9 @@ class TestRequiredAgentFilesPresent:
         """Target path helpers resolve cursor/agents and .claude/agents correctly."""
         source = get_cursor_agents_source()
         if source is None:
-            pytest.skip("cursor-agents source directory not found")
+            pytest.skip(
+                "cursor-agents source directory not found (ref: cleanup-skipped-legacy-tests)"
+            )
         project_root = source.parent.parent.parent
         # In tests, get_cursor_path is patched (conftest): repo root -> session temp; tmp_path -> _cursor
         expected_cursor_agents = (

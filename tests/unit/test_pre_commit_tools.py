@@ -726,7 +726,9 @@ class TestRunSynapseScript:
             / "check_async_tests.py"
         )
         if not script_path.exists():
-            pytest.skip("check_async_tests.py not present (e.g. in minimal tree)")
+            pytest.skip(
+                "check_async_tests.py not present (e.g. in minimal tree) (ref: cleanup-skipped-legacy-tests)"
+            )
         result = run_synapse_script(
             project_root, "python", "check_async_tests.py", "check_async_tests"
         )

@@ -75,7 +75,9 @@ class TestCheckAsyncTestsScriptModule:
     def test_check_file_reports_unawaited_call(self) -> None:
         """check_file reports when an async name is called without await."""
         if not _SCRIPT_DIR.exists():
-            pytest.skip("check_async_tests script dir not present")
+            pytest.skip(
+                "check_async_tests script dir not present (ref: cleanup-skipped-legacy-tests)"
+            )
         import check_async_tests as m  # noqa: PLC0415
 
         with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as f:
@@ -93,7 +95,9 @@ class TestCheckAsyncTestsScriptModule:
     def test_check_file_no_violation_when_awaited(self) -> None:
         """check_file reports no violation when call is awaited."""
         if not _SCRIPT_DIR.exists():
-            pytest.skip("check_async_tests script dir not present")
+            pytest.skip(
+                "check_async_tests script dir not present (ref: cleanup-skipped-legacy-tests)"
+            )
         import check_async_tests as m  # noqa: PLC0415
 
         with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as f:
@@ -110,7 +114,9 @@ class TestCheckAsyncTestsScriptModule:
     def test_check_file_no_violation_for_unknown_name(self) -> None:
         """check_file ignores calls to names not in async set."""
         if not _SCRIPT_DIR.exists():
-            pytest.skip("check_async_tests script dir not present")
+            pytest.skip(
+                "check_async_tests script dir not present (ref: cleanup-skipped-legacy-tests)"
+            )
         import check_async_tests as m  # noqa: PLC0415
 
         with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as f:
@@ -126,7 +132,9 @@ class TestCheckAsyncTestsScriptModule:
     def test_check_file_attribute_call_unawaited(self) -> None:
         """check_file reports handler.detect_failure() when not awaited."""
         if not _SCRIPT_DIR.exists():
-            pytest.skip("check_async_tests script dir not present")
+            pytest.skip(
+                "check_async_tests script dir not present (ref: cleanup-skipped-legacy-tests)"
+            )
         import check_async_tests as m  # noqa: PLC0415
 
         with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as f:

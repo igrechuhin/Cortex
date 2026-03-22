@@ -250,6 +250,7 @@ def process_tests_check(
         )
         results[PreCommitCheck.TESTS.value] = test_result
         stats.checks_performed.append(PreCommitCheck.TESTS.value)
+        stats.total_warnings += len(test_result.warnings)
         if not test_result.success:
             stats.total_errors += len(test_result.errors)
 

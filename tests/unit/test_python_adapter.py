@@ -157,7 +157,12 @@ class TestPythonAdapter:
         """_get_command uses cwd/.venv/bin when project_root has no .venv (MCP fallback)."""
         cwd_venv_bin = get_venv_bin_path(Path.cwd())
         if not (cwd_venv_bin / "ruff").exists():
-            pytest.skip(reason="repo .venv/bin/ruff not present (e.g. minimal CI)")
+            pytest.skip(
+                reason=(
+                    "repo .venv/bin/ruff not present (e.g. minimal CI) "
+                    "(ref: cleanup-skipped-legacy-tests)"
+                )
+            )
         with tempfile.TemporaryDirectory() as tmpdir:
             project_root = Path(tmpdir)
             adapter = PythonAdapter(str(project_root))

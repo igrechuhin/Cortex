@@ -1333,10 +1333,14 @@ async def test_rules_get_relevant_returns_at_least_one_rule_for_commit_pipeline(
     project_root = get_project_root()
     rules_dir = project_root / ".cortex" / "rules"
     if not rules_dir.exists():
-        pytest.skip(reason=".cortex/rules not present")
+        pytest.skip(
+            reason=".cortex/rules not present (ref: cleanup-skipped-legacy-tests)"
+        )
     rule_files = list(rules_dir.rglob("*.mdc")) if rules_dir.is_dir() else []
     if not rule_files:
-        pytest.skip(reason=".cortex/rules has no .mdc files")
+        pytest.skip(
+            reason=".cortex/rules has no .mdc files (ref: cleanup-skipped-legacy-tests)"
+        )
 
     async def _return_project_root(_: object, __: object) -> Path:
         return project_root
@@ -1350,7 +1354,9 @@ async def test_rules_get_relevant_returns_at_least_one_rule_for_commit_pipeline(
         index_result = await rules(operation="index", force=True)
         index_data = json.loads(index_result)
         if index_data.get("status") == "disabled":
-            pytest.skip(reason="Rules indexing disabled in config")
+            pytest.skip(
+                reason="Rules indexing disabled in config (ref: cleanup-skipped-legacy-tests)"
+            )
 
         get_result = await rules(
             operation="get_relevant",

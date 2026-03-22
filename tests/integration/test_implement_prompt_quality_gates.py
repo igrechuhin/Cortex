@@ -66,7 +66,7 @@ class TestImplementPromptQualityGates:
         path = _implement_prompt_path()
         if not path.exists():
             pytest.skip(
-                f"Implement prompt not found at {path} (e.g. synapse submodule not present)"
+                f"Implement prompt not found at {path} (e.g. synapse submodule not present) (ref: cleanup-skipped-legacy-tests)"
             )
         return path.read_text()
 
@@ -76,7 +76,7 @@ class TestImplementPromptQualityGates:
         path = _implement_executor_path()
         if not path.exists():
             pytest.skip(
-                f"Implement-executor agent not found at {path} (e.g. synapse submodule not present)"
+                f"Implement-executor agent not found at {path} (e.g. synapse submodule not present) (ref: cleanup-skipped-legacy-tests)"
             )
         return path.read_text()
 
@@ -180,7 +180,7 @@ class TestCreatePlanImplementationSequence:
         path = _create_plan_prompt_path()
         if not path.exists():
             pytest.skip(
-                f"Create-plan prompt not found at {path} (e.g. synapse submodule not present)"
+                f"Create-plan prompt not found at {path} (e.g. synapse submodule not present) (ref: cleanup-skipped-legacy-tests)"
             )
         return path.read_text()
 
@@ -202,7 +202,7 @@ class TestPythonCodingStandardsTypedDictProhibition:
         path = _python_coding_standards_path()
         if not path.exists():
             pytest.skip(
-                f"Python coding standards not found at {path} (e.g. synapse submodule not present)"
+                f"Python coding standards not found at {path} (e.g. synapse submodule not present) (ref: cleanup-skipped-legacy-tests)"
             )
         return path.read_text()
 
