@@ -2,6 +2,7 @@
 
 ## 2026-03-22
 
+- **Session context usage statistics and memory bank index** - COMPLETE. Rolled up context usage statistics; refreshed memory bank index; Synapse usage analytics for 2026-03-22.
 - **Clean up legacy Node package manifest** - COMPLETE. Removed unused root `package.json`; documented CI/global `cspell` and Node usage in contributor docs and AGENTS; archived plan `clean-up-legacy-package-json` to `.cortex/plans/archive/`.
 - **Decompose oversized tool modules by responsibility boundaries** - COMPLETE. Batches 1–4 done; quality gate and size checks verified; boundary tests cover facades. (Earlier PARTIAL note on architecture guardrails folded into contributing.md policy; remaining splits tracked under roadmap Refactoring.)
 - **Project root resolver — roots capability gate** - COMPLETE. Skip `list_roots()` unless the client advertises MCP roots (`ClientCapabilities` / `RootsCapability`); prevents Cursor MCP bridge transport failures; `test_project_root_resolver.py` extended.

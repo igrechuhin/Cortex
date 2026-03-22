@@ -4,6 +4,8 @@
 
 ## Completed Work (2026-03-22)
 
+- ✅ **Session context usage statistics and memory bank index** - COMPLETE (2026-03-22) - Refreshed `.cortex/.session/context-usage-statistics.json` rollup and `.cortex/index.json` metadata; Synapse usage cache events for 2026-03-22 committed in submodule.
+
 - ✅ **Clean up legacy Node package manifest and clarify Node dependency** - COMPLETE (2026-03-22) - Removed root `package.json`; contributor docs and AGENTS describe a Python-first workflow and CI/global `cspell` as the remaining Node surface; plan archived to `.cortex/plans/archive/`.
 
 - ✅ **Decompose oversized tool modules (PARTIAL)** - COMPLETE (2026-03-22) - Contributor docs now include Architecture guardrails under Code Constraints (size limits, how to request exemptions, quarterly review). Roadmap item kept pending until audit and any remaining splits land.
