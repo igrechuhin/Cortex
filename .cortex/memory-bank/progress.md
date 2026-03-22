@@ -20,6 +20,7 @@
 - **Document offline bootstrap and preflight CLI architecture** - COMPLETE. docs/offline-bootstrap-preflight.md plus cross-links in security best practices and README.
 - **Narrow exceptions in python_adapter_checks** - COMPLETE. Pyright timeout parity, TimeoutExpired branch, ruff command timeouts with `test_timeout_returns_lint_error`, tests in `test_python_adapter_checks.py`; review-report markdown preflight fixes.
 - **Pipeline handoff + usage analytics decomposition** - COMPLETE. Split `pipeline_handoff` into `pipeline_handoff_io` and `pipeline_handoff_validation`; split usage analytics into `analytics_collection` and `usage_analytics_resources` with thin facades; `test_analytics_collection`, `test_python_adapter_checks`, `test_phase_a_lock`; boundary governance and pre-commit zero-arg wiring updated; Phase A ~0.916 coverage.
+- **Decompose oversized tool modules (prompts, markdown cache, pre-commit process, effectiveness)** - COMPLETE. Split Synapse prompts into `prompts_content`, `prompts_paths`, `prompts_registration`, and `prompts_agents` with a thin `prompts.py` facade; moved markdown lint cache updates and `after_one_file` to `markdown_lint_cache_updates.py`; moved detached spawn/poll/result I/O to `pre_commit_process.py`; moved `build_statistics_dict` into `effectiveness_operations_insights.py`; updated prompt, markdown lint, cursor-agent sync, and boundary tests. Remainder plan archived under `.cortex/plans/archive/Other/`.
 
 ## 2026-03-20
 

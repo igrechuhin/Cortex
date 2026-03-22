@@ -89,7 +89,8 @@ class TestGetSynapsePromptsPath:
         """Test finding prompts directory from current working directory."""
         # Arrange
         with patch(
-            "cortex.tools.synapse.prompts.Path.cwd", return_value=temp_project_root
+            "cortex.tools.synapse.prompts_paths.Path.cwd",
+            return_value=temp_project_root,
         ):
             # Act
             result = synapse_prompts.get_synapse_prompts_path()
@@ -104,7 +105,7 @@ class TestGetSynapsePromptsPath:
         # Arrange
         subdir = temp_project_root / "subdir"
         subdir.mkdir()
-        with patch("cortex.tools.synapse.prompts.Path.cwd", return_value=subdir):
+        with patch("cortex.tools.synapse.prompts_paths.Path.cwd", return_value=subdir):
             # Act
             result = synapse_prompts.get_synapse_prompts_path()
 
@@ -119,8 +120,13 @@ class TestGetSynapsePromptsPath:
         module_file_path = (
             temp_project_root / "src" / "cortex" / "tools" / "synapse_prompts.py"
         )
-        with patch("cortex.tools.synapse.prompts.Path.cwd", return_value=Path("/tmp")):
-            with patch.object(synapse_prompts, "__file__", str(module_file_path)):
+        with patch(
+            "cortex.tools.synapse.prompts_paths.Path.cwd", return_value=Path("/tmp")
+        ):
+            with patch(
+                "cortex.tools.synapse.prompts_paths._paths_anchor",
+                return_value=Path(str(module_file_path)),
+            ):
                 # Act
                 result = synapse_prompts.get_synapse_prompts_path()
 
@@ -130,11 +136,12 @@ class TestGetSynapsePromptsPath:
     def test_returns_none_when_not_found(self):
         """Test returns None when prompts directory doesn't exist."""
         # Arrange
-        with patch("cortex.tools.synapse.prompts.Path.cwd", return_value=Path("/tmp")):
-            with patch.object(
-                synapse_prompts,
-                "__file__",
-                str(Path("/tmp") / "nonexistent" / "file.py"),
+        with patch(
+            "cortex.tools.synapse.prompts_paths.Path.cwd", return_value=Path("/tmp")
+        ):
+            with patch(
+                "cortex.tools.synapse.prompts_paths._paths_anchor",
+                return_value=Path("/tmp") / "nonexistent" / "file.py",
             ):
                 # Act
                 result = synapse_prompts.get_synapse_prompts_path()
@@ -513,8 +520,8 @@ class TestRegisterSynapsePrompts:
             get_cortex_path(temp_project_root, CortexResourceType.SYNAPSE) / "prompts"
         )
         with patch(
-            "cortex.tools.synapse.prompts.get_synapse_prompts_path",
-            return_value=prompts_dir,
+            "cortex.tools.synapse.prompts_paths.get_prompts_paths",
+            return_value=[prompts_dir],
         ):
             # Clear any existing registrations
             for key in list(synapse_prompts.__dict__.keys()):
@@ -532,7 +539,8 @@ class TestRegisterSynapsePrompts:
         """Test handles case when prompts path doesn't exist."""
         # Arrange
         with patch(
-            "cortex.tools.synapse.prompts.get_synapse_prompts_path", return_value=None
+            "cortex.tools.synapse.prompts_paths.get_prompts_paths",
+            return_value=[],
         ):
             # Act & Assert - should not raise
             synapse_prompts.register_synapse_prompts()
@@ -541,11 +549,12 @@ class TestRegisterSynapsePrompts:
         """Test handles case when manifest doesn't exist."""
         # Arrange
         with patch(
-            "cortex.tools.synapse.prompts.get_synapse_prompts_path",
-            return_value=prompts_dir,
+            "cortex.tools.synapse.prompts_paths.get_prompts_paths",
+            return_value=[prompts_dir],
         ):
             with patch(
-                "cortex.tools.synapse.prompts.load_prompts_manifest", return_value=None
+                "cortex.tools.synapse.prompts_paths.load_prompts_manifest",
+                return_value=None,
             ):
                 # Act & Assert - should not raise
                 synapse_prompts.register_synapse_prompts()
@@ -561,11 +570,11 @@ class TestRegisterSynapsePrompts:
             )
         )
         with patch(
-            "cortex.tools.synapse.prompts.get_synapse_prompts_path",
-            return_value=prompts_dir,
+            "cortex.tools.synapse.prompts_paths.get_prompts_paths",
+            return_value=[prompts_dir],
         ):
             with patch(
-                "cortex.tools.synapse.prompts.load_prompts_manifest",
+                "cortex.tools.synapse.prompts_paths.load_prompts_manifest",
                 return_value=manifest,
             ):
                 # Act & Assert - should not raise
@@ -585,11 +594,11 @@ class TestRegisterSynapsePrompts:
             )
         )
         with patch(
-            "cortex.tools.synapse.prompts.get_synapse_prompts_path",
-            return_value=prompts_dir,
+            "cortex.tools.synapse.prompts_paths.get_prompts_paths",
+            return_value=[prompts_dir],
         ):
             with patch(
-                "cortex.tools.synapse.prompts.load_prompts_manifest",
+                "cortex.tools.synapse.prompts_paths.load_prompts_manifest",
                 return_value=manifest,
             ):
                 # Act & Assert - should not raise
@@ -609,11 +618,11 @@ class TestRegisterSynapsePrompts:
             )
         )
         with patch(
-            "cortex.tools.synapse.prompts.get_synapse_prompts_path",
-            return_value=prompts_dir,
+            "cortex.tools.synapse.prompts_paths.get_prompts_paths",
+            return_value=[prompts_dir],
         ):
             with patch(
-                "cortex.tools.synapse.prompts.load_prompts_manifest",
+                "cortex.tools.synapse.prompts_paths.load_prompts_manifest",
                 return_value=manifest,
             ):
                 # Act & Assert - should not raise
@@ -633,11 +642,11 @@ class TestRegisterSynapsePrompts:
             )
         )
         with patch(
-            "cortex.tools.synapse.prompts.get_synapse_prompts_path",
-            return_value=prompts_dir,
+            "cortex.tools.synapse.prompts_paths.get_prompts_paths",
+            return_value=[prompts_dir],
         ):
             with patch(
-                "cortex.tools.synapse.prompts.load_prompts_manifest",
+                "cortex.tools.synapse.prompts_paths.load_prompts_manifest",
                 return_value=manifest,
             ):
                 # Act & Assert - should not raise
@@ -720,8 +729,8 @@ class TestRegisterSynapsePrompts:
         _ = (prompts_dir / "prompt2.md").write_text("Content 2", encoding="utf-8")
 
         with patch(
-            "cortex.tools.synapse.prompts.get_synapse_prompts_path",
-            return_value=prompts_dir,
+            "cortex.tools.synapse.prompts_paths.get_prompts_paths",
+            return_value=[prompts_dir],
         ):
             # Clear existing registrations
             for key in list(synapse_prompts.__dict__.keys()):

@@ -175,6 +175,7 @@ class TestMarkdownLintCoreNarrowExceptions:
     ) -> None:
         """FileLockTimeoutError from cache update is logged, not re-raised."""
         from cortex.core.exceptions import FileLockTimeoutError
+        from cortex.tools.files import markdown_lint_cache_updates as mlcu
         from cortex.tools.files import markdown_lint_core as mlc
         from cortex.tools.files.markdown_lint_cache import MarkdownLintIndex
         from cortex.tools.files.markdown_lint_helpers import FileResult
@@ -192,12 +193,12 @@ class TestMarkdownLintCoreNarrowExceptions:
 
         with (
             patch.object(
-                mlc,
+                mlcu,
                 "_update_markdown_lint_cache_from_results",
                 new_callable=AsyncMock,
                 side_effect=FileLockTimeoutError("markdown-lint-index.json", 30),
             ),
-            patch.object(mlc, "log_client", new_callable=AsyncMock) as mock_log,
+            patch.object(mlcu, "log_client", new_callable=AsyncMock) as mock_log,
         ):
             await mlc.update_markdown_lint_cache_safe(
                 index, tmp_path, results, hashes, ctx=None
@@ -213,6 +214,7 @@ class TestMarkdownLintCoreNarrowExceptions:
         self, tmp_path: Path
     ) -> None:
         """Programming errors during cache update are not swallowed."""
+        from cortex.tools.files import markdown_lint_cache_updates as mlcu
         from cortex.tools.files import markdown_lint_core as mlc
         from cortex.tools.files.markdown_lint_cache import MarkdownLintIndex
         from cortex.tools.files.markdown_lint_helpers import FileResult
@@ -230,7 +232,7 @@ class TestMarkdownLintCoreNarrowExceptions:
 
         with (
             patch.object(
-                mlc,
+                mlcu,
                 "_update_markdown_lint_cache_from_results",
                 new_callable=AsyncMock,
                 side_effect=RuntimeError("bug"),
@@ -1204,12 +1206,12 @@ class TestFixMarkdownLintErrorHandling:
                 return_value=results,
             ),
             patch(
-                "cortex.tools.files.markdown_lint_core._update_markdown_lint_cache_from_results",
+                "cortex.tools.files.markdown_lint_cache_updates._update_markdown_lint_cache_from_results",
                 new_callable=AsyncMock,
                 side_effect=FileLockTimeoutError("markdown-lint-index.json", 30),
             ),
             patch(
-                "cortex.tools.files.markdown_lint_core.log_client",
+                "cortex.tools.files.markdown_lint_cache_updates.log_client",
                 new_callable=AsyncMock,
             ) as mock_log,
         ):
@@ -1227,7 +1229,7 @@ class TestFixMarkdownLintErrorHandling:
             result = json.loads(result_str)
             assert result["success"] is True
             assert result["files_processed"] == 1
-            # Should have logged warning about cache update failure (from markdown_lint_core)
+            # Should have logged warning about cache update failure (from markdown_lint_cache_updates)
             assert any(
                 len(c[0]) >= 3
                 and "warning" in str(c[0][1])
@@ -1350,7 +1352,7 @@ class TestMarkdownlintBatchHelpers:
                 return_value=[],
             ) as mock_run_files,
             patch(
-                "cortex.tools.files.markdown_lint_core._update_markdown_lint_cache_from_results",
+                "cortex.tools.files.markdown_lint_cache_updates._update_markdown_lint_cache_from_results",
                 new_callable=AsyncMock,
             ) as mock_update,
         ):
@@ -1483,7 +1485,7 @@ class TestFixMarkdownLintProgressReporting:
         )
 
         with patch(
-            "cortex.tools.files.markdown_lint_core.report_progress_safe",
+            "cortex.tools.files.markdown_lint_cache_updates.report_progress_safe",
             new_callable=AsyncMock,
         ) as mock_progress:
             await after_one_file(
@@ -1518,7 +1520,7 @@ class TestFixMarkdownLintProgressReporting:
         )
 
         with patch(
-            "cortex.tools.files.markdown_lint_core.report_progress_safe",
+            "cortex.tools.files.markdown_lint_cache_updates.report_progress_safe",
             new_callable=AsyncMock,
         ) as mock_progress:
             await after_one_file(

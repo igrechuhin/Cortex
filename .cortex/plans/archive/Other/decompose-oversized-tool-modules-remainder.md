@@ -85,12 +85,7 @@ Read the file. Identify groups:
 
 ### Step 4: Split `synapse/prompts.py` (465 lines)
 
-Read the file. This file likely contains both prompt content and dispatch logic.
-Split into:
-
-- Prompt content constants → `prompts_content.py`
-- Sync/dispatch helpers → `prompts_sync.py`
-- Thin dispatcher in `prompts.py`
+**Done (2026-03-22):** Split into `prompts_content.py` (icons + Claude tool rewrite constants), `prompts_paths.py` (discovery + manifest/content load + testable `_paths_anchor()`), `prompts_registration.py` (MCP registration + manifest walk), `prompts_agents.py` (cursor/claude agent sync + frontmatter inject), and thin `prompts.py` facade (~107 lines). Tests patch `prompts_paths` / `prompts_agents` where implementation moved; `process_prompt_info` calls facade `create_prompt_function` for patchability.
 
 **Verification checklist:**
 
@@ -99,6 +94,8 @@ Split into:
 - Synapse format/lint checks still pass (synapse_format, synapse_lint in gate output).
 
 ### Step 5: Split `markdown_lint_core.py` (457 lines)
+
+**Done (2026-03-22):** Cache persistence and per-file progress → `markdown_lint_cache_updates.py` (`after_one_file`, `_update_markdown_lint_cache_from_results`, `update_markdown_lint_cache_safe`); `markdown_lint_core.py` re-exports stable symbols (~376 lines). Tests patch `markdown_lint_cache_updates` for moved helpers.
 
 Read the file alongside `markdown_lint_run.py` (353 lines) and
 `markdown_lint_helpers.py` (327 lines). Identify what remains in `_core.py`:
@@ -114,6 +111,8 @@ Read the file alongside `markdown_lint_run.py` (353 lines) and
 - `run_quality_gate()` passes.
 
 ### Step 6: Split `pre_commit_detached.py` (453 lines)
+
+**Done (2026-03-22):** Subprocess spawn (`Popen`, worker argv, log redirection) and async polling (`poll_for_result`, result-file reads, timeout/dead-worker envelopes) → `pre_commit_process.py`. `pre_commit_detached.py` keeps hashing, cache discovery, job interpretation, and `run_checks_detached` / `start_pre_commit_job_impl` (~313 lines). `poll_for_result` and `spawn_detached_worker` re-exported from facade for test patch targets.
 
 Read alongside `pre_commit_worker.py` (352 lines). Identify groups:
 

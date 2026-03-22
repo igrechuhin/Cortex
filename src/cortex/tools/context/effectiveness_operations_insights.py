@@ -5,10 +5,13 @@ Insight generation from context usage entries.
 """
 
 from collections.abc import Callable
+from typing import cast
 
+from cortex.core.models import JsonValue, ModelDict
 from cortex.tools.context.effectiveness_models import (
     ContextInsights,
     ContextUsageEntry,
+    ContextUsageStatistics,
     FileEffectiveness,
     TaskTypeInsight,
 )
@@ -66,6 +69,18 @@ def extract_task_pattern(task_description: str) -> str:
         if keyword in task_lower:
             return pattern
     return "other"
+
+
+def build_statistics_dict(
+    stats: ContextUsageStatistics, common_task_patterns_json: dict[str, JsonValue]
+) -> ModelDict:
+    """Build statistics dictionary for context statistics MCP responses."""
+    return {
+        "avg_token_utilization": stats.avg_token_utilization,
+        "avg_files_selected": stats.avg_files_selected,
+        "avg_relevance_score": stats.avg_relevance_score,
+        "common_task_patterns": cast(JsonValue, common_task_patterns_json),
+    }
 
 
 def _compute_recommended_budget(avg_tokens: float) -> int:

@@ -52,6 +52,8 @@
 
 - ✅ **Pipeline handoff and usage analytics decomposition** - COMPLETE (2026-03-22) - Split pipeline_handoff into pipeline_handoff_io and pipeline_handoff_validation; usage analytics into analytics_collection and usage_analytics_resources with thin facades; added test_analytics_collection, test_python_adapter_checks, and test_phase_a_lock; updated test_decomposed_tool_module_boundaries and pre_commit_zero_arg_tools; python_adapter_checks and session index aligned with quality gate.
 
+- ✅ **Decompose oversized tool modules — remainder** - COMPLETE (2026-03-22) - All src/cortex/tools/**/*.py files are at or under 400 logical lines; function_length_violations empty. Final trim: moved build_statistics_dict into effectiveness_operations_insights.py. Earlier batches split pipeline_handoff, usage_analytics, synapse prompts, markdown_lint cache/core, and pre_commit_detached/process. Quality gate passed (5412 tests, coverage ~91.6%).
+
 ## Completed Work (2026-03-21)
 
 - **Summary (2026-03-21)** - 1 entries archived.

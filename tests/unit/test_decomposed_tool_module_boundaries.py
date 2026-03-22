@@ -65,6 +65,8 @@ def test_refactoring_entrypoints_import_from_canonical_modules() -> None:
         "src/cortex/refactoring/approval_manager.py",
         "src/cortex/refactoring/refactoring_engine.py",
         "src/cortex/tools/usage/usage_analytics.py",
+        "src/cortex/tools/files/markdown_lint_core.py",
+        "src/cortex/tools/files/markdown_lint_cache_updates.py",
     ],
 )
 def test_plan_priority_modules_respect_max_logical_file_lines(relative: str) -> None:

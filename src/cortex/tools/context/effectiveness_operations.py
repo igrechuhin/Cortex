@@ -9,7 +9,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import cast
 
-from cortex.core.models import JsonDict, JsonValue, ModelDict
+from cortex.core.models import JsonDict, JsonValue
 from cortex.core.session_logger import (
     LoadContextLogEntry,
     get_session_id,
@@ -30,6 +30,7 @@ from cortex.tools.context.effectiveness_models import (
     SessionStats,
 )
 from cortex.tools.context.effectiveness_operations_insights import (
+    build_statistics_dict,
     extract_task_pattern,
     generate_insights,
 )
@@ -343,18 +344,6 @@ def analyze_session_logs(project_root: Path) -> SessionLogsAnalysisResult:
     return _build_session_logs_result(sessions_analyzed, new_entries, stats)
 
 
-def _build_statistics_dict(
-    stats: ContextUsageStatistics, common_task_patterns_json: dict[str, JsonValue]
-) -> ModelDict:
-    """Build statistics dictionary."""
-    return {
-        "avg_token_utilization": stats.avg_token_utilization,
-        "avg_files_selected": stats.avg_files_selected,
-        "avg_relevance_score": stats.avg_relevance_score,
-        "common_task_patterns": cast(JsonValue, common_task_patterns_json),
-    }
-
-
 def _build_success_statistics_result(
     stats: ContextUsageStatistics, common_task_patterns_json: dict[str, JsonValue]
 ) -> ContextStatisticsResult:
@@ -366,7 +355,7 @@ def _build_success_statistics_result(
         total_sessions=stats.total_sessions_analyzed,
         total_calls=stats.total_load_context_calls,
         statistics=JsonDict.from_dict(
-            _build_statistics_dict(stats, common_task_patterns_json)
+            build_statistics_dict(stats, common_task_patterns_json)
         ),
         insights=JsonDict.from_dict(insights.model_dump(mode="json")),
         recent_entries=[
