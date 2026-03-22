@@ -11,6 +11,7 @@ file-length limit while preserving the public MCP surface:
 
 from __future__ import annotations
 
+import asyncio
 import json
 from pathlib import Path
 from typing import cast
@@ -40,6 +41,11 @@ from cortex.tools.execution.pre_commit_phase_dispatch import (
     PreCommitPhase,
     phase_to_checks,
 )
+
+# Serializes all Phase-A spawns (run_quality_gate, run_quality_gate_fresh,
+# fix_quality_issues). Concurrent Phase-A subprocess jobs crash the MCP server
+# because they race on shared session files and stdout. One job at a time.
+phase_a_lock = asyncio.Lock()
 
 
 def _read_pipeline_phase_config(
@@ -167,18 +173,22 @@ async def _spawn_and_poll_phase_a(
     every 2 seconds (via asyncio.sleep in poll_for_result), allowing
     progress notifications to flow. Without this, long-running in-process
     checks block the event loop and Cursor drops the connection.
+
+    Acquires ``phase_a_lock`` before spawning to prevent concurrent Phase-A
+    jobs, which race on shared session files and crash the MCP server.
     """
-    job = _start_phase_a_job(
-        root,
-        timeout=timeout,
-        coverage_threshold=coverage_threshold,
-        force_fresh=force_fresh,
-    )
-    job_id = str(job.get("job_id", ""))
-    status = str(job.get("status", ""))
-    if status == "error":
-        return job
-    return await _poll_phase_a_result(root, job_id, timeout=timeout, ctx=ctx)
+    async with phase_a_lock:
+        job = _start_phase_a_job(
+            root,
+            timeout=timeout,
+            coverage_threshold=coverage_threshold,
+            force_fresh=force_fresh,
+        )
+        job_id = str(job.get("job_id", ""))
+        status = str(job.get("status", ""))
+        if status == "error":
+            return job
+        return await _poll_phase_a_result(root, job_id, timeout=timeout, ctx=ctx)
 
 
 @typed_mcp_tool(
@@ -319,7 +329,8 @@ async def fix_quality_issues(
       the fix path before re-running the quality gate.
     """
     root = get_current_project_root() or Path(await get_or_resolve_project_root(ctx))
-    result_json = await fix_quality_issues_impl(
-        root, include_untracked_markdown=True, ctx=ctx
-    )
+    async with phase_a_lock:
+        result_json = await fix_quality_issues_impl(
+            root, include_untracked_markdown=True, ctx=ctx
+        )
     return cast(ModelDict, json.loads(result_json))

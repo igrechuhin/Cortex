@@ -18,6 +18,8 @@
 - **Test and harden parse_type_errors in python_adapter_parsing** - COMPLETE. Regex-based parse_type_errors; TestParseTypeErrors in test_python_adapter_parsing.py.
 - **Add URL scheme validation to preflight registry probe** - COMPLETE. UV_INDEX_URL must use https or http scheme; ValueError and preflight main exit 2; tests in test_preflight.py.
 - **Document offline bootstrap and preflight CLI architecture** - COMPLETE. docs/offline-bootstrap-preflight.md plus cross-links in security best practices and README.
+- **Narrow exceptions in python_adapter_checks** - COMPLETE. Pyright timeout parity, TimeoutExpired branch, ruff command timeouts with `test_timeout_returns_lint_error`, tests in `test_python_adapter_checks.py`; review-report markdown preflight fixes.
+- **Pipeline handoff + usage analytics decomposition** - COMPLETE. Split `pipeline_handoff` into `pipeline_handoff_io` and `pipeline_handoff_validation`; split usage analytics into `analytics_collection` and `usage_analytics_resources` with thin facades; `test_analytics_collection`, `test_python_adapter_checks`, `test_phase_a_lock`; boundary governance and pre-commit zero-arg wiring updated; Phase A ~0.916 coverage.
 
 ## 2026-03-20
 

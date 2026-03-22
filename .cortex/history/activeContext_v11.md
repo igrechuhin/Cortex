@@ -46,6 +46,12 @@
 
 - ✅ **Document offline bootstrap and preflight CLI architecture** - COMPLETE (2026-03-22) - Replaced stub with architecture doc: overview, UV_INDEX_URL and scheme guard, HEAD to GET fallback, exit codes, offline triage, CI bootstrap-offline vs quality workflow, ASCII flow, security notes, related files. Linked from docs/security/best-practices.md and README developer commands.
 
+- ✅ **Python adapter checks (pyright timeout parity)** - COMPLETE (2026-03-22) - `_run_pyright` uses `timeout=300`; `type_check_pyright_only` catches `TimeoutExpired` with labeled errors. New timeout unit tests. Review-report markdown blank-line fixes for rumdl preflight.
+
+- ✅ **Narrow exceptions in python_adapter_checks** - COMPLETE (2026-03-22) - Pyright path uses 300s timeout and TimeoutExpired handling aligned with check_types script; unit tests for script/pyright timeouts; layered exceptions already present for black/ruff/type/ruff_fix.
+
+- ✅ **Pipeline handoff and usage analytics decomposition** - COMPLETE (2026-03-22) - Split pipeline_handoff into pipeline_handoff_io and pipeline_handoff_validation; usage analytics into analytics_collection and usage_analytics_resources with thin facades; added test_analytics_collection, test_python_adapter_checks, and test_phase_a_lock; updated test_decomposed_tool_module_boundaries and pre_commit_zero_arg_tools; python_adapter_checks and session index aligned with quality gate.
+
 ## Completed Work (2026-03-21)
 
 - **Summary (2026-03-21)** - 1 entries archived.
