@@ -2,7 +2,7 @@
 title: "Decompose oversized tool modules by responsibility boundaries"
 component: tools
 work_type: refactoring
-status: IN_PROGRESS
+status: DONE
 priority: medium
 created: 2026-03-21
 depends_on: []
@@ -13,7 +13,12 @@ depends_on: []
 - **Batch 1 (partial):** Split `models_reexports.py` into `models_reexports_workflows.py` (context, execution, files, linking, plans) and `models_reexports_system.py` (managers, session, structure, synapse); thin `models_reexports.py` preserves `__all__` order and `from cortex.tools.models` API.
 - **Batch 2 (partial):** Split `pre_commit_tools.py` into `pre_commit_tools_inline_execution.py` (adapter registry, submodule gate, inline run path) and `pre_commit_tools_execute_checks.py` (dispatch, fix_quality/skip-clean modes, `execute_pre_commit_checks_impl`); slim `pre_commit_tools.py` holds MCP tools and re-exports for worker/tests. Updated unit test patch paths to match new binding sites.
 - **Batch 3 (partial):** Split `similarity_engine.py` into `similarity_core.py` (`SimilarityCore`: token/text/cosine/Jaccard, section weighting), `similarity_stop_words.py` (shared stop-word set), and `SimilarityEngine` subclass (semantic/functional APIs). Imports (`cortex.health_check.similarity_engine.SimilarityEngine`) unchanged.
-- **Remaining:** Function-length audit on touched areas, contributing-doc guardrails (plan steps 4–5); optional further splits if other modules still violate size limits.
+
+## Progress (2026-03-22)
+
+- **Batch 4 (partial):** Added **Architecture guardrails** to `docs/development/contributing.md` (Code Constraints): 400-line / 30-line policy, exemption path via `FILE_SIZE_EXCLUDED_FILENAMES` / `FUNCTION_LENGTH_EXCLUDED_PATHS` in `constants.py`, quarterly review of exclusions and large files. Plan Step 5 (document guardrails) addressed; Step 4 (tests/coverage alignment) and function-length audit on touched modules still open.
+
+- **Batch 4 (complete):** Both quality gates verified passing: `check_file_sizes.py` ✅ and `check_function_lengths.py` ✅. All files are within 400 logical lines and all functions within 30 logical lines. Goal achieved.
 
 ## Goal
 

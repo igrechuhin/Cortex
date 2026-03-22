@@ -1,5 +1,13 @@
 # Progress Log
 
+## 2026-03-22
+
+- **Clean up legacy Node package manifest** - COMPLETE. Removed unused root `package.json`; documented CI/global `cspell` and Node usage in contributor docs and AGENTS; archived plan `clean-up-legacy-package-json` to `.cortex/plans/archive/`.
+- **Decompose oversized tool modules by responsibility boundaries** - PARTIAL. Added architecture guardrails to docs/development/contributing.md (400/30 line policy, exemption path via constants.py, quarterly exclusion review). Remaining: function-length audit on touched areas, Step 4 test/coverage verification, further module splits per audit.
+- **Decompose oversized tool modules by responsibility boundaries** - COMPLETE. Batches 1–4 done; quality gate and size checks verified; boundary tests cover facades.
+- **Project root resolver — roots capability gate** - COMPLETE. Skip `list_roots()` unless the client advertises MCP roots (`ClientCapabilities` / `RootsCapability`); prevents Cursor MCP bridge transport failures; `test_project_root_resolver.py` extended.
+- **Decomposed tool module boundary governance** - COMPLETE. Added `tests/unit/test_decomposed_tool_module_boundaries.py` for stable imports and logical-line caps on split tool modules.
+
 ## 2026-03-20
 
 - **Pytest lightweight MCP usage init expansion** - COMPLETE. Expanded `_PYTEST_LIGHTWEIGHT_TOOLS` in `mcp_stability_usage.py`, refreshed tool governance tests under `tests/tools/`, tuned `pytest.ini`, and kept Makefile env-check quoting plus integration smoke guard stable; Phase A ~0.91 coverage.
@@ -67,8 +75,7 @@
 
 ## 2026-03-14
 
-- **MCP Connection Stability Fix**
-  - COMPLETE. Root-caused `ClosedResourceError` crash when concurrent tool calls from parallel subagents raced on shared stdio write stream. Fix: (1) monkeypatched `_handle_request` in `main.py` to catch `ClosedResourceError` on `message.respond()`; (2) removed `log_client` stream writes from `_run_standard_checks_mode`; (3) used cached `get_current_project_root()` to avoid `list_roots` round-trips; (4) made `_dispatch_phase` use detached mode; (5) changed `fix.md` from parallel to sequential subagent execution. Root cause: Cursor kills connection when 3-4 concurrent tool calls pending >10-15s. Sequential execution eliminated all disconnections. All 5102 tests pass.
+- **Week containing 2026-03-14** - 1 entries summarized.
 
 ## 2026-03-13
 

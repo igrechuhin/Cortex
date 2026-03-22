@@ -92,6 +92,29 @@ class TestResolveProjectRootAsync:
             mock_get.assert_called_once_with(None)
 
     @pytest.mark.asyncio
+    async def test_when_client_lacks_roots_capability_falls_back(self) -> None:
+        """Client that doesn't advertise roots capability must not trigger list_roots().
+
+        Clients like Cursor's MCP bridge close the transport when they receive a
+        ListRootsRequest, crashing the server.  The capability guard must skip
+        list_roots() and go straight to the fallback.
+        """
+        mock_session = AsyncMock()
+        # check_client_capability is sync; override it with a plain MagicMock
+        mock_session.check_client_capability = MagicMock(return_value=False)
+        mock_session.list_roots = AsyncMock()
+        mock_ctx = MagicMock()
+        mock_ctx.session = mock_session
+        with patch(
+            "cortex.core.project_root_resolver.get_project_root",
+            return_value=Path("/fallback"),
+        ) as mock_get:
+            result = await resolve_project_root_async(None, mock_ctx)
+            assert result == Path("/fallback")
+            mock_get.assert_called_once_with(None)
+            mock_session.list_roots.assert_not_called()
+
+    @pytest.mark.asyncio
     async def test_fallback_root_with_env_var_runs_in_thread_pool(self) -> None:
         """Test that fallback root with CORTEX_USE_FALLBACK_ROOT env var runs in thread pool."""
         with patch.dict("os.environ", {"CORTEX_USE_FALLBACK_ROOT": "1"}):

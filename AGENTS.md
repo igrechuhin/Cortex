@@ -184,7 +184,7 @@ All phases run inline. Use zero-arg tools — do NOT use legacy pre-commit tools
 - If you explicitly request emojis for a given response, prioritize that request over stored preferences.
 - Keep final summaries concise (typically at most four sentences) and avoid heavy code blocks there; use headings and bolded bullet labels per the markdown formatting guide.
 - When a roadmap item is large, always make concrete partial progress in the current session (smallest meaningful subtask plus tests/quality) and update plans/status as PARTIAL instead of stopping with no changes.
-- For continual-learning updates, process transcripts incrementally via `.cursor/hooks/state/continual-learning-index.json`, update matching `AGENTS.md` bullets in place (not append-only), and return exactly `No high-signal memory updates.` when no meaningful changes exist.
+- For continual-learning updates, process transcripts incrementally via `.cursor/hooks/state/continual-learning-index.json` (only newly listed transcripts or those whose file mtime is newer than the stored mtime; after a run, refresh stored mtimes and remove index entries for transcript files that no longer exist), update matching `AGENTS.md` bullets in place (not append-only), and return exactly `No high-signal memory updates.` when no meaningful changes exist.
 
 ## Learned Workspace Facts
 

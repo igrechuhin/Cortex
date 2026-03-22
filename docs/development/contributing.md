@@ -79,7 +79,7 @@ brew install uv
 ### Set Up Development Environment
 
 ```bash
-# Install dependencies and dev tools (creates .venv with Python 3.13.x and Node deps for markdownlint)
+# Install dependencies and dev tools (creates .venv with Python 3.13.x)
 bash scripts/bootstrap.sh
 # Or: make bootstrap
 
@@ -87,7 +87,10 @@ bash scripts/bootstrap.sh
 source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 ```
 
-Bootstrap installs Python (uv) and Node (npm) dependencies from `package.json`. For offline or restricted environments, see [Getting Started — Offline or restricted environments](../getting-started.md#offline-or-restricted-environments).
+Bootstrap installs Python dependencies via `uv`. For offline or restricted environments, see [Getting Started — Offline or restricted environments](../getting-started.md#offline-or-restricted-environments).
+
+> **Node.js**: The only Node.js dependency is `cspell` for spelling checks, which CI installs
+> on-demand via `npm install -g cspell@8.6.1`. No `npm install` step is required locally.
 
 ### Python Version Management
 
@@ -166,7 +169,7 @@ cortex/
 - **Flat structure**: Keep package structure reasonably flat
 - **One public type per file**: Each file should expose one main public class/function
 - **Clear naming**: Module names should describe their responsibility
-- **Size limits**: Production files must stay within **400 logical lines** per file (see [Code Constraints](#code-constraints)); raw `wc -l` can be much higher when docstrings dominate
+- **Size limits**: Production files must stay within **400 logical lines** per file (see [Code Constraints](#code-constraints) and [Architecture guardrails](#architecture-guardrails)); raw `wc -l` can be much higher when docstrings dominate
 
 ### Core Modules
 
@@ -442,6 +445,21 @@ uv run python .cortex/synapse/scripts/python/check_function_lengths.py
 **Why a file can look “huge” but still pass:** Heavy docstrings and comments do not count. Split or refactor when **logical** lines approach the cap, not only when totals cross 400.
 
 > **Note:** Exceeding **logical** limits fails CI and will result in rejection in code review.
+
+### Architecture guardrails
+
+These limits exist to keep modules testable, reviewable, and aligned with **single responsibility**: separate I/O, validation, orchestration, and rendering where it helps readers and tests. The numbers above are the policy; the checks in CI are the enforcement.
+
+**Exemptions (changing or adding them):**
+
+- **Built-in lists** live in [`src/cortex/core/constants.py`](../../src/cortex/core/constants.py) (`FILE_SIZE_EXCLUDED_FILENAMES`, `FUNCTION_LENGTH_EXCLUDED_PATHS`). They must stay in sync with the Synapse scripts and the Code Quality workflow.
+- **Prefer decomposition** (split by responsibility, preserve public APIs via re-exports) before expanding an exclusion list.
+- **If you must add or widen an exemption**, do it in a dedicated pull request that updates `constants.py`, states why decomposition is not feasible yet or why the path is an intentional long-lived dispatcher, and points to a tracking issue or roadmap item when the exception is meant to be temporary.
+
+**Quarterly review (cadence):**
+
+- At least once per quarter, treat `FILE_SIZE_EXCLUDED_FILENAMES` and `FUNCTION_LENGTH_EXCLUDED_PATHS` as a **review backlog**: confirm each entry is still justified, identify candidates to remove after refactors, and align large files with the decomposition direction in [Project Structure — Module Organization](#module-organization).
+- No separate calendar automation is required; this can coincide with roadmap or quality-gate maintenance work, as long as the exclusion lists and worst offenders are revisited on that schedule.
 
 ### Function size: examples (30 logical lines)
 

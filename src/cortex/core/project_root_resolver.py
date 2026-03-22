@@ -17,6 +17,9 @@ import time
 from pathlib import Path
 from urllib.parse import unquote, urlparse
 
+from mcp.server.session import ServerSession
+from mcp.types import ClientCapabilities, RootsCapability
+
 from cortex.managers.initialization import get_project_root
 
 from .constants import MCP_ROOTS_LIST_TIMEOUT_SECONDS
@@ -51,12 +54,24 @@ def _fallback_root() -> Path:
     return root
 
 
-async def _try_roots_from_ctx(ctx: MCPContext) -> Path | None:
-    """Request roots from client; return first valid file path or None."""
+_ROOTS_CAPABILITY = ClientCapabilities(roots=RootsCapability())
+
+
+def _client_supports_roots(ctx: MCPContext) -> bool:
+    """Return True if the client advertised roots capability.
+
+    Clients that don't advertise it (e.g. Cursor's MCP bridge) close the
+    transport when they receive ListRootsRequest, crashing the server.
+    """
+    return bool(ctx.session.check_client_capability(_ROOTS_CAPABILITY))
+
+
+async def _fetch_roots_path(session: ServerSession) -> Path | None:
+    """Call list_roots() and return the first valid file:// path, or None."""
     t0 = time.monotonic()
     try:
         async with asyncio.timeout(MCP_ROOTS_LIST_TIMEOUT_SECONDS):
-            result = await ctx.session.list_roots()
+            result = await session.list_roots()
         elapsed = time.monotonic() - t0
         logger.debug("project_root_resolver: list_roots() took %.3fs", elapsed)
         if elapsed > 1.0:
@@ -65,8 +80,7 @@ async def _try_roots_from_ctx(ctx: MCPContext) -> Path | None:
                 elapsed,
             )
         if result.roots:
-            first = result.roots[0]
-            path = _file_uri_to_path(str(first.uri))
+            path = _file_uri_to_path(str(result.roots[0].uri))
             if path is not None and path.exists():
                 logger.debug("project_root_resolver: using root from client: %s", path)
                 return path
@@ -83,6 +97,16 @@ async def _try_roots_from_ctx(ctx: MCPContext) -> Path | None:
             type(e).__name__,
         )
     return None
+
+
+async def _try_roots_from_ctx(ctx: MCPContext) -> Path | None:
+    """Request roots from client; return first valid file path or None."""
+    if not _client_supports_roots(ctx):
+        logger.debug(
+            "project_root_resolver: client did not advertise roots capability, skipping list_roots()"
+        )
+        return None
+    return await _fetch_roots_path(ctx.session)
 
 
 async def resolve_project_root_async(

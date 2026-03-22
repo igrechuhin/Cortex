@@ -2,11 +2,17 @@
 title: "Clean up legacy package.json and clarify Node dependency"
 component: build
 work_type: cleanup
-status: PENDING
+status: COMPLETE
 priority: low
 created: 2026-03-21
 depends_on: []
 ---
+
+## Progress (2026-03-22)
+
+- Removed `package.json` — had no `devDependencies` and was not used by `bootstrap.sh` or CI.
+- Updated `docs/development/contributing.md`: corrected bootstrap comment and paragraph (removed incorrect npm/Node claim); added a note that Node is only needed in CI for `cspell` via `npm install -g cspell@8.6.1`.
+- Quality gate passes.
 
 ## Goal
 

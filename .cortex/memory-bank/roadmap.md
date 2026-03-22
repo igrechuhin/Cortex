@@ -20,11 +20,7 @@
 
 ### Refactoring
 
-- **Decompose oversized tool modules by responsibility boundaries** — PENDING (medium) — Split largest files/functions to comply with 400-line/30-line limits. Plan: `.cortex/plans/decompose-oversized-tool-modules.md`
-
 ### Cleanup
-
-- **Clean up legacy Node package manifest and clarify Node dependency** — PENDING (low) — Remove or formalize legacy Node metadata; document exact CI Node usage. Plan: `.cortex/plans/clean-up-legacy-package-json.md`
 
 ### Investigation Plans (Archive / Reference)
 
