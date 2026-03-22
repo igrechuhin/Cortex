@@ -2,13 +2,18 @@
 title: "Add offline mode and preflight network/test failure differentiation for bootstrap"
 component: build
 work_type: fix
-status: PENDING
+status: IN_PROGRESS
 priority: high
 created: 2026-03-22
 depends_on: []
 sources:
   - "Codex audit: Bootstrap/Quality Gate Reliability in Restricted Environments (High)"
 ---
+
+## Session progress (2026-03-22)
+
+- **Done:** Step 2 core — `src/cortex/cli/preflight.py`, `scripts/preflight.sh`, `make preflight`, `tests/test_preflight.py`; bootstrap script cross-link to preflight; exit **0** = OK, **2** = registry/network unreachable.
+- **Remaining:** Step 3 (CONTRIBUTING offline section + `bootstrap-offline` target), Step 4 (restricted-egress CI job), Step 5 (final quality + memory bank at plan completion).
 
 ## Goal
 

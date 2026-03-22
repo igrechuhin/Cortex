@@ -18,6 +18,8 @@
 
 - ✅ **Reconstruct roadmap backlog and enforce docs-gate consistency invariant** - COMPLETE (2026-03-22) - Docs-gate invariant check_roadmap_progress_consistency integrated into Phase B; tests added; progress reconciled (superseded PARTIALs); roadmap Refactoring backlog for remaining decomposition; Steps 1–5 satisfied.
 
+- ✅ **Bootstrap offline preflight (PARTIAL)** - COMPLETE (2026-03-22) - Registry preflight is available via `make preflight` / `python -m cortex.cli.preflight` (UV_INDEX_URL or PyPI default); exit 2 on unreachable registry. Docs, offline bootstrap target, and CI job still per plan.
+
 ## Completed Work (2026-03-21)
 
 - **Summary (2026-03-21)** - 1 entries archived.

@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# Creates .venv via uv (pyproject [build-system] uses uv_build). For index
+# connectivity before sync, run: make preflight or bash scripts/preflight.sh.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

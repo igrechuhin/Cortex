@@ -8,6 +8,7 @@
 - **Decomposed tool module boundary governance** - COMPLETE. Added `tests/unit/test_decomposed_tool_module_boundaries.py` for stable imports and logical-line caps on split tool modules.
 - **Fix broad exception handling and subprocess log fd comment** - COMPLETE. Documented exception surfaces, subprocess log fd, central MCP wrappers; REV items resolved; `cortex.tools` package initializer side effects inventoried for follow-up.
 - **Reconstruct roadmap backlog and enforce docs-gate consistency invariant** - COMPLETE. Docs-gate PARTIAL/PENDING invariant, progress/roadmap reconciliation, refactoring backlog entry for remaining module splits.
+- **Add offline mode and preflight network/test failure differentiation for bootstrap** - PARTIAL. Landed `cortex.cli.preflight` (`python -m cortex.cli.preflight`), `scripts/preflight.sh`, `make preflight`, and `tests/test_preflight.py` (exit 0 reachable, 2 on registry/network failure). Remaining: CONTRIBUTING offline section, `bootstrap-offline` Make target, restricted-egress CI job.
 
 ## 2026-03-20
 
