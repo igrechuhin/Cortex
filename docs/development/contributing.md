@@ -6,16 +6,17 @@ Welcome to the Cortex project! This guide will help you get started with contrib
 
 1. [Getting Started](#getting-started)
 2. [Development Setup](#development-setup)
-3. [Project Structure](#project-structure)
-4. [Coding Standards](#coding-standards)
-5. [Type Hints](#type-hints)
-6. [Code Constraints](#code-constraints)
-7. [Error Handling](#error-handling)
-8. [Testing Requirements](#testing-requirements)
-9. [Pull Request Process](#pull-request-process)
-10. [Code Review](#code-review)
-11. [Common Pitfalls](#common-pitfalls)
-12. [Getting Help](#getting-help)
+3. [Offline / Restricted-Network Setup](#offline--restricted-network-setup)
+4. [Project Structure](#project-structure)
+5. [Coding Standards](#coding-standards)
+6. [Type Hints](#type-hints)
+7. [Code Constraints](#code-constraints)
+8. [Error Handling](#error-handling)
+9. [Testing Requirements](#testing-requirements)
+10. [Pull Request Process](#pull-request-process)
+11. [Code Review](#code-review)
+12. [Common Pitfalls](#common-pitfalls)
+13. [Getting Help](#getting-help)
 
 ## Getting Started
 
@@ -87,7 +88,36 @@ bash scripts/bootstrap.sh
 source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 ```
 
-Bootstrap installs Python dependencies via `uv`. For offline or restricted environments, see [Getting Started — Offline or restricted environments](../getting-started.md#offline-or-restricted-environments).
+Bootstrap installs Python dependencies via `uv`. For copying an existing `.venv` into a restricted environment, see [Getting Started — Offline or restricted environments](../getting-started.md#offline-or-restricted-environments).
+
+## Offline / Restricted-Network Setup
+
+Use a **wheelhouse** (a directory of pre-downloaded wheels) when you cannot reach PyPI during `uv sync`. This complements the [Getting Started](../getting-started.md#offline-or-restricted-environments) guidance about copying `.venv`; the wheelhouse path avoids transferring a full virtualenv when you prefer to recreate `.venv` offline from files.
+
+### 1. Online: populate `wheelhouse/`
+
+From a machine with registry access, at the repository root:
+
+```bash
+mkdir -p wheelhouse
+uv export --frozen --all-extras --all-groups --no-hashes --no-annotate \
+  --no-emit-project -o /tmp/cortex-offline-reqs.txt
+uv pip download -r /tmp/cortex-offline-reqs.txt -d wheelhouse --python 3.13
+uv pip download "uv_build" -d wheelhouse --python 3.13
+```
+
+The export matches what `uv sync --group dev --extra dev` installs (including optional `dev` and dependency-group `dev`). The extra `uv pip download "uv_build"` line vendors the build backend declared in `pyproject.toml` (`[build-system]` uses `uv_build`), which `uv sync` needs to build the package offline.
+
+### 2. Point `uv` at local wheels and run Make
+
+- Pass **`--find-links ./wheelhouse`** (or **`UV_FIND_LINKS`** with the absolute path to the wheelhouse) so offline resolution sees vendored wheels.
+- Run **`make bootstrap-offline`** (optional: `WHEELHOUSE=/path/to/wheelhouse`). The recipe sets **`UV_NO_INDEX=1`** with **`uv sync --offline --group dev --extra dev`** so installs do not hit the index.
+
+Ensure the **Synapse submodule** is already present (`git submodule update --init --recursive`); `make bootstrap-offline` does not run submodule init (same assumption as CI with `submodules: true`).
+
+### 3. Registry connectivity check
+
+Run **`make preflight`** before bootstrap when you are unsure about network policy. **Exit code 2** means the registry is unreachable (not a failed project test). Exit **0** means the index probe succeeded.
 
 > **Node.js**: The only Node.js dependency is `cspell` for spelling checks, which CI installs
 > on-demand via `npm install -g cspell@8.6.1`. No `npm install` step is required locally.

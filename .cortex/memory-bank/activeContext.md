@@ -18,7 +18,7 @@
 
 - ✅ **Reconstruct roadmap backlog and enforce docs-gate consistency invariant** - COMPLETE (2026-03-22) - Docs-gate invariant check_roadmap_progress_consistency integrated into Phase B; tests added; progress reconciled (superseded PARTIALs); roadmap Refactoring backlog for remaining decomposition; Steps 1–5 satisfied.
 
-- ✅ **Bootstrap offline preflight (PARTIAL)** - COMPLETE (2026-03-22) - Registry preflight is available via `make preflight` / `python -m cortex.cli.preflight` (UV_INDEX_URL or PyPI default); exit 2 on unreachable registry. Docs, offline bootstrap target, and CI job still per plan.
+- ✅ **Add offline mode and preflight network/test failure differentiation for bootstrap** - COMPLETE (2026-03-22) - Preflight CLI and `make preflight` (exit 2 on unreachable registry); `make bootstrap-offline` with `WHEELHOUSE`; contributing.md **Offline / Restricted-Network Setup**; path-gated `.github/workflows/bootstrap-offline.yml` (Docker `--network none`, assert `make preflight` exits 2); regression tests; plan archived to `.cortex/plans/archive/Other/fix-bootstrap-offline-preflight-reliability.md`.
 
 ## Completed Work (2026-03-21)
 

@@ -13,7 +13,9 @@ sources:
 ## Session progress (2026-03-22)
 
 - **Done:** Step 2 core — `src/cortex/cli/preflight.py`, `scripts/preflight.sh`, `make preflight`, `tests/test_preflight.py`; bootstrap script cross-link to preflight; exit **0** = OK, **2** = registry/network unreachable.
-- **Remaining:** Step 3 (CONTRIBUTING offline section + `bootstrap-offline` target), Step 4 (restricted-egress CI job), Step 5 (final quality + memory bank at plan completion).
+- **Done:** Step 3 — `docs/development/contributing.md` section **Offline / Restricted-Network Setup**, TOC update, `make bootstrap-offline` (`WHEELHOUSE`, wheelhouse guard, `uv python install 3.13` + offline `uv sync` with `UV_NO_INDEX` / `UV_FIND_LINKS` / `--find-links`).
+- **Done:** Step 4 — `.github/workflows/bootstrap-offline.yml` (`bootstrap-restricted`, path filters, wheelhouse populate + `docker run --network none` + preflight exit 2).
+- **Remaining:** Step 5 (final quality + memory bank when roadmap item completes).
 
 ## Goal
 

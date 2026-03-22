@@ -35,3 +35,24 @@ def test_make_check_is_non_mutating_and_uses_black_check() -> None:
     assert "format-check" in deps
     assert "format" not in deps
     assert "black --check src/ tests/" in makefile
+
+
+def test_makefile_defines_bootstrap_offline_with_wheelhouse() -> None:
+    """Offline bootstrap target must guard wheelhouse and mirror uv sync shape."""
+    makefile = _read_repo_file("Makefile")
+    assert "bootstrap-offline:" in makefile
+    assert "WHEELHOUSE ?=" in makefile
+    assert "uv sync --offline --group dev --extra dev" in makefile
+    assert "UV_NO_INDEX=1" in makefile
+
+
+def test_bootstrap_offline_workflow_is_wired() -> None:
+    """Restricted-egress bootstrap workflow must exist with path filters and Docker isolation."""
+    workflow_path = get_project_root() / ".github/workflows/bootstrap-offline.yml"
+    text = workflow_path.read_text(encoding="utf-8")
+    assert "bootstrap-restricted" in text
+    assert "network none" in text
+    assert "paths:" in text
+    assert "uv.lock" in text
+    assert "make bootstrap-offline" in text
+    assert "make preflight" in text

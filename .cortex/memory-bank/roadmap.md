@@ -16,8 +16,6 @@
 
 ### Fixes
 
-- **Add offline mode and preflight network/test failure differentiation for bootstrap** - PENDING - Make project bootstrappable in restricted-network environments. Add preflight command distinguishing network failure (exit 2) from test failure (exit 1). Document offline wheelhouse path in the contributing guide. Add restricted-egress CI job. Plan: `.cortex/plans/fix-bootstrap-offline-preflight-reliability.md`
-
 ### Documentation Cleanup (DRY)
 
 - **Resolve contributor documentation drift and conflicting quality workflow instructions** - PENDING - Replace stale `.cursor/memory-bank` path references with `.cortex/memory-bank`. Create single canonical human/agent workflow matrix in the contributing guide. Add regression tests for stale paths and matrix presence. Plan: `.cortex/plans/cleanup-contributor-docs-drift.md`

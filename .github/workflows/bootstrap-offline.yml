@@ -1,0 +1,69 @@
+# Validates offline bootstrap using a pre-populated wheelhouse and a network-isolated container.
+# Triggered only when bootstrap-related paths change.
+
+name: Bootstrap offline
+
+on:
+  push:
+    paths:
+      - "pyproject.toml"
+      - "uv.lock"
+      - "requirements.txt"
+      - "scripts/**"
+      - "Makefile"
+      - "docs/development/contributing.md"
+      - ".github/workflows/bootstrap-offline.yml"
+  pull_request:
+    paths:
+      - "pyproject.toml"
+      - "uv.lock"
+      - "requirements.txt"
+      - "scripts/**"
+      - "Makefile"
+      - "docs/development/contributing.md"
+      - ".github/workflows/bootstrap-offline.yml"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  bootstrap-restricted:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          version: "latest"
+
+      - name: Verify Synapse submodule
+        run: bash scripts/check_synapse.sh
+
+      - name: Populate wheelhouse (online)
+        run: |
+          set -euo pipefail
+          mkdir -p wheelhouse
+          uv export --frozen --all-extras --all-groups --no-hashes --no-annotate \
+            --no-emit-project -o /tmp/bootstrap-offline-reqs.txt
+          uv pip download -r /tmp/bootstrap-offline-reqs.txt -d wheelhouse --python 3.13
+          uv pip download "uv_build" -d wheelhouse --python 3.13
+
+      - name: Bootstrap without network (Docker)
+        run: |
+          set -euo pipefail
+          docker run --rm --network none \
+            -v "${GITHUB_WORKSPACE}:/repo" \
+            -w /repo \
+            ghcr.io/astral-sh/uv:python3.13-bookworm-slim \
+            bash -lc 'set -euo pipefail; make bootstrap-offline WHEELHOUSE=wheelhouse; set +e; make preflight; code=$?; set -e; test "$code" -eq 2'
