@@ -77,6 +77,7 @@ async def health_check() -> str:
             },
             indent=2,
         )
+    # Broad catch: return JSON error payload for any health-check failure to the client.
     except Exception as e:
         return json.dumps(
             {

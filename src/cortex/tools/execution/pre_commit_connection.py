@@ -20,6 +20,7 @@ async def log_connection_health_before_tests() -> ConnectionHealth | None:
             health.model_dump(),
         )
         return health
+    # Diagnostic only: never fail the pipeline if health logging breaks.
     except Exception as e:
         logger.warning(
             "execute_pre_commit_checks: failed to check connection health before tests: %s",
@@ -39,6 +40,7 @@ async def log_connection_health_after_tests(
             health_after.model_dump(),
             health_before.model_dump() if health_before else None,
         )
+    # Diagnostic only: never fail the pipeline if health logging breaks.
     except Exception as e:
         logger.warning(
             "execute_pre_commit_checks: failed to check connection health after tests: %s",

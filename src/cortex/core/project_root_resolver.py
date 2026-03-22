@@ -91,6 +91,9 @@ async def _fetch_roots_path(session: ServerSession) -> Path | None:
             elapsed,
             MCP_ROOTS_LIST_TIMEOUT_SECONDS,
         )
+    # MCP transport/client implementations may raise varied exceptions
+    # (e.g. McpError, ConnectionError, RuntimeError); fall back to
+    # get_project_root() for all of them.
     except Exception as e:
         logger.debug(
             "project_root_resolver: roots/list failed (%s), using fallback",

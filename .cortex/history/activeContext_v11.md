@@ -14,6 +14,8 @@
 
 - ✅ **Decomposed tool module boundary governance test** - COMPLETE (2026-03-22) - `tests/unit/test_decomposed_tool_module_boundaries.py` asserts stable facades, import paths, and logical line caps aligned with decomposition policy.
 
+- ✅ **Fix broad exception handling and subprocess log fd comment** - COMPLETE (2026-03-22) - Documented intentional broad except in project_root_resolver (_fetch_roots_path) and mcp_stability (usage metrics + tool wrapper), plus diagnostic catches in pre_commit_connection and health_check; added Unix fd inheritance comment in _spawn_detached_process; added RuntimeError fallback unit test; marked REV-2026-03-22-1/2 RESOLVED in code review report. Inventory: the `cortex.tools` package initializer uses intentional side-effect imports to register tool modules at import time—lazy/deferred registration remains a future refactor. Fixed MD036/heading style in sibling .cortex/plans drafts so markdown gate passes.
+
 ## Completed Work (2026-03-21)
 
 - **Summary (2026-03-21)** - 1 entries archived.

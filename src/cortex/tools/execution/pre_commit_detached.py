@@ -138,6 +138,9 @@ def _build_worker_cmd(
 def _spawn_detached_process(cmd: list[str], log_file: Path, project_root: Path) -> None:
     """Start detached subprocess writing stdout/stderr to log_file."""
     with open(log_file, "w") as lf:
+        # On Unix the child process inherits the fd after the parent's
+        # `with` block closes its own handle; this is intentional so
+        # stdout/stderr are captured in the detached log file.
         _ = subprocess.Popen(
             cmd,
             stdin=subprocess.DEVNULL,

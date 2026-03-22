@@ -197,6 +197,7 @@ async def _execute_with_error_handling[T](
             None,
             None,
         )
+    # Broad catch: classify any tool failure for usage metrics, then re-raise.
     except Exception as e:
         success, error_type = False, type(e).__name__
         raise
@@ -314,6 +315,7 @@ def _make_tool_wrapper_func[T](
                 enable_progress=progress_enabled,
                 **kwargs_no_progress,
             )
+        # Broad catch: log structured failure context for any tool error, then re-raise.
         except Exception as e:
             ctx_raw = kwargs.get("ctx")
             mcp_ctx = cast(MCPContext | None, ctx_raw)

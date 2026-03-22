@@ -78,6 +78,23 @@ class TestResolveProjectRootAsync:
             mock_get.assert_called_once_with(None)
 
     @pytest.mark.asyncio
+    async def test_when_list_roots_raises_runtime_error_falls_back(self) -> None:
+        """RuntimeError from list_roots is part of the documented exception surface."""
+        mock_session = AsyncMock()
+        mock_session.list_roots = AsyncMock(
+            side_effect=RuntimeError("transport closed")
+        )
+        mock_ctx = MagicMock()
+        mock_ctx.session = mock_session
+        with patch(
+            "cortex.core.project_root_resolver.get_project_root",
+            return_value=Path("/fallback"),
+        ) as mock_get:
+            result = await resolve_project_root_async(None, mock_ctx)
+            assert result == Path("/fallback")
+            mock_get.assert_called_once_with(None)
+
+    @pytest.mark.asyncio
     async def test_fallback_root_runs_in_thread_pool(self) -> None:
         """Test that _fallback_root() runs in thread pool to avoid blocking event loop."""
         with patch(
