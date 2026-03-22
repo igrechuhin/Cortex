@@ -20,6 +20,10 @@
 
 - ✅ **Add offline mode and preflight network/test failure differentiation for bootstrap** - COMPLETE (2026-03-22) - Preflight CLI and `make preflight` (exit 2 on unreachable registry); `make bootstrap-offline` with `WHEELHOUSE`; contributing.md **Offline / Restricted-Network Setup**; path-gated `.github/workflows/bootstrap-offline.yml` (Docker `--network none`, assert `make preflight` exits 2); regression tests; plan archived to `.cortex/plans/archive/Other/fix-bootstrap-offline-preflight-reliability.md`.
 
+- ✅ **Resolve contributor documentation drift and conflicting quality workflow instructions** - COMPLETE (2026-03-22) - Updated docs/development/contributing.md with .cortex-centric project layout and a human vs MCP quality matrix aligned with AGENTS.md; removed the forbidden legacy Memory Bank path substring from all Markdown; adjusted prompts, ADRs, and tools docs; added unit tests for contributing content and repo-wide Markdown scan.
+
+- ✅ **Decompose oversized tool modules (remainder)** - COMPLETE (2026-03-22) - Verified governance: all src files ≤400 logical lines and functions ≤30 lines; quality gate clean with no file/function length violations. Archived decomposition plan batches 1–4 complete; remainder closed.
+
 ## Completed Work (2026-03-21)
 
 - **Summary (2026-03-21)** - 1 entries archived.

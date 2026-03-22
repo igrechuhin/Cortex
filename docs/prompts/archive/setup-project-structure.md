@@ -31,12 +31,13 @@ The assistant will:
 1. Create directory structure:
 
 ```text
-   .cursor/
-   ├── memory-bank/     # Core memory bank files
-   ├── rules/           # Project-specific rules
+   .cortex/
+   ├── memory-bank/     # Core Memory Bank files (canonical)
+   ├── synapse/         # Shared rules and scripts (submodule)
    ├── plans/           # Development plans
    │   └── archive/     # Archived plans
-   └── integrations/    # IDE integration configs
+   └── config/          # Cortex configuration
+   .cursor/             # IDE integration (optional symlinks, mcp.json)
    ```
 
 1. Generate core memory bank files from templates
@@ -54,11 +55,11 @@ The assistant will:
   "status": "success",
   "message": "Project structure setup successfully",
   "directories_created": [
-    ".cursor/memory-bank",
-    ".cursor/rules",
-    ".cursor/plans",
-    ".cursor/plans/archive",
-    ".cursor/integrations"
+    ".cortex/memory-bank",
+    ".cortex/synapse",
+    ".cortex/plans",
+    ".cortex/plans/archive",
+    ".cortex/config"
   ],
   "files_created": [
     "memory-bank/projectBrief.md",
@@ -89,8 +90,8 @@ The assistant will:
 {
   "status": "partial",
   "message": "Some structure exists, filled in missing parts",
-  "created": [".cursor/plans", ".cursor/plans/archive"],
-  "existing": [".cursor/memory-bank", ".cursor/rules"]
+  "created": [".cortex/plans", ".cortex/plans/archive"],
+  "existing": [".cortex/memory-bank", ".cortex/synapse"]
 }
 ```
 

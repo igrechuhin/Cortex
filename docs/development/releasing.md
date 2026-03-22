@@ -126,7 +126,7 @@ Before creating a release, complete the following checklist:
 - [ ] API documentation updated in `docs/api/`
 - [ ] Getting started guide reflects new features
 - [ ] Contributing guide is current
-- [ ] Memory bank `.cursor/memory-bank/` files updated
+- [ ] Memory bank `.cortex/memory-bank/` files updated
 
 ### 4. Dependency Verification
 

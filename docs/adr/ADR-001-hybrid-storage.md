@@ -165,7 +165,7 @@ MetadataIndex updated
 
 ### Storage Format
 
-**File Storage** (`.cursor/memory-bank/*.md`):
+**File Storage** (`.cortex/memory-bank/*.md`):
 
 ```markdown
 # Project Brief
@@ -181,7 +181,7 @@ Dependencies:
 
 ```json
 {
-  ".cursor/memory-bank/projectBrief.md": {
+  ".cortex/memory-bank/projectBrief.md": {
     "hash": "abc123...",
     "size": 1024,
     "modified": "2024-01-10T12:00:00Z",

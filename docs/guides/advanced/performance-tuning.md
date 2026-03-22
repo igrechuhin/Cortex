@@ -1156,7 +1156,7 @@ CREATE INDEX idx_tokens ON metadata(token_count);
 -- Analyze query performance
 EXPLAIN QUERY PLAN
 SELECT * FROM metadata
-WHERE file_path LIKE '.cursor/memory-bank/%'
+WHERE file_path LIKE '.cortex/memory-bank/%'
   AND last_modified > datetime('now', '-7 days');
 
 -- Optimize with covering index
@@ -1215,9 +1215,9 @@ async def batch_read_files(files: list[str]) -> dict[str, str]:
 
 # Usage
 files = [
-    ".cursor/memory-bank/projectBrief.md",
-    ".cursor/memory-bank/systemPatterns.md",
-    ".cursor/memory-bank/techContext.md"
+    ".cortex/memory-bank/projectBrief.md",
+    ".cortex/memory-bank/systemPatterns.md",
+    ".cortex/memory-bank/techContext.md"
 ]
 contents = await batch_read_files(files)
 ```

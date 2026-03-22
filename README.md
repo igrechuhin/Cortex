@@ -176,7 +176,7 @@ Prompts are for setup and migration; for daily work use **plan → implement →
 | Situation | Prompt |
 |-----------|--------|
 | New project, no Memory Bank | `initialize` |
-| Legacy `.cursor/memory-bank/` format | `migrate` |
+| Legacy Memory Bank under IDE `.cursor/` (`memory-bank/`) | `migrate` |
 | Share rules across projects | `setup_synapse` |
 
 Full prompt list: [docs/prompts](docs/prompts/README.md)

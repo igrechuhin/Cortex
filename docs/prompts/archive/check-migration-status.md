@@ -25,8 +25,8 @@ I need you to:
 
 The assistant will:
 
-1. Check for old format at `.cursor/memory-bank/`
-2. Check for new format at `memory-bank/`
+1. Check for legacy layout (Memory Bank under IDE `.cursor/` as `memory-bank/`, or other pre-`.cortex/` paths)
+2. Check for current format at `.cortex/memory-bank/`
 3. Validate file structure and metadata
 4. Report whether migration is needed
 
@@ -48,9 +48,9 @@ The assistant will:
 ```json
 {
   "status": "migration_needed",
-  "message": "Old format detected at .cursor/memory-bank/",
-  "old_location": ".cursor/memory-bank/",
-  "new_location": "memory-bank/",
+  "message": "Old format detected at legacy_cursor_memory_bank",
+  "old_location": "legacy_cursor_memory_bank",
+  "new_location": ".cortex/memory-bank/",
   "files_to_migrate": 7,
   "estimated_duration": "< 1 second"
 }

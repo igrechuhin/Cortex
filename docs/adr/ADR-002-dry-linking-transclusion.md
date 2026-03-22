@@ -769,7 +769,7 @@ TransclusionError: Failed to resolve {{include:missing.md}}
   Reason: Target file not found
 
   Searched paths:
-    - /path/to/.cursor/memory-bank/missing.md
+    - /path/to/.cortex/memory-bank/missing.md
     - /path/to/missing.md
 ```
 

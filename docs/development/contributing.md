@@ -183,9 +183,13 @@ cortex/
 ├── docs/                         # Documentation
 │   ├── development/              # Developer documentation
 │   └── [other docs].md
-├── .cursor/                      # Cursor IDE configuration
-│   ├── memory-bank/              # Memory bank files
-│   └── rules/                    # Coding rules
+├── .cortex/                      # Cortex project state (memory bank, plans, session cache)
+│   ├── memory-bank/              # Memory Bank files (canonical)
+│   ├── synapse/                  # Synapse rules and scripts (git submodule)
+│   ├── plans/                    # Implementation plans
+│   └── ...                       # config, history, session artifacts
+├── .cursor/                      # Cursor IDE configuration (MCP client config, optional local files)
+│   └── ...                       # Rules source of truth: `.cortex/synapse/rules` (see AGENTS.md)
 ├── pyproject.toml               # Project configuration
 ├── README.md                    # Project overview
 ├── CLAUDE.md                    # Claude Code instructions
@@ -215,22 +219,22 @@ See [CLAUDE.md](../../CLAUDE.md) for the complete services initialization order.
 
 ## Coding Standards
 
-### Format Code (Mandatory)
+### Quality checks: human (local) vs agent (MCP)
 
-Before every commit, format your code:
+Use the path that matches your role. **Agents** (IDE automation, Cursor commands, MCP-connected assistants) **must** use the **Agent (MCP)** column — direct formatter, linter, or raw `pytest` invocation by agents is a governance violation per [AGENTS.md](../../AGENTS.md).
 
-```bash
-# Format with Black (88-char line length)
-black .
+| Task | Human (local CLI) | Agent (MCP) |
+| --- | --- | --- |
+| Format code | `uv run black src/ tests/` | `fix_quality_issues()` |
+| Lint | `uv run ruff check src/ tests/` | `run_quality_gate()` |
+| Type-check | `uv run pyright src/ tests/` | `run_quality_gate()` |
+| Run tests | `uv run pytest tests/ -q` | `run_quality_gate()` |
+| Fix auto-fixable quality issues | `make fix` (or `uv run black src/ tests/` plus `uv run ruff check src/ tests/ --fix`) | `fix_quality_issues()` |
+| Validate docs / memory-bank sync | `uv run rumdl check --fix .` | `run_docs_gate()` |
 
-# Sort imports with isort
-isort .
+**Humans**: Black (88-char line) and Ruff (including import sorting) are enforced in CI; use `make fix` at the repo root for the same auto-fixes the project expects.
 
-# Both at once
-black . && isort .
-```
-
-**Important**: Black and isort are MANDATORY. Never manually adjust formatted code.
+**Agents**: Do not substitute the Human column for MCP tools unless the environment documents an explicit read-only fallback.
 
 ### Python 3.13+ Features (Mandatory)
 
@@ -819,17 +823,17 @@ def test_validate_with_mocked_schema_validator(mock_validator):
 
 ### Before Creating a PR
 
-1. **Ensure code is formatted**
+1. **Ensure code is formatted** (see [Quality checks: human (local) vs agent (MCP)](#quality-checks-human-local-vs-agent-mcp))
 
    ```bash
-   black .
-   isort .
+   make fix
+   # or: uv run black src/ tests/ && uv run ruff check src/ tests/ --fix
    ```
 
 2. **Run all tests**
 
    ```bash
-   pytest tests/ -v
+   uv run pytest tests/ -v
    ```
 
 3. **Check test coverage**
@@ -910,8 +914,8 @@ def test_validate_with_mocked_schema_validator(mock_validator):
 
    ## Checklist
 
-   - [ ] Code is formatted (black, isort)
-   - [ ] Tests pass (pytest)
+   - [ ] Code is formatted (Black / Ruff; see quality matrix above)
+   - [ ] Tests pass (`uv run pytest`)
    - [ ] Coverage >= 90%
    - [ ] Type hints complete (Pyright)
    - [ ] No test skips without justification
@@ -922,7 +926,7 @@ def test_validate_with_mocked_schema_validator(mock_validator):
 
 All of these MUST pass:
 
-- ✅ Code formatting (Black, isort)
+- ✅ Code formatting (Black, Ruff)
 - ✅ Type checking (Pyright strict mode)
 - ✅ All tests pass
 - ✅ Coverage >= 90%
@@ -936,7 +940,7 @@ If any check fails, the PR will be automatically rejected.
 ### What Reviewers Look For
 
 1. **Coding Standards**
-   - Black/isort formatting
+   - Black/Ruff formatting and import order
    - Python 3.13+ features
    - Type hints completeness
    - No bare `except:`
@@ -1142,7 +1146,7 @@ def get_suggestions(...) -> list[RefactoringSuggestion]:
 
 - **[CLAUDE.md](../../CLAUDE.md)** - Project overview, architecture, and development instructions
 - **[README.md](../../README.md)** - Project features and running the server
-- **[CLAUDE.md](../../CLAUDE.md) and [AGENTS.md](../../AGENTS.md)** - Coding rules and standards (see also `.cursor/rules/` locally if present)
+- **[CLAUDE.md](../../CLAUDE.md) and [AGENTS.md](../../AGENTS.md)** - Coding rules and standards (Synapse rules live under `.cortex/synapse/rules`; load via Cortex MCP `cortex://rules` in agent workflows)
 - **[PyProject.toml](../../pyproject.toml)** - Project configuration and dependencies
 
 ### Discussion and Questions
@@ -1153,11 +1157,10 @@ def get_suggestions(...) -> list[RefactoringSuggestion]:
 
 ### Common Issues
 
-#### "My code doesn't pass Black/isort"
+#### "My code doesn't pass Black/Ruff"
 
 ```bash
-# Simply run formatters
-black . && isort .
+make fix
 ```
 
 #### "Type checking fails"

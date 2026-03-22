@@ -55,7 +55,7 @@ The `MetadataIndex` correctly uses `.cortex/memory-bank/` but `file_operations.p
 
 ### 2. Check for Symlink Handling
 
-- [ ] Verify if symlinks (`.cursor/memory-bank -> ../.cortex/memory-bank`) are being used
+- [ ] Verify if symlinks (`memory-bank` under `.cursor/` → `../.cortex/memory-bank`) are being used
 - [ ] Determine if tool should support both symlink and direct paths
 - [ ] Test path resolution with and without symlinks
 

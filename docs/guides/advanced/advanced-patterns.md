@@ -24,7 +24,7 @@ This guide covers advanced patterns and configurations for using Cortex in compl
 For monorepos with multiple projects, use a hierarchical Memory Bank structure:
 
 ```text
-.cursor/memory-bank/
+.cortex/memory-bank/
 ├── projectBrief.md           # Root-level project overview
 ├── productContext.md          # Overall product context
 ├── systemPatterns.md          # Shared architectural patterns
@@ -51,20 +51,20 @@ For monorepos with multiple projects, use a hierarchical Memory Bank structure:
 ```json
 {
   "memory_bank": {
-    "root": ".cursor/memory-bank",
+    "root": ".cortex/memory-bank",
     "structure_type": "hierarchical",
     "package_contexts": {
-      "frontend": ".cursor/memory-bank/packages/frontend",
-      "backend": ".cursor/memory-bank/packages/backend",
-      "shared": ".cursor/memory-bank/packages/shared",
-      "infrastructure": ".cursor/memory-bank/infrastructure"
+      "frontend": ".cortex/memory-bank/packages/frontend",
+      "backend": ".cortex/memory-bank/packages/backend",
+      "shared": ".cortex/memory-bank/packages/shared",
+      "infrastructure": ".cortex/memory-bank/infrastructure"
     }
   },
   "transclusion": {
     "search_paths": [
-      ".cursor/memory-bank",
-      ".cursor/memory-bank/packages/*/",
-      ".cursor/memory-bank/infrastructure"
+      ".cortex/memory-bank",
+      ".cortex/memory-bank/packages/*/",
+      ".cortex/memory-bank/infrastructure"
     ]
   }
 }
@@ -105,7 +105,7 @@ cortex initialize_shared_rules --repo=https://github.com/your-org/memory-bank-ru
 **Service A Memory Bank:**
 
 ```markdown
-<!-- .cursor/memory-bank/systemPatterns.md -->
+<!-- .cortex/memory-bank/systemPatterns.md -->
 # Service A System Patterns
 
 ## Common Patterns
@@ -123,7 +123,7 @@ This service implements event sourcing with CQRS...
 **Service B Memory Bank:**
 
 ```markdown
-<!-- .cursor/memory-bank/systemPatterns.md -->
+<!-- .cortex/memory-bank/systemPatterns.md -->
 # Service B System Patterns
 
 ## Common Patterns
@@ -138,7 +138,7 @@ This service implements event sourcing with CQRS...
 This service aggregates data from multiple sources...
 ```
 
-**Cross-Repository Configuration (.cursor/memory-bank-config.json):**
+**Cross-Repository Configuration (.cortex/memory-bank-config.json):**
 
 ```json
 {
@@ -234,7 +234,7 @@ For teams across multiple time zones and locations:
 For SaaS platforms with per-tenant customization:
 
 ```text
-.cursor/memory-bank/
+.cortex/memory-bank/
 ├── core/                      # Shared across all tenants
 │   ├── projectBrief.md
 │   ├── systemPatterns.md
@@ -263,16 +263,16 @@ For SaaS platforms with per-tenant customization:
 {
   "multi_tenant": {
     "enabled": true,
-    "tenant_root": ".cursor/memory-bank/tenants",
-    "shared_root": ".cursor/memory-bank/core",
+    "tenant_root": ".cortex/memory-bank/tenants",
+    "shared_root": ".cortex/memory-bank/core",
     "tenant_isolation": "strict",
-    "tenant_templates": ".cursor/memory-bank/tenants/template"
+    "tenant_templates": ".cortex/memory-bank/tenants/template"
   },
   "transclusion": {
     "search_paths": [
-      ".cursor/memory-bank/core",
-      ".cursor/memory-bank/tenants/${TENANT_ID}",
-      ".cursor/memory-bank/shared"
+      ".cortex/memory-bank/core",
+      ".cortex/memory-bank/tenants/${TENANT_ID}",
+      ".cortex/memory-bank/shared"
     ],
     "tenant_overrides": true
   }
@@ -294,7 +294,7 @@ name: Memory Bank Validation
 on:
   pull_request:
     paths:
-      - '.cursor/memory-bank/**'
+      - '.cortex/memory-bank/**'
       - 'src/**'
       - 'docs/**'
 
@@ -397,14 +397,14 @@ jobs:
 
       - name: Update Progress
         run: |
-          cortex analyze_structure --output=.cursor/memory-bank/temp-insights.json
+          cortex analyze_structure --output=.cortex/memory-bank/temp-insights.json
           python scripts/update-progress.py
 
       - name: Commit Updates
         run: |
           git config user.name "Memory Bank Bot"
           git config user.email "bot@memory-bank.dev"
-          git add .cursor/memory-bank/progress.md
+          git add .cortex/memory-bank/progress.md
           git commit -m "chore: auto-update Memory Bank progress [skip ci]" || echo "No changes"
           git push
 ```
@@ -468,21 +468,21 @@ repos:
         name: Validate Memory Bank
         entry: cortex validate_memory_bank
         language: system
-        files: ^\.cursor/memory-bank/.*\.md$
+        files: ^\.cortex/memory-bank/.*\.md$
         pass_filenames: false
 
       - id: memory-bank-links
         name: Validate Memory Bank Links
         entry: cortex validate_links
         language: system
-        files: ^\.cursor/memory-bank/.*\.md$
+        files: ^\.cortex/memory-bank/.*\.md$
         pass_filenames: false
 
       - id: memory-bank-quality
         name: Check Memory Bank Quality
         entry: bash -c 'cortex calculate_quality_metrics --min-score=7.0'
         language: system
-        files: ^\.cursor/memory-bank/.*\.md$
+        files: ^\.cortex/memory-bank/.*\.md$
         pass_filenames: false
 ```
 
@@ -495,7 +495,7 @@ repos:
 For teams with specialized roles (frontend, backend, DevOps, QA):
 
 ```text
-.cursor/memory-bank/
+.cortex/memory-bank/
 ├── projectBrief.md           # All roles
 ├── productContext.md         # All roles
 ├── systemPatterns.md         # All roles
@@ -563,7 +563,7 @@ git checkout -b feature/new-payment-system
 cortex create_snapshot --name="pre-feature-payment"
 
 # Create feature-specific context
-cat > .cursor/memory-bank/features/payment-system.md <<EOF
+cat > .cortex/memory-bank/features/payment-system.md <<EOF
 # Payment System Feature
 
 ## Context
@@ -590,7 +590,7 @@ Chosen for comprehensive API and strong security...
 EOF
 
 # Update activeContext to reference feature
-echo "\n## Active Features\n\n{{include:features/payment-system.md}}" >> .cursor/memory-bank/activeContext.md
+echo "\n## Active Features\n\n{{include:features/payment-system.md}}" >> .cortex/memory-bank/activeContext.md
 ```
 
 ### Merge Conflict Resolution
@@ -598,7 +598,7 @@ echo "\n## Active Features\n\n{{include:features/payment-system.md}}" >> .cursor
 **Memory Bank Merge Strategy (.gitattributes):**
 
 ```text
-.cursor/memory-bank/*.md merge=memory-bank-merge
+.cortex/memory-bank/*.md merge=memory-bank-merge
 ```
 
 **Custom Merge Driver (.git/config):**
@@ -947,7 +947,7 @@ Create a centralized knowledge base across multiple projects:
 
 ```text
 central-knowledge-base/
-├── .cursor/memory-bank/
+├── .cortex/memory-bank/
 │   ├── company/
 │   │   ├── mission.md
 │   │   ├── values.md
@@ -977,7 +977,7 @@ central-knowledge-base/
   },
   "transclusion": {
     "search_paths": [
-      ".cursor/memory-bank",
+      ".cortex/memory-bank",
       ".cursor/shared/memory-bank"
     ]
   }
@@ -1046,7 +1046,7 @@ config = MemoryBankConfig(
 
 # Generate configuration file
 import json
-with open(".cursor/memory-bank-config.json", "w") as f:
+with open(".cortex/memory-bank-config.json", "w") as f:
     json.dump(config.to_json(), f, indent=2)
 ```
 

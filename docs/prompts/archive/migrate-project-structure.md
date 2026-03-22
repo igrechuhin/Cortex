@@ -32,9 +32,9 @@ The assistant will:
 2. Identify files to migrate
 3. Create new directory structure
 4. Move files to standardized locations:
-   - Old memory bank → `.cursor/memory-bank/`
-   - Old rules → `.cursor/rules/`
-   - Old plans → `.cursor/plans/`
+   - Old memory bank → `.cortex/memory-bank/`
+   - Old rules → `.cortex/synapse/rules/` (Synapse)
+   - Old plans → `.cortex/plans/`
 5. Update file references and transclusions
 6. Validate all links work
 7. Report migration results
@@ -50,17 +50,17 @@ The assistant will:
   "migrations": {
     "memory_bank": {
       "from": "memory-bank/",
-      "to": ".cursor/memory-bank/",
+      "to": ".cortex/memory-bank/",
       "files": 7
     },
     "rules": {
       "from": "rules/",
-      "to": ".cursor/rules/",
+      "to": ".cortex/synapse/rules/",
       "files": 3
     },
     "plans": {
       "from": ".plan/",
-      "to": ".cursor/plans/",
+      "to": ".cortex/plans/",
       "files": 25
     }
   },
@@ -96,11 +96,11 @@ The migration handles these common patterns:
 
 ### Old → New Locations
 
-- `memory-bank/` → `.cursor/memory-bank/`
-- `.cursor/memory-bank/` → `.cursor/memory-bank/` (no change)
-- `rules/` → `.cursor/rules/`
-- `.plan/` → `.cursor/plans/`
-- `docs/plans/` → `.cursor/plans/`
+- `memory-bank/` → `.cortex/memory-bank/`
+- Legacy IDE `.cursor/` + `memory-bank/` → `.cortex/memory-bank/` (with compatibility symlink)
+- `rules/` → `.cortex/synapse/` (Synapse)
+- `.plan/` → `.cortex/plans/`
+- `docs/plans/` → `.cortex/plans/`
 
 ### File Renames
 

@@ -28,7 +28,7 @@ This mismatch indicates a path resolution or metadata index issue in the Memory 
 
 2. **Metadata Index Desynchronization**
    - `.memory-bank-index` (or equivalent index) may not have been updated after migrating files to `.cortex/memory-bank/`
-   - Index may be pointing at an obsolete directory (for example, `.cursor/memory-bank/`)
+   - Index may be pointing at an obsolete directory (for example, a pre-`.cortex/` Memory Bank root)
 
 3. **Tool Configuration Drift**
    - Recent refactors (for example, Phase 2 linking or Phase 12 MCP tooling) may have partially updated paths without re-initializing the index

@@ -285,17 +285,17 @@ Before starting Phase 9.9, verify ALL previous phases are complete:
 
 **Files to Update:**
 
-1. `.cursor/memory-bank/activeContext.md`
+1. `.cortex/memory-bank/activeContext.md`
    - Current focus: Phase 9 COMPLETE
    - Recent work: Phase 9.9 Final Integration
    - Next steps: Post-Phase 9 maintenance
 
-2. `.cursor/memory-bank/progress.md`
+2. `.cortex/memory-bank/progress.md`
    - Add Phase 9 completion entry
    - Document all achievements
    - Record final metrics
 
-3. `.cursor/memory-bank/roadmap.md` (if exists)
+3. `.cortex/memory-bank/roadmap.md` (if exists)
    - Mark Phase 9 complete
    - Add post-Phase 9 roadmap items
 

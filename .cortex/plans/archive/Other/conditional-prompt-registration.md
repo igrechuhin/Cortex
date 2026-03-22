@@ -124,12 +124,12 @@ def setup_synapse(synapse_repo_url: str) -> str:
 
 3. **Cursor Integration Configured**:
    - `.cursor/` directory exists
-   - Symlinks exist: `.cursor/memory-bank -> ../.cortex/memory-bank`
+   - Symlinks exist: `memory-bank` under `.cursor/` → `../.cortex/memory-bank`
    - Symlinks are valid (not broken)
 
 4. **Migration Needed**:
    - Legacy format detected:
-     - `.cursor/memory-bank/` exists (old Cursor-centric format)
+     - Memory Bank exists under IDE `.cursor/` as `memory-bank/` (old Cursor-centric format)
      - `memory-bank/` exists at root (root-level format)
      - `.memory-bank/` exists (old standardized format)
    - AND `.cortex/memory-bank/` does NOT exist (not yet migrated)

@@ -28,7 +28,7 @@ During roadmap sync validation on 2026-02-04, the validator reported:
 - Manual grep of `roadmap.md` shows no matches for "Recent Findings" or "Completed Milestones"
 - Manual regex search finds 62 file references, none matching the reported invalid ones
 - The validator consistently reports the same 32 invalid references across multiple runs
-- Both `.cortex/memory-bank/roadmap.md` and `.cursor/memory-bank/roadmap.md` are identical (no diff)
+- Both `.cortex/memory-bank/roadmap.md` and the `roadmap.md` reached via the IDE `memory-bank` symlink are identical (no diff)
 
 **Impact**:
 
@@ -119,7 +119,7 @@ During roadmap sync validation on 2026-02-04, the validator reported:
 
 4.2 **Check for symlink issues**
 
-- Verify `.cursor/memory-bank/roadmap.md` symlink points to correct file
+- Verify the `memory-bank` symlink under `.cursor/` resolves `roadmap.md` to the canonical file
 - Check if validator might be reading from wrong location
 - Ensure path resolution is correct
 

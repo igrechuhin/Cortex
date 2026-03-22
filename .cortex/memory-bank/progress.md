@@ -9,6 +9,8 @@
 - **Fix broad exception handling and subprocess log fd comment** - COMPLETE. Documented exception surfaces, subprocess log fd, central MCP wrappers; REV items resolved; `cortex.tools` package initializer side effects inventoried for follow-up.
 - **Reconstruct roadmap backlog and enforce docs-gate consistency invariant** - COMPLETE. Docs-gate PARTIAL/PENDING invariant, progress/roadmap reconciliation, refactoring backlog entry for remaining module splits.
 - **Add offline mode and preflight network/test failure differentiation for bootstrap** - COMPLETE. Preflight CLI/`make preflight`; `make bootstrap-offline` with `WHEELHOUSE`; contributing.md offline/restricted-network section; path-gated `bootstrap-offline.yml` (Docker `--network none`, preflight exit 2); regression tests; quality gate passed; plan archived.
+- **Resolve contributor documentation drift and conflicting quality workflow instructions** - COMPLETE. Contributing guide, repo Markdown, and regression tests aligned with .cortex/memory-bank and MCP-first quality workflow.
+- **Decompose oversized tool modules (remainder)** - COMPLETE. Verified file/function size checks and quality gate; no remaining violations; archived plan work done.
 
 ## 2026-03-20
 

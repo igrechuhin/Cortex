@@ -23,7 +23,7 @@ These I/O operations are inherently blocking. The question is: How should we han
 def validate_memory_bank():
     """Validate all files (synchronous)."""
     errors = {}
-    files = list_files(".cursor/memory-bank")  # Blocking I/O
+    files = list_files(".cortex/memory-bank")  # Blocking I/O
 
     for file in files:  # Sequential processing
         content = read_file(file)  # Blocking I/O
@@ -356,7 +356,7 @@ async def validate_memory_bank() -> dict[str, object]:
     validator = managers["schema_validator"]
 
     # List all files
-    files = await fs.list_files(".cursor/memory-bank")
+    files = await fs.list_files(".cortex/memory-bank")
 
     # Validate concurrently
     results = await asyncio.gather(*[
@@ -507,7 +507,7 @@ async def get_file_list_lazy(directory: str) -> AsyncIterator[str]:
         await asyncio.sleep(0)  # Yield control
 
 # Usage
-async for file in get_file_list_lazy(".cursor/memory-bank"):
+async for file in get_file_list_lazy(".cortex/memory-bank"):
     await process_file(file)
 ```
 

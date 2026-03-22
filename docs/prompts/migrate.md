@@ -5,7 +5,7 @@ This prompt template guides you through migrating a project from legacy structur
 ## Prerequisites
 
 - Cortex server installed and configured
-- Project with legacy structure detected (`.cursor/memory-bank/`, `memory-bank/`, `.memory-bank/`)
+- Project with legacy structure detected (Memory Bank as `memory-bank/` under the IDE `.cursor/` directory, root-level `memory-bank/`, or `.memory-bank/`)
 - Git repository initialized (for version history preservation)
 
 ## Prompt
@@ -21,7 +21,7 @@ The assistant will perform complete migration:
 ### Step 1: Detect legacy structure
 
 - Checks for legacy formats:
-  - `.cursor/memory-bank/` (old Cursor-centric format)
+  - `memory-bank/` inside the IDE `.cursor/` tree (old Cursor-centric layout)
   - `memory-bank/` (root-level format)
   - `.memory-bank/` (old standardized format)
   - Any other legacy locations
@@ -36,8 +36,8 @@ The assistant will perform complete migration:
 ### Step 3: Migrate legacy files
 
 - Copies/moves all files from legacy locations to new structure:
-  - `.cursor/memory-bank/` → `.cortex/memory-bank/` (+ symlink `.cursor/memory-bank`)
-  - `memory-bank/` → `.cortex/memory-bank/` (+ symlink `.cursor/memory-bank`)
+  - IDE `.cursor/` + `memory-bank/` → `.cortex/memory-bank/` (+ symlink under `.cursor/` named `memory-bank`)
+  - `memory-bank/` (repo root) → `.cortex/memory-bank/` (+ same compatibility symlink under `.cursor/`)
   - `.memory-bank/knowledge/` → `.cortex/memory-bank/`
   - `.cursor/synapse/` → `.cortex/synapse/` (+ symlink `.cursor/synapse`)
   - `.cursor/plans/` → `.cortex/plans/` (+ symlink `.cursor/plans`)
@@ -68,7 +68,7 @@ The assistant will perform complete migration:
 ### Step 7: Remove legacy directories
 
 - Only after successful validation
-- Removes old `.cursor/memory-bank/`, `memory-bank/`, `.memory-bank/` directories
+- Removes old Memory Bank directories (IDE `.cursor/` + `memory-bank/`, root `memory-bank/`, `.memory-bank/`)
 - Keeps `.cursor/` directory but removes old content
 - Cleans up any other legacy locations
 
@@ -81,12 +81,12 @@ The assistant will perform complete migration:
   "status": "success",
   "message": "Project migrated successfully",
   "legacy_locations_detected": [
-    ".cursor/memory-bank",
+    "cursor_ide_memory_bank",
     "memory-bank"
   ],
   "migrations": {
     "memory_bank": {
-      "from": ".cursor/memory-bank",
+      "from": "cursor_ide_memory_bank",
       "to": ".cortex/memory-bank/",
       "files": 7
     },
@@ -108,7 +108,7 @@ The assistant will perform complete migration:
     ".cursor"
   ],
   "symlinks_created": [
-    ".cursor/memory-bank",
+    "cursor_ide_memory_bank_symlink",
     ".cursor/synapse",
     ".cursor/plans"
   ],
@@ -116,12 +116,14 @@ The assistant will perform complete migration:
   "versions_migrated": 15,
   "links_updated": 3,
   "legacy_directories_removed": [
-    ".cursor/memory-bank",
+    "cursor_ide_memory_bank",
     "memory-bank"
   ],
   "duration_ms": 1234
 }
 ```
+
+(`cursor_ide_memory_bank` and `cursor_ide_memory_bank_symlink` stand in for the pre-migration Memory Bank directory and its compatibility symlink under `.cursor/`.)
 
 ### Migration Not Needed
 
@@ -151,7 +153,7 @@ The assistant will perform complete migration:
 This prompt is **conditionally registered** and only appears when:
 
 - Legacy structure is detected (`migration_needed = true`)
-- Project has files in old locations (`.cursor/memory-bank/`, `memory-bank/`, `.memory-bank/`)
+- Project has files in old locations (Memory Bank under IDE `.cursor/` as `memory-bank/`, root `memory-bank/`, or `.memory-bank/`)
 
 If your project is already using the `.cortex/` structure, this prompt will not appear.
 
@@ -167,8 +169,8 @@ If your project is already using the `.cortex/` structure, this prompt will not 
 
 | Legacy Location | New Location | Notes |
 |----------------|--------------|-------|
-| `.cursor/memory-bank/` | `.cortex/memory-bank/` | Creates symlink `.cursor/memory-bank` |
-| `memory-bank/` | `.cortex/memory-bank/` | Creates symlink `.cursor/memory-bank` |
+| IDE `.cursor/` + `memory-bank/` | `.cortex/memory-bank/` | Creates compatibility symlink under `.cursor/` |
+| `memory-bank/` (repo root) | `.cortex/memory-bank/` | Same symlink under `.cursor/` |
 | `.memory-bank/knowledge/` | `.cortex/memory-bank/` | Migrates knowledge files |
 | `.cursor/synapse/` | `.cortex/synapse/` | Creates symlink `.cursor/synapse` |
 | `.cursor/plans/` | `.cortex/plans/` | Creates symlink `.cursor/plans` |

@@ -85,11 +85,11 @@ These could be implemented as an optional Cortex plugin/extension rather than co
 
 ## Suggestion 6: Memory Bank Migration Tool
 
-**Current State**: Projects using `.cursor/memory-bank/` format need manual migration to `.cortex/memory-bank/` format.
+**Current State**: Projects using the legacy IDE Memory Bank layout need manual migration to `.cortex/memory-bank/` format.
 
 **Proposed Enhancement**: Add a migration tool that:
 
-- Detects existing `.cursor/memory-bank/` directories
+- Detects existing legacy IDE Memory Bank directories
 - Converts files to Cortex-compatible format (adds frontmatter metadata)
 - Optionally maintains backward-compatible symlinks
 - Configures bi-directional sync between `.cursor/` and `.cortex/` memory banks

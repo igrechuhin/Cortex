@@ -55,7 +55,7 @@ The assistant will:
 
 ## Migration
 
-If an old Memory Bank format is detected (e.g., `.cursor/memory-bank/`), the assistant will automatically migrate it to the new `.cortex/memory-bank/` location while preserving all content and version history.
+If an old Memory Bank format is detected (e.g., under IDE `.cursor/` as `memory-bank/`), the assistant will automatically migrate it to `.cortex/memory-bank/` while preserving all content and version history.
 
 ## Next Steps
 

@@ -57,7 +57,7 @@ See [Failure Modes: MCP Connection Closed](failure-modes.md#8-mcp-connection-clo
 3. **Verify Memory Bank Directory:**
 
    ```bash
-   ls -la .cursor/memory-bank/
+   ls -la .cortex/memory-bank/
    # OR
    ls -la memory-bank/
    ```

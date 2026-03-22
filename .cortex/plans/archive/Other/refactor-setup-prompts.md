@@ -47,7 +47,7 @@ And 3 migration prompts:
    - Only shown when project is not initialized
 
 2. **`migrate`** - Should be a single prompt that:
-   - Detects legacy structure (`.cursor/memory-bank/`, `memory-bank/`, `.memory-bank/`)
+   - Detects legacy structure (Memory Bank under IDE `.cursor/` as `memory-bank/`, root `memory-bank/`, `.memory-bank/`)
    - First runs `initialize` to create new structure
    - Migrates all legacy files to new structure
    - Preserves content and version history

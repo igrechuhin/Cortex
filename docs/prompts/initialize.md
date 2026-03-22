@@ -41,7 +41,7 @@ The assistant will perform complete project initialization:
 ### Step 3: Setup Cursor IDE integration
 
 - Creates `.cursor/` directory with symlinks to `.cortex/` subdirectories:
-  - `.cursor/memory-bank -> ../.cortex/memory-bank`
+  - Symlink named `memory-bank` under `.cursor/` → `../.cortex/memory-bank`
   - `.cursor/synapse -> ../.cortex/synapse`
   - `.cursor/plans -> ../.cortex/plans`
 - Creates `.cursor/mcp.json` with MCP server configuration
@@ -77,7 +77,7 @@ The assistant will perform complete project initialization:
   ],
   "files_created": 7,
   "symlinks_created": [
-    ".cursor/memory-bank",
+    "cursor_symlink_memory_bank",
     ".cursor/synapse",
     ".cursor/plans"
   ],
@@ -87,6 +87,8 @@ The assistant will perform complete project initialization:
   "total_tokens": 1234
 }
 ```
+
+(`cursor_symlink_memory_bank` stands for the `memory-bank` symlink created under `.cursor/`.)
 
 ### Already Initialized
 
@@ -109,7 +111,7 @@ If your project is already initialized, this prompt will not appear.
 
 ## Migration Handling
 
-If an old format is detected during initialization (e.g., `.cursor/memory-bank/`, `memory-bank/`, `.memory-bank/`), the assistant will automatically migrate it to the current `.cortex/memory-bank/` format while preserving all content and version history.
+If an old format is detected during initialization (e.g., Memory Bank under IDE `.cursor/` as `memory-bank/`, root `memory-bank/`, or `.memory-bank/`), the assistant will automatically migrate it to the current `.cortex/memory-bank/` format while preserving all content and version history.
 
 ## Next Steps
 

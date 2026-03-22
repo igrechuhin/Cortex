@@ -77,7 +77,7 @@ This plan captures all Cursor + MCP + Pyright recommendations and describes how 
 
    - Run Pyright to confirm diagnostics match expectations (no new unknown-type or decorator noise).
    - Run tests to ensure no behavioral regressions.
-   - Update `.cursor/memory-bank/activeContext.md` and `progress.md` to record completion of this plan.
+   - Update `.cortex/memory-bank/activeContext.md` and `progress.md` to record completion of this plan.
    - If needed, add a short quick-reference section to `.plan/phase-7.2-quick-reference.md` pointing to this file.
 
 ## Success Criteria

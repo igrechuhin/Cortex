@@ -26,7 +26,7 @@ As an MCP server running locally with Claude Desktop, we must ensure:
 
 **Assets to Protect**:
 
-1. Memory bank files (`.cursor/memory-bank/*.md`)
+1. Memory bank files (`.cortex/memory-bank/*.md`)
 2. Project source code
 3. File system integrity
 4. User privacy

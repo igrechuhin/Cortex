@@ -16,8 +16,8 @@ This prompt template guides you through migrating your Memory Bank to the latest
 Please migrate my Memory Bank at [PROJECT_ROOT] to the latest format.
 
 I need you to:
-1. Create the new memory-bank/ directory
-2. Copy all files from .cursor/memory-bank/ to memory-bank/
+1. Create or verify the `.cortex/memory-bank/` directory
+2. Copy all files from the legacy Memory Bank (under IDE `.cursor/` as `memory-bank/`) into `.cortex/memory-bank/`
 3. Preserve all content and version history
 4. Update the metadata index
 5. Create snapshots in the new location
@@ -28,7 +28,7 @@ I need you to:
 
 The assistant will:
 
-1. Create new `memory-bank/` directory
+1. Ensure `.cortex/memory-bank/` exists (canonical location)
 2. Copy all files with content preservation
 3. Migrate version history and snapshots
 4. Update metadata index
@@ -43,8 +43,8 @@ The assistant will:
 {
   "status": "success",
   "message": "Memory Bank migrated successfully",
-  "old_location": ".cursor/memory-bank/",
-  "new_location": "memory-bank/",
+  "old_location": "legacy_cursor_memory_bank",
+  "new_location": ".cortex/memory-bank/",
   "files_migrated": 7,
   "versions_migrated": 25,
   "duration_ms": 234
@@ -73,16 +73,16 @@ The assistant will:
 
 After successful migration:
 
-1. Verify all files are in `memory-bank/`
+1. Verify all files are in `.cortex/memory-bank/`
 2. Check that content is intact
 3. Test basic operations (read, write, validate)
-4. Optionally delete `.cursor/memory-bank/` directory
+4. Optionally remove the legacy source directory after validation
 5. Continue using Memory Bank normally
 
 ## Rollback
 
 If you need to rollback:
 
-- The old directory `.cursor/memory-bank/` is preserved
+- The legacy source directory remains available until you delete it
 - Use `rollback_file_version` tool to restore specific files
 - Contact support if automatic rollback failed

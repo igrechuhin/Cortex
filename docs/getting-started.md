@@ -255,7 +255,7 @@ Users authenticate via OAuth 2.0 using Google...
 
 ### Migrating from Legacy Structure
 
-If you have existing Memory Bank files in a legacy layout (`.cursor/memory-bank/`, `memory-bank/`, or `.memory-bank/`), use the **migrate** prompt. It:
+If you have existing Memory Bank files in a legacy layout (under IDE `.cursor/` as `memory-bank/`, root `memory-bank/`, or `.memory-bank/`), use the **migrate** prompt. It:
 
 - Detects legacy structure type
 - Creates backup

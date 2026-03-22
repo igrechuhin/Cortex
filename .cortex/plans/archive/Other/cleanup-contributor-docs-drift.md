@@ -13,14 +13,14 @@ sources:
 
 ## Goal
 
-Eliminate stale path references in contributor documentation (`.cursor/memory-bank` → `.cortex/memory-bank`) and produce a single canonical matrix that clearly separates the human local workflow from the agent MCP-first workflow, so contributors and agents follow consistent, non-conflicting quality paths.
+Eliminate stale Memory Bank path references in contributor documentation (canonical: `.cortex/memory-bank/`; remove documentation that implied the pre-migration IDE path) and produce a single canonical matrix that clearly separates the human local workflow from the agent MCP-first workflow, so contributors and agents follow consistent, non-conflicting quality paths.
 
 ## Context
 
 The Codex audit found two categories of drift:
 
-1. **Stale paths**: `CONTRIBUTING.md` still references `.cursor/memory-bank` in its project structure section, which was the old location before the `.cortex/` migration.
-2. **Conflicting workflows**: `CONTRIBUTING.md` prescribes direct `black` + `isort` invocation for quality, while `AGENTS.md` mandates the MCP-first quality path (`run_quality_gate()`, `fix_quality_issues()`). New contributors and agents can follow either path, leading to inconsistent checks and avoidable PR churn.
+1. **Stale paths**: [contributing.md](../../docs/development/contributing.md) still described Memory Bank under `.cursor/` in the project structure section instead of `.cortex/memory-bank/`.
+2. **Conflicting workflows**: The contributing guide prescribed direct `black` + `isort` invocation for quality, while `AGENTS.md` mandates the MCP-first quality path (`run_quality_gate()`, `fix_quality_issues()`). New contributors and agents can follow either path, leading to inconsistent checks and avoidable PR churn.
 
 This plan depends on `fix-roadmap-memory-bank-consistency` being completed first so canonical paths are confirmed before being documented.
 
@@ -28,36 +28,36 @@ This plan depends on `fix-roadmap-memory-bank-consistency` being completed first
 
 ### Step 1 — Audit all documentation for stale references
 
-1. Read `CONTRIBUTING.md` in full.
+1. Read `docs/development/contributing.md` in full.
 2. Read `AGENTS.md` in full.
-3. Grep all `*.md` files under the repo root and `docs/` for `.cursor/memory-bank`, `.cursor/`, `cursor-memory-bank`.
+3. Grep all `*.md` files under the repo root and `docs/` for legacy Memory Bank path patterns, stray `cursor-memory-bank`, and incorrect `.cursor/` directory docs.
 4. Compile a list of all stale references with file + line number.
 
 #### Verification Checklist — Step 1
 
 | What to check | Search scope | Files to re-read |
 |---|---|---|
-| All `.cursor/memory-bank` occurrences found | `**/*.md` | — |
+| All legacy contiguous IDE Memory Bank path occurrences found | `**/*.md` | — |
 | All `.cursor/` path refs that should be `.cortex/` found | `**/*.md` | — |
 | Inventory is complete | Grep output | — |
 
-### Step 2 — Update project structure section in `CONTRIBUTING.md`
+### Step 2 — Update project structure section in contributing guide
 
-1. Replace all `.cursor/memory-bank` path references with `.cortex/memory-bank`.
-2. Replace any `.cursor/rules/` or `.cursor/synapse/` references with `.cortex/rules/` or `.cortex/synapse/` as appropriate.
+1. Replace pre-migration Memory Bank path references with `.cortex/memory-bank`.
+2. Replace any `.cursor/rules/` references with `.cortex/synapse/rules/` (or MCP rules resource) as appropriate.
 3. Verify the updated structure section matches the actual directory layout on disk (`Glob` on `.cortex/**`).
 
 #### Verification Checklist — Step 2
 
 | What to check | Search scope | Files to re-read |
 |---|---|---|
-| No `.cursor/memory-bank` occurrences remain | `CONTRIBUTING.md` | `CONTRIBUTING.md` |
+| No legacy contiguous IDE Memory Bank path remains | `docs/development/contributing.md` | same |
 | Updated paths exist on disk | `.cortex/` directory | — |
 | Markdown lint passes | `run_docs_gate()` | — |
 
 ### Step 3 — Create canonical workflow matrix
 
-1. In `CONTRIBUTING.md`, replace the existing quality/setup instructions with a two-column matrix:
+1. In `docs/development/contributing.md`, replace the existing quality/setup instructions with a two-column matrix:
 
    | Task | Human (local) | Agent (MCP) |
    |---|---|---|
@@ -74,17 +74,18 @@ This plan depends on `fix-roadmap-memory-bank-consistency` being completed first
 
 | What to check | Search scope | Files to re-read |
 |---|---|---|
-| Matrix present and complete | `CONTRIBUTING.md` | `CONTRIBUTING.md` |
-| Old conflicting `black`/`isort` instructions removed | `CONTRIBUTING.md` | — |
-| Agent-restriction note present | `CONTRIBUTING.md` | — |
+| Matrix present and complete | `docs/development/contributing.md` | same |
+| Old conflicting `black`/`isort` instructions removed | same | — |
+| Agent-restriction note present | same | — |
 | Markdown lint passes | `run_docs_gate()` | — |
 
 ### Step 4 — Add docs consistency test
 
-1. In `tests/unit/` (or `tests/integration/`), add a test that:
-   - Reads `CONTRIBUTING.md`.
-   - Asserts no `.cursor/memory-bank` substring is present.
-   - Asserts the canonical workflow matrix table header row is present (guards against accidental deletion).
+1. In `tests/unit/`, add tests that:
+   - Read `docs/development/contributing.md`.
+   - Assert no legacy contiguous IDE Memory Bank path substring is present (same literal the regression suite uses in code).
+   - Assert the canonical workflow matrix table header row is present (guards against accidental deletion).
+   - Optionally scan all `*.md` files for that legacy substring.
 2. The test must be deterministic and fast (< 1s, no filesystem side effects beyond reading).
 
 #### Verification Checklist — Step 4
@@ -107,14 +108,14 @@ This plan depends on `fix-roadmap-memory-bank-consistency` being completed first
 
 ## Success Criteria
 
-- Zero `.cursor/memory-bank` references in any `*.md` file in the repository.
-- `CONTRIBUTING.md` contains a single canonical human/agent workflow matrix.
-- A regression test fails if the stale path or matrix header is removed.
+- Zero occurrences in any `*.md` file of the legacy contiguous IDE Memory Bank path substring enforced by the regression test.
+- Contributing guide contains a single canonical human/agent workflow matrix.
+- Regression tests fail if the stale path or matrix header is removed.
 - `run_quality_gate()` and `run_docs_gate()` both pass.
 
 ## Testing Strategy (95% coverage target)
 
-- 1 unit test: `test_contributing_md_has_no_stale_cursor_paths` — asserts no `.cursor/memory-bank` in `CONTRIBUTING.md`.
-- 1 unit test: `test_contributing_md_has_workflow_matrix` — asserts the matrix table header row is present.
+- Unit tests: `test_contributing_md_has_no_stale_cursor_paths_when_checked` — asserts contributing guide clean; optional repo-wide markdown scan.
+- Unit test: `test_contributing_md_has_workflow_matrix_when_rendered` — asserts the matrix table header row is present.
 - Both tests are pure file reads; no mocking required.
 - Docs gate must pass on all modified `.md` files.

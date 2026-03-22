@@ -2395,7 +2395,7 @@ Creates the standardized `.cortex/` directory structure including:
       ".cortex/config/structure.json"
     ],
     "symlinks_created": [
-      ".cursor/memory-bank -> ../.cortex/memory-bank",
+      "memory-bank under .cursor/ -> ../.cortex/memory-bank",
       ".cursor/plans -> ../.cortex/plans"
     ],
     "shared_rules_setup": false
@@ -2482,7 +2482,7 @@ Creates symlinks in `.cursor/` directory pointing to `.cortex/` structure. Works
   "report": {
     "platform": "darwin",
     "symlinks_created": [
-      ".cursor/memory-bank -> ../.cortex/memory-bank",
+      "memory-bank under .cursor/ -> ../.cortex/memory-bank",
       ".cursor/rules -> ../.cortex/synapse/rules",
       ".cursor/plans -> ../.cortex/plans"
     ],
@@ -2678,7 +2678,7 @@ Get current project structure configuration, paths, and status. No parameters (p
     "cursor_integration": {
       "enabled": true,
       "symlinks": [
-        ".cursor/memory-bank -> ../.cortex/memory-bank",
+        "memory-bank under .cursor/ -> ../.cortex/memory-bank",
         ".cursor/rules -> ../.cortex/synapse/rules",
         ".cursor/plans -> ../.cortex/plans"
       ]
