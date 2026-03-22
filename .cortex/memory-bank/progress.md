@@ -13,6 +13,10 @@
 - **Decompose oversized tool modules (remainder)** - COMPLETE. Verified file/function size checks and quality gate; no remaining violations; archived plan work done.
 - **Remove permanently skipped legacy tests and establish skip expiration policy** - COMPLETE. Legacy skip-only modules removed; `skip_reference_policy` enforces ref/issue/see on `@pytest.mark.skip` and AST-scans runtime `pytest.skip`; inventory `docs/development/test-skip-inventory.md`; `skipped_tests` and skip-count trend in quality pipeline; plan archived.
 - **Python framework adapter parsing** - COMPLETE. Hardened `python_adapter_parsing.py` and base adapter integration; `pre_commit_pipeline_processors` aligned with skip summary reporting; unit tests refreshed in `test_python_adapter.py` and `test_python_adapter_parsing.py`.
+- **Narrow broad exception handling in PythonAdapter test execution** - COMPLETE. Narrowed catches in streaming and non-streaming test paths; debug log for cache OSError; six tests added.
+- **Test and harden parse_type_errors in python_adapter_parsing** - COMPLETE. Regex-based parse_type_errors; TestParseTypeErrors in test_python_adapter_parsing.py.
+- **Add URL scheme validation to preflight registry probe** - COMPLETE. UV_INDEX_URL must use https or http scheme; ValueError and preflight main exit 2; tests in test_preflight.py.
+- **Document offline bootstrap and preflight CLI architecture** - COMPLETE. docs/offline-bootstrap-preflight.md plus cross-links in security best practices and README.
 
 ## 2026-03-20
 

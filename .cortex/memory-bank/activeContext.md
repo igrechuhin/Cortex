@@ -36,6 +36,14 @@
 
 - ✅ **Python framework adapter parsing hardening** - COMPLETE (2026-03-22) - Refined python_adapter_parsing and base adapter wiring; pre_commit processor touch for skipped_tests reporting; tests updated. Lands with skip-reference policy work in the same commit batch.
 
+- ✅ **Narrow broad exception handling in PythonAdapter test execution** - COMPLETE (2026-03-22) - Narrowed test execution catches to (OSError, subprocess.SubprocessError) with descriptive fallback for other exceptions; debug log on skip-count cache write failure; six unit tests; helper _complete_streaming_test_run for function-length compliance.
+
+- ✅ **Test and harden parse_type_errors in python_adapter_parsing** - COMPLETE (2026-03-22) - Added _PYRIGHT_ERROR_RE for pyright path:line:col - error: lines; replaced substring heuristic in parse_type_errors; added TestParseTypeErrors with eight unit tests including summary, warning, and snippet edge cases.
+
+- ✅ **Add URL scheme validation to preflight registry probe** - COMPLETE (2026-03-22) - resolve_registry_url now requires UV_INDEX_URL to start with https:// or <http://>; invalid schemes raise ValueError; main prints [FAIL] and exits 2. Added five tests (file/ftp reject, http/https accept, main invalid scheme).
+
+- ✅ **Document offline bootstrap and preflight CLI architecture** - COMPLETE (2026-03-22) - Replaced stub with architecture doc: overview, UV_INDEX_URL and scheme guard, HEAD to GET fallback, exit codes, offline triage, CI bootstrap-offline vs quality workflow, ASCII flow, security notes, related files. Linked from docs/security/best-practices.md and README developer commands.
+
 ## Completed Work (2026-03-21)
 
 - **Summary (2026-03-21)** - 1 entries archived.

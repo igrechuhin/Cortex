@@ -302,3 +302,80 @@ class TestPythonAdapter:
             assert cb_arg is progress_callback
             assert result["success"] is True
             assert result["tests_run"] == 100
+
+    @patch("cortex.services.framework_adapters.python_adapter.subprocess.run")
+    def test_execute_test_command_oserror(self, mock_run: MagicMock) -> None:
+        """OSError from subprocess.run surfaces as failure with original message."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            adapter = PythonAdapter(str(tmpdir))
+            mock_run.side_effect = OSError("exec failed")
+            result = adapter._execute_test_command(  # type: ignore[attr-defined]
+                ["python", "-m", "pytest"],
+                None,
+                0.90,
+            )
+            assert result["success"] is False
+            errors = cast(list[str], result["errors"])
+            assert len(errors) > 0
+            assert "exec failed" in errors[0]
+
+    @patch("cortex.services.framework_adapters.python_adapter.subprocess.run")
+    def test_execute_test_command_unexpected_error(self, mock_run: MagicMock) -> None:
+        """Non-subprocess errors include Unexpected error prefix."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            adapter = PythonAdapter(str(tmpdir))
+            mock_run.side_effect = ValueError("bad arg")
+            result = adapter._execute_test_command(  # type: ignore[attr-defined]
+                ["python", "-m", "pytest"],
+                None,
+                0.90,
+            )
+            assert result["success"] is False
+            output = cast(str, result["output"])
+            assert "Unexpected error" in output
+            errors = cast(list[str], result["errors"])
+            assert any("Unexpected error" in e for e in errors)
+
+    @patch("cortex.services.framework_adapters.python_adapter.subprocess.Popen")
+    def test_execute_test_command_streaming_oserror(
+        self, mock_popen: MagicMock
+    ) -> None:
+        """OSError when starting streaming process surfaces without Unexpected prefix."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            adapter = PythonAdapter(str(tmpdir))
+            mock_popen.side_effect = OSError("popen failed")
+            result = adapter._execute_test_command_streaming(  # type: ignore[attr-defined]
+                ["python", "-m", "pytest"],
+                None,
+                0.90,
+                5,
+                lambda _c, _t: None,
+            )
+            assert result["success"] is False
+            errors = cast(list[str], result["errors"])
+            assert len(errors) > 0
+            assert "popen failed" in errors[0]
+
+    @patch("cortex.services.framework_adapters.python_adapter.subprocess.Popen")
+    def test_execute_test_command_streaming_unexpected_error(
+        self, mock_popen: MagicMock
+    ) -> None:
+        """Unexpected errors during streaming include descriptive prefix."""
+        mock_proc = MagicMock()
+        mock_proc.stdout = iter(["line\n"])
+        mock_proc.poll.return_value = 0
+        mock_proc.returncode = 0
+        mock_proc.wait.side_effect = RuntimeError("wait blew up")
+        mock_popen.return_value = mock_proc
+        with tempfile.TemporaryDirectory() as tmpdir:
+            adapter = PythonAdapter(str(tmpdir))
+            result = adapter._execute_test_command_streaming(  # type: ignore[attr-defined]
+                ["python", "-m", "pytest"],
+                None,
+                0.90,
+                1,
+                lambda _c, _t: None,
+            )
+            assert result["success"] is False
+            output = cast(str, result["output"])
+            assert "Unexpected error during streaming test execution" in output

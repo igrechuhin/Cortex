@@ -226,6 +226,28 @@ class PythonAdapter(FrameworkAdapter):
             bufsize=1,
         )
 
+    def _complete_streaming_test_run(
+        self,
+        proc: subprocess.Popen[str],
+        timeout: int | None,
+        coverage_threshold: float,
+        total: int,
+        progress_callback: ProgressCallback,
+    ) -> TestResult:
+        """Collect streamed output, wait for process, parse pytest result."""
+        lines = self._collect_streaming_output(proc, total, progress_callback)
+        wait_timeout = timeout if timeout else 3600
+        _ = proc.wait(timeout=wait_timeout)  # noqa: F841
+        output = "".join(lines)
+        if proc.returncode == 0 and total > 0:
+            progress_callback(total, total)
+        return parse_pytest_output(
+            output,
+            proc.returncode == 0,
+            coverage_threshold,
+            self.project_root,
+        )
+
     def _execute_test_command_streaming(
         self,
         cmd: list[str],
@@ -238,24 +260,19 @@ class PythonAdapter(FrameworkAdapter):
         proc: subprocess.Popen[str] | None = None
         try:
             proc = self._start_streaming_process(cmd)
-            lines = self._collect_streaming_output(proc, total, progress_callback)
-            wait_timeout = timeout if timeout else 3600
-            _ = proc.wait(timeout=wait_timeout)  # noqa: F841
-            output = "".join(lines)
-            if proc.returncode == 0 and total > 0:
-                progress_callback(total, total)
-            return parse_pytest_output(
-                output,
-                proc.returncode == 0,
-                coverage_threshold,
-                self.project_root,
+            return self._complete_streaming_test_run(
+                proc, timeout, coverage_threshold, total, progress_callback
             )
         except subprocess.TimeoutExpired:
             if proc is not None and proc.poll() is None:
                 proc.kill()
             return self._create_timeout_result()
-        except Exception as e:
+        except (OSError, subprocess.SubprocessError) as e:
             return self._create_error_result(str(e))
+        except Exception as e:
+            return self._create_error_result(
+                f"Unexpected error during streaming test execution: {e}"
+            )
 
     def _execute_test_command(
         self, cmd: list[str], timeout: int | None, coverage_threshold: float = 0.90
@@ -278,8 +295,12 @@ class PythonAdapter(FrameworkAdapter):
             )
         except subprocess.TimeoutExpired:
             return self._create_timeout_result()
-        except Exception as e:
+        except (OSError, subprocess.SubprocessError) as e:
             return self._create_error_result(str(e))
+        except Exception as e:
+            return self._create_error_result(
+                f"Unexpected error during test execution: {e}"
+            )
 
     def _create_timeout_result(self) -> TestResult:
         """Create test result for timeout."""

@@ -1,7 +1,11 @@
 """Tests for Python adapter parsing helpers."""
 
+import logging
 from pathlib import Path
 from typing import cast
+from unittest.mock import patch
+
+import pytest
 
 from cortex.services.framework_adapters.python_adapter_parsing import (
     build_test_errors,
@@ -10,6 +14,7 @@ from cortex.services.framework_adapters.python_adapter_parsing import (
     parse_lint_errors,
     parse_pytest_output,
     parse_test_counts,
+    parse_type_errors,
 )
 
 
@@ -32,6 +37,61 @@ class TestParseLintErrors:
         )
         errors = parse_lint_errors(output)
         assert errors == ["src/foo.py:1:1: F401 `os` imported but unused"]
+
+
+class TestParseTypeErrors:
+    """Tests for parse_type_errors."""
+
+    def test_captures_pyright_error_line(self) -> None:
+        """Canonical pyright error line is captured."""
+        line = (
+            "src/foo.py:10:5 - error: Name 'x' is not defined "
+            "(reportUndefinedVariable)"
+        )
+        assert parse_type_errors(line) == [line]
+
+    def test_ignores_warning_lines(self) -> None:
+        """Warning diagnostics are not treated as errors."""
+        line = "src/foo.py:10:5 - warning: something"
+        assert parse_type_errors(line) == []
+
+    def test_ignores_summary_line(self) -> None:
+        """Pyright summary lines do not match the diagnostic pattern."""
+        assert parse_type_errors("0 errors, 0 warnings") == []
+
+    def test_ignores_empty_input(self) -> None:
+        assert parse_type_errors("") == []
+
+    def test_multiple_errors(self) -> None:
+        """Only error-shaped lines are returned when mixed with warnings."""
+        output = "\n".join(
+            [
+                "src/a.py:1:1 - error: first (reportX)",
+                "src/b.py:2:2 - error: second (reportY)",
+                "src/c.py:3:3 - warning: skip me",
+            ]
+        )
+        assert parse_type_errors(output) == [
+            "src/a.py:1:1 - error: first (reportX)",
+            "src/b.py:2:2 - error: second (reportY)",
+        ]
+
+    def test_does_not_capture_informational_lines(self) -> None:
+        """Version header lines are ignored."""
+        assert parse_type_errors("Pyright (1.1.400)") == []
+
+    def test_error_in_string_literal_context(self) -> None:
+        """Lines with 'error' only in a code snippet lack the pyright shape."""
+        line = '  print("error")'
+        assert parse_type_errors(line) == []
+
+    def test_captures_leading_whitespace_pyright_line(self) -> None:
+        """Indented pyright output still matches path:line:col - error:."""
+        line = (
+            "  /path/to/file.py:1:1 - error: Import could not be resolved "
+            "(reportMissingModuleSource)"
+        )
+        assert parse_type_errors(line) == [line.strip()]
 
 
 class TestBuildTestErrors:
@@ -187,3 +247,27 @@ class TestMergeSkipTrendWarnings:
         assert merge_skip_trend_warnings(3, root, ["keep"]) == ["keep"]
         w2 = merge_skip_trend_warnings(3, root, [])
         assert w2 == []
+
+
+class TestPersistSkippedCountCache:
+    """Tests for skip-count cache persistence (via merge_skip_trend_warnings)."""
+
+    def test_cache_write_failure_logs_debug(
+        self, tmp_path: Path, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        """OSError on cache write emits debug log with cache path."""
+        root = tmp_path / "proj"
+        cache_path = root / ".cortex" / ".cache" / "last_pytest_skipped_count.json"
+        with caplog.at_level(logging.DEBUG):
+            with patch.object(Path, "write_text", side_effect=OSError("eperm")):
+                _ = merge_skip_trend_warnings(2, root, [])
+        joined = " ".join(r.getMessage() for r in caplog.records)
+        assert "Cache write failed" in joined
+        assert str(cache_path) in joined
+
+    def test_cache_write_failure_does_not_raise(self, tmp_path: Path) -> None:
+        """Cache write failure is swallowed; caller does not see OSError."""
+        root = tmp_path / "proj2"
+        with patch.object(Path, "write_text", side_effect=OSError("eperm")):
+            out = merge_skip_trend_warnings(2, root, [])
+        assert out == []

@@ -16,6 +16,10 @@
 
 ### Fixes
 
+### Quality & Reliability Improvements
+
+### Security
+
 ### Documentation Cleanup (DRY)
 
 ### Refactoring

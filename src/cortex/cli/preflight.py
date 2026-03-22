@@ -15,14 +15,24 @@ from urllib.request import Request, urlopen
 DEFAULT_REGISTRY_URL = "https://pypi.org/simple/"
 DEFAULT_TIMEOUT_SEC = 10.0
 UV_INDEX_ENV = "UV_INDEX_URL"
+ALLOWED_SCHEMES = ("https://", "http://")
 
 
 def resolve_registry_url() -> str:
-    """Return ``UV_INDEX_URL`` if set and non-empty after strip, else PyPI default."""
+    """Return ``UV_INDEX_URL`` if set and non-empty after strip, else PyPI default.
+
+    Raises:
+        ValueError: If ``UV_INDEX_URL`` is set but does not start with ``https://``
+            or ``http://``.
+    """
     raw = os.environ.get(UV_INDEX_ENV, "").strip()
-    if raw:
-        return raw
-    return DEFAULT_REGISTRY_URL
+    if not raw:
+        return DEFAULT_REGISTRY_URL
+    if not raw.startswith(ALLOWED_SCHEMES):
+        raise ValueError(
+            f"UV_INDEX_URL must start with 'https://' or 'http://'; got: {raw!r}"
+        )
+    return raw
 
 
 def _failure_message(exc: BaseException) -> str:
@@ -72,7 +82,11 @@ def registry_reachable(
 
 def main() -> int:
     """Run preflight; print status to stdout. Returns exit code for shell."""
-    url = resolve_registry_url()
+    try:
+        url = resolve_registry_url()
+    except ValueError as exc:
+        print(f"[FAIL] Invalid registry URL: {exc}")
+        return 2
     ok, reason = registry_reachable(url, timeout=DEFAULT_TIMEOUT_SEC)
     if ok:
         print("[OK] Registry reachable")

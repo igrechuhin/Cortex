@@ -468,6 +468,12 @@ logger.info(f"User password: {password}")  # NEVER DO THIS
 
 ## Network Security
 
+### See also
+
+- [Offline bootstrap and preflight](../offline-bootstrap-preflight.md) — package-index
+  reachability probe, `UV_INDEX_URL` resolution and scheme validation, HEAD→GET
+  fallback, and the bootstrap-offline CI workflow.
+
 ### HTTP Client Configuration
 
 **Secure Defaults:**

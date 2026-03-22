@@ -6,6 +6,7 @@ Pure functions for parsing pytest, coverage, type-check, and lint output.
 from __future__ import annotations
 
 import json
+import logging
 import re
 from pathlib import Path
 from typing import cast
@@ -13,6 +14,8 @@ from typing import cast
 from cortex.services.framework_adapters.base import COVERAGE_ACCEPT_MIN, TestResult
 
 RUFF_DIAGNOSTIC_RE = re.compile(r"^.+?:\d+:\d+:\s+[A-Z]{1,6}\d{1,4}\b")
+# Pyright diagnostic lines: <path>:<line>:<col> - error: <message> (reportXxx optional)
+_PYRIGHT_ERROR_RE = re.compile(r".+:\d+:\d+ - error:", re.IGNORECASE)
 TESTS_COLLECTED_RE = re.compile(r"(\d+)\s+tests?\s+collected", re.IGNORECASE)
 # Match any pytest line that reports an individual test outcome, including
 # xdist/parallel formats. We do not rely on a specific prefix/suffix shape,
@@ -94,8 +97,8 @@ def _persist_skipped_count_cache(cache_path: Path, skipped_tests: int) -> None:
         _ = cache_path.parent.mkdir(parents=True, exist_ok=True)
         payload = json.dumps({"skipped_tests": skipped_tests}, indent=2) + "\n"
         _ = cache_path.write_text(payload, encoding="utf-8")
-    except OSError:
-        pass
+    except OSError as exc:
+        logging.debug("Cache write failed for %s: %s", cache_path, exc)
 
 
 def merge_skip_trend_warnings(
@@ -239,11 +242,9 @@ def coverage_accept_and_warning(
 
 def parse_type_errors(output: str) -> list[str]:
     """Parse pyright output for type errors."""
-    errors: list[str] = []
-    for line in output.split("\n"):
-        if "error" in line.lower() and "warning" not in line.lower():
-            errors.append(line.strip())
-    return errors
+    return [
+        line.strip() for line in output.split("\n") if _PYRIGHT_ERROR_RE.search(line)
+    ]
 
 
 def parse_lint_errors(output: str) -> list[str]:

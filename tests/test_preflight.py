@@ -68,6 +68,44 @@ def test_resolve_registry_url_empty_env_uses_default(
     assert preflight.resolve_registry_url() == preflight.DEFAULT_REGISTRY_URL
 
 
+def test_resolve_registry_url_rejects_file_scheme(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv(preflight.UV_INDEX_ENV, "file:///etc/passwd")
+    with pytest.raises(ValueError, match="must start with"):
+        _ = preflight.resolve_registry_url()
+
+
+def test_resolve_registry_url_rejects_ftp_scheme(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv(preflight.UV_INDEX_ENV, "ftp://internal/")
+    with pytest.raises(ValueError, match="must start with"):
+        _ = preflight.resolve_registry_url()
+
+
+def test_resolve_registry_url_accepts_https(monkeypatch: pytest.MonkeyPatch) -> None:
+    url = "https://my.registry/simple/"
+    monkeypatch.setenv(preflight.UV_INDEX_ENV, url)
+    assert preflight.resolve_registry_url() == url
+
+
+def test_resolve_registry_url_accepts_http(monkeypatch: pytest.MonkeyPatch) -> None:
+    url = "http://internal.registry/"
+    monkeypatch.setenv(preflight.UV_INDEX_ENV, url)
+    assert preflight.resolve_registry_url() == url
+
+
+def test_main_invalid_url_scheme(
+    capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv(preflight.UV_INDEX_ENV, "file:///tmp/")
+    code = preflight.main()
+    assert code == 2
+    out = capsys.readouterr().out
+    assert "[FAIL]" in out
+
+
 def test_registry_reachable_success(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(
         preflight,
