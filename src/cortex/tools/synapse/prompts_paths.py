@@ -60,7 +60,7 @@ def get_synapse_prompts_path() -> Path | None:
     """Get path to Synapse prompts directory (for backwards compatibility)."""
     paths = get_prompts_paths()
     for path in paths:
-        if "synapse" in str(path):
+        if path.name == "prompts" and path.parent.name == "synapse":
             return path
     return paths[0] if paths else None
 
@@ -75,7 +75,7 @@ def load_prompts_manifest(prompts_path: Path) -> JsonDict | None:
         with open(manifest_path, encoding="utf-8") as f:
             data = json.load(f)
             return JsonDict.from_dict(data)
-    except Exception:
+    except (OSError, json.JSONDecodeError, UnicodeDecodeError, ValueError):
         return None
 
 
@@ -109,5 +109,5 @@ def load_prompt_content(prompts_path: Path, category: str, filename: str) -> str
     try:
         with open(resolved, encoding="utf-8") as f:
             return f.read()
-    except Exception:
+    except (OSError, UnicodeDecodeError):
         return None

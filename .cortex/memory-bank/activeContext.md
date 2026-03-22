@@ -62,6 +62,8 @@
 
 - ✅ **Perf regression tests — pyright unused call results** - COMPLETE (2026-03-22) - Assigned `_ =` to warmup `load_context_impl` and `count_tokens_with_cache` in tests/unit/test_context_load_perf.py and test_tiktoken_cache_perf.py so reportUnusedCallResult passes; use run_quality_gate_fresh when Phase A pyright output looks stale versus local fixes (per AGENTS.md).
 
+- ✅ **Synapse prompts path and usage analytics hardening** - COMPLETE (2026-03-22) - `get_synapse_prompts_path` selects `.../synapse/prompts` via parent/name checks (avoids false substring matches); narrowed manifest and prompt read exceptions in `prompts_paths.py`; documented invalid ISO date-string behavior in `usage_date_range_from_strings`; refreshed `.cortex/.session/context-usage-statistics.json`, `.cortex/index.json`, and Synapse usage cache for 2026-03-22.
+
 ## Completed Work (2026-03-21)
 
 - **Summary (2026-03-21)** - 1 entries archived.

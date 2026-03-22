@@ -14,7 +14,11 @@ from cortex.managers.usage_tracker import UsageTracker
 def usage_date_range_from_strings(
     start_date: str | None, end_date: str | None, default_days: int = 365
 ) -> tuple[datetime, datetime]:
-    """Parse start/end date strings; default to default_days ago to now."""
+    """Parse start/end date strings; default to default_days ago to now.
+
+    Invalid ISO strings are silently ignored and the default range bound is
+    kept (start defaults to ``default_days`` ago, end defaults to now).
+    """
     end = datetime.now(UTC)
     start = end - timedelta(days=default_days)
     if end_date:

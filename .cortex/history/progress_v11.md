@@ -24,6 +24,7 @@
 - **Add narrative doc for preflight HEAD→GET fallback and http:// allowance** - COMPLETE. Documented HEAD→GET 405 fallback and intentional http:// for internal mirrors in docs/offline-bootstrap-preflight.md.
 - **Profile and verify performance of context loading and preflight hot paths** - COMPLETE. Documented performance baselines with measured samples and links from productContext and tool-usage-tracking; context/tiktoken paths remain guarded by unit perf tests.
 - **Perf regression tests — pyright reportUnusedCallResult** - COMPLETE. Warmup `load_context_impl` and `count_tokens_with_cache` calls assign `_ =` for intentional discard; Phase A used `run_quality_gate_fresh` when cached typecheck lagged the working tree.
+- **Synapse prompts path and usage analytics hardening** - COMPLETE. Synapse prompts path resolution, narrowed I/O exceptions, usage date-range docstring, session/index rollup and Synapse usage events for 2026-03-22.
 
 ## 2026-03-20
 
