@@ -67,6 +67,10 @@ def test_token_counter_warm_cache_median_under_5ms() -> None:
         samples.append(time.perf_counter() - start)
 
     median_seconds = statistics.median(samples)
+    p95_seconds = sorted(samples)[int(len(samples) * 0.95)]
     assert (
         median_seconds < 0.005
     ), f"median warm cache latency {median_seconds * 1000:.2f}ms exceeds 5ms target"
+    assert (
+        p95_seconds < 0.020
+    ), f"p95 warm cache latency {p95_seconds * 1000:.2f}ms exceeds 20ms target"

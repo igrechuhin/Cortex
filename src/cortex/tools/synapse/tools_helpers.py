@@ -42,7 +42,7 @@ def format_language_rules_list(rules: list[ModelDict]) -> list[ModelDict]:
     return result
 
 
-def _create_error_result(error_message: str) -> RulesExecutionResult:
+def create_error_result(error_message: str) -> RulesExecutionResult:
     """Create error result for rules execution."""
     return RulesExecutionResult(
         status=OperationStatus.ERROR,
@@ -72,7 +72,7 @@ async def execute_rules_with_context(
     if validation_error:
         error_raw = validation_error.get("error")
         error_message = str(error_raw) if error_raw is not None else "Unknown error"
-        return _create_error_result(error_message)
+        return create_error_result(error_message)
 
     rules_manager = await get_manager(managers, "rules_manager", RulesManager)
     file_paths = parse_project_files(project_files)

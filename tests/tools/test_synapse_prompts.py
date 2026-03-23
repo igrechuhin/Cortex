@@ -742,3 +742,157 @@ class TestRegisterSynapsePrompts:
 
             # Assert - functions should be registered
             # Note: This verifies the registration flow completes
+
+
+# ============================================================================
+# Additional coverage: both-roots preference, load_prompt_content edge cases,
+# prompts_registration fallback paths, register_synapse_prompts_for_facade
+# ============================================================================
+
+
+class TestGetSynapsePromptsPathBothRoots:
+    """get_synapse_prompts_path prefers synapse root when both roots exist."""
+
+    def test_prefers_synapse_prompts_over_project_prompts(
+        self, temp_project_root: Path, prompts_dir: Path
+    ) -> None:
+        """When both .cortex/synapse/prompts and .cortex/prompts exist,
+        get_synapse_prompts_path returns the synapse-shaped one."""
+        from cortex.core.path_resolver import CortexResourceType, get_cortex_path
+
+        # Create project-specific prompts directory alongside synapse prompts
+        project_prompts = (
+            get_cortex_path(temp_project_root, CortexResourceType.CORTEX_DIR)
+            / "prompts"
+        )
+        project_prompts.mkdir(parents=True, exist_ok=True)
+
+        with patch(
+            "cortex.tools.synapse.prompts_paths.get_prompts_paths",
+            return_value=[project_prompts, prompts_dir],
+        ):
+            result = synapse_prompts.get_synapse_prompts_path()
+
+        assert result == prompts_dir
+
+    def test_falls_back_to_first_path_when_no_synapse_shaped_root(
+        self, temp_project_root: Path
+    ) -> None:
+        """Falls back to paths[0] when no synapse-shaped entry exists."""
+        from cortex.core.path_resolver import CortexResourceType, get_cortex_path
+
+        project_prompts = (
+            get_cortex_path(temp_project_root, CortexResourceType.CORTEX_DIR)
+            / "prompts"
+        )
+        project_prompts.mkdir(parents=True, exist_ok=True)
+        other_prompts = temp_project_root / "other" / "prompts"
+        other_prompts.mkdir(parents=True)
+
+        with patch(
+            "cortex.tools.synapse.prompts_paths.get_prompts_paths",
+            return_value=[project_prompts, other_prompts],
+        ):
+            result = synapse_prompts.get_synapse_prompts_path()
+
+        assert result == project_prompts
+
+
+class TestLoadPromptContentEdgeCases:
+    """Additional edge cases for load_prompt_content."""
+
+    def test_returns_none_when_resolve_raises_oserror(self, prompts_dir: Path) -> None:
+        """Returns None when candidate.resolve() raises OSError (lines 97-98).
+
+        The first call to .resolve() on prompts_path must succeed (to get
+        base_dir); the second call on the candidate must raise OSError.
+        """
+        import pathlib
+
+        prompt_file = prompts_dir / "test.md"
+        _ = prompt_file.write_text("content", encoding="utf-8")
+
+        original_resolve = pathlib.Path.resolve
+        call_count = 0
+
+        def resolve_raise_on_second(self: Path, **kwargs: object) -> Path:
+            nonlocal call_count
+            call_count += 1
+            if call_count == 1:
+                return original_resolve(self, **kwargs)  # type: ignore[arg-type]
+            raise OSError("bad path")
+
+        with patch.object(pathlib.Path, "resolve", resolve_raise_on_second):
+            result = synapse_prompts.load_prompt_content(
+                prompts_dir, "general", "test.md"
+            )
+
+        assert result is None
+
+    def test_returns_none_when_relative_to_raises_value_error(
+        self, tmp_path: Path
+    ) -> None:
+        """Returns None when resolved path is outside base_dir (lines 103-104).
+
+        This simulates a symlink pointing outside the prompts directory.
+        """
+        base = tmp_path / "base"
+        base.mkdir()
+        outside = tmp_path / "outside.md"
+        _ = outside.write_text("secret", encoding="utf-8")
+
+        # Create a symlink inside base pointing outside
+        link = base / "link.md"
+        link.symlink_to(outside)
+
+        result = synapse_prompts.load_prompt_content(base, "cat", "link.md")
+        assert result is None
+
+
+class TestRegisterSynapsePromptsForFacade:
+    """Tests for register_synapse_prompts_for_facade."""
+
+    def test_uses_provided_facade_module(self) -> None:
+        """Uses provided facade module instead of default."""
+        import types
+
+        fake_facade = types.ModuleType("fake_facade")
+        fake_facade.create_prompt_function = synapse_prompts.create_prompt_function  # type: ignore[attr-defined]
+        fake_facade.__dict__["_prompt_contents"] = {}
+
+        with patch(
+            "cortex.tools.synapse.prompts_paths.get_prompts_paths",
+            return_value=[],
+        ):
+            synapse_prompts.register_synapse_prompts_for_facade(  # type: ignore[reportPrivateImportUsage]
+                fake_facade
+            )
+            # No error — confirms facade dispatch works with explicit arg
+
+
+class TestRegisterPromptsFromPathEdgeCases:
+    """Additional coverage for register_prompts_from_path."""
+
+    def test_returns_zero_when_categories_not_dict(self, prompts_dir: Path) -> None:
+        """Returns 0 when manifest categories is not a dict (line 141)."""
+        manifest_path = prompts_dir / "prompts-manifest.json"
+        _ = manifest_path.write_text(
+            '{"version": "1.0", "categories": ["not", "a", "dict"]}',
+            encoding="utf-8",
+        )
+        result = synapse_prompts.register_prompts_from_path(prompts_dir)
+        assert result == 0
+
+    def test_returns_zero_when_prompts_not_list(self, prompts_dir: Path) -> None:
+        """Returns 0 for category whose prompts field is not a list (line 150)."""
+        import json as _json
+
+        manifest_data = {
+            "version": "1.0",
+            "categories": {"general": {"prompts": "not-a-list"}},
+        }
+        _ = (prompts_dir / "prompts-manifest.json").write_text(
+            _json.dumps(manifest_data), encoding="utf-8"
+        )
+        result = synapse_prompts.register_prompts_from_path(prompts_dir)
+        assert result == 0

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import cast
@@ -9,6 +10,8 @@ from typing import cast
 from cortex.managers.initialization import get_managers
 from cortex.managers.lazy_manager import LazyManager
 from cortex.managers.usage_tracker import UsageTracker
+
+_logger = logging.getLogger(__name__)
 
 
 def usage_date_range_from_strings(
@@ -25,12 +28,18 @@ def usage_date_range_from_strings(
         try:
             end = datetime.fromisoformat(end_date.replace("Z", "+00:00"))
         except ValueError:
-            pass
+            _logger.debug(
+                "invalid end_date ISO string, using default",
+                extra={"end_date": end_date},
+            )
     if start_date:
         try:
             start = datetime.fromisoformat(start_date.replace("Z", "+00:00"))
         except ValueError:
-            pass
+            _logger.debug(
+                "invalid start_date ISO string, using default",
+                extra={"start_date": start_date},
+            )
     return start, end
 
 

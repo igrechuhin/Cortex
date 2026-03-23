@@ -56,6 +56,10 @@ async def test_context_load_meets_100ms_target() -> None:
         samples.append(time.perf_counter() - start)
 
     median_seconds = statistics.median(samples)
+    p95_seconds = sorted(samples)[int(len(samples) * 0.95)]
     assert (
         median_seconds < 0.1
     ), f"median context load {median_seconds * 1000:.1f}ms exceeds 100ms target"
+    assert (
+        p95_seconds < 0.25
+    ), f"p95 context load {p95_seconds * 1000:.1f}ms exceeds 250ms target"

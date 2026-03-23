@@ -59,7 +59,7 @@ def get_claude_agents_target(source: Path) -> Path:
     return source.parent.parent.parent / ".claude" / "agents"
 
 
-def _rewrite_tool_refs(body: str) -> str:
+def rewrite_tool_refs(body: str) -> str:
     """Replace bare `tool_name(` references with `mcp__cortex__tool_name(` in body text.
 
     Only rewrites occurrences that are already prefixed with a backtick (i.e. inside
@@ -91,10 +91,10 @@ def inject_tools_into_frontmatter(content: str) -> str:
     If no frontmatter is present, only the tool-ref rewrite is applied.
     """
     if not content.startswith("---"):
-        return _rewrite_tool_refs(content)
+        return rewrite_tool_refs(content)
     end = content.find("\n---", 3)
     if end == -1:
-        return _rewrite_tool_refs(content)
+        return rewrite_tool_refs(content)
     frontmatter = content[3:end]
     closing = end + 4  # position just after "\n---"
     body = content[closing:]
@@ -106,10 +106,10 @@ def inject_tools_into_frontmatter(content: str) -> str:
     else:
         injected_fm = content[:closing]
 
-    return injected_fm + _rewrite_tool_refs(body)
+    return injected_fm + rewrite_tool_refs(body)
 
 
-def _sync_agent_file(agent_file: Path, target: Path, transform: bool = False) -> bool:
+def sync_agent_file(agent_file: Path, target: Path, transform: bool = False) -> bool:
     """Write agent file to target if content differs. Returns True if written."""
     from cortex.core.logging_config import logger
 
@@ -127,7 +127,7 @@ def _sync_agent_file(agent_file: Path, target: Path, transform: bool = False) ->
         return False
 
 
-def _sync_agents_to_target(
+def sync_agents_to_target(
     source: Path, target: Path, label: str, transform: bool = False
 ) -> int:
     """Sync all .md agent files from source to target. Returns count written.
@@ -144,7 +144,7 @@ def _sync_agents_to_target(
 
     source_names = {f.name for f in source.glob("*.md")}
     synced = sum(
-        _sync_agent_file(f, target, transform=transform)
+        sync_agent_file(f, target, transform=transform)
         for f in sorted(source.glob("*.md"))
     )
     # Remove stale agent files that no longer exist in source
@@ -175,7 +175,7 @@ def sync_cursor_agents() -> None:
     if not source:
         return
 
-    _ = _sync_agents_to_target(source, get_cursor_agents_target(source), "cursor")
-    _ = _sync_agents_to_target(
+    _ = sync_agents_to_target(source, get_cursor_agents_target(source), "cursor")
+    _ = sync_agents_to_target(
         source, get_claude_agents_target(source), "claude-code", transform=True
     )

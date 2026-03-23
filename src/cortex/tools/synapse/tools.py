@@ -73,7 +73,15 @@ def _synapse_error_update_missing_params(operation: str) -> str:
 
 
 async def _synapse_handle_sync(pull: bool, push: bool, ctx: MCPContext | None) -> str:
-    """Handle synapse(operation='sync')."""
+    """Handle synapse(operation='sync').
+
+    MCP boundary: catches all exceptions and serialises them as JSON error
+    responses so the MCP client always receives a structured payload rather
+    than an unhandled exception.  Internal helpers (``sync_synapse_impl``,
+    ``update_synapse_*_impl``) raise on all error conditions; narrowing here
+    is intentional — see ``prompts_paths.py`` for narrowed catches at lower
+    layers where specific failure modes are known.
+    """
     await log_client(ctx, "info", "synapse(sync): starting", logger_name=__name__)
     try:
         return await sync_synapse_impl(pull, push, ctx)

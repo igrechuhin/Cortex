@@ -1058,3 +1058,106 @@ class TestSynapseResources:
         result = json.loads(result_str)
         assert result["status"] == "success"
         assert "prompts" in result or "categories" in result
+
+
+# ============================================================================
+# Additional coverage: tools_impl error paths + tools_helpers error paths
+# ============================================================================
+
+
+@pytest.mark.asyncio
+class TestGetSynapseHandleRulesEmptyDescription:
+    """get_synapse(content_type='rules') with empty task_description returns error."""
+
+    async def test_empty_task_description_returns_error(self) -> None:
+        """tools_impl.get_synapse_handle_rules: empty string returns structured error."""
+        from cortex.tools.synapse.tools import get_synapse
+
+        result_str = await get_synapse(content_type="rules", task_description="")
+        result = json.loads(result_str)
+        assert result["status"] == "error"
+        assert "task_description" in result["error"]
+
+    async def test_whitespace_task_description_returns_error(self) -> None:
+        """tools_impl.get_synapse_handle_rules: whitespace-only is treated as empty."""
+        from cortex.tools.synapse.tools import get_synapse
+
+        result_str = await get_synapse(content_type="rules", task_description="   ")
+        result = json.loads(result_str)
+        assert result["status"] == "error"
+
+
+@pytest.mark.asyncio
+class TestGetSynapseHandlePromptsException:
+    """get_synapse(content_type='prompts') catches and returns errors."""
+
+    async def test_exception_in_prompts_impl_returns_error_json(
+        self, mock_project_root: Path
+    ) -> None:
+        """tools_impl.get_synapse_handle_prompts: wraps exception in error JSON."""
+        from cortex.tools.synapse.tools import get_synapse
+
+        with (
+            patch(
+                "cortex.tools.synapse.tools_impl.get_project_root",
+                return_value=mock_project_root,
+            ),
+            patch(
+                "cortex.tools.synapse.tools_impl.get_managers",
+                side_effect=RuntimeError("prompts failure"),
+            ),
+        ):
+            result_str = await get_synapse(content_type="prompts")
+        result = json.loads(result_str)
+        assert result["status"] == "error"
+        assert "prompts failure" in result["error"]
+        assert result["error_type"] == "RuntimeError"
+
+
+@pytest.mark.asyncio
+class TestExecuteRulesWithContextErrorPath:
+    """execute_rules_with_context returns error result when rules_manager missing."""
+
+    async def test_returns_error_result_when_no_rules_manager(
+        self, mock_project_root: Path
+    ) -> None:
+        """tools_helpers.execute_rules_with_context: error result for missing manager."""
+        from cortex.tools.synapse.tools_helpers import execute_rules_with_context
+
+        managers = make_test_managers()  # no rules_manager
+        with (
+            patch(
+                "cortex.tools.synapse.tools_helpers.get_project_root",
+                return_value=mock_project_root,
+            ),
+            patch(
+                "cortex.tools.synapse.tools_helpers.get_managers",
+                return_value=managers,
+            ),
+        ):
+            result = await execute_rules_with_context(
+                task_description="test",
+                max_tokens=1000,
+                min_relevance_score=0.3,
+                project_files=None,
+                rule_priority="local_overrides_shared",
+                context_aware=True,
+            )
+
+        assert result.status.value == "error"
+        assert result.error is not None
+        assert "not initialized" in result.error.lower()
+
+
+class TestCreateErrorResult:
+    """tools_helpers._create_error_result produces correct error model."""
+
+    def test_creates_error_result_with_message(self) -> None:
+        """_create_error_result sets status=error and propagates message."""
+        from cortex.tools.synapse.tools_helpers import create_error_result
+
+        result = create_error_result("something went wrong")
+        assert result.status.value == "error"
+        assert result.error == "something went wrong"
+        assert result.rules_loaded is None
+        assert result.total_tokens is None

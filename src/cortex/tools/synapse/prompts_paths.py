@@ -3,10 +3,13 @@
 from __future__ import annotations
 
 import json
+import logging
 from pathlib import Path
 
 from cortex.core.models import JsonDict
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
+
+_logger = logging.getLogger(__name__)
 
 
 def _paths_anchor() -> Path:
@@ -57,7 +60,12 @@ def get_prompts_paths() -> list[Path]:
 
 
 def get_synapse_prompts_path() -> Path | None:
-    """Get path to Synapse prompts directory (for backwards compatibility)."""
+    """Get path to Synapse prompts directory (for backwards compatibility).
+
+    Prefers ``.cortex/synapse/prompts/`` over ``.cortex/prompts/`` when both
+    exist. Falls back to ``paths[0]`` (the first discovered path) when no
+    synapse-shaped entry is found, or returns ``None`` if no paths exist.
+    """
     paths = get_prompts_paths()
     for path in paths:
         if path.name == "prompts" and path.parent.name == "synapse":
@@ -76,6 +84,7 @@ def load_prompts_manifest(prompts_path: Path) -> JsonDict | None:
             data = json.load(f)
             return JsonDict.from_dict(data)
     except (OSError, json.JSONDecodeError, UnicodeDecodeError, ValueError):
+        _logger.debug("prompts manifest unreadable: %s", manifest_path, exc_info=True)
         return None
 
 

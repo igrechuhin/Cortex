@@ -54,6 +54,11 @@ def create_prompt_function(
 
 
 def _description_and_icon(prompt_info: ModelDict) -> tuple[str, str | None]:
+    """Extract description string and optional icon emoji from a prompt info dict.
+
+    Returns empty string for description and None for icon when the fields are
+    absent or not strings.
+    """
     raw_desc = prompt_info.get("description", "")
     description = raw_desc if isinstance(raw_desc, str) else ""
     icon_raw = prompt_info.get("icon")
@@ -62,6 +67,11 @@ def _description_and_icon(prompt_info: ModelDict) -> tuple[str, str | None]:
 
 
 def _mcp_func_name(prompt_name: str) -> str:
+    """Convert a prompt name to a valid Python/MCP function identifier.
+
+    Lowercases the name, replaces spaces and hyphens with underscores, and
+    replaces any remaining non-alphanumeric characters with underscores.
+    """
     base = prompt_name.lower().replace(" ", "_").replace("-", "_")
     return "".join(c if c.isalnum() or c == "_" else "_" for c in base)
 
