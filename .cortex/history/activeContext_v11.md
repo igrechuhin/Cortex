@@ -2,6 +2,10 @@
 
 **This file records completed work only.** For current status and upcoming work see [roadmap.md](roadmap.md).
 
+## Completed Work (2026-03-23)
+
+- ✅ **Commit pipeline state and reliability hardening** - COMPLETE (2026-03-23) - Implemented structured pipeline state and aligned zero-arg commit/quality tooling paths with expanded test coverage for handoff, plan completion, markdown lint fixes, and usage tracking.
+
 ## Completed Work (2026-03-22)
 
 - **Summary (2026-03-22)** - 1 entries archived.

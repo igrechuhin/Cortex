@@ -35,9 +35,15 @@ def validate_progress_entry_text(entry_text: str) -> str | None:
             "Progress entry contains 'COMPLETE' but is missing ' - COMPLETE' "
             "(e.g. use '**Title** - COMPLETE. Summary...', not '...COMPLETE' alone)"
         )
-    if "(" in t and ")** - COMPLETE" not in t and " - COMPLETE" in t:
-        return (
-            "Progress entry has '(' but is missing ')** - COMPLETE'. "
-            "Use '**Title (date)** - COMPLETE. Summary...' so the title segment is closed."
-        )
+    if " - COMPLETE" in t:
+        title_part = t.split(" - COMPLETE", 1)[0]
+        if (
+            "(" in title_part
+            and ")** " not in title_part
+            and not title_part.endswith(")**")
+        ):
+            return (
+                "Progress entry has '(' but is missing ')** - COMPLETE'. "
+                "Use '**Title (date)** - COMPLETE. Summary...' so the title segment is closed."
+            )
     return None

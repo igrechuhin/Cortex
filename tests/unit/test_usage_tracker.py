@@ -781,3 +781,51 @@ class TestGetUsageTimelineWindow:
             limit=0,
         )
         assert zero_limit_result == []
+
+
+# ---------------------------------------------------------------------------
+# Telemetry suppression during commit pipeline (Fix 1)
+# ---------------------------------------------------------------------------
+
+
+class TestTelemetrySuppressedDuringPipeline:
+    @pytest.mark.asyncio
+    async def test_record_skipped_when_pipeline_active(self, tmp_path: Path) -> None:
+        """record_tool_usage is a no-op when commit pipeline dir exists."""
+        from cortex.core.synapse_usage_config import get_usage_storage_root
+        from cortex.tools.session.pipeline_handoff_io import (
+            pipeline_dir,
+            state_path,
+        )
+
+        root = _make_project_root(tmp_path, usage_writable=True)
+        # Simulate an active pipeline by creating pipeline.json
+        pdir = pipeline_dir(root, "commit")
+        pdir.mkdir(parents=True, exist_ok=True)
+        _ = state_path(pdir).write_text('{"started_at": "2026-01-01T00:00:00"}')
+
+        tracker = UsageTracker(root)
+        await tracker.record_tool_usage("my_tool", 50.0, True)
+
+        storage_root = get_usage_storage_root(root)
+        from datetime import UTC, datetime
+
+        today = datetime.now(UTC).strftime("%Y-%m-%d")
+        events_file = storage_root / "usage" / "events" / f"{today}.json"
+        assert not events_file.exists()
+
+    @pytest.mark.asyncio
+    async def test_record_proceeds_when_pipeline_inactive(self, tmp_path: Path) -> None:
+        """record_tool_usage persists events when no pipeline dir exists."""
+        from cortex.core.synapse_usage_config import get_usage_storage_root
+
+        root = _make_project_root(tmp_path, usage_writable=True)
+        tracker = UsageTracker(root)
+        await tracker.record_tool_usage("my_tool", 50.0, True)
+
+        storage_root = get_usage_storage_root(root)
+        from datetime import UTC, datetime
+
+        today = datetime.now(UTC).strftime("%Y-%m-%d")
+        events_file = storage_root / "usage" / "events" / f"{today}.json"
+        assert events_file.exists()

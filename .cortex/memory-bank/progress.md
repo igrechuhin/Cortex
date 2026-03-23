@@ -1,5 +1,9 @@
 # Progress Log
 
+## 2026-03-23
+
+- **Pipeline state + quality gate reliability updates** - COMPLETE. Added `pipeline_state` core model and updated zero-arg commit pipeline execution flows (`pipeline_handoff_io`, `pre_commit_zero_arg_tools`, `completion_validation`, `markdown_lint_core`, usage tracking) with corresponding test updates.
+
 ## 2026-03-22
 
 - **Session context usage statistics and memory bank index** - COMPLETE. Rolled up context usage statistics; refreshed memory bank index; Synapse usage analytics for 2026-03-22.

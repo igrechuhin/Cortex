@@ -594,3 +594,83 @@ class TestReadTaskFallback:
         )
         assert result["status"] == "not_found"
         assert result["pipeline_state"] == {}
+
+
+# ---------------------------------------------------------------------------
+# is_commit_pipeline_active (Fix 1)
+# ---------------------------------------------------------------------------
+
+
+class TestIsCommitPipelineActive:
+    def test_returns_false_before_init(self, tmp_path: Path) -> None:
+        from cortex.core.pipeline_state import is_commit_pipeline_active
+
+        assert is_commit_pipeline_active(tmp_path) is False
+
+    @pytest.mark.asyncio
+    async def test_returns_true_after_init(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        from cortex.core.pipeline_state import is_commit_pipeline_active
+
+        _resolve_root(monkeypatch, tmp_path)
+        await pipeline_handoff(operation="init", pipeline="commit")
+        assert is_commit_pipeline_active(tmp_path) is True
+
+    @pytest.mark.asyncio
+    async def test_returns_false_after_clear(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        from cortex.core.pipeline_state import is_commit_pipeline_active
+
+        _resolve_root(monkeypatch, tmp_path)
+        await pipeline_handoff(operation="init", pipeline="commit")
+        await pipeline_handoff(operation="clear", pipeline="commit")
+        assert is_commit_pipeline_active(tmp_path) is False
+
+
+# ---------------------------------------------------------------------------
+# Stale pipeline auto-expiry on re-init (Fix 5)
+# ---------------------------------------------------------------------------
+
+
+class TestStalePipelineExpiry:
+    @pytest.mark.asyncio
+    async def test_stale_pipeline_is_replaced_on_reinit(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """A pipeline.json older than TTL is removed and recreated on next init."""
+        import json as _json
+        from datetime import datetime, timedelta
+
+        from cortex.tools.session.pipeline_handoff_io import (
+            PIPELINE_TTL_SECONDS,
+            pipeline_dir,
+            state_path,
+        )
+
+        _resolve_root(monkeypatch, tmp_path)
+        await pipeline_handoff(operation="init", pipeline="commit")
+        pdir = pipeline_dir(tmp_path, "commit")
+        sfile = state_path(pdir)
+        state = _json.loads(sfile.read_text())
+        stale_time = datetime.now() - timedelta(seconds=PIPELINE_TTL_SECONDS + 10)
+        state["started_at"] = stale_time.isoformat(timespec="seconds")
+        _ = sfile.write_text(_json.dumps(state))
+        _ = (pdir / "sentinel.txt").write_text("old")
+        await pipeline_handoff(operation="init", pipeline="commit")
+        assert not (pdir / "sentinel.txt").exists()
+
+    @pytest.mark.asyncio
+    async def test_fresh_pipeline_is_preserved_on_reinit(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """A recently created pipeline.json is preserved on a second init call."""
+        from cortex.tools.session.pipeline_handoff_io import pipeline_dir
+
+        _resolve_root(monkeypatch, tmp_path)
+        await pipeline_handoff(operation="init", pipeline="commit")
+        pdir = pipeline_dir(tmp_path, "commit")
+        _ = (pdir / "sentinel.txt").write_text("new")
+        await pipeline_handoff(operation="init", pipeline="commit")
+        assert (pdir / "sentinel.txt").exists()

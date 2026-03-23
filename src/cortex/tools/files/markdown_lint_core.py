@@ -115,19 +115,29 @@ async def run_command(
 def _parse_git_output(stdout: str, project_root: Path, files: list[Path]) -> None:
     """Parse git command output and add markdown files to list."""
     for line in stdout.strip().split("\n"):
-        if line.strip():
-            file_path = project_root / line.strip()
-            if file_path.suffix in (".md", ".mdc") and file_path not in files:
-                files.append(file_path)
+        rel = line.strip()
+        if not rel:
+            continue
+        rel_path = Path(rel)
+        if rel_path.is_absolute() or ".." in rel_path.parts:
+            continue
+        file_path = project_root / rel_path
+        if file_path.suffix in (".md", ".mdc") and file_path not in files:
+            files.append(file_path)
 
 
 def _parse_untracked_files(stdout: str, project_root: Path, files: list[Path]) -> None:
     """Parse untracked files from git status output."""
     for line in stdout.strip().split("\n"):
-        if line.startswith("??"):
-            file_path = project_root / line[3:].strip()
-            if file_path.suffix in (".md", ".mdc") and file_path not in files:
-                files.append(file_path)
+        if not line.startswith("??"):
+            continue
+        rel = line[3:].strip()
+        rel_path = Path(rel)
+        if rel_path.is_absolute() or ".." in rel_path.parts:
+            continue
+        file_path = project_root / rel_path
+        if file_path.suffix in (".md", ".mdc") and file_path not in files:
+            files.append(file_path)
 
 
 parse_git_output = _parse_git_output

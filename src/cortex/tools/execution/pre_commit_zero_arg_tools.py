@@ -33,6 +33,7 @@ from cortex.core.usage_context import (
     get_current_project_root,
     get_or_resolve_project_root,
 )
+from cortex.tools.execution.pre_commit_detached import clear_all_cached_results
 from cortex.tools.execution.pre_commit_docs_memory_helpers import (
     run_docs_and_memory_bank_sync_impl,
 )
@@ -333,4 +334,5 @@ async def fix_quality_issues(
         result_json = await fix_quality_issues_impl(
             root, include_untracked_markdown=True, ctx=ctx
         )
+    _ = clear_all_cached_results(root)
     return cast(ModelDict, json.loads(result_json))

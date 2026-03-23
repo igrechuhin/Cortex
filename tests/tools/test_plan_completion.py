@@ -678,3 +678,46 @@ class TestPlanToolCompleteSmoke:
         active_text = active.read_text()
         assert "Wire optimization" in active_text
         assert "Connected config to runtime." in active_text
+
+
+# ---------------------------------------------------------------------------
+# validate_progress_entry_text parenthesis fix (Fix 3)
+# ---------------------------------------------------------------------------
+
+
+class TestValidateProgressEntryTextParentheses:
+    def test_parens_in_summary_body_are_valid(self) -> None:
+        """Parentheses in the summary body (after ' - COMPLETE') must not be rejected."""
+        from cortex.tools.plans.completion_validation import (
+            validate_progress_entry_text,
+        )
+
+        entry = "**Fix quality gate** - COMPLETE. Resolved using fix_quality_issues() helper."
+        assert validate_progress_entry_text(entry) is None
+
+    def test_properly_closed_parens_in_title_are_valid(self) -> None:
+        """Title with properly closed '(date)**' is valid."""
+        from cortex.tools.plans.completion_validation import (
+            validate_progress_entry_text,
+        )
+
+        entry = "**Fix quality gate (2026-03-23)** - COMPLETE. Summary."
+        assert validate_progress_entry_text(entry) is None
+
+    def test_unclosed_parens_in_title_are_invalid(self) -> None:
+        """Unclosed '(' before ' - COMPLETE' with no ')** ' is rejected."""
+        from cortex.tools.plans.completion_validation import (
+            validate_progress_entry_text,
+        )
+
+        entry = "**Fix quality gate (2026-03-23 - COMPLETE. Missing closing."
+        assert validate_progress_entry_text(entry) is not None
+
+    def test_no_complete_marker_is_valid(self) -> None:
+        """Entry without COMPLETE is always valid (not a completion entry)."""
+        from cortex.tools.plans.completion_validation import (
+            validate_progress_entry_text,
+        )
+
+        entry = "Some note with (parentheses) here."
+        assert validate_progress_entry_text(entry) is None

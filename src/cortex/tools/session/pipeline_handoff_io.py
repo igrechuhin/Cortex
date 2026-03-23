@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import logging
 import os
 import shutil
 import uuid
@@ -11,6 +12,10 @@ from pathlib import Path
 from typing import cast
 
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
+
+logger = logging.getLogger(__name__)
+
+PIPELINE_TTL_SECONDS = 4 * 3600  # 4 hours
 
 # ---------------------------------------------------------------------------
 # Session ID helpers (mirrors session_logger._get_session_id)
@@ -60,22 +65,48 @@ def state_path(pipeline_dir: Path) -> Path:
 # ---------------------------------------------------------------------------
 
 
+def _is_pipeline_stale(state_file: Path) -> bool:
+    """Return True if pipeline.json is older than PIPELINE_TTL_SECONDS."""
+    if not state_file.exists():
+        return False
+    try:
+        data: object = json.loads(state_file.read_text(encoding="utf-8"))
+        if not isinstance(data, dict):
+            return True
+        started_raw = cast(dict[str, object], data).get("started_at")
+        if not isinstance(started_raw, str):
+            return True
+        started = datetime.fromisoformat(started_raw)
+        age = (datetime.now() - started).total_seconds()
+        return age > PIPELINE_TTL_SECONDS
+    except (OSError, json.JSONDecodeError, ValueError):
+        return True
+
+
+def _parse_init_data(data: str) -> dict[str, object]:
+    try:
+        parsed: object = json.loads(data)
+        if isinstance(parsed, dict):
+            return cast(dict[str, object], parsed)
+        return {"raw": data}
+    except json.JSONDecodeError:
+        return {"raw": data}
+
+
 def op_init(project_root: Path, pipeline: str, data: str | None) -> str:
     """Create the pipeline directory and write initial manifest."""
     pdir = pipeline_dir(project_root, pipeline)
-    pdir.mkdir(parents=True, exist_ok=True)
     state_file = state_path(pdir)
-    extra: dict[str, object] = {}
-    if data:
-        try:
-            parsed: object = json.loads(data)
-            extra = (
-                cast(dict[str, object], parsed)
-                if isinstance(parsed, dict)
-                else {"raw": data}
-            )
-        except json.JSONDecodeError:
-            extra = {"raw": data}
+    if state_file.exists() and _is_pipeline_stale(state_file):
+        ttl_hours = PIPELINE_TTL_SECONDS // 3600
+        logger.warning(
+            "pipeline_handoff: stale '%s' pipeline state detected (>%dh); clearing.",
+            pipeline,
+            ttl_hours,
+        )
+        shutil.rmtree(pdir, ignore_errors=True)
+    pdir.mkdir(parents=True, exist_ok=True)
+    extra = _parse_init_data(data) if data else {}
     state: dict[str, object] = {
         "session_id": get_session_id(),
         "pipeline": pipeline,

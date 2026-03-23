@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import cast
 
 from cortex.core.models import HandlerKind
+from cortex.core.pipeline_state import is_commit_pipeline_active
 from cortex.core.synapse_usage_config import is_usage_writable
 from cortex.managers.usage_models import ToolUsageEvent, ToolUsageStats
 from cortex.managers.usage_tracker_aggregation import (
@@ -135,6 +136,8 @@ class UsageTracker:
 
     def _should_skip_recording(self, tool_name: str, duration_ms: float) -> bool:
         """Return True if recording should be skipped."""
+        if is_commit_pipeline_active(self._project_root):
+            return True
         return not is_usage_writable(
             self._project_root
         ) or not self._should_record_event(tool_name, duration_ms)

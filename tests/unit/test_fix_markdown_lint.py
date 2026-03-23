@@ -1065,6 +1065,51 @@ class TestHelperFunctions:
         assert any("file1.md" in str(f) for f in files)
         assert any("file2.mdc" in str(f) for f in files)
 
+    def test_parse_git_output_rejects_absolute_path(self, tmp_path: Path) -> None:
+        """parse_git_output ignores lines that are absolute paths."""
+        from cortex.tools.files.markdown_operations import parse_git_output
+
+        files: list[Path] = []
+        stdout = "/etc/passwd\n/tmp/evil.md\nnormal.md"
+        parse_git_output(stdout, tmp_path, files)
+
+        assert len(files) == 1
+        assert any("normal.md" in str(f) for f in files)
+        assert not any("/etc/passwd" in str(f) for f in files)
+
+    def test_parse_git_output_rejects_traversal(self, tmp_path: Path) -> None:
+        """parse_git_output ignores lines with .. path traversal segments."""
+        from cortex.tools.files.markdown_operations import parse_git_output
+
+        files: list[Path] = []
+        stdout = "../outside.md\n../../secret.md\nnormal.md"
+        parse_git_output(stdout, tmp_path, files)
+
+        assert len(files) == 1
+        assert any("normal.md" in str(f) for f in files)
+
+    def test_parse_untracked_files_rejects_absolute_path(self, tmp_path: Path) -> None:
+        """parse_untracked_files ignores untracked entries with absolute paths."""
+        from cortex.tools.files.markdown_operations import parse_untracked_files
+
+        files: list[Path] = []
+        stdout = "?? /tmp/evil.md\n?? normal.md"
+        parse_untracked_files(stdout, tmp_path, files)
+
+        assert len(files) == 1
+        assert any("normal.md" in str(f) for f in files)
+
+    def test_parse_untracked_files_rejects_traversal(self, tmp_path: Path) -> None:
+        """parse_untracked_files ignores untracked entries with .. segments."""
+        from cortex.tools.files.markdown_operations import parse_untracked_files
+
+        files: list[Path] = []
+        stdout = "?? ../outside.md\n?? normal.mdc"
+        parse_untracked_files(stdout, tmp_path, files)
+
+        assert len(files) == 1
+        assert any("normal.mdc" in str(f) for f in files)
+
     def test_parse_markdownlint_errors(self):
         """Test parse_markdownlint_errors helper."""
         from cortex.tools.files.markdown_operations import parse_markdownlint_errors
