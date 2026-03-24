@@ -71,14 +71,39 @@ _SETUP_PROMPT_ICONS: dict[str, str] = {
 }
 
 # ---------------------------------------------------------------------------
-# Prompt content (imported lazily to keep this module free of circular deps)
+# Prompt content
+#
+# Imported inside each _register_*() helper (not at module level) to avoid
+# importing cortex.setup.prompts at module-level.  That module calls
+# get_project_config_status() and registers prompts as a side-effect when
+# imported, which would fire with the wrong project root before the lazy
+# registry has had a chance to resolve the correct one.
 # ---------------------------------------------------------------------------
 
-from cortex.setup.prompts import (  # noqa: E402
-    _INITIALIZE_PROMPT,  # pyright: ignore[reportPrivateUsage]
-    _MIGRATE_PROMPT,  # pyright: ignore[reportPrivateUsage]
-    _POPULATE_TIKTOKEN_CACHE_PROMPT,  # pyright: ignore[reportPrivateUsage]
-)
+
+def _get_initialize_prompt() -> str:
+    from cortex.setup.prompts import (
+        _INITIALIZE_PROMPT,
+    )  # pyright: ignore[reportPrivateUsage]
+
+    return _INITIALIZE_PROMPT
+
+
+def _get_migrate_prompt() -> str:
+    from cortex.setup.prompts import (
+        _MIGRATE_PROMPT,
+    )  # pyright: ignore[reportPrivateUsage]
+
+    return _MIGRATE_PROMPT
+
+
+def _get_tiktoken_prompt() -> str:
+    from cortex.setup.prompts import (
+        _POPULATE_TIKTOKEN_CACHE_PROMPT,
+    )  # pyright: ignore[reportPrivateUsage]
+
+    return _POPULATE_TIKTOKEN_CACHE_PROMPT
+
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -113,7 +138,7 @@ def _register_initialize_prompt() -> None:
         - Cursor integration (symlinks + mcp.json)
         - Optional Synapse setup with default URL
         """
-        return _INITIALIZE_PROMPT
+        return _get_initialize_prompt()
 
     _ = initialize  # pyright: ignore[reportUnusedFunction]
 
@@ -128,7 +153,7 @@ def _register_migrate_prompt() -> None:
         2. Migrate legacy files
         3. Remove legacy directories
         """
-        return _MIGRATE_PROMPT
+        return _get_migrate_prompt()
 
     _ = migrate  # pyright: ignore[reportUnusedFunction]
 
@@ -139,7 +164,7 @@ def _register_tiktoken_prompt() -> None:
     )
     def populate_tiktoken_cache() -> str:
         """Populate bundled tiktoken cache with encoding files for offline operation."""
-        return _POPULATE_TIKTOKEN_CACHE_PROMPT
+        return _get_tiktoken_prompt()
 
     _ = populate_tiktoken_cache  # pyright: ignore[reportUnusedFunction]
 
