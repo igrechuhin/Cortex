@@ -20,7 +20,7 @@ clients to discover deferred tools by query.
 from __future__ import annotations
 
 from mcp.server.fastmcp import FastMCP
-from mcp.types import Prompt as MCPPrompt
+from mcp.types import ListPromptsRequest, ServerResult
 
 # FastMCP server instance (framework requirement)
 # This is an acceptable exception to the no-global-state rule
@@ -30,31 +30,33 @@ mcp = FastMCP("cortex")
 # ---------------------------------------------------------------------------
 # Lazy-registration hook
 #
-# FastMCP calls ``list_prompts()`` on every client request for the prompt list.
-# We intercept it to trigger :mod:`cortex.setup.lazy_prompt_registration` on
-# the *first* call, which resolves the correct project root via the MCP
-# ``roots/list`` capability and registers synapse / setup prompts with that
-# root.  All subsequent calls hit the short-circuit ``_registered`` flag and
-# pay only a single attribute lookup.
+# The MCP protocol calls ``list_prompts`` on every client request for the
+# prompt list.  We intercept the *low-level request handler* (the entry in
+# ``mcp._mcp_server.request_handlers``) to trigger lazy prompt registration
+# on the first call.  Replacing ``mcp.list_prompts`` (the FastMCP method)
+# does NOT work: FastMCP captures a bound-method reference to
+# ``FastMCP.list_prompts`` in a closure when ``_setup_handlers()`` runs at
+# ``__init__`` time, so a later attribute assignment on the instance is
+# invisible to the already-registered low-level handler.
 # ---------------------------------------------------------------------------
 
+_original_list_prompts_handler = mcp._mcp_server.request_handlers[  # type: ignore[index]
+    ListPromptsRequest
+]
 
-_list_prompts_original = mcp.list_prompts
 
-
-async def _list_prompts_with_lazy_registration() -> list[MCPPrompt]:
-    """Wrap FastMCP list_prompts to trigger lazy prompt registration on first call."""
-    from cortex.core.context_logging import MCPContext
+async def _lazy_list_prompts_handler(req: ListPromptsRequest) -> ServerResult:
+    """Low-level list_prompts handler that triggers lazy registration first."""
     from cortex.setup.lazy_prompt_registration import ensure_prompts_registered
 
-    ctx: MCPContext | None
+    ctx = None
     try:
         ctx = mcp.get_context()  # type: ignore[assignment]
     except Exception:
-        ctx = None
+        pass
 
     await ensure_prompts_registered(ctx)
-    return await _list_prompts_original()
+    return await _original_list_prompts_handler(req)  # type: ignore[arg-type]
 
 
-mcp.list_prompts = _list_prompts_with_lazy_registration  # type: ignore[method-assign]
+mcp._mcp_server.request_handlers[ListPromptsRequest] = _lazy_list_prompts_handler  # type: ignore[index]
