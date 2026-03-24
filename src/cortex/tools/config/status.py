@@ -99,26 +99,30 @@ def _get_fail_safe_status() -> ProjectConfigStatus:
     )
 
 
-def get_project_config_status() -> ProjectConfigStatus:
-    """Check project configuration status synchronously at import time.
+def get_project_config_status(
+    project_root: Path | None = None,
+) -> ProjectConfigStatus:
+    """Check project configuration status synchronously.
+
+    Args:
+        project_root: Explicit project root path. When ``None``, auto-detected
+            from CWD and ``sys.argv[0]`` via :func:`get_project_root`.
 
     Returns:
         Dictionary with status flags: memory_bank_initialized, structure_configured,
         cursor_integration_configured, migration_needed, tiktoken_cache_available.
     """
     try:
-        project_root = get_project_root()
-        cortex_dir = get_cortex_path(project_root, CortexResourceType.CORTEX_DIR)
-        cursor_dir = get_cursor_path(project_root, CursorResourceType.CURSOR_DIR)
+        root = project_root if project_root is not None else get_project_root()
+        cortex_dir = get_cortex_path(root, CortexResourceType.CORTEX_DIR)
+        cursor_dir = get_cursor_path(root, CursorResourceType.CURSOR_DIR)
 
-        memory_bank_initialized = _check_memory_bank_initialized(project_root)
+        memory_bank_initialized = _check_memory_bank_initialized(root)
         structure_configured = _check_structure_configured(cortex_dir)
         cursor_integration_configured = _check_cursor_integration(
             cursor_dir, cortex_dir
         )
-        migration_needed = _check_migration_needed(
-            project_root, memory_bank_initialized
-        )
+        migration_needed = _check_migration_needed(root, memory_bank_initialized)
         tiktoken_cache_available = ensure_bundled_cache_available()
         return ProjectConfigStatus(
             memory_bank_initialized=memory_bank_initialized,

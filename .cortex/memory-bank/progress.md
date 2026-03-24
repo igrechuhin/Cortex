@@ -1,5 +1,9 @@
 # Progress Log
 
+## 2026-03-24
+
+- **Lazy Synapse prompt registration and roots cache** - COMPLETE. Deferred Synapse prompt and cursor-agent sync until first `list_prompts` with correct MCP roots resolution; per-process `list_roots` cache to prevent stdio corruption under concurrent tools; `notifications/prompts/list_changed` after deferred registration; Synapse prompts modules and `config/status` refactors; unit tests for lazy registration, resolver, cursor-agent sync, and prompts.
+
 ## 2026-03-23
 
 - **Pipeline state + quality gate reliability updates** - COMPLETE. Added `pipeline_state` core model and updated zero-arg commit pipeline execution flows (`pipeline_handoff_io`, `pre_commit_zero_arg_tools`, `completion_validation`, `markdown_lint_core`, usage tracking) with corresponding test updates.
@@ -79,13 +83,7 @@
 
 ## 2026-03-16
 
-- **Commit pipeline Phase B re-validation**
-  - Re-ran commit pipeline Phase B (docs/state) for the current rules and composite tools batch using Phase A coverage 0.90 from pipeline handoff as context.
-  - Confirmed `activeContext.md`, `progress.md`, and `roadmap.md` already reflected the rules-hybrid categorization fix and migration helper directory-creation changes; no new roadmap items or plan archive moves were required.
-- **Code review bug fixes**
-  - Fixed `_categorize_non_generic_rule` in `rules_hybrid.py` to use mutually exclusive `if/elif` branching so a non-generic rule cannot be classified into multiple buckets (e.g., `language_rules` and `local_rules`) in the same pass, and updated Synapse coding standards with guidance on avoiding overlapping branches.
-  - Updated structure migration helpers (`migrate_memory_bank_files_from_source`, `migrate_single_file`, `migrate_plans`) to create destination directories with `mkdir(parents=True, exist_ok=True)` before calling `shutil.copy2`, preventing `FileNotFoundError` when running migrations on a fresh workspace.
-  - Ran commit pipeline Phase B (docs/state) for this batch using Phase A coverage 0.90 from pipeline handoff; verified memory bank (`activeContext.md`, `progress.md`, `roadmap.md`) and plans archive are already consistent with these changes.
+- **Week containing 2026-03-16** - 1 entries summarized.
 
 ## 2026-03-15
 

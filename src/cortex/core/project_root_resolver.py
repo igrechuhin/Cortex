@@ -8,6 +8,15 @@ Falls back to get_project_root(None) on timeout, error, or unsupported client.
 Set CORTEX_USE_FALLBACK_ROOT=1 to skip list_roots and use cwd/script-based
 root immediately. Use this if the first tool call is slow and you suspect
 the client is slow to respond to roots/list (then the delay is client-side).
+
+Root caching
+------------
+The resolved root is cached after the first successful ``list_roots`` call and
+reused for the lifetime of the server process.  Without a cache, every
+concurrent tool call that calls :func:`resolve_project_root_async` issues its
+own ``list_roots`` request.  When many tools run concurrently (e.g. five MCP
+calls in the same agent step), those five simultaneous ``list_roots`` writes
+to the stdio transport corrupt the protocol and crash the server.
 """
 
 import asyncio
@@ -26,6 +35,27 @@ from .constants import MCP_ROOTS_LIST_TIMEOUT_SECONDS
 from .context_logging import MCPContext
 
 logger = logging.getLogger(__name__)
+
+# ---------------------------------------------------------------------------
+# Per-process root cache
+# ---------------------------------------------------------------------------
+# Populated on the first successful list_roots() call.  All subsequent calls
+# return the cached value immediately without touching the transport.
+_cached_root: Path | None = None
+_root_cache_lock: asyncio.Lock | None = None
+
+
+def _get_root_cache_lock() -> asyncio.Lock:
+    global _root_cache_lock
+    if _root_cache_lock is None:
+        _root_cache_lock = asyncio.Lock()
+    return _root_cache_lock
+
+
+def clear_cached_root() -> None:
+    """Reset the root cache (used in tests and on explicit project-root override)."""
+    global _cached_root
+    _cached_root = None
 
 
 def _file_uri_to_path(uri: str) -> Path | None:
@@ -103,13 +133,34 @@ async def _fetch_roots_path(session: ServerSession) -> Path | None:
 
 
 async def _try_roots_from_ctx(ctx: MCPContext) -> Path | None:
-    """Request roots from client; return first valid file path or None."""
+    """Request roots from client; return cached or freshly fetched file path.
+
+    Uses a per-process cache so only the first call ever issues a
+    ``list_roots`` request.  Concurrent callers wait on the lock and then
+    return the cached value, avoiding simultaneous writes to the stdio
+    transport that would corrupt the protocol.
+    """
+    global _cached_root
+
+    # Fast path: already resolved.
+    if _cached_root is not None:
+        return _cached_root
+
     if not _client_supports_roots(ctx):
         logger.debug(
             "project_root_resolver: client did not advertise roots capability, skipping list_roots()"
         )
         return None
-    return await _fetch_roots_path(ctx.session)
+
+    async with _get_root_cache_lock():
+        # Re-check inside the lock (another coroutine may have populated it).
+        if _cached_root is not None:
+            return _cached_root
+        path = await _fetch_roots_path(ctx.session)
+        if path is not None:
+            _cached_root = path
+            logger.debug("project_root_resolver: cached resolved root %s", _cached_root)
+        return path
 
 
 async def resolve_project_root_async(

@@ -18,8 +18,21 @@ from cortex.tools.synapse.prompts_content import (
 )
 
 
-def get_cursor_agents_source() -> Path | None:
-    """Find .cortex/synapse/cursor-agents/ by walking up from CWD and module location."""
+def get_cursor_agents_source(project_root: Path | None = None) -> Path | None:
+    """Find .cortex/synapse/cursor-agents/.
+
+    When *project_root* is provided the lookup is scoped to that directory.
+    When ``None``, falls back to walking up from CWD then from the module file
+    location (backward-compatible heuristic for dev installs).
+    """
+    if project_root is not None:
+        candidate = (
+            get_cortex_path(project_root, CortexResourceType.CORTEX_DIR)
+            / "synapse"
+            / "cursor-agents"
+        )
+        return candidate if (candidate.exists() and candidate.is_dir()) else None
+
     current = Path.cwd()
     for path in [current, *current.parents]:
         candidate = (
@@ -160,18 +173,20 @@ def sync_agents_to_target(
     return synced
 
 
-def sync_cursor_agents() -> None:
+def sync_cursor_agents(project_root: Path | None = None) -> None:
     """Sync cursor agents to .cursor/agents/ and .claude/agents/.
 
     Copies all .md files from .cortex/synapse/cursor-agents/ to both IDE
     agent directories so the commit and implement pipelines work in both
     Cursor (primary) and Claude Code (secondary).
 
+    When *project_root* is provided the lookup is scoped to that directory.
+    When ``None``, falls back to the CWD/module-anchor heuristic.
+
     Idempotent: files are only written when content changes. Creates target
-    directories if absent. Called at import time so agents are always in sync
-    when the MCP server starts.
+    directories if absent.
     """
-    source = get_cursor_agents_source()
+    source = get_cursor_agents_source(project_root)
     if not source:
         return
 

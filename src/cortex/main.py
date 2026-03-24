@@ -38,6 +38,10 @@ import cortex.core.logging_config  # noqa: F401, E402
 # Import tools package to register all @mcp.tool() decorators
 import cortex.setup.prompts_always  # noqa: F401, E402
 import cortex.tools  # noqa: F401, E402
+
+# Import synapse prompts so the import-time fast-path registration runs
+# (succeeds when CWD == project root; lazy registry handles the rest).
+import cortex.tools.synapse.prompts  # noqa: F401, E402
 from cortex.core.mcp_stability_semaphores import (  # noqa: E402
     get_long_running_elapsed_seconds,
     get_long_running_semaphore_holder,
@@ -46,7 +50,6 @@ from cortex.core.mcp_stability_semaphores import (  # noqa: E402
     was_long_running_released_by_timeout,
 )
 from cortex.server import mcp  # noqa: E402
-from cortex.setup import should_mount_setup  # noqa: E402
 from cortex.transport_config import (  # noqa: E402
     TRANSPORT_SSE,
     TRANSPORT_STREAMABLE_HTTP,
@@ -56,16 +59,17 @@ from cortex.transport_config import (  # noqa: E402
 
 cortex.core.logging_config.apply_cortex_format_to_third_party_loggers()
 
-# Setup prompts (initialize_memory_bank, migration, etc.) only when project
-# needs setup; setup_synapse is always available via prompts_always.
-if should_mount_setup():
-    import cortex.setup.prompts as _setup_prompts  # noqa: F401
-
-    _ = _setup_prompts  # side-effect registration only
+# Setup prompts (initialize, migrate, populate_tiktoken_cache) and synapse
+# prompts are now registered lazily on the first list_prompts call via
+# cortex.setup.lazy_prompt_registration.  This ensures the correct project
+# root — supplied by the IDE client through the MCP roots/list capability —
+# is used, regardless of what directory the server process started in.
+# setup_synapse is always available via cortex.setup.prompts_always (above).
 
 # Explicitly reference for side effects (tool/prompt registration)
 _ = cortex.setup.prompts_always
 _ = cortex.tools
+_ = cortex.tools.synapse.prompts
 
 logger = logging.getLogger(__name__)
 

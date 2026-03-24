@@ -50,6 +50,25 @@ class TestGetCursorAgentsSource:
             result = get_cursor_agents_source()
         assert result == agents_dir
 
+    def test_finds_cursor_agents_via_explicit_project_root(
+        self, tmp_path: Path
+    ) -> None:
+        """Explicit project_root bypasses CWD walk."""
+        agents_dir = tmp_path / ".cortex" / "synapse" / "cursor-agents"
+        agents_dir.mkdir(parents=True)
+        # CWD is deliberately wrong; explicit root should win
+        with patch(
+            "cortex.tools.synapse.prompts_agents.Path.cwd",
+            return_value=Path("/nonexistent_xyz"),
+        ):
+            result = get_cursor_agents_source(project_root=tmp_path)
+        assert result == agents_dir
+
+    def test_returns_none_via_explicit_root_when_missing(self, tmp_path: Path) -> None:
+        """Returns None when cursor-agents dir absent under explicit project_root."""
+        result = get_cursor_agents_source(project_root=tmp_path)
+        assert result is None
+
 
 # ---------------------------------------------------------------------------
 # get_cursor_agents_target / get_claude_agents_target

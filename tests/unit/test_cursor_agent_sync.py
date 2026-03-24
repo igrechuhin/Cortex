@@ -42,6 +42,24 @@ class TestSyncCursorAgents:
         source.mkdir(parents=True)
         return source
 
+    @staticmethod
+    def _source_resolver(
+        source: Path,
+    ) -> object:
+        def _resolve(_root: Path | None = None) -> Path:
+            _ = _root
+            return source
+
+        return _resolve
+
+    @staticmethod
+    def _none_source_resolver() -> object:
+        def _resolve(_root: Path | None = None) -> None:
+            _ = _root
+            return None
+
+        return _resolve
+
     def test_syncs_all_agent_files_to_both_targets(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
@@ -52,7 +70,7 @@ class TestSyncCursorAgents:
         _ = (source / "agent-b.md").write_text("agent B", encoding="utf-8")
         monkeypatch.setattr(
             "cortex.tools.synapse.prompts_agents.get_cursor_agents_source",
-            lambda: source,
+            self._source_resolver(source),
         )
         cursor_target = get_cursor_agents_target(source)
         claude_target = get_claude_agents_target(source)
@@ -75,7 +93,7 @@ class TestSyncCursorAgents:
         _ = (source / "agent.md").write_text(original, encoding="utf-8")
         monkeypatch.setattr(
             "cortex.tools.synapse.prompts_agents.get_cursor_agents_source",
-            lambda: source,
+            self._source_resolver(source),
         )
         cursor_target = get_cursor_agents_target(source)
         claude_target = get_claude_agents_target(source)
@@ -98,7 +116,7 @@ class TestSyncCursorAgents:
         _ = (source / "agent.md").write_text("content", encoding="utf-8")
         monkeypatch.setattr(
             "cortex.tools.synapse.prompts_agents.get_cursor_agents_source",
-            lambda: source,
+            self._source_resolver(source),
         )
         cursor_target = get_cursor_agents_target(source)
         claude_target = get_claude_agents_target(source)
@@ -116,7 +134,8 @@ class TestSyncCursorAgents:
         """Missing source directory is handled gracefully (no exception)."""
         # Arrange
         monkeypatch.setattr(
-            "cortex.tools.synapse.prompts_agents.get_cursor_agents_source", lambda: None
+            "cortex.tools.synapse.prompts_agents.get_cursor_agents_source",
+            self._none_source_resolver(),
         )
 
         # Act / Assert: no exception raised
@@ -131,7 +150,7 @@ class TestSyncCursorAgents:
         _ = (source / "agent.md").write_text("content", encoding="utf-8")
         monkeypatch.setattr(
             "cortex.tools.synapse.prompts_agents.get_cursor_agents_source",
-            lambda: source,
+            self._source_resolver(source),
         )
 
         sync_cursor_agents()
@@ -157,7 +176,7 @@ class TestSyncCursorAgents:
         _ = agent.write_text("---\nname: a\n---\nold body", encoding="utf-8")
         monkeypatch.setattr(
             "cortex.tools.synapse.prompts_agents.get_cursor_agents_source",
-            lambda: source,
+            self._source_resolver(source),
         )
 
         sync_cursor_agents()
@@ -183,7 +202,7 @@ class TestSyncCursorAgents:
         _ = (source / "README.txt").write_text("readme", encoding="utf-8")
         monkeypatch.setattr(
             "cortex.tools.synapse.prompts_agents.get_cursor_agents_source",
-            lambda: source,
+            self._source_resolver(source),
         )
         cursor_target = get_cursor_agents_target(source)
         claude_target = get_claude_agents_target(source)
@@ -206,7 +225,7 @@ class TestSyncCursorAgents:
         _ = (source / "remove.md").write_text("remove", encoding="utf-8")
         monkeypatch.setattr(
             "cortex.tools.synapse.prompts_agents.get_cursor_agents_source",
-            lambda: source,
+            self._source_resolver(source),
         )
         sync_cursor_agents()
         cursor_target = get_cursor_agents_target(source)

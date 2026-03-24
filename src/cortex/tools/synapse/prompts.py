@@ -107,11 +107,21 @@ def register_prompts_from_path(prompts_path: Path) -> int:
     return _register_prompts_from_path_impl(_facade(), prompts_path)
 
 
-def register_synapse_prompts() -> None:
-    """Load and register all prompts from Synapse and project-specific directories."""
-    register_synapse_prompts_for_facade(_facade())
+def register_synapse_prompts(project_root: Path | None = None) -> None:
+    """Load and register all prompts from Synapse and project-specific directories.
+
+    Args:
+        project_root: Explicit project root. When ``None``, falls back to the
+            CWD/module-anchor heuristic.
+    """
+    register_synapse_prompts_for_facade(_facade(), project_root)
 
 
-# Register prompts and sync cursor agents at import time
+# Register prompts and sync cursor agents at import time using heuristic root.
+# When CWD equals the project root (e.g. ``python -m cortex.main`` launched by
+# the IDE from the project directory), this succeeds immediately.  When the
+# heuristic fails (e.g. uvx launched from home dir), the LazyPromptRegistry
+# will re-run these calls with the correct root on the first list_prompts
+# request from the client.
 register_synapse_prompts()
 sync_cursor_agents()

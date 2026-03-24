@@ -2,9 +2,13 @@
 
 **This file records completed work only.** For current status and upcoming work see [roadmap.md](roadmap.md).
 
+## Completed Work (2026-03-24)
+
+- **Lazy Synapse prompt registration and roots-safe project root** - Added `lazy_prompt_registration` so the first `list_prompts` resolves the workspace via `resolve_project_root_async` (MCP `roots/list` when the client advertises roots; skip when unsupported to avoid bridge crashes), then runs `register_synapse_prompts`, `sync_cursor_agents`, and conditional setup prompts; emits `notifications/prompts/list_changed` and short-circuits when startup registration already loaded Synapse prompts. Extended `project_root_resolver` with per-process root caching to avoid concurrent `list_roots` on stdio. Wired `server`/`main`, refactored Synapse `prompts_*` modules and `config/status`; tests in `test_lazy_prompt_registration`, `test_project_root_resolver`, `test_cursor_agent_sync`, `test_synapse_prompts`, `test_prompts_agents`.
+
 ## Completed Work (2026-03-23)
 
-- ✅ **Commit pipeline state and reliability hardening** - COMPLETE (2026-03-23) - Implemented structured pipeline state and aligned zero-arg commit/quality tooling paths with expanded test coverage for handoff, plan completion, markdown lint fixes, and usage tracking.
+- **Summary (2026-03-23)** - 1 entries archived.
 
 ## Completed Work (2026-03-22)
 

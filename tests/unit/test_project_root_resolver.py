@@ -7,9 +7,16 @@ import pytest
 
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.core.project_root_resolver import (
+    clear_cached_root,
     file_uri_to_path,
     resolve_project_root_async,
 )
+
+
+@pytest.fixture(autouse=True)
+def _reset_root_cache() -> None:  # pyright: ignore[reportUnusedFunction]
+    """Reset the per-process root cache before every test to prevent cross-test pollution."""
+    clear_cached_root()
 
 
 class TestFileUriToPath:

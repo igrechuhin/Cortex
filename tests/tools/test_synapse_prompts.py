@@ -149,6 +149,26 @@ class TestGetSynapsePromptsPath:
                 # Assert
                 assert result is None
 
+    def test_finds_prompts_via_explicit_project_root(
+        self, temp_project_root: Path, prompts_dir: Path
+    ) -> None:
+        """Explicit project_root skips CWD walk and returns correct path."""
+        # CWD is deliberately wrong
+        with patch(
+            "cortex.tools.synapse.prompts_paths.Path.cwd",
+            return_value=Path("/nonexistent_xyz"),
+        ):
+            result = synapse_prompts.get_prompts_paths(temp_project_root)
+
+        assert prompts_dir in result
+
+    def test_explicit_project_root_returns_empty_when_no_cortex(
+        self, tmp_path: Path
+    ) -> None:
+        """When .cortex/synapse/prompts does not exist under explicit root, returns []."""
+        result = synapse_prompts.get_prompts_paths(tmp_path)
+        assert result == []
+
 
 # ============================================================================
 # Tests for _load_prompts_manifest()

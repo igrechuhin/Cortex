@@ -169,9 +169,17 @@ def register_prompts_from_path(facade: ModuleType, prompts_path: Path) -> int:
     return registered_count
 
 
-def register_synapse_prompts_impl(facade: ModuleType) -> None:
-    """Load and register all prompts from Synapse and project-specific directories."""
-    prompts_paths = get_prompts_paths()
+def register_synapse_prompts_impl(
+    facade: ModuleType, project_root: Path | None = None
+) -> None:
+    """Load and register all prompts from Synapse and project-specific directories.
+
+    Args:
+        facade: The facade module on whose namespace prompts are registered.
+        project_root: Explicit project root. When ``None``, falls back to the
+            CWD/module-anchor heuristic inside :func:`get_prompts_paths`.
+    """
+    prompts_paths = get_prompts_paths(project_root)
     if not prompts_paths:
         return
 
@@ -183,7 +191,15 @@ def register_synapse_prompts_impl(facade: ModuleType) -> None:
     log_registration_summary(facade, total_registered)
 
 
-def register_synapse_prompts_for_facade(facade: ModuleType | None = None) -> None:
-    """Register prompts; defaults to the ``cortex.tools.synapse.prompts`` module."""
+def register_synapse_prompts_for_facade(
+    facade: ModuleType | None = None,
+    project_root: Path | None = None,
+) -> None:
+    """Register prompts; defaults to the ``cortex.tools.synapse.prompts`` module.
+
+    Args:
+        facade: The facade module. Defaults to ``cortex.tools.synapse.prompts``.
+        project_root: Explicit project root passed to :func:`register_synapse_prompts_impl`.
+    """
     mod = facade or sys.modules["cortex.tools.synapse.prompts"]
-    register_synapse_prompts_impl(mod)
+    register_synapse_prompts_impl(mod, project_root)

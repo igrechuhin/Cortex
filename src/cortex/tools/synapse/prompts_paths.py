@@ -17,22 +17,37 @@ def _paths_anchor() -> Path:
     return Path(__file__)
 
 
-def get_prompts_paths() -> list[Path]:
+def get_prompts_paths(project_root: Path | None = None) -> list[Path]:
     """Get paths to all prompts directories.
 
-    Walks up the directory tree from current working directory to find
-    prompts directories. Returns paths for both:
+    When *project_root* is provided the search is scoped to that directory and
+    no further CWD or module-anchor walking is performed.  This is the
+    preferred call-site when the project root has already been resolved
+    (e.g. via :func:`resolve_project_root_async`).
+
+    When *project_root* is ``None`` the function falls back to the original
+    heuristic: walk up from CWD first, then from the module file location.
+    The fallback exists for backward-compatibility and for the case where the
+    server is run directly from the project directory (``python -m cortex.main``
+    with a correctly inherited CWD).
+
+    Returns paths for:
     - .cortex/synapse/prompts/ (shared Synapse prompts)
     - .cortex/prompts/ (project-specific prompts)
-
-    Also tries to find them relative to the module file location as fallback.
     """
     found_paths: list[Path] = []
-
-    # Directories to check (relative to .cortex/)
     prompt_dirs = ["synapse/prompts", "prompts"]
 
-    # Try current working directory first (works when server runs from project root)
+    if project_root is not None:
+        # Fast path: explicit root, no walking needed.
+        cortex_root = get_cortex_path(project_root, CortexResourceType.CORTEX_DIR)
+        for prompt_dir in prompt_dirs:
+            prompts_path = cortex_root / prompt_dir
+            if prompts_path.exists() and prompts_path.is_dir():
+                found_paths.append(prompts_path)
+        return found_paths
+
+    # Heuristic fallback: walk up from CWD (works when CWD == project root).
     current = Path.cwd()
     for path in [current, *current.parents]:
         cortex_root = get_cortex_path(path, CortexResourceType.CORTEX_DIR)
@@ -42,8 +57,9 @@ def get_prompts_paths() -> list[Path]:
                 if prompts_path not in found_paths:
                     found_paths.append(prompts_path)
 
-    # Fallback: try relative to this module's location
-    # This helps when CWD is not the project root
+    # Secondary fallback: walk up from module file location.
+    # Helps dev-install (src/ layout) when CWD is not the project root.
+    # Does NOT help pip/uvx installs whose __file__ is in site-packages.
     anchor = _paths_anchor()
     for path in [
         anchor.parent.parent.parent.parent,
