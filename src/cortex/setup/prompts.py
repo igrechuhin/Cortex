@@ -69,7 +69,21 @@ Generate all 7 core files from templates:
 - Use default URL: https://github.com/igrechuhin/Synapse.git
 - Or skip this step if you don't need shared rules/prompts
 
-**Step 5: Optional pre-commit hook for markdown lint**
+**Step 5: Update .gitignore for Cortex transient files**
+- Open or create the root `.gitignore` file.
+- Add the following entries if they are not already present (append under a
+  `# Cortex MCP (transient/generated files)` comment block):
+  ```
+  # Cortex MCP (transient/generated files)
+  .cortex/.session/
+  .cortex/.cache/
+  .cortex/history/
+  .cortex-backup-*/
+  ```
+- Do NOT add `.cortex/memory-bank/`, `.cortex/plans/`, or `.cortex/config/` —
+  those contain project data that should be tracked by version control.
+
+**Step 6: Optional pre-commit hook for markdown lint**
 - If the project has a Git repository (.git exists):
  - If .pre-commit-config.yaml does NOT exist: create it with a single local hook that runs markdown lint on all .md/.mdc files (id: markdownlint, name: Markdown lint (rumdl, all files), entry: uv run rumdl check --fix ., language: system, pass_filenames: false, always_run: true). This requires rumdl (for example via uv sync --extra dev) and pre-commit (e.g. pip install pre-commit).
  - If .pre-commit-config.yaml already exists: add the same markdownlint hook to the existing local repos/hooks so commits run markdown lint via rumdl.
@@ -97,6 +111,7 @@ Expected output format:
   "symlinks_created": [".cursor/memory-bank", ".cursor/synapse", ".cursor/plans"],
   "config_files": [".cursor/mcp.json"],
   "synapse_setup": <true/false>,
+  "gitignore_updated": <true/false>,
   "pre_commit_installed": <true/false or omitted if skipped>,
   "total_tokens": <token_count>
 }}
@@ -157,6 +172,7 @@ First, create the new structure (same as initialize prompt):
 - Create .cortex/ directory structure (memory-bank, plans, config)
 - Initialize Memory Bank with 7 core files (if not already present)
 - Setup Cursor integration (symlinks + mcp.json)
+- Update .gitignore (same as initialize Step 5)
 
 **Step 3: Migrate legacy files**
 Copy/move all files from legacy locations to new structure:
@@ -213,6 +229,7 @@ Expected output format:
   }},
   "directories_created": [".cortex", ".cortex/memory-bank", ".cortex/plans", ".cursor"],
   "symlinks_created": [".cursor/memory-bank", ".cursor/synapse", ".cursor/plans"],
+  "gitignore_updated": <true/false>,
   "files_migrated": <total_count>,
   "versions_migrated": <count>,
   "links_updated": <count>,

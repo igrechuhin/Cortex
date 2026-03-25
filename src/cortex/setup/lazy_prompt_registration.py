@@ -191,6 +191,18 @@ def _register_setup_prompts(status: object) -> None:
         _register_tiktoken_prompt()
 
 
+async def _run_startup_repair(project_root: Path) -> None:
+    """Run startup repair and log a summary if anything was changed."""
+    try:
+        from cortex.structure.lifecycle.startup_repair import repair_project_setup
+
+        report = await repair_project_setup(project_root)
+        if not report.skipped:
+            logger.info("startup_repair: %s", report.model_dump())
+    except Exception as exc:
+        logger.warning("startup_repair: failed: %s", exc)
+
+
 async def _resolve_project_root(ctx: MCPContext | None) -> Path | None:
     try:
         return await resolve_project_root_async(None, ctx)
@@ -292,6 +304,7 @@ class LazyPromptRegistry:
         logger.debug("lazy_prompt_registration: resolved project root %s", project_root)
         already_has_synapse = _prompt_manager_has_synapse_prompts()
         _try_sync_synapse_prompts(project_root, already_has_synapse)
+        await _run_startup_repair(project_root)
         setup_registered = _register_setup_if_needed(project_root)
         await _notify_prompt_list_changed_if_needed(
             ctx, (not already_has_synapse) or setup_registered

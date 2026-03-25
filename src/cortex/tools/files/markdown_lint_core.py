@@ -233,13 +233,15 @@ async def find_markdownlint_command(
 def _find_markdownlint_config(project_root: Path) -> Path | None:
     """Find Markdown lint config file in project root.
 
-    For rumdl we prefer ``rumdl.toml``. Legacy markdownlint configuration files
-    from earlier tooling are ignored by the Python integration after migration,
-    but can remain on disk if external tools still rely on them.
+    ``rumdl init`` creates ``.rumdl.toml`` (hidden file) by default — that is
+    the canonical name.  ``rumdl.toml`` (no leading dot) is a legacy alias that
+    some older documentation referenced; we check it as a fallback so existing
+    projects are not broken.
     """
-    rumdl_config = project_root / "rumdl.toml"
-    if rumdl_config.exists():
-        return rumdl_config
+    for name in (".rumdl.toml", "rumdl.toml"):
+        config = project_root / name
+        if config.exists():
+            return config
     return None
 
 

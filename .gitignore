@@ -96,3 +96,9 @@ eval_results.json
 /invalid/
 /learning/
 /validation/
+
+# Cortex MCP (transient/generated files)
+.cortex/.session/
+.cortex/.cache/
+.cortex/history/
+.cortex-backup-*/
