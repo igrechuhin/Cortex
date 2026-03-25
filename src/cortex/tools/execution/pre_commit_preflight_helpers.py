@@ -55,7 +55,7 @@ def _ensure_result_dict(value: ModelDict | str) -> ModelDict:
         return cast(ModelDict, {"status": "error", "error": str(value)})
 
 
-def _has_pre_commit_tool_error(execute_result: ModelDict) -> bool:
+def has_pre_commit_tool_error(execute_result: ModelDict) -> bool:
     """Return True when execute_pre_commit_checks failed as a tool."""
     status = str(execute_result.get("status"))
     error_message = execute_result.get("error")
@@ -63,13 +63,13 @@ def _has_pre_commit_tool_error(execute_result: ModelDict) -> bool:
     return status == "error" and (error_message is not None or error_type is not None)
 
 
-def _markdown_has_tool_error(markdown_result: JsonDict) -> bool:
+def markdown_has_tool_error(markdown_result: JsonDict) -> bool:
     """Return True when fix_markdown_lint reported a tool-level error."""
     status_value: JsonValue | None = markdown_result.get("status")
     return str(status_value) == "error"
 
 
-def _compute_preflight_passed(
+def compute_preflight_passed(
     execute_result: ModelDict,
     markdown_result: JsonDict | None,
 ) -> bool:
@@ -114,7 +114,7 @@ def _one_check_summary(name: str, check_dict: ModelDict) -> PreflightCheckSummar
     )
 
 
-def _build_execute_check_summaries(
+def build_execute_check_summaries(
     execute_result: ModelDict,
 ) -> list[PreflightCheckSummary]:
     """Build summaries for checks returned by execute_pre_commit_checks."""
@@ -130,7 +130,7 @@ def _build_execute_check_summaries(
     return summaries
 
 
-def _append_markdown_summary(
+def append_markdown_summary(
     summaries: list[PreflightCheckSummary],
     markdown_result: JsonDict | None,
 ) -> None:
@@ -159,13 +159,13 @@ def _append_markdown_summary(
     )
 
 
-def _build_check_summaries(
+def build_check_summaries(
     execute_result: ModelDict,
     markdown_result: JsonDict | None,
 ) -> list[PreflightCheckSummary]:
     """Build per-check summaries from execute_pre_commit_checks and markdown lint."""
-    summaries = _build_execute_check_summaries(execute_result)
-    _append_markdown_summary(summaries, markdown_result)
+    summaries = build_execute_check_summaries(execute_result)
+    append_markdown_summary(summaries, markdown_result)
     return summaries
 
 
@@ -220,15 +220,15 @@ async def _run_preflight_checks_phase_tools(
     return execute_result, language, markdown_result
 
 
-def _build_preflight_model(
+def build_preflight_model(
     execute_result: ModelDict,
     language: str | None,
     markdown_result: JsonDict | None,
     ctx: MCPContext | None,
 ) -> ModelDict:
     """Build success or error model for run_preflight_checks."""
-    if _has_pre_commit_tool_error(execute_result) or (
-        markdown_result is not None and _markdown_has_tool_error(markdown_result)
+    if has_pre_commit_tool_error(execute_result) or (
+        markdown_result is not None and markdown_has_tool_error(markdown_result)
     ):
         error_model = RunPreflightChecksErrorResult(
             error="run_preflight_checks: underlying tool error during preflight",
@@ -240,8 +240,8 @@ def _build_preflight_model(
         # Logging handled by caller; keep this helper pure except for type.
         return cast(ModelDict, error_model.model_dump(mode="json"))
 
-    preflight_passed = _compute_preflight_passed(execute_result, markdown_result)
-    summaries = _build_check_summaries(execute_result, markdown_result)
+    preflight_passed = compute_preflight_passed(execute_result, markdown_result)
+    summaries = build_check_summaries(execute_result, markdown_result)
     result_model = RunPreflightChecksResult(
         preflight_passed=preflight_passed,
         language=language,
@@ -267,7 +267,7 @@ async def run_preflight_checks_impl(
         include_untracked_markdown,
         ctx,
     )
-    return _build_preflight_model(execute_result, language, markdown_result, ctx)
+    return build_preflight_model(execute_result, language, markdown_result, ctx)
 
 
 __all__ = ["run_preflight_checks_impl"]

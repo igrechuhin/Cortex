@@ -203,7 +203,7 @@ async def _execute_with_error_handling[T](
         raise
 
 
-async def _run_and_finalize[T](
+async def run_and_finalize[T](
     execute_fn: Callable[
         [], Awaitable[tuple[T, bool, str | None, bool, int | None, str | None]]
     ],
@@ -255,7 +255,7 @@ async def _run_with_retry_and_record[T](
             func, semaphore, effective_timeout, args, kwargs_model, ctx, progress_task
         )
 
-    return await _run_and_finalize(
+    return await run_and_finalize(
         _execute_and_finalize,
         progress_task,
         ctx,

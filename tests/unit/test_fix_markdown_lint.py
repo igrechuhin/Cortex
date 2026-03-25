@@ -194,7 +194,7 @@ class TestMarkdownLintCoreNarrowExceptions:
         with (
             patch.object(
                 mlcu,
-                "_update_markdown_lint_cache_from_results",
+                "update_markdown_lint_cache_from_results",
                 new_callable=AsyncMock,
                 side_effect=FileLockTimeoutError("markdown-lint-index.json", 30),
             ),
@@ -233,7 +233,7 @@ class TestMarkdownLintCoreNarrowExceptions:
         with (
             patch.object(
                 mlcu,
-                "_update_markdown_lint_cache_from_results",
+                "update_markdown_lint_cache_from_results",
                 new_callable=AsyncMock,
                 side_effect=RuntimeError("bug"),
             ),
@@ -1251,7 +1251,7 @@ class TestFixMarkdownLintErrorHandling:
                 return_value=results,
             ),
             patch(
-                "cortex.tools.files.markdown_lint_cache_updates._update_markdown_lint_cache_from_results",
+                "cortex.tools.files.markdown_lint_cache_updates.update_markdown_lint_cache_from_results",
                 new_callable=AsyncMock,
                 side_effect=FileLockTimeoutError("markdown-lint-index.json", 30),
             ),
@@ -1397,7 +1397,7 @@ class TestMarkdownlintBatchHelpers:
                 return_value=[],
             ) as mock_run_files,
             patch(
-                "cortex.tools.files.markdown_lint_cache_updates._update_markdown_lint_cache_from_results",
+                "cortex.tools.files.markdown_lint_cache_updates.update_markdown_lint_cache_from_results",
                 new_callable=AsyncMock,
             ) as mock_update,
         ):
@@ -1442,7 +1442,7 @@ class TestFixMarkdownLintProgressReporting:
 
         with (
             patch(
-                "cortex.tools.files.markdown_lint_run._process_markdown_files_sequential",
+                "cortex.tools.files.markdown_lint_run.process_markdown_files_sequential",
                 new_callable=AsyncMock,
                 return_value=mock_results,
             ) as mock_seq,
@@ -1488,7 +1488,7 @@ class TestFixMarkdownLintProgressReporting:
 
         with (
             patch(
-                "cortex.tools.files.markdown_lint_run._process_markdown_files_sequential",
+                "cortex.tools.files.markdown_lint_run.process_markdown_files_sequential",
                 new_callable=AsyncMock,
                 return_value=mock_results,
             ),

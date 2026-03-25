@@ -38,7 +38,7 @@ from cortex.tools.execution.pre_commit_tools_run_helpers import (
 logger = logging.getLogger(__name__)
 
 # Adapter registry: language -> factory(project_root) -> FrameworkAdapter.
-_ADAPTER_REGISTRY: dict[str, Callable[[str | None], FrameworkAdapter]] = {
+ADAPTER_REGISTRY: dict[str, Callable[[str | None], FrameworkAdapter]] = {
     "python": lambda root: PythonAdapter(root),
     "typescript": lambda root: TypeScriptAdapter(root),
     "javascript": lambda root: JavaScriptAdapter(root),
@@ -48,16 +48,14 @@ _ADAPTER_REGISTRY: dict[str, Callable[[str | None], FrameworkAdapter]] = {
     "swift": lambda root: SwiftAdapter(root),
     "kotlin": lambda root: KotlinAdapter(root),
 }
-SUPPORTED_LANGUAGES: tuple[str, ...] = tuple(_ADAPTER_REGISTRY.keys())
-# Public alias for pre_commit_worker subprocess (avoids reportPrivateUsage).
-ADAPTER_REGISTRY = _ADAPTER_REGISTRY
+SUPPORTED_LANGUAGES: tuple[str, ...] = tuple(ADAPTER_REGISTRY.keys())
 
 
 def get_adapter(
     language_info: LanguageInfo, project_root: str | None
 ) -> FrameworkAdapter | None:
     """Get framework adapter for detected language."""
-    factory = _ADAPTER_REGISTRY.get(language_info.language)
+    factory = ADAPTER_REGISTRY.get(language_info.language)
     if factory is None:
         return None
     return factory(project_root)

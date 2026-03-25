@@ -99,9 +99,7 @@ def _apply_rollup_totals(
     stats.insights = generate_insights(rollup, create_empty_insights)
 
 
-def _analyze_log_entry(
-    session_id: str, entry: LoadContextLogEntry
-) -> ContextUsageEntry:
+def analyze_log_entry(session_id: str, entry: LoadContextLogEntry) -> ContextUsageEntry:
     """Analyze a single log entry and create usage entry."""
     rq, qnote = log_and_classify_context_telemetry_entry(session_id, entry)
     _, avg_r, hi_r, lo_r = _relevance_aggregates_from_log_entry(entry)
@@ -126,7 +124,7 @@ def _analyze_log_entry(
     )
 
 
-def _update_aggregates(stats: ContextUsageStatistics) -> None:
+def update_aggregates(stats: ContextUsageStatistics) -> None:
     """Update aggregate statistics from entries."""
     entries = stats.entries
     if not entries:
@@ -159,11 +157,11 @@ def reconcile_context_usage_statistics_entries(stats: ContextUsageStatistics) ->
     if not changed:
         return False
     stats.entries = new_entries
-    _update_aggregates(stats)
+    update_aggregates(stats)
     return True
 
 
-def _calculate_session_stats(
+def calculate_session_stats(
     entries: list[ContextUsageEntry],
 ) -> SessionStats:
     """Calculate statistics for a list of context usage entries."""
@@ -202,7 +200,7 @@ def _update_global_stats(
         stats.entries.extend(entries)
         stats.total_sessions_analyzed += 1
         stats.last_updated = datetime.now().isoformat(timespec="minutes")
-        _update_aggregates(stats)
+        update_aggregates(stats)
         if is_usage_writable(project_root):
             save_statistics(stats_path, stats)
         new_entries_added = len(entries)
@@ -256,10 +254,9 @@ def analyze_current_session(project_root: Path) -> CurrentSessionAnalysisResult:
         )
 
     current_entries = [
-        _analyze_log_entry(session_id, entry)
-        for entry in session_log.load_context_calls
+        analyze_log_entry(session_id, entry) for entry in session_log.load_context_calls
     ]
-    session_stats = _calculate_session_stats(current_entries)
+    session_stats = calculate_session_stats(current_entries)
     stats, new_entries_added = _update_global_stats(
         project_root, session_id, current_entries
     )
@@ -280,7 +277,7 @@ def _process_log_files(
             continue
         sessions_analyzed += 1
         for entry in session_log.load_context_calls:
-            new_entries.append(_analyze_log_entry(session_log.session_id, entry))
+            new_entries.append(analyze_log_entry(session_log.session_id, entry))
     return new_entries, sessions_analyzed
 
 
@@ -337,7 +334,7 @@ def analyze_session_logs(project_root: Path) -> SessionLogsAnalysisResult:
         stats.entries.extend(new_entries)
         stats.total_sessions_analyzed += sessions_analyzed
         stats.last_updated = datetime.now().isoformat(timespec="minutes")
-        _update_aggregates(stats)
+        update_aggregates(stats)
         if is_usage_writable(project_root):
             save_statistics(stats_path, stats)
 

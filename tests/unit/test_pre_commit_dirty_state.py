@@ -5,8 +5,7 @@ redundant checks are skipped when no source files change between
 Phase A and Step 12.
 """
 
-# pyright: reportPrivateUsage=false, reportUnusedFunction=false
-
+# pyright: reportUnusedFunction=false
 from __future__ import annotations
 
 from pathlib import Path
@@ -21,10 +20,10 @@ from cortex.tools.execution.pre_commit_dirty_state import (
     PipelineDirtyTracker,
     PipelineFingerprint,
     SkipDecision,
-    _compute_git_file_hash,
+    compute_git_file_hash,
 )
 
-_HASH_TARGET = "cortex.tools.execution.pre_commit_dirty_state._compute_git_file_hash"
+_HASH_TARGET = "cortex.tools.execution.pre_commit_dirty_state.compute_git_file_hash"
 _SUBPROC = "cortex.tools.execution.pre_commit_dirty_state.subprocess.run"
 
 _FP_BASE = PipelineFingerprint("abc123", "def456", 5, 10)
@@ -66,7 +65,7 @@ def _git_side_effect(
     return _inner
 
 
-# --- _compute_git_file_hash -----------------------------------------------
+# --- compute_git_file_hash -------------------------------------------------
 
 
 class TestComputeGitFileHash:
@@ -75,7 +74,7 @@ class TestComputeGitFileHash:
         with patch(_SUBPROC) as m:
             m.return_value.returncode = 0
             m.return_value.stdout = ""
-            fp = _compute_git_file_hash(tmp_path)
+            fp = compute_git_file_hash(tmp_path)
         assert fp.source_file_count == 0 and fp.total_file_count == 0
 
     def test_python_as_source(self, tmp_path: Path) -> None:
@@ -85,7 +84,7 @@ class TestComputeGitFileHash:
                 staged="M\tsrc/foo.py\nA\tsrc/bar.py",
             ),
         ):
-            fp = _compute_git_file_hash(tmp_path)
+            fp = compute_git_file_hash(tmp_path)
         assert fp.source_file_count == 2
 
     def test_markdown_not_source(self, tmp_path: Path) -> None:
@@ -95,14 +94,14 @@ class TestComputeGitFileHash:
                 staged="M\tdocs/readme.md\nM\tsrc/main.py",
             ),
         ):
-            fp = _compute_git_file_hash(tmp_path)
+            fp = compute_git_file_hash(tmp_path)
         assert fp.source_file_count == 1 and fp.total_file_count == 2
 
     def test_git_failure(self, tmp_path: Path) -> None:
         with patch(_SUBPROC) as m:
             m.return_value.returncode = 1
             m.return_value.stdout = ""
-            fp = _compute_git_file_hash(tmp_path)
+            fp = compute_git_file_hash(tmp_path)
         assert fp.source_file_count == 0
 
     def test_untracked_included(self, tmp_path: Path) -> None:
@@ -112,7 +111,7 @@ class TestComputeGitFileHash:
                 untracked="src/new_module.py\n",
             ),
         ):
-            fp = _compute_git_file_hash(tmp_path)
+            fp = compute_git_file_hash(tmp_path)
         assert fp.source_file_count == 1
 
 
@@ -242,28 +241,28 @@ class TestTrySkipCleanChecks:
         assert result is None
 
 
-# --- _record_phase_a_fingerprint -------------------------------------------
+# --- record_phase_a_fingerprint --------------------------------------------
 
 
 class TestRecordPhaseAFingerprint:
 
     def test_records_on_pass(self, tmp_path: Path) -> None:
         from cortex.tools.execution.pre_commit_phase_dispatch import (
-            _record_phase_a_fingerprint,
+            record_phase_a_fingerprint,
         )
 
         result = cast(ModelDict, {"preflight_passed": True, "status": "success"})
         with patch(_HASH_TARGET, return_value=_FP_BASE):
-            _record_phase_a_fingerprint(result, tmp_path)
+            record_phase_a_fingerprint(result, tmp_path)
         assert PipelineDirtyTracker.get_instance().is_active
 
     def test_inactive_on_fail(self, tmp_path: Path) -> None:
         from cortex.tools.execution.pre_commit_phase_dispatch import (
-            _record_phase_a_fingerprint,
+            record_phase_a_fingerprint,
         )
 
         result = cast(ModelDict, {"preflight_passed": False, "status": "error"})
-        _record_phase_a_fingerprint(result, tmp_path)
+        record_phase_a_fingerprint(result, tmp_path)
         assert not PipelineDirtyTracker.get_instance().is_active
 
 

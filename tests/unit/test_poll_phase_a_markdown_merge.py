@@ -1,4 +1,4 @@
-"""Tests for markdown-result merging in _poll_phase_a_result.
+"""Tests for markdown-result merging in `poll_phase_a_result`.
 
 Verifies that the detached worker's ``markdown_result`` is merged into the
 quality-gate response and that ``preflight_passed`` is set to False when
@@ -14,37 +14,37 @@ from unittest.mock import AsyncMock, patch
 import pytest
 
 from cortex.tools.execution.pre_commit_zero_arg_tools import (
-    _markdown_result_has_errors,  # pyright: ignore[reportPrivateUsage]
-    _poll_phase_a_result,  # pyright: ignore[reportPrivateUsage]
+    markdown_result_has_errors,
+    poll_phase_a_result,
     run_quality_gate,
 )
 
 # ---------------------------------------------------------------------------
-# _markdown_result_has_errors
+# markdown_result_has_errors
 # ---------------------------------------------------------------------------
 
 
 class TestMarkdownResultHasErrors:
-    """Unit tests for _markdown_result_has_errors helper."""
+    """Unit tests for markdown_result_has_errors helper."""
 
     def test_no_errors(self) -> None:
         assert (
-            _markdown_result_has_errors({"files_with_errors": 0, "status": "success"})
+            markdown_result_has_errors({"files_with_errors": 0, "status": "success"})
             is False
         )
 
     def test_files_with_errors_int(self) -> None:
         assert (
-            _markdown_result_has_errors({"files_with_errors": 1, "status": "error"})
+            markdown_result_has_errors({"files_with_errors": 1, "status": "error"})
             is True
         )
 
     def test_files_with_errors_str(self) -> None:
-        assert _markdown_result_has_errors({"files_with_errors": "2"}) is True
+        assert markdown_result_has_errors({"files_with_errors": "2"}) is True
 
     def test_error_status_non_timeout(self) -> None:
         assert (
-            _markdown_result_has_errors(
+            markdown_result_has_errors(
                 {"files_with_errors": 0, "status": "error", "error": "rumdl not found"}
             )
             is True
@@ -53,27 +53,25 @@ class TestMarkdownResultHasErrors:
     def test_error_status_timeout_ignored(self) -> None:
         """Timeout errors are not treated as lint failures."""
         assert (
-            _markdown_result_has_errors(
+            markdown_result_has_errors(
                 {"files_with_errors": 0, "status": "error", "error": "timeout"}
             )
             is False
         )
 
     def test_empty_dict(self) -> None:
-        assert _markdown_result_has_errors({}) is False
+        assert markdown_result_has_errors({}) is False
 
     def test_missing_status_with_zero_errors(self) -> None:
-        assert _markdown_result_has_errors({"files_with_errors": 0}) is False
+        assert markdown_result_has_errors({"files_with_errors": 0}) is False
 
     def test_non_numeric_files_with_errors_treated_as_error(self) -> None:
         """Non-numeric string in files_with_errors is treated as error signal."""
-        assert (
-            _markdown_result_has_errors({"files_with_errors": "not-a-number"}) is True
-        )
+        assert markdown_result_has_errors({"files_with_errors": "not-a-number"}) is True
 
 
 # ---------------------------------------------------------------------------
-# _poll_phase_a_result — markdown merging
+# poll_phase_a_result — markdown merging
 # ---------------------------------------------------------------------------
 
 
@@ -121,7 +119,7 @@ class TestPollPhaseAMarkdownMerge:
                 return_value=envelope,
             ),
         ):
-            result = await _poll_phase_a_result(
+            result = await poll_phase_a_result(
                 _mock_project_root, "test-job", timeout=30, ctx=None
             )
 
@@ -147,7 +145,7 @@ class TestPollPhaseAMarkdownMerge:
                 return_value=envelope,
             ),
         ):
-            result = await _poll_phase_a_result(
+            result = await poll_phase_a_result(
                 _mock_project_root, "test-job", timeout=30, ctx=None
             )
 
@@ -173,7 +171,7 @@ class TestPollPhaseAMarkdownMerge:
                 return_value=envelope,
             ),
         ):
-            result = await _poll_phase_a_result(
+            result = await poll_phase_a_result(
                 _mock_project_root, "test-job", timeout=30, ctx=None
             )
 
@@ -200,7 +198,7 @@ class TestPollPhaseAMarkdownMerge:
                 return_value=envelope,
             ),
         ):
-            result = await _poll_phase_a_result(
+            result = await poll_phase_a_result(
                 _mock_project_root, "test-job", timeout=30, ctx=None
             )
 

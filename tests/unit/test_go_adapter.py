@@ -1,6 +1,5 @@
 """Tests for Go framework adapter."""
 
-# pyright: reportPrivateUsage=false
 import subprocess
 import tempfile
 from pathlib import Path
@@ -226,9 +225,7 @@ class TestGoAdapter:
         """_extract_test_counts parses go test result lines."""
         adapter = GoAdapter()
         output = "--- PASS: TestFoo (0.00s)\n--- PASS: TestBar (0.00s)\n--- FAIL: TestBaz (0.00s)"
-        passed, failed = adapter._extract_test_counts(
-            output
-        )  # pyright: ignore[reportPrivateUsage]
+        passed, failed = adapter.extract_test_counts(output)
         assert passed == 2
         assert failed == 1
 
@@ -236,9 +233,7 @@ class TestGoAdapter:
         """_parse_go_vet_output extracts file:line: message lines."""
         adapter = GoAdapter()
         output = "main.go:10:2: undefined: x\nmain.go:11:3: undefined: y"
-        errs = adapter._parse_go_vet_output(  # pyright: ignore[reportPrivateUsage]
-            output
-        )
+        errs = adapter.parse_go_vet_output(output)
         assert len(errs) == 2
         assert "main.go:10" in errs[0]
         assert "main.go:11" in errs[1]

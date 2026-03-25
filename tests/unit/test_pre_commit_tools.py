@@ -1,7 +1,6 @@
 """Tests for pre-commit tools."""
 
-# pyright: reportPrivateUsage=false, reportUnusedFunction=false
-
+# pyright: reportUnusedFunction=false
 import ast
 import json
 import tempfile
@@ -47,8 +46,8 @@ from cortex.tools.execution.pre_commit_helpers_remaining import (
     extract_int_from_object,
     extract_list_from_object,
 )
-from cortex.tools.execution.pre_commit_pipeline import (
-    _check_function_lengths,  # pyright: ignore[reportPrivateUsage]
+from cortex.tools.execution.pre_commit_pipeline_quality import (
+    check_function_lengths,
 )
 from cortex.tools.execution.pre_commit_synapse import run_synapse_script
 from cortex.tools.execution.pre_commit_tools import (
@@ -62,7 +61,7 @@ from cortex.tools.execution.pre_commit_tools_inline_execution import get_adapter
 def _reset_connection_state_for_pre_commit_tools() -> None:
     """Ensure MCP connection state is healthy before each pre-commit tools test."""
     mcp_stability_retry._connection_state = None  # type: ignore[attr-defined]
-    _ = mcp_stability_retry._get_connection_state()
+    _ = mcp_stability_retry.get_connection_state()
 
 
 # Required parameters for execute_pre_commit_checks (tool requires all params).
@@ -1453,12 +1452,12 @@ class TestGetDocstringRange:
 
 
 class TestCheckFunctionLengths:
-    """Test _check_function_lengths and _check_function_lengths_in_file."""
+    """Test check_function_lengths and check_function_lengths_in_file."""
 
     def test_no_violations_when_no_src(self) -> None:
         """Test no violations when src directory doesn't exist."""
         with tempfile.TemporaryDirectory() as tmpdir:
-            violations = _check_function_lengths(Path(tmpdir))
+            violations = check_function_lengths(Path(tmpdir))
             assert violations == []
 
     def test_no_violations_for_short_function(self) -> None:
@@ -1477,7 +1476,7 @@ def short_func():
 '''
             _ = (src_dir / "short.py").write_text(content)
 
-            violations = _check_function_lengths(project_root)
+            violations = check_function_lengths(project_root)
             assert violations == []
 
     def test_detects_long_function(self) -> None:
@@ -1492,7 +1491,7 @@ def short_func():
             content = "def long_func():\n" + "\n".join(lines) + "\n    return x0\n"
             _ = (src_dir / "long.py").write_text(content)
 
-            violations = _check_function_lengths(project_root)
+            violations = check_function_lengths(project_root)
             assert len(violations) == 1
             assert violations[0].function == "long_func"
             assert violations[0].lines > MAX_FUNCTION_LINES
@@ -1527,7 +1526,7 @@ def short_func():
             content = "def long_func():\n" + "\n".join(lines) + "\n    return x0\n"
             _ = (src_dir / "test_long.py").write_text(content)
 
-            violations = _check_function_lengths(project_root)
+            violations = check_function_lengths(project_root)
             assert violations == []  # test files are skipped
 
     def test_detects_async_function_length(self) -> None:
@@ -1546,7 +1545,7 @@ def short_func():
             )
             _ = (src_dir / "async_long.py").write_text(content)
 
-            violations = _check_function_lengths(project_root)
+            violations = check_function_lengths(project_root)
             assert len(violations) == 1
             assert violations[0].function == "long_async_func"
 

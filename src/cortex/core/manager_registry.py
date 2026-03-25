@@ -32,6 +32,11 @@ class ManagerRegistry:
         """Initialize an empty manager registry."""
         self._managers: dict[str, ManagersDict] = {}
 
+    @property
+    def managers(self) -> dict[str, ManagersDict]:
+        """Public access to the internal managers cache (tests/callers)."""
+        return self._managers
+
     async def get_managers(self, project_root: Path) -> ManagersDict:
         """Get or initialize managers for a project with lazy loading.
 

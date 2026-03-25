@@ -12,8 +12,6 @@ Tests that patch internals should patch the implementation modules
 (cortex.tools.files.markdown_lint_core, cortex.tools.files.markdown_lint_run).
 """
 
-# pyright: reportPrivateUsage=false
-
 from cortex.tools.files.markdown_lint import (
     FileResult,
     FixMarkdownLintResult,
@@ -22,7 +20,6 @@ from cortex.tools.files.markdown_lint import (
     run_markdownlint_with_cache,
 )
 from cortex.tools.files.markdown_lint_core import (
-    _update_markdown_lint_cache_from_results,
     after_one_file,
     compute_file_hashes,
     filter_files_for_linting,
@@ -34,6 +31,7 @@ from cortex.tools.files.markdown_lint_core import (
     parse_git_output,
     parse_untracked_files,
     run_command,
+    update_markdown_lint_cache_from_results,
     update_markdown_lint_cache_safe,
     validate_markdown_prerequisites,
 )
@@ -42,7 +40,7 @@ from cortex.tools.files.markdown_lint_helpers import (
     parse_markdownlint_output,
 )
 from cortex.tools.files.markdown_lint_run import (
-    _process_markdown_files_sequential,
+    process_markdown_files_sequential,
     run_markdownlint_batch,
     run_markdownlint_fix,
     run_markdownlint_for_files,
@@ -66,10 +64,10 @@ __all__ = [
     "parse_untracked_files",
     "run_command",
     "run_markdownlint_with_cache",
-    "_update_markdown_lint_cache_from_results",
+    "update_markdown_lint_cache_from_results",
     "update_markdown_lint_cache_safe",
     "validate_markdown_prerequisites",
-    "_process_markdown_files_sequential",
+    "process_markdown_files_sequential",
     "run_markdownlint_batch",
     "run_markdownlint_fix",
     "run_markdownlint_for_files",

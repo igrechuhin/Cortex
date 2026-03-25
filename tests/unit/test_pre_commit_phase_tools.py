@@ -16,23 +16,43 @@ import pytest
 
 from cortex.core.models import JsonDict, ModelDict
 from cortex.tools.execution.pre_commit_docs_memory_helpers import (
-    _build_docs_memory_bank_model,  # pyright: ignore[reportPrivateUsage]
-    _build_docs_memory_bank_summaries,  # pyright: ignore[reportPrivateUsage]
-    _build_roadmap_sync_summary,  # pyright: ignore[reportPrivateUsage]
-    _build_timestamps_summary,  # pyright: ignore[reportPrivateUsage]
-    _compute_docs_memory_bank_passed,  # pyright: ignore[reportPrivateUsage]
+    build_docs_memory_bank_model as _build_docs_memory_bank_model,
+)
+from cortex.tools.execution.pre_commit_docs_memory_helpers import (
+    build_docs_memory_bank_summaries as _build_docs_memory_bank_summaries,
+)
+from cortex.tools.execution.pre_commit_docs_memory_helpers import (
+    build_roadmap_sync_summary as _build_roadmap_sync_summary,
+)
+from cortex.tools.execution.pre_commit_docs_memory_helpers import (
+    build_timestamps_summary as _build_timestamps_summary,
+)
+from cortex.tools.execution.pre_commit_docs_memory_helpers import (
+    compute_docs_memory_bank_passed as _compute_docs_memory_bank_passed,
 )
 from cortex.tools.execution.pre_commit_phase_dispatch import (
-    _ensure_dict,  # pyright: ignore[reportPrivateUsage]
+    ensure_dict as _ensure_dict,
 )
 from cortex.tools.execution.pre_commit_preflight_helpers import (
-    _append_markdown_summary,  # pyright: ignore[reportPrivateUsage]
-    _build_check_summaries,  # pyright: ignore[reportPrivateUsage]
-    _build_execute_check_summaries,  # pyright: ignore[reportPrivateUsage]
-    _build_preflight_model,  # pyright: ignore[reportPrivateUsage]
-    _compute_preflight_passed,  # pyright: ignore[reportPrivateUsage]
-    _has_pre_commit_tool_error,  # pyright: ignore[reportPrivateUsage]
-    _markdown_has_tool_error,  # pyright: ignore[reportPrivateUsage]
+    append_markdown_summary as _append_markdown_summary,
+)
+from cortex.tools.execution.pre_commit_preflight_helpers import (
+    build_check_summaries as _build_check_summaries,
+)
+from cortex.tools.execution.pre_commit_preflight_helpers import (
+    build_execute_check_summaries as _build_execute_check_summaries,
+)
+from cortex.tools.execution.pre_commit_preflight_helpers import (
+    build_preflight_model as _build_preflight_model,
+)
+from cortex.tools.execution.pre_commit_preflight_helpers import (
+    compute_preflight_passed as _compute_preflight_passed,
+)
+from cortex.tools.execution.pre_commit_preflight_helpers import (
+    has_pre_commit_tool_error as _has_pre_commit_tool_error,
+)
+from cortex.tools.execution.pre_commit_preflight_helpers import (
+    markdown_has_tool_error as _markdown_has_tool_error,
 )
 from cortex.tools.execution.pre_commit_tools import execute_pre_commit_checks
 from cortex.tools.models import PreflightCheckSummary

@@ -83,7 +83,7 @@ class JavaScriptAdapter(FrameworkAdapter):
 
     def _parse_test_output(self, output: str, success: bool) -> TestResult:
         """Parse npm test / Jest / Vitest-style output."""
-        passed, failed = self._extract_test_counts(output)
+        passed, failed = self.extract_test_counts(output)
         total = passed + failed
         pass_rate = (passed / total) if total > 0 else 0.0
         coverage = self._extract_coverage(output)
@@ -103,7 +103,7 @@ class JavaScriptAdapter(FrameworkAdapter):
             errors=errors,
         )
 
-    def _extract_test_counts(self, output: str) -> tuple[int, int]:
+    def extract_test_counts(self, output: str) -> tuple[int, int]:
         """Extract passed/failed counts from test output."""
         passed, failed = 0, 0
         for line in reversed(output.splitlines()):
@@ -239,15 +239,15 @@ class JavaScriptAdapter(FrameworkAdapter):
             output = result.stdout + result.stderr
             out_lower = output.lower()
             if result.returncode == 0:
-                return self._type_check_success_result(output)
+                return self.type_check_success_result(output)
             if any(ind in out_lower for ind in _NO_TSC_INDICATORS):
-                return self._type_check_not_configured_result(output)
+                return self.type_check_not_configured_result(output)
             errs = self.parse_tsc_errors(output)
-            return self._type_check_failure_result(output, errs)
+            return self.type_check_failure_result(output, errs)
         except Exception as e:
-            return self._type_check_exception_result(e)
+            return self.type_check_exception_result(e)
 
-    def _type_check_success_result(self, output: str) -> CheckResult:
+    def type_check_success_result(self, output: str) -> CheckResult:
         """Build CheckResult for successful type check."""
         return CheckResult(
             check_type="type_check",
@@ -258,7 +258,7 @@ class JavaScriptAdapter(FrameworkAdapter):
             files_modified=[],
         )
 
-    def _type_check_not_configured_result(self, output: str) -> CheckResult:
+    def type_check_not_configured_result(self, output: str) -> CheckResult:
         """Build CheckResult when tsc is not configured (treat as success)."""
         return CheckResult(
             check_type="type_check",
@@ -269,7 +269,7 @@ class JavaScriptAdapter(FrameworkAdapter):
             files_modified=[],
         )
 
-    def _type_check_failure_result(self, output: str, errs: list[str]) -> CheckResult:
+    def type_check_failure_result(self, output: str, errs: list[str]) -> CheckResult:
         """Build CheckResult for type check failure."""
         return CheckResult(
             check_type="type_check",
@@ -280,7 +280,7 @@ class JavaScriptAdapter(FrameworkAdapter):
             files_modified=[],
         )
 
-    def _type_check_exception_result(self, e: Exception) -> CheckResult:
+    def type_check_exception_result(self, e: Exception) -> CheckResult:
         """Build CheckResult for type check exception."""
         return CheckResult(
             check_type="type_check",

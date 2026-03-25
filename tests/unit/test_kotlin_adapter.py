@@ -1,6 +1,5 @@
 """Tests for Kotlin framework adapter."""
 
-# pyright: reportPrivateUsage=false
 import tempfile
 from pathlib import Path
 from unittest.mock import MagicMock, patch
@@ -27,20 +26,20 @@ class TestKotlinAdapter:
         with tempfile.TemporaryDirectory() as tmpdir:
             _ = (Path(tmpdir) / "pom.xml").write_text("<project/>")
             adapter = KotlinAdapter(str(tmpdir))
-            assert adapter._build_tool() == "maven"
+            assert adapter.build_tool() == "maven"
 
     def test_build_tool_returns_gradle_when_build_gradle_kts_exists(self) -> None:
         """_build_tool returns gradle when build.gradle.kts is present."""
         with tempfile.TemporaryDirectory() as tmpdir:
             _ = (Path(tmpdir) / "build.gradle.kts").write_text("")
             adapter = KotlinAdapter(str(tmpdir))
-            assert adapter._build_tool() == "gradle"
+            assert adapter.build_tool() == "gradle"
 
     def test_build_tool_returns_none_when_no_build_file(self) -> None:
         """_build_tool returns None when no Maven/Gradle build file."""
         with tempfile.TemporaryDirectory() as tmpdir:
             adapter = KotlinAdapter(str(tmpdir))
-            assert adapter._build_tool() is None
+            assert adapter.build_tool() is None
 
     def test_gradle_wrapper_cmd_returns_gradlew_when_present(self) -> None:
         """_gradle_wrapper_cmd returns [gradlew] when gradlew exists."""
@@ -48,7 +47,7 @@ class TestKotlinAdapter:
             _ = (Path(tmpdir) / "build.gradle.kts").write_text("")
             _ = (Path(tmpdir) / "gradlew").write_text("#!/bin/sh\n")
             adapter = KotlinAdapter(str(tmpdir))
-            cmd = adapter._gradle_wrapper_cmd()
+            cmd = adapter.gradle_wrapper_cmd()
             assert len(cmd) == 1
             assert "gradlew" in cmd[0]
 
@@ -58,7 +57,7 @@ class TestKotlinAdapter:
             _ = (Path(tmpdir) / "build.gradle.kts").write_text("")
             _ = (Path(tmpdir) / "gradlew.bat").write_text("@echo off\n")
             adapter = KotlinAdapter(str(tmpdir))
-            cmd = adapter._gradle_wrapper_cmd()
+            cmd = adapter.gradle_wrapper_cmd()
             assert len(cmd) == 1
             assert "gradlew.bat" in cmd[0]
 

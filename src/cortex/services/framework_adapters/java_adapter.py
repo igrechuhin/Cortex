@@ -17,7 +17,7 @@ _JAVA_ERROR_RE = re.compile(r"^\[ERROR\].*|error:\s+.*", re.IGNORECASE)
 _JAVAC_LINE_RE = re.compile(r"^.*\.java:\d+:\s+error:", re.IGNORECASE)
 
 
-def _no_build_check_result(check_type: str) -> CheckResult:
+def no_build_check_result(check_type: str) -> CheckResult:
     """Return CheckResult when no build tool is found."""
     return CheckResult(
         check_type=check_type,
@@ -29,7 +29,7 @@ def _no_build_check_result(check_type: str) -> CheckResult:
     )
 
 
-def _error_check_result(check_type: str, e: Exception) -> CheckResult:
+def error_check_result(check_type: str, e: Exception) -> CheckResult:
     """Return CheckResult for a raised exception."""
     return CheckResult(
         check_type=check_type,
@@ -41,7 +41,7 @@ def _error_check_result(check_type: str, e: Exception) -> CheckResult:
     )
 
 
-def _infer_from_build_status(output: str, passed: int, failed: int) -> tuple[int, int]:
+def infer_from_build_status(output: str, passed: int, failed: int) -> tuple[int, int]:
     """Infer passed/failed from build status when counts are zero."""
     if (
         passed == 0
@@ -77,7 +77,7 @@ class JavaAdapter(FrameworkAdapter):
         """
         super().__init__(project_root)
 
-    def _build_tool(self) -> str | None:
+    def build_tool(self) -> str | None:
         """Detect Maven or Gradle from project root."""
         root = Path(self.project_root)
         if (root / "pom.xml").is_file():
@@ -99,7 +99,7 @@ class JavaAdapter(FrameworkAdapter):
             timeout=timeout,
         )
 
-    def _gradle_wrapper_cmd(self) -> list[str]:
+    def gradle_wrapper_cmd(self) -> list[str]:
         """Return Gradle wrapper command (gradlew or gradlew.bat)."""
         root = Path(self.project_root)
         bat = root / "gradlew.bat"
@@ -114,7 +114,7 @@ class JavaAdapter(FrameworkAdapter):
         self, tasks: list[str], timeout: int | None = None
     ) -> subprocess.CompletedProcess[str]:
         """Run Gradle in project root."""
-        cmd = self._gradle_wrapper_cmd() + ["--quiet", *tasks]
+        cmd = self.gradle_wrapper_cmd() + ["--quiet", *tasks]
         return subprocess.run(
             cmd,
             cwd=self.project_root,
@@ -132,7 +132,7 @@ class JavaAdapter(FrameworkAdapter):
         include_slow_tests: bool = False,
     ) -> TestResult:
         """Run test suite via Maven or Gradle."""
-        tool = self._build_tool()
+        tool = self.build_tool()
         if tool is None:
             return self._error_test_result("No Maven (pom.xml) or Gradle build found")
         try:
@@ -149,7 +149,7 @@ class JavaAdapter(FrameworkAdapter):
 
     def _parse_test_output(self, output: str, success: bool) -> TestResult:
         """Parse Maven/Gradle test output."""
-        passed, failed = self._extract_test_counts(output)
+        passed, failed = self.extract_test_counts(output)
         total = passed + failed
         pass_rate = (passed / total) if total > 0 else 0.0
         errors: list[str] = []
@@ -166,7 +166,7 @@ class JavaAdapter(FrameworkAdapter):
             errors=errors,
         )
 
-    def _extract_test_counts(self, output: str) -> tuple[int, int]:
+    def extract_test_counts(self, output: str) -> tuple[int, int]:
         """Extract passed/failed counts from Maven/Gradle test output."""
         passed, failed = 0, 0
         for line in output.splitlines():
@@ -184,7 +184,7 @@ class JavaAdapter(FrameworkAdapter):
                             passed = int(parts[i - 1])
                         except ValueError:
                             pass
-        return _infer_from_build_status(output, passed, failed)
+        return infer_from_build_status(output, passed, failed)
 
     def _timeout_test_result(self) -> TestResult:
         """Build test result for timeout."""
@@ -240,9 +240,9 @@ class JavaAdapter(FrameworkAdapter):
 
     def format_code(self) -> CheckResult:
         """Format code using Spotless (Maven spotless:apply / Gradle spotlessApply)."""
-        tool = self._build_tool()
+        tool = self.build_tool()
         if tool is None:
-            return _no_build_check_result("format")
+            return no_build_check_result("format")
         try:
             result = (
                 self._run_maven(["spotless:apply"])
@@ -259,13 +259,13 @@ class JavaAdapter(FrameworkAdapter):
                 files_modified=[],
             )
         except Exception as e:
-            return _error_check_result("format", e)
+            return error_check_result("format", e)
 
     def type_check(self) -> CheckResult:
         """Run type checker via Maven compile or Gradle compileJava."""
-        tool = self._build_tool()
+        tool = self.build_tool()
         if tool is None:
-            return _no_build_check_result("type_check")
+            return no_build_check_result("type_check")
         try:
             result = (
                 self._run_maven(["compile"])
@@ -283,7 +283,7 @@ class JavaAdapter(FrameworkAdapter):
                 files_modified=[],
             )
         except Exception as e:
-            return _error_check_result("type_check", e)
+            return error_check_result("type_check", e)
 
     def _parse_compile_output(self, output: str) -> list[str]:
         """Extract error lines from Maven/Gradle compile output."""
@@ -300,9 +300,9 @@ class JavaAdapter(FrameworkAdapter):
 
     def lint_code(self) -> CheckResult:
         """Run linter via Maven validate or Gradle check."""
-        tool = self._build_tool()
+        tool = self.build_tool()
         if tool is None:
-            return _no_build_check_result("lint")
+            return no_build_check_result("lint")
         try:
             result = (
                 self._run_maven(["validate"])
@@ -320,4 +320,4 @@ class JavaAdapter(FrameworkAdapter):
                 files_modified=[],
             )
         except Exception as e:
-            return _error_check_result("lint", e)
+            return error_check_result("lint", e)

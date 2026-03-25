@@ -118,6 +118,12 @@ def get_long_running_semaphore() -> TrackedSemaphore:
     return _long_running_tools_semaphore
 
 
+def reset_long_running_tools_semaphore_for_testing() -> None:
+    """Reset cached long-running semaphore (tests only)."""
+    global _long_running_tools_semaphore
+    _long_running_tools_semaphore = None
+
+
 def set_long_running_semaphore_holder(tool_name: str | None) -> None:
     """Set or clear the name of the tool currently holding the long-running semaphore."""
     global _long_running_semaphore_holder, _long_running_start_time

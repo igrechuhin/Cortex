@@ -21,7 +21,7 @@ PROMPT_ICONS: dict[str, str] = {
     "populate_tiktoken_cache": "💾",
 }
 
-_INITIALIZE_PROMPT = """Please initialize Cortex in my project with complete setup.
+INITIALIZE_PROMPT = """Please initialize Cortex in my project with complete setup.
 
 This prompt performs complete project initialization including:
 1. Creating the .cortex/ directory structure (memory-bank, plans, config)
@@ -118,7 +118,7 @@ Expected output format:
 
 If an old format is detected during initialization, please migrate it to the current format."""
 
-_POPULATE_TIKTOKEN_CACHE_PROMPT = """Please populate the bundled tiktoken cache
+POPULATE_TIKTOKEN_CACHE_PROMPT = """Please populate the bundled tiktoken cache
 with encoding files.
 
 The tiktoken cache is missing or empty, which may cause slower token
@@ -151,7 +151,7 @@ If download fails:
 - Try downloading encodings one at a time
 - Report which encodings failed and why"""
 
-_MIGRATE_PROMPT = """Please migrate my project from legacy structure to the new .cortex/ structure.
+MIGRATE_PROMPT = """Please migrate my project from legacy structure to the new .cortex/ structure.
 
 This prompt performs complete migration including:
 1. Detecting legacy structure
@@ -256,7 +256,7 @@ if (
         - Cursor integration (symlinks + mcp.json)
         - Optional Synapse setup with default URL
         """
-        return _INITIALIZE_PROMPT
+        return INITIALIZE_PROMPT
 
 
 # Migrate prompt: shown when migration is needed
@@ -271,7 +271,7 @@ if _config_status.migration_needed:
         2. Migrate legacy files
         3. Remove legacy directories
         """
-        return _MIGRATE_PROMPT
+        return MIGRATE_PROMPT
 
 
 # Populate tiktoken cache: shown when cache is not available
@@ -280,4 +280,4 @@ if not _config_status.tiktoken_cache_available:
     @mcp.prompt(icons=[create_emoji_icon(PROMPT_ICONS["populate_tiktoken_cache"])])
     def populate_tiktoken_cache() -> str:
         """Populate bundled tiktoken cache with encoding files for offline operation."""
-        return _POPULATE_TIKTOKEN_CACHE_PROMPT
+        return POPULATE_TIKTOKEN_CACHE_PROMPT

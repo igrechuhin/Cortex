@@ -1,15 +1,13 @@
 """Unit tests for MCP reconnection and circuit breaker logic (Phase 86)."""
 
-# pyright: reportPrivateUsage=false
-
 from unittest.mock import AsyncMock, patch
 
 import pytest
 
 from cortex.core.mcp_stability_retry import (
-    _get_connection_state,
     check_connection_health,
     ensure_clean_connection_state_for_testing,
+    get_connection_state,
     reconnect,
 )
 
@@ -45,7 +43,7 @@ async def test_reconnect_succeeds_after_transient_failures() -> None:
     assert health.degraded is False
     assert health.reconnecting is False
     # After a successful reconnect, consecutive_failures should be reset.
-    state = _get_connection_state()
+    state = get_connection_state()
     assert state.consecutive_failures == 0
 
 

@@ -19,7 +19,7 @@ from cortex.core.models import JsonValue, ModelDict
 logger = logging.getLogger(__name__)
 
 
-def _is_test_context() -> bool:
+def is_test_context() -> bool:
     """Check if code is running in a test context (pytest)."""
     return "pytest" in sys.modules or "_pytest" in sys.modules
 
@@ -52,7 +52,7 @@ async def validate_mcp_tool_response(
     await _validate_none_response(response, tool_name, step_name, handler, ctx)
     await _validate_string_response(response, tool_name, step_name, handler, ctx)
 
-    if _is_test_context():
+    if is_test_context():
         return
 
     _validate_dict_response(response, tool_name)

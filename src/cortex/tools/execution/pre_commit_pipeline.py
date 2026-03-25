@@ -25,10 +25,6 @@ from cortex.tools.execution.pre_commit_pipeline_processors import (
     process_tests_check,
     process_type_check,
 )
-from cortex.tools.execution.pre_commit_pipeline_quality import check_function_lengths
-
-# Re-export for tests (reportPrivateUsage)
-_check_function_lengths = check_function_lengths
 
 
 def _run_non_test_checks(

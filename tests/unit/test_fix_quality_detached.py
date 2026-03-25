@@ -323,14 +323,14 @@ class TestStartFixJobImpl:
     def test_clears_prior_result_before_spawning(self, tmp_path: Path) -> None:
         # Arrange
         from cortex.tools.execution.pre_commit_detached import (
-            _fix_args_hash,  # pyright: ignore[reportPrivateUsage]
-            _fix_result_path,  # pyright: ignore[reportPrivateUsage]
+            fix_args_hash,
+            fix_result_path,
             start_fix_job_impl,
         )
         from cortex.tools.execution.session_paths import session_dir
 
-        args_hash = _fix_args_hash(include_markdown_fix=False)
-        rp = _fix_result_path(session_dir(tmp_path), args_hash)
+        args_hash = fix_args_hash(include_markdown_fix=False)
+        rp = fix_result_path(session_dir(tmp_path), args_hash)
         rp.parent.mkdir(parents=True, exist_ok=True)
         _ = rp.write_text('{"status":"completed"}')
         assert rp.exists()

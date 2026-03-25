@@ -3,8 +3,6 @@
 Extracted from pre_commit_tools to keep it under 400 lines.
 """
 
-# pyright: reportPrivateUsage=false
-
 import json
 import logging
 from pathlib import Path
@@ -15,8 +13,8 @@ from pydantic import BaseModel, ConfigDict, Field
 from cortex.core.context_logging import MCPContext, log_client, report_progress_safe
 from cortex.core.models import JsonValue, ModelDict, OperationStatus
 from cortex.tools.execution.pre_commit_detached import (  # noqa: E402
-    _fix_args_hash,
-    _fix_result_path,
+    fix_args_hash,
+    fix_result_path,
     start_fix_job_impl,
 )
 from cortex.tools.execution.pre_commit_helpers_remaining import (
@@ -230,8 +228,8 @@ async def fix_quality_issues_impl(
     """
     await report_progress_safe(ctx, 5.0, 100.0)
     _ = start_fix_job_impl(root, include_untracked_markdown)
-    args_hash = _fix_args_hash(include_untracked_markdown)
-    rp = _fix_result_path(session_dir(root), args_hash)
+    args_hash = fix_args_hash(include_untracked_markdown)
+    rp = fix_result_path(session_dir(root), args_hash)
     envelope = await poll_for_result(rp, ctx=ctx, timeout=960.0)
     out = _parse_fix_envelope(cast(ModelDict, envelope))
     await log_client(ctx, "info", "fix_quality_issues: completed", logger_name=__name__)

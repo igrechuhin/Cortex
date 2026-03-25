@@ -177,6 +177,8 @@ All phases run inline. Use zero-arg tools — do NOT use legacy pre-commit tools
 - When naming modules within a package, drop redundant package-name prefixes (e.g., in cortex.tools.linking use graph_operations not link_graph_operations).
 - When adding or changing tools, prefer consolidation and removal of redundant or poorly used tools over adding new ones; tool count should decrease as functionality improves, and strengthen tool descriptions and governance tests so agents naturally use the intended entrypoints.
 - When enforcing new coding standards (e.g., Literal→enum), update `.cortex/synapse/rules/python` so the rule is reflected there.
+- When fixing private/public access issues, prefer making the original symbol public (rename `_name` → `name` and update call sites) instead of adding public alias shims like `name = _name`.
+- Prompts must be language agnostic; avoid language- or tool-specific identifiers in prompt instructions (e.g. specific typechecker rule names).
 - When refactoring, briefly explain why the new approach is better, especially when the change is non-obvious.
 - When consolidating tools or updating tool descriptions, follow `docs/guides/tool-description-altitude-rubric.md` (target score ≥4).
 - Tool names must reflect the purpose of the tool.
@@ -196,6 +198,7 @@ All phases run inline. Use zero-arg tools — do NOT use legacy pre-commit tools
 - Synapse Python standards forbid `from typing import TYPE_CHECKING` and `if TYPE_CHECKING:` conditional imports; use normal imports (including under `tests/`) instead of that pattern.
 - Phase A `run_quality_gate()` can reuse cached fingerprints so typecheck output may not match the current working tree; if pyright errors look stale versus local `pyright`, run `run_quality_gate_fresh()` once before treating results as ground truth.
 - The docs gate `roadmap_progress_consistency` check fails when `progress.md` contains any `PARTIAL` line but `roadmap.md` has no `PENDING` backlog bullet; keep at least one real `PENDING` item while unfinished work remains in progress, or resolve the PARTIAL entries.
+- In this repo environment, prefer `python3` over `python` in shell commands (the `python` shim may point to a legacy interpreter).
 
 ## Cursor Cloud specific instructions
 

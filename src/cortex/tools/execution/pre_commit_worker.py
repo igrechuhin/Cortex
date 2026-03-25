@@ -46,7 +46,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-def _write_status(result_path: Path, status: str, pid: int) -> None:
+def write_status(result_path: Path, status: str, pid: int) -> None:
     """Write a running/error status marker atomically."""
     data: dict[str, object] = {
         "version": 1,
@@ -54,10 +54,10 @@ def _write_status(result_path: Path, status: str, pid: int) -> None:
         "started_at": time.time(),
         "pid": pid,
     }
-    _atomic_write(result_path, data)
+    atomic_write(result_path, data)
 
 
-def _atomic_write(result_path: Path, data: dict[str, object]) -> None:
+def atomic_write(result_path: Path, data: dict[str, object]) -> None:
     """Write JSON atomically via tmp file + rename."""
     result_path.parent.mkdir(parents=True, exist_ok=True)
     fd, tmp = tempfile.mkstemp(
@@ -75,7 +75,7 @@ def _atomic_write(result_path: Path, data: dict[str, object]) -> None:
         raise
 
 
-def _resolve_adapter_worker(
+def resolve_adapter_worker(
     project_root: str,
 ) -> dict[str, object] | tuple[FrameworkAdapter, LanguageInfo]:
     """Resolve language and adapter in worker. Returns error dict or (adapter, language_info)."""
@@ -167,7 +167,7 @@ def _run_checks(
     strict_mode: bool,
 ) -> dict[str, object]:
     """Run pre-commit checks synchronously, return result dict."""
-    resolved = _resolve_adapter_worker(project_root)
+    resolved = resolve_adapter_worker(project_root)
     if isinstance(resolved, dict):
         return resolved
     adapter, language_info = resolved
@@ -184,7 +184,7 @@ def collect_pre_commit_markdown_paths(root: Path, max_files: int = 500) -> list[
     memory-bank text with sibling-relative links that are invalid from those
     locations and are not hand-edited sources of truth.
     """
-    exclude_dirs = {"node_modules", ".venv", "venv", "__pycache__", ".git"}
+    exclude_dirs = {"node_modules", ".venv", "venv", "__pycache__", ".git", ".build"}
     exclude_prefixes = (
         ".cortex/plans/archive",
         ".cortex/history/",
@@ -244,7 +244,7 @@ def _run_markdownlint_subprocess(
         return {"files_with_errors": 0, "status": "error", "error": str(e)}
 
 
-def _resolve_rumdl_path() -> str:
+def resolve_rumdl_path() -> str:
     """Resolve rumdl binary from the same venv as the running Python."""
     venv_bin = Path(sys.executable).parent / "rumdl"
     if venv_bin.is_file():
@@ -255,7 +255,7 @@ def _resolve_rumdl_path() -> str:
 def _run_markdown_lint(project_root: str) -> dict[str, object]:
     """Run rumdl in check-only mode, return result dict."""
     root = Path(project_root)
-    cmd: list[str] = [_resolve_rumdl_path(), "check"]
+    cmd: list[str] = [resolve_rumdl_path(), "check"]
     md_files = collect_pre_commit_markdown_paths(root)
     return _run_markdownlint_subprocess(root, cmd, md_files)
 
@@ -292,7 +292,7 @@ def _write_success_result(
     }
     if markdown_result is not None:
         output["markdown_result"] = markdown_result
-    _atomic_write(result_path, output)
+    atomic_write(result_path, output)
 
 
 def _run_worker_once(
@@ -328,13 +328,13 @@ def main() -> None:
     args = _parse_worker_args()
     result_path = Path(args.result_file)
     pid = os.getpid()
-    _write_status(result_path, "running", pid)
+    write_status(result_path, "running", pid)
     started = time.time()
     try:
         _run_worker_once(args, result_path, started, pid)
     except Exception as e:
         logger.exception("Worker failed: %s", e)
-        _atomic_write(
+        atomic_write(
             result_path,
             {
                 "version": 1,

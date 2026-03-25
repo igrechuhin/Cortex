@@ -1,7 +1,5 @@
 """Public API for fix_markdown_lint: orchestration and MCP tool entry point."""
 
-# pyright: reportPrivateUsage=false
-
 import asyncio
 import json
 from pathlib import Path
@@ -94,7 +92,7 @@ async def _fix_markdown_lint_impl(
     files = await get_markdown_files_to_process(root_path, include_untracked_markdown)
     if not files:
         return create_empty_success_response()
-    return await _run_markdownlint_with_cache(
+    return await run_markdownlint_with_cache(
         root_path, files, markdownlint_cmd, config_path, dry_run, ctx
     )
 
@@ -164,7 +162,7 @@ async def run_markdown_lint_all_files_check(
     return _build_fix_response(results)
 
 
-async def _run_markdownlint_with_cache(
+async def run_markdownlint_with_cache(
     root_path: Path,
     files: list[Path],
     markdownlint_cmd: list[str],
@@ -196,9 +194,6 @@ async def _run_markdownlint_with_cache(
         ctx,
     )
     return _build_fix_response(results)
-
-
-run_markdownlint_with_cache = _run_markdownlint_with_cache
 
 
 async def _fix_markdown_lint_run_or_error(

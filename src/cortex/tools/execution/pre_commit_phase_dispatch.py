@@ -63,7 +63,7 @@ def phase_to_checks(phase: PreCommitPhase) -> list[str]:
     return list(_PHASE_A_CHECKS + _PHASE_B_CHECKS)
 
 
-def _ensure_dict(value: ModelDict | str) -> ModelDict:
+def ensure_dict(value: ModelDict | str) -> ModelDict:
     """Ensure value is a dict; parse JSON string if needed (MCP protocol edge case).
 
     Some MCP clients may return tool results as JSON strings instead of parsed dicts.
@@ -86,7 +86,7 @@ class PreCommitPhase(str, Enum):
     FULL = "full"
 
 
-def _record_phase_a_fingerprint(result: ModelDict, project_root: Path) -> None:
+def record_phase_a_fingerprint(result: ModelDict, project_root: Path) -> None:
     """Record dirty-state fingerprint after Phase A if it passed."""
     from cortex.tools.execution.pre_commit_dirty_state import PipelineDirtyTracker
 
@@ -113,7 +113,7 @@ async def _best_effort_record_phase_a_fingerprint(
             )
             return
         preflight_passed = candidate
-        _record_phase_a_fingerprint(result, root)
+        record_phase_a_fingerprint(result, root)
     except (OSError, ValueError, TypeError, RuntimeError):
         logger.warning(
             "Phase A fingerprint bookkeeping failed (best-effort); preflight_passed=%s project_root=%s",
@@ -171,8 +171,8 @@ async def _run_phase_full(
         test_timeout, coverage_threshold, strict_mode, include_untracked_markdown, ctx
     )
     phase_b_result = await _run_phase_b(ctx)
-    phase_a_dict = _ensure_dict(phase_a_result)
-    phase_b_dict = _ensure_dict(phase_b_result)
+    phase_a_dict = ensure_dict(phase_a_result)
+    phase_b_dict = ensure_dict(phase_b_result)
     return cast(
         ModelDict,
         {

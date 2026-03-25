@@ -6,8 +6,6 @@ the ``rumdl`` CLI under the hood via commands constructed in
 ``markdown_lint_core``.
 """
 
-# pyright: reportPrivateUsage=false
-
 import asyncio
 import re
 from pathlib import Path
@@ -21,28 +19,28 @@ from cortex.tools.files.markdown_lint_cache import MarkdownLintIndex
 from cortex.tools.files.markdown_lint_core import after_one_file, run_command
 from cortex.tools.files.markdown_lint_helpers import (
     FileResult,
-    _build_error_result,
-    _build_markdownlint_batch_results,
-    _chunk_paths,
-    _parse_markdownlint_errors,
-    _parse_markdownlint_lines_by_file,
-    _parse_markdownlint_output,
-    _result_error,
-    _result_returncode,
-    _result_stderr,
-    _result_stdout,
-    _result_success,
+    build_error_result,
+    build_markdownlint_batch_results,
+    chunk_paths,
+    parse_markdownlint_errors,
+    parse_markdownlint_lines_by_file,
+    parse_markdownlint_output,
+    result_error,
+    result_returncode,
+    result_stderr,
+    result_stdout,
+    result_success,
 )
 
 __all__ = [
-    "_process_markdown_files_sequential",
+    "process_markdown_files_sequential",
     "run_markdownlint_batch",
     "run_markdownlint_fix",
     "run_markdownlint_for_files",
 ]
 
 
-async def _run_markdownlint_fix(
+async def run_markdownlint_fix(
     file_path: Path,
     project_root: Path,
     markdownlint_cmd: list[str],
@@ -58,13 +56,13 @@ async def _run_markdownlint_fix(
 
     result = await run_command(cmd, cwd=project_root, timeout=60)
 
-    if not _result_success(result):
-        error_msg = _result_error(result)
-        return_code = _result_returncode(result)
-        errors = _parse_markdownlint_errors(_result_stderr(result))
-        return _build_error_result(str(relative_path), errors, return_code, error_msg)
+    if not result_success(result):
+        error_msg = result_error(result)
+        return_code = result_returncode(result)
+        errors = parse_markdownlint_errors(result_stderr(result))
+        return build_error_result(str(relative_path), errors, return_code, error_msg)
 
-    errors = _parse_markdownlint_output(_result_stdout(result))
+    errors = parse_markdownlint_output(result_stdout(result))
     fixed = bool(errors) and not dry_run
 
     return FileResult(
@@ -84,7 +82,7 @@ async def _run_per_file_fallback(
     """Re-run each file individually to get rule codes when batch fails."""
     fallback_results: list[FileResult] = []
     for file_path in file_paths:
-        file_result = await _run_markdownlint_fix(
+        file_result = await run_markdownlint_fix(
             file_path, project_root, markdownlint_cmd, dry_run
         )
         fallback_results.append(file_result)
@@ -119,7 +117,7 @@ def _build_batch_command(
     return cmd
 
 
-async def _run_markdownlint_batch(
+async def run_markdownlint_batch(
     file_paths: list[Path],
     project_root: Path,
     markdownlint_cmd: list[str],
@@ -134,26 +132,21 @@ async def _run_markdownlint_batch(
         rel_strs, markdownlint_cmd, config_path, project_root, dry_run
     )
     result = await run_command(cmd, cwd=project_root, timeout=120)
-    success = _result_success(result)
-    out = _result_stdout(result) if success else _result_stderr(result)
-    by_file = _parse_markdownlint_lines_by_file(out)
-    raw_lines = _parse_markdownlint_output(out) if success else []
+    success = result_success(result)
+    out = result_stdout(result) if success else result_stderr(result)
+    by_file = parse_markdownlint_lines_by_file(out)
+    raw_lines = parse_markdownlint_output(out) if success else []
 
     if not success and not _has_parsed_rule_codes(
-        rel_strs, by_file, _result_stderr(result)
+        rel_strs, by_file, result_stderr(result)
     ):
         return await _run_per_file_fallback(
             file_paths, project_root, markdownlint_cmd, dry_run
         )
 
-    return _build_markdownlint_batch_results(
+    return build_markdownlint_batch_results(
         rel_strs, result, by_file, raw_lines, dry_run
     )
-
-
-# Public aliases for code that needs to call these (e.g. tests)
-run_markdownlint_batch = _run_markdownlint_batch
-run_markdownlint_fix = _run_markdownlint_fix
 
 
 async def _markdown_lint_heartbeat_loop(
@@ -206,9 +199,9 @@ async def _run_batched_markdown_loop(
     progress_total: int | None,
 ) -> None:
     """Run markdown lint in batches; appends to results and updates current_n."""
-    chunks = _chunk_paths(files, MARKDOWN_LINT_BATCH_SIZE)
+    chunks = chunk_paths(files, MARKDOWN_LINT_BATCH_SIZE)
     for chunk in chunks:
-        batch_results = await _run_markdownlint_batch(
+        batch_results = await run_markdownlint_batch(
             chunk, root_path, markdownlint_cmd, config_path, dry_run
         )
         for result in batch_results:
@@ -256,7 +249,7 @@ async def _run_markdownlint_for_batches(
     return results
 
 
-async def _process_markdown_files_sequential(
+async def process_markdown_files_sequential(
     files: list[Path],
     root_path: Path,
     markdownlint_cmd: list[str],
@@ -339,7 +332,7 @@ async def run_markdownlint_for_files(
     if ctx is not None:
         await report_progress_safe(ctx, 0.0, float(len(files_to_lint)))
 
-    lint_results = await _process_markdown_files_sequential(
+    lint_results = await process_markdown_files_sequential(
         files_to_lint,
         root_path,
         markdownlint_cmd,

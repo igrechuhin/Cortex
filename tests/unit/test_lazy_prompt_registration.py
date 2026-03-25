@@ -2,8 +2,6 @@
 # SPDX-License-Identifier: MIT
 
 """Unit tests for cortex.setup.lazy_prompt_registration."""
-# pyright: reportPrivateUsage=false
-
 from __future__ import annotations
 
 import asyncio
@@ -15,10 +13,10 @@ import pytest
 import cortex.setup.prompts_always  # noqa: F401  # registers setup_synapse on the MCP server
 from cortex.setup.lazy_prompt_registration import (
     LazyPromptRegistry,
-    _prompt_manager_has_synapse_prompts,
-    _register_setup_prompts,
-    _registered_prompt_names,
     ensure_prompts_registered,
+    prompt_manager_has_synapse_prompts,
+    register_setup_prompts,
+    registered_prompt_names,
 )
 from cortex.tools.config import ProjectConfigStatus
 
@@ -53,13 +51,13 @@ def _make_status(
 
 class TestRegisteredPromptNames:
     def test_returns_frozenset_of_registered_names(self) -> None:
-        names = _registered_prompt_names()
+        names = registered_prompt_names()
         assert isinstance(names, frozenset)
         # setup_synapse is always registered via prompts_always
         assert "setup_synapse" in names
 
     def test_has_synapse_prompts_returns_bool(self) -> None:
-        result = _prompt_manager_has_synapse_prompts()
+        result = prompt_manager_has_synapse_prompts()
         assert isinstance(result, bool)
 
 
@@ -75,17 +73,17 @@ class TestRegisterSetupPrompts:
             structure_configured=False,
             migration_needed=False,
         )
-        before = _registered_prompt_names()
-        _register_setup_prompts(status)
-        after = _registered_prompt_names()
+        before = registered_prompt_names()
+        register_setup_prompts(status)
+        after = registered_prompt_names()
         # initialize must be registered (or was already there)
         assert "initialize" in after
         _ = before  # referenced to satisfy linter
 
     def test_registers_migrate_when_migration_needed(self) -> None:
         status = _make_status(migration_needed=True, memory_bank_initialized=False)
-        _register_setup_prompts(status)
-        assert "migrate" in _registered_prompt_names()
+        register_setup_prompts(status)
+        assert "migrate" in registered_prompt_names()
 
     def test_skips_initialize_when_migration_needed(self) -> None:
         # When migration_needed=True, initialize should NOT be registered
@@ -95,18 +93,18 @@ class TestRegisterSetupPrompts:
             structure_configured=False,
             migration_needed=True,
         )
-        before = _registered_prompt_names()
-        _register_setup_prompts(status)
-        after = _registered_prompt_names()
+        before = registered_prompt_names()
+        register_setup_prompts(status)
+        after = registered_prompt_names()
         # initialize was not present before and should not be added now
         if "initialize" not in before:
             assert "initialize" not in after
 
     def test_no_setup_prompts_when_fully_configured(self) -> None:
         status = _make_status()  # all good
-        before = _registered_prompt_names()
-        _register_setup_prompts(status)
-        after = _registered_prompt_names()
+        before = registered_prompt_names()
+        register_setup_prompts(status)
+        after = registered_prompt_names()
         # Nothing new should be added
         assert after == before
 
@@ -127,7 +125,7 @@ class TestLazyPromptRegistry:
             nonlocal call_count
             call_count += 1
 
-        registry._do_register = fake_do_register  # type: ignore[method-assign]
+        registry.do_register = fake_do_register  # type: ignore[method-assign]
 
         await registry.ensure_registered(None)
         await registry.ensure_registered(None)
@@ -138,11 +136,11 @@ class TestLazyPromptRegistry:
     @pytest.mark.asyncio
     async def test_ensure_registered_sets_flag(self) -> None:
         registry = LazyPromptRegistry()
-        registry._do_register = AsyncMock()  # type: ignore[method-assign]
+        registry.do_register = AsyncMock()  # type: ignore[method-assign]
 
-        assert not registry._registered
+        assert not registry.registered
         await registry.ensure_registered(None)
-        assert registry._registered
+        assert registry.registered
 
     @pytest.mark.asyncio
     async def test_ensure_registered_concurrent(self) -> None:
@@ -155,7 +153,7 @@ class TestLazyPromptRegistry:
             call_count += 1
             await asyncio.sleep(0)
 
-        registry._do_register = slow_do_register  # type: ignore[method-assign]
+        registry.do_register = slow_do_register  # type: ignore[method-assign]
 
         _ = await asyncio.gather(
             registry.ensure_registered(None),
@@ -174,7 +172,7 @@ class TestLazyPromptRegistry:
 
         with (
             patch(
-                "cortex.setup.lazy_prompt_registration._prompt_manager_has_synapse_prompts",
+                "cortex.setup.lazy_prompt_registration.prompt_manager_has_synapse_prompts",
                 return_value=True,
             ),
             patch(
@@ -197,7 +195,7 @@ class TestLazyPromptRegistry:
                 return_value=False,
             ),
         ):
-            await registry._do_register(None)
+            await registry.do_register(None)
 
         mock_reg.assert_not_called()
         mock_sync.assert_not_called()
@@ -209,7 +207,7 @@ class TestLazyPromptRegistry:
 
         with (
             patch(
-                "cortex.setup.lazy_prompt_registration._prompt_manager_has_synapse_prompts",
+                "cortex.setup.lazy_prompt_registration.prompt_manager_has_synapse_prompts",
                 return_value=False,
             ),
             patch(
@@ -232,7 +230,7 @@ class TestLazyPromptRegistry:
                 return_value=False,
             ),
         ):
-            await registry._do_register(None)
+            await registry.do_register(None)
 
         mock_reg.assert_called_once_with(tmp_path)
         mock_sync.assert_called_once_with(tmp_path)
@@ -246,7 +244,7 @@ class TestLazyPromptRegistry:
 
         with (
             patch(
-                "cortex.setup.lazy_prompt_registration._prompt_manager_has_synapse_prompts",
+                "cortex.setup.lazy_prompt_registration.prompt_manager_has_synapse_prompts",
                 return_value=True,
             ),
             patch(
@@ -269,10 +267,10 @@ class TestLazyPromptRegistry:
                 return_value=True,
             ),
             patch(
-                "cortex.setup.lazy_prompt_registration._register_setup_prompts"
+                "cortex.setup.lazy_prompt_registration.register_setup_prompts"
             ) as mock_setup,
         ):
-            await registry._do_register(None)
+            await registry.do_register(None)
 
         mock_setup.assert_called_once()
 
@@ -290,7 +288,7 @@ class TestLazyPromptRegistry:
 
         with (
             patch(
-                "cortex.setup.lazy_prompt_registration._prompt_manager_has_synapse_prompts",
+                "cortex.setup.lazy_prompt_registration.prompt_manager_has_synapse_prompts",
                 return_value=False,
             ),
             patch(
@@ -309,7 +307,7 @@ class TestLazyPromptRegistry:
                 return_value=False,
             ),
         ):
-            await registry._do_register(mock_ctx)
+            await registry.do_register(mock_ctx)
 
         mock_session.send_prompt_list_changed.assert_called_once()
 
@@ -320,7 +318,7 @@ class TestLazyPromptRegistry:
 
         with (
             patch(
-                "cortex.setup.lazy_prompt_registration._prompt_manager_has_synapse_prompts",
+                "cortex.setup.lazy_prompt_registration.prompt_manager_has_synapse_prompts",
                 return_value=False,
             ),
             patch(
@@ -340,7 +338,7 @@ class TestLazyPromptRegistry:
             ),
         ):
             # Should not raise even though ctx is None
-            await registry._do_register(None)
+            await registry.do_register(None)
 
     @pytest.mark.asyncio
     async def test_do_register_handles_root_resolution_error(self) -> None:
@@ -352,7 +350,7 @@ class TestLazyPromptRegistry:
             side_effect=RuntimeError("roots not available"),
         ):
             # Must not raise
-            await registry._do_register(None)
+            await registry.do_register(None)
 
     @pytest.mark.asyncio
     async def test_do_register_handles_synapse_registration_error(
@@ -363,7 +361,7 @@ class TestLazyPromptRegistry:
 
         with (
             patch(
-                "cortex.setup.lazy_prompt_registration._prompt_manager_has_synapse_prompts",
+                "cortex.setup.lazy_prompt_registration.prompt_manager_has_synapse_prompts",
                 return_value=False,
             ),
             patch(
@@ -386,7 +384,7 @@ class TestLazyPromptRegistry:
             ),
         ):
             # Must not raise
-            await registry._do_register(None)
+            await registry.do_register(None)
 
 
 # ---------------------------------------------------------------------------
@@ -400,12 +398,12 @@ class TestEnsurePromptsRegistered:
         """ensure_prompts_registered delegates to the module singleton."""
         from cortex.setup import lazy_prompt_registration as lpr
 
-        original = lpr._registry
+        original = lpr.registry
         mock_registry = MagicMock()
         mock_registry.ensure_registered = AsyncMock()
-        lpr._registry = mock_registry
+        lpr.registry = mock_registry
         try:
             await ensure_prompts_registered(None)
             mock_registry.ensure_registered.assert_awaited_once_with(None)
         finally:
-            lpr._registry = original
+            lpr.registry = original

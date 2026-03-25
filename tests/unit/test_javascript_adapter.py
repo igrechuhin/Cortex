@@ -1,6 +1,5 @@
 """Tests for JavaScript framework adapter."""
 
-# pyright: reportPrivateUsage=false
 import subprocess
 import tempfile
 from pathlib import Path
@@ -284,20 +283,14 @@ class TestJavaScriptAdapter:
     def test_extract_test_counts_parses_passed_failed(self) -> None:
         """_extract_test_counts parses Jest-style output."""
         adapter = JavaScriptAdapter()
-        passed, failed = (
-            adapter._extract_test_counts(  # pyright: ignore[reportPrivateUsage]
-                "5 passed, 2 failed"
-            )
-        )
+        passed, failed = adapter.extract_test_counts("5 passed, 2 failed")
         assert passed == 5
         assert failed == 2
 
     def test_type_check_success_result_helper(self) -> None:
         """_type_check_success_result returns success CheckResult."""
         adapter = JavaScriptAdapter()
-        result = adapter._type_check_success_result(
-            "ok"
-        )  # pyright: ignore[reportPrivateUsage]
+        result = adapter.type_check_success_result("ok")
         assert result.check_type == "type_check"
         assert result.success is True
         assert result.output == "ok"
@@ -306,9 +299,7 @@ class TestJavaScriptAdapter:
     def test_type_check_not_configured_result_helper(self) -> None:
         """_type_check_not_configured_result returns success with warning."""
         adapter = JavaScriptAdapter()
-        result = adapter._type_check_not_configured_result(
-            "tsc not found"
-        )  # pyright: ignore[reportPrivateUsage]
+        result = adapter.type_check_not_configured_result("tsc not found")
         assert result.check_type == "type_check"
         assert result.success is True
         assert len(result.warnings) == 1
@@ -317,9 +308,7 @@ class TestJavaScriptAdapter:
     def test_type_check_failure_result_helper(self) -> None:
         """_type_check_failure_result returns failure with errors."""
         adapter = JavaScriptAdapter()
-        result = adapter._type_check_failure_result(
-            "out", ["err1"]
-        )  # pyright: ignore[reportPrivateUsage]
+        result = adapter.type_check_failure_result("out", ["err1"])
         assert result.check_type == "type_check"
         assert result.success is False
         assert result.errors == ["err1"]
@@ -327,9 +316,7 @@ class TestJavaScriptAdapter:
     def test_type_check_exception_result_helper(self) -> None:
         """_type_check_exception_result returns failure with exception message."""
         adapter = JavaScriptAdapter()
-        result = adapter._type_check_exception_result(
-            ValueError("bad")
-        )  # pyright: ignore[reportPrivateUsage]
+        result = adapter.type_check_exception_result(ValueError("bad"))
         assert result.check_type == "type_check"
         assert result.success is False
         assert result.errors == ["bad"]

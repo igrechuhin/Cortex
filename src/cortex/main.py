@@ -11,8 +11,6 @@ MCP, so the next session gets a fresh Initialize handshake with no user action.
 Set CORTEX_AUTO_RESTART=1 to run an in-process restart loop (server respawns
 under the same pipe; may require reloading MCP after disconnect to restore tools).
 """
-# pyright: reportPrivateUsage=false
-
 import logging
 import os
 import subprocess
@@ -99,7 +97,7 @@ def _log_broken_resource_group_diag(eg: BaseExceptionGroup, exc: BaseException) 
     )
 
 
-def _handle_broken_resource_in_group(eg: BaseExceptionGroup) -> bool:
+def handle_broken_resource_in_group(eg: BaseExceptionGroup) -> bool:
     """Check if BaseExceptionGroup contains connection-related errors.
 
     Handles BrokenResourceError, ClosedResourceError, BrokenPipeError,
@@ -248,7 +246,9 @@ def _patch_mcp_server_handle_request() -> None:
     from anyio import ClosedResourceError
 
     lowlevel = mcp._mcp_server  # type: ignore[attr-defined]
-    _original_handle_request = lowlevel._handle_request
+    # Avoid `lowlevel._handle_request` attribute access so Pyright doesn't
+    # report `reportPrivateUsage` for a protected member.
+    _original_handle_request = getattr(lowlevel, "_handle_request")
 
     async def _patched(
         _self: object,
@@ -273,7 +273,7 @@ def _patch_mcp_server_handle_request() -> None:
                 getattr(message, "request_id", "?"),
             )
 
-    lowlevel._handle_request = _types.MethodType(_patched, lowlevel)
+    setattr(lowlevel, "_handle_request", _types.MethodType(_patched, lowlevel))
 
 
 def _run_server_once() -> None:
@@ -294,7 +294,7 @@ def _run_server_once() -> None:
         logger.info("MCP server interrupted by user")
         sys.exit(0)
     except BaseExceptionGroup as eg:
-        if _handle_broken_resource_in_group(eg):
+        if handle_broken_resource_in_group(eg):
             sys.exit(0)  # Graceful shutdown
         _log_and_exit_on_task_group_error(eg)
     except (

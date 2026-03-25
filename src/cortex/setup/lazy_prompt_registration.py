@@ -43,7 +43,7 @@ When the server is launched from the project directory (e.g. ``python -m
 cortex.main`` with the CWD inherited from the IDE), the startup-time
 ``register_synapse_prompts()`` call in ``prompts.py`` already succeeds.
 :class:`LazyPromptRegistry` detects this via
-``_prompt_manager_has_synapse_prompts()`` and short-circuits without issuing
+``prompt_manager_has_synapse_prompts()`` and short-circuits without issuing
 another ``roots/list`` round-trip or sending a list-changed notification.
 """
 
@@ -82,27 +82,21 @@ _SETUP_PROMPT_ICONS: dict[str, str] = {
 
 
 def _get_initialize_prompt() -> str:
-    from cortex.setup.prompts import (
-        _INITIALIZE_PROMPT,  # pyright: ignore[reportPrivateUsage]
-    )
+    from cortex.setup.prompts import INITIALIZE_PROMPT
 
-    return _INITIALIZE_PROMPT
+    return INITIALIZE_PROMPT
 
 
 def _get_migrate_prompt() -> str:
-    from cortex.setup.prompts import (
-        _MIGRATE_PROMPT,  # pyright: ignore[reportPrivateUsage]
-    )
+    from cortex.setup.prompts import MIGRATE_PROMPT
 
-    return _MIGRATE_PROMPT
+    return MIGRATE_PROMPT
 
 
 def _get_tiktoken_prompt() -> str:
-    from cortex.setup.prompts import (
-        _POPULATE_TIKTOKEN_CACHE_PROMPT,  # pyright: ignore[reportPrivateUsage]
-    )
+    from cortex.setup.prompts import POPULATE_TIKTOKEN_CACHE_PROMPT
 
-    return _POPULATE_TIKTOKEN_CACHE_PROMPT
+    return POPULATE_TIKTOKEN_CACHE_PROMPT
 
 
 # ---------------------------------------------------------------------------
@@ -115,15 +109,15 @@ def _synapse_prompt_names() -> frozenset[str]:
     return frozenset(SYNAPSE_PROMPT_ICONS.keys())
 
 
-def _registered_prompt_names() -> frozenset[str]:
+def registered_prompt_names() -> frozenset[str]:
     """Return names of all prompts currently registered on the MCP server."""
     # FastMCP's _prompt_manager.list_prompts() is synchronous.
     return frozenset(p.name for p in mcp._prompt_manager.list_prompts())  # type: ignore[attr-defined]
 
 
-def _prompt_manager_has_synapse_prompts() -> bool:
+def prompt_manager_has_synapse_prompts() -> bool:
     """Return True when at least one expected synapse prompt is already registered."""
-    registered = _registered_prompt_names()
+    registered = registered_prompt_names()
     return bool(registered & _synapse_prompt_names())
 
 
@@ -169,12 +163,12 @@ def _register_tiktoken_prompt() -> None:
     _ = populate_tiktoken_cache  # pyright: ignore[reportUnusedFunction]
 
 
-def _register_setup_prompts(status: object) -> None:
+def register_setup_prompts(status: object) -> None:
     """Register whichever setup prompts the project needs."""
     from cortex.tools.config import ProjectConfigStatus
 
     cfg: ProjectConfigStatus = status  # type: ignore[assignment]
-    already = _registered_prompt_names()
+    already = registered_prompt_names()
 
     if (
         not cfg.memory_bank_initialized
@@ -229,7 +223,7 @@ def _register_setup_if_needed(project_root: Path) -> bool:
         status = get_project_config_status(project_root)
         if not should_mount_setup(status):
             return False
-        _register_setup_prompts(status)
+        register_setup_prompts(status)
         logger.debug(
             "lazy_prompt_registration: registered setup prompts for %s",
             project_root,
@@ -292,8 +286,17 @@ class LazyPromptRegistry:
         async with self._get_lock():
             if self._registered:
                 return
-            await self._do_register(ctx)
+            await self.do_register(ctx)
             self._registered = True
+
+    @property
+    def registered(self) -> bool:
+        """Public view of whether setup prompts were registered."""
+        return self._registered
+
+    async def do_register(self, ctx: MCPContext | None) -> None:
+        """Public wrapper around the internal registration routine."""
+        await self._do_register(ctx)
 
     async def _do_register(self, ctx: MCPContext | None) -> None:
         """Resolve the project root and register all prompts."""
@@ -302,7 +305,7 @@ class LazyPromptRegistry:
             return
 
         logger.debug("lazy_prompt_registration: resolved project root %s", project_root)
-        already_has_synapse = _prompt_manager_has_synapse_prompts()
+        already_has_synapse = prompt_manager_has_synapse_prompts()
         _try_sync_synapse_prompts(project_root, already_has_synapse)
         await _run_startup_repair(project_root)
         setup_registered = _register_setup_if_needed(project_root)
@@ -313,9 +316,9 @@ class LazyPromptRegistry:
 
 # Module-level singleton — shared across all list_prompts calls in one server
 # process.
-_registry = LazyPromptRegistry()
+registry = LazyPromptRegistry()
 
 
 async def ensure_prompts_registered(ctx: MCPContext | None) -> None:
     """Module-level entry point used by the list_prompts hook in server.py."""
-    await _registry.ensure_registered(ctx)
+    await registry.ensure_registered(ctx)

@@ -78,7 +78,7 @@ def _get_connection_state_lock() -> asyncio.Lock:
     return _connection_state_lock
 
 
-def _get_connection_state() -> MCPConnectionState:
+def get_connection_state() -> MCPConnectionState:
     """Return global MCP connection state (lazy init)."""
     global _connection_state
     if _connection_state is None:
@@ -100,10 +100,10 @@ def reset_connection_state_for_testing() -> None:
 def ensure_clean_connection_state_for_testing() -> None:
     """Reset connection state and re-init defaults (pytest autouse hook)."""
     reset_connection_state_for_testing()
-    _ = _get_connection_state()
+    _ = get_connection_state()
 
 
-async def _record_connection_closure() -> None:
+async def record_connection_closure() -> None:
     """Record connection closure for diagnostics (Phase 32).
 
     Protected by asyncio.Lock to prevent inconsistent state when multiple
@@ -112,11 +112,11 @@ async def _record_connection_closure() -> None:
     global _connection_closure_count
     async with _get_connection_state_lock():
         _connection_closure_count += 1
-        state = _get_connection_state()
+        state = get_connection_state()
         state.connected = False
 
 
-async def _record_connection_recovery() -> None:
+async def record_connection_recovery() -> None:
     """Record connection recovery for diagnostics (Phase 32).
 
     Protected by asyncio.Lock to prevent inconsistent state when multiple
@@ -125,7 +125,7 @@ async def _record_connection_recovery() -> None:
     global _connection_recovery_count
     async with _get_connection_state_lock():
         _connection_recovery_count += 1
-        state = _get_connection_state()
+        state = get_connection_state()
         state.connected = True
         state.reconnecting = False
         state.circuit_open = False
@@ -193,7 +193,7 @@ async def reconnect(reason: str | None = None) -> ConnectionHealth:
     failure, opens the circuit breaker (degraded mode) and raises
     ConnectionError.
     """
-    state = _get_connection_state()
+    state = get_connection_state()
     if state.circuit_open:
         # Already in degraded mode; report current health without retry loop.
         return await check_connection_health()
@@ -203,7 +203,7 @@ async def reconnect(reason: str | None = None) -> ConnectionHealth:
     for attempt, base_delay in enumerate(_RECONNECT_BACKOFF_SECONDS, start=1):
         try:
             await _ping_transport()
-            await _record_connection_recovery()
+            await record_connection_recovery()
             state.reconnecting = False
             return await check_connection_health()
         except Exception as exc:  # pragma: no cover - exercised via tests
@@ -222,7 +222,7 @@ async def _health_monitor_loop(interval_seconds: float) -> None:
     while True:
         try:
             health = await check_connection_health()
-            if not health.healthy and not _get_connection_state().circuit_open:
+            if not health.healthy and not get_connection_state().circuit_open:
                 try:
                     _ = await reconnect("health_monitor")
                 except ConnectionError:
@@ -289,7 +289,7 @@ async def _handle_connection_error(
     func_name: str, attempt: int, e: Exception
 ) -> tuple[ConnectionError | RuntimeError | None, Exception | None]:
     """Handle connection error during retry."""
-    await _record_connection_closure()
+    await record_connection_closure()
     max_attempts = get_connection_retry_attempts(func_name)
     holder_str, elapsed_str = _connection_error_diag()
     logger.warning(
@@ -342,7 +342,7 @@ async def _retry_path_health_and_recovery(
             f"Connection not healthy before retry {attempt} for {func_name}"
         ) from last_exception
     if last_exception and is_connection_error(last_exception):
-        await _record_connection_recovery()
+        await record_connection_recovery()
 
 
 async def _handle_retry_exception(
@@ -444,7 +444,7 @@ async def check_connection_health() -> ConnectionHealth:
         if MCP_MAX_CONCURRENT_TOOLS > 0
         else 0.0
     )
-    state = _get_connection_state()
+    state = get_connection_state()
     healthy = not state.circuit_open
 
     return ConnectionHealth(

@@ -31,19 +31,23 @@ from cortex.structure.lifecycle.setup import StructureSetup
 from cortex.structure.lifecycle.symlinks import CursorSymlinkManager
 from cortex.structure.structure_config import StructureConfig
 from cortex.tools.config.status import (
-    _check_cursor_integration,  # pyright: ignore[reportPrivateUsage]
-    _check_structure_configured,  # pyright: ignore[reportPrivateUsage]
+    check_cursor_integration,
+    check_structure_configured,
 )
 
 logger = logging.getLogger(__name__)
 
 GITIGNORE_MARKER = ".cortex/.session/"
+AGENT_SYNC_MARKER = ".claude/"
 _GITIGNORE_BLOCK = (
     "\n# Cortex MCP (transient/generated files)\n"
     ".cortex/.session/\n"
     ".cortex/.cache/\n"
     ".cortex/history/\n"
     ".cortex-backup-*/\n"
+    "\n# Cortex agent sync outputs (generated at MCP startup — do not commit)\n"
+    ".claude/\n"
+    ".cursor/agents/\n"
 )
 
 
@@ -72,13 +76,13 @@ class StartupRepairReport(BaseModel):
 
 def _needs_structure(project_root: Path) -> bool:
     cortex_dir = project_root / ".cortex"
-    return not _check_structure_configured(cortex_dir)
+    return not check_structure_configured(cortex_dir)
 
 
 def _needs_symlinks(project_root: Path) -> bool:
     cortex_dir = project_root / ".cortex"
     cursor_dir = project_root / ".cursor"
-    return not _check_cursor_integration(cursor_dir, cortex_dir)
+    return not check_cursor_integration(cursor_dir, cortex_dir)
 
 
 def _needs_gitignore(project_root: Path) -> bool:
@@ -88,7 +92,8 @@ def _needs_gitignore(project_root: Path) -> bool:
     gitignore = project_root / ".gitignore"
     if not gitignore.is_file():
         return True
-    return GITIGNORE_MARKER not in gitignore.read_text(encoding="utf-8")
+    text = gitignore.read_text(encoding="utf-8")
+    return GITIGNORE_MARKER not in text or AGENT_SYNC_MARKER not in text
 
 
 async def _repair_structure(project_root: Path, report: StartupRepairReport) -> None:

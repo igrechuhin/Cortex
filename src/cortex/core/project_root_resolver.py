@@ -58,7 +58,7 @@ def clear_cached_root() -> None:
     _cached_root = None
 
 
-def _file_uri_to_path(uri: str) -> Path | None:
+def file_uri_to_path(uri: str) -> Path | None:
     """Convert file:// URI to Path; return None if not file or invalid."""
     parsed = urlparse(uri)
     if parsed.scheme != "file":
@@ -67,9 +67,6 @@ def _file_uri_to_path(uri: str) -> Path | None:
     if not path_str:
         return None
     return Path(path_str).resolve()
-
-
-file_uri_to_path = _file_uri_to_path
 
 
 def _fallback_root() -> Path:
@@ -110,7 +107,7 @@ async def _fetch_roots_path(session: ServerSession) -> Path | None:
                 elapsed,
             )
         if result.roots:
-            path = _file_uri_to_path(str(result.roots[0].uri))
+            path = file_uri_to_path(str(result.roots[0].uri))
             if path is not None and path.exists():
                 logger.debug("project_root_resolver: using root from client: %s", path)
                 return path

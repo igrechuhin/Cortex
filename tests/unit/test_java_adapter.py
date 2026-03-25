@@ -1,6 +1,5 @@
 """Tests for Java framework adapter."""
 
-# pyright: reportPrivateUsage=false
 import subprocess
 import tempfile
 from pathlib import Path
@@ -8,9 +7,9 @@ from unittest.mock import MagicMock, patch
 
 from cortex.services.framework_adapters.java_adapter import (
     JavaAdapter,
-    _error_check_result,
-    _infer_from_build_status,
-    _no_build_check_result,
+    error_check_result,
+    infer_from_build_status,
+    no_build_check_result,
 )
 
 
@@ -33,27 +32,27 @@ class TestJavaAdapter:
         with tempfile.TemporaryDirectory() as tmpdir:
             _ = (Path(tmpdir) / "pom.xml").write_text("<project/>")
             adapter = JavaAdapter(str(tmpdir))
-            assert adapter._build_tool() == "maven"
+            assert adapter.build_tool() == "maven"
 
     def test_build_tool_returns_gradle_when_build_gradle_exists(self) -> None:
         """_build_tool returns gradle when build.gradle is present."""
         with tempfile.TemporaryDirectory() as tmpdir:
             _ = (Path(tmpdir) / "build.gradle").write_text("")
             adapter = JavaAdapter(str(tmpdir))
-            assert adapter._build_tool() == "gradle"
+            assert adapter.build_tool() == "gradle"
 
     def test_build_tool_returns_gradle_when_build_gradle_kts_exists(self) -> None:
         """_build_tool returns gradle when build.gradle.kts is present."""
         with tempfile.TemporaryDirectory() as tmpdir:
             _ = (Path(tmpdir) / "build.gradle.kts").write_text("")
             adapter = JavaAdapter(str(tmpdir))
-            assert adapter._build_tool() == "gradle"
+            assert adapter.build_tool() == "gradle"
 
     def test_build_tool_returns_none_when_no_build_file(self) -> None:
         """_build_tool returns None when no Maven/Gradle build file."""
         with tempfile.TemporaryDirectory() as tmpdir:
             adapter = JavaAdapter(str(tmpdir))
-            assert adapter._build_tool() is None
+            assert adapter.build_tool() is None
 
     def test_gradle_wrapper_cmd_returns_gradlew_when_present(self) -> None:
         """_gradle_wrapper_cmd returns [gradlew] when gradlew exists."""
@@ -61,7 +60,7 @@ class TestJavaAdapter:
             _ = (Path(tmpdir) / "build.gradle").write_text("")
             _ = (Path(tmpdir) / "gradlew").write_text("#!/bin/sh\n")
             adapter = JavaAdapter(str(tmpdir))
-            cmd = adapter._gradle_wrapper_cmd()
+            cmd = adapter.gradle_wrapper_cmd()
             assert len(cmd) == 1
             assert "gradlew" in cmd[0]
             assert "gradle" in cmd[0] or "gradlew" in cmd[0]
@@ -72,7 +71,7 @@ class TestJavaAdapter:
             _ = (Path(tmpdir) / "build.gradle").write_text("")
             _ = (Path(tmpdir) / "gradlew.bat").write_text("@echo off\n")
             adapter = JavaAdapter(str(tmpdir))
-            cmd = adapter._gradle_wrapper_cmd()
+            cmd = adapter.gradle_wrapper_cmd()
             assert len(cmd) == 1
             assert "gradlew.bat" in cmd[0]
 
@@ -259,7 +258,7 @@ class TestJavaAdapter:
         """_extract_test_counts infers (1,0) when output has BUILD SUCCESS and no counts."""
         with tempfile.TemporaryDirectory() as tmpdir:
             adapter = JavaAdapter(str(tmpdir))
-            passed, failed = adapter._extract_test_counts("BUILD SUCCESS")
+            passed, failed = adapter.extract_test_counts("BUILD SUCCESS")
             assert passed == 1
             assert failed == 0
 
@@ -267,7 +266,7 @@ class TestJavaAdapter:
         """_extract_test_counts infers (0,1) when output has BUILD FAILURE and no counts."""
         with tempfile.TemporaryDirectory() as tmpdir:
             adapter = JavaAdapter(str(tmpdir))
-            passed, failed = adapter._extract_test_counts("BUILD FAILURE")
+            passed, failed = adapter.extract_test_counts("BUILD FAILURE")
             assert passed == 0
             assert failed == 1
 
@@ -275,7 +274,7 @@ class TestJavaAdapter:
         """_extract_test_counts infers (1,0) when output has SUCCESSFUL and no counts."""
         with tempfile.TemporaryDirectory() as tmpdir:
             adapter = JavaAdapter(str(tmpdir))
-            passed, failed = adapter._extract_test_counts("SUCCESSFUL")
+            passed, failed = adapter.extract_test_counts("SUCCESSFUL")
             assert passed == 1
             assert failed == 0
 
@@ -283,7 +282,7 @@ class TestJavaAdapter:
         """_extract_test_counts infers (0,1) when output has FAILED and no counts."""
         with tempfile.TemporaryDirectory() as tmpdir:
             adapter = JavaAdapter(str(tmpdir))
-            passed, failed = adapter._extract_test_counts("FAILED")
+            passed, failed = adapter.extract_test_counts("FAILED")
             assert passed == 0
             assert failed == 1
 
@@ -323,7 +322,7 @@ class TestJavaAdapter:
 
     def test_no_build_check_result_returns_expected_structure(self) -> None:
         """_no_build_check_result returns CheckResult with no build message."""
-        r = _no_build_check_result("format")
+        r = no_build_check_result("format")
         assert r.check_type == "format"
         assert r.success is False
         assert "No Maven" in r.output
@@ -332,7 +331,7 @@ class TestJavaAdapter:
     def test_error_check_result_returns_expected_structure(self) -> None:
         """_error_check_result returns CheckResult with exception message."""
         e = ValueError("bad")
-        r = _error_check_result("type_check", e)
+        r = error_check_result("type_check", e)
         assert r.check_type == "type_check"
         assert r.success is False
         assert "bad" in r.output
@@ -342,5 +341,5 @@ class TestJavaAdapter:
         self,
     ) -> None:
         """_infer_from_build_status returns (passed, failed) when not zero/zero."""
-        assert _infer_from_build_status("", 5, 2) == (5, 2)
-        assert _infer_from_build_status("other", 0, 1) == (0, 1)
+        assert infer_from_build_status("", 5, 2) == (5, 2)
+        assert infer_from_build_status("other", 0, 1) == (0, 1)

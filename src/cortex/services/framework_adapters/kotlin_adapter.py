@@ -60,7 +60,7 @@ class KotlinAdapter(FrameworkAdapter):
         """
         super().__init__(project_root)
 
-    def _build_tool(self) -> str | None:
+    def build_tool(self) -> str | None:
         """Detect Maven or Gradle from project root."""
         root = Path(self.project_root)
         if (root / "pom.xml").is_file():
@@ -82,7 +82,7 @@ class KotlinAdapter(FrameworkAdapter):
             timeout=timeout,
         )
 
-    def _gradle_wrapper_cmd(self) -> list[str]:
+    def gradle_wrapper_cmd(self) -> list[str]:
         """Return Gradle wrapper command (gradlew or gradlew.bat)."""
         root = Path(self.project_root)
         bat = root / "gradlew.bat"
@@ -97,7 +97,7 @@ class KotlinAdapter(FrameworkAdapter):
         self, tasks: list[str], timeout: int | None = None
     ) -> subprocess.CompletedProcess[str]:
         """Run Gradle in project root."""
-        cmd = self._gradle_wrapper_cmd() + ["--quiet", *tasks]
+        cmd = self.gradle_wrapper_cmd() + ["--quiet", *tasks]
         return subprocess.run(
             cmd,
             cwd=self.project_root,
@@ -115,7 +115,7 @@ class KotlinAdapter(FrameworkAdapter):
         include_slow_tests: bool = False,
     ) -> TestResult:
         """Run test suite via Maven or Gradle."""
-        tool = self._build_tool()
+        tool = self.build_tool()
         if tool is None:
             return self._error_test_result("No Maven (pom.xml) or Gradle build found")
         try:
@@ -235,7 +235,7 @@ class KotlinAdapter(FrameworkAdapter):
 
     def format_code(self) -> CheckResult:
         """Format code using Spotless (Maven spotless:apply / Gradle spotlessApply)."""
-        tool = self._build_tool()
+        tool = self.build_tool()
         if tool is None:
             return _no_build_check_result("format")
         try:
@@ -258,7 +258,7 @@ class KotlinAdapter(FrameworkAdapter):
 
     def type_check(self) -> CheckResult:
         """Run type checker via Maven compile or Gradle compileKotlin."""
-        tool = self._build_tool()
+        tool = self.build_tool()
         if tool is None:
             return _no_build_check_result("type_check")
         try:
@@ -293,7 +293,7 @@ class KotlinAdapter(FrameworkAdapter):
 
     def lint_code(self) -> CheckResult:
         """Run linter via Maven validate or Gradle check."""
-        tool = self._build_tool()
+        tool = self.build_tool()
         if tool is None:
             return _no_build_check_result("lint")
         try:

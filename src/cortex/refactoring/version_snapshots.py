@@ -67,13 +67,13 @@ async def get_affected_files(
     for file_path in memory_bank_dir.glob("**/*.md"):
         if file_path.is_file():
             rel_path = file_path.relative_to(memory_bank_dir)
-            if await _file_has_snapshot(str(rel_path), snapshot_id, metadata_index):
+            if await file_has_snapshot(str(rel_path), snapshot_id, metadata_index):
                 affected_files.append(str(rel_path))
 
     return affected_files
 
 
-async def _file_has_snapshot(
+async def file_has_snapshot(
     rel_path: str, snapshot_id: str, metadata_index: MetadataIndex
 ) -> bool:
     """Check if file has snapshot with matching ID.
@@ -102,9 +102,6 @@ async def _file_has_snapshot(
             return True
 
     return False
-
-
-file_has_snapshot = _file_has_snapshot
 
 
 async def get_version_history(

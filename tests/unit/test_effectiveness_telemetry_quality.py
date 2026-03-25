@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-# pyright: reportPrivateUsage=false, reportUnusedFunction=false
+# pyright: reportUnusedFunction=false
 import json
 from collections.abc import Generator
 from pathlib import Path
@@ -20,11 +20,11 @@ from cortex.tools.context.effectiveness_models import (
     ContextUsageStatistics,
 )
 from cortex.tools.context.effectiveness_operations import (
-    _analyze_log_entry,
-    _calculate_session_stats,
-    _update_aggregates,
+    analyze_log_entry,
     analyze_session_logs,
+    calculate_session_stats,
     get_context_statistics,
+    update_aggregates,
 )
 from cortex.tools.context.effectiveness_operations_io import (
     create_empty_insights,
@@ -398,7 +398,7 @@ def test_exclusion_metrics_export_debounced(
 
 def test_analyze_log_entry_sets_quality_fields() -> None:
     entry = _log_entry(task_description="pytest integration")
-    row = _analyze_log_entry("sid", entry)
+    row = analyze_log_entry("sid", entry)
     assert row.record_quality == ContextTelemetryRecordQuality.SYNTHETIC
     assert row.telemetry_quality_note == "synthetic_or_test_task_marker"
 
@@ -415,12 +415,12 @@ def test_update_aggregates_noop_when_entries_empty() -> None:
         insights=create_empty_insights(),
         entries=[],
     )
-    _update_aggregates(stats)
+    update_aggregates(stats)
     assert stats.total_load_context_calls == 3
 
 
 def test_calculate_session_stats_empty_entries() -> None:
-    stats = _calculate_session_stats([])
+    stats = calculate_session_stats([])
     assert stats.calls_count == 0
     assert stats.task_patterns == {}
 
@@ -447,7 +447,7 @@ def test_update_aggregates_uses_production_only() -> None:
             ),
         ],
     )
-    _update_aggregates(stats)
+    update_aggregates(stats)
     assert stats.total_load_context_calls == 1
     assert stats.common_task_patterns == {"implement/add": 1}
 
@@ -469,7 +469,7 @@ def test_update_aggregates_all_filtered_yields_empty_rollups() -> None:
             ),
         ],
     )
-    _update_aggregates(stats)
+    update_aggregates(stats)
     assert stats.total_load_context_calls == 0
     assert stats.avg_token_utilization == 0.0
     assert stats.common_task_patterns == {}
@@ -478,7 +478,7 @@ def test_update_aggregates_all_filtered_yields_empty_rollups() -> None:
 
 
 def test_calculate_session_stats_counts_all_averages_production_only() -> None:
-    stats = _calculate_session_stats(
+    stats = calculate_session_stats(
         [
             _usage_entry(
                 task="Test task",

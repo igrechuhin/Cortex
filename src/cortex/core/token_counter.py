@@ -72,6 +72,15 @@ class TokenCounter:
         return importlib.util.find_spec("tiktoken") is not None
 
     @property
+    def tiktoken_available(self) -> bool:
+        """Public access to whether tiktoken loading is available."""
+        return self._tiktoken_available
+
+    @tiktoken_available.setter
+    def tiktoken_available(self, value: bool) -> None:
+        self._tiktoken_available = value
+
+    @property
     def encoding(self) -> _Encoding | None:
         """Lazy load encoding to avoid blocking on initialization."""
         if not self._tiktoken_available:
@@ -106,6 +115,10 @@ class TokenCounter:
             pattern in error_str or pattern in error_type
             for pattern in network_patterns
         )
+
+    # Public alias for tests/callers.
+    def is_network_error(self, error: Exception) -> bool:
+        return self._is_network_error(error)
 
     def _try_load_encoding_with_timeout(
         self, tiktoken: _TiktokenModule, timeout_seconds: float
@@ -311,6 +324,14 @@ class TokenCounter:
                 return None
         self._tiktoken_available = False
         return None
+
+    # Public wrapper around the internal timeout loader.
+    def load_tiktoken_with_timeout(
+        self, timeout_seconds: float = 30.0, max_retries: int = 2
+    ) -> _Encoding | None:
+        return self._load_tiktoken_with_timeout(
+            timeout_seconds=timeout_seconds, max_retries=max_retries
+        )
 
     def _estimate_tokens_by_words(self, text: str) -> int:
         """

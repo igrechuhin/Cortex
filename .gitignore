@@ -102,3 +102,13 @@ eval_results.json
 .cortex/.cache/
 .cortex/history/
 .cortex-backup-*/
+
+# Cortex MCP (transient/generated files)
+.cortex/.session/
+.cortex/.cache/
+.cortex/history/
+.cortex-backup-*/
+
+# Cortex agent sync outputs (generated at MCP startup — do not commit)
+.claude/
+.cursor/agents/

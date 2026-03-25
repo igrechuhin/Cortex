@@ -5,18 +5,16 @@ Fix 2: run_docs_gate calls validate_impl directly (no nested semaphore).
 Fix 3: _record_connection_closure/_recovery protected by asyncio.Lock.
 """
 
-# pyright: reportPrivateUsage=false
-
 import asyncio
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
 from cortex.core.mcp_stability_retry import (
-    _get_connection_state,
-    _record_connection_closure,
-    _record_connection_recovery,
     ensure_clean_connection_state_for_testing,
+    get_connection_state,
+    record_connection_closure,
+    record_connection_recovery,
 )
 
 
@@ -33,10 +31,10 @@ class TestConnectionStateLockProtection:
     async def test_record_closure_sets_connected_false(self) -> None:
         """_record_connection_closure marks state as disconnected."""
         _reset()
-        state = _get_connection_state()
+        state = get_connection_state()
         assert state.connected is True
 
-        await _record_connection_closure()
+        await record_connection_closure()
 
         assert state.connected is False
 
@@ -44,14 +42,14 @@ class TestConnectionStateLockProtection:
     async def test_record_recovery_resets_state(self) -> None:
         """_record_connection_recovery resets all degraded-mode flags."""
         _reset()
-        state = _get_connection_state()
+        state = get_connection_state()
         state.connected = False
         state.reconnecting = True
         state.circuit_open = True
         state.consecutive_failures = 5
         state.last_error = "test error"
 
-        await _record_connection_recovery()
+        await record_connection_recovery()
 
         assert state.connected is True
         assert state.reconnecting is False
@@ -70,18 +68,18 @@ class TestConnectionStateLockProtection:
         barrier = asyncio.Barrier(2)
 
         async def close_then_recover() -> None:
-            _ = await _record_connection_closure()
+            _ = await record_connection_closure()
             _ = await barrier.wait()
-            _ = await _record_connection_recovery()
+            _ = await record_connection_recovery()
 
         async def close_then_recover_delayed() -> None:
-            _ = await _record_connection_closure()
+            _ = await record_connection_closure()
             _ = await barrier.wait()
-            _ = await _record_connection_recovery()
+            _ = await record_connection_recovery()
 
         _ = await asyncio.gather(close_then_recover(), close_then_recover_delayed())
 
-        state = _get_connection_state()
+        state = get_connection_state()
         assert state.connected is True
         assert state.circuit_open is False
         assert state.consecutive_failures == 0
@@ -95,7 +93,7 @@ class TestDocsGateBypassesSemaphore:
     async def test_run_single_validation_calls_validate_impl(self) -> None:
         """_run_single_validation calls validate_impl (not validate MCP wrapper)."""
         from cortex.tools.execution.pre_commit_docs_memory_helpers import (
-            _run_single_validation,
+            run_single_validation,
         )
         from cortex.tools.validation.operations import ValidateCheckTypeName
 
@@ -105,7 +103,7 @@ class TestDocsGateBypassesSemaphore:
             new_callable=AsyncMock,
             return_value=mock_result,
         ) as mock_impl:
-            result = await _run_single_validation(
+            result = await run_single_validation(
                 ValidateCheckTypeName.TIMESTAMPS, ctx=None
             )
 
@@ -131,13 +129,13 @@ class TestDocsGateBypassesSemaphore:
             ) as mock_validate,
         ):
             from cortex.tools.execution.pre_commit_docs_memory_helpers import (
-                _run_single_validation,
+                run_single_validation,
             )
             from cortex.tools.validation.operations import (
                 ValidateCheckTypeName,
             )
 
-            _ = await _run_single_validation(ValidateCheckTypeName.TIMESTAMPS, ctx=None)
+            _ = await run_single_validation(ValidateCheckTypeName.TIMESTAMPS, ctx=None)
 
         mock_validate.assert_not_awaited()
 
@@ -150,21 +148,21 @@ class TestGracefulDisconnectOnMCPError32000:
         self,
     ) -> None:
         """_handle_broken_resource_in_group returns True for MCP -32000."""
-        from cortex.main import _handle_broken_resource_in_group
+        from cortex.main import handle_broken_resource_in_group
 
         exc = RuntimeError("MCP error -32000: Connection closed")
         eg = BaseExceptionGroup("TaskGroup", [exc])
-        assert _handle_broken_resource_in_group(eg) is True
+        assert handle_broken_resource_in_group(eg) is True
 
     def test_handle_broken_resource_returns_false_for_unrelated_error(
         self,
     ) -> None:
         """_handle_broken_resource_in_group returns False for non-connection errors."""
-        from cortex.main import _handle_broken_resource_in_group
+        from cortex.main import handle_broken_resource_in_group
 
         exc = ValueError("unrelated")
         eg = BaseExceptionGroup("TaskGroup", [exc])
-        assert _handle_broken_resource_in_group(eg) is False
+        assert handle_broken_resource_in_group(eg) is False
 
     @patch("cortex.main.get_effective_transport", return_value="stdio")
     @patch("cortex.main.mcp")

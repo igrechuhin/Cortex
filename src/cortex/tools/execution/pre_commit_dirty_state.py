@@ -148,7 +148,7 @@ def _collect_untracked(
         logger.warning("git ls-files failed for dirty-state tracking")
 
 
-def _compute_git_file_hash(project_root: Path) -> PipelineFingerprint:
+def compute_git_file_hash(project_root: Path) -> PipelineFingerprint:
     """Compute fingerprint from git status of staged and modified files."""
     source_entries: list[str] = []
     all_entries: list[str] = []
@@ -204,7 +204,7 @@ class PipelineDirtyTracker:
         self.project_root = project_root
         self.phase_a_passed = passed
         if passed:
-            self.phase_a_fingerprint = _compute_git_file_hash(project_root)
+            self.phase_a_fingerprint = compute_git_file_hash(project_root)
             self._active = True
             logger.info(
                 "Phase A fingerprint recorded: source=%s, files=%d",
@@ -245,7 +245,7 @@ class PipelineDirtyTracker:
         if self.project_root is None:
             return SkipDecision(False, "No project root")
 
-        current = _compute_git_file_hash(self.project_root)
+        current = compute_git_file_hash(self.project_root)
         if check_name not in _SOURCE_DEPENDENT_CHECKS:
             return SkipDecision(False, f"Check '{check_name}' always re-runs")
 

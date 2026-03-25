@@ -1,6 +1,5 @@
 """Tests for Swift framework adapter."""
 
-# pyright: reportPrivateUsage=false
 import subprocess
 import tempfile
 from pathlib import Path
@@ -30,13 +29,13 @@ class TestSwiftAdapter:
                 "// swift-tools-version:5.9"
             )
             adapter = SwiftAdapter(str(tmpdir))
-            assert adapter._has_package_swift() is True
+            assert adapter.has_package_swift() is True
 
     def test_has_package_swift_false_when_no_package_swift(self) -> None:
         """_has_package_swift returns False when Package.swift is absent."""
         with tempfile.TemporaryDirectory() as tmpdir:
             adapter = SwiftAdapter(str(tmpdir))
-            assert adapter._has_package_swift() is False
+            assert adapter.has_package_swift() is False
 
     @patch("cortex.services.framework_adapters.swift_adapter.subprocess.run")
     def test_run_tests_returns_error_when_no_package_swift(

@@ -6,8 +6,6 @@ names are kept stable (e.g. ``find_markdownlint_command``) for backward
 compatibility so callers do not need to change imports when tooling is upgraded.
 """
 
-# pyright: reportPrivateUsage=false
-
 import asyncio
 import hashlib
 import subprocess
@@ -19,14 +17,14 @@ from cortex.core.constants import GIT_OPERATION_TIMEOUT_SECONDS
 from cortex.core.models import GitCommandResult
 from cortex.tools.files.markdown_lint_cache import MarkdownLintIndex
 from cortex.tools.files.markdown_lint_cache_updates import (
-    _update_markdown_lint_cache_from_results,
     after_one_file,
+    update_markdown_lint_cache_from_results,
     update_markdown_lint_cache_safe,
 )
 from cortex.tools.files.markdown_lint_helpers import (
     FileResult,
-    _result_stdout,
-    _result_success,
+    result_stdout,
+    result_success,
 )
 from cortex.tools.files.markdown_lint_responses import create_error_response
 
@@ -37,6 +35,7 @@ _ALL_MARKDOWN_EXCLUDE_DIRS = (
     "venv",
     "__pycache__",
     ".git",
+    ".build",
 )
 _ALL_MARKDOWN_EXCLUDE_PREFIXES = (
     ".cortex/plans/archive",
@@ -58,7 +57,7 @@ __all__ = [
     "parse_git_output",
     "parse_untracked_files",
     "run_command",
-    "_update_markdown_lint_cache_from_results",
+    "update_markdown_lint_cache_from_results",
     "update_markdown_lint_cache_safe",
     "validate_markdown_prerequisites",
     "calculate_file_hash",
@@ -112,7 +111,7 @@ async def run_command(
         return _create_error_result(str(e))
 
 
-def _parse_git_output(stdout: str, project_root: Path, files: list[Path]) -> None:
+def parse_git_output(stdout: str, project_root: Path, files: list[Path]) -> None:
     """Parse git command output and add markdown files to list."""
     for line in stdout.strip().split("\n"):
         rel = line.strip()
@@ -126,7 +125,7 @@ def _parse_git_output(stdout: str, project_root: Path, files: list[Path]) -> Non
             files.append(file_path)
 
 
-def _parse_untracked_files(stdout: str, project_root: Path, files: list[Path]) -> None:
+def parse_untracked_files(stdout: str, project_root: Path, files: list[Path]) -> None:
     """Parse untracked files from git status output."""
     for line in stdout.strip().split("\n"):
         if not line.startswith("??"):
@@ -140,11 +139,7 @@ def _parse_untracked_files(stdout: str, project_root: Path, files: list[Path]) -
             files.append(file_path)
 
 
-parse_git_output = _parse_git_output
-parse_untracked_files = _parse_untracked_files
-
-
-async def _calculate_file_hash(file_path: Path) -> str | None:
+async def calculate_file_hash(file_path: Path) -> str | None:
     """Calculate sha256 hash for a file."""
     if not file_path.is_file():
         return None
@@ -176,21 +171,21 @@ async def get_modified_markdown_files(
     files: list[Path] = []
 
     diff_result = await run_command(["git", "diff", "--name-only"], cwd=project_root)
-    if _result_success(diff_result):
-        _parse_git_output(_result_stdout(diff_result), project_root, files)
+    if result_success(diff_result):
+        parse_git_output(result_stdout(diff_result), project_root, files)
 
     cached_result = await run_command(
         ["git", "diff", "--cached", "--name-only"], cwd=project_root
     )
-    if _result_success(cached_result):
-        _parse_git_output(_result_stdout(cached_result), project_root, files)
+    if result_success(cached_result):
+        parse_git_output(result_stdout(cached_result), project_root, files)
 
     if include_untracked:
         status_result = await run_command(
             ["git", "status", "--porcelain"], cwd=project_root
         )
-        if _result_success(status_result):
-            _parse_untracked_files(_result_stdout(status_result), project_root, files)
+        if result_success(status_result):
+            parse_untracked_files(result_stdout(status_result), project_root, files)
 
     return sorted(set(files))
 
@@ -214,17 +209,17 @@ async def find_markdownlint_command(
         local_bin = project_root / "node_modules" / ".bin" / "rumdl"
         if local_bin.exists():
             result = await run_command([str(local_bin.resolve()), "--version"])
-            if _result_success(result) or "rumdl" in _result_stdout(result):
+            if result_success(result) or "rumdl" in result_stdout(result):
                 return [str(local_bin.resolve()), "check"]
 
     # 2) Try rumdl on PATH.
     result = await run_command(["rumdl", "--version"])
-    if _result_success(result) or "rumdl" in _result_stdout(result):
+    if result_success(result) or "rumdl" in result_stdout(result):
         return ["rumdl", "check"]
 
     # 3) Fallback to npx-based invocation.
     result = await run_command(["npx", "--yes", "rumdl", "--version"])
-    if _result_success(result) or "rumdl" in _result_stdout(result):
+    if result_success(result) or "rumdl" in result_stdout(result):
         return ["npx", "--yes", "rumdl", "check"]
 
     return None
@@ -250,7 +245,7 @@ async def validate_markdown_prerequisites(
 ) -> tuple[str | None, list[str] | None, Path | None]:
     """Validate git and markdownlint; return (error_or_none, cmd_or_none, config_or_none)."""
     git_check = await run_command(["git", "rev-parse", "--git-dir"], cwd=root_path)
-    if not _result_success(git_check):
+    if not result_success(git_check):
         return create_error_response("Not in a git repository"), None, None
 
     markdownlint_cmd = await find_markdownlint_command(root_path)
@@ -308,7 +303,7 @@ async def get_markdown_files_to_process(
     return await get_modified_markdown_files(root_path, include_untracked_markdown)
 
 
-def _is_cached_clean_entry(
+def is_cached_clean_entry(
     stored_hash: str | None,
     content_hash: str,
     dry_run: bool,
@@ -320,7 +315,7 @@ def _is_cached_clean_entry(
 _HASH_CONCURRENCY = 32
 
 
-async def _compute_file_hashes(
+async def compute_file_hashes(
     files: list[Path], project_root: Path, max_concurrent: int = _HASH_CONCURRENCY
 ) -> dict[str, str | None]:
     """Compute content hashes for files in parallel; path -> hash or None."""
@@ -329,7 +324,7 @@ async def _compute_file_hashes(
     async def hash_one(file_path: Path) -> tuple[str, str | None]:
         rel = str(file_path.relative_to(project_root))
         async with semaphore:
-            h = await _calculate_file_hash(file_path)
+            h = await calculate_file_hash(file_path)
         return rel, h
 
     pairs = await asyncio.gather(
@@ -351,7 +346,7 @@ async def filter_files_for_linting(
     dry_run: bool,
 ) -> tuple[list[Path], list[FileResult], dict[str, str]]:
     """Filter files using lint cache and prepare initial results."""
-    file_hashes = await _compute_file_hashes(files, project_root)
+    file_hashes = await compute_file_hashes(files, project_root)
 
     files_to_lint: list[Path] = []
     initial_results: list[FileResult] = []
@@ -366,7 +361,7 @@ async def filter_files_for_linting(
 
         hashes_for_cache[rel_path] = content_hash
         stored_hash = index.files.get(rel_path)
-        if _is_cached_clean_entry(stored_hash, content_hash, dry_run):
+        if is_cached_clean_entry(stored_hash, content_hash, dry_run):
             initial_results.append(
                 FileResult(
                     file=rel_path,
@@ -380,9 +375,3 @@ async def filter_files_for_linting(
         files_to_lint.append(file_path)
 
     return files_to_lint, initial_results, hashes_for_cache
-
-
-# Public aliases for code that needs to call these (e.g. tests)
-is_cached_clean_entry = _is_cached_clean_entry
-compute_file_hashes = _compute_file_hashes
-calculate_file_hash = _calculate_file_hash

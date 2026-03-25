@@ -9,8 +9,7 @@ Tests verify that:
 - Long-running semaphore wait allows second call to succeed after first completes
 """
 
-# pyright: reportPrivateUsage=false, reportUnusedFunction=false
-
+# pyright: reportUnusedFunction=false
 import asyncio
 from pathlib import Path
 from unittest.mock import AsyncMock, patch
@@ -42,7 +41,7 @@ from cortex.managers.initialization import get_project_root
 def _reset_connection_state() -> None:
     """Ensure MCP connection state is healthy before each timeout test."""
     mcp_stability_retry._connection_state = None  # type: ignore[attr-defined]
-    _ = mcp_stability_retry._get_connection_state()
+    _ = mcp_stability_retry.get_connection_state()
 
 
 async def _block_forever() -> str:
@@ -334,7 +333,7 @@ class TestProgressHelpers:
         async def tool_that_fails() -> str:
             raise RuntimeError("Tool failed early")
 
-        from cortex.core.mcp_stability import _run_and_finalize
+        from cortex.core.mcp_stability import run_and_finalize
         from cortex.core.mcp_stability_config import get_semaphore
 
         progress_task = asyncio.create_task(fake_progress_loop())
@@ -351,7 +350,7 @@ class TestProgressHelpers:
             return result, True, None, False, None, None
 
         with pytest.raises(RuntimeError, match="Tool failed early"):
-            _ = await _run_and_finalize(
+            _ = await run_and_finalize(
                 execute_fn,
                 progress_task,
                 None,
@@ -380,10 +379,10 @@ class TestLongRunningSemaphoreWait:
     async def test_second_long_running_waits_then_succeeds(self) -> None:
         """Second long-running call waits for first to finish then runs (reduces commit blocking)."""
         import cortex.core.mcp_stability_semaphores as semaphores_mod
-        from cortex.core.mcp_stability import _run_and_finalize
+        from cortex.core.mcp_stability import run_and_finalize
         from cortex.core.mcp_stability_config import get_long_running_semaphore
 
-        semaphores_mod._long_running_tools_semaphore = None
+        semaphores_mod.reset_long_running_tools_semaphore_for_testing()
         _ = get_long_running_semaphore()
         first_done: asyncio.Event = asyncio.Event()
         first_acquired: asyncio.Event = asyncio.Event()
@@ -406,7 +405,7 @@ class TestLongRunningSemaphoreWait:
         ):
             # Start first (holds semaphore), then second (waits then runs)
             first_task: asyncio.Task[str] = asyncio.create_task(
-                _run_and_finalize(
+                run_and_finalize(
                     first_execute,
                     None,
                     None,
@@ -418,7 +417,7 @@ class TestLongRunningSemaphoreWait:
             )
             _ = await first_acquired.wait()
             second_task: asyncio.Task[str] = asyncio.create_task(
-                _run_and_finalize(
+                run_and_finalize(
                     second_execute,
                     None,
                     None,
@@ -438,10 +437,10 @@ class TestLongRunningSemaphoreWait:
     async def test_second_long_running_fails_after_wait_timeout(self) -> None:
         """Second long-running call raises RuntimeError if first runs longer than wait."""
         import cortex.core.mcp_stability_semaphores as semaphores_mod
-        from cortex.core.mcp_stability import _run_and_finalize
+        from cortex.core.mcp_stability import run_and_finalize
         from cortex.core.mcp_stability_config import get_long_running_semaphore
 
-        semaphores_mod._long_running_tools_semaphore = None
+        semaphores_mod.reset_long_running_tools_semaphore_for_testing()
         sem = get_long_running_semaphore()
         await sem.acquire()
         try:
@@ -456,7 +455,7 @@ class TestLongRunningSemaphoreWait:
                 0.15,
             ):
                 with pytest.raises(RuntimeError, match="Another long-running tool"):
-                    _ = await _run_and_finalize(
+                    _ = await run_and_finalize(
                         fast_execute,
                         None,
                         None,
@@ -474,10 +473,10 @@ class TestLongRunningSemaphoreWait:
     ) -> None:
         """Second call acquires semaphore on retry window when first releases at main timeout."""
         import cortex.core.mcp_stability_semaphores as semaphores_mod
-        from cortex.core.mcp_stability import _run_and_finalize
+        from cortex.core.mcp_stability import run_and_finalize
         from cortex.core.mcp_stability_config import get_long_running_semaphore
 
-        semaphores_mod._long_running_tools_semaphore = None
+        semaphores_mod.reset_long_running_tools_semaphore_for_testing()
         sem = get_long_running_semaphore()
         await sem.acquire()
         released_during_retry: asyncio.Event = asyncio.Event()
@@ -503,7 +502,7 @@ class TestLongRunningSemaphoreWait:
             ),
         ):
             release_task = asyncio.create_task(release_after_main_timeout())
-            result: str = await _run_and_finalize(
+            result: str = await run_and_finalize(
                 second_execute,
                 None,
                 None,
@@ -520,10 +519,10 @@ class TestLongRunningSemaphoreWait:
     async def test_long_running_semaphore_released_on_cancellation(self) -> None:
         """When first long-running call is cancelled, semaphore is released so second can run."""
         import cortex.core.mcp_stability_semaphores as semaphores_mod
-        from cortex.core.mcp_stability import _run_and_finalize
+        from cortex.core.mcp_stability import run_and_finalize
         from cortex.core.mcp_stability_config import get_long_running_semaphore
 
-        semaphores_mod._long_running_tools_semaphore = None
+        semaphores_mod.reset_long_running_tools_semaphore_for_testing()
         _ = get_long_running_semaphore()
         first_acquired: asyncio.Event = asyncio.Event()
         never_set: asyncio.Event = asyncio.Event()
@@ -545,7 +544,7 @@ class TestLongRunningSemaphoreWait:
             2.0,
         ):
             first_task: asyncio.Task[str] = asyncio.create_task(
-                _run_and_finalize(
+                run_and_finalize(
                     first_execute,
                     None,
                     None,
@@ -559,7 +558,7 @@ class TestLongRunningSemaphoreWait:
             _ = first_task.cancel()
             with pytest.raises(asyncio.CancelledError):
                 _ = await first_task
-            second_result: str = await _run_and_finalize(
+            second_result: str = await run_and_finalize(
                 second_execute,
                 None,
                 None,

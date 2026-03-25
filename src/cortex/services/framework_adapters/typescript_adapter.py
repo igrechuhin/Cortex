@@ -87,7 +87,7 @@ class TypeScriptAdapter(FrameworkAdapter):
 
     def _parse_test_output(self, output: str, success: bool) -> TestResult:
         """Parse npm test / Jest / Vitest-style output."""
-        passed, failed = self._extract_test_counts(output)
+        passed, failed = self.extract_test_counts(output)
         total = passed + failed
         pass_rate = (passed / total) if total > 0 else 0.0
         coverage = self._extract_coverage(output)
@@ -107,7 +107,7 @@ class TypeScriptAdapter(FrameworkAdapter):
             errors=errors,
         )
 
-    def _extract_test_counts(self, output: str) -> tuple[int, int]:
+    def extract_test_counts(self, output: str) -> tuple[int, int]:
         """Extract passed/failed counts from test output."""
         passed, failed = 0, 0
         for line in reversed(output.splitlines()):

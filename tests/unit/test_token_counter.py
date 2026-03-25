@@ -706,7 +706,6 @@ class TestCacheManagement:
         assert size2 == 2
 
 
-# pyright: reportPrivateUsage=false
 class TestTiktokenTimeoutAndRetry:
     """Tests for tiktoken loading timeout and retry mechanism."""
 
@@ -733,13 +732,13 @@ class TestTiktokenTimeoutAndRetry:
                 )
 
                 # Act
-                result = counter._load_tiktoken_with_timeout(
+                result = counter.load_tiktoken_with_timeout(
                     timeout_seconds=30.0, max_retries=2
                 )
 
                 # Assert
                 assert result is mock_encoding
-                assert counter._tiktoken_available is True
+                assert counter.tiktoken_available is True
         finally:
             if original_tiktoken is not None:
                 sys.modules["tiktoken"] = original_tiktoken
@@ -772,13 +771,13 @@ class TestTiktokenTimeoutAndRetry:
                     )
 
                     # Act
-                    result = counter._load_tiktoken_with_timeout(
+                    result = counter.load_tiktoken_with_timeout(
                         timeout_seconds=0.1, max_retries=1
                     )
 
                     # Assert
                     assert result is mock_encoding
-                    assert counter._tiktoken_available is True
+                    assert counter.tiktoken_available is True
         finally:
             if original_tiktoken is not None:
                 sys.modules["tiktoken"] = original_tiktoken
@@ -807,13 +806,13 @@ class TestTiktokenTimeoutAndRetry:
                     )
 
                     # Act
-                    result = counter._load_tiktoken_with_timeout(
+                    result = counter.load_tiktoken_with_timeout(
                         timeout_seconds=0.1, max_retries=2
                     )
 
                     # Assert
                     assert result is None
-                    assert counter._tiktoken_available is False
+                    assert counter.tiktoken_available is False
         finally:
             if original_tiktoken is not None:
                 sys.modules["tiktoken"] = original_tiktoken
@@ -846,13 +845,13 @@ class TestTiktokenTimeoutAndRetry:
                     )
 
                     # Act
-                    result = counter._load_tiktoken_with_timeout(
+                    result = counter.load_tiktoken_with_timeout(
                         timeout_seconds=30.0, max_retries=1
                     )
 
                     # Assert
                     assert result is mock_encoding
-                    assert counter._tiktoken_available is True
+                    assert counter.tiktoken_available is True
         finally:
             if original_tiktoken is not None:
                 sys.modules["tiktoken"] = original_tiktoken
@@ -881,13 +880,13 @@ class TestTiktokenTimeoutAndRetry:
                     )
 
                     # Act
-                    result = counter._load_tiktoken_with_timeout(
+                    result = counter.load_tiktoken_with_timeout(
                         timeout_seconds=30.0, max_retries=2
                     )
 
                     # Assert
                     assert result is None
-                    assert counter._tiktoken_available is False
+                    assert counter.tiktoken_available is False
         finally:
             if original_tiktoken is not None:
                 sys.modules["tiktoken"] = original_tiktoken
@@ -926,13 +925,13 @@ class TestTiktokenTimeoutAndRetry:
 
             try:
                 # Act
-                result = counter._load_tiktoken_with_timeout(
+                result = counter.load_tiktoken_with_timeout(
                     timeout_seconds=30.0, max_retries=2
                 )
 
                 # Assert
                 assert result is None
-                assert counter._tiktoken_available is False
+                assert counter.tiktoken_available is False
             finally:
                 builtins.__import__ = original_import
         finally:
@@ -962,7 +961,7 @@ class TestTiktokenTimeoutAndRetry:
                         )
 
                         # Act
-                        _ = counter._load_tiktoken_with_timeout(
+                        _ = counter.load_tiktoken_with_timeout(
                             timeout_seconds=0.1, max_retries=2
                         )
 
@@ -983,7 +982,7 @@ class TestTiktokenTimeoutAndRetry:
         text = "This is a test text with multiple words"
 
         # Simulate timeout by setting encoding_impl to None and disabling tiktoken
-        counter._tiktoken_available = False  # Disable tiktoken to force fallback
+        counter.tiktoken_available = False  # Disable tiktoken to force fallback
         counter.encoding_impl = None
 
         # Act
@@ -995,7 +994,7 @@ class TestTiktokenTimeoutAndRetry:
         expected_min = len(text) // 4
         assert count >= expected_min
         # Verify fallback was used (tiktoken is disabled)
-        assert counter._tiktoken_available is False
+        assert counter.tiktoken_available is False
 
     def test_is_network_error_detection(self):
         """Test network error detection logic."""
@@ -1003,16 +1002,16 @@ class TestTiktokenTimeoutAndRetry:
         counter = TokenCounter()
 
         # Act & Assert - Network errors
-        assert counter._is_network_error(TimeoutError("Connection timeout"))
-        assert counter._is_network_error(ConnectionError("Connection refused"))
-        assert counter._is_network_error(Exception("DNS resolution failed"))
-        assert counter._is_network_error(Exception("Network unreachable"))
-        assert counter._is_network_error(Exception("SSL certificate error"))
+        assert counter.is_network_error(TimeoutError("Connection timeout"))
+        assert counter.is_network_error(ConnectionError("Connection refused"))
+        assert counter.is_network_error(Exception("DNS resolution failed"))
+        assert counter.is_network_error(Exception("Network unreachable"))
+        assert counter.is_network_error(Exception("SSL certificate error"))
 
         # Act & Assert - Non-network errors
-        assert not counter._is_network_error(ValueError("Invalid model name"))
-        assert not counter._is_network_error(KeyError("Missing key"))
-        assert not counter._is_network_error(Exception("Generic error"))
+        assert not counter.is_network_error(ValueError("Invalid model name"))
+        assert not counter.is_network_error(KeyError("Missing key"))
+        assert not counter.is_network_error(Exception("Generic error"))
 
     def test_load_tiktoken_handles_network_unavailable_gracefully(self):
         """Test that network unavailability is handled gracefully."""
@@ -1035,13 +1034,13 @@ class TestTiktokenTimeoutAndRetry:
                 )
 
                 # Act
-                result = counter._load_tiktoken_with_timeout(
+                result = counter.load_tiktoken_with_timeout(
                     timeout_seconds=30.0, max_retries=1
                 )
 
                 # Assert
                 assert result is None
-                assert counter._tiktoken_available is False
+                assert counter.tiktoken_available is False
         finally:
             if original_tiktoken is not None:
                 sys.modules["tiktoken"] = original_tiktoken
@@ -1069,13 +1068,13 @@ class TestTiktokenTimeoutAndRetry:
                 )
 
                 # Act
-                result = counter._load_tiktoken_with_timeout(
+                result = counter.load_tiktoken_with_timeout(
                     timeout_seconds=30.0, max_retries=2
                 )
 
                 # Assert
                 assert result is None
-                assert counter._tiktoken_available is False
+                assert counter.tiktoken_available is False
                 # Should not retry non-network errors
                 assert mock_future.result.call_count == 1
         finally:

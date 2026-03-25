@@ -70,7 +70,7 @@ class GoAdapter(FrameworkAdapter):
 
     def _parse_test_output(self, output: str, success: bool) -> TestResult:
         """Parse go test output."""
-        passed, failed = self._extract_test_counts(output)
+        passed, failed = self.extract_test_counts(output)
         total = passed + failed
         pass_rate = (passed / total) if total > 0 else 0.0
         errors: list[str] = []
@@ -87,7 +87,7 @@ class GoAdapter(FrameworkAdapter):
             errors=errors,
         )
 
-    def _extract_test_counts(self, output: str) -> tuple[int, int]:
+    def extract_test_counts(self, output: str) -> tuple[int, int]:
         """Extract passed/failed counts from go test output."""
         passed, failed = 0, 0
         for line in output.splitlines():
@@ -218,7 +218,7 @@ class GoAdapter(FrameworkAdapter):
         try:
             result = self._run_go(["vet", "./..."])
             output = result.stdout + result.stderr
-            errs = self._parse_go_vet_output(output)
+            errs = self.parse_go_vet_output(output)
             return CheckResult(
                 check_type="lint",
                 success=len(errs) == 0,
@@ -237,7 +237,7 @@ class GoAdapter(FrameworkAdapter):
                 files_modified=[],
             )
 
-    def _parse_go_vet_output(self, output: str) -> list[str]:
+    def parse_go_vet_output(self, output: str) -> list[str]:
         """Extract error lines from go vet output."""
         errors: list[str] = []
         for line in output.splitlines():

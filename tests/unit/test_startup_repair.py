@@ -6,6 +6,7 @@ from unittest.mock import patch
 import pytest
 
 from cortex.structure.lifecycle.startup_repair import (
+    AGENT_SYNC_MARKER,
     GITIGNORE_MARKER,
     repair_project_setup,
 )
@@ -166,16 +167,50 @@ async def test_repair_appends_gitignore_entries(tmp_path: Path) -> None:
     assert ".cortex/.cache/" in content
     assert ".cortex/history/" in content
     assert ".cortex-backup-*/" in content
+    assert AGENT_SYNC_MARKER in content
+    assert ".cursor/agents/" in content
+    assert report.skipped is False
+
+
+@pytest.mark.asyncio
+async def test_repair_updates_gitignore_when_agent_marker_missing(
+    tmp_path: Path,
+) -> None:
+    # Arrange – git repo, .gitignore has Cortex transient marker but not agent sync marker
+    _make_git_repo(tmp_path)
+    gitignore = tmp_path / ".gitignore"
+    _ = gitignore.write_text(
+        f"# existing\n{GITIGNORE_MARKER}\n",
+        encoding="utf-8",
+    )
+
+    with (
+        patch(
+            "cortex.structure.lifecycle.startup_repair._needs_structure",
+            return_value=False,
+        ),
+        patch(
+            "cortex.structure.lifecycle.startup_repair._needs_symlinks",
+            return_value=False,
+        ),
+    ):
+        report = await repair_project_setup(tmp_path)
+
+    # Assert – updated because agent sync marker was absent
+    assert report.gitignore_updated is True
+    content = gitignore.read_text(encoding="utf-8")
+    assert AGENT_SYNC_MARKER in content
+    assert ".cursor/agents/" in content
     assert report.skipped is False
 
 
 @pytest.mark.asyncio
 async def test_repair_skips_gitignore_when_entries_present(tmp_path: Path) -> None:
-    # Arrange – git repo, .gitignore already has marker
+    # Arrange – git repo, .gitignore already has both markers
     _make_git_repo(tmp_path)
     gitignore = tmp_path / ".gitignore"
     _ = gitignore.write_text(
-        f"# existing\n{GITIGNORE_MARKER}\n",
+        f"# existing\n{GITIGNORE_MARKER}\n{AGENT_SYNC_MARKER}\n",
         encoding="utf-8",
     )
 

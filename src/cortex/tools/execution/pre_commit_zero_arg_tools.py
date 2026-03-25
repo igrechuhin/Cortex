@@ -109,7 +109,7 @@ def _start_phase_a_job(
     return cast(ModelDict, job)
 
 
-def _markdown_result_has_errors(md: dict[str, object]) -> bool:
+def markdown_result_has_errors(md: dict[str, object]) -> bool:
     """Return True when the detached worker's markdown_result indicates failures."""
     files_err = md.get("files_with_errors", 0)
     try:
@@ -123,7 +123,7 @@ def _markdown_result_has_errors(md: dict[str, object]) -> bool:
     return False
 
 
-async def _poll_phase_a_result(
+async def poll_phase_a_result(
     root: Path,
     job_id: str,
     timeout: int,
@@ -155,7 +155,7 @@ async def _poll_phase_a_result(
     if isinstance(md_raw, dict):
         md_result = cast(dict[str, object], md_raw)
         inner["markdown_result"] = md_result
-        if _markdown_result_has_errors(md_result):
+        if markdown_result_has_errors(md_result):
             inner["preflight_passed"] = False
 
     return cast(ModelDict, inner)
@@ -189,7 +189,7 @@ async def _spawn_and_poll_phase_a(
         status = str(job.get("status", ""))
         if status == "error":
             return job
-        return await _poll_phase_a_result(root, job_id, timeout=timeout, ctx=ctx)
+        return await poll_phase_a_result(root, job_id, timeout=timeout, ctx=ctx)
 
 
 @typed_mcp_tool(

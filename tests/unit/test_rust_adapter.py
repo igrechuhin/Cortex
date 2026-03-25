@@ -1,6 +1,5 @@
 """Tests for Rust framework adapter."""
 
-# pyright: reportPrivateUsage=false
 import subprocess
 import tempfile
 from pathlib import Path
@@ -244,10 +243,8 @@ class TestRustAdapter:
     def test_extract_test_counts_parses_cargo_test_output(self) -> None:
         """_extract_test_counts parses cargo test result line."""
         adapter = RustAdapter()
-        passed, failed = (
-            adapter._extract_test_counts(  # pyright: ignore[reportPrivateUsage]
-                "test result: ok. 5 passed; 2 failed"
-            )
+        passed, failed = adapter.extract_test_counts(
+            "test result: ok. 5 passed; 2 failed"
         )
         assert passed == 5
         assert failed == 2
@@ -261,9 +258,7 @@ class TestRustAdapter:
                 "warning: unused variable",
             ]
         )
-        errs, warns = adapter._parse_rust_output(  # pyright: ignore[reportPrivateUsage]
-            output
-        )
+        errs, warns = adapter.parse_rust_output(output)
         assert len(errs) == 1
         assert "error" in errs[0].lower()
         assert len(warns) == 1

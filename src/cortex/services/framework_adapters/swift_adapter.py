@@ -35,7 +35,7 @@ class SwiftAdapter(FrameworkAdapter):
         """
         super().__init__(project_root)
 
-    def _has_package_swift(self) -> bool:
+    def has_package_swift(self) -> bool:
         """Return True if Package.swift exists in project root."""
         return (self.project_root / "Package.swift").is_file()
 
@@ -61,7 +61,7 @@ class SwiftAdapter(FrameworkAdapter):
         include_slow_tests: bool = False,
     ) -> TestResult:
         """Run test suite via swift test."""
-        if not self._has_package_swift():
+        if not self.has_package_swift():
             return self._error_test_result(
                 "No Package.swift found; not a Swift Package Manager project"
             )
@@ -172,7 +172,7 @@ class SwiftAdapter(FrameworkAdapter):
 
     def format_code(self) -> CheckResult:
         """Format code using swift format."""
-        if not self._has_package_swift():
+        if not self.has_package_swift():
             return CheckResult(
                 check_type="format",
                 success=False,
@@ -204,7 +204,7 @@ class SwiftAdapter(FrameworkAdapter):
 
     def type_check(self) -> CheckResult:
         """Run type checker via swift build."""
-        if not self._has_package_swift():
+        if not self.has_package_swift():
             return CheckResult(
                 check_type="type_check",
                 success=False,

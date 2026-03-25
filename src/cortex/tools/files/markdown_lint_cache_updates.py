@@ -53,7 +53,7 @@ async def after_one_file(
         )
 
 
-async def _update_markdown_lint_cache_from_results(
+async def update_markdown_lint_cache_from_results(
     index: MarkdownLintIndex,
     project_root: Path,
     results: list[FileResult],
@@ -81,7 +81,7 @@ async def update_markdown_lint_cache_safe(
 ) -> None:
     """Update markdown lint cache with error handling."""
     try:
-        await _update_markdown_lint_cache_from_results(
+        await update_markdown_lint_cache_from_results(
             index, root_path, results, file_hashes
         )
     except (OSError, ValueError, KeyError, FileLockTimeoutError) as e:

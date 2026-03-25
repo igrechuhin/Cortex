@@ -8,8 +8,6 @@ Tests for:
 - mcp_failure_handler.py
 """
 
-# pyright: reportPrivateUsage=false
-
 import json
 from pathlib import Path
 from typing import cast
@@ -169,7 +167,7 @@ class TestManagerRegistry:
         registry = ManagerRegistry()
 
         # Assert
-        assert registry._managers == {}
+        assert registry.managers == {}
 
     @pytest.mark.asyncio
     async def test_get_managers(self, tmp_path: Path) -> None:
@@ -213,28 +211,28 @@ class TestManagerRegistry:
         """Test clearing all cached managers."""
         # Arrange
         registry = ManagerRegistry()
-        registry._managers[str(tmp_path)] = make_test_managers(fs=MagicMock())
-        registry._managers["/other/path"] = make_test_managers(fs=MagicMock())
+        registry.managers[str(tmp_path)] = make_test_managers(fs=MagicMock())
+        registry.managers["/other/path"] = make_test_managers(fs=MagicMock())
 
         # Act
         registry.clear_cache()
 
         # Assert
-        assert registry._managers == {}
+        assert registry.managers == {}
 
     def test_clear_cache_specific(self, tmp_path: Path) -> None:
         """Test clearing specific project cache."""
         # Arrange
         registry = ManagerRegistry()
-        registry._managers[str(tmp_path)] = make_test_managers(fs=MagicMock())
-        registry._managers["/other/path"] = make_test_managers(fs=MagicMock())
+        registry.managers[str(tmp_path)] = make_test_managers(fs=MagicMock())
+        registry.managers["/other/path"] = make_test_managers(fs=MagicMock())
 
         # Act
         registry.clear_cache(tmp_path)
 
         # Assert
         assert not registry.has_managers(tmp_path)
-        assert "/other/path" in registry._managers
+        assert "/other/path" in registry.managers
 
     def test_has_managers_false(self, tmp_path: Path) -> None:
         """Test has_managers returns False when not cached."""
@@ -285,7 +283,7 @@ class TestMCPToolValidator:
     ) -> None:
         """Test dict response without 'status' triggers validation path."""
         from cortex.core.mcp_tool_validator import (
-            _is_test_context,
+            is_test_context,
             validate_mcp_tool_response,
         )
 
@@ -293,7 +291,7 @@ class TestMCPToolValidator:
         response_dict: ModelDict = {"data": "no status key"}
 
         with patch(
-            "cortex.core.mcp_tool_validator._is_test_context",
+            "cortex.core.mcp_tool_validator.is_test_context",
             return_value=False,
         ):
             # Act - should not raise; _validate_dict_response logs warning
@@ -302,7 +300,7 @@ class TestMCPToolValidator:
             )
 
         # Restore so other tests see pytest context
-        assert _is_test_context() is True
+        assert is_test_context() is True
 
     async def test_validate_mcp_tool_response_json_string_raises(
         self, tmp_path: Path
@@ -315,7 +313,7 @@ class TestMCPToolValidator:
         response_str = '{"status": "ok"}'
 
         with patch(
-            "cortex.core.mcp_tool_validator._is_test_context",
+            "cortex.core.mcp_tool_validator.is_test_context",
             return_value=False,
         ):
             with pytest.raises(MCPToolFailure):

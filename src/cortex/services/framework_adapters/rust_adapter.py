@@ -71,7 +71,7 @@ class RustAdapter(FrameworkAdapter):
 
     def _parse_test_output(self, output: str, success: bool) -> TestResult:
         """Parse cargo test output."""
-        passed, failed = self._extract_test_counts(output)
+        passed, failed = self.extract_test_counts(output)
         total = passed + failed
         pass_rate = (passed / total) if total > 0 else 0.0
         errors: list[str] = []
@@ -88,7 +88,7 @@ class RustAdapter(FrameworkAdapter):
             errors=errors,
         )
 
-    def _extract_test_counts(self, output: str) -> tuple[int, int]:
+    def extract_test_counts(self, output: str) -> tuple[int, int]:
         """Extract passed/failed counts from cargo test output."""
         passed, failed = 0, 0
         for line in reversed(output.splitlines()):
@@ -176,7 +176,7 @@ class RustAdapter(FrameworkAdapter):
         try:
             result = self._run_cargo(["fix", "--allow-dirty", "--allow-staged"])
             output = result.stdout + result.stderr
-            errs, warns = self._parse_rust_output(output)
+            errs, warns = self.parse_rust_output(output)
             return CheckResult(
                 check_type="lint",
                 success=len(errs) == 0,
@@ -223,7 +223,7 @@ class RustAdapter(FrameworkAdapter):
         try:
             result = self._run_cargo(["check"])
             output = result.stdout + result.stderr
-            errs, warns = self._parse_rust_output(output)
+            errs, warns = self.parse_rust_output(output)
             return CheckResult(
                 check_type="type_check",
                 success=len(errs) == 0,
@@ -247,7 +247,7 @@ class RustAdapter(FrameworkAdapter):
         try:
             result = self._run_cargo(["clippy", "--", "-D", "warnings"])
             output = result.stdout + result.stderr
-            errs, warns = self._parse_rust_output(output)
+            errs, warns = self.parse_rust_output(output)
             return CheckResult(
                 check_type="lint",
                 success=len(errs) == 0,
@@ -266,7 +266,7 @@ class RustAdapter(FrameworkAdapter):
                 files_modified=[],
             )
 
-    def _parse_rust_output(self, output: str) -> tuple[list[str], list[str]]:
+    def parse_rust_output(self, output: str) -> tuple[list[str], list[str]]:
         """Parse rustc/clippy output into errors and warnings."""
         errors: list[str] = []
         warnings: list[str] = []

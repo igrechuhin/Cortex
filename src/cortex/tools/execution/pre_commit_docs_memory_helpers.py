@@ -65,7 +65,7 @@ async def _decode_validation_result(
     return cast(JsonDict, decoded)
 
 
-async def _run_single_validation(
+async def run_single_validation(
     check_type_name: ValidateCheckTypeName,
     ctx: MCPContext | None,
 ) -> JsonDict | None:
@@ -114,10 +114,10 @@ async def _run_docs_and_memory_bank_phase_tools(
     ctx: MCPContext | None,
 ) -> tuple[JsonDict | None, JsonDict | None]:
     """Run validate() for timestamps and roadmap_sync once for docs/memory phase."""
-    timestamps_result = await _run_single_validation(
+    timestamps_result = await run_single_validation(
         ValidateCheckTypeName.TIMESTAMPS, ctx
     )
-    roadmap_result = await _run_single_validation(
+    roadmap_result = await run_single_validation(
         ValidateCheckTypeName.ROADMAP_SYNC, ctx
     )
     return timestamps_result, roadmap_result
@@ -131,7 +131,7 @@ def _docs_memory_bank_has_tool_error(result: JsonDict | None) -> bool:
     return str(status_value) == "error"
 
 
-def _compute_docs_memory_bank_passed(
+def compute_docs_memory_bank_passed(
     timestamps_result: JsonDict | None,
     roadmap_result: JsonDict | None,
     consistency_violations: list[str],
@@ -147,7 +147,7 @@ def _compute_docs_memory_bank_passed(
     return ts_valid and roadmap_valid and consistency_ok
 
 
-def _build_timestamps_summary(
+def build_timestamps_summary(
     timestamps_result: JsonDict | None,
 ) -> PreflightCheckSummary | None:
     """Build summary entry for timestamps validation."""
@@ -173,7 +173,7 @@ def _build_timestamps_summary(
     )
 
 
-def _build_roadmap_sync_summary(
+def build_roadmap_sync_summary(
     roadmap_result: JsonDict | None,
 ) -> PreflightCheckSummary | None:
     """Build summary entry for roadmap_sync validation."""
@@ -217,17 +217,17 @@ def _build_roadmap_progress_consistency_summary(
     )
 
 
-def _build_docs_memory_bank_summaries(
+def build_docs_memory_bank_summaries(
     timestamps_result: JsonDict | None,
     roadmap_result: JsonDict | None,
     consistency_violations: list[str],
 ) -> list[PreflightCheckSummary]:
     """Build summaries for docs/memory validations."""
     summaries: list[PreflightCheckSummary] = []
-    ts_summary = _build_timestamps_summary(timestamps_result)
+    ts_summary = build_timestamps_summary(timestamps_result)
     if ts_summary is not None:
         summaries.append(ts_summary)
-    roadmap_summary = _build_roadmap_sync_summary(roadmap_result)
+    roadmap_summary = build_roadmap_sync_summary(roadmap_result)
     if roadmap_summary is not None:
         summaries.append(roadmap_summary)
     summaries.append(
@@ -242,12 +242,12 @@ def _build_docs_memory_bank_success_model(
     consistency_violations: list[str],
 ) -> ModelDict:
     """Assemble the success payload after validate() results are decoded."""
-    passed = _compute_docs_memory_bank_passed(
+    passed = compute_docs_memory_bank_passed(
         timestamps_result,
         roadmap_result,
         consistency_violations,
     )
-    summaries = _build_docs_memory_bank_summaries(
+    summaries = build_docs_memory_bank_summaries(
         timestamps_result,
         roadmap_result,
         consistency_violations,
@@ -261,7 +261,7 @@ def _build_docs_memory_bank_success_model(
     return cast(ModelDict, ok.model_dump(mode="json"))
 
 
-def _build_docs_memory_bank_model(
+def build_docs_memory_bank_model(
     timestamps_result: JsonDict | None,
     roadmap_result: JsonDict | None,
     consistency_violations: list[str],
@@ -295,7 +295,7 @@ async def run_docs_and_memory_bank_sync_impl(
         ctx,
     )
     violations = await _roadmap_progress_consistency_violations(ctx)
-    return _build_docs_memory_bank_model(
+    return build_docs_memory_bank_model(
         timestamps_result,
         roadmap_result,
         violations,

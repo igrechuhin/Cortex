@@ -8,7 +8,7 @@ import pytest
 
 from cortex.tools.files.markdown_operations import (
     FileResult,
-    _process_markdown_files_sequential,  # pyright: ignore[reportPrivateUsage]
+    process_markdown_files_sequential,
 )
 
 
@@ -49,10 +49,10 @@ class TestSequentialProcessing:
 
             # Act
             with patch(
-                "cortex.tools.files.markdown_lint_run._run_markdownlint_batch",
+                "cortex.tools.files.markdown_lint_run.run_markdownlint_batch",
                 side_effect=mock_run_markdownlint_batch,
             ):
-                results: list[FileResult] = await _process_markdown_files_sequential(
+                results: list[FileResult] = await process_markdown_files_sequential(
                     files,
                     project_root,
                     markdownlint_cmd,
@@ -108,10 +108,10 @@ class TestSequentialProcessing:
 
             # Act
             with patch(
-                "cortex.tools.files.markdown_lint_run._run_markdownlint_batch",
+                "cortex.tools.files.markdown_lint_run.run_markdownlint_batch",
                 side_effect=mock_run_markdownlint_batch,
             ):
-                results: list[FileResult] = await _process_markdown_files_sequential(
+                results: list[FileResult] = await process_markdown_files_sequential(
                     files,
                     project_root,
                     markdownlint_cmd,
@@ -163,10 +163,10 @@ class TestSequentialProcessing:
 
             # Act
             with patch(
-                "cortex.tools.files.markdown_lint_run._run_markdownlint_batch",
+                "cortex.tools.files.markdown_lint_run.run_markdownlint_batch",
                 side_effect=mock_run_markdownlint_batch,
             ):
-                results: list[FileResult] = await _process_markdown_files_sequential(
+                results: list[FileResult] = await process_markdown_files_sequential(
                     files,
                     project_root,
                     markdownlint_cmd,
@@ -224,10 +224,10 @@ class TestSequentialProcessing:
                 ]
 
             with patch(
-                "cortex.tools.files.markdown_lint_run._run_markdownlint_batch",
+                "cortex.tools.files.markdown_lint_run.run_markdownlint_batch",
                 side_effect=mock_run_markdownlint_batch,
             ):
-                results: list[FileResult] = await _process_markdown_files_sequential(
+                results: list[FileResult] = await process_markdown_files_sequential(
                     files,
                     project_root,
                     markdownlint_cmd,

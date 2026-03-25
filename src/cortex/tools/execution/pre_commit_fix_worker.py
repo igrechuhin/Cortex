@@ -11,7 +11,6 @@ Usage:
         [--include-markdown-fix]
 """
 
-# pyright: reportPrivateUsage=false
 from __future__ import annotations
 
 import argparse
@@ -25,11 +24,11 @@ from typing import cast
 
 from cortex.tools.execution.pre_commit_helpers_models import PreCommitCheck
 from cortex.tools.execution.pre_commit_worker import (
-    _atomic_write,
-    _resolve_adapter_worker,
-    _resolve_rumdl_path,
-    _write_status,
+    atomic_write,
     collect_pre_commit_markdown_paths,
+    resolve_adapter_worker,
+    resolve_rumdl_path,
+    write_status,
 )
 
 logging.basicConfig(
@@ -54,7 +53,7 @@ def _run_fix_checks(project_root: str) -> dict[str, object]:
         execute_all_checks,
     )
 
-    resolved = _resolve_adapter_worker(project_root)
+    resolved = resolve_adapter_worker(project_root)
     if isinstance(resolved, dict):
         return resolved
     adapter, language_info = resolved
@@ -80,7 +79,7 @@ def _run_markdown_fix(project_root: str) -> dict[str, object]:
     if not md_files:
         return {"success": True, "files_fixed": 0, "results": []}
 
-    rumdl = _resolve_rumdl_path()
+    rumdl = resolve_rumdl_path()
     cmd = [rumdl, "check", "--fix"] + md_files
     try:
         proc = subprocess.run(
@@ -118,7 +117,7 @@ def _write_success_result(
     }
     if markdown_result is not None:
         output["markdown_result"] = markdown_result
-    _atomic_write(result_path, output)
+    atomic_write(result_path, output)
 
 
 def _run_worker_once(
@@ -150,13 +149,13 @@ def main() -> None:
     args = _parse_fix_worker_args()
     result_path = Path(args.result_file)
     pid = os.getpid()
-    _write_status(result_path, "running", pid)
+    write_status(result_path, "running", pid)
     started = time.time()
     try:
         _run_worker_once(args, result_path, started, pid)
     except Exception as e:
         logger.exception("Fix worker failed: %s", e)
-        _atomic_write(
+        atomic_write(
             result_path,
             {
                 "version": 1,

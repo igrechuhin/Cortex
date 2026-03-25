@@ -46,7 +46,7 @@ def _check_memory_bank_initialized(project_root: Path) -> bool:
     return is_memory_bank_fully_initialized(project_root)
 
 
-def _check_structure_configured(cortex_dir: Path) -> bool:
+def check_structure_configured(cortex_dir: Path) -> bool:
     """Check if .cortex/ structure is configured."""
     required_dirs = ["memory-bank", "plans"]
     return cortex_dir.is_dir() and all(
@@ -54,7 +54,7 @@ def _check_structure_configured(cortex_dir: Path) -> bool:
     )
 
 
-def _check_cursor_integration(cursor_dir: Path, cortex_dir: Path) -> bool:
+def check_cursor_integration(cursor_dir: Path, cortex_dir: Path) -> bool:
     """Check if Cursor integration is configured with valid symlinks."""
     if not cursor_dir.is_dir():
         return False
@@ -118,10 +118,8 @@ def get_project_config_status(
         cursor_dir = get_cursor_path(root, CursorResourceType.CURSOR_DIR)
 
         memory_bank_initialized = _check_memory_bank_initialized(root)
-        structure_configured = _check_structure_configured(cortex_dir)
-        cursor_integration_configured = _check_cursor_integration(
-            cursor_dir, cortex_dir
-        )
+        structure_configured = check_structure_configured(cortex_dir)
+        cursor_integration_configured = check_cursor_integration(cursor_dir, cortex_dir)
         migration_needed = _check_migration_needed(root, memory_bank_initialized)
         tiktoken_cache_available = ensure_bundled_cache_available()
         return ProjectConfigStatus(

@@ -163,11 +163,7 @@ class TestTypeScriptAdapter:
     def test_extract_test_counts_parses_passed_failed(self) -> None:
         """_extract_test_counts parses Jest-style output."""
         adapter = TypeScriptAdapter()
-        passed, failed = (
-            adapter._extract_test_counts(  # pyright: ignore[reportPrivateUsage]
-                "5 passed, 2 failed"
-            )
-        )
+        passed, failed = adapter.extract_test_counts("5 passed, 2 failed")
         assert passed == 5
         assert failed == 2
 
@@ -175,7 +171,7 @@ class TestTypeScriptAdapter:
         """_parse_tsc_errors extracts lines with error TS."""
         adapter = TypeScriptAdapter()
         output = "src/a.ts:1:2 error TS2322: not assignable\nsrc/b.ts:3:4 warning"
-        errors = adapter.parse_tsc_errors(output)  # pyright: ignore[reportPrivateUsage]
+        errors = adapter.parse_tsc_errors(output)
         assert len(errors) == 1
         assert "TS2322" in errors[0]
 
@@ -185,9 +181,7 @@ class TestTypeScriptAdapter:
         output = (
             "src/a.ts:1:1: error Unexpected var\nsrc/b.ts:2:2: warning Prefer const\n"
         )
-        errs, warns = adapter.parse_eslint_output(
-            output
-        )  # pyright: ignore[reportPrivateUsage]
+        errs, warns = adapter.parse_eslint_output(output)
         assert len(errs) == 1
         assert "error" in errs[0].lower()
         assert len(warns) == 1

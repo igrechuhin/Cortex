@@ -48,7 +48,7 @@ _logger = logging.getLogger(__name__)
 # conflicting or backwards progress updates on the client.
 # Note: execute_pre_commit_checks was removed after switching to detached mode
 # (run_checks_detached returns immediately; no in-process progress needed).
-_TOOLS_WITH_OWN_PROGRESS: frozenset[str] = frozenset(
+tools_with_own_progress: frozenset[str] = frozenset(
     {
         # run_quality_gate / run_quality_gate_fresh call poll_for_result which sends tick/500
         # heartbeats. The stability background loop sends pct/100 on the same ctx,
@@ -59,19 +59,19 @@ _TOOLS_WITH_OWN_PROGRESS: frozenset[str] = frozenset(
     }
 )
 # Tools that need more frequent progress to prevent client idle timeout (-32000).
-_TOOLS_NEEDING_FREQUENT_PROGRESS = frozenset({"fix_markdown_lint"})
+tools_needing_frequent_progress = frozenset({"fix_markdown_lint"})
 # Long-running tools serialized (one at a time) so the connection does not break.
 # Detached pipelines like execute_pre_commit_checks manage their own concurrency
 # and progress; serializing them at the MCP wrapper layer can cause redundant
 # waits when a detached worker is already running.
-_LONG_RUNNING_TOOLS_SERIALIZED = frozenset({"fix_markdown_lint"})
+long_running_tools_serialized = frozenset({"fix_markdown_lint"})
 # Default fallback when tool has no specific recovery steps.
 _CONNECTION_ERROR_FALLBACK_DEFAULT = (
     " Reconnect Cortex MCP and retry. See docs/guides/troubleshooting.md"
     "#issue-mcp-error-32000-connection-closed for recovery steps."
 )
 # Tool-specific fallback steps in connection-error messages.
-_CONNECTION_ERROR_FALLBACK: dict[str, str] = {
+connection_error_fallback: dict[str, str] = {
     "execute_pre_commit_checks": (
         " Retry once. If still failing: run pre-commit locally (e.g. uv run pytest, ruff check, black .). "
         "See commit prompt Step 12 and docs/guides/troubleshooting.md."
@@ -174,7 +174,7 @@ def raise_final_error(func_name: str, last_exception: Exception | None) -> NoRet
     """Raise ConnectionError or RuntimeError after retries exhausted; never returns."""
     max_attempts = get_connection_retry_attempts(func_name)
     if last_exception and is_connection_error(last_exception):
-        fallback = _CONNECTION_ERROR_FALLBACK.get(
+        fallback = connection_error_fallback.get(
             func_name, _CONNECTION_ERROR_FALLBACK_DEFAULT
         )
         raise ConnectionError(
@@ -212,12 +212,6 @@ def to_timeout_value(value: JsonValue | None) -> float | None:
     )
     return None
 
-
-# Public aliases for use by mcp_stability (avoid reportPrivateUsage).
-connection_error_fallback = _CONNECTION_ERROR_FALLBACK
-long_running_tools_serialized = _LONG_RUNNING_TOOLS_SERIALIZED
-tools_needing_frequent_progress = _TOOLS_NEEDING_FREQUENT_PROGRESS
-tools_with_own_progress = _TOOLS_WITH_OWN_PROGRESS
 
 __all__ = [
     "attach_attempt_to_exception",
