@@ -12,6 +12,8 @@
 
 - ✅ **Startup repair lifecycle recovery** - COMPLETE (2026-03-25) - Added `repair_project_setup` (idempotent) to validate/repair `.cortex/` structure, Cursor symlinks, and append Cortex transient markers to `.gitignore` for git repos; included unit tests.
 
+- **pytest-randomly, project root resource cache, deterministic validation globs** - COMPLETE (2026-03-25). Added `pytest-randomly` to dev dependencies and lockfile; `get_project_root_resource` revalidates cached JSON against the resolved root; sorted `*.md` iteration in memory-bank validation helpers for stable ordering.
+
 ## Completed Work (2026-03-24)
 
 - **Summary (2026-03-24)** - 1 entries archived.

@@ -48,7 +48,7 @@ async def read_all_memory_bank_files(
     """Read all markdown files in memory-bank directory."""
     memory_bank_dir = get_cortex_path(root, CortexResourceType.MEMORY_BANK)
     files_content: dict[str, str] = {}
-    for md_file in memory_bank_dir.glob("*.md"):
+    for md_file in sorted(memory_bank_dir.glob("*.md")):
         if md_file.is_file():
             content, _ = await fs_manager.read_file(md_file)
             files_content[md_file.name] = content

@@ -19,6 +19,7 @@ perform_cleanup=True parameter.
 
 import json
 from pathlib import Path
+from typing import cast
 
 from cortex.core.cache import TTLCache
 from cortex.core.constants import (
@@ -277,14 +278,22 @@ async def check_structure_health_resource() -> str:
 @mcp_resource_wrapper(timeout=MCP_TOOL_TIMEOUT_FAST)
 async def get_project_root_resource() -> str:
     """Resource: Resolved project root path (idempotent). Read via cortex://project/root."""
+    root = await resolve_project_root_async(None, None)
+    resolved = str(root.resolve())
     cached = _structure_resource_cache.get("project/root")
     if cached is not None:
-        return cached
-    root = await resolve_project_root_async(None, None)
-    result = json.dumps(
-        {"project_root": str(root.resolve())},
-        indent=2,
-    )
+        try:
+            parsed_obj: object = json.loads(cached)
+            if isinstance(parsed_obj, dict):
+                parsed_dict = cast(ModelDict, parsed_obj)
+                if "project_root" in parsed_dict:
+                    cached_root_obj = parsed_dict["project_root"]
+                    if isinstance(cached_root_obj, str) and cached_root_obj == resolved:
+                        return cached
+        except json.JSONDecodeError:
+            # Corrupt cache entry — recompute below.
+            pass
+    result = json.dumps({"project_root": resolved}, indent=2)
     _structure_resource_cache.set("project/root", result)
     return result
 

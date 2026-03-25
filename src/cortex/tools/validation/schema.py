@@ -67,7 +67,7 @@ async def validate_schema_all_files(
     """Validate all files against schema."""
     memory_bank_dir = get_cortex_path(root, CortexResourceType.MEMORY_BANK)
     results_dict: ModelDict = {}
-    for md_file in memory_bank_dir.glob("*.md"):
+    for md_file in sorted(memory_bank_dir.glob("*.md")):
         if md_file.is_file():
             content, _ = await fs_manager.read_file(md_file)
             validation_result = await schema_validator.validate_file(

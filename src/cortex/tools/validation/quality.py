@@ -82,7 +82,7 @@ async def _collect_files_data(
     files_metadata: dict[
         str, DetailedFileMetadata | FileMetadataForQuality | ModelDict
     ] = {}
-    for md_file in memory_bank_dir.glob("*.md"):
+    for md_file in sorted(memory_bank_dir.glob("*.md")):
         if md_file.is_file():
             content, _ = await fs_manager.read_file(md_file)
             all_files_content[md_file.name] = content
