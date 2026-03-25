@@ -1,5 +1,9 @@
 # Progress Log
 
+## 2026-03-25
+
+- **Lazy setup prompt pyright suppressions, context rollup, Synapse usage cache** - COMPLETE. Placed `# pyright: ignore[reportPrivateUsage]` on the same lines as private `_INITIALIZE_PROMPT`, `_MIGRATE_PROMPT`, and `_POPULATE_TIKTOKEN_CACHE_PROMPT` imports in `lazy_prompt_registration.py`; refreshed `.cortex/.session/context-usage-statistics.json`, memory bank index, and history snapshot; updated Synapse `.cache/usage/events` for 2026-03-24 and 2026-03-25.
+
 ## 2026-03-24
 
 - **Lazy Synapse prompt registration and roots cache** - COMPLETE. Deferred Synapse prompt and cursor-agent sync until first `list_prompts` with correct MCP roots resolution; per-process `list_roots` cache to prevent stdio corruption under concurrent tools; `notifications/prompts/list_changed` after deferred registration; Synapse prompts modules and `config/status` refactors; unit tests for lazy registration, resolver, cursor-agent sync, and prompts.

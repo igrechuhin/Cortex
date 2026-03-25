@@ -83,24 +83,24 @@ _SETUP_PROMPT_ICONS: dict[str, str] = {
 
 def _get_initialize_prompt() -> str:
     from cortex.setup.prompts import (
-        _INITIALIZE_PROMPT,
-    )  # pyright: ignore[reportPrivateUsage]
+        _INITIALIZE_PROMPT,  # pyright: ignore[reportPrivateUsage]
+    )
 
     return _INITIALIZE_PROMPT
 
 
 def _get_migrate_prompt() -> str:
     from cortex.setup.prompts import (
-        _MIGRATE_PROMPT,
-    )  # pyright: ignore[reportPrivateUsage]
+        _MIGRATE_PROMPT,  # pyright: ignore[reportPrivateUsage]
+    )
 
     return _MIGRATE_PROMPT
 
 
 def _get_tiktoken_prompt() -> str:
     from cortex.setup.prompts import (
-        _POPULATE_TIKTOKEN_CACHE_PROMPT,
-    )  # pyright: ignore[reportPrivateUsage]
+        _POPULATE_TIKTOKEN_CACHE_PROMPT,  # pyright: ignore[reportPrivateUsage]
+    )
 
     return _POPULATE_TIKTOKEN_CACHE_PROMPT
 
