@@ -8,6 +8,7 @@ import pytest
 from cortex.structure.lifecycle.startup_repair import (
     AGENT_SYNC_MARKER,
     GITIGNORE_MARKER,
+    RUMDL_TOML_MARKER,
     repair_project_setup,
 )
 from cortex.structure.structure_config import StructureConfig
@@ -48,7 +49,7 @@ def _make_full_structure(root: Path) -> None:
 
 @pytest.mark.asyncio
 async def test_repair_skips_healthy_project(tmp_path: Path) -> None:
-    # Arrange – all three needs-checks report healthy; repair should be skipped.
+    # Arrange – all needs-checks report healthy; repair should be skipped.
     with (
         patch(
             "cortex.structure.lifecycle.startup_repair._needs_structure",
@@ -62,6 +63,10 @@ async def test_repair_skips_healthy_project(tmp_path: Path) -> None:
             "cortex.structure.lifecycle.startup_repair._needs_gitignore",
             return_value=False,
         ),
+        patch(
+            "cortex.structure.lifecycle.startup_repair._needs_rumdl_config",
+            return_value=False,
+        ),
     ):
         # Act
         report = await repair_project_setup(tmp_path)
@@ -71,6 +76,7 @@ async def test_repair_skips_healthy_project(tmp_path: Path) -> None:
     assert report.structure_repaired is False
     assert report.symlinks_repaired is False
     assert report.gitignore_updated is False
+    assert report.rumdl_config_updated is False
     assert report.errors == []
 
 
@@ -223,6 +229,10 @@ async def test_repair_skips_gitignore_when_entries_present(tmp_path: Path) -> No
             "cortex.structure.lifecycle.startup_repair._needs_symlinks",
             return_value=False,
         ),
+        patch(
+            "cortex.structure.lifecycle.startup_repair._needs_rumdl_config",
+            return_value=False,
+        ),
     ):
         report = await repair_project_setup(tmp_path)
 
@@ -241,6 +251,10 @@ async def test_repair_skips_gitignore_when_no_git_dir(tmp_path: Path) -> None:
         ),
         patch(
             "cortex.structure.lifecycle.startup_repair._needs_symlinks",
+            return_value=False,
+        ),
+        patch(
+            "cortex.structure.lifecycle.startup_repair._needs_rumdl_config",
             return_value=False,
         ),
     ):
@@ -304,3 +318,60 @@ async def test_repair_creates_gitignore_when_missing(tmp_path: Path) -> None:
     assert report.gitignore_updated is True
     assert (tmp_path / ".gitignore").is_file()
     assert GITIGNORE_MARKER in (tmp_path / ".gitignore").read_text(encoding="utf-8")
+
+
+@pytest.mark.asyncio
+async def test_repair_creates_rumdl_toml_when_missing(tmp_path: Path) -> None:
+    # Arrange – no .rumdl.toml in project root
+    with (
+        patch(
+            "cortex.structure.lifecycle.startup_repair._needs_structure",
+            return_value=False,
+        ),
+        patch(
+            "cortex.structure.lifecycle.startup_repair._needs_symlinks",
+            return_value=False,
+        ),
+        patch(
+            "cortex.structure.lifecycle.startup_repair._needs_gitignore",
+            return_value=False,
+        ),
+    ):
+        report = await repair_project_setup(tmp_path)
+
+    # Assert – .rumdl.toml created with disable list
+    assert report.rumdl_config_updated is True
+    assert report.skipped is False
+    rumdl_toml = tmp_path / ".rumdl.toml"
+    assert rumdl_toml.is_file()
+    content = rumdl_toml.read_text(encoding="utf-8")
+    assert RUMDL_TOML_MARKER in content
+    assert "MD013" in content
+
+
+@pytest.mark.asyncio
+async def test_repair_skips_rumdl_toml_when_already_configured(
+    tmp_path: Path,
+) -> None:
+    # Arrange – .rumdl.toml exists with the disable marker
+    rumdl_toml = tmp_path / ".rumdl.toml"
+    _ = rumdl_toml.write_text('[global]\ndisable = ["MD013"]\n', encoding="utf-8")
+
+    with (
+        patch(
+            "cortex.structure.lifecycle.startup_repair._needs_structure",
+            return_value=False,
+        ),
+        patch(
+            "cortex.structure.lifecycle.startup_repair._needs_symlinks",
+            return_value=False,
+        ),
+        patch(
+            "cortex.structure.lifecycle.startup_repair._needs_gitignore",
+            return_value=False,
+        ),
+    ):
+        report = await repair_project_setup(tmp_path)
+
+    assert report.rumdl_config_updated is False
+    assert report.skipped is True

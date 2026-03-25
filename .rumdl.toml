@@ -1,0 +1,8 @@
+[global]
+# MD013 (line length), MD060 (fenced code block style), and MD041 (first line
+# heading) are intentionally disabled — these rules conflict with agent prompt
+# files (.md/.mdc in .cortex/synapse/) that contain long prose lines, and with
+# the project's existing documentation style.  The legacy .markdownlint.json
+# expresses the same intent but rumdl's JSON import does not apply the disable
+# list correctly at check time; this native TOML config takes precedence.
+disable = ["MD013", "MD060", "MD041"]

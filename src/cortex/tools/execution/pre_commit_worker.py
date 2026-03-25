@@ -255,7 +255,13 @@ def resolve_rumdl_path() -> str:
 def _run_markdown_lint(project_root: str) -> dict[str, object]:
     """Run rumdl in check-only mode, return result dict."""
     root = Path(project_root)
+    # Pass --config explicitly: rumdl 0.1.x auto-discovers the config file and
+    # reports it correctly via `rumdl config file`, but does not apply it during
+    # check execution unless the path is passed explicitly.
+    rumdl_config = root / ".rumdl.toml"
     cmd: list[str] = [resolve_rumdl_path(), "check"]
+    if rumdl_config.is_file():
+        cmd += ["--config", str(rumdl_config)]
     md_files = collect_pre_commit_markdown_paths(root)
     return _run_markdownlint_subprocess(root, cmd, md_files)
 

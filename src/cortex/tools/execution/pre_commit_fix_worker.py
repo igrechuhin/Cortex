@@ -80,7 +80,11 @@ def _run_markdown_fix(project_root: str) -> dict[str, object]:
         return {"success": True, "files_fixed": 0, "results": []}
 
     rumdl = resolve_rumdl_path()
-    cmd = [rumdl, "check", "--fix"] + md_files
+    # Pass --config explicitly: rumdl 0.1.x auto-discovery does not apply the
+    # config during check execution despite reporting it via `rumdl config file`.
+    rumdl_config = root / ".rumdl.toml"
+    config_args = ["--config", str(rumdl_config)] if rumdl_config.is_file() else []
+    cmd = [rumdl, "check", "--fix"] + config_args + md_files
     try:
         proc = subprocess.run(
             cmd,

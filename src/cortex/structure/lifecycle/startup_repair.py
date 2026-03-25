@@ -12,6 +12,7 @@ What is repaired
 - Missing or partial ``.cortex/`` directory structure (dirs + config file).
 - Broken or missing ``.cursor/`` symlinks.
 - Missing Cortex transient-file entries in ``.gitignore`` (git repos only).
+- Missing or incomplete ``.rumdl.toml`` (ensures MD013/MD060/MD041 disabled).
 
 What is NOT repaired (requires human intent)
 --------------------------------------------
@@ -39,6 +40,16 @@ logger = logging.getLogger(__name__)
 
 GITIGNORE_MARKER = ".cortex/.session/"
 AGENT_SYNC_MARKER = ".claude/"
+RUMDL_TOML_MARKER = "disable = ["
+_RUMDL_TOML_CONTENT = (
+    "[global]\n"
+    "# MD013 (line length), MD060 (fenced code block style), and MD041 (first line\n"
+    "# heading) are intentionally disabled — these rules conflict with agent prompt\n"
+    "# files (.md/.mdc in .cortex/synapse/) that contain long prose lines, and with\n"
+    "# the project's existing documentation style.  rumdl 0.1.x auto-discovery does\n"
+    "# not apply the config during check execution; always pass --config explicitly.\n"
+    'disable = ["MD013", "MD060", "MD041"]\n'
+)
 _GITIGNORE_BLOCK = (
     "\n# Cortex MCP (transient/generated files)\n"
     ".cortex/.session/\n"
@@ -64,6 +75,9 @@ class StartupRepairReport(BaseModel):
     )
     gitignore_updated: bool = Field(
         default=False, description="Cortex entries appended to .gitignore."
+    )
+    rumdl_config_updated: bool = Field(
+        default=False, description=".rumdl.toml was created or updated."
     )
     errors: list[str] = Field(
         default_factory=list, description="Non-fatal errors encountered."
@@ -140,6 +154,27 @@ def _repair_gitignore(project_root: Path, report: StartupRepairReport) -> None:
         report.errors.append(f"gitignore repair failed: {exc}")
 
 
+def _needs_rumdl_config(project_root: Path) -> bool:
+    """Return True if .rumdl.toml is missing or does not disable MD013."""
+    rumdl_toml = project_root / ".rumdl.toml"
+    if not rumdl_toml.is_file():
+        return True
+    try:
+        return RUMDL_TOML_MARKER not in rumdl_toml.read_text(encoding="utf-8")
+    except OSError:
+        return True
+
+
+def _repair_rumdl_config(project_root: Path, report: StartupRepairReport) -> None:
+    try:
+        rumdl_toml = project_root / ".rumdl.toml"
+        _ = rumdl_toml.write_text(_RUMDL_TOML_CONTENT, encoding="utf-8")
+        report.rumdl_config_updated = True
+        logger.debug("startup_repair: wrote .rumdl.toml")
+    except Exception as exc:
+        report.errors.append(f".rumdl.toml repair failed: {exc}")
+
+
 async def repair_project_setup(project_root: Path) -> StartupRepairReport:
     """Validate and repair Cortex project setup.
 
@@ -156,8 +191,9 @@ async def repair_project_setup(project_root: Path) -> StartupRepairReport:
     needs_structure = _needs_structure(project_root)
     needs_symlinks = _needs_symlinks(project_root)
     needs_gitignore = _needs_gitignore(project_root)
+    needs_rumdl_config = _needs_rumdl_config(project_root)
 
-    if not needs_structure and not needs_symlinks and not needs_gitignore:
+    if not any([needs_structure, needs_symlinks, needs_gitignore, needs_rumdl_config]):
         report.skipped = True
         return report
 
@@ -178,5 +214,11 @@ async def repair_project_setup(project_root: Path) -> StartupRepairReport:
             _repair_gitignore(project_root, report)
         except Exception as exc:
             report.errors.append(f"gitignore repair failed: {exc}")
+
+    if needs_rumdl_config:
+        try:
+            _repair_rumdl_config(project_root, report)
+        except Exception as exc:
+            report.errors.append(f".rumdl.toml repair failed: {exc}")
 
     return report

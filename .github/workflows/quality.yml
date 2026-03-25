@@ -275,8 +275,10 @@ jobs:
             -not -path "./.cortex/history/*" \
             -not -path "./.cortex/.cache/*" | head -500)
           if [ -n "$MD_FILES" ]; then
-            # rumdl exits non-zero when violations are present
-            if ! echo "$MD_FILES" | xargs uv run rumdl check 2>&1; then
+            # rumdl exits non-zero when violations are present.
+            # Pass --config explicitly: rumdl 0.1.x auto-discovery reports the
+            # correct config file but does not apply it during check execution.
+            if ! echo "$MD_FILES" | xargs uv run rumdl check --config .rumdl.toml 2>&1; then
               echo "::error::Markdown lint issues detected. Run 'uv run rumdl check --fix .' to fix auto-fixable issues."
               exit 1
             else

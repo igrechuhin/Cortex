@@ -1,7 +1,7 @@
 {
   "schema_version": "1.0.0",
   "created_at": "2026-01-25T21:38:36.940164",
-  "last_updated": "2026-03-25T18:22:00.943466",
+  "last_updated": "2026-03-25T20:22:36.782882",
   "project_root": ".",
   "memory_bank_dir": ".cortex/memory-bank",
   "files": {
@@ -138,7 +138,7 @@
       "size_bytes": 19059,
       "token_count": 2899,
       "token_model": "cl100k_base",
-      "last_modified": "2026-03-25T18:22:00.941829",
+      "last_modified": "2026-03-25T20:22:36.781499",
       "content_hash": "sha256:28d1f97be20e4eb1e404006969b5fdd54f9556b78ab999aa578121003385ee43",
       "sections": [
         {
@@ -255,8 +255,8 @@
         }
       ],
       "read_count": 0,
-      "write_count": 4314,
-      "last_read": "2026-03-25T18:22:00.941829",
+      "write_count": 4329,
+      "last_read": "2026-03-25T20:22:36.781499",
       "current_version": 11
     },
     "activeContext.md": {
@@ -265,7 +265,7 @@
       "size_bytes": 5485,
       "token_count": 917,
       "token_model": "cl100k_base",
-      "last_modified": "2026-03-25T18:22:00.931666",
+      "last_modified": "2026-03-25T20:22:36.772715",
       "content_hash": "sha256:306a87b6af5dc81d002382f2c131528ab7cf7b92d7236d73ed8e88ca07e07833",
       "sections": [
         {
@@ -630,8 +630,8 @@
         }
       ],
       "read_count": 0,
-      "write_count": 4321,
-      "last_read": "2026-03-25T18:22:00.931666",
+      "write_count": 4336,
+      "last_read": "2026-03-25T20:22:36.772715",
       "current_version": 11
     },
     "projectBrief.md": {
@@ -1049,6 +1049,6 @@
     "total_files": 7,
     "total_size_bytes": 51394,
     "total_tokens": 9730,
-    "last_full_scan": "2026-03-25T18:22:00.941865"
+    "last_full_scan": "2026-03-25T20:22:36.781539"
   }
 }
