@@ -4,6 +4,7 @@
 
 ## Completed Work (2026-03-25)
 
+- **Detached fix worker pipeline + docs-path compliance hardening** - COMPLETE. Added `pre_commit_fix_worker.py` integration path coverage with `test_fix_quality_detached.py`, exposed `parse_fix_envelope` public wrapper to avoid private-symbol test imports, and updated `debug-external-integration.md` wording to remove stale legacy cursor path references that violate docs path guard tests.
 - **Lazy setup prompt imports, session rollup, Synapse analytics** - COMPLETE. Pyright suppression comments aligned on private prompt imports in lazy_prompt_registration.py; context-usage-statistics and memory-bank index/history refreshed; Synapse usage event cache updated for 2026-03-24 and 2026-03-25.
 
 ## Completed Work (2026-03-24)

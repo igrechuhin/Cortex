@@ -17,9 +17,11 @@ from typing import cast
 
 from cortex.core.context_logging import MCPContext
 from cortex.tools.execution.pre_commit_process import (
+    build_fix_worker_cmd,
     is_process_alive,
     poll_for_result,
     pre_commit_result_path,
+    spawn_detached_process,
     spawn_detached_worker,
 )
 from cortex.tools.execution.session_paths import session_dir
@@ -290,6 +292,47 @@ async def run_checks_detached(
     return {"job_id": args_hash, "status": "started"}
 
 
+_FIX_RESULT_PREFIX = "pre_commit_fix_result_"
+
+
+def _fix_result_path(sd: Path, args_hash: str) -> Path:
+    """Path to the JSON result file for a fix worker run."""
+    return sd / f"{_FIX_RESULT_PREFIX}{args_hash}.json"
+
+
+def _fix_args_hash(include_markdown_fix: bool) -> str:
+    """Deterministic hash for fix worker args."""
+    key = json.dumps({"fix": True, "markdown": include_markdown_fix}, sort_keys=True)
+    return hashlib.sha256(key.encode()).hexdigest()[:12]
+
+
+def spawn_detached_fix_worker(
+    project_root: Path,
+    include_markdown_fix: bool,
+    args_hash: str,
+) -> Path:
+    """Spawn a detached fix worker subprocess. Returns result file path."""
+    sd = session_dir(project_root)
+    rp = _fix_result_path(sd, args_hash)
+    log_file = sd / f"pre_commit_fix_worker_{args_hash}.log"
+    cmd = build_fix_worker_cmd(project_root, rp, include_markdown_fix)
+    spawn_detached_process(cmd, log_file, project_root)
+    logger.info("Spawned detached fix worker: hash=%s result=%s", args_hash, rp)
+    return rp
+
+
+def start_fix_job_impl(
+    project_root: Path,
+    include_markdown_fix: bool,
+) -> dict[str, object]:
+    """Clear any prior fix result, spawn fresh fix worker, return {job_id, status}."""
+    args_hash = _fix_args_hash(include_markdown_fix)
+    rp = _fix_result_path(session_dir(project_root), args_hash)
+    rp.unlink(missing_ok=True)
+    _ = spawn_detached_fix_worker(project_root, include_markdown_fix, args_hash)
+    return {"job_id": args_hash, "status": "started"}
+
+
 __all__ = [
     "DETACHED_ENABLED",
     "clear_all_cached_results",
@@ -298,6 +341,8 @@ __all__ = [
     "poll_for_result",
     "poll_job_to_completion",
     "run_checks_detached",
+    "spawn_detached_fix_worker",
     "spawn_detached_worker",
+    "start_fix_job_impl",
     "start_pre_commit_job_impl",
 ]

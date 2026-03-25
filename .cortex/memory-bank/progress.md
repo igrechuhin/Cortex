@@ -2,6 +2,7 @@
 
 ## 2026-03-25
 
+- **Detached fix-quality worker and envelope parser tests** - COMPLETE. Added new detached fix worker module and unit coverage in `test_fix_quality_detached.py`, promoted envelope parsing via public `parse_fix_envelope`, and resolved stale legacy cursor path wording in `debug-external-integration.md` so docs path guard tests pass.
 - **Lazy setup prompt pyright suppressions, context rollup, Synapse usage cache** - COMPLETE. Placed `# pyright: ignore[reportPrivateUsage]` on the same lines as private `_INITIALIZE_PROMPT`, `_MIGRATE_PROMPT`, and `_POPULATE_TIKTOKEN_CACHE_PROMPT` imports in `lazy_prompt_registration.py`; refreshed `.cortex/.session/context-usage-statistics.json`, memory bank index, and history snapshot; updated Synapse `.cache/usage/events` for 2026-03-24 and 2026-03-25.
 
 ## 2026-03-24

@@ -1047,18 +1047,47 @@ class TestAdapterRegistry:
 
 
 class TestFixQualityCheck:
-    """Test execute_pre_commit_checks(checks=['fix_quality'])."""
+    """Test execute_pre_commit_checks(checks=['fix_quality']).
+
+    All tests patch fix_quality_issues_impl — the boundary between the
+    execute_pre_commit_checks dispatch layer and the detached fix pipeline.
+    """
+
+    def _make_success_json(
+        self,
+        errors_fixed: int = 0,
+        warnings_fixed: int = 0,
+        formatting_issues_fixed: int = 0,
+        type_errors_fixed: int = 0,
+        markdown_issues_fixed: int = 0,
+        files_modified: list[str] | None = None,
+        remaining_issues: list[str] | None = None,
+    ) -> str:
+        """Build a FixQualityResult JSON string."""
+        from cortex.tools.execution.pre_commit_fix_quality import (
+            build_quality_response_json,
+        )
+
+        return build_quality_response_json(
+            errors_fixed=errors_fixed,
+            warnings_fixed=warnings_fixed,
+            formatting_issues_fixed=formatting_issues_fixed,
+            markdown_issues_fixed=markdown_issues_fixed,
+            type_errors_fixed=type_errors_fixed,
+            files_modified=files_modified or [],
+            remaining_issues=remaining_issues or [],
+        )
 
     @pytest.mark.asyncio
     async def test_fix_quality_error_path(self) -> None:
-        """Test error path when inner quality checks return error."""
+        """Test error path when fix worker returns error."""
         from cortex.tools.execution.pre_commit_fix_quality import (
             create_quality_error_response,
         )
 
         error_json = create_quality_error_response("Test error")
         with patch(
-            "cortex.tools.execution.pre_commit_fix_quality._run_quality_checks",
+            "cortex.tools.execution.pre_commit_tools_execute_checks.fix_quality_issues_impl",
             new_callable=AsyncMock,
             return_value=error_json,
         ):
@@ -1079,49 +1108,20 @@ class TestFixQualityCheck:
 
     @pytest.mark.asyncio
     async def test_fix_quality_success_when_checks_report_errors(self) -> None:
-        """Test non-exceptional 'status=error' from checks is still handled as success."""
+        """Test that errors_fixed > 0 and remaining_issues populated when fixes applied."""
         with tempfile.TemporaryDirectory() as tmpdir:
             project_root = Path(tmpdir)
-            _ = (project_root / "pyproject.toml").write_text("[project]\nname = 'test'")
-            get_project_path(project_root, ProjectResourceType.VENV).mkdir()
 
-            inner_result: ModelDict = {
-                "status": "error",
-                "checks_performed": ["fix_errors", "format", "type_check"],
-                "files_modified": ["file1.py"],
-                "total_errors": 1,
-                "total_warnings": 0,
-                "success": False,
-                "results": {
-                    "fix_errors": {
-                        "errors": ["E1"],
-                        "warnings": [],
-                        "files_modified": ["file1.py"],
-                    },
-                    "format": {"files_formatted": 0},
-                    "type_check": {"errors": [], "warnings": []},
-                },
-            }
-            with (
-                patch(
-                    "cortex.tools.execution.pre_commit_fix_quality._run_quality_checks",
-                    new_callable=AsyncMock,
-                    return_value=inner_result,
-                ),
-                patch(
-                    "cortex.tools.files.markdown_operations.fix_markdown_lint",
-                    new_callable=AsyncMock,
-                ) as mock_markdown,
+            fix_json = self._make_success_json(
+                errors_fixed=1,
+                files_modified=["file1.py"],
+                remaining_issues=["1 linting/formatting errors remain"],
+            )
+            with patch(
+                "cortex.tools.execution.pre_commit_tools_execute_checks.fix_quality_issues_impl",
+                new_callable=AsyncMock,
+                return_value=fix_json,
             ):
-                mock_markdown.return_value = json.dumps(
-                    {
-                        "success": True,
-                        "files_fixed": 0,
-                        "files_processed": 0,
-                        "results": [],
-                    }
-                )
-
                 with patch(
                     "cortex.tools.execution.pre_commit_tools_execute_checks.get_or_resolve_project_root",
                     new_callable=AsyncMock,
@@ -1132,20 +1132,17 @@ class TestFixQualityCheck:
                         **_EXECUTE_REQUIRED,
                     )
 
-                assert result["status"] == "success"
-                assert result.get("error_message") is None
-                errors_fixed = extract_int_from_object(
-                    result.get("errors_fixed", 0),
-                    0,
-                )
-                assert errors_fixed == 1
-                remaining_issues_obj = result.get("remaining_issues", [])
-                remaining_issues = extract_list_from_object(remaining_issues_obj, [])
-                assert len(remaining_issues) > 0
-                assert any(
-                    "1 linting/formatting errors remain" in issue
-                    for issue in remaining_issues
-                )
+            assert result["status"] == "success"
+            assert result.get("error_message") is None
+            errors_fixed = extract_int_from_object(result.get("errors_fixed", 0), 0)
+            assert errors_fixed == 1
+            remaining_issues_obj = result.get("remaining_issues", [])
+            remaining_issues = extract_list_from_object(remaining_issues_obj, [])
+            assert len(remaining_issues) > 0
+            assert any(
+                "1 linting/formatting errors remain" in issue
+                for issue in remaining_issues
+            )
 
     @pytest.mark.asyncio
     async def test_fix_quality_exception_handling(self) -> None:
@@ -1170,41 +1167,16 @@ class TestFixQualityCheck:
         """Test success path in fix_quality mode."""
         with tempfile.TemporaryDirectory() as tmpdir:
             project_root = Path(tmpdir)
-            _ = (project_root / "pyproject.toml").write_text("[project]\nname = 'test'")
-            get_project_path(project_root, ProjectResourceType.VENV).mkdir()
 
-            inner_result = {
-                "status": "success",
-                "results": {
-                    "fix_errors": {
-                        "errors": [],
-                        "warnings": [],
-                        "files_modified": ["file1.py"],
-                    },
-                    "format": {"files_formatted": 1},
-                    "type_check": {"errors": 0, "warnings": 0},
-                },
-            }
-            with (
-                patch(
-                    "cortex.tools.execution.pre_commit_fix_quality._run_quality_checks",
-                    new_callable=AsyncMock,
-                    return_value=inner_result,
-                ),
-                patch(
-                    "cortex.tools.files.markdown_operations.fix_markdown_lint",
-                    new_callable=AsyncMock,
-                ) as mock_markdown,
+            fix_json = self._make_success_json(
+                formatting_issues_fixed=1,
+                files_modified=["file1.py"],
+            )
+            with patch(
+                "cortex.tools.execution.pre_commit_tools_execute_checks.fix_quality_issues_impl",
+                new_callable=AsyncMock,
+                return_value=fix_json,
             ):
-                mock_markdown.return_value = json.dumps(
-                    {
-                        "success": True,
-                        "files_fixed": 1,
-                        "files_processed": 1,
-                        "results": [],
-                    }
-                )
-
                 with patch(
                     "cortex.tools.execution.pre_commit_tools_execute_checks.get_or_resolve_project_root",
                     new_callable=AsyncMock,
@@ -1215,72 +1187,25 @@ class TestFixQualityCheck:
                         **_EXECUTE_REQUIRED,
                     )
 
-                assert result["status"] == "success"
-                errors_fixed = extract_int_from_object(
-                    result.get("errors_fixed", 0),
-                    0,
-                )
-                assert errors_fixed >= 0
-                files_modified_obj = result.get("files_modified", [])
-                files_modified = extract_list_from_object(files_modified_obj, [])
-                assert len(files_modified) >= 0
+            assert result["status"] == "success"
+            errors_fixed = extract_int_from_object(result.get("errors_fixed", 0), 0)
+            assert errors_fixed >= 0
+            files_modified_obj = result.get("files_modified", [])
+            files_modified = extract_list_from_object(files_modified_obj, [])
+            assert len(files_modified) >= 0
 
     @pytest.mark.asyncio
     async def test_fix_quality_clean_repo_no_remaining_issues(self) -> None:
-        """Test that fix_quality returns empty remaining_issues on clean repo.
-
-        Verifies the fix for over-reporting remaining issues. Even if
-        total_errors/total_warnings are non-zero, if all checks succeeded
-        (success=True), remaining_issues should be empty.
-        """
+        """Test that fix_quality returns empty remaining_issues on clean repo."""
         with tempfile.TemporaryDirectory() as tmpdir:
             project_root = Path(tmpdir)
-            _ = (project_root / "pyproject.toml").write_text("[project]\nname = 'test'")
-            get_project_path(project_root, ProjectResourceType.VENV).mkdir()
 
-            inner_result: ModelDict = {
-                "status": "success",
-                "checks_performed": ["fix_errors", "format", "type_check"],
-                "files_modified": [],
-                "total_errors": 4175,
-                "total_warnings": 100,
-                "success": True,
-                "results": {
-                    "fix_errors": {
-                        "check_type": "fix_errors",
-                        "success": True,
-                        "errors": [],
-                        "warnings": [],
-                        "files_modified": [],
-                    },
-                    "format": {
-                        "check_type": "format",
-                        "success": True,
-                        "errors": [],
-                        "files_modified": [],
-                    },
-                    "type_check": {
-                        "check_type": "type_check",
-                        "success": True,
-                        "errors": [],
-                    },
-                },
-            }
-            with (
-                patch(
-                    "cortex.tools.execution.pre_commit_fix_quality._run_quality_checks",
-                    new_callable=AsyncMock,
-                    return_value=inner_result,
-                ),
-                patch(
-                    "cortex.tools.files.markdown_operations.fix_markdown_lint",
-                    new_callable=AsyncMock,
-                ) as mock_markdown,
+            fix_json = self._make_success_json(remaining_issues=[])
+            with patch(
+                "cortex.tools.execution.pre_commit_tools_execute_checks.fix_quality_issues_impl",
+                new_callable=AsyncMock,
+                return_value=fix_json,
             ):
-                mock_markdown.return_value = json.dumps(
-                    {"success": True, "files_fixed": 0, "files_processed": 0}
-                )
-
                 with patch(
                     "cortex.tools.execution.pre_commit_tools_execute_checks.get_or_resolve_project_root",
                     new_callable=AsyncMock,

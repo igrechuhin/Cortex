@@ -14,7 +14,11 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from cortex.core.context_logging import MCPContext, log_client, report_progress_safe
 from cortex.core.models import JsonValue, ModelDict, OperationStatus
-from cortex.tools.execution.pre_commit_helpers_models import PreCommitCheck
+from cortex.tools.execution.pre_commit_detached import (  # noqa: E402
+    _fix_args_hash,
+    _fix_result_path,
+    start_fix_job_impl,
+)
 from cortex.tools.execution.pre_commit_helpers_remaining import (
     collect_remaining_issues,
     extract_check_results,
@@ -23,25 +27,10 @@ from cortex.tools.execution.pre_commit_helpers_remaining import (
     extract_list_from_object,
     truncate_large_logs_in_data,
 )
+from cortex.tools.execution.pre_commit_process import poll_for_result
+from cortex.tools.execution.session_paths import session_dir
 
 logger = logging.getLogger(__name__)
-
-
-def _ensure_result_dict(value: ModelDict | str) -> ModelDict:
-    """Ensure value is a dict; parse JSON string if needed (e.g. cancellation response).
-
-    MCP stability can return CANCELLED_RESPONSE_JSON as a string. Prevents
-    AttributeError: 'str' object has no attribute 'get'.
-    """
-    if isinstance(value, dict):
-        return value
-    try:
-        parsed = json.loads(value)
-        return (
-            cast(ModelDict, parsed) if isinstance(parsed, dict) else cast(ModelDict, {})
-        )
-    except (json.JSONDecodeError, TypeError):
-        return cast(ModelDict, {"status": "error", "error": str(value)})
 
 
 class FixQualityResult(BaseModel):
@@ -192,74 +181,40 @@ def build_markdown_fix_output(
     )
 
 
-async def _run_quality_checks(root: Path, ctx: MCPContext | None) -> ModelDict | str:
-    """Run quality checks (fix_errors, format, type_check, quality) and return result.
+def _parse_fix_envelope(envelope: ModelDict) -> str:
+    """Parse a completed fix worker envelope into FixQualityResult JSON.
 
-    This calls the underlying pre-commit implementation directly (not the MCP
-    tool wrapper) to avoid nested execute_pre_commit_checks tool invocations,
-    which are serialized via the long-running semaphore. Using the internal
-    implementation keeps fix_quality progress driven by real pipeline steps
-    instead of an outer time-based progress loop.
-
-    Includes PreCommitCheck.QUALITY so function-length and file-size violations
-    are surfaced in remaining_issues and not silently missed.
+    Extracts ``result`` (checks) and ``markdown_result`` from the envelope
+    written by pre_commit_fix_worker and builds the FixQualityResult response.
     """
-    from cortex.tools.execution.pre_commit_tools_execute_checks import (
-        execute_pre_commit_checks_impl,
-    )
+    status = str(envelope.get("status", ""))
+    if status in ("error", "timeout"):
+        error = str(envelope.get("error", "Fix worker failed"))
+        return create_quality_error_response(error)
 
-    raw_result = await execute_pre_commit_checks_impl(
-        root=root,
-        language=None,
-        checks=[
-            PreCommitCheck.FIX_ERRORS.value,
-            PreCommitCheck.FORMAT.value,
-            PreCommitCheck.TYPE_CHECK.value,
-            PreCommitCheck.QUALITY.value,
-        ],
-        strict_mode=False,
-        timeout=300,
-        coverage_threshold=0.90,
-        ctx=None,
+    inner_raw = envelope.get("result")
+    fix_errors_result: ModelDict = (
+        cast(ModelDict, inner_raw)
+        if isinstance(inner_raw, dict)
+        else cast(ModelDict, {})
     )
-    fix_errors_result = _ensure_result_dict(raw_result)
-    if fix_errors_result.get("status") == "error" and (
-        "error" in fix_errors_result or "error_type" in fix_errors_result
-    ):
-        error_obj = fix_errors_result.get("error")
-        return create_quality_error_response(
-            str(error_obj) if error_obj is not None else "Unknown error"
+    (_, _, _, _, files_modified) = extract_fix_statistics(fix_errors_result)
+
+    markdown_issues_fixed = 0
+    md_raw = envelope.get("markdown_result")
+    if isinstance(md_raw, dict):
+        markdown_issues_fixed = process_markdown_results(
+            cast(ModelDict, md_raw), files_modified
         )
-    return fix_errors_result
 
-
-async def _fix_markdown_and_update_files(
-    root: Path,
-    include_untracked: bool,
-    files_modified_list: list[str],
-    ctx: MCPContext | None,
-) -> int:
-    """Fix markdown lint errors and update files_modified list.
-
-    Uses the internal fix_markdown_lint implementation to avoid nested MCP tool
-    invocations (which are serialized as long-running tools) while still
-    benefiting from real, file-based progress reporting inside markdown lint.
-    """
-    from cortex.tools.files.markdown_lint import (
-        _fix_markdown_lint_impl,  # pyright: ignore[reportPrivateUsage]
+    return build_markdown_fix_output(
+        fix_errors_result, markdown_issues_fixed, files_modified
     )
 
-    markdown_result_json = await _fix_markdown_lint_impl(
-        root_path=root,
-        include_untracked_markdown=include_untracked,
-        dry_run=False,
-        ctx=ctx,
-    )
-    markdown_result_raw: JsonValue = json.loads(markdown_result_json)
-    if not isinstance(markdown_result_raw, dict):
-        return 0
-    markdown_result = cast(ModelDict, markdown_result_raw)
-    return process_markdown_results(markdown_result, files_modified_list)
+
+def parse_fix_envelope(envelope: ModelDict) -> str:
+    """Public wrapper for fix envelope parsing used by tests and callers."""
+    return _parse_fix_envelope(envelope)
 
 
 async def fix_quality_issues_impl(
@@ -267,29 +222,17 @@ async def fix_quality_issues_impl(
     include_untracked_markdown: bool,
     ctx: MCPContext | None,
 ) -> str:
-    """Run quality fixes and return JSON result."""
-    await report_progress_safe(ctx, 10.0, 100.0)
-    fix_errors_result = await _run_quality_checks(root, ctx)
-    if isinstance(fix_errors_result, str):
-        await log_client(
-            ctx,
-            "warning",
-            "fix_quality_issues: quality checks returned error",
-            logger_name=__name__,
-        )
-        return fix_errors_result
+    """Spawn detached fix worker, poll with heartbeats, parse result.
 
-    (_, _, _, _, files_modified) = extract_fix_statistics(fix_errors_result)
-    await report_progress_safe(ctx, 50.0, 100.0)
-    markdown_issues_fixed = await _fix_markdown_and_update_files(
-        root,
-        include_untracked_markdown,
-        files_modified,
-        ctx,
-    )
-    out = build_markdown_fix_output(
-        fix_errors_result, markdown_issues_fixed, files_modified
-    )
-    await report_progress_safe(ctx, 100.0, 100.0)
+    Mirrors run_quality_gate's detached-subprocess + polling pattern so the
+    asyncio event loop is never blocked: the MCP stdio transport stays alive
+    and Cursor does not drop the connection during long-running fix operations.
+    """
+    await report_progress_safe(ctx, 5.0, 100.0)
+    _ = start_fix_job_impl(root, include_untracked_markdown)
+    args_hash = _fix_args_hash(include_untracked_markdown)
+    rp = _fix_result_path(session_dir(root), args_hash)
+    envelope = await poll_for_result(rp, ctx=ctx, timeout=960.0)
+    out = _parse_fix_envelope(cast(ModelDict, envelope))
     await log_client(ctx, "info", "fix_quality_issues: completed", logger_name=__name__)
     return out

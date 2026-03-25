@@ -76,6 +76,26 @@ def build_worker_cmd(
     return cmd
 
 
+def build_fix_worker_cmd(
+    project_root: Path,
+    rp: Path,
+    include_markdown_fix: bool,
+) -> list[str]:
+    """Build argv for the detached fix worker subprocess."""
+    cmd = [
+        sys.executable,
+        "-m",
+        "cortex.tools.execution.pre_commit_fix_worker",
+        "--result-file",
+        str(rp),
+        "--project-root",
+        str(project_root),
+    ]
+    if include_markdown_fix:
+        cmd.append("--include-markdown-fix")
+    return cmd
+
+
 def spawn_detached_process(cmd: list[str], log_file: Path, project_root: Path) -> None:
     """Start detached subprocess writing stdout/stderr to ``log_file``."""
     with open(log_file, "w") as lf:

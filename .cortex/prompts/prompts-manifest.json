@@ -18,6 +18,13 @@
           "description": "Populate bundled tiktoken cache for offline token counting",
           "keywords": ["tiktoken", "cache", "tokens"],
           "requires": ["cortex-mcp"]
+        },
+        {
+          "file": "debug-external-integration.md",
+          "name": "Debug External Integration",
+          "description": "Diagnose Cortex MCP integration problems in external projects: validate layout, memory bank, config, Synapse submodule, index state, and project root resolution",
+          "keywords": ["integration", "debug", "external", "setup", "cortex-mcp", "synapse", "memory-bank", "index"],
+          "requires": ["cortex-mcp"]
         }
       ]
     }
