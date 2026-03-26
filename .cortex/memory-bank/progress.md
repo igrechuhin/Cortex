@@ -11,6 +11,8 @@
 - **Session improvements from 2026-03-26T18-37** - PARTIAL. Seeded idempotent early-session context telemetry in session_start and added regression tests to prevent false analyze no_data when session activity exists; remaining work is lifecycle integration validation for end-of-session analyze path.
 - **Session improvements from 2026-03-26T18-37** - COMPLETE. Added lifecycle regression coverage for end-of-session context analysis across mixed MCP and direct entrypoints; validates calls_analyzed is present when session activity exists.
 - **Per-Project Post-Edit Quality Hook — Language-Agnostic Pattern** - PARTIAL. Integrated runtime post-edit hook language detection with shared `LanguageDetector`, added TypeScript detection and unsupported-language fallback tests, and validated via quality gate; remaining work is programmatic routing through `LanguageQualityRouter`.
+- **Per-Project Post-Edit Quality Hook — Language-Agnostic Pattern** - PARTIAL. Added shared `LanguageQualityRouter` and routed post-edit hook command selection through it; added router unit tests and preserved existing pre-commit adapter patch points. Remaining: consume the same router for runtime quality adapter selection to fully unify routing.
+- **Per-Project Post-Edit Quality Hook — Language-Agnostic Pattern** - COMPLETE. Unified runtime hook and quality adapter routing through `LanguageQualityRouter`, removed adapter-registry execution indirection, updated boundary/unit tests, and validated with passing quality gate.
 
 ## 2026-03-25
 

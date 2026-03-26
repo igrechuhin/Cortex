@@ -28,6 +28,7 @@ from cortex.services.framework_adapters.base import (
     TestResult,
 )
 from cortex.services.language_detector import LanguageInfo
+from cortex.services.language_quality_router import LanguageQualityRouter
 from cortex.tools.execution.pre_commit_helpers import ensure_json_serializable_for_mcp
 from cortex.tools.execution.pre_commit_helpers_language import detect_or_use_language
 from cortex.tools.execution.pre_commit_helpers_models import (
@@ -54,7 +55,6 @@ from cortex.tools.execution.pre_commit_tools import (
     SUPPORTED_LANGUAGES,
     execute_pre_commit_checks,
 )
-from cortex.tools.execution.pre_commit_tools_inline_execution import get_adapter
 
 
 @pytest.fixture(autouse=True)
@@ -112,8 +112,9 @@ class TestExecutePreCommitChecks:
 
             with (
                 patch(
-                    "cortex.tools.execution.pre_commit_tools_inline_execution.PythonAdapter",
-                ) as mock_adapter_class,
+                    "cortex.services.language_quality_router.LanguageQualityRouter.get_adapter",
+                    return_value=MagicMock(),
+                ) as mock_get_adapter,
                 patch(
                     "cortex.tools.execution.pre_commit_tools_execute_checks.get_current_project_root",
                     return_value=project_root,
@@ -128,8 +129,7 @@ class TestExecutePreCommitChecks:
                     new_callable=AsyncMock,
                 ) as mock_to_thread,
             ):
-                mock_adapter = MagicMock()
-                mock_adapter_class.return_value = mock_adapter
+                mock_adapter = cast(MagicMock, mock_get_adapter.return_value)
                 mock_result = CheckResult(
                     check_type="fix_errors",
                     success=True,
@@ -278,16 +278,16 @@ class TestExecutePreCommitChecks:
 
             with (
                 patch(
-                    "cortex.tools.execution.pre_commit_tools_inline_execution.PythonAdapter"
-                ) as mock_adapter_class,
+                    "cortex.services.language_quality_router.LanguageQualityRouter.get_adapter",
+                    return_value=MagicMock(),
+                ) as mock_get_adapter,
                 patch(
                     "cortex.tools.execution.pre_commit_tools_execute_checks.get_or_resolve_project_root",
                     new_callable=AsyncMock,
                     return_value=project_root,
                 ),
             ):
-                mock_adapter = MagicMock()
-                mock_adapter_class.return_value = mock_adapter
+                mock_adapter = cast(MagicMock, mock_get_adapter.return_value)
 
                 mock_adapter.fix_errors.return_value = CheckResult(
                     check_type="fix_errors",
@@ -339,10 +339,10 @@ class TestExecutePreCommitChecks:
             get_project_path(project_root, ProjectResourceType.VENV).mkdir()
 
             with patch(
-                "cortex.tools.execution.pre_commit_tools_inline_execution.PythonAdapter"
-            ) as mock_adapter_class:
-                mock_adapter = MagicMock()
-                mock_adapter_class.return_value = mock_adapter
+                "cortex.services.language_quality_router.LanguageQualityRouter.get_adapter",
+                return_value=MagicMock(),
+            ) as mock_get_adapter:
+                mock_adapter = cast(MagicMock, mock_get_adapter.return_value)
 
                 mock_result = CheckResult(
                     check_type="test",
@@ -570,10 +570,10 @@ class TestExecutePreCommitChecks:
             # No .cortex/synapse/scripts/python/check_formatting_ci_parity.py
 
             with patch(
-                "cortex.tools.execution.pre_commit_tools_inline_execution.PythonAdapter"
-            ) as mock_adapter_class:
-                mock_adapter = MagicMock()
-                mock_adapter_class.return_value = mock_adapter
+                "cortex.services.language_quality_router.LanguageQualityRouter.get_adapter",
+                return_value=MagicMock(),
+            ) as mock_get_adapter:
+                mock_adapter = cast(MagicMock, mock_get_adapter.return_value)
                 mock_adapter.project_root = project_root
 
                 with patch(
@@ -612,10 +612,10 @@ class TestExecutePreCommitChecks:
             get_project_path(project_root, ProjectResourceType.VENV).mkdir()
 
             with patch(
-                "cortex.tools.execution.pre_commit_tools_inline_execution.PythonAdapter"
-            ) as mock_adapter_class:
-                mock_adapter = MagicMock()
-                mock_adapter_class.return_value = mock_adapter
+                "cortex.services.language_quality_router.LanguageQualityRouter.get_adapter",
+                return_value=MagicMock(),
+            ) as mock_get_adapter:
+                mock_adapter = cast(MagicMock, mock_get_adapter.return_value)
                 mock_adapter.project_root = project_root
 
                 with patch(
@@ -654,10 +654,10 @@ class TestExecutePreCommitChecks:
             get_project_path(project_root, ProjectResourceType.VENV).mkdir()
 
             with patch(
-                "cortex.tools.execution.pre_commit_tools_inline_execution.PythonAdapter"
-            ) as mock_adapter_class:
-                mock_adapter = MagicMock()
-                mock_adapter_class.return_value = mock_adapter
+                "cortex.services.language_quality_router.LanguageQualityRouter.get_adapter",
+                return_value=MagicMock(),
+            ) as mock_get_adapter:
+                mock_adapter = cast(MagicMock, mock_get_adapter.return_value)
                 mock_adapter.project_root = project_root
 
                 with patch(
@@ -889,7 +889,7 @@ class TestAdapterRegistry:
             build_tool=None,
             confidence=1.0,
         )
-        adapter = get_adapter(info, None)
+        adapter = LanguageQualityRouter.get_adapter(info.language, None)
         assert adapter is not None
         assert isinstance(adapter, FrameworkAdapter)
 
@@ -904,7 +904,7 @@ class TestAdapterRegistry:
             build_tool=None,
             confidence=0.8,
         )
-        adapter = get_adapter(info, "/some/root")
+        adapter = LanguageQualityRouter.get_adapter(info.language, "/some/root")
         assert adapter is None
 
     def test_supported_languages_includes_stub_languages(self) -> None:
@@ -936,7 +936,7 @@ class TestAdapterRegistry:
             build_tool=None,
             confidence=0.8,
         )
-        adapter = get_adapter(info, "/some/root")
+        adapter = LanguageQualityRouter.get_adapter(info.language, "/some/root")
         assert adapter is not None
         assert isinstance(adapter, TypeScriptAdapter)
 
@@ -955,7 +955,7 @@ class TestAdapterRegistry:
             build_tool=None,
             confidence=0.8,
         )
-        adapter = get_adapter(info, "/some/root")
+        adapter = LanguageQualityRouter.get_adapter(info.language, "/some/root")
         assert adapter is not None
         assert isinstance(adapter, JavaScriptAdapter)
 
@@ -972,7 +972,7 @@ class TestAdapterRegistry:
             build_tool=None,
             confidence=0.8,
         )
-        adapter = get_adapter(info, "/some/root")
+        adapter = LanguageQualityRouter.get_adapter(info.language, "/some/root")
         assert adapter is not None
         assert isinstance(adapter, RustAdapter)
 
@@ -989,7 +989,7 @@ class TestAdapterRegistry:
             build_tool=None,
             confidence=0.8,
         )
-        adapter = get_adapter(info, "/some/root")
+        adapter = LanguageQualityRouter.get_adapter(info.language, "/some/root")
         assert adapter is not None
         assert isinstance(adapter, GoAdapter)
 
@@ -1006,7 +1006,7 @@ class TestAdapterRegistry:
             build_tool=None,
             confidence=0.8,
         )
-        adapter = get_adapter(info, "/some/root")
+        adapter = LanguageQualityRouter.get_adapter(info.language, "/some/root")
         assert adapter is not None
         assert isinstance(adapter, JavaAdapter)
 
@@ -1023,7 +1023,7 @@ class TestAdapterRegistry:
             build_tool=None,
             confidence=0.8,
         )
-        adapter = get_adapter(info, "/some/root")
+        adapter = LanguageQualityRouter.get_adapter(info.language, "/some/root")
         assert adapter is not None
         assert isinstance(adapter, SwiftAdapter)
 
@@ -1040,7 +1040,7 @@ class TestAdapterRegistry:
             build_tool=None,
             confidence=0.8,
         )
-        adapter = get_adapter(info, "/some/root")
+        adapter = LanguageQualityRouter.get_adapter(info.language, "/some/root")
         assert adapter is not None
         assert isinstance(adapter, KotlinAdapter)
 
@@ -1567,10 +1567,10 @@ class TestQualityCheckIntegration:
             _ = (src_dir / "module.py").write_text("x = 1\n")
 
             with patch(
-                "cortex.tools.execution.pre_commit_tools_inline_execution.PythonAdapter"
-            ) as mock_adapter_class:
-                mock_adapter = MagicMock()
-                mock_adapter_class.return_value = mock_adapter
+                "cortex.services.language_quality_router.LanguageQualityRouter.get_adapter",
+                return_value=MagicMock(),
+            ) as mock_get_adapter:
+                mock_adapter = cast(MagicMock, mock_get_adapter.return_value)
                 mock_adapter.project_root = project_root
 
                 mock_adapter.lint_code.return_value = CheckResult(
@@ -1637,10 +1637,10 @@ class TestLogTruncationBehavior:
             large_output = "X" * (MAX_LOG_OUTPUT_LENGTH * 2)
 
             with patch(
-                "cortex.tools.execution.pre_commit_tools_inline_execution.PythonAdapter"
-            ) as mock_adapter_class:
-                mock_adapter = MagicMock()
-                mock_adapter_class.return_value = mock_adapter
+                "cortex.services.language_quality_router.LanguageQualityRouter.get_adapter",
+                return_value=MagicMock(),
+            ) as mock_get_adapter:
+                mock_adapter = cast(MagicMock, mock_get_adapter.return_value)
                 mock_adapter.project_root = project_root
 
                 mock_adapter.lint_code.return_value = CheckResult(
@@ -1707,8 +1707,9 @@ class TestPreCommitToolsContextLogging:
                     new_callable=AsyncMock,
                 ) as mock_log,
                 patch(
-                    "cortex.tools.execution.pre_commit_tools_inline_execution.PythonAdapter",
-                ) as mock_adapter_class,
+                    "cortex.services.language_quality_router.LanguageQualityRouter.get_adapter",
+                    return_value=MagicMock(),
+                ) as mock_get_adapter,
                 patch(
                     "cortex.tools.execution.pre_commit_tools_execute_checks.get_current_project_root",
                     return_value=project_root,
@@ -1723,8 +1724,7 @@ class TestPreCommitToolsContextLogging:
                     new_callable=AsyncMock,
                 ) as mock_to_thread,
             ):
-                mock_adapter = MagicMock()
-                mock_adapter_class.return_value = mock_adapter
+                mock_adapter = cast(MagicMock, mock_get_adapter.return_value)
                 mock_result = CheckResult(
                     check_type="fix_errors",
                     success=True,

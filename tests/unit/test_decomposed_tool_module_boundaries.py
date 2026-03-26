@@ -22,11 +22,9 @@ from cortex.health_check.similarity_core import SimilarityCore
 from cortex.health_check.similarity_engine import SimilarityEngine
 from cortex.refactoring.approval_manager import ApprovalManager
 from cortex.refactoring.refactoring_engine import RefactoringEngine
+from cortex.services.language_quality_router import LanguageQualityRouter
 from cortex.tools import models as tools_models
 from cortex.tools.execution import pre_commit_tools
-from cortex.tools.execution.pre_commit_tools_inline_execution import (
-    ADAPTER_REGISTRY as INLINE_ADAPTER_REGISTRY,
-)
 from cortex.tools.models_reexports_system import SessionStartResult
 from cortex.tools.models_reexports_workflows import ExecutePreCommitChecksResult
 
@@ -87,9 +85,12 @@ def test_models_facade_matches_split_system_and_workflow_exports() -> None:
     assert tools_models.ExecutePreCommitChecksResult is ExecutePreCommitChecksResult
 
 
-def test_pre_commit_tools_reexports_adapter_registry_from_inline_module() -> None:
-    """Facade must expose the same registry object tests and workers patch."""
-    assert pre_commit_tools.ADAPTER_REGISTRY is INLINE_ADAPTER_REGISTRY
+def test_pre_commit_tools_supported_languages_match_router() -> None:
+    """Facade language list must stay aligned with the central quality router."""
+    assert (
+        pre_commit_tools.SUPPORTED_LANGUAGES
+        == LanguageQualityRouter.supported_languages()
+    )
 
 
 @pytest.mark.parametrize(

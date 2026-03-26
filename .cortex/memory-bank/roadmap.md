@@ -32,7 +32,6 @@ Completed investigations are recorded in [activeContext.md](activeContext.md). P
 
 ### Improvements
 
-- **Per-Project Post-Edit Quality Hook — Language-Agnostic Pattern** - PENDING (`.cortex/plans/post-edit-test-hook.md`) — Emit language-appropriate PostToolUse hooks into each project's `.claude/` settings during migrate/initialize (pytest for Python, swift build for Swift, cargo test for Rust, etc.). Depends on language detection from migrate-language-rules-scripts-scaffolding. Component: ci. Priority: high.
 - **Pipeline Code Integrity Guard — Prevent Fix-Loop Corruption** - PENDING (`.cortex/plans/pipeline-code-integrity-guard.md`) — Add NO-GO list and post-fix import validation to the fix prompt to prevent duplicate definitions, TYPE_CHECKING violations, and circular imports. Component: pipelines. Priority: high.
 - **Session Scope Lock — Single-Goal Session Pattern** - PENDING (`.cortex/plans/session-scope-lock-pattern.md`) — Surface single-goal session discipline at session start to reduce budget exhaustion and partial completions. Component: prompts. Priority: medium.
 - **MCP Server Regression Test Suite — Concurrent Subagent and Serialization Tests** - PENDING (`.cortex/plans/mcp-regression-test-suite.md`) — Create regression tests covering concurrent saturation, serialization roundtrip, CWD resolution, graceful degradation, and sequential execution. Component: mcp-server. Priority: high.

@@ -29,6 +29,7 @@ from cortex.services.framework_adapters.base import (
     TestResult,
 )
 from cortex.services.language_detector import LanguageInfo
+from cortex.services.language_quality_router import LanguageQualityRouter
 from cortex.tools.execution.pre_commit_helpers_models import (
     CheckStats,
     PreCommitCheck,
@@ -82,19 +83,17 @@ def resolve_adapter_worker(
     from cortex.tools.execution.pre_commit_helpers_language import (
         detect_or_use_language,
     )
-    from cortex.tools.execution.pre_commit_tools import ADAPTER_REGISTRY
 
     lang_result = detect_or_use_language(None, project_root)
     if isinstance(lang_result, str):
         return {"status": "error", "error": lang_result}
     language_info, root_to_use = lang_result
-    factory = ADAPTER_REGISTRY.get(language_info.language)
-    if factory is None:
+    adapter = LanguageQualityRouter.get_adapter(language_info.language, root_to_use)
+    if adapter is None:
         return {
             "status": "error",
             "error": f"Unsupported language: {language_info.language}",
         }
-    adapter = factory(root_to_use)
     return (adapter, language_info)
 
 

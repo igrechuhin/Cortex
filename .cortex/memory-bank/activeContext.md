@@ -14,6 +14,8 @@
 
 - ✅ **Session improvements from 2026-03-26T18-37** - COMPLETE (2026-03-26) - Added lifecycle regression coverage for end-of-session context analysis across mixed MCP and direct entrypoints, ensuring sessions with activity no longer produce false no_data results.
 
+- ✅ **Per-Project Post-Edit Quality Hook — Language-Agnostic Pattern** - COMPLETE (2026-03-26) - Completed router unification by making LanguageQualityRouter the runtime single source of truth for both post-edit hook command selection and quality adapter selection across inline and detached pre-commit execution, with updated tests and passing quality gate.
+
 ## Completed Work (2026-03-25)
 
 - **Summary (2026-03-25)** - 1 entries archived.

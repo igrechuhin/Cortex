@@ -30,6 +30,7 @@ from cortex.core.usage_context import (
     get_or_resolve_project_root,
 )
 from cortex.services.framework_adapters.python_adapter import PythonAdapter
+from cortex.services.language_quality_router import LanguageQualityRouter
 from cortex.tools.execution.pre_commit_helpers_language import detect_or_use_language
 from cortex.tools.execution.pre_commit_phase_dispatch import PreCommitPhase
 from cortex.tools.execution.pre_commit_submodule_guard import precommit_block_response
@@ -37,17 +38,10 @@ from cortex.tools.execution.pre_commit_tools_execute_checks import (
     PreCommitCheckName,
     execute_pre_commit_checks_dispatch,
 )
-from cortex.tools.execution.pre_commit_tools_inline_execution import (
-    ADAPTER_REGISTRY,
-    SUPPORTED_LANGUAGES,
-)
 
-# Re-export for pre_commit_worker, tests (patch targets), and tooling.
 __all__ = [
-    "ADAPTER_REGISTRY",
     "PreCommitCheckName",
     "PythonAdapter",
-    "SUPPORTED_LANGUAGES",
     "detect_or_use_language",
     "execute_pre_commit_checks",
     "get_current_project_root",
@@ -57,6 +51,9 @@ __all__ = [
     "precommit_block_response",
     "start_quality_job",
 ]
+
+
+SUPPORTED_LANGUAGES: tuple[str, ...] = LanguageQualityRouter.supported_languages()
 
 
 @ensure_usage_context

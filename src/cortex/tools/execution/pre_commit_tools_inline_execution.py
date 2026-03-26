@@ -8,22 +8,15 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
-from collections.abc import Callable, Sequence
+from collections.abc import Sequence
 from pathlib import Path
 from typing import cast
 
 from cortex.core.context_logging import MCPContext, log_client
 from cortex.core.models import ModelDict
 from cortex.services.framework_adapters.base import FrameworkAdapter
-from cortex.services.framework_adapters.go_adapter import GoAdapter
-from cortex.services.framework_adapters.java_adapter import JavaAdapter
-from cortex.services.framework_adapters.javascript_adapter import JavaScriptAdapter
-from cortex.services.framework_adapters.kotlin_adapter import KotlinAdapter
-from cortex.services.framework_adapters.python_adapter import PythonAdapter
-from cortex.services.framework_adapters.rust_adapter import RustAdapter
-from cortex.services.framework_adapters.swift_adapter import SwiftAdapter
-from cortex.services.framework_adapters.typescript_adapter import TypeScriptAdapter
 from cortex.services.language_detector import LanguageInfo
+from cortex.services.language_quality_router import LanguageQualityRouter
 from cortex.tools.execution.pre_commit_helpers import (
     determine_checks_to_perform,
     unsupported_language_result_dict,
@@ -36,29 +29,6 @@ from cortex.tools.execution.pre_commit_tools_run_helpers import (
 )
 
 logger = logging.getLogger(__name__)
-
-# Adapter registry: language -> factory(project_root) -> FrameworkAdapter.
-ADAPTER_REGISTRY: dict[str, Callable[[str | None], FrameworkAdapter]] = {
-    "python": lambda root: PythonAdapter(root),
-    "typescript": lambda root: TypeScriptAdapter(root),
-    "javascript": lambda root: JavaScriptAdapter(root),
-    "rust": lambda root: RustAdapter(root),
-    "go": lambda root: GoAdapter(root),
-    "java": lambda root: JavaAdapter(root),
-    "swift": lambda root: SwiftAdapter(root),
-    "kotlin": lambda root: KotlinAdapter(root),
-}
-SUPPORTED_LANGUAGES: tuple[str, ...] = tuple(ADAPTER_REGISTRY.keys())
-
-
-def get_adapter(
-    language_info: LanguageInfo, project_root: str | None
-) -> FrameworkAdapter | None:
-    """Get framework adapter for detected language."""
-    factory = ADAPTER_REGISTRY.get(language_info.language)
-    if factory is None:
-        return None
-    return factory(project_root)
 
 
 async def _resolve_language_and_adapter(
@@ -77,7 +47,7 @@ async def _resolve_language_and_adapter(
         )
         return cast(ModelDict, json.loads(result))
     language_info, root_to_use = result
-    adapter = get_adapter(language_info, root_to_use)
+    adapter = LanguageQualityRouter.get_adapter(language_info.language, root_to_use)
     if adapter is None:
         await log_client(
             ctx,
@@ -86,7 +56,7 @@ async def _resolve_language_and_adapter(
             logger_name=__name__,
         )
         return unsupported_language_result_dict(
-            language_info.language, SUPPORTED_LANGUAGES
+            language_info.language, LanguageQualityRouter.supported_languages()
         )
     return (adapter, language_info)
 
@@ -162,9 +132,6 @@ async def run_inline_pre_commit_checks(
 
 
 __all__ = [
-    "ADAPTER_REGISTRY",
-    "SUPPORTED_LANGUAGES",
-    "get_adapter",
     "run_inline_pre_commit_checks",
     "_execute_inline_checks_after_hygiene",
     "_resolve_language_and_adapter",

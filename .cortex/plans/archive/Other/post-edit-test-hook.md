@@ -153,7 +153,9 @@ Done:
 - Wired runtime post-edit hook application into `initialize` / `migrate` execution paths via `apply_project_post_edit_hook()` and integrated both direct + lazy prompt handlers
 - Added runtime wiring tests in `tests/unit/test_post_edit_hook_runtime.py`, `tests/unit/test_prompts_conditional_registration.py`, and `tests/unit/test_lazy_prompt_registration.py`
 - Switched post-edit hook detection to reuse shared `LanguageDetector` and added focused fallback coverage in `tests/unit/test_post_edit_hook_detection.py` (TypeScript detection and unsupported-language behavior)
+- Added shared `LanguageQualityRouter` and routed `HookTemplates.get_post_edit_hook()` through router-based hook command selection
+- Added `tests/unit/test_language_quality_router.py` coverage for supported languages, hook command mapping, and adapter lookup fallback behavior
 
 Remaining:
 
-- Route post-edit hook command selection through the same programmatic quality-routing path (`LanguageQualityRouter`) so runtime hook selection and quality execution share one source of truth
+- Route runtime quality adapter selection through `LanguageQualityRouter` as the single source of truth, then remove compatibility-only indirection/re-exports in pre-commit execution once callsites are migrated
