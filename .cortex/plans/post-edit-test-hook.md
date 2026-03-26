@@ -149,7 +149,9 @@ Done:
 - Updated `docs/prompts/migrate.md` Step 2a to document auto-emitted hook with language table and merge behavior
 - Added 14 integration tests in `tests/unit/test_post_edit_hook_integration.py` covering Python, Swift, all other languages, idempotency, and key preservation
 - Cortex repo `.claude/settings.json` already had the Python hook configured
+- Added programmatic hook-language detection helper (`detect_post_edit_hook_language`) and Java project detection (Maven/Gradle)
 
 Remaining:
 
-- Integrate with language detection from `migrate-language-rules-scripts-scaffolding` so detection is fully automated (currently the prompt instructs the agent to detect; future: call `LanguageQualityRouter` programmatically)
+- Wire `migrate` / `initialize` runtime execution paths to call `detect_post_edit_hook_language(project_root)` and apply the post-edit hook automatically (not just prompt-instructed)
+- Integrate with language detection from `migrate-language-rules-scripts-scaffolding` so detection is fully automated (future: call `LanguageQualityRouter` programmatically)

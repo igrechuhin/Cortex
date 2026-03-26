@@ -81,6 +81,10 @@ class LanguageDetector:
         if self._is_kotlin_project():
             return self._detect_kotlin_tooling()
 
+        # Check for Java
+        if self._is_java_project():
+            return self._detect_java_tooling()
+
         return None
 
     def _is_python_project(self) -> bool:
@@ -133,6 +137,19 @@ class LanguageDetector:
         has_maven = (root / "pom.xml").exists()
         has_kt = any(root.rglob("*.kt"))
         return (has_gradle or has_maven) and has_kt
+
+    def _is_java_project(self) -> bool:
+        """Check if project is Java (Maven or Gradle, non-Kotlin)."""
+        root = self.project_root
+        has_build = (
+            (root / "pom.xml").exists()
+            or (root / "build.gradle").exists()
+            or (root / "build.gradle.kts").exists()
+        )
+        if not has_build:
+            return False
+        # If Kotlin sources exist, prefer Kotlin detection.
+        return not any(root.rglob("*.kt"))
 
     def _package_json_has_typescript(self) -> bool:
         """Check if package.json indicates TypeScript."""
@@ -249,6 +266,24 @@ class LanguageDetector:
             type_checker=None,
             build_tool="gradle",
             confidence=0.85,
+        )
+
+    def _detect_java_tooling(self) -> LanguageInfo:
+        """Detect Java tooling (Maven or Gradle)."""
+        root = self.project_root
+        build_tool = None
+        if (root / "pom.xml").exists():
+            build_tool = "maven"
+        elif (root / "build.gradle").exists() or (root / "build.gradle.kts").exists():
+            build_tool = "gradle"
+        return LanguageInfo(
+            language="java",
+            test_framework=None,
+            formatter="spotless",
+            linter=None,
+            type_checker=None,
+            build_tool=build_tool,
+            confidence=0.8,
         )
 
     def _detect_js_test_framework(self) -> str | None:

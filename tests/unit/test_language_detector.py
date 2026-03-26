@@ -160,6 +160,36 @@ class TestLanguageDetector:
             assert result["language"] == "kotlin"
             assert result["build_tool"] == "gradle"
 
+    def test_detect_java_from_pom_xml(self) -> None:
+        """Test Java detection from pom.xml."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            project_root = Path(tmpdir)
+            _ = (project_root / "pom.xml").write_text(
+                "<project></project>", encoding="utf-8"
+            )
+
+            detector = LanguageDetector(str(project_root))
+            result = detector.detect_language()
+
+            assert result is not None
+            assert result["language"] == "java"
+            assert result["build_tool"] == "maven"
+
+    def test_detect_java_from_gradle_when_no_kotlin_sources(self) -> None:
+        """Test Java detection from Gradle build when no .kt sources exist."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            project_root = Path(tmpdir)
+            _ = (project_root / "build.gradle").write_text(
+                "plugins { id 'java' }", encoding="utf-8"
+            )
+
+            detector = LanguageDetector(str(project_root))
+            result = detector.detect_language()
+
+            assert result is not None
+            assert result["language"] == "java"
+            assert result["build_tool"] == "gradle"
+
     def test_detect_none_for_empty_directory(self) -> None:
         """Test that empty directory returns None."""
         with tempfile.TemporaryDirectory() as tmpdir:
