@@ -4,7 +4,7 @@
 **Component**: pipelines
 **Work type**: improvement
 **Priority**: high
-**Status**: PENDING
+**Status**: IN_PROGRESS
 **Created**: 2026-03-26
 
 ---
@@ -39,3 +39,16 @@ Multiple sessions had fix pipeline corruption: duplicate definitions, circular i
 
 - Verify NO-GO items are prominent and early in the prompt
 - Check rollback logic is actionable
+
+## Progress Notes (2026-03-26)
+
+Completed:
+
+- Added explicit fix-loop integrity guardrails and rollback guidance to `docs/guides/workflows.md`.
+- Updated `fix_quality_issues` tool documentation in `src/cortex/tools/execution/pre_commit_zero_arg_tools.py` with anti-corruption warnings and re-verification requirements.
+- Added integration tests in `tests/integration/test_commit_workflow_prompt_alignment.py` to enforce these guardrails.
+
+Remaining:
+
+- Apply the same NO-GO and post-fix import/syntax validation guidance directly in `.cortex/synapse/prompts/fix.md`.
+- Re-run verification focused on fix prompt alignment for full plan completion.

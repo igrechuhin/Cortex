@@ -16,7 +16,6 @@ import pytest
 
 from cortex.core.path_resolver import (
     CortexResourceType,
-    ProjectResourceType,
     get_cortex_path,
 )
 from cortex.managers.initialization import get_project_root
@@ -56,6 +55,20 @@ def _read_commit_pipeline_content() -> str:
 def _implement_prompt_path() -> Path:
     """Return path to implement prompt."""
     return _synapse_path() / "prompts" / "implement-next-roadmap-step.md"
+
+
+def _fix_quality_tool_source_path() -> Path:
+    """Return path to zero-arg quality tools source."""
+    root = _repo_root()
+    return (
+        root / "src" / "cortex" / "tools" / "execution" / "pre_commit_zero_arg_tools.py"
+    )
+
+
+def _workflows_guide_path() -> Path:
+    """Return path to workflows guide."""
+    root = _repo_root()
+    return root / "docs" / "guides" / "workflows.md"
 
 
 def _read_implement_pipeline_content() -> str:
@@ -192,9 +205,7 @@ class TestCommitPipelineAlignment:
 
     def test_pipeline_uses_tools_not_scripts(self, commit_prompt_content: str) -> None:
         """Commit prompt must not invoke scripts directly."""
-        forbidden = (
-            f"{ProjectResourceType.VENV.value}/bin/python" " .cortex/synapse/scripts"
-        )
+        forbidden = ".venv/bin/python .cortex/synapse/scripts"
         assert forbidden not in commit_prompt_content
 
     def test_pipeline_references_analyze(self, pipeline_content: str) -> None:
@@ -328,6 +339,67 @@ class TestImplementPromptRefactoringGuidance:
         lower = implement_prompt_content.lower()
         assert "duplicate-definition" in lower or "duplicate" in lower
         assert "definitions" in lower
+
+
+class TestFixLoopIntegrityGuard:
+    """Assert fix-loop integrity safeguards are documented."""
+
+    @pytest.fixture
+    def workflows_guide_content(self) -> str:
+        """Read workflows guide content."""
+        path = _workflows_guide_path()
+        if not path.exists():
+            pytest.skip(
+                f"Workflows guide not found at {path} (ref: cleanup-skipped-legacy-tests)"
+            )
+        return path.read_text()
+
+    @pytest.fixture
+    def fix_quality_tool_content(self) -> str:
+        """Read fix_quality_issues tool source content."""
+        path = _fix_quality_tool_source_path()
+        if not path.exists():
+            pytest.skip(
+                f"fix_quality_issues source not found at {path} (ref: cleanup-skipped-legacy-tests)"
+            )
+        return path.read_text()
+
+    def test_workflows_guide_contains_no_go_integrity_list(
+        self, workflows_guide_content: str
+    ) -> None:
+        """Workflow docs include explicit NO-GO corruption safeguards."""
+        lower = workflows_guide_content.lower()
+        assert "no-go" in lower
+        assert "duplicate function/class definitions" in lower
+        assert "type_checking" in lower
+        assert "circular imports" in lower
+        assert "syntax-invalid python" in lower
+
+    def test_workflows_guide_contains_post_fix_module_validation(
+        self, workflows_guide_content: str
+    ) -> None:
+        """Workflow docs require import/syntax checks before success."""
+        lower = workflows_guide_content.lower()
+        assert "post-fix validation" in lower
+        assert "python3 -m py_compile" in lower
+        assert 'python3 -c "import <module_import_path>"' in workflows_guide_content
+
+    def test_workflows_guide_contains_rollback_guidance_for_regressions(
+        self, workflows_guide_content: str
+    ) -> None:
+        """Workflow docs require rollback and bounded retry on regressions."""
+        lower = workflows_guide_content.lower()
+        assert "roll back that attempt" in lower
+        assert "max 3 attempts" in lower
+
+    def test_fix_quality_tool_docs_warn_about_integrity_risks(
+        self, fix_quality_tool_content: str
+    ) -> None:
+        """Tool docs require re-verification and rollback on regressions."""
+        lower = fix_quality_tool_content.lower()
+        assert "integrity safeguards" in lower
+        assert "run_quality_gate()" in fix_quality_tool_content
+        assert "roll back that" in lower
 
 
 class TestPythonCodingStandardsTypeNarrowing:

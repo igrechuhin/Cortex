@@ -323,6 +323,12 @@ async def fix_quality_issues(
     Called by commit-checks, commit-final-gate, and implement-code agents after
     preflight_passed=false. Runs fix_errors, format, type_check, and markdown auto-fix.
 
+    INTEGRITY SAFEGUARDS:
+    - Do not use this tool output as a "done" signal by itself; always re-run
+      run_quality_gate() and validate changed modules still import cleanly.
+    - If a fix iteration introduces new failures/regressions, roll back that
+      attempt and retry with a different approach (max 3 attempts).
+
     EXAMPLES:
     - fix_quality_issues() immediately after a failing run_quality_gate() call
       to auto-fix formatting, linting, type, and markdown issues.

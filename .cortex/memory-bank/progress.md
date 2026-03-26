@@ -13,6 +13,7 @@
 - **Per-Project Post-Edit Quality Hook — Language-Agnostic Pattern** - PARTIAL. Integrated runtime post-edit hook language detection with shared `LanguageDetector`, added TypeScript detection and unsupported-language fallback tests, and validated via quality gate; remaining work is programmatic routing through `LanguageQualityRouter`.
 - **Per-Project Post-Edit Quality Hook — Language-Agnostic Pattern** - PARTIAL. Added shared `LanguageQualityRouter` and routed post-edit hook command selection through it; added router unit tests and preserved existing pre-commit adapter patch points. Remaining: consume the same router for runtime quality adapter selection to fully unify routing.
 - **Per-Project Post-Edit Quality Hook — Language-Agnostic Pattern** - COMPLETE. Unified runtime hook and quality adapter routing through `LanguageQualityRouter`, removed adapter-registry execution indirection, updated boundary/unit tests, and validated with passing quality gate.
+- **Pipeline Code Integrity Guard — Prevent Fix-Loop Corruption** - PARTIAL. Added fix-loop NO-GO guardrails and post-fix import/syntax validation guidance in workflow/tool docs, plus integration tests enforcing these guardrails; remaining work is to apply the same guardrails directly in `.cortex/synapse/prompts/fix.md` and complete full plan acceptance criteria.
 
 ## 2026-03-25
 

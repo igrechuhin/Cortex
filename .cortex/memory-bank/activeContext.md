@@ -16,6 +16,8 @@
 
 - ✅ **Per-Project Post-Edit Quality Hook — Language-Agnostic Pattern** - COMPLETE (2026-03-26) - Completed router unification by making LanguageQualityRouter the runtime single source of truth for both post-edit hook command selection and quality adapter selection across inline and detached pre-commit execution, with updated tests and passing quality gate.
 
+- ✅ **Pipeline Code Integrity Guard — Prevent Fix-Loop Corruption (PARTIAL)** - COMPLETE (2026-03-26) - Added integrity guardrails (NO-GO list, post-fix module validation, rollback guidance) to repo-owned quality workflow and fix-quality tool documentation, and added integration tests to prevent regression; still need direct `fix.md` prompt updates to fully complete roadmap step.
+
 ## Completed Work (2026-03-25)
 
 - **Summary (2026-03-25)** - 1 entries archived.

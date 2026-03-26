@@ -105,6 +105,15 @@ This guide documents common workflows as sequences of Cortex MCP tool calls, wit
    - **`fix_quality_issues()`** for the bundled auto-fix pass, then re-run **`run_quality_gate()`**.
    - **fix_markdown_lint**(`include_untracked_markdown`: true) for markdown-only follow-ups.
    - Re-run **`run_quality_gate()`** until all pass.
+   - Apply integrity NO-GO safeguards during fix loops:
+     - never introduce duplicate function/class definitions
+     - never use `TYPE_CHECKING` import workarounds
+     - never introduce circular imports; extract shared code instead
+     - never leave syntax-invalid Python in the tree
+   - Post-fix validation before success:
+     - run `python3 -m py_compile <module_path>` for each changed Python module
+     - run `python3 -c "import <module_import_path>"` for each changed module
+   - If a fix iteration introduces new failures, roll back that attempt and retry with a different approach (max 3 attempts).
 
 3. **validate** – Optional: `check_type="timestamps"` or `"roadmap_sync"` for memory bank consistency.
 
