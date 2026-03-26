@@ -5,6 +5,7 @@ Extracted from pre_commit_tools to keep it under 400 lines.
 
 import json
 import logging
+import subprocess
 from pathlib import Path
 from typing import cast
 
@@ -158,6 +159,8 @@ def build_markdown_fix_output(
     fix_errors_result: ModelDict,
     markdown_issues_fixed: int,
     files_modified: list[str],
+    *,
+    files_modified_override: list[str] | None = None,
 ) -> str:
     """Build final quality response JSON from fix result and markdown stats."""
     remaining_issues = collect_remaining_issues(fix_errors_result)
@@ -168,18 +171,25 @@ def build_markdown_fix_output(
         type_errors_fixed,
         _,
     ) = extract_fix_statistics(fix_errors_result)
+    effective_files_modified = (
+        files_modified_override
+        if files_modified_override is not None
+        else files_modified
+    )
     return build_quality_response_json(
         errors_fixed,
         warnings_fixed,
         formatting_issues_fixed,
         markdown_issues_fixed,
         type_errors_fixed,
-        files_modified,
+        effective_files_modified,
         remaining_issues,
     )
 
 
-def _parse_fix_envelope(envelope: ModelDict) -> str:
+def _parse_fix_envelope(
+    envelope: ModelDict, files_modified_override: list[str] | None = None
+) -> str:
     """Parse a completed fix worker envelope into FixQualityResult JSON.
 
     Extracts ``result`` (checks) and ``markdown_result`` from the envelope
@@ -206,13 +216,48 @@ def _parse_fix_envelope(envelope: ModelDict) -> str:
         )
 
     return build_markdown_fix_output(
-        fix_errors_result, markdown_issues_fixed, files_modified
+        fix_errors_result,
+        markdown_issues_fixed,
+        files_modified,
+        files_modified_override=files_modified_override,
     )
 
 
-def parse_fix_envelope(envelope: ModelDict) -> str:
+def parse_fix_envelope(
+    envelope: ModelDict, files_modified_override: list[str] | None = None
+) -> str:
     """Public wrapper for fix envelope parsing used by tests and callers."""
-    return _parse_fix_envelope(envelope)
+    return _parse_fix_envelope(
+        envelope, files_modified_override=files_modified_override
+    )
+
+
+def _get_tracked_git_changes(root: Path) -> set[str] | None:
+    """Return tracked modified file paths from git status, or None if unavailable."""
+    try:
+        completed = subprocess.run(
+            ["git", "status", "--porcelain", "--untracked-files=no"],
+            capture_output=True,
+            text=True,
+            cwd=root,
+            timeout=5,
+            check=False,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return None
+
+    if completed.returncode != 0:
+        return None
+
+    changed_files: set[str] = set()
+    for line in completed.stdout.splitlines():
+        # Porcelain format: XY<space>path; skip malformed rows defensively.
+        if len(line) < 4:
+            continue
+        path = line[3:].strip()
+        if path:
+            changed_files.add(path)
+    return changed_files
 
 
 async def fix_quality_issues_impl(
@@ -226,11 +271,18 @@ async def fix_quality_issues_impl(
     asyncio event loop is never blocked: the MCP stdio transport stays alive
     and Cursor does not drop the connection during long-running fix operations.
     """
+    tracked_before = _get_tracked_git_changes(root)
     await report_progress_safe(ctx, 5.0, 100.0)
     _ = start_fix_job_impl(root, include_untracked_markdown)
     args_hash = fix_args_hash(include_untracked_markdown)
     rp = fix_result_path(session_dir(root), args_hash)
     envelope = await poll_for_result(rp, ctx=ctx, timeout=960.0)
-    out = _parse_fix_envelope(cast(ModelDict, envelope))
+    tracked_after = _get_tracked_git_changes(root)
+    files_modified_override: list[str] | None = None
+    if tracked_before is not None and tracked_after is not None:
+        files_modified_override = sorted(tracked_after - tracked_before)
+    out = _parse_fix_envelope(
+        cast(ModelDict, envelope), files_modified_override=files_modified_override
+    )
     await log_client(ctx, "info", "fix_quality_issues: completed", logger_name=__name__)
     return out

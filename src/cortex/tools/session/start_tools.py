@@ -52,6 +52,39 @@ from cortex.tools.session.models import (
 logger = logging.getLogger(__name__)
 
 
+def _session_has_context_telemetry(project_root: Path) -> bool:
+    """Return True when current session already has context-call telemetry."""
+    from cortex.core.session_logger import get_session_log_path, read_session_log
+
+    session_log = read_session_log(get_session_log_path(project_root))
+    return session_log is not None and bool(session_log.load_context_calls)
+
+
+def _seed_session_start_context_telemetry(
+    project_root: Path,
+    token_count: int,
+) -> None:
+    """Write one early-session telemetry row for context analysis, once per session."""
+    if _session_has_context_telemetry(project_root):
+        return
+    from cortex.core.session_logger import log_load_context_call
+
+    # Keep this non-synthetic and internally consistent so it remains rollup-eligible.
+    log_load_context_call(
+        project_root=project_root,
+        task_description="Session orientation bootstrap",
+        token_budget=max(token_count, 1),
+        strategy="session_start",
+        selected_files=["activeContext.md", "roadmap.md"],
+        selected_sections={},
+        total_tokens=max(token_count, 1),
+        utilization=1.0,
+        excluded_files=[],
+        relevance_scores={},
+        role="feature",
+    )
+
+
 def parse_roadmap_sections(content: str) -> dict[str, tuple[int, int]]:
     """Parse roadmap to get section boundaries. Returns {section_id: (start_line, end_line)}."""
     sections: dict[str, tuple[int, int]] = {}
@@ -290,13 +323,19 @@ async def session_start_impl(
     from cortex.tools.session import health as session_health
 
     mcp_healthy, mcp_health_message = await session_health.get_mcp_health_status()
-    return await _load_brief_and_return_result(
+    result = await _load_brief_and_return_result(
         fs_manager,
         managers,
         project_root,
         mcp_healthy,
         mcp_health_message,
     )
+    if (
+        isinstance(result, SessionStartResult)
+        and result.status == ToolResultStatus.SUCCESS
+    ):
+        _seed_session_start_context_telemetry(project_root, result.token_count)
+    return result
 
 
 # Internal; use session(operation="start") as MCP tool.

@@ -21,7 +21,11 @@ from cortex.core.project_root_resolver import resolve_project_root_async
 from cortex.managers import initialization
 from cortex.managers.types import ManagersDict
 from cortex.server import mcp
-from cortex.tools.context.analysis_helpers import AnalysisTarget, parse_analysis_target
+from cortex.tools.context.analysis_helpers import (
+    AnalysisTarget,
+    normalize_analysis_target,
+    parse_analysis_target,
+)
 from cortex.tools.context.analysis_run_helpers import (
     analysis_invalid_target_response,
     dispatch_analysis_target,
@@ -121,9 +125,11 @@ async def analyze(
           provides formatted documentation, "text" provides plain text summary.
     """
     await log_client(ctx, "info", "analyze: starting", logger_name=__name__)
+    normalized_target = normalize_analysis_target(target)
+    target_value = normalized_target if normalized_target is not None else target
     root = await resolve_project_root_async(None, ctx)
     # First try legacy targets via AnalysisTarget/Pattern/Structure/Insights.
-    parsed_target = parse_analysis_target(target)
+    parsed_target = parse_analysis_target(target_value)
     if parsed_target is not None:
         return await _analyze_run_or_error(
             ctx,
@@ -135,13 +141,16 @@ async def analyze(
         )
 
     # Consolidated analytics targets: context* and health.
-    if target.startswith("context"):
-        return await run_context_analysis(target, root)
-    if target in ("health", "health_check"):
-        return await run_health_analysis(root)
+    if target_value.startswith("context"):
+        return await run_context_analysis(target_value, root)
+    if target_value in ("health", "health_check", "prompts", "rules", "tools", "all"):
+        health_type = (
+            "all" if target_value in ("health", "health_check") else target_value
+        )
+        return await run_health_analysis(root, analysis_type=health_type)
 
     await log_client(ctx, "warning", "analyze: invalid target")
-    return analysis_invalid_target_response(target)
+    return analysis_invalid_target_response(target_value)
 
 
 async def _analyze_run_or_error(

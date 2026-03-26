@@ -152,7 +152,8 @@ Done:
 - Added programmatic hook-language detection helper (`detect_post_edit_hook_language`) and Java project detection (Maven/Gradle)
 - Wired runtime post-edit hook application into `initialize` / `migrate` execution paths via `apply_project_post_edit_hook()` and integrated both direct + lazy prompt handlers
 - Added runtime wiring tests in `tests/unit/test_post_edit_hook_runtime.py`, `tests/unit/test_prompts_conditional_registration.py`, and `tests/unit/test_lazy_prompt_registration.py`
+- Switched post-edit hook detection to reuse shared `LanguageDetector` and added focused fallback coverage in `tests/unit/test_post_edit_hook_detection.py` (TypeScript detection and unsupported-language behavior)
 
 Remaining:
 
-- Integrate with language detection from `migrate-language-rules-scripts-scaffolding` so detection is fully automated (future: call `LanguageQualityRouter` programmatically)
+- Route post-edit hook command selection through the same programmatic quality-routing path (`LanguageQualityRouter`) so runtime hook selection and quality execution share one source of truth

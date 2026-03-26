@@ -294,6 +294,36 @@ class TestAnalyzeHandler:
             assert result_data["time_window_days"] == 60
 
     @pytest.mark.asyncio
+    async def test_analyze_usage_pattern_alias_routes_to_usage_patterns(
+        self, tmp_path: Path
+    ) -> None:
+        """Hyphenated usage-pattern alias dispatches to usage_patterns handler."""
+        # Arrange
+        with patch(
+            "cortex.tools.context.analysis_operations.get_managers",
+            new_callable=AsyncMock,
+        ) as mock_get_managers:
+            mock_pattern_analyzer = MagicMock()
+            mock_pattern_analyzer.get_access_frequency = AsyncMock(return_value={})
+            mock_pattern_analyzer.get_co_access_patterns = AsyncMock(return_value=[])
+            mock_pattern_analyzer.get_task_patterns = AsyncMock(return_value={})
+            mock_pattern_analyzer.get_unused_files = AsyncMock(return_value=[])
+
+            mock_get_managers.return_value = make_test_managers(
+                pattern_analyzer=mock_pattern_analyzer,
+                structure_analyzer=MagicMock(),
+                insight_engine=MagicMock(),
+            )
+
+            # Act
+            result = await analyze(target="usage-pattern")
+
+            # Assert
+            result_data = json.loads(result)
+            assert result_data["status"] == "success"
+            assert result_data["target"] == "usage_patterns"
+
+    @pytest.mark.asyncio
     async def test_analyze_structure(self, tmp_path: Path) -> None:
         """Test analyzing structure."""
         # Arrange
@@ -384,6 +414,26 @@ class TestAnalyzeHandler:
             assert result_data["status"] == "error"
             assert "Test error" in result_data["error"]
             assert result_data["error_type"] == "RuntimeError"
+
+    @pytest.mark.asyncio
+    async def test_analyze_tools_target_routes_to_health_tools_analysis(
+        self, tmp_path: Path
+    ) -> None:
+        """tools target dispatches to health-check analysis_type=tools."""
+        # Arrange
+        with patch(
+            "cortex.tools.context.analysis_operations.run_health_analysis",
+            new_callable=AsyncMock,
+            return_value=json.dumps({"status": "success", "analysis_type": "tools"}),
+        ) as mock_health:
+            # Act
+            result = await analyze(target="tools")
+
+            # Assert
+            result_data = json.loads(result)
+            assert result_data["status"] == "success"
+            assert result_data["analysis_type"] == "tools"
+            assert mock_health.await_count == 1
 
 
 @pytest.mark.timeout(20)

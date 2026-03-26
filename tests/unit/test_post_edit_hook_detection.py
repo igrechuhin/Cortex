@@ -28,3 +28,22 @@ def test_detect_post_edit_hook_language_detects_swift(tmp_path: Path) -> None:
 def test_detect_post_edit_hook_language_detects_java(tmp_path: Path) -> None:
     _ = (tmp_path / "pom.xml").write_text("<project></project>\n", encoding="utf-8")
     assert detect_post_edit_hook_language(tmp_path) == "java"
+
+
+def test_detect_post_edit_hook_language_detects_typescript(tmp_path: Path) -> None:
+    _ = (tmp_path / "tsconfig.json").write_text("{}", encoding="utf-8")
+    _ = (tmp_path / "package.json").write_text(
+        '{"name":"x","devDependencies":{"typescript":"^5.0.0"}}\n',
+        encoding="utf-8",
+    )
+    assert detect_post_edit_hook_language(tmp_path) == "typescript"
+
+
+def test_detect_post_edit_hook_language_returns_unknown_for_kotlin(
+    tmp_path: Path,
+) -> None:
+    _ = (tmp_path / "build.gradle.kts").write_text("plugins {}\n", encoding="utf-8")
+    _ = (tmp_path / "Main.kt").write_text(
+        'fun main() = println("hi")\n', encoding="utf-8"
+    )
+    assert detect_post_edit_hook_language(tmp_path) == "unknown"

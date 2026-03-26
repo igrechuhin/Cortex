@@ -122,6 +122,33 @@ class TestParseFixEnvelope:
         assert data["status"] == "success"
         assert data["markdown_issues_fixed"] == 0
 
+    def test_parse_fix_envelope_override_files_modified(self) -> None:
+        # Arrange
+        envelope = cast(
+            ModelDict,
+            {
+                "version": 1,
+                "status": "completed",
+                "result": {
+                    "results": {
+                        "fix_errors": {"errors": [], "warnings": []},
+                        "format": {"files_formatted": 0},
+                        "type_check": {"errors": [], "warnings": []},
+                    },
+                    "files_modified": ["noise.md"],
+                },
+            },
+        )
+        # Act
+        out = parse_fix_envelope(
+            envelope, files_modified_override=["actual.py", "actual_test.py"]
+        )
+        data = json.loads(out)
+
+        # Assert
+        assert data["status"] == "success"
+        assert data["files_modified"] == ["actual.py", "actual_test.py"]
+
 
 # ---------------------------------------------------------------------------
 # fix_quality_issues_impl — detached spawn + poll
@@ -275,6 +302,53 @@ class TestFixQualityIssuesImpl:
         # Assert — poll_for_result received the ctx
         _, kwargs = poll_mock.call_args
         assert kwargs.get("ctx") is mock_ctx or poll_mock.call_args[0][1] is mock_ctx
+
+    @pytest.mark.asyncio
+    async def test_uses_git_delta_for_files_modified(self, tmp_path: Path) -> None:
+        # Arrange
+        envelope = cast(
+            ModelDict,
+            {
+                "version": 1,
+                "status": "completed",
+                "result": {
+                    "results": {
+                        "fix_errors": {"errors": [], "warnings": []},
+                        "format": {"files_formatted": 0},
+                        "type_check": {"errors": [], "warnings": []},
+                    },
+                    "files_modified": ["noise.md"],
+                },
+            },
+        )
+        with (
+            patch(
+                "cortex.tools.execution.pre_commit_fix_quality.start_fix_job_impl",
+                return_value={"job_id": "abc123", "status": "started"},
+            ),
+            patch(
+                "cortex.tools.execution.pre_commit_fix_quality.poll_for_result",
+                new_callable=AsyncMock,
+                return_value=envelope,
+            ),
+            patch(
+                "cortex.tools.execution.pre_commit_fix_quality._get_tracked_git_changes",
+                side_effect=[{"already_dirty.py"}, {"already_dirty.py", "new_fix.py"}],
+            ),
+        ):
+            from cortex.tools.execution.pre_commit_fix_quality import (
+                fix_quality_issues_impl,
+            )
+
+            # Act
+            out = await fix_quality_issues_impl(
+                tmp_path, include_untracked_markdown=True, ctx=None
+            )
+
+        # Assert
+        data = json.loads(out)
+        assert data["status"] == "success"
+        assert data["files_modified"] == ["new_fix.py"]
 
 
 # ---------------------------------------------------------------------------

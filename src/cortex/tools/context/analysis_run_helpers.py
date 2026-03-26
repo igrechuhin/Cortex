@@ -122,15 +122,21 @@ async def run_context_analysis(target: str, root: Path) -> str:
     return analysis_invalid_target_response(target)
 
 
-async def run_health_analysis(root: Path) -> str:
+async def run_health_analysis(root: Path, analysis_type: str = "all") -> str:
     """Run health-check analysis using the shared engine."""
     from cortex.tools.session.health_check_operations import (
         HealthCheckAnalysisType,
         run_health_check_analysis,
     )
 
+    requested = analysis_type.strip().lower().replace("-", "_")
+    if requested == "health_check":
+        requested = "all"
+    valid_types = {member.value for member in HealthCheckAnalysisType}
+    resolved_type = requested if requested in valid_types else "all"
+
     return await run_health_check_analysis(
-        analysis_type=HealthCheckAnalysisType.ALL,
+        analysis_type=HealthCheckAnalysisType(resolved_type),
         similarity_threshold=0.75,
         include_dependencies=True,
         validate_quality=True,

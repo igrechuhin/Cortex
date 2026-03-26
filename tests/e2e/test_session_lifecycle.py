@@ -10,7 +10,9 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
+from cortex.tools.context.analysis_operations import analyze
 from cortex.tools.files.operations import manage_file
+from cortex.tools.memory.compaction_operations import compact_session
 from cortex.tools.optimization import load_context
 from cortex.tools.session.dispatcher import session
 from tests.helpers.path_helpers import ensure_test_cortex_structure
@@ -157,3 +159,63 @@ async def test_session_lifecycle_with_manage_file(tmp_path: Path) -> None:
             ),
         )
         assert "status" in compact_data
+
+
+@pytest.mark.slow
+@pytest.mark.timeout(120)
+@pytest.mark.asyncio
+async def test_session_lifecycle_analyze_context_not_no_data_for_mixed_entrypoints(
+    tmp_path: Path,
+) -> None:
+    """Regression: end-of-session analyze(context) stays non-no_data after mixed entrypoints."""
+    memory_bank_dir = ensure_test_cortex_structure(tmp_path)
+    _write_minimal_memory_bank(memory_bank_dir)
+
+    with (
+        patch(
+            "cortex.core.project_root_resolver.resolve_project_root_async",
+            new_callable=AsyncMock,
+            return_value=tmp_path,
+        ),
+        patch(
+            "cortex.tools.compaction_operations.get_or_resolve_project_root",
+            new_callable=AsyncMock,
+            return_value=tmp_path,
+        ),
+    ):
+        # MCP-style start entrypoint via dispatcher.
+        session_fn = get_tool_fn(session)
+        start_result = await session_fn(
+            operation="start", task_description=None, ctx=None
+        )
+        start_data = cast(
+            dict[str, object],
+            (
+                to_dict(cast(object, start_result))
+                if isinstance(start_result, dict)
+                else json.loads(str(start_result))
+            ),
+        )
+        assert start_data.get("status") == "success"
+
+        # CLI/direct compact entrypoint.
+        compact_fn = get_tool_fn(compact_session)
+        compact_result = await compact_fn(
+            summary="mixed-entrypoint lifecycle", ctx=None
+        )
+        compact_data = cast(
+            dict[str, object],
+            (
+                to_dict(cast(object, compact_result))
+                if isinstance(compact_result, dict)
+                else json.loads(str(compact_result))
+            ),
+        )
+        assert "status" in compact_data
+
+        # Analyze through MCP analyze entrypoint and assert no_data is prevented.
+        analyze_result = await analyze(target="context")
+        analyze_data = cast(dict[str, object], json.loads(str(analyze_result)))
+        assert analyze_data.get("status") == "success"
+        current_session = cast(dict[str, object], analyze_data.get("current_session"))
+        assert cast(int, current_session.get("calls_analyzed")) >= 1

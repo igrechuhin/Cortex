@@ -4,6 +4,7 @@ Tests the session_start tool that combines orientation tasks into a single call.
 """
 
 import json
+import os
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -13,6 +14,7 @@ from cortex.core.file_system import FileSystemManager
 from cortex.core.metadata_index import MetadataIndex
 from cortex.core.token_counter import TokenCounter
 from cortex.core.version_manager import VersionManager
+from cortex.tools.context.effectiveness_operations import analyze_current_session
 from cortex.tools.memory.compaction_operations import compact_session, write_handoff
 from cortex.tools.models import (
     GitStatusSummary,
@@ -704,6 +706,147 @@ Working on Phase 54.
         assert "Phase 54" in result.brief.next_work_item
         assert result.token_count > 0
         assert result.brief.mcp_healthy is True
+
+    @pytest.mark.asyncio
+    async def test_session_start_impl_seeds_context_telemetry_for_analysis(
+        self, tmp_path: Path
+    ) -> None:
+        """Successful session_start writes one telemetry call to avoid no_data."""
+        memory_bank_dir = ensure_test_cortex_structure(tmp_path)
+        _ = (memory_bank_dir / "activeContext.md").write_text(
+            "# Active Context\n\n## Current Focus\n\nTest.\n"
+        )
+        _ = (memory_bank_dir / "roadmap.md").write_text(
+            "# Roadmap\n\n## Pending plans (from .cortex/plans)\n\n- **Task** - PENDING - Desc\n"
+        )
+        _ = (memory_bank_dir / "projectBrief.md").write_text("# Cortex\n")
+        for file_name in [
+            "progress.md",
+            "systemPatterns.md",
+            "techContext.md",
+            "productContext.md",
+        ]:
+            _ = (memory_bank_dir / file_name).write_text(f"# {file_name}\n")
+
+        fs_manager = FileSystemManager(tmp_path)
+        metadata_index = MetadataIndex(tmp_path)
+        _ = await metadata_index.load()
+        for file_name in [
+            "activeContext.md",
+            "roadmap.md",
+            "projectBrief.md",
+            "progress.md",
+            "systemPatterns.md",
+            "techContext.md",
+            "productContext.md",
+        ]:
+            await metadata_index.update_file_metadata(
+                file_name=file_name,
+                path=memory_bank_dir / file_name,
+                exists=True,
+                size_bytes=100,
+                token_count=50,
+                content_hash="sha256:test",
+                sections=[],
+            )
+        managers = make_test_managers(
+            fs=fs_manager,
+            index=metadata_index,
+            tokens=TokenCounter(),
+        )
+        env_key = "CORTEX_SESSION_ID"
+        original = os.environ.get(env_key)
+        os.environ[env_key] = "session_start_seed_1"
+        try:
+            with patch(
+                "cortex.tools.session.health.get_mcp_health_status",
+                new_callable=AsyncMock,
+                return_value=(True, None),
+            ):
+                result = await session_start_impl(None, tmp_path, managers)  # type: ignore[arg-type]
+            assert isinstance(result, SessionStartResult)
+            assert result.status == "success"
+            analysis = analyze_current_session(tmp_path)
+            assert analysis.status == "success"
+            current_raw = analysis.current_session
+            assert current_raw is not None
+            current = current_raw.model_dump(mode="python")
+            assert current["calls_analyzed"] == 1
+        finally:
+            if original:
+                os.environ[env_key] = original
+            else:
+                _ = os.environ.pop(env_key, None)
+
+    @pytest.mark.asyncio
+    async def test_session_start_impl_does_not_duplicate_seeded_context_telemetry(
+        self, tmp_path: Path
+    ) -> None:
+        """Repeated session_start in same session keeps a single seeded telemetry row."""
+        memory_bank_dir = ensure_test_cortex_structure(tmp_path)
+        _ = (memory_bank_dir / "activeContext.md").write_text(
+            "# Active Context\n\n## Current Focus\n\nTest.\n"
+        )
+        _ = (memory_bank_dir / "roadmap.md").write_text(
+            "# Roadmap\n\n## Pending plans (from .cortex/plans)\n\n- **Task** - PENDING - Desc\n"
+        )
+        _ = (memory_bank_dir / "projectBrief.md").write_text("# Cortex\n")
+        for file_name in [
+            "progress.md",
+            "systemPatterns.md",
+            "techContext.md",
+            "productContext.md",
+        ]:
+            _ = (memory_bank_dir / file_name).write_text(f"# {file_name}\n")
+
+        fs_manager = FileSystemManager(tmp_path)
+        metadata_index = MetadataIndex(tmp_path)
+        _ = await metadata_index.load()
+        for file_name in [
+            "activeContext.md",
+            "roadmap.md",
+            "projectBrief.md",
+            "progress.md",
+            "systemPatterns.md",
+            "techContext.md",
+            "productContext.md",
+        ]:
+            await metadata_index.update_file_metadata(
+                file_name=file_name,
+                path=memory_bank_dir / file_name,
+                exists=True,
+                size_bytes=100,
+                token_count=50,
+                content_hash="sha256:test",
+                sections=[],
+            )
+        managers = make_test_managers(
+            fs=fs_manager,
+            index=metadata_index,
+            tokens=TokenCounter(),
+        )
+        env_key = "CORTEX_SESSION_ID"
+        original = os.environ.get(env_key)
+        os.environ[env_key] = "session_start_seed_2"
+        try:
+            with patch(
+                "cortex.tools.session.health.get_mcp_health_status",
+                new_callable=AsyncMock,
+                return_value=(True, None),
+            ):
+                _ = await session_start_impl(None, tmp_path, managers)  # type: ignore[arg-type]
+                _ = await session_start_impl(None, tmp_path, managers)  # type: ignore[arg-type]
+            analysis = analyze_current_session(tmp_path)
+            assert analysis.status == "success"
+            current_raw = analysis.current_session
+            assert current_raw is not None
+            current = current_raw.model_dump(mode="python")
+            assert current["calls_analyzed"] == 1
+        finally:
+            if original:
+                os.environ[env_key] = original
+            else:
+                _ = os.environ.pop(env_key, None)
 
     @pytest.mark.asyncio
     async def test_session_start_impl_includes_handoff(self, tmp_path: Path) -> None:

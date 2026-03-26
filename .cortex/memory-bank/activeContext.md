@@ -10,6 +10,10 @@
 
 - ✅ **Per-Project Post-Edit Quality Hook — Language-Agnostic Pattern (PARTIAL)** - COMPLETE (2026-03-26) - Runtime now applies/merges project-specific PostToolUse(Edit) hooks during initialize/migrate via a shared setup helper and both direct/lazy prompt handlers, reducing manual setup drift; remaining work is tighter integration with the language-routing scaffolding pipeline.
 
+- ✅ **Session improvements from 2026-03-26T18-37 (PARTIAL)** - COMPLETE (2026-03-26) - Implemented robust analysis target normalization and dispatch routing for usage-pattern aliases and tools/prompts/rules targets, with regression tests and passing quality gate. This materially improves end-of-session analysis target reliability in current MCP/CLI flows; telemetry-presence checks remain.
+
+- ✅ **Session improvements from 2026-03-26T18-37** - COMPLETE (2026-03-26) - Added lifecycle regression coverage for end-of-session context analysis across mixed MCP and direct entrypoints, ensuring sessions with activity no longer produce false no_data results.
+
 ## Completed Work (2026-03-25)
 
 - **Summary (2026-03-25)** - 1 entries archived.
