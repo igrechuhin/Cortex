@@ -12,13 +12,29 @@ from collections.abc import Awaitable, Callable
 from pathlib import Path
 from typing import ParamSpec, TypeVar, cast
 
+from cortex.core import usage_context
 from cortex.core.constants import MCP_USAGE_CONTEXT_INIT_LOCK_TIMEOUT_SECONDS
 from cortex.core.context_logging import MCPContext
 from cortex.core.mcp_stability_config import get_usage_context_init_lock
 from cortex.core.protocols.mcp import SignatureAware
-from cortex.core.usage_context import get_current_managers, set_current_managers
 
 logger = logging.getLogger(__name__)
+
+
+def get_current_managers() -> dict[str, object] | None:
+    """Forward to usage_context.get_current_managers (patch-friendly for tests)."""
+    return usage_context.get_current_managers()
+
+
+def set_current_managers(managers: dict[str, object]) -> None:
+    """Forward to usage_context.set_current_managers (patch-friendly for tests)."""
+    usage_context.set_current_managers(managers)
+
+
+def set_current_project_root(root: Path) -> None:
+    """Forward to usage_context.set_current_project_root (patch-friendly for tests)."""
+    usage_context.set_current_project_root(root)
+
 
 _P = ParamSpec("_P")
 _R = TypeVar("_R")
@@ -121,8 +137,6 @@ async def _init_usage_context_under_lock(
     mcp_ctx: MCPContext | None, func_name: str
 ) -> None:
     """Resolve root, get managers, set usage context; raise after reporting."""
-    from cortex.core.usage_context import set_current_project_root
-
     try:
         root, mgrs_dict = await _resolve_root_and_managers(mcp_ctx)
         set_current_managers(mgrs_dict)
@@ -146,7 +160,6 @@ def _ensure_usage_context_wrapper(  # noqa: UP047
         tool_name = _tool_original_name(func)
         if _should_use_pytest_lightweight_init(ctx_raw, tool_name):
             from cortex.core.project_root_resolver import resolve_project_root_async
-            from cortex.core.usage_context import set_current_project_root
 
             root = await resolve_project_root_async(None, None)
             set_current_managers({})

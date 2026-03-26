@@ -1,6 +1,7 @@
 """Query helpers and I/O for metadata index (read-only and load/save)."""
 
 import json
+import os
 from datetime import datetime
 from pathlib import Path
 from typing import cast
@@ -243,7 +244,9 @@ async def save_index_async(data: dict[str, object] | None, index_path: Path) -> 
 
     async def _write() -> None:
         index_path.parent.mkdir(parents=True, exist_ok=True)
-        temp_path = index_path.with_suffix(".tmp")
+        # Use a per-call unique temp file to avoid races when multiple async tasks
+        # save the index concurrently (shared temp names can disappear mid-rename).
+        temp_path = index_path.with_suffix(f".tmp.{os.getpid()}.{os.urandom(4).hex()}")
         async with open_async_text_file(temp_path, "w", "utf-8") as f:
             _ = await f.write(json.dumps(data, indent=2))
         _ = temp_path.replace(index_path)

@@ -112,15 +112,18 @@ async def load_and_format_context_result(
 ) -> str:
     """Load context result and format with logging."""
     if project_root is not None:
-        await asyncio.to_thread(
-            log_context_call,
-            project_root,
-            task_description,
-            effective_budget,
-            strategy,
-            result,
-            agent_role,
+        task = asyncio.create_task(
+            asyncio.to_thread(
+                log_context_call,
+                project_root,
+                task_description,
+                effective_budget,
+                strategy,
+                result,
+                agent_role,
+            )
         )
+        task.add_done_callback(lambda t: t.exception())
 
     return format_load_context_result(
         task_description, effective_budget, strategy, result, depth=depth

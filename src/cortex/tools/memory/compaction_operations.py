@@ -4,16 +4,13 @@ import json
 from pathlib import Path
 from typing import cast
 
+from cortex.core import usage_context
 from cortex.core.constants import MCP_TOOL_TIMEOUT_MEDIUM
 from cortex.core.context_logging import MCPContext, log_client
 from cortex.core.file_system import FileSystemManager
 from cortex.core.mcp_stability import ensure_usage_context, mcp_tool_wrapper
 from cortex.core.metadata_index import MetadataIndex
 from cortex.core.token_counter import TokenCounter
-from cortex.core.usage_context import (
-    get_current_managers,
-    get_or_resolve_project_root,
-)
 from cortex.core.version_manager import VersionManager
 from cortex.managers.types import ManagersDict
 from cortex.managers.utils import get_manager
@@ -26,6 +23,16 @@ from cortex.tools.memory.compaction_handoff import (
 from cortex.tools.memory.compaction_write_helpers import compact_session_run
 
 __all__ = ["compact_session", "write_handoff", "read_handoff"]
+
+
+async def get_or_resolve_project_root(ctx: MCPContext | None) -> Path:
+    """Forward to usage_context.get_or_resolve_project_root (patch-friendly for tests)."""
+    return await usage_context.get_or_resolve_project_root(ctx)
+
+
+def get_current_managers() -> dict[str, object] | None:
+    """Forward to usage_context.get_current_managers (patch-friendly for tests)."""
+    return usage_context.get_current_managers()
 
 
 async def _compact_session_impl(

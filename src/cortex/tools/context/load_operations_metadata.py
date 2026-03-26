@@ -240,19 +240,26 @@ async def _emit_metadata_log_if_needed(
         int,
     ],
 ) -> None:
-    """Emit metadata-only log when project_root is set."""
+    """Emit metadata-only log when project_root is set.
+
+    This is intentionally best-effort and should not block the hot path: context
+    loading latency should not be gated on filesystem writes or lock contention.
+    """
     if project_root is None:
         return
-    await asyncio.to_thread(
-        _do_emit_metadata_log,
-        project_root,
-        task_description,
-        token_budget,
-        strategy,
-        always_load_sections,
-        agent_role,
-        ctx,
+    task = asyncio.create_task(
+        asyncio.to_thread(
+            _do_emit_metadata_log,
+            project_root,
+            task_description,
+            token_budget,
+            strategy,
+            always_load_sections,
+            agent_role,
+            ctx,
+        )
     )
+    task.add_done_callback(lambda t: t.exception())
 
 
 def _build_response_from_ctx(

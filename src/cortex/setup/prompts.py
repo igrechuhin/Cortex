@@ -83,6 +83,55 @@ Generate all 7 core files from templates:
 - Do NOT add `.cortex/memory-bank/`, `.cortex/plans/`, or `.cortex/config/` —
   those contain project data that should be tracked by version control.
 
+**Step 5b: Emit post-edit quality hook**
+Detect the project's primary language (inspect pyproject.toml / setup.py for Python,
+Package.swift for Swift, package.json for TypeScript/JavaScript, Cargo.toml for Rust,
+go.mod for Go, pom.xml / build.gradle for Java).
+
+Then configure your tool's **post-edit hook** mechanism so it runs after edit operations
+(whatever your environment calls this: "post-edit hook", "after-edit hook",
+"on-save hook", "post-tool hook", etc.).
+
+**Hook contract (tool-agnostic):**
+- Trigger: after an edit is applied (or, if your tool only supports it, after file save)
+- Working directory: project root
+- Command: a fast, language-appropriate quality gate implemented as a script under
+  `.cortex/synapse/scripts/<lang>/`
+- Config update behavior: if your tool stores hook config in a file, **merge** changes
+  and do not overwrite unrelated keys/settings.
+
+If you are using Claude Code specifically, write/merge the following into
+`.claude/settings.json` (create `.claude/` if needed; merge — do not overwrite unrelated keys):
+
+{{
+  "hooks": {{
+    "PostToolUse": [
+      {{
+        "matcher": "Edit",
+        "hooks": [
+          {{
+            "type": "command",
+            "command": "<language-specific command from table below>"
+          }}
+        ]
+      }}
+    ]
+  }}
+}}
+
+Language → command mapping:
+- python      → python3 -m pytest tests/ --timeout=30 -x -q 2>&1 | tail -20
+- swift       → swift build 2>&1 | tail -20
+- typescript  → npm test --if-present 2>&1 | tail -20
+- javascript  → npm test --if-present 2>&1 | tail -20
+- rust        → cargo test 2>&1 | tail -20
+- go          → go test ./... 2>&1 | tail -20
+- java        → ./mvnw test -q 2>&1 | tail -20
+- unknown     → skip hook; warn: "No post-edit hook template for <lang>. Add one to .claude/settings.json manually."
+
+If `.claude/settings.json` already contains the exact command, skip (no-op).
+Report `post_edit_hook_written: true/false` and `detected_language: <lang>` in output.
+
 **Step 6: Optional pre-commit hook for markdown lint**
 - If the project has a Git repository (.git exists):
  - If .pre-commit-config.yaml does NOT exist: create it with a single local hook that runs markdown lint on all .md/.mdc files (id: markdownlint, name: Markdown lint (rumdl, all files), entry: uv run rumdl check --fix ., language: system, pass_filenames: false, always_run: true). This requires rumdl (for example via uv sync --extra dev) and pre-commit (e.g. pip install pre-commit).
@@ -112,6 +161,8 @@ Expected output format:
   "config_files": [".cursor/mcp.json"],
   "synapse_setup": <true/false>,
   "gitignore_updated": <true/false>,
+  "detected_language": "<lang or unknown>",
+  "post_edit_hook_written": <true/false>,
   "pre_commit_installed": <true/false or omitted if skipped>,
   "total_tokens": <token_count>
 }}
@@ -174,6 +225,42 @@ First, create the new structure (same as initialize prompt):
 - Initialize Memory Bank with 7 core files (if not already present)
 - Setup Cursor integration (symlinks + mcp.json)
 - Update .gitignore (same as initialize Step 5)
+
+**Step 2b: Emit post-edit quality hook**
+Detect the project's primary language using common project manifests and conventions
+(pick a best guess; if ambiguous, choose the most likely "primary" language).
+
+If no clear primary language can be determined, treat as `unknown` and skip the hook (warn).
+
+Then write/merge the following into the project's `.claude/settings.json`
+(create `.claude/` if needed; merge — do not overwrite unrelated keys):
+
+{{
+  "hooks": {{
+    "PostToolUse": [
+      {{
+        "matcher": "Edit",
+        "hooks": [
+          {{
+            "type": "command",
+            "command": "<language-specific command from table below>"
+          }}
+        ]
+      }}
+    ]
+  }}
+}}
+
+Prefer a scripts-based hook (keeps agent instructions minimal and consistent):
+
+- For a recognized language (e.g. `python`, `swift`), set `command` to run an appropriate
+  script from `.cortex/synapse/scripts/<lang>/` (choose a fast gate like build/tests).
+- Prefer `post_edit_hook.py` if present in that language folder; otherwise pick an
+  existing script in the folder that best matches "fast post-edit quality check".
+- If `unknown`, skip hook; warn: "No post-edit hook template for <lang>. Configure your tool's hook manually."
+
+If `.claude/settings.json` already contains the exact command, skip (no-op).
+Report `post_edit_hook_written: true/false` and `detected_language: <lang>` in output.
 
 **Step 3: Migrate files — core files only into memory-bank/**
 The 7 canonical memory bank core files are:
@@ -266,6 +353,8 @@ Expected output format:
   "symlinks_created": [".cursor/memory-bank", ".cursor/synapse", ".cursor/plans"],
   "path_references_updated": <count>,
   "gitignore_updated": <true/false>,
+  "detected_language": "<lang or unknown>",
+  "post_edit_hook_written": <true/false>,
   "files_migrated": <total_count>,
   "versions_migrated": <count>,
   "legacy_directories_removed": ["<old_location1>", "<old_location2>"],

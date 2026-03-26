@@ -145,10 +145,11 @@ Done:
 
 - Added `HookTemplates.get_post_edit_hook()` hook template library
 - Added safe `.claude/settings.json` PostToolUse(Edit) merge/write utility + tests
+- Wired hook emission step into `MIGRATE_PROMPT` (Step 2b) and `INITIALIZE_PROMPT` (Step 5b) in `prompts.py` with full language->command table and merge instructions
+- Updated `docs/prompts/migrate.md` Step 2a to document auto-emitted hook with language table and merge behavior
+- Added 14 integration tests in `tests/unit/test_post_edit_hook_integration.py` covering Python, Swift, all other languages, idempotency, and key preservation
+- Cortex repo `.claude/settings.json` already had the Python hook configured
 
 Remaining:
 
-- Wire hook emission into a concrete migrate/initialize execution step that writes into the *target project* filesystem
-- Add integration tests that run migration against tmp Swift + Python project dirs
-- Update `docs/prompts/migrate.md` to document the emitted hook pattern
-- Optionally apply the Python template to this repo’s `.claude/settings.json` to validate end-to-end
+- Integrate with language detection from `migrate-language-rules-scripts-scaffolding` so detection is fully automated (currently the prompt instructs the agent to detect; future: call `LanguageQualityRouter` programmatically)

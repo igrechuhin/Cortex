@@ -33,16 +33,24 @@ The assistant will perform complete migration:
 - Initializes Memory Bank with 7 core files (if not already present)
 - Sets up Cursor integration (symlinks + mcp.json)
 
-#### Step 2a: Post-edit quality hook (recommended)
+#### Step 2a: Post-edit quality hook (auto-emitted)
 
-Configure a per-project **post-edit quality hook** that runs your project’s quality checks
-after edits. This is tool-agnostic: it can be implemented via your AI coding assistant’s
-hooks, your editor/IDE automation, or a repo-local script runner.
+During migration, Cortex **automatically** detects the project language and emits
+instructions for a tool-agnostic **post-edit hook**. This hook runs your project's
+quality checks after every edit, catching breakages early (circular imports, corrupted
+edits, type-check issues).
 
-This catches breakages early (circular imports, corrupted edits, type-check issues) and
-makes the “edit → verify” loop automatic.
+**Language detection:** Cortex uses common project manifests and conventions to pick a
+best-guess primary language for the repo. If ambiguous or unknown, the hook is skipped.
 
-**Pattern (language-agnostic):**
+**Hook contract (tool-agnostic):**
+
+- Trigger: after an edit is applied (or, if your tool only supports it, after file save)
+- Working directory: project root
+- Command: run a fast, language-appropriate script from `.cortex/synapse/scripts/<lang>/`
+- Config update behavior: merge changes; do not overwrite unrelated settings
+
+**Example hook config (Claude Code only):**
 
 ```json
 {
@@ -53,7 +61,7 @@ makes the “edit → verify” loop automatic.
         "hooks": [
           {
             "type": "command",
-            "command": "<language-specific quality command>"
+            "command": "python3 .cortex/synapse/scripts/<lang>/<chosen_script>.py"
           }
         ]
       }
@@ -62,13 +70,16 @@ makes the “edit → verify” loop automatic.
 }
 ```
 
-**Example (Python):** set `command` to `python3 -m pytest tests/ --timeout=30 -x -q 2>&1 | tail -20`.
+**Command selection:** For a recognized language `<lang>`, pick an appropriate fast
+script from `.cortex/synapse/scripts/<lang>/` (prefer `post_edit_hook.py` if present;
+otherwise choose a build/tests script). Unknown/unsupported languages skip the hook.
 
-**Customization:**
+**Merge behavior:** If `.claude/settings.json` already exists, the hook is merged
+(unrelated keys are preserved). If the exact command is already present, the step is
+a no-op. The migration output includes `detected_language` and `post_edit_hook_written`.
 
-- Replace the `command` with your project’s preferred “fast” gate (tests, build, lint, etc.).
-- If you store hook config in a JSON settings file (for example, `.claude/settings.json`),
-  **merge** this hook (do not overwrite unrelated keys).
+**Customization:** Replace the `command` with your project's preferred fast gate
+(tests, build, lint, etc.).
 
 ### Step 3: Migrate legacy files
 
@@ -122,21 +133,9 @@ makes the “edit → verify” loop automatic.
     "memory-bank"
   ],
   "migrations": {
-    "memory_bank": {
-      "from": "cursor_ide_memory_bank",
-      "to": ".cortex/memory-bank/",
-      "files": 7
-    },
-    "synapse": {
-      "from": ".cursor/synapse",
-      "to": ".cortex/synapse/",
-      "files": 12
-    },
-    "plans": {
-      "from": ".cursor/plans",
-      "to": ".cortex/plans/",
-      "files": 5
-    }
+    "memory_bank": {"from": "cursor_ide_memory_bank", "to": ".cortex/memory-bank/", "files": 7},
+    "synapse": {"from": ".cursor/synapse", "to": ".cortex/synapse/", "files": 12},
+    "plans": {"from": ".cursor/plans", "to": ".cortex/plans/", "files": 5}
   },
   "directories_created": [
     ".cortex",
@@ -149,6 +148,8 @@ makes the “edit → verify” loop automatic.
     ".cursor/synapse",
     ".cursor/plans"
   ],
+  "detected_language": "python",
+  "post_edit_hook_written": true,
   "files_migrated": 24,
   "versions_migrated": 15,
   "links_updated": 3,
