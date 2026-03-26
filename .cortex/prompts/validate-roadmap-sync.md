@@ -4,9 +4,16 @@
 
 ## Severity Levels
 
-- **GATE**: Blocks commit. Validation must pass.
-- **CHECK**: Requires verification. Confirm before proceeding.
-- **PREFER**: Best practice. Recommended but non-blocking.
+- ⛔ **GATE**: Blocks commit. Validation must pass.
+- ✅ **CHECK**: Requires verification. Confirm before proceeding.
+- ⚠️ **PREFER**: Best practice. Recommended but non-blocking.
+
+## Status legend (scan-friendly)
+
+- ✅ **Success** (passed / complete)
+- ⚠️ **Warning** (non-blocking; proceed but report)
+- ❌ **Error** (blocking; must fix before proceeding)
+- ⛔ **Hard gate** (rule violation if skipped)
 
 Execute all steps AUTOMATICALLY. DO NOT ask the user for permission.
 
@@ -33,7 +40,7 @@ This command validates **roadmap.md only**. It does not validate activeContext.m
    - Roadmap → Code: All file references in roadmap.md must exist and be valid (roadmap = future work only; references are typically plan paths and source files)
    - Plans ↔ Roadmap: All **non-archived** plan files under `.cortex/plans` must be referenced in roadmap.md (no orphan plans), and all roadmap plan references must point to existing plan files
 
-**VIOLATION**: Executing this command without following this checklist is a CRITICAL violation that blocks proper validation.
+⛔ **VIOLATION**: Executing this command without following this checklist is a CRITICAL violation that blocks proper validation.
 
 ## Steps
 
@@ -57,11 +64,11 @@ This command validates **roadmap.md only**. It does not validate activeContext.m
 
 2. **Report validation results**:
    - If validation passes (`valid = true`):
-     - Report success: "Roadmap synchronization validation passed"
+     - ✅ Report success: "Roadmap synchronization validation passed"
      - All production TODOs are tracked in roadmap.md
      - All roadmap references are valid
    - If validation fails (`valid = false`):
-     - **BLOCK COMMIT** and report failures:
+     - ❌ **BLOCK COMMIT** and report failures:
      - List all missing roadmap entries (TODOs not tracked):
        - For each entry: `file_path:line - snippet`
        - Example: `src/cortex/tools/pre_commit_tools.py:56 - # TODO: Add other language adapters`
@@ -113,10 +120,10 @@ The roadmap sync validation is considered successful when:
 
 If validation fails:
 
-- **BLOCK COMMIT** - Do not proceed with commit until all issues are resolved
-- **Report detailed errors** - List all missing entries and invalid references
-- **Provide actionable guidance** - Explain how to fix each issue
-- **Re-run after fixes** - Verify all issues are resolved before allowing commit
+- ❌ **BLOCK COMMIT** - Do not proceed with commit until all issues are resolved
+- ❌ **Report detailed errors** - List all missing entries and invalid references
+- ✅ **Provide actionable guidance** - Explain how to fix each issue
+- ✅ **Re-run after fixes** - Verify all issues are resolved before allowing commit
 
 ## Notes
 

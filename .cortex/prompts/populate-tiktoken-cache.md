@@ -2,7 +2,14 @@
 
 **AI EXECUTION COMMAND**: Populate bundled tiktoken cache with encoding files for offline operation.
 
-**CRITICAL**: This command is ONLY executed when explicitly invoked by the user or when tiktoken cache is missing. Once invoked, execute all steps AUTOMATICALLY without asking for additional permission or confirmation.
+## Status legend (scan-friendly)
+
+- ✅ **Success** (passed / complete)
+- ⚠️ **Warning** (non-blocking; proceed but report)
+- ❌ **Error** (blocking; must fix before proceeding)
+- ⛔ **Hard gate** (rule violation if skipped)
+
+⛔ **CRITICAL**: This command is ONLY executed when explicitly invoked by the user or when tiktoken cache is missing. Once invoked, execute all steps AUTOMATICALLY without asking for additional permission or confirmation.
 
 **Tooling Note**: Use standard Cursor tools (`Read`, `ApplyPatch`, `Write`, `LS`, `Glob`, `Grep`) by default; MCP filesystem tools are optional fallbacks only when standard tools are unavailable or explicitly requested.
 
@@ -57,16 +64,16 @@ After successful cache population:
 
 If download fails:
 
-- Check network connectivity
-- Verify URLs are accessible
-- Try downloading encodings one at a time
-- Report which encodings failed and why
+- ❌ Check network connectivity
+- ❌ Verify URLs are accessible
+- ❌ Try downloading encodings one at a time
+- ❌ Report which encodings failed and why
 
 If cache directory creation fails:
 
-- Check file system permissions
-- Verify project structure is correct
-- Report specific error message
+- ❌ Check file system permissions
+- ❌ Verify project structure is correct
+- ❌ Report specific error message
 
 ## Notes
 

@@ -2,7 +2,14 @@
 
 **PURPOSE**: Load all context needed to investigate and fix a Cortex MCP integration problem reported for the TradeWing project. The user will describe the specific problem after this context is loaded.
 
-**CRITICAL**: Execute ALL steps AUTOMATICALLY. Do NOT pause or summarize. Move directly into the problem description after Step 5.
+## Status legend (scan-friendly)
+
+- ✅ **Success** (passed / complete)
+- ⚠️ **Warning** (non-blocking; proceed but report)
+- ❌ **Error** (blocking; must fix before proceeding)
+- ⛔ **Hard gate** (rule violation if skipped)
+
+⛔ **CRITICAL**: Execute ALL steps AUTOMATICALLY. Do NOT pause or summarize. Move directly into the problem description after Step 5.
 
 ---
 

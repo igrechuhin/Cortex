@@ -2,17 +2,13 @@
 
 **This file records completed work only.** For current status and upcoming work see [roadmap.md](roadmap.md).
 
+## Completed Work (2026-03-26)
+
+- ✅ **Root-Cause-First Debugging Guardrails** - COMPLETE (2026-03-26) - Updated the Synapse fix prompt to enforce a mandatory diagnose-first Phase 0 with a hard gate that blocks edits until a hypothesis-driven Diagnosis Note is written.
+
 ## Completed Work (2026-03-25)
 
-- **MCP stability + quality pipeline hardening** - COMPLETE. Improved MCP reconnect/timeout stability, strengthened tool validation and token counting utilities, refined markdown lint and pre-commit execution plumbing (inline + detached worker), and refreshed language framework adapter behaviors with expanded unit coverage.
-
-- **Detached fix worker pipeline + docs-path compliance hardening** - COMPLETE. Added `pre_commit_fix_worker.py` integration path coverage with `test_fix_quality_detached.py`, exposed `parse_fix_envelope` public wrapper to avoid private-symbol test imports, and updated `debug-external-integration.md` wording to remove stale legacy cursor path references that violate docs path guard tests.
-
-- **Lazy setup prompt imports, session rollup, Synapse analytics** - COMPLETE. Pyright suppression comments aligned on private prompt imports in lazy_prompt_registration.py; context-usage-statistics and memory-bank index/history refreshed; Synapse usage event cache updated for 2026-03-24 and 2026-03-25.
-
-- ✅ **Startup repair lifecycle recovery** - COMPLETE (2026-03-25) - Added `repair_project_setup` (idempotent) to validate/repair `.cortex/` structure, Cursor symlinks, and append Cortex transient markers to `.gitignore` for git repos; included unit tests.
-
-- **pytest-randomly, project root resource cache, deterministic validation globs** - COMPLETE (2026-03-25). Added `pytest-randomly` to dev dependencies and lockfile; `get_project_root_resource` revalidates cached JSON against the resolved root; sorted `*.md` iteration in memory-bank validation helpers for stable ordering.
+- **Summary (2026-03-25)** - 1 entries archived.
 
 ## Completed Work (2026-03-24)
 

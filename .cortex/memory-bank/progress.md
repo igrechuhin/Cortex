@@ -1,5 +1,10 @@
 # Progress Log
 
+## 2026-03-26
+
+- **Root-Cause-First Debugging Guardrails** - COMPLETE. Added a HARD GATE + mandatory PHASE 0 (Diagnose First) to the fix prompt requiring evidence-backed hypotheses and selection before any edits.
+- **Per-Project Post-Edit Quality Hook — Language-Agnostic Pattern** - PARTIAL. Added reusable hook templates (`HookTemplates.get_post_edit_hook`) plus `.claude/settings.json` merge/write utilities and unit tests; remaining: wire into migrate/initialize, update migrate prompt docs, add integration tests, and optionally apply to this repo’s settings.
+
 ## 2026-03-25
 
 - **MCP stability + quality pipeline hardening** - COMPLETE. Strengthened MCP reconnect/timeout flows and tool validation, refined token counting and project-root resolution behavior, improved markdown lint and pre-commit execution internals (inline + detached worker), and updated multiple language framework adapters with expanded unit tests.

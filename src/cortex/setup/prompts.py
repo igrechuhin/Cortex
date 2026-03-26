@@ -155,10 +155,11 @@ MIGRATE_PROMPT = """Please migrate my project from legacy structure to the new .
 
 This prompt performs complete migration including:
 1. Detecting legacy structure
-2. Initializing new .cortex/ structure (via initialize steps)
-3. Migrating all legacy files to new structure
-4. Validating migration
-5. Removing legacy directories after successful migration
+2. Initializing new .cortex/ structure
+3. Migrating core files; relocating non-standard files
+4. Updating internal path references
+5. Replacing legacy directories with symlinks
+6. Validating migration
 
 **Step 1: Detect legacy structure**
 Check for legacy formats:
@@ -174,13 +175,30 @@ First, create the new structure (same as initialize prompt):
 - Setup Cursor integration (symlinks + mcp.json)
 - Update .gitignore (same as initialize Step 5)
 
-**Step 3: Migrate legacy files**
-Copy/move all files from legacy locations to new structure:
+**Step 3: Migrate files — core files only into memory-bank/**
+The 7 canonical memory bank core files are:
+  projectbrief.md, productContext.md, activeContext.md,
+  systemPatterns.md, techContext.md, progress.md, roadmap.md
 
-Migration mappings:
-- .cursor/memory-bank/ -> .cortex/memory-bank/ (+ symlink .cursor/memory-bank)
-- memory-bank/ -> .cortex/memory-bank/ (+ symlink .cursor/memory-bank)
-- .memory-bank/knowledge/ -> .cortex/memory-bank/
+Additionally allow: memorybankinstructions.md (legacy instructions file)
+
+Migration mappings for core files:
+- .cursor/memory-bank/<core-file> -> .cortex/memory-bank/<core-file>
+- memory-bank/<core-file> -> .cortex/memory-bank/<core-file>
+- .memory-bank/knowledge/<core-file> -> .cortex/memory-bank/<core-file>
+
+For any OTHER files found in legacy memory-bank directories
+(e.g. topic notes, analysis files, ad-hoc documentation):
+- Do NOT copy them into .cortex/memory-bank/
+- Move them to .cortex/notes/ instead
+- These are project-specific reference files, not inter-session context
+- For each relocated file, add a one-line summary + link in the most relevant
+  memory bank file (techContext.md for tech-specific notes, systemPatterns.md
+  for architectural notes) so agents can discover them. Example:
+    ⚠️ vDSP_vsubD has counter-intuitive param order. See .cortex/notes/vdsp_vsubd_notes.md
+- Report each relocated file in the migration output
+
+Other directory mappings:
 - .cursor/synapse/ -> .cortex/synapse/ (+ symlink .cursor/synapse)
 - .cursor/plans/ -> .cortex/plans/ (+ symlink .cursor/plans)
 - rules/ -> .cortex/synapse/ (if using Synapse)
@@ -193,22 +211,38 @@ Migration mappings:
 - Update metadata index to .cortex/index.json
 - Preserve all snapshots and version information
 
-**Step 5: Update references and links**
-- Update any internal references to old paths
-- Fix broken links in memory bank files
-- Update configuration files with new paths
+**Step 5: Update internal path references in memory bank content**
+Scan every file in .cortex/memory-bank/ and .cortex/plans/ for stale path
+references and rewrite them:
 
-**Step 6: Validate migration**
-- Verify all files were migrated successfully
-- Check that content is preserved correctly
-- Validate symlinks are working
+- .cursor/memory-bank/ -> .cortex/memory-bank/
+- .cursor/plans/ -> .cortex/plans/
+- .cursor/synapse/ -> .cortex/synapse/
+- .cursor/scripts/ -> remove or replace with actual tool invocations
+- .cursor/rules/ -> remove (rules now live in .cortex/synapse/)
+- Any instruction in memorybankinstructions.md that says to sync
+  .cursor/memory-bank/ or .cursor/rules/ should be updated to reflect
+  the .cortex/ paths (or removed if the sync step no longer applies)
+
+**Step 6: Replace legacy directories with symlinks**
+After migrating all content:
+- Remove .cursor/memory-bank/ directory (the real files are now in .cortex/)
+- Create symlink: .cursor/memory-bank -> ../.cortex/memory-bank
+- Remove .cursor/plans/ directory
+- Create symlink: .cursor/plans -> ../.cortex/plans
+- Remove .cursor/synapse/ directory (if present)
+- Create symlink: .cursor/synapse -> ../.cortex/synapse
+- Verify each symlink resolves correctly
+
+This ensures that tools reading .cursor/ paths still work while the
+authoritative content lives in .cortex/.
+
+**Step 7: Validate migration**
+- Verify all 7 core files exist in .cortex/memory-bank/
+- Verify any non-standard files were relocated to .cortex/notes/ (not left in memory-bank/)
+- Verify .cursor/ symlinks resolve to .cortex/ directories
+- Verify no stale .cursor/ path references remain in .cortex/memory-bank/ or .cortex/plans/ files
 - Ensure version history is intact
-
-**Step 7: Remove legacy directories**
-- Only after successful validation
-- Remove old .cursor/memory-bank/, memory-bank/, .memory-bank/ directories
-- Keep .cursor/ directory but remove old content
-- Clean up any other legacy locations
 
 Safety requirements:
 - Automatic rollback if migration fails
@@ -227,12 +261,13 @@ Expected output format:
     "synapse": {{"from": "<old_location>", "to": ".cortex/synapse/", "files": <count>}},
     "plans": {{"from": "<old_location>", "to": ".cortex/plans/", "files": <count>}}
   }},
+  "non_standard_files_relocated": ["<file1>", "<file2>"],
   "directories_created": [".cortex", ".cortex/memory-bank", ".cortex/plans", ".cursor"],
   "symlinks_created": [".cursor/memory-bank", ".cursor/synapse", ".cursor/plans"],
+  "path_references_updated": <count>,
   "gitignore_updated": <true/false>,
   "files_migrated": <total_count>,
   "versions_migrated": <count>,
-  "links_updated": <count>,
   "legacy_directories_removed": ["<old_location1>", "<old_location2>"],
   "duration_ms": <time>
 }}"""

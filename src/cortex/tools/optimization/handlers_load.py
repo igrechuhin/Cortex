@@ -12,7 +12,6 @@ from pathlib import Path
 import cortex.tools.optimization as opt
 from cortex.core.context_logging import MCPContext
 from cortex.core.models import ContextDepth, ResponseFormat
-from cortex.core.project_root_resolver import resolve_project_root_async
 from cortex.managers.types import ManagersDict
 from cortex.managers.utils import get_manager
 from cortex.optimization.agent_roles import (
@@ -30,6 +29,19 @@ from .handlers_format import (
 from .handlers_validation import (
     validate_explicit_budget_for_non_trivial,
 )
+
+
+async def resolve_project_root_async(
+    project_root: str | None, ctx: MCPContext | None
+) -> Path:
+    """Indirection for test patching.
+
+    Tests patch this symbol (handlers_load.resolve_project_root_async). Delegate to the
+    handlers facade so patching handlers.resolve_project_root_async also works.
+    """
+    from cortex.tools.optimization import handlers as handlers_mod
+
+    return await handlers_mod.resolve_project_root_async(project_root, ctx)
 
 
 def determine_agent_role(role: str | None, task_description: str) -> AgentRole:
@@ -187,6 +199,32 @@ async def execute_load_context(
     if error or root is None or mgrs is None:
         return error or json.dumps({"status": "error", "error": "Failed to initialize"})
 
+    return await execute_load_context_preinitialized(
+        root=root,
+        mgrs=mgrs,
+        task_description=task_description,
+        token_budget=token_budget,
+        strategy=strategy,
+        loading_strategy=loading_strategy,
+        depth=depth,
+        response_format=response_format,
+        role=role,
+    )
+
+
+async def execute_load_context_preinitialized(
+    *,
+    root: Path,
+    mgrs: ManagersDict,
+    task_description: str,
+    token_budget: int | None,
+    strategy: str,
+    loading_strategy: str | None,
+    depth: ContextDepth | None,
+    response_format: ResponseFormat,
+    role: str | None,
+) -> str:
+    """Execute load_context assuming root and managers are already available."""
     agent_role = determine_agent_role(role, task_description)
     effective_depth = determine_depth_from_budget(depth, token_budget)
     out = await load_context_with_error_handling(

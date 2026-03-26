@@ -182,11 +182,9 @@ All phases run inline. Use zero-arg tools — do NOT use legacy pre-commit tools
 - When refactoring, briefly explain why the new approach is better, especially when the change is non-obvious.
 - When consolidating tools or updating tool descriptions, follow `docs/guides/tool-description-altitude-rubric.md` (target score ≥4).
 - Tool names must reflect the purpose of the tool.
-- Use emojis in responses when they increase info density; otherwise avoid them.
-- If you explicitly request emojis for a given response, prioritize that request over stored preferences.
+- Prefer scan-friendly emoji status markers (✅/⚠️/❌) in prompts and summaries for success/warn/error.
 - Keep final summaries concise (typically at most four sentences) and avoid heavy code blocks there; use headings and bolded bullet labels per the markdown formatting guide.
 - When a roadmap item is large, always make concrete partial progress in the current session (smallest meaningful subtask plus tests/quality) and update plans/status as PARTIAL instead of stopping with no changes.
-- For continual-learning updates, read `AGENTS.md` first; process transcripts incrementally via `.cursor/hooks/state/continual-learning-index.json`, touching only files absent from the index or whose mtime is newer than the stored mtime; after each run refresh stored mtimes and remove index entries for deleted transcript paths; update existing bullets in place under `Learned User Preferences` and `Learned Workspace Facts` (not append-only); keep each of those sections to at most 12 plain bullets with no evidence or confidence tags; if nothing qualifies, respond exactly: No high-signal memory updates.
 
 ## Learned Workspace Facts
 

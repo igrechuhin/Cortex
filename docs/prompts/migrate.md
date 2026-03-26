@@ -178,14 +178,33 @@ If your project is already using the `.cortex/` structure, this prompt will not 
 | `.plan/` | `.cortex/plans/` | Legacy plan directory |
 | `docs/plans/` | `.cortex/plans/` | Documentation plans |
 
+## Markdown Linting After Migration
+
+After migration, plans in `.cortex/plans/` are resolved from the `.cortex/` tree, not from
+`.cursor/plans/` (which is a symlink). Linters such as rumdl resolve relative links from the
+real file location and cannot follow symlinks, so links that referenced sibling plans via the
+old `.cursor/plans/` root must be verified.
+
+**Common link breakage patterns to fix after migrating plans to `.cortex/plans/archive/`:**
+
+| Broken pattern (from within `archive/`) | Fix |
+|---|---|
+| `archive/some-plan.plan.md` | `some-plan.plan.md` (drop the `archive/` prefix — files are peers) |
+| `some-plan.v1.plan.md` where only `some-plan.plan.md` exists | Update to the real filename |
+| `../condition-aware-…` when the file moved to plans root | Use correct `../` relative path |
+| `.cursor/reviews/old-review.md` where the file no longer exists | Strip the link, keep display text |
+
+Run `rumdl check --enable MD057 .` after migration to find any remaining broken relative links.
+
 ## Next Steps
 
 After migration:
 
 1. **Verify migration** - Check that all files were migrated correctly
 2. **Test functionality** - Ensure Memory Bank tools work with new structure
-3. **Update documentation** - Update any project documentation referencing old paths
-4. **Commit changes** - Commit the migration to version control
+3. **Fix broken links** - Run `rumdl check --enable MD057 .` and fix any broken relative links
+4. **Update documentation** - Update any project documentation referencing old paths
+5. **Commit changes** - Commit the migration to version control
 
 ## Related Prompts
 
