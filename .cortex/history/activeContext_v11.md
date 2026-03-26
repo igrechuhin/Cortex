@@ -6,6 +6,8 @@
 
 - ✅ **Root-Cause-First Debugging Guardrails** - COMPLETE (2026-03-26) - Updated the Synapse fix prompt to enforce a mandatory diagnose-first Phase 0 with a hard gate that blocks edits until a hypothesis-driven Diagnosis Note is written.
 
+- ✅ **Per-Project Post-Edit Quality Hook (PARTIAL)** - COMPLETE (2026-03-26) - Hook emission instructions added to MIGRATE_PROMPT and INITIALIZE_PROMPT with full language→command table. migrate.md Step 2a updated. 14 integration tests added. Remaining: wire to language detection from migrate-language-rules-scripts-scaffolding.
+
 ## Completed Work (2026-03-25)
 
 - **Summary (2026-03-25)** - 1 entries archived.
