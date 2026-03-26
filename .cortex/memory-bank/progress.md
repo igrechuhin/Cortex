@@ -3,7 +3,7 @@
 ## 2026-03-26
 
 - **Root-Cause-First Debugging Guardrails** - COMPLETE. Added a HARD GATE + mandatory PHASE 0 (Diagnose First) to the fix prompt requiring evidence-backed hypotheses and selection before any edits.
-- **Per-Project Post-Edit Quality Hook — Language-Agnostic Pattern** - PARTIAL. Added reusable hook templates (`HookTemplates.get_post_edit_hook`) plus `.claude/settings.json` merge/write utilities and unit tests; remaining: wire into migrate/initialize, update migrate prompt docs, add integration tests, and optionally apply to this repo’s settings.
+- **Per-Project Post-Edit Quality Hook — Language-Agnostic Pattern** - PARTIAL. Added reusable hook templates (`HookTemplates.get_post_edit_hook`) plus `.claude/settings.json` merge/write utilities and unit tests; then applied the Python post-edit hook to this repo’s `.claude/settings.json` and documented the language-agnostic PostToolUse(Edit) pattern in `docs/prompts/migrate.md`. Wiring into migrate/initialize execution remains deferred because setup/migration are prompt-based rather than filesystem-writing tools.
 
 ## 2026-03-25
 

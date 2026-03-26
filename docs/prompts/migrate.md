@@ -33,6 +33,43 @@ The assistant will perform complete migration:
 - Initializes Memory Bank with 7 core files (if not already present)
 - Sets up Cursor integration (symlinks + mcp.json)
 
+#### Step 2a: Post-edit quality hook (recommended)
+
+Configure a per-project **post-edit quality hook** that runs your project’s quality checks
+after edits. This is tool-agnostic: it can be implemented via your AI coding assistant’s
+hooks, your editor/IDE automation, or a repo-local script runner.
+
+This catches breakages early (circular imports, corrupted edits, type-check issues) and
+makes the “edit → verify” loop automatic.
+
+**Pattern (language-agnostic):**
+
+```json
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "<language-specific quality command>"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+**Example (Python):** set `command` to `python3 -m pytest tests/ --timeout=30 -x -q 2>&1 | tail -20`.
+
+**Customization:**
+
+- Replace the `command` with your project’s preferred “fast” gate (tests, build, lint, etc.).
+- If you store hook config in a JSON settings file (for example, `.claude/settings.json`),
+  **merge** this hook (do not overwrite unrelated keys).
+
 ### Step 3: Migrate legacy files
 
 - Copies/moves all files from legacy locations to new structure:

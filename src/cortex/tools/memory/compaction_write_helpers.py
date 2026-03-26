@@ -284,13 +284,17 @@ def compact_success_result(
     """Build success JSON result."""
     ta = token_counter.count_tokens(compacted_active)
     tp = token_counter.count_tokens(compacted_progress)
+    # Compaction can be a no-op (or even slightly expand text due to formatting),
+    # so savings must be non-negative for stable UX and test expectations.
+    savings_active = max(0, tokens_before_active - ta)
+    savings_progress = max(0, tokens_before_progress - tp)
     payload: dict[str, object] = {
         "status": "success",
         "message": "Session compacted; handoff written.",
         "token_savings": {
-            "activeContext": tokens_before_active - ta,
-            "progress": tokens_before_progress - tp,
-            "total": tokens_before_active + tokens_before_progress - ta - tp,
+            "activeContext": savings_active,
+            "progress": savings_progress,
+            "total": savings_active + savings_progress,
         },
         "tokens_after": {"activeContext": ta, "progress": tp},
         "rollback_snapshots": [str(snapshot_active), str(snapshot_progress)],

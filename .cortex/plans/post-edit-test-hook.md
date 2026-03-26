@@ -2,7 +2,7 @@
 title: "Per-Project Post-Edit Quality Hook — Language-Agnostic Pattern"
 component: ci
 work_type: improvement
-status: PENDING
+status: IN_PROGRESS
 priority: high
 created: 2026-03-26
 depends_on: [migrate-language-rules-scripts-scaffolding]
@@ -138,3 +138,17 @@ Coverage target: 95%.
 - `HookTemplates` tested with parametrize over all language keys
 - Merge logic tested with pre-populated and empty `.claude/settings.json` fixtures
 - Integration tests use `tmp_path` (pytest) — no side effects on real project files
+
+## Status (2026-03-26)
+
+Done:
+
+- Added `HookTemplates.get_post_edit_hook()` hook template library
+- Added safe `.claude/settings.json` PostToolUse(Edit) merge/write utility + tests
+
+Remaining:
+
+- Wire hook emission into a concrete migrate/initialize execution step that writes into the *target project* filesystem
+- Add integration tests that run migration against tmp Swift + Python project dirs
+- Update `docs/prompts/migrate.md` to document the emitted hook pattern
+- Optionally apply the Python template to this repo’s `.claude/settings.json` to validate end-to-end

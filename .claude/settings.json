@@ -19,5 +19,18 @@
     "additionalDirectories": [
       "s/sections[0][level]/sections[0].level"
     ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 -m pytest tests/ --timeout=30 -x -q 2>&1 | tail -20"
+          }
+        ]
+      }
+    ]
   }
 }
