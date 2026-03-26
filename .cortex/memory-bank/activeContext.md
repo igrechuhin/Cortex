@@ -8,6 +8,8 @@
 
 - ✅ **Per-Project Post-Edit Quality Hook (PARTIAL)** - COMPLETE (2026-03-26) - Hook emission instructions added to MIGRATE_PROMPT and INITIALIZE_PROMPT with full language→command table. migrate.md Step 2a updated. 14 integration tests added. Remaining: wire to language detection from migrate-language-rules-scripts-scaffolding.
 
+- ✅ **Per-Project Post-Edit Quality Hook — Language-Agnostic Pattern (PARTIAL)** - COMPLETE (2026-03-26) - Runtime now applies/merges project-specific PostToolUse(Edit) hooks during initialize/migrate via a shared setup helper and both direct/lazy prompt handlers, reducing manual setup drift; remaining work is tighter integration with the language-routing scaffolding pipeline.
+
 ## Completed Work (2026-03-25)
 
 - **Summary (2026-03-25)** - 1 entries archived.

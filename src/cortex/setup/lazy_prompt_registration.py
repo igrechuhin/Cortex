@@ -58,6 +58,7 @@ from cortex.core.icon_helpers import create_emoji_icon
 from cortex.core.project_root_resolver import resolve_project_root_async
 from cortex.server import mcp
 from cortex.setup import should_mount_setup
+from cortex.setup.post_edit_hook_runtime import apply_project_post_edit_hook
 from cortex.tools.config import get_project_config_status
 from cortex.tools.synapse.prompts import register_synapse_prompts, sync_cursor_agents
 from cortex.tools.synapse.prompts_content import SYNAPSE_PROMPT_ICONS
@@ -121,7 +122,7 @@ def prompt_manager_has_synapse_prompts() -> bool:
     return bool(registered & _synapse_prompt_names())
 
 
-def _register_initialize_prompt() -> None:
+def _register_initialize_prompt(project_root: Path) -> None:
     @mcp.prompt(icons=[create_emoji_icon(_SETUP_PROMPT_ICONS["initialize"])])
     def initialize() -> str:
         """Complete project initialization.
@@ -132,12 +133,13 @@ def _register_initialize_prompt() -> None:
         - Cursor integration (symlinks + mcp.json)
         - Optional Synapse setup with default URL
         """
+        _ = apply_project_post_edit_hook(project_root)
         return _get_initialize_prompt()
 
     _ = initialize  # pyright: ignore[reportUnusedFunction]
 
 
-def _register_migrate_prompt() -> None:
+def _register_migrate_prompt(project_root: Path) -> None:
     @mcp.prompt(icons=[create_emoji_icon(_SETUP_PROMPT_ICONS["migrate"])])
     def migrate() -> str:
         """Migrate legacy structure to new .cortex/ structure.
@@ -147,6 +149,7 @@ def _register_migrate_prompt() -> None:
         2. Migrate legacy files
         3. Remove legacy directories
         """
+        _ = apply_project_post_edit_hook(project_root)
         return _get_migrate_prompt()
 
     _ = migrate  # pyright: ignore[reportUnusedFunction]
@@ -163,7 +166,7 @@ def _register_tiktoken_prompt() -> None:
     _ = populate_tiktoken_cache  # pyright: ignore[reportUnusedFunction]
 
 
-def register_setup_prompts(status: object) -> None:
+def register_setup_prompts(status: object, project_root: Path) -> None:
     """Register whichever setup prompts the project needs."""
     from cortex.tools.config import ProjectConfigStatus
 
@@ -176,10 +179,10 @@ def register_setup_prompts(status: object) -> None:
         and not cfg.migration_needed
         and "initialize" not in already
     ):
-        _register_initialize_prompt()
+        _register_initialize_prompt(project_root)
 
     if cfg.migration_needed and "migrate" not in already:
-        _register_migrate_prompt()
+        _register_migrate_prompt(project_root)
 
     if not cfg.tiktoken_cache_available and "populate_tiktoken_cache" not in already:
         _register_tiktoken_prompt()
@@ -223,7 +226,7 @@ def _register_setup_if_needed(project_root: Path) -> bool:
         status = get_project_config_status(project_root)
         if not should_mount_setup(status):
             return False
-        register_setup_prompts(status)
+        register_setup_prompts(status, project_root)
         logger.debug(
             "lazy_prompt_registration: registered setup prompts for %s",
             project_root,

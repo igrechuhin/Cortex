@@ -14,6 +14,8 @@
 
 ## Pending plans (from .cortex/plans)
 
+- **Session improvements from 2026-03-26T18-37** - PENDING (`.cortex/plans/session-improvements-2026-03-26t18-37.md`) — Follow-up from analysis: improve session telemetry capture and analysis target routing.
+
 ### Fixes
 
 ### Quality & Reliability Improvements

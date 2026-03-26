@@ -9,8 +9,11 @@ main.py only when should_mount_setup() is True so that setup prompts are
 conditionally available.
 """
 
+from pathlib import Path
+
 from cortex.core.icon_helpers import create_emoji_icon
 from cortex.server import mcp
+from cortex.setup.post_edit_hook_runtime import apply_project_post_edit_hook
 from cortex.tools.config import get_project_config_status
 
 _config_status = get_project_config_status()
@@ -380,6 +383,7 @@ if (
         - Cursor integration (symlinks + mcp.json)
         - Optional Synapse setup with default URL
         """
+        _ = apply_project_post_edit_hook(Path.cwd())
         return INITIALIZE_PROMPT
 
 
@@ -395,6 +399,7 @@ if _config_status.migration_needed:
         2. Migrate legacy files
         3. Remove legacy directories
         """
+        _ = apply_project_post_edit_hook(Path.cwd())
         return MIGRATE_PROMPT
 
 

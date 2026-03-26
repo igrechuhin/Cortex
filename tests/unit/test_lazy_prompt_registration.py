@@ -74,7 +74,7 @@ class TestRegisterSetupPrompts:
             migration_needed=False,
         )
         before = registered_prompt_names()
-        register_setup_prompts(status)
+        register_setup_prompts(status, Path.cwd())
         after = registered_prompt_names()
         # initialize must be registered (or was already there)
         assert "initialize" in after
@@ -82,7 +82,7 @@ class TestRegisterSetupPrompts:
 
     def test_registers_migrate_when_migration_needed(self) -> None:
         status = _make_status(migration_needed=True, memory_bank_initialized=False)
-        register_setup_prompts(status)
+        register_setup_prompts(status, Path.cwd())
         assert "migrate" in registered_prompt_names()
 
     def test_skips_initialize_when_migration_needed(self) -> None:
@@ -94,7 +94,7 @@ class TestRegisterSetupPrompts:
             migration_needed=True,
         )
         before = registered_prompt_names()
-        register_setup_prompts(status)
+        register_setup_prompts(status, Path.cwd())
         after = registered_prompt_names()
         # initialize was not present before and should not be added now
         if "initialize" not in before:
@@ -103,7 +103,7 @@ class TestRegisterSetupPrompts:
     def test_no_setup_prompts_when_fully_configured(self) -> None:
         status = _make_status()  # all good
         before = registered_prompt_names()
-        register_setup_prompts(status)
+        register_setup_prompts(status, Path.cwd())
         after = registered_prompt_names()
         # Nothing new should be added
         assert after == before
@@ -273,6 +273,14 @@ class TestLazyPromptRegistry:
             await registry.do_register(None)
 
         mock_setup.assert_called_once()
+        call_args = mock_setup.call_args.args
+        assert len(call_args) == 2
+        status_arg, root_arg = call_args
+        assert isinstance(status_arg, ProjectConfigStatus)
+        assert status_arg.memory_bank_initialized is False
+        assert status_arg.structure_configured is False
+        assert status_arg.migration_needed is False
+        assert root_arg == tmp_path
 
     @pytest.mark.asyncio
     async def test_do_register_sends_list_changed_when_prompts_added(

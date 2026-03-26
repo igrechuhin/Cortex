@@ -23,7 +23,11 @@ def test_prompts_module_registers_conditional_prompts_when_needed() -> None:
             del sys.modules["cortex.setup.prompts"]
         import cortex.setup.prompts as prompts_migration
 
-        migrate_text = prompts_migration.migrate()
+        with patch(
+            "cortex.setup.prompts.apply_project_post_edit_hook"
+        ) as migration_hook_patch:
+            migrate_text = prompts_migration.migrate()
+            migration_hook_patch.assert_called_once()
         tiktoken_text_migration = prompts_migration.populate_tiktoken_cache()
         # initialize should NOT be registered when migration is needed
         assert not hasattr(prompts_migration, "initialize")
@@ -45,7 +49,11 @@ def test_prompts_module_registers_conditional_prompts_when_needed() -> None:
             del sys.modules["cortex.setup.prompts"]
         import cortex.setup.prompts as prompts_init
 
-        init_text = prompts_init.initialize()
+        with patch(
+            "cortex.setup.prompts.apply_project_post_edit_hook"
+        ) as init_hook_patch:
+            init_text = prompts_init.initialize()
+            init_hook_patch.assert_called_once()
         tiktoken_text_init = prompts_init.populate_tiktoken_cache()
         # migrate should NOT be registered when migration is not needed
         assert not hasattr(prompts_init, "migrate")
