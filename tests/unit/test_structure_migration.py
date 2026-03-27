@@ -2,6 +2,8 @@ from pathlib import Path
 from typing import cast
 from unittest.mock import MagicMock, patch
 
+import pytest
+
 from cortex.core.models import ModelDict
 from cortex.core.path_resolver import (
     CortexResourceType,
@@ -226,3 +228,32 @@ def test_archive_legacy_files_if_requested_sets_archive_location(
     archive_location = report.get("archive_location")
     assert isinstance(archive_location, str)
     assert "legacy-" in archive_location
+
+
+@pytest.mark.asyncio
+async def test_migrate_legacy_structure_detects_languages_and_scaffolds_swift_scripts(
+    tmp_path: Path,
+) -> None:
+    _ = (tmp_path / "Package.swift").write_text("// swiftpm", encoding="utf-8")
+    scattered_dir = tmp_path / "somewhere"
+    scattered_dir.mkdir(parents=True, exist_ok=True)
+    _ = (scattered_dir / "projectBrief.md").write_text("# Brief", encoding="utf-8")
+
+    manager = StructureMigrationManager(tmp_path)
+
+    report = await manager.migrate_legacy_structure(
+        legacy_type="scattered-files", backup=False, archive=False
+    )
+
+    assert report.success is True
+    assert report.detected_languages == ["swift"]
+    assert report.scaffolded_languages == ["swift"]
+
+    quality_script = (
+        tmp_path / ".cortex" / "synapse" / "scripts" / "swift" / "run_quality_check.sh"
+    )
+    assert quality_script.exists()
+    content = quality_script.read_text(encoding="utf-8")
+    assert "swift build" in content
+    assert "swift test" in content
+    assert str(quality_script) in report.scripts_scaffolded

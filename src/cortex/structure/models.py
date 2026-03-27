@@ -348,6 +348,18 @@ class MigrationReport(StructureBaseModel):
     structure_creation: SetupReport | None = Field(
         default=None, description="Structure creation report"
     )
+    detected_languages: list[str] = Field(
+        default_factory=list,
+        description="Detected primary language(s) for the project root",
+    )
+    scaffolded_languages: list[str] = Field(
+        default_factory=list,
+        description="Languages for which migration scaffolding was applied",
+    )
+    scripts_scaffolded: list[str] = Field(
+        default_factory=list,
+        description="Language scripts stubs created during migration",
+    )
     errors: list[str] = Field(default_factory=list, description="Errors encountered")
     error: str | None = Field(
         default=None, description="Error message if migration failed"

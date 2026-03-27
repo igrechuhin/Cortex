@@ -20,6 +20,7 @@ from cortex.core.path_resolver import (
     get_cortex_path,
     get_cursor_path,
 )
+from cortex.structure.language_scripts_scaffolding import scaffold_language_scripts
 from cortex.structure.migration_strategies import (
     migrate_cursor_default,
     migrate_cursorrules,
@@ -137,10 +138,36 @@ class StructureMigrationManager:
         report: ModelDict = self._build_initial_report(legacy_type)
         self._create_backup_if_requested(report, backup)
         await self._create_new_structure(report)
+        self._detect_languages_and_scaffold_scripts(report)
         self._migrate_files_by_type(legacy_type, report)
         self.archive_legacy_files_if_requested(report, archive)
 
         return MigrationReport.model_validate(report)
+
+    def _detect_languages_and_scaffold_scripts(self, report: ModelDict) -> None:
+        from cortex.setup.migration_language_detection import (
+            detect_languages_for_migration,
+        )
+
+        detected_languages = detect_languages_for_migration(self.project_root)
+        detected_languages_json: list[JsonValue] = []
+        for language in detected_languages:
+            detected_languages_json.append(language)
+        report["detected_languages"] = detected_languages_json
+
+        scripts_scaffolded = scaffold_language_scripts(
+            self.project_root, detected_languages
+        )
+        scripts_scaffolded_json: list[JsonValue] = []
+        for script_path in scripts_scaffolded:
+            scripts_scaffolded_json.append(script_path)
+        report["scripts_scaffolded"] = scripts_scaffolded_json
+
+        scaffolded_languages: list[JsonValue] = []
+        for language in detected_languages:
+            if language == "swift" and scripts_scaffolded:
+                scaffolded_languages.append(language)
+        report["scaffolded_languages"] = scaffolded_languages
 
     def _detect_or_validate_legacy_type(self, legacy_type: str | None) -> str | None:
         """Detect or validate legacy structure type.

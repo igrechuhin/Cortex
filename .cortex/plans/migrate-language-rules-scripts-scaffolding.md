@@ -195,12 +195,17 @@ Coverage target: 95%.
   `swift -> typescript/javascript -> java -> rust -> go -> python`.
 - Added `tests/unit/test_migration_language_detection.py` with 5 tests covering
   no markers, multi-language ordering, and JS/TS precedence.
+- Wired language detection into `StructureMigrationManager.migrate_legacy_structure()` so
+  migration reports include `detected_languages` and scaffolding output fields.
+- Added minimal Swift scripts stub scaffolding under `.cortex/synapse/scripts/swift/`
+  (README + `run_quality_check.sh`) via a new `scaffold_language_scripts()` helper.
 
 ### Remaining
 
-- Wire the new helper into migration flow and prompt output.
-- Scaffold language rule/templates/scripts based on detected languages.
+- Scaffold language rule templates (Synapse `_templates/<lang>/`) and copy into
+  project-local rules folders during migration.
 - Route `run_quality_gate` through language-aware dispatch for non-Python projects.
+- Update the `migrate` prompt to document Step 2b and include the new output fields.
 
 ## Success Criteria
 
