@@ -70,6 +70,11 @@ def get_phase_a_lock() -> asyncio.Lock:
     return _phase_a_lock_map[loop]
 
 
+# Backwards-compatible alias: older call sites referenced `phase_a_lock()`.
+# Keep it as a callable (not a module-level Lock) to avoid cross-event-loop bugs.
+phase_a_lock = get_phase_a_lock
+
+
 def _read_pipeline_phase_config(
     root: Path,
     pipeline: str,

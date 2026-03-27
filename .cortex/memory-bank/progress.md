@@ -12,6 +12,7 @@
 - **MCP Server Regression Test Suite — Concurrent Subagent and Serialization Tests** - COMPLETE. Added deterministic regression tests covering concurrent tool saturation, `pipeline_handoff` serialization (string/object payloads), and CWD/root-resolution edge cases, plus sequencing safeguards; quality gates now pass.
 - **Migration: Language-Agnostic Rules and Scripts Scaffolding** - PARTIAL. Added `detect_languages_for_migration(project_root)` with deterministic multi-language marker detection (swift/typescript/javascript/java/rust/go/python) and 5 unit tests covering ordering and precedence; quality gate passed.
 - **Commit pipeline execution and markdown gate repair** - PARTIAL. Ran `/cortex/commit` pipeline preflight and Phase A, fixed roadmap blocker-link markdown lint failure (`../plans/...`), and revalidated with passing quality gate (~91.82% coverage).
+- **Investigate fix_quality_issues MCP Tool Failure** - COMPLETE. Restored backwards-compatible `phase_a_lock` symbol as an alias to `get_phase_a_lock`, unblocking `fix_quality_issues()` runtime execution; verified via full quality gate and docs gate.
 
 ## 2026-03-26
 

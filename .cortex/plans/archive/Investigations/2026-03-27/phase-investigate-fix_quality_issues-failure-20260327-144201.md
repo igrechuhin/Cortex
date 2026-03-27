@@ -1,6 +1,6 @@
 # Phase: Investigate fix_quality_issues MCP Tool Failure
 
-**Status**: PLANNING
+**Status**: COMPLETE
 **Priority**: ASAP (Blocker)
 **Created**: 2026-03-27
 **Target Completion**: 2026-03-27
@@ -38,6 +38,12 @@ Investigate and fix MCP tool failure that occurred during commit procedure execu
 - Root cause identified and fixed
 - Tool works correctly via MCP protocol
 - Commit procedure can proceed, no regressions
+
+## Completion Summary (2026-03-27)
+
+- Root cause: missing backwards-compatible `phase_a_lock` symbol after lock API rename to `get_phase_a_lock()`.
+- Fix: added `phase_a_lock = get_phase_a_lock` alias.
+- Verified: `fix_quality_issues()`, `run_quality_gate()`, and `run_docs_gate()` all passed.
 
 ## Notes
 

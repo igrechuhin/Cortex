@@ -20,6 +20,8 @@
 
 - ✅ **Commit pipeline run + docs lint repair** - COMPLETE (2026-03-27) - Executed commit pipeline phases inline, pre-staged Synapse submodule hygiene commit, and repaired roadmap link path to unblock markdown lint in Phase A.
 
+- ✅ **Investigate fix_quality_issues MCP Tool Failure** - COMPLETE (2026-03-27) - Restored backwards-compatible `phase_a_lock` symbol as an alias to `get_phase_a_lock`, unblocking `fix_quality_issues()` runtime execution; verified via full quality gate and docs gate.
+
 ## Completed Work (2026-03-26)
 
 - **Summary (2026-03-26)** - 1 entries archived.
