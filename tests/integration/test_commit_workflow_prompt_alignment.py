@@ -316,6 +316,7 @@ class TestCommitPipelineAlignment:
         lower = pipeline_content.lower()
         assert "split" in lower and "commit" in lower
         assert "multi-goal" in lower or "multiple unrelated goals" in lower
+        assert "single-goal session pattern" in lower
 
 
 class TestImplementPromptRefactoringGuidance:

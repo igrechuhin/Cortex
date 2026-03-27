@@ -14,6 +14,8 @@
 
 - ✅ **Submodule Hygiene Unblock for Fix Pipeline** - COMPLETE (2026-03-27) - Adjusted submodule hygiene behavior for FIX semantics so dirty_worktree findings no longer block `/cortex/fix` quality/test progression, while out_of_sync and merge_conflict still block. Added regression tests for both non-blocking and blocking FIX-mode cases; quality gate verified green.
 
+- ✅ **Session Scope Lock — Single-Goal Session Pattern** - COMPLETE (2026-03-27) - Enforced single-goal session discipline in commit/analyze prompts by adding mandatory split-commit guidance and multi-goal scope-risk reporting, with integration tests updated accordingly.
+
 ## Completed Work (2026-03-26)
 
 - ✅ **Root-Cause-First Debugging Guardrails** - COMPLETE (2026-03-26) - Updated the Synapse fix prompt to enforce a mandatory diagnose-first Phase 0 with a hard gate that blocks edits until a hypothesis-driven Diagnosis Note is written.

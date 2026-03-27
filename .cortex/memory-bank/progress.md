@@ -8,6 +8,7 @@
 - **Session Scope Lock — Single-Goal Session Pattern** - PARTIAL. Added `cortex://context` parity by appending `session_scope` guidance to successful context payloads in `load_context_resource`, plus coverage in `test_phase4_optimization`; quality gate now passes.
 - **Session Scope Lock — Single-Goal Session Pattern** - PARTIAL. Strengthened session scope guidance with explicit defer-unrelated-work wording and added assertions in session-start/context-resource tests; prompt-level commit/analyze follow-ups remain.
 - **Submodule Hygiene Unblock for Fix Pipeline** - COMPLETE. Relaxed submodule guard behavior under FIX mode to ignore dirty_worktree while preserving blocking on out_of_sync/merge_conflict, with unit regression coverage and passing quality gate.
+- **Session Scope Lock — Single-Goal Session Pattern** - COMPLETE. Enforced split-commit hinting and multi-goal risk signaling in Synapse commit/analyze prompts; added integration coverage assertions.
 
 ## 2026-03-26
 

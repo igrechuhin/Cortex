@@ -139,6 +139,8 @@ class TestUnifiedAnalyzePromptContent:
         assert "session scope risk" in lower
         assert "multi-goal" in lower
         assert "split recommendation" in lower or "split" in lower
+        assert "single-goal session pattern" in lower
+        assert "scope lock violation" in lower
 
     def test_includes_unified_output_format(self, prompt_content: str) -> None:
         """Prompt includes unified output format (Context + Session sections)."""
