@@ -28,6 +28,14 @@ This project runs a **Cortex MCP server**. All project knowledge, rules, and wor
 
 **Note for AI agents**: When you need detailed workflows (commit, implement, fix-path, etc.), read the corresponding Synapse prompts and rules via Cortex MCP instead of adding guidance to `CLAUDE.md` or `AGENTS.md`.
 
+## Session Discipline
+
+Use a single-goal session pattern to improve completion reliability:
+
+- Confirm **one primary goal** early in the session and keep work scoped to that goal.
+- If unrelated issues appear, note them and defer them to a separate follow-up session.
+- If multiple unrelated fixes are already in progress, split execution into separate scoped passes instead of one mixed bundle.
+
 ## Execution continuity
 
 Once you have enough information to act, continue execution without waiting for the user to say "ok, proceed" or similar.

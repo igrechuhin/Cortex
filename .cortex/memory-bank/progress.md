@@ -4,6 +4,7 @@
 
 - **Pipeline Code Integrity Guard — Prevent Fix-Loop Corruption** - COMPLETE. fix.md now matches workflows integrity guardrails; integration tests enforce prompt alignment.
 - **Session Scope Lock — Single-Goal Session Pattern** - PARTIAL. Added `SessionBrief.session_scope` with `SESSION_SCOPE_PROMPT` in session start output; wired via `brief_helpers`; tests in `test_session_start_tools`. Remaining: commit.md, analyze.md, CLAUDE.md per plan.
+- **Session Scope Lock — Single-Goal Session Pattern** - PARTIAL. Added a new `Session Discipline` section in `CLAUDE.md` to enforce single-goal session scope and defer unrelated work.
 
 ## 2026-03-26
 
