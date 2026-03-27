@@ -1,5 +1,9 @@
 # Progress Log
 
+## 2026-03-27
+
+- **Pipeline Code Integrity Guard — Prevent Fix-Loop Corruption** - COMPLETE. fix.md now matches workflows integrity guardrails; integration tests enforce prompt alignment.
+
 ## 2026-03-26
 
 - **Root-Cause-First Debugging Guardrails** - COMPLETE. Added a HARD GATE + mandatory PHASE 0 (Diagnose First) to the fix prompt requiring evidence-backed hypotheses and selection before any edits.

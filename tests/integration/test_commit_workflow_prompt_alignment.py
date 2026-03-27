@@ -71,6 +71,11 @@ def _workflows_guide_path() -> Path:
     return root / "docs" / "guides" / "workflows.md"
 
 
+def _fix_prompt_path() -> Path:
+    """Return path to fix helper prompt under .cortex/synapse/prompts/."""
+    return _synapse_path() / "prompts" / "fix.md"
+
+
 def _read_implement_pipeline_content() -> str:
     """Read implement prompt + implement-code agent.
 
@@ -400,6 +405,48 @@ class TestFixLoopIntegrityGuard:
         assert "integrity safeguards" in lower
         assert "run_quality_gate()" in fix_quality_tool_content
         assert "roll back that" in lower
+
+
+class TestFixPromptIntegrityGuard:
+    """Assert fix.md documents the same integrity safeguards as workflows.md."""
+
+    @pytest.fixture
+    def fix_prompt_content(self) -> str:
+        """Read fix helper prompt content."""
+        path = _fix_prompt_path()
+        if not path.exists():
+            pytest.skip(
+                f"Fix prompt not found at {path} (ref: cleanup-skipped-legacy-tests)"
+            )
+        return path.read_text()
+
+    def test_fix_prompt_contains_no_go_integrity_list(
+        self, fix_prompt_content: str
+    ) -> None:
+        """Fix prompt includes explicit NO-GO corruption safeguards."""
+        lower = fix_prompt_content.lower()
+        assert "no-go" in lower
+        assert "duplicate function/class definitions" in lower
+        assert "type_checking" in lower
+        assert "circular imports" in lower
+        assert "syntax-invalid python" in lower
+
+    def test_fix_prompt_contains_post_fix_module_validation(
+        self, fix_prompt_content: str
+    ) -> None:
+        """Fix prompt requires import/syntax checks before success."""
+        lower = fix_prompt_content.lower()
+        assert "post-fix validation" in lower
+        assert "python3 -m py_compile" in lower
+        assert 'python3 -c "import <module_import_path>"' in fix_prompt_content
+
+    def test_fix_prompt_contains_rollback_guidance_for_regressions(
+        self, fix_prompt_content: str
+    ) -> None:
+        """Fix prompt requires rollback and bounded retry on regressions."""
+        lower = fix_prompt_content.lower()
+        assert "roll back that attempt" in lower
+        assert "max 3 attempts" in lower
 
 
 class TestPythonCodingStandardsTypeNarrowing:
