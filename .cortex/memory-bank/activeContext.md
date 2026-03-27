@@ -20,19 +20,7 @@
 
 ## Completed Work (2026-03-26)
 
-- ✅ **Root-Cause-First Debugging Guardrails** - COMPLETE (2026-03-26) - Updated the Synapse fix prompt to enforce a mandatory diagnose-first Phase 0 with a hard gate that blocks edits until a hypothesis-driven Diagnosis Note is written.
-
-- ✅ **Per-Project Post-Edit Quality Hook (PARTIAL)** - COMPLETE (2026-03-26) - Hook emission instructions added to MIGRATE_PROMPT and INITIALIZE_PROMPT with full language→command table. migrate.md Step 2a updated. 14 integration tests added. Remaining: wire to language detection from migrate-language-rules-scripts-scaffolding.
-
-- ✅ **Per-Project Post-Edit Quality Hook — Language-Agnostic Pattern (PARTIAL)** - COMPLETE (2026-03-26) - Runtime now applies/merges project-specific PostToolUse(Edit) hooks during initialize/migrate via a shared setup helper and both direct/lazy prompt handlers, reducing manual setup drift; remaining work is tighter integration with the language-routing scaffolding pipeline.
-
-- ✅ **Session improvements from 2026-03-26T18-37 (PARTIAL)** - COMPLETE (2026-03-26) - Implemented robust analysis target normalization and dispatch routing for usage-pattern aliases and tools/prompts/rules targets, with regression tests and passing quality gate. This materially improves end-of-session analysis target reliability in current MCP/CLI flows; telemetry-presence checks remain.
-
-- ✅ **Session improvements from 2026-03-26T18-37** - COMPLETE (2026-03-26) - Added lifecycle regression coverage for end-of-session context analysis across mixed MCP and direct entrypoints, ensuring sessions with activity no longer produce false no_data results.
-
-- ✅ **Per-Project Post-Edit Quality Hook — Language-Agnostic Pattern** - COMPLETE (2026-03-26) - Completed router unification by making LanguageQualityRouter the runtime single source of truth for both post-edit hook command selection and quality adapter selection across inline and detached pre-commit execution, with updated tests and passing quality gate.
-
-- ✅ **Pipeline Code Integrity Guard — Prevent Fix-Loop Corruption (PARTIAL)** - COMPLETE (2026-03-26) - Added integrity guardrails (NO-GO list, post-fix module validation, rollback guidance) to repo-owned quality workflow and fix-quality tool documentation, and added integration tests to prevent regression; still need direct `fix.md` prompt updates to fully complete roadmap step.
+- **Summary (2026-03-26)** - 7 entries archived.
 
 ## Completed Work (2026-03-25)
 

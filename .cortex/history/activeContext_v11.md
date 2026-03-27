@@ -2,11 +2,25 @@
 
 **This file records completed work only.** For current status and upcoming work see [roadmap.md](roadmap.md).
 
+## Completed Work (2026-03-27)
+
+- ✅ **Pipeline Code Integrity Guard — Prevent Fix-Loop Corruption** - COMPLETE (2026-03-27) - Added fix-loop NO-GO section, post-fix py_compile/import validation, and rollback guidance to fix.md; added TestFixPromptIntegrityGuard alignment tests.
+
+- ✅ **Session Scope Lock (PARTIAL)** - COMPLETE (2026-03-27) - Session start JSON now includes `session_scope` prompting single-goal discipline and confirming one primary goal before expanding scope.
+
+- ✅ **Session Scope Lock — Single-Goal Session Pattern (PARTIAL)** - COMPLETE (2026-03-27) - Documented single-goal session discipline in `CLAUDE.md` under a new `Session Discipline` section to reduce mixed-scope sessions and partial completions.
+
+- ✅ **Session Scope Lock — context parity (PARTIAL)** - COMPLETE (2026-03-27) - `cortex://context` now includes `session_scope` in success payloads, aligning start-session guidance with context resources. Added test coverage in optimization resource tests; remaining roadmap work is prompt-level split-commit and analyze scope-risk guidance.
+
+- ✅ **Submodule Hygiene Unblock for Fix Pipeline** - COMPLETE (2026-03-27) - Adjusted submodule hygiene behavior for FIX semantics so dirty_worktree findings no longer block `/cortex/fix` quality/test progression, while out_of_sync and merge_conflict still block. Added regression tests for both non-blocking and blocking FIX-mode cases; quality gate verified green.
+
+- ✅ **Session Scope Lock — Single-Goal Session Pattern** - COMPLETE (2026-03-27) - Enforced single-goal session discipline in commit/analyze prompts by adding mandatory split-commit guidance and multi-goal scope-risk reporting, with integration tests updated accordingly.
+
+- ✅ **MCP Server Regression Test Suite — Concurrent Subagent and Serialization Tests** - COMPLETE (2026-03-27) - Added deterministic regression tests covering concurrent tool saturation, `pipeline_handoff` serialization (string/object payloads), and CWD/root-resolution edge cases, plus sequencing safeguards; quality gates now pass.
+
 ## Completed Work (2026-03-26)
 
-- ✅ **Root-Cause-First Debugging Guardrails** - COMPLETE (2026-03-26) - Updated the Synapse fix prompt to enforce a mandatory diagnose-first Phase 0 with a hard gate that blocks edits until a hypothesis-driven Diagnosis Note is written.
-
-- ✅ **Per-Project Post-Edit Quality Hook (PARTIAL)** - COMPLETE (2026-03-26) - Hook emission instructions added to MIGRATE_PROMPT and INITIALIZE_PROMPT with full language→command table. migrate.md Step 2a updated. 14 integration tests added. Remaining: wire to language detection from migrate-language-rules-scripts-scaffolding.
+- **Summary (2026-03-26)** - 7 entries archived.
 
 ## Completed Work (2026-03-25)
 

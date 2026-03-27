@@ -2,7 +2,7 @@
 title: "Migration Prompt: Language-Agnostic Rules and Scripts Scaffolding"
 component: migration
 work_type: enhancement
-status: PENDING
+status: IN_PROGRESS
 priority: high
 created: 2026-03-26
 depends_on: []
@@ -184,6 +184,23 @@ Coverage target: 95%.
 - `src/cortex/services/language_detector.py` — must remain stable
 - `src/cortex/services/framework_adapters/swift_adapter.py` — must be wired to quality gate
 - Synapse submodule must accept the `_templates/` directory (no `.gitignore` exclusion)
+
+## Progress Update (2026-03-27)
+
+### Completed in this session
+
+- Added `detect_languages_for_migration(project_root: Path) -> list[str]` in
+  `src/cortex/setup/migration_language_detection.py`.
+- Implemented deterministic multi-language detection order:
+  `swift -> typescript/javascript -> java -> rust -> go -> python`.
+- Added `tests/unit/test_migration_language_detection.py` with 5 tests covering
+  no markers, multi-language ordering, and JS/TS precedence.
+
+### Remaining
+
+- Wire the new helper into migration flow and prompt output.
+- Scaffold language rule/templates/scripts based on detected languages.
+- Route `run_quality_gate` through language-aware dispatch for non-Python projects.
 
 ## Success Criteria
 
