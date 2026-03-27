@@ -142,7 +142,10 @@ def _assemble_session_brief(
     mcp_healthy: bool = True,
     mcp_health_message: str | None = None,
 ) -> SessionBrief:
-    """Assemble session brief from collected components."""
+    """Assemble session brief from collected components.
+
+    Includes ``session_scope`` (single-goal discipline) via ``brief_helpers`` assembly.
+    """
     inp = _BriefInputs(
         project_name=project_name,
         current_focus=current_focus,
@@ -267,7 +270,10 @@ async def build_session_brief(
     mcp_healthy: bool = True,
     mcp_health_message: str | None = None,
 ) -> SessionBrief:
-    """Build session brief from extracted information (caller provides git/next)."""
+    """Build session brief from extracted information (caller provides git/next).
+
+    Every successful brief includes ``session_scope`` prompting one primary goal per session.
+    """
     c = await _gather_brief_components(
         active_context_content,
         managers,

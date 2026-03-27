@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from cortex.tools.session.models import (
+    SESSION_SCOPE_PROMPT,
     ConcurrentSession,
     GitStatusSummary,
     SessionBrief,
@@ -42,6 +43,7 @@ def _create_session_brief(
         locked_tasks=locked_tasks,
         mcp_healthy=mcp_healthy,
         mcp_health_message=mcp_health_message,
+        session_scope=SESSION_SCOPE_PROMPT,
     )
 
 

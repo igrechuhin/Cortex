@@ -33,7 +33,7 @@ from cortex.tools.session.health import (
     determine_token_budget_status,
     parse_mcp_health,
 )
-from cortex.tools.session.models import TokenBudgetStatus
+from cortex.tools.session.models import SESSION_SCOPE_PROMPT, TokenBudgetStatus
 from cortex.tools.session.start_tools import (
     extract_next_work_item,
     get_git_status,
@@ -706,6 +706,9 @@ Working on Phase 54.
         assert "Phase 54" in result.brief.next_work_item
         assert result.token_count > 0
         assert result.brief.mcp_healthy is True
+        assert result.brief.session_scope
+        assert result.brief.session_scope == SESSION_SCOPE_PROMPT
+        assert "Session Scope" in result.brief.session_scope
 
     @pytest.mark.asyncio
     async def test_session_start_impl_seeds_context_telemetry_for_analysis(

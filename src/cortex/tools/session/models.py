@@ -101,6 +101,15 @@ def _default_task_locks() -> list[TaskLock]:
     return []
 
 
+# Shown on every session start brief so agents adopt single-goal discipline.
+SESSION_SCOPE_PROMPT: str = (
+    "## Session Scope\n\n"
+    "Pick **one** primary goal for this session. Confirm it with the user (or state it clearly) "
+    "before taking on additional unrelated work. Single-goal sessions finish more reliably than "
+    "mixed bundles of fixes and exploration."
+)
+
+
 class SessionBrief(StrictBaseModel):
     """Session brief with orientation information."""
 
@@ -144,6 +153,14 @@ class SessionBrief(StrictBaseModel):
     mcp_health_message: str | None = Field(
         default=None,
         description="When mcp_healthy is False, short reason (e.g. unhealthy, connection error)",
+    )
+    session_scope: str = Field(
+        default=SESSION_SCOPE_PROMPT,
+        min_length=1,
+        description=(
+            "Session scope guidance: single primary goal, confirm before expanding scope "
+            "(markdown/plain text for tool output)"
+        ),
     )
 
 
