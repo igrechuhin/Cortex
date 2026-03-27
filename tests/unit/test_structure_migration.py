@@ -235,6 +235,10 @@ async def test_migrate_legacy_structure_detects_languages_and_scaffolds_swift_sc
     tmp_path: Path,
 ) -> None:
     _ = (tmp_path / "Package.swift").write_text("// swiftpm", encoding="utf-8")
+    templates_dir = tmp_path / ".cortex" / "synapse" / "rules" / "_templates" / "swift"
+    templates_dir.mkdir(parents=True, exist_ok=True)
+    template_rule = templates_dir / "swift-coding-standards.mdc"
+    _ = template_rule.write_text("# Swift template", encoding="utf-8")
     scattered_dir = tmp_path / "somewhere"
     scattered_dir.mkdir(parents=True, exist_ok=True)
     _ = (scattered_dir / "projectBrief.md").write_text("# Brief", encoding="utf-8")
@@ -248,6 +252,16 @@ async def test_migrate_legacy_structure_detects_languages_and_scaffolds_swift_sc
     assert report.success is True
     assert report.detected_languages == ["swift"]
     assert report.scaffolded_languages == ["swift"]
+    scaffolded_rule = (
+        tmp_path
+        / ".cortex"
+        / "synapse"
+        / "rules"
+        / "swift"
+        / "swift-coding-standards.mdc"
+    )
+    assert scaffolded_rule.exists()
+    assert str(scaffolded_rule) in report.rules_scaffolded
 
     quality_script = (
         tmp_path / ".cortex" / "synapse" / "scripts" / "swift" / "run_quality_check.sh"

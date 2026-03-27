@@ -22,6 +22,8 @@
 
 - ✅ **Investigate fix_quality_issues MCP Tool Failure** - COMPLETE (2026-03-27) - Restored backwards-compatible `phase_a_lock` symbol as an alias to `get_phase_a_lock`, unblocking `fix_quality_issues()` runtime execution; verified via full quality gate and docs gate.
 
+- ✅ **Migration: Language-Agnostic Rules and Scripts Scaffolding (PARTIAL)** - COMPLETE (2026-03-27) - Migration now scaffolds Swift rule templates into project-local Synapse rules and reports `rules_scaffolded`; tests added and quality gate passes. Remaining work: multi-language templates, quality-gate language routing, and migrate prompt updates.
+
 ## Completed Work (2026-03-26)
 
 - **Summary (2026-03-26)** - 1 entries archived.

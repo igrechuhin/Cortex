@@ -13,6 +13,7 @@
 - **Migration: Language-Agnostic Rules and Scripts Scaffolding** - PARTIAL. Wired language detection into structure migration reports (`detected_languages`) and added minimal Swift scripts stub scaffolding under `.cortex/synapse/scripts/swift/` (README + `run_quality_check.sh`); quality gate fresh pass (~91.84% coverage). Earlier in the session: added `detect_languages_for_migration(project_root)` with deterministic multi-language marker detection (swift/typescript/javascript/java/rust/go/python) and 5 unit tests covering ordering and precedence.
 - **Commit pipeline execution and markdown gate repair** - PARTIAL. Ran `/cortex/commit` pipeline preflight and Phase A, fixed roadmap blocker-link markdown lint failure (`../plans/...`), and revalidated with passing quality gate (~91.82% coverage).
 - **Investigate fix_quality_issues MCP Tool Failure** - COMPLETE. Restored backwards-compatible `phase_a_lock` symbol as an alias to `get_phase_a_lock`, unblocking `fix_quality_issues()` runtime execution; verified via full quality gate and docs gate.
+- **Migration: Language-Agnostic Rules and Scripts Scaffolding** - PARTIAL. Implemented Swift rules-template scaffolding during migration: copy missing templates from `.cortex/synapse/rules/_templates/swift/` into project-local rules, surfaced `rules_scaffolded` in migration output, and added tests; quality gate passed.
 
 ## 2026-03-26
 

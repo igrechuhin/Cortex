@@ -199,11 +199,19 @@ Coverage target: 95%.
   migration reports include `detected_languages` and scaffolding output fields.
 - Added minimal Swift scripts stub scaffolding under `.cortex/synapse/scripts/swift/`
   (README + `run_quality_check.sh`) via a new `scaffold_language_scripts()` helper.
+- Added migration-time rules-template scaffolding for Swift via
+  `scaffold_language_rules_from_templates()` in
+  `src/cortex/structure/language_rules_scaffolding.py`.
+- Wired rules scaffolding into `StructureMigrationManager` and surfaced
+  `rules_scaffolded` in `MigrationReport`.
+- Added tests for template copy + skip-existing behavior and migration report coverage:
+  `tests/unit/test_language_rules_scaffolding.py` and updated
+  `tests/unit/test_structure_migration.py`.
 
 ### Remaining
 
-- Scaffold language rule templates (Synapse `_templates/<lang>/`) and copy into
-  project-local rules folders during migration.
+- Expand template coverage beyond the initial Swift template set and add
+  per-language template packs (`typescript`, `javascript`, `java`, `rust`, `go`).
 - Route `run_quality_gate` through language-aware dispatch for non-Python projects.
 - Update the `migrate` prompt to document Step 2b and include the new output fields.
 

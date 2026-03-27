@@ -20,6 +20,9 @@ from cortex.core.path_resolver import (
     get_cortex_path,
     get_cursor_path,
 )
+from cortex.structure.language_rules_scaffolding import (
+    scaffold_language_rules_from_templates,
+)
 from cortex.structure.language_scripts_scaffolding import scaffold_language_scripts
 from cortex.structure.migration_strategies import (
     migrate_cursor_default,
@@ -155,6 +158,14 @@ class StructureMigrationManager:
             detected_languages_json.append(language)
         report["detected_languages"] = detected_languages_json
 
+        rules_scaffolded = scaffold_language_rules_from_templates(
+            self.project_root, detected_languages
+        )
+        rules_scaffolded_json: list[JsonValue] = []
+        for rule_path in rules_scaffolded:
+            rules_scaffolded_json.append(rule_path)
+        report["rules_scaffolded"] = rules_scaffolded_json
+
         scripts_scaffolded = scaffold_language_scripts(
             self.project_root, detected_languages
         )
@@ -165,7 +176,7 @@ class StructureMigrationManager:
 
         scaffolded_languages: list[JsonValue] = []
         for language in detected_languages:
-            if language == "swift" and scripts_scaffolded:
+            if language == "swift" and (rules_scaffolded or scripts_scaffolded):
                 scaffolded_languages.append(language)
         report["scaffolded_languages"] = scaffolded_languages
 
