@@ -9,6 +9,7 @@
 - **Session Scope Lock — Single-Goal Session Pattern** - PARTIAL. Strengthened session scope guidance with explicit defer-unrelated-work wording and added assertions in session-start/context-resource tests; prompt-level commit/analyze follow-ups remain.
 - **Submodule Hygiene Unblock for Fix Pipeline** - COMPLETE. Relaxed submodule guard behavior under FIX mode to ignore dirty_worktree while preserving blocking on out_of_sync/merge_conflict, with unit regression coverage and passing quality gate.
 - **Session Scope Lock — Single-Goal Session Pattern** - COMPLETE. Enforced split-commit hinting and multi-goal risk signaling in Synapse commit/analyze prompts; added integration coverage assertions.
+- **MCP Server Regression Test Suite — Concurrent Subagent and Serialization Tests** - COMPLETE. Added deterministic regression tests covering concurrent tool saturation, `pipeline_handoff` serialization (string/object payloads), and CWD/root-resolution edge cases, plus sequencing safeguards; quality gates now pass.
 
 ## 2026-03-26
 

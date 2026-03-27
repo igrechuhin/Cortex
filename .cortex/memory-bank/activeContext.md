@@ -16,6 +16,8 @@
 
 - ✅ **Session Scope Lock — Single-Goal Session Pattern** - COMPLETE (2026-03-27) - Enforced single-goal session discipline in commit/analyze prompts by adding mandatory split-commit guidance and multi-goal scope-risk reporting, with integration tests updated accordingly.
 
+- ✅ **MCP Server Regression Test Suite — Concurrent Subagent and Serialization Tests** - COMPLETE (2026-03-27) - Added deterministic regression tests covering concurrent tool saturation, `pipeline_handoff` serialization (string/object payloads), and CWD/root-resolution edge cases, plus sequencing safeguards; quality gates now pass.
+
 ## Completed Work (2026-03-26)
 
 - ✅ **Root-Cause-First Debugging Guardrails** - COMPLETE (2026-03-26) - Updated the Synapse fix prompt to enforce a mandatory diagnose-first Phase 0 with a hard gate that blocks edits until a hypothesis-driven Diagnosis Note is written.
