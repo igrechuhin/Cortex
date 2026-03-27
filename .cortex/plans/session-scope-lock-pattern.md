@@ -21,7 +21,9 @@ Usage analytics show fully_achieved sessions almost always had a single clear go
 
 - Done: `SessionBrief.session_scope` + `SESSION_SCOPE_PROMPT` on session start; tests in `tests/tools/test_session_start_tools.py`.
 - Done: Added `## Session Discipline` in `CLAUDE.md` with single-goal session guidance and deferral rules for unrelated work.
-- Remaining: commit.md split-commit hint; analyze.md multi-goal flag; optional `cortex://context` parity.
+- Done: Added `cortex://context` parity so successful context payloads include `session_scope`; tests in `tests/tools/test_phase4_optimization.py`.
+- Done: Strengthened `SESSION_SCOPE_PROMPT` wording to explicitly defer unrelated issues to follow-up sessions; added assertions covering this wording in session-start and context-resource tests.
+- Remaining: commit.md split-commit hint; analyze.md multi-goal flag.
 
 ## Implementation Steps
 

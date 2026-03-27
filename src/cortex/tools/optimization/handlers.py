@@ -13,6 +13,7 @@ Note: load_progressive_context has been merged into load_context with strategy="
 """
 
 import json
+from typing import cast
 from urllib.parse import unquote
 
 # Import via facade to allow test patching
@@ -33,6 +34,7 @@ from cortex.core.project_root_resolver import resolve_project_root_async
 from cortex.server import mcp
 from cortex.tools.optimization.relevance_operations import get_relevance_scores_impl
 from cortex.tools.optimization.summarization_operations import summarize_content_impl
+from cortex.tools.session.models import SESSION_SCOPE_PROMPT
 
 from .handlers_load import (
     check_optimization_enabled,
@@ -302,6 +304,23 @@ async def get_relevance_scores(
 _LOAD_CONTEXT_RESOURCE_DEFAULT_BUDGET = 10000
 
 
+def _append_session_scope_to_context_payload(payload: str) -> str:
+    """Add session scope guidance to successful context payloads."""
+    try:
+        parsed = json.loads(payload)
+    except json.JSONDecodeError:
+        return payload
+
+    if not isinstance(parsed, dict):
+        return payload
+    payload_data = cast(dict[str, object], parsed)
+    if payload_data.get("status") != "success":
+        return payload
+
+    payload_data["session_scope"] = SESSION_SCOPE_PROMPT
+    return json.dumps(payload_data, indent=2)
+
+
 @mcp.resource(uri="cortex://context")
 @ensure_usage_context
 @mcp_resource_wrapper(timeout=MCP_TOOL_TIMEOUT_COMPLEX)
@@ -320,11 +339,12 @@ async def load_context_resource() -> str:
         if isinstance(raw_budget, int)
         else _LOAD_CONTEXT_RESOURCE_DEFAULT_BUDGET
     )
-    return await load_context(
+    result = await load_context(
         task_description=task,
         token_budget=budget,
         strategy="dependency_aware",
     )
+    return _append_session_scope_to_context_payload(result)
 
 
 # MCP resource registration removed

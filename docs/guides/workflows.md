@@ -97,6 +97,12 @@ This guide documents common workflows as sequences of Cortex MCP tool calls, wit
 
 **Tool sequence:**
 
+0. **Submodule-first routing** (required when submodules are dirty).
+
+   - Check submodules with `git submodule foreach 'git status --short'`.
+   - If any submodule has changes, run its fix loop first and get it green before running root checks.
+   - Treat uncommitted submodule changes as fix scope, not immediate failure.
+
 1. **`run_quality_gate()`** – Zero-arg Phase A gate (fix_errors, format, type_check, quality, tests, markdown lint). Optional `test_timeout` / `coverage_threshold` come from the `pipeline_handoff` task file for `commit` / `checks`, not from JSON the client must forward.
 
    **Example output:** `preflight_passed`, `checks` with per-check success/failure.

@@ -709,6 +709,10 @@ Working on Phase 54.
         assert result.brief.session_scope
         assert result.brief.session_scope == SESSION_SCOPE_PROMPT
         assert "Session Scope" in result.brief.session_scope
+        assert (
+            "Defer unrelated issues to a follow-up session"
+            in result.brief.session_scope
+        )
 
     @pytest.mark.asyncio
     async def test_session_start_impl_seeds_context_telemetry_for_analysis(

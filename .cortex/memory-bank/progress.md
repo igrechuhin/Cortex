@@ -5,6 +5,9 @@
 - **Pipeline Code Integrity Guard — Prevent Fix-Loop Corruption** - COMPLETE. fix.md now matches workflows integrity guardrails; integration tests enforce prompt alignment.
 - **Session Scope Lock — Single-Goal Session Pattern** - PARTIAL. Added `SessionBrief.session_scope` with `SESSION_SCOPE_PROMPT` in session start output; wired via `brief_helpers`; tests in `test_session_start_tools`. Remaining: commit.md, analyze.md, CLAUDE.md per plan.
 - **Session Scope Lock — Single-Goal Session Pattern** - PARTIAL. Added a new `Session Discipline` section in `CLAUDE.md` to enforce single-goal session scope and defer unrelated work.
+- **Session Scope Lock — Single-Goal Session Pattern** - PARTIAL. Added `cortex://context` parity by appending `session_scope` guidance to successful context payloads in `load_context_resource`, plus coverage in `test_phase4_optimization`; quality gate now passes.
+- **Session Scope Lock — Single-Goal Session Pattern** - PARTIAL. Strengthened session scope guidance with explicit defer-unrelated-work wording and added assertions in session-start/context-resource tests; prompt-level commit/analyze follow-ups remain.
+- **Submodule Hygiene Unblock for Fix Pipeline** - COMPLETE. Relaxed submodule guard behavior under FIX mode to ignore dirty_worktree while preserving blocking on out_of_sync/merge_conflict, with unit regression coverage and passing quality gate.
 
 ## 2026-03-26
 

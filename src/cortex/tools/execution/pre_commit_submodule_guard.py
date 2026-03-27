@@ -7,6 +7,7 @@ uncommitted work or its checkout disagrees with the superproject index.
 from __future__ import annotations
 
 import logging
+import os
 import re
 import subprocess
 from enum import StrEnum
@@ -40,6 +41,13 @@ REMEDIATION = (
 SUBMODULE_INIT_REMEDIATION = "git submodule update --init --recursive"
 
 
+class SubmoduleHygieneMode(StrEnum):
+    """Execution context for submodule hygiene behavior."""
+
+    COMMIT = "commit"
+    FIX = "fix"
+
+
 class SubmoduleHygieneCode(StrEnum):
     """Why the submodule failed the hygiene gate."""
 
@@ -63,6 +71,33 @@ class SubmoduleHygieneReport(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
     violations: tuple[SubmoduleHygieneViolation, ...] = Field(default_factory=tuple)
+
+
+def _resolve_hygiene_mode(mode: SubmoduleHygieneMode | None) -> SubmoduleHygieneMode:
+    """Resolve explicit mode first, then environment override, then default."""
+    if mode is not None:
+        return mode
+    raw = os.environ.get("CORTEX_SUBMODULE_HYGIENE_MODE", "").strip().lower()
+    if raw == SubmoduleHygieneMode.COMMIT.value:
+        return SubmoduleHygieneMode.COMMIT
+    if raw == SubmoduleHygieneMode.FIX.value:
+        return SubmoduleHygieneMode.FIX
+    # Default to FIX semantics: treat "dirty_worktree" as fixable/work-in-progress
+    # rather than a blocker for quality/test execution. Still block the more
+    # severe out-of-sync and merge-conflict states.
+    return SubmoduleHygieneMode.FIX
+
+
+def _filter_violations_for_mode(
+    violations: tuple[SubmoduleHygieneViolation, ...],
+    mode: SubmoduleHygieneMode,
+) -> tuple[SubmoduleHygieneViolation, ...]:
+    """Apply mode-specific filtering for gate-blocking violations."""
+    if mode is SubmoduleHygieneMode.FIX:
+        return tuple(
+            v for v in violations if v.code is not SubmoduleHygieneCode.DIRTY_WORKTREE
+        )
+    return violations
 
 
 def _parse_submodule_status_line(line: str) -> tuple[str, str] | None:
@@ -238,40 +273,88 @@ def _violation_messages(report: SubmoduleHygieneReport) -> list[str]:
     return lines
 
 
-def precommit_block_response(project_root: Path) -> ModelDict | None:
-    """If submodules are unsafe to commit against, return a PreCommit-shaped dict."""
-    report = scan_submodule_hygiene(project_root)
-    if not report.violations:
-        return None
-
-    messages = _violation_messages(report)
-    detail = " ".join(messages) + " " + REMEDIATION
-    check = CheckResult(
+def _make_submodule_hygiene_check(messages: list[str], detail: str) -> CheckResult:
+    """Build the submodule_hygiene CheckResult payload."""
+    return CheckResult(
         check_type="submodule_hygiene",
         success=False,
         output=detail[:8000],
         errors=messages + [REMEDIATION],
     )
-    result = PreCommitResult(
+
+
+def _make_precommit_result(check: CheckResult, total_errors: int) -> PreCommitResult:
+    """Build PreCommitResult wrapper for the hygiene failure."""
+    return PreCommitResult(
         status=OperationStatus.ERROR,
         language=None,
         checks_performed=["submodule_hygiene"],
         results={"submodule_hygiene": check},
-        total_errors=len(report.violations),
+        total_errors=total_errors,
         total_warnings=0,
         success=False,
     )
-    data = result.model_dump(mode="json")
-    compact = truncate_large_logs_in_data(data)
-    serialized = ensure_json_serializable_for_mcp(cast(ModelDict, compact))
-    merged: dict[str, object] = dict(serialized)
-    merged["remediation"] = SUBMODULE_INIT_REMEDIATION
+
+
+def _finalize_precommit_block_response(
+    result: PreCommitResult,
+    *,
+    effective_mode: SubmoduleHygieneMode,
+    effective_violations: tuple[SubmoduleHygieneViolation, ...],
+) -> ModelDict:
+    """Attach remediation metadata for MCP /cortex/fix routing."""
+    data = truncate_large_logs_in_data(result.model_dump(mode="json"))
+    merged: dict[str, object] = dict(
+        ensure_json_serializable_for_mcp(cast(ModelDict, data))
+    )
+    merged.update(
+        {
+            "remediation": SUBMODULE_INIT_REMEDIATION,
+            "submodule_first_required": True,
+            "submodule_hygiene_violations": [
+                {"path": v.path, "code": v.code.value} for v in effective_violations
+            ],
+            "submodule_hygiene_mode": effective_mode.value,
+        }
+    )
     return cast(ModelDict, merged)
+
+
+def _build_precommit_block_response(
+    effective_mode: SubmoduleHygieneMode,
+    effective_violations: tuple[SubmoduleHygieneViolation, ...],
+) -> ModelDict:
+    """Build the MCP pre-commit shaped response payload."""
+    report = SubmoduleHygieneReport(violations=effective_violations)
+    messages = _violation_messages(report)
+    detail = " ".join(messages) + " " + REMEDIATION
+    check = _make_submodule_hygiene_check(messages, detail)
+    result = _make_precommit_result(check, len(effective_violations))
+    return _finalize_precommit_block_response(
+        result,
+        effective_mode=effective_mode,
+        effective_violations=effective_violations,
+    )
+
+
+def precommit_block_response(
+    project_root: Path, *, mode: SubmoduleHygieneMode | None = None
+) -> ModelDict | None:
+    """If submodules are unsafe to commit against, return a PreCommit-shaped dict."""
+    report = scan_submodule_hygiene(project_root)
+    effective_mode = _resolve_hygiene_mode(mode)
+    effective_violations = _filter_violations_for_mode(
+        report.violations, effective_mode
+    )
+    if not effective_violations:
+        return None
+    return _build_precommit_block_response(effective_mode, effective_violations)
 
 
 __all__ = [
     "REMEDIATION",
     "SUBMODULE_INIT_REMEDIATION",
+    "SubmoduleHygieneMode",
     "SubmoduleHygieneCode",
     "SubmoduleHygieneReport",
     "SubmoduleHygieneViolation",

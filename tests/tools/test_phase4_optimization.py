@@ -27,6 +27,7 @@ from cortex.tools.optimization import (
     summarize_content_resource,
 )
 from cortex.tools.optimization.handlers import is_non_trivial_task
+from cortex.tools.session.models import SESSION_SCOPE_PROMPT
 from tests.helpers.fixture_validator import validate_optimization_config_mock
 from tests.helpers.managers import make_test_managers
 
@@ -1308,6 +1309,10 @@ class TestPhase4OptimizationResources:
         assert result["status"] == "success"
         assert result["task_description"] == "Test task"
         assert result["strategy"] == "dependency_aware"
+        assert result["session_scope"] == SESSION_SCOPE_PROMPT
+        assert (
+            "Defer unrelated issues to a follow-up session" in result["session_scope"]
+        )
 
     async def test_get_relevance_scores_resource_returns_success(
         self, mock_project_root: Path, mock_managers: dict[str, Any]

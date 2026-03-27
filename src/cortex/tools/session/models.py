@@ -105,8 +105,9 @@ def _default_task_locks() -> list[TaskLock]:
 SESSION_SCOPE_PROMPT: str = (
     "## Session Scope\n\n"
     "Pick **one** primary goal for this session. Confirm it with the user (or state it clearly) "
-    "before taking on additional unrelated work. Single-goal sessions finish more reliably than "
-    "mixed bundles of fixes and exploration."
+    "before taking on additional unrelated work. Defer unrelated issues to a follow-up session "
+    "instead of bundling them into the current one. Single-goal sessions finish more reliably "
+    "than mixed bundles of fixes and exploration."
 )
 
 

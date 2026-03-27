@@ -131,6 +131,15 @@ class TestUnifiedAnalyzePromptContent:
         assert "usage_patterns" in prompt_content or "usage patterns" in prompt_content
         assert "reviews" in prompt_content
 
+    def test_includes_multi_goal_session_scope_risk_flag(
+        self, prompt_content: str
+    ) -> None:
+        """Prompt flags multi-goal sessions as session scope risk."""
+        lower = prompt_content.lower()
+        assert "session scope risk" in lower
+        assert "multi-goal" in lower
+        assert "split recommendation" in lower or "split" in lower
+
     def test_includes_unified_output_format(self, prompt_content: str) -> None:
         """Prompt includes unified output format (Context + Session sections)."""
         assert "Output Format" in prompt_content or "output format" in prompt_content

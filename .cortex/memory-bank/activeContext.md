@@ -10,6 +10,10 @@
 
 - ✅ **Session Scope Lock — Single-Goal Session Pattern (PARTIAL)** - COMPLETE (2026-03-27) - Documented single-goal session discipline in `CLAUDE.md` under a new `Session Discipline` section to reduce mixed-scope sessions and partial completions.
 
+- ✅ **Session Scope Lock — context parity (PARTIAL)** - COMPLETE (2026-03-27) - `cortex://context` now includes `session_scope` in success payloads, aligning start-session guidance with context resources. Added test coverage in optimization resource tests; remaining roadmap work is prompt-level split-commit and analyze scope-risk guidance.
+
+- ✅ **Submodule Hygiene Unblock for Fix Pipeline** - COMPLETE (2026-03-27) - Adjusted submodule hygiene behavior for FIX semantics so dirty_worktree findings no longer block `/cortex/fix` quality/test progression, while out_of_sync and merge_conflict still block. Added regression tests for both non-blocking and blocking FIX-mode cases; quality gate verified green.
+
 ## Completed Work (2026-03-26)
 
 - ✅ **Root-Cause-First Debugging Guardrails** - COMPLETE (2026-03-26) - Updated the Synapse fix prompt to enforce a mandatory diagnose-first Phase 0 with a hard gate that blocks edits until a hypothesis-driven Diagnosis Note is written.

@@ -8,6 +8,7 @@ from unittest.mock import patch
 
 from cortex.tools.execution.pre_commit_submodule_guard import (
     SubmoduleHygieneCode,
+    SubmoduleHygieneMode,
     precommit_block_response,
     scan_submodule_hygiene,
 )
@@ -184,3 +185,51 @@ def test_precommit_block_response_shape_when_dirty(tmp_path: Path) -> None:
     assert isinstance(sub, dict)
     assert sub.get("success") is False
     assert blocked.get("remediation") == "git submodule update --init --recursive"
+    assert blocked.get("submodule_hygiene_mode") == "fix"
+
+
+def test_precommit_block_response_fix_mode_ignores_dirty_worktree(
+    tmp_path: Path,
+) -> None:
+    (tmp_path / ".git").mkdir()
+    (tmp_path / "sub").mkdir(parents=True)
+    (tmp_path / "sub" / ".git").mkdir()
+
+    def fake_run(
+        cmd: list[str],
+        **_kwargs: object,
+    ) -> subprocess.CompletedProcess[str]:
+        if "submodule" in cmd:
+            return subprocess.CompletedProcess(cmd, 0, " abcd1234abcdef12 sub\n", "")
+        if "--porcelain" in cmd:
+            return subprocess.CompletedProcess(cmd, 0, " M file.txt\n", "")
+        return subprocess.CompletedProcess(cmd, 1, "", "unexpected")
+
+    with patch(
+        "cortex.tools.execution.pre_commit_submodule_guard.subprocess.run",
+        side_effect=fake_run,
+    ):
+        blocked = precommit_block_response(tmp_path, mode=SubmoduleHygieneMode.FIX)
+    assert blocked is None
+
+
+def test_precommit_block_response_fix_mode_still_blocks_out_of_sync(
+    tmp_path: Path,
+) -> None:
+    (tmp_path / ".git").mkdir()
+    fake = subprocess.CompletedProcess(
+        ["git", "submodule", "status"],
+        0,
+        "+abcd1234abcdef12 sub\n",
+        "",
+    )
+    with patch(
+        "cortex.tools.execution.pre_commit_submodule_guard.subprocess.run",
+        return_value=fake,
+    ):
+        blocked = precommit_block_response(tmp_path, mode=SubmoduleHygieneMode.FIX)
+    assert blocked is not None
+    assert blocked.get("submodule_hygiene_mode") == "fix"
+    violations = blocked.get("submodule_hygiene_violations")
+    assert isinstance(violations, list)
+    assert violations == [{"path": "sub", "code": "out_of_sync"}]

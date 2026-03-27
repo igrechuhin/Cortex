@@ -309,6 +309,14 @@ class TestCommitPipelineAlignment:
         assert "git add" in lower
         assert ".env" in pipeline_content or "sensitive" in lower
 
+    def test_pipeline_includes_split_commit_hint_for_multi_goal_changes(
+        self, pipeline_content: str
+    ) -> None:
+        """Commit prompt warns about multi-goal scope and split commits."""
+        lower = pipeline_content.lower()
+        assert "split" in lower and "commit" in lower
+        assert "multi-goal" in lower or "multiple unrelated goals" in lower
+
 
 class TestImplementPromptRefactoringGuidance:
     """Assert implement prompt contains refactoring guidance."""
@@ -397,6 +405,15 @@ class TestFixLoopIntegrityGuard:
         assert "roll back that attempt" in lower
         assert "max 3 attempts" in lower
 
+    def test_workflows_guide_requires_submodule_first_fix_routing(
+        self, workflows_guide_content: str
+    ) -> None:
+        """Workflow docs require submodule-first remediation before root checks."""
+        lower = workflows_guide_content.lower()
+        assert "submodule-first routing" in lower
+        assert "git submodule foreach" in workflows_guide_content
+        assert "run its fix loop first" in lower
+
     def test_fix_quality_tool_docs_warn_about_integrity_risks(
         self, fix_quality_tool_content: str
     ) -> None:
@@ -447,6 +464,15 @@ class TestFixPromptIntegrityGuard:
         lower = fix_prompt_content.lower()
         assert "roll back that attempt" in lower
         assert "max 3 attempts" in lower
+
+    def test_fix_prompt_requires_submodule_first_fix_routing(
+        self, fix_prompt_content: str
+    ) -> None:
+        """Fix prompt requires submodule-first remediation before root gates."""
+        lower = fix_prompt_content.lower()
+        assert "submodule-first fix routing" in lower
+        assert "git submodule foreach" in fix_prompt_content
+        assert 'not automatically "dirty state to reject"' in lower
 
 
 class TestPythonCodingStandardsTypeNarrowing:
