@@ -18,9 +18,11 @@
 
 - ✅ **MCP Server Regression Test Suite — Concurrent Subagent and Serialization Tests** - COMPLETE (2026-03-27) - Added deterministic regression tests covering concurrent tool saturation, `pipeline_handoff` serialization (string/object payloads), and CWD/root-resolution edge cases, plus sequencing safeguards; quality gates now pass.
 
+- ✅ **Commit pipeline run + docs lint repair** - COMPLETE (2026-03-27) - Executed commit pipeline phases inline, pre-staged Synapse submodule hygiene commit, and repaired roadmap link path to unblock markdown lint in Phase A.
+
 ## Completed Work (2026-03-26)
 
-- **Summary (2026-03-26)** - 7 entries archived.
+- **Summary (2026-03-26)** - 1 entries archived.
 
 ## Completed Work (2026-03-25)
 

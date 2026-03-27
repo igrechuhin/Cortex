@@ -46,7 +46,28 @@ from cortex.tools.execution.pre_commit_phase_dispatch import (
 # Serializes all Phase-A spawns (run_quality_gate, run_quality_gate_fresh,
 # fix_quality_issues). Concurrent Phase-A subprocess jobs crash the MCP server
 # because they race on shared session files and stdout. One job at a time.
-phase_a_lock = asyncio.Lock()
+#
+# Lazy per-loop: asyncio.Lock() binds to the running event loop at construction
+# time. A module-level singleton created at import time fails with
+# "bound to a different event loop" when tests (or xdist workers) each run in
+# their own fresh loop. We key the lock to the loop so each loop gets its own.
+_phase_a_lock_map: dict[asyncio.AbstractEventLoop, asyncio.Lock] = {}
+
+
+def get_phase_a_lock() -> asyncio.Lock:
+    """Return the Phase-A serialization lock for the currently running loop.
+
+    Creates a new asyncio.Lock on first call for each distinct event loop, so
+    pytest-asyncio and pytest-xdist workers that each spin up a fresh loop
+    never share a lock bound to a different loop (which raises RuntimeError).
+    """
+    try:
+        loop: asyncio.AbstractEventLoop = asyncio.get_running_loop()
+    except RuntimeError:
+        loop = asyncio.get_event_loop()
+    if loop not in _phase_a_lock_map:
+        _phase_a_lock_map[loop] = asyncio.Lock()
+    return _phase_a_lock_map[loop]
 
 
 def _read_pipeline_phase_config(
@@ -175,10 +196,10 @@ async def _spawn_and_poll_phase_a(
     progress notifications to flow. Without this, long-running in-process
     checks block the event loop and Cursor drops the connection.
 
-    Acquires ``phase_a_lock`` before spawning to prevent concurrent Phase-A
-    jobs, which race on shared session files and crash the MCP server.
+    Acquires ``get_phase_a_lock()`` before spawning to prevent concurrent
+    Phase-A jobs, which race on shared session files and crash the MCP server.
     """
-    async with phase_a_lock:
+    async with get_phase_a_lock():
         job = _start_phase_a_job(
             root,
             timeout=timeout,
@@ -336,7 +357,7 @@ async def fix_quality_issues(
       the fix path before re-running the quality gate.
     """
     root = get_current_project_root() or Path(await get_or_resolve_project_root(ctx))
-    async with phase_a_lock:
+    async with get_phase_a_lock():
         result_json = await fix_quality_issues_impl(
             root, include_untracked_markdown=True, ctx=ctx
         )

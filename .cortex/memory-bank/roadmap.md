@@ -6,6 +6,8 @@
 
 ## Blockers (ASAP Priority)
 
+- [Phase: Investigate fix_quality_issues MCP Tool Failure](../plans/phase-investigate-fix_quality_issues-failure-20260327-144201.md) - ASAP (PLANNING) - Investigate and fix MCP tool failure that occurred during commit procedure - Tool: `fix_quality_issues`, Error: AttributeError - Impact: Commit procedure blocked - Target completion: 2026-03-27
+
 ### No active blockers (all resolved as of 2026-03-14)
 
 ## Active Work (in progress)
