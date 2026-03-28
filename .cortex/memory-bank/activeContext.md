@@ -16,6 +16,8 @@
 
 - ✅ **Structured Final Reports — commit (Step 3 + test)** - COMPLETE (2026-03-28) - Synapse submodule commit documents final-report format in primary prompts; integration test guards required headings; plan Step 3 done, Steps 4-5 still open on roadmap.
 
+- ✅ **Structured Final Reports — implement-code handoff + superproject commit** - COMPLETE (2026-03-28) - Synapse submodule chore commit documents orchestrator final-report vs `pipeline_handoff` in `cursor-agents/implement-code.md`; superproject adds alignment integration test, REFACTORING_GUIDE appendix note, plan Step 4/5 partial updates, regenerated `.claude/agents`, and bumped gitlink. Optional `.cursor/commands` wrappers still absent.
+
 ## Completed Work (2026-03-27)
 
 - ✅ **Pipeline Code Integrity Guard — Prevent Fix-Loop Corruption** - COMPLETE (2026-03-27) - Added fix-loop NO-GO section, post-fix py_compile/import validation, and rollback guidance to fix.md; added TestFixPromptIntegrityGuard alignment tests.

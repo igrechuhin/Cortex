@@ -27,6 +27,6 @@ Step 1 inventory for [synapse-prompt-final-report-standardization](../../.cortex
 | `CLAUDE.md` | meta | Workspace agent rules; not an MCP prompt |
 | `.cursor/agents/implement-code.md` | pipeline | Cursor subagent; implement pipeline step 2 (code + quality gate) |
 | `.cursor/agents/shared-defaults.md` | meta | Shared agent conventions; reference for subagents |
-| `.cursor/commands/` | — | **Absent in this repo** (2026-03-28); no parallel Cursor command markdown |
+| `.cursor/commands/` | — | **Absent in this repo** (2026-03-28); no parallel Cursor command markdown. `.cortex/synapse/cursor-agents/implement-code.md` syncs to `.cursor/agents/implement-code.md` and points at the shared final-report template `docs/guides/synapse-final-report-templates.md`. |
 
 Categories follow the plan: **pipeline** (multi-phase with quality gates), **single-shot** (one main outcome), **meta** (planning / memory-bank / standards-only).

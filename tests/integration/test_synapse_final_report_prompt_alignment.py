@@ -47,6 +47,25 @@ def _synapse_prompts_dir() -> Path:
     return get_cortex_path(_repo_root(), CortexResourceType.SYNAPSE) / "prompts"
 
 
+def _cursor_implement_code_agent_path() -> Path:
+    """Return Synapse source path for the Cursor implement-code subagent."""
+    return (
+        get_cortex_path(_repo_root(), CortexResourceType.SYNAPSE)
+        / "cursor-agents"
+        / "implement-code.md"
+    )
+
+
+def _read_cursor_implement_code_agent() -> str:
+    """Read Synapse source for the Cursor implement-code subagent."""
+    path = _cursor_implement_code_agent_path()
+    if not path.exists():
+        pytest.skip(
+            f"(ref: cleanup-skipped-legacy-tests) cursor agent source not found at {path}"
+        )
+    return path.read_text()
+
+
 def _read_prompt(name: str) -> str:
     """Read a primary Synapse prompt by filename."""
     path = _synapse_prompts_dir() / name
@@ -63,3 +82,11 @@ def test_primary_prompt_has_final_report_section(filename: str) -> None:
     assert _TEMPLATE_REF in content
     for marker in _REQUIRED_SECTION_MARKERS:
         assert marker in content, f"{filename} missing section marker {marker}"
+
+
+def test_cursor_implement_code_agent_documents_final_report_handoff_split() -> None:
+    """Cursor implement-code subagent defers user-facing final report to the orchestrator."""
+    content = _read_cursor_implement_code_agent()
+    assert _TEMPLATE_REF in content
+    assert "orchestrator" in content
+    assert "pipeline_handoff" in content

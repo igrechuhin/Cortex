@@ -8,6 +8,8 @@
 - **Structured Final Reports for Cortex Synapse Prompts** - PARTIAL. Step 2 complete: canonical user-facing final-report templates documented in docs/guides/synapse-final-report-templates.md (base skeleton, per-prompt deltas, anti-patterns); REFACTORING_GUIDE appendix link added. Steps 3–5 remain (embed in Synapse prompts, align Cursor commands, regression tests).
 - **Structured Final Reports for Cortex Synapse Prompts** - PARTIAL. Step 3: mandatory Final report sections added to six primary Synapse prompts; `test_synapse_final_report_prompt_alignment.py` added. Steps 4-5 remain (Cursor commands if present; further regression tests).
 - **Structured Final Reports for Cortex Synapse Prompts** - PARTIAL. Commit pipeline: Synapse submodule bumped (six prompts with mandatory final-report sections); superproject adds `test_synapse_final_report_prompt_alignment.py` and plan updates. Steps 4-5 remain.
+- **Structured Final Reports for Cortex Synapse Prompts** - PARTIAL. implement-code agent documents orchestrator vs handoff split; synapse cursor-agents/implement-code.md + synced .cursor/agents; integration test for template ref; REFACTORING_GUIDE appendix note. Remaining: optional .cursor/commands when repo adds them.
+- **Structured Final Reports for Cortex Synapse Prompts** - PARTIAL. Superproject commit bundles Synapse gitlink bump (implement-code handoff docs), Claude agent sync, `test_synapse_final_report_prompt_alignment` cursor-agent coverage, REFACTORING_GUIDE + plan updates. Remaining: `.cursor/commands` when added.
 
 ## 2026-03-27
 
