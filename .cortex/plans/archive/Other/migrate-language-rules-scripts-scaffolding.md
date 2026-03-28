@@ -220,8 +220,16 @@ Coverage target: 95%.
 
 ### Remaining
 
-- Route `run_quality_gate` through language-aware dispatch for non-Python projects.
-- Update the `migrate` prompt to document Step 2b and include the new output fields.
+- **Optional / manual:** Step 6 — reconcile TradeWing Swift rules with `_templates/swift/`
+  (one-time; not automated in CI).
+
+### Done (2026-03-28)
+
+- **Quality gate:** Detached `pre_commit_worker` already routed via
+  `LanguageQualityRouter`; documented in `run_quality_gate` tool text and
+  `LanguageQualityRouter` docstring; added `tests/unit/test_pre_commit_worker_resolve_adapter.py`.
+- **`migrate` prompt:** Step 2b and migration JSON fields documented in
+  `docs/prompts/migrate.md`.
 
 ## Success Criteria
 

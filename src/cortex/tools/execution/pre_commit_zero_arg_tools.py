@@ -237,6 +237,11 @@ async def run_quality_gate(
     as a detached subprocess and polls with heartbeat progress notifications,
     keeping the MCP stdio connection alive during long runs (~90s).
 
+    Language dispatch: the worker resolves the project root via
+    ``detect_or_use_language`` and ``LanguageQualityRouter.get_adapter``, so
+    non-Python projects (Swift, Rust, Go, etc.) run the matching framework
+    adapter instead of Python-only Synapse scripts.
+
     Config is read automatically from the pipeline session file written by
     pipeline_handoff(operation="write", pipeline="commit", phase="checks").
     Supported keys: coverage_threshold (float), test_timeout (int).

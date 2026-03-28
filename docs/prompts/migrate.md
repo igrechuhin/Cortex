@@ -81,6 +81,36 @@ a no-op. The migration output includes `detected_language` and `post_edit_hook_w
 **Customization:** Replace the `command` with your project's preferred fast gate
 (tests, build, lint, etc.).
 
+#### Step 2b: Detect language and scaffold Synapse rules/scripts
+
+After `.cortex/` structure exists (Step 2), the migration flow **detects primary
+language(s)** from project markers (for example `Package.swift`, `package.json`,
+`Cargo.toml`, `go.mod`, dominant `*.py`) and can scaffold language-specific
+content without manual copy-paste:
+
+1. **Detect** — `detect_languages_for_migration` runs on the project root; results
+   appear on the migration report as `detected_languages` (list, ordered).
+2. **Confirm** — When running migration interactively, confirm or adjust the
+   detected set before relying on scaffolded files.
+3. **Rules** — Starter `.mdc` files are copied from
+   `.cortex/synapse/rules/_templates/<lang>/` into
+   `.cortex/synapse/rules/<lang>/` when templates exist; existing files are not
+   overwritten.
+4. **Scripts** — For languages without Python analysis scripts under
+   `scripts/python/`, migration may create `.cortex/synapse/scripts/<lang>/`
+   stubs (for example `run_quality_check.sh` and `README.md`) so you can wire
+   your native toolchain.
+5. **Report** — The migration output lists what was created under
+   `rules_scaffolded`, `scripts_scaffolded`, and `scaffolded_languages`.
+
+**Quality gate routing:** `run_quality_gate()` (Phase A) runs in a detached worker
+that resolves the project language via framework adapters and
+`LanguageQualityRouter`, then executes the matching adapter (for example
+`SwiftAdapter` for SwiftPM projects). Python Synapse scripts under
+`scripts/python/` apply only when the detected language is Python; other
+languages use adapter commands or language-specific stubs. Markdown lint
+(`rumdl`) still runs for all projects when included in Phase A.
+
 ### Step 3: Migrate legacy files
 
 - Copies/moves all files from legacy locations to new structure:
@@ -150,6 +180,10 @@ a no-op. The migration output includes `detected_language` and `post_edit_hook_w
   ],
   "detected_language": "python",
   "post_edit_hook_written": true,
+  "detected_languages": ["python"],
+  "scaffolded_languages": [],
+  "rules_scaffolded": [],
+  "scripts_scaffolded": [],
   "files_migrated": 24,
   "versions_migrated": 15,
   "links_updated": 3,

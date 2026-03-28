@@ -23,7 +23,11 @@ class LanguageQualityRoute:
 
 
 class LanguageQualityRouter:
-    """Single source of truth for language-specific quality routing."""
+    """Map detected language → framework adapter for pre-commit / quality gate.
+
+    Used by inline checks, the detached ``pre_commit_worker`` (``run_quality_gate``),
+    and post-edit hook template resolution.
+    """
 
     _ROUTES: dict[str, LanguageQualityRoute] = {
         "python": LanguageQualityRoute(

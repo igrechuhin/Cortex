@@ -34,5 +34,4 @@ Completed investigations are recorded in [activeContext.md](activeContext.md). P
 
 ### Features & Enhancements
 
-- **Migration: Language-Agnostic Rules and Scripts Scaffolding** - PENDING (`.cortex/plans/migrate-language-rules-scripts-scaffolding.md`) — Extend the migrate prompt to auto-detect project language and scaffold Synapse rules + scripts stubs for Swift, TypeScript, Java, Rust, Go etc. Wire `run_quality_gate` to route by language via `LanguageQualityRouter`. Eliminates manual post-migration setup (8 rule files for TradeWing Swift required manual creation). Component: migration. Priority: high.
 - **Structured Final Reports for Cortex Synapse Prompts** - PENDING (`.cortex/plans/synapse-prompt-final-report-standardization.md`) — Standardize user-facing final report layout across Synapse prompts (commit, implement, fix, analyze, plan, review) and Cursor commands so pipeline outcomes use one predictable markdown skeleton per prompt family.

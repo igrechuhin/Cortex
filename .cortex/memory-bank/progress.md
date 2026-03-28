@@ -3,6 +3,7 @@
 ## 2026-03-28
 
 - **Migration: Language-Agnostic Rules and Scripts Scaffolding** - PARTIAL. Landed Synapse template stubs under rules/_templates for go/java/javascript/rust/typescript; generalized migration scaffolded_languages reporting and tests; committed via Cortex commit pipeline with updated submodule gitlink.
+- **Migration: Language-Agnostic Rules and Scripts Scaffolding** - COMPLETE. Migrate prompt Step 2b + JSON fields; quality gate routing documented and covered by resolve_adapter_worker tests.
 
 ## 2026-03-27
 
