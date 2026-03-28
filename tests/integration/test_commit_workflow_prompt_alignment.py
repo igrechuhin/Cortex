@@ -318,6 +318,14 @@ class TestCommitPipelineAlignment:
         assert "multi-goal" in lower or "multiple unrelated goals" in lower
         assert "single-goal session pattern" in lower
 
+    def test_pipeline_includes_session_discipline_section(
+        self, pipeline_content: str
+    ) -> None:
+        """Commit prompt exposes Session Discipline (CLAUDE.md parity) before phases."""
+        assert "## Session Discipline" in pipeline_content
+        assert "CLAUDE.md" in pipeline_content
+        assert "Step 13" in pipeline_content
+
 
 class TestImplementPromptRefactoringGuidance:
     """Assert implement prompt contains refactoring guidance."""

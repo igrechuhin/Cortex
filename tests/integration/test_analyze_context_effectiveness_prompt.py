@@ -113,6 +113,12 @@ class TestUnifiedAnalyzePromptContent:
             )
         return path.read_text()
 
+    def test_includes_session_discipline_section(self, prompt_content: str) -> None:
+        """Analyze prompt exposes Session Discipline (CLAUDE.md parity) before steps."""
+        assert "## Session Discipline" in prompt_content
+        assert "CLAUDE.md" in prompt_content
+        assert "Step 5" in prompt_content
+
     def test_includes_pre_analysis_checklist(self, prompt_content: str) -> None:
         """Prompt includes Pre-Analysis Checklist (session health, manage_file)."""
         assert "Pre-Analysis Checklist" in prompt_content

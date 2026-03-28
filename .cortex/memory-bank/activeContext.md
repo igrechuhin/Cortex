@@ -22,6 +22,8 @@
 
 - ✅ **Structured Final Reports for Cortex Synapse Prompts** - COMPLETE (2026-03-28) - Extended `test_synapse_final_report_prompt_alignment` for Cursor command markdown when a `.cursor/commands` tree exists; REFACTORING_GUIDE links the archived plan; Phase B pre-commit tests isolate roadmap/progress consistency from workspace drift. Optional workflow command files under `.cursor/commands/` are gitignored (`/.cursor/`); use them locally or mirror content into tracked paths if sharing is required. Plan Steps 4–5 complete; plan archived.
 
+- ✅ **Session Scope Lock — remaining prompt alignment** - COMPLETE (2026-03-28) - Added explicit ## Session Discipline sections to Synapse commit.md and analyze.md (CLAUDE.md parity with pointers to Step 13 split-commit hint and Step 5 scope risk check); integration tests assert headings.
+
 ## Completed Work (2026-03-27)
 
 - **Summary (2026-03-27)** - 1 entries archived.

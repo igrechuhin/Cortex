@@ -14,7 +14,7 @@
 
 ## Pending plans (from .cortex/plans)
 
-- **Session Scope Lock — remaining prompt alignment** - PENDING — Complete Synapse commit and analyze prompt session-discipline sections deferred from 2026-03-27 progress notes.
+- **MCP startup: Synapse submodule sync** - PENDING - Plan `.cortex/plans/mcp-startup-synapse-submodule-sync.md`. On MCP server start, run a bounded git step so `.cortex/synapse` is initialized/updated per policy; opt-out env; safe behavior when dirty or offline.
 
 ### Fixes
 
