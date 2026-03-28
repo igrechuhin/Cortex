@@ -271,3 +271,40 @@ async def test_migrate_legacy_structure_detects_languages_and_scaffolds_swift_sc
     assert "swift build" in content
     assert "swift test" in content
     assert str(quality_script) in report.scripts_scaffolded
+
+
+@pytest.mark.asyncio
+async def test_migrate_legacy_structure_marks_typescript_as_scaffolded_from_rules(
+    tmp_path: Path,
+) -> None:
+    _ = (tmp_path / "tsconfig.json").write_text("{}", encoding="utf-8")
+    templates_dir = (
+        tmp_path / ".cortex" / "synapse" / "rules" / "_templates" / "typescript"
+    )
+    templates_dir.mkdir(parents=True, exist_ok=True)
+    template_rule = templates_dir / "typescript-coding-standards.mdc"
+    _ = template_rule.write_text("# TypeScript template", encoding="utf-8")
+    scattered_dir = tmp_path / "somewhere"
+    scattered_dir.mkdir(parents=True, exist_ok=True)
+    _ = (scattered_dir / "projectBrief.md").write_text("# Brief", encoding="utf-8")
+
+    manager = StructureMigrationManager(tmp_path)
+
+    report = await manager.migrate_legacy_structure(
+        legacy_type="scattered-files", backup=False, archive=False
+    )
+
+    assert report.success is True
+    assert report.detected_languages == ["typescript"]
+    assert report.scaffolded_languages == ["typescript"]
+    scaffolded_rule = (
+        tmp_path
+        / ".cortex"
+        / "synapse"
+        / "rules"
+        / "typescript"
+        / "typescript-coding-standards.mdc"
+    )
+    assert scaffolded_rule.exists()
+    assert str(scaffolded_rule) in report.rules_scaffolded
+    assert report.scripts_scaffolded == []

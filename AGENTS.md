@@ -179,9 +179,9 @@ All phases run inline. Use zero-arg tools — do NOT use legacy pre-commit tools
 - When enforcing new coding standards (e.g., Literal→enum), update `.cortex/synapse/rules/python` so the rule is reflected there.
 - When fixing private/public access issues, prefer making the original symbol public (rename `_name` → `name` and update call sites) instead of adding public alias shims like `name = _name`.
 - Prompts must be language agnostic; avoid language- or tool-specific identifiers in prompt instructions (e.g. specific typechecker rule names).
+- Treat overloaded terms (e.g. "clean") as prompt-specific; do not assume commit-pipeline git-clean semantics when a prompt defines issue-clean or workflow-clean semantics.
 - When refactoring, briefly explain why the new approach is better, especially when the change is non-obvious.
-- When consolidating tools or updating tool descriptions, follow `docs/guides/tool-description-altitude-rubric.md` (target score ≥4).
-- Tool names must reflect the purpose of the tool.
+- When consolidating or adding tools, keep names purpose-revealing and follow `docs/guides/tool-description-altitude-rubric.md` (target score ≥4).
 - Prefer scan-friendly emoji status markers (✅/⚠️/❌) in prompts and summaries for success/warn/error.
 - Keep final summaries concise (typically at most four sentences) and avoid heavy code blocks there; use headings and bolded bullet labels per the markdown formatting guide.
 - When a roadmap item is large, always make concrete partial progress in the current session (smallest meaningful subtask plus tests/quality) and update plans/status as PARTIAL instead of stopping with no changes.

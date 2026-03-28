@@ -2,6 +2,10 @@
 
 **This file records completed work only.** For current status and upcoming work see [roadmap.md](roadmap.md).
 
+## Completed Work (2026-03-28)
+
+- ✅ **Migration: language rule templates and scaffolded_languages reporting** - COMPLETE (2026-03-28) - Synapse submodule adds minimal rules/_templates for Go, Java, JavaScript, Rust, and TypeScript. Structure migration now derives scaffolded_languages from scaffolded rule/script paths (_collect_scaffolded_languages, _to_json_list) with expanded unit tests; plan doc and AGENTS touched. Submodule pointer updated to the new Synapse commit.
+
 ## Completed Work (2026-03-27)
 
 - ✅ **Pipeline Code Integrity Guard — Prevent Fix-Loop Corruption** - COMPLETE (2026-03-27) - Added fix-loop NO-GO section, post-fix py_compile/import validation, and rollback guidance to fix.md; added TestFixPromptIntegrityGuard alignment tests.

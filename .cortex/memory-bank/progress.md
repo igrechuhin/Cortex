@@ -1,5 +1,9 @@
 # Progress Log
 
+## 2026-03-28
+
+- **Migration: Language-Agnostic Rules and Scripts Scaffolding** - PARTIAL. Landed Synapse template stubs under rules/_templates for go/java/javascript/rust/typescript; generalized migration scaffolded_languages reporting and tests; committed via Cortex commit pipeline with updated submodule gitlink.
+
 ## 2026-03-27
 
 - **Pipeline Code Integrity Guard — Prevent Fix-Loop Corruption** - COMPLETE. fix.md now matches workflows integrity guardrails; integration tests enforce prompt alignment.
@@ -14,6 +18,7 @@
 - **Commit pipeline execution and markdown gate repair** - PARTIAL. Ran `/cortex/commit` pipeline preflight and Phase A, fixed roadmap blocker-link markdown lint failure (`../plans/...`), and revalidated with passing quality gate (~91.82% coverage).
 - **Investigate fix_quality_issues MCP Tool Failure** - COMPLETE. Restored backwards-compatible `phase_a_lock` symbol as an alias to `get_phase_a_lock`, unblocking `fix_quality_issues()` runtime execution; verified via full quality gate and docs gate.
 - **Migration: Language-Agnostic Rules and Scripts Scaffolding** - PARTIAL. Implemented Swift rules-template scaffolding during migration: copy missing templates from `.cortex/synapse/rules/_templates/swift/` into project-local rules, surfaced `rules_scaffolded` in migration output, and added tests; quality gate passed.
+- **Migration: Language-Agnostic Rules and Scripts Scaffolding** - PARTIAL. Added language rule template packs for `typescript`, `javascript`, `java`, `rust`, and `go`; made migration `scaffolded_languages` reporting generic; added unit coverage for multi-language template scaffolding and TypeScript migration reporting.
 
 ## 2026-03-26
 

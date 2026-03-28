@@ -153,32 +153,24 @@ class StructureMigrationManager:
         )
 
         detected_languages = detect_languages_for_migration(self.project_root)
-        detected_languages_json: list[JsonValue] = []
-        for language in detected_languages:
-            detected_languages_json.append(language)
-        report["detected_languages"] = detected_languages_json
+        report["detected_languages"] = _to_json_list(detected_languages)
 
         rules_scaffolded = scaffold_language_rules_from_templates(
             self.project_root, detected_languages
         )
-        rules_scaffolded_json: list[JsonValue] = []
-        for rule_path in rules_scaffolded:
-            rules_scaffolded_json.append(rule_path)
-        report["rules_scaffolded"] = rules_scaffolded_json
+        report["rules_scaffolded"] = _to_json_list(rules_scaffolded)
 
         scripts_scaffolded = scaffold_language_scripts(
             self.project_root, detected_languages
         )
-        scripts_scaffolded_json: list[JsonValue] = []
-        for script_path in scripts_scaffolded:
-            scripts_scaffolded_json.append(script_path)
-        report["scripts_scaffolded"] = scripts_scaffolded_json
+        report["scripts_scaffolded"] = _to_json_list(scripts_scaffolded)
 
-        scaffolded_languages: list[JsonValue] = []
-        for language in detected_languages:
-            if language == "swift" and (rules_scaffolded or scripts_scaffolded):
-                scaffolded_languages.append(language)
-        report["scaffolded_languages"] = scaffolded_languages
+        scaffolded_by_language = _collect_scaffolded_languages(
+            detected_languages,
+            rules_scaffolded,
+            scripts_scaffolded,
+        )
+        report["scaffolded_languages"] = _to_json_list(scaffolded_by_language)
 
     def _detect_or_validate_legacy_type(self, legacy_type: str | None) -> str | None:
         """Detect or validate legacy structure type.
@@ -345,3 +337,26 @@ class StructureMigrationManager:
 
 # Export for public API
 __all__ = ["StructureMigrationManager", "STANDARD_MEMORY_BANK_FILES"]
+
+
+def _collect_scaffolded_languages(
+    detected_languages: list[str],
+    rules_scaffolded: list[str],
+    scripts_scaffolded: list[str],
+) -> list[str]:
+    scaffolded_paths = rules_scaffolded + scripts_scaffolded
+    scaffolded_languages: list[str] = []
+
+    for language in detected_languages:
+        language_marker = f"/{language}/"
+        if any(language_marker in path for path in scaffolded_paths):
+            scaffolded_languages.append(language)
+
+    return scaffolded_languages
+
+
+def _to_json_list(values: list[str]) -> list[JsonValue]:
+    json_values: list[JsonValue] = []
+    for value in values:
+        json_values.append(value)
+    return json_values

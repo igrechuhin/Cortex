@@ -207,11 +207,19 @@ Coverage target: 95%.
 - Added tests for template copy + skip-existing behavior and migration report coverage:
   `tests/unit/test_language_rules_scaffolding.py` and updated
   `tests/unit/test_structure_migration.py`.
+- Expanded rule template coverage beyond Swift by adding starter packs under:
+  `.cortex/synapse/rules/_templates/typescript/`,
+  `.cortex/synapse/rules/_templates/javascript/`,
+  `.cortex/synapse/rules/_templates/java/`,
+  `.cortex/synapse/rules/_templates/rust/`, and
+  `.cortex/synapse/rules/_templates/go/`.
+- Updated migration reporting to derive `scaffolded_languages` from actual
+  scaffolded rule/script paths, removing Swift-only assumptions.
+- Added/extended tests to cover multi-language template copy behavior and
+  TypeScript migration scaffolding/reporting paths.
 
 ### Remaining
 
-- Expand template coverage beyond the initial Swift template set and add
-  per-language template packs (`typescript`, `javascript`, `java`, `rust`, `go`).
 - Route `run_quality_gate` through language-aware dispatch for non-Python projects.
 - Update the `migrate` prompt to document Step 2b and include the new output fields.
 
