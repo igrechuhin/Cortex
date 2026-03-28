@@ -31,10 +31,12 @@ class SynapseStartupSyncOutcome(StrEnum):
 
     SKIPPED_OPT_OUT = "skipped_opt_out"
     SKIPPED_NOT_GIT_ROOT = "skipped_not_git_root"
-    SKIPPED_DIRTY_WORKTREE = "skipped_dirty_worktree"
     SUCCESS = "success"
+    SUCCESS_WITH_STASH = "success_with_stash"
     GIT_ERROR = "git_error"
     GIT_TIMEOUT = "git_timeout"
+    STASH_FAILED = "stash_failed"
+    STASH_POP_FAILED = "stash_pop_failed"
 
 
 class SynapseStartupSyncResult(BaseModel):
@@ -69,15 +71,28 @@ def _skipped_not_git(root: Path) -> SynapseStartupSyncResult:
     )
 
 
-def _skipped_dirty(synapse_abs: Path) -> SynapseStartupSyncResult:
-    logger.warning(
-        "MCP startup: skipping Synapse submodule sync — %s has local changes (commit, stash, or discard to avoid data loss). Manual: git submodule update --init --recursive from repo root.",
-        synapse_abs,
-    )
-    return SynapseStartupSyncResult(
-        outcome=SynapseStartupSyncOutcome.SKIPPED_DIRTY_WORKTREE,
-        detail=str(synapse_abs),
-    )
+def _stash_push(synapse_abs: Path, timeout: float) -> bool:
+    """Stash local changes in submodule. Returns True on success."""
+    cmd = ["git", "-C", str(synapse_abs), "stash", "push", "-m", "cortex-mcp-startup"]
+    try:
+        proc = subprocess.run(
+            cmd, capture_output=True, text=True, timeout=timeout, check=False
+        )
+        return proc.returncode == 0
+    except subprocess.TimeoutExpired:
+        return False
+
+
+def _stash_pop(synapse_abs: Path, timeout: float) -> bool:
+    """Pop stashed changes. Returns True on success."""
+    cmd = ["git", "-C", str(synapse_abs), "stash", "pop"]
+    try:
+        proc = subprocess.run(
+            cmd, capture_output=True, text=True, timeout=timeout, check=False
+        )
+        return proc.returncode == 0
+    except subprocess.TimeoutExpired:
+        return False
 
 
 def _submodule_update_result_from_proc(
@@ -135,6 +150,51 @@ def _run_git_submodule_update(
     return _submodule_update_result_from_proc(proc)
 
 
+def _result_after_stashed_submodule_update(
+    update_result: SynapseStartupSyncResult,
+) -> SynapseStartupSyncResult:
+    if update_result.outcome != SynapseStartupSyncOutcome.SUCCESS:
+        return update_result
+    logger.info(
+        "MCP startup: Synapse submodule sync completed (stashed and restored local changes)"
+    )
+    return SynapseStartupSyncResult(
+        outcome=SynapseStartupSyncOutcome.SUCCESS_WITH_STASH
+    )
+
+
+def _sync_with_stash(
+    root: Path,
+    synapse_abs: Path,
+    update_timeout: float,
+    porcelain_timeout: float,
+) -> SynapseStartupSyncResult:
+    """Stash local changes, update submodule, pop stash."""
+    if not _stash_push(synapse_abs, porcelain_timeout):
+        logger.warning(
+            "MCP startup: git stash push failed in %s; skipping submodule sync",
+            synapse_abs,
+        )
+        return SynapseStartupSyncResult(
+            outcome=SynapseStartupSyncOutcome.STASH_FAILED,
+            detail=str(synapse_abs),
+        )
+
+    update_result = _run_git_submodule_update(root, update_timeout)
+
+    if not _stash_pop(synapse_abs, porcelain_timeout):
+        logger.warning(
+            "MCP startup: git stash pop failed in %s; local changes may remain stashed (run 'git stash pop' manually)",
+            synapse_abs,
+        )
+        return SynapseStartupSyncResult(
+            outcome=SynapseStartupSyncOutcome.STASH_POP_FAILED,
+            detail=f"update={update_result.outcome.value}",
+        )
+
+    return _result_after_stashed_submodule_update(update_result)
+
+
 def try_sync_synapse_submodule_at_mcp_startup(
     project_root: Path,
     *,
@@ -150,8 +210,12 @@ def try_sync_synapse_submodule_at_mcp_startup(
         return _skipped_not_git(root)
 
     synapse_abs = get_cortex_path(root, CortexResourceType.SYNAPSE).resolve()
-    if submodule_path_has_local_changes(synapse_abs, timeout=porcelain_timeout):
-        return _skipped_dirty(synapse_abs)
+    has_local_changes = submodule_path_has_local_changes(
+        synapse_abs, timeout=porcelain_timeout
+    )
+
+    if has_local_changes:
+        return _sync_with_stash(root, synapse_abs, update_timeout, porcelain_timeout)
 
     return _run_git_submodule_update(root, update_timeout)
 

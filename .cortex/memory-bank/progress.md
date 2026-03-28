@@ -16,6 +16,7 @@
 - **Structured Final Reports — superproject commit** - COMPLETE. Committed tests, docs, memory-bank, plan archive, and Claude agent sync; markdown roadmap formatting (MD032); `.cursor/commands` remains outside git per `.gitignore`.
 - **Session Scope Lock — remaining prompt alignment** - COMPLETE. Synapse commit/analyze prompts now include explicit Session Discipline sections; tests updated.
 - **MCP startup: Synapse submodule sync** - COMPLETE. Bounded git submodule sync at MCP startup; opt-out env; dirty worktree skips; non-fatal errors; tests and docs.
+- **MCP startup: Synapse submodule sync — stash path** - COMPLETE. Stash local Synapse changes before submodule update and pop after; distinct outcomes for stash and stash-pop failures; helper split for function-length limits; expanded unit tests; AGENTS/troubleshooting and index updates.
 
 ## 2026-03-27
 
