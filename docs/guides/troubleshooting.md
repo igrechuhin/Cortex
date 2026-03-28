@@ -61,7 +61,7 @@ Use this when tunnels, proxies, air-gaps, or corporate filters block PyPI (or wh
 
 - **Python** 3.13 or later (see [Issue: Python version too old](#issue-python-version-too-old)).
 - **`uv`** on `PATH` (see [Issue: `uv` command not found](#issue-uv-command-not-found)).
-- **Synapse submodule** (shared rules and hook scripts): from repo root run `git submodule update --init --recursive`. Submodule fetch is a **Git** operation to the submodule remote; it can fail independently of PyPI.
+- **Synapse submodule** (shared rules and hook scripts): from repo root run `git submodule update --init --recursive`. Submodule fetch is a **Git** operation to the submodule remote; it can fail independently of PyPI. The MCP server runs the same command once at startup when policy allows (skipped for dirty `.cortex/synapse` or `CORTEX_SKIP_SYNAPSE_UPDATE=1`); failures there are non-fatal—check logs and run the command manually if needed.
 
 **Bootstrap (connected machine, normal path)**:
 
@@ -104,7 +104,7 @@ Environment variable reference: [Astral uv — Environment variables](https://do
 | “No solution” / missing distribution at locked version (offline) | Lock not satisfiable from local wheels | Regenerate lock and wheelhouse on a connected machine; expand `UV_FIND_LINKS` |
 | `uv sync` succeeds; pytest shows failed tests with tracebacks | Code, test, or local expectation issue | Debug failing tests; fix implementation or test data |
 | `pytest: command not found` or wrong Python version | Shell not using project venv | Use `uv run pytest …` or select `.venv` (see [Development and Testing](#development-and-testing)) |
-| Errors referencing `.cortex/synapse` paths during hooks | Submodule missing | `git submodule update --init --recursive` |
+| Errors referencing `.cortex/synapse` paths during hooks | Submodule missing | `git submodule update --init --recursive` (also attempted on MCP startup when not skipped) |
 
 **Optional (follow-up)**: A devcontainer or pre-built image with dependencies resolved can reduce friction; treat as a separate change if your team standardizes on containers.
 

@@ -209,6 +209,7 @@ If dependency download fails (network, proxy, air-gap, or SSL), use the prefligh
 ### Running the Cortex MCP server
 
 - Default transport is **stdio** (reads JSON-RPC from stdin, writes to stdout): `uv run cortex`
+- **Synapse submodule on startup**: From the detected project root, the server runs a best-effort, **non-fatal** `git submodule update --init --recursive` (superproject gitlink only; not `--remote`) so `.cortex/synapse` is initialized or aligned. It is **skipped** if the submodule worktree has local changes (to avoid data loss), if the root is not a git checkout, or if you set `CORTEX_SKIP_SYNAPSE_UPDATE=1`. Git errors or timeouts are logged and startup continues. Manual recovery is still `git submodule update --init --recursive` from repo root (same as CI/bootstrap scripts).
 - For HTTP/SSE testing: `CORTEX_MCP_TRANSPORT=sse uv run cortex` (starts on port 8000 by default)
 - The server is self-contained with no database or external API dependencies; all state is filesystem-based (`.cortex/` directory)
 

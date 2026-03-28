@@ -14,7 +14,7 @@
 
 ## Pending plans (from .cortex/plans)
 
-- **MCP startup: Synapse submodule sync** - PENDING - Plan `.cortex/plans/mcp-startup-synapse-submodule-sync.md`. On MCP server start, run a bounded git step so `.cortex/synapse` is initialized/updated per policy; opt-out env; safe behavior when dirty or offline.
+- **Migration: Language-Agnostic Rules and Scripts Scaffolding** - PENDING - Remaining integration and scaffolding work described by PARTIAL progress entries; remove when that work is complete or progress is reconciled.
 
 ### Fixes
 

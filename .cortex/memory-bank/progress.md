@@ -15,6 +15,7 @@
 - **Implement pipeline follow-up** - PARTIAL. Isolated Phase B unit tests from workspace progress/roadmap drift (autouse patch + moved consistency test class); fixed REFACTORING_GUIDE archived plan link; restored a PENDING roadmap bullet for docs gate invariant after Structured Final Reports completion.
 - **Structured Final Reports — superproject commit** - COMPLETE. Committed tests, docs, memory-bank, plan archive, and Claude agent sync; markdown roadmap formatting (MD032); `.cursor/commands` remains outside git per `.gitignore`.
 - **Session Scope Lock — remaining prompt alignment** - COMPLETE. Synapse commit/analyze prompts now include explicit Session Discipline sections; tests updated.
+- **MCP startup: Synapse submodule sync** - COMPLETE. Bounded git submodule sync at MCP startup; opt-out env; dirty worktree skips; non-fatal errors; tests and docs.
 
 ## 2026-03-27
 

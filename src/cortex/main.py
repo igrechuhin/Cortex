@@ -22,6 +22,10 @@ from typing import cast
 import anyio
 
 from cortex.core.mcp_stability_config import is_connection_error
+from cortex.core.synapse_submodule_startup import (
+    try_sync_synapse_submodule_at_mcp_startup,
+)
+from cortex.managers.initialization import get_project_root
 
 # Apply Cortex transport env to FastMCP settings before server is imported
 from cortex.transport_config import apply_cortex_env_to_fastmcp
@@ -276,13 +280,14 @@ def _patch_mcp_server_handle_request() -> None:
     setattr(lowlevel, "_handle_request", _types.MethodType(_patched, lowlevel))
 
 
-def _run_server_once() -> None:
-    """Run the MCP server once (stdio or HTTP). Exits on disconnect or error."""
-    _inject_sequential_thinking_core()
-    _patch_mcp_server_handle_request()
-    transport = get_effective_transport()
-    if transport in (TRANSPORT_SSE, TRANSPORT_STREAMABLE_HTTP):
-        _require_http_deps()
+def _sync_synapse_before_listen() -> None:
+    """Best-effort Synapse submodule sync; logs outcome at debug level."""
+    sync_result = try_sync_synapse_submodule_at_mcp_startup(get_project_root(None))
+    logger.debug("synapse_submodule_startup: %s", sync_result.model_dump(mode="json"))
+
+
+def _run_mcp_with_transport_handlers(transport: str) -> None:
+    """Run FastMCP for transport and map connection errors to process exit."""
     try:
         if transport == "stdio":
             mcp.run(transport="stdio")
@@ -308,6 +313,17 @@ def _run_server_once() -> None:
     except Exception as e:
         logger.exception("Unexpected error in MCP server: %s", e)
         sys.exit(1)
+
+
+def _run_server_once() -> None:
+    """Run the MCP server once (stdio or HTTP). Exits on disconnect or error."""
+    _sync_synapse_before_listen()
+    _inject_sequential_thinking_core()
+    _patch_mcp_server_handle_request()
+    transport = get_effective_transport()
+    if transport in (TRANSPORT_SSE, TRANSPORT_STREAMABLE_HTTP):
+        _require_http_deps()
+    _run_mcp_with_transport_handlers(transport)
 
 
 def _run_auto_restart_loop() -> None:

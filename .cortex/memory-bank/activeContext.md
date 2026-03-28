@@ -24,6 +24,8 @@
 
 - ✅ **Session Scope Lock — remaining prompt alignment** - COMPLETE (2026-03-28) - Added explicit ## Session Discipline sections to Synapse commit.md and analyze.md (CLAUDE.md parity with pointers to Step 13 split-commit hint and Step 5 scope risk check); integration tests assert headings.
 
+- ✅ **MCP startup: Synapse submodule sync** - COMPLETE (2026-03-28) - Added synapse_submodule_startup helper: bounded git submodule update --init --recursive before MCP listen; skip when CORTEX_SKIP_SYNAPSE_UPDATE set or synapse worktree dirty; non-fatal on failure. Hooked in _run_server_once. Tests and AGENTS/troubleshooting notes.
+
 ## Completed Work (2026-03-27)
 
 - **Summary (2026-03-27)** - 1 entries archived.

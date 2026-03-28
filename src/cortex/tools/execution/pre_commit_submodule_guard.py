@@ -116,6 +116,15 @@ def _parse_submodule_status_line(line: str) -> tuple[str, str] | None:
     return prefix, path
 
 
+def submodule_path_has_local_changes(sub_abs: Path, *, timeout: float = 60.0) -> bool:
+    """True when submodule_abs is a git worktree with local changes (hygiene guard rules)."""
+    if not sub_abs.exists():
+        return False
+    if not (sub_abs / ".git").exists():
+        return False
+    return _submodule_porcelain_non_empty(sub_abs, timeout)
+
+
 def _submodule_porcelain_non_empty(sub_abs: Path, timeout: float) -> bool:
     """True when the submodule has unstaged/untracked changes outside ignored noise paths."""
     try:
@@ -354,6 +363,7 @@ def precommit_block_response(
 __all__ = [
     "REMEDIATION",
     "SUBMODULE_INIT_REMEDIATION",
+    "submodule_path_has_local_changes",
     "SubmoduleHygieneMode",
     "SubmoduleHygieneCode",
     "SubmoduleHygieneReport",
