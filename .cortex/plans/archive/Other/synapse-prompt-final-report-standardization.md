@@ -2,13 +2,13 @@
 title: Structured Final Reports for Cortex Synapse Prompts
 component: prompts
 work_type: improvement
-status: IN_PROGRESS
+status: COMPLETED
 priority: medium
 created: 2026-03-27
 depends_on: []
 ---
 
-**Remaining:** Step 4 — add `.cursor/commands/*.md` when the repo ships Cursor command wrappers (repo still has no commands dir). Step 5 — extend tests if new prompt entrypoints or include-mechanisms are added.
+**Remaining:** None — Steps 1–5 complete (2026-03-28). Ongoing: keep Synapse prompts, `.cursor/commands/*.md`, and alignment tests in sync when workflows change.
 
 ## Goal
 
@@ -60,7 +60,7 @@ Make user-visible outcomes of Cortex Synapse prompts (and related Cursor command
 
 ### Step 4 — Align Cursor commands
 
-**Partial (2026-03-28):** `.cortex/synapse/cursor-agents/implement-code.md` (synced to `.cursor/agents/implement-code.md`) documents that the orchestrator owns user-facing final reports per `docs/guides/synapse-final-report-templates.md`; subagent uses `pipeline_handoff` only. REFACTORING_GUIDE appendix notes the sync path.
+**Done (2026-03-28):** Added `.cursor/commands/` markdown for commit, implement, fix, analyze, create-plan, and review. Each command points at the matching Synapse prompt under `.cortex/synapse/prompts/` and mandates the same **Final report (required format)** section order as `docs/guides/synapse-final-report-templates.md` (including workflow-specific delta pointers). `.cortex/synapse/cursor-agents/implement-code.md` remains synced to `.cursor/agents/implement-code.md` for orchestrator-owned final reports vs subagent `pipeline_handoff`.
 
 - Update Cursor command markdown under `.cursor/commands` or equivalent so command instructions point agents to the same final-report template as the matching Synapse prompt (no duplicate conflicting formats).
 
@@ -68,7 +68,7 @@ Make user-visible outcomes of Cortex Synapse prompts (and related Cursor command
 
 ### Step 5 — Regression tests
 
-**Partial (2026-03-28):** `tests/integration/test_synapse_final_report_prompt_alignment.py` asserts the final-report heading, template path, and required section markers across primary prompts; also asserts `cursor-agents/implement-code.md` references the template and orchestrator vs `pipeline_handoff` split.
+**Done (2026-03-28):** `tests/integration/test_synapse_final_report_prompt_alignment.py` asserts primary prompts, each non-empty `.cursor/commands/*.md` set (skip if commands dir missing), and `cursor-agents/implement-code.md` (template ref + orchestrator vs `pipeline_handoff`). Shared `_assert_final_report_markers` covers heading, `docs/guides/synapse-final-report-templates.md`, and required backtick section markers.
 
 - Extend or add prompt alignment tests (similar to `test_commit_workflow_prompt_alignment.py`) to assert presence of required headings or stable markers for **final report** sections, without brittle full-text equality where possible (semantic / structural checks per archived reduce-prompt-alignment-fragility plan).
 

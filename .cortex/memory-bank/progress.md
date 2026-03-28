@@ -10,6 +10,9 @@
 - **Structured Final Reports for Cortex Synapse Prompts** - PARTIAL. Commit pipeline: Synapse submodule bumped (six prompts with mandatory final-report sections); superproject adds `test_synapse_final_report_prompt_alignment.py` and plan updates. Steps 4-5 remain.
 - **Structured Final Reports for Cortex Synapse Prompts** - PARTIAL. implement-code agent documents orchestrator vs handoff split; synapse cursor-agents/implement-code.md + synced .cursor/agents; integration test for template ref; REFACTORING_GUIDE appendix note. Remaining: optional .cursor/commands when repo adds them.
 - **Structured Final Reports for Cortex Synapse Prompts** - PARTIAL. Superproject commit bundles Synapse gitlink bump (implement-code handoff docs), Claude agent sync, `test_synapse_final_report_prompt_alignment` cursor-agent coverage, REFACTORING_GUIDE + plan updates. Remaining: `.cursor/commands` when added.
+- **Structured Final Reports for Cortex Synapse Prompts** - COMPLETE. Cursor command wrappers and tests aligned with synapse-final-report-templates; Steps 4–5 done.
+- **Implement pipeline follow-up** - PARTIAL. Isolated Phase B unit tests from workspace progress/roadmap drift (autouse patch + moved consistency test class); fixed REFACTORING_GUIDE archived plan link; restored a PENDING roadmap bullet for docs gate invariant after Structured Final Reports completion.
+- **Structured Final Reports — superproject commit** - COMPLETE. Committed tests, docs, memory-bank, plan archive, and Claude agent sync; markdown roadmap formatting (MD032); `.cursor/commands` remains outside git per `.gitignore`.
 
 ## 2026-03-27
 

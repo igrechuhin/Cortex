@@ -74,14 +74,38 @@ def _read_prompt(name: str) -> str:
     return path.read_text()
 
 
+def _cursor_commands_md_paths() -> list[Path]:
+    """Return sorted paths to `.cursor/commands/*.md` (non-empty)."""
+    root = _repo_root() / ".cursor" / "commands"
+    if not root.is_dir():
+        pytest.skip(
+            "(ref: cleanup-skipped-legacy-tests) .cursor/commands directory not found"
+        )
+    paths = sorted(p for p in root.glob("*.md") if p.is_file())
+    assert paths, f"expected at least one *.md under {root}"
+    return paths
+
+
+def _assert_final_report_markers(path: Path, content: str) -> None:
+    """Shared structural checks for template ref, heading, and section markers."""
+    assert _FINAL_REPORT_HEADING in content, f"{path} missing final report heading"
+    assert _TEMPLATE_REF in content, f"{path} missing template reference"
+    for marker in _REQUIRED_SECTION_MARKERS:
+        assert marker in content, f"{path} missing section marker {marker}"
+
+
 @pytest.mark.parametrize("filename", _PRIMARY_PROMPT_FILES)
 def test_primary_prompt_has_final_report_section(filename: str) -> None:
     """Each primary prompt documents mandatory final-report format."""
+    path = _synapse_prompts_dir() / filename
     content = _read_prompt(filename)
-    assert _FINAL_REPORT_HEADING in content
-    assert _TEMPLATE_REF in content
-    for marker in _REQUIRED_SECTION_MARKERS:
-        assert marker in content, f"{filename} missing section marker {marker}"
+    _assert_final_report_markers(path, content)
+
+
+def test_cursor_commands_align_with_final_report_template() -> None:
+    """Cursor workflow commands mirror Synapse final-report expectations."""
+    for path in _cursor_commands_md_paths():
+        _assert_final_report_markers(path, path.read_text())
 
 
 def test_cursor_implement_code_agent_documents_final_report_handoff_split() -> None:

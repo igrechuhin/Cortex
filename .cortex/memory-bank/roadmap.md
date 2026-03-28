@@ -14,6 +14,8 @@
 
 ## Pending plans (from .cortex/plans)
 
+- **Session Scope Lock — remaining prompt alignment** - PENDING — Complete Synapse commit and analyze prompt session-discipline sections deferred from 2026-03-27 progress notes.
+
 ### Fixes
 
 ### Quality & Reliability Improvements
@@ -33,5 +35,3 @@ Completed investigations are recorded in [activeContext.md](activeContext.md). P
 ### Improvements
 
 ### Features & Enhancements
-
-- **Structured Final Reports for Cortex Synapse Prompts** - PENDING (`.cortex/plans/synapse-prompt-final-report-standardization.md`) — Standardize user-facing final report layout across Synapse prompts (commit, implement, fix, analyze, plan, review) and Cursor commands so pipeline outcomes use one predictable markdown skeleton per prompt family.

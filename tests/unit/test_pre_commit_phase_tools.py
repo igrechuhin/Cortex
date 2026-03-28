@@ -669,6 +669,16 @@ class TestEnsureDict:
 class TestRunDocsAndMemoryBankSync:
     """Tests for execute_pre_commit_checks(phase='B') (Phase B docs/memory sync)."""
 
+    @pytest.fixture(autouse=True)
+    def _patch_roadmap_progress_consistency(self):  # type: ignore[misc]  # noqa: ANN202
+        """Isolate tests from workspace progress/roadmap PARTIAL vs PENDING drift."""
+        with patch(
+            "cortex.tools.execution.pre_commit_docs_memory_helpers._roadmap_progress_consistency_violations",
+            new_callable=AsyncMock,
+            return_value=[],
+        ):
+            yield
+
     @pytest.mark.asyncio
     async def test_success(self) -> None:
         """Docs/memory phase passes when both validations are valid."""
@@ -896,6 +906,52 @@ class TestRunDocsAndMemoryBankSync:
         assert "timestamps" not in check_names
 
     @pytest.mark.asyncio
+    async def test_roadmap_sync_with_warnings_only(self) -> None:
+        """Roadmap sync passes with warnings but no errors."""
+        timestamps_payload = {
+            "status": "success",
+            "check_type": "timestamps",
+            "valid": True,
+            "total_invalid_format": 0,
+            "total_invalid_with_time": 0,
+        }
+        roadmap_payload = {
+            "status": "success",
+            "check_type": "roadmap_sync",
+            "valid": True,
+            "summary": {
+                "missing_entries_count": 0,
+                "invalid_references_count": 0,
+                "completed_entries_count": 0,
+                "warnings_count": 3,
+            },
+        }
+
+        with patch(
+            "cortex.tools.execution.pre_commit_docs_memory_helpers.validate_impl",
+            new_callable=AsyncMock,
+        ) as mock_validate:
+            mock_validate.side_effect = [
+                json.dumps(timestamps_payload),
+                json.dumps(roadmap_payload),
+            ]
+            result = await execute_pre_commit_checks(phase="B")
+
+        assert result["status"] == "success"
+        assert result["docs_phase_passed"] is True
+        roadmap_entry = next(
+            (e for e in _get_checks_list(result) if e.get("name") == "roadmap_sync"),
+            None,
+        )
+        assert roadmap_entry is not None
+        assert roadmap_entry.get("warnings") == 3
+        assert roadmap_entry.get("status") == "success"
+
+
+class TestRunDocsAndMemoryBankProgressConsistency:
+    """Phase B progress/roadmap consistency uses real memory-bank files (no autouse patch)."""
+
+    @pytest.mark.asyncio
     async def test_docs_phase_fails_when_partial_without_pending(
         self, tmp_path: Path
     ) -> None:
@@ -954,48 +1010,6 @@ class TestRunDocsAndMemoryBankSync:
         )
         assert cons.get("status") == "error"
         assert cons.get("errors") == 1
-
-    @pytest.mark.asyncio
-    async def test_roadmap_sync_with_warnings_only(self) -> None:
-        """Roadmap sync passes with warnings but no errors."""
-        timestamps_payload = {
-            "status": "success",
-            "check_type": "timestamps",
-            "valid": True,
-            "total_invalid_format": 0,
-            "total_invalid_with_time": 0,
-        }
-        roadmap_payload = {
-            "status": "success",
-            "check_type": "roadmap_sync",
-            "valid": True,
-            "summary": {
-                "missing_entries_count": 0,
-                "invalid_references_count": 0,
-                "completed_entries_count": 0,
-                "warnings_count": 3,
-            },
-        }
-
-        with patch(
-            "cortex.tools.execution.pre_commit_docs_memory_helpers.validate_impl",
-            new_callable=AsyncMock,
-        ) as mock_validate:
-            mock_validate.side_effect = [
-                json.dumps(timestamps_payload),
-                json.dumps(roadmap_payload),
-            ]
-            result = await execute_pre_commit_checks(phase="B")
-
-        assert result["status"] == "success"
-        assert result["docs_phase_passed"] is True
-        roadmap_entry = next(
-            (e for e in _get_checks_list(result) if e.get("name") == "roadmap_sync"),
-            None,
-        )
-        assert roadmap_entry is not None
-        assert roadmap_entry.get("warnings") == 3
-        assert roadmap_entry.get("status") == "success"
 
 
 # ============================================================================
