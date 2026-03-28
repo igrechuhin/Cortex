@@ -60,6 +60,7 @@ from cortex.core.mcp_stability_retry import (  # noqa: E402
 )
 from cortex.core.metadata_index import MetadataIndex  # noqa: E402
 from cortex.core.models import JsonValue, ModelDict  # noqa: E402
+from cortex.core.project_root_resolver import clear_cached_root  # noqa: E402
 from cortex.core.token_counter import TokenCounter  # noqa: E402
 from cortex.managers.types import ManagersDict  # noqa: E402
 from cortex.optimization.relevance_scorer import RelevanceScorer  # noqa: E402
@@ -81,6 +82,18 @@ def isolate_mcp_connection_state() -> Generator[None]:
     ensure_clean_connection_state_for_testing()
     yield
     reset_connection_state_for_testing()
+
+
+@pytest.fixture(autouse=True)
+def isolate_project_root_cache() -> Generator[None]:
+    """Clear project root resolver cache around every test (xdist-safe).
+
+    ``resolve_project_root_async`` caches the first successful roots/list result;
+    without teardown, later tests on the same worker can observe a wrong root.
+    """
+    clear_cached_root()
+    yield
+    clear_cached_root()
 
 
 @pytest.fixture(autouse=True, scope="session")

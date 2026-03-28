@@ -26,6 +26,8 @@
 
 - ✅ **MCP startup: Synapse submodule sync (stash + structured outcomes)** - COMPLETE (2026-03-28) - `synapse_submodule_startup` runs bounded `git submodule update --init --recursive` for `.cortex/synapse`; when the submodule has local changes, stashes before update and pops after; skips when `CORTEX_SKIP_SYNAPSE_UPDATE` is set or root is not a git checkout; `SynapseStartupSyncResult` / `SynapseStartupSyncOutcome` for logging and tests; non-fatal on git error, timeout, stash, or stash-pop failure. Invoked from `LazyPromptRegistry.ensure_registered` after MCP project root resolution (removed `_sync_synapse_before_listen` from `cortex.main`); `test_lazy_registry_invokes_sync_after_root_resolution` covers ordering; unit tests; AGENTS/troubleshooting connectivity preflight; memory bank index.
 
+- ✅ **Project root resolver — public cache + ctx-None fast path** - COMPLETE (2026-03-28) - Renamed `_cached_root` to public `cached_root`; `resolve_project_root_async` returns the cached root when `ctx` is None after a prior roots resolution (e.g. lazy prompt paths). Added autouse `isolate_project_root_cache` in `tests/conftest.py` (xdist-safe teardown). New unit test ensures cached path is returned without `get_project_root` fallback.
+
 ## Completed Work (2026-03-27)
 
 - **Summary (2026-03-27)** - 1 entries archived.

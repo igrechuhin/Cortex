@@ -24,7 +24,7 @@
 
 - ✅ **Session Scope Lock — remaining prompt alignment** - COMPLETE (2026-03-28) - Added explicit ## Session Discipline sections to Synapse commit.md and analyze.md (CLAUDE.md parity with pointers to Step 13 split-commit hint and Step 5 scope risk check); integration tests assert headings.
 
-- ✅ **MCP startup: Synapse submodule sync (stash + structured outcomes)** - COMPLETE (2026-03-28) - `synapse_submodule_startup` runs bounded `git submodule update --init --recursive` before MCP listen; when `.cortex/synapse` has local changes, stashes before update and pops after; skips when `CORTEX_SKIP_SYNAPSE_UPDATE` is set or root is not a git checkout; `SynapseStartupSyncResult` / `SynapseStartupSyncOutcome` for logging and tests; non-fatal on git error, timeout, stash, or stash-pop failure. Wired into server startup; unit tests; AGENTS/troubleshooting connectivity preflight; memory bank index.
+- ✅ **MCP startup: Synapse submodule sync (stash + structured outcomes)** - COMPLETE (2026-03-28) - `synapse_submodule_startup` runs bounded `git submodule update --init --recursive` for `.cortex/synapse`; when the submodule has local changes, stashes before update and pops after; skips when `CORTEX_SKIP_SYNAPSE_UPDATE` is set or root is not a git checkout; `SynapseStartupSyncResult` / `SynapseStartupSyncOutcome` for logging and tests; non-fatal on git error, timeout, stash, or stash-pop failure. Invoked from `LazyPromptRegistry.ensure_registered` after MCP project root resolution (removed `_sync_synapse_before_listen` from `cortex.main`); `test_lazy_registry_invokes_sync_after_root_resolution` covers ordering; unit tests; AGENTS/troubleshooting connectivity preflight; memory bank index.
 
 ## Completed Work (2026-03-27)
 
@@ -203,6 +203,8 @@
 No queued pending plans under `.cortex/plans` in [roadmap.md](roadmap.md); next slice is chosen from Future Enhancements or the implement command.
 
 ## Recent Changes
+
+Synapse sync timing (2026-03-28): submodule update runs when lazy prompts first register, after `resolve_project_root_async`, aligning sync with MCP roots (not only process CWD).
 
 MCP startup Synapse sync (2026-03-28): dirty submodule worktrees are stashed around `git submodule update --init --recursive`; structured outcomes cover stash/push/pop edge cases; see AGENTS.md and `docs/guides/troubleshooting.md` MCP preflight.
 

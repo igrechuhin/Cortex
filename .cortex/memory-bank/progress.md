@@ -18,6 +18,7 @@
 - **MCP startup: Synapse submodule sync** - COMPLETE. Bounded git submodule sync at MCP startup; opt-out env; dirty worktree skips; non-fatal errors; tests and docs.
 - **MCP startup: Synapse submodule sync — stash path** - COMPLETE. Stash local Synapse changes before submodule update and pop after; distinct outcomes for stash and stash-pop failures; helper split for function-length limits; expanded unit tests; AGENTS/troubleshooting and index updates.
 - **Synapse submodule sync — lazy registration hook** - COMPLETE. Submodule sync runs in LazyPromptRegistry.ensure_registered after resolve_project_root_async; cortex.main no longer calls sync before listen; async unit test asserts resolve_root then sync.
+- **Project root resolver — public cache + ctx-None fast path** - COMPLETE. `cached_root` fast path when ctx is None; global autouse cache isolation in conftest; unit coverage; memory bank index/history updated.
 
 ## 2026-03-27
 

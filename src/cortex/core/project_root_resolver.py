@@ -41,7 +41,7 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 # Populated on the first successful list_roots() call.  All subsequent calls
 # return the cached value immediately without touching the transport.
-_cached_root: Path | None = None
+cached_root: Path | None = None
 _root_cache_lock: asyncio.Lock | None = None
 
 
@@ -54,8 +54,8 @@ def _get_root_cache_lock() -> asyncio.Lock:
 
 def clear_cached_root() -> None:
     """Reset the root cache (used in tests and on explicit project-root override)."""
-    global _cached_root
-    _cached_root = None
+    global cached_root
+    cached_root = None
 
 
 def file_uri_to_path(uri: str) -> Path | None:
@@ -137,11 +137,11 @@ async def _try_roots_from_ctx(ctx: MCPContext) -> Path | None:
     return the cached value, avoiding simultaneous writes to the stdio
     transport that would corrupt the protocol.
     """
-    global _cached_root
+    global cached_root
 
     # Fast path: already resolved.
-    if _cached_root is not None:
-        return _cached_root
+    if cached_root is not None:
+        return cached_root
 
     if not _client_supports_roots(ctx):
         logger.debug(
@@ -151,12 +151,12 @@ async def _try_roots_from_ctx(ctx: MCPContext) -> Path | None:
 
     async with _get_root_cache_lock():
         # Re-check inside the lock (another coroutine may have populated it).
-        if _cached_root is not None:
-            return _cached_root
+        if cached_root is not None:
+            return cached_root
         path = await _fetch_roots_path(ctx.session)
         if path is not None:
-            _cached_root = path
-            logger.debug("project_root_resolver: cached resolved root %s", _cached_root)
+            cached_root = path
+            logger.debug("project_root_resolver: cached resolved root %s", cached_root)
         return path
 
 
@@ -187,6 +187,10 @@ async def resolve_project_root_async(
             "project_root_resolver: using fallback root (CORTEX_USE_FALLBACK_ROOT=1)"
         )
         return await asyncio.to_thread(_fallback_root)
+    # Fast path: if a previous list_roots() call already resolved the root,
+    # return it immediately even when ctx is None (e.g. inside list_prompts handler).
+    if cached_root is not None:
+        return cached_root
     if ctx is not None and getattr(ctx, "session", None) is not None:
         path = await _try_roots_from_ctx(ctx)
         if path is not None:

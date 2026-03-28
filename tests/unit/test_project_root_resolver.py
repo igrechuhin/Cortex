@@ -7,16 +7,9 @@ import pytest
 
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.core.project_root_resolver import (
-    clear_cached_root,
     file_uri_to_path,
     resolve_project_root_async,
 )
-
-
-@pytest.fixture(autouse=True)
-def _reset_root_cache() -> None:  # pyright: ignore[reportUnusedFunction]
-    """Reset the per-process root cache before every test to prevent cross-test pollution."""
-    clear_cached_root()
 
 
 class TestFileUriToPath:
@@ -67,6 +60,21 @@ class TestResolveProjectRootAsync:
             result = await resolve_project_root_async(None, None)
             assert result == Path("/fallback")
             mock_get.assert_called_once_with(None)
+
+    @pytest.mark.asyncio
+    async def test_when_ctx_none_but_cache_populated_returns_cached(
+        self, tmp_path: Path
+    ) -> None:
+        """ctx=None should still return the cached root from a prior list_roots call."""
+        import cortex.core.project_root_resolver as resolver_mod
+
+        resolver_mod.cached_root = tmp_path
+        with patch(
+            "cortex.core.project_root_resolver.get_project_root",
+        ) as mock_get:
+            result = await resolve_project_root_async(None, None)
+            assert result == tmp_path
+            mock_get.assert_not_called()
 
     @pytest.mark.asyncio
     async def test_when_list_roots_raises_falls_back(self) -> None:
