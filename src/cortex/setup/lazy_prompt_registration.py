@@ -56,6 +56,9 @@ from pathlib import Path
 from cortex.core.context_logging import MCPContext
 from cortex.core.icon_helpers import create_emoji_icon
 from cortex.core.project_root_resolver import resolve_project_root_async
+from cortex.core.synapse_submodule_startup import (
+    try_sync_synapse_submodule_at_mcp_startup,
+)
 from cortex.server import mcp
 from cortex.setup import should_mount_setup
 from cortex.setup.post_edit_hook_runtime import apply_project_post_edit_hook
@@ -308,6 +311,13 @@ class LazyPromptRegistry:
             return
 
         logger.debug("lazy_prompt_registration: resolved project root %s", project_root)
+
+        # Best-effort synapse submodule sync (stash/update/pop) using correct root
+        sync_result = try_sync_synapse_submodule_at_mcp_startup(project_root)
+        logger.debug(
+            "synapse_submodule_startup: %s", sync_result.model_dump(mode="json")
+        )
+
         already_has_synapse = prompt_manager_has_synapse_prompts()
         _try_sync_synapse_prompts(project_root, already_has_synapse)
         await _run_startup_repair(project_root)
