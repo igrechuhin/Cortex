@@ -12,6 +12,10 @@
 
 - ✅ **Structured Final Reports — Step 2 (canonical templates)** - COMPLETE (2026-03-28) - Added docs/guides/synapse-final-report-templates.md: base final-report skeleton, per-prompt deltas (commit, implement, fix, analyze, create-plan, review), anti-patterns, and distinction from MCP JSON. REFACTORING_GUIDE appendix links to the guide. Plan synapse-prompt-final-report-standardization Step 2 marked done; Steps 3–5 remain on roadmap.
 
+- ✅ **Structured Final Reports (PARTIAL)** - COMPLETE (2026-03-28) - Synapse primary prompts now require canonical final-report markdown per docs/guides/synapse-final-report-templates.md; integration test guards section markers.
+
+- ✅ **Structured Final Reports — commit (Step 3 + test)** - COMPLETE (2026-03-28) - Synapse submodule commit documents final-report format in primary prompts; integration test guards required headings; plan Step 3 done, Steps 4-5 still open on roadmap.
+
 ## Completed Work (2026-03-27)
 
 - ✅ **Pipeline Code Integrity Guard — Prevent Fix-Loop Corruption** - COMPLETE (2026-03-27) - Added fix-loop NO-GO section, post-fix py_compile/import validation, and rollback guidance to fix.md; added TestFixPromptIntegrityGuard alignment tests.

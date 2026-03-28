@@ -8,7 +8,7 @@ created: 2026-03-27
 depends_on: []
 ---
 
-**Remaining:** Steps 3–5 — embed templates in Synapse prompts, align any Cursor wrappers, add structural regression tests.
+**Remaining:** Steps 4–5 — align Cursor command wrappers when the repo ships them; extend structural regression tests if new prompt entrypoints or include-mechanisms are added.
 
 ## Goal
 
@@ -50,6 +50,8 @@ Make user-visible outcomes of Cortex Synapse prompts (and related Cursor command
 
 ### Step 3 — Apply to Synapse prompts
 
+**Done (2026-03-28):** Added **Final report (required format)** near **Success Criteria** in `commit.md`, `implement-next-roadmap-step.md`, `fix.md`, `analyze.md`, `create-plan.md`, and `review.md`, each referencing `docs/guides/synapse-final-report-templates.md` with the correct workflow delta. Structural coverage: `tests/integration/test_synapse_final_report_prompt_alignment.py`.
+
 - Add a **mandatory "Final report (required format)"** section near the end of each primary prompt, embedding the base template + delta for that prompt.
 - Prefer a **single included fragment** (if Synapse supports includes) or a **copy-paste canonical block** maintained in one source file referenced by all prompts to reduce drift.
 - Ensure commit and other long pipelines repeat the same outer skeleton every time, with only inner rows changing.
@@ -63,6 +65,8 @@ Make user-visible outcomes of Cortex Synapse prompts (and related Cursor command
 **Verification checklist**: Command files mention the shared format | List `.cursor/commands` | Re-read command files touching commit/implement/plan
 
 ### Step 5 — Regression tests
+
+**Partial (2026-03-28):** `tests/integration/test_synapse_final_report_prompt_alignment.py` asserts the final-report heading, template path, and required section markers across primary prompts.
 
 - Extend or add prompt alignment tests (similar to `test_commit_workflow_prompt_alignment.py`) to assert presence of required headings or stable markers for **final report** sections, without brittle full-text equality where possible (semantic / structural checks per archived reduce-prompt-alignment-fragility plan).
 
