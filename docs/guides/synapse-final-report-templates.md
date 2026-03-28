@@ -1,122 +1,321 @@
-# Synapse and Cursor final report templates
+# Synapse Final Report Templates
 
-This guide defines the **canonical markdown layout** for agent-to-user **final reports** at the end of Synapse prompts and related Cursor agent instructions.
+Agent-to-user **final reports** at the end of Synapse prompts. Three report types based on workflow characteristics.
 
-## MCP JSON vs user-facing markdown
+## Report Types
 
-- **MCP tool responses** are JSON payloads returned to the client (fields such as `status`, structured results, errors). Their shape is a separate concern; see the archived Phase 75 plan [phase-75-unify-response-format.md](../../.cortex/plans/archive/Phase75/phase-75-unify-response-format.md) for unifying tool response format.
-- **User-facing final reports** are the last narrative the user reads in chat: markdown with headings, lists, and optional tables. This document applies **only** to that markdown narrative—not to tool JSON.
+| Type | Workflows | Sections |
+|------|-----------|----------|
+| **Pipeline** | commit, implement | Result, Phases, Artifacts, Next |
+| **Diagnostic** | fix | Result, Diagnosis, Iterations, Changes, Next |
+| **Artifact** | analyze, create-plan, review | Result, Output/Scores, Next |
 
-Follow [markdown-formatting.md](markdown-formatting.md): use real heading syntax (`##`, `###`) for section titles; do not use bold alone as a heading (MD036).
+## Section Semantics
 
-## Base template (fixed section order)
+### Result (required, all types)
 
-Every final report should use these sections in **this order**. Omit a section only when it truly does not apply; if nothing to say, use a one-line explicit negative (for example, `None` under blockers).
-
-In the user-visible message, the six blocks below are **`##` headings** (optionally nested under a single top-level `## Final report` if the prompt requires a wrapper). Subsections inside a block use `###` per [markdown-formatting.md](markdown-formatting.md).
+First line: emoji + one-line outcome including command context.
 
 ```markdown
-## Status
+## Result
 
-✅ <one-line summary>
+✅ Committed abc1234 to main (3 files)
+```
 
-## Scope
+Emoji meanings:
 
-<prompt or command name>
+- ✅ Success
+- ⚠️ Partial / warning (proceed with caution)
+- ❌ Failed / blocked
 
-## What ran
+### Phases (Pipeline type)
 
-- <action or phase> — pass | fail | skipped
-- …
+Table of pipeline phases with status and notes.
 
-## Key results
+```markdown
+## Phases
 
-- <artifacts, hash, files, counts — prompt-specific>
+| Phase | Status | Notes |
+|-------|--------|-------|
+| Preflight | ✅ | snapshot: HEAD |
+| Quality (A) | ✅ | 94% coverage |
+| Docs (B) | ✅ | roadmap updated |
+| Validate (C) | ✅ | — |
+| Final gate | ✅ | 0 fix iterations |
+```
 
-## Memory bank and roadmap
+**Memory bank rule**: Include memory bank updates in Notes column only when something changed. Do not show "Not updated".
 
-<what changed, or: Not updated>
+### Diagnosis (Diagnostic type)
 
-## Blockers and follow-ups
+Root cause analysis for fix workflows.
+
+```markdown
+## Diagnosis
+
+**Symptom**: Type error in src/cortex/tools/quality.py:142
+**Cause**: Missing return type annotation
+```
+
+### Iterations (Diagnostic type)
+
+Table of fix targets with iteration counts.
+
+```markdown
+## Iterations
+
+| Target | Status | Count |
+|--------|--------|-------|
+| Quality | ✅ | 2 |
+| Tests | ✅ | 0 |
+| Docs | ⏭️ | skipped |
+```
+
+### Changes (Diagnostic type)
+
+List of files modified with line references.
+
+```markdown
+## Changes
+
+- src/cortex/tools/quality.py:142 — added return type
+- tests/unit/test_quality.py — fixed assertion
+```
+
+### Artifacts (Pipeline type)
+
+Concrete outputs: commit SHA, files, coverage, push status.
+
+```markdown
+## Artifacts
+
+- Commit: `abc1234` on `main`
+- Files: activeContext.md, roadmap.md, src/foo.py
+- Coverage: 94%
+- Pushed: ✅ origin/main
+```
+
+### Output (Artifact type)
+
+Table of artifact metadata for analyze/create-plan.
+
+```markdown
+## Output
+
+| Field | Value |
+|-------|-------|
+| Path | `.cortex/plans/phase-123-feature-x.md` |
+| Roadmap | Added to "Active Work" |
+| Status | PENDING |
+```
+
+### Scores (Review type)
+
+Metrics table with deltas. Flag negative deltas.
+
+```markdown
+## Scores
+
+| Metric | Score | Delta |
+|--------|-------|-------|
+| Architecture | 8 | +0 |
+| Test Coverage | 7 | +1 |
+| Error Handling | 6 | -1 ⚠️ |
+| **Overall** | **7.5** | **+0.1** |
+```
+
+### Issues (Review type)
+
+Issue tracker table.
+
+```markdown
+## Issues
+
+| ID | Severity | Location |
+|----|----------|----------|
+| REV-2026-03-28-1 | High | src/foo.py:42 — Missing validation |
+```
+
+### Next (required, all types)
+
+Explicit next actions or "None".
+
+```markdown
+## Next
+
+Fix High severity issues before commit
+```
+
+Or:
+
+```markdown
+## Next
 
 None
 ```
 
-### Status
+## Complete Examples
 
-- First line: one of ✅ (success), ⚠️ (partial / blocked with salvageable outcome), ❌ (failed or aborted).
-- Same line or immediately below: **one-line summary** of the outcome (what the user should remember).
+### Pipeline: commit
 
-### Scope
+```markdown
+## Result
 
-- Prompt name, slash command, or agent role; the user-visible **label** for what was asked (not internal session IDs).
+✅ Committed abc1234 to main (3 files)
 
-### What ran
+## Phases
 
-- High-level list of actions. For **pipeline** prompts, include phases or steps with **pass / fail / skipped** per row (or sub-bullets), not only a prose paragraph.
+| Phase | Status | Notes |
+|-------|--------|-------|
+| Preflight | ✅ | snapshot: HEAD |
+| Quality (A) | ✅ | 94% coverage |
+| Docs (B) | ✅ | roadmap updated |
+| Validate (C) | ✅ | — |
+| Final gate | ✅ | 0 fix iterations |
 
-### Key results
+## Artifacts
 
-- Concrete outputs: artifacts paths, commit hash, files touched, counts, URLs—whatever the workflow produced. Use **placeholders in docs** when describing the template (for example, `<commit-sha>`, `<plan-path>`); agents fill with real values.
+- Commit: `abc1234` on `main`
+- Files: activeContext.md, roadmap.md, src/foo.py
+- Coverage: 94%
+- Pushed: ✅ origin/main
 
-### Memory bank and roadmap
+## Next
 
-- Include when the workflow updates `.cortex/memory-bank/`, roadmap, or plans: **what** changed (file or bullet level), or state **Not updated** if nothing was written.
+None
+```
 
-### Blockers and follow-ups
+### Pipeline: implement
 
-- Open issues, deferred work, or **explicit `None`** when there are no blockers and no required follow-ups.
+```markdown
+## Result
 
-## Delta blocks by workflow
+✅ Implemented "Add quality config" (full)
 
-Add these subsections **under the base sections** (usually under **What ran** and **Key results**) so pipeline-specific detail stays predictable without breaking the outer skeleton.
+## Phases
 
-### Commit (pipeline)
+| Phase | Status | Notes |
+|-------|--------|-------|
+| Selection | ✅ | from roadmap priority |
+| Implementation | ✅ | 5 files, 3 tests, 92% |
+| Finalize | ✅ | plan archived |
+| Verify | ✅ | roadmap entry removed |
+| Fix | ✅ | 1 iteration |
 
-- **Phase A** — quality gate: pass/fail; if fail, primary error class or tool.
-- **Phase B** — docs gate: pass/fail.
-- **Step 12** — `run_quality_gate_fresh` (or equivalent final gate): pass/fail.
-- Tie each phase to **Key results** (for example, gate log snippet path only if the prompt requires it).
+## Artifacts
 
-### Implement (pipeline)
+- Files: src/config.py, src/quality.py, tests/test_config.py
+- Tests added: 3
+- Coverage: 92%
+- Plan: archived to `.cortex/plans/archive/`
 
-- **Selection** — plan step or roadmap item chosen.
-- **Code / subagent** — implement-code (or equivalent): files changed, tests added count, coverage if reported.
-- **Finalize** — `pipeline_handoff` or orchestrator completion status.
-- **Verify** — quality gate iterations (count, pass/fail).
-- **Fix path** — if used: note that diagnosis/fix iterations ran and outcome.
+## Next
 
-### Fix (pipeline)
+None
+```
 
-- **Diagnosis pointer** — where the root cause lives (file, test name, failing check) before listing fixes; keeps the report scannable when many files changed.
+### Diagnostic: fix
 
-### Analyze (single-shot)
+```markdown
+## Result
 
-- **Session optimization** — path or reference to written analysis (for example, handoff or memory-bank note) and whether `session(compact)` or equivalent was invoked, if applicable.
+✅ Fixed quality + tests (2 iterations)
 
-### Create-plan (meta)
+## Diagnosis
 
-- **Plan path** — new or updated plan file under `.cortex/plans/`.
-- **Roadmap** — registration or update (which section or bullet), or **Not registered** if intentionally skipped.
+**Symptom**: Type error in src/cortex/tools/quality.py:142
+**Cause**: Missing return type annotation
 
-### Review (single-shot)
+## Iterations
 
-- Use a **scores / evidence table** (or tight bullet matrix) so criteria, score, and pointer to evidence line up—for example:
+| Target | Status | Count |
+|--------|--------|-------|
+| Quality | ✅ | 2 |
+| Tests | ✅ | 0 |
+| Docs | ⏭️ | skipped |
 
-| Criterion | Score | Evidence |
-| --- | --- | --- |
-| … | … | file:line or heading |
+## Changes
 
-Keep the **Overall** row or subsection consistent with [markdown-formatting.md](markdown-formatting.md) (heading for score block, not bold-as-heading).
+- src/cortex/tools/quality.py:142 — added return type
+- tests/unit/test_quality.py — fixed assertion
+
+## Next
+
+None
+```
+
+### Artifact: create-plan
+
+```markdown
+## Result
+
+✅ Plan created: phase-123-feature-x.md
+
+## Output
+
+| Field | Value |
+|-------|-------|
+| Path | `.cortex/plans/phase-123-feature-x.md` |
+| Roadmap | Added to "Active Work" |
+| Status | PENDING |
+
+## Next
+
+`/cortex/implement @.cortex/plans/phase-123-feature-x.md`
+```
+
+### Artifact: analyze
+
+```markdown
+## Result
+
+✅ Analysis complete
+
+## Output
+
+| Field | Value |
+|-------|-------|
+| Report | `.cortex/reviews/session-optimization-2026-03-28T14-30.md` |
+| Compaction | 2400 → 1800 tokens (25% reduction) |
+
+## Next
+
+None
+```
+
+### Artifact: review
+
+```markdown
+## Result
+
+⚠️ Review complete — 3 issues found
+
+## Scores
+
+| Metric | Score | Delta |
+|--------|-------|-------|
+| Architecture | 8 | +0 |
+| Test Coverage | 7 | +1 |
+| Code Style | 9 | +0 |
+| Error Handling | 6 | -1 ⚠️ |
+| **Overall** | **7.5** | **+0.1** |
+
+## Issues
+
+| ID | Severity | Location |
+|----|----------|----------|
+| REV-2026-03-28-1 | High | src/foo.py:42 — Missing validation |
+| REV-2026-03-28-2 | Medium | src/bar.py:18 — Broad exception |
+
+## Next
+
+Fix High severity issues before commit
+```
 
 ## Anti-patterns
 
-- **Process-only summaries** — Narrating *"I ran the pipeline"* or *"I called the tools"* without phase pass/fail and without **Key results** the user can verify.
-- **Inconsistent emoji** — Mixing ad-hoc symbols with ✅/⚠️/❌ for the same severity levels; pick one scheme per report and match project preferences (✅/⚠️/❌ for status).
-- **Burying failures** — Leading with success language or long preamble while ❌ or Phase B failure appears only at the bottom; put **Status** and failed phases **first** in the narrative order.
-
-## References
-
-- Markdown headings: [markdown-formatting.md](markdown-formatting.md)
-- MCP tool JSON shape (separate): [phase-75-unify-response-format.md](../../.cortex/plans/archive/Phase75/phase-75-unify-response-format.md)
-- Prompt inventory: [REFACTORING_GUIDE.md — Appendix: Synapse prompt inventory](REFACTORING_GUIDE.md#appendix-synapse-prompt-inventory)
+- **Process summaries**: "I ran the pipeline" without phase status or artifacts
+- **Buried failures**: Leading with success while ❌ appears at the bottom
+- **Memory bank noise**: "Memory bank: Not updated" — omit if nothing changed
+- **Missing Next**: Always include `## Next` with explicit "None" or action items
+- **Prose instead of tables**: Use tables for phases/iterations/scores

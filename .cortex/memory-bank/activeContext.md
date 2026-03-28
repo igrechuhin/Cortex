@@ -4,6 +4,8 @@
 
 ## Completed Work (2026-03-28)
 
+- ✅ **Structured final-report types (Pipeline/Diagnostic/Artifact) + Synapse gitlink** - COMPLETE (2026-03-28) - Synapse submodule commits six primary prompts to typed final-report sections per `docs/guides/synapse-final-report-templates.md`; MD032 markdown fixes; superproject updates the guide, `test_synapse_final_report_prompt_alignment`, `.claude/agents/implement-code.md`, memory bank index/history, and bumps the submodule pointer.
+
 - ✅ **Migration: language rule templates and scaffolded_languages reporting** - COMPLETE (2026-03-28) - Synapse submodule adds minimal rules/_templates for Go, Java, JavaScript, Rust, and TypeScript. Structure migration now derives scaffolded_languages from scaffolded rule/script paths (_collect_scaffolded_languages, _to_json_list) with expanded unit tests; plan doc and AGENTS touched. Submodule pointer updated to the new Synapse commit.
 
 - ✅ **Migration: Language-Agnostic Rules and Scripts Scaffolding** - COMPLETE (2026-03-28) - Documented migrate Step 2b (language detection, rules/scripts scaffolding, quality gate routing) and extended expected migration JSON. Clarified zero-arg run_quality_gate and LanguageQualityRouter docs; added unit tests proving resolve_adapter_worker selects SwiftAdapter vs PythonAdapter. Optional TradeWing template reconciliation remains a manual follow-up outside this repo.
@@ -22,25 +24,7 @@
 
 ## Completed Work (2026-03-27)
 
-- ✅ **Pipeline Code Integrity Guard — Prevent Fix-Loop Corruption** - COMPLETE (2026-03-27) - Added fix-loop NO-GO section, post-fix py_compile/import validation, and rollback guidance to fix.md; added TestFixPromptIntegrityGuard alignment tests.
-
-- ✅ **Session Scope Lock (PARTIAL)** - COMPLETE (2026-03-27) - Session start JSON now includes `session_scope` prompting single-goal discipline and confirming one primary goal before expanding scope.
-
-- ✅ **Session Scope Lock — Single-Goal Session Pattern (PARTIAL)** - COMPLETE (2026-03-27) - Documented single-goal session discipline in `CLAUDE.md` under a new `Session Discipline` section to reduce mixed-scope sessions and partial completions.
-
-- ✅ **Session Scope Lock — context parity (PARTIAL)** - COMPLETE (2026-03-27) - `cortex://context` now includes `session_scope` in success payloads, aligning start-session guidance with context resources. Added test coverage in optimization resource tests; remaining roadmap work is prompt-level split-commit and analyze scope-risk guidance.
-
-- ✅ **Submodule Hygiene Unblock for Fix Pipeline** - COMPLETE (2026-03-27) - Adjusted submodule hygiene behavior for FIX semantics so dirty_worktree findings no longer block `/cortex/fix` quality/test progression, while out_of_sync and merge_conflict still block. Added regression tests for both non-blocking and blocking FIX-mode cases; quality gate verified green.
-
-- ✅ **Session Scope Lock — Single-Goal Session Pattern** - COMPLETE (2026-03-27) - Enforced single-goal session discipline in commit/analyze prompts by adding mandatory split-commit guidance and multi-goal scope-risk reporting, with integration tests updated accordingly.
-
-- ✅ **MCP Server Regression Test Suite — Concurrent Subagent and Serialization Tests** - COMPLETE (2026-03-27) - Added deterministic regression tests covering concurrent tool saturation, `pipeline_handoff` serialization (string/object payloads), and CWD/root-resolution edge cases, plus sequencing safeguards; quality gates now pass.
-
-- ✅ **Commit pipeline run + docs lint repair** - COMPLETE (2026-03-27) - Executed commit pipeline phases inline, pre-staged Synapse submodule hygiene commit, and repaired roadmap link path to unblock markdown lint in Phase A.
-
-- ✅ **Investigate fix_quality_issues MCP Tool Failure** - COMPLETE (2026-03-27) - Restored backwards-compatible `phase_a_lock` symbol as an alias to `get_phase_a_lock`, unblocking `fix_quality_issues()` runtime execution; verified via full quality gate and docs gate.
-
-- ✅ **Migration: Language-Agnostic Rules and Scripts Scaffolding (PARTIAL)** - COMPLETE (2026-03-27) - Migration now scaffolds Swift rule templates into project-local Synapse rules and reports `rules_scaffolded`; tests added and quality gate passes. Remaining work: multi-language templates, quality-gate language routing, and migrate prompt updates.
+- **Summary (2026-03-27)** - 1 entries archived.
 
 ## Completed Work (2026-03-26)
 

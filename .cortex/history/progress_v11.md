@@ -1,5 +1,19 @@
 # Progress Log
 
+## 2026-03-28
+
+- **Migration: Language-Agnostic Rules and Scripts Scaffolding** - PARTIAL. Landed Synapse template stubs under rules/_templates for go/java/javascript/rust/typescript; generalized migration scaffolded_languages reporting and tests; committed via Cortex commit pipeline with updated submodule gitlink.
+- **Migration: Language-Agnostic Rules and Scripts Scaffolding** - COMPLETE. Migrate prompt Step 2b + JSON fields; quality gate routing documented and covered by resolve_adapter_worker tests.
+- **Structured Final Reports for Cortex Synapse Prompts** - PARTIAL. Step 1 complete: prompt/command inventory table in docs/guides/REFACTORING_GUIDE.md appendix; plan Step 1 marked done. Remaining: Steps 2–5 (templates, Synapse apply, Cursor align, tests).
+- **Structured Final Reports for Cortex Synapse Prompts** - PARTIAL. Step 2 complete: canonical user-facing final-report templates documented in docs/guides/synapse-final-report-templates.md (base skeleton, per-prompt deltas, anti-patterns); REFACTORING_GUIDE appendix link added. Steps 3–5 remain (embed in Synapse prompts, align Cursor commands, regression tests).
+- **Structured Final Reports for Cortex Synapse Prompts** - PARTIAL. Step 3: mandatory Final report sections added to six primary Synapse prompts; `test_synapse_final_report_prompt_alignment.py` added. Steps 4-5 remain (Cursor commands if present; further regression tests).
+- **Structured Final Reports for Cortex Synapse Prompts** - PARTIAL. Commit pipeline: Synapse submodule bumped (six prompts with mandatory final-report sections); superproject adds `test_synapse_final_report_prompt_alignment.py` and plan updates. Steps 4-5 remain.
+- **Structured Final Reports for Cortex Synapse Prompts** - PARTIAL. implement-code agent documents orchestrator vs handoff split; synapse cursor-agents/implement-code.md + synced .cursor/agents; integration test for template ref; REFACTORING_GUIDE appendix note. Remaining: optional .cursor/commands when repo adds them.
+- **Structured Final Reports for Cortex Synapse Prompts** - PARTIAL. Superproject commit bundles Synapse gitlink bump (implement-code handoff docs), Claude agent sync, `test_synapse_final_report_prompt_alignment` cursor-agent coverage, REFACTORING_GUIDE + plan updates. Remaining: `.cursor/commands` when added.
+- **Structured Final Reports for Cortex Synapse Prompts** - COMPLETE. Cursor command wrappers and tests aligned with synapse-final-report-templates; Steps 4–5 done.
+- **Implement pipeline follow-up** - PARTIAL. Isolated Phase B unit tests from workspace progress/roadmap drift (autouse patch + moved consistency test class); fixed REFACTORING_GUIDE archived plan link; restored a PENDING roadmap bullet for docs gate invariant after Structured Final Reports completion.
+- **Structured Final Reports — superproject commit** - COMPLETE. Committed tests, docs, memory-bank, plan archive, and Claude agent sync; markdown roadmap formatting (MD032); `.cursor/commands` remains outside git per `.gitignore`.
+
 ## 2026-03-27
 
 - **Pipeline Code Integrity Guard — Prevent Fix-Loop Corruption** - COMPLETE. fix.md now matches workflows integrity guardrails; integration tests enforce prompt alignment.
@@ -10,7 +24,11 @@
 - **Submodule Hygiene Unblock for Fix Pipeline** - COMPLETE. Relaxed submodule guard behavior under FIX mode to ignore dirty_worktree while preserving blocking on out_of_sync/merge_conflict, with unit regression coverage and passing quality gate.
 - **Session Scope Lock — Single-Goal Session Pattern** - COMPLETE. Enforced split-commit hinting and multi-goal risk signaling in Synapse commit/analyze prompts; added integration coverage assertions.
 - **MCP Server Regression Test Suite — Concurrent Subagent and Serialization Tests** - COMPLETE. Added deterministic regression tests covering concurrent tool saturation, `pipeline_handoff` serialization (string/object payloads), and CWD/root-resolution edge cases, plus sequencing safeguards; quality gates now pass.
-- **Migration: Language-Agnostic Rules and Scripts Scaffolding** - PARTIAL. Added `detect_languages_for_migration(project_root)` with deterministic multi-language marker detection (swift/typescript/javascript/java/rust/go/python) and 5 unit tests covering ordering and precedence; quality gate passed.
+- **Migration: Language-Agnostic Rules and Scripts Scaffolding** - PARTIAL. Wired language detection into structure migration reports (`detected_languages`) and added minimal Swift scripts stub scaffolding under `.cortex/synapse/scripts/swift/` (README + `run_quality_check.sh`); quality gate fresh pass (~91.84% coverage). Earlier in the session: added `detect_languages_for_migration(project_root)` with deterministic multi-language marker detection (swift/typescript/javascript/java/rust/go/python) and 5 unit tests covering ordering and precedence.
+- **Commit pipeline execution and markdown gate repair** - PARTIAL. Ran `/cortex/commit` pipeline preflight and Phase A, fixed roadmap blocker-link markdown lint failure (`../plans/...`), and revalidated with passing quality gate (~91.82% coverage).
+- **Investigate fix_quality_issues MCP Tool Failure** - COMPLETE. Restored backwards-compatible `phase_a_lock` symbol as an alias to `get_phase_a_lock`, unblocking `fix_quality_issues()` runtime execution; verified via full quality gate and docs gate.
+- **Migration: Language-Agnostic Rules and Scripts Scaffolding** - PARTIAL. Implemented Swift rules-template scaffolding during migration: copy missing templates from `.cortex/synapse/rules/_templates/swift/` into project-local rules, surfaced `rules_scaffolded` in migration output, and added tests; quality gate passed.
+- **Migration: Language-Agnostic Rules and Scripts Scaffolding** - PARTIAL. Added language rule template packs for `typescript`, `javascript`, `java`, `rust`, and `go`; made migration `scaffolded_languages` reporting generic; added unit coverage for multi-language template scaffolding and TypeScript migration reporting.
 
 ## 2026-03-26
 

@@ -82,3 +82,9 @@ After quality gate passes (or fails after max iterations), report:
 - Quality gate: passed | failed
 - Step fully complete: yes | no (note remaining work if partial)
 - Fix iterations: {count}
+
+### Final report vs structured handoff
+
+The **orchestrator** (Implement pipeline) emits the user-facing closing markdown per `docs/guides/synapse-final-report-templates.md` — including the Implement pipeline delta sections (Selection, Implementation, Finalize, Verify, Fix).
+
+This subagent uses `pipeline_handoff` for structured JSON handoff only. Do not invent a parallel final-report `##` heading layout for the user that conflicts with that template.

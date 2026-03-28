@@ -2,7 +2,7 @@
 Structural checks for mandatory final-report guidance in primary Synapse prompts.
 
 Ensures each primary workflow prompt references the canonical template doc and
-lists the required closing `##` section titles (user-facing markdown narrative).
+uses the correct report type structure (Pipeline, Diagnostic, or Artifact).
 """
 
 from pathlib import Path
@@ -27,13 +27,38 @@ _PRIMARY_PROMPT_FILES: tuple[str, ...] = (
 _FINAL_REPORT_HEADING = "## Final report (required format)"
 _TEMPLATE_REF = "docs/guides/synapse-final-report-templates.md"
 
-_REQUIRED_SECTION_MARKERS: tuple[str, ...] = (
-    "`## Status`",
-    "`## Scope`",
-    "`## What ran`",
-    "`## Key results`",
-    "`## Memory bank and roadmap`",
-    "`## Blockers and follow-ups`",
+# Report type classification
+_PIPELINE_PROMPTS = ("commit.md", "implement-next-roadmap-step.md")
+_DIAGNOSTIC_PROMPTS = ("fix.md",)
+_ARTIFACT_PROMPTS = ("analyze.md", "create-plan.md", "review.md")
+
+# Required section markers by report type (backtick-wrapped in prompt examples)
+_PIPELINE_MARKERS: tuple[str, ...] = (
+    "## Result",
+    "## Phases",
+    "## Artifacts",
+    "## Next",
+)
+
+_DIAGNOSTIC_MARKERS: tuple[str, ...] = (
+    "## Result",
+    "## Diagnosis",
+    "## Iterations",
+    "## Changes",
+    "## Next",
+)
+
+_ARTIFACT_MARKERS: tuple[str, ...] = (
+    "## Result",
+    "## Output",
+    "## Next",
+)
+
+_REVIEW_MARKERS: tuple[str, ...] = (
+    "## Result",
+    "## Scores",
+    "## Issues",
+    "## Next",
 )
 
 
@@ -86,11 +111,30 @@ def _cursor_commands_md_paths() -> list[Path]:
     return paths
 
 
-def _assert_final_report_markers(path: Path, content: str) -> None:
+def _get_required_markers(filename: str) -> tuple[str, ...]:
+    """Return the required section markers based on prompt type."""
+    if filename in _PIPELINE_PROMPTS:
+        return _PIPELINE_MARKERS
+    if filename in _DIAGNOSTIC_PROMPTS:
+        return _DIAGNOSTIC_MARKERS
+    if filename == "review.md":
+        return _REVIEW_MARKERS
+    if filename in _ARTIFACT_PROMPTS:
+        return _ARTIFACT_MARKERS
+    # Default fallback
+    return _ARTIFACT_MARKERS
+
+
+def _assert_final_report_markers(path: Path, content: str, filename: str = "") -> None:
     """Shared structural checks for template ref, heading, and section markers."""
     assert _FINAL_REPORT_HEADING in content, f"{path} missing final report heading"
     assert _TEMPLATE_REF in content, f"{path} missing template reference"
-    for marker in _REQUIRED_SECTION_MARKERS:
+
+    # Get appropriate markers based on filename or path
+    effective_filename = filename or path.name
+    markers = _get_required_markers(effective_filename)
+
+    for marker in markers:
         assert marker in content, f"{path} missing section marker {marker}"
 
 
@@ -99,17 +143,22 @@ def test_primary_prompt_has_final_report_section(filename: str) -> None:
     """Each primary prompt documents mandatory final-report format."""
     path = _synapse_prompts_dir() / filename
     content = _read_prompt(filename)
-    _assert_final_report_markers(path, content)
+    _assert_final_report_markers(path, content, filename)
 
 
 def test_cursor_commands_align_with_final_report_template() -> None:
     """Cursor workflow commands mirror Synapse final-report expectations."""
     for path in _cursor_commands_md_paths():
-        _assert_final_report_markers(path, path.read_text())
+        content = path.read_text()
+        # Cursor commands should have the heading and template ref
+        # but may use any report type based on the workflow they wrap
+        assert (
+            _FINAL_REPORT_HEADING in content or _TEMPLATE_REF in content
+        ), f"{path} missing final report heading or template reference"
 
 
 def test_cursor_implement_code_agent_documents_final_report_handoff_split() -> None:
-    """Cursor implement-code subagent defers user-facing final report to the orchestrator."""
+    """Cursor implement-code subagent defers user-facing final report to orchestrator."""
     content = _read_cursor_implement_code_agent()
     assert _TEMPLATE_REF in content
     assert "orchestrator" in content

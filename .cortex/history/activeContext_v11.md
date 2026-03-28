@@ -2,21 +2,27 @@
 
 **This file records completed work only.** For current status and upcoming work see [roadmap.md](roadmap.md).
 
+## Completed Work (2026-03-28)
+
+- ✅ **Migration: language rule templates and scaffolded_languages reporting** - COMPLETE (2026-03-28) - Synapse submodule adds minimal rules/_templates for Go, Java, JavaScript, Rust, and TypeScript. Structure migration now derives scaffolded_languages from scaffolded rule/script paths (_collect_scaffolded_languages, _to_json_list) with expanded unit tests; plan doc and AGENTS touched. Submodule pointer updated to the new Synapse commit.
+
+- ✅ **Migration: Language-Agnostic Rules and Scripts Scaffolding** - COMPLETE (2026-03-28) - Documented migrate Step 2b (language detection, rules/scripts scaffolding, quality gate routing) and extended expected migration JSON. Clarified zero-arg run_quality_gate and LanguageQualityRouter docs; added unit tests proving resolve_adapter_worker selects SwiftAdapter vs PythonAdapter. Optional TradeWing template reconciliation remains a manual follow-up outside this repo.
+
+- ✅ **Synapse final-report standardization (PARTIAL)** - COMPLETE (2026-03-28) - Step 1 delivered REFACTORING_GUIDE appendix inventory (pipeline/single-shot/meta); .cursor/commands not in repo. Next: canonical templates and prompt updates per plan.
+
+- ✅ **Structured Final Reports — Step 2 (canonical templates)** - COMPLETE (2026-03-28) - Added docs/guides/synapse-final-report-templates.md: base final-report skeleton, per-prompt deltas (commit, implement, fix, analyze, create-plan, review), anti-patterns, and distinction from MCP JSON. REFACTORING_GUIDE appendix links to the guide. Plan synapse-prompt-final-report-standardization Step 2 marked done; Steps 3–5 remain on roadmap.
+
+- ✅ **Structured Final Reports (PARTIAL)** - COMPLETE (2026-03-28) - Synapse primary prompts now require canonical final-report markdown per docs/guides/synapse-final-report-templates.md; integration test guards section markers.
+
+- ✅ **Structured Final Reports — commit (Step 3 + test)** - COMPLETE (2026-03-28) - Synapse submodule commit documents final-report format in primary prompts; integration test guards required headings; plan Step 3 done, Steps 4-5 still open on roadmap.
+
+- ✅ **Structured Final Reports — implement-code handoff + superproject commit** - COMPLETE (2026-03-28) - Synapse submodule chore commit documents orchestrator final-report vs `pipeline_handoff` in `cursor-agents/implement-code.md`; superproject adds alignment integration test, REFACTORING_GUIDE appendix note, plan Step 4/5 partial updates, regenerated `.claude/agents`, and bumped gitlink. Optional `.cursor/commands` wrappers still absent.
+
+- ✅ **Structured Final Reports for Cortex Synapse Prompts** - COMPLETE (2026-03-28) - Extended `test_synapse_final_report_prompt_alignment` for Cursor command markdown when a `.cursor/commands` tree exists; REFACTORING_GUIDE links the archived plan; Phase B pre-commit tests isolate roadmap/progress consistency from workspace drift. Optional workflow command files under `.cursor/commands/` are gitignored (`/.cursor/`); use them locally or mirror content into tracked paths if sharing is required. Plan Steps 4–5 complete; plan archived.
+
 ## Completed Work (2026-03-27)
 
-- ✅ **Pipeline Code Integrity Guard — Prevent Fix-Loop Corruption** - COMPLETE (2026-03-27) - Added fix-loop NO-GO section, post-fix py_compile/import validation, and rollback guidance to fix.md; added TestFixPromptIntegrityGuard alignment tests.
-
-- ✅ **Session Scope Lock (PARTIAL)** - COMPLETE (2026-03-27) - Session start JSON now includes `session_scope` prompting single-goal discipline and confirming one primary goal before expanding scope.
-
-- ✅ **Session Scope Lock — Single-Goal Session Pattern (PARTIAL)** - COMPLETE (2026-03-27) - Documented single-goal session discipline in `CLAUDE.md` under a new `Session Discipline` section to reduce mixed-scope sessions and partial completions.
-
-- ✅ **Session Scope Lock — context parity (PARTIAL)** - COMPLETE (2026-03-27) - `cortex://context` now includes `session_scope` in success payloads, aligning start-session guidance with context resources. Added test coverage in optimization resource tests; remaining roadmap work is prompt-level split-commit and analyze scope-risk guidance.
-
-- ✅ **Submodule Hygiene Unblock for Fix Pipeline** - COMPLETE (2026-03-27) - Adjusted submodule hygiene behavior for FIX semantics so dirty_worktree findings no longer block `/cortex/fix` quality/test progression, while out_of_sync and merge_conflict still block. Added regression tests for both non-blocking and blocking FIX-mode cases; quality gate verified green.
-
-- ✅ **Session Scope Lock — Single-Goal Session Pattern** - COMPLETE (2026-03-27) - Enforced single-goal session discipline in commit/analyze prompts by adding mandatory split-commit guidance and multi-goal scope-risk reporting, with integration tests updated accordingly.
-
-- ✅ **MCP Server Regression Test Suite — Concurrent Subagent and Serialization Tests** - COMPLETE (2026-03-27) - Added deterministic regression tests covering concurrent tool saturation, `pipeline_handoff` serialization (string/object payloads), and CWD/root-resolution edge cases, plus sequencing safeguards; quality gates now pass.
+- **Summary (2026-03-27)** - 1 entries archived.
 
 ## Completed Work (2026-03-26)
 
