@@ -2,6 +2,7 @@
 
 ## 2026-03-28
 
+- **Structured final-report types + Synapse prompts** - COMPLETE. Pipeline/Diagnostic/Artifact templates applied in Synapse; docs guide, integration test, and Claude implement-code agent updated; submodule commit and superproject gitlink in Cortex commit pipeline.
 - **Migration: Language-Agnostic Rules and Scripts Scaffolding** - PARTIAL. Landed Synapse template stubs under rules/_templates for go/java/javascript/rust/typescript; generalized migration scaffolded_languages reporting and tests; committed via Cortex commit pipeline with updated submodule gitlink.
 - **Migration: Language-Agnostic Rules and Scripts Scaffolding** - COMPLETE. Migrate prompt Step 2b + JSON fields; quality gate routing documented and covered by resolve_adapter_worker tests.
 - **Structured Final Reports for Cortex Synapse Prompts** - PARTIAL. Step 1 complete: prompt/command inventory table in docs/guides/REFACTORING_GUIDE.md appendix; plan Step 1 marked done. Remaining: Steps 2–5 (templates, Synapse apply, Cursor align, tests).
@@ -13,6 +14,8 @@
 - **Structured Final Reports for Cortex Synapse Prompts** - COMPLETE. Cursor command wrappers and tests aligned with synapse-final-report-templates; Steps 4–5 done.
 - **Implement pipeline follow-up** - PARTIAL. Isolated Phase B unit tests from workspace progress/roadmap drift (autouse patch + moved consistency test class); fixed REFACTORING_GUIDE archived plan link; restored a PENDING roadmap bullet for docs gate invariant after Structured Final Reports completion.
 - **Structured Final Reports — superproject commit** - COMPLETE. Committed tests, docs, memory-bank, plan archive, and Claude agent sync; markdown roadmap formatting (MD032); `.cursor/commands` remains outside git per `.gitignore`.
+- **Session Scope Lock — remaining prompt alignment** - COMPLETE. Synapse commit/analyze prompts now include explicit Session Discipline sections; tests updated.
+- **MCP startup: Synapse submodule sync** - COMPLETE. Bounded git submodule sync at MCP startup; opt-out env; dirty worktree skips; non-fatal errors; tests and docs.
 
 ## 2026-03-27
 

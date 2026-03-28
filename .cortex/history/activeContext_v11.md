@@ -4,6 +4,8 @@
 
 ## Completed Work (2026-03-28)
 
+- ✅ **Structured final-report types (Pipeline/Diagnostic/Artifact) + Synapse gitlink** - COMPLETE (2026-03-28) - Synapse submodule commits six primary prompts to typed final-report sections per `docs/guides/synapse-final-report-templates.md`; MD032 markdown fixes; superproject updates the guide, `test_synapse_final_report_prompt_alignment`, `.claude/agents/implement-code.md`, memory bank index/history, and bumps the submodule pointer.
+
 - ✅ **Migration: language rule templates and scaffolded_languages reporting** - COMPLETE (2026-03-28) - Synapse submodule adds minimal rules/_templates for Go, Java, JavaScript, Rust, and TypeScript. Structure migration now derives scaffolded_languages from scaffolded rule/script paths (_collect_scaffolded_languages, _to_json_list) with expanded unit tests; plan doc and AGENTS touched. Submodule pointer updated to the new Synapse commit.
 
 - ✅ **Migration: Language-Agnostic Rules and Scripts Scaffolding** - COMPLETE (2026-03-28) - Documented migrate Step 2b (language detection, rules/scripts scaffolding, quality gate routing) and extended expected migration JSON. Clarified zero-arg run_quality_gate and LanguageQualityRouter docs; added unit tests proving resolve_adapter_worker selects SwiftAdapter vs PythonAdapter. Optional TradeWing template reconciliation remains a manual follow-up outside this repo.
@@ -19,6 +21,10 @@
 - ✅ **Structured Final Reports — implement-code handoff + superproject commit** - COMPLETE (2026-03-28) - Synapse submodule chore commit documents orchestrator final-report vs `pipeline_handoff` in `cursor-agents/implement-code.md`; superproject adds alignment integration test, REFACTORING_GUIDE appendix note, plan Step 4/5 partial updates, regenerated `.claude/agents`, and bumped gitlink. Optional `.cursor/commands` wrappers still absent.
 
 - ✅ **Structured Final Reports for Cortex Synapse Prompts** - COMPLETE (2026-03-28) - Extended `test_synapse_final_report_prompt_alignment` for Cursor command markdown when a `.cursor/commands` tree exists; REFACTORING_GUIDE links the archived plan; Phase B pre-commit tests isolate roadmap/progress consistency from workspace drift. Optional workflow command files under `.cursor/commands/` are gitignored (`/.cursor/`); use them locally or mirror content into tracked paths if sharing is required. Plan Steps 4–5 complete; plan archived.
+
+- ✅ **Session Scope Lock — remaining prompt alignment** - COMPLETE (2026-03-28) - Added explicit ## Session Discipline sections to Synapse commit.md and analyze.md (CLAUDE.md parity with pointers to Step 13 split-commit hint and Step 5 scope risk check); integration tests assert headings.
+
+- ✅ **MCP startup: Synapse submodule sync** - COMPLETE (2026-03-28) - Added synapse_submodule_startup helper: bounded git submodule update --init --recursive before MCP listen; skip when CORTEX_SKIP_SYNAPSE_UPDATE set or synapse worktree dirty; non-fatal on failure. Hooked in _run_server_once. Tests and AGENTS/troubleshooting notes.
 
 ## Completed Work (2026-03-27)
 
