@@ -8,6 +8,8 @@
 
 - ✅ **Migration: Language-Agnostic Rules and Scripts Scaffolding** - COMPLETE (2026-03-28) - Documented migrate Step 2b (language detection, rules/scripts scaffolding, quality gate routing) and extended expected migration JSON. Clarified zero-arg run_quality_gate and LanguageQualityRouter docs; added unit tests proving resolve_adapter_worker selects SwiftAdapter vs PythonAdapter. Optional TradeWing template reconciliation remains a manual follow-up outside this repo.
 
+- ✅ **Synapse final-report standardization (PARTIAL)** - COMPLETE (2026-03-28) - Step 1 delivered REFACTORING_GUIDE appendix inventory (pipeline/single-shot/meta); .cursor/commands not in repo. Next: canonical templates and prompt updates per plan.
+
 ## Completed Work (2026-03-27)
 
 - ✅ **Pipeline Code Integrity Guard — Prevent Fix-Loop Corruption** - COMPLETE (2026-03-27) - Added fix-loop NO-GO section, post-fix py_compile/import validation, and rollback guidance to fix.md; added TestFixPromptIntegrityGuard alignment tests.

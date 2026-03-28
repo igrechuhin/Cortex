@@ -2,11 +2,13 @@
 title: Structured Final Reports for Cortex Synapse Prompts
 component: prompts
 work_type: improvement
-status: PENDING
+status: IN_PROGRESS
 priority: medium
 created: 2026-03-27
 depends_on: []
 ---
+
+**Remaining:** Steps 2–5 — define canonical final-report templates, embed in Synapse prompts, align any Cursor wrappers, add structural regression tests.
 
 ## Goal
 
@@ -21,6 +23,8 @@ Make user-visible outcomes of Cortex Synapse prompts (and related Cursor command
 ## Implementation Steps
 
 ### Step 1 — Inventory and classify
+
+**Done (2026-03-28):** Inventory table added under `docs/guides/REFACTORING_GUIDE.md` → Appendix: Synapse prompt inventory (manifest primaries, `.cortex/prompts/`, archives, `CLAUDE.md`, `.cursor/agents/`; `.cursor/commands/` not present).
 
 - Enumerate all user-facing prompt entrypoints (Synapse `*.md` + any repo `CLAUDE.md` / Cursor command markdown that defines end-of-run reporting).
 - Tag each as **pipeline** (multi-phase with quality gates), **single-shot** (one main outcome), or **meta** (plan/memory-bank only).
