@@ -8,7 +8,7 @@ created: 2026-03-27
 depends_on: []
 ---
 
-**Remaining:** Steps 2–5 — define canonical final-report templates, embed in Synapse prompts, align any Cursor wrappers, add structural regression tests.
+**Remaining:** Steps 3–5 — embed templates in Synapse prompts, align any Cursor wrappers, add structural regression tests.
 
 ## Goal
 
@@ -33,6 +33,8 @@ Make user-visible outcomes of Cortex Synapse prompts (and related Cursor command
 **Verification checklist**: What to search for | `grep` / list `prompts/*.md` | Re-read `REFACTORING_GUIDE.md`
 
 ### Step 2 — Define canonical templates
+
+**Done (2026-03-28):** Authoritative guide at `docs/guides/synapse-final-report-templates.md` (base section order, per-workflow delta blocks, anti-patterns, JSON vs markdown distinction); pointer added in `docs/guides/REFACTORING_GUIDE.md` appendix.
 
 - Specify one **base** final-report template (fixed section order, optional sub-bullets):
   - Status line (✅ success / ⚠️ partial / ❌ failed + one-line summary)

@@ -10,6 +10,8 @@
 
 - ✅ **Synapse final-report standardization (PARTIAL)** - COMPLETE (2026-03-28) - Step 1 delivered REFACTORING_GUIDE appendix inventory (pipeline/single-shot/meta); .cursor/commands not in repo. Next: canonical templates and prompt updates per plan.
 
+- ✅ **Structured Final Reports — Step 2 (canonical templates)** - COMPLETE (2026-03-28) - Added docs/guides/synapse-final-report-templates.md: base final-report skeleton, per-prompt deltas (commit, implement, fix, analyze, create-plan, review), anti-patterns, and distinction from MCP JSON. REFACTORING_GUIDE appendix links to the guide. Plan synapse-prompt-final-report-standardization Step 2 marked done; Steps 3–5 remain on roadmap.
+
 ## Completed Work (2026-03-27)
 
 - ✅ **Pipeline Code Integrity Guard — Prevent Fix-Loop Corruption** - COMPLETE (2026-03-27) - Added fix-loop NO-GO section, post-fix py_compile/import validation, and rollback guidance to fix.md; added TestFixPromptIntegrityGuard alignment tests.

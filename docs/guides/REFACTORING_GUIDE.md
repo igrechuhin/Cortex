@@ -4,7 +4,7 @@ Repo-level refactoring notes. Prompt-orchestration and Synapse-specific refactor
 
 ## Appendix: Synapse prompt inventory
 
-Step 1 inventory for [synapse-prompt-final-report-standardization](../../.cortex/plans/synapse-prompt-final-report-standardization.md). **Primary** rows are registered via `prompts-manifest.json` under `.cortex/synapse/prompts/` or `.cortex/prompts/`. **Archived** Synapse files are not manifest entrypoints but remain in the tree for reference.
+Step 1 inventory for [synapse-prompt-final-report-standardization](../../.cortex/plans/synapse-prompt-final-report-standardization.md). **Primary** rows are registered via `prompts-manifest.json` under `.cortex/synapse/prompts/` or `.cortex/prompts/`. **Archived** Synapse files are not manifest entrypoints but remain in the tree for reference. Step 2 canonical **final-report** section order and deltas: [synapse-final-report-templates.md](synapse-final-report-templates.md).
 
 | Prompt / command path | Category | Notes |
 | --- | --- | --- |

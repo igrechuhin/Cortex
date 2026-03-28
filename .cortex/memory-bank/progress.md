@@ -5,6 +5,7 @@
 - **Migration: Language-Agnostic Rules and Scripts Scaffolding** - PARTIAL. Landed Synapse template stubs under rules/_templates for go/java/javascript/rust/typescript; generalized migration scaffolded_languages reporting and tests; committed via Cortex commit pipeline with updated submodule gitlink.
 - **Migration: Language-Agnostic Rules and Scripts Scaffolding** - COMPLETE. Migrate prompt Step 2b + JSON fields; quality gate routing documented and covered by resolve_adapter_worker tests.
 - **Structured Final Reports for Cortex Synapse Prompts** - PARTIAL. Step 1 complete: prompt/command inventory table in docs/guides/REFACTORING_GUIDE.md appendix; plan Step 1 marked done. Remaining: Steps 2–5 (templates, Synapse apply, Cursor align, tests).
+- **Structured Final Reports for Cortex Synapse Prompts** - PARTIAL. Step 2 complete: canonical user-facing final-report templates documented in docs/guides/synapse-final-report-templates.md (base skeleton, per-prompt deltas, anti-patterns); REFACTORING_GUIDE appendix link added. Steps 3–5 remain (embed in Synapse prompts, align Cursor commands, regression tests).
 
 ## 2026-03-27
 
