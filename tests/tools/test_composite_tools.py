@@ -81,6 +81,24 @@ class TestAgentWorkflowQuickStart:
                 call_kwargs = mock_load.call_args[1]
                 assert call_kwargs["task_description"] == "general task"
 
+    async def test_quick_start_error_when_session_returns_invalid_json(self) -> None:
+        """quick_start returns error status when session(start) is not valid JSON."""
+        context_data = {"status": "success"}
+        with patch(
+            "cortex.tools.session.dispatcher.session",
+            new_callable=AsyncMock,
+            return_value="{not valid json",
+        ):
+            with patch(
+                "cortex.tools.optimization.load_context",
+                new_callable=AsyncMock,
+                return_value=json.dumps(context_data),
+            ):
+                result = await run_composite_workflow(operation="quick_start")
+        out = json.loads(result)
+        assert out["status"] == "error"
+        assert "session(start)" in out["error"]
+
 
 @pytest.mark.asyncio
 class TestAgentWorkflowQualityCheck:

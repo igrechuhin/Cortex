@@ -2,7 +2,12 @@
 Structural checks for mandatory final-report guidance in primary Synapse prompts.
 
 Ensures each primary workflow prompt references the canonical template doc and
-uses the correct report type structure (Pipeline, Diagnostic, or Artifact).
+uses the correct report structure (Pipeline, Diagnostic, or Artifact).
+
+Repository policy: optional `.cursor/commands/*.md` is intentionally unsupported in
+git (`/.cursor/` is ignored). Do not add stub command files to satisfy these tests;
+when no command markdown exists, the Cursor-commands test skips. Canonical workflows
+live under `.cortex/synapse/prompts/`.
 """
 
 from pathlib import Path
@@ -100,14 +105,23 @@ def _read_prompt(name: str) -> str:
 
 
 def _cursor_commands_md_paths() -> list[Path]:
-    """Return sorted paths to `.cursor/commands/*.md` (non-empty)."""
+    """Return sorted paths to `.cursor/commands/*.md` when present (optional).
+
+    Cursor command markdown is not required in this repository: Synapse prompts
+    under `.cortex/synapse/prompts/` are canonical. If a developer adds local
+    `*.md` under `.cursor/commands/`, they must still reference the shared
+    final-report template (see `test_cursor_commands_align_with_final_report_template`).
+    """
     root = _repo_root() / ".cursor" / "commands"
     if not root.is_dir():
         pytest.skip(
             "(ref: cleanup-skipped-legacy-tests) .cursor/commands directory not found"
         )
     paths = sorted(p for p in root.glob("*.md") if p.is_file())
-    assert paths, f"expected at least one *.md under {root}"
+    if not paths:
+        pytest.skip(
+            "(ref: optional-cursor-commands) no .cursor/commands/*.md — workflows live under .cortex/synapse/prompts/; skip alignment check"
+        )
     return paths
 
 

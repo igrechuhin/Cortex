@@ -17,6 +17,11 @@ concurrent tool call that calls :func:`resolve_project_root_async` issues its
 own ``list_roots`` request.  When many tools run concurrently (e.g. five MCP
 calls in the same agent step), those five simultaneous ``list_roots`` writes
 to the stdio transport corrupt the protocol and crash the server.
+
+Clients that support roots MAY send ``notifications/roots/list_changed`` when
+the workspace root set changes.  The MCP server registers a handler that calls
+:func:`handle_roots_list_changed` so the next resolution performs a fresh
+``list_roots`` instead of returning a stale path.
 """
 
 import asyncio
@@ -56,6 +61,21 @@ def clear_cached_root() -> None:
     """Reset the root cache (used in tests and on explicit project-root override)."""
     global cached_root
     cached_root = None
+
+
+async def handle_roots_list_changed() -> None:
+    """Clear the cached root when the client reports a roots change.
+
+    Called when the MCP server receives ``notifications/roots/list_changed``.
+    The next :func:`resolve_project_root_async` call issues a new ``list_roots``.
+    """
+    global cached_root
+    if cached_root is not None:
+        logger.info(
+            "project_root_resolver: roots/list_changed received, clearing cached root %s",
+            cached_root,
+        )
+        cached_root = None
 
 
 def file_uri_to_path(uri: str) -> Path | None:

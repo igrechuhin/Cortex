@@ -20,7 +20,9 @@ clients to discover deferred tools by query.
 from __future__ import annotations
 
 from mcp.server.fastmcp import FastMCP
-from mcp.types import ListPromptsRequest, ServerResult
+from mcp.types import ListPromptsRequest, RootsListChangedNotification, ServerResult
+
+from cortex.core.project_root_resolver import handle_roots_list_changed
 
 # FastMCP server instance (framework requirement)
 # This is an acceptable exception to the no-global-state rule
@@ -60,3 +62,15 @@ async def _lazy_list_prompts_handler(req: ListPromptsRequest) -> ServerResult:
 
 
 mcp._mcp_server.request_handlers[ListPromptsRequest] = _lazy_list_prompts_handler  # type: ignore[index]
+
+
+async def _roots_list_changed_notification_handler(
+    _notification: RootsListChangedNotification,
+) -> None:
+    """Invalidate cached MCP root when the client sends roots/list_changed."""
+    await handle_roots_list_changed()
+
+
+mcp._mcp_server.notification_handlers[RootsListChangedNotification] = (  # type: ignore[index]
+    _roots_list_changed_notification_handler
+)

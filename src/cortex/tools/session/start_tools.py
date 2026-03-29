@@ -15,6 +15,7 @@ Total: 1 tool
 """
 
 import asyncio
+import json
 import logging
 import re
 from pathlib import Path
@@ -50,6 +51,25 @@ from cortex.tools.session.models import (
 )
 
 logger = logging.getLogger(__name__)
+
+
+def _session_start_union_to_json(result: SessionStartResultUnion) -> str:
+    """Serialize session start result and verify JSON is parseable (stdlib)."""
+    raw = result.model_dump_json(exclude_none=True)
+    if isinstance(result, SessionStartErrorResult):
+        return raw
+    try:
+        json.loads(raw)
+    except json.JSONDecodeError:
+        logger.exception("SessionStartResult JSON round-trip failed")
+        return SessionStartErrorResult(
+            status=ToolResultStatus.ERROR,
+            error=(
+                "Session brief produced invalid JSON after serialization; "
+                "try again or report."
+            ),
+        ).model_dump_json(exclude_none=True)
+    return raw
 
 
 def _session_has_context_telemetry(project_root: Path) -> bool:
@@ -395,4 +415,4 @@ async def session_start(
 
     result = await session_start_impl(task_description, project_root, managers)
 
-    return result.model_dump_json(exclude_none=True)
+    return _session_start_union_to_json(result)

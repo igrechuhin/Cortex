@@ -35,7 +35,7 @@ Key source paths relevant to external project integration:
 |------|---------|
 | `src/cortex/core/project_root_resolver.py` | Resolves external project root via MCP `roots/list`; cached per server lifetime |
 | `src/cortex/setup/lazy_prompt_registration.py` | Defers prompt registration until first `list_prompts`; uses `resolve_project_root_async()` |
-| `src/cortex/server.py` | MCP server entry point; hooks lazy prompt handler |
+| `src/cortex/server.py` | MCP server entry point; hooks lazy prompt handler and roots/list_changed notification |
 | `src/cortex/core/session_config.py` | Session config reader; resources read task/context from here |
 | `src/cortex/tools/` | All MCP tool implementations |
 | `src/cortex/setup/prompts.py` | Synapse prompt registration; `sync_cursor_agents()` |
@@ -69,16 +69,26 @@ Also note the integration plan that was created:
 
 Use `Glob` on `/Users/i.grechukhin/Repo/TradeWing/.cortex/` to confirm what is present vs. missing.
 
-Known integration facts (do not re-verify, just record):
+**Stable structural facts (cached — no re-verification needed):**
+
+These were established by prior migration work and do not change between debug sessions unless explicitly modified:
 
 - `.cortex/synapse/` — Synapse git submodule present
 - `.cortex/memory-bank/` — 7 core files migrated; `projectBrief.md` uses camelCase B
 - `.cortex/plans/` — plans migrated from the prior location
-- `.cortex/index.corrupted` — **exists** (index was corrupted; blocks `manage_file` reads until repaired)
 - Legacy links should point to `.cortex/` counterparts
 - `.cortex/config/` — 3 config JSON files should exist (`validation.json`, `optimization.json`, `usage_tracking.json`)
 
 Flag anything that diverges from the above as a new finding.
+
+**Dynamic state (re-verify each session using the Glob output):**
+
+Check the actual Glob output from this session to determine current state:
+
+- **`.cortex/index.corrupted`** — check for presence in the Glob output.
+  - If present: index was corrupted. Delete both `index.corrupted` and `index.json` from TradeWing `.cortex/`, then call `session()` to trigger rebuild before testing memory bank reads.
+  - If absent: index is healthy. Do NOT attempt to delete or rebuild.
+- **`.cortex/index.json`** — check for presence in the Glob output. If missing (and no `.corrupted` marker): call `session()` to trigger a fresh index build.
 
 ---
 
@@ -91,6 +101,7 @@ This is the most common source of integration failures:
 - If `roots/list` returns Cortex repo instead of TradeWing → all memory bank reads go to wrong project
 - If `roots/list` times out or fails → server falls back to CWD (wrong)
 - The root is cached after first resolution — a bad first call poisons the whole session
+- Cache is invalidated on `notifications/roots/list_changed` (workspace switch mid-session)
 
 Read `src/cortex/core/project_root_resolver.py` now to understand the current resolution logic and cache behavior.
 
@@ -120,4 +131,4 @@ Do NOT make changes to TradeWing source files (`.swift`). Changes go to:
 - **No auto-commit**: never commit to either repo without explicit user request
 - **Cursor strips args**: all MCP tools work with `{}`. Pass explicit args when needed; fall back to `Write` if tool rejects them
 - **TradeWing quality gate**: `run_quality_gate()` runs Python checks — do not run it against TradeWing Swift source
-- **Index repair**: if `.cortex/index.corrupted` is still present, delete it and `index.json` from TradeWing `.cortex/`, then call `session()` to trigger rebuild before testing memory bank reads
+- **Index repair**: if Step 4 dynamic-state check found `.cortex/index.corrupted` present in the Glob output, delete both `index.corrupted` and `index.json` from TradeWing `.cortex/`, then call `session()` to trigger rebuild before testing memory bank reads. If `index.corrupted` was NOT present in the Glob output, skip this step entirely.

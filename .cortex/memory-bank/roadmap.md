@@ -6,15 +6,13 @@
 
 ## Blockers (ASAP Priority)
 
-### No active blockers (all resolved as of 2026-03-27)
-
 ## Active Work (in progress)
 
 ## Future Enhancements
 
 ## Pending plans (from .cortex/plans)
 
-- **Migration: Language-Agnostic Rules and Scripts Scaffolding** - PENDING - Remaining integration and scaffolding work described by PARTIAL progress entries; remove when that work is complete or progress is reconciled.
+- **Migration: Language-Agnostic Rules and Scripts Scaffolding (follow-up)** - PENDING - Optional TradeWing template reconciliation and further language packs; tracks remaining work reflected in progress PARTIAL entries.
 
 ### Fixes
 

@@ -25,6 +25,16 @@ from cortex.tools.response_builder import error_response, success_response
 # ---------------------------------------------------------------------------
 
 
+def _expect_json_object_from_tool(payload: str, label: str) -> ModelDict:
+    try:
+        parsed = json.loads(payload)
+    except json.JSONDecodeError as e:
+        raise ValueError(f"{label} returned invalid JSON: {e}") from e
+    if not isinstance(parsed, dict):
+        raise ValueError(f"{label} returned JSON that is not an object")
+    return cast(ModelDict, parsed)
+
+
 async def _quick_start_impl(
     task_description: str | None = None,
     token_budget: int | None = None,
@@ -44,10 +54,17 @@ async def _quick_start_impl(
         task_description=task,
         token_budget=budget,
     )
+    try:
+        session_brief_parsed = _expect_json_object_from_tool(
+            brief_json, "session(start)"
+        )
+        context_parsed = _expect_json_object_from_tool(context_json, "load_context")
+    except ValueError as e:
+        return json.dumps(error_response(error=str(e)), indent=2)
     return json.dumps(
         success_response(
-            session_brief=json.loads(brief_json),
-            context=json.loads(context_json),
+            session_brief=session_brief_parsed,
+            context=context_parsed,
         ),
         indent=2,
     )

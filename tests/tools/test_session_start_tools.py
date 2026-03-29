@@ -23,6 +23,7 @@ from cortex.tools.models import (
     SessionStartErrorResult,
     SessionStartResult,
 )
+from cortex.tools.session.brief import cap_session_brief_payload
 from cortex.tools.session.brief_extraction_helpers import (
     extract_current_focus,
     extract_recent_completed,
@@ -33,7 +34,12 @@ from cortex.tools.session.health import (
     determine_token_budget_status,
     parse_mcp_health,
 )
-from cortex.tools.session.models import SESSION_SCOPE_PROMPT, TokenBudgetStatus
+from cortex.tools.session.models import (
+    SESSION_SCOPE_PROMPT,
+    ConcurrentSession,
+    SessionBrief,
+    TokenBudgetStatus,
+)
 from cortex.tools.session.start_tools import (
     extract_next_work_item,
     get_git_status,
@@ -1366,3 +1372,37 @@ Working on Phase 54.
 
             assert result["status"] == "error"
             assert "Managers not initialized" in result["error"]
+
+
+def test_cap_session_brief_payload_truncates_long_concurrent_task() -> None:
+    """Long concurrent session task strings are capped for stable MCP JSON."""
+    long_task = "x" * 3000
+    brief = SessionBrief(
+        project_name="Proj",
+        current_focus="",
+        recent_completed=[],
+        next_work_item=None,
+        next_work_plan_path=None,
+        health=SessionHealthSummary(
+            file_count=1,
+            total_tokens=1,
+            token_budget_status=TokenBudgetStatus.HEALTHY,
+        ),
+        git_status=None,
+        session_suggestions=[],
+        last_handoff=None,
+        concurrent_sessions=[
+            ConcurrentSession(
+                agent_role=None,
+                task=long_task,
+                started="2020-01-01T00:00:00+00:00",
+                session_id="sid",
+            )
+        ],
+        locked_tasks=[],
+        mcp_healthy=True,
+        mcp_health_message=None,
+    )
+    capped = cap_session_brief_payload(brief)
+    assert len(capped.concurrent_sessions[0].task) < len(long_task)
+    assert capped.concurrent_sessions[0].task.endswith("…")

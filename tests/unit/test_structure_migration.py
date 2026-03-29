@@ -263,14 +263,8 @@ async def test_migrate_legacy_structure_detects_languages_and_scaffolds_swift_sc
     assert scaffolded_rule.exists()
     assert str(scaffolded_rule) in report.rules_scaffolded
 
-    quality_script = (
-        tmp_path / ".cortex" / "synapse" / "scripts" / "swift" / "run_quality_check.sh"
-    )
-    assert quality_script.exists()
-    content = quality_script.read_text(encoding="utf-8")
-    assert "swift build" in content
-    assert "swift test" in content
-    assert str(quality_script) in report.scripts_scaffolded
+    # Swift ships native scripts in Synapse; stub scaffolding skips swift.
+    assert report.scripts_scaffolded == []
 
 
 @pytest.mark.asyncio
@@ -307,4 +301,19 @@ async def test_migrate_legacy_structure_marks_typescript_as_scaffolded_from_rule
     )
     assert scaffolded_rule.exists()
     assert str(scaffolded_rule) in report.rules_scaffolded
-    assert report.scripts_scaffolded == []
+
+    readme = tmp_path / ".cortex" / "synapse" / "scripts" / "typescript" / "README.md"
+    quality_script = (
+        tmp_path
+        / ".cortex"
+        / "synapse"
+        / "scripts"
+        / "typescript"
+        / "run_quality_check.sh"
+    )
+    assert readme.exists()
+    assert quality_script.exists()
+    content = quality_script.read_text(encoding="utf-8")
+    assert "npm run build" in content
+    assert "npm test" in content
+    assert set(report.scripts_scaffolded) == {str(readme), str(quality_script)}

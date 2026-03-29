@@ -85,7 +85,15 @@ a no-op. The migration output includes `detected_language` and `post_edit_hook_w
 
 After `.cortex/` structure exists (Step 2), the migration flow **detects primary
 language(s)** from project markers (for example `Package.swift`, `package.json`,
-`Cargo.toml`, `go.mod`, dominant `*.py`) and can scaffold language-specific
+`pom.xml`, `build.gradle` / `build.gradle.kts`, `settings.gradle` / `settings.gradle.kts`,
+`gradlew` / `gradlew.bat`, `gradle/wrapper/gradle-wrapper.properties`,
+`mvnw` / `mvnw.cmd`, `.mvn/wrapper/maven-wrapper.properties`, `Cargo.toml`,
+`go.mod`, `pyproject.toml`, `setup.py`, `setup.cfg`, `tox.ini`, `requirements.txt`,
+`Pipfile`, `Pipfile.lock`, `poetry.lock`, `uv.lock`, `pdm.toml`, `pdm.lock`, `pixi.toml`,
+`environment.yml` / `environment.yaml`,
+`conda-lock.yml`, `.python-version`, `MANIFEST.in`, `constraints.txt`, `runtime.txt`, `.flake8`,
+`pytest.ini`, `.coveragerc`, `pyrightconfig.json`, `mypy.ini`, `.mypy.ini`, `ruff.toml`, `.ruff.toml`,
+`noxfile.py`, dominant `*.py`) and can scaffold language-specific
 content without manual copy-paste:
 
 1. **Detect** — `detect_languages_for_migration` runs on the project root; results

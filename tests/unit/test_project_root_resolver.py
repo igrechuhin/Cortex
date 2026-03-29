@@ -5,9 +5,11 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
+import cortex.core.project_root_resolver as project_root_resolver_mod
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.core.project_root_resolver import (
     file_uri_to_path,
+    handle_roots_list_changed,
     resolve_project_root_async,
 )
 
@@ -157,3 +159,46 @@ class TestResolveProjectRootAsync:
                 result = await resolve_project_root_async(None, None)
                 assert result == Path("/fallback")
                 mock_get.assert_called_once_with(None)
+
+
+class TestRootsListChanged:
+    """Tests for notifications/roots/list_changed cache invalidation."""
+
+    @pytest.mark.asyncio
+    async def test_roots_list_changed_clears_cache(self, tmp_path: Path) -> None:
+        stale = tmp_path / "stale"
+        stale.mkdir()
+        resolved = stale.resolve()
+        project_root_resolver_mod.cached_root = resolved
+        await handle_roots_list_changed()
+        assert project_root_resolver_mod.cached_root is None
+
+    @pytest.mark.asyncio
+    async def test_roots_list_changed_noop_when_no_cache(self) -> None:
+        project_root_resolver_mod.cached_root = None
+        await handle_roots_list_changed()
+        assert project_root_resolver_mod.cached_root is None
+
+    @pytest.mark.asyncio
+    async def test_roots_list_changed_triggers_re_resolve(self, tmp_path: Path) -> None:
+        path_a = tmp_path / "a"
+        path_b = tmp_path / "b"
+        path_a.mkdir()
+        path_b.mkdir()
+        project_root_resolver_mod.cached_root = path_a.resolve()
+
+        root_uri = f"file://{path_b}"
+        mock_root = MagicMock()
+        mock_root.uri = root_uri
+        mock_result = MagicMock()
+        mock_result.roots = [mock_root]
+        mock_session = AsyncMock()
+        mock_session.list_roots = AsyncMock(return_value=mock_result)
+        mock_session.check_client_capability = MagicMock(return_value=True)
+        mock_ctx = MagicMock()
+        mock_ctx.session = mock_session
+
+        await handle_roots_list_changed()
+        result = await resolve_project_root_async(None, mock_ctx)
+        assert result == path_b.resolve()
+        mock_session.list_roots.assert_called_once()
