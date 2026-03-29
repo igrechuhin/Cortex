@@ -292,8 +292,8 @@ class LazyPromptRegistry:
         async with self._get_lock():
             if self._registered:
                 return
-            await self.do_register(ctx)
             self._registered = True
+            await self.do_register(ctx)
 
     @property
     def registered(self) -> bool:

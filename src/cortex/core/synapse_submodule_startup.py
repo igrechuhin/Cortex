@@ -111,23 +111,16 @@ def _submodule_update_result_from_proc(
         )
 
     logger.info(
-        "MCP startup: Synapse submodule sync completed (git submodule update --init --recursive)"
+        "MCP startup: Synapse submodule sync completed (git pull --ff-only origin main)"
     )
     return SynapseStartupSyncResult(outcome=SynapseStartupSyncOutcome.SUCCESS)
 
 
 def _run_git_submodule_update(
-    root: Path, update_timeout: float
+    synapse_abs: Path, update_timeout: float
 ) -> SynapseStartupSyncResult:
-    cmd = [
-        "git",
-        "-C",
-        str(root),
-        "submodule",
-        "update",
-        "--init",
-        "--recursive",
-    ]
+    """Pull the latest remote main into the submodule."""
+    cmd = ["git", "-C", str(synapse_abs), "pull", "--ff-only", "origin", "main"]
     try:
         proc = subprocess.run(
             cmd,
@@ -180,7 +173,7 @@ def _sync_with_stash(
             detail=str(synapse_abs),
         )
 
-    update_result = _run_git_submodule_update(root, update_timeout)
+    update_result = _run_git_submodule_update(synapse_abs, update_timeout)
 
     if not _stash_pop(synapse_abs, porcelain_timeout):
         logger.warning(
@@ -217,7 +210,7 @@ def try_sync_synapse_submodule_at_mcp_startup(
     if has_local_changes:
         return _sync_with_stash(root, synapse_abs, update_timeout, porcelain_timeout)
 
-    return _run_git_submodule_update(root, update_timeout)
+    return _run_git_submodule_update(synapse_abs, update_timeout)
 
 
 __all__ = [

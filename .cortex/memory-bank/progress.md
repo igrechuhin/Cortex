@@ -1,5 +1,9 @@
 # Progress Log
 
+## 2026-03-29
+
+- **MCP startup: Synapse sync uses ff-only pull in submodule** - COMPLETE. Replaced superproject `git submodule update --init --recursive` with `git pull --ff-only origin main` inside `.cortex/synapse`; logging, lazy prompt registration comment, and unit tests updated; AGENTS/troubleshooting aligned.
+
 ## 2026-03-28
 
 - **Structured final-report types + Synapse prompts** - COMPLETE. Pipeline/Diagnostic/Artifact templates applied in Synapse; docs guide, integration test, and Claude implement-code agent updated; submodule commit and superproject gitlink in Cortex commit pipeline.

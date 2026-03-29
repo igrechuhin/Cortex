@@ -2,31 +2,13 @@
 
 **This file records completed work only.** For current status and upcoming work see [roadmap.md](roadmap.md).
 
+## Completed Work (2026-03-29)
+
+- **MCP startup: Synapse sync uses ff-only pull in submodule** - COMPLETE (2026-03-29) - `synapse_submodule_startup` runs `git pull --ff-only origin main` inside `.cortex/synapse` instead of `git submodule update --init --recursive` from the superproject; stash/pop behavior unchanged when the submodule has local changes; unit tests and log messages updated; AGENTS and troubleshooting docs aligned.
+
 ## Completed Work (2026-03-28)
 
-- ✅ **Structured final-report types (Pipeline/Diagnostic/Artifact) + Synapse gitlink** - COMPLETE (2026-03-28) - Synapse submodule commits six primary prompts to typed final-report sections per `docs/guides/synapse-final-report-templates.md`; MD032 markdown fixes; superproject updates the guide, `test_synapse_final_report_prompt_alignment`, `.claude/agents/implement-code.md`, memory bank index/history, and bumps the submodule pointer.
-
-- ✅ **Migration: language rule templates and scaffolded_languages reporting** - COMPLETE (2026-03-28) - Synapse submodule adds minimal rules/_templates for Go, Java, JavaScript, Rust, and TypeScript. Structure migration now derives scaffolded_languages from scaffolded rule/script paths (_collect_scaffolded_languages, _to_json_list) with expanded unit tests; plan doc and AGENTS touched. Submodule pointer updated to the new Synapse commit.
-
-- ✅ **Migration: Language-Agnostic Rules and Scripts Scaffolding** - COMPLETE (2026-03-28) - Documented migrate Step 2b (language detection, rules/scripts scaffolding, quality gate routing) and extended expected migration JSON. Clarified zero-arg run_quality_gate and LanguageQualityRouter docs; added unit tests proving resolve_adapter_worker selects SwiftAdapter vs PythonAdapter. Optional TradeWing template reconciliation remains a manual follow-up outside this repo.
-
-- ✅ **Synapse final-report standardization (PARTIAL)** - COMPLETE (2026-03-28) - Step 1 delivered REFACTORING_GUIDE appendix inventory (pipeline/single-shot/meta); .cursor/commands not in repo. Next: canonical templates and prompt updates per plan.
-
-- ✅ **Structured Final Reports — Step 2 (canonical templates)** - COMPLETE (2026-03-28) - Added docs/guides/synapse-final-report-templates.md: base final-report skeleton, per-prompt deltas (commit, implement, fix, analyze, create-plan, review), anti-patterns, and distinction from MCP JSON. REFACTORING_GUIDE appendix links to the guide. Plan synapse-prompt-final-report-standardization Step 2 marked done; Steps 3–5 remain on roadmap.
-
-- ✅ **Structured Final Reports (PARTIAL)** - COMPLETE (2026-03-28) - Synapse primary prompts now require canonical final-report markdown per docs/guides/synapse-final-report-templates.md; integration test guards section markers.
-
-- ✅ **Structured Final Reports — commit (Step 3 + test)** - COMPLETE (2026-03-28) - Synapse submodule commit documents final-report format in primary prompts; integration test guards required headings; plan Step 3 done, Steps 4-5 still open on roadmap.
-
-- ✅ **Structured Final Reports — implement-code handoff + superproject commit** - COMPLETE (2026-03-28) - Synapse submodule chore commit documents orchestrator final-report vs `pipeline_handoff` in `cursor-agents/implement-code.md`; superproject adds alignment integration test, REFACTORING_GUIDE appendix note, plan Step 4/5 partial updates, regenerated `.claude/agents`, and bumped gitlink. Optional `.cursor/commands` wrappers still absent.
-
-- ✅ **Structured Final Reports for Cortex Synapse Prompts** - COMPLETE (2026-03-28) - Extended `test_synapse_final_report_prompt_alignment` for Cursor command markdown when a `.cursor/commands` tree exists; REFACTORING_GUIDE links the archived plan; Phase B pre-commit tests isolate roadmap/progress consistency from workspace drift. Optional workflow command files under `.cursor/commands/` are gitignored (`/.cursor/`); use them locally or mirror content into tracked paths if sharing is required. Plan Steps 4–5 complete; plan archived.
-
-- ✅ **Session Scope Lock — remaining prompt alignment** - COMPLETE (2026-03-28) - Added explicit ## Session Discipline sections to Synapse commit.md and analyze.md (CLAUDE.md parity with pointers to Step 13 split-commit hint and Step 5 scope risk check); integration tests assert headings.
-
-- ✅ **MCP startup: Synapse submodule sync (stash + structured outcomes)** - COMPLETE (2026-03-28) - `synapse_submodule_startup` runs bounded `git submodule update --init --recursive` for `.cortex/synapse`; when the submodule has local changes, stashes before update and pops after; skips when `CORTEX_SKIP_SYNAPSE_UPDATE` is set or root is not a git checkout; `SynapseStartupSyncResult` / `SynapseStartupSyncOutcome` for logging and tests; non-fatal on git error, timeout, stash, or stash-pop failure. Invoked from `LazyPromptRegistry.ensure_registered` after MCP project root resolution (removed `_sync_synapse_before_listen` from `cortex.main`); `test_lazy_registry_invokes_sync_after_root_resolution` covers ordering; unit tests; AGENTS/troubleshooting connectivity preflight; memory bank index.
-
-- ✅ **Project root resolver — public cache + ctx-None fast path** - COMPLETE (2026-03-28) - Renamed `_cached_root` to public `cached_root`; `resolve_project_root_async` returns the cached root when `ctx` is None after a prior roots resolution (e.g. lazy prompt paths). Added autouse `isolate_project_root_cache` in `tests/conftest.py` (xdist-safe teardown). New unit test ensures cached path is returned without `get_project_root` fallback.
+- **Summary (2026-03-28)** - 1 entries archived.
 
 ## Completed Work (2026-03-27)
 
@@ -208,7 +190,7 @@ No queued pending plans under `.cortex/plans` in [roadmap.md](roadmap.md); next 
 
 Synapse sync timing (2026-03-28): submodule update runs when lazy prompts first register, after `resolve_project_root_async`, aligning sync with MCP roots (not only process CWD).
 
-MCP startup Synapse sync (2026-03-28): dirty submodule worktrees are stashed around `git submodule update --init --recursive`; structured outcomes cover stash/push/pop edge cases; see AGENTS.md and `docs/guides/troubleshooting.md` MCP preflight.
+MCP startup Synapse sync (2026-03-29): dirty submodule worktrees are stashed around `git pull --ff-only origin main` inside `.cortex/synapse` (replacing superproject `git submodule update --init --recursive`); structured outcomes cover stash/push/pop edge cases; see AGENTS.md and `docs/guides/troubleshooting.md` MCP preflight.
 
 Submodule hygiene for commits (2026-03-20): `pre_commit_submodule_guard` blocks Phase A when a submodule worktree is dirty or the gitlink is out of sync; covered by `test_pre_commit_submodule_guard.py` and pre-commit tool fixture patches.
 

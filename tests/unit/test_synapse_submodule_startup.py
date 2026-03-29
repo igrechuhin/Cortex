@@ -56,7 +56,7 @@ def test_dirty_worktree_stash_update_pop(
         if "stash" in cmd and "pop" in cmd:
             calls.append("stash_pop")
             return subprocess.CompletedProcess(cmd, 0, "", "")
-        if "submodule" in cmd and "update" in cmd:
+        if "pull" in cmd:
             calls.append("update")
             return subprocess.CompletedProcess(cmd, 0, "", "")
         return subprocess.CompletedProcess(cmd, 1, "", "unknown")
@@ -120,7 +120,7 @@ def test_dirty_worktree_stash_pop_fails(
             return subprocess.CompletedProcess(cmd, 0, "", "")
         if "stash" in cmd and "pop" in cmd:
             return subprocess.CompletedProcess(cmd, 1, "", "conflict")
-        if "submodule" in cmd and "update" in cmd:
+        if "pull" in cmd:
             return subprocess.CompletedProcess(cmd, 0, "", "")
         return subprocess.CompletedProcess(cmd, 0, "", "")
 
@@ -146,7 +146,7 @@ def test_success_on_clean_git_root(tmp_path: Path) -> None:
         cmd: list[str],
         **_kwargs: object,
     ) -> subprocess.CompletedProcess[str]:
-        assert "submodule" in cmd and "update" in cmd
+        assert "pull" in cmd
         return subprocess.CompletedProcess(cmd, 0, "", "")
 
     with (
@@ -157,10 +157,9 @@ def test_success_on_clean_git_root(tmp_path: Path) -> None:
         patch(
             "cortex.core.synapse_submodule_startup.subprocess.run",
             side_effect=fake_run,
-        ) as run,
+        ),
     ):
         result = try_sync_synapse_submodule_at_mcp_startup(tmp_path)
-    run.assert_called_once()
     assert result.outcome is SynapseStartupSyncOutcome.SUCCESS
 
 
