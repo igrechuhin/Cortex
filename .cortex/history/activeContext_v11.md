@@ -52,6 +52,8 @@
 
 - ✅ **Debug external integration prompt: stale index state** - COMPLETE (2026-03-29) - Step 4 splits stable structural facts from dynamic index state; Glob-driven presence checks for index.corrupted and index.json; Notes index repair is conditional on Glob output.
 
+- ✅ **Synapse fix.md: NO-GO Cursor command stubs** - COMPLETE (2026-03-29) - Documented policy against adding tracked `.cursor/commands/*.md` to satisfy tests or the gate; routes final-report alignment failures to test/prompt fixes; submodule commit `docs: clarify fix prompt for rules-disabled and cursor command stubs`.
+
 ## Completed Work (2026-03-28)
 
 - **Summary (2026-03-28)** - 1 entries archived.

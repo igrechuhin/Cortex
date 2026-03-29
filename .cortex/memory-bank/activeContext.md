@@ -54,6 +54,8 @@
 
 - ✅ **Synapse fix.md: NO-GO Cursor command stubs** - COMPLETE (2026-03-29) - Documented policy against adding tracked `.cursor/commands/*.md` to satisfy tests or the gate; routes final-report alignment failures to test/prompt fixes; submodule commit `docs: clarify fix prompt for rules-disabled and cursor command stubs`.
 
+- ✅ **Swift quality gate — plans and roadmap (QG-S1–S8)** - COMPLETE (2026-03-29) - Archived umbrella plan `swift-quality-gate-support.v1` to `.cortex/plans/archive/`; added eight slice plans (`swift-qg-s1` … `swift-qg-s8`) under `.cortex/plans/` with rumdl-clean markdown; registered Blockers in roadmap with plan links; updated `.cortex/index.json` and history snapshots; staged superproject Synapse gitlink to match checked-out submodule.
+
 ## Completed Work (2026-03-28)
 
 - **Summary (2026-03-28)** - 1 entries archived.
@@ -232,7 +234,7 @@
 
 ## Current Focus
 
-No queued pending plans under `.cortex/plans` in [roadmap.md](roadmap.md); next slice is chosen from Future Enhancements or the implement command.
+Next implementation slice: **[QG-S1] Add EXTENSION_SCRIPT_MAP** per [roadmap.md](roadmap.md) Blockers and `.cortex/plans/swift-qg-s1-add-extension-script-map.plan.md`.
 
 ## Recent Changes
 

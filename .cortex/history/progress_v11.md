@@ -27,6 +27,7 @@
 - **Migration: Language-Agnostic Rules and Scripts Scaffolding** - COMPLETE (2026-03-29). Extended `scaffold_language_scripts` to emit `README.md` + `run_quality_check.sh` stubs for all non-Python/Swift languages (java, go, rust, typescript, javascript) under `.cortex/synapse/scripts/<lang>/`. Added 29-test suite `tests/unit/test_language_scripts_scaffolding.py` covering all 5 languages, native-skip, idempotency, unknown-language fallback, executable bit, and return-value shape. All quality gates pass.
 - **Fix pipeline: surface rules-resource disabled warning** - COMPLETE. fix.md: disabled vs failure branches; ⚠️ in Next; `rules.enabled` path.
 - **Debug external integration prompt: stale index state** - COMPLETE. Split Step 4 stable vs dynamic sections; conditional index repair in Notes.
+- **Synapse fix.md: NO-GO Cursor command stubs** - COMPLETE. NO-GO bullet and routing when `.cursor/commands` has no `*.md`; submodule commit with rules-disabled branching updates.
 
 ## 2026-03-28
 

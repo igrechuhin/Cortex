@@ -28,6 +28,7 @@
 - **Fix pipeline: surface rules-resource disabled warning** - COMPLETE. fix.md: disabled vs failure branches; ⚠️ in Next; `rules.enabled` path.
 - **Debug external integration prompt: stale index state** - COMPLETE. Split Step 4 stable vs dynamic sections; conditional index repair in Notes.
 - **Synapse fix.md: NO-GO Cursor command stubs** - COMPLETE. NO-GO bullet and routing when `.cursor/commands` has no `*.md`; submodule commit with rules-disabled branching updates.
+- **Swift quality gate — multi-slice plans and roadmap** - PARTIAL. Umbrella plan archived; QG-S1–QG-S8 slice plans added with markdown lint fixes; roadmap Blockers and index/history updated; Synapse gitlink staged. Remaining: implement slices per plans (start with QG-S1).
 
 ## 2026-03-28
 
