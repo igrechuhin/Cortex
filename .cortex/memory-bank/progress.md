@@ -9,6 +9,7 @@
 - **[QG-S5] Swift check_function_lengths FILES env** - COMPLETE. Support `FILES` env-var dispatcher mode for `check_function_lengths.py` and include `Tests/` in the fallback scan (removed path-based `Tests` exclusion); added unit tests for the FILES behavior.
 - **[QG-S6] python synapse scripts FILES env** - COMPLETE. Added `FILES` dispatcher mode parity to Python size/length scripts with unit tests.
 - **[QG-S7] Unit tests for file_language_router** - COMPLETE. Added a comprehensive unit test suite for `file_language_router` (routing, project file collection, violation parsing, mocked per-language script dispatch) plus an `execute_quality()` regression guard.
+- **[QG-S8] Integration tests + validation** - COMPLETE. Added integration tests that invoke real Synapse scripts via FILES env (Swift/Python routing, mixed-language, unknown extension skip, clean pass, Swift function-length) and validated via cache-cleared quality gate run.
 
 ## 2026-03-29
 

@@ -6,8 +6,6 @@
 
 ## Blockers (ASAP Priority)
 
-- **[QG-S8] Integration tests + validation** - PENDING - Real synapse script invocations via FILES env; TradeWing scenario; full suite regression check. Plan: `.cortex/plans/swift-qg-s8-integration-tests.plan.md`
-
 ## Active Work (in progress)
 
 ## Future Enhancements
