@@ -9,7 +9,6 @@ from subprocess import CompletedProcess
 from cortex.core.constants import (
     EXTENSION_SCRIPT_MAP,
     FILE_SIZE_EXCLUDED_FILENAMES,
-    FUNCTION_LENGTH_EXCLUDED_PATHS,
 )
 from cortex.core.path_resolver import (
     CortexResourceType,
@@ -28,13 +27,15 @@ _SKIP_DIRS: frozenset[str] = frozenset(
         ".git",
         "node_modules",
         ".venv",
-        ".cortex",
+        ".cortex",  # synapse tooling, not project source
         "venv",
         "build",
         "dist",
         ".tox",
         ".mypy_cache",
-        "tests",
+        # NOTE: "tests" / "Tests" are intentionally NOT listed here.
+        # Test files must be included — they are subject to the same
+        # size and function-length rules as production files.
     }
 )
 
@@ -74,15 +75,15 @@ def route_files(
 def collect_project_files(project_root: Path) -> list[Path]:
     """Return all checkable source files under project_root.
 
-    Skips: __pycache__, .git, node_modules, .venv, build, dist directories.
-    Does NOT skip test directories or test_* files — that is the scripts' job
-    in fallback mode; when FILES is set, scripts check exactly what is given.
+    Skips: __pycache__, .git, node_modules, .venv, build, dist, .cortex dirs.
+    Does NOT skip test directories or test_* files — the per-language scripts
+    apply their own exclusions in fallback mode; when FILES is set, scripts
+    check exactly what the dispatcher provides.
     Skips FILE_SIZE_EXCLUDED_FILENAMES (e.g. models.py) by name.
     Returns sorted list of absolute Paths.
     """
     root = project_root.resolve()
     excluded_names = frozenset(FILE_SIZE_EXCLUDED_FILENAMES)
-    function_excluded_paths = frozenset(FUNCTION_LENGTH_EXCLUDED_PATHS)
     known_ext = frozenset(EXTENSION_SCRIPT_MAP.keys())
     found: list[Path] = []
     for path in root.rglob("*"):
@@ -92,13 +93,6 @@ def collect_project_files(project_root: Path) -> list[Path]:
             continue
         if path.name in excluded_names:
             continue
-        if path.suffix == ".py" and path.name.startswith("test_"):
-            continue
-        if path.suffix == ".py":
-            # Mirror check_function_lengths.py fallback exclusion when dispatching.
-            rel = path.relative_to(root).as_posix()
-            if rel in function_excluded_paths:
-                continue
         if path.suffix not in known_ext:
             continue
         found.append(path.resolve())
@@ -238,7 +232,7 @@ def _rel_file_str(rel: str, project_root: Path) -> str:
         if p.is_absolute():
             return str(p.resolve().relative_to(project_root))
         return rel.replace("\\", "/")
-    except Exception:
+    except ValueError:
         return rel.replace("\\", "/")
 
 

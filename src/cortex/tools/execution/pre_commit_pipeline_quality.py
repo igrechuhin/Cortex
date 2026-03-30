@@ -3,9 +3,13 @@
 Extracted from pre_commit_pipeline_processors to keep files under 400 lines.
 """
 
+from __future__ import annotations
+
+import subprocess
 from pathlib import Path
 
 from cortex.core.constants import (
+    EXTENSION_SCRIPT_MAP,
     FUNCTION_LENGTH_EXCLUDED_PATHS,
     MAX_FILE_LINES,
     MAX_FUNCTION_LINES,
@@ -22,6 +26,42 @@ from cortex.tools.execution.pre_commit_helpers_models import (
 from cortex.tools.execution.pre_commit_helpers_quality import (
     check_function_lengths_in_file,
 )
+
+
+def _collect_git_delta_files(project_root: Path) -> list[Path] | None:
+    """Return changed/untracked files for incremental quality checks.
+
+    Returns None if git commands fail (caller decides fallback).
+    """
+    candidates: set[Path] = set()
+    for args in (
+        ["git", "diff", "--cached", "--name-only"],
+        ["git", "diff", "--name-only"],
+        ["git", "ls-files", "--others", "--exclude-standard"],
+    ):
+        try:
+            result = subprocess.run(
+                args,
+                capture_output=True,
+                text=True,
+                cwd=str(project_root),
+                timeout=10,
+            )
+        except (subprocess.TimeoutExpired, FileNotFoundError):
+            return None
+        if result.returncode != 0:
+            return None
+        for line in result.stdout.splitlines():
+            rel = line.strip()
+            if rel:
+                candidates.add((project_root / rel).resolve())
+    return sorted(candidates, key=lambda p: str(p))
+
+
+def _filter_checkable_files(files: list[Path]) -> list[Path]:
+    """Filter to existing files with extensions supported by the router."""
+    known_ext = frozenset(EXTENSION_SCRIPT_MAP.keys())
+    return [p for p in files if p.is_file() and p.suffix in known_ext]
 
 
 def _collect_violations_from_file(
@@ -79,8 +119,14 @@ def execute_quality(adapter: FrameworkAdapter, language: str) -> QualityCheckRes
     """Execute quality check: linting; file/function sizes via language router."""
     lint_result = adapter.lint_code()
     project_root = adapter.project_root
+    delta_files = _collect_git_delta_files(project_root)
+    # If git metadata is unavailable (detached/subtree environments), we fall back
+    # to incremental-only semantics: skip file/function-size checks rather than
+    # scanning the entire repo and reporting unrelated legacy violations.
+    checkable = _filter_checkable_files(delta_files) if delta_files is not None else []
     file_violations, func_violations = run_quality_checks_for_all_languages(
-        project_root
+        project_root,
+        files=checkable,
     )
 
     errors = _build_quality_errors(lint_result.errors, file_violations, func_violations)

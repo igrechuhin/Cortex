@@ -16,7 +16,15 @@ from pathlib import Path
 
 # Reviewed exceptions (must remain rare). Empty unless a file is intentionally
 # non-collected but kept under tests/ for tooling compatibility.
-ALLOWLIST: frozenset[str] = frozenset()
+ALLOWLIST: frozenset[str] = frozenset(
+    {
+        # Umbrella re-export: star-imports all tests from the three split modules
+        # (test_file_language_router_routing/parsing/dispatch). Pytest collects
+        # them at runtime via the wildcard imports, but the static AST scan finds
+        # no top-level ``def test_*`` / ``class Test*`` definitions here.
+        "tests/unit/tools/execution/test_file_language_router.py",
+    }
+)
 
 
 def _collect_test_definitions(module: ast.Module) -> list[str]:

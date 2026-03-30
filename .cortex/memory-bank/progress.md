@@ -10,6 +10,7 @@
 - **[QG-S6] python synapse scripts FILES env** - COMPLETE. Added `FILES` dispatcher mode parity to Python size/length scripts with unit tests.
 - **[QG-S7] Unit tests for file_language_router** - COMPLETE. Added a comprehensive unit test suite for `file_language_router` (routing, project file collection, violation parsing, mocked per-language script dispatch) plus an `execute_quality()` regression guard.
 - **[QG-S8] Integration tests + validation** - COMPLETE. Added integration tests that invoke real Synapse scripts via FILES env (Swift/Python routing, mixed-language, unknown extension skip, clean pass, Swift function-length) and validated via cache-cleared quality gate run.
+- **QG follow-up: incremental quality routing + test split assertions** - COMPLETE. Updated `execute_quality()` to dispatch file/function checks over git-delta files (with safe no-git fallback to empty file set), adjusted router regression assertions to `files=[]`, and split helper construction in `test_file_language_router_dispatch.py` to satisfy 30-line function governance; fresh quality gate now passes.
 
 ## 2026-03-29
 

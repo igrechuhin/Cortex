@@ -20,6 +20,8 @@
 
 - ✅ **[QG-S8] Integration tests + validation** - COMPLETE (2026-03-30) - Added integration coverage that invokes real Synapse scripts via FILES env and validates Swift/Python routing, mixed-language handling, unknown extensions, clean-pass behavior, and Swift function-length violations. Verified with cache-cleared quality gate run.
 
+- ✅ **QG follow-up incremental routing** - COMPLETE (2026-03-30) - Fixed quality-router rollout regression by making execute_quality pass git-delta files to run_quality_checks_for_all_languages and updating dispatch tests (including function-length compliant helper refactor).
+
 ## Completed Work (2026-03-29)
 
 - **MCP startup: Synapse sync uses ff-only pull in submodule** - COMPLETE (2026-03-29) - `synapse_submodule_startup` runs `git pull --ff-only origin main` inside `.cortex/synapse` instead of `git submodule update --init --recursive` from the superproject; stash/pop behavior unchanged when the submodule has local changes; unit tests and log messages updated; AGENTS and troubleshooting docs aligned.
