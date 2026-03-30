@@ -120,10 +120,15 @@ def execute_quality(adapter: FrameworkAdapter, language: str) -> QualityCheckRes
     lint_result = adapter.lint_code()
     project_root = adapter.project_root
     delta_files = _collect_git_delta_files(project_root)
-    # If git metadata is unavailable (detached/subtree environments), we fall back
-    # to incremental-only semantics: skip file/function-size checks rather than
-    # scanning the entire repo and reporting unrelated legacy violations.
-    checkable = _filter_checkable_files(delta_files) if delta_files is not None else []
+    # delta_files is None  → git unavailable; fall back to full scan.
+    # delta_files is []    → clean working tree (nothing staged/changed/untracked);
+    #                         also fall back to full scan so a clean tree is never
+    #                         silently skipped (this was the root cause of the
+    #                         false-green quality gate on TradeWing).
+    if delta_files:
+        checkable = _filter_checkable_files(delta_files)
+    else:
+        checkable = None  # router will call collect_project_files()
     file_violations, func_violations = run_quality_checks_for_all_languages(
         project_root,
         files=checkable,

@@ -1,7 +1,7 @@
 {
   "schema_version": "1.0.0",
   "created_at": "2026-01-25T21:38:36.940164",
-  "last_updated": "2026-03-29T21:51:47.939699",
+  "last_updated": "2026-03-30T15:40:58.103747",
   "project_root": ".",
   "memory_bank_dir": ".cortex/memory-bank",
   "files": {
@@ -143,11 +143,11 @@
     "progress.md": {
       "path": ".cortex/memory-bank/progress.md",
       "exists": true,
-      "size_bytes": 40028,
-      "token_count": 6113,
+      "size_bytes": 12401,
+      "token_count": 2898,
       "token_model": "cl100k_base",
-      "last_modified": "2026-03-29T21:51:47.939166",
-      "content_hash": "sha256:d6fae47e5b9f24abd20fbe7b1fac7e3290b40dd85c243db7e395d68d4d3feaa0",
+      "last_modified": "2026-03-30T15:40:58.102918",
+      "content_hash": "sha256:463fe7409c8592500dc265c1c3f9de5d0a50f52452e07148c6ac27368b84a19a",
       "sections": [
         {
           "heading": "# Progress Log",
@@ -155,148 +155,60 @@
           "line_start": 1,
           "line_end": 2,
           "content_hash": "sha256:0081f513e848bf1f74d9a9bad8a88998d2fc2673d9cf6871e0eedbb5b5c638d2",
-          "token_count": 3
+          "token_count": 4
+        },
+        {
+          "heading": "## 2026-03-30",
+          "level": 2,
+          "line_start": 3,
+          "line_end": 14,
+          "content_hash": "sha256:029e25bc072ddc60bad6ad736da46399244129a9b4ea03e2cde66641eda88264",
+          "token_count": 470
         },
         {
           "heading": "## 2026-03-29",
           "level": 2,
-          "line_start": 3,
-          "line_end": 31,
-          "content_hash": "sha256:f1aace43a76d8fafa45234e5dc982196d772edde1b88a3805ea555de1937314e",
-          "token_count": 1253
+          "line_start": 15,
+          "line_end": 44,
+          "content_hash": "sha256:e69304169cb5f894218030c74076c872d6eba9b7ebba1ece9747911c8e7c2627",
+          "token_count": 2032
         },
         {
           "heading": "## 2026-03-28",
           "level": 2,
-          "line_start": 32,
+          "line_start": 45,
           "line_end": 51,
-          "content_hash": "sha256:b4e297c9e9203f104e5d7aa647643af7bca7f39031e350b4909f10747913d6db",
-          "token_count": 700
+          "content_hash": "sha256:28ac6509c9cc872b32e76c4bc92a50d37a075d8c8e8534c4c6163dccde4316b2",
+          "token_count": 228
         },
         {
-          "heading": "## 2026-03-27",
+          "heading": "## 2026-03-29",
           "level": 2,
           "line_start": 52,
-          "line_end": 67,
-          "content_hash": "sha256:2d7a19b626be0f62c21681032d9af5d79315e02d1d584fdcda7e045fb5aa8493",
-          "token_count": 547
-        },
-        {
-          "heading": "## 2026-03-26",
-          "level": 2,
-          "line_start": 68,
-          "line_end": 82,
-          "content_hash": "sha256:e98b3941371bfeb729b25647402ce4a3d6163af3acefd1ddbfb0d0de0b886cde",
-          "token_count": 669
-        },
-        {
-          "heading": "## 2026-03-25",
-          "level": 2,
-          "line_start": 83,
-          "line_end": 90,
-          "content_hash": "sha256:9832ca6230f23165059b9c76c14606d3d61a4ac4d8f8fa90fcee0abd50423df6",
-          "token_count": 254
-        },
-        {
-          "heading": "## 2026-03-24",
-          "level": 2,
-          "line_start": 91,
-          "line_end": 94,
-          "content_hash": "sha256:cdfa3c3b95b33d0b11507d89b03151d9bb337925c29e0e3c89971b88cfe59a13",
-          "token_count": 72
-        },
-        {
-          "heading": "## 2026-03-23",
-          "level": 2,
-          "line_start": 95,
-          "line_end": 98,
-          "content_hash": "sha256:e0c432319e587d3bda2d70ad0a64bd37fd7fdebbf53ce0e0b2dfe76ba737c4b7",
-          "token_count": 42
-        },
-        {
-          "heading": "## 2026-03-22",
-          "level": 2,
-          "line_start": 99,
-          "line_end": 124,
-          "content_hash": "sha256:3898380a2ce508574bdad2cabb2ccf6652630b1c51af8948545cdf612463ee5f",
-          "token_count": 878
-        },
-        {
-          "heading": "## 2026-03-20",
-          "level": 2,
-          "line_start": 125,
-          "line_end": 136,
-          "content_hash": "sha256:89c981c31d311c4193906e6884b4d54fecdeefe024b1963aae3597aac40e94e4",
-          "token_count": 388
-        },
-        {
-          "heading": "## 2026-03-21",
-          "level": 2,
-          "line_start": 137,
-          "line_end": 171,
-          "content_hash": "sha256:6f9e4aab33f8e92928dec7fb903543bc651cdfdcd4c425e4c255dc2075895ffe",
-          "token_count": 1177
-        },
-        {
-          "heading": "## 2026-03-16",
-          "level": 2,
-          "line_start": 172,
-          "line_end": 175,
-          "content_hash": "sha256:601d24c4e6d8478149d6960d999897a4361b5a1eb143f6eaeed4da941c2999a9",
-          "token_count": 13
-        },
-        {
-          "heading": "## 2026-03-15",
-          "level": 2,
-          "line_start": 176,
-          "line_end": 179,
-          "content_hash": "sha256:94d881d73750964d89470d201e527bf747ec0370c3769db2df29a1d90f388812",
-          "token_count": 13
-        },
-        {
-          "heading": "## 2026-03-14",
-          "level": 2,
-          "line_start": 180,
-          "line_end": 183,
-          "content_hash": "sha256:016db8d9186c34c6ac7d349e4b48b1f7522badfa0032e696b37f8f502e026dcc",
-          "token_count": 13
-        },
-        {
-          "heading": "## 2026-03-13",
-          "level": 2,
-          "line_start": 184,
-          "line_end": 187,
-          "content_hash": "sha256:6ae9e025df3f6d812fa0740b8f5974fcc1b570e31ff655172dace75a24e98c44",
-          "token_count": 13
-        },
-        {
-          "heading": "## 2026-03-12",
-          "level": 2,
-          "line_start": 188,
-          "line_end": 191,
-          "content_hash": "sha256:e1510f00625a19f210df479425ba4939101c72beb778f9c590040d21ef912404",
-          "token_count": 13
+          "line_end": 55,
+          "content_hash": "sha256:0a0ffa7aeff970407a20c91b05f6060d5f7fbab953fd66c7e78ba97fa0a4f0f5",
+          "token_count": 78
         },
         {
           "heading": "## What Works",
           "level": 2,
-          "line_start": 192,
-          "line_end": 195,
+          "line_start": 56,
+          "line_end": 59,
           "content_hash": "sha256:3b086fceb97a0cc91c3f7d1589d686ccf624174efd5b0b97d33d8d9bc801a286",
-          "token_count": 52
+          "token_count": 77
         },
         {
           "heading": "## What's Left",
           "level": 2,
-          "line_start": 196,
-          "line_end": 199,
+          "line_start": 60,
+          "line_end": 63,
           "content_hash": "sha256:bd698cf51d2d59c2ce4333a538cddf8a4f5931df5ec383aeff37ff9c6c018f8b",
-          "token_count": 6
+          "token_count": 9
         }
       ],
-      "read_count": 0,
-      "write_count": 4564,
-      "last_read": "2026-03-29T21:51:47.939166",
+      "read_count": 1,
+      "write_count": 4566,
+      "last_read": "2026-03-30T15:40:58.102918",
       "current_version": 11
     },
     "activeContext.md": {
@@ -1119,8 +1031,8 @@
   },
   "totals": {
     "total_files": 7,
-    "total_size_bytes": 79573,
-    "total_tokens": 14124,
-    "last_full_scan": "2026-03-29T21:51:47.939187"
+    "total_size_bytes": 51946,
+    "total_tokens": 10909,
+    "last_full_scan": "2026-03-30T15:40:58.102954"
   }
 }

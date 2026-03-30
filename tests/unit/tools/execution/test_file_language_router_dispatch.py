@@ -151,7 +151,8 @@ def test_execute_quality_calls_router_for_swift(tmp_path: Path) -> None:
         mock_router.return_value = ([], [])
         result: QualityCheckResult = execute_quality(adapter, "swift")
 
-    mock_router.assert_called_once_with(tmp_path, files=[])
+    # tmp_path is not a git repo; execute_quality falls back to full scan (files=None).
+    mock_router.assert_called_once_with(tmp_path, files=None)
     assert result.success
 
 
@@ -164,7 +165,8 @@ def test_execute_quality_calls_router_for_python(tmp_path: Path) -> None:
         mock_router.return_value = ([], [])
         _ = execute_quality(adapter, "python")
 
-    mock_router.assert_called_once_with(tmp_path, files=[])
+    # tmp_path is not a git repo; execute_quality falls back to full scan (files=None).
+    mock_router.assert_called_once_with(tmp_path, files=None)
 
 
 def test_execute_quality_fails_on_file_size_violation(tmp_path: Path) -> None:
