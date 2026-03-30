@@ -12,6 +12,8 @@
 
 - ✅ **[QG-S4] Swift check_file_sizes FILES env** - COMPLETE (2026-03-30) - Added `FILES` env var dispatcher mode to check exactly provided Swift files; fallback now scans `Sources/` and (if present) `Tests/`; removed `Tests/` exclusion from generated-file filtering.
 
+- ✅ **[QG-S5] Swift check_function_lengths FILES env** - COMPLETE (2026-03-30) - Support `FILES` env-var dispatcher mode for `check_function_lengths.py` and include `Tests/` in the fallback scan (removed path-based `Tests` exclusion); added unit tests for the FILES behavior.
+
 ## Completed Work (2026-03-29)
 
 - **MCP startup: Synapse sync uses ff-only pull in submodule** - COMPLETE (2026-03-29) - `synapse_submodule_startup` runs `git pull --ff-only origin main` inside `.cortex/synapse` instead of `git submodule update --init --recursive` from the superproject; stash/pop behavior unchanged when the submodule has local changes; unit tests and log messages updated; AGENTS and troubleshooting docs aligned.
