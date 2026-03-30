@@ -8,6 +8,7 @@
 - **[QG-S4] Swift check_file_sizes FILES env** - COMPLETE. Added `FILES` env var dispatcher mode to check exactly provided Swift files; fallback now scans `Sources/` and (if present) `Tests/`; removed `Tests/` exclusion from generated-file filtering.
 - **[QG-S5] Swift check_function_lengths FILES env** - COMPLETE. Support `FILES` env-var dispatcher mode for `check_function_lengths.py` and include `Tests/` in the fallback scan (removed path-based `Tests` exclusion); added unit tests for the FILES behavior.
 - **[QG-S6] python synapse scripts FILES env** - COMPLETE. Added `FILES` dispatcher mode parity to Python size/length scripts with unit tests.
+- **[QG-S7] Unit tests for file_language_router** - COMPLETE. Added a comprehensive unit test suite for `file_language_router` (routing, project file collection, violation parsing, mocked per-language script dispatch) plus an `execute_quality()` regression guard.
 
 ## 2026-03-29
 

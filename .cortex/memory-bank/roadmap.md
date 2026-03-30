@@ -6,7 +6,6 @@
 
 ## Blockers (ASAP Priority)
 
-- **[QG-S7] Unit tests for file_language_router** - PENDING - Full unit test suite: routing, collection, parsers, mocked dispatch, execute_quality regression. Plan: `.cortex/plans/swift-qg-s7-unit-tests.plan.md`
 - **[QG-S8] Integration tests + validation** - PENDING - Real synapse script invocations via FILES env; TradeWing scenario; full suite regression check. Plan: `.cortex/plans/swift-qg-s8-integration-tests.plan.md`
 
 ## Active Work (in progress)

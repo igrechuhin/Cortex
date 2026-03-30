@@ -16,6 +16,8 @@
 
 - ✅ **[QG-S6] python synapse scripts FILES env** - COMPLETE (2026-03-30) - Added `FILES` env dispatcher mode to Python synapse size/length scripts (router-determined filtering preserved), kept the default directory-scan fallback identical, and added unit tests to lock in the interface parity (including router behavior for Python `test_*` files).
 
+- ✅ **[QG-S7] Unit tests for file_language_router** - COMPLETE (2026-03-30) - Added a comprehensive unit test suite for `file_language_router` (routing, project file collection, violation parsing, mocked per-language script dispatch) plus an `execute_quality()` regression guard.
+
 ## Completed Work (2026-03-29)
 
 - **MCP startup: Synapse sync uses ff-only pull in submodule** - COMPLETE (2026-03-29) - `synapse_submodule_startup` runs `git pull --ff-only origin main` inside `.cortex/synapse` instead of `git submodule update --init --recursive` from the superproject; stash/pop behavior unchanged when the submodule has local changes; unit tests and log messages updated; AGENTS and troubleshooting docs aligned.
