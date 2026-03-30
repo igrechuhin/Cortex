@@ -11,13 +11,15 @@ from cortex.core.constants import (
     MAX_FUNCTION_LINES,
 )
 from cortex.services.framework_adapters.base import FrameworkAdapter
+from cortex.tools.execution.file_language_router import (
+    run_quality_checks_for_all_languages,
+)
 from cortex.tools.execution.pre_commit_helpers_models import (
     FileSizeViolation,
     FunctionLengthViolation,
     QualityCheckResult,
 )
 from cortex.tools.execution.pre_commit_helpers_quality import (
-    check_file_sizes,
     check_function_lengths_in_file,
 )
 
@@ -47,7 +49,11 @@ def _collect_violations_from_file(
 
 
 def check_function_lengths(project_root: Path) -> list[FunctionLengthViolation]:
-    """Check all Python files for function length violations."""
+    """Check all Python files for function length violations.
+
+    TODO: migrate callers to file_language_router / synapse scripts when tests
+    are updated to use the router path exclusively.
+    """
     violations: list[FunctionLengthViolation] = []
     src_dir = project_root / "src"
 
@@ -70,14 +76,12 @@ def check_function_lengths(project_root: Path) -> list[FunctionLengthViolation]:
 
 
 def execute_quality(adapter: FrameworkAdapter, language: str) -> QualityCheckResult:
-    """Execute quality check: linting; for Python, file sizes and function lengths."""
+    """Execute quality check: linting; file/function sizes via language router."""
     lint_result = adapter.lint_code()
     project_root = adapter.project_root
-    file_violations: list[FileSizeViolation] = []
-    func_violations: list[FunctionLengthViolation] = []
-    if language == "python":
-        file_violations = check_file_sizes(project_root)
-        func_violations = check_function_lengths(project_root)
+    file_violations, func_violations = run_quality_checks_for_all_languages(
+        project_root
+    )
 
     errors = _build_quality_errors(lint_result.errors, file_violations, func_violations)
     output = _build_quality_output(lint_result.output, file_violations, func_violations)

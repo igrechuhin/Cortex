@@ -31,6 +31,14 @@ MAX_FUNCTION_LINES = 30
 # Filenames excluded from file-size check (must match CI and local quality gate)
 FILE_SIZE_EXCLUDED_FILENAMES: tuple[str, ...] = ("models.py",)  # Pydantic schema-heavy
 
+# Maps file extension → synapse script language subdirectory.
+# Used by file_language_router to dispatch quality checks per extension.
+# Add a new entry here to enable quality checks for a new language.
+EXTENSION_SCRIPT_MAP: dict[str, str] = {
+    ".py": "python",
+    ".swift": "swift",
+}
+
 # Paths excluded from function-length check (MCP dispatchers; used by pre_commit + scripts)
 FUNCTION_LENGTH_EXCLUDED_PATHS: tuple[str, ...] = (
     "src/cortex/tools/plans/plan.py",

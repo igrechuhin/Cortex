@@ -1,5 +1,11 @@
 # Progress Log
 
+## 2026-03-30
+
+- **[QG-S1] Add EXTENSION_SCRIPT_MAP** - COMPLETE. Added EXTENSION_SCRIPT_MAP to constants.py with .py and .swift entries; quality gate passed.
+- **[QG-S2] Create file_language_router module** - COMPLETE. New module with route_files, collect_project_files, run_quality_checks_for_all_languages, parsers, tests; quality gate passed.
+- **[QG-S3] Wire router into execute_quality()** - COMPLETE. Quality check uses file_language_router for all languages; gate passed.
+
 ## 2026-03-29
 
 - **MCP startup: Synapse sync uses ff-only pull in submodule** - COMPLETE. Replaced superproject `git submodule update --init --recursive` with `git pull --ff-only origin main` inside `.cortex/synapse`; logging, lazy prompt registration comment, and unit tests updated; AGENTS/troubleshooting aligned.

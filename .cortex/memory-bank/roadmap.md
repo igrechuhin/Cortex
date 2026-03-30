@@ -6,9 +6,6 @@
 
 ## Blockers (ASAP Priority)
 
-- **[QG-S1] Add EXTENSION_SCRIPT_MAP** - PENDING - Add `EXTENSION_SCRIPT_MAP: dict[str, str]` to the Cortex quality constants module; foundation for all subsequent steps. Plan: `.cortex/plans/swift-qg-s1-add-extension-script-map.plan.md`
-- **[QG-S2] Create file_language_router module** - PENDING - New module: `route_files`, `collect_project_files`, `run_quality_checks_for_all_languages`, parsers. Plan: `.cortex/plans/swift-qg-s2-create-file-language-router.plan.md`
-- **[QG-S3] Wire router into execute_quality()** - PENDING - Remove `if language == "python":` guard; call router unconditionally. Plan: `.cortex/plans/swift-qg-s3-update-pipeline-quality.plan.md`
 - **[QG-S4] Swift check_file_sizes FILES env** - PENDING - Accept FILES env var; include Tests/ in fallback scan. Plan: `.cortex/plans/swift-qg-s4-swift-check-file-sizes.plan.md`
 - **[QG-S5] Swift check_function_lengths FILES env** - PENDING - Accept FILES env var; include Tests/ in fallback scan. Plan: `.cortex/plans/swift-qg-s5-swift-check-function-lengths.plan.md`
 - **[QG-S6] python synapse scripts FILES env** - PENDING - Add FILES env var interface to both python scripts for interface parity. Plan: `.cortex/plans/swift-qg-s6-python-scripts-files-env.plan.md`

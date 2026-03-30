@@ -2,6 +2,14 @@
 
 **This file records completed work only.** For current status and upcoming work see [roadmap.md](roadmap.md).
 
+## Completed Work (2026-03-30)
+
+- ✅ **[QG-S1] Add EXTENSION_SCRIPT_MAP** - COMPLETE (2026-03-30) - Added EXTENSION_SCRIPT_MAP (dict[str, str]) to src/cortex/core/constants.py mapping .py→python and .swift→swift for future file_language_router dispatch.
+
+- ✅ **[QG-S2] Create file_language_router module** - COMPLETE (2026-03-30) - Added file_language_router.py: extension-based routing via EXTENSION_SCRIPT_MAP, project file collection with skip dirs and models.py exclusion, synapse script dispatch with FILES env, Python/Swift violation parsers, and unit tests.
+
+- ✅ **[QG-S3] Wire router into execute_quality()** - COMPLETE (2026-03-30) - execute_quality() now calls run_quality_checks_for_all_languages(project_root) unconditionally; removed Python-only guard and check_file_sizes import. Kept check_function_lengths/_collect_violations_from_file for test_pre_commit_tools with TODO to migrate.
+
 ## Completed Work (2026-03-29)
 
 - **MCP startup: Synapse sync uses ff-only pull in submodule** - COMPLETE (2026-03-29) - `synapse_submodule_startup` runs `git pull --ff-only origin main` inside `.cortex/synapse` instead of `git submodule update --init --recursive` from the superproject; stash/pop behavior unchanged when the submodule has local changes; unit tests and log messages updated; AGENTS and troubleshooting docs aligned.
