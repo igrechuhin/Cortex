@@ -10,6 +10,8 @@
 
 - ✅ **[QG-S3] Wire router into execute_quality()** - COMPLETE (2026-03-30) - execute_quality() now calls run_quality_checks_for_all_languages(project_root) unconditionally; removed Python-only guard and check_file_sizes import. Kept check_function_lengths/_collect_violations_from_file for test_pre_commit_tools with TODO to migrate.
 
+- ✅ **[QG-S4] Swift check_file_sizes FILES env** - COMPLETE (2026-03-30) - Added `FILES` env var dispatcher mode to check exactly provided Swift files; fallback now scans `Sources/` and (if present) `Tests/`; removed `Tests/` exclusion from generated-file filtering.
+
 ## Completed Work (2026-03-29)
 
 - **MCP startup: Synapse sync uses ff-only pull in submodule** - COMPLETE (2026-03-29) - `synapse_submodule_startup` runs `git pull --ff-only origin main` inside `.cortex/synapse` instead of `git submodule update --init --recursive` from the superproject; stash/pop behavior unchanged when the submodule has local changes; unit tests and log messages updated; AGENTS and troubleshooting docs aligned.

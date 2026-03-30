@@ -6,7 +6,6 @@
 
 ## Blockers (ASAP Priority)
 
-- **[QG-S4] Swift check_file_sizes FILES env** - PENDING - Accept FILES env var; include Tests/ in fallback scan. Plan: `.cortex/plans/swift-qg-s4-swift-check-file-sizes.plan.md`
 - **[QG-S5] Swift check_function_lengths FILES env** - PENDING - Accept FILES env var; include Tests/ in fallback scan. Plan: `.cortex/plans/swift-qg-s5-swift-check-function-lengths.plan.md`
 - **[QG-S6] python synapse scripts FILES env** - PENDING - Add FILES env var interface to both python scripts for interface parity. Plan: `.cortex/plans/swift-qg-s6-python-scripts-files-env.plan.md`
 - **[QG-S7] Unit tests for file_language_router** - PENDING - Full unit test suite: routing, collection, parsers, mocked dispatch, execute_quality regression. Plan: `.cortex/plans/swift-qg-s7-unit-tests.plan.md`

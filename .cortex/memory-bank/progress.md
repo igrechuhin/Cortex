@@ -5,6 +5,7 @@
 - **[QG-S1] Add EXTENSION_SCRIPT_MAP** - COMPLETE. Added EXTENSION_SCRIPT_MAP to constants.py with .py and .swift entries; quality gate passed.
 - **[QG-S2] Create file_language_router module** - COMPLETE. New module with route_files, collect_project_files, run_quality_checks_for_all_languages, parsers, tests; quality gate passed.
 - **[QG-S3] Wire router into execute_quality()** - COMPLETE. Quality check uses file_language_router for all languages; gate passed.
+- **[QG-S4] Swift check_file_sizes FILES env** - COMPLETE. Added `FILES` env var dispatcher mode to check exactly provided Swift files; fallback now scans `Sources/` and (if present) `Tests/`; removed `Tests/` exclusion from generated-file filtering.
 
 ## 2026-03-29
 
