@@ -6,7 +6,11 @@ import subprocess
 from pathlib import Path
 from subprocess import CompletedProcess
 
-from cortex.core.constants import EXTENSION_SCRIPT_MAP, FILE_SIZE_EXCLUDED_FILENAMES
+from cortex.core.constants import (
+    EXTENSION_SCRIPT_MAP,
+    FILE_SIZE_EXCLUDED_FILENAMES,
+    FUNCTION_LENGTH_EXCLUDED_PATHS,
+)
 from cortex.core.path_resolver import (
     CortexResourceType,
     get_cortex_path,
@@ -24,11 +28,13 @@ _SKIP_DIRS: frozenset[str] = frozenset(
         ".git",
         "node_modules",
         ".venv",
+        ".cortex",
         "venv",
         "build",
         "dist",
         ".tox",
         ".mypy_cache",
+        "tests",
     }
 )
 
@@ -76,6 +82,7 @@ def collect_project_files(project_root: Path) -> list[Path]:
     """
     root = project_root.resolve()
     excluded_names = frozenset(FILE_SIZE_EXCLUDED_FILENAMES)
+    function_excluded_paths = frozenset(FUNCTION_LENGTH_EXCLUDED_PATHS)
     known_ext = frozenset(EXTENSION_SCRIPT_MAP.keys())
     found: list[Path] = []
     for path in root.rglob("*"):
@@ -85,6 +92,13 @@ def collect_project_files(project_root: Path) -> list[Path]:
             continue
         if path.name in excluded_names:
             continue
+        if path.suffix == ".py" and path.name.startswith("test_"):
+            continue
+        if path.suffix == ".py":
+            # Mirror check_function_lengths.py fallback exclusion when dispatching.
+            rel = path.relative_to(root).as_posix()
+            if rel in function_excluded_paths:
+                continue
         if path.suffix not in known_ext:
             continue
         found.append(path.resolve())
