@@ -27,14 +27,15 @@ def test_route_files_groups_swift_files_under_swift() -> None:
 
 
 def test_route_files_skips_unknown_extensions() -> None:
-    assert route_files([Path("a.js"), Path("b.ts"), Path("c.go")]) == {}
+    assert route_files([Path("a.elm"), Path("b.ex"), Path("c.dart")]) == {}
 
 
 def test_route_files_mixed_language_repo() -> None:
     result = route_files([Path("a.py"), Path("b.swift"), Path("c.rs")])
-    assert set(result.keys()) == {"python", "swift"}
+    assert set(result.keys()) == {"python", "swift", "rust"}
     assert result["python"] == [Path("a.py")]
     assert result["swift"] == [Path("b.swift")]
+    assert result["rust"] == [Path("c.rs")]
 
 
 def test_route_files_empty_list() -> None:
@@ -51,6 +52,16 @@ def test_route_files_uses_extension_map_override() -> None:
 def test_extension_script_map_is_sane() -> None:
     assert ".py" in EXTENSION_SCRIPT_MAP
     assert ".swift" in EXTENSION_SCRIPT_MAP
+    assert EXTENSION_SCRIPT_MAP[".go"] == "go"
+    assert EXTENSION_SCRIPT_MAP[".rs"] == "rust"
+    assert EXTENSION_SCRIPT_MAP[".java"] == "java"
+    assert EXTENSION_SCRIPT_MAP[".kt"] == "kotlin"
+    assert EXTENSION_SCRIPT_MAP[".kts"] == "kotlin"
+    assert EXTENSION_SCRIPT_MAP[".cs"] == "csharp"
+    assert EXTENSION_SCRIPT_MAP[".ts"] == "typescript"
+    assert EXTENSION_SCRIPT_MAP[".tsx"] == "typescript"
+    assert EXTENSION_SCRIPT_MAP[".js"] == "javascript"
+    assert EXTENSION_SCRIPT_MAP[".jsx"] == "javascript"
 
 
 # ---------------------------------------------------------------------------
@@ -67,6 +78,29 @@ def test_collect_project_files_includes_py_and_swift(tmp_path: Path) -> None:
     names = {f.name for f in collect_project_files(tmp_path)}
     assert "foo.py" in names
     assert "Bar.swift" in names
+
+
+def test_collect_project_files_includes_supported_non_native_extensions(
+    tmp_path: Path,
+) -> None:
+    _ = (tmp_path / "Main.java").write_text("class Main {}", encoding="utf-8")
+    _ = (tmp_path / "Api.kt").write_text("fun main() {}", encoding="utf-8")
+    _ = (tmp_path / "Program.cs").write_text("class Program {}", encoding="utf-8")
+    _ = (tmp_path / "main.go").write_text("package main", encoding="utf-8")
+    _ = (tmp_path / "lib.rs").write_text("fn main() {}", encoding="utf-8")
+    _ = (tmp_path / "index.ts").write_text("export {}", encoding="utf-8")
+    _ = (tmp_path / "index.js").write_text("console.log(1)", encoding="utf-8")
+
+    names = {f.name for f in collect_project_files(tmp_path)}
+    assert {
+        "Main.java",
+        "Api.kt",
+        "Program.cs",
+        "main.go",
+        "lib.rs",
+        "index.ts",
+        "index.js",
+    } <= names
 
 
 def test_collect_project_files_excludes_pycache(tmp_path: Path) -> None:

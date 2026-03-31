@@ -3,6 +3,7 @@
 ## 2026-03-31
 
 - **Migration: Language-Agnostic Rules and Scripts Scaffolding (follow-up)** - PARTIAL. Added first-class `csharp` language-pack scaffolding hints (`dotnet build`/`dotnet test`) in `language_scripts_scaffolding` and expanded unit coverage; roadmap item remains open for additional language-pack/template reconciliation.
+- **Migration: Language-Agnostic Rules and Scripts Scaffolding (follow-up)** - PARTIAL. Extended extension-to-language routing map for scaffolded non-native languages (.java/.kt/.kts/.cs/.go/.rs/.ts/.tsx/.js/.jsx) and aligned router tests; quality gate fresh passed (5805/5805, 91.86% coverage).
 
 ## 2026-03-30
 

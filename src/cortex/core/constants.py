@@ -37,6 +37,16 @@ FILE_SIZE_EXCLUDED_FILENAMES: tuple[str, ...] = ("models.py",)  # Pydantic schem
 EXTENSION_SCRIPT_MAP: dict[str, str] = {
     ".py": "python",
     ".swift": "swift",
+    ".java": "java",
+    ".kt": "kotlin",
+    ".kts": "kotlin",
+    ".cs": "csharp",
+    ".go": "go",
+    ".rs": "rust",
+    ".ts": "typescript",
+    ".tsx": "typescript",
+    ".js": "javascript",
+    ".jsx": "javascript",
 }
 
 # Paths excluded from function-length check (MCP dispatchers; used by pre_commit + scripts)
