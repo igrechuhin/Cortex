@@ -33,3 +33,5 @@ Completed investigations are recorded in [activeContext.md](activeContext.md). P
 ### Improvements
 
 ### Features & Enhancements
+
+- **Analyze Feedback Loop: Post-Prompt Self-Improvement** - PENDING - Auto-invoke analyze after every prompt; route findings to Skills, Plans, or Rules. Plan: `.cortex/plans/analyze-feedback-loop.md`

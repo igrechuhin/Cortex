@@ -59,6 +59,16 @@ _LANGUAGE_HINTS: dict[str, str] = {
         "  ./gradlew build test   # Gradle\n"
         "  ./mvnw verify          # Maven"
     ),
+    "kotlin": (
+        "Replace the stub command with your build/test invocation, e.g.:\n"
+        "  ./gradlew build test   # Gradle Kotlin DSL\n"
+        "  ./gradlew test         # Gradle test task"
+    ),
+    "csharp": (
+        "Replace the stub command with your build/test invocation, e.g.:\n"
+        "  dotnet build\n"
+        "  dotnet test"
+    ),
     "go": (
         "Replace the stub command with your build/test invocation, e.g.:\n"
         "  go build ./...\n"
@@ -108,6 +118,8 @@ _LANGUAGE_QUALITY_COMMANDS: dict[str, list[str]] = {
         "# Replace with your build + test command",
         "# Examples: ./gradlew build test | ./mvnw verify",
     ],
+    "kotlin": ["./gradlew build test"],
+    "csharp": ["dotnet build", "dotnet test"],
     "go": ["go build ./...", "go test ./..."],
     "rust": ["cargo build", "cargo test"],
     "typescript": ["npm run build", "npm test"],

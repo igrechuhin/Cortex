@@ -451,6 +451,27 @@ class TestProcessPromptInfo:
         # Assert
         assert result == 0
 
+    def test_skips_internal_prompt(
+        self, prompts_dir: Path, sample_prompt_file: Path
+    ) -> None:
+        """Entries with internal=True are not published to the MCP command picker."""
+        # Arrange
+        prompt_info = {
+            "file": "test-prompt.md",
+            "name": "test_internal",
+            "description": "Should not be published",
+            "internal": True,
+        }
+
+        # Act
+        result = synapse_prompts.process_prompt_info(
+            cast(ModelDict, prompt_info), prompts_dir, "general"
+        )
+
+        # Assert
+        assert result == 0
+        assert "test_internal" not in synapse_prompts.__dict__
+
     def test_handles_exception_during_registration(
         self, prompts_dir: Path, sample_prompt_file: Path
     ):
@@ -719,12 +740,8 @@ class TestRegisterSynapsePrompts:
         # Assert
         assert synapse_prompts.__dict__["_prompt_contents"][test_name] == test_content
 
-    def test_registers_multiple_prompts(
-        self, temp_project_root: Path, prompts_dir: Path
-    ):
-        """Test registering multiple prompts from manifest."""
-        # Arrange
-        manifest_path = prompts_dir / "prompts-manifest.json"
+    def _write_two_prompt_manifest(self, prompts_dir: Path) -> None:
+        """Write a two-prompt manifest and matching .md files into prompts_dir."""
         manifest_data = {
             "version": "1.0",
             "categories": {
@@ -744,9 +761,18 @@ class TestRegisterSynapsePrompts:
                 }
             },
         }
-        _ = manifest_path.write_text(json.dumps(manifest_data), encoding="utf-8")
+        _ = (prompts_dir / "prompts-manifest.json").write_text(
+            json.dumps(manifest_data), encoding="utf-8"
+        )
         _ = (prompts_dir / "prompt1.md").write_text("Content 1", encoding="utf-8")
         _ = (prompts_dir / "prompt2.md").write_text("Content 2", encoding="utf-8")
+
+    def test_registers_multiple_prompts(
+        self, temp_project_root: Path, prompts_dir: Path
+    ):
+        """Test registering multiple prompts from manifest."""
+        # Arrange
+        self._write_two_prompt_manifest(prompts_dir)
 
         with patch(
             "cortex.tools.synapse.prompts_paths.get_prompts_paths",

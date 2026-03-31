@@ -300,21 +300,84 @@ class TestReturnValues:
 class TestUnknownLanguage:
     def test_unknown_language_gets_generic_stub(self, tmp_path: Path) -> None:
         """An unrecognised language key still gets README + script stubs."""
-        result = scaffold_language_scripts(tmp_path, ["kotlin"])
+        result = scaffold_language_scripts(tmp_path, ["elixir"])
 
-        scripts_dir = _scripts_dir(tmp_path, "kotlin")
+        scripts_dir = _scripts_dir(tmp_path, "elixir")
         assert scripts_dir.exists()
         assert (scripts_dir / "README.md").exists()
         assert (scripts_dir / "run_quality_check.sh").exists()
         assert len(result) == 2
 
     def test_unknown_language_script_has_todo_comment(self, tmp_path: Path) -> None:
+        _ = scaffold_language_scripts(tmp_path, ["elixir"])
+
+        script = (_scripts_dir(tmp_path, "elixir") / "run_quality_check.sh").read_text(
+            encoding="utf-8"
+        )
+        assert "quality-check command" in script
+
+
+# ---------------------------------------------------------------------------
+# Kotlin — explicit language pack
+# ---------------------------------------------------------------------------
+
+
+class TestKotlinScaffolding:
+    def test_creates_readme_and_script(self, tmp_path: Path) -> None:
+        """scaffold_language_scripts creates README.md and run_quality_check.sh for kotlin."""
+        result = scaffold_language_scripts(tmp_path, ["kotlin"])
+
+        scripts_dir = _scripts_dir(tmp_path, "kotlin")
+        _assert_stub_exists(scripts_dir)
+        assert len(result) == 2
+
+    def test_readme_mentions_gradle_kotlin_dsl(self, tmp_path: Path) -> None:
+        _ = scaffold_language_scripts(tmp_path, ["kotlin"])
+
+        readme = (_scripts_dir(tmp_path, "kotlin") / "README.md").read_text(
+            encoding="utf-8"
+        )
+        assert "kotlin" in readme.lower()
+        assert "gradle kotlin dsl" in readme.lower()
+
+    def test_quality_script_contains_gradle_example(self, tmp_path: Path) -> None:
         _ = scaffold_language_scripts(tmp_path, ["kotlin"])
 
         script = (_scripts_dir(tmp_path, "kotlin") / "run_quality_check.sh").read_text(
             encoding="utf-8"
         )
-        assert "quality-check command" in script
+        assert "./gradlew build test" in script
+
+
+# ---------------------------------------------------------------------------
+# C# — explicit language pack
+# ---------------------------------------------------------------------------
+
+
+class TestCSharpScaffolding:
+    def test_creates_readme_and_script(self, tmp_path: Path) -> None:
+        result = scaffold_language_scripts(tmp_path, ["csharp"])
+
+        _assert_stub_exists(_scripts_dir(tmp_path, "csharp"))
+        assert len(result) == 2
+
+    def test_readme_mentions_dotnet_commands(self, tmp_path: Path) -> None:
+        _ = scaffold_language_scripts(tmp_path, ["csharp"])
+
+        readme = (_scripts_dir(tmp_path, "csharp") / "README.md").read_text(
+            encoding="utf-8"
+        )
+        assert "dotnet build" in readme
+        assert "dotnet test" in readme
+
+    def test_quality_script_contains_dotnet_commands(self, tmp_path: Path) -> None:
+        _ = scaffold_language_scripts(tmp_path, ["csharp"])
+
+        script = (_scripts_dir(tmp_path, "csharp") / "run_quality_check.sh").read_text(
+            encoding="utf-8"
+        )
+        assert "dotnet build" in script
+        assert "dotnet test" in script
 
 
 # ---------------------------------------------------------------------------

@@ -11,6 +11,8 @@ You are the implementation specialist. You write code, tests, and run the qualit
 
 **Step 0**: Call `mcp__cortex__pipeline_handoff(operation="read", pipeline="implement", phase="code")` to get full context from the orchestrator (selected step, plan contents, rules, success criteria). If not found, use the orchestrator's summary.
 
+If the context includes a `partial_progress` field (non-null, non-empty), treat those entries as already-completed subtasks from prior sessions. **Do not repeat them.** Start scoping from the next logical subtask in the plan.
+
 ### Step 1: Scope the Subtask
 
 If the selected roadmap step is large (multi-session scope), identify the **smallest meaningful subtask** that:

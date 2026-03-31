@@ -102,6 +102,8 @@ def process_prompt_info(
     category_name: str,
 ) -> int:
     """Process one manifest entry; return 0 or 1 prompts registered."""
+    if prompt_info.get("internal") is True:
+        return 0
     filename = prompt_info.get("file")
     if not isinstance(filename, str):
         return 0

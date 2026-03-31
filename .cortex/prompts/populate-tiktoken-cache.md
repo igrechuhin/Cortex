@@ -45,6 +45,10 @@ This prompt is conditionally registered and only appears when:
    - Verify no network requests are made (if network unavailable)
    - Confirm token counts are accurate
 
+5. **Post-prompt hook (self-improvement)** - After writing your final report for this cache workflow:
+   - Read `.cortex/synapse/prompts/post-prompt-hook.md` and execute it to analyze the session and emit any applicable Skills, Plans, or Rules
+   - Treat this hook as **non-blocking**: if it fails or is unavailable (for example, MCP connection issues), record a brief note in your `## Next` section and consider this workflow complete
+
 ## Expected Output
 
 After successful cache population:

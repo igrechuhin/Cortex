@@ -105,6 +105,10 @@ This command validates **roadmap.md only**. It does not validate activeContext.m
    - Ensure `valid = true` before proceeding with commit
    - All issues must be resolved before commit can proceed
 
+5. **Post-prompt hook (self-improvement)**:
+   - After writing your final report for this validation workflow, read `.cortex/synapse/prompts/post-prompt-hook.md` and execute it to analyze the session and emit any applicable Skills, Plans, or Rules
+   - Treat this hook as **non-blocking**: if it fails or is unavailable (for example, MCP connection issues), record a brief note in your `## Next` section and consider the validation workflow complete
+
 ## Success Criteria
 
 The roadmap sync validation is considered successful when:

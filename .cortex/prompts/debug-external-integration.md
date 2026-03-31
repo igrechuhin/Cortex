@@ -125,6 +125,15 @@ Do NOT make changes to TradeWing source files (`.swift`). Changes go to:
 
 ---
 
+## Step 7: Post-Prompt Hook (Self-Improvement)
+
+After writing your final report for this debug workflow, invoke the post-prompt self-improvement hook:
+
+- Read `.cortex/synapse/prompts/post-prompt-hook.md` and execute it to analyze the session and emit any applicable Skills, Plans, or Rules.
+- Treat this hook as **non-blocking**: if it fails or is unavailable (for example, MCP connection issues), record a brief note in your `## Next` section and consider the debug workflow complete.
+
+---
+
 ## Notes
 
 - **Fix path rule**: load `cortex://rules` before making any code change (already done in Step 1)
