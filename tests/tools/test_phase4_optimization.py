@@ -22,11 +22,15 @@ from cortex.tools.optimization import (
     get_relevance_scores,
     get_relevance_scores_resource,
     load_context,
-    load_context_resource,
     summarize_content,
     summarize_content_resource,
 )
-from cortex.tools.optimization.handlers import is_non_trivial_task
+from cortex.tools.optimization.handlers import (
+    is_non_trivial_task,
+)
+from cortex.tools.optimization.handlers import (
+    load_context_impl as _load_context_impl,
+)
 from cortex.tools.session.models import SESSION_SCOPE_PROMPT
 from tests.helpers.fixture_validator import validate_optimization_config_mock
 from tests.helpers.managers import make_test_managers
@@ -212,7 +216,7 @@ class TestLoadContext:
             ),
         ):
             # Act
-            result_str = await load_context(
+            result_str = await _load_context_impl(
                 task_description="Test task",
                 token_budget=50000,
                 strategy="priority",
@@ -250,7 +254,7 @@ class TestLoadContext:
             ),
         ):
             # Act
-            result_str = await load_context(
+            result_str = await _load_context_impl(
                 task_description="Fix failing tests for feature X",
                 token_budget=5000,
                 response_format="concise",
@@ -285,7 +289,7 @@ class TestLoadContext:
             ),
         ):
             # Act
-            result_str = await load_context(
+            result_str = await _load_context_impl(
                 task_description="Some generic task",
                 token_budget=5000,
                 response_format="concise",
@@ -318,7 +322,7 @@ class TestLoadContext:
             ),
         ):
             # Act - pass explicit budget so validation passes; mock yields effective 0
-            result_str = await load_context(
+            result_str = await _load_context_impl(
                 task_description="Test task",
                 token_budget=10000,
                 response_format="detailed",
@@ -336,7 +340,7 @@ class TestLoadContext:
         """token_budget=0 with non-trivial task returns validation error (no normalization)."""
         # Arrange: no need to patch managers; validation runs before init
         # Act: non-trivial task with token_budget=0 → rejected with error
-        result_str = await load_context(
+        result_str = await _load_context_impl(
             task_description="Implement feature X",
             token_budget=0,
             response_format="detailed",
@@ -370,7 +374,7 @@ class TestLoadContext:
             ),
         ):
             # Act: trivial task (no implement/fix/debug etc.) with token_budget=0
-            result_str = await load_context(
+            result_str = await _load_context_impl(
                 task_description="What is the project name?",
                 token_budget=0,
                 response_format="detailed",
@@ -402,7 +406,7 @@ class TestLoadContext:
             ),
         ):
             # Act
-            result_str = await load_context(
+            result_str = await _load_context_impl(
                 task_description="Test task",
                 token_budget=50000,
                 strategy="dependency_aware",
@@ -435,7 +439,7 @@ class TestLoadContext:
             ),
         ):
             # Act
-            result_str = await load_context(
+            result_str = await _load_context_impl(
                 task_description="Test task",
                 token_budget=50000,
                 strategy="progressive",
@@ -468,7 +472,7 @@ class TestLoadContext:
             ),
         ):
             # Act
-            result_str = await load_context(
+            result_str = await _load_context_impl(
                 task_description="Test task",
                 token_budget=50000,
                 strategy="progressive",
@@ -503,7 +507,7 @@ class TestLoadContext:
             ),
         ):
             # Act
-            result_str = await load_context(
+            result_str = await _load_context_impl(
                 task_description="Test task",
                 token_budget=50000,
                 strategy="progressive",
@@ -536,7 +540,7 @@ class TestLoadContext:
             ),
         ):
             # Act - don't specify loading_strategy, should default to "by_relevance"
-            result_str = await load_context(
+            result_str = await _load_context_impl(
                 task_description="Test task",
                 token_budget=50000,
                 strategy="progressive",
@@ -558,7 +562,7 @@ class TestLoadContext:
             side_effect=RuntimeError("Test error"),
         ):
             # Act
-            result_str = await load_context(
+            result_str = await _load_context_impl(
                 task_description="Test task", token_budget=50000
             )
             result = json.loads(result_str)
@@ -592,7 +596,7 @@ class TestLoadContext:
             ),
         ):
             # Act
-            result_str = await load_context(
+            result_str = await _load_context_impl(
                 task_description="Test task", token_budget=50000
             )
             result = json.loads(result_str)
@@ -622,7 +626,7 @@ class TestLoadContext:
             ),
         ):
             # Act
-            result_str = await load_context(
+            result_str = await _load_context_impl(
                 task_description="Test task",
                 token_budget=50000,
                 response_format="concise",
@@ -671,7 +675,7 @@ class TestLoadContext:
             ),
         ):
             # Act
-            result_str = await load_context(
+            result_str = await _load_context_impl(
                 task_description="Test task",
                 token_budget=50000,
                 response_format="concise",
@@ -718,7 +722,7 @@ class TestLoadContext:
             ),
         ):
             # Act
-            result_str = await load_context(
+            result_str = await _load_context_impl(
                 task_description="Test task",
                 token_budget=50000,
                 response_format="concise",
@@ -755,7 +759,7 @@ class TestLoadContext:
             ),
         ):
             # Act
-            result_str = await load_context(
+            result_str = await _load_context_impl(
                 task_description="Test task",
                 token_budget=50000,
                 response_format="concise",
@@ -950,7 +954,7 @@ class TestSummarizeContent:
             ),
         ):
             # Act - test load_context (explicit budget so we reach disabled check)
-            result_str = await load_context(
+            result_str = await _load_context_impl(
                 task_description="test task", token_budget=50000
             )
             result = json.loads(result_str)
@@ -1198,7 +1202,7 @@ class TestIntegration:
             ),
         ):
             # Act 1: Load context
-            opt_result = await load_context(
+            opt_result = await _load_context_impl(
                 task_description="Test task", token_budget=50000
             )
             opt_data = json.loads(opt_result)
@@ -1259,7 +1263,7 @@ class TestPhase4OptimizationContextLogging:
                 side_effect=_get_manager_helper,
             ),
         ):
-            result_str = await load_context(
+            result_str = await _load_context_impl(
                 task_description="Test task",
                 token_budget=5000,
                 ctx=mock_ctx,
@@ -1281,10 +1285,10 @@ class TestPhase4OptimizationContextLogging:
 class TestPhase4OptimizationResources:
     """Test Phase 4 optimization resources (Phase 43 Step 3.2)."""
 
-    async def test_load_context_resource_returns_success(
+    async def test_load_context_returns_success(
         self, mock_project_root: Path, mock_managers: dict[str, Any]
     ) -> None:
-        """load_context_resource returns JSON success (zero-arg, session config)."""
+        """load_context returns JSON success (zero-arg, session config)."""
         with (
             patch(
                 "cortex.core.session_config.read_session_config",
@@ -1304,7 +1308,7 @@ class TestPhase4OptimizationResources:
                 side_effect=_get_manager_helper,
             ),
         ):
-            result_str = await load_context_resource()
+            result_str = await load_context()
             result = json.loads(result_str)
         assert result["status"] == "success"
         assert result["task_description"] == "Test task"
@@ -1447,7 +1451,7 @@ class TestContextBudgetValidation:
     ) -> None:
         """load_context returns validation error for token_budget=0 with non-trivial tasks."""
         # No patches: validation runs before initialization
-        result_str = await load_context(
+        result_str = await _load_context_impl(
             task_description="Implement a new feature",
             token_budget=0,
             response_format="detailed",
@@ -1464,7 +1468,7 @@ class TestContextBudgetValidation:
     ) -> None:
         """load_context returns validation error when token_budget is omitted for non-trivial tasks."""
         # No patches: validation runs before initialization (token_budget=None)
-        result_str = await load_context(
+        result_str = await _load_context_impl(
             task_description="Refactor the auth module",
             response_format="detailed",
         )
@@ -1496,7 +1500,7 @@ class TestContextBudgetValidation:
         ):
             # This should not error - trivial tasks can have zero budget
             # (though the actual loading may still fail if optimization is disabled)
-            result_str = await load_context(
+            result_str = await _load_context_impl(
                 task_description="Read a file",
                 token_budget=0,
             )
@@ -1537,7 +1541,7 @@ class TestContextBudgetValidation:
                 return_value=mock_result,
             ),
         ):
-            result_str = await load_context(
+            result_str = await _load_context_impl(
                 task_description="Implement a new feature",
                 token_budget=10000,
             )

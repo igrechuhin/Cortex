@@ -6,8 +6,8 @@ Tools:
 - execute_pre_commit_checks: Run checks with explicit list or phase.
 - start_quality_job / get_quality_job_status: Non-blocking detached job API.
 - get_last_pre_commit_status: Last run summary (internal fallback).
-- run_quality_gate / run_quality_gate_fresh / run_docs_gate: Zero-arg pipeline tools.
-- fix_quality_issues: Zero-arg auto-fix (format, lint, type, markdown).
+- run_quality_gate / run_docs_gate: Zero-arg pipeline tools.
+- autofix: Zero-arg auto-fix (format, lint, type, markdown).
 
 Implementation helpers live in pre_commit_tools_inline_execution and
 pre_commit_tools_execute_checks to satisfy file-size limits.
@@ -56,55 +56,17 @@ __all__ = [
 SUPPORTED_LANGUAGES: tuple[str, ...] = LanguageQualityRouter.supported_languages()
 
 
-@ensure_usage_context
-@mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_VERY_COMPLEX, enable_progress=False)
-async def execute_pre_commit_checks(
-    phase: Literal["A", "B", "full"] | None = None,
-    checks: Sequence[PreCommitCheckName] | None = None,
-    test_timeout: int = 300,
-    coverage_threshold: float = 0.9,
-    strict_mode: bool = False,
-    include_untracked_markdown: bool = True,
-    skip_if_clean: bool = False,
-    ctx: MCPContext | None = None,
+async def _execute_pre_commit_checks_inner(
+    phase: Literal["A", "B", "full"] | None,
+    checks: Sequence[PreCommitCheckName] | None,
+    test_timeout: int,
+    coverage_threshold: float,
+    strict_mode: bool,
+    include_untracked_markdown: bool,
+    skip_if_clean: bool,
+    ctx: MCPContext | None,
 ) -> ModelDict:
-    """Run pre-commit checks or a commit-pipeline phase (A, B, or full).
-
-    USE WHEN: Running the quality gate before commit, validating format/type/quality/tests,
-    or executing Phase A (preflight) or Phase B (docs/memory sync) of the commit pipeline.
-
-    EXAMPLES: execute_pre_commit_checks(phase="A") for preflight;
-    execute_pre_commit_checks(checks=["format", "type_check"]) for targeted checks;
-    execute_pre_commit_checks(checks=["tests"], skip_if_clean=True) for Step 12 re-runs
-    that skip when no source files changed since Phase A;
-    execute_pre_commit_checks(phase="B") for docs/memory validation after Step 5.
-
-    DO NOT:
-    - Run raw pytest/ruff/black commands in a shell for this project; use this MCP tool so
-      results are structured and consistent with the commit pipeline.
-    - Pass project_root or cwd-style parameters; the tool resolves the project root
-      internally.
-    - Mix phase and checks in the same call; use either a phase ("A", "B", "full") or an
-      explicit checks list.
-
-    RETURNS: JSON with status; for phase "A" or "full": preflight_passed, checks (per-check
-    results); for phase "B" or "full": docs_phase_passed, timestamps, roadmap_sync; for
-    explicit checks: results per check (format, type_check, quality, tests, etc.).
-    When skip_if_clean=True and no source files changed since Phase A, returns
-    {"status": "success", "skipped": true, "skip_reason": "..."}.
-
-    Args:
-        phase: "A", "B", or "full" for pipeline phases. Optional.
-        checks: Required when phase is None. E.g. ["format"], ["type_check", "quality"].
-        test_timeout, coverage_threshold, strict_mode: Check options.
-        skip_if_clean: When True, skip checks if no source files changed since Phase A.
-            Use for Step 12 re-runs to avoid redundant checks. Default False.
-
-    When phase is None, you must pass checks (e.g. ["format"], ["type_check", "quality"],
-    ["fix_quality"] for auto-fix only, or ["tests"] with test_timeout and coverage_threshold).
-    Language is auto-detected. checks=["fix_quality"] runs fix_errors, format, type_check,
-    and markdown lint (no tests); returns fix-quality response shape.
-    """
+    """Dispatch pre-commit checks after resolving phase enum."""
     phase_enum: PreCommitPhase | None = (
         PreCommitPhase(phase) if phase is not None else None
     )
@@ -121,6 +83,47 @@ async def execute_pre_commit_checks(
 
 
 @ensure_usage_context
+@mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_VERY_COMPLEX, enable_progress=False)
+async def execute_pre_commit_checks(
+    phase: Literal["A", "B", "full"] | None = None,
+    checks: Sequence[PreCommitCheckName] | None = None,
+    test_timeout: int = 300,
+    coverage_threshold: float = 0.9,
+    strict_mode: bool = False,
+    include_untracked_markdown: bool = True,
+    skip_if_clean: bool = False,
+    ctx: MCPContext | None = None,
+) -> ModelDict:
+    """Run pre-commit checks or a commit-pipeline phase (A, B, or full).
+
+    USE WHEN: Running the quality gate before commit, validating format/type/quality/tests,
+    or executing Phase A (preflight) or Phase B (docs/memory sync) of the commit pipeline.
+    """
+    return await _execute_pre_commit_checks_inner(
+        phase,
+        checks,
+        test_timeout,
+        coverage_threshold,
+        strict_mode,
+        include_untracked_markdown,
+        skip_if_clean,
+        ctx,
+    )
+
+
+async def _fetch_last_pre_commit_status(
+    root: Path, ctx: MCPContext | None
+) -> ModelDict:
+    """Lazy-import and call get_last_pre_commit_status_impl."""
+    module = __import__(
+        "cortex.tools.execution.pre_commit_status",
+        fromlist=["get_last_pre_commit_status_impl"],
+    )
+    impl = module.get_last_pre_commit_status_impl
+    return cast(ModelDict, await impl(Path(root), ctx))
+
+
+@ensure_usage_context
 @mcp_tool_wrapper(timeout=60.0)
 async def get_last_pre_commit_status(
     ctx: MCPContext | None = None,
@@ -131,29 +134,10 @@ async def get_last_pre_commit_status(
     (e.g. after reconnecting following a connection-closed error) without
     starting a new run. This tool is lightweight and safe to poll.
 
-    EXAMPLES:
-    - get_last_pre_commit_status() immediately after execute_pre_commit_checks(checks=["tests"])
-      to see whether tests are still running or have completed.
-    - get_last_pre_commit_status() in a follow-up session to inspect the outcome of a detached
-      quality gate run without starting a new one.
-
-    RETURNS: JSON with at least:
-      - status: "no_runs" | "running" | "completed" | "error" | "unknown"
-      - args_hash: identifier of the detached run (if known)
-      - checks: list of checks or checks_performed (when available)
-      - preflight_passed / docs_phase_passed / coverage when reported
-      - error: optional error message for "error" or "unknown" status.
+    RETURNS: JSON with status, args_hash, checks, preflight_passed, coverage, error.
     """
     root = await get_or_resolve_project_root(ctx)
-    module = __import__(
-        "cortex.tools.execution.pre_commit_status",
-        fromlist=["get_last_pre_commit_status_impl"],
-    )
-    impl = module.get_last_pre_commit_status_impl
-    return cast(
-        ModelDict,
-        await impl(Path(root), ctx),
-    )
+    return await _fetch_last_pre_commit_status(root, ctx)
 
 
 def _resolve_pre_commit_check_names(
@@ -177,6 +161,33 @@ def _resolve_pre_commit_check_names(
     return phase_to_checks(PreCommitPhase("A"))
 
 
+def _spawn_quality_job(
+    root: Path,
+    check_names: list[str],
+    test_timeout: int,
+    coverage_threshold: float,
+    strict_mode: bool,
+    include_untracked_markdown: bool,
+    force_fresh: bool,
+) -> ModelDict:
+    """Lazy-import and call start_pre_commit_job_impl."""
+    module = __import__(
+        "cortex.tools.execution.pre_commit_detached",
+        fromlist=["start_pre_commit_job_impl"],
+    )
+    impl = module.start_pre_commit_job_impl
+    result = impl(
+        root,
+        check_names,
+        test_timeout,
+        coverage_threshold,
+        strict_mode,
+        include_untracked_markdown,
+        force_fresh,
+    )
+    return cast(ModelDict, result)
+
+
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=60.0)
 async def start_quality_job(
@@ -195,36 +206,11 @@ async def start_quality_job(
     connection. Call this once to get a job_id, then poll with
     get_quality_job_status(job_id) until status != "running".
 
-    EXAMPLES:
-    - start_quality_job(phase="A") to start a full Phase A quality gate.
-    - start_quality_job(checks=["tests"], coverage_threshold=0.9) for tests only.
-    - start_quality_job(phase="A", force_fresh=True) for Step 12 final gate —
-      always spawns a new worker even when a recent cached result exists.
-
     RETURNS: {"job_id": "<hash>", "status": "started"|"already_running"|"completed"|"error"}
-    - "started": worker spawned; poll with get_quality_job_status(job_id).
-    - "already_running": worker already active; poll the same job_id.
-    - "completed": fresh cached result exists; call get_quality_job_status for details.
-    - "error": previous run failed; check get_quality_job_status for error details.
-
-    Args:
-        phase: "A", "B", or "full". Resolves to canonical check list for the phase.
-            Mutually exclusive with checks.
-        checks: Explicit check list. Required when phase is None.
-        test_timeout, coverage_threshold, strict_mode, include_untracked_markdown:
-            Passed through to the detached worker.
-        force_fresh: When True, bypass any cached result and always spawn a fresh worker.
-            Use for Step 12 (final gate) where Phase B/C may have modified files since
-            Phase A completed.
     """
     check_names = _resolve_pre_commit_check_names(phase=phase, checks=checks)
     root = await get_or_resolve_project_root(ctx)
-    module = __import__(
-        "cortex.tools.execution.pre_commit_detached",
-        fromlist=["start_pre_commit_job_impl"],
-    )
-    impl = module.start_pre_commit_job_impl
-    result = impl(
+    return _spawn_quality_job(
         Path(root),
         check_names,
         test_timeout,
@@ -233,7 +219,18 @@ async def start_quality_job(
         include_untracked_markdown,
         force_fresh,
     )
-    return cast(ModelDict, result)
+
+
+async def _fetch_quality_job_status(
+    root: Path, job_id: str, ctx: MCPContext | None
+) -> ModelDict:
+    """Lazy-import and call get_pre_commit_status_impl for a specific job."""
+    module = __import__(
+        "cortex.tools.execution.pre_commit_status",
+        fromlist=["get_pre_commit_status_impl"],
+    )
+    impl = module.get_pre_commit_status_impl
+    return cast(ModelDict, await impl(root, job_id, ctx))
 
 
 @ensure_usage_context
@@ -245,46 +242,11 @@ async def get_quality_job_status(
     """Return summary for a specific detached pre-commit job by job_id.
 
     USE WHEN: Polling the status of a long-running detached quality gate
-    started via start_quality_job without triggering a new run. This is
-    the preferred way to monitor progress and completion of Phase A/B/full
-    or tests-only jobs from the commit pipeline.
+    started via start_quality_job without triggering a new run.
 
-    EXAMPLES:
-    - get_quality_job_status(job_id="abc123") in a loop until status != "running"
-      to wait for a detached tests run to complete.
-    - get_quality_job_status(job_id="abc123") in a follow-up session to inspect
-      the final result (status, coverage, checks) of a previously started job.
-    - get_quality_job_status() with no args: falls back to get_last_pre_commit_status
-      (most recent run). Use when the MCP wrapper cannot pass job_id.
-
-    RETURNS: JSON with at least:
-      - status: "no_runs" | "running" | "completed" | "error" | "unknown"
-      - args_hash: identifier of the detached run (usually derived from job_id)
-      - checks: list of checks or checks_performed when available
-      - preflight_passed / docs_phase_passed / coverage when reported
-      - error: optional error message for "error" or "unknown" status.
-
-    Args:
-        job_id: Identifier of the detached pre-commit job (from start_quality_job).
-            When empty or omitted, falls back to the most recent run (same as
-            get_last_pre_commit_status). This allows environments where the MCP
-            wrapper cannot pass arguments to still poll the running job.
-        ctx: Optional MCP context for logging and project root resolution.
+    RETURNS: JSON with status, args_hash, checks, preflight_passed, coverage, error.
     """
     root = await get_or_resolve_project_root(ctx)
     if not job_id:
-        module = __import__(
-            "cortex.tools.execution.pre_commit_status",
-            fromlist=["get_last_pre_commit_status_impl"],
-        )
-        impl = module.get_last_pre_commit_status_impl
-        return cast(ModelDict, await impl(Path(root), ctx))
-    module = __import__(
-        "cortex.tools.execution.pre_commit_status",
-        fromlist=["get_pre_commit_status_impl"],
-    )
-    impl = module.get_pre_commit_status_impl
-    return cast(
-        ModelDict,
-        await impl(Path(root), job_id, ctx),
-    )
+        return await _fetch_last_pre_commit_status(root, ctx)
+    return await _fetch_quality_job_status(Path(root), job_id, ctx)

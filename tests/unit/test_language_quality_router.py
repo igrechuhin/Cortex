@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import pytest
 
+from cortex.core.constants import LANGUAGE_POST_EDIT_HOOK_COMMANDS
 from cortex.services.framework_adapters.python_adapter import PythonAdapter
 from cortex.services.language_quality_router import LanguageQualityRouter
 
@@ -17,6 +18,7 @@ def test_supported_languages_include_quality_and_hook_routed_languages() -> None
         "java",
         "swift",
         "kotlin",
+        "csharp",
     ):
         assert language in supported
 
@@ -36,6 +38,7 @@ def test_get_adapter_returns_expected_adapter_for_python() -> None:
         ("rust", "cargo test 2>&1 | tail -20"),
         ("go", "go test ./... 2>&1 | tail -20"),
         ("java", "./mvnw test -q 2>&1 | tail -20"),
+        ("csharp", "dotnet test 2>&1 | tail -20"),
         ("  PYTHON  ", "python3 -m pytest tests/ --timeout=30 -x -q 2>&1 | tail -20"),
         ("kotlin", None),
         ("unknown", None),
@@ -43,3 +46,8 @@ def test_get_adapter_returns_expected_adapter_for_python() -> None:
 )
 def test_get_post_edit_hook_command(language: str, expected: str | None) -> None:
     assert LanguageQualityRouter.get_post_edit_hook_command(language) == expected
+
+
+def test_post_edit_hook_commands_are_sourced_from_constants() -> None:
+    for language, expected in LANGUAGE_POST_EDIT_HOOK_COMMANDS.items():
+        assert LanguageQualityRouter.get_post_edit_hook_command(language) == expected

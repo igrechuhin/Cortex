@@ -4,9 +4,7 @@
 
 ## Completed Work (2026-03-31)
 
-- ✅ **Language scaffolding follow-up (C# pack)** - COMPLETE (2026-03-31) - Implemented one incremental subtask: promoted `csharp` from generic fallback to explicit scaffolding hints and script commands, plus dedicated tests. Kept roadmap item PARTIAL for remaining language-pack/template reconciliation work.
-
-- ✅ **Migration: Language-Agnostic Rules and Scripts Scaffolding (follow-up) (PARTIAL)** - COMPLETE (2026-03-31) - Added language-extension routing coverage for scaffolded non-native languages by extending EXTENSION_SCRIPT_MAP and updating routing tests, reducing fallback-to-unknown behavior for mixed-language repositories.
+- **Summary (2026-03-31)** - 1 entries archived.
 
 ## Completed Work (2026-03-30)
 

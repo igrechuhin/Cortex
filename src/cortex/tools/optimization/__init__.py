@@ -6,7 +6,7 @@ This package contains tools for context loading, content summarization,
 and relevance scoring.
 
 Total: 3 tools, 3 resources (rules tools moved to consolidated.py)
-- load_context / load_context_resource
+- load_context (resource: cortex://context)
 - summarize_content / summarize_content_resource
 - get_relevance_scores / get_relevance_scores_resource
 
@@ -28,7 +28,7 @@ from .handlers import (
     get_relevance_scores_resource,
     is_non_trivial_task,
     load_context,
-    load_context_resource,
+    load_context_impl,
     summarize_content,
     summarize_content_resource,
 )
@@ -41,7 +41,7 @@ __all__ = [
     "get_relevance_scores_resource",
     "is_non_trivial_task",
     "load_context",
-    "load_context_resource",
+    "load_context_impl",
     "summarize_content",
     "summarize_content_resource",
 ]

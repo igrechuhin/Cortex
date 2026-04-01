@@ -4,7 +4,7 @@ Analysis Operations Tools
 This module contains analysis tools for Memory Bank.
 
 Total: 1 tool, 1 resource
-- analyze / analyze_resource (cortex://analysis/analyze/{target})
+- analyze (resource: cortex://analysis)
 """
 
 import json
@@ -46,7 +46,7 @@ async def get_managers(root: Path) -> ManagersDict:
 # MCP tool registration removed — exposed as resource below
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_COMPLEX)
-async def analyze(
+async def analyze_impl(
     target: str = "context",
     time_window_days: int | None = None,
     export_format: str = "json",
@@ -124,23 +124,37 @@ async def analyze(
         - Export formats for insights: "json" provides structured data, "markdown"
           provides formatted documentation, "text" provides plain text summary.
     """
+    return await _analyze_dispatch(
+        target, time_window_days, export_format, categories, ctx
+    )
+
+
+async def _analyze_dispatch(
+    target: str,
+    time_window_days: int | None,
+    export_format: str,
+    categories: list[str] | None,
+    ctx: MCPContext | None,
+) -> str:
+    """Dispatch analysis to the appropriate handler."""
     await log_client(ctx, "info", "analyze: starting", logger_name=__name__)
     normalized_target = normalize_analysis_target(target)
     target_value = normalized_target if normalized_target is not None else target
     root = await resolve_project_root_async(None, ctx)
-    # First try legacy targets via AnalysisTarget/Pattern/Structure/Insights.
     parsed_target = parse_analysis_target(target_value)
     if parsed_target is not None:
         return await _analyze_run_or_error(
-            ctx,
-            parsed_target,
-            root,
-            time_window_days,
-            export_format,
-            categories,
+            ctx, parsed_target, root, time_window_days, export_format, categories
         )
+    return await _analyze_consolidated_target(target_value, root, ctx)
 
-    # Consolidated analytics targets: context* and health.
+
+async def _analyze_consolidated_target(
+    target_value: str,
+    root: Path,
+    ctx: MCPContext | None,
+) -> str:
+    """Handle consolidated analytics targets: context* and health."""
     if target_value.startswith("context"):
         return await run_context_analysis(target_value, root)
     if target_value in ("health", "health_check", "prompts", "rules", "tools", "all"):
@@ -148,7 +162,6 @@ async def analyze(
             "all" if target_value in ("health", "health_check") else target_value
         )
         return await run_health_analysis(root, analysis_type=health_type)
-
     await log_client(ctx, "warning", "analyze: invalid target")
     return analysis_invalid_target_response(target_value)
 
@@ -181,7 +194,7 @@ async def _analyze_run_or_error(
 @mcp.resource(uri="cortex://analysis")
 @ensure_usage_context
 @mcp_resource_wrapper(timeout=MCP_TOOL_TIMEOUT_COMPLEX)
-async def analyze_resource() -> str:
+async def analyze() -> str:
     """Resource: Run analysis. Zero-arg — reads target from session config.
 
     Falls back to "context" if no session config exists. Target must be one of:
@@ -191,7 +204,7 @@ async def analyze_resource() -> str:
 
     cfg = read_session_config()
     target = str(cfg.get("analysis_target", "context"))
-    return await analyze(
+    return await analyze_impl(
         target=target,
         time_window_days=None,
         export_format="json",

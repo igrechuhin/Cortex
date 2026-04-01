@@ -31,7 +31,7 @@ from cortex.tools.models import (
 )
 from cortex.tools.validation.operations import (
     ValidateCheckTypeName,
-    validate_impl,
+    validate_from_parsed,
 )
 from cortex.validation.roadmap_progress_consistency import (
     check_roadmap_progress_consistency,
@@ -71,14 +71,15 @@ async def run_single_validation(
 ) -> JsonDict | None:
     """Run validation for a single check_type and decode JSON result.
 
-    Calls ``validate_impl`` directly instead of the ``validate`` MCP tool
-    wrapper to avoid nested semaphore acquisition.  ``run_docs_gate`` already
-    holds one tool-semaphore slot; calling ``validate`` (which is wrapped with
-    ``@mcp_tool_wrapper``) would acquire additional slots from the same 5-slot
-    pool, creating a deadlock when two ``run_docs_gate`` calls run concurrently.
+    Calls ``validate_from_parsed`` directly instead of the ``validate_impl``
+    MCP tool wrapper to avoid nested semaphore acquisition.  ``run_docs_gate``
+    already holds one tool-semaphore slot; calling ``validate_impl`` (which is
+    wrapped with ``@mcp_tool_wrapper``) would acquire additional slots from the
+    same 5-slot pool, creating a deadlock when two ``run_docs_gate`` calls run
+    concurrently.
     """
-    raw = await validate_impl(
-        parsed=check_type_name,
+    raw = await validate_from_parsed(
+        check_type_name,
         file_name=None,
         similarity_threshold=None,
         suggest_fixes=True,

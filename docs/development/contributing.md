@@ -225,11 +225,11 @@ Use the path that matches your role. **Agents** (IDE automation, Cursor commands
 
 | Task | Human (local CLI) | Agent (MCP) |
 | --- | --- | --- |
-| Format code | `uv run black src/ tests/` | `fix_quality_issues()` |
+| Format code | `uv run black src/ tests/` | `autofix()` |
 | Lint | `uv run ruff check src/ tests/` | `run_quality_gate()` |
 | Type-check | `uv run pyright src/ tests/` | `run_quality_gate()` |
 | Run tests | `uv run pytest tests/ -q` | `run_quality_gate()` |
-| Fix auto-fixable quality issues | `make fix` (or `uv run black src/ tests/` plus `uv run ruff check src/ tests/ --fix`) | `fix_quality_issues()` |
+| Fix auto-fixable quality issues | `make fix` (or `uv run black src/ tests/` plus `uv run ruff check src/ tests/ --fix`) | `autofix()` |
 | Validate docs / memory-bank sync | `uv run rumdl check --fix .` | `run_docs_gate()` |
 
 **Humans**: Black (88-char line) and Ruff (including import sorting) are enforced in CI; use `make fix` at the repo root for the same auto-fixes the project expects.

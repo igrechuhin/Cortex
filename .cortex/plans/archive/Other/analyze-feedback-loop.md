@@ -2,7 +2,7 @@
 title: "Analyze Feedback Loop: Post-Prompt Self-Improvement"
 component: synapse
 work_type: feature
-status: IN_PROGRESS
+status: COMPLETE
 priority: high
 created: 2026-03-31
 depends_on: []
@@ -259,3 +259,9 @@ Since these are prompt/markdown files (not runnable code), testing is trace-base
 3. **Regression check**:
    - Confirm existing prompts' core logic is unchanged (diff each file, core steps untouched).
    - Confirm `analyze.md` Steps 1–8 are unchanged.
+
+**Testing Status (2026-03-31)**: Structural tests implemented in
+`tests/integration/test_feedback_loop_structural.py` — 30 tests, all passing.
+Covers: all 8 caller-prompt hook invocations, analyze.md Steps 9a/9b/9c router,
+post-prompt-hook.md existence/guard/no-circular-reference, manifest registration,
+and absence of stale recursion-guard text in caller prompts.

@@ -77,7 +77,6 @@ __all__ = [
     "check_structure_initialized",
     "find_stale_plans",
     "get_structure_info",
-    "get_structure_info_resource",
     "get_project_root_resource",
     "move_stale_plans",
     "perform_archive_stale",
@@ -165,13 +164,6 @@ async def check_structure_health(
 
     USE WHEN: You want a high-level structure health report or to perform
     cleanup actions (archive stale plans, fix symlinks, update index).
-
-    EXAMPLES: 'check_structure_health()', 'check_structure_health(perform_cleanup=True)'.
-
-    DO NOT:
-    - Pass project_root or filesystem paths; the tool resolves the project root
-      and structure configuration internally.
-    - Use this as a generic filesystem cleaner for non-Cortex directories.
     """
     await log_client(
         ctx, "info", "check_structure_health: starting", logger_name=__name__
@@ -190,37 +182,18 @@ async def check_structure_health(
 check_structure_health.__doc__ = CHECK_STRUCTURE_HEALTH_DOC
 
 
-@ensure_usage_context
-@mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_FAST)
-async def get_structure_info(
-    ctx: MCPContext | None = None,
-) -> str:
-    """Get current project structure configuration, paths, and status.
-
-    USE WHEN: You need the canonical paths for memory_bank, plans, rules, or
-    want to inspect structure.json configuration.
-
-    EXAMPLES: 'get_structure_info()' to retrieve structure paths and status.
-
-    DO NOT:
-    - Pass project_root or other filesystem parameters; the tool resolves the
-      project root and structure configuration internally.
-    - Use this as a generic file discovery helper outside the Cortex project
-      structure.
-    """
+async def _get_structure_info_inner(ctx: MCPContext | None) -> str:
+    """Resolve root, build structure JSON, and log result."""
     await log_client(ctx, "info", "get_structure_info: starting", logger_name=__name__)
     try:
         root = await resolve_project_root_async(None, ctx)
         structure_mgr = StructureManager(root)
-
-        info = structure_mgr.get_structure_info()
-
-        info_payload: ModelDict = info
+        info_payload: ModelDict = structure_mgr.get_structure_info()
         out = json.dumps(
             {
                 "success": True,
                 "structure_info": info_payload,
-                "message": "✅ Structure information retrieved successfully",
+                "message": "Structure information retrieved successfully",
             },
             indent=2,
         )
@@ -228,7 +201,6 @@ async def get_structure_info(
             ctx, "info", "get_structure_info: completed", logger_name=__name__
         )
         return out
-
     except Exception as e:
         await log_client(
             ctx, "error", f"get_structure_info: {e!s}", logger_name=__name__
@@ -239,18 +211,28 @@ async def get_structure_info(
         )
 
 
-get_structure_info.__doc__ = GET_STRUCTURE_INFO_DOC
+@ensure_usage_context
+@mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_FAST)
+async def get_structure_info_impl(
+    ctx: MCPContext | None = None,
+) -> str:
+    """Get current project structure configuration, paths, and status.
+
+    USE WHEN: You need the canonical paths for memory_bank, plans, rules, or
+    want to inspect structure.json configuration.
+    """
+    return await _get_structure_info_inner(ctx)
 
 
 @mcp.resource(uri="cortex://structure")
 @ensure_usage_context
 @mcp_resource_wrapper(timeout=MCP_TOOL_TIMEOUT_FAST)
-async def get_structure_info_resource() -> str:
+async def get_structure_info() -> str:
     """Resource: Project structure info. Zero-arg with caching."""
     cached = _structure_resource_cache.get("structure/info")
     if cached is not None:
         return cached
-    result = await get_structure_info()
+    result = await get_structure_info_impl()
     _structure_resource_cache.set("structure/info", result)
     return result
 
@@ -298,4 +280,4 @@ async def get_project_root_resource() -> str:
     return result
 
 
-get_structure_info.__doc__ = GET_STRUCTURE_INFO_DOC
+get_structure_info_impl.__doc__ = GET_STRUCTURE_INFO_DOC

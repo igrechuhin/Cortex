@@ -22,7 +22,7 @@ This project runs a **Cortex MCP server**. All project knowledge, rules, and wor
 
 **For rules and standards:** Read `cortex://rules` resource — do not read `.cortex/rules/` or `.cortex/synapse/` directly. For tool parameters and structured dispatch data use Pydantic BaseModel, not `dict[str, Any]`.
 
-**For quality and tests:** Use zero-arg tools: `run_quality_gate()`, `run_docs_gate()`, `fix_quality_issues()`. Do not run language-specific formatters/linters/test runners directly.
+**For quality and tests:** Use zero-arg tools: `run_quality_gate()`, `run_docs_gate()`, `autofix()`. Do not run language-specific formatters/linters/test runners directly.
 
 **For memory bank, plans, reviews:** Use dedicated Cortex MCP helpers (`manage_file()`, `plan()`, `update_memory_bank()`) — do not edit `.cortex/` files directly.
 

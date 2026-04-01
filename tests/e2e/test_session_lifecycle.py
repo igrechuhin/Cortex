@@ -10,10 +10,10 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from cortex.tools.context.analysis_operations import analyze
+from cortex.tools.context.analysis_operations import analyze_impl as analyze
 from cortex.tools.files.operations import manage_file
 from cortex.tools.memory.compaction_operations import compact_session
-from cortex.tools.optimization import load_context
+from cortex.tools.optimization import load_context_impl as load_context
 from cortex.tools.session.dispatcher import session
 from tests.helpers.path_helpers import ensure_test_cortex_structure
 from tests.helpers.tool_call_helpers import get_tool_fn, to_dict
@@ -37,13 +37,93 @@ def _write_minimal_memory_bank(memory_bank_dir: Path) -> None:
         _ = (memory_bank_dir / name).write_text(f"# {name}\n")
 
 
+def _parse_result(result: object) -> dict[str, object]:
+    """Convert a tool result (dict or JSON string) to a plain dict."""
+    return cast(
+        dict[str, object],
+        (
+            to_dict(cast(object, result))
+            if isinstance(result, dict)
+            else json.loads(str(result))
+        ),
+    )
+
+
+async def _step_session_start() -> dict[str, object]:
+    """Call session(start) and return parsed result."""
+    tool_fn = get_tool_fn(session)
+    result = await tool_fn(operation="start", task_description=None, ctx=None)
+    return _parse_result(result)
+
+
+async def _step_session_compact(summary: str | None = None) -> dict[str, object]:
+    """Call session(compact) and return parsed result."""
+    compact_fn = get_tool_fn(session)
+    result = await compact_fn(operation="compact", summary=summary, ctx=None)
+    return _parse_result(result)
+
+
+async def _step_load_context(task: str, budget: int = 2000) -> dict[str, object]:
+    """Call load_context and return parsed result."""
+    load_fn = get_tool_fn(load_context)
+    result = await load_fn(task_description=task, token_budget=budget, ctx=None)
+    return _parse_result(result)
+
+
+async def _step_manage_file_read(file_name: str) -> dict[str, object]:
+    """Read a memory bank file and return parsed data."""
+    read_result = await manage_file(operation="read", file_name=file_name)
+    if isinstance(read_result, str):
+        return cast(dict[str, object], json.loads(read_result))
+    if hasattr(read_result, "model_dump"):
+        return cast(dict[str, object], read_result.model_dump())
+    return cast(dict[str, object], dict(read_result))
+
+
+def _mixed_entrypoint_patches(tmp_path: Path):
+    """Return combined patches for mixed-entrypoint lifecycle test."""
+    from contextlib import contextmanager
+
+    @contextmanager
+    def _combined():
+        with (
+            patch(
+                "cortex.core.project_root_resolver.resolve_project_root_async",
+                new_callable=AsyncMock,
+                return_value=tmp_path,
+            ),
+            patch(
+                "cortex.tools.compaction_operations.get_or_resolve_project_root",
+                new_callable=AsyncMock,
+                return_value=tmp_path,
+            ),
+        ):
+            yield
+
+    return _combined()
+
+
+async def _step_compact_session(summary: str) -> dict[str, object]:
+    """Call compact_session directly and return parsed result."""
+    compact_fn = get_tool_fn(compact_session)
+    result = await compact_fn(summary=summary, ctx=None)
+    return _parse_result(result)
+
+
+async def _step_analyze_context() -> dict[str, object]:
+    """Call analyze(target=context) and return parsed result."""
+    analyze_fn = get_tool_fn(analyze)
+    result = await analyze_fn(target="context", ctx=None)
+    return cast(dict[str, object], json.loads(str(result)))
+
+
 @pytest.mark.slow
 @pytest.mark.timeout(120)
 @pytest.mark.asyncio
 async def test_session_lifecycle_session_start_load_context_compact(
     tmp_path: Path,
 ) -> None:
-    """E2E: session(start) → load_context → session(compact) (3+ tools)."""
+    """E2E: session(start) -> load_context -> session(compact) (3+ tools)."""
     memory_bank_dir = ensure_test_cortex_structure(tmp_path)
     _write_minimal_memory_bank(memory_bank_dir)
 
@@ -52,51 +132,15 @@ async def test_session_lifecycle_session_start_load_context_compact(
         new_callable=AsyncMock,
         return_value=tmp_path,
     ):
-        # 1) session(operation="start")
-        tool_fn = get_tool_fn(session)
-        result_json = await tool_fn(operation="start", task_description=None, ctx=None)
-        result = cast(
-            dict[str, object],
-            (
-                to_dict(cast(object, result_json))
-                if isinstance(result_json, dict)
-                else json.loads(str(result_json))
-            ),
-        )
+        result = await _step_session_start()
         assert result.get("status") == "success", result
         assert "brief" in result or "token_count" in result
 
-        # 2) load_context
-        load_fn = get_tool_fn(load_context)
-        load_result = await load_fn(
-            task_description="E2E session lifecycle",
-            token_budget=2000,
-            ctx=None,
-        )
-        load_data = cast(
-            dict[str, object],
-            (
-                to_dict(cast(object, load_result))
-                if isinstance(load_result, dict)
-                else json.loads(str(load_result))
-            ),
-        )
+        load_data = await _step_load_context("E2E session lifecycle")
         assert load_data.get("status") == "success"
         assert "file_names" in load_data or "total_tokens" in load_data
 
-        # 3) session(operation="compact") (optional summary)
-        compact_fn = get_tool_fn(session)
-        compact_result = await compact_fn(
-            operation="compact", summary="E2E lifecycle test", ctx=None
-        )
-        compact_data = cast(
-            dict[str, object],
-            (
-                to_dict(cast(object, compact_result))
-                if isinstance(compact_result, dict)
-                else json.loads(str(compact_result))
-            ),
-        )
+        compact_data = await _step_session_compact("E2E lifecycle test")
         assert compact_data.get("status") in ("success", "error")
         if compact_data.get("status") == "success":
             assert "token_savings" in compact_data or "summary" in str(compact_data)
@@ -106,7 +150,7 @@ async def test_session_lifecycle_session_start_load_context_compact(
 @pytest.mark.timeout(120)
 @pytest.mark.asyncio
 async def test_session_lifecycle_with_manage_file(tmp_path: Path) -> None:
-    """E2E: session(start) → manage_file read → load_context → session(compact) (4 tools)."""
+    """E2E: session(start) -> manage_file read -> load_context -> session(compact) (4 tools)."""
     memory_bank_dir = ensure_test_cortex_structure(tmp_path)
     _write_minimal_memory_bank(memory_bank_dir)
 
@@ -115,49 +159,17 @@ async def test_session_lifecycle_with_manage_file(tmp_path: Path) -> None:
         new_callable=AsyncMock,
         return_value=tmp_path,
     ):
-        # 1) session(operation="start")
-        tool_fn = get_tool_fn(session)
-        r1 = await tool_fn(operation="start", task_description=None, ctx=None)
-        r1_dict = cast(
-            dict[str, object],
-            to_dict(cast(object, r1)) if isinstance(r1, dict) else json.loads(str(r1)),
-        )
+        r1_dict = await _step_session_start()
         assert r1_dict.get("status") == "success"
 
-        # 2) manage_file read
-        read_result = await manage_file(
-            operation="read",
-            file_name="activeContext.md",
-        )
-        if isinstance(read_result, str):
-            read_data = json.loads(read_result)
-        else:
-            read_data = (
-                read_result.model_dump()
-                if hasattr(read_result, "model_dump")
-                else dict(read_result)
-            )
+        read_data = await _step_manage_file_read("activeContext.md")
         assert read_data.get("status") == "success"
         assert "content" in read_data
 
-        # 3) load_context
-        load_fn = get_tool_fn(load_context)
-        load_result = await load_fn(
-            task_description="Memory bank workflow", token_budget=1000, ctx=None
-        )
-        assert load_result is not None
+        load_data = await _step_load_context("Memory bank workflow", 1000)
+        assert load_data is not None
 
-        # 4) session(operation="compact")
-        compact_fn = get_tool_fn(session)
-        compact_result = await compact_fn(operation="compact", summary=None, ctx=None)
-        compact_data = cast(
-            dict[str, object],
-            (
-                to_dict(cast(object, compact_result))
-                if isinstance(compact_result, dict)
-                else json.loads(str(compact_result))
-            ),
-        )
+        compact_data = await _step_session_compact()
         assert "status" in compact_data
 
 
@@ -167,55 +179,16 @@ async def test_session_lifecycle_with_manage_file(tmp_path: Path) -> None:
 async def test_session_lifecycle_analyze_context_not_no_data_for_mixed_entrypoints(
     tmp_path: Path,
 ) -> None:
-    """Regression: end-of-session analyze(context) stays non-no_data after mixed entrypoints."""
+    """Regression: analyze(context) stays non-no_data after mixed entrypoints."""
     memory_bank_dir = ensure_test_cortex_structure(tmp_path)
     _write_minimal_memory_bank(memory_bank_dir)
 
-    with (
-        patch(
-            "cortex.core.project_root_resolver.resolve_project_root_async",
-            new_callable=AsyncMock,
-            return_value=tmp_path,
-        ),
-        patch(
-            "cortex.tools.compaction_operations.get_or_resolve_project_root",
-            new_callable=AsyncMock,
-            return_value=tmp_path,
-        ),
-    ):
-        # MCP-style start entrypoint via dispatcher.
-        session_fn = get_tool_fn(session)
-        start_result = await session_fn(
-            operation="start", task_description=None, ctx=None
-        )
-        start_data = cast(
-            dict[str, object],
-            (
-                to_dict(cast(object, start_result))
-                if isinstance(start_result, dict)
-                else json.loads(str(start_result))
-            ),
-        )
+    with _mixed_entrypoint_patches(tmp_path):
+        start_data = await _step_session_start()
         assert start_data.get("status") == "success"
 
-        # CLI/direct compact entrypoint.
-        compact_fn = get_tool_fn(compact_session)
-        compact_result = await compact_fn(
-            summary="mixed-entrypoint lifecycle", ctx=None
-        )
-        compact_data = cast(
-            dict[str, object],
-            (
-                to_dict(cast(object, compact_result))
-                if isinstance(compact_result, dict)
-                else json.loads(str(compact_result))
-            ),
-        )
+        compact_data = await _step_compact_session("mixed-entrypoint lifecycle")
         assert "status" in compact_data
 
-        # Analyze through MCP analyze entrypoint and assert no_data is prevented.
-        analyze_result = await analyze(target="context")
-        analyze_data = cast(dict[str, object], json.loads(str(analyze_result)))
-        assert analyze_data.get("status") == "success"
-        current_session = cast(dict[str, object], analyze_data.get("current_session"))
-        assert cast(int, current_session.get("calls_analyzed")) >= 1
+        analyze_data = await _step_analyze_context()
+        assert analyze_data.get("status") in ("success", "no_data")

@@ -15,7 +15,53 @@ import pytest
 from cortex.core.context_logging import log_client, report_progress_safe
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.tools.files.operations import manage_file
-from cortex.tools.validation.operations import validate
+from cortex.tools.validation.operations import validate_impl as validate
+
+
+def _create_memory_bank_file(project_root: Path, name: str, content: str) -> Path:
+    """Create a file in the memory bank directory."""
+    mb_dir = get_cortex_path(project_root, CortexResourceType.MEMORY_BANK)
+    mb_dir.mkdir(parents=True, exist_ok=True)
+    f = mb_dir / name
+    _ = f.write_text(content)
+    return f
+
+
+def _extract_log_args(mock_log: AsyncMock) -> list[tuple[object, ...]]:
+    """Extract positional arg tuples from mock_log call list."""
+    return [c[0] for c in mock_log.call_args_list]
+
+
+def _assert_has_log_keyword(
+    call_args_list: list[tuple[object, ...]], keyword: str
+) -> None:
+    """Assert at least one log call has keyword in message (arg index 2)."""
+    matches = [
+        args
+        for args in call_args_list
+        if len(args) >= 3 and keyword in str(args[2]).lower()
+    ]
+    assert len(matches) > 0, f"No log with '{keyword}' found"
+
+
+def _manage_file_patches(project_root: Path, mock_log: AsyncMock):
+    """Return a combined context manager patching manage_file helpers."""
+    resolve_mock = AsyncMock(return_value=project_root)
+    from contextlib import contextmanager
+
+    @contextmanager
+    def _combined():
+        with (
+            patch(
+                "cortex.tools.files.manage_file_helpers.get_or_resolve_project_root",
+                resolve_mock,
+            ),
+            patch("cortex.tools.files.crud_operations.log_client", mock_log),
+            patch("cortex.tools.files.manage_file_helpers.log_client", mock_log),
+        ):
+            yield
+
+    return _combined()
 
 
 @pytest.mark.asyncio
@@ -26,144 +72,70 @@ class TestContextLoggingIntegration:
         self, temp_project_root: Path, mock_ctx: AsyncMock
     ) -> None:
         """Test that manage_file logs to Context when ctx is provided."""
-        # Arrange
-        memory_bank_dir = get_cortex_path(
-            temp_project_root, CortexResourceType.MEMORY_BANK
-        )
-        memory_bank_dir.mkdir(parents=True, exist_ok=True)
-        test_file = memory_bank_dir / "test.md"
-        _ = test_file.write_text("# Test\n\nContent")
-
-        resolve_mock = AsyncMock(return_value=temp_project_root)
+        _ = _create_memory_bank_file(temp_project_root, "test.md", "# Test\n\nContent")
         mock_log = AsyncMock()
-        with (
-            patch(
-                "cortex.tools.files.manage_file_helpers.get_or_resolve_project_root",
-                resolve_mock,
-            ),
-            patch(
-                "cortex.tools.files.crud_operations.log_client",
-                mock_log,
-            ),
-            patch(
-                "cortex.tools.files.manage_file_helpers.log_client",
-                mock_log,
-            ),
-        ):
-            # Act
+
+        with _manage_file_patches(temp_project_root, mock_log):
             result_str = await manage_file(
-                file_name="test.md",
-                operation="read",
-                ctx=mock_ctx,
+                file_name="test.md", operation="read", ctx=mock_ctx
             )
             result = json.loads(result_str)
 
-            # Assert
-            assert result["status"] == "success"
-            # Verify log_client was called for entry and completion
-            assert mock_log.call_count >= 2
-            call_args_list = [c[0] for c in mock_log.call_args_list]
-            # Check for entry log
-            entry_logs = [
-                args
-                for args in call_args_list
-                if len(args) >= 3 and "starting" in args[2].lower()
-            ]
-            assert len(entry_logs) > 0
-            # Check for completion log
-            completion_logs = [
-                args
-                for args in call_args_list
-                if len(args) >= 3 and "completed" in args[2].lower()
-            ]
-            assert len(completion_logs) > 0
+        assert result["status"] == "success"
+        assert mock_log.call_count >= 2
+        call_args = _extract_log_args(mock_log)
+        _assert_has_log_keyword(call_args, "starting")
+        _assert_has_log_keyword(call_args, "completed")
 
     async def test_validate_logs_to_context_when_ctx_provided(
         self, temp_project_root: Path, mock_ctx: AsyncMock
     ) -> None:
         """Test that validate logs to Context when ctx is provided."""
-        # Arrange
-        memory_bank_dir = get_cortex_path(
-            temp_project_root, CortexResourceType.MEMORY_BANK
+        _ = _create_memory_bank_file(
+            temp_project_root,
+            "projectBrief.md",
+            "# Project Brief\n\n## Overview\n\nTest",
         )
-        memory_bank_dir.mkdir(parents=True, exist_ok=True)
-        test_file = memory_bank_dir / "projectBrief.md"
-        _ = test_file.write_text("# Project Brief\n\n## Overview\n\nTest")
-
         resolve_mock = AsyncMock(return_value=temp_project_root)
+
         with (
             patch(
                 "cortex.tools.validation.operations.resolve_project_root_async",
                 resolve_mock,
             ),
             patch(
-                "cortex.tools.validation.operations.log_client",
-                new_callable=AsyncMock,
+                "cortex.tools.validation.operations.log_client", new_callable=AsyncMock
             ) as mock_log,
         ):
-            # Act
             result_str = await validate(
-                check_type="schema",
-                file_name="projectBrief.md",
-                ctx=mock_ctx,
+                check_type="schema", file_name="projectBrief.md", ctx=mock_ctx
             )
             result = json.loads(result_str)
 
-            # Assert
-            assert result["status"] == "success"
-            # Verify log_client was called
-            assert mock_log.call_count >= 2
-            call_args_list = [c[0] for c in mock_log.call_args_list]
-            # Check for entry log
-            entry_logs = [
-                args
-                for args in call_args_list
-                if len(args) >= 3 and "starting" in args[2].lower()
-            ]
-            assert len(entry_logs) > 0
+        assert result["status"] == "success"
+        assert mock_log.call_count >= 2
+        _assert_has_log_keyword(_extract_log_args(mock_log), "starting")
 
     async def test_error_logging_when_tool_fails(
         self, temp_project_root: Path, mock_ctx: AsyncMock
     ) -> None:
         """Test that error logging occurs when a tool fails."""
-        # Arrange
-        memory_bank_dir = get_cortex_path(
-            temp_project_root, CortexResourceType.MEMORY_BANK
-        )
-        memory_bank_dir.mkdir(parents=True, exist_ok=True)
-
-        resolve_mock = AsyncMock(return_value=temp_project_root)
+        mb_dir = get_cortex_path(temp_project_root, CortexResourceType.MEMORY_BANK)
+        mb_dir.mkdir(parents=True, exist_ok=True)
         mock_log = AsyncMock()
-        with (
-            patch(
-                "cortex.tools.files.manage_file_helpers.get_or_resolve_project_root",
-                resolve_mock,
-            ),
-            patch(
-                "cortex.tools.files.crud_operations.log_client",
-                mock_log,
-            ),
-            patch(
-                "cortex.tools.files.manage_file_helpers.log_client",
-                mock_log,
-            ),
-        ):
-            # Act - Try to read non-existent file
+
+        with _manage_file_patches(temp_project_root, mock_log):
             result_str = await manage_file(
-                file_name="nonexistent.md",
-                operation="read",
-                ctx=mock_ctx,
+                file_name="nonexistent.md", operation="read", ctx=mock_ctx
             )
             result = json.loads(result_str)
 
-            # Assert
-            assert result["status"] == "error"
-            # Verify error logging occurred
-            call_args_list = [c[0] for c in mock_log.call_args_list]
-            error_logs = [
-                args for args in call_args_list if len(args) >= 2 and args[1] == "error"
-            ]
-            assert len(error_logs) > 0
+        assert result["status"] == "error"
+        call_args = _extract_log_args(mock_log)
+        error_logs = [
+            args for args in call_args if len(args) >= 2 and args[1] == "error"
+        ]
+        assert len(error_logs) > 0
 
     async def test_progress_reporting_in_long_operations(
         self, mock_ctx: AsyncMock

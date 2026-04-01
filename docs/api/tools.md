@@ -29,9 +29,9 @@ Contributor and agent workflows should use these **zero-argument** Cortex MCP to
 | Use case | Tool |
 |----------|------|
 | Phase A (format, lint, types, tests, coverage) | `run_quality_gate()` |
-| Step 12 final gate after Phase B/C edits | `run_quality_gate_fresh()` |
+| Step 12 final gate after Phase B/C edits | `pipeline_handoff(write, checks, {"force_fresh": true, "test_timeout": 600})` then `run_quality_gate()` |
 | Phase B docs / memory-bank / timestamps / roadmap sync | `run_docs_gate()` |
-| Auto-fix formatting, lint, types, markdown | `fix_quality_issues()` |
+| Auto-fix formatting, lint, types, markdown | `autofix()` |
 
 Source of truth for behavior and timeouts: `src/cortex/tools/execution/pre_commit_zero_arg_tools.py`.
 
@@ -100,8 +100,7 @@ The long-term consolidation goal is **`TARGET_REGISTERED_TOOLS = 10`** in `src/c
 | `update_memory_bank` | always_loaded |
 | `session` | always_loaded |
 | `run_quality_gate` | always_loaded |
-| `run_quality_gate_fresh` | always_loaded |
-| `fix_quality_issues` | always_loaded |
+| `autofix` | always_loaded |
 | `think` | always_loaded |
 | `run_docs_gate` | deferred_medium |
 | `pipeline_handoff` | deferred_medium |

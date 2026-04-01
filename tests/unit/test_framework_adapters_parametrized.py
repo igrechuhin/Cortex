@@ -6,6 +6,7 @@ from pathlib import Path
 import pytest
 
 from cortex.services.framework_adapters.base import FrameworkAdapter
+from cortex.services.framework_adapters.csharp_adapter import CSharpAdapter
 from cortex.services.framework_adapters.go_adapter import GoAdapter
 from cortex.services.framework_adapters.java_adapter import JavaAdapter
 from cortex.services.framework_adapters.javascript_adapter import JavaScriptAdapter
@@ -25,6 +26,7 @@ _ADAPTERS: list[tuple[str, type[FrameworkAdapter]]] = [
     ("rust", RustAdapter),
     ("swift", SwiftAdapter),
     ("javascript", JavaScriptAdapter),
+    ("csharp", CSharpAdapter),
 ]
 
 

@@ -18,6 +18,7 @@ _DETECTION_MARKERS: list[tuple[str, str, str]] = [
     ("go", "go.mod", "module example.com/foo\n"),
     ("swift", "Package.swift", "// swift-tools-version:5.0\n"),
     ("kotlin", "build.gradle.kts", ""),
+    ("csharp", "Example.csproj", '<Project Sdk="Microsoft.NET.Sdk"></Project>\n'),
 ]
 
 

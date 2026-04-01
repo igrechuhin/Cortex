@@ -86,12 +86,12 @@ class TestConnectionStateLockProtection:
 
 
 class TestDocsGateBypassesSemaphore:
-    """Fix 2: run_docs_gate calls validate_impl directly, avoiding nested
+    """Fix 2: run_docs_gate calls validate_from_parsed directly, avoiding nested
     tool-semaphore acquisition."""
 
     @pytest.mark.asyncio
     async def test_run_single_validation_calls_validate_impl(self) -> None:
-        """_run_single_validation calls validate_impl (not validate MCP wrapper)."""
+        """_run_single_validation calls validate_from_parsed (not validate_impl MCP wrapper)."""
         from cortex.tools.execution.pre_commit_docs_memory_helpers import (
             run_single_validation,
         )
@@ -99,7 +99,7 @@ class TestDocsGateBypassesSemaphore:
 
         mock_result = '{"valid": true, "message": "ok"}'
         with patch(
-            "cortex.tools.execution.pre_commit_docs_memory_helpers.validate_impl",
+            "cortex.tools.execution.pre_commit_docs_memory_helpers.validate_from_parsed",
             new_callable=AsyncMock,
             return_value=mock_result,
         ) as mock_impl:
@@ -119,7 +119,7 @@ class TestDocsGateBypassesSemaphore:
         mock_result = '{"valid": true}'
         with (
             patch(
-                "cortex.tools.execution.pre_commit_docs_memory_helpers.validate_impl",
+                "cortex.tools.execution.pre_commit_docs_memory_helpers.validate_from_parsed",
                 new_callable=AsyncMock,
                 return_value=mock_result,
             ),

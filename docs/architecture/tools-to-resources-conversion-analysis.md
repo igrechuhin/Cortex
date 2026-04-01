@@ -32,7 +32,7 @@ This document analyzes all 28 Cortex MCP tools (from `TOOL_CATEGORIES`) to deter
 | roadmap | always_loaded | add, remove entries | No | No |
 | append_entry | always_loaded | append to progress/activeContext | No | No |
 | run_quality_gate | always_loaded | runs checks, may fix | No | No |
-| fix_quality_issues | always_loaded | fix format/lint/type | No | No |
+| autofix | always_loaded | fix format/lint/type | No | No |
 | check_mcp_connection_health | always_loaded | None | Yes | cortex://health/connection |
 | get_structure_info | always_loaded | None | Yes | cortex://structure/info |
 | search_tools | always_loaded | None | Yes | No |
@@ -121,7 +121,7 @@ This document analyzes all 28 Cortex MCP tools (from `TOOL_CATEGORIES`) to deter
 | roadmap | No | N/A | No | tool_only | add/remove entries are writes |
 | append_entry | No | N/A | No | tool_only | Appends to memory bank |
 | run_quality_gate | No | N/A | No | tool_only | Runs subprocesses, may fix files |
-| fix_quality_issues | No | N/A | No | tool_only | Fixes format, lint, types |
+| autofix | No | N/A | No | tool_only | Fixes format, lint, types |
 | check_mcp_connection_health | Yes | Yes (no params) | cortex://health/connection | resource_primary_tool_fallback | No params; resource ideal |
 | get_structure_info | Yes | Yes (no params) | cortex://structure/info | resource_primary_tool_fallback | No params; resource ideal |
 | search_tools | Yes | Partial (query in path?) | No | add_resource_partial | Candidate: cortex://tools/search/{query} with defaults |

@@ -33,7 +33,7 @@ logger = logging.getLogger(__name__)
 
 
 class FixQualityResult(BaseModel):
-    """Result of fix_quality_issues operation."""
+    """Result of autofix operation."""
 
     model_config = ConfigDict(extra="forbid", validate_assignment=True)
 
@@ -187,19 +187,10 @@ def build_markdown_fix_output(
     )
 
 
-def _parse_fix_envelope(
-    envelope: ModelDict, files_modified_override: list[str] | None = None
-) -> str:
-    """Parse a completed fix worker envelope into FixQualityResult JSON.
-
-    Extracts ``result`` (checks) and ``markdown_result`` from the envelope
-    written by pre_commit_fix_worker and builds the FixQualityResult response.
-    """
-    status = str(envelope.get("status", ""))
-    if status in ("error", "timeout"):
-        error = str(envelope.get("error", "Fix worker failed"))
-        return create_quality_error_response(error)
-
+def _extract_envelope_results(
+    envelope: ModelDict,
+) -> tuple[ModelDict, list[str], int]:
+    """Extract fix results, files modified, and markdown issues from envelope."""
     inner_raw = envelope.get("result")
     fix_errors_result: ModelDict = (
         cast(ModelDict, inner_raw)
@@ -207,14 +198,26 @@ def _parse_fix_envelope(
         else cast(ModelDict, {})
     )
     (_, _, _, _, files_modified) = extract_fix_statistics(fix_errors_result)
-
     markdown_issues_fixed = 0
     md_raw = envelope.get("markdown_result")
     if isinstance(md_raw, dict):
         markdown_issues_fixed = process_markdown_results(
             cast(ModelDict, md_raw), files_modified
         )
+    return fix_errors_result, files_modified, markdown_issues_fixed
 
+
+def _parse_fix_envelope(
+    envelope: ModelDict, files_modified_override: list[str] | None = None
+) -> str:
+    """Parse a completed fix worker envelope into FixQualityResult JSON."""
+    status = str(envelope.get("status", ""))
+    if status in ("error", "timeout"):
+        error = str(envelope.get("error", "Fix worker failed"))
+        return create_quality_error_response(error)
+    fix_errors_result, files_modified, markdown_issues_fixed = (
+        _extract_envelope_results(envelope)
+    )
     return build_markdown_fix_output(
         fix_errors_result,
         markdown_issues_fixed,
@@ -260,7 +263,7 @@ def _get_tracked_git_changes(root: Path) -> set[str] | None:
     return changed_files
 
 
-async def fix_quality_issues_impl(
+async def autofix_impl(
     root: Path,
     include_untracked_markdown: bool,
     ctx: MCPContext | None,
@@ -284,5 +287,5 @@ async def fix_quality_issues_impl(
     out = _parse_fix_envelope(
         cast(ModelDict, envelope), files_modified_override=files_modified_override
     )
-    await log_client(ctx, "info", "fix_quality_issues: completed", logger_name=__name__)
+    await log_client(ctx, "info", "autofix: completed", logger_name=__name__)
     return out

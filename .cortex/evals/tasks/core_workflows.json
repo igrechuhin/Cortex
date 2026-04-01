@@ -60,14 +60,14 @@
     "name": "Run quality fixes after modifying multiple files",
     "description": "Agent applies automatic quality fixes across several modules, then verifies with the quality gate.",
     "category": "pre_commit",
-    "expected_tools": ["fix_quality_issues", "execute_pre_commit_checks"],
+    "expected_tools": ["autofix", "execute_pre_commit_checks"],
     "expected_outcome": "All lint/format/type issues are fixed and the quality gate passes.",
     "token_budget_baseline": 0,
     "common_failure_modes": [
-      "fix_quality_issues fails due to connection issues and is not retried",
+      "autofix fails due to connection issues and is not retried",
       "execute_pre_commit_checks reports persistent type errors"
     ],
-    "usage_query": "fix_quality_issues"
+    "usage_query": "autofix"
   },
   {
     "id": "precommit-full-commit-pipeline-feature",

@@ -34,7 +34,7 @@ from cortex.tools.synapse.rules_operation_helpers import (
     parse_rules_operation,
     resolve_config_defaults,
 )
-from cortex.tools.synapse.rules_operations import rules, rules_get_relevant_resource
+from cortex.tools.synapse.rules_operations import get_relevant_rules, rules
 from cortex.tools.synapse.rules_operations_handlers import (
     check_rules_enabled,
     dispatch_operation,
@@ -1059,10 +1059,10 @@ async def test_rules_get_relevant_defaults(
 
 
 @pytest.mark.asyncio
-async def test_rules_get_relevant_resource_returns_json(
+async def test_get_relevant_rules_returns_json(
     mock_managers_enabled: dict[str, Any], mock_project_root: Path
 ) -> None:
-    """rules_get_relevant_resource returns JSON (zero-arg, session config)."""
+    """get_relevant_rules returns JSON (zero-arg, session config)."""
     # Arrange: Create rules folder
     rules_folder = mock_project_root / ".cortex" / "rules"
     rules_folder.mkdir(parents=True, exist_ok=True)
@@ -1081,7 +1081,7 @@ async def test_rules_get_relevant_resource_returns_json(
             AsyncMock(return_value=mock_managers_enabled),
         ),
     ):
-        result_str = await rules_get_relevant_resource()
+        result_str = await get_relevant_rules()
     result_dict = json.loads(result_str)
     assert result_dict["status"] == "success"
     assert result_dict["operation"] == "get_relevant"

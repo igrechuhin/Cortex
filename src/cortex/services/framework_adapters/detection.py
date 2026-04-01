@@ -9,6 +9,7 @@ from pathlib import Path
 from cortex.services.language_detector import LanguageInfo
 
 from .base import FrameworkAdapter
+from .csharp_adapter import CSharpAdapter
 from .go_adapter import GoAdapter
 from .java_adapter import JavaAdapter
 from .javascript_adapter import JavaScriptAdapter
@@ -28,6 +29,7 @@ _DETECTOR_ADAPTERS: tuple[type[FrameworkAdapter], ...] = (
     JavaAdapter,
     SwiftAdapter,
     KotlinAdapter,
+    CSharpAdapter,
 )
 
 

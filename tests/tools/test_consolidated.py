@@ -12,10 +12,10 @@ from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.managers.lazy_manager import LazyManager
 from cortex.structure.models import HealthGrade
 from cortex.tools.config import configure
-from cortex.tools.context.analysis_operations import analyze
+from cortex.tools.context.analysis_operations import analyze_impl as analyze
 from cortex.tools.files.operations import manage_file
 from cortex.tools.refactoring import suggest_refactoring
-from cortex.tools.validation.operations import validate
+from cortex.tools.validation.operations import validate_impl as validate
 from cortex.tools.validation.result_models import SchemaValidationResult
 from cortex.validation.models import (
     CategoryBreakdown,

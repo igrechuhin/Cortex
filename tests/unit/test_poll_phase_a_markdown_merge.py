@@ -233,6 +233,7 @@ class TestRunQualityGateMarkdownMerge:
                 return_value={
                     "coverage_threshold": 0.90,
                     "test_timeout": 300,
+                    "force_fresh": False,
                 },
             ),
             patch(

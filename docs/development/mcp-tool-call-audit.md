@@ -5,7 +5,7 @@ This document is the **Step 1 audit** for the plan [Fix MCP Plan Tool Argument W
 ## Scope
 
 - **Orchestration layers**: Cursor agents and Synapse prompts that instruct agents to call Cortex MCP tools.
-- **Tools in scope**: `plan`, `manage_file`, `rules`, `run_quality_gate`, `run_quality_gate_fresh`, `run_docs_gate`, `pipeline_handoff`, `update_memory_bank`, `load_context`, `fix_quality_issues`, `get_structure_info`, `validate`.
+- **Tools in scope**: `plan`, `manage_file`, `rules`, `run_quality_gate`, `run_docs_gate`, `pipeline_handoff`, `update_memory_bank`, `load_context`, `autofix`, `get_structure_info`, `validate`.
 
 ## Classification
 
@@ -22,7 +22,7 @@ This document is the **Step 1 audit** for the plan [Fix MCP Plan Tool Argument W
 | `.claude/agents/implement-select.md` | `rules(operation="get_relevant", task_description="...")` | Full payload | **Safe** |
 | `.claude/agents/implement-code.md` | `pipeline_handoff(operation="read_task", pipeline="implement", phase="code")` | Full payload | **Safe** |
 | `.claude/agents/implement-code.md` | `run_quality_gate()` | Zero-arg; config from pipeline task file when present | **Safe** |
-| `.claude/agents/implement-code.md` | `fix_quality_issues()` | No params required for this tool | **Safe** |
+| `.claude/agents/implement-code.md` | `autofix()` | No params required for this tool | **Safe** |
 | `.claude/agents/implement-finalize.md` | `pipeline_handoff(operation="read_task", pipeline="implement", phase="finalize")` | Full payload | **Safe** |
 | `.claude/agents/implement-finalize.md` | `plan(operation="complete", plan_title="...", summary="...", plan_file_name="...", progress_entry="...", completion_date="...")` | Full payload | **Safe** |
 | `.claude/agents/implement-finalize.md` | `update_memory_bank(operation="progress_append", ...)` / `active_context_append` | Full payload | **Safe** |
@@ -38,7 +38,7 @@ Synapse cursor-agents (`.cortex/synapse/cursor-agents/`) mirror the same pattern
 | `.claude/agents/commit-checks.md` | `pipeline_handoff(operation="read_task", pipeline="commit", phase="checks")` | Full payload | **Safe** |
 | `.claude/agents/commit-checks.md` | `run_quality_gate()` | Zero-arg; config from pipeline task file when present | **Safe** |
 | `.claude/agents/commit-checks.md` | `load_context(task_description="...", token_budget=15000)` | Full payload | **Safe** |
-| `.claude/agents/commit-checks.md` | `fix_quality_issues()` | No params required | **Safe** |
+| `.claude/agents/commit-checks.md` | `autofix()` | No params required | **Safe** |
 | `.claude/agents/commit-docs.md` | `manage_file(file_name="activeContext.md", operation="read")`, etc. | Full payload | **Safe** |
 | `.claude/agents/commit-docs.md` | `manage_file(file_name="...", operation="write", content="...", change_description="...")` | Full payload | **Safe** |
 | `.claude/agents/commit-docs.md` | `run_docs_gate()` | Zero-arg Phase B validation | **Safe** |
@@ -50,7 +50,7 @@ Synapse cursor-agents (`.cortex/synapse/cursor-agents/`) mirror the same pattern
 |-----------|---------|-----------------|----------------|
 | `.cortex/synapse/agents/quality-checker.md` | `run_quality_gate()` | Zero-arg Phase A | **Safe** |
 | `.cortex/synapse/agents/error-fixer.md` | `rules(operation="get_relevant", task_description="...")` | Full payload | **Safe** |
-| `.cortex/synapse/agents/error-fixer.md` | `fix_quality_issues()` then `run_quality_gate()` | Zero-arg tools | **Safe** |
+| `.cortex/synapse/agents/error-fixer.md` | `autofix()` then `run_quality_gate()` | Zero-arg tools | **Safe** |
 | `.cortex/synapse/agents/error-fixer.md` | Documents anti-pattern: missing `file_name`/`operation` for `manage_file`, missing `operation` for `rules` | N/A (guardrails) | **Safe** |
 
 ## Plan / docs flows

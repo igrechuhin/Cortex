@@ -52,7 +52,7 @@ The external project lives at `/Users/i.grechukhin/Repo/TradeWing/`.
 GitHub: `https://github.com/igrechuhin/TradeWing`
 
 **Tech stack**: Swift 6.1, SwiftPM, macOS 15.5+, MLX, GRDB/SQLite, gRPC Swift 2.
-**Language**: NOT Python. Cortex quality gate tools (`run_quality_gate`, `fix_quality_issues`) target Python — they do not apply to TradeWing source code.
+**Language**: NOT Python. Cortex quality gate tools (`run_quality_gate`, `autofix`) target Python — they do not apply to TradeWing source code.
 
 Read the following to understand current TradeWing state:
 

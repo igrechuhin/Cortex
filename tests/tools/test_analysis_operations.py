@@ -29,7 +29,9 @@ from cortex.refactoring.models import (
 from cortex.refactoring.split_recommender import SplitRecommendation
 from cortex.tools.context.analysis_operations import (
     analyze,
-    analyze_resource,
+)
+from cortex.tools.context.analysis_operations import (
+    analyze_impl as _analyze_impl,
 )
 from cortex.tools.context.analysis_run_helpers import (
     analyze_insights,
@@ -282,7 +284,7 @@ class TestAnalyzeHandler:
             )
 
             # Act
-            result = await analyze(
+            result = await _analyze_impl(
                 target="usage_patterns",
                 time_window_days=60,
             )
@@ -316,7 +318,7 @@ class TestAnalyzeHandler:
             )
 
             # Act
-            result = await analyze(target="usage-pattern")
+            result = await _analyze_impl(target="usage-pattern")
 
             # Assert
             result_data = json.loads(result)
@@ -350,7 +352,7 @@ class TestAnalyzeHandler:
             )
 
             # Act
-            result = await analyze(target="structure")
+            result = await _analyze_impl(target="structure")
 
             # Assert
             result_data = json.loads(result)
@@ -385,7 +387,7 @@ class TestAnalyzeHandler:
             )
 
             # Act
-            result = await analyze(
+            result = await _analyze_impl(
                 target="insights",
                 export_format="json",
                 categories=["duplication"],
@@ -407,7 +409,7 @@ class TestAnalyzeHandler:
             mock_get_managers.side_effect = RuntimeError("Test error")
 
             # Act
-            result = await analyze(target="structure")
+            result = await _analyze_impl(target="structure")
 
             # Assert
             result_data = json.loads(result)
@@ -427,7 +429,7 @@ class TestAnalyzeHandler:
             return_value=json.dumps({"status": "success", "analysis_type": "tools"}),
         ) as mock_health:
             # Act
-            result = await analyze(target="tools")
+            result = await _analyze_impl(target="tools")
 
             # Assert
             result_data = json.loads(result)
@@ -476,7 +478,7 @@ class TestAnalyzeContextLogging:
             )
 
             # Act
-            result = await analyze(
+            result = await _analyze_impl(
                 target="structure",
                 ctx=mock_ctx,
             )
@@ -500,7 +502,7 @@ class TestAnalyzeContextLogging:
             new_callable=AsyncMock,
         ) as mock_log:
             # Act
-            result = await analyze(
+            result = await _analyze_impl(
                 target="invalid",  # type: ignore[arg-type]
                 ctx=mock_ctx,
             )
@@ -533,7 +535,7 @@ class TestAnalyzeContextLogging:
             ),
         ):
             # Act
-            result = await analyze(
+            result = await _analyze_impl(
                 target="structure",
                 ctx=mock_ctx,
             )
@@ -1447,20 +1449,18 @@ class TestRefactoringOperationsContextLogging:
 
 @pytest.mark.timeout(20)
 class TestAnalyzeResource:
-    """Test analyze_resource (Phase 43 Phase 5 Analysis resource)."""
+    """Test analyze resource (Phase 43 Phase 5 Analysis resource)."""
 
     @pytest.mark.asyncio
-    async def test_analyze_resource_returns_json_for_valid_target(
-        self, tmp_path: Path
-    ) -> None:
-        """analyze_resource returns valid JSON (zero-arg, reads session config)."""
+    async def test_analyze_returns_json_for_valid_target(self, tmp_path: Path) -> None:
+        """analyze returns valid JSON (zero-arg, reads session config)."""
         with (
             patch(
                 "cortex.core.session_config.read_session_config",
                 return_value={"analysis_target": "structure"},
             ),
             patch(
-                "cortex.tools.context.analysis_operations.analyze",
+                "cortex.tools.context.analysis_operations.analyze_impl",
                 new_callable=AsyncMock,
                 return_value=json.dumps(
                     {"status": "success", "target": "structure", "analysis": {}},
@@ -1468,26 +1468,26 @@ class TestAnalyzeResource:
                 ),
             ),
         ):
-            result = await analyze_resource()
+            result = await analyze()
         result_data = json.loads(result)
         assert result_data["status"] == "success"
         assert result_data["target"] == "structure"
 
     @pytest.mark.asyncio
-    async def test_analyze_resource_default_target_is_context(self) -> None:
-        """analyze_resource defaults to 'context' when no session config."""
+    async def test_analyze_default_target_is_context(self) -> None:
+        """analyze defaults to 'context' when no session config."""
         with (
             patch(
                 "cortex.core.session_config.read_session_config",
                 return_value={},
             ),
             patch(
-                "cortex.tools.context.analysis_operations.analyze",
+                "cortex.tools.context.analysis_operations.analyze_impl",
                 new_callable=AsyncMock,
                 return_value=json.dumps({"status": "success", "target": "context"}),
             ) as mock_analyze,
         ):
-            result = await analyze_resource()
+            result = await analyze()
         mock_analyze.assert_called_once_with(
             target="context",
             time_window_days=None,

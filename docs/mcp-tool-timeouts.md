@@ -83,7 +83,7 @@ MCP_TOOL_TIMEOUT_MEDIUM = 120        # Medium operations (60-120s)
 MCP_TOOL_TIMEOUT_COMPLEX = 300      # Complex operations (120-300s)
 MCP_TOOL_TIMEOUT_VERY_COMPLEX = 960  # Very complex operations (e.g. full test suite)
 MCP_TOOL_TIMEOUT_EXTERNAL = 120     # External operations (30-120s)
-MCP_TOOL_TIMEOUT_QUALITY_FIXES = 60  # Quality auto-fix tools (e.g. fix_quality_issues)
+MCP_TOOL_TIMEOUT_QUALITY_FIXES = 60  # Quality auto-fix tools (e.g. autofix)
 ```
 
 ## Timeout Categories
@@ -186,8 +186,8 @@ MCP_TOOL_TIMEOUT_QUALITY_FIXES = 60  # Quality auto-fix tools (e.g. fix_quality_
 - `synapse` (sync, update_rule, update_prompt)
 - `get_synapse_rules`
 - `get_synapse_prompts`
-- `run_quality_gate` / `run_quality_gate_fresh`
-- `fix_quality_issues`
+- `run_quality_gate`
+- `autofix`
 
 ## How to Add Timeout to a New Tool
 
@@ -274,9 +274,9 @@ The commit pipeline (e.g. `/cortex/commit`) uses these MCP tools that can run fo
 
 | Tool | Typical duration | Server behavior | Client timeout recommendation |
 |------|------------------|-----------------|-------------------------------|
-| `run_quality_gate` / `run_quality_gate_fresh` (Step 12.7: tests inside Phase A) | 300–600 s (driven by `test_timeout` from the pipeline task file, often 300–600) | Very-complex timeout (960 s); frequent progress reports to reduce idle timeout | If the client exposes a tool-call timeout, set it to **≥ test_timeout + buffer** (e.g. 600 + 60 s). Otherwise rely on retry and runbook. |
+| `run_quality_gate` (Step 12.7: tests inside Phase A) | 300–600 s (driven by `test_timeout` from the pipeline task file, often 300–600) | Very-complex timeout (960 s); frequent progress reports to reduce idle timeout | If the client exposes a tool-call timeout, set it to **≥ test_timeout + buffer** (e.g. 600 + 60 s). Otherwise rely on retry and runbook. |
 | `fix_markdown_lint` (Step 12.5) | 30–120 s (depends on repo size; scoped to git-modified when possible) | Batched runs, 5 s heartbeat, progress after each file | Same as above; use local markdownlint for faster runs (see [troubleshooting](guides/troubleshooting.md#issue-mcp-error-32000-connection-closed)). |
-| `fix_quality_issues` (pre-flight / Step 12.1) | 30–120 s | Progress and timeout; serialized with other long tools | Retry once; then use fallback scripts per commit prompt. |
+| `autofix` (pre-flight / Step 12.1) | 30–120 s | Progress and timeout; serialized with other long tools | Retry once; then use fallback scripts per commit prompt. |
 
 - **Keepalive / progress**: The server sends progress or heartbeat for all of these (see "Tools that need more frequent progress" in `mcp_stability_config` and "Client connection closed during long tools" below). This reduces the chance of client idle timeout (-32000).
 - **If Cursor or the MCP client exposes a configurable tool-call timeout**: Set it to at least the longest expected run (e.g. `test_timeout` + 60 s for Step 12.7). For Cursor IDE, community-documented settings (`mcp.server.timeout`, `mcp.elicitation.timeout` in milliseconds) and recommended values are in [Cursor IDE: MCP tool timeout configuration](guides/troubleshooting.md#cursor-ide-mcp-tool-timeout-configuration). If the client does not expose a configurable timeout, the only mitigations are server-side progress and the pipeline retry/fallback behavior; see [MCP disconnect runbook (commit pipeline)](guides/troubleshooting.md#mcp-disconnect-runbook-commit).
@@ -298,7 +298,7 @@ When the client (e.g. Cursor) fetches many MCP **resources** in parallel (e.g. w
 - **`Request X cancelled - duplicate response suppressed`** in server logs
 - **`Received a response for an unknown message ID: Request cancelled`** on the client
 
-**Cause**: The MCP server handles one request at a time over stdio. If a long-running **tool** is executing (e.g. `rules`, `manage_file`, `fix_quality_issues`), all **ReadResource** requests are queued. The client applies its own timeout (often ~5–10 seconds) per request. Queued resource reads exceed that timeout, so the client cancels them. When the server later sends the response, the client has already discarded that request ID → "unknown message ID" and "duplicate response suppressed".
+**Cause**: The MCP server handles one request at a time over stdio. If a long-running **tool** is executing (e.g. `rules`, `manage_file`, `autofix`), all **ReadResource** requests are queued. The client applies its own timeout (often ~5–10 seconds) per request. Queued resource reads exceed that timeout, so the client cancels them. When the server later sends the response, the client has already discarded that request ID → "unknown message ID" and "duplicate response suppressed".
 
 **Recommendations**:
 

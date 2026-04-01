@@ -148,7 +148,7 @@
       "append_progress_entry",
       "check_mcp_connection_health",
       "execute_pre_commit_checks",
-      "fix_quality_issues",
+      "autofix",
       "get_structure_info",
       "load_context",
       "manage_file",

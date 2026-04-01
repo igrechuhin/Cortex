@@ -3,7 +3,9 @@ from __future__ import annotations
 from collections.abc import Callable
 from dataclasses import dataclass
 
+from cortex.core.constants import LANGUAGE_POST_EDIT_HOOK_COMMANDS
 from cortex.services.framework_adapters.base import FrameworkAdapter
+from cortex.services.framework_adapters.csharp_adapter import CSharpAdapter
 from cortex.services.framework_adapters.go_adapter import GoAdapter
 from cortex.services.framework_adapters.java_adapter import JavaAdapter
 from cortex.services.framework_adapters.javascript_adapter import JavaScriptAdapter
@@ -32,35 +34,39 @@ class LanguageQualityRouter:
     _ROUTES: dict[str, LanguageQualityRoute] = {
         "python": LanguageQualityRoute(
             adapter_factory=lambda root: PythonAdapter(root),
-            post_edit_hook_command="python3 -m pytest tests/ --timeout=30 -x -q 2>&1 | tail -20",
+            post_edit_hook_command=LANGUAGE_POST_EDIT_HOOK_COMMANDS.get("python"),
         ),
         "typescript": LanguageQualityRoute(
             adapter_factory=lambda root: TypeScriptAdapter(root),
-            post_edit_hook_command="npm test --if-present 2>&1 | tail -20",
+            post_edit_hook_command=LANGUAGE_POST_EDIT_HOOK_COMMANDS.get("typescript"),
         ),
         "javascript": LanguageQualityRoute(
             adapter_factory=lambda root: JavaScriptAdapter(root),
-            post_edit_hook_command="npm test --if-present 2>&1 | tail -20",
+            post_edit_hook_command=LANGUAGE_POST_EDIT_HOOK_COMMANDS.get("javascript"),
         ),
         "rust": LanguageQualityRoute(
             adapter_factory=lambda root: RustAdapter(root),
-            post_edit_hook_command="cargo test 2>&1 | tail -20",
+            post_edit_hook_command=LANGUAGE_POST_EDIT_HOOK_COMMANDS.get("rust"),
         ),
         "go": LanguageQualityRoute(
             adapter_factory=lambda root: GoAdapter(root),
-            post_edit_hook_command="go test ./... 2>&1 | tail -20",
+            post_edit_hook_command=LANGUAGE_POST_EDIT_HOOK_COMMANDS.get("go"),
         ),
         "java": LanguageQualityRoute(
             adapter_factory=lambda root: JavaAdapter(root),
-            post_edit_hook_command="./mvnw test -q 2>&1 | tail -20",
+            post_edit_hook_command=LANGUAGE_POST_EDIT_HOOK_COMMANDS.get("java"),
         ),
         "swift": LanguageQualityRoute(
             adapter_factory=lambda root: SwiftAdapter(root),
-            post_edit_hook_command="swift build 2>&1 | tail -20",
+            post_edit_hook_command=LANGUAGE_POST_EDIT_HOOK_COMMANDS.get("swift"),
         ),
         "kotlin": LanguageQualityRoute(
             adapter_factory=lambda root: KotlinAdapter(root),
-            post_edit_hook_command=None,
+            post_edit_hook_command=LANGUAGE_POST_EDIT_HOOK_COMMANDS.get("kotlin"),
+        ),
+        "csharp": LanguageQualityRoute(
+            adapter_factory=lambda root: CSharpAdapter(root),
+            post_edit_hook_command=LANGUAGE_POST_EDIT_HOOK_COMMANDS.get("csharp"),
         ),
     }
 

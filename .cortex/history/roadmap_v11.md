@@ -6,13 +6,15 @@
 
 ## Blockers (ASAP Priority)
 
-### No active blockers (all resolved as of 2026-03-14)
+- [Phase: Investigate validate_impl MCP Tool Failure](../plans/phase-investigate-validate_impl-failure-20260331-195026.md) - ASAP (PLANNING) - Investigate and fix MCP tool failure that occurred during commit procedure - Tool: `validate_impl`, Error: TypeError - Impact: Commit procedure blocked - Target completion: 2026-03-31
 
 ## Active Work (in progress)
 
 ## Future Enhancements
 
 ## Pending plans (from .cortex/plans)
+
+- **Migration: Language-Agnostic Rules and Scripts Scaffolding (follow-up)** - PENDING - Optional TradeWing template reconciliation and further language packs; tracks remaining work reflected in progress PARTIAL entries.
 
 ### Fixes
 
@@ -32,11 +34,6 @@ Completed investigations are recorded in [activeContext.md](activeContext.md). P
 
 ### Improvements
 
-- **Per-Project Post-Edit Quality Hook — Language-Agnostic Pattern** - PENDING (`.cortex/plans/post-edit-test-hook.md`) — Emit language-appropriate PostToolUse hooks into each project's `.claude/` settings during migrate/initialize (pytest for Python, swift build for Swift, cargo test for Rust, etc.). Depends on language detection from migrate-language-rules-scripts-scaffolding. Component: ci. Priority: high.
-- **Pipeline Code Integrity Guard — Prevent Fix-Loop Corruption** - PENDING (`.cortex/plans/pipeline-code-integrity-guard.md`) — Add NO-GO list and post-fix import validation to the fix prompt to prevent duplicate definitions, TYPE_CHECKING violations, and circular imports. Component: pipelines. Priority: high.
-- **Session Scope Lock — Single-Goal Session Pattern** - PENDING (`.cortex/plans/session-scope-lock-pattern.md`) — Surface single-goal session discipline at session start to reduce budget exhaustion and partial completions. Component: prompts. Priority: medium.
-- **MCP Server Regression Test Suite — Concurrent Subagent and Serialization Tests** - PENDING (`.cortex/plans/mcp-regression-test-suite.md`) — Create regression tests covering concurrent saturation, serialization roundtrip, CWD resolution, graceful degradation, and sequential execution. Component: mcp-server. Priority: high.
-
 ### Features & Enhancements
 
-- **Migration: Language-Agnostic Rules and Scripts Scaffolding** - PENDING (`.cortex/plans/migrate-language-rules-scripts-scaffolding.md`) — Extend the migrate prompt to auto-detect project language and scaffold Synapse rules + scripts stubs for Swift, TypeScript, Java, Rust, Go etc. Wire `run_quality_gate` to route by language via `LanguageQualityRouter`. Eliminates manual post-migration setup (8 rule files for TradeWing Swift required manual creation). Component: migration. Priority: high.
+- **Analyze Feedback Loop: Post-Prompt Self-Improvement** - PENDING - Auto-invoke analyze after every prompt; route findings to Skills, Plans, or Rules. Plan: `.cortex/plans/analyze-feedback-loop.md`

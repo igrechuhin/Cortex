@@ -5,7 +5,7 @@ This module contains the MCP tool decorators and handlers for context loading,
 content summarization, and relevance scoring.
 
 Total: 3 tools, 3 resources
-- load_context / load_context_resource (cortex://optimization/load-context/{task_description})
+- load_context (resource: cortex://context)
 - summarize_content / summarize_content_resource (cortex://optimization/summarize/{file_name})
 - get_relevance_scores / get_relevance_scores_resource (cortex://optimization/relevance-scores/{task_description})
 
@@ -94,7 +94,7 @@ async def _execute_load_context(
 # MCP tool removed — exposed as resource cortex://context/{task_description}
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_COMPLEX)
-async def load_context(
+async def load_context_impl(
     task_description: str | None = None,
     token_budget: int | None = None,
     strategy: str = "dependency_aware",
@@ -121,16 +121,39 @@ async def load_context(
     Returns:
         JSON with selected files, their content, and relevance scores
     """
+    return await _load_context_body(
+        task_description,
+        token_budget,
+        strategy,
+        loading_strategy,
+        depth,
+        response_format,
+        role,
+        ctx,
+    )
+
+
+async def _load_context_body(
+    task_description: str | None,
+    token_budget: int | None,
+    strategy: str,
+    loading_strategy: str | None,
+    depth: ContextDepth | None,
+    response_format: ResponseFormat,
+    role: str | None,
+    ctx: MCPContext | None,
+) -> str:
+    """Resolve inputs, validate, and execute load_context."""
     await log_client(ctx, "info", "load_context: starting", logger_name=__name__)
-    resolved = _resolve_load_context_inputs(task_description, token_budget)
-    resolved_task, resolved_budget = resolved
-    length_error = validate_task_description_length(resolved_task)
-    if length_error:
+    resolved_task, resolved_budget = _resolve_load_context_inputs(
+        task_description, token_budget
+    )
+    if (length_error := validate_task_description_length(resolved_task)) is not None:
         return length_error
     effective_budget, budget_error = resolve_load_context_budget(
         resolved_task, resolved_budget
     )
-    if budget_error:
+    if budget_error is not None:
         return budget_error
     return await _execute_load_context(
         resolved_task,
@@ -194,15 +217,23 @@ async def summarize_content(
         }
         ```
     """
+    return await _summarize_content_body(file_name, target_reduction, strategy, ctx)
+
+
+async def _summarize_content_body(
+    file_name: str | None,
+    target_reduction: float | None,
+    strategy: str | None,
+    ctx: MCPContext | None,
+) -> str:
+    """Execute summarize_content with error handling."""
     await log_client(ctx, "info", "summarize_content: starting", logger_name=__name__)
     try:
         root = await resolve_project_root_async(None, ctx)
         mgrs = await opt.get_managers(root)
-
         enabled_error = await check_optimization_enabled(mgrs)
         if enabled_error:
             return enabled_error
-
         out = await summarize_content_impl(mgrs, file_name, target_reduction, strategy)
         await log_client(
             ctx, "info", "summarize_content: completed", logger_name=__name__
@@ -267,24 +298,36 @@ async def get_relevance_scores(
         }
         ```
     """
+    return await _get_relevance_scores_body(task_description, include_sections, ctx)
+
+
+def _resolve_relevance_task(task_description: str | None) -> str:
+    """Resolve task_description with zero-arg fallback from session config."""
+    if task_description:
+        return task_description
+    from cortex.core.session_config import read_session_config
+
+    cfg = read_session_config()
+    return str(cfg.get("task_description", "session context"))
+
+
+async def _get_relevance_scores_body(
+    task_description: str | None,
+    include_sections: bool,
+    ctx: MCPContext | None,
+) -> str:
+    """Execute get_relevance_scores with error handling."""
     await log_client(
         ctx, "info", "get_relevance_scores: starting", logger_name=__name__
     )
-    # Zero-arg fallback
-    if not task_description:
-        from cortex.core.session_config import read_session_config
-
-        cfg = read_session_config()
-        task_description = str(cfg.get("task_description", "session context"))
+    resolved_task = _resolve_relevance_task(task_description)
     try:
         root = await resolve_project_root_async(None, ctx)
         mgrs = await opt.get_managers(root)
-
         enabled_error = await check_optimization_enabled(mgrs)
         if enabled_error:
             return enabled_error
-
-        out = await get_relevance_scores_impl(mgrs, task_description, include_sections)
+        out = await get_relevance_scores_impl(mgrs, resolved_task, include_sections)
         await log_client(
             ctx, "info", "get_relevance_scores: completed", logger_name=__name__
         )
@@ -301,7 +344,7 @@ async def get_relevance_scores(
 
 # Phase 43: Optimization resources (read-only, default params)
 
-_LOAD_CONTEXT_RESOURCE_DEFAULT_BUDGET = 10000
+_LOAD_CONTEXT_DEFAULT_BUDGET = 10000
 
 
 def _append_session_scope_to_context_payload(payload: str) -> str:
@@ -324,7 +367,7 @@ def _append_session_scope_to_context_payload(payload: str) -> str:
 @mcp.resource(uri="cortex://context")
 @ensure_usage_context
 @mcp_resource_wrapper(timeout=MCP_TOOL_TIMEOUT_COMPLEX)
-async def load_context_resource() -> str:
+async def load_context() -> str:
     """Resource: Load context for current task. Zero-arg — reads task from session config.
 
     Falls back to "general session context" if no session config exists.
@@ -333,13 +376,9 @@ async def load_context_resource() -> str:
 
     cfg = read_session_config()
     task = str(cfg.get("task_description", "general session context"))
-    raw_budget = cfg.get("token_budget", _LOAD_CONTEXT_RESOURCE_DEFAULT_BUDGET)
-    budget = (
-        raw_budget
-        if isinstance(raw_budget, int)
-        else _LOAD_CONTEXT_RESOURCE_DEFAULT_BUDGET
-    )
-    result = await load_context(
+    raw_budget = cfg.get("token_budget", _LOAD_CONTEXT_DEFAULT_BUDGET)
+    budget = raw_budget if isinstance(raw_budget, int) else _LOAD_CONTEXT_DEFAULT_BUDGET
+    result = await load_context_impl(
         task_description=task,
         token_budget=budget,
         strategy="dependency_aware",

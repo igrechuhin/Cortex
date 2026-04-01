@@ -213,7 +213,7 @@ If the **client** shows `MCP error -32000: Connection closed` during a tool call
 **Symptoms**:
 
 - Tool call returns: `{"error":"MCP error -32000: Connection closed"}`
-- Occurs during long-running tools (e.g. `fix_markdown_lint`, `run_quality_gate`, `fix_quality_issues`)
+- Occurs during long-running tools (e.g. `fix_markdown_lint`, `run_quality_gate`, `autofix`)
 - Occurs when **multiple subagents call MCP tools concurrently** (e.g. parallel fix quality + fix tests + fix docs)
 
 **Cause**:
@@ -302,7 +302,7 @@ Use this runbook when the Cortex MCP connection is lost **during** `/cortex/comm
 | During Step 12.1 (format) | Format fix or check | Client timeout during formatting tool | Retry once; if retry fails, use fallback scripts (`fix_formatting.py` then `check_formatting.py`) per commit prompt; record "MCP connection closed; fallback used". Do not skip Step 12.1. |
 | During Step 12.5 (markdown lint) | `fix_markdown_lint` or check | Client timeout (markdown lint can be slow) | Retry once; if retry fails, run markdown lint via shell (see commit prompt) and record "MCP connection closed; fallback used". |
 | During Step 12.6 (file size / function length) | Quality checks | Client timeout | Retry once; if retry fails, use shell script fallbacks for file size and function length checks; record "MCP connection closed; fallback used". Do not skip Step 12.6. |
-| During Step 12.7 (tests with coverage) | `run_quality_gate_fresh()` (Step 12 final Phase A pass, includes tests) | Client timeout (tests can run 5–10+ minutes) | Retry once. **There is no fallback for Step 12.7.** If retry fails, **block commit** and tell the user: "Reconnect Cortex MCP and re-run the commit command." Do not proceed with Phase A results. |
+| During Step 12.7 (tests with coverage) | `run_quality_gate()` (Step 12 final Phase A pass, includes tests) | Client timeout (tests can run 5–10+ minutes) | Retry once. **There is no fallback for Step 12.7.** If retry fails, **block commit** and tell the user: "Reconnect Cortex MCP and re-run the commit command." Do not proceed with Phase A results. |
 
 **Likely cause**: In most cases the **client** (e.g. Cursor) closed the connection—due to client-side tool-call timeout or IDE lifecycle—not a server crash. The tool may have completed on the server; the connection was already closed when the response was sent. To increase Cursor’s timeout, see [Cursor IDE: MCP tool timeout configuration](#cursor-ide-mcp-tool-timeout-configuration). See also [MCP error -32000: Connection closed](#issue-mcp-error-32000-connection-closed).
 
@@ -434,7 +434,7 @@ Sandboxed environments may block or limit subprocess execution, network, or long
 
 **Enhanced retry logic with exponential backoff**:
 
-- **First retry**: If `run_quality_gate()` / `run_quality_gate_fresh()` fails with connection error during the test step (e.g., "Connection closed", MCP error -32000), wait 2 seconds and retry
+- **First retry**: If `run_quality_gate()` fails with connection error during the test step (e.g., "Connection closed", MCP error -32000), wait 2 seconds and retry
 - **Second retry**: If first retry fails, wait 5 seconds and retry again
 - **If both retries fail**: Block commit immediately. Do not proceed to Step 13. Report error and instruct user to reconnect Cortex MCP and re-run the commit command
 - **No fallback**: Unlike Step 12.6, there is no shell script fallback for tests. Step 12.7 must execute successfully via MCP
@@ -1168,7 +1168,7 @@ When the GitHub Actions "Code Quality" workflow fails on push (e.g. [run #244](h
    uv run black --check src/ tests/
    ```
 
-   Fix any reformatting, then commit and push again. Prefer re-running the commit pipeline with Cortex MCP connected so Step 12 runs via `run_quality_gate_fresh()` (which drives the same Black-backed checks as CI). See [commit-pipeline-phases.md](../design/commit-pipeline-phases.md) and the commit prompt Step 12.1 fallback rules.
+   Fix any reformatting, then commit and push again. Prefer re-running the commit pipeline with Cortex MCP connected so Step 12 runs via `run_quality_gate()` with `force_fresh` config (which drives the same Black-backed checks as CI). See [commit-pipeline-phases.md](../design/commit-pipeline-phases.md) and the commit prompt Step 12.1 fallback rules.
 
 2. **Run the exact CI test command locally** (from repo root, with same Python/uv as CI):
 

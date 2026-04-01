@@ -50,12 +50,11 @@ _logger = logging.getLogger(__name__)
 # (run_checks_detached returns immediately; no in-process progress needed).
 tools_with_own_progress: frozenset[str] = frozenset(
     {
-        # run_quality_gate / run_quality_gate_fresh call poll_for_result which sends tick/500
-        # heartbeats. The stability background loop sends pct/100 on the same ctx,
+        # run_quality_gate calls poll_for_result which sends tick/500 heartbeats.
+        # The stability background loop sends pct/100 on the same ctx,
         # causing the client progress bar to jump between incompatible scales.
         # Registering here suppresses the stability loop so only one stream runs.
         "run_quality_gate",
-        "run_quality_gate_fresh",
     }
 )
 # Tools that need more frequent progress to prevent client idle timeout (-32000).

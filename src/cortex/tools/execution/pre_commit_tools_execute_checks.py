@@ -18,8 +18,8 @@ from cortex.core.usage_context import (
     get_or_resolve_project_root,
 )
 from cortex.tools.execution.pre_commit_fix_quality import (
+    autofix_impl,
     create_quality_error_response,
-    fix_quality_issues_impl,
 )
 from cortex.tools.execution.pre_commit_helpers import (
     create_error_result_dict,
@@ -120,11 +120,9 @@ async def _dispatch_phase(
 async def _run_fix_quality_and_return_dict(
     include_untracked_markdown: bool, ctx: MCPContext | None
 ) -> ModelDict:
-    """Run fix_quality_issues_impl and return result as dict."""
+    """Run autofix_impl and return result as dict."""
     root = await get_or_resolve_project_root(ctx)
-    json_str = await fix_quality_issues_impl(
-        Path(root), include_untracked_markdown, ctx
-    )
+    json_str = await autofix_impl(Path(root), include_untracked_markdown, ctx)
     result = json.loads(json_str)
     return cast(ModelDict, result)
 

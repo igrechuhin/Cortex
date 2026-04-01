@@ -4,7 +4,7 @@
 
 ## Completed Work (2026-03-31)
 
-- ✅ **Language scaffolding follow-up (C# pack)** - COMPLETE (2026-03-31) - Implemented one incremental subtask: promoted `csharp` from generic fallback to explicit scaffolding hints and script commands, plus dedicated tests. Kept roadmap item PARTIAL for remaining language-pack/template reconciliation work.
+- **Summary (2026-03-31)** - 1 entries archived.
 
 ## Completed Work (2026-03-30)
 

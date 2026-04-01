@@ -63,7 +63,7 @@ Capabilities below follow the same historical phase labels used in the codebase 
 ### Phase 5: Workflows, quality, and discovery
 
 - Consolidated published MCP tools for session, Memory Bank, plans, pipeline handoff, quality gates, and reasoning (`think`)
-- Zero-arg quality pipeline tools (`run_quality_gate`, `run_quality_gate_fresh`, `run_docs_gate`, `fix_quality_issues`) aligned with CI
+- Zero-arg quality pipeline tools (`run_quality_gate`, `run_docs_gate`, `autofix`) aligned with CI
 - Plan and roadmap lifecycle via `plan()`; compound-engineering handoff via `pipeline_handoff`
 - Usage and discovery helpers (`query_usage`, resource URIs such as `cortex://context`) for telemetry and orientation
 - Deeper analysis and refactoring capabilities remain in the codebase; phase-grouped sections in [api/tools.md](./api/tools.md) are a historical catalog, not the current `tools/list` surface

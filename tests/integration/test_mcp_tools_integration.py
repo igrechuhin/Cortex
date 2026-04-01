@@ -11,6 +11,7 @@ are skipped.
 
 import json
 from pathlib import Path
+from typing import cast
 from unittest.mock import patch
 
 import pytest
@@ -19,47 +20,41 @@ from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.tools.files.operations import manage_file
 from cortex.tools.linking.linking_operations import parse_file_links, validate_links
 from cortex.tools.memory.query_memory_bank_operations import query_memory_bank
-from cortex.tools.optimization import load_context
-from cortex.tools.validation.operations import validate
+from cortex.tools.optimization.handlers import load_context_impl as load_context
+from cortex.tools.validation.operations import validate_impl as validate
 from tests.helpers.schema_fixtures import MINIMAL_VALID_PROJECT_BRIEF_CONTENT
 
+_BASIC_FILES = [
+    "projectBrief.md",
+    "activeContext.md",
+    "systemPatterns.md",
+    "techContext.md",
+    "productContext.md",
+    "progress.md",
+    "roadmap.md",
+]
 
-# Helper function to replace initialize_memory_bank
-async def _initialize_memory_bank_helper(project_root: str) -> str:
-    """
-    Helper to initialize memory bank structure for tests.
 
-    Note: The actual initialize_memory_bank function has been replaced by
-    prompt templates. This helper creates the basic structure for testing.
-    """
-    import json
-    from pathlib import Path
-
-    from tests.helpers.path_helpers import ensure_test_cortex_structure
-
-    root = Path(project_root)
-    memory_bank_dir = ensure_test_cortex_structure(root)
-
-    # Create basic files if they don't exist
-    basic_files = [
-        "projectBrief.md",
-        "activeContext.md",
-        "systemPatterns.md",
-        "techContext.md",
-        "productContext.md",
-        "progress.md",
-        "roadmap.md",
-    ]
-
+def _create_basic_files(memory_bank_dir: Path) -> int:
+    """Create basic memory bank placeholder files. Returns count created."""
     created = 0
-    for filename in basic_files:
+    for filename in _BASIC_FILES:
         file_path = memory_bank_dir / filename
         if not file_path.exists():
             _ = file_path.write_text(
                 f"# {filename.replace('.md', '')}\n\nPlaceholder content.\n"
             )
             created += 1
+    return created
 
+
+async def _initialize_memory_bank_helper(project_root: str) -> str:
+    """Initialize memory bank structure for tests."""
+    from tests.helpers.path_helpers import ensure_test_cortex_structure
+
+    root = Path(project_root)
+    memory_bank_dir = ensure_test_cortex_structure(root)
+    created = _create_basic_files(memory_bank_dir)
     return json.dumps(
         {
             "status": "success",
@@ -70,126 +65,113 @@ async def _initialize_memory_bank_helper(project_root: str) -> str:
     )
 
 
+async def _init_and_patch(project_root: Path):
+    """Initialize memory bank and return a patch context manager."""
+    _ = await _initialize_memory_bank_helper(str(project_root))
+    return patch(
+        "cortex.core.project_root_resolver.get_project_root",
+        return_value=project_root,
+    )
+
+
+async def _manage_file_op(
+    operation: str, file_name: str, **kwargs: object
+) -> dict[str, object]:
+    """Run manage_file and return parsed JSON data."""
+    result = await manage_file(operation=operation, file_name=file_name, **kwargs)
+    return json.loads(result)
+
+
+async def _write_and_read_back(project_root: Path) -> dict[str, object]:
+    """Write updated projectBrief then read it back."""
+    new_content = (
+        "# Updated Project Brief\n\nUpdated content.\n\n"
+        + MINIMAL_VALID_PROJECT_BRIEF_CONTENT
+    )
+    data = await _manage_file_op(
+        "write",
+        "projectBrief.md",
+        content=new_content,
+        change_description="Test update",
+    )
+    assert data["status"] == "success"
+    return await _manage_file_op("read", "projectBrief.md")
+
+
+def _create_mb_file(project_root: Path, name: str, content: str) -> Path:
+    """Create a file in memory bank directory."""
+    mb_dir = get_cortex_path(project_root, CortexResourceType.MEMORY_BANK)
+    mb_dir.mkdir(exist_ok=True, parents=True)
+    f = mb_dir / name
+    _ = f.write_text(content)
+    return f
+
+
+def _obj_to_str(value: object) -> str:
+    """Return a string view for object-typed JSON values in tests."""
+    return str(value)
+
+
 @pytest.mark.integration
 class TestMCPToolWorkflows:
     """Test MCP tool integration workflows."""
 
     async def test_initialize_read_write_workflow(self, temp_project_root: Path):
         """Test complete workflow: initialize -> read -> write."""
-        # Arrange
-        project_root_str = str(temp_project_root)
+        p = await _init_and_patch(temp_project_root)
 
-        # Act 1: Initialize
-        result = await _initialize_memory_bank_helper(project_root_str)
-        data = json.loads(result)
-        assert data["status"] == "success"
-
-        with patch(
-            "cortex.core.project_root_resolver.get_project_root",
-            return_value=temp_project_root,
-        ):
-            # Act 2: Read file
-            result = await manage_file(operation="read", file_name="projectBrief.md")
-            data = json.loads(result)
+        with p:
+            data = await _manage_file_op("read", "projectBrief.md")
             assert data["status"] == "success"
             assert "content" in data
 
-            # Act 3: Write file (schema-aligned content from shared fixture)
-            new_content = (
-                "# Updated Project Brief\n\nUpdated content.\n\n"
-                + MINIMAL_VALID_PROJECT_BRIEF_CONTENT
-            )
-            result = await manage_file(
-                operation="write",
-                file_name="projectBrief.md",
-                content=new_content,
-                change_description="Test update",
-            )
-            data = json.loads(result)
-            assert data["status"] == "success"
-
-            # Act 4: Read updated file
-            result = await manage_file(operation="read", file_name="projectBrief.md")
-            data = json.loads(result)
-            assert data["status"] == "success"
-            assert "Updated Project Brief" in data["content"]
+            read_back = await _write_and_read_back(temp_project_root)
+            assert read_back["status"] == "success"
+            assert "Updated Project Brief" in _obj_to_str(read_back["content"])
 
     async def test_link_parsing_and_validation_workflow(
         self, temp_project_root: Path, sample_memory_bank_files: dict[str, Path]
     ):
         """Test workflow: create file -> parse links -> validate links."""
-        # Arrange
-        project_root_str = str(temp_project_root)
-
-        # Initialize
-        _ = await _initialize_memory_bank_helper(project_root_str)
-
-        # Create file with links
-        file_system = (
-            get_cortex_path(temp_project_root, CortexResourceType.MEMORY_BANK)
-            / "test.md"
-        )
-        file_system.parent.mkdir(exist_ok=True, parents=True)
-        _ = file_system.write_text(
-            "[Project Brief](projectBrief.md)\n[Active Context](activeContext.md)"
+        p = await _init_and_patch(temp_project_root)
+        _ = _create_mb_file(
+            temp_project_root,
+            "test.md",
+            "[Project Brief](projectBrief.md)\n[Active Context](activeContext.md)",
         )
 
-        with patch(
-            "cortex.core.project_root_resolver.get_project_root",
-            return_value=temp_project_root,
-        ):
-            # Act 1: Parse links
+        with p:
             result = await parse_file_links("test.md")
             data = json.loads(result)
             assert data["status"] == "success"
-            # Check markdown_links instead of links
             assert len(data["markdown_links"]) >= 2
 
-            # Act 2: Validate links
             result = await validate_links()
             data = json.loads(result)
-            # Validation should succeed (may return success or error status)
             assert data["status"] in ["success", "error"]
-            # Check if validation was performed
             if data["status"] == "success":
-                # Should have mode and validation results
                 assert "mode" in data
 
     async def test_validation_workflow(
         self, temp_project_root: Path, sample_memory_bank_files: dict[str, Path]
     ):
         """Test validation workflow: validate -> check quality -> check duplications."""
-        # Arrange
-        project_root_str = str(temp_project_root)
+        p = await _init_and_patch(temp_project_root)
 
-        # Initialize
-        _ = await _initialize_memory_bank_helper(project_root_str)
-
-        with patch(
-            "cortex.core.project_root_resolver.get_project_root",
-            return_value=temp_project_root,
-        ):
-            # Act 1: Validate memory bank
-            result = await validate(check_type="schema")
-            data = json.loads(result)
-            # Validation may return success, validation_failed, or error
+        with p:
+            data = json.loads(await validate(check_type="schema"))
             assert data["status"] in ["success", "validation_failed", "error"]
 
-            # Act 2: Get quality score
-            result = await validate(check_type="quality", response_format="detailed")
-            data = json.loads(result)
+            data = json.loads(
+                await validate(check_type="quality", response_format="detailed")
+            )
             assert data["status"] == "success"
-            assert "overall_score" in data
             assert 0 <= data["overall_score"] <= 100
 
-            # Act 3: Check duplications
-            result = await validate(
-                check_type="duplications",
-                response_format="detailed",
+            data = json.loads(
+                await validate(check_type="duplications", response_format="detailed")
             )
-            data = json.loads(result)
             assert data["status"] == "success"
-            # Can be duplications, exact_duplicates, or similar_content
             assert (
                 "duplications" in data
                 or "exact_duplicates" in data
@@ -220,85 +202,59 @@ class TestMCPToolWorkflows:
             assert data["status"] == "success"
             assert "selected_files" in data or "files" in data
 
+    async def _write_two_versions(self) -> None:
+        """Write two versions of test.md to create version history."""
+        await manage_file(
+            operation="write",
+            file_name="test.md",
+            content="# Version 1\n\nInitial content.",
+            change_description="Initial version",
+        )
+        await manage_file(
+            operation="write",
+            file_name="test.md",
+            content="# Version 2\n\nUpdated content.",
+            change_description="Updated version",
+        )
+
+    async def _assert_version_history(self) -> None:
+        """Assert version history has at least 2 versions and metadata matches."""
+        data = json.loads(
+            await query_memory_bank(query_type="version_history", file_name="test.md")
+        )
+        assert data["status"] == "success"
+        assert data["total_versions"] >= 2
+
+        meta = await _manage_file_op("metadata", "test.md")
+        assert meta["status"] == "success"
+        metadata = cast(dict[str, object], meta["metadata"])
+        assert int(cast(int, metadata["current_version"])) >= 2
+
     async def test_version_history_workflow(
         self, temp_project_root: Path, sample_memory_bank_files: dict[str, Path]
     ):
         """Test version history workflow: write -> get history -> get metadata."""
-        # Arrange
-        project_root_str = str(temp_project_root)
+        p = await _init_and_patch(temp_project_root)
+        _ = _create_mb_file(
+            temp_project_root, "test.md", "# Test\n\nInitial content.\n"
+        )
 
-        # Initialize
-        _ = await _initialize_memory_bank_helper(project_root_str)
-
-        # Create test.md file first (manage_file only allows modifying existing files)
-        from tests.helpers.path_helpers import ensure_test_cortex_structure
-
-        memory_bank_dir = ensure_test_cortex_structure(temp_project_root)
-        test_file = memory_bank_dir / "test.md"
-        _ = test_file.write_text("# Test\n\nInitial content.\n")
-
-        with patch(
-            "cortex.core.project_root_resolver.get_project_root",
-            return_value=temp_project_root,
-        ):
-            # Act 1: Write file (creates version 1)
-            content1 = "# Version 1\n\nInitial content."
-            await manage_file(
-                operation="write",
-                file_name="test.md",
-                content=content1,
-                change_description="Initial version",
-            )
-
-            # Act 2: Write again (creates version 2)
-            content2 = "# Version 2\n\nUpdated content."
-            await manage_file(
-                operation="write",
-                file_name="test.md",
-                content=content2,
-                change_description="Updated version",
-            )
-
-            # Act 3: Get version history (via query_memory_bank)
-            result = await query_memory_bank(
-                query_type="version_history", file_name="test.md"
-            )
-            data = json.loads(result)
-            assert data["status"] == "success"
-            assert data["total_versions"] >= 2
-
-            # Act 4: Get file metadata
-            result = await manage_file(operation="metadata", file_name="test.md")
-            data = json.loads(result)
-            assert data["status"] == "success"
-            assert "metadata" in data
-            assert data["metadata"]["current_version"] >= 2
+        with p:
+            await self._write_two_versions()
+            await self._assert_version_history()
 
     async def test_dependency_graph_workflow(
         self, temp_project_root: Path, sample_memory_bank_files: dict[str, Path]
     ):
         """Test dependency graph workflow."""
-        # Arrange
-        project_root_str = str(temp_project_root)
+        p = await _init_and_patch(temp_project_root)
+        _ = _create_mb_file(temp_project_root, "parent.md", "[Child](child.md)")
+        _ = _create_mb_file(temp_project_root, "child.md", "# Child\nContent.")
 
-        # Initialize
-        _ = await _initialize_memory_bank_helper(project_root_str)
-
-        # Create linked files
-        file_system = get_cortex_path(temp_project_root, CortexResourceType.MEMORY_BANK)
-        file_system.mkdir(exist_ok=True, parents=True)
-        _ = (file_system / "parent.md").write_text("[Child](child.md)")
-        _ = (file_system / "child.md").write_text("# Child\nContent.")
-
-        with patch(
-            "cortex.core.project_root_resolver.get_project_root",
-            return_value=temp_project_root,
-        ):
-            # Act: Get dependency graph (via query_memory_bank)
-            result = await query_memory_bank(
-                query_type="dependency_graph", format="json"
+        with p:
+            data = json.loads(
+                await query_memory_bank(query_type="dependency_graph", format="json")
             )
-            data = json.loads(result)
             assert data["status"] == "success"
             assert "graph" in data
             assert "loading_order" in data
@@ -307,21 +263,12 @@ class TestMCPToolWorkflows:
         self, temp_project_root: Path, sample_memory_bank_files: dict[str, Path]
     ):
         """Test memory bank statistics workflow."""
-        # Arrange
-        project_root_str = str(temp_project_root)
+        p = await _init_and_patch(temp_project_root)
 
-        # Initialize
-        _ = await _initialize_memory_bank_helper(project_root_str)
-
-        with patch(
-            "cortex.core.project_root_resolver.get_project_root",
-            return_value=temp_project_root,
-        ):
-            # Act: Get stats (via query_memory_bank)
-            result = await query_memory_bank(
-                query_type="stats", response_format="detailed"
+        with p:
+            data = json.loads(
+                await query_memory_bank(query_type="stats", response_format="detailed")
             )
-            data = json.loads(result)
             assert data["status"] == "success"
             assert "summary" in data
             assert "total_files" in data["summary"]
@@ -334,21 +281,10 @@ class TestMCPToolErrorHandling:
 
     async def test_error_handling_for_missing_file(self, temp_project_root: Path):
         """Test error handling when file doesn't exist."""
-        # Arrange
-        project_root_str = str(temp_project_root)
+        p = await _init_and_patch(temp_project_root)
 
-        # Initialize
-        _ = await _initialize_memory_bank_helper(project_root_str)
-
-        with patch(
-            "cortex.core.project_root_resolver.get_project_root",
-            return_value=temp_project_root,
-        ):
-            # Act: Try to read non-existent file
-            result = await manage_file(operation="read", file_name="nonexistent.md")
-            data = json.loads(result)
-
-            # Assert: Should return error status
+        with p:
+            data = await _manage_file_op("read", "nonexistent.md")
             assert data["status"] == "error"
             assert "error" in data
 

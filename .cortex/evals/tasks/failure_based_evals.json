@@ -101,13 +101,13 @@
   },
   {
     "id": "failure-fix-quality-issues-not-retried",
-    "name": "fix_quality_issues not retried on connection failure",
-    "description": "Real failure: fix_quality_issues fails due to connection issues; agent does not retry. Task validates retry once on connection closed, then proceed with execute_pre_commit_checks for gates.",
+    "name": "autofix not retried on connection failure",
+    "description": "Real failure: autofix fails due to connection issues; agent does not retry. Task validates retry once on connection closed, then proceed with execute_pre_commit_checks for gates.",
     "category": "pre_commit",
-    "expected_tools": ["fix_quality_issues", "execute_pre_commit_checks"],
-    "expected_outcome": "On connection closed for fix_quality_issues: retry once; then rely on execute_pre_commit_checks for quality gate.",
-    "common_failure_modes": ["Failure type: tool_errors", "fix_quality_issues connection closed", "Not retrying"],
-    "usage_query": "fix_quality_issues"
+    "expected_tools": ["autofix", "execute_pre_commit_checks"],
+    "expected_outcome": "On connection closed for autofix: retry once; then rely on execute_pre_commit_checks for quality gate.",
+    "common_failure_modes": ["Failure type: tool_errors", "autofix connection closed", "Not retrying"],
+    "usage_query": "autofix"
   },
   {
     "id": "failure-rules-not-loaded-before-fix",

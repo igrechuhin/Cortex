@@ -13,6 +13,7 @@ from cortex.setup.hook_templates import HookTemplates
         ("rust", "cargo test 2>&1 | tail -20"),
         ("go", "go test ./... 2>&1 | tail -20"),
         ("java", "./mvnw test -q 2>&1 | tail -20"),
+        ("csharp", "dotnet test 2>&1 | tail -20"),
         ("  PYTHON  ", "python3 -m pytest tests/ --timeout=30 -x -q 2>&1 | tail -20"),
     ],
 )

@@ -692,7 +692,7 @@ class TestValidateProgressEntryTextParentheses:
             validate_progress_entry_text,
         )
 
-        entry = "**Fix quality gate** - COMPLETE. Resolved using fix_quality_issues() helper."
+        entry = "**Fix quality gate** - COMPLETE. Resolved using autofix() helper."
         assert validate_progress_entry_text(entry) is None
 
     def test_properly_closed_parens_in_title_are_valid(self) -> None:

@@ -24,7 +24,6 @@ from cortex.tools.structure import (
     find_stale_plans,
     get_project_root_resource,
     get_structure_info,
-    get_structure_info_resource,
     move_stale_plans,
     perform_archive_stale,
     perform_cleanup_actions,
@@ -33,6 +32,7 @@ from cortex.tools.structure import (
     perform_update_index,
     record_archive_action,
 )
+from cortex.tools.structure.main import get_structure_info_impl
 
 # ============================================================================
 # Fixtures
@@ -364,7 +364,7 @@ class TestGetStructureInfo:
             ),
         ):
             # Act
-            result_str = await get_structure_info()
+            result_str = await get_structure_info_impl()
             result = json.loads(result_str)
 
             # Assert
@@ -390,7 +390,7 @@ class TestGetStructureInfo:
             ),
         ):
             # Act
-            result_str = await get_structure_info()
+            result_str = await get_structure_info_impl()
             result = json.loads(result_str)
 
             # Assert
@@ -407,7 +407,7 @@ class TestGetStructureInfo:
             side_effect=ValueError("Invalid project root"),
         ):
             # Act
-            result_str = await get_structure_info()
+            result_str = await get_structure_info_impl()
             result = json.loads(result_str)
 
             # Assert
@@ -424,12 +424,12 @@ class TestGetStructureInfo:
 class TestPhase8StructureResources:
     """Tests for Phase 8 structure resources (cortex://structure/*)."""
 
-    async def test_get_structure_info_resource_returns_success(
+    async def test_get_structure_info_returns_success(
         self,
         mock_project_root: Path,
         mock_structure_manager: MagicMock,
     ) -> None:
-        """get_structure_info_resource returns JSON success (Phase 43)."""
+        """get_structure_info returns JSON success (Phase 43)."""
         with (
             patch(
                 "cortex.tools.structure.main.resolve_project_root_async",
@@ -441,17 +441,17 @@ class TestPhase8StructureResources:
                 return_value=mock_structure_manager,
             ),
         ):
-            result_str = await get_structure_info_resource()
+            result_str = await get_structure_info()
             result = json.loads(result_str)
         assert result["success"] is True
         assert "structure_info" in result
 
-    async def test_get_structure_info_resource_uses_cache_on_second_call(
+    async def test_get_structure_info_uses_cache_on_second_call(
         self,
         mock_project_root: Path,
         mock_structure_manager: MagicMock,
     ) -> None:
-        """Second call to get_structure_info_resource returns cached result."""
+        """Second call to get_structure_info returns cached result."""
         from cortex.tools import structure
 
         structure.invalidate_structure_resource_cache()
@@ -466,13 +466,13 @@ class TestPhase8StructureResources:
                 return_value=mock_structure_manager,
             ),
             patch(
-                "cortex.tools.structure.main.get_structure_info",
+                "cortex.tools.structure.main.get_structure_info_impl",
                 new_callable=AsyncMock,
                 return_value='{"success": true, "structure_info": {"paths": {}}}',
             ) as mock_get_info,
         ):
-            first = await get_structure_info_resource()
-            second = await get_structure_info_resource()
+            first = await get_structure_info()
+            second = await get_structure_info()
         assert first == second
         mock_get_info.assert_called_once()
 
@@ -874,7 +874,7 @@ class TestIntegration:
             assert "cleanup" in result2
 
             # Act 3: Get structure info
-            info_str = await get_structure_info()
+            info_str = await get_structure_info_impl()
             info = json.loads(info_str)
 
             # Assert 3
@@ -1087,7 +1087,7 @@ class TestPhase8StructureContextLogging:
                 return_value=mock_structure_manager,
             ),
         ):
-            result_str = await get_structure_info(ctx=mock_ctx)
+            result_str = await get_structure_info_impl(ctx=mock_ctx)
             result = json.loads(result_str)
         assert result["success"] is True
         args_list = [c[0] for c in mock_log.call_args_list]

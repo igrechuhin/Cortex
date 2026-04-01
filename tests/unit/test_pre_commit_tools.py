@@ -3,6 +3,7 @@
 # pyright: reportUnusedFunction=false
 import ast
 import json
+import subprocess
 import tempfile
 from collections.abc import Callable, Generator
 from pathlib import Path
@@ -33,6 +34,8 @@ from cortex.tools.execution.pre_commit_helpers import ensure_json_serializable_f
 from cortex.tools.execution.pre_commit_helpers_language import detect_or_use_language
 from cortex.tools.execution.pre_commit_helpers_models import (
     DEFAULT_CHECKS,
+    FileSizeViolation,
+    FunctionLengthViolation,
     PreCommitCheck,
 )
 from cortex.tools.execution.pre_commit_helpers_quality import (
@@ -49,6 +52,7 @@ from cortex.tools.execution.pre_commit_helpers_remaining import (
 )
 from cortex.tools.execution.pre_commit_pipeline_quality import (
     check_function_lengths,
+    filter_preexisting_structural_violations,
 )
 from cortex.tools.execution.pre_commit_synapse import run_synapse_script
 from cortex.tools.execution.pre_commit_tools import (
@@ -908,7 +912,7 @@ class TestAdapterRegistry:
         assert adapter is None
 
     def test_supported_languages_includes_stub_languages(self) -> None:
-        """SUPPORTED_LANGUAGES includes TypeScript, JavaScript, Rust, Go, Java, Swift, Kotlin."""
+        """SUPPORTED_LANGUAGES includes non-Python routed languages."""
         for lang in (
             "typescript",
             "javascript",
@@ -917,9 +921,10 @@ class TestAdapterRegistry:
             "java",
             "swift",
             "kotlin",
+            "csharp",
         ):
             assert lang in SUPPORTED_LANGUAGES
-        assert len(SUPPORTED_LANGUAGES) == 8
+        assert len(SUPPORTED_LANGUAGES) == 9
 
     def test_get_adapter_returns_typescript_adapter_for_typescript(self) -> None:
         """_get_adapter returns TypeScriptAdapter for typescript."""
@@ -1044,11 +1049,28 @@ class TestAdapterRegistry:
         assert adapter is not None
         assert isinstance(adapter, KotlinAdapter)
 
+    def test_get_adapter_returns_csharp_adapter_for_csharp(self) -> None:
+        """_get_adapter returns CSharpAdapter for csharp."""
+        from cortex.services.framework_adapters.csharp_adapter import CSharpAdapter
+
+        info = LanguageInfo(
+            language="csharp",
+            test_framework=None,
+            formatter=None,
+            linter=None,
+            type_checker=None,
+            build_tool=None,
+            confidence=0.8,
+        )
+        adapter = LanguageQualityRouter.get_adapter(info.language, "/some/root")
+        assert adapter is not None
+        assert isinstance(adapter, CSharpAdapter)
+
 
 class TestFixQualityCheck:
     """Test execute_pre_commit_checks(checks=['fix_quality']).
 
-    All tests patch fix_quality_issues_impl — the boundary between the
+    All tests patch autofix_impl — the boundary between the
     execute_pre_commit_checks dispatch layer and the detached fix pipeline.
     """
 
@@ -1086,7 +1108,7 @@ class TestFixQualityCheck:
 
         error_json = create_quality_error_response("Test error")
         with patch(
-            "cortex.tools.execution.pre_commit_tools_execute_checks.fix_quality_issues_impl",
+            "cortex.tools.execution.pre_commit_tools_execute_checks.autofix_impl",
             new_callable=AsyncMock,
             return_value=error_json,
         ):
@@ -1117,7 +1139,7 @@ class TestFixQualityCheck:
                 remaining_issues=["1 linting/formatting errors remain"],
             )
             with patch(
-                "cortex.tools.execution.pre_commit_tools_execute_checks.fix_quality_issues_impl",
+                "cortex.tools.execution.pre_commit_tools_execute_checks.autofix_impl",
                 new_callable=AsyncMock,
                 return_value=fix_json,
             ):
@@ -1172,7 +1194,7 @@ class TestFixQualityCheck:
                 files_modified=["file1.py"],
             )
             with patch(
-                "cortex.tools.execution.pre_commit_tools_execute_checks.fix_quality_issues_impl",
+                "cortex.tools.execution.pre_commit_tools_execute_checks.autofix_impl",
                 new_callable=AsyncMock,
                 return_value=fix_json,
             ):
@@ -1201,7 +1223,7 @@ class TestFixQualityCheck:
 
             fix_json = self._make_success_json(remaining_issues=[])
             with patch(
-                "cortex.tools.execution.pre_commit_tools_execute_checks.fix_quality_issues_impl",
+                "cortex.tools.execution.pre_commit_tools_execute_checks.autofix_impl",
                 new_callable=AsyncMock,
                 return_value=fix_json,
             ):
@@ -1682,6 +1704,74 @@ class TestLogTruncationBehavior:
                 assert isinstance(truncated_output, str)
                 assert len(truncated_output) <= MAX_LOG_OUTPUT_LENGTH + 200
                 assert "truncated" in truncated_output
+
+
+class TestStructuralViolationFiltering:
+    """Tests for filtering pre-existing structural violations from changed files."""
+
+    def _init_git_repo(self, root: Path) -> None:
+        _ = subprocess.run(["git", "init"], cwd=root, check=True, capture_output=True)
+        _ = subprocess.run(
+            ["git", "config", "user.email", "test@example.com"],
+            cwd=root,
+            check=True,
+            capture_output=True,
+        )
+        _ = subprocess.run(
+            ["git", "config", "user.name", "Test User"],
+            cwd=root,
+            check=True,
+            capture_output=True,
+        )
+
+    def _prepare_renamed_file(self, root: Path, line_count: int) -> Path:
+        src = root / "src"
+        src.mkdir()
+        lines = "\n".join(f"    x{i} = {i}" for i in range(line_count))
+        _ = (src / "legacy.py").write_text(f"def too_long():\n{lines}\n    return x0\n")
+        _ = subprocess.run(
+            ["git", "add", "."], cwd=root, check=True, capture_output=True
+        )
+        _ = subprocess.run(
+            ["git", "commit", "-m", "init"], cwd=root, check=True, capture_output=True
+        )
+        _ = subprocess.run(
+            ["git", "mv", "src/legacy.py", "src/renamed.py"],
+            cwd=root,
+            check=True,
+            capture_output=True,
+        )
+        return src / "renamed.py"
+
+    def test_filters_preexisting_file_and_function_violations_for_rename(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            line_count = MAX_FILE_LINES + 20
+            self._init_git_repo(root)
+            new = self._prepare_renamed_file(root, line_count)
+            file_violations = [
+                FileSizeViolation(
+                    file="src/renamed.py",
+                    lines=line_count,
+                    max_lines=MAX_FILE_LINES,
+                    excess=line_count - MAX_FILE_LINES,
+                )
+            ]
+            func_violations = [
+                FunctionLengthViolation(
+                    file="src/renamed.py",
+                    function="too_long",
+                    line=1,
+                    lines=line_count,
+                    max_lines=MAX_FUNCTION_LINES,
+                    excess=line_count - MAX_FUNCTION_LINES,
+                )
+            ]
+            filtered_file, filtered_func = filter_preexisting_structural_violations(
+                root, [new], file_violations, func_violations
+            )
+            assert filtered_file == []
+            assert filtered_func == []
 
 
 @pytest.mark.asyncio

@@ -53,7 +53,7 @@ direct file read) before any code-modifying step runs.
 - **Any check fails**: Stop the pipeline. Do not proceed to Phase B.
 - **Recommended recovery**: Use targeted helper commands such as
   `/cortex/fix_tests`, `/cortex/fix_quality`, or the
-  `fix_quality_issues()` MCP tool to resolve specific failures, then
+  `autofix()` MCP tool to resolve specific failures, then
   re-run `/cortex/commit`.
 - **Zero-errors policy**: Pre-existing errors are not acceptable.
   Every error (new or old) must be fixed before the pipeline can
@@ -163,7 +163,7 @@ during Phase B (documentation updates, new files, code changes):
 | Sub-step | Check | Tool call / orchestration |
 |----------|-------|---------------------------|
 | 12.0 | Markdown re-validation | `fix_markdown_lint(include_untracked_markdown=True)` |
-| 12.1–12.7 | Format through tests with coverage | `run_quality_gate_fresh()` (zero-arg Phase A re-run). Individual checks (format, type, quality, tests, etc.) run inside that gate; when MCP is unavailable, use the commit prompt’s shell/script fallbacks per sub-step (Black for 12.1; no test fallback for 12.7). |
+| 12.1–12.7 | Format through tests with coverage | `pipeline_handoff(write, checks, {"force_fresh": true, "test_timeout": 600})` then `run_quality_gate()` (zero-arg Phase A re-run with cache cleared). Individual checks run inside that gate; when MCP is unavailable, use the commit prompt’s shell/script fallbacks per sub-step (Black for 12.1; no test fallback for 12.7). |
 | 12.5 | Markdown lint (within Step 12) | `fix_markdown_lint(include_untracked_markdown=True)` (may run inside or adjacent to the gate per prompt) |
 
 **Step 12.1 fallback (CI parity)**: If MCP is unavailable, Step 12.1 fallback
@@ -356,7 +356,7 @@ changed between phases.
 This document serves as the foundation for subsequent plan steps:
 
 - **Step 2**: Phase-level MCP tools are available as zero-arg entrypoints
-  (`run_quality_gate`, `run_docs_gate`, `run_quality_gate_fresh`); keep
+  (`run_quality_gate`, `run_docs_gate`); keep
   prompts aligned with those names as the bridge-safe surface.
 - **Step 3**: Refactor `/cortex/commit` prompt to orchestrate phase
   tools instead of micromanaging individual checks.

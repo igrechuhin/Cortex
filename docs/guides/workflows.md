@@ -108,7 +108,7 @@ This guide documents common workflows as sequences of Cortex MCP tool calls, wit
    **Example output:** `preflight_passed`, `checks` with per-check success/failure.
 
 2. If a check fails:
-   - **`fix_quality_issues()`** for the bundled auto-fix pass, then re-run **`run_quality_gate()`**.
+   - **`autofix()`** for the bundled auto-fix pass, then re-run **`run_quality_gate()`**.
    - **fix_markdown_lint**(`include_untracked_markdown`: true) for markdown-only follow-ups.
    - Re-run **`run_quality_gate()`** until all pass.
    - Apply integrity NO-GO safeguards during fix loops:

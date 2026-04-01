@@ -21,16 +21,15 @@
     "cortex://analysis"
   ],
   "tool_names": [
-    "fix_quality_issues",
+    "autofix",
     "manage_file",
     "pipeline_handoff",
     "plan",
     "run_docs_gate",
     "run_quality_gate",
-    "run_quality_gate_fresh",
     "session",
     "think",
     "update_memory_bank"
   ],
-  "tools_count": 10
+  "tools_count": 9
 }

@@ -3,10 +3,9 @@
 Extracted from ``pre_commit_tools.py`` to keep that module under the
 file-length limit while preserving the public MCP surface:
 
-- run_quality_gate: Phase A quality gate (used by commit orchestrator)
-- run_quality_gate_fresh: Phase A final gate (Step 12)
+- run_quality_gate: Phase A quality gate (used by commit orchestrator and Step 12)
 - run_docs_gate: Phase B docs/memory validation
-- fix_quality_issues: Auto-fix format/type/quality/markdown issues
+- autofix: Auto-fix format/type/quality/markdown issues
 """
 
 from __future__ import annotations
@@ -37,14 +36,14 @@ from cortex.tools.execution.pre_commit_detached import clear_all_cached_results
 from cortex.tools.execution.pre_commit_docs_memory_helpers import (
     run_docs_and_memory_bank_sync_impl,
 )
-from cortex.tools.execution.pre_commit_fix_quality import fix_quality_issues_impl
+from cortex.tools.execution.pre_commit_fix_quality import autofix_impl
 from cortex.tools.execution.pre_commit_phase_dispatch import (
     PreCommitPhase,
     phase_to_checks,
 )
 
-# Serializes all Phase-A spawns (run_quality_gate, run_quality_gate_fresh,
-# fix_quality_issues). Concurrent Phase-A subprocess jobs crash the MCP server
+# Serializes all Phase-A spawns (run_quality_gate, autofix).
+# Concurrent Phase-A subprocess jobs crash the MCP server
 # because they race on shared session files and stdout. One job at a time.
 #
 # Lazy per-loop: asyncio.Lock() binds to the running event loop at construction
@@ -75,19 +74,26 @@ def get_phase_a_lock() -> asyncio.Lock:
 phase_a_lock = get_phase_a_lock
 
 
+def _merge_task_data(data: object, defaults: dict[str, object]) -> dict[str, object]:
+    """Merge parsed JSON task data into defaults, keeping only known keys."""
+    if not isinstance(data, dict):
+        return defaults
+    merged = dict(defaults)
+    updates: dict[str, object] = {}
+    for k, v in cast(dict[object, object], data).items():
+        if isinstance(k, str) and k in defaults:
+            updates[k] = v
+    merged.update(updates)
+    return merged
+
+
 def _read_pipeline_phase_config(
     root: Path,
     pipeline: str,
     phase: str,
     defaults: dict[str, object],
 ) -> dict[str, object]:
-    """Read config for a pipeline phase from its task file. Falls back to defaults.
-
-    Reads .cortex/.session/{session_id}/{pipeline}/{phase}-task.json written by
-    pipeline_handoff(operation="write_task"). This lets orchestrators pass params
-    without the MCP bridge needing to forward arguments — the tool reads them from
-    disk instead. Returns defaults for any key not present in the task file.
-    """
+    """Read config for a pipeline phase from its task file. Falls back to defaults."""
     import os
 
     session_id = os.environ.get("CORTEX_SESSION_ID", "")
@@ -101,16 +107,53 @@ def _read_pipeline_phase_config(
         data: object = json.loads(task_path.read_text())
     except (OSError, json.JSONDecodeError):
         return defaults
-    if not isinstance(data, dict):
-        return defaults
-    merged = dict(defaults)
-    # pyright can't infer key/value types from json.loads + dict checks.
-    updates: dict[str, object] = {}
-    for k, v in cast(dict[object, object], data).items():
-        if isinstance(k, str) and k in defaults:
-            updates[k] = v
-    merged.update(updates)
-    return merged
+    return _merge_task_data(data, defaults)
+
+
+def _as_int(value: object, default: int) -> int:
+    """Return int value for config scalar input, or default."""
+    if isinstance(value, bool):
+        return int(value)
+    if isinstance(value, int):
+        return value
+    if isinstance(value, float):
+        return int(value)
+    if isinstance(value, str):
+        try:
+            return int(value.strip())
+        except ValueError:
+            return default
+    return default
+
+
+def _as_float(value: object, default: float) -> float:
+    """Return float value for config scalar input, or default."""
+    if isinstance(value, bool):
+        return float(value)
+    if isinstance(value, (int, float)):
+        return float(value)
+    if isinstance(value, str):
+        try:
+            return float(value.strip())
+        except ValueError:
+            return default
+    return default
+
+
+def _as_bool(value: object, default: bool) -> bool:
+    """Return bool value for common config inputs, or default."""
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, (int, float)):
+        return bool(value)
+    if isinstance(value, str):
+        normalized = value.strip().lower()
+        if normalized in {"1", "true", "yes", "on"}:
+            return True
+        if normalized in {"0", "false", "no", "off"}:
+            return False
+        return default
+    return default
 
 
 def _start_phase_a_job(
@@ -149,6 +192,18 @@ def markdown_result_has_errors(md: dict[str, object]) -> bool:
     return False
 
 
+def _merge_markdown_into_inner(
+    envelope: dict[str, object], inner: dict[str, object]
+) -> None:
+    """Merge markdown_result from envelope into inner, updating preflight_passed."""
+    md_raw = envelope.get("markdown_result")
+    if isinstance(md_raw, dict):
+        md_result = cast(dict[str, object], md_raw)
+        inner["markdown_result"] = md_result
+        if markdown_result_has_errors(md_result):
+            inner["preflight_passed"] = False
+
+
 async def poll_phase_a_result(
     root: Path,
     job_id: str,
@@ -157,11 +212,8 @@ async def poll_phase_a_result(
 ) -> ModelDict:
     """Poll detached Phase A result envelope and return inner dict.
 
-    The detached worker stores two top-level keys in the result envelope:
-    ``result`` (language checks) and ``markdown_result`` (rumdl lint).
-    This function merges them so that ``preflight_passed`` reflects
-    **both** — preventing markdown-lint failures from being silently
-    dropped before the commit orchestrator sees the quality-gate output.
+    Merges ``result`` and ``markdown_result`` so ``preflight_passed``
+    reflects both language checks and markdown lint.
     """
     from cortex.tools.execution.pre_commit_detached import poll_for_result
 
@@ -175,15 +227,8 @@ async def poll_phase_a_result(
     inner = envelope.get("result")
     if not isinstance(inner, dict):
         return cast(ModelDict, {"status": "error", "error": "Missing result key"})
-
-    # Merge markdown lint result so callers see it and preflight_passed is correct.
-    md_raw = envelope.get("markdown_result")
-    if isinstance(md_raw, dict):
-        md_result = cast(dict[str, object], md_raw)
-        inner["markdown_result"] = md_result
-        if markdown_result_has_errors(md_result):
-            inner["preflight_passed"] = False
-
+    inner_dict = cast(dict[str, object], inner)
+    _merge_markdown_into_inner(envelope, inner_dict)
     return cast(ModelDict, inner)
 
 
@@ -218,6 +263,28 @@ async def _spawn_and_poll_phase_a(
         return await poll_phase_a_result(root, job_id, timeout=timeout, ctx=ctx)
 
 
+async def _run_quality_gate_inner(ctx: MCPContext | None) -> ModelDict:
+    """Resolve config and spawn Phase A quality gate."""
+    root = get_current_project_root() or Path(await get_or_resolve_project_root(ctx))
+    _ = clear_all_cached_results(root)
+    cfg = _read_pipeline_phase_config(
+        root,
+        "commit",
+        "checks",
+        {"coverage_threshold": 0.90, "test_timeout": 300, "force_fresh": True},
+    )
+    timeout = _as_int(cfg.get("test_timeout"), 300)
+    coverage_threshold = _as_float(cfg.get("coverage_threshold"), 0.90)
+    force_fresh = _as_bool(cfg.get("force_fresh"), True)
+    return await _spawn_and_poll_phase_a(
+        root,
+        timeout=timeout,
+        coverage_threshold=coverage_threshold,
+        force_fresh=force_fresh,
+        ctx=ctx,
+    )
+
+
 @typed_mcp_tool(
     annotations=external_annotations(
         "Run Quality Gate",
@@ -233,74 +300,20 @@ async def run_quality_gate(
 ) -> ModelDict:
     """Run Phase A quality gate end-to-end and return full result. Zero args required.
 
-    USE WHEN: Running the commit pipeline Phase A quality gate. Spawns checks
-    as a detached subprocess and polls with heartbeat progress notifications,
-    keeping the MCP stdio connection alive during long runs (~90s).
+    USE WHEN: Running the commit pipeline Phase A quality gate or the Step 12
+    final gate. Spawns checks as a detached subprocess and polls with heartbeat
+    progress notifications, keeping the MCP stdio connection alive.
 
-    Language dispatch: the worker resolves the project root via
-    ``detect_or_use_language`` and ``LanguageQualityRouter.get_adapter``, so
-    non-Python projects (Swift, Rust, Go, etc.) run the matching framework
-    adapter instead of Python-only Synapse scripts.
-
-    Config is read automatically from the pipeline session file written by
+    Config is read from the pipeline session file written by
     pipeline_handoff(operation="write", pipeline="commit", phase="checks").
-    Supported keys: coverage_threshold (float), test_timeout (int).
+    Supported keys: coverage_threshold (float), test_timeout (int), force_fresh (bool).
 
     EXAMPLES:
-    - run_quality_gate() to run the full Phase A quality gate before commit.
-    - run_quality_gate() inside the commit orchestrator instead of calling
-      start_quality_job + get_quality_job_status manually when arguments
-      cannot be passed through the MCP bridge.
+    - run_quality_gate() before commit Phase A.
+    - pipeline_handoff(write, checks, {"force_fresh": true, "test_timeout": 600})
+      then run_quality_gate() for Step 12 final gate.
     """
-    root = get_current_project_root() or Path(await get_or_resolve_project_root(ctx))
-    cfg = _read_pipeline_phase_config(
-        root,
-        "commit",
-        "checks",
-        {"coverage_threshold": 0.90, "test_timeout": 300},
-    )
-    return await _spawn_and_poll_phase_a(
-        root,
-        timeout=int(cfg["test_timeout"]),  # type: ignore[arg-type]
-        coverage_threshold=float(cfg["coverage_threshold"]),  # type: ignore[arg-type]
-        force_fresh=False,
-        ctx=ctx,
-    )
-
-
-@typed_mcp_tool(
-    annotations=external_annotations(
-        "Run Quality Gate Fresh",
-        read_only=False,
-        destructive=False,
-        idempotent=False,
-    )
-)
-@ensure_usage_context
-@mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_VERY_COMPLEX)
-async def run_quality_gate_fresh(
-    ctx: MCPContext | None = None,
-) -> ModelDict:
-    """Run Phase A quality gate with cache cleared (force_fresh). Zero args required.
-
-    USE WHEN: Running the Step 12 final gate where a fresh run is mandatory after
-    Phase B/C may have modified files. Clears all cached pre-commit results first,
-    then spawns and polls Phase A with heartbeat progress.
-
-    EXAMPLES:
-    - run_quality_gate_fresh() in Step 12 of the commit pipeline when Phase B/C
-      may have modified files since Phase A.
-    - run_quality_gate_fresh() after manual fixes to ensure a clean, uncached
-      quality gate run.
-    """
-    root = get_current_project_root() or Path(await get_or_resolve_project_root(ctx))
-    return await _spawn_and_poll_phase_a(
-        root,
-        timeout=600,
-        coverage_threshold=0.90,
-        force_fresh=True,
-        ctx=ctx,
-    )
+    return await _run_quality_gate_inner(ctx)
 
 
 @typed_mcp_tool(
@@ -345,7 +358,7 @@ async def run_docs_gate(
 )
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_VERY_COMPLEX)
-async def fix_quality_issues(
+async def autofix(
     ctx: MCPContext | None = None,
 ) -> ModelDict:
     """Auto-fix formatting, linting, type errors, and markdown lint. Zero args required.
@@ -361,15 +374,13 @@ async def fix_quality_issues(
       attempt and retry with a different approach (max 3 attempts).
 
     EXAMPLES:
-    - fix_quality_issues() immediately after a failing run_quality_gate() call
+    - autofix() immediately after a failing run_quality_gate() call
       to auto-fix formatting, linting, type, and markdown issues.
-    - fix_quality_issues() inside implement-code or commit-checks agents on
+    - autofix() inside implement-code or commit-checks agents on
       the fix path before re-running the quality gate.
     """
     root = get_current_project_root() or Path(await get_or_resolve_project_root(ctx))
     async with get_phase_a_lock():
-        result_json = await fix_quality_issues_impl(
-            root, include_untracked_markdown=True, ctx=ctx
-        )
+        result_json = await autofix_impl(root, include_untracked_markdown=True, ctx=ctx)
     _ = clear_all_cached_results(root)
     return cast(ModelDict, json.loads(result_json))

@@ -7,7 +7,7 @@
 
 Names must clearly indicate what the tool does. Per [naming-conventions.md](naming-conventions.md):
 
-- **Imperative verbs** for side effects: `manage_file`, `fix_quality_issues`
+- **Imperative verbs** for side effects: `manage_file`, `autofix`
 - **`query_*`** for read-only consolidated dispatchers
 - **`manage_*`** when the tool manages a resource (create/read/update/delete operations)
 - **`run_*`** / **`execute_*`** when the tool executes a workflow or composite action
@@ -37,7 +37,7 @@ Names must clearly indicate what the tool does. Per [naming-conventions.md](nami
 | `validate` | Run validation checks | ✓ |
 | `configure` | Configure validation/optimization/learning | ✓ |
 | `analyze` | Analyze Memory Bank, context, health | ✓ |
-| `fix_quality_issues`, `fix_markdown_lint` | Fix quality/lint issues | ✓ |
+| `autofix`, `fix_markdown_lint` | Fix quality/lint issues | ✓ |
 | `run_quality_gate` | Phase A quality gate (zero-arg) | ✓ |
 | `get_structure_info`, `get_relevance_scores` | Project structure; file relevance | Deferred per naming-conventions.md |
 

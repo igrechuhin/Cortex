@@ -35,25 +35,8 @@ def _expect_json_object_from_tool(payload: str, label: str) -> ModelDict:
     return cast(ModelDict, parsed)
 
 
-async def _quick_start_impl(
-    task_description: str | None = None,
-    token_budget: int | None = None,
-) -> str:
-    """Run session(operation=start) then load_context."""
-    from cortex.tools.optimization import load_context
-    from cortex.tools.session.dispatcher import session
-
-    brief_json = await session(operation="start", task_description=None, ctx=None)
-    budget = token_budget if token_budget is not None else 10000
-    task = (
-        task_description.strip()
-        if task_description and task_description.strip()
-        else "general task"
-    )
-    context_json = await load_context(
-        task_description=task,
-        token_budget=budget,
-    )
+def _format_quick_start_result(brief_json: str, context_json: str) -> str:
+    """Parse tool outputs and build quick_start response."""
     try:
         session_brief_parsed = _expect_json_object_from_tool(
             brief_json, "session(start)"
@@ -68,6 +51,25 @@ async def _quick_start_impl(
         ),
         indent=2,
     )
+
+
+async def _quick_start_impl(
+    task_description: str | None = None,
+    token_budget: int | None = None,
+) -> str:
+    """Run session(operation=start) then load_context."""
+    from cortex.tools.optimization import load_context_impl as load_context
+    from cortex.tools.session.dispatcher import session
+
+    brief_json = await session(operation="start", task_description=None, ctx=None)
+    budget = token_budget if token_budget is not None else 10000
+    task = (
+        task_description.strip()
+        if task_description and task_description.strip()
+        else "general task"
+    )
+    context_json = await load_context(task_description=task, token_budget=budget)
+    return _format_quick_start_result(brief_json, context_json)
 
 
 async def _quality_check_impl() -> str:
@@ -92,6 +94,18 @@ async def _quality_check_impl() -> str:
     return json.dumps(success_response(**payload), indent=2)
 
 
+def _build_safe_manage_result(pre: str, file_result: str, post: str) -> str:
+    """Build safe_manage_file success response JSON."""
+    return json.dumps(
+        success_response(
+            pre_validation=json.loads(pre),
+            manage_file_result=json.loads(file_result),
+            post_validation=json.loads(post),
+        ),
+        indent=2,
+    )
+
+
 async def _safe_manage_file_impl(
     file_name: str,
     operation: str,
@@ -104,7 +118,7 @@ async def _safe_manage_file_impl(
     from cortex.tools.files.crud_operations import manage_file
     from cortex.tools.files.operation_helpers import FileOperation
     from cortex.tools.validation.helpers import ValidationCheckType
-    from cortex.tools.validation.operations import validate
+    from cortex.tools.validation.operations import validate_impl as validate
 
     vct = ValidationCheckType(check_type)
     pre = await validate(check_type=vct)
@@ -116,14 +130,7 @@ async def _safe_manage_file_impl(
         change_description=change_description,
     )
     post = await validate(check_type=vct)
-    return json.dumps(
-        success_response(
-            pre_validation=json.loads(pre),
-            manage_file_result=json.loads(file_result),
-            post_validation=json.loads(post),
-        ),
-        indent=2,
-    )
+    return _build_safe_manage_result(pre, file_result, post)
 
 
 # ---------------------------------------------------------------------------
@@ -163,7 +170,7 @@ async def _fix_docs_impl() -> str:
         run_docs_and_memory_bank_sync_impl,
     )
     from cortex.tools.validation.helpers import ValidationCheckType
-    from cortex.tools.validation.operations import validate
+    from cortex.tools.validation.operations import validate_impl as validate
 
     docs = await run_docs_and_memory_bank_sync_impl()
     ts = await validate(check_type=ValidationCheckType("timestamps"))
@@ -263,7 +270,7 @@ async def _fix_all_impl() -> str:
     from cortex.core.usage_context import get_current_project_root
     from cortex.tools.execution.pre_commit_detached import clear_all_cached_results
     from cortex.tools.validation.helpers import ValidationCheckType
-    from cortex.tools.validation.operations import validate
+    from cortex.tools.validation.operations import validate_impl as validate
 
     root = get_current_project_root()
     quality = await _run_fix_quality_job()
@@ -292,6 +299,12 @@ async def _run_suggest_workflow(task_description: str | None, limit: int) -> str
     return await suggest_workflow_impl(task_description=task, limit=lim)
 
 
+def _unknown_operation_error(operation: str) -> str:
+    """Build error response for unknown composite workflow operation."""
+    msg = f"Unknown operation: {operation}. Use quick_start, quality_check, fix_all, fix_docs, safe_manage_file, or suggest_workflow."
+    return json.dumps(error_response(error=msg), indent=2)
+
+
 async def _dispatch_agent_workflow(
     operation: str,
     task_description: str | None,
@@ -307,9 +320,7 @@ async def _dispatch_agent_workflow(
     """Route to operation-specific implementation."""
     op = operation.strip().lower() if operation else ""
     if op == "quick_start":
-        return await _quick_start_impl(
-            task_description=task_description, token_budget=token_budget
-        )
+        return await _quick_start_impl(task_description, token_budget)
     if op == "quality_check":
         return await _quality_check_impl()
     if op == "safe_manage_file":
@@ -322,8 +333,7 @@ async def _dispatch_agent_workflow(
         return await _fix_docs_impl()
     if op in ("fix_all", ""):
         return await _fix_all_impl()
-    msg = f"Unknown operation: {operation}. Use quick_start, quality_check, fix_all, fix_docs, safe_manage_file, or suggest_workflow."
-    return json.dumps(error_response(error=msg), indent=2)
+    return _unknown_operation_error(operation)
 
 
 # ---------------------------------------------------------------------------

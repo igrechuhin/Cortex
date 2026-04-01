@@ -117,7 +117,7 @@ class TestLoadContextInputSanitization:
     @pytest.mark.asyncio
     async def test_load_context_rejects_oversized_task_description(self):
         """Test load_context rejects task_description exceeding limit."""
-        from cortex.tools.optimization import load_context
+        from cortex.tools.optimization.handlers import load_context_impl as load_context
 
         oversized = "x" * (MAX_TASK_DESCRIPTION_CHARS + 1)
 
@@ -132,7 +132,7 @@ class TestLoadContextInputSanitization:
     @pytest.mark.asyncio
     async def test_load_context_accepts_task_description_at_limit(self):
         """Test load_context accepts task_description at exactly the limit."""
-        from cortex.tools.optimization import load_context
+        from cortex.tools.optimization.handlers import load_context_impl as load_context
 
         task_description = "x" * MAX_TASK_DESCRIPTION_CHARS
 

@@ -156,7 +156,7 @@ For local development, use these Make targets (after running `bash scripts/boots
 
 ## Key Tools
 
-<!-- cortex-published-inventory: tools=10 resources=6 prompts-max=4 -->
+<!-- cortex-published-inventory: tools=9 resources=6 prompts-max=4 -->
 
 Cortex exposes **10 MCP tools**, **6 static `cortex://` resources**, and **up to 4 setup prompts** (one always-on plus up to three configuration-dependent). Machine-readable inventory: [docs/_generated/tool-inventory.json](docs/_generated/tool-inventory.json) (must match `cortex.discovery.published_inventory`; CI enforces parity).
 
@@ -164,7 +164,7 @@ Cortex exposes **10 MCP tools**, **6 static `cortex://` resources**, and **up to
 | ------------------------------------------------------------------------ | ----------------------------------------------------------------------------------- |
 | **Session & handoff**                                                    | `session()`, `pipeline_handoff()`                                                   |
 | **Memory Bank**                                                          | `manage_file()`, `update_memory_bank()`                                             |
-| **Quality (commit / implement)**                                         | `run_quality_gate()`, `run_quality_gate_fresh()`, `run_docs_gate()`, `fix_quality_issues()` |
+| **Quality (commit / implement)**                                         | `run_quality_gate()`, `run_docs_gate()`, `autofix()` |
 | **Plans**                                                                | `plan()`                                                                            |
 | **Rules & context (read-only)**                                          | `cortex://rules`, `cortex://context`, `cortex://analysis`, `cortex://validation`   |
 | **Reasoning**                                                            | `think()`                                                                           |

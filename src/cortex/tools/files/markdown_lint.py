@@ -11,7 +11,10 @@ from cortex.core.context_logging import MCPContext, log_client
 from cortex.core.mcp_stability import ensure_usage_context, mcp_tool_wrapper
 from cortex.core.project_root_resolver import resolve_project_root_async
 from cortex.tools.files.markdown_link_validation import find_broken_links
-from cortex.tools.files.markdown_lint_cache import load_markdown_lint_index_safe
+from cortex.tools.files.markdown_lint_cache import (
+    MarkdownLintIndex,
+    load_markdown_lint_index_safe,
+)
 from cortex.tools.files.markdown_lint_core import (
     filter_files_for_linting,
     get_all_markdown_files_for_lint,
@@ -128,24 +131,13 @@ def _merge_internal_link_errors(
     return sorted(by_file.values(), key=lambda r: r.file)
 
 
-async def run_markdown_lint_all_files_check(
-    root_path: Path | None = None, ctx: MCPContext | None = None
+async def _lint_all_files_and_merge(
+    root_path: Path,
+    markdownlint_cmd: list[str],
+    config_path: Path | None,
+    ctx: MCPContext | None,
 ) -> str:
-    """Run markdown lint on all repo markdown files (CI parity); check-only, no fix.
-
-    Used by commit pipeline Phase A so preflight fails if any file has lint errors,
-    matching the quality.yml markdown step. Returns same JSON shape as fix_markdown_lint.
-    """
-    if root_path is None:
-        root_path = await resolve_project_root_async(None, ctx)
-    (
-        validation_error,
-        markdownlint_cmd,
-        config_path,
-    ) = await validate_markdown_prerequisites(root_path)
-    if validation_error:
-        return apply_validation_error_hint(validation_error)
-    assert markdownlint_cmd is not None
+    """Run lint on all markdown files, merge link errors, and build response."""
     files = get_all_markdown_files_for_lint(root_path)
     if not files:
         return create_empty_success_response()
@@ -162,6 +154,52 @@ async def run_markdown_lint_all_files_check(
     return _build_fix_response(results)
 
 
+async def run_markdown_lint_all_files_check(
+    root_path: Path | None = None, ctx: MCPContext | None = None
+) -> str:
+    """Run markdown lint on all repo markdown files (CI parity); check-only, no fix."""
+    if root_path is None:
+        root_path = await resolve_project_root_async(None, ctx)
+    (
+        validation_error,
+        markdownlint_cmd,
+        config_path,
+    ) = await validate_markdown_prerequisites(root_path)
+    if validation_error:
+        return apply_validation_error_hint(validation_error)
+    assert markdownlint_cmd is not None
+    return await _lint_all_files_and_merge(
+        root_path, markdownlint_cmd, config_path, ctx
+    )
+
+
+async def _run_lint_and_update_cache(
+    root_path: Path,
+    files_to_lint: list[Path],
+    initial_results: list[FileResult],
+    markdownlint_cmd: list[str],
+    config_path: Path | None,
+    dry_run: bool,
+    ctx: MCPContext | None,
+    index: MarkdownLintIndex,
+    file_hashes: dict[str, str],
+) -> list[FileResult]:
+    """Run markdownlint for filtered files and update the cache."""
+    results = await run_markdownlint_for_files(
+        files_to_lint,
+        initial_results,
+        root_path,
+        markdownlint_cmd,
+        config_path,
+        dry_run,
+        ctx=ctx,
+        index=index,
+        file_hashes=file_hashes,
+    )
+    await update_markdown_lint_cache_safe(index, root_path, results, file_hashes, ctx)
+    return results
+
+
 async def run_markdownlint_with_cache(
     root_path: Path,
     files: list[Path],
@@ -175,23 +213,16 @@ async def run_markdownlint_with_cache(
     files_to_lint, initial_results, file_hashes = await filter_files_for_linting(
         root_path, files, index, dry_run
     )
-    results = await run_markdownlint_for_files(
+    results = await _run_lint_and_update_cache(
+        root_path,
         files_to_lint,
         initial_results,
-        root_path,
         markdownlint_cmd,
         config_path,
         dry_run,
-        ctx=ctx,
-        index=index,
-        file_hashes=file_hashes,
-    )
-    await update_markdown_lint_cache_safe(
-        index,
-        root_path,
-        results,
-        file_hashes,
         ctx,
+        index,
+        file_hashes,
     )
     return _build_fix_response(results)
 
@@ -228,48 +259,12 @@ async def _fix_markdown_lint_run_or_error(
         return (create_error_response(f"Fatal markdown lint error: {e!r}"), False)
 
 
-# MCP registration removed — fix_quality_issues includes markdown auto-fix
-@ensure_usage_context
-@mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_VERY_COMPLEX, enable_progress=False)
-async def fix_markdown_lint(
-    include_untracked_markdown: bool = False,
-    dry_run: bool = False,
-    check_all_files: bool = False,
-    ctx: MCPContext | None = None,
+async def _fix_markdown_lint_inner(
+    include_untracked_markdown: bool,
+    dry_run: bool,
+    ctx: MCPContext | None,
 ) -> str:
-    """Fix markdown lint errors in markdown files.
-
-    USE WHEN: User wants markdown fixes, user needs lint fixes, user
-    requests markdown lint fix, user wants to fix markdown errors.
-
-    EXAMPLES: 'fix markdown lint', 'fix markdown errors', 'auto-fix
-    markdown', 'fix markdown formatting'.
-
-        RETURNS: JSON with fixes applied, files modified, and lint results.
-
-        Scans markdown files in the working copy, runs the rumdl CLI,
-        and optionally applies fixes to resolve reported issues.
-
-    The return value is a JSON string encoded from `FixMarkdownLintResult`
-    with aggregate counts and per-file `FileResult` entries. Project root
-    is resolved by the server (MCP roots or cwd/script detection).
-
-    **Scope**: Always scopes to git-modified and (optionally) untracked
-    markdown files. The ``check_all_files`` parameter is accepted for
-    backward compatibility but **ignored** — it has no effect. For
-    full-repo lint, use a dedicated shell command such as
-    ``uv run rumdl check --fix .``.
-
-    Args:
-        include_untracked_markdown: If True, lint untracked .md/.mdc files
-            in addition to git-modified ones. Default: False.
-        dry_run: If True, report what would be fixed without writing.
-            Default: False.
-        check_all_files: Deprecated; accepted for backward compatibility
-            but ignored. Lint scope is always git-modified (and optionally
-            untracked when include_untracked_markdown=True).
-    """
-    _ = check_all_files  # Accepted for backward compat, always scoped to git-modified
+    """Resolve root, run lint fix, and log completion."""
     await log_client(ctx, "info", "fix_markdown_lint: starting", logger_name=__name__)
     root_path = await resolve_project_root_async(None, ctx)
     result, ok = await _fix_markdown_lint_run_or_error(
@@ -283,3 +278,24 @@ async def fix_markdown_lint(
             ctx, "info", "fix_markdown_lint: completed", logger_name=__name__
         )
     return result
+
+
+# MCP registration removed — autofix includes markdown auto-fix
+@ensure_usage_context
+@mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_VERY_COMPLEX, enable_progress=False)
+async def fix_markdown_lint(
+    include_untracked_markdown: bool = False,
+    dry_run: bool = False,
+    check_all_files: bool = False,
+    ctx: MCPContext | None = None,
+) -> str:
+    """Fix markdown lint errors in markdown files.
+
+    USE WHEN: User wants markdown fixes, user needs lint fixes, user
+    requests markdown lint fix, user wants to fix markdown errors.
+
+    RETURNS: JSON with fixes applied, files modified, and lint results.
+    Scans git-modified markdown files, runs the rumdl CLI, and applies fixes.
+    """
+    _ = check_all_files
+    return await _fix_markdown_lint_inner(include_untracked_markdown, dry_run, ctx)

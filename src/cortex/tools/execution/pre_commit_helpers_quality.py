@@ -108,9 +108,15 @@ def count_file_lines(path: Path) -> int:
     """Count non-blank, non-comment, non-docstring lines in a file."""
     try:
         with open(path, encoding="utf-8") as f:
-            lines = f.readlines()
+            source = f.read()
     except Exception:
         return 0
+    return count_file_lines_from_source(source)
+
+
+def count_file_lines_from_source(source: str) -> int:
+    """Count non-blank, non-comment, non-docstring lines from source text."""
+    lines = source.splitlines()
 
     count = 0
     in_docstring = False
@@ -127,6 +133,18 @@ def count_file_lines(path: Path) -> int:
         count += 1
 
     return count
+
+
+def check_function_lengths_in_source(source: str) -> list[tuple[str, int, int]]:
+    """Check function length violations from in-memory source text."""
+    source_lines = source.split("\n")
+    try:
+        tree = ast.parse(source, filename="<in-memory>")
+    except SyntaxError:
+        return []
+    visitor = _FunctionVisitor(source_lines)
+    visitor.visit(tree)
+    return visitor.violations
 
 
 def check_file_sizes(

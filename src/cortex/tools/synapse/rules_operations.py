@@ -185,21 +185,50 @@ async def rules(
         - Rules with relevance_score below min_relevance_score excluded regardless
           of available token budget
     """
-    await log_client(ctx, "info", "rules: starting", logger_name=__name__)
-    # Zero-arg fallback: default to get_relevant with session task description
-    if operation is None:
-        from cortex.core.session_config import read_session_config
+    return await _rules_body(
+        operation,
+        force,
+        task_description,
+        max_tokens,
+        min_relevance_score,
+        ctx,
+    )
 
-        cfg = read_session_config()
-        operation = RulesOperation("get_relevant")  # type: ignore[assignment]
-        if task_description is None:
-            task_description = str(
-                cfg.get("task_description", "general coding standards")
-            )
+
+def _resolve_rules_zero_arg(
+    operation: RulesOperationName | None,
+    task_description: str | None,
+) -> tuple[RulesOperationName | None, str | None]:
+    """Apply zero-arg defaults from session config when operation is None."""
+    if operation is not None:
+        return operation, task_description
+    from cortex.core.session_config import read_session_config
+
+    cfg = read_session_config()
+    resolved_op: RulesOperationName | None = RulesOperation("get_relevant")
+    if task_description is None:
+        task_description = str(cfg.get("task_description", "general coding standards"))
+    return resolved_op, task_description
+
+
+async def _rules_body(
+    operation: RulesOperationName | None,
+    force: bool,
+    task_description: str | None,
+    max_tokens: int | None,
+    min_relevance_score: float | None,
+    ctx: MCPContext | None,
+) -> str:
+    """Resolve zero-arg defaults, validate, and dispatch."""
+    await log_client(ctx, "info", "rules: starting", logger_name=__name__)
+    operation, task_description = _resolve_rules_zero_arg(operation, task_description)
     parsed = parse_rules_operation(operation)
     if parsed is None:
         await log_client(ctx, "warning", "rules: invalid or missing operation")
-        return build_invalid_operation_error(operation)
+        operation_text = (
+            operation.value if isinstance(operation, RulesOperation) else str(operation)
+        )
+        return build_invalid_operation_error(operation_text)
     root = await resolve_project_root_async(None, ctx)
     return await _execute_rules_operation(
         parsed,
@@ -280,7 +309,7 @@ async def _execute_rules_operation(
 @mcp.resource(uri="cortex://rules")
 @ensure_usage_context
 @mcp_resource_wrapper(timeout=MCP_TOOL_TIMEOUT_MEDIUM)
-async def rules_get_relevant_resource() -> str:
+async def get_relevant_rules() -> str:
     """Resource: Rules relevant to current task. Zero-arg — reads task from session config.
 
     Falls back to "general coding standards" if no session config exists.

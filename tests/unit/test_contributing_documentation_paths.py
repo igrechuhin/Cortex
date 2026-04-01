@@ -17,7 +17,7 @@ def test_contributing_md_has_no_stale_cursor_paths_when_scanned() -> None:
 def test_contributing_md_has_workflow_matrix_when_rendered() -> None:
     text = _CONTRIBUTING.read_text(encoding="utf-8")
     assert "| Task | Human (local CLI) | Agent (MCP) |" in text
-    assert "fix_quality_issues()" in text
+    assert "autofix()" in text
     assert "run_quality_gate()" in text
 
 

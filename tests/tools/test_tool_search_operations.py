@@ -84,7 +84,7 @@ def test_tool_search_token_savings_potential() -> None:
     deferred = len(config.deferred_medium) + len(config.deferred_low)
     total = always + deferred
     assert always < total, "always_loaded must be a subset to achieve token savings"
-    assert always >= 8, "enough core tools for session start and quality gates"
+    assert always >= 7, "enough core tools for session start and quality gates"
     assert deferred >= 2, "enough deferred tools for on-demand discovery"
 
 

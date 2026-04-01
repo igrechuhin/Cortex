@@ -51,7 +51,17 @@ def _get_session_default_check_type() -> ValidateCheckTypeName:
     return parsed or ValidationCheckType("timestamps")
 
 
-async def validate_impl(
+def _resolve_validate_target(
+    parsed: ValidateCheckTypeName | None, check_type: ValidateCheckTypeName | None
+) -> tuple[ValidateCheckTypeName | None, ValidateCheckTypeName | None]:
+    """Resolve validate target from explicit parsed value or check_type."""
+    if parsed is not None:
+        return check_type, parsed
+    resolved = check_type or _get_session_default_check_type()
+    return resolved, parse_validation_check_type(resolved)
+
+
+async def validate_from_parsed(
     parsed: ValidateCheckTypeName,
     file_name: str | None,
     similarity_threshold: float | None,
@@ -77,10 +87,10 @@ async def validate_impl(
     return format_validate_response(raw, parsed, response_format)
 
 
-# MCP tool removed — exposed as resource cortex://validation/{check_type}
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_COMPLEX)
-async def validate(
+async def validate_impl(
+    parsed: ValidateCheckTypeName | None = None,
     check_type: ValidateCheckTypeName | None = None,
     file_name: str | None = None,
     strict_mode: bool = False,
@@ -200,14 +210,42 @@ async def validate(
         below 60 needs improvement
         - All validation operations are read-only and do not modify files
     """
-    await log_client(ctx, "info", "validate: starting", logger_name=__name__)
-    check_type = check_type or _get_session_default_check_type()
-    parsed = parse_validation_check_type(check_type)
-    if parsed is None:
-        await log_client(ctx, "warning", "validate: invalid check_type")
-        return create_invalid_check_type_error(check_type or "null")
-    return await validate_impl(
+    return await _validate_impl_body(
         parsed,
+        check_type,
+        file_name,
+        similarity_threshold,
+        suggest_fixes,
+        check_commit_ci_alignment,
+        check_code_quality_consistency,
+        check_documentation_consistency,
+        check_config_consistency,
+        response_format,
+        ctx,
+    )
+
+
+async def _validate_impl_body(
+    parsed: ValidateCheckTypeName | None,
+    check_type: ValidateCheckTypeName | None,
+    file_name: str | None,
+    similarity_threshold: float | None,
+    suggest_fixes: bool,
+    check_commit_ci_alignment: bool,
+    check_code_quality_consistency: bool,
+    check_documentation_consistency: bool,
+    check_config_consistency: bool,
+    response_format: ResponseFormat,
+    ctx: MCPContext | None,
+) -> str:
+    """Resolve target and dispatch validation."""
+    await log_client(ctx, "info", "validate: starting", logger_name=__name__)
+    ct, sp = _resolve_validate_target(parsed, check_type)
+    if sp is None:
+        await log_client(ctx, "warning", "validate: invalid check_type")
+        return create_invalid_check_type_error(ct or "null")
+    return await validate_from_parsed(
+        sp,
         file_name,
         similarity_threshold,
         suggest_fixes,
@@ -217,6 +255,34 @@ async def validate(
         check_config_consistency,
         ctx,
         response_format,
+    )
+
+
+async def _run_validation_dispatch(
+    check_type: ValidationCheckType,
+    file_name: str | None,
+    similarity_threshold: float | None,
+    suggest_fixes: bool,
+    check_commit_ci_alignment: bool,
+    check_code_quality_consistency: bool,
+    check_documentation_consistency: bool,
+    check_config_consistency: bool,
+    ctx: MCPContext | None,
+) -> str:
+    """Resolve root, prepare managers, and call dispatch."""
+    resolved_root = await resolve_project_root_async(None, ctx)
+    root, managers = await prepare_validation_managers(str(resolved_root))
+    return await call_dispatch_validation(
+        check_type,
+        managers,
+        root,
+        file_name,
+        similarity_threshold,
+        suggest_fixes,
+        check_commit_ci_alignment,
+        check_code_quality_consistency,
+        check_documentation_consistency,
+        check_config_consistency,
     )
 
 
@@ -233,12 +299,8 @@ async def _execute_validation_with_error_handling(
 ) -> str:
     """Execute validation with error handling."""
     try:
-        resolved_root = await resolve_project_root_async(None, ctx)
-        root, managers = await prepare_validation_managers(str(resolved_root))
-        result = await call_dispatch_validation(
+        result = await _run_validation_dispatch(
             check_type,
-            managers,
-            root,
             file_name,
             similarity_threshold,
             suggest_fixes,
@@ -246,6 +308,7 @@ async def _execute_validation_with_error_handling(
             check_code_quality_consistency,
             check_documentation_consistency,
             check_config_consistency,
+            ctx,
         )
         await log_client(ctx, "info", "validate: completed", logger_name=__name__)
         return result
@@ -257,7 +320,7 @@ async def _execute_validation_with_error_handling(
 @mcp.resource(uri="cortex://validation")
 @ensure_usage_context
 @mcp_resource_wrapper(timeout=MCP_TOOL_TIMEOUT_COMPLEX)
-async def validate_resource() -> str:
+async def validate() -> str:
     """Resource: Run validation. Zero-arg — reads check_type from session config.
 
     Falls back to "timestamps" if no session config exists. check_type must be

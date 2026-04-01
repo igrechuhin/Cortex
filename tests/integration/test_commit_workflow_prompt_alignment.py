@@ -1,5 +1,5 @@
 """
-Integration tests for commit workflow prompt–model alignment.
+Integration tests for commit workflow prompt-model alignment.
 
 Verifies that the commit pipeline (orchestrator) contains
 required quality gates, tooling references, and workflow guidance.
@@ -14,35 +14,21 @@ from pathlib import Path
 
 import pytest
 
-from cortex.core.path_resolver import (
-    CortexResourceType,
-    get_cortex_path,
-)
-from cortex.managers.initialization import get_project_root
 from cortex.validation.commit_workflow_model import (
     get_commit_steps_metadata,
     get_parallel_block_step_ids,
     get_sequential_step_ranges,
 )
-
-
-def _repo_root() -> Path:
-    """Return repository root (directory containing src/ and tests/)."""
-    return get_project_root()
-
-
-def _synapse_path() -> Path:
-    """Return path to Synapse directory."""
-    return get_cortex_path(_repo_root(), CortexResourceType.SYNAPSE)
+from tests.integration.conftest import synapse_path
 
 
 def _commit_prompt_path() -> Path:
     """Return path to commit prompt under .cortex/synapse/prompts/."""
-    return _synapse_path() / "prompts" / "commit.md"
+    return synapse_path() / "prompts" / "commit.md"
 
 
 def _read_commit_pipeline_content() -> str:
-    """Read commit pipeline content (orchestrator prompt only — no subagents).
+    """Read commit pipeline content (orchestrator prompt only).
 
     All commit phases run inline in the orchestrator since simplification.
     """
@@ -54,47 +40,19 @@ def _read_commit_pipeline_content() -> str:
 
 def _implement_prompt_path() -> Path:
     """Return path to implement prompt."""
-    return _synapse_path() / "prompts" / "implement-next-roadmap-step.md"
-
-
-def _fix_quality_tool_source_path() -> Path:
-    """Return path to zero-arg quality tools source."""
-    root = _repo_root()
-    return (
-        root / "src" / "cortex" / "tools" / "execution" / "pre_commit_zero_arg_tools.py"
-    )
-
-
-def _workflows_guide_path() -> Path:
-    """Return path to workflows guide."""
-    root = _repo_root()
-    return root / "docs" / "guides" / "workflows.md"
-
-
-def _fix_prompt_path() -> Path:
-    """Return path to fix helper prompt under .cortex/synapse/prompts/."""
-    return _synapse_path() / "prompts" / "fix.md"
+    return synapse_path() / "prompts" / "implement-next-roadmap-step.md"
 
 
 def _read_implement_pipeline_content() -> str:
-    """Read implement prompt + implement-code agent.
-
-    Selection, finalize, and verify phases run inline in the orchestrator.
-    Only implement-code delegates to a subagent.
-    """
+    """Read implement prompt + implement-code agent."""
     parts: list[str] = []
     prompt = _implement_prompt_path()
     if prompt.exists():
         parts.append(prompt.read_text())
-    code_agent = _synapse_path() / "cursor-agents" / "implement-code.md"
+    code_agent = synapse_path() / "cursor-agents" / "implement-code.md"
     if code_agent.exists():
         parts.append(code_agent.read_text())
     return "\n".join(parts)
-
-
-def _python_coding_standards_path() -> Path:
-    """Return path to Python coding standards."""
-    return _synapse_path() / "rules" / "python" / "python-coding-standards.mdc"
 
 
 class TestCommitWorkflowModelInvariants:
@@ -120,11 +78,7 @@ class TestCommitWorkflowModelInvariants:
 
 
 class TestCommitPipelineAlignment:
-    """Assert commit pipeline contains required workflow guidance.
-
-    Tests search the full pipeline (orchestrator + phase agents)
-    for semantic concepts rather than exact substrings.
-    """
+    """Assert commit pipeline contains required workflow guidance."""
 
     @pytest.fixture
     def pipeline_content(self) -> str:
@@ -180,9 +134,9 @@ class TestCommitPipelineAlignment:
         """Phase A uses run_quality_gate() zero-arg tool."""
         assert "run_quality_gate" in pipeline_content
 
-    def test_pipeline_uses_fix_quality_issues(self, pipeline_content: str) -> None:
-        """Pipeline uses fix_quality_issues() zero-arg tool."""
-        assert "fix_quality_issues" in pipeline_content
+    def test_pipeline_uses_autofix(self, pipeline_content: str) -> None:
+        """Pipeline uses autofix() zero-arg tool."""
+        assert "autofix" in pipeline_content
 
     # -- Quality checks --
 
@@ -250,7 +204,6 @@ class TestCommitPipelineAlignment:
     ) -> None:
         """Pipeline defines fix loops with iteration limit."""
         lower = pipeline_content.lower()
-        # Iteration limit exists (any reasonable number)
         assert (
             any(
                 f"{n} iteration" in lower or f"{n} time" in lower or f"max {n}" in lower
@@ -361,155 +314,3 @@ class TestImplementPromptRefactoringGuidance:
         lower = implement_prompt_content.lower()
         assert "duplicate-definition" in lower or "duplicate" in lower
         assert "definitions" in lower
-
-
-class TestFixLoopIntegrityGuard:
-    """Assert fix-loop integrity safeguards are documented."""
-
-    @pytest.fixture
-    def workflows_guide_content(self) -> str:
-        """Read workflows guide content."""
-        path = _workflows_guide_path()
-        if not path.exists():
-            pytest.skip(
-                f"Workflows guide not found at {path} (ref: cleanup-skipped-legacy-tests)"
-            )
-        return path.read_text()
-
-    @pytest.fixture
-    def fix_quality_tool_content(self) -> str:
-        """Read fix_quality_issues tool source content."""
-        path = _fix_quality_tool_source_path()
-        if not path.exists():
-            pytest.skip(
-                f"fix_quality_issues source not found at {path} (ref: cleanup-skipped-legacy-tests)"
-            )
-        return path.read_text()
-
-    def test_workflows_guide_contains_no_go_integrity_list(
-        self, workflows_guide_content: str
-    ) -> None:
-        """Workflow docs include explicit NO-GO corruption safeguards."""
-        lower = workflows_guide_content.lower()
-        assert "no-go" in lower
-        assert "duplicate function/class definitions" in lower
-        assert "type_checking" in lower
-        assert "circular imports" in lower
-        assert "syntax-invalid python" in lower
-
-    def test_workflows_guide_contains_post_fix_module_validation(
-        self, workflows_guide_content: str
-    ) -> None:
-        """Workflow docs require import/syntax checks before success."""
-        lower = workflows_guide_content.lower()
-        assert "post-fix validation" in lower
-        assert "python3 -m py_compile" in lower
-        assert 'python3 -c "import <module_import_path>"' in workflows_guide_content
-
-    def test_workflows_guide_contains_rollback_guidance_for_regressions(
-        self, workflows_guide_content: str
-    ) -> None:
-        """Workflow docs require rollback and bounded retry on regressions."""
-        lower = workflows_guide_content.lower()
-        assert "roll back that attempt" in lower
-        assert "max 3 attempts" in lower
-
-    def test_workflows_guide_requires_submodule_first_fix_routing(
-        self, workflows_guide_content: str
-    ) -> None:
-        """Workflow docs require submodule-first remediation before root checks."""
-        lower = workflows_guide_content.lower()
-        assert "submodule-first routing" in lower
-        assert "git submodule foreach" in workflows_guide_content
-        assert "run its fix loop first" in lower
-
-    def test_fix_quality_tool_docs_warn_about_integrity_risks(
-        self, fix_quality_tool_content: str
-    ) -> None:
-        """Tool docs require re-verification and rollback on regressions."""
-        lower = fix_quality_tool_content.lower()
-        assert "integrity safeguards" in lower
-        assert "run_quality_gate()" in fix_quality_tool_content
-        assert "roll back that" in lower
-
-
-class TestFixPromptIntegrityGuard:
-    """Assert fix.md documents the same integrity safeguards as workflows.md."""
-
-    @pytest.fixture
-    def fix_prompt_content(self) -> str:
-        """Read fix helper prompt content."""
-        path = _fix_prompt_path()
-        if not path.exists():
-            pytest.skip(
-                f"Fix prompt not found at {path} (ref: cleanup-skipped-legacy-tests)"
-            )
-        return path.read_text()
-
-    def test_fix_prompt_contains_no_go_integrity_list(
-        self, fix_prompt_content: str
-    ) -> None:
-        """Fix prompt includes explicit NO-GO corruption safeguards."""
-        lower = fix_prompt_content.lower()
-        assert "no-go" in lower
-        assert "duplicate function/class definitions" in lower
-        assert "type_checking" in lower
-        assert "circular imports" in lower
-        assert "syntax-invalid python" in lower
-
-    def test_fix_prompt_contains_post_fix_module_validation(
-        self, fix_prompt_content: str
-    ) -> None:
-        """Fix prompt requires import/syntax checks before success."""
-        lower = fix_prompt_content.lower()
-        assert "post-fix validation" in lower
-        assert "python3 -m py_compile" in lower
-        assert 'python3 -c "import <module_import_path>"' in fix_prompt_content
-
-    def test_fix_prompt_contains_rollback_guidance_for_regressions(
-        self, fix_prompt_content: str
-    ) -> None:
-        """Fix prompt requires rollback and bounded retry on regressions."""
-        lower = fix_prompt_content.lower()
-        assert "roll back that attempt" in lower
-        assert "max 3 attempts" in lower
-
-    def test_fix_prompt_requires_submodule_first_fix_routing(
-        self, fix_prompt_content: str
-    ) -> None:
-        """Fix prompt requires submodule-first remediation before root gates."""
-        lower = fix_prompt_content.lower()
-        assert "submodule-first fix routing" in lower
-        assert "git submodule foreach" in fix_prompt_content
-        assert 'not automatically "dirty state to reject"' in lower
-
-
-class TestPythonCodingStandardsTypeNarrowing:
-    """Assert Python coding standards document type narrowing."""
-
-    @pytest.fixture
-    def python_standards_content(self) -> str:
-        """Read Python coding standards; skip if missing."""
-        path = _python_coding_standards_path()
-        if not path.exists():
-            pytest.skip(
-                f"Python standards not found at {path} (ref: cleanup-skipped-legacy-tests)"
-            )
-        return path.read_text()
-
-    def test_python_standards_contain_type_narrowing(
-        self, python_standards_content: str
-    ) -> None:
-        """Standards include type narrowing guidance."""
-        lower = python_standards_content.lower()
-        assert "type narrowing" in lower, "Standards must cover type narrowing"
-        assert any(
-            kw in lower for kw in ("assert", "isinstance", "is not none")
-        ), "Standards must show a narrowing technique"
-
-    def test_python_standards_type_hints_reference_narrowing(
-        self, python_standards_content: str
-    ) -> None:
-        """Type Hints section cross-references type narrowing."""
-        lower = python_standards_content.lower()
-        assert "type narrowing" in lower

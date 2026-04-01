@@ -33,12 +33,10 @@ from cortex.tools.structure.categories import (
 # Constants for expected counts (update when tools are added/removed)
 # ---------------------------------------------------------------------------
 
-_MIN_ALWAYS_LOADED = 8  # 2026-03-19: 8 always_loaded after resource conversion
+_MIN_ALWAYS_LOADED = 7  # 2026-03-31: 7 always_loaded after naming cleanup
 _MIN_DEFERRED_MEDIUM = 2  # 2026-03-19: 2 deferred_medium after resource conversion
 _MIN_DEFERRED_LOW = 0  # 2026-03-18: no deferred_low tools after consolidation
-_MIN_TOTAL_TOOLS = (
-    10  # 2026-03-19: 10 registered tools after converting 6 tools to resources
-)
+_MIN_TOTAL_TOOLS = 9  # 2026-03-31: 9 registered tools after cleanup
 
 
 @pytest.mark.timeout(15)

@@ -702,7 +702,7 @@ class TestRunDocsAndMemoryBankSync:
         }
 
         with patch(
-            "cortex.tools.execution.pre_commit_docs_memory_helpers.validate_impl",
+            "cortex.tools.execution.pre_commit_docs_memory_helpers.validate_from_parsed",
             new_callable=AsyncMock,
         ) as mock_validate:
             mock_validate.side_effect = [
@@ -741,7 +741,7 @@ class TestRunDocsAndMemoryBankSync:
         }
 
         with patch(
-            "cortex.tools.execution.pre_commit_docs_memory_helpers.validate_impl",
+            "cortex.tools.execution.pre_commit_docs_memory_helpers.validate_from_parsed",
             new_callable=AsyncMock,
         ) as mock_validate:
             mock_validate.side_effect = [
@@ -780,7 +780,7 @@ class TestRunDocsAndMemoryBankSync:
         }
 
         with patch(
-            "cortex.tools.execution.pre_commit_docs_memory_helpers.validate_impl",
+            "cortex.tools.execution.pre_commit_docs_memory_helpers.validate_from_parsed",
             new_callable=AsyncMock,
         ) as mock_validate:
             mock_validate.side_effect = [
@@ -816,7 +816,7 @@ class TestRunDocsAndMemoryBankSync:
         }
 
         with patch(
-            "cortex.tools.execution.pre_commit_docs_memory_helpers.validate_impl",
+            "cortex.tools.execution.pre_commit_docs_memory_helpers.validate_from_parsed",
             new_callable=AsyncMock,
         ) as mock_validate:
             mock_validate.side_effect = [
@@ -848,7 +848,7 @@ class TestRunDocsAndMemoryBankSync:
         }
 
         with patch(
-            "cortex.tools.execution.pre_commit_docs_memory_helpers.validate_impl",
+            "cortex.tools.execution.pre_commit_docs_memory_helpers.validate_from_parsed",
             new_callable=AsyncMock,
         ) as mock_validate:
             mock_validate.side_effect = [
@@ -864,7 +864,7 @@ class TestRunDocsAndMemoryBankSync:
     async def test_invalid_json_from_validation_handled(self) -> None:
         """Invalid JSON from validate() is gracefully handled as None."""
         with patch(
-            "cortex.tools.execution.pre_commit_docs_memory_helpers.validate_impl",
+            "cortex.tools.execution.pre_commit_docs_memory_helpers.validate_from_parsed",
             new_callable=AsyncMock,
         ) as mock_validate:
             mock_validate.side_effect = ["NOT-JSON", "ALSO-NOT-JSON"]
@@ -892,7 +892,7 @@ class TestRunDocsAndMemoryBankSync:
             },
         }
         with patch(
-            "cortex.tools.execution.pre_commit_docs_memory_helpers.validate_impl",
+            "cortex.tools.execution.pre_commit_docs_memory_helpers.validate_from_parsed",
             new_callable=AsyncMock,
         ) as mock_validate:
             mock_validate.side_effect = ["[1, 2]", json.dumps(roadmap_payload)]
@@ -928,7 +928,7 @@ class TestRunDocsAndMemoryBankSync:
         }
 
         with patch(
-            "cortex.tools.execution.pre_commit_docs_memory_helpers.validate_impl",
+            "cortex.tools.execution.pre_commit_docs_memory_helpers.validate_from_parsed",
             new_callable=AsyncMock,
         ) as mock_validate:
             mock_validate.side_effect = [
@@ -986,7 +986,7 @@ class TestRunDocsAndMemoryBankProgressConsistency:
         }
         with (
             patch(
-                "cortex.tools.execution.pre_commit_docs_memory_helpers.validate_impl",
+                "cortex.tools.execution.pre_commit_docs_memory_helpers.validate_from_parsed",
                 new_callable=AsyncMock,
             ) as mock_validate,
             patch(

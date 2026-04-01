@@ -100,12 +100,7 @@ TOOL_CATEGORIES: tuple[ToolCategoryEntry, ...] = (
         rationale="Zero-arg Phase A quality gate",
     ),
     ToolCategoryEntry(
-        name="run_quality_gate_fresh",
-        category=ToolCategory.ALWAYS_LOADED,
-        rationale="Zero-arg fresh Phase A gate for Step 12 final validation",
-    ),
-    ToolCategoryEntry(
-        name="fix_quality_issues",
+        name="autofix",
         category=ToolCategory.ALWAYS_LOADED,
         rationale="Zero-arg auto-fix for formatting, linting, type, and markdown errors",
     ),
@@ -235,28 +230,12 @@ def _deferred_entries(
     return deferred
 
 
-def search_deferred_tools(
-    query: str,
-    *,
-    category: ToolCategoryName | None = None,
-    limit: int = 20,
+def _match_deferred_entries(
+    pattern: re.Pattern[str],
+    category: ToolCategoryName | None,
+    limit: int,
 ) -> list[ToolSearchResult]:
-    """Search deferred tools by regex over name and rationale.
-
-    Args:
-        query: Search string; compiled as case-insensitive regex.
-        category: If set, restrict to this category (deferred_medium or deferred_low).
-        limit: Maximum number of results to return (default 20).
-
-    Returns:
-        List of matching deferred tools, ordered by category (medium first) then name.
-    """
-    if not query or not query.strip():
-        return []
-    try:
-        pattern = re.compile(re.escape(query.strip()), re.IGNORECASE)
-    except re.error:
-        return []
+    """Return deferred entries matching pattern, up to limit."""
     matches: list[ToolSearchResult] = []
     for entry in _deferred_entries(category):
         if pattern.search(entry.name) or pattern.search(entry.rationale):
@@ -270,3 +249,19 @@ def search_deferred_tools(
         if len(matches) >= limit:
             break
     return matches[:limit]
+
+
+def search_deferred_tools(
+    query: str,
+    *,
+    category: ToolCategoryName | None = None,
+    limit: int = 20,
+) -> list[ToolSearchResult]:
+    """Search deferred tools by regex over name and rationale."""
+    if not query or not query.strip():
+        return []
+    try:
+        pattern = re.compile(re.escape(query.strip()), re.IGNORECASE)
+    except re.error:
+        return []
+    return _match_deferred_entries(pattern, category, limit)

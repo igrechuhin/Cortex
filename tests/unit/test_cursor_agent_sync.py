@@ -263,12 +263,11 @@ class TestInjectToolsIntoFrontmatter:
     def test_rewrites_multiple_tool_refs(self) -> None:
         """All Cortex tool references in the body are rewritten."""
         content = (
-            "---\nname: test\n---\n\n"
-            "Call `run_quality_gate()` then `fix_quality_issues()`."
+            "---\nname: test\n---\n\n" "Call `run_quality_gate()` then `autofix()`."
         )
         result = inject_tools_into_frontmatter(content)
         assert "`mcp__cortex__run_quality_gate(" in result
-        assert "`mcp__cortex__fix_quality_issues(" in result
+        assert "`mcp__cortex__autofix(" in result
 
     def test_non_cortex_tool_refs_unchanged(self) -> None:
         """Backtick calls to non-Cortex names are not rewritten in the body."""
@@ -288,9 +287,9 @@ class TestInjectToolsIntoFrontmatter:
 
     def test_no_frontmatter_still_rewrites_tool_refs(self) -> None:
         """Even without frontmatter, tool refs in body are rewritten."""
-        content = "Call `fix_quality_issues()` here."
+        content = "Call `autofix()` here."
         result = inject_tools_into_frontmatter(content)
-        assert "`mcp__cortex__fix_quality_issues(" in result
+        assert "`mcp__cortex__autofix(" in result
 
     def test_existing_tools_field_preserved(self) -> None:
         """Content that already has a tools field is not double-injected."""

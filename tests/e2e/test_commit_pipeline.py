@@ -13,7 +13,7 @@ import pytest
 
 from cortex.tools.execution.pre_commit_tools import execute_pre_commit_checks
 from cortex.tools.files.operations import manage_file
-from cortex.tools.validation.operations import validate
+from cortex.tools.validation.operations import validate_impl as validate
 from tests.helpers.path_helpers import ensure_test_cortex_structure
 from tests.helpers.tool_call_helpers import get_tool_fn
 
@@ -32,11 +32,27 @@ def _write_minimal_memory_bank(memory_bank_dir: Path) -> None:
         _ = (memory_bank_dir / name).write_text(f"# {name}\n")
 
 
+async def _step_manage_file_read(file_name: str) -> dict[str, object]:
+    """Read a memory bank file and assert success."""
+    read_result = await manage_file(operation="read", file_name=file_name)
+    read_data = json.loads(read_result) if isinstance(read_result, str) else read_result
+    assert read_data.get("status") == "success"
+    return cast(dict[str, object], read_data)
+
+
+async def _step_validate_schema(file_name: str) -> object:
+    """Run schema validation and assert non-None result."""
+    validate_fn = get_tool_fn(validate)
+    val_result = await validate_fn(check_type="schema", file_name=file_name, ctx=None)
+    assert val_result is not None
+    return val_result
+
+
 @pytest.mark.slow
 @pytest.mark.timeout(180)
 @pytest.mark.asyncio
 async def test_commit_pipeline_manage_file_validate_pre_commit(tmp_path: Path) -> None:
-    """E2E: manage_file read → validate → execute_pre_commit_checks (3 tools)."""
+    """E2E: manage_file read -> validate -> execute_pre_commit_checks (3 tools)."""
     memory_bank_dir = ensure_test_cortex_structure(tmp_path)
     _write_minimal_memory_bank(memory_bank_dir)
 
@@ -45,27 +61,9 @@ async def test_commit_pipeline_manage_file_validate_pre_commit(tmp_path: Path) -
         new_callable=AsyncMock,
         return_value=tmp_path,
     ):
-        # 1) manage_file read (simulate "before change")
-        read_result = await manage_file(
-            operation="read",
-            file_name="activeContext.md",
-        )
-        read_data = (
-            json.loads(read_result) if isinstance(read_result, str) else read_result
-        )
-        assert read_data.get("status") == "success"
+        _ = await _step_manage_file_read("activeContext.md")
+        _ = await _step_validate_schema("activeContext.md")
 
-        # 2) validate roadmap_sync or schema (light check)
-        validate_fn = get_tool_fn(validate)
-        val_result = await validate_fn(
-            check_type="schema",
-            file_name="activeContext.md",
-            ctx=None,
-        )
-        assert val_result is not None
-
-        # 3) execute_pre_commit_checks (light: format only, short timeout)
-        # In tmp_path there may be no src/; tool may return success or report no files
         pre_commit_result = await execute_pre_commit_checks(
             checks=["format"],
             test_timeout=60,
@@ -73,7 +71,6 @@ async def test_commit_pipeline_manage_file_validate_pre_commit(tmp_path: Path) -
             strict_mode=False,
             ctx=None,
         )
-        # execute_pre_commit_checks returns ModelDict (dict[str, JsonValue])
         result_dict = cast(dict[str, object], pre_commit_result)
         assert "status" in result_dict or "checks" in result_dict
 

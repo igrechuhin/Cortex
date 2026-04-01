@@ -15,13 +15,12 @@ CLAUDE_CODE_TOOLS_FIELD = "tools: mcp__cortex__*"
 # agent instructions so Claude Code can call them as `mcp__cortex__tool(`.
 CORTEX_TOOL_NAMES: frozenset[str] = frozenset(
     [
-        "fix_quality_issues",
+        "autofix",
         "manage_file",
         "pipeline_handoff",
         "plan",
         "run_docs_gate",
         "run_quality_gate",
-        "run_quality_gate_fresh",
         "session",
         "think",
         "update_memory_bank",

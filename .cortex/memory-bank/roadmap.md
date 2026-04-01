@@ -6,6 +6,8 @@
 
 ## Blockers (ASAP Priority)
 
+- [Phase: Investigate validate_impl MCP Tool Failure](../plans/phase-investigate-validate_impl-failure-20260331-195026.md) - ASAP (PLANNING) - Investigate and fix MCP tool failure that occurred during commit procedure - Tool: `validate_impl`, Error: TypeError - Impact: Commit procedure blocked - Target completion: 2026-03-31
+
 ## Active Work (in progress)
 
 ## Future Enhancements

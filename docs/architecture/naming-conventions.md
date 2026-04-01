@@ -20,7 +20,7 @@ Define a unified naming rubric for Cortex MCP **tools**, **`cortex://` resources
 | Rule | Example |
 |------|---------|
 | snake_case | manage_file, query_memory_bank |
-| Verb-first for actions | fix_quality_issues, run_quality_gate |
+| Verb-first for actions | autofix, run_quality_gate |
 | Noun for dispatchers (when established) | plan, roadmap, rules — acceptable for consolidated dispatchers with operation parameter |
 | No get_* for writes | ❌ get_file (if it wrote); ✓ manage_file |
 
@@ -92,7 +92,7 @@ Action prompts use verb-first names: `commit`, `implement`, `analyze`, `fix-test
 |---------|---------|
 | manage_* | manage_file |
 | query_* | query_memory_bank, query_usage |
-| fix_* | fix_quality_issues, fix_markdown_lint |
+| fix_* | autofix, fix_markdown_lint |
 | append_* | append_entry |
 | execute_* | Legacy pre-commit helpers (prefer run_quality_gate zero-arg) |
 

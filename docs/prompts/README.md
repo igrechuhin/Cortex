@@ -31,7 +31,7 @@ Cortex registers each prompt with an **emoji icon** (per MCP spec): setup prompt
 
 ## Quality and pre-commit in Cursor prompts
 
-When authoring or reviewing Synapse prompts (for example under `.cortex/synapse/prompts/`), prefer zero-arg **`fix_quality_issues()`** and **`run_quality_gate()`** when targeting Cursor — the MCP bridge may strip JSON tool parameters. Do not treat the legacy parameterized trio (names in the block below) as the primary Cursor path:
+When authoring or reviewing Synapse prompts (for example under `.cortex/synapse/prompts/`), prefer zero-arg **`autofix()`** and **`run_quality_gate()`** when targeting Cursor — the MCP bridge may strip JSON tool parameters. Do not treat the legacy parameterized trio (names in the block below) as the primary Cursor path:
 
 ```text
 execute_pre_commit_checks

@@ -1,5 +1,5 @@
 """
-Models for execute_pre_commit_checks, fix_quality_issues, run_preflight_checks,
+Models for execute_pre_commit_checks, autofix, run_preflight_checks,
 run_docs_and_memory_bank_sync, cleanup_metadata_index, and pre-commit result types.
 """
 
@@ -77,7 +77,7 @@ ExecutePreCommitChecksResultUnion = (
 
 
 class FixQualityIssuesResult(ToolResultBase):
-    """Result of fix_quality_issues operation (success)."""
+    """Result of autofix operation (success)."""
 
     status: ToolResultStatus = Field(default=ToolResultStatus.SUCCESS)
     errors_fixed: int
@@ -91,7 +91,7 @@ class FixQualityIssuesResult(ToolResultBase):
 
 
 class FixQualityIssuesErrorResult(ErrorResultBase):
-    """Error result for fix_quality_issues operations."""
+    """Error result for autofix operations."""
 
     errors_fixed: int = 0
     warnings_fixed: int = 0

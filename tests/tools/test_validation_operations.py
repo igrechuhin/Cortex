@@ -27,7 +27,12 @@ from cortex.tools.validation.helpers import (
 from cortex.tools.validation.infrastructure import (
     handle_infrastructure_validation,
 )
-from cortex.tools.validation.operations import validate, validate_resource
+from cortex.tools.validation.operations import (
+    validate,
+)
+from cortex.tools.validation.operations import (
+    validate_impl as _validate_impl,
+)
 from cortex.tools.validation.quality import (
     handle_quality_validation,
     validate_quality_all_files,
@@ -1227,7 +1232,7 @@ class TestValidateMainFunction:
             mock_dispatch.return_value = json.dumps({"status": "success"})
 
             # Act
-            result = await validate(check_type="schema")
+            result = await _validate_impl(check_type="schema")
 
             # Assert
             result_data = json.loads(result)
@@ -1253,7 +1258,7 @@ class TestValidateMainFunction:
             mock_handle.return_value = json.dumps({"status": "success"})
 
             # Act
-            result = await validate(check_type="duplications")
+            result = await _validate_impl(check_type="duplications")
 
             # Assert
             result_data = json.loads(result)
@@ -1279,7 +1284,7 @@ class TestValidateMainFunction:
             mock_handle.return_value = json.dumps({"status": "success"})
 
             # Act
-            result = await validate(check_type="quality")
+            result = await _validate_impl(check_type="quality")
 
             # Assert
             result_data = json.loads(result)
@@ -1316,7 +1321,7 @@ class TestValidateMainFunction:
             )
 
             # Act
-            result = await validate(
+            result = await _validate_impl(
                 check_type="infrastructure",  # type: ignore[arg-type]
             )
 
@@ -1373,7 +1378,7 @@ class TestValidateMainFunction:
             mock_setup.return_value = {}
 
             # Act
-            result = await validate(
+            result = await _validate_impl(
                 check_type="invalid",  # type: ignore[arg-type]
             )
 
@@ -1392,7 +1397,7 @@ class TestValidateMainFunction:
             mock_setup.side_effect = RuntimeError("Setup failed")
 
             # Act
-            result = await validate(check_type="schema")
+            result = await _validate_impl(check_type="schema")
 
             # Assert
             result_data = json.loads(result)
@@ -1421,7 +1426,7 @@ class TestValidateMainFunction:
             )
 
             # Act
-            result = await validate(
+            result = await _validate_impl(
                 check_type="duplications",
                 file_name="test.md",
                 strict_mode=True,
@@ -1466,7 +1471,7 @@ class TestValidateContextLogging:
             mock_prepare.return_value = (tmp_path, {})
 
             # Act
-            result = await validate(
+            result = await _validate_impl(
                 check_type="schema",
                 ctx=mock_ctx,
             )
@@ -1492,7 +1497,7 @@ class TestValidateContextLogging:
             new_callable=AsyncMock,
         ) as mock_log:
             # Act
-            result = await validate(
+            result = await _validate_impl(
                 check_type="invalid",  # type: ignore[arg-type]
                 ctx=mock_ctx,
             )
@@ -1527,7 +1532,7 @@ class TestValidateContextLogging:
             ),
         ):
             # Act
-            result = await validate(
+            result = await _validate_impl(
                 check_type="schema",
                 ctx=mock_ctx,
             )
@@ -1937,11 +1942,11 @@ class TestHandleRoadmapSyncValidation:
 
 
 class TestValidateResource:
-    """Test validate_resource (Phase 43 Phase 3 Validation resource)."""
+    """Test validate resource (Phase 43 Phase 3 Validation resource)."""
 
     @pytest.mark.asyncio
-    async def test_validate_resource_returns_json_success(self, tmp_path: Path) -> None:
-        """Test validate_resource returns valid JSON (zero-arg, session config)."""
+    async def test_validate_returns_json_success(self, tmp_path: Path) -> None:
+        """Test validate returns valid JSON (zero-arg, session config)."""
         memory_bank_dir = get_cortex_path(tmp_path, CortexResourceType.MEMORY_BANK)
         memory_bank_dir.mkdir(parents=True)
         with (
@@ -1960,7 +1965,7 @@ class TestValidateResource:
             mock_dispatch.return_value = json.dumps(
                 {"status": "success", "check_type": "schema"}
             )
-            result = await validate_resource()
+            result = await validate()
         result_data = json.loads(result)
         assert "status" in result_data
         assert result_data["status"] in ("success", "error")
@@ -1968,14 +1973,14 @@ class TestValidateResource:
             assert result_data["check_type"] == "schema"
 
     @pytest.mark.asyncio
-    async def test_validate_resource_defaults_to_timestamps(self) -> None:
-        """Test validate_resource defaults to timestamps when no session config."""
+    async def test_validate_defaults_to_timestamps(self) -> None:
+        """Test validate defaults to timestamps when no session config."""
         with patch(
             "cortex.core.session_config.read_session_config",
             return_value={},
         ):
             # Should not error — "timestamps" is a valid check_type
-            result = await validate_resource()
+            result = await validate()
         # The call may fail due to missing project root, but the check_type
         # should be valid (not "invalid check_type" error)
         result_data = json.loads(result)

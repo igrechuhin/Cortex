@@ -21,7 +21,7 @@ Catalog current names for Cortex MCP tools, `cortex://` resources, and Synapse p
 | `*_file` | manage_file | ✓ |
 | `append_*` | append_entry | Imperative; side effects. ✓ (consolidates append_progress_entry, append_active_context_entry) |
 | `execute_*` | run_quality_gate (Phase A; legacy `execute_*` helpers) | ✓ |
-| `fix_*` | fix_quality_issues, fix_markdown_lint | Imperative. ✓ |
+| `fix_*` | autofix, fix_markdown_lint | Imperative. ✓ |
 | `check_*` | check_mcp_connection_health, check_structure_health | Read-only checks. ✓ |
 | `validate` | validate | Dispatcher; imperative. ✓ |
 | `load_*` | load_context | Read-only; has resource. ✓ |

@@ -15,10 +15,9 @@ This project has a **Cortex MCP server** that provides tools for everything agen
 | `plan()` | Plan create/list/get/complete/register/archive_completed |
 | `update_memory_bank()` | Roadmap/progress/activeContext mutations |
 | `pipeline_handoff()` | Inter-phase state exchange (init/write/read/clear) |
-| `run_quality_gate()` | Phase A quality checks (zero-arg) |
-| `run_quality_gate_fresh()` | Step 12 final gate (zero-arg, clears cache) |
+| `run_quality_gate()` | Phase A quality checks and Step 12 final gate (zero-arg) |
 | `run_docs_gate()` | Phase B docs validation (zero-arg) |
-| `fix_quality_issues()` | Auto-fix lint/format/types/markdown (zero-arg) |
+| `autofix()` | Auto-fix lint/format/types/markdown (zero-arg) |
 | `think()` | Reasoning scratchpad |
 
 ### Resources (6 — read-only, all static/zero-arg)
@@ -40,7 +39,7 @@ This project has a **Cortex MCP server** that provides tools for everything agen
 | Coding rules, standards | `cortex://rules` resource | Read `.cortex/rules/` or `.cortex/synapse/` directly |
 | Type annotations | Read rules via `cortex://rules` before coding; Pydantic models for internal data; `object` only for MCP tool params | Use `Any` type; skip loading rules |
 | Markdown formatting | [docs/guides/markdown-formatting.md](docs/guides/markdown-formatting.md) | Use bold for section titles (use `#`/`##`/`###` instead) |
-| Quality fixes | `fix_quality_issues()` | Run language-specific formatters/linters manually |
+| Quality fixes | `autofix()` | Run language-specific formatters/linters manually |
 | Tests and pre-commit | `run_quality_gate()` | Run pytest/ruff/black/pyright directly |
 | Quality pipeline reference | [docs/api/tools.md — zero-arg quality tools](docs/api/tools.md#commit-and-quality-pipeline-zero-arg-mcp-tools) | Legacy parameterized pre-commit tools or job polling when the bridge strips args |
 | Memory bank, roadmap, plans | `manage_file()`, `plan()`, `update_memory_bank()` | Edit `.cortex/` files directly |
@@ -130,10 +129,9 @@ All pipelines (commit, implement) run **inline** in the orchestrator — no suba
 
 **Zero-arg tools**: All MCP tools work with empty `{}` arguments (Cursor's MCP bridge strips args). Tools read config from session files or use sensible defaults. Key zero-arg tools:
 
-- `run_quality_gate()` — Phase A quality gate
-- `run_quality_gate_fresh()` — Phase A with cache clear (Step 12)
+- `run_quality_gate()` — Phase A quality gate and Step 12 final gate (write `{"force_fresh": true, "test_timeout": 600}` via `pipeline_handoff` first for Step 12)
 - `run_docs_gate()` — Phase B docs validation
-- `fix_quality_issues()` — Auto-fix formatting/linting/types/markdown
+- `autofix()` — Auto-fix formatting/linting/types/markdown
 
 **Pipeline state**: `pipeline_handoff(operation="write|read|init|clear", pipeline="...", phase="...")` exchanges structured JSON via `.cortex/.session/` files. Supports resumability after context compression.
 
@@ -143,7 +141,7 @@ All phases run inline. Use zero-arg tools — do NOT use legacy pre-commit tools
 
 - **Phase A**: `run_quality_gate()` — runs all quality checks end-to-end
 - **Phase B**: `run_docs_gate()` — validates timestamps and sync
-- **Step 12**: `run_quality_gate_fresh()` — final gate with cache clear
+- **Step 12**: `pipeline_handoff(write, checks, {"force_fresh": true, "test_timeout": 600})` then `run_quality_gate()` — final gate with cache clear
 - **Zero-errors policy**: Any check with errors blocks commit
 - **Doc-only when tooling unavailable**: See [Troubleshooting](docs/guides/troubleshooting.md#quality-gate-unavailable-in-environment).
 
@@ -194,7 +192,7 @@ All phases run inline. Use zero-arg tools — do NOT use legacy pre-commit tools
 - Archived plans must live under `.cortex/plans/archive` (not `.cortex/archived/plans`) so completed plans stay in the canonical archive tree.
 - When editing `roadmap.md` pending bullets, avoid bare dotted Python filenames, backticked paths such as `pre_commit_foo`/`pre_commit_bar`, and the root Node manifest name written as one token; the roadmap file-reference scanner can treat those as real paths and fail `roadmap_sync`.
 - Synapse Python standards forbid `from typing import TYPE_CHECKING` and `if TYPE_CHECKING:` conditional imports; use normal imports (including under `tests/`) instead of that pattern.
-- Phase A `run_quality_gate()` can reuse cached fingerprints so typecheck output may not match the current working tree; if pyright errors look stale versus local `pyright`, run `run_quality_gate_fresh()` once before treating results as ground truth.
+- Phase A `run_quality_gate()` can reuse cached fingerprints so typecheck output may not match the current working tree; if pyright errors look stale versus local `pyright`, write `{"force_fresh": true}` via `pipeline_handoff(write, checks, ...)` then call `run_quality_gate()` once before treating results as ground truth.
 - The docs gate `roadmap_progress_consistency` check fails when `progress.md` contains any `PARTIAL` line but `roadmap.md` has no `PENDING` backlog bullet; keep at least one real `PENDING` item while unfinished work remains in progress, or resolve the PARTIAL entries.
 - In this repo environment, prefer `python3` over `python` in shell commands (the `python` shim may point to a legacy interpreter).
 

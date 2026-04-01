@@ -49,6 +49,20 @@ EXTENSION_SCRIPT_MAP: dict[str, str] = {
     ".jsx": "javascript",
 }
 
+# Maps detected language -> default post-edit hook command.
+# Used by LanguageQualityRouter so hook template resolution is data-driven.
+LANGUAGE_POST_EDIT_HOOK_COMMANDS: dict[str, str | None] = {
+    "python": "python3 -m pytest tests/ --timeout=30 -x -q 2>&1 | tail -20",
+    "typescript": "npm test --if-present 2>&1 | tail -20",
+    "javascript": "npm test --if-present 2>&1 | tail -20",
+    "rust": "cargo test 2>&1 | tail -20",
+    "go": "go test ./... 2>&1 | tail -20",
+    "java": "./mvnw test -q 2>&1 | tail -20",
+    "swift": "swift build 2>&1 | tail -20",
+    "kotlin": None,
+    "csharp": "dotnet test 2>&1 | tail -20",
+}
+
 # Paths excluded from function-length check (MCP dispatchers; used by pre_commit + scripts)
 FUNCTION_LENGTH_EXCLUDED_PATHS: tuple[str, ...] = (
     "src/cortex/tools/plans/plan.py",
@@ -143,9 +157,7 @@ MCP_TOOL_TIMEOUT_VERY_COMPLEX = (
     960.0  # Very complex: full tests (~15min), large refactors
 )
 MCP_TOOL_TIMEOUT_EXTERNAL = 120.0  # External operations: network, git sync
-MCP_TOOL_TIMEOUT_QUALITY_FIXES = (
-    60.0  # Quality auto-fix tools (e.g. fix_quality_issues)
-)
+MCP_TOOL_TIMEOUT_QUALITY_FIXES = 60.0  # Quality auto-fix tools (e.g. autofix)
 
 # Progress reporting (Phase 46)
 PROGRESS_REPORT_INTERVAL_SECONDS = 10  # Report progress every N seconds

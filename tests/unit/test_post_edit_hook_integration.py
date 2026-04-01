@@ -145,6 +145,7 @@ class TestUnknownLanguageFallback:
         ("rust", "cargo test"),
         ("go", "go test"),
         ("java", "mvnw test"),
+        ("csharp", "dotnet test"),
     ],
 )
 def test_all_supported_languages_produce_valid_hook_in_project(
