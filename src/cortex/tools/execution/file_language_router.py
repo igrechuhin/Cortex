@@ -117,6 +117,8 @@ def run_quality_checks_for_all_languages(
     for language, lang_files in sorted(grouped.items()):
         if not lang_files:
             continue
+        if not _language_has_required_scripts(resolved_root, language):
+            raise _missing_language_scripts_error(resolved_root, language)
         fs_result = _run_script_with_files(
             resolved_root, language, "check_file_sizes.py", lang_files
         )
@@ -141,6 +143,31 @@ def _resolve_synapse_python_bin(project_root: Path) -> Path:
     """Resolve Python binary for running synapse scripts."""
     venv_python = get_venv_bin_path(project_root) / "python"
     return venv_python if venv_python.exists() else Path("python3")
+
+
+def _language_has_required_scripts(project_root: Path, language: str) -> bool:
+    """Return True when both quality scripts exist for a language."""
+    synapse_root = get_cortex_path(project_root, CortexResourceType.SYNAPSE)
+    scripts_dir = synapse_root / "scripts" / language
+    return (scripts_dir / "check_file_sizes.py").exists() and (
+        scripts_dir / "check_function_lengths.py"
+    ).exists()
+
+
+def _missing_language_scripts_error(project_root: Path, language: str) -> RuntimeError:
+    """Build a user-facing error when language scripts are not scaffolded."""
+    synapse_root = get_cortex_path(project_root, CortexResourceType.SYNAPSE)
+    scripts_dir = synapse_root / "scripts" / language
+    missing: list[str] = []
+    for script_name in ("check_file_sizes.py", "check_function_lengths.py"):
+        if not (scripts_dir / script_name).exists():
+            missing.append(script_name)
+    missing_str = ", ".join(missing) if missing else "unknown scripts"
+    message = (
+        f"Missing required quality scripts for language '{language}': {missing_str}. "
+        f"Expected under {scripts_dir}."
+    )
+    return RuntimeError(message)
 
 
 def _synapse_script_skipped_result(check_type: str, language: str) -> CheckResult:

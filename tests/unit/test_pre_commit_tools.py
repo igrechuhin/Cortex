@@ -1613,10 +1613,16 @@ class TestQualityCheckIntegration:
                     files_modified=[],
                 )
 
-                with patch(
-                    "cortex.tools.execution.pre_commit_tools_execute_checks.get_or_resolve_project_root",
-                    new_callable=AsyncMock,
-                    return_value=project_root,
+                with (
+                    patch(
+                        "cortex.tools.execution.pre_commit_tools_execute_checks.get_or_resolve_project_root",
+                        new_callable=AsyncMock,
+                        return_value=project_root,
+                    ),
+                    patch(
+                        "cortex.tools.execution.pre_commit_pipeline_quality.run_quality_checks_for_all_languages",
+                        return_value=([], []),
+                    ),
                 ):
                     result = await execute_pre_commit_checks(
                         checks=["quality"],
@@ -1683,10 +1689,16 @@ class TestLogTruncationBehavior:
                     files_modified=[],
                 )
 
-                with patch(
-                    "cortex.tools.execution.pre_commit_tools_execute_checks.get_or_resolve_project_root",
-                    new_callable=AsyncMock,
-                    return_value=project_root,
+                with (
+                    patch(
+                        "cortex.tools.execution.pre_commit_tools_execute_checks.get_or_resolve_project_root",
+                        new_callable=AsyncMock,
+                        return_value=project_root,
+                    ),
+                    patch(
+                        "cortex.tools.execution.pre_commit_pipeline_quality.run_quality_checks_for_all_languages",
+                        return_value=([], []),
+                    ),
                 ):
                     result = await execute_pre_commit_checks(
                         checks=["quality"],

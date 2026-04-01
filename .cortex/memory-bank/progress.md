@@ -1,5 +1,10 @@
 # Progress Log
 
+## 2026-04-01
+
+- **Phase: Investigate validate_impl MCP Tool Failure** - COMPLETE. Removed stale roadmap blocker entry for an already resolved plan and verified quality gate passes.
+- **Migration: Language-Agnostic Rules and Scripts Scaffolding (follow-up)** - PARTIAL. Added script-availability gating in file language dispatch so only languages with required Synapse size/function scripts are routed, plus regression tests for unsupported-language skip behavior.
+
 ## 2026-03-31
 
 - **Migration: Language-Agnostic Rules and Scripts Scaffolding (follow-up)** - PARTIAL. Added first-class `csharp` language-pack scaffolding hints (`dotnet build`/`dotnet test`) in `language_scripts_scaffolding` and expanded unit coverage; roadmap item remains open for additional language-pack/template reconciliation.

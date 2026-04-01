@@ -56,8 +56,8 @@ jobs:
           mkdir -p wheelhouse
           uv export --frozen --all-extras --all-groups --no-hashes --no-annotate \
             --no-emit-project -o /tmp/bootstrap-offline-reqs.txt
-          uv pip download -r /tmp/bootstrap-offline-reqs.txt -d wheelhouse --python 3.13
-          uv pip download "uv_build" -d wheelhouse --python 3.13
+          python3 -m pip download -r /tmp/bootstrap-offline-reqs.txt -d wheelhouse
+          python3 -m pip download "uv_build" -d wheelhouse
 
       - name: Bootstrap without network (Docker)
         run: |

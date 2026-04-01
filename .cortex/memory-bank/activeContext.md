@@ -2,6 +2,12 @@
 
 **This file records completed work only.** For current status and upcoming work see [roadmap.md](roadmap.md).
 
+## Completed Work (2026-04-01)
+
+- ✅ **Phase: Investigate validate_impl MCP Tool Failure** - COMPLETE (2026-04-01) - Synchronized roadmap and plan state by removing the obsolete blocker entry and confirming repository health via quality gate.
+
+- ✅ **Language-agnostic script-gated dispatch (PARTIAL)** - COMPLETE (2026-04-01) - Updated file-language quality routing to dispatch only when both required Synapse scripts exist for a language, preventing false dispatch for unscaffolded language packs and keeping migration behavior explicit and safe.
+
 ## Completed Work (2026-03-31)
 
 - **Summary (2026-03-31)** - 1 entries archived.

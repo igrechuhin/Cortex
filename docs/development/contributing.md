@@ -102,8 +102,8 @@ From a machine with registry access, at the repository root:
 mkdir -p wheelhouse
 uv export --frozen --all-extras --all-groups --no-hashes --no-annotate \
   --no-emit-project -o /tmp/cortex-offline-reqs.txt
-uv pip download -r /tmp/cortex-offline-reqs.txt -d wheelhouse --python 3.13
-uv pip download "uv_build" -d wheelhouse --python 3.13
+python3 -m pip download -r /tmp/cortex-offline-reqs.txt -d wheelhouse
+python3 -m pip download "uv_build" -d wheelhouse
 ```
 
 The export matches what `uv sync --group dev --extra dev` installs (including optional `dev` and dependency-group `dev`). The extra `uv pip download "uv_build"` line vendors the build backend declared in `pyproject.toml` (`[build-system]` uses `uv_build`), which `uv sync` needs to build the package offline.

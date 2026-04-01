@@ -106,17 +106,18 @@ def test_mixed_language_repo_both_violations_caught(
 
 
 @pytest.mark.integration
-def test_unknown_extension_silently_skipped(
+def test_missing_language_scripts_raises_and_stops(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     _clear_synapse_config_env(monkeypatch)
     unknown = tmp_path / "foo.js"
     _ = unknown.write_text("const x = 1;\n" * 500, encoding="utf-8")
-
-    file_v, func_v = run_quality_checks_for_all_languages(_REPO_ROOT, files=[unknown])
-
-    assert file_v == []
-    assert func_v == []
+    with pytest.raises(RuntimeError) as exc_info:
+        _ = run_quality_checks_for_all_languages(_REPO_ROOT, files=[unknown])
+    message = str(exc_info.value)
+    assert "Missing required quality scripts for language 'javascript'" in message
+    assert "check_file_sizes.py" in message
+    assert "check_function_lengths.py" in message
 
 
 @pytest.mark.integration

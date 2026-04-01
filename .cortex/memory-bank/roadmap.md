@@ -6,8 +6,6 @@
 
 ## Blockers (ASAP Priority)
 
-- [Phase: Investigate validate_impl MCP Tool Failure](../plans/phase-investigate-validate_impl-failure-20260331-195026.md) - ASAP (PLANNING) - Investigate and fix MCP tool failure that occurred during commit procedure - Tool: `validate_impl`, Error: TypeError - Impact: Commit procedure blocked - Target completion: 2026-03-31
-
 ## Active Work (in progress)
 
 ## Future Enhancements
@@ -36,4 +34,4 @@ Completed investigations are recorded in [activeContext.md](activeContext.md). P
 
 ### Features & Enhancements
 
-- **Analyze Feedback Loop: Post-Prompt Self-Improvement** - PENDING - Auto-invoke analyze after every prompt; route findings to Skills, Plans, or Rules. Plan: `.cortex/plans/analyze-feedback-loop.md`
+- **Analyze Feedback Loop: Post-Prompt Self-Improvement** - PENDING - Auto-invoke analyze after every prompt; route findings to Skills, Plans, or Rules.

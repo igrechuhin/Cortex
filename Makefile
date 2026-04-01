@@ -35,7 +35,7 @@ bootstrap-offline:
 	@_wh_first="$$(find "$(WHEELHOUSE)" -mindepth 1 2>/dev/null | head -n 1)"; \
 	if [ -z "$$_wh_first" ]; then \
 		echo "error: wheelhouse is empty: $(WHEELHOUSE)"; \
-		echo "On a machine with network: uv export + uv pip download into $(WHEELHOUSE) (see docs/development/contributing.md#offline--restricted-network-setup)."; \
+		echo "On a machine with network: uv export + python3 -m pip download into $(WHEELHOUSE) (see docs/development/contributing.md#offline--restricted-network-setup)."; \
 		exit 1; \
 	fi
 	UV_NO_INDEX=1 UV_FIND_LINKS="$(CURDIR)/$(WHEELHOUSE)" uv python install 3.13

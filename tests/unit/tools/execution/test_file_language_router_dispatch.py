@@ -28,17 +28,20 @@ from cortex.tools.execution.pre_commit_pipeline_quality import execute_quality
 
 
 def test_run_returns_empty_when_no_supported_files(tmp_path: Path) -> None:
-    _ = (tmp_path / "foo.js").write_text("", encoding="utf-8")
+    _ = (tmp_path / "foo.unknownext").write_text("", encoding="utf-8")
     file_v, func_v = run_quality_checks_for_all_languages(tmp_path)
     assert file_v == []
     assert func_v == []
 
 
 @patch("cortex.tools.execution.file_language_router._run_script_with_files")
+@patch("cortex.tools.execution.file_language_router._language_has_required_scripts")
 def test_run_invokes_check_file_sizes_and_check_function_lengths(
+    mock_has_scripts: MagicMock,
     mock_run: MagicMock,
     tmp_path: Path,
 ) -> None:
+    mock_has_scripts.return_value = True
     mock_run.return_value = CheckResult(
         check_type="test",
         success=True,
@@ -58,10 +61,13 @@ def test_run_invokes_check_file_sizes_and_check_function_lengths(
 
 
 @patch("cortex.tools.execution.file_language_router._run_script_with_files")
+@patch("cortex.tools.execution.file_language_router._language_has_required_scripts")
 def test_run_returns_violations_parsed_from_script_output(
+    mock_has_scripts: MagicMock,
     mock_run: MagicMock,
     tmp_path: Path,
 ) -> None:
+    mock_has_scripts.return_value = True
     output = "  src/foo.py: 450 lines (max: 400, excess: 50)\n"
     mock_run.return_value = CheckResult(
         check_type="test",
@@ -79,10 +85,13 @@ def test_run_returns_violations_parsed_from_script_output(
 
 
 @patch("cortex.tools.execution.file_language_router._run_script_with_files")
+@patch("cortex.tools.execution.file_language_router._language_has_required_scripts")
 def test_run_merges_violations_across_languages(
+    mock_has_scripts: MagicMock,
     mock_run: MagicMock,
     tmp_path: Path,
 ) -> None:
+    mock_has_scripts.return_value = True
     py_output = "  src/foo.py: 450 lines (max: 400, excess: 50)\n"
     swift_output = "  Sources/Bar.swift: 410 lines (max: 400, excess: 10)\n"
 
@@ -102,11 +111,14 @@ def test_run_merges_violations_across_languages(
 
 
 @patch("cortex.tools.execution.file_language_router._run_script_with_files")
+@patch("cortex.tools.execution.file_language_router._language_has_required_scripts")
 def test_run_accepts_explicit_files_list(
+    mock_has_scripts: MagicMock,
     mock_run: MagicMock,
     tmp_path: Path,
 ) -> None:
     """Explicit files= parameter bypasses collect_project_files."""
+    mock_has_scripts.return_value = True
     mock_run.return_value = CheckResult(
         check_type="t",
         success=True,
@@ -121,6 +133,25 @@ def test_run_accepts_explicit_files_list(
 
     calls = mock_run.call_args_list
     assert any(c.args[1] == "swift" for c in calls)
+
+
+@patch("cortex.tools.execution.file_language_router._run_script_with_files")
+def test_run_skips_languages_without_required_scripts(
+    mock_run: MagicMock,
+    tmp_path: Path,
+) -> None:
+    _ = (tmp_path / "Main.java").write_text("class Main {}", encoding="utf-8")
+
+    try:
+        _ = run_quality_checks_for_all_languages(tmp_path)
+        assert False, "Expected RuntimeError for missing language scripts"
+    except RuntimeError as exc:
+        message = str(exc)
+        assert "Missing required quality scripts for language 'java'" in message
+        assert "check_file_sizes.py" in message
+        assert "check_function_lengths.py" in message
+
+    mock_run.assert_not_called()
 
 
 # ---------------------------------------------------------------------------
