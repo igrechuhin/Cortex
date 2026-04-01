@@ -6,6 +6,7 @@
 - **Migration: Language-Agnostic Rules and Scripts Scaffolding (follow-up)** - PARTIAL. Added script-availability gating in file language dispatch so only languages with required Synapse size/function scripts are routed, plus regression tests for unsupported-language skip behavior.
 - **Migration: Language-Agnostic Rules and Scripts Scaffolding (follow-up)** - PARTIAL. Added migration-level scaffolding warnings for non-native language script stubs, extended MigrationReport with scaffolding_warnings, and added unit tests for warning behavior in scaffolding and structure migration flows.
 - **Analyze Feedback Loop: Post-Prompt Self-Improvement** - PARTIAL. Auto-injected post-prompt hook guidance into prompt loading flow with recursion-safe exclusions (`analyze.md`, `post-prompt-hook.md`) and deduplication; added targeted tests and passed quality gate.
+- **Analyze Feedback Loop: Post-Prompt Self-Improvement** - COMPLETE. Confirmed end-to-end hook coverage for caller prompts (Synapse + project), router presence in analyze flow, manifest registration, and recursion-safety guards via structural tests.
 - **Migration: Language-Agnostic Rules and Scripts Scaffolding (follow-up)** - COMPLETE. Added C# migration language-pack reconciliation (detection markers, csharp rule template source, docs marker list, and tests) and validated with passing quality/docs gates.
 
 ## 2026-03-31

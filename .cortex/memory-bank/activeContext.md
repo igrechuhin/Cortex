@@ -12,6 +12,8 @@
 
 - ✅ **Analyze Feedback Loop: Post-Prompt Self-Improvement (PARTIAL)** - COMPLETE (2026-04-01) - Prompt loading now auto-appends post-prompt self-improvement hook instructions for prompts that do not already reference `post-prompt-hook.md`, excluding `analyze.md` and the hook file itself to prevent recursion. Added tests for injection, exclusion, and non-duplication.
 
+- ✅ **Analyze Feedback Loop: Post-Prompt Self-Improvement** - COMPLETE (2026-04-01) - Finalized the feedback loop by validating hook invocation coverage across caller prompts, confirming Skill/Plan/Rule routing structure in the analyze path, and verifying recursion-safe hook behavior and manifest registration.
+
 - ✅ **Migration: Language-Agnostic Rules and Scripts Scaffolding (follow-up)** - COMPLETE (2026-04-01) - Completed remaining language-pack reconciliation by adding C# migration detection markers, C# rules template scaffolding source, migration marker documentation, and regression tests; full quality/docs gates pass.
 
 ## Completed Work (2026-03-31)
@@ -207,6 +209,8 @@
 Next implementation slice: **[QG-S1] Add EXTENSION_SCRIPT_MAP** per [roadmap.md](roadmap.md) Blockers and `.cortex/plans/swift-qg-s1-add-extension-script-map.plan.md`.
 
 ## Recent Changes
+
+Memory-bank guardrail (2026-04-01): when `roadmap_progress_consistency` fails, never create synthetic reconciliation/verification backlog entries. Only keep concrete, implementation-ready roadmap items tied to real deliverables.
 
 Synapse sync timing (2026-03-28): submodule update runs when lazy prompts first register, after `resolve_project_root_async`, aligning sync with MCP roots (not only process CWD).
 

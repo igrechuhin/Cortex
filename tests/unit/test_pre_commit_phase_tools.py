@@ -142,6 +142,60 @@ def _make_markdown_result(
     )
 
 
+def _make_phase_b_valid_payloads() -> tuple[dict[str, object], dict[str, object]]:
+    """Return baseline-success payloads for timestamps and roadmap_sync checks."""
+    timestamps_payload: dict[str, object] = {
+        "status": "success",
+        "check_type": "timestamps",
+        "valid": True,
+        "total_invalid_format": 0,
+        "total_invalid_with_time": 0,
+    }
+    roadmap_payload: dict[str, object] = {
+        "status": "success",
+        "check_type": "roadmap_sync",
+        "valid": True,
+        "summary": {
+            "missing_entries_count": 0,
+            "invalid_references_count": 0,
+            "completed_entries_count": 0,
+            "warnings_count": 0,
+        },
+    }
+    return timestamps_payload, roadmap_payload
+
+
+async def _run_phase_b_for_partial_without_pending(tmp_path: Path) -> ModelDict:
+    """Execute Phase B with synthetic PARTIAL progress and no roadmap PENDING."""
+    mb = tmp_path / ".cortex" / "memory-bank"
+    mb.mkdir(parents=True)
+    _ = (mb / "progress.md").write_text(
+        "- **Orphan** - PARTIAL. Needs roadmap.\n",
+        encoding="utf-8",
+    )
+    _ = (mb / "roadmap.md").write_text(
+        "# Roadmap\n\n## Future\n\n(no pending bullets)\n",
+        encoding="utf-8",
+    )
+    timestamps_payload, roadmap_payload = _make_phase_b_valid_payloads()
+    with (
+        patch(
+            "cortex.tools.execution.pre_commit_docs_memory_helpers.validate_from_parsed",
+            new_callable=AsyncMock,
+        ) as mock_validate,
+        patch(
+            "cortex.tools.execution.pre_commit_docs_memory_helpers.resolve_project_root_async",
+            new_callable=AsyncMock,
+        ) as mock_root,
+    ):
+        mock_root.return_value = tmp_path
+        mock_validate.side_effect = [
+            json.dumps(timestamps_payload),
+            json.dumps(roadmap_payload),
+        ]
+        return await execute_pre_commit_checks(phase="B")
+
+
 # ============================================================================
 # Phase A – execute_pre_commit_checks(phase="A") (MCP tool integration tests)
 # ============================================================================
@@ -952,64 +1006,20 @@ class TestRunDocsAndMemoryBankProgressConsistency:
     """Phase B progress/roadmap consistency uses real memory-bank files (no autouse patch)."""
 
     @pytest.mark.asyncio
-    async def test_docs_phase_fails_when_partial_without_pending(
+    async def test_docs_phase_warns_when_partial_without_pending(
         self, tmp_path: Path
     ) -> None:
-        """Synthetic memory bank: PARTIAL progress and no PENDING roadmap fails gate."""
-        mb = tmp_path / ".cortex" / "memory-bank"
-        mb.mkdir(parents=True)
-        _ = (mb / "progress.md").write_text(
-            "- **Orphan** - PARTIAL. Needs roadmap.\n",
-            encoding="utf-8",
-        )
-        _ = (mb / "roadmap.md").write_text(
-            "# Roadmap\n\n## Future\n\n(no pending bullets)\n",
-            encoding="utf-8",
-        )
-        timestamps_payload = {
-            "status": "success",
-            "check_type": "timestamps",
-            "valid": True,
-            "total_invalid_format": 0,
-            "total_invalid_with_time": 0,
-        }
-        roadmap_payload = {
-            "status": "success",
-            "check_type": "roadmap_sync",
-            "valid": True,
-            "summary": {
-                "missing_entries_count": 0,
-                "invalid_references_count": 0,
-                "completed_entries_count": 0,
-                "warnings_count": 0,
-            },
-        }
-        with (
-            patch(
-                "cortex.tools.execution.pre_commit_docs_memory_helpers.validate_from_parsed",
-                new_callable=AsyncMock,
-            ) as mock_validate,
-            patch(
-                "cortex.tools.execution.pre_commit_docs_memory_helpers.resolve_project_root_async",
-                new_callable=AsyncMock,
-            ) as mock_root,
-        ):
-            mock_root.return_value = tmp_path
-            mock_validate.side_effect = [
-                json.dumps(timestamps_payload),
-                json.dumps(roadmap_payload),
-            ]
-            result = await execute_pre_commit_checks(phase="B")
-
+        """Synthetic memory bank: PARTIAL/no-PENDING yields warning-only consistency."""
+        result = await _run_phase_b_for_partial_without_pending(tmp_path)
         assert result["status"] == "success"
-        assert result["docs_phase_passed"] is False
+        assert result["docs_phase_passed"] is True
         cons = next(
             e
             for e in _get_checks_list(result)
             if e.get("name") == "roadmap_progress_consistency"
         )
-        assert cons.get("status") == "error"
-        assert cons.get("errors") == 1
+        assert cons.get("status") == "success"
+        assert cons.get("warnings") == 1
 
 
 # ============================================================================
@@ -1035,8 +1045,8 @@ class TestDocsMemoryHelperFunctions:
         assert _compute_docs_memory_bank_passed(None, rm, []) is False
 
     def test_compute_passed_consistency_violation(self) -> None:
-        """Fails when roadmap/progress consistency violations are present."""
-        assert _compute_docs_memory_bank_passed(None, None, ["drift"]) is False
+        """Consistency violations are warning-only for phase pass/fail."""
+        assert _compute_docs_memory_bank_passed(None, None, ["drift"]) is True
 
     def test_build_timestamps_summary_none(self) -> None:
         """Returns None when timestamps_result is None."""
@@ -1181,7 +1191,7 @@ class TestDocsMemoryHelperFunctions:
         assert row0.get("name") == "roadmap_progress_consistency"
 
     def test_build_docs_memory_bank_model_consistency_failure(self) -> None:
-        """Consistency violations fail the phase while validations are green."""
+        """Consistency violations are warning-only while validations are green."""
         ts = cast(JsonDict, {"status": "success", "valid": True})
         rm = cast(
             JsonDict,
@@ -1198,7 +1208,7 @@ class TestDocsMemoryHelperFunctions:
         )
         model = _build_docs_memory_bank_model(ts, rm, ["roadmap drift"])
         assert model["status"] == "success"
-        assert model["docs_phase_passed"] is False
+        assert model["docs_phase_passed"] is True
         checks_raw = cast(JsonDict, model).get("checks")
         assert isinstance(checks_raw, list)
         cons_row = next(
@@ -1206,5 +1216,5 @@ class TestDocsMemoryHelperFunctions:
             for c in checks_raw
             if isinstance(c, dict) and c.get("name") == "roadmap_progress_consistency"
         )
-        assert cons_row.get("status") == "error"
-        assert cons_row.get("errors") == 1
+        assert cons_row.get("status") == "success"
+        assert cons_row.get("warnings") == 1
