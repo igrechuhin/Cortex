@@ -1,18 +1,18 @@
 {
   "schema_version": "1.0.0",
   "created_at": "2026-01-25T21:38:36.940164",
-  "last_updated": "2026-04-01T13:40:56.544084",
+  "last_updated": "2026-04-01T15:50:48.672804",
   "project_root": ".",
   "memory_bank_dir": ".cortex/memory-bank",
   "files": {
     "roadmap.md": {
       "path": ".cortex/memory-bank/roadmap.md",
       "exists": true,
-      "size_bytes": 1814,
-      "token_count": 408,
+      "size_bytes": 1439,
+      "token_count": 315,
       "token_model": "cl100k_base",
-      "last_modified": "2026-03-31T19:59:03.883314",
-      "content_hash": "sha256:e0467e78c747822b8118ec345df57496a2779abc556522b493ea7c16d6fa1e72",
+      "last_modified": "2026-04-01T15:50:14.781094",
+      "content_hash": "sha256:60dd2429e5916abfd6dd5eeba02ad23045cb38d8d7430c5265d86ed0b70406f9",
       "sections": [
         {
           "heading": "# Roadmap: MCP Memory Bank",
@@ -26,120 +26,120 @@
           "heading": "## Blockers (ASAP Priority)",
           "level": 2,
           "line_start": 7,
-          "line_end": 10,
-          "content_hash": "sha256:06687bfebf434ba081d23ae81e990df0943c84262bcec12c8ff956c6fb1f7f62",
-          "token_count": 88
+          "line_end": 8,
+          "content_hash": "sha256:f93c417b935594999186af8600ec5c36ab63fb0364b8be77dc855b4840cbc326",
+          "token_count": 8
         },
         {
           "heading": "## Active Work (in progress)",
           "level": 2,
-          "line_start": 11,
-          "line_end": 12,
+          "line_start": 9,
+          "line_end": 10,
           "content_hash": "sha256:baeb6ce4690b40abc5cd3fc4ac2bb37bf24ee8216469135dc71597a2da079f4c",
           "token_count": 7
         },
         {
           "heading": "## Future Enhancements",
           "level": 2,
-          "line_start": 13,
-          "line_end": 14,
+          "line_start": 11,
+          "line_end": 12,
           "content_hash": "sha256:39d279dc49f50ce1ef1a7536a07ddf22dd1f85d39bbc4ea0f7bca90fe7dfe628",
           "token_count": 5
         },
         {
           "heading": "## Pending plans (from .cortex/plans)",
           "level": 2,
-          "line_start": 15,
-          "line_end": 18,
+          "line_start": 13,
+          "line_end": 16,
           "content_hash": "sha256:9bf96c1d14ccb66eedd8f07d4c5c4ecea641d59cf8e5d6ec28935bf3508e2919",
           "token_count": 55
         },
         {
           "heading": "### Fixes",
           "level": 3,
-          "line_start": 19,
-          "line_end": 20,
+          "line_start": 17,
+          "line_end": 18,
           "content_hash": "sha256:e95e398264bc220448791e96bbe1b9820683be0eacac135666c759f3b846bb1f",
           "token_count": 3
         },
         {
           "heading": "### Quality & Reliability Improvements",
           "level": 3,
-          "line_start": 21,
-          "line_end": 22,
+          "line_start": 19,
+          "line_end": 20,
           "content_hash": "sha256:f443706c61b231009cf59ae6ade3f28c073b0fca875ed5474846b23ff3c532eb",
           "token_count": 8
         },
         {
           "heading": "### Security",
           "level": 3,
-          "line_start": 23,
-          "line_end": 24,
+          "line_start": 21,
+          "line_end": 22,
           "content_hash": "sha256:4e54eaedd7fb54648d5f2b94310e1bc4882d61cfb9dbe0fd21ad5740f655e46f",
           "token_count": 3
         },
         {
           "heading": "### Documentation Cleanup (DRY)",
           "level": 3,
-          "line_start": 25,
-          "line_end": 26,
+          "line_start": 23,
+          "line_end": 24,
           "content_hash": "sha256:6f1edb5a57de8d32c4c71ac22f72c5162dcdcd57ffd2891200f1dd19a2334563",
           "token_count": 7
         },
         {
           "heading": "### Refactoring",
           "level": 3,
-          "line_start": 27,
-          "line_end": 28,
+          "line_start": 25,
+          "line_end": 26,
           "content_hash": "sha256:b9e7b888f7316c3961c7d4a578299bce810fc64b60c7c826d6a62ec04ec0bb5c",
           "token_count": 4
         },
         {
           "heading": "### Cleanup",
           "level": 3,
-          "line_start": 29,
-          "line_end": 30,
+          "line_start": 27,
+          "line_end": 28,
           "content_hash": "sha256:f492faf8dada7b264a2992e068f21b23c8196a67742c3d819f48995e3df0dc3a",
           "token_count": 3
         },
         {
           "heading": "### Investigation Plans (Archive / Reference)",
           "level": 3,
-          "line_start": 31,
-          "line_end": 34,
+          "line_start": 29,
+          "line_end": 32,
           "content_hash": "sha256:88cecd33202786f11280b0758ce7133af71b73a185f0700cca345c05ed80cde3",
           "token_count": 36
         },
         {
           "heading": "### Improvements",
           "level": 3,
-          "line_start": 35,
-          "line_end": 36,
+          "line_start": 33,
+          "line_end": 34,
           "content_hash": "sha256:18991a94ad5b90939e524781550e65c1f8382d2cdd3c8e4bfd63c94e954c2b8a",
           "token_count": 4
         },
         {
           "heading": "### Features & Enhancements",
           "level": 3,
-          "line_start": 37,
-          "line_end": 40,
-          "content_hash": "sha256:64404b660048c71d182ea90a291d12a1d392059c88cfbbedce00629ae3fbd493",
-          "token_count": 56
+          "line_start": 35,
+          "line_end": 38,
+          "content_hash": "sha256:6f517f54b4df4227a7f53853c6862bc8785d4140452628da43d28d030c785504",
+          "token_count": 43
         }
       ],
       "read_count": 0,
-      "write_count": 22,
-      "last_read": "2026-03-31T19:59:03.883314",
+      "write_count": 23,
+      "last_read": "2026-04-01T15:50:14.781094",
       "current_version": 11
     },
     "progress.md": {
       "path": ".cortex/memory-bank/progress.md",
       "exists": true,
-      "size_bytes": 13047,
-      "token_count": 2005,
+      "size_bytes": 13822,
+      "token_count": 3199,
       "token_model": "cl100k_base",
-      "last_modified": "2026-04-01T13:40:56.543366",
-      "content_hash": "sha256:c0cf70aad411b231b56e013736f1b3fb31795165df071477528adcf7457c1aa5",
+      "last_modified": "2026-04-01T15:50:48.672028",
+      "content_hash": "sha256:1ad74246a12e8e3ee539681d41d188ebb9d65df92e52f0abe821ccc171483541",
       "sections": [
         {
           "heading": "# Progress Log",
@@ -147,60 +147,68 @@
           "line_start": 1,
           "line_end": 2,
           "content_hash": "sha256:0081f513e848bf1f74d9a9bad8a88998d2fc2673d9cf6871e0eedbb5b5c638d2",
-          "token_count": 3
+          "token_count": 4
+        },
+        {
+          "heading": "## 2026-04-01",
+          "level": 2,
+          "line_start": 3,
+          "line_end": 8,
+          "content_hash": "sha256:dbfd6b80b7760f226792203d975b940c82bde4ac6bd467e320780ba55478ae1b",
+          "token_count": 154
         },
         {
           "heading": "## 2026-03-31",
           "level": 2,
-          "line_start": 3,
-          "line_end": 8,
+          "line_start": 9,
+          "line_end": 14,
           "content_hash": "sha256:556e61010bb2ff7abb0aa54540de1a57d5e5a03d10135ca67c19150ec5bd2262",
-          "token_count": 133
+          "token_count": 225
         },
         {
           "heading": "## 2026-03-30",
           "level": 2,
-          "line_start": 9,
-          "line_end": 20,
+          "line_start": 15,
+          "line_end": 26,
           "content_hash": "sha256:029e25bc072ddc60bad6ad736da46399244129a9b4ea03e2cde66641eda88264",
-          "token_count": 345
+          "token_count": 470
         },
         {
           "heading": "## 2026-03-29",
           "level": 2,
-          "line_start": 21,
-          "line_end": 50,
+          "line_start": 27,
+          "line_end": 56,
           "content_hash": "sha256:e69304169cb5f894218030c74076c872d6eba9b7ebba1ece9747911c8e7c2627",
-          "token_count": 1302
+          "token_count": 2032
         },
         {
           "heading": "## 2026-03-28",
           "level": 2,
-          "line_start": 51,
-          "line_end": 57,
+          "line_start": 57,
+          "line_end": 63,
           "content_hash": "sha256:28ac6509c9cc872b32e76c4bc92a50d37a075d8c8e8534c4c6163dccde4316b2",
-          "token_count": 161
+          "token_count": 228
         },
         {
           "heading": "## What Works",
           "level": 2,
-          "line_start": 58,
-          "line_end": 61,
+          "line_start": 64,
+          "line_end": 67,
           "content_hash": "sha256:3b086fceb97a0cc91c3f7d1589d686ccf624174efd5b0b97d33d8d9bc801a286",
-          "token_count": 52
+          "token_count": 77
         },
         {
           "heading": "## What's Left",
           "level": 2,
-          "line_start": 62,
-          "line_end": 65,
+          "line_start": 68,
+          "line_end": 71,
           "content_hash": "sha256:bd698cf51d2d59c2ce4333a538cddf8a4f5931df5ec383aeff37ff9c6c018f8b",
-          "token_count": 6
+          "token_count": 9
         }
       ],
       "read_count": 1,
-      "write_count": 4660,
-      "last_read": "2026-04-01T13:40:56.543366",
+      "write_count": 4661,
+      "last_read": "2026-04-01T15:50:48.672028",
       "current_version": 11
     },
     "activeContext.md": {
@@ -1039,8 +1047,8 @@
   },
   "totals": {
     "total_files": 7,
-    "total_size_bytes": 44583,
-    "total_tokens": 8681,
-    "last_full_scan": "2026-04-01T13:40:56.543388"
+    "total_size_bytes": 44983,
+    "total_tokens": 9782,
+    "last_full_scan": "2026-04-01T15:50:48.672057"
   }
 }

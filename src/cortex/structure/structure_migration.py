@@ -23,7 +23,10 @@ from cortex.core.path_resolver import (
 from cortex.structure.language_rules_scaffolding import (
     scaffold_language_rules_from_templates,
 )
-from cortex.structure.language_scripts_scaffolding import scaffold_language_scripts
+from cortex.structure.language_scripts_scaffolding import (
+    build_missing_native_script_warnings,
+    scaffold_language_scripts,
+)
 from cortex.structure.migration_strategies import (
     migrate_cursor_default,
     migrate_cursorrules,
@@ -164,6 +167,9 @@ class StructureMigrationManager:
             self.project_root, detected_languages
         )
         report["scripts_scaffolded"] = _to_json_list(scripts_scaffolded)
+        report["scaffolding_warnings"] = _to_json_list(
+            build_missing_native_script_warnings(self.project_root, detected_languages)
+        )
 
         scaffolded_by_language = _collect_scaffolded_languages(
             detected_languages,

@@ -31,6 +31,31 @@ def scaffold_language_scripts(project_root: Path, languages: list[str]) -> list[
     return scaffolded
 
 
+def build_missing_native_script_warnings(
+    project_root: Path, languages: list[str]
+) -> list[str]:
+    """Build migration warnings for languages without native Synapse scripts."""
+    warnings: list[str] = []
+    for language in languages:
+        if language in _LANGUAGES_WITH_NATIVE_SCRIPTS:
+            continue
+        script_path = (
+            project_root
+            / ".cortex"
+            / "synapse"
+            / "scripts"
+            / language
+            / "run_quality_check.sh"
+        )
+        warning = (
+            f"No native quality scripts found for {language}. "
+            f"Stub created at {script_path} "
+            "- customize for your toolchain."
+        )
+        warnings.append(warning)
+    return warnings
+
+
 def _write_text_if_missing(path: Path, content: str) -> list[str]:
     if path.exists():
         return []

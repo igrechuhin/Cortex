@@ -265,6 +265,7 @@ async def test_migrate_legacy_structure_detects_languages_and_scaffolds_swift_sc
 
     # Swift ships native scripts in Synapse; stub scaffolding skips swift.
     assert report.scripts_scaffolded == []
+    assert report.scaffolding_warnings == []
 
 
 @pytest.mark.asyncio
@@ -317,3 +318,7 @@ async def test_migrate_legacy_structure_marks_typescript_as_scaffolded_from_rule
     assert "npm run build" in content
     assert "npm test" in content
     assert set(report.scripts_scaffolded) == {str(readme), str(quality_script)}
+    assert len(report.scaffolding_warnings) == 1
+    warning = report.scaffolding_warnings[0]
+    assert "No native quality scripts found for typescript" in warning
+    assert str(quality_script) in warning

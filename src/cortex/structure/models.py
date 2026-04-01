@@ -364,6 +364,10 @@ class MigrationReport(StructureBaseModel):
         default_factory=list,
         description="Rule files scaffolded from language templates during migration",
     )
+    scaffolding_warnings: list[str] = Field(
+        default_factory=list,
+        description="Warnings about scaffolded language script stubs needing customization",
+    )
     errors: list[str] = Field(default_factory=list, description="Errors encountered")
     error: str | None = Field(
         default=None, description="Error message if migration failed"

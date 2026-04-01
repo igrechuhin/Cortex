@@ -289,6 +289,51 @@ class TestLoadPromptContent:
         # Assert
         assert result is None
 
+    def test_injects_post_prompt_hook_when_missing(self, prompts_dir: Path) -> None:
+        """Prompts without hook reference receive an auto-injected hook step."""
+        prompt_file = prompts_dir / "workflow.md"
+        _ = prompt_file.write_text("# Workflow\n\nRun tasks.", encoding="utf-8")
+
+        result = synapse_prompts.load_prompt_content(
+            prompts_dir, "general", "workflow.md"
+        )
+
+        assert result is not None
+        assert "## Post-Prompt Hook" in result
+        assert "post-prompt-hook.md" in result
+
+    def test_does_not_inject_hook_for_analyze_prompt(self, prompts_dir: Path) -> None:
+        """analyze.md is excluded from hook auto-injection to prevent recursion."""
+        prompt_file = prompts_dir / "analyze.md"
+        _ = prompt_file.write_text("# Analyze\n\nAlready special.", encoding="utf-8")
+
+        result = synapse_prompts.load_prompt_content(
+            prompts_dir, "general", "analyze.md"
+        )
+
+        assert result == "# Analyze\n\nAlready special."
+
+    def test_does_not_duplicate_existing_hook_reference(
+        self, prompts_dir: Path
+    ) -> None:
+        """Prompts already referencing hook keep a single hook section."""
+        prompt_file = prompts_dir / "existing-hook.md"
+        _ = prompt_file.write_text(
+            (
+                "# Existing Hook\n\n"
+                "## Post-Prompt Hook\n\n"
+                "Read `.cortex/synapse/prompts/post-prompt-hook.md`.\n"
+            ),
+            encoding="utf-8",
+        )
+
+        result = synapse_prompts.load_prompt_content(
+            prompts_dir, "general", "existing-hook.md"
+        )
+
+        assert result is not None
+        assert result.count("## Post-Prompt Hook") == 1
+
 
 # ============================================================================
 # Tests for create_prompt_function()
@@ -391,9 +436,9 @@ class TestProcessPromptInfo:
         )
         assert result == 1
         assert "test_with_icon" in synapse_prompts.__dict__
-        assert synapse_prompts.__dict__["test_with_icon"]() == (
-            "# Test Prompt\n\nThis is a test prompt."
-        )
+        prompt_text = synapse_prompts.__dict__["test_with_icon"]()
+        assert "# Test Prompt\n\nThis is a test prompt." in prompt_text
+        assert "post-prompt-hook.md" in prompt_text
 
     def test_returns_zero_when_filename_missing(self, prompts_dir: Path):
         """Test returns 0 when filename is missing."""

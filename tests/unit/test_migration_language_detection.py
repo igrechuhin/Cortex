@@ -334,6 +334,28 @@ def test_detect_languages_for_migration_detects_java_from_maven_wrapper_properti
     assert detect_languages_for_migration(tmp_path) == ["java"]
 
 
+def test_detect_languages_for_migration_detects_csharp_from_solution_file(
+    tmp_path: Path,
+) -> None:
+    _ = (tmp_path / "Example.sln").write_text(
+        "Microsoft Visual Studio Solution File, Format Version 12.00\n",
+        encoding="utf-8",
+    )
+
+    assert detect_languages_for_migration(tmp_path) == ["csharp"]
+
+
+def test_detect_languages_for_migration_detects_csharp_from_project_file(
+    tmp_path: Path,
+) -> None:
+    _ = (tmp_path / "Example.csproj").write_text(
+        '<Project Sdk="Microsoft.NET.Sdk"></Project>\n',
+        encoding="utf-8",
+    )
+
+    assert detect_languages_for_migration(tmp_path) == ["csharp"]
+
+
 def test_detect_languages_for_migration_detects_multiple_languages_in_priority_order(
     tmp_path: Path,
 ) -> None:
@@ -342,6 +364,10 @@ def test_detect_languages_for_migration_detects_multiple_languages_in_priority_o
         encoding="utf-8",
     )
     _ = (tmp_path / "build.gradle").write_text("plugins {}\n", encoding="utf-8")
+    _ = (tmp_path / "App.sln").write_text(
+        "Microsoft Visual Studio Solution File, Format Version 12.00\n",
+        encoding="utf-8",
+    )
     _ = (tmp_path / "Cargo.toml").write_text("[package]\nname='x'\n", encoding="utf-8")
     _ = (tmp_path / "go.mod").write_text("module x\n", encoding="utf-8")
     _ = (tmp_path / "main.py").write_text("print('x')\n", encoding="utf-8")
@@ -349,6 +375,7 @@ def test_detect_languages_for_migration_detects_multiple_languages_in_priority_o
     assert detect_languages_for_migration(tmp_path) == [
         "swift",
         "java",
+        "csharp",
         "rust",
         "go",
         "python",

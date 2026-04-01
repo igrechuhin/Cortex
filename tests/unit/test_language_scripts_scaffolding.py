@@ -7,7 +7,10 @@ from pathlib import Path
 
 import pytest
 
-from cortex.structure.language_scripts_scaffolding import scaffold_language_scripts
+from cortex.structure.language_scripts_scaffolding import (
+    build_missing_native_script_warnings,
+    scaffold_language_scripts,
+)
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -315,6 +318,23 @@ class TestUnknownLanguage:
             encoding="utf-8"
         )
         assert "quality-check command" in script
+
+
+class TestScaffoldingWarnings:
+    def test_warnings_include_non_native_languages_only(self, tmp_path: Path) -> None:
+        warnings = build_missing_native_script_warnings(
+            tmp_path, ["python", "swift", "typescript", "go"]
+        )
+
+        assert len(warnings) == 2
+        assert "typescript" in warnings[0]
+        assert "go" in warnings[1]
+        assert "run_quality_check.sh" in warnings[0]
+        assert "run_quality_check.sh" in warnings[1]
+
+    def test_warnings_empty_for_native_languages(self, tmp_path: Path) -> None:
+        warnings = build_missing_native_script_warnings(tmp_path, ["python", "swift"])
+        assert warnings == []
 
 
 # ---------------------------------------------------------------------------

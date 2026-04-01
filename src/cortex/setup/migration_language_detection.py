@@ -39,7 +39,7 @@ def detect_languages_for_migration(project_root: Path) -> list[str]:
     """Detect migration scaffold languages using marker-based priority.
 
     Priority is aligned with the migration roadmap:
-    swift -> typescript/javascript -> java -> rust -> go -> python.
+    swift -> typescript/javascript -> java -> csharp -> rust -> go -> python.
     Multiple languages can be returned when multiple markers are present.
 
     JVM / Java scaffolding uses the shared ``_templates/java/`` pack. Gradle projects
@@ -78,6 +78,9 @@ def detect_languages_for_migration(project_root: Path) -> list[str]:
     if _has_jvm_migration_markers(project_root):
         detected.append("java")
 
+    if _has_csharp_migration_markers(project_root):
+        detected.append("csharp")
+
     if (project_root / "Cargo.toml").exists():
         detected.append("rust")
 
@@ -105,6 +108,13 @@ def _has_jvm_migration_markers(project_root: Path) -> bool:
         or (project_root / "mvnw.cmd").exists()
         or (project_root / ".mvn" / "wrapper" / "maven-wrapper.properties").exists()
     )
+
+
+def _has_csharp_migration_markers(project_root: Path) -> bool:
+    """True when a C#/.NET solution or project file is present at the repo root."""
+    if any(project_root.glob("*.sln")):
+        return True
+    return any(project_root.glob("*.csproj"))
 
 
 def _has_python_sources(project_root: Path) -> bool:

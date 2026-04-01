@@ -11,6 +11,14 @@ from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 
 _logger = logging.getLogger(__name__)
 
+_POST_PROMPT_HOOK_REF = "post-prompt-hook.md"
+_POST_PROMPT_HOOK_SNIPPET = (
+    "## Post-Prompt Hook\n\n"
+    "Read `.cortex/synapse/prompts/post-prompt-hook.md` and execute it after "
+    "the final report to run the post-prompt self-improvement router.\n"
+)
+_POST_PROMPT_HOOK_EXCLUDED_FILES = frozenset({"analyze.md", "post-prompt-hook.md"})
+
 
 def _paths_anchor() -> Path:
     """Return this module's path (tests may patch this for discovery fallbacks)."""
@@ -133,6 +141,12 @@ def load_prompt_content(prompts_path: Path, category: str, filename: str) -> str
 
     try:
         with open(resolved, encoding="utf-8") as f:
-            return f.read()
+            content = f.read()
+            if (
+                filename not in _POST_PROMPT_HOOK_EXCLUDED_FILES
+                and _POST_PROMPT_HOOK_REF not in content
+            ):
+                return f"{content.rstrip()}\n\n{_POST_PROMPT_HOOK_SNIPPET}"
+            return content
     except (OSError, UnicodeDecodeError):
         return None

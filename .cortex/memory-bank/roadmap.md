@@ -12,8 +12,6 @@
 
 ## Pending plans (from .cortex/plans)
 
-- **Migration: Language-Agnostic Rules and Scripts Scaffolding (follow-up)** - PENDING - Optional TradeWing template reconciliation and further language packs; tracks remaining work reflected in progress PARTIAL entries.
-
 ### Fixes
 
 ### Quality & Reliability Improvements
