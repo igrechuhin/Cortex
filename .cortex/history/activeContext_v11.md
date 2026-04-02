@@ -5,6 +5,7 @@
 ## Completed Work (2026-04-02)
 
 - ✅ **Synapse prompt filenames (Do / Plan)** - COMPLETE (2026-04-02) - Renamed Synapse prompts to `do.md`/`plan.md` and updated prompts manifest plus all repo/test/docs references.
+- ✅ **Roadmap entries: link to plan files (PARTIAL)** - COMPLETE (2026-04-02) - Delivered Step 1: threaded optional `plan_relative_path` through plan register payload/dispatcher/helpers with fallback to `plan_file_name`, and added tests validating emitted `Plan: .cortex/plans/...` bullets.
 
 ## Completed Work (2026-04-01)
 

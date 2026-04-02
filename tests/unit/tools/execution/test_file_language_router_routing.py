@@ -110,27 +110,26 @@ def test_collect_project_files_excludes_pycache(tmp_path: Path) -> None:
     assert not any("__pycache__" in str(f) for f in collect_project_files(tmp_path))
 
 
-def test_collect_project_files_includes_swift_test_files(tmp_path: Path) -> None:
-    # CRITICAL: Swift Tests/ directory must NOT be excluded (TradeWing bug).
+def test_collect_project_files_excludes_swift_test_files(tmp_path: Path) -> None:
+    # Repo-wide scan: Tests/ is excluded; tests can still be checked when passed
+    # explicitly via run_quality_checks_for_all_languages(files=[...]).
     (tmp_path / "Tests").mkdir()
     _ = (tmp_path / "Tests" / "FooTests.swift").write_text("// test", encoding="utf-8")
-    assert any(f.name == "FooTests.swift" for f in collect_project_files(tmp_path))
+    assert not any(f.name == "FooTests.swift" for f in collect_project_files(tmp_path))
 
 
-def test_collect_project_files_includes_lowercase_tests_dir(tmp_path: Path) -> None:
-    # Regression guard for CRITICAL-1: lowercase "tests/" must NOT be skipped.
-    # Python projects conventionally use tests/ (lowercase).
+def test_collect_project_files_excludes_lowercase_tests_dir(tmp_path: Path) -> None:
+    # Repo-wide scan: tests/ is excluded; explicit file lists still include them.
     (tmp_path / "tests").mkdir()
     _ = (tmp_path / "tests" / "conftest.py").write_text("", encoding="utf-8")
-    assert any(f.name == "conftest.py" for f in collect_project_files(tmp_path))
+    assert not any(f.name == "conftest.py" for f in collect_project_files(tmp_path))
 
 
-def test_collect_project_files_includes_python_test_files(tmp_path: Path) -> None:
-    # Regression guard for CRITICAL-2: test_*.py files must NOT be filtered here.
-    # The per-language scripts apply their own test_* exclusions in fallback mode.
+def test_collect_project_files_excludes_python_test_files(tmp_path: Path) -> None:
+    # Repo-wide scan: tests are excluded.
     (tmp_path / "tests").mkdir()
     _ = (tmp_path / "tests" / "test_foo.py").write_text("x = 1", encoding="utf-8")
-    assert any(f.name == "test_foo.py" for f in collect_project_files(tmp_path))
+    assert not any(f.name == "test_foo.py" for f in collect_project_files(tmp_path))
 
 
 def test_collect_project_files_includes_dispatcher_excluded_py_files(

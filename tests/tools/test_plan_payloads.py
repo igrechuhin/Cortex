@@ -62,7 +62,12 @@ class TestPlanPayloadModels:
     def test_plan_register_payload_defaults(self) -> None:
         """PlanRegisterPayload has status and section defaults."""
         p = PlanRegisterPayload(
-            plan_title="T", description="D", status="PENDING", section="pending"
+            plan_title="T",
+            description="D",
+            status="PENDING",
+            section="pending",
+            plan_file_name=None,
+            plan_relative_path=None,
         )
         assert p.operation == PlanOperation.REGISTER
         assert p.status == "PENDING"
@@ -125,6 +130,8 @@ class TestToPlanArguments:
             description="Short desc",
             status="IN_PROGRESS",
             section="blockers",
+            plan_file_name=None,
+            plan_relative_path=".cortex/plans/new-plan.md",
         )
         out = to_plan_arguments(p)
         assert out["operation"] == "register"
@@ -132,6 +139,7 @@ class TestToPlanArguments:
         assert out["description"] == "Short desc"
         assert out["status"] == "IN_PROGRESS"
         assert out["section"] == "blockers"
+        assert out["plan_relative_path"] == ".cortex/plans/new-plan.md"
 
     def test_create_payload_serialization(self) -> None:
         """PlanCreatePayload serializes to expected keys."""
@@ -175,12 +183,17 @@ class TestBuildPlanArguments:
 
     def test_build_plan_register_arguments(self) -> None:
         """build_plan_register_arguments returns dict with defaults."""
-        d = build_plan_register_arguments("Title", "Desc")
+        d = build_plan_register_arguments(
+            "Title",
+            "Desc",
+            plan_relative_path=".cortex/plans/title.md",
+        )
         assert d["operation"] == "register"
         assert d["plan_title"] == "Title"
         assert d["description"] == "Desc"
         assert d["status"] == "PENDING"
         assert d["section"] == "pending"
+        assert d["plan_relative_path"] == ".cortex/plans/title.md"
 
     def test_build_plan_create_arguments(self) -> None:
         """build_plan_create_arguments returns dict for create operation."""
@@ -224,6 +237,8 @@ class TestPlanPayloadGuardrails:
                 description="Short desc",
                 status="PENDING",
                 section="pending",
+                plan_file_name=None,
+                plan_relative_path=None,
             )
 
     def test_plan_register_payload_empty_description_raises(self) -> None:
@@ -234,6 +249,8 @@ class TestPlanPayloadGuardrails:
                 description="",
                 status="PENDING",
                 section="pending",
+                plan_file_name=None,
+                plan_relative_path=None,
             )
 
     def test_plan_create_payload_empty_title_raises(self) -> None:
@@ -340,7 +357,11 @@ class TestPlanToolAcceptsBuiltPayloads:
     @pytest.mark.asyncio
     async def test_register_built_payload_passes_validation(self) -> None:
         """plan(**build_plan_register_arguments(...)) passes required-field validation."""
-        kwargs = build_plan_register_arguments("Test Plan", "Description")
+        kwargs = build_plan_register_arguments(
+            "Test Plan",
+            "Description",
+            plan_relative_path=".cortex/plans/test-plan.md",
+        )
         result_str = await plan(**kwargs)
         result = json.loads(result_str)
         message = (result.get("message") or "").lower()

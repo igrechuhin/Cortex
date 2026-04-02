@@ -151,6 +151,69 @@ class TestRegisterPlanInRoadmapIntegration:
         assert "Pending plans (from .cortex/plans)" in new_content
 
     @pytest.mark.asyncio
+    async def test_register_plan_in_roadmap_appends_plan_path_when_provided(
+        self, temp_project_with_roadmap: Path
+    ) -> None:
+        """When plan_relative_path is provided, tool appends canonical `Plan:` path."""
+        root = temp_project_with_roadmap
+        memory_bank = get_cortex_path(root, CortexResourceType.MEMORY_BANK)
+        roadmap_path = memory_bank / MemoryBankFile.ROADMAP
+
+        with patch(
+            "cortex.tools.plans.register.resolve_project_root_async",
+            new_callable=AsyncMock,
+            return_value=root,
+        ):
+            result_str = await register_plan_in_roadmap(
+                plan_title="Auto Path Plan",
+                description="Reference.",
+                status="PENDING",
+                section="pending",
+                plan_relative_path=".cortex/plans/auto-path-plan.md",
+                ctx=None,
+            )
+
+        result = RegisterPlanResult.model_validate_json(result_str)
+        assert result.status == "success"
+
+        new_content = roadmap_path.read_text(encoding="utf-8")
+        assert (
+            "- **Auto Path Plan** - PENDING - Reference. Plan: .cortex/plans/auto-path-plan.md"
+            in new_content
+        )
+
+    @pytest.mark.asyncio
+    async def test_register_plan_in_roadmap_prefers_relative_path_over_file_name(
+        self, temp_project_with_roadmap: Path
+    ) -> None:
+        """When both fields are set, canonical relative path takes precedence."""
+        root = temp_project_with_roadmap
+        memory_bank = get_cortex_path(root, CortexResourceType.MEMORY_BANK)
+        roadmap_path = memory_bank / MemoryBankFile.ROADMAP
+
+        with patch(
+            "cortex.tools.plans.register.resolve_project_root_async",
+            new_callable=AsyncMock,
+            return_value=root,
+        ):
+            result_str = await register_plan_in_roadmap(
+                plan_title="Preferred Path Plan",
+                description="Reference.",
+                status="PENDING",
+                section="pending",
+                plan_file_name="legacy-fallback.md",
+                plan_relative_path=".cortex/plans/preferred-path-plan.md",
+                ctx=None,
+            )
+
+        result = RegisterPlanResult.model_validate_json(result_str)
+        assert result.status == "success"
+
+        new_content = roadmap_path.read_text(encoding="utf-8")
+        assert "Plan: .cortex/plans/preferred-path-plan.md" in new_content
+        assert "Plan: .cortex/plans/legacy-fallback.md" not in new_content
+
+    @pytest.mark.asyncio
     async def test_register_plan_in_blockers_section(
         self, temp_project_with_roadmap: Path
     ) -> None:

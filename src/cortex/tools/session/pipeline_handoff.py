@@ -37,6 +37,7 @@ from cortex.core.usage_context import get_or_resolve_project_root
 from cortex.server import mcp
 
 from .pipeline_handoff_io import (
+    extract_routing_keys,
     op_clear,
     op_init,
     op_read_state,
@@ -51,6 +52,37 @@ from .pipeline_handoff_validation import validate_phase, validate_pipeline
 # ---------------------------------------------------------------------------
 
 _OPS_NEED_PHASE = frozenset({"write_task", "read_task", "write_result", "write"})
+
+
+def _resolve_zero_arg_defaults(
+    operation: str,
+    pipeline: str,
+    phase: str | None,
+) -> tuple[str, str, str | None]:
+    """Fall back to session config when Cursor strips all tool arguments.
+
+    Cursor's MCP bridge sends {} for every tool call, leaving all parameters
+    at their declared defaults.  Detect this by checking whether both
+    ``operation`` and ``pipeline`` are still at their default values, then read
+    ``operation``, ``pipeline``, and ``phase`` from the session config file
+    written by the orchestrator prompt before it called this tool.
+
+    If session config is absent or incomplete the original values are returned
+    unchanged, so non-Cursor callers are unaffected.
+    """
+    if operation != "read_state" or pipeline != "default":
+        # At least one arg was explicitly set — not a zero-arg call.
+        return operation, pipeline, phase
+
+    from cortex.core.session_config import read_session_config
+
+    cfg = read_session_config()
+    resolved_op = str(cfg.get("operation", operation))
+    resolved_pipeline = str(cfg.get("pipeline", pipeline))
+    resolved_phase = phase or (
+        str(cfg["phase"]) if isinstance(cfg.get("phase"), str) else phase
+    )
+    return resolved_op, resolved_pipeline, resolved_phase
 
 
 def _coerce_data(data: object) -> str | None:
@@ -134,6 +166,21 @@ async def _dispatch(
     ctx: MCPContext | None,
 ) -> str:
     data_str = _coerce_data(data)
+
+    # Extract routing overrides embedded in the data payload (Cursor protocol).
+    # Agents write {"_op":"write","_phase":"select","_pipeline":"implement",...payload...}
+    # to current-task.json so routing + payload travel in one write instead of two.
+    routing, data_str = extract_routing_keys(data_str)
+    if routing.get("op"):
+        operation = routing["op"]
+    if routing.get("phase"):
+        phase = routing["phase"]
+    if routing.get("pipeline"):
+        pipeline = routing["pipeline"]
+
+    # When Cursor strips all args and no routing keys were in data, recover
+    # operation/pipeline/phase from the session config file.
+    operation, pipeline, phase = _resolve_zero_arg_defaults(operation, pipeline, phase)
 
     # Validate tokens before any filesystem path construction.
     pipeline_error = validate_pipeline(pipeline)

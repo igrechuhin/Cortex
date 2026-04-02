@@ -205,6 +205,43 @@ def load_or_create_state(state_file: Path, pipeline: str) -> dict[str, object]:
     }
 
 
+_ROUTING_KEYS: frozenset[str] = frozenset({"_op", "_phase", "_pipeline"})
+
+
+def extract_routing_keys(
+    data: str | None,
+) -> tuple[dict[str, str], str | None]:
+    """Extract _op/_phase/_pipeline routing overrides from a JSON data string.
+
+    Returns (routing, cleaned_data):
+    - routing: dict with string values for any of "op", "phase", "pipeline"
+      found in the data (keys are stripped of the leading underscore).
+    - cleaned_data: original data with routing keys removed, or the original
+      string unchanged if no routing keys were present (or data was not JSON).
+
+    Used by the dispatcher so agents can embed routing alongside payload in a
+    single JSON write instead of a separate session-config write per call.
+    """
+    if not data:
+        return {}, data
+    try:
+        parsed: object = json.loads(data)
+    except json.JSONDecodeError:
+        return {}, data
+    if not isinstance(parsed, dict):
+        return {}, data
+    parsed_dict = cast(dict[str, object], parsed)
+    routing: dict[str, str] = {}
+    for key in _ROUTING_KEYS:
+        val = parsed_dict.get(key)
+        if isinstance(val, str) and val:
+            routing[key.lstrip("_")] = val
+    if not routing:
+        return {}, data
+    cleaned = {k: v for k, v in parsed_dict.items() if k not in _ROUTING_KEYS}
+    return routing, json.dumps(cleaned) if cleaned else None
+
+
 def parse_result_data(data: str | None) -> dict[str, object]:
     """Parse optional JSON data into a dict for payload update."""
     out: dict[str, object] = {}
@@ -242,7 +279,13 @@ def op_write_result(
     state["last_updated"] = now_iso()
     _ = sfile.write_text(json.dumps(state, indent=2), encoding="utf-8")
     return json.dumps(
-        {"status": "ok", "result_file": str(rfile), "phase": phase}, indent=2
+        {
+            "status": "ok",
+            "result_file": str(rfile),
+            "phase": phase,
+            "pipeline_state": state,
+        },
+        indent=2,
     )
 
 

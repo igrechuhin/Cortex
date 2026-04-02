@@ -103,6 +103,8 @@ async def _plan_handle_register(
     description: str,
     status: str,
     section: str,
+    plan_file_name: str | None,
+    plan_relative_path: str | None,
     ctx: MCPContext | None,
 ) -> str:
     from cortex.tools.plans.register import register_plan_in_roadmap
@@ -112,6 +114,8 @@ async def _plan_handle_register(
         description=description,
         status=status,
         section=section,
+        plan_file_name=plan_file_name,
+        plan_relative_path=plan_relative_path,
         ctx=ctx,
     )
 
@@ -136,11 +140,21 @@ async def _plan_dispatch_register(
     description: str | None,
     status: str,
     section: str,
+    plan_file_name: str | None,
+    plan_relative_path: str | None,
     ctx: MCPContext | None,
 ) -> str:
     if not plan_title or not description:
         return _plan_error_missing_register_params()
-    return await _plan_handle_register(plan_title, description, status, section, ctx)
+    return await _plan_handle_register(
+        plan_title,
+        description,
+        status,
+        section,
+        plan_file_name,
+        plan_relative_path,
+        ctx,
+    )
 
 
 async def _plan_handle_archive_completed(ctx: MCPContext | None) -> str:
@@ -187,6 +201,7 @@ async def _plan_dispatch(
     completion_date: str | None,
     progress_entry: str | None,
     plan_file_name: str | None,
+    plan_relative_path: str | None,
     description: str | None,
     status: str,
     section: str,
@@ -222,7 +237,13 @@ async def _plan_dispatch(
         )
     if operation == "register":
         return await _plan_dispatch_register(
-            plan_title, description, status, section, ctx
+            plan_title,
+            description,
+            status,
+            section,
+            plan_file_name,
+            plan_relative_path,
+            ctx,
         )
     return await _plan_handle_crud(
         operation, title, content, slug, include_archive, response_format, ctx
@@ -246,6 +267,7 @@ async def plan(
     completion_date: str | None = None,
     progress_entry: str | None = None,
     plan_file_name: str | None = None,
+    plan_relative_path: str | None = None,
     description: str | None = None,
     status: str = "PENDING",
     section: str = "pending",
@@ -276,6 +298,7 @@ async def plan(
         completion_date,
         progress_entry,
         plan_file_name,
+        plan_relative_path,
         description,
         status,
         section,

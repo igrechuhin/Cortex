@@ -23,7 +23,9 @@ def read_session_config() -> dict[str, object]:
     """Read current task config from session file, or return empty dict.
 
     Returns a dict with optional keys: task_description, pipeline, phase,
-    token_budget, file_name, check_type. All values are strings or ints.
+    operation, token_budget, file_name, check_type. All values are strings or
+    ints.  ``operation`` is used by ``pipeline_handoff`` to recover the intended
+    operation (e.g. "init") when Cursor strips all tool arguments.
     """
     root = get_current_project_root()
     if root is None:

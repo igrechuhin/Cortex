@@ -71,3 +71,7 @@ Make **pending roadmap bullets** reliably include a **machine- and human-usable 
 - New registrations can include a **canonical plan path** without manual `description` hacks.
 - Session/orchestrator code paths that read `Plan:` continue to work.
 - Plan prompt workflow text and tests align with the new parameter.
+
+## Partial Progress Log
+
+- 2026-04-02: Added optional canonical register path support via `plan_relative_path` across plan payloads/dispatcher/register rendering with regression tests for emitted `Plan: .cortex/plans/...` bullets — files: src/cortex/tools/plans/plan_payloads.py, src/cortex/tools/plans/plan.py, src/cortex/tools/plans/register.py, src/cortex/tools/plans/register_helpers.py, tests/integration/test_structured_plan_tools.py, tests/tools/test_plan_payloads.py

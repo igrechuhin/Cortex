@@ -83,8 +83,37 @@ def extract_plan_path_from_bullet(line: str) -> str | None:
     return raw.rstrip(".,")
 
 
-def _build_entry_text(plan_title: str, status: str, description: str) -> str:
-    return f"- **{plan_title}** - {status} - {description}"
+def _normalize_plan_path(plan_ref: str) -> str:
+    raw = plan_ref.strip()
+    if raw.startswith(".cortex/plans/"):
+        return raw
+    return f".cortex/plans/{raw}"
+
+
+def _append_plan_path(
+    description: str,
+    plan_file_name: str | None,
+    plan_relative_path: str | None,
+) -> str:
+    plan_ref = plan_relative_path or plan_file_name
+    if plan_ref is None:
+        return description
+    if extract_plan_path_from_bullet(description) is not None:
+        return description
+    normalized = _normalize_plan_path(plan_ref)
+    return f"{description.rstrip().rstrip('.')}. Plan: {normalized}"
+
+
+def _build_entry_text(
+    plan_title: str,
+    status: str,
+    description: str,
+    *,
+    plan_file_name: str | None,
+    plan_relative_path: str | None,
+) -> str:
+    rendered = _append_plan_path(description, plan_file_name, plan_relative_path)
+    return f"- **{plan_title}** - {status} - {rendered}"
 
 
 def _find_existing_plan_line(
@@ -126,20 +155,13 @@ def _ensure_section_exists(
     return content, sections
 
 
-def _insert_plan_entry(
-    *,
-    content: str,
-    plan_title: str,
-    description: str,
-    status: str,
-    section_id: str,
+def _insert_entry_in_section(
+    lines: list[str],
     section_start: int,
     section_end: int,
+    entry_text: str,
     position: str,
 ) -> tuple[str, int | None]:
-    """Insert a plan entry into the given section."""
-    lines = content.split("\n")
-    entry_text = _build_entry_text(plan_title, status, description)
     plan_path = extract_plan_path_from_bullet(entry_text)
     existing_line = _find_existing_plan_line(
         lines=lines,
@@ -149,8 +171,7 @@ def _insert_plan_entry(
         entry_text=entry_text,
     )
     if existing_line is not None:
-        return (content, None)
-
+        return ("\n".join(lines), None)
     insert_line = find_insertion_line_for_section(
         lines=lines,
         section_start=section_start,
@@ -168,6 +189,8 @@ def register_plan_entry(
     status: str,
     section_id: str,
     position: str = "last",
+    plan_file_name: str | None = None,
+    plan_relative_path: str | None = None,
 ) -> tuple[str, int | None]:
     """Register a plan entry in the roadmap."""
     sections = parse_roadmap_sections(content)
@@ -177,16 +200,24 @@ def register_plan_entry(
         return (content, None)
 
     section_start, section_end = sections[section_id]
-    return _insert_plan_entry(
-        content=content,
-        plan_title=plan_title,
-        description=description,
-        status=status,
-        section_id=section_id,
+    lines = content.split("\n")
+    entry_text = _build_entry_text(
+        plan_title,
+        status,
+        description,
+        plan_file_name=plan_file_name,
+        plan_relative_path=plan_relative_path,
+    )
+    updated_content, inserted_line = _insert_entry_in_section(
+        lines=lines,
         section_start=section_start,
         section_end=section_end,
+        entry_text=entry_text,
         position=position,
     )
+    if inserted_line is None:
+        return (content, None)
+    return (updated_content, inserted_line)
 
 
 def is_completed_status(status: str) -> bool:

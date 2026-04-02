@@ -74,6 +74,8 @@ def _do_register_plan_entry(
     description: str,
     status: str,
     section_id: str,
+    plan_file_name: str | None,
+    plan_relative_path: str | None,
 ) -> tuple[str, int | None]:
     """Register plan entry and return (content, line_inserted)."""
     return register_plan_entry(
@@ -83,6 +85,8 @@ def _do_register_plan_entry(
         status,
         section_id,
         "last",
+        plan_file_name=plan_file_name,
+        plan_relative_path=plan_relative_path,
     )
 
 
@@ -122,6 +126,8 @@ async def _execute_register_plan(
     description: str,
     status: str,
     section_id: str,
+    plan_file_name: str | None,
+    plan_relative_path: str | None,
     ctx: MCPContext | None,
 ) -> str:
     """Execute plan registration. Returns JSON result."""
@@ -135,7 +141,13 @@ async def _execute_register_plan(
     current_content, _ = read_roadmap_file(roadmap_path)
     assert current_content is not None
     updated_content, line_inserted = _do_register_plan_entry(
-        current_content, plan_title, description, status, section_id
+        current_content,
+        plan_title,
+        description,
+        status,
+        section_id,
+        plan_file_name,
+        plan_relative_path,
     )
 
     if line_inserted is None:
@@ -153,6 +165,8 @@ async def _validate_and_execute_register(
     plan_title: str,
     description: str,
     status: str,
+    plan_file_name: str | None,
+    plan_relative_path: str | None,
     ctx: MCPContext | None,
 ) -> str:
     """Validate section and execute registration."""
@@ -179,7 +193,14 @@ async def _validate_and_execute_register(
 
     assert section_id is not None
     return await _execute_register_plan(
-        root, plan_title, description, status, section_id, ctx
+        root,
+        plan_title,
+        description,
+        status,
+        section_id,
+        plan_file_name,
+        plan_relative_path,
+        ctx,
     )
 
 
@@ -188,6 +209,8 @@ async def _register_plan_impl(
     description: str,
     status: str,
     section: str,
+    plan_file_name: str | None,
+    plan_relative_path: str | None,
     ctx: MCPContext | None,
 ) -> str:
     """Implementation of register_plan_in_roadmap logic."""
@@ -198,7 +221,14 @@ async def _register_plan_impl(
     try:
         root = await resolve_project_root_async(None, ctx)
         return await _validate_and_execute_register(
-            section, root, plan_title, description, status, ctx
+            section,
+            root,
+            plan_title,
+            description,
+            status,
+            plan_file_name,
+            plan_relative_path,
+            ctx,
         )
     except Exception as e:
         await log_client(
@@ -224,6 +254,8 @@ async def register_plan_in_roadmap(
     description: str,
     status: str = "PENDING",
     section: str = "pending",
+    plan_file_name: str | None = None,
+    plan_relative_path: str | None = None,
     ctx: MCPContext | None = None,
 ) -> str:
     """Register a plan entry in the roadmap using structured merging.
@@ -244,4 +276,12 @@ async def register_plan_in_roadmap(
     This tool handles the read-modify-write of roadmap.md, ensuring no content is lost
     and the entry is placed in the correct section.
     """
-    return await _register_plan_impl(plan_title, description, status, section, ctx)
+    return await _register_plan_impl(
+        plan_title,
+        description,
+        status,
+        section,
+        plan_file_name,
+        plan_relative_path,
+        ctx,
+    )

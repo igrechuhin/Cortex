@@ -59,6 +59,17 @@ class PlanRegisterPayload(StrictBaseModel):
     description: str = Field(..., min_length=1, description="Roadmap entry description")
     status: str = Field("PENDING", description="Roadmap status")
     section: str = Field("pending", description="Roadmap section")
+    plan_file_name: str | None = Field(
+        None,
+        description="Optional plan filename to append as `Plan: .cortex/plans/<file>.md`",
+    )
+    plan_relative_path: str | None = Field(
+        None,
+        description=(
+            "Optional canonical plan path (for example `.cortex/plans/foo.md`) "
+            "to append as `Plan: ...`; takes precedence over plan_file_name"
+        ),
+    )
 
 
 PlanPayload = PlanCreatePayload | PlanCompletePayload | PlanRegisterPayload
@@ -99,6 +110,8 @@ def build_plan_register_arguments(
     *,
     status: str = "PENDING",
     section: str = "pending",
+    plan_file_name: str | None = None,
+    plan_relative_path: str | None = None,
 ) -> dict[str, object]:
     """Build the arguments dict for plan(operation='register', ...)."""
     return to_plan_arguments(
@@ -107,6 +120,8 @@ def build_plan_register_arguments(
             description=description,
             status=status,
             section=section,
+            plan_file_name=plan_file_name,
+            plan_relative_path=plan_relative_path,
         )
     )
 

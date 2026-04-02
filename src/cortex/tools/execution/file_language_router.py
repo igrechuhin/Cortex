@@ -29,13 +29,14 @@ _SKIP_DIRS: frozenset[str] = frozenset(
         ".venv",
         ".cortex",  # synapse tooling, not project source
         "venv",
+        # Repo-wide scans should skip test suites by default; tests are still
+        # checked when explicitly passed via `files=[...]`.
+        "tests",
+        "Tests",
         "build",
         "dist",
         ".tox",
         ".mypy_cache",
-        # NOTE: "tests" / "Tests" are intentionally NOT listed here.
-        # Test files must be included — they are subject to the same
-        # size and function-length rules as production files.
     }
 )
 
@@ -75,10 +76,9 @@ def route_files(
 def collect_project_files(project_root: Path) -> list[Path]:
     """Return all checkable source files under project_root.
 
-    Skips: __pycache__, .git, node_modules, .venv, build, dist, .cortex dirs.
-    Does NOT skip test directories or test_* files — the per-language scripts
-    apply their own exclusions in fallback mode; when FILES is set, scripts
-    check exactly what the dispatcher provides.
+    Skips: __pycache__, .git, node_modules, .venv, build, dist, .cortex,
+    tests/, Tests/ dirs.  Test files are still checked when passed explicitly
+    via run_quality_checks_for_all_languages(files=[...]).
     Skips FILE_SIZE_EXCLUDED_FILENAMES (e.g. models.py) by name.
     Returns sorted list of absolute Paths.
     """

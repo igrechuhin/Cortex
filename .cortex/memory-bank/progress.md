@@ -3,6 +3,7 @@
 ## 2026-04-02
 
 - **Synapse prompt filenames (Do / Plan)** - COMPLETE. Renamed Synapse prompts to `do.md`/`plan.md` and updated prompts manifest plus all repo/test/docs references.
+- **Roadmap entries: link to plan files** - PARTIAL. Implemented Step 1 by adding optional `plan_relative_path` to plan register payload/dispatcher/rendering with backward-compatible `plan_file_name` fallback, plus integration and payload tests; quality gate passed (coverage 91.64% global).
 
 ## 2026-04-01
 
