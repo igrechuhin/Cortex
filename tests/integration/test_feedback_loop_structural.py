@@ -57,8 +57,8 @@ _SYNAPSE_CALLER_PROMPTS: tuple[str, ...] = (
     "commit.md",
     "fix.md",
     "review.md",
-    "create-plan.md",
-    "implement-next-roadmap-step.md",
+    "plan.md",
+    "do.md",
 )
 
 _CORTEX_CALLER_PROMPTS: tuple[str, ...] = (

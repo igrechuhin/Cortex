@@ -243,11 +243,11 @@ Each manager/service module has a single responsibility:
 
 ### Synapse Integration Architecture
 
-**Synapse** is the shared rules-and-prompts repository integrated as a Git submodule under `.cortex/synapse/`. It provides prompts, rules, agents, and scripts used by the commit pipeline, implement workflow, and quality gates.
+**Synapse** is the shared rules-and-prompts repository integrated as a Git submodule under `.cortex/synapse/`. It provides prompts, rules, agents, and scripts used by the commit pipeline, do workflow, and quality gates.
 
 **Directory layout** (under `.cortex/synapse/`):
 
-- **prompts/** – Prompt templates (e.g. commit, implement, analyze, create-plan); registered with the MCP server for Cursor/IDE.
+- **prompts/** – Prompt templates (e.g. commit, do, analyze, plan); registered with the MCP server for Cursor/IDE.
 - **rules/** – Rule files (`.mdc`): `general/`, `python/`, `markdown/`; loaded by the rules manager and `get_synapse_rules()`.
 - **agents/** – Synapse agents (e.g. plan-archiver, quality-checker, memory-bank-updater); referenced by orchestration prompts.
 - **scripts/** – Language-specific scripts (e.g. `python/check_formatting.py`, `run_tests.py`); used by the Phase A quality gate (`run_quality_gate`) and CI.

@@ -177,7 +177,7 @@ This guide documents common workflows as sequences of Cortex MCP tool calls, wit
 
 **Tool sequence:**
 
-1. **create_plan** (or use create-plan prompt) – Create a new plan file under `.cortex/plans/`.
+1. **create_plan** (or use plan prompt) – Create a new plan file under `.cortex/plans/`.
 
    **Parameters:** Title, steps, optional priority. Plan file path returned.
 

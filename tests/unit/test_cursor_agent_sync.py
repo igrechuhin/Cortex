@@ -309,7 +309,7 @@ class TestRequiredAgentFilesPresent:
     """Assert all required pipeline agents exist in source and both IDE targets.
 
     These tests ensure that every agent referenced by commit.md and
-    implement-next-roadmap-step.md is present in the source directory and
+    do.md is present in the source directory and
     both .cursor/agents/ and .claude/agents/ after sync.
     """
 

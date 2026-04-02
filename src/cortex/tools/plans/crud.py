@@ -168,7 +168,7 @@ async def list_plans(
 ) -> str:
     """List plan files in the plans directory.
 
-    USE WHEN: Checking for existing plans before creating a new one (e.g. create-plan
+    USE WHEN: Checking for existing plans before creating a new one (e.g. Plan prompt
     Step 2.5) or discovering plan slugs for get_plan.
 
     EXAMPLES: 'list plans', 'list plans include_archive=true', 'what plans exist'.

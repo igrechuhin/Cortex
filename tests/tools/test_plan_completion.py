@@ -617,7 +617,7 @@ class TestCompletePlanIntegration:
         with _patch_root(tmp_path):
             result_str = await complete_plan(
                 plan_title="Roadmap full-content enforcement",
-                summary="Strengthened create-plan and memory-bank-updater.",
+                summary="Strengthened plan workflow and memory-bank-updater.",
                 completion_date="2026-02-09",
                 progress_entry="**Roadmap full-content enforcement** - COMPLETE. Summary.",
                 plan_file_name=plan_basename,

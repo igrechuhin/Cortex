@@ -670,7 +670,7 @@ await create_plan(operation="get", slug="phase-60-feature", response_format="met
 
 Register a plan entry in the roadmap. Use **`plan(operation="register", plan_title=..., description=..., section=...)`** (consolidated from `register_plan_in_roadmap`).
 
-**USE WHEN:** Registering a newly created plan in roadmap.md during the create-plan workflow. Prefer this over building full roadmap content and calling `manage_file(write)` for a single new entry to avoid truncation.
+**USE WHEN:** Registering a newly created plan in roadmap.md during the plan workflow. Prefer this over building full roadmap content and calling `manage_file(write)` for a single new entry to avoid truncation.
 
 **RETURNS:** JSON with `status`, `file_name`, `message`, `line_inserted`, `section`, and `error` (if any).
 

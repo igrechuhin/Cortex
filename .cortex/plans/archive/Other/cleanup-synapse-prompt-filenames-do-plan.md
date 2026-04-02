@@ -14,23 +14,23 @@ Align Synapse prompt **filenames** and **manifest display names** with short, co
 
 ## Context
 
-- `prompts-manifest.json` (under `.cortex/synapse/prompts/`, also visible via `.cursor/synapse/` symlink) lists `implement-next-roadmap-step.md` / `create-plan.md`.
+- `prompts-manifest.json` (under `.cortex/synapse/prompts/`, also visible via `.cursor/synapse/` symlink) lists `do.md` / `plan.md`.
 - `.cursor/synapse` → `.cortex/synapse` (single source tree); renames happen once in the submodule.
 - Many tests and docs hardcode the old basenames; `docs/architecture/naming-*.md` documents slug/filename mapping.
-- User-facing slash commands (e.g. `/cortex/implement`) are defined in prompt bodies and may remain stable unless product chooses to rename commands in a follow-up.
+- User-facing slash commands (e.g. `/cortex/do`) are defined in prompt bodies and may remain stable unless product chooses to rename commands in a follow-up.
 
 ## Implementation Steps
 
 ### Step 1: Submodule renames (Synapse)
 
-- In `.cortex/synapse/`: `git mv prompts/implement-next-roadmap-step.md prompts/do.md` and `git mv prompts/create-plan.md prompts/plan.md`.
+- In `.cortex/synapse/`: ensure `prompts/do.md` and `prompts/plan.md` exist (renames applied).
 - Edit `prompts/prompts-manifest.json`: set `"file": "do.md"`, `"name": "Do"` for the implement entry; set `"file": "plan.md"` for the plan entry (keep `"name": "Plan"`).
-- Search within `prompts/` for self-references to old filenames or titles; update prose (e.g. "create-plan" hard gate text) only where it names the file.
-- Update `agents/agents-manifest.json` (or similar) if description string references `implement-next-roadmap-step` literally.
+- Search within `prompts/` for self-references to old filenames or titles; update prose (e.g. "plan" hard gate text) only where it names the file.
+- Update `agents/agents-manifest.json` (or similar) if description string references `do` literally.
 
 ### Step 2: Cortex repo references
 
-- Grep repo for `implement-next-roadmap-step`, `create-plan.md` (path references); update:
+- Grep repo for `do`, `plan.md` (path references); update:
   - `tests/integration/` (e.g. `test_synapse_final_report_prompt_alignment.py`, `test_feedback_loop_structural.py`, `test_commit_workflow_*`, `test_plan_creation_workflow_compliance.py`, `test_implement_prompt_quality_gates.py`, `test_implement_select_explicit_plan_prompt.py`)
   - `tests/tools/` as needed
   - `docs/architecture/naming-conventions.md`, `docs/architecture/naming-inventory-2026-02.md`
@@ -47,7 +47,7 @@ Align Synapse prompt **filenames** and **manifest display names** with short, co
 
 | Step | What to search for | Search scope | Files to re-read |
 |------|-------------------|--------------|------------------|
-| 1 | `implement-next-roadmap-step`, `create-plan.md` | `.cortex/synapse/prompts/`, `agents/` | `prompts-manifest.json`, `do.md`, `plan.md` |
+| 1 | `do`, `plan.md` | `.cortex/synapse/prompts/`, `agents/` | `prompts-manifest.json`, `do.md`, `plan.md` |
 | 2 | same strings | `tests/`, `docs/`, `src/` if any | failing test files |
 | 3 | test failures | pytest output | — |
 

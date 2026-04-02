@@ -40,7 +40,7 @@ def _read_commit_pipeline_content() -> str:
 
 def _implement_prompt_path() -> Path:
     """Return path to implement prompt."""
-    return synapse_path() / "prompts" / "implement-next-roadmap-step.md"
+    return synapse_path() / "prompts" / "do.md"
 
 
 def _read_implement_pipeline_content() -> str:

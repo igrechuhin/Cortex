@@ -36,7 +36,7 @@ def _fix_prompt_path() -> Path:
 
 def _implement_prompt_path() -> Path:
     """Return path to implement helper prompt under .cortex/synapse/prompts/."""
-    return synapse_path() / "prompts" / "implement-next-roadmap-step.md"
+    return synapse_path() / "prompts" / "do.md"
 
 
 def _python_coding_standards_path() -> Path:

@@ -1,7 +1,7 @@
 """
 Integration tests for Phase 55: Implement prompt quality gates.
 
-Verifies that implement-next-roadmap-step.md and python-coding-standards.mdc
+Verifies that do.md and python-coding-standards.mdc
 contain the mandatory quality gates (Pydantic/TypedDict, format/type steps,
 error handling, checklist, implicit-concatenation, ReadLints before 4.5,
 token budget; TypedDict prohibition in rules).
@@ -21,20 +21,18 @@ def _repo_root() -> Path:
 
 
 def _implement_prompt_path() -> Path:
-    """Return path to implement-next-roadmap-step prompt."""
+    """Return path to do prompt."""
     return (
-        get_cortex_path(_repo_root(), CortexResourceType.SYNAPSE)
-        / "prompts"
-        / "implement-next-roadmap-step.md"
+        get_cortex_path(_repo_root(), CortexResourceType.SYNAPSE) / "prompts" / "do.md"
     )
 
 
 def _create_plan_prompt_path() -> Path:
-    """Return path to create-plan prompt."""
+    """Return path to plan prompt."""
     return (
         get_cortex_path(_repo_root(), CortexResourceType.SYNAPSE)
         / "prompts"
-        / "create-plan.md"
+        / "plan.md"
     )
 
 
@@ -172,15 +170,15 @@ class TestImplementPromptQualityGates:
 
 
 class TestCreatePlanImplementationSequence:
-    """Assert create-plan prompt documents implementation sequence (Session Optimization 2026-02-01)."""
+    """Assert plan prompt documents implementation sequence (Session Optimization 2026-02-01)."""
 
     @pytest.fixture
     def create_plan_content(self) -> str:
-        """Read create-plan prompt; skip if missing."""
+        """Read plan prompt; skip if missing."""
         path = _create_plan_prompt_path()
         if not path.exists():
             pytest.skip(
-                f"Create-plan prompt not found at {path} (e.g. synapse submodule not present) (ref: cleanup-skipped-legacy-tests)"
+                f"Plan prompt not found at {path} (e.g. synapse submodule not present) (ref: cleanup-skipped-legacy-tests)"
             )
         return path.read_text()
 

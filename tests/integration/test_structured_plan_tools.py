@@ -181,7 +181,7 @@ class TestRegisterPlanInRoadmapIntegration:
 
 
 class TestCreatePlanThenRegisterIntegration:
-    """Simulated create-plan sequence: create_plan then register_plan_in_roadmap."""
+    """Simulated plan sequence: create_plan then register_plan_in_roadmap."""
 
     @pytest.mark.asyncio
     async def test_create_plan_then_register_plan_in_roadmap(

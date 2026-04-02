@@ -10,10 +10,10 @@ Step 1 inventory for [synapse-prompt-final-report-standardization](../../.cortex
 | --- | --- | --- |
 | `.cortex/synapse/prompts/commit.md` | pipeline | Primary MCP prompt `Commit`; Phase A / B / Step 12 |
 | `.cortex/synapse/prompts/fix.md` | pipeline | Primary MCP prompt `Fix`; quality / tests / docs targets |
-| `.cortex/synapse/prompts/implement-next-roadmap-step.md` | pipeline | Primary MCP prompt `Implement`; handoff, subagent, gates |
+| `.cortex/synapse/prompts/do.md` | pipeline | Primary MCP prompt `Do`; handoff, subagent, gates |
 | `.cortex/synapse/prompts/review.md` | single-shot | Primary MCP prompt `Review`; one review report artifact |
 | `.cortex/synapse/prompts/analyze.md` | single-shot | Primary MCP prompt `Analyze`; end-of-session analysis report |
-| `.cortex/synapse/prompts/create-plan.md` | meta | Primary MCP prompt `Plan`; plans dir + roadmap registration |
+| `.cortex/synapse/prompts/plan.md` | meta | Primary MCP prompt `Plan`; plans dir + roadmap registration |
 | `.cortex/prompts/validate-roadmap-sync.md` | single-shot | Project MCP prompt; roadmap sync validation |
 | `.cortex/prompts/populate-tiktoken-cache.md` | single-shot | Project MCP prompt; offline tiktoken cache |
 | `.cortex/prompts/debug-external-integration.md` | single-shot | Project MCP prompt; external integration diagnostics |

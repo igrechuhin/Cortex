@@ -26,7 +26,7 @@ Make **pending roadmap bullets** reliably include a **machine- and human-usable 
 - Add an optional parameter **`plan_file_name`** (basename only, e.g. `cleanup-synapse-prompt-filenames-do-plan.md`) or **`plan_relative_path`** (preferred single representation: always `.cortex/plans/<file>.md`).
 - When provided, append to the rendered bullet a stable fragment matching session parsing: e.g. end the description segment with `Plan: .cortex/plans/<file>.md` (confirm exact punctuation against `_process_pending_line` regex — today it expects a **period before `Plan:`**).
 - Update `PlanRegisterPayload` in `plan_payloads.py` and the plan tool dispatcher (`plan.py`) to pass the new field through.
-- Keep **backward compatibility**: omitting the field preserves current behavior; document that new create-plan runs should supply it.
+- Keep **backward compatibility**: omitting the field preserves current behavior; document that new Plan prompt runs should supply it.
 
 ### Step 2: Wire create → register (optional consolidation)
 
@@ -34,14 +34,14 @@ Make **pending roadmap bullets** reliably include a **machine- and human-usable 
 
 ### Step 3: Synapse prompt + compliance tests
 
-- Update **create-plan** prompt Step 8: require passing the plan file path into registration (via new parameter or embedded `Plan:` in description if parameters are stripped).
+- Update **Plan** prompt Step 8: require passing the plan file path into registration (via new parameter or embedded `Plan:` in description if parameters are stripped).
 - Extend **`tests/integration/test_plan_creation_workflow_compliance.py`** (or equivalent) so the prompt text mandates plan-path registration.
 - Add unit/integration tests for `_build_entry_text` / `register_plan_entry` when `plan_file_name` is set: roadmap line contains `Plan: .cortex/plans/…` and `extract_plan_path_from_bullet` returns the path.
 
 ### Step 4: Documentation
 
 - Update `docs/api/tools.md` **plan(register)** section: first-class `plan_file_name` (or path) parameter; adjust examples to show the recommended one-liner without duplicating path inside free-form `description`.
-- Short note in `docs/guides/workflows.md` if it describes create-plan registration.
+- Short note in `docs/guides/workflows.md` if it describes Plan prompt registration.
 
 ### Step 5 (optional): Lint or docs-gate hint
 
@@ -53,12 +53,12 @@ Make **pending roadmap bullets** reliably include a **machine- and human-usable 
 |------|-------------------|--------------|------------------|
 | 1 | `plan_file_name`, `_build_entry_text` | `src/cortex/tools/plans/` | `register_helpers.py`, `register.py`, `plan.py`, `plan_payloads.py` |
 | 2 | `operation="register"` | `tests/` | integration tests for plan tool |
-| 3 | `Step 8`, `register` | `.cortex/synapse/prompts/create-plan.md` | prompt + compliance test |
+| 3 | `Step 8`, `register` | `.cortex/synapse/prompts/plan.md` | prompt + compliance test |
 | 4 | `plan(operation="register"` | `docs/api/tools.md` | tools.md |
 
 ## Dependencies
 
-- None blocking; Synapse submodule edit for `create-plan.md` after Cortex code ships (or coordinate submodule bump).
+- None blocking; Synapse submodule edit for `plan.md` after Cortex code ships (or coordinate submodule bump).
 
 ## Testing Strategy
 
@@ -70,4 +70,4 @@ Make **pending roadmap bullets** reliably include a **machine- and human-usable 
 
 - New registrations can include a **canonical plan path** without manual `description` hacks.
 - Session/orchestrator code paths that read `Plan:` continue to work.
-- Create-plan workflow text and tests align with the new parameter.
+- Plan prompt workflow text and tests align with the new parameter.

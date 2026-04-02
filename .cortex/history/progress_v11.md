@@ -1,5 +1,9 @@
 # Progress Log
 
+## 2026-04-02
+
+- **Synapse prompt filenames (Do / Plan)** - COMPLETE. Renamed Synapse prompts to `do.md`/`plan.md` and updated prompts manifest plus all repo/test/docs references.
+
 ## 2026-04-01
 
 - **Swift quality gate — multi-slice plans and roadmap** - COMPLETE. Historical PARTIAL ledger row resolved as closed documentation history; no remaining implementation backlog is required.
@@ -68,7 +72,7 @@
 
 ## What Works
 
-Pre-commit pipeline (fix_errors, format, type_check, quality, tests); 3702 tests, 90.36% coverage; integration tests for projectBrief schema; Option C HTTP/SSE transport (Phase 1 and 2). Create-plan and memory-bank-updater mandate register_plan_in_roadmap for new plan entry to prevent roadmap corruption.
+Pre-commit pipeline (fix_errors, format, type_check, quality, tests); 3702 tests, 90.36% coverage; integration tests for projectBrief schema; Option C HTTP/SSE transport (Phase 1 and 2). Plan prompt and memory-bank-updater mandate register_plan_in_roadmap for new plan entry to prevent roadmap corruption.
 
 ## What's Left
 

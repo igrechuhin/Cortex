@@ -71,18 +71,18 @@ Domains align with tool categories and functionality:
 
 ### 3.1 Filenames
 
-- **Format**: `kebab-case.md` (e.g. `create-plan.md`, `fix-quality.md`)
+- **Format**: `kebab-case.md` (e.g. `plan.md`, `fix-quality.md`)
 - **Slug**: Filename without `.md`; used as Cursor command suffix
 
 ### 3.2 Cursor commands
 
 - **Pattern**: `user-cortex/{slug}`
 - **Mapping**: Slug matches prompt filename (e.g. `commit.md` → `user-cortex/commit`)
-- **Exception**: Long filenames may map to shorter slugs (e.g. `implement-next-roadmap-step.md` → `user-cortex/implement`)
+- **Exception**: Long filenames may map to shorter slugs (e.g. `do.md` → `user-cortex/do`)
 
 ### 3.3 Verb-first
 
-Action prompts use verb-first names: `commit`, `implement`, `analyze`, `fix-tests`, `create-plan`, `docs-sync`
+Action prompts use verb-first names: `commit`, `do`, `analyze`, `fix-tests`, `plan`, `docs-sync`
 
 ## 4. Examples
 
@@ -110,7 +110,7 @@ Action prompts use verb-first names: `commit`, `implement`, `analyze`, `fix-test
 | File | Command |
 |------|---------|
 | commit.md | user-cortex/commit |
-| create-plan.md | user-cortex/create-plan |
+| plan.md | user-cortex/plan |
 | fix-quality.md | user-cortex/fix-quality |
 
 ## 5. Proposals (Steps 3–5)
@@ -141,7 +141,7 @@ Action prompts use verb-first names: `commit`, `implement`, `analyze`, `fix-test
 
 | Current | Proposal | Rationale |
 |---------|----------|-----------|
-| implement-next-roadmap-step.md | **Keep** filename; document slug=implement | Slug already shortened; mapping is intentional. |
+| do.md | **Keep** filename; document slug=do | Slug matches filename; mapping is intentional. |
 | fix-quality vs fix_quality | Document mapping | Cursor command may use fix_quality; prompt file is fix-quality.md. Ensure docs clarify. |
 
 No prompt renames recommended; current mapping is acceptable.

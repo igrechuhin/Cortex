@@ -44,5 +44,5 @@ The commit pipeline (Step 12) and pre-commit checks include **check_async_tests*
 ## References
 
 - [Commit pipeline phases](../design/commit-pipeline-phases.md) – Step 12 includes `check_async_tests`
-- [Implement prompt](../../.cortex/synapse/prompts/implement-next-roadmap-step.md) – Step 4.3.1 (async method and test updates)
+- [Do prompt](../../.cortex/synapse/prompts/do.md) – Step 4.3.1 (async method and test updates)
 - [Python testing standards](../../.cortex/synapse/rules/python/python-testing-standards.mdc) – project testing rules

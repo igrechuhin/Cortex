@@ -41,7 +41,7 @@ As of the baseline run (`query_usage(query_type="unused", days=30, min_usage_cou
 |------|------------------|
 | check_task_available_lock | keep (Phase 58 task locking) |
 | claim_task_lock | keep (Phase 58 task locking) |
-| get_plan | keep (plan discovery; implement/create-plan) |
+| get_plan | keep (plan discovery; do/plan) |
 | get_session_tool_anomalies | removed (pruned); use query_usage(anomalies) |
 | list_active_tasks | keep (Phase 58 task locking) |
 | list_plans | keep (plan discovery) |

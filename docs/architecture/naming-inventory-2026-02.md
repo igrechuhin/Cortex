@@ -94,18 +94,18 @@ Catalog current names for Cortex MCP tools, `cortex://` resources, and Synapse p
 |----------|---------------|---------|------------|
 | analyze.md | analyze | user-cortex/analyze | ✓ |
 | commit.md | commit | user-cortex/commit | ✓ |
-| create-plan.md | create-plan | user-cortex/create-plan | ✓ |
+| plan.md | plan | user-cortex/plan | ✓ |
 | fix-quality.md | fix-quality | user-cortex/fix-quality | ✓ (via fix_quality) |
 | fix-tests.md | fix-tests | user-cortex/fix-tests | ✓ (via fix_tests) |
 | docs-sync.md | docs-sync | user-cortex/docs-sync | ✓ |
-| implement-next-roadmap-step.md | implement | user-cortex/implement | ✓ (slug shortened) |
+| do.md | do | user-cortex/do | ✓ |
 | review.md | review | user-cortex/review | ✓ |
 | REFACTORING_GUIDE.md | — | Not a command | — |
 | REFACTORING_SUMMARY.md | — | Not a command | — |
 
 ### 3.1 Inconsistencies
 
-- **Slug vs filename**: `implement-next-roadmap-step.md` maps to slug `implement` (shortened). Other prompts use filename-as-slug (e.g. create-plan, fix-quality).
+- **Slug vs filename**: `do.md` maps to slug `do`. Other prompts use filename-as-slug (e.g. plan, fix-quality).
 - **Command name mapping**: Cursor command `user-cortex/fix_quality` uses snake_case; prompt file is `fix-quality.md`. Document mapping explicitly.
 
 ## 4. Summary of findings

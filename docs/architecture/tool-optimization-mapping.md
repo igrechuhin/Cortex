@@ -16,7 +16,7 @@ Map each tool below the usage threshold (≤5 calls in 90 days) to an action: **
 | claim_task_lock | **keep** | Phase 58; critical for multi-agent coordination. |
 | release_task_lock | **keep** | Phase 58; critical for multi-agent coordination. |
 | list_active_tasks | **keep** | Phase 58; discovery of locked tasks. |
-| get_plan | **keep** | Plan discovery and content; used by create-plan and implement workflows (see docs/api/tools.md). |
+| get_plan | **keep** | Plan discovery and content; used by plan and do workflows (see docs/api/tools.md). |
 | list_plans | **keep** | Plan discovery; used before create_plan and in implement (roadmap/plan steps). |
 | session_register | **consolidated** (2026-02-27) | Use `session(operation="register", task_title=..., role=...)`. |
 | session_deregister | **consolidated** (2026-02-27) | Use `session(operation="deregister")`. |

@@ -22,10 +22,10 @@ from cortex.managers.initialization import get_project_root
 
 _PRIMARY_PROMPT_FILES: tuple[str, ...] = (
     "commit.md",
-    "implement-next-roadmap-step.md",
+    "do.md",
     "fix.md",
     "analyze.md",
-    "create-plan.md",
+    "plan.md",
     "review.md",
 )
 
@@ -33,9 +33,9 @@ _FINAL_REPORT_HEADING = "## Final report (required format)"
 _TEMPLATE_REF = "docs/guides/synapse-final-report-templates.md"
 
 # Report type classification
-_PIPELINE_PROMPTS = ("commit.md", "implement-next-roadmap-step.md")
+_PIPELINE_PROMPTS = ("commit.md", "do.md")
 _DIAGNOSTIC_PROMPTS = ("fix.md",)
-_ARTIFACT_PROMPTS = ("analyze.md", "create-plan.md", "review.md")
+_ARTIFACT_PROMPTS = ("analyze.md", "plan.md", "review.md")
 
 # Required section markers by report type (backtick-wrapped in prompt examples)
 _PIPELINE_MARKERS: tuple[str, ...] = (

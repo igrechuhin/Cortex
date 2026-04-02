@@ -85,7 +85,7 @@ async def add_roadmap_entry(
 ) -> str:
     """Add entry to roadmap section, avoiding truncation from full updates.
 
-    USE WHEN: Create-plan Step 6 needs to register a new plan entry.
+    USE WHEN: Plan prompt Step 6 needs to register a new plan entry.
 
     EXAMPLES: 'add_roadmap_entry(section="pending", entry_text="- Plan: .cortex/plans/foo.md")',
     'add roadmap entry to future section'.

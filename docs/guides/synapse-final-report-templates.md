@@ -6,9 +6,9 @@ Agent-to-user **final reports** at the end of Synapse prompts. Three report type
 
 | Type | Workflows | Sections |
 |------|-----------|----------|
-| **Pipeline** | commit, implement | Result, Phases, Artifacts, Next |
+| **Pipeline** | commit, do | Result, Phases, Artifacts, Next |
 | **Diagnostic** | fix | Result, Diagnosis, Iterations, Changes, Next |
-| **Artifact** | analyze, create-plan, review | Result, Output/Scores, Next |
+| **Artifact** | analyze, plan, review | Result, Output/Scores, Next |
 
 ## Section Semantics
 
@@ -97,7 +97,7 @@ Concrete outputs: commit SHA, files, coverage, push status.
 
 ### Output (Artifact type)
 
-Table of artifact metadata for analyze/create-plan.
+Table of artifact metadata for analyze/plan.
 
 ```markdown
 ## Output
@@ -185,7 +185,7 @@ None
 None
 ```
 
-### Pipeline: implement
+### Pipeline: do
 
 ```markdown
 ## Result
@@ -244,7 +244,7 @@ None
 None
 ```
 
-### Artifact: create-plan
+### Artifact: plan
 
 ```markdown
 ## Result
@@ -261,7 +261,7 @@ None
 
 ## Next
 
-`/cortex/implement @.cortex/plans/phase-123-feature-x.md`
+`/cortex/do @.cortex/plans/phase-123-feature-x.md`
 ```
 
 ### Artifact: analyze

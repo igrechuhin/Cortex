@@ -26,7 +26,7 @@ def _implement_select_path() -> Path:
 
 def _implement_prompt_path() -> Path:
     """Return path to implement orchestrator prompt."""
-    return _synapse_path() / "prompts" / "implement-next-roadmap-step.md"
+    return _synapse_path() / "prompts" / "do.md"
 
 
 @pytest.fixture
