@@ -155,6 +155,10 @@ class SessionBrief(StrictBaseModel):
         default=None,
         description="When mcp_healthy is False, short reason (e.g. unhealthy, connection error)",
     )
+    gate_feedback_summary: str | None = Field(
+        default=None,
+        description="Summary of active quality/docs gate feedback from pipeline handoff",
+    )
     session_scope: str = Field(
         default=SESSION_SCOPE_PROMPT,
         min_length=1,

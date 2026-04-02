@@ -67,6 +67,56 @@ def _mcp_health_json(healthy: bool) -> str:
     return json.dumps({"status": "success", "health": health})
 
 
+async def _build_minimal_session_managers(tmp_path: Path) -> object:
+    """Create minimal session_start files/metadata and return managers."""
+    memory_bank_dir = ensure_test_cortex_structure(tmp_path)
+    _ = (memory_bank_dir / "activeContext.md").write_text(
+        "# Active Context\n\n## Current Focus\n\nWorking on fixes.\n"
+    )
+    _ = (memory_bank_dir / "roadmap.md").write_text(
+        "# Roadmap\n\n## Pending plans (from .cortex/plans)\n\n- **Task** - PENDING - Desc\n"
+    )
+    _ = (memory_bank_dir / "projectBrief.md").write_text("# Cortex\n")
+    for file_name in (
+        "progress.md",
+        "systemPatterns.md",
+        "techContext.md",
+        "productContext.md",
+    ):
+        _ = (memory_bank_dir / file_name).write_text(f"# {file_name}\n")
+    fs_manager = FileSystemManager(tmp_path)
+    metadata_index = MetadataIndex(tmp_path)
+    _ = await metadata_index.load()
+    await _seed_basic_metadata(memory_bank_dir, metadata_index)
+    return make_test_managers(
+        fs=fs_manager, index=metadata_index, tokens=TokenCounter()
+    )
+
+
+async def _seed_basic_metadata(
+    memory_bank_dir: Path, metadata_index: MetadataIndex
+) -> None:
+    """Populate metadata entries for minimal session_start files."""
+    for file_name in (
+        "activeContext.md",
+        "roadmap.md",
+        "projectBrief.md",
+        "progress.md",
+        "systemPatterns.md",
+        "techContext.md",
+        "productContext.md",
+    ):
+        await metadata_index.update_file_metadata(
+            file_name=file_name,
+            path=memory_bank_dir / file_name,
+            exists=True,
+            size_bytes=100,
+            token_count=50,
+            content_hash="sha256:test",
+            sections=[],
+        )
+
+
 # ============================================================================
 # Helper Function Tests
 # ============================================================================
@@ -1046,6 +1096,41 @@ Working on Phase 54.
         assert result.status == "success"
         assert result.brief is not None
         assert result.brief.last_handoff is None
+
+    @pytest.mark.asyncio
+    async def test_session_start_impl_includes_gate_feedback_summary(
+        self, tmp_path: Path
+    ) -> None:
+        """session_start surfaces active gate_feedback summary from handoff state."""
+        managers = await _build_minimal_session_managers(tmp_path)
+
+        with (
+            patch(
+                "cortex.tools.session.health.get_mcp_health_status",
+                new_callable=AsyncMock,
+                return_value=(True, None),
+            ),
+            patch(
+                "cortex.tools.session.pipeline_handoff.pipeline_handoff",
+                new_callable=AsyncMock,
+                return_value=json.dumps(
+                    {
+                        "summary": "Quality gate failed with 2 issue group(s).",
+                        "top_files": ["src/a.py", "tests/b.py"],
+                    }
+                ),
+            ),
+        ):
+            result = await session_start_impl(None, tmp_path, managers)  # type: ignore[arg-type]
+
+        assert isinstance(result, SessionStartResult)
+        assert result.status == "success"
+        assert result.brief.gate_feedback_summary is not None
+        assert (
+            "Quality gate failed with 2 issue group(s)."
+            in result.brief.gate_feedback_summary
+        )
+        assert "Top files: src/a.py, tests/b.py" in result.brief.gate_feedback_summary
 
     @pytest.mark.asyncio
     async def test_session_lifecycle_compact_then_session_start_sees_handoff(

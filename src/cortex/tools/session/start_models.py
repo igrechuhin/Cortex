@@ -26,6 +26,7 @@ class SessionBriefContextKwargs(DictLikeModel):
     locked_tasks: list[str]
     mcp_healthy: bool
     mcp_health_message: str | None
+    gate_feedback_summary: str | None
 
 
 class BriefInputs(DictLikeModel):
@@ -43,3 +44,4 @@ class BriefInputs(DictLikeModel):
     locked_tasks: list[str]
     mcp_healthy: bool
     mcp_health_message: str | None
+    gate_feedback_summary: str | None

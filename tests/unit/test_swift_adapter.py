@@ -60,8 +60,8 @@ class TestSwiftAdapter:
             )
             mock_result = MagicMock()
             mock_result.returncode = 0
-            mock_result.stdout = "Test run: 3 passed"
-            mock_result.stderr = ""
+            mock_result.stdout = b"Test run: 3 passed"
+            mock_result.stderr = b""
             mock_run.return_value = mock_result
 
             adapter = SwiftAdapter(str(tmpdir))
@@ -71,6 +71,26 @@ class TestSwiftAdapter:
             call_args = mock_run.call_args[0][0]
             assert "swift" in call_args
             assert "test" in call_args
+
+    @patch("cortex.services.framework_adapters.swift_adapter.subprocess.run")
+    def test_run_tests_tolerates_binary_output(self, mock_run: MagicMock) -> None:
+        """run_tests does not crash when output contains non-UTF-8 bytes (e.g. PNG 0x89)."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            _ = (Path(tmpdir) / "Package.swift").write_text(
+                "// swift-tools-version:5.9"
+            )
+            mock_result = MagicMock()
+            mock_result.returncode = 0
+            # Simulate PNG header bytes mixed into test output
+            mock_result.stdout = b"Test run: 1 passed\n" + bytes([0x89]) + b"PNG\r\n"
+            mock_result.stderr = b""
+            mock_run.return_value = mock_result
+
+            adapter = SwiftAdapter(str(tmpdir))
+            result = adapter.run_tests()  # must not raise UnicodeDecodeError
+
+            assert result.success is True
+            assert "\ufffd" in result.output or "Test run" in result.output
 
     @patch("cortex.services.framework_adapters.swift_adapter.subprocess.run")
     def test_run_tests_timeout(self, mock_run: MagicMock) -> None:
@@ -123,8 +143,8 @@ class TestSwiftAdapter:
             )
             mock_result = MagicMock()
             mock_result.returncode = 0
-            mock_result.stdout = ""
-            mock_result.stderr = ""
+            mock_result.stdout = b""
+            mock_result.stderr = b""
             mock_run.return_value = mock_result
 
             adapter = SwiftAdapter(str(tmpdir))
@@ -156,8 +176,8 @@ class TestSwiftAdapter:
             )
             mock_result = MagicMock()
             mock_result.returncode = 0
-            mock_result.stdout = ""
-            mock_result.stderr = ""
+            mock_result.stdout = b""
+            mock_result.stderr = b""
             mock_run.return_value = mock_result
 
             adapter = SwiftAdapter(str(tmpdir))
@@ -178,8 +198,8 @@ class TestSwiftAdapter:
             )
             mock_result = MagicMock()
             mock_result.returncode = 0
-            mock_result.stdout = ""
-            mock_result.stderr = ""
+            mock_result.stdout = b""
+            mock_result.stderr = b""
             mock_run.return_value = mock_result
 
             adapter = SwiftAdapter(str(tmpdir))

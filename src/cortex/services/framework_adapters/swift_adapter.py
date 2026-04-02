@@ -42,14 +42,27 @@ class SwiftAdapter(FrameworkAdapter):
     def _run_swift(
         self, args: list[str], timeout: int | None = None
     ) -> subprocess.CompletedProcess[str]:
-        """Run swift command in project root."""
+        """Run swift command in project root.
+
+        Captures raw bytes and decodes with ``errors="replace"`` so that binary
+        content in test output (e.g. PNG snapshot bytes starting with 0x89) does
+        not raise ``UnicodeDecodeError`` and crash the quality gate.
+        """
         cmd = ["swift", *args]
-        return subprocess.run(
+        raw = subprocess.run(
             cmd,
             cwd=self.project_root,
             capture_output=True,
-            text=True,
+            text=False,
             timeout=timeout,
+        )
+        stdout = raw.stdout.decode("utf-8", errors="replace") if raw.stdout else ""
+        stderr = raw.stderr.decode("utf-8", errors="replace") if raw.stderr else ""
+        return subprocess.CompletedProcess(
+            args=raw.args,
+            returncode=raw.returncode,
+            stdout=stdout,
+            stderr=stderr,
         )
 
     def run_tests(

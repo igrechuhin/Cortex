@@ -6,7 +6,9 @@ Extracted from session_start_tools to keep file size under 400 lines.
 from __future__ import annotations
 
 import asyncio
+import json
 from pathlib import Path
+from typing import cast
 
 from cortex.core.constants import MemoryBankFile
 from cortex.core.file_system import FileSystemManager
@@ -38,6 +40,59 @@ _MAX_SESSION_BRIEF_CONCURRENT_TASK_CHARS = 512
 _MAX_SESSION_BRIEF_CURRENT_FOCUS_CHARS = 20000
 _MAX_SESSION_BRIEF_LINE_CHARS = 1000
 _MAX_SESSION_BRIEF_SUGGESTION_CHARS = 800
+
+
+def _format_gate_feedback_summary(payload: dict[str, object]) -> str | None:
+    """Build a one-line gate feedback summary from handoff payload."""
+    summary_raw = payload.get("summary")
+    if not isinstance(summary_raw, str):
+        return None
+    summary = summary_raw.strip()
+    if not summary:
+        return None
+    top_files_raw = payload.get("top_files")
+    if not isinstance(top_files_raw, list):
+        return summary
+    top_files: list[str] = []
+    top_files_items = cast(list[object], top_files_raw)
+    for item in top_files_items:
+        if not isinstance(item, str):
+            continue
+        cleaned = item.strip()
+        if cleaned:
+            top_files.append(cleaned)
+    if not top_files:
+        return summary
+    return f"{summary} Top files: {', '.join(top_files[:5])}"
+
+
+async def _load_gate_feedback_summary_safe(project_root: Path) -> str | None:
+    """Load gate feedback summary from implement pipeline handoff if present."""
+    import logging
+
+    from cortex.tools.session.pipeline_handoff import pipeline_handoff
+
+    logger = logging.getLogger(__name__)
+    try:
+        raw = await pipeline_handoff(
+            operation="read",
+            pipeline="implement",
+            phase="gate_feedback",
+            ctx=None,
+        )
+    except Exception as e:
+        logger.debug("Failed to read gate feedback handoff: %s", e)
+        return None
+    try:
+        parsed: object = json.loads(raw)
+    except json.JSONDecodeError:
+        return None
+    if not isinstance(parsed, dict):
+        return None
+    payload = cast(dict[str, object], parsed)
+    if payload.get("status") in {"not_found", "error"}:
+        return None
+    return _format_gate_feedback_summary(payload)
 
 
 def _truncate_for_brief_text(value: str, max_chars: int) -> str:
@@ -87,6 +142,7 @@ def _session_brief_cap_update(brief: SessionBrief) -> dict[str, object]:
         "concurrent_sessions": _cap_concurrent_session_tasks(brief.concurrent_sessions),
         "locked_tasks": [_truncate_for_brief_text(t, line) for t in brief.locked_tasks],
         "mcp_health_message": _truncate_optional(brief.mcp_health_message, line),
+        "gate_feedback_summary": _truncate_optional(brief.gate_feedback_summary, line),
     }
 
 
@@ -186,6 +242,7 @@ def _compute_suggestions_and_create_brief(inp: _BriefInputs) -> SessionBrief:
             inp.locked_tasks,
             inp.mcp_healthy,
             inp.mcp_health_message,
+            inp.gate_feedback_summary,
         ),
     )
 
@@ -203,6 +260,7 @@ def _assemble_session_brief(
     locked_tasks: list[str],
     mcp_healthy: bool = True,
     mcp_health_message: str | None = None,
+    gate_feedback_summary: str | None = None,
 ) -> SessionBrief:
     """Assemble session brief from collected components.
 
@@ -221,6 +279,7 @@ def _assemble_session_brief(
         locked_tasks=locked_tasks,
         mcp_healthy=mcp_healthy,
         mcp_health_message=mcp_health_message,
+        gate_feedback_summary=gate_feedback_summary,
     )
     return _compute_suggestions_and_create_brief(inp)
 
@@ -234,6 +293,7 @@ def _assemble_brief_from_components(
         SessionHandoff | None,
         list[ConcurrentSession],
         list[str],
+        str | None,
     ],
     next_work_item: str | None,
     next_work_plan_path: str | None,
@@ -255,6 +315,7 @@ def _assemble_brief_from_components(
         c[6],
         mcp_healthy=mcp_healthy,
         mcp_health_message=mcp_health_message,
+        gate_feedback_summary=c[7],
     )
 
 
@@ -263,20 +324,37 @@ async def _load_brief_async(
     project_root: Path,
     fs_manager: FileSystemManager,
 ) -> tuple[
-    SessionHealthSummary, str, SessionHandoff | None, list[ConcurrentSession], list[str]
+    SessionHealthSummary,
+    str,
+    SessionHandoff | None,
+    list[ConcurrentSession],
+    list[str],
+    str | None,
 ]:
     """Load health, project name, handoff, and concurrency for brief in parallel."""
     from cortex.tools.memory.compaction_operations import read_handoff
 
-    health, project_name, last_handoff, (concurrent_sessions, locked_tasks) = (
-        await asyncio.gather(
-            calculate_health_summary(managers, project_root),
-            _extract_project_name(fs_manager),
-            read_handoff(project_root, fs_manager),
-            _load_concurrency_info(project_root),
-        )
+    (
+        health,
+        project_name,
+        last_handoff,
+        (concurrent_sessions, locked_tasks),
+        gate_feedback,
+    ) = await asyncio.gather(
+        calculate_health_summary(managers, project_root),
+        _extract_project_name(fs_manager),
+        read_handoff(project_root, fs_manager),
+        _load_concurrency_info(project_root),
+        _load_gate_feedback_summary_safe(project_root),
     )
-    return health, project_name, last_handoff, concurrent_sessions, locked_tasks
+    return (
+        health,
+        project_name,
+        last_handoff,
+        concurrent_sessions,
+        locked_tasks,
+        gate_feedback,
+    )
 
 
 _BriefComponents = tuple[
@@ -287,6 +365,7 @@ _BriefComponents = tuple[
     SessionHandoff | None,
     list[ConcurrentSession],
     list[str],
+    str | None,
 ]
 
 
@@ -309,6 +388,7 @@ async def _gather_brief_components(
         last_handoff,
         concurrent_sessions,
         locked_tasks,
+        gate_feedback,
     ) = await _load_brief_async(managers, project_root, fs_manager)
     return (
         current_focus,
@@ -318,6 +398,7 @@ async def _gather_brief_components(
         last_handoff,
         concurrent_sessions,
         locked_tasks,
+        gate_feedback,
     )
 
 

@@ -27,6 +27,7 @@ def _create_session_brief(
     locked_tasks: list[str],
     mcp_healthy: bool = True,
     mcp_health_message: str | None = None,
+    gate_feedback_summary: str | None = None,
 ) -> SessionBrief:
     """Create SessionBrief from components."""
     return SessionBrief(
@@ -43,6 +44,7 @@ def _create_session_brief(
         locked_tasks=locked_tasks,
         mcp_healthy=mcp_healthy,
         mcp_health_message=mcp_health_message,
+        gate_feedback_summary=gate_feedback_summary,
         session_scope=SESSION_SCOPE_PROMPT,
     )
 
@@ -61,6 +63,7 @@ def _create_brief_with_suggestions(
     locked_tasks: list[str],
     mcp_healthy: bool = True,
     mcp_health_message: str | None = None,
+    gate_feedback_summary: str | None = None,
 ) -> SessionBrief:
     """Build SessionBrief from suggestions and components."""
     return _create_session_brief(
@@ -77,6 +80,7 @@ def _create_brief_with_suggestions(
         locked_tasks,
         mcp_healthy=mcp_healthy,
         mcp_health_message=mcp_health_message,
+        gate_feedback_summary=gate_feedback_summary,
     )
 
 
@@ -93,6 +97,7 @@ def session_brief_context_kwargs(
     locked_tasks: list[str],
     mcp_healthy: bool = True,
     mcp_health_message: str | None = None,
+    gate_feedback_summary: str | None = None,
 ) -> SessionBriefContextKwargs:
     """Build kwargs model for _create_brief_with_suggestions from context."""
     return SessionBriefContextKwargs(
@@ -108,6 +113,7 @@ def session_brief_context_kwargs(
         locked_tasks=locked_tasks,
         mcp_healthy=mcp_healthy,
         mcp_health_message=mcp_health_message,
+        gate_feedback_summary=gate_feedback_summary,
     )
 
 

@@ -103,3 +103,4 @@ The KB identifies iterative development with small steps as a core principle: "V
 ## Partial Progress Log
 
 - 2026-04-02: Implemented Step 1 baseline model + helpers, wired quality/docs gates to write/clear `gate_feedback`, and updated `/cortex/do` with `gate_feedback` + `gate_iterations` step-1 guard guidance — files: src/cortex/tools/session/gate_feedback.py, src/cortex/tools/execution/pre_commit_zero_arg_tools.py, src/cortex/tools/session/pipeline_handoff_validation.py, .cortex/synapse/prompts/do.md, tests/unit/tools/session/test_gate_feedback.py
+- 2026-04-02: Implemented Step 6 session feedback visibility by adding `gate_feedback_summary` into session start brief model/builders and reading implement handoff `gate_feedback` in session brief generation — files: src/cortex/tools/session/models.py, src/cortex/tools/session/start_models.py, src/cortex/tools/session/brief_helpers.py, src/cortex/tools/session/brief.py, tests/tools/test_session_start_tools.py
