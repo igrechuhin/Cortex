@@ -159,6 +159,10 @@ class SessionBrief(StrictBaseModel):
         default=None,
         description="Summary of active quality/docs gate feedback from pipeline handoff",
     )
+    trace_id: str | None = Field(
+        default=None,
+        description="Session trace id for structured agent logs (stderr JSON lines)",
+    )
     session_scope: str = Field(
         default=SESSION_SCOPE_PROMPT,
         min_length=1,

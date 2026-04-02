@@ -12,6 +12,16 @@
 
 - ✅ **Feedback Loop: Pipe Quality Gate Errors Back into Agent Context (PARTIAL)** - COMPLETE (2026-04-02) - Implemented the first functional slice: new `GateFeedback` model/helpers, gate write/clear plumbing in zero-arg quality/docs tools, handoff phase allowlist support for `gate_feedback`/`gate_iterations`, and `/cortex/do` Step 1 instructions to surface prior gate failures.
 
+- ✅ **Feedback Loop: Pipe Quality Gate Errors Back into Agent Context (PARTIAL)** - COMPLETE (2026-04-02) - Implemented Step 6 session visibility: `session()` now reads implement handoff `gate_feedback` and exposes a `gate_feedback_summary` field in start brief output, with targeted test coverage.
+
+- ✅ **SwiftAdapter subprocess capture** - COMPLETE (2026-04-02) - Hardened `SwiftAdapter._run_swift` to decode process output with replacement characters when stdout/stderr contain non-UTF-8 bytes, with regression coverage.
+
+- ✅ **Feedback Loop: Pipe Quality Gate Errors Back into Agent Context** - COMPLETE (2026-04-02) - Documented gate_feedback handoff (docs/guides/feedback-loops.md) and added tests/integration/test_gate_feedback_loop.py for failure write and success clear. Core GateFeedback wiring was completed in earlier sessions.
+
+- ✅ **Structured Agent-Oriented Logging (PARTIAL)** - COMPLETE (2026-04-02) - Introduced `src/cortex/tools/logging/` (LogEvent, emit, format_for_agent) and tests; quality gate passed. Next: instrument run_quality_gate, autofix, pipeline_handoff; trace_id in session; docs.
+
+- ✅ **Structured Agent-Oriented Logging for Cortex MCP Tools** - COMPLETE (2026-04-02) - Instrumented run_quality_gate and autofix with LogEvent stderr lines and agent_log markdown; pipeline_handoff emits handoff events; session brief includes trace_id; docs/guides/agent-logging.md added; tests for instrumentation.
+
 ## Completed Work (2026-04-01)
 
 - **Summary (2026-04-01)** - 1 entries archived.

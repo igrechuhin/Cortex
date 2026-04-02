@@ -12,8 +12,6 @@
 
 ## Pending plans (from .cortex/plans)
 
-- **Feedback Loop: Pipe Quality Gate Errors Back into Agent Context** - PENDING - Auto-write GateFeedback to pipeline_handoff on failure; /cortex/do reads it at next step start. Plan: .cortex/plans/feedback-loop-error-context.md
-- **Structured Agent-Oriented Logging for Cortex MCP Tools** - PENDING - Add structured LogEvent logging to MCP tools so agents trace requirement→code→runtime behavior. Plan: .cortex/plans/structured-agent-logging.md
 - **Reflection Quality Pass — Self-Evaluation Step in Cortex Pipelines** - PENDING - Optional reflection/critic pass after quality gate to catch semantic issues the gate misses. Plan: .cortex/plans/reflection-quality-pass.md
 - **AI Code Comments and BELIEF Annotations Support in Cortex Rules** - PENDING - Surface # AI: comment and BELIEF declaration conventions as a Cortex rule with gate warnings. Plan: .cortex/plans/ai-code-comments-belief-annotations.md
 

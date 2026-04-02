@@ -35,6 +35,7 @@ from cortex.core.mcp_annotations import safe_write_annotations
 from cortex.core.mcp_stability import ensure_usage_context, mcp_tool_wrapper
 from cortex.core.usage_context import get_or_resolve_project_root
 from cortex.server import mcp
+from cortex.tools.logging.instrumentation import emit_pipeline_handoff_log
 
 from .pipeline_handoff_io import (
     extract_routing_keys,
@@ -194,9 +195,11 @@ async def _dispatch(
     root = await get_or_resolve_project_root(ctx)
     project_root = Path(root)
     # Offload all blocking filesystem operations in _dispatch_sync.
-    return await asyncio.to_thread(
+    out = await asyncio.to_thread(
         _dispatch_sync, project_root, operation, pipeline, phase, data_str
     )
+    emit_pipeline_handoff_log(operation, pipeline, phase)
+    return out
 
 
 # ---------------------------------------------------------------------------

@@ -3,7 +3,11 @@
   "pythonVersion": "3.13",
 
   "include": ["src", "tests", ".cortex/synapse/scripts/python"],
-  "extraPaths": ["scripts", ".cortex/synapse/scripts/python"],
+  "extraPaths": [
+    "scripts",
+    ".cortex/synapse/scripts/python",
+    ".cortex/synapse/scripts/swift"
+  ],
 
   "exclude": [
     "**/__pycache__",

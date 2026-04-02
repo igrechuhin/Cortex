@@ -6,6 +6,11 @@
 - **Roadmap entries: link to plan files** - PARTIAL. Implemented Step 1 by adding optional `plan_relative_path` to plan register payload/dispatcher/rendering with backward-compatible `plan_file_name` fallback, plus integration and payload tests; quality gate passed (coverage 91.64% global).
 - **Roadmap entries: link to plan files** - COMPLETE. Completed canonical plan-path registration workflow end-to-end (tooling support + prompt compliance tests + docs).
 - **Feedback Loop: Pipe Quality Gate Errors Back into Agent Context** - PARTIAL. Added `GateFeedback` models/helpers, wired `run_quality_gate` and `run_docs_gate` to write/clear `gate_feedback` in implement handoff, expanded phase allowlist for `gate_feedback`/`gate_iterations`, and updated `/cortex/do` Step 1 guidance to consume feedback and enforce a 5-iteration guard; quality/docs gates pass.
+- **Feedback Loop: Pipe Quality Gate Errors Back into Agent Context** - PARTIAL. Implemented Step 6 by surfacing `gate_feedback_summary` from implement handoff in `session()` start brief models/builders and added focused unit coverage; quality gate passed (91.63%).
+- **SwiftAdapter subprocess capture** - COMPLETE. `SwiftAdapter._run_swift` now captures bytes and decodes stdout/stderr with UTF-8 `errors="replace"` so embedded binary (for example PNG header bytes) in `swift test` output cannot raise `UnicodeDecodeError` and abort the quality gate; unit test added.
+- **Feedback Loop: Pipe Quality Gate Errors Back into Agent Context** - COMPLETE. Documented gate_feedback schema and orchestrator behavior; added integration tests for persist write/clear.
+- **Structured Agent-Oriented Logging for Cortex MCP Tools** - PARTIAL. Added `cortex.tools.logging` with `LogEvent`/`LogLevel`, `emit` (JSON lines to stderr), `format_for_agent` markdown table, and unit tests; instrumentation deferred to follow-up.
+- **Structured Agent-Oriented Logging for Cortex MCP Tools** - COMPLETE. Structured LogEvent emission, agent_log on gate/autofix, pipeline_handoff logs, trace_id in session brief, agent-logging guide, unit tests.
 
 ## 2026-04-01
 

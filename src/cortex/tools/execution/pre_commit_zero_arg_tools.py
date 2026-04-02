@@ -47,6 +47,10 @@ from cortex.tools.execution.pre_commit_phase_dispatch import (
     PreCommitPhase,
     phase_to_checks,
 )
+from cortex.tools.logging.instrumentation import (
+    append_agent_log_to_autofix_result,
+    append_agent_log_to_quality_result,
+)
 from cortex.tools.session.gate_feedback import (
     feedback_from_docs_result,
     feedback_from_quality_result,
@@ -230,6 +234,7 @@ async def _run_quality_gate_inner(ctx: MCPContext | None) -> ModelDict:
         feedback_from_quality_result(cast(dict[str, object], result)),
         ctx,
     )
+    append_agent_log_to_quality_result(result)
     return result
 
 
@@ -336,4 +341,6 @@ async def autofix(
     async with get_phase_a_lock():
         result_json = await autofix_impl(root, include_untracked_markdown=True, ctx=ctx)
     _ = clear_all_cached_results(root)
-    return cast(ModelDict, json.loads(result_json))
+    parsed = cast(ModelDict, json.loads(result_json))
+    append_agent_log_to_autofix_result(parsed)
+    return parsed

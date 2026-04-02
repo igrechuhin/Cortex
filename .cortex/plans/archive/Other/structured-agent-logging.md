@@ -98,3 +98,7 @@ Currently Cortex MCP tools emit plain text or minimal structured output. When a 
 - Integration tests: `tests/integration/test_agent_logging.py` — call quality gate on a failing project, verify structured event appears in response
 - 95%+ coverage target on new module
 - Existing gate/autofix tests must pass unchanged (logging is additive, non-breaking)
+
+## Partial Progress Log
+
+- 2026-04-02: Steps 1–2 — `LogEvent`/`LogLevel` in `src/cortex/tools/logging/models.py`, `emit` and `format_for_agent` in `logger.py`, package exports in `__init__.py`, unit tests in `tests/unit/tools/logging/test_logger.py` — files: src/cortex/tools/logging/__init__.py, src/cortex/tools/logging/models.py, src/cortex/tools/logging/logger.py, tests/unit/tools/logging/test_logger.py

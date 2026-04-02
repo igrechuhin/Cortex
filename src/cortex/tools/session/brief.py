@@ -13,6 +13,7 @@ from typing import cast
 from cortex.core.constants import MemoryBankFile
 from cortex.core.file_system import FileSystemManager
 from cortex.managers.types import ManagersDict
+from cortex.tools.logging.session_context import ensure_trace_id_persisted
 from cortex.tools.models_base import ToolResultStatus
 from cortex.tools.session.brief_extraction_helpers import (
     extract_focus_and_completed,
@@ -220,7 +221,8 @@ async def _load_concurrency_info(
 
 def _compute_suggestions_and_create_brief(inp: _BriefInputs) -> SessionBrief:
     """Compute suggestions and build SessionBrief."""
-    return brief_from_suggestions_and_context(
+    trace_id = ensure_trace_id_persisted()
+    brief = brief_from_suggestions_and_context(
         generate_session_suggestions(
             inp.health,
             inp.git_status,
@@ -245,6 +247,7 @@ def _compute_suggestions_and_create_brief(inp: _BriefInputs) -> SessionBrief:
             inp.gate_feedback_summary,
         ),
     )
+    return brief.model_copy(update={"trace_id": trace_id})
 
 
 def _assemble_session_brief(

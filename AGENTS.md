@@ -175,7 +175,7 @@ All phases run inline. Use zero-arg tools — do NOT use legacy pre-commit tools
 - When naming modules within a package, drop redundant package-name prefixes (e.g., in cortex.tools.linking use graph_operations not link_graph_operations).
 - When adding or changing tools, prefer consolidation and removal of redundant or poorly used tools over adding new ones; tool count should decrease as functionality improves, and strengthen tool descriptions and governance tests so agents naturally use the intended entrypoints.
 - When enforcing new coding standards (e.g., Literal→enum), update `.cortex/synapse/rules/python` so the rule is reflected there.
-- When fixing private/public access issues, prefer making the original symbol public (rename `_name` → `name` and update call sites) instead of adding public alias shims like `name = _name`.
+- When fixing private/public access issues, prefer making the original symbol public (rename `_name` → `name` and update call sites) instead of adding public alias shims like `name = _name`. When a handoff or validation key is shown in prompts or other agent-visible text, prefer renaming away from a leading underscore (and updating allowlists) rather than exposing `_prefixed` identifiers in user-facing surfaces.
 - Prompts must be language agnostic; avoid language- or tool-specific identifiers in prompt instructions (e.g. specific typechecker rule names).
 - Treat overloaded terms (e.g. "clean") as prompt-specific; do not assume commit-pipeline git-clean semantics when a prompt defines issue-clean or workflow-clean semantics.
 - When refactoring, briefly explain why the new approach is better, especially when the change is non-obvious.
@@ -195,6 +195,7 @@ All phases run inline. Use zero-arg tools — do NOT use legacy pre-commit tools
 - Phase A `run_quality_gate()` can reuse cached fingerprints so typecheck output may not match the current working tree; if pyright errors look stale versus local `pyright`, write `{"force_fresh": true}` via `pipeline_handoff(write, checks, ...)` then call `run_quality_gate()` once before treating results as ground truth.
 - The docs gate `roadmap_progress_consistency` check fails when `progress.md` contains any `PARTIAL` line but `roadmap.md` has no `PENDING` backlog bullet; keep at least one real `PENDING` item while unfinished work remains in progress, or resolve the PARTIAL entries.
 - In this repo environment, prefer `python3` over `python` in shell commands (the `python` shim may point to a legacy interpreter).
+- Keep README and similar entrypoint docs aligned with current Cortex commands and resources (for example `/cortex/do`, `/cortex/commit`, `cortex://context`); avoid obsolete workflow shorthand such as "plan → implement → commit" when it no longer matches shipped names.
 
 ## Cursor Cloud specific instructions
 

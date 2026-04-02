@@ -8,6 +8,10 @@
 - **Feedback Loop: Pipe Quality Gate Errors Back into Agent Context** - PARTIAL. Added `GateFeedback` models/helpers, wired `run_quality_gate` and `run_docs_gate` to write/clear `gate_feedback` in implement handoff, expanded phase allowlist for `gate_feedback`/`gate_iterations`, and updated `/cortex/do` Step 1 guidance to consume feedback and enforce a 5-iteration guard; quality/docs gates pass.
 - **Feedback Loop: Pipe Quality Gate Errors Back into Agent Context** - PARTIAL. Implemented Step 6 by surfacing `gate_feedback_summary` from implement handoff in `session()` start brief models/builders and added focused unit coverage; quality gate passed (91.63%).
 - **SwiftAdapter subprocess capture** - COMPLETE. `SwiftAdapter._run_swift` now captures bytes and decodes stdout/stderr with UTF-8 `errors="replace"` so embedded binary (for example PNG header bytes) in `swift test` output cannot raise `UnicodeDecodeError` and abort the quality gate; unit test added.
+- **Feedback Loop: Pipe Quality Gate Errors Back into Agent Context** - COMPLETE. Documented gate_feedback schema and orchestrator behavior; added integration tests for persist write/clear.
+- **Structured Agent-Oriented Logging for Cortex MCP Tools** - PARTIAL. Added `cortex.tools.logging` with `LogEvent`/`LogLevel`, `emit` (JSON lines to stderr), `format_for_agent` markdown table, and unit tests; instrumentation deferred to follow-up.
+- **Structured Agent-Oriented Logging for Cortex MCP Tools** - COMPLETE. Structured LogEvent emission, agent_log on gate/autofix, pipeline_handoff logs, trace_id in session brief, agent-logging guide, unit tests.
+- **Synapse prompts: commit/fix zero-arg alignment** - COMPLETE. Submodule commits for `prompts/commit.md` and `prompts/fix.md` aligned with zero-arg `pipeline_handoff` and gate tool usage.
 
 ## 2026-04-01
 
