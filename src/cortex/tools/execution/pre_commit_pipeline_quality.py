@@ -100,7 +100,7 @@ def _collect_changed_line_ranges(
     """Collect changed line ranges by file from staged and unstaged diffs."""
     ranges: dict[str, list[tuple[int, int]]] = {}
     for args in _changed_lines_git_commands():
-        output = _run_git_diff_output(project_root, args)
+        output = run_git_diff_output(project_root, args)
         if output is not None:
             _parse_changed_line_output(output, ranges)
     return ranges
@@ -114,13 +114,13 @@ def _changed_lines_git_commands() -> tuple[list[str], ...]:
     )
 
 
-def _run_git_diff_output(project_root: Path, args: list[str]) -> str | None:
+def run_git_diff_output(project_root: Path, args: list[str]) -> str | None:
     """Run git diff and return stdout on success."""
     try:
         result = subprocess.run(
             args,
             capture_output=True,
-            text=True,
+            text=False,
             cwd=str(project_root),
             timeout=10,
         )
@@ -128,7 +128,7 @@ def _run_git_diff_output(project_root: Path, args: list[str]) -> str | None:
         return None
     if result.returncode != 0:
         return None
-    return result.stdout
+    return result.stdout.decode("utf-8", errors="replace")
 
 
 def _parse_changed_line_output(
@@ -157,7 +157,7 @@ def _parse_diff_hunk_range(line: str) -> tuple[int, int]:
     return start, end
 
 
-def _read_head_source(project_root: Path, rel_path: str) -> str | None:
+def read_head_source(project_root: Path, rel_path: str) -> str | None:
     """Read source for rel_path from HEAD, returning None if missing."""
     check = subprocess.run(
         ["git", "cat-file", "-e", f"HEAD:{rel_path}"],
@@ -171,13 +171,13 @@ def _read_head_source(project_root: Path, rel_path: str) -> str | None:
     show = subprocess.run(
         ["git", "show", f"HEAD:{rel_path}"],
         capture_output=True,
-        text=True,
+        text=False,
         cwd=str(project_root),
         timeout=10,
     )
     if show.returncode != 0:
         return None
-    return show.stdout
+    return show.stdout.decode("utf-8", errors="replace")
 
 
 def _build_baseline_function_lines(
@@ -187,9 +187,9 @@ def _build_baseline_function_lines(
     tracked: set[str] = set()
     baseline: dict[str, dict[str, int]] = {}
     for rel in changed_rel:
-        head_source = _read_head_source(project_root, rel)
+        head_source = read_head_source(project_root, rel)
         if head_source is None and rel in rename_map:
-            head_source = _read_head_source(project_root, rename_map[rel])
+            head_source = read_head_source(project_root, rename_map[rel])
         if head_source is None:
             continue
         tracked.add(rel)
@@ -222,7 +222,7 @@ def filter_preexisting_structural_violations(
     For changed tracked files, compare current violations against HEAD.
     Untracked files are treated as new code and keep all violations.
     """
-    changed_rel = _changed_relative_files(project_root, delta_files)
+    changed_rel = changed_relative_files(project_root, delta_files)
     if not changed_rel:
         return file_violations, func_violations
 
@@ -231,12 +231,15 @@ def filter_preexisting_structural_violations(
     )
 
 
-def _changed_relative_files(project_root: Path, delta_files: list[Path]) -> set[str]:
+def changed_relative_files(project_root: Path, delta_files: list[Path]) -> set[str]:
     """Build set of changed relative file paths."""
+    known_ext = frozenset(EXTENSION_SCRIPT_MAP.keys())
     return {
         path.relative_to(project_root).as_posix()
         for path in delta_files
-        if path.is_file() and path.is_relative_to(project_root)
+        if path.is_file()
+        and path.suffix in known_ext
+        and path.is_relative_to(project_root)
     }
 
 

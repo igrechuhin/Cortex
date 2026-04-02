@@ -668,7 +668,7 @@ await create_plan(operation="get", slug="phase-60-feature", response_format="met
 
 ### plan(operation="register") (roadmap registration)
 
-Register a plan entry in the roadmap. Use **`plan(operation="register", plan_title=..., description=..., section=...)`** (consolidated from `register_plan_in_roadmap`).
+Register a plan entry in the roadmap. Use **`plan(operation="register", plan_title=..., description=..., plan_relative_path=..., section=...)`** (consolidated from `register_plan_in_roadmap`).
 
 **USE WHEN:** Registering a newly created plan in roadmap.md during the plan workflow. Prefer this over building full roadmap content and calling `manage_file(write)` for a single new entry to avoid truncation.
 
@@ -678,6 +678,7 @@ Register a plan entry in the roadmap. Use **`plan(operation="register", plan_tit
 
 - `plan_title` (str) - **Required.** Title of the plan (used in roadmap entry).
 - `description` (str) - **Required.** One-line or short description for the roadmap entry.
+- `plan_relative_path` (str | None) - Optional canonical path to the plan file (recommended): `.cortex/plans/<file>.md`. When provided, roadmap entry rendering appends `Plan: .cortex/plans/<file>.md` in parser-friendly form.
 - `status` (str) - Plan status: use `PENDING` or `IN PROGRESS` only (default: `PENDING`). Completed work belongs in activeContext.md; COMPLETED/COMPLETE/DONE are rejected.
 - `section` (str) - Roadmap section: `blockers`, `active_work`, `future`, or `pending` (default: `pending`).
 
@@ -687,7 +688,8 @@ Register a plan entry in the roadmap. Use **`plan(operation="register", plan_tit
 await plan(
     operation="register",
     plan_title="Phase 60: Structured plan tools",
-    description="Reference. Plan: .cortex/plans/phase-60-structured-plan-tools.md.",
+    description="Reference for structured-plan tools.",
+    plan_relative_path=".cortex/plans/phase-60-structured-plan-tools.md",
     status="PENDING",
     section="pending"
 )

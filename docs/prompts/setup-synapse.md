@@ -136,8 +136,8 @@ synapse/
 
 After successful setup:
 
-1. **Rules are indexed** - Use `rules(operation="get_relevant", ...)` to retrieve rules
-2. **Prompts are available** - Synapse prompts (commit, review, implement, plan) are registered
+1. **Rules are indexed** - Use the `cortex://rules` resource to retrieve rules
+2. **Prompts are available** - Synapse prompts (commit, review, do, plan) are registered
 3. **Sync updates** - Use `synapse(operation="sync")` to pull latest changes from remote
 4. **Customize** - You can customize rules locally (they won't be overwritten by sync)
 

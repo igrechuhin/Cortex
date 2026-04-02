@@ -42,7 +42,7 @@ When the quality gate reports file size (>400 lines) or function length (>30 lin
 4. **Update tests**: add or adjust tests for the new helpers; keep coverage and update imports.
 5. **Run the quality gate** to confirm file size and function length are within limits.
 
-Naming: use `*_helpers.py` for extracted modules. Full pattern and examples are in the maintainability rules (e.g. `maintainability.mdc` via the rules directory or `rules(operation="get_relevant", task_description="helper module extraction")`). The implement prompt also documents this pattern as the standard refactoring approach for quality violations.
+Naming: use `*_helpers.py` for extracted modules. Full pattern and examples are in the maintainability rules (e.g. `maintainability.mdc` via the rules directory or the `cortex://rules` resource). The do prompt also documents this pattern as the standard refactoring approach for quality violations.
 
 ## Related
 

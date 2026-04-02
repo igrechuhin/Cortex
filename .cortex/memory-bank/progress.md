@@ -4,6 +4,8 @@
 
 - **Synapse prompt filenames (Do / Plan)** - COMPLETE. Renamed Synapse prompts to `do.md`/`plan.md` and updated prompts manifest plus all repo/test/docs references.
 - **Roadmap entries: link to plan files** - PARTIAL. Implemented Step 1 by adding optional `plan_relative_path` to plan register payload/dispatcher/rendering with backward-compatible `plan_file_name` fallback, plus integration and payload tests; quality gate passed (coverage 91.64% global).
+- **Roadmap entries: link to plan files** - COMPLETE. Completed canonical plan-path registration workflow end-to-end (tooling support + prompt compliance tests + docs).
+- **Feedback Loop: Pipe Quality Gate Errors Back into Agent Context** - PARTIAL. Added `GateFeedback` models/helpers, wired `run_quality_gate` and `run_docs_gate` to write/clear `gate_feedback` in implement handoff, expanded phase allowlist for `gate_feedback`/`gate_iterations`, and updated `/cortex/do` Step 1 guidance to consume feedback and enforce a 5-iteration guard; quality/docs gates pass.
 
 ## 2026-04-01
 

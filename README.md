@@ -11,32 +11,32 @@ Learn how to setup and use Memory Bank directly in Cursor: <http://enlightby.ai/
 ## What it's for
 
 Cortex is an MCP server that helps build and maintain a project Memory Bank so AI assistants always have up-to-date context, plans, and rules.
-It follows the [Memory Bank pattern](https://docs.cline.bot/improving-your-prompting-skills/cline-memory-bank) and keeps your `.cortex/` files (roadmap, activeContext, progress, rules) in sync so agents can reliably run a **plan → implement → commit** loop instead of ad-hoc edits.
+It follows the [Memory Bank pattern](https://docs.cline.bot/improving-your-prompting-skills/cline-memory-bank) and keeps your `.cortex/` files (roadmap, activeContext, progress, rules) in sync so agents can reliably run a **plan → do → commit** loop instead of ad-hoc edits.
 Use Cortex when you want reproducible, high-quality AI-driven development that survives restarts, editor changes, and long-running projects.
 
 ## How to use it
 
 1. **Install prerequisites**: Python 3.13+ and the Rust-based `rumdl` Markdown linter (installed via the Python dev environment; see [Prerequisites](#prerequisites)).
 2. **Run the server**: Add the config snippet from [Running the Server](#running-the-server) to your `mcp.json` (most users pick **uvx**).
-3. **Start with the plan → implement → commit loop** (see below).
+3. **Start with the plan → do → commit loop** (see below).
    In your IDE/assistant, ask the agent to orchestrate these commands:
    - Start a session (get an orientation brief)
    - Load task-specific context
-   - Follow the **plan → implement → commit** loop
+   - Follow the **plan → do → commit** loop
 
 For new projects, use the **initialize** prompt to create the Memory Bank and `.cortex/` structure.
 
-### Plan → implement → commit
+### Plan → do → commit
 
 This is the daily workflow:
 
 | Step | What happens |
 |------|--------------|
 | **Plan** | Create or refine plans in `.cortex/plans/` and register them in `roadmap.md`. |
-| **Implement** | Apply the next PENDING roadmap step with tests and quality checks. |
+| **Do** | Apply the next PENDING roadmap step with tests and quality checks. |
 | **Commit** | Run the full pre-commit pipeline and push only healthy commits. |
 
-See [docs/prompts](docs/prompts/README.md) for the implement and commit prompt details.
+See [docs/prompts](docs/prompts/README.md) for setup/migration prompt details.
 
 If Cortex MCP cannot be reached in your environment, you can still do a **read-only audit** of the repo under the boundaries in [AGENTS.md](AGENTS.md) (**MCP unavailable: read-only audit fallback**) and the runbook [MCP unavailable: read-only audits](docs/guides/troubleshooting.md#mcp-unavailable-read-only-audits).
 
@@ -180,7 +180,7 @@ Cortex exposes **10 MCP tools**, **6 static `cortex://` resources**, and **up to
 
 ## Prompts
 
-Prompts are for setup and migration; for daily work use **plan → implement → commit** tools.
+Prompts are for setup and migration; for daily work use **plan → do → commit** tools.
 
 | Situation | Prompt |
 |-----------|--------|

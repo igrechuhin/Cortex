@@ -168,7 +168,7 @@ async def _dispatch(
     data_str = _coerce_data(data)
 
     # Extract routing overrides embedded in the data payload (Cursor protocol).
-    # Agents write {"_op":"write","_phase":"select","_pipeline":"implement",...payload...}
+    # Agents write {"operation":"write","phase":"select","pipeline":"implement",...payload...}
     # to current-task.json so routing + payload travel in one write instead of two.
     routing, data_str = extract_routing_keys(data_str)
     if routing.get("op"):

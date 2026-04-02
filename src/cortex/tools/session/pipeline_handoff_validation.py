@@ -23,6 +23,8 @@ _VALID_PHASES: frozenset[str] = frozenset(
         "finalize",
         "verify",
         "fix",
+        "gate_feedback",
+        "gate_iterations",
     }
 )
 

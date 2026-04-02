@@ -1347,7 +1347,7 @@ When fixing quality violations (e.g. function length, file size) by refactoring,
 
 #### Intermediate Validation
 
-Run type check and quality check **after each refactor step**, not only at the end. This catches new violations (e.g. redeclaration, new function length) immediately. See commit prompt Step 3.5 (Intermediate Validation During Refactoring) and implement prompt "Code Quality" (incremental validation). Benefits: fewer pre-commit cycles and faster resolution.
+Run type check and quality check **after each refactor step**, not only at the end. This catches new violations (e.g. redeclaration, new function length) immediately. See commit prompt Step 3.5 (Intermediate Validation During Refactoring) and do prompt "Code Quality" (incremental validation). Benefits: fewer pre-commit cycles and faster resolution.
 
 #### Type Narrowing
 
@@ -1365,7 +1365,7 @@ For type check errors involving `int | None` or similar, see the [Type Narrowing
 
 #### Duplicate Detection
 
-Before creating new helper functions during refactoring, search for existing functions with similar names to avoid duplicates (e.g. redeclaration or unused-symbol errors). See commit prompt Step 3.6 (Duplicate Detection Before Creating Helpers) and implement prompt "Code Quality" (duplicate detection). Use the Grep tool or your language’s search to find existing helpers; reuse or rename to avoid duplicate declarations.
+Before creating new helper functions during refactoring, search for existing functions with similar names to avoid duplicates (e.g. redeclaration or unused-symbol errors). See commit prompt Step 3.6 (Duplicate Detection Before Creating Helpers) and do prompt "Code Quality" (duplicate detection). Use the Grep tool or your language's search to find existing helpers; reuse or rename to avoid duplicate declarations.
 
 For quality check failures during refactoring, see [Intermediate Validation](#intermediate-validation) above.
 

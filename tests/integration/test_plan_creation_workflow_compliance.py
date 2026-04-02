@@ -127,6 +127,21 @@ class TestCreatePlanRoadmapUpdate:
         assert 'plan(operation="register"' in create_plan_prompt_content
         assert "REQUIRED" in create_plan_prompt_content
         assert "roadmap" in create_plan_prompt_content.lower()
+        assert "plan_relative_path" in create_plan_prompt_content
+
+    def test_prompt_requires_canonical_plan_relative_path(
+        self, create_plan_prompt_content: str
+    ) -> None:
+        """Plan Step 8 must require canonical .cortex/plans path registration."""
+        assert "plan_relative_path" in create_plan_prompt_content
+        assert ".cortex/plans/<filename>.md" in create_plan_prompt_content
+
+    def test_prompt_has_description_fallback_for_stripped_args(
+        self, create_plan_prompt_content: str
+    ) -> None:
+        """Plan Step 8 must require Plan: fallback in description when args are stripped."""
+        assert "arguments are stripped" in create_plan_prompt_content
+        assert "Plan: .cortex/plans/<filename>.md" in create_plan_prompt_content
 
     def test_prompt_contains_prohibited_for_roadmap(
         self, create_plan_prompt_content: str

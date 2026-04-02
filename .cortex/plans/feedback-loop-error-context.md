@@ -14,7 +14,7 @@ Implement an automatic feedback loop that pipes quality gate and test failure co
 
 ## Context
 
-The KB identifies iterative development with small steps as a core principle: "Verify-then-trust with automatic guardrails." Currently when `run_quality_gate` fails, the agent receives a raw text block of errors and must manually parse which files to fix. If the agent's context is already large, important error details get lost. The fix: after a gate failure, write a structured `GateFeedback` object to `pipeline_handoff` under a reserved key (`_gate_feedback`). The `/cortex/do` prompt then reads this at Step 1 and highlights the top-N errors before the agent starts making edits. This closes the feedback loop automatically.
+The KB identifies iterative development with small steps as a core principle: "Verify-then-trust with automatic guardrails." Currently when `run_quality_gate` fails, the agent receives a raw text block of errors and must manually parse which files to fix. If the agent's context is already large, important error details get lost. The fix: after a gate failure, write a structured `GateFeedback` object to `pipeline_handoff` under a reserved key (`gate_feedback`). The `/cortex/do` prompt then reads this at Step 1 and highlights the top-N errors before the agent starts making edits. This closes the feedback loop automatically.
 
 ## Implementation Steps
 
@@ -28,9 +28,9 @@ The KB identifies iterative development with small steps as a core principle: "V
 ### Step 2 — Quality gate: write GateFeedback on failure
 
 - After gate checks complete and ≥1 check failed: parse error output into `list[GateError]`
-- Write `GateFeedback` to `pipeline_handoff(operation="write", key="_gate_feedback", value=feedback.model_dump_json())`
-- On gate success: clear `_gate_feedback` from handoff state (`pipeline_handoff(operation="clear", key="_gate_feedback")`)
-- Verification: Integration test calls gate on failing project, reads handoff, confirms `_gate_feedback` key present and parseable.
+- Write `GateFeedback` to `pipeline_handoff(operation="write", key="gate_feedback", value=feedback.model_dump_json())`
+- On gate success: clear `gate_feedback` from handoff state (`pipeline_handoff(operation="clear", key="gate_feedback")`)
+- Verification: Integration test calls gate on failing project, reads handoff, confirms `gate_feedback` key present and parseable.
 
 ### Step 3 — `run_docs_gate`: same feedback loop
 
@@ -40,26 +40,26 @@ The KB identifies iterative development with small steps as a core principle: "V
 
 ### Step 4 — Update `/cortex/do` prompt: read gate feedback at Step 1
 
-- In `do.md`, after `session()` call (Step 1): add instruction to read `_gate_feedback` from `pipeline_handoff`
+- In `do.md`, after `session()` call (Step 1): add instruction to read `gate_feedback` from `pipeline_handoff`
 - If feedback present: display `GateFeedback.summary` and `top_files` as the first context block before reading the plan
 - Format: `> ⚠️ Gate failed on previous run: <summary>. Top files: <top_files>`
-- Verification: `do.md` contains `_gate_feedback` read instruction.
+- Verification: `do.md` contains `gate_feedback` read instruction.
 
 ### Step 5 — `/cortex/do` prompt: iteration limit guard
 
 - Add a note: if gate has failed ≥5 times on the same `run_id` prefix, pause and surface to user (matches KB rule: <5 iterations continue, 5+ restart fresh)
-- Store iteration count in `pipeline_handoff` under `_gate_iterations`
+- Store iteration count in `pipeline_handoff` under `gate_iterations`
 - Verification: `do.md` contains iteration guard reference.
 
 ### Step 6 — `session()` tool: surface active gate feedback
 
-- If `_gate_feedback` key exists in handoff: include a `gate_feedback_summary` field in `session()` response
+- If `gate_feedback` key exists in handoff: include a `gate_feedback_summary` field in `session()` response
 - Agents see the summary at session start without an extra tool call
-- Verification: Unit test mocks handoff state with `_gate_feedback`, confirms `session()` includes it.
+- Verification: Unit test mocks handoff state with `gate_feedback`, confirms `session()` includes it.
 
 ### Step 7 — Documentation
 
-- Add `docs/guides/feedback-loops.md` explaining the `_gate_feedback` key, GateFeedback schema, and iteration guard
+- Add `docs/guides/feedback-loops.md` explaining the `gate_feedback` key, GateFeedback schema, and iteration guard
 - Verification: File exists with GateFeedback JSON example.
 
 ## Verification Checklist
@@ -67,11 +67,11 @@ The KB identifies iterative development with small steps as a core principle: "V
 | Step | What to search for | Search scope | Files to re-read |
 |------|-------------------|--------------|-----------------|
 | 1 | `class GateFeedback` | `src/cortex/tools/session/gate_feedback.py` | gate_feedback.py |
-| 2 | `_gate_feedback` write call | quality gate handler | gate handler file |
+| 2 | `gate_feedback` write call | quality gate handler | gate handler file |
 | 2 | clear on success | quality gate handler | gate handler file |
 | 3 | `gate="docs"` | docs gate handler | docs gate file |
-| 4 | `_gate_feedback` read in do.md | `.cortex/synapse/prompts/do.md` | do.md |
-| 5 | `_gate_iterations` in do.md | `.cortex/synapse/prompts/do.md` | do.md |
+| 4 | `gate_feedback` read in do.md | `.cortex/synapse/prompts/do.md` | do.md |
+| 5 | `gate_iterations` in do.md | `.cortex/synapse/prompts/do.md` | do.md |
 | 6 | `gate_feedback_summary` in session | `src/cortex/tools/session/` | session handler |
 | 7 | `feedback-loops.md` | `docs/guides/` | feedback-loops.md |
 
@@ -99,3 +99,7 @@ The KB identifies iterative development with small steps as a core principle: "V
 - Integration tests: `tests/integration/test_gate_feedback_loop.py` — failing gate writes feedback; passing gate clears it; session reads it
 - Parametric: multiple error types (type error, lint, test failure) all produce valid GateError entries
 - 95%+ coverage target on new module
+
+## Partial Progress Log
+
+- 2026-04-02: Implemented Step 1 baseline model + helpers, wired quality/docs gates to write/clear `gate_feedback`, and updated `/cortex/do` with `gate_feedback` + `gate_iterations` step-1 guard guidance — files: src/cortex/tools/session/gate_feedback.py, src/cortex/tools/execution/pre_commit_zero_arg_tools.py, src/cortex/tools/session/pipeline_handoff_validation.py, .cortex/synapse/prompts/do.md, tests/unit/tools/session/test_gate_feedback.py

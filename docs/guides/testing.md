@@ -33,4 +33,4 @@ For consolidated tools that use **handler dispatch** (e.g. `query_memory_bank`, 
 
 - **Unit tests with mocks**: Typically achieve 80–90% coverage. Handler imports and dispatch branches may not run when handlers are mocked. Use when you need fast, isolated tests and 90%+ is acceptable.
 - **Integration tests**: Call the real tool so all handlers and imports run. Use when you need 95%+ coverage or must validate handler dispatch and error paths end-to-end.
-- **Coverage expectations**: 90%+ is acceptable for consolidated tools; 95%+ is ideal and usually requires integration tests. Plan both unit and integration tests when implementing new consolidated tools (see the implement prompt Test Coverage Planning Checklist).
+- **Coverage expectations**: 90%+ is acceptable for consolidated tools; 95%+ is ideal and usually requires integration tests. Plan both unit and integration tests when implementing new consolidated tools (see the do prompt Test Coverage Planning Checklist).

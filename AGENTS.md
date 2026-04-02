@@ -121,11 +121,11 @@ Agents must keep going until the task is done or genuinely blocked; do not pause
   - After restating a plan, checklist, or next steps without new questions.
   - Waiting for the user to say "ok, proceed" (or similar) when no new information is required.
 
-**Load context on the fix path (MANDATORY)**: When you encounter a problem and have to fix something (errors, test failures, quality issues, type/lint violations), you **must** load context and rules **before** making changes. Read `cortex://context` and `cortex://rules` resources. Only after context and rules are loaded, proceed with fixes. This ensures fixes follow all project rules and guidelines. See the commit and implement prompts for concrete placement.
+**Load context on the fix path (MANDATORY)**: When you encounter a problem and have to fix something (errors, test failures, quality issues, type/lint violations), you **must** load context and rules **before** making changes. Read `cortex://context` and `cortex://rules` resources. Only after context and rules are loaded, proceed with fixes. This ensures fixes follow all project rules and guidelines. See the commit and do prompts for concrete placement.
 
 ## Pipeline Architecture (simplified for reliability)
 
-All pipelines (commit, implement) run **inline** in the orchestrator — no subagents for commit phases, and only `implement-code` uses a subagent (for context isolation during heavy coding). This eliminates concurrent MCP access issues with Cursor.
+All pipelines (commit, do) run **inline** in the orchestrator — no subagents for commit phases, and only `implement-code` uses a subagent (for context isolation during heavy coding). This eliminates concurrent MCP access issues with Cursor.
 
 **Zero-arg tools**: All MCP tools work with empty `{}` arguments (Cursor's MCP bridge strips args). Tools read config from session files or use sensible defaults. Key zero-arg tools:
 

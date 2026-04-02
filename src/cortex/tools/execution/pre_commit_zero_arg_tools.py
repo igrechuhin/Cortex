@@ -32,6 +32,12 @@ from cortex.core.usage_context import (
     get_current_project_root,
     get_or_resolve_project_root,
 )
+from cortex.tools.execution.pre_commit_config import (
+    as_bool,
+    as_float,
+    as_int,
+    read_pipeline_phase_config,
+)
 from cortex.tools.execution.pre_commit_detached import clear_all_cached_results
 from cortex.tools.execution.pre_commit_docs_memory_helpers import (
     run_docs_and_memory_bank_sync_impl,
@@ -40,6 +46,11 @@ from cortex.tools.execution.pre_commit_fix_quality import autofix_impl
 from cortex.tools.execution.pre_commit_phase_dispatch import (
     PreCommitPhase,
     phase_to_checks,
+)
+from cortex.tools.session.gate_feedback import (
+    feedback_from_docs_result,
+    feedback_from_quality_result,
+    persist_gate_feedback,
 )
 
 # Serializes all Phase-A spawns (run_quality_gate, autofix).
@@ -72,88 +83,6 @@ def get_phase_a_lock() -> asyncio.Lock:
 # Backwards-compatible alias: older call sites referenced `phase_a_lock()`.
 # Keep it as a callable (not a module-level Lock) to avoid cross-event-loop bugs.
 phase_a_lock = get_phase_a_lock
-
-
-def _merge_task_data(data: object, defaults: dict[str, object]) -> dict[str, object]:
-    """Merge parsed JSON task data into defaults, keeping only known keys."""
-    if not isinstance(data, dict):
-        return defaults
-    merged = dict(defaults)
-    updates: dict[str, object] = {}
-    for k, v in cast(dict[object, object], data).items():
-        if isinstance(k, str) and k in defaults:
-            updates[k] = v
-    merged.update(updates)
-    return merged
-
-
-def _read_pipeline_phase_config(
-    root: Path,
-    pipeline: str,
-    phase: str,
-    defaults: dict[str, object],
-) -> dict[str, object]:
-    """Read config for a pipeline phase from its task file. Falls back to defaults."""
-    import os
-
-    session_id = os.environ.get("CORTEX_SESSION_ID", "")
-    if not session_id:
-        return defaults
-    session_root = get_cortex_path(root, CortexResourceType.SESSION)
-    task_path = session_root / session_id / pipeline / f"{phase}-task.json"
-    if not task_path.exists():
-        return defaults
-    try:
-        data: object = json.loads(task_path.read_text())
-    except (OSError, json.JSONDecodeError):
-        return defaults
-    return _merge_task_data(data, defaults)
-
-
-def _as_int(value: object, default: int) -> int:
-    """Return int value for config scalar input, or default."""
-    if isinstance(value, bool):
-        return int(value)
-    if isinstance(value, int):
-        return value
-    if isinstance(value, float):
-        return int(value)
-    if isinstance(value, str):
-        try:
-            return int(value.strip())
-        except ValueError:
-            return default
-    return default
-
-
-def _as_float(value: object, default: float) -> float:
-    """Return float value for config scalar input, or default."""
-    if isinstance(value, bool):
-        return float(value)
-    if isinstance(value, (int, float)):
-        return float(value)
-    if isinstance(value, str):
-        try:
-            return float(value.strip())
-        except ValueError:
-            return default
-    return default
-
-
-def _as_bool(value: object, default: bool) -> bool:
-    """Return bool value for common config inputs, or default."""
-    if isinstance(value, bool):
-        return value
-    if isinstance(value, (int, float)):
-        return bool(value)
-    if isinstance(value, str):
-        normalized = value.strip().lower()
-        if normalized in {"1", "true", "yes", "on"}:
-            return True
-        if normalized in {"0", "false", "no", "off"}:
-            return False
-        return default
-    return default
 
 
 def _start_phase_a_job(
@@ -281,22 +210,27 @@ async def _run_quality_gate_inner(ctx: MCPContext | None) -> ModelDict:
     """Resolve config and spawn Phase A quality gate."""
     root = get_current_project_root() or Path(await get_or_resolve_project_root(ctx))
     _ = clear_all_cached_results(root)
-    cfg = _read_pipeline_phase_config(
+    cfg = read_pipeline_phase_config(
         root,
         "commit",
         "checks",
         {"coverage_threshold": 0.90, "test_timeout": 300, "force_fresh": True},
     )
-    timeout = _as_int(cfg.get("test_timeout"), 300)
-    coverage_threshold = _as_float(cfg.get("coverage_threshold"), 0.90)
-    force_fresh = _as_bool(cfg.get("force_fresh"), True)
-    return await _spawn_and_poll_phase_a(
+    timeout = as_int(cfg.get("test_timeout"), 300)
+    coverage_threshold = as_float(cfg.get("coverage_threshold"), 0.90)
+    force_fresh = as_bool(cfg.get("force_fresh"), True)
+    result = await _spawn_and_poll_phase_a(
         root,
         timeout=timeout,
         coverage_threshold=coverage_threshold,
         force_fresh=force_fresh,
         ctx=ctx,
     )
+    await persist_gate_feedback(
+        feedback_from_quality_result(cast(dict[str, object], result)),
+        ctx,
+    )
+    return result
 
 
 @typed_mcp_tool(
@@ -359,7 +293,12 @@ async def run_docs_gate(
     - run_docs_gate() to re-check roadmap_sync and timestamps without
       re-running tests or other quality checks.
     """
-    return await run_docs_and_memory_bank_sync_impl(ctx=ctx)
+    result = await run_docs_and_memory_bank_sync_impl(ctx=ctx)
+    await persist_gate_feedback(
+        feedback_from_docs_result(cast(dict[str, object], result)),
+        ctx,
+    )
+    return result
 
 
 @typed_mcp_tool(

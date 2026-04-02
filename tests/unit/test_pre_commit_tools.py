@@ -51,8 +51,11 @@ from cortex.tools.execution.pre_commit_helpers_remaining import (
     extract_list_from_object,
 )
 from cortex.tools.execution.pre_commit_pipeline_quality import (
+    changed_relative_files,
     check_function_lengths,
     filter_preexisting_structural_violations,
+    read_head_source,
+    run_git_diff_output,
 )
 from cortex.tools.execution.pre_commit_synapse import run_synapse_script
 from cortex.tools.execution.pre_commit_tools import (
@@ -1784,6 +1787,44 @@ class TestStructuralViolationFiltering:
             )
             assert filtered_file == []
             assert filtered_func == []
+
+    def test_run_git_diff_output_handles_binary_bytes(self) -> None:
+        """Binary bytes in git diff output should not crash decoding."""
+        mocked = MagicMock(returncode=0, stdout=b"\x89PNG\r\n@@ -1 +1 @@\n")
+        with patch(
+            "cortex.tools.execution.pre_commit_pipeline_quality.subprocess.run",
+            return_value=mocked,
+        ):
+            output = run_git_diff_output(Path("/tmp"), ["git", "diff", "--unified=0"])
+        assert output is not None
+        assert "@@ -1 +1 @@" in output
+
+    def test_read_head_source_handles_binary_bytes(self) -> None:
+        """git show binary content should be safely decoded without exceptions."""
+        exists = MagicMock(returncode=0, stdout=b"", stderr=b"")
+        show = MagicMock(returncode=0, stdout=b"\x89PNG\r\n", stderr=b"")
+        with patch(
+            "cortex.tools.execution.pre_commit_pipeline_quality.subprocess.run",
+            side_effect=[exists, show],
+        ):
+            output = read_head_source(Path("/tmp"), "Tests/Charts/snapshot.png")
+        assert output is not None
+        assert "PNG" in output
+
+    def test_changed_relative_files_skips_non_checkable_extensions(self) -> None:
+        """Only quality-checkable file extensions should be considered changed."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            src = root / "src"
+            src.mkdir()
+            py_file = src / "module.py"
+            png_file = src / "chart.png"
+            _ = py_file.write_text("x = 1\n")
+            _ = png_file.write_bytes(b"\x89PNG\r\n")
+
+            changed = changed_relative_files(root, [py_file, png_file])
+            assert "src/module.py" in changed
+            assert "src/chart.png" not in changed
 
 
 @pytest.mark.asyncio

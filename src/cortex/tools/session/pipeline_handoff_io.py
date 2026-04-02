@@ -177,7 +177,7 @@ def op_read_task(project_root: Path, pipeline: str, phase: str) -> str:
             "pipeline": pipeline,
             "message": (
                 f"No explicit task written for phase '{phase}'. "
-                "Using pipeline state as context — orchestrator skipped write_task."
+                "Using pipeline state as context — orchestrator skipped write."
             ),
             "pipeline_state": prior_state,
         },
@@ -205,17 +205,17 @@ def load_or_create_state(state_file: Path, pipeline: str) -> dict[str, object]:
     }
 
 
-_ROUTING_KEYS: frozenset[str] = frozenset({"_op", "_phase", "_pipeline"})
+_ROUTING_KEYS: frozenset[str] = frozenset({"operation", "phase", "pipeline"})
 
 
 def extract_routing_keys(
     data: str | None,
 ) -> tuple[dict[str, str], str | None]:
-    """Extract _op/_phase/_pipeline routing overrides from a JSON data string.
+    """Extract operation/phase/pipeline routing overrides from a JSON data string.
 
     Returns (routing, cleaned_data):
     - routing: dict with string values for any of "op", "phase", "pipeline"
-      found in the data (keys are stripped of the leading underscore).
+      found in the data ("operation" is normalised to "op" for the dispatcher).
     - cleaned_data: original data with routing keys removed, or the original
       string unchanged if no routing keys were present (or data was not JSON).
 
@@ -235,7 +235,9 @@ def extract_routing_keys(
     for key in _ROUTING_KEYS:
         val = parsed_dict.get(key)
         if isinstance(val, str) and val:
-            routing[key.lstrip("_")] = val
+            # "operation" → "op" so the dispatcher's existing key checks still work.
+            canonical = "op" if key == "operation" else key
+            routing[canonical] = val
     if not routing:
         return {}, data
     cleaned = {k: v for k, v in parsed_dict.items() if k not in _ROUTING_KEYS}

@@ -14,7 +14,7 @@ If your project is fully configured, only active-development prompts (e.g. from 
 
 ## Prompt Icons
 
-Cortex registers each prompt with an **emoji icon** (per MCP spec): setup prompts use icons like 🏗️ 🔄 💾 🔗, and Synapse prompts (commit, review, implement, plan) use 💾 👀 ⚡ 📋. The server sends these in the `prompts/list` response (each prompt has an `icons` array with a data-URI SVG).
+Cortex registers each prompt with an **emoji icon** (per MCP spec): setup prompts use icons like 🏗️ 🔄 💾 🔗, and Synapse prompts (commit, review, do, plan) use 💾 👀 ⚡ 📋. The server sends these in the `prompts/list` response (each prompt has an `icons` array with a data-URI SVG).
 
 **Visibility in the UI** depends on your MCP client. Cursor IDE may show only prompt names and descriptions and **not render prompt icons** yet. To confirm the server is sending icons, you can use an MCP inspector or call the prompts list endpoint; the response will include `icons` for each prompt.
 

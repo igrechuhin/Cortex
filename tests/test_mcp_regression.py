@@ -261,7 +261,7 @@ async def test_phase_a_prompt_execution_is_serialized_by_lock(tmp_path: Path) ->
 
     with (
         patch(
-            "cortex.tools.execution.pre_commit_zero_arg_tools._read_pipeline_phase_config",
+            "cortex.tools.execution.pre_commit_zero_arg_tools.read_pipeline_phase_config",
             return_value={"coverage_threshold": 0.90, "test_timeout": 1},
         ),
         patch(

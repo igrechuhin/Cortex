@@ -410,27 +410,28 @@ async def test_full_commit_pipeline_round_trip(
         "cortex.tools.session.pipeline_handoff.get_or_resolve_project_root",
         AsyncMock(return_value=str(tmp_path)),
     )
+    await _run_commit_round_trip_preflight_phase()
+    await _run_commit_round_trip_checks_phase()
+    await _assert_commit_round_trip_final_state()
+    clear_r = json.loads(await pipeline_handoff(operation="clear", pipeline="commit"))
+    assert clear_r["status"] == "ok"
 
-    # Orchestrator: init
+
+async def _run_commit_round_trip_preflight_phase() -> None:
     init_r = json.loads(await pipeline_handoff(operation="init", pipeline="commit"))
     assert init_r["status"] == "ok"
-
-    # Orchestrator: dispatch preflight with context
     await pipeline_handoff(
         operation="write_task",
         pipeline="commit",
         phase="preflight",
         data='{"requested_by": "user"}',
     )
-
-    # Preflight subagent: read task, do work, write result
     task = json.loads(
         await pipeline_handoff(
             operation="read_task", pipeline="commit", phase="preflight"
         )
     )
     assert task["requested_by"] == "user"
-
     await pipeline_handoff(
         operation="write_result",
         pipeline="commit",
@@ -438,26 +439,23 @@ async def test_full_commit_pipeline_round_trip(
         data='{"status": "complete", "snapshot_ref": "deadbeef", "rules_loaded": true}',
     )
 
-    # Orchestrator: read state, extract snapshot_ref, dispatch checks
+
+async def _run_commit_round_trip_checks_phase() -> None:
     state = json.loads(
         await pipeline_handoff(operation="read_state", pipeline="commit")
     )
     snapshot_ref = state["phases"]["preflight"]["snapshot_ref"]
     assert snapshot_ref == "deadbeef"
-
     await pipeline_handoff(
         operation="write_task",
         pipeline="commit",
         phase="checks",
         data=json.dumps({"snapshot_ref": snapshot_ref, "coverage_threshold": 0.9}),
     )
-
-    # Checks subagent: read task (receives snapshot_ref from preflight), write result
     checks_task = json.loads(
         await pipeline_handoff(operation="read_task", pipeline="commit", phase="checks")
     )
     assert checks_task["snapshot_ref"] == "deadbeef"
-
     await pipeline_handoff(
         operation="write_result",
         pipeline="commit",
@@ -465,17 +463,14 @@ async def test_full_commit_pipeline_round_trip(
         data='{"status": "passed", "coverage": 0.94, "fix_iterations": 0}',
     )
 
-    # Final state has both phases
+
+async def _assert_commit_round_trip_final_state() -> None:
     final_state = json.loads(
         await pipeline_handoff(operation="read_state", pipeline="commit")
     )
     assert final_state["phases"]["preflight"]["status"] == "complete"
     assert final_state["phases"]["checks"]["status"] == "passed"
     assert final_state["phases"]["checks"]["coverage"] == 0.94
-
-    # Cleanup
-    clear_r = json.loads(await pipeline_handoff(operation="clear", pipeline="commit"))
-    assert clear_r["status"] == "ok"
 
 
 # ---------------------------------------------------------------------------
@@ -767,9 +762,9 @@ class TestExtractRoutingKeys:
 
         data = json.dumps(
             {
-                "_op": "write",
-                "_phase": "select",
-                "_pipeline": "implement",
+                "operation": "write",
+                "phase": "select",
+                "pipeline": "implement",
                 "status": "ok",
             }
         )
@@ -802,7 +797,7 @@ class TestExtractRoutingKeys:
     def test_routing_only_data_returns_none_cleaned(self) -> None:
         from cortex.tools.session.pipeline_handoff_io import extract_routing_keys
 
-        data = json.dumps({"_op": "clear", "_pipeline": "implement"})
+        data = json.dumps({"operation": "clear", "pipeline": "implement"})
         routing, cleaned = extract_routing_keys(data)
         assert routing["op"] == "clear"
         assert cleaned is None  # no payload keys remain
@@ -815,7 +810,7 @@ class TestExtractRoutingKeys:
 
 @pytest.mark.asyncio
 class TestRoutingKeysInData:
-    """Verify pipeline_handoff extracts _op/_phase/_pipeline from data payload.
+    """Verify pipeline_handoff extracts operation/phase/pipeline from data payload.
 
     This is the Cursor protocol: agent writes one JSON blob to current-task.json
     containing both routing and payload instead of a separate routing write.
@@ -835,43 +830,31 @@ class TestRoutingKeysInData:
             json.dumps(config), encoding="utf-8"
         )
 
+    @staticmethod
+    def _routing_payload() -> dict[str, object]:
+        return {
+            "operation": "write",
+            "phase": "select",
+            "pipeline": "implement",
+            "status": "complete",
+            "selected_step": "step-1",
+        }
+
     async def test_routing_keys_in_data_trigger_write(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        """_op/_phase/_pipeline in data drive the write operation."""
+        """operation/phase/pipeline in data drive the write operation."""
         self._setup(monkeypatch, tmp_path)
         await pipeline_handoff(operation="init", pipeline="implement")
-        self._write_session_config(
-            tmp_path,
-            {
-                "data": json.dumps(
-                    {
-                        "_op": "write",
-                        "_phase": "select",
-                        "_pipeline": "implement",
-                        "status": "complete",
-                        "selected_step": "step-1",
-                    }
-                )
-            },
-        )
-        result = json.loads(
-            await pipeline_handoff(
-                data={
-                    "_op": "write",
-                    "_phase": "select",
-                    "_pipeline": "implement",
-                    "status": "complete",
-                    "selected_step": "step-1",
-                }
-            )
-        )
+        payload = self._routing_payload()
+        self._write_session_config(tmp_path, {"data": json.dumps(payload)})
+        result = json.loads(await pipeline_handoff(data=payload))
         assert (result["status"], result["phase"]) == ("ok", "select")
 
     async def test_routing_keys_stripped_from_stored_payload(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        """Routing keys _op/_phase/_pipeline are not stored in the phase file."""
+        """Routing keys operation/phase/pipeline are not stored in the phase file."""
         self._setup(monkeypatch, tmp_path)
         await pipeline_handoff(operation="init", pipeline="implement")
         await pipeline_handoff(
@@ -879,9 +862,9 @@ class TestRoutingKeysInData:
             pipeline="implement",
             phase="select",
             data={
-                "_op": "write",
-                "_phase": "select",
-                "_pipeline": "implement",
+                "operation": "write",
+                "phase": "select",
+                "pipeline": "implement",
                 "status": "complete",
             },
         )
@@ -889,9 +872,8 @@ class TestRoutingKeysInData:
 
         pdir = pipeline_dir(tmp_path, "implement")
         stored = json.loads(result_path(pdir, "select").read_text())
-        assert "_op" not in stored
-        assert "_phase" not in stored
-        assert "_pipeline" not in stored
+        assert "operation" not in stored
+        assert "pipeline" not in stored
         assert stored["status"] == "complete"
 
     async def test_write_response_includes_pipeline_state(
