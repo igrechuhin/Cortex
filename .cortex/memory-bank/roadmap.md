@@ -12,6 +12,9 @@
 
 ## Pending plans (from .cortex/plans)
 
+- **Synapse prompt filenames (Do / Plan)** - PENDING - Rename implement-next-roadmap-step to Do and create-plan to Plan; update manifest, tests, docs. Tracked in `.cortex/plans/cleanup-synapse-prompt-filenames-do-plan.md`.
+- **Roadmap entries: link to plan files** - PENDING - MCP register + create-plan: require Plan path on bullets. Plan: .cortex/plans/roadmap-entries-link-plan-files.md
+
 ### Fixes
 
 ### Quality & Reliability Improvements

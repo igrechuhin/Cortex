@@ -75,6 +75,14 @@ If Cortex MCP cannot be reached in your environment, you can still do a **read-o
 }
 ```
 
+**First run / IDE timeouts:** `uvx --from git+…` must resolve GitHub `HEAD`, download dependencies, and build the package into uv’s cache. That can take minutes on a cold machine or right after `uv cache clean`. Some MCP clients time out during the first Initialize if the server is not ready yet. **Pre-warm once in a terminal** (same command you use in `mcp.json`), then start or reload the MCP client:
+
+```bash
+uvx --from git+https://github.com/igrechuhin/Cortex.git cortex --help
+```
+
+Details: [Getting started — Stable MCP setup](docs/getting-started.md#stable-mcp-setup-recommended), [Troubleshooting — uvx cold start](docs/guides/troubleshooting.md#issue-uvx-cold-start-mcp-timeout).
+
 ### With Smithery
 
 ```json

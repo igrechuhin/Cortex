@@ -37,7 +37,8 @@ def check_roadmap_progress_consistency(
     if _PENDING_LINE.search(roadmap_content) is not None:
         return []
     msg = (
-        "progress.md contains unresolved PARTIAL entries but roadmap.md has no PENDING "
-        "items; add or restore at least one roadmap backlog entry for incomplete work."
+        "progress.md contains unresolved PARTIAL entries while roadmap.md has no PENDING "
+        "items; review whether those PARTIAL rows still represent real unfinished "
+        "deliverables (warning-only, do not fabricate placeholder backlog)."
     )
     return [msg]

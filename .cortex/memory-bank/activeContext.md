@@ -4,17 +4,7 @@
 
 ## Completed Work (2026-04-01)
 
-- ✅ **Phase: Investigate validate_impl MCP Tool Failure** - COMPLETE (2026-04-01) - Synchronized roadmap and plan state by removing the obsolete blocker entry and confirming repository health via quality gate.
-
-- ✅ **Language-agnostic script-gated dispatch (PARTIAL)** - COMPLETE (2026-04-01) - Updated file-language quality routing to dispatch only when both required Synapse scripts exist for a language, preventing false dispatch for unscaffolded language packs and keeping migration behavior explicit and safe.
-
-- ✅ **Migration: Language-Agnostic Rules and Scripts Scaffolding (follow-up) (PARTIAL)** - COMPLETE (2026-04-01) - Migration now surfaces explicit scaffolding_warnings when non-native language script stubs are generated; report schema and tests updated to validate warning emission for TypeScript vs native Swift behavior.
-
-- ✅ **Analyze Feedback Loop: Post-Prompt Self-Improvement (PARTIAL)** - COMPLETE (2026-04-01) - Prompt loading now auto-appends post-prompt self-improvement hook instructions for prompts that do not already reference `post-prompt-hook.md`, excluding `analyze.md` and the hook file itself to prevent recursion. Added tests for injection, exclusion, and non-duplication.
-
-- ✅ **Analyze Feedback Loop: Post-Prompt Self-Improvement** - COMPLETE (2026-04-01) - Finalized the feedback loop by validating hook invocation coverage across caller prompts, confirming Skill/Plan/Rule routing structure in the analyze path, and verifying recursion-safe hook behavior and manifest registration.
-
-- ✅ **Migration: Language-Agnostic Rules and Scripts Scaffolding (follow-up)** - COMPLETE (2026-04-01) - Completed remaining language-pack reconciliation by adding C# migration detection markers, C# rules template scaffolding source, migration marker documentation, and regression tests; full quality/docs gates pass.
+- **Summary (2026-04-01)** - 1 entries archived.
 
 ## Completed Work (2026-03-31)
 

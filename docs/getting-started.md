@@ -114,8 +114,15 @@ For the most stable MCP experience:
 4. **During long runs** (e.g. commit, pre-commit): avoid opening UI that triggers many MCP resource reads at once (e.g. MCP resources panel); prefer tool calls over `cortex://` resources.
 5. **Automatic recovery (no manual reload)** — Install the [Cursor MCP Refresh](https://github.com/tankmurdock/cursor-mcp-refresh) extension and set **Auto-refresh interval** (e.g. 60–300 seconds). It periodically refreshes MCP servers, so after a disconnect or "0 tools" state the next refresh restores tools without you toggling. Install from the [releases `.vsix`](https://github.com/tankmurdock/cursor-mcp-refresh/releases) via **Extensions: Install from VSIX**.
 6. **If you see "0 tools"** and don't use the extension: reload MCP manually or see [Troubleshooting: Found 0 tools](guides/troubleshooting.md#issue-mcp-0-tools).
+7. **Pre-warm `uvx` from Git (cold cache)** — The first run after a fresh install, a new machine, or `uv cache clean` can spend a long time on `Preparing packages…` while uv resolves `git+HEAD`, fetches PyPI wheels, and builds/installs Cortex into `~/.cache/uv` and `~/.local/share/uv/tools/`. Some clients abort MCP startup with **Request timed out** (`-32001`) if Initialize does not finish in time. Run the same entrypoint once in a terminal so the cache is hot before the IDE starts the server:
 
-Details and troubleshooting: [MCP disconnections and connection closed](guides/troubleshooting.md#issue-mcp-server-crashes-with-brokenresourceerror), [Found 0 tools](guides/troubleshooting.md#issue-mcp-0-tools).
+   ```bash
+   uvx --from git+https://github.com/igrechuhin/Cortex.git cortex --help
+   ```
+
+   Then enable or reload the Cortex MCP server in the client. If the cache looks corrupted, see [uvx cold start / MCP Initialize timeout](guides/troubleshooting.md#issue-uvx-cold-start-mcp-timeout).
+
+Details and troubleshooting: [MCP disconnections and connection closed](guides/troubleshooting.md#issue-mcp-server-crashes-with-brokenresourceerror), [Found 0 tools](guides/troubleshooting.md#issue-mcp-0-tools), [uvx cold start](guides/troubleshooting.md#issue-uvx-cold-start-mcp-timeout).
 
 ### Offline or restricted environments
 

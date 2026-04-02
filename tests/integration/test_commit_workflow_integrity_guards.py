@@ -34,6 +34,11 @@ def _fix_prompt_path() -> Path:
     return synapse_path() / "prompts" / "fix.md"
 
 
+def _implement_prompt_path() -> Path:
+    """Return path to implement helper prompt under .cortex/synapse/prompts/."""
+    return synapse_path() / "prompts" / "implement-next-roadmap-step.md"
+
+
 def _python_coding_standards_path() -> Path:
     """Return path to Python coding standards."""
     return synapse_path() / "rules" / "python" / "python-coding-standards.mdc"
@@ -158,6 +163,38 @@ class TestFixPromptIntegrityGuard:
         assert "submodule-first fix routing" in lower
         assert "git submodule foreach" in fix_prompt_content
         assert 'not automatically "dirty state to reject"' in lower
+
+    def test_fix_prompt_forbids_synthetic_roadmap_backlog(
+        self, fix_prompt_content: str
+    ) -> None:
+        """Fix prompt disallows fake pending backlog fabrication."""
+        lower = fix_prompt_content.lower()
+        assert "no-go — synthetic roadmap backlog" in lower
+        assert "never fabricate generic `pending` roadmap bullets" in lower
+
+
+class TestImplementPromptIntegrityGuard:
+    """Assert implement prompt blocks metadata-only roadmap churn."""
+
+    @pytest.fixture
+    def implement_prompt_content(self) -> str:
+        """Read implement helper prompt content."""
+        path = _implement_prompt_path()
+        if not path.exists():
+            pytest.skip(
+                f"Implement prompt not found at {path} (ref: cleanup-skipped-legacy-tests)"
+            )
+        return path.read_text()
+
+    def test_implement_prompt_contains_no_op_anti_scrap_guard(
+        self, implement_prompt_content: str
+    ) -> None:
+        """Implement prompt must treat bookkeeping-only runs as no-op."""
+        lower = implement_prompt_content.lower()
+        assert "hard guardrail (anti-scrap backlog)" in lower
+        assert "if `phases.code.files_changed` is empty" in lower
+        assert "do not create/add/split roadmap pending items" in lower
+        assert "note `no_op_run`" in lower
 
 
 class TestPythonCodingStandardsTypeNarrowing:

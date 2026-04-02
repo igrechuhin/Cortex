@@ -194,6 +194,7 @@ dependencies = [
     { name = "mcp" },
     { name = "pydantic" },
     { name = "pyyaml" },
+    { name = "rumdl" },
     { name = "tiktoken" },
     { name = "watchdog" },
 ]
@@ -243,6 +244,7 @@ requires-dist = [
     { name = "pytest-timeout", marker = "extra == 'dev'", specifier = ">=2.1.0" },
     { name = "pytest-xdist", marker = "extra == 'dev'", specifier = ">=3.5.0" },
     { name = "pyyaml", specifier = ">=6.0.0" },
+    { name = "rumdl", specifier = ">=0.1.29" },
     { name = "starlette", marker = "extra == 'all'" },
     { name = "starlette", marker = "extra == 'server'" },
     { name = "tiktoken", specifier = ">=0.5.0" },

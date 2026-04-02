@@ -22,12 +22,16 @@ import time
 from pathlib import Path
 from typing import cast
 
+from cortex.core.path_resolver import augmented_environ_with_project_venv_bins
 from cortex.tools.execution.pre_commit_helpers_models import PreCommitCheck
+from cortex.tools.execution.pre_commit_rumdl_resolve import (
+    coerce_rumdl_argv0,
+    markdown_rumdl_argv,
+)
 from cortex.tools.execution.pre_commit_worker import (
     atomic_write,
     collect_pre_commit_markdown_paths,
     resolve_adapter_worker,
-    resolve_rumdl_path,
     write_status,
 )
 
@@ -74,23 +78,22 @@ def _run_fix_checks(project_root: str) -> dict[str, object]:
 
 def _run_markdown_fix(project_root: str) -> dict[str, object]:
     """Run rumdl --fix on all markdown files and return result dict."""
-    root = Path(project_root)
+    root = Path(project_root).resolve()
     md_files = collect_pre_commit_markdown_paths(root)
     if not md_files:
         return {"success": True, "files_fixed": 0, "results": []}
 
-    rumdl = resolve_rumdl_path()
-    # Pass --config explicitly: rumdl 0.1.x auto-discovery does not apply the
-    # config during check execution despite reporting it via `rumdl config file`.
-    rumdl_config = root / ".rumdl.toml"
-    config_args = ["--config", str(rumdl_config)] if rumdl_config.is_file() else []
-    cmd = [rumdl, "check", "--fix"] + config_args + md_files
+    cmd = markdown_rumdl_argv(root, with_fix=True)
+    if cmd and cmd[0] == "rumdl":
+        cmd = coerce_rumdl_argv0(root, cmd)
+    cmd = cmd + md_files
     try:
         proc = subprocess.run(
             cmd,
             capture_output=True,
             text=True,
             cwd=project_root,
+            env=augmented_environ_with_project_venv_bins(root),
             timeout=120,
         )
         fixed = proc.returncode == 0

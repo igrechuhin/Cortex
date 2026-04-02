@@ -5,9 +5,17 @@ from pathlib import Path
 from cortex.core.cache_utils import CacheType
 from cortex.core.path_resolver import (
     CortexResourceType,
+    ProjectResourceType,
+    augmented_environ_with_project_venv_bins,
     get_cache_path,
     get_cortex_path,
+    get_legacy_venv_bin_path,
+    get_node_modules_bin_dir,
+    get_node_modules_bin_path,
+    get_project_path,
+    get_venv_bin_path,
     is_memory_bank_fully_initialized,
+    iter_venv_executable_candidates,
 )
 
 
@@ -157,3 +165,49 @@ class TestIsMemoryBankFullyInitialized:
         ):
             _ = (mb / f).write_text("#")
         assert is_memory_bank_fully_initialized(tmp_path) is True
+
+
+class TestProjectVenvAndNodePaths:
+    """Tests for venv and node_modules path helpers."""
+
+    def test_get_legacy_venv_bin_path(self, tmp_path: Path) -> None:
+        """Legacy venv uses project_root/venv/bin."""
+        assert get_legacy_venv_bin_path(tmp_path) == tmp_path / "venv" / "bin"
+
+    def test_get_node_modules_bin_dir_matches_project_resource_type(
+        self, tmp_path: Path
+    ) -> None:
+        """node_modules/.bin aligns with ProjectResourceType.NODE_MODULES."""
+        assert (
+            get_node_modules_bin_dir(tmp_path)
+            == get_project_path(tmp_path, ProjectResourceType.NODE_MODULES) / ".bin"
+        )
+
+    def test_get_node_modules_bin_path_appends_executable(self, tmp_path: Path) -> None:
+        """Full CLI path is bin dir + executable name."""
+        assert (
+            get_node_modules_bin_path(tmp_path, "rumdl")
+            == get_node_modules_bin_dir(tmp_path) / "rumdl"
+        )
+
+    def test_iter_venv_executable_candidates_order(self, tmp_path: Path) -> None:
+        """Yields .venv/bin/name before venv/bin/name."""
+        names = list(iter_venv_executable_candidates(tmp_path, "rumdl"))
+        assert names == [
+            get_venv_bin_path(tmp_path) / "rumdl",
+            get_legacy_venv_bin_path(tmp_path) / "rumdl",
+        ]
+
+    def test_augmented_environ_prepends_venv_bins_to_path(self, tmp_path: Path) -> None:
+        """Prepend order matches iter_venv_executable_candidates (.venv then venv)."""
+        dot_venv_bin = tmp_path / ".venv" / "bin"
+        legacy_bin = tmp_path / "venv" / "bin"
+        _ = dot_venv_bin.mkdir(parents=True)
+        _ = legacy_bin.mkdir(parents=True)
+        env = augmented_environ_with_project_venv_bins(tmp_path)
+        path = env.get("PATH", "")
+        assert path.startswith(str(dot_venv_bin.resolve()))
+        assert str(legacy_bin.resolve()) in path
+        assert path.index(str(dot_venv_bin.resolve())) < path.index(
+            str(legacy_bin.resolve())
+        )

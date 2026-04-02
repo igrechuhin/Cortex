@@ -15,6 +15,10 @@ import aiofiles
 
 from cortex.core.constants import GIT_OPERATION_TIMEOUT_SECONDS
 from cortex.core.models import GitCommandResult
+from cortex.core.path_resolver import (
+    get_node_modules_bin_path,
+    iter_venv_executable_candidates,
+)
 from cortex.tools.files.markdown_lint_cache import MarkdownLintIndex
 from cortex.tools.files.markdown_lint_cache_updates import (
     after_one_file,
@@ -190,6 +194,34 @@ async def get_modified_markdown_files(
     return sorted(set(files))
 
 
+async def _probe_rumdl_binary(exe: str) -> list[str] | None:
+    """Return ``[exe, "check"]`` if exe responds to ``--version``, else None."""
+    result = await run_command([exe, "--version"])
+    if result_success(result) or "rumdl" in result_stdout(result):
+        return [exe, "check"]
+    return None
+
+
+async def _find_rumdl_in_project(project_root: Path) -> list[str] | None:
+    """Search node_modules and project venvs for a rumdl binary."""
+    local_bin = get_node_modules_bin_path(project_root, "rumdl")
+    if local_bin.exists():
+        cmd = await _probe_rumdl_binary(str(local_bin.resolve()))
+        if cmd is not None:
+            return cmd
+    for candidate in iter_venv_executable_candidates(project_root, "rumdl"):
+        if candidate.is_file():
+            cmd = await _probe_rumdl_binary(str(candidate.resolve()))
+            if cmd is not None:
+                return cmd
+    # Sandbox retry: skip is_file() — some IDEs hide .venv from stat().
+    for candidate in iter_venv_executable_candidates(project_root, "rumdl"):
+        cmd = await _probe_rumdl_binary(str(candidate.resolve()))
+        if cmd is not None:
+            return cmd
+    return None
+
+
 async def find_markdownlint_command(
     project_root: Path | None = None,
 ) -> list[str] | None:
@@ -198,30 +230,18 @@ async def find_markdownlint_command(
     Returns a base command including the ``check`` subcommand so callers
     can append ``--fix`` and file paths directly.
 
-    Discovery order:
-
-    1. Local ``node_modules/.bin/rumdl`` when ``project_root`` is provided.
-    2. ``rumdl`` on PATH (installed into the Python environment).
-    3. ``npx --yes rumdl`` as a final fallback.
+    Discovery order: node_modules → project venv → PATH → npx fallback.
     """
-    # 1) Prefer a project-local CLI when project_root is known.
     if project_root is not None:
-        local_bin = project_root / "node_modules" / ".bin" / "rumdl"
-        if local_bin.exists():
-            result = await run_command([str(local_bin.resolve()), "--version"])
-            if result_success(result) or "rumdl" in result_stdout(result):
-                return [str(local_bin.resolve()), "check"]
-
-    # 2) Try rumdl on PATH.
-    result = await run_command(["rumdl", "--version"])
-    if result_success(result) or "rumdl" in result_stdout(result):
-        return ["rumdl", "check"]
-
-    # 3) Fallback to npx-based invocation.
+        cmd = await _find_rumdl_in_project(project_root)
+        if cmd is not None:
+            return cmd
+    cmd = await _probe_rumdl_binary("rumdl")
+    if cmd is not None:
+        return cmd
     result = await run_command(["npx", "--yes", "rumdl", "--version"])
     if result_success(result) or "rumdl" in result_stdout(result):
         return ["npx", "--yes", "rumdl", "check"]
-
     return None
 
 

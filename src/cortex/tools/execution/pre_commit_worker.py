@@ -17,12 +17,14 @@ import argparse
 import json
 import logging
 import os
+import subprocess
 import sys
 import tempfile
 import time
 from pathlib import Path
 from typing import cast
 
+from cortex.core.path_resolver import augmented_environ_with_project_venv_bins
 from cortex.services.framework_adapters.base import (
     CheckResult,
     FrameworkAdapter,
@@ -34,6 +36,10 @@ from cortex.tools.execution.pre_commit_helpers_models import (
     CheckStats,
     PreCommitCheck,
     QualityCheckResult,
+)
+from cortex.tools.execution.pre_commit_rumdl_resolve import (
+    markdown_rumdl_argv,
+    uv_executable,
 )
 from cortex.tools.execution.pre_commit_submodule_guard import precommit_block_response
 from cortex.tools.execution.pre_commit_tools_run_helpers import (
@@ -175,37 +181,88 @@ def _run_checks(
     )
 
 
+_MD_EXCLUDE_DIRS = frozenset(
+    {"node_modules", ".venv", "venv", "__pycache__", ".git", ".build"}
+)
+_MD_EXCLUDE_PREFIXES = (".cortex/plans/archive", ".cortex/history/", ".cortex/.cache/")
+
+
+def _is_collectable_markdown(path: Path, root: Path) -> bool:
+    """Return True when path is a markdown file that should be linted."""
+    if not path.is_file() or path.suffix not in (".md", ".mdc"):
+        return False
+    try:
+        rel = path.relative_to(root)
+    except ValueError:
+        return False
+    if any(d in rel.parts for d in _MD_EXCLUDE_DIRS):
+        return False
+    rel_str = str(rel).replace("\\", "/")
+    return not any(rel_str.startswith(p) for p in _MD_EXCLUDE_PREFIXES)
+
+
 def collect_pre_commit_markdown_paths(root: Path, max_files: int = 500) -> list[str]:
     """Collect markdown file paths under root, excluding common dirs and archive.
 
     Versioned memory-bank snapshots under ``.cortex/history/`` and session cache
-    markdown under ``.cortex/.cache/`` are excluded: they copy canonical
-    memory-bank text with sibling-relative links that are invalid from those
-    locations and are not hand-edited sources of truth.
+    markdown under ``.cortex/.cache/`` are excluded: they are not hand-edited
+    sources of truth and contain sibling-relative links invalid from those paths.
     """
-    exclude_dirs = {"node_modules", ".venv", "venv", "__pycache__", ".git", ".build"}
-    exclude_prefixes = (
-        ".cortex/plans/archive",
-        ".cortex/history/",
-        ".cortex/.cache/",
-    )
     md_files: list[str] = []
     for path in sorted(root.rglob("*")):
         if len(md_files) >= max_files:
             break
-        if not path.is_file() or path.suffix not in (".md", ".mdc"):
-            continue
-        try:
-            rel = path.relative_to(root)
-        except ValueError:
-            continue
-        if any(d in rel.parts for d in exclude_dirs):
-            continue
-        rel_str = str(rel).replace("\\", "/")
-        if any(rel_str.startswith(p) for p in exclude_prefixes):
-            continue
-        md_files.append(str(path))
+        if _is_collectable_markdown(path, root):
+            md_files.append(str(path))
     return md_files
+
+
+def _run_subprocess_attempt(
+    attempt: list[str],
+    env: dict[str, str],
+    root: Path,
+) -> dict[str, object] | None:
+    """Run one rumdl invocation; return result dict or None on FileNotFoundError."""
+    try:
+        proc = subprocess.run(
+            attempt,
+            capture_output=True,
+            text=True,
+            cwd=str(root),
+            env=env,
+            timeout=120,
+        )
+    except FileNotFoundError:
+        return None
+    except subprocess.TimeoutExpired:
+        return {"files_with_errors": 1, "status": "error", "error": "timeout"}
+    except OSError as e:
+        return {"files_with_errors": 0, "status": "error", "error": str(e)}
+    if proc.returncode == 0:
+        return {"files_with_errors": 0, "status": "success"}
+    return {
+        "files_with_errors": 1,
+        "status": "error",
+        "output": (proc.stdout + "\n" + proc.stderr)[:2000],
+    }
+
+
+def _build_rumdl_attempts(
+    root: Path, cmd: list[str], md_files: list[str]
+) -> list[list[str]]:
+    """Build ordered list of rumdl invocation attempts from most to least specific."""
+    tail = list(cmd[1:]) + md_files
+    attempts: list[list[str]] = [cmd + md_files]
+    argv0 = cmd[0] if cmd else ""
+    p0 = Path(argv0)
+    # Only add venv fallbacks when argv0 is bare "rumdl" or a bin-sibling path
+    # (not when it is already a `uv run` invocation — that would double the prefix).
+    if argv0 == "rumdl" or (p0.name == "rumdl" and p0.parent.name == "bin"):
+        for rel in (".venv/bin/rumdl", "venv/bin/rumdl"):
+            explicit = str((root / rel).resolve())
+            if explicit != argv0:
+                attempts.append([explicit, *tail])
+    return attempts
 
 
 def _run_markdownlint_subprocess(
@@ -217,51 +274,32 @@ def _run_markdownlint_subprocess(
     whether any Markdown files have lint errors. We therefore treat any
     non-zero rumdl exit code as at least one file with errors.
     """
-    import subprocess
-
     if not md_files:
         return {"files_with_errors": 0}
-    try:
-        proc = subprocess.run(
-            cmd + md_files,
-            capture_output=True,
-            text=True,
-            cwd=str(root),
-            timeout=120,
+    env = augmented_environ_with_project_venv_bins(root)
+    for attempt in _build_rumdl_attempts(root, cmd, md_files):
+        result = _run_subprocess_attempt(attempt, env, root)
+        if result is not None:
+            return result
+    # All attempts raised FileNotFoundError — try `uv run rumdl` as a last resort.
+    # Only do this when cmd does NOT already start with uv (avoid doubled prefix).
+    uv_bin = uv_executable()
+    is_uv_cmd = bool(cmd) and Path(cmd[0]).name == "uv"
+    if uv_bin and not is_uv_cmd:
+        uv_result = _run_subprocess_attempt(
+            [uv_bin, "run", "rumdl", "check", *md_files], env, root
         )
-        if proc.returncode == 0:
-            return {"files_with_errors": 0, "status": "success"}
-        # Rumdl reports violations on stderr/stdout; any non-zero exit means issues.
-        return {
-            "files_with_errors": 1,
-            "status": "error",
-            "output": (proc.stdout + "\n" + proc.stderr)[:2000],
-        }
-    except subprocess.TimeoutExpired:
-        return {"files_with_errors": 1, "status": "error", "error": "timeout"}
-    except Exception as e:
-        return {"files_with_errors": 0, "status": "error", "error": str(e)}
-
-
-def resolve_rumdl_path() -> str:
-    """Resolve rumdl binary from the same venv as the running Python."""
-    venv_bin = Path(sys.executable).parent / "rumdl"
-    if venv_bin.is_file():
-        return str(venv_bin)
-    return "rumdl"
+        if uv_result is not None:
+            return uv_result
+    return {"files_with_errors": 0, "status": "error", "error": "rumdl not found"}
 
 
 def _run_markdown_lint(project_root: str) -> dict[str, object]:
     """Run rumdl in check-only mode, return result dict."""
-    root = Path(project_root)
-    # Pass --config explicitly: rumdl 0.1.x auto-discovers the config file and
-    # reports it correctly via `rumdl config file`, but does not apply it during
-    # check execution unless the path is passed explicitly.
-    rumdl_config = root / ".rumdl.toml"
-    cmd: list[str] = [resolve_rumdl_path(), "check"]
-    if rumdl_config.is_file():
-        cmd += ["--config", str(rumdl_config)]
+    root = Path(project_root).resolve()
+    cmd = markdown_rumdl_argv(root, with_fix=False)
     md_files = collect_pre_commit_markdown_paths(root)
+    logger.info("markdown lint rumdl argv=%s md_files=%d", cmd, len(md_files))
     return _run_markdownlint_subprocess(root, cmd, md_files)
 
 

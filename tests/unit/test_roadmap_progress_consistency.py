@@ -22,7 +22,7 @@ def test_partial_with_pending_passes() -> None:
 
 
 def test_partial_without_pending_fails() -> None:
-    """PARTIAL progress and no PENDING roadmap lines fails with a clear message."""
+    """PARTIAL progress and no PENDING roadmap lines returns warning guidance."""
     progress = "- **Big task** - PARTIAL. More work."
     violations = check_roadmap_progress_consistency(
         progress, "# Roadmap\n\n(no items)\n"
@@ -30,6 +30,7 @@ def test_partial_without_pending_fails() -> None:
     assert len(violations) == 1
     assert "PARTIAL" in violations[0]
     assert "PENDING" in violations[0]
+    assert "do not fabricate placeholder backlog" in violations[0]
 
 
 def test_partial_with_matching_complete_no_pending_passes() -> None:
@@ -54,3 +55,4 @@ def test_unresolved_partial_without_pending_still_fails() -> None:
     )
     assert len(violations) == 1
     assert "unresolved PARTIAL" in violations[0]
+    assert "review whether those PARTIAL rows" in violations[0]

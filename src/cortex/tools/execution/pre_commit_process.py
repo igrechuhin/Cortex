@@ -102,12 +102,21 @@ def spawn_detached_process(cmd: list[str], log_file: Path, project_root: Path) -
         # On Unix the child process inherits the fd after the parent's
         # `with` block closes its own handle; this is intentional so
         # stdout/stderr are captured in the detached log file.
+        env = os.environ.copy()
+        # Ensure detached workers import the current workspace code even when
+        # the Cortex package inside the server Python environment is stale.
+        src_root = project_root / "src"
+        if src_root.is_dir():
+            env["PYTHONPATH"] = (
+                str(src_root.resolve()) + os.pathsep + env.get("PYTHONPATH", "")
+            )
         _ = subprocess.Popen(
             cmd,
             stdin=subprocess.DEVNULL,
             stdout=lf,
             stderr=lf,
             cwd=str(project_root),
+            env=env,
             start_new_session=True,
         )
 

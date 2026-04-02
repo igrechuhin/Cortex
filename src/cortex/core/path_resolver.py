@@ -4,6 +4,8 @@ This module provides a centralized way to resolve paths to Cortex resources,
 avoiding hardcoded path construction throughout the codebase.
 """
 
+import os
+from collections.abc import Iterator
 from enum import Enum
 from pathlib import Path
 
@@ -40,6 +42,8 @@ class ProjectResourceType(Enum):
     """Enumeration of project root resource types for path resolution."""
 
     VENV = ".venv"
+    LEGACY_VENV = "venv"
+    NODE_MODULES = "node_modules"
 
 
 def get_cortex_path(project_root: Path, resource_type: CortexResourceType) -> Path:
@@ -103,6 +107,89 @@ def get_venv_bin_path(project_root: Path) -> Path:
         Path("/project/.venv/bin")
     """
     return get_project_path(project_root, ProjectResourceType.VENV) / "bin"
+
+
+def get_legacy_venv_bin_path(project_root: Path) -> Path:
+    """Get the legacy virtualenv bin directory path (``project_root/venv/bin``).
+
+    Some projects use a non-dot ``venv`` directory instead of ``.venv``.
+    """
+    return get_project_path(project_root, ProjectResourceType.LEGACY_VENV) / "bin"
+
+
+def get_node_modules_bin_dir(project_root: Path) -> Path:
+    """Return ``project_root/node_modules/.bin`` (npm/yarn/pnpm local CLI layout)."""
+    return get_project_path(project_root, ProjectResourceType.NODE_MODULES) / ".bin"
+
+
+def get_node_modules_bin_path(project_root: Path, executable: str) -> Path:
+    """Path to a project-local npm binary (``node_modules/.bin/<executable>``).
+
+    Args:
+        project_root: Root directory of the project
+        executable: CLI name (e.g. ``\"rumdl\"``, ``\"prettier\"``)
+
+    Returns:
+        Absolute path convention; the file may or may not exist.
+
+    Examples:
+        >>> root = Path("/project")
+        >>> get_node_modules_bin_path(root, "rumdl")
+        Path("/project/node_modules/.bin/rumdl")
+    """
+    return get_node_modules_bin_dir(project_root) / executable
+
+
+def iter_venv_executable_candidates(
+    project_root: Path, executable: str
+) -> Iterator[Path]:
+    """Yield project-local virtualenv CLI paths (priority: ``.venv/bin`` then ``venv/bin``).
+
+    Matches common uv/pip layouts so callers can probe for CLIs without relying
+    on ``PATH``.
+
+    Args:
+        project_root: Root directory of the project
+        executable: CLI name (e.g. ``\"rumdl\"``, ``\"pytest\"``)
+
+    Yields:
+        Candidate paths in probe order.
+
+    Examples:
+        >>> root = Path("/project")
+        >>> list(iter_venv_executable_candidates(root, "rumdl"))
+        [Path('/project/.venv/bin/rumdl'), Path('/project/venv/bin/rumdl')]
+    """
+    yield get_venv_bin_path(project_root) / executable
+    yield get_legacy_venv_bin_path(project_root) / executable
+
+
+def augmented_environ_with_project_venv_bins(project_root: Path) -> dict[str, str]:
+    """Return a copy of ``os.environ`` with project venv ``bin`` dirs prepended to ``PATH``.
+
+    Uses :func:`get_venv_bin_path` and :func:`get_legacy_venv_bin_path` (same order
+    as :func:`iter_venv_executable_candidates`) so subprocesses can resolve bare
+    executable names (e.g. ``rumdl``) when ``sys.executable`` is not the project
+    virtualenv interpreter but CLIs live under ``project_root/.venv/bin``.
+
+    Args:
+        project_root: Root directory of the project
+
+    Returns:
+        Environment mapping suitable for ``subprocess.run(..., env=...)``.
+    """
+    env = os.environ.copy()
+    prefixes: list[str] = []
+    for bin_dir in (
+        get_venv_bin_path(project_root),
+        get_legacy_venv_bin_path(project_root),
+    ):
+        # Always prepend conventional locations. Some IDE/agent sandboxes treat
+        # ignored virtualenv trees as absent for is_dir()/is_file() even though
+        # subprocess can still resolve executables when PATH includes these dirs.
+        prefixes.append(str(bin_dir.resolve()))
+    env["PATH"] = os.pathsep.join(prefixes) + os.pathsep + env.get("PATH", "")
+    return env
 
 
 def get_cursor_path(project_root: Path, resource_type: CursorResourceType) -> Path:

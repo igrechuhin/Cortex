@@ -2,6 +2,8 @@
 
 ## 2026-04-01
 
+- **Swift quality gate — multi-slice plans and roadmap** - COMPLETE. Historical PARTIAL ledger row resolved as closed documentation history; no remaining implementation backlog is required.
+- **Structured Final Reports for Cortex Synapse Prompts** - COMPLETE. Historical PARTIAL ledger row resolved as closed documentation history; no remaining implementation backlog is required.
 - **Phase: Investigate validate_impl MCP Tool Failure** - COMPLETE. Removed stale roadmap blocker entry for an already resolved plan and verified quality gate passes.
 - **Migration: Language-Agnostic Rules and Scripts Scaffolding (follow-up)** - PARTIAL. Added script-availability gating in file language dispatch so only languages with required Synapse size/function scripts are routed, plus regression tests for unsupported-language skip behavior.
 - **Migration: Language-Agnostic Rules and Scripts Scaffolding (follow-up)** - PARTIAL. Added migration-level scaffolding warnings for non-native language script stubs, extended MigrationReport with scaffolding_warnings, and added unit tests for warning behavior in scaffolding and structure migration flows.

@@ -180,6 +180,31 @@ The server distinguishes between:
 
 If the **client** shows `MCP error -32000: Connection closed` during a tool call, see [MCP error -32000: Connection closed](#issue-mcp-error-32000-connection-closed).
 
+#### Issue: uvx cold start / MCP Initialize timeout {#issue-uvx-cold-start-mcp-timeout}
+
+**Symptoms**:
+
+- MCP logs: `Pending server creation failed`, `MCP error -32001: Request timed out`, or `initializing -> error: Client closed` shortly after start.
+- Terminal: `uvx --from git+https://github.com/igrechuhin/Cortex.git cortex …` sits on `Preparing packages…` for a long time.
+
+**Cause**:
+
+`uvx --from git+…` is not instant. On a **cold** uv cache it must resolve the repo (GitHub `HEAD`), download transitive wheels from PyPI, fetch/build the Cortex package, and install the tool environment. That work can exceed a client’s MCP **Initialize** deadline even though the process would succeed if given enough time. This is expected after `uv cache clean`, on a new machine, or the first time you use that tool entrypoint.
+
+**Mitigation**:
+
+1. **Pre-warm in a terminal** (same `command` / `args` as `mcp.json`):
+
+   ```bash
+   uvx --from git+https://github.com/igrechuhin/Cortex.git cortex --help
+   ```
+
+2. After it finishes, **start or reload** the MCP server in the IDE.
+
+3. **Suspect cache corruption** (rare): stop other `uv` processes, then `uv cache clean --force` and pre-warm again (the next run will be cold and slow by design).
+
+Related: [Stable MCP setup (recommended)](../getting-started.md#stable-mcp-setup-recommended), [README — With uvx (recommended)](../../README.md#with-uvx-recommended).
+
 #### Issue: MCP server not found by client
 
 **Symptoms**:
