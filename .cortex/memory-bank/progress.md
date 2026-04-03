@@ -2,6 +2,8 @@
 
 ## 2026-04-03
 
+- **Quality gate: agent_log on failure only** - COMPLETE (2026-04-03). `append_agent_log_to_quality_result` runs only when `preflight_passed` is false; passing gates omit the agent log table and keep trimmed results.
+
 - **Quality gate, transclusion, and pre-commit tooling** - COMPLETE. Refactored pre-commit quality modules and zero-arg tool checks; expanded reflection heuristics; hardened transclusion resolution and rules loading; refreshed linking and pre-commit unit tests; Synapse submodule pointer and plan stubs updated. Quality gate passed (≈91.7% coverage).
 
 - **Fix `_execute_transclusion_resolution` Reliability** - COMPLETE. Structured failure logging, memory-bank root fallback, `PathError`/`FileNotFoundError` validation, section-not-found full-file fallback, resource payloads omitting `original_content` by default; regression tests; quality gate pass. Production error-rate monitoring remains via usage analytics.

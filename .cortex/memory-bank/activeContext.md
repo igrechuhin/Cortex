@@ -4,6 +4,8 @@
 
 ## Completed Work (2026-04-03)
 
+- ✅ **Quality gate: append agent_log only on failed preflight** - COMPLETE (2026-04-03) - `run_quality_gate_inner` calls `append_agent_log_to_quality_result` only when the gate does not pass; successful runs keep trimmed payloads without agent log table noise.
+
 - **Quality gate and linking stack (PARTIAL)** - Pre-commit quality pipelines and zero-arg governance tests refactored; reflection evaluation tightened; transclusion operations and rules operations updated with expanded regression coverage.
 
 - ✅ **Transclusion reliability (PARTIAL)** - COMPLETE (2026-04-03) - Hardened `resolve_transclusions` root selection and error typing; added JSON warning logs for uncaught exceptions in the resolution path.

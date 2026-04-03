@@ -277,10 +277,11 @@ async def run_quality_gate_inner(ctx: MCPContext | None) -> ModelDict:
     await persist_gate_feedback(
         feedback_from_quality_result(cast(dict[str, object], result)), ctx
     )
-    append_agent_log_to_quality_result(result)
     if result.get("preflight_passed") is True:
         _ = trim_passing_quality_gate_result(result)
         PipelineDirtyTracker.get_instance().record_phase_a(root, True)
+    else:
+        append_agent_log_to_quality_result(result)
     return result
 
 
