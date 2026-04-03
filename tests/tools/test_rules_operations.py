@@ -1094,10 +1094,10 @@ async def test_get_relevant_rules_returns_json(
 async def test_get_relevant_rules_merges_ai_code_comments_file(
     mock_managers_enabled: dict[str, Any], mock_project_root: Path
 ) -> None:
-    """cortex://rules includes `.cortex/rules/ai-code-comments.md` when present."""
-    rules_folder = mock_project_root / ".cortex" / "rules"
-    rules_folder.mkdir(parents=True, exist_ok=True)
-    _ = (rules_folder / "ai-code-comments.md").write_text(
+    """cortex://rules includes `.cortex/synapse/rules/general/ai-code-comments.mdc` when present."""
+    ai_rules_folder = mock_project_root / ".cortex" / "synapse" / "rules" / "general"
+    ai_rules_folder.mkdir(parents=True, exist_ok=True)
+    _ = (ai_rules_folder / "ai-code-comments.mdc").write_text(
         "## AI Comment Convention\n\nBody.\n",
         encoding="utf-8",
     )

@@ -340,7 +340,10 @@ async def get_relevant_rules() -> str:
         merged["reflection_checklist"] = REFLECTION_CHECKLIST_MARKDOWN
         root = await resolve_project_root_async(None, None)
         ai_path = (
-            get_cortex_path(root, CortexResourceType.RULES) / "ai-code-comments.md"
+            get_cortex_path(root, CortexResourceType.SYNAPSE)
+            / "rules"
+            / "general"
+            / "ai-code-comments.mdc"
         )
         try:
             if ai_path.is_file():

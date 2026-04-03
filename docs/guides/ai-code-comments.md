@@ -1,6 +1,6 @@
 # AI code comments and BELIEF annotations
 
-This guide complements the project rule file `.cortex/rules/ai-code-comments.md` and the `ai_code_comments_rule` field on the `cortex://rules` resource.
+This guide complements the synapse rule file `.cortex/synapse/rules/general/ai-code-comments.mdc` and the `ai_code_comments_rule` field on the `cortex://rules` resource.
 
 ## Why use them
 
