@@ -31,6 +31,7 @@ from cortex.tools.plans.operations import (
     create_plan,
     register_plan_in_roadmap,
 )
+from cortex.tools.plans.plan import plan
 from cortex.tools.plans.register_helpers import (
     find_insertion_line_for_section as find_insertion_line,
 )
@@ -804,3 +805,74 @@ class TestGetPlanTool:
         result = GetPlanResult.model_validate_json(result_str)
         assert result.status == "error"
         assert "not found" in result.message.lower()
+
+
+class TestPlanDispatcherParity:
+    """plan(operation=...) must match create_plan(operation=...) for list/get (plan consolidation)."""
+
+    @pytest.mark.asyncio
+    async def test_plan_list_matches_create_plan_list(self, tmp_path: Path) -> None:
+        """plan(operation='list') returns the same JSON as create_plan(operation='list')."""
+        plans_dir = get_cortex_path(tmp_path, CortexResourceType.PLANS)
+        plans_dir.mkdir(parents=True)
+        _ = (plans_dir / "parity.md").write_text("# Parity")
+        with patch(
+            "cortex.tools.plans.crud.resolve_project_root_async",
+            new_callable=AsyncMock,
+            return_value=tmp_path,
+        ):
+            from_plan = await plan(operation="list", include_archive=False, ctx=None)
+            from_create = await create_plan(
+                operation="list", include_archive=False, ctx=None
+            )
+        assert from_plan == from_create
+
+    @pytest.mark.asyncio
+    async def test_plan_list_include_archive_matches_create_plan(
+        self, tmp_path: Path
+    ) -> None:
+        """include_archive=True is honored the same way on plan() and create_plan()."""
+        plans_dir = get_cortex_path(tmp_path, CortexResourceType.PLANS)
+        plans_dir.mkdir(parents=True)
+        archive_dir = plans_dir / "archive"
+        archive_dir.mkdir(parents=True)
+        _ = (plans_dir / "live.md").write_text("# Live")
+        _ = (archive_dir / "old.md").write_text("# Old")
+        with patch(
+            "cortex.tools.plans.crud.resolve_project_root_async",
+            new_callable=AsyncMock,
+            return_value=tmp_path,
+        ):
+            from_plan = await plan(operation="list", include_archive=True, ctx=None)
+            from_create = await create_plan(
+                operation="list", include_archive=True, ctx=None
+            )
+        assert from_plan == from_create
+        parsed = ListPlansResult.model_validate_json(from_plan)
+        slugs = {p.slug for p in parsed.plans}
+        assert "live" in slugs and "old" in slugs
+
+    @pytest.mark.asyncio
+    async def test_plan_get_matches_create_plan_get(self, tmp_path: Path) -> None:
+        """plan(operation='get') returns the same JSON as create_plan(operation='get')."""
+        plans_dir = get_cortex_path(tmp_path, CortexResourceType.PLANS)
+        plans_dir.mkdir(parents=True)
+        _ = (plans_dir / "slug-a.md").write_text("# Title\n\nbody")
+        with patch(
+            "cortex.tools.plans.crud.resolve_project_root_async",
+            new_callable=AsyncMock,
+            return_value=tmp_path,
+        ):
+            from_plan = await plan(
+                operation="get",
+                slug="slug-a",
+                response_format="content",
+                ctx=None,
+            )
+            from_create = await create_plan(
+                operation="get",
+                slug="slug-a",
+                response_format="content",
+                ctx=None,
+            )
+        assert from_plan == from_create

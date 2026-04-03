@@ -24,11 +24,6 @@
 
 ### Cleanup
 
-- **Prune Dead/Near-Dead Tools and Reduce Token-Heavy Responses** — PENDING — `.cortex/plans/prune-dead-tools-reduce-token-bloat.md`
-  Remove `list_plans`/`get_plan` from MCP surface (superseded by `plan()`), confirm
-  `run_tool_optimization_workflow` is fully pruned, and trim `analyze` resource from 5,941 avg
-  tokens to < 1,500 with session truncation.
-
 ### Investigation Plans (Archive / Reference)
 
 Completed investigations are recorded in [activeContext.md](activeContext.md). Plan files under `.cortex/plans/archive/` as needed.

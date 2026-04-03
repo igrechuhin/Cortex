@@ -699,15 +699,15 @@ await plan(
 
 ---
 
-### list_plans (use create_plan(operation="list"))
+### list_plans (use plan(operation="list"))
 
-List plan files: use `create_plan(operation="list", include_archive=False)`. Returns `ListPlansResult` JSON with `status`, `plans` (list of `{slug, title}`), `message`, and `error` (if any).
+List plan files: use `plan(operation="list", include_archive=False)` (zero-arg defaults to listing). Returns `ListPlansResult` JSON with `status`, `plans` (list of `{slug, title}`), `message`, and `error` (if any). The `list_plans` Python helper is not a separate MCP tool.
 
 ---
 
-### get_plan (use create_plan(operation="get"))
+### get_plan (use plan(operation="get"))
 
-Read a plan by slug: use `create_plan(operation="get", slug="phase-60-feature", response_format="content"|"metadata")`. Returns `GetPlanResult` JSON with `status`, `slug`, and either full `content` or `title`/`plan_status`.
+Read a plan by slug: use `plan(operation="get", slug="phase-60-feature", response_format="content"|"metadata")`. Returns `GetPlanResult` JSON with `status`, `slug`, and either full `content` or `title`/`plan_status`. The `get_plan` Python helper is not a separate MCP tool.
 
 ---
 

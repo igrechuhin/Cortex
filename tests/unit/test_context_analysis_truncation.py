@@ -6,7 +6,43 @@ from pathlib import Path
 from typing import cast
 
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
-from cortex.tools.context.effectiveness_operations import analyze_current_session
+from cortex.tools.context.effectiveness_models import (
+    ContextTelemetryRecordQuality,
+    ContextUsageEntry,
+    ContextUsageStatistics,
+)
+from cortex.tools.context.effectiveness_operations import (
+    analyze_current_session,
+    get_context_statistics,
+)
+from cortex.tools.context.effectiveness_operations_io import (
+    create_empty_insights,
+    get_statistics_path,
+    save_statistics,
+)
+
+
+def _five_sample_usage_entries() -> list[ContextUsageEntry]:
+    """Minimal persisted rows for statistics truncation tests."""
+    return [
+        ContextUsageEntry(
+            session_id=f"s{i}",
+            timestamp=f"2026-01-{20 + i:02d}T10:00",
+            task_description="task",
+            token_budget=1000,
+            total_tokens=100,
+            utilization=0.1,
+            files_selected=1,
+            files_excluded=0,
+            avg_relevance_score=0.5,
+            files_with_high_relevance=0,
+            files_with_low_relevance=0,
+            selected_file_names=["a.md"],
+            relevance_by_file={"a.md": 0.5},
+            record_quality=ContextTelemetryRecordQuality.PRODUCTION,
+        )
+        for i in range(5)
+    ]
 
 
 def _write_twelve_call_session_log(tmp_path: Path, session_id: str) -> None:
@@ -57,3 +93,24 @@ def test_truncates_entries_when_max_response_calls_set(tmp_path: Path) -> None:
             os.environ[env_key] = original
         else:
             _ = os.environ.pop(env_key, None)
+
+
+def test_context_statistics_marks_truncated_when_tail_capped(tmp_path: Path) -> None:
+    """Statistics JSON omits older rows when max_recent_entries is smaller than history."""
+    stats = ContextUsageStatistics(
+        last_updated="2026-01-25T10:00",
+        total_sessions_analyzed=5,
+        total_load_context_calls=5,
+        avg_token_utilization=0.1,
+        avg_files_selected=1.0,
+        avg_relevance_score=0.5,
+        common_task_patterns={},
+        insights=create_empty_insights(),
+        entries=_five_sample_usage_entries(),
+    )
+    save_statistics(get_statistics_path(tmp_path), stats)
+    result = get_context_statistics(tmp_path, max_recent_entries=3)
+    assert result.status == "success"
+    assert result.truncated is True
+    assert result.recent_entries is not None
+    assert len(result.recent_entries) == 3

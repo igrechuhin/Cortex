@@ -2,7 +2,7 @@
 
 **Status**: Step 2 deliverable (plan: optimize-tools-from-usage)  
 **Created**: 2026-02-23  
-**Updated**: 2026-02-27 (census 2026-02-27)
+**Updated**: 2026-02-27 (census 2026-02-27); 2026-04-03 (plan list/get MCP consolidation note)
 
 ## Purpose
 
@@ -16,8 +16,8 @@ Map each tool below the usage threshold (≤5 calls in 90 days) to an action: **
 | claim_task_lock | **keep** | Phase 58; critical for multi-agent coordination. |
 | release_task_lock | **keep** | Phase 58; critical for multi-agent coordination. |
 | list_active_tasks | **keep** | Phase 58; discovery of locked tasks. |
-| get_plan | **keep** | Plan discovery and content; used by plan and do workflows (see docs/api/tools.md). |
-| list_plans | **keep** | Plan discovery; used before create_plan and in implement (roadmap/plan steps). |
+| get_plan | **consolidated** (2026-04-03) | Use `plan(operation="get", slug=..., response_format=...)`. Standalone MCP registration removed; Python helper remains for tests/internal use. |
+| list_plans | **consolidated** (2026-04-03) | Use `plan(operation="list", include_archive=...)`. Standalone MCP registration removed; Python helper remains for tests/internal use. |
 | session_register | **consolidated** (2026-02-27) | Use `session(operation="register", task_title=..., role=...)`. |
 | session_deregister | **consolidated** (2026-02-27) | Use `session(operation="deregister")`. |
 | session_start | **consolidated** (2026-02-27) | Use `session(operation="start")`. |
@@ -46,6 +46,7 @@ Map each tool below the usage threshold (≤5 calls in 90 days) to an action: **
 - **Consolidated**: 4 tools → 1 (`run_composite_workflow`) — quick_start, quality_check, safe_manage_file, suggest_workflow.
 - **Consolidated**: 2 tools → 1 (`synapse`) — sync_synapse, update_synapse.
 - **Consolidated**: register_plan_in_roadmap → `plan` (operation="register").
+- **Consolidated** (2026-04-03): `list_plans`, `get_plan` → `plan` (operation="list"|"get"); standalone MCP registration removed earlier; docs/api aligned.
 - **Consolidated**: rollback_file_version → `manage_file` (operation="rollback").
 
 ## Done

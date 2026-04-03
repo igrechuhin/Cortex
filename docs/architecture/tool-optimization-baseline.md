@@ -41,10 +41,10 @@ As of the baseline run (`query_usage(query_type="unused", days=30, min_usage_cou
 |------|------------------|
 | check_task_available_lock | keep (Phase 58 task locking) |
 | claim_task_lock | keep (Phase 58 task locking) |
-| get_plan | keep (plan discovery; do/plan) |
+| get_plan | consolidated (2026-04-03); use `plan(operation="get", ...)` — not a standalone MCP tool |
 | get_session_tool_anomalies | removed (pruned); use query_usage(anomalies) |
 | list_active_tasks | keep (Phase 58 task locking) |
-| list_plans | keep (plan discovery) |
+| list_plans | consolidated (2026-04-03); use `plan(operation="list", ...)` — not a standalone MCP tool |
 | release_task_lock | keep (Phase 58) |
 | remove_roadmap_entry | keep (memory bank discipline) |
 | run_tool_optimization_workflow | removed (pruned); use query_usage(unused/recommendations) |

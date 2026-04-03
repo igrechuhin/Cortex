@@ -10,6 +10,12 @@
 
 - **Prune Dead/Near-Dead Tools and Reduce Token-Heavy Responses** - PARTIAL. list_plans/get_plan decoupled from MCP wrappers; analyze resource + context stats bounded; tests refactored for function-length compliance; plan log updated. Remaining: Synapse prompt audit, MEMORY/tool-registry doc touch-up if needed, measurement window for token avg.
 
+- **Prune Dead/Near-Dead Tools and Reduce Token-Heavy Responses** - PARTIAL (follow-up). Synapse prompts audit: no `list_plans`/`get_plan` references. `docs/api/tools.md` and tool-optimization architecture docs now cite `plan(operation=list|get)`; plan checklist updated. Remaining: usage analytics measurement window for `cortex://analysis` token average.
+
+- **Prune Dead/Near-Dead Tools and Reduce Token-Heavy Responses** - PARTIAL. Added `TestPlanDispatcherParity` (plan vs create_plan for list/get and include_archive) and governance test ensuring list_plans/get_plan/run_tool_optimization_workflow are not standalone MCP tools; fixed progress.md MD076 between duplicate PARTIAL bullets; quality gate passed (~91.7% coverage). Remaining: usage analytics measurement for cortex://analysis token average.
+
+- **Prune Dead/Near-Dead Tools and Reduce Token-Heavy Responses** - COMPLETE. Context statistics results now set truncated when persisted history exceeds max_recent_entries; tests added.
+
 ## 2026-04-02
 
 - **Synapse prompt filenames (Do / Plan)** - COMPLETE. Renamed Synapse prompts to `do.md`/`plan.md` and updated prompts manifest plus all repo/test/docs references.

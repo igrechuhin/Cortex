@@ -136,15 +136,15 @@ still works for list and get operations.
 
 ## Verification Checklist
 
-- [ ] `list_plans` and `get_plan` have no external callers in Synapse prompts (Step 1)
-- [ ] `list_plans` and `get_plan` decorators removed; functions remain callable (Step 2)
-- [ ] `plan(operation="list")` and `plan(operation="get")` tested and working (Step 2)
-- [ ] `run_tool_optimization_workflow` absent from MCP surface (Step 3)
+- [x] `list_plans` and `get_plan` have no external callers in Synapse prompts (Step 1 — grep 2026-04-03: no matches under `.cortex/synapse/prompts/`)
+- [x] `list_plans` and `get_plan` decorators removed; functions remain callable (Step 2)
+- [x] `plan(operation="list")` and `plan(operation="get")` tested and working (Step 2)
+- [x] `run_tool_optimization_workflow` absent from MCP surface (Step 3)
 - [ ] `analyze` resource avg tokens < 1,500 on "context" target (Step 4)
 - [ ] `"truncated": true` field present when sessions > 3 (Step 4)
-- [ ] `plan(operation="list")` accepts `include_archive` param (Step 5)
-- [ ] Tool count updated in memory bank (Step 6)
-- [ ] `run_quality_gate()` passes after all changes (Step 7)
+- [x] `plan(operation="list")` accepts `include_archive` param (Step 5)
+- [x] Tool count updated in memory bank (Step 6 — `AGENTS.md` already lists 10 tools; matches `TOOL_CATEGORIES`; no separate MEMORY.md in repo)
+- [x] `run_quality_gate()` passes after all changes (Step 7)
 
 ## Dependencies
 
@@ -176,3 +176,5 @@ still works for list and get operations.
 ## Partial Progress Log
 
 - 2026-04-03: Removed MCP stability decorators from `list_plans`/`get_plan` (internal callables; surface is `plan()`). Added `cortex://analysis` default caps (`max_sessions=3`, `max_calls_per_session=10`), truncation metadata on current-session context analysis, `get_context_statistics` tail cap, shared test mocks, and `tests/tools/test_analyze_resource.py`. — files: `src/cortex/tools/plans/crud.py`, `src/cortex/tools/context/effectiveness_models.py`, `src/cortex/tools/context/effectiveness_operations.py`, `src/cortex/tools/context/analysis_operations.py`, `src/cortex/tools/context/analysis_run_helpers.py`, `tests/helpers/analysis_structure_mocks.py`, `tests/tools/test_analyze_resource.py`, `tests/unit/test_context_analysis_truncation.py`, `tests/tools/test_analysis_operations.py`, `tests/tools/test_analysis_operations_handlers.py`
+- 2026-04-03: Synapse prompt audit (no `list_plans`/`get_plan` references); docs updated — `docs/api/tools.md` deprecated sections now cite `plan(operation=...)`, `docs/architecture/tool-optimization-baseline.md` and `tool-optimization-mapping.md` mark list/get as consolidated. — files: `docs/api/tools.md`, `docs/architecture/tool-optimization-baseline.md`, `docs/architecture/tool-optimization-mapping.md`
+- 2026-04-03: `TestPlanDispatcherParity` (plan vs create_plan list/get/include_archive) and `test_consolidated_tools_not_registered_as_separate_mcp_tools`; progress.md MD076 fix. — files: `tests/tools/test_plan_operations.py`, `tests/tools/test_tool_categories_governance.py`, `.cortex/memory-bank/progress.md`

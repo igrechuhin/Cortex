@@ -327,6 +327,10 @@ class ContextStatisticsResult(StrictBaseModel):
         None, description="Last 10 context usage entries"
     )
     message: str | None = Field(None, description="Status message for no_data case")
+    truncated: bool | None = Field(
+        None,
+        description="True when recent_entries omits older rows due to max_recent_entries cap",
+    )
 
     model_config = ConfigDict(extra="forbid", validate_assignment=True)
 

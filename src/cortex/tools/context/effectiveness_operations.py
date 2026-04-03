@@ -395,7 +395,10 @@ def _build_success_statistics_result(
 ) -> ContextStatisticsResult:
     """Build success statistics result."""
     insights = stats.insights or create_empty_insights()
+    total_entry_count = len(stats.entries)
     tail = stats.entries[-max_recent_entries:] if max_recent_entries > 0 else []
+    # AI: Surface truncation when the tail omits older persisted rows (resource size bounds).
+    truncated = max_recent_entries > 0 and total_entry_count > max_recent_entries
     return ContextStatisticsResult(
         status=ContextAnalysisStatus.SUCCESS,
         last_updated=stats.last_updated,
@@ -407,6 +410,7 @@ def _build_success_statistics_result(
         insights=JsonDict.from_dict(insights.model_dump(mode="json")),
         recent_entries=[JsonDict.from_dict(e.model_dump(mode="json")) for e in tail],
         message=None,
+        truncated=True if truncated else None,
     )
 
 
@@ -435,6 +439,7 @@ def get_context_statistics(
             insights=None,
             recent_entries=None,
             message="No statistics found. Run analyze(target='context') first.",
+            truncated=None,
         )
 
     stats = load_statistics(stats_path)

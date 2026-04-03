@@ -48,6 +48,23 @@ class TestToolCategoriesGovernance:
             f"Extra in TOOL_CATEGORIES: {extra_in_categories}."
         )
 
+    def test_consolidated_tools_not_registered_as_separate_mcp_tools(self) -> None:
+        """Pruned/consolidated callables must not appear as standalone MCP tools."""
+        tools_dir = _tools_dir()
+        analyzer = ToolAnalyzer(tools_dir)
+        tools = asyncio.run(analyzer.get_registered_tools())
+        registered = set(tools.keys())
+        must_not_register = {
+            "list_plans",
+            "get_plan",
+            "run_tool_optimization_workflow",
+        }
+        leaked = sorted(registered & must_not_register)
+        assert not leaked, (
+            "These names were consolidated or pruned; they must not be separate "
+            f"@mcp.tool registrations: {leaked}"
+        )
+
     def test_registered_tools_respect_budget(self) -> None:
         """Total registered tools must not exceed the configured budget."""
         summary = get_category_summary()

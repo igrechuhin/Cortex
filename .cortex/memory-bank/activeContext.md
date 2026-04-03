@@ -14,6 +14,8 @@
 
 - ✅ **Prune dead tools / analyze truncation (PARTIAL)** - COMPLETE (2026-04-03) - cortex://analysis now passes default truncation parameters; context effectiveness responses can include truncated=true and caps on stats tail; list_plans/get_plan are plain async helpers.
 
+- ✅ **Prune Dead/Near-Dead Tools and Reduce Token-Heavy Responses** - COMPLETE (2026-04-03) - Finished analyze resource size bounds: context stats now expose truncated when recent_entries tail is capped; unit test coverage. Prior work already removed list_plans/get_plan from MCP, added cortex://analysis defaults, and updated docs/tests.
+
 ## Completed Work (2026-04-02)
 
 - **Summary (2026-04-02)** - 1 entries archived.
