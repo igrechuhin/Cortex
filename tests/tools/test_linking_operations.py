@@ -1365,6 +1365,48 @@ async def test_resolve_transclusions_resource_returns_json(
 
 
 @pytest.mark.asyncio
+async def test_resolve_transclusions_resource_omits_original_content(
+    mock_project_root: Path, mock_managers: ManagersDict
+) -> None:
+    """Resource path omits original_content on success to reduce payload size."""
+    mock_managers.link_parser.has_transclusions.return_value = False  # type: ignore[attr-defined]
+    with patch(
+        "cortex.core.project_root_resolver.resolve_project_root_async",
+        new_callable=AsyncMock,
+        return_value=mock_project_root,
+    ):
+        with patch(
+            "cortex.managers.initialization.get_managers",
+            new=AsyncMock(return_value=mock_managers),
+        ):
+            result = await resolve_transclusions_resource("activeContext.md")
+    data = json.loads(result)
+    assert data["status"] == "success"
+    assert "original_content" not in data
+
+
+@pytest.mark.asyncio
+async def test_resolve_transclusions_tool_keeps_original_content(
+    mock_project_root: Path, mock_managers: ManagersDict
+) -> None:
+    """Tool path still returns original_content for clients that need the diff."""
+    mock_managers.link_parser.has_transclusions.return_value = False  # type: ignore[attr-defined]
+    with patch(
+        "cortex.core.project_root_resolver.resolve_project_root_async",
+        new_callable=AsyncMock,
+        return_value=mock_project_root,
+    ):
+        with patch(
+            "cortex.managers.initialization.get_managers",
+            new=AsyncMock(return_value=mock_managers),
+        ):
+            result = await resolve_transclusions("activeContext.md")
+    data = json.loads(result)
+    assert data["status"] == "success"
+    assert "original_content" in data
+
+
+@pytest.mark.asyncio
 async def test_validate_links_resource_returns_json(
     mock_project_root: Path, mock_managers: ManagersDict
 ):

@@ -13,6 +13,7 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
+from cortex.core.models import ModelDict
 from cortex.tools.execution.pre_commit_zero_arg_tools import (
     markdown_result_has_errors,
     poll_phase_a_result,
@@ -204,10 +205,72 @@ class TestPollPhaseAMarkdownMerge:
 
         assert result["preflight_passed"] is False
 
+    @pytest.mark.asyncio()
+    async def test_failed_execute_clean_markdown_not_success(
+        self, _mock_project_root: Path
+    ) -> None:
+        """Worker omits preflight_passed; clean markdown must not mask status error."""
+        checks = {
+            "status": "error",
+            "success": False,
+            "total_errors": 1,
+            "language": "python",
+        }
+        md = {"files_with_errors": 0, "status": "success"}
+        envelope = _fake_result_file(checks, md)
+
+        with (
+            patch(
+                "cortex.tools.execution.pre_commit_zero_arg_tools.get_cortex_path",
+                return_value=_mock_project_root / ".cortex" / ".session",
+            ),
+            patch(
+                "cortex.tools.execution.pre_commit_detached.poll_for_result",
+                new_callable=AsyncMock,
+                return_value=envelope,
+            ),
+        ):
+            result = await poll_phase_a_result(
+                _mock_project_root, "test-job", timeout=30, ctx=None
+            )
+
+        assert result["preflight_passed"] is False
+
 
 # ---------------------------------------------------------------------------
 # run_quality_gate — markdown merge integration (detached path)
 # ---------------------------------------------------------------------------
+
+
+async def _run_quality_gate_with_envelope(
+    tmp_path: Path, envelope: dict[str, object]
+) -> ModelDict:
+    """Exercise detached path with a fake worker envelope (keeps tests under length limits)."""
+    session_dir = tmp_path / ".cortex" / ".session"
+    session_dir.mkdir(parents=True)
+    z = "cortex.tools.execution.pre_commit_zero_arg_tools"
+    with (
+        patch(f"{z}.get_current_project_root", return_value=tmp_path),
+        patch(
+            f"{z}.read_pipeline_phase_config",
+            return_value={
+                "coverage_threshold": 0.90,
+                "test_timeout": 300,
+                "force_fresh": False,
+            },
+        ),
+        patch(
+            f"{z}._start_phase_a_job",
+            return_value={"job_id": "test-job", "status": "started"},
+        ),
+        patch(f"{z}.get_cortex_path", return_value=session_dir),
+        patch(
+            "cortex.tools.execution.pre_commit_detached.poll_for_result",
+            new_callable=AsyncMock,
+            return_value=envelope,
+        ),
+    ):
+        return await run_quality_gate(ctx=None)
 
 
 class TestRunQualityGateMarkdownMerge:
@@ -220,37 +283,6 @@ class TestRunQualityGateMarkdownMerge:
         checks = {"preflight_passed": True, "status": "success"}
         md = {"files_with_errors": 1, "status": "error", "output": "MD036"}
         envelope = _fake_result_file(checks, md)
-        session_dir = tmp_path / ".cortex" / ".session"
-        session_dir.mkdir(parents=True)
-
-        with (
-            patch(
-                "cortex.tools.execution.pre_commit_zero_arg_tools.get_current_project_root",
-                return_value=tmp_path,
-            ),
-            patch(
-                "cortex.tools.execution.pre_commit_zero_arg_tools.read_pipeline_phase_config",
-                return_value={
-                    "coverage_threshold": 0.90,
-                    "test_timeout": 300,
-                    "force_fresh": False,
-                },
-            ),
-            patch(
-                "cortex.tools.execution.pre_commit_zero_arg_tools._start_phase_a_job",
-                return_value={"job_id": "test-job", "status": "started"},
-            ),
-            patch(
-                "cortex.tools.execution.pre_commit_zero_arg_tools.get_cortex_path",
-                return_value=session_dir,
-            ),
-            patch(
-                "cortex.tools.execution.pre_commit_detached.poll_for_result",
-                new_callable=AsyncMock,
-                return_value=envelope,
-            ),
-        ):
-            result = await run_quality_gate(ctx=None)
-
+        result = await _run_quality_gate_with_envelope(tmp_path, envelope)
         assert result["preflight_passed"] is False
         assert isinstance(result.get("markdown_result"), dict)

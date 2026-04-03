@@ -21,8 +21,19 @@ from cortex.tools.execution.session_paths import session_dir
 
 logger = logging.getLogger(__name__)
 
-_POLL_INTERVAL_SECONDS = 2
 _HEARTBEAT_TOTAL = 500
+
+# AI: Fast runs finish in <30s; 1s polling reduces idle wait vs 2s fixed interval.
+_POLL_FAST_SECONDS = 1.0
+_POLL_SLOW_SECONDS = 3.0
+_POLL_FAST_WINDOW_SECONDS = 30.0
+
+
+def poll_interval_for_elapsed(elapsed_seconds: float) -> float:
+    """Return sleep duration before next poll (adaptive backoff after 30s)."""
+    if elapsed_seconds < _POLL_FAST_WINDOW_SECONDS:
+        return _POLL_FAST_SECONDS
+    return _POLL_SLOW_SECONDS
 
 
 def pre_commit_result_path(sd: Path, args_hash: str) -> Path:
@@ -187,10 +198,12 @@ async def poll_for_result(
     timeout: float = 900.0,
 ) -> dict[str, object]:
     """Poll for result file completion, sending heartbeat progress."""
-    deadline = time.time() + timeout
+    poll_start = time.time()
+    deadline = poll_start + timeout
     tick = 0
     while time.time() < deadline:
-        await asyncio.sleep(_POLL_INTERVAL_SECONDS)
+        elapsed = time.time() - poll_start
+        await asyncio.sleep(poll_interval_for_elapsed(elapsed))
         tick += 1
         if ctx is not None:
             await report_progress_safe(

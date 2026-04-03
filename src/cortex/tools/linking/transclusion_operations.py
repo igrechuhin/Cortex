@@ -57,6 +57,34 @@ def _log_transclusion_failure_category(
     )
 
 
+async def _resolve_project_root_for_transclusions(ctx: MCPContext | None) -> Path:
+    """Resolve project root and apply memory-bank fallback when async root is wrong."""
+    root = await resolve_project_root_async(None, ctx)
+    if not _memory_bank_dir_exists(root):
+        candidate = get_current_project_root()
+        if candidate is None:
+            candidate = await get_or_resolve_project_root(ctx)
+        if _memory_bank_dir_exists(candidate):
+            root = candidate
+    return root
+
+
+async def _run_resolve_transclusions_pipeline(
+    ctx: MCPContext | None,
+    file_name: str,
+    max_depth: int,
+    include_original: bool,
+) -> str:
+    """Shared entry for tool and resource (resource omits original_content by default)."""
+    await log_client(
+        ctx, "info", "resolve_transclusions: starting", logger_name=__name__
+    )
+    root = await _resolve_project_root_for_transclusions(ctx)
+    return await _resolve_transclusions_run_or_error(
+        ctx, file_name, root, max_depth, include_original
+    )
+
+
 # Tool consolidated into query_memory_bank (Phase 50); kept as callable for dispatch.
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_MEDIUM)
@@ -189,26 +217,22 @@ async def resolve_transclusions(
         - Maximum depth prevents stack overflow from deeply nested or
           circular transclusions
     """
-    await log_client(
-        ctx, "info", "resolve_transclusions: starting", logger_name=__name__
+    return await _run_resolve_transclusions_pipeline(
+        ctx, file_name, max_depth, include_original=True
     )
-    root = await resolve_project_root_async(None, ctx)
-    # AI: Multi-root clients may resolve a workspace without .cortex/memory-bank; reuse in-process root.
-    if not _memory_bank_dir_exists(root):
-        candidate = get_current_project_root()
-        if candidate is None:
-            candidate = await get_or_resolve_project_root(ctx)
-        if _memory_bank_dir_exists(candidate):
-            root = candidate
-    return await _resolve_transclusions_run_or_error(ctx, file_name, root, max_depth)
 
 
 # MCP resource registration removed
 @ensure_usage_context
 @mcp_resource_wrapper(timeout=MCP_TOOL_TIMEOUT_MEDIUM)
 async def resolve_transclusions_resource(file_name: str) -> str:
-    """Resource: Resolve transclusions for a file. Read via cortex://links/transclusions/{file_name}."""
-    return await resolve_transclusions(file_name=file_name, max_depth=5)
+    """Resource: Resolve transclusions for a file. Read via cortex://links/transclusions/{file_name}.
+
+    Omits ``original_content`` by default to keep resource payloads small compared to the tool path.
+    """
+    return await _run_resolve_transclusions_pipeline(
+        None, file_name, 5, include_original=False
+    )
 
 
 async def _resolve_transclusions_run_or_error(
@@ -216,6 +240,7 @@ async def _resolve_transclusions_run_or_error(
     file_name: str,
     root: Path,
     max_depth: int,
+    include_original: bool = True,
 ) -> str:
     """Run resolve_transclusions and handle errors with logging."""
     try:
@@ -228,7 +253,10 @@ async def _resolve_transclusions_run_or_error(
             "resolve_transclusions: completed",
             logger_name=__name__,
         )
-        return json.dumps(result.model_dump(), indent=2)
+        payload: dict[str, object] = result.model_dump()
+        if not include_original and isinstance(result, ResolveTransclusionsResult):
+            _ = payload.pop("original_content", None)
+        return json.dumps(payload, indent=2)
     except Exception as e:
         _log_transclusion_failure_category(type(e).__name__, file_name, root)
         await log_client(

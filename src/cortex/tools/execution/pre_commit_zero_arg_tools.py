@@ -26,7 +26,7 @@ from cortex.core.mcp_stability import (
     mcp_tool_wrapper,
     typed_mcp_tool,
 )
-from cortex.core.models import ModelDict
+from cortex.core.models import JsonDict, ModelDict
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.core.usage_context import (
     get_current_project_root,
@@ -40,6 +40,7 @@ from cortex.tools.execution.pre_commit_config import (
     read_pipeline_phase_config,
 )
 from cortex.tools.execution.pre_commit_detached import clear_all_cached_results
+from cortex.tools.execution.pre_commit_dirty_state import PipelineDirtyTracker
 from cortex.tools.execution.pre_commit_docs_memory_helpers import (
     run_docs_and_memory_bank_sync_impl,
 )
@@ -48,6 +49,7 @@ from cortex.tools.execution.pre_commit_phase_dispatch import (
     PreCommitPhase,
     phase_to_checks,
 )
+from cortex.tools.execution.pre_commit_preflight_helpers import compute_preflight_passed
 from cortex.tools.logging.instrumentation import (
     append_agent_log_to_autofix_result,
     append_agent_log_to_quality_result,
@@ -143,13 +145,14 @@ def _merge_markdown_into_inner(
 ) -> None:
     """Merge markdown_result from envelope into inner, updating preflight_passed."""
     md_raw = envelope.get("markdown_result")
+    md_typed: JsonDict | None = None
     if isinstance(md_raw, dict):
-        md_result = cast(dict[str, object], md_raw)
-        inner["markdown_result"] = md_result
-        if markdown_result_has_errors(md_result):
-            inner["preflight_passed"] = False
-        else:
-            _ = inner.setdefault("preflight_passed", True)
+        md_typed = cast(JsonDict, md_raw)
+        inner["markdown_result"] = md_typed
+    # AI: Must combine Phase A status with markdown; clean markdown must not mask failed checks.
+    inner["preflight_passed"] = compute_preflight_passed(
+        cast(ModelDict, inner), md_typed
+    )
 
 
 async def poll_phase_a_result(
@@ -231,11 +234,38 @@ def _read_quality_gate_config(root: Path) -> tuple[int, float, bool, dict[str, o
     )
 
 
-async def _run_quality_gate_inner(ctx: MCPContext | None) -> ModelDict:
+_PASS_TRIM_KEYS: frozenset[str] = frozenset(
+    {
+        "status",
+        "preflight_passed",
+        "summary",
+        "checks_performed",
+        "markdown_result",
+        "language",
+        "success",
+        "total_errors",
+        "total_warnings",
+        "reflection_languages",
+        "reflection_result",
+    }
+)
+
+
+def trim_passing_quality_gate_result(result: ModelDict) -> ModelDict:
+    """Shrink passing quality gate payloads for MCP (drop per-check bodies, large dicts)."""
+    trimmed: ModelDict = {k: result[k] for k in _PASS_TRIM_KEYS if k in result}
+    result.clear()
+    result.update(trimmed)
+    return result
+
+
+async def run_quality_gate_inner(ctx: MCPContext | None) -> ModelDict:
     """Resolve config and spawn Phase A quality gate."""
     root = get_current_project_root() or Path(await get_or_resolve_project_root(ctx))
-    _ = clear_all_cached_results(root)
     timeout, coverage_threshold, force_fresh, cfg = _read_quality_gate_config(root)
+    # AI: Cache clears only when Step 12 / explicit force_fresh; default True preserves behavior.
+    if force_fresh:
+        _ = clear_all_cached_results(root)
     result = await _spawn_and_poll_phase_a(
         root,
         timeout=timeout,
@@ -248,6 +278,9 @@ async def _run_quality_gate_inner(ctx: MCPContext | None) -> ModelDict:
         feedback_from_quality_result(cast(dict[str, object], result)), ctx
     )
     append_agent_log_to_quality_result(result)
+    if result.get("preflight_passed") is True:
+        _ = trim_passing_quality_gate_result(result)
+        PipelineDirtyTracker.get_instance().record_phase_a(root, True)
     return result
 
 
@@ -282,7 +315,7 @@ async def run_quality_gate(
     - pipeline_handoff(write, checks, {"force_fresh": true, "test_timeout": 600})
       then run_quality_gate() for Step 12 final gate.
     """
-    return await _run_quality_gate_inner(ctx)
+    return await run_quality_gate_inner(ctx)
 
 
 @typed_mcp_tool(

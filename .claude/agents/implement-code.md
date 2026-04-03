@@ -1,6 +1,6 @@
 ---
 name: implement-code
-description: Implement pipeline step 2 — implement the smallest meaningful subtask with tests and quality gate. Use this subagent after the orchestrator completes selection. Scopes a concrete subtask, writes code and tests, then runs the quality gate. Must pass before finalize.
+description: Use when the /cortex/do orchestrator has completed Selection and is ready to implement the selected roadmap step. Scopes the smallest meaningful subtask, writes code and tests, runs the quality gate. Invoke after pipeline_handoff phase "select" is complete and before Finalize.
 model: sonnet
 tools: mcp__cortex__*
 ---

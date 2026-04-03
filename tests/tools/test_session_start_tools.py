@@ -14,6 +14,7 @@ from cortex.core.file_system import FileSystemManager
 from cortex.core.metadata_index import MetadataIndex
 from cortex.core.token_counter import TokenCounter
 from cortex.core.version_manager import VersionManager
+from cortex.managers.types import ManagersDict
 from cortex.tools.context.effectiveness_operations import analyze_current_session
 from cortex.tools.memory.compaction_operations import compact_session, write_handoff
 from cortex.tools.models import (
@@ -67,7 +68,7 @@ def _mcp_health_json(healthy: bool) -> str:
     return json.dumps({"status": "success", "health": health})
 
 
-async def _build_minimal_session_managers(tmp_path: Path) -> object:
+async def _build_minimal_session_managers(tmp_path: Path) -> ManagersDict:
     """Create minimal session_start files/metadata and return managers."""
     memory_bank_dir = ensure_test_cortex_structure(tmp_path)
     _ = (memory_bank_dir / "activeContext.md").write_text(
@@ -114,6 +115,272 @@ async def _seed_basic_metadata(
             token_count=50,
             content_hash="sha256:test",
             sections=[],
+        )
+
+
+async def _build_minimal_session_managers_with_focus(
+    tmp_path: Path, focus_body: str
+) -> ManagersDict:
+    """Like ``_build_minimal_session_managers`` but custom Current Focus body."""
+    memory_bank_dir = ensure_test_cortex_structure(tmp_path)
+    _ = (memory_bank_dir / "activeContext.md").write_text(
+        f"# Active Context\n\n## Current Focus\n\n{focus_body}"
+    )
+    _ = (memory_bank_dir / "roadmap.md").write_text(
+        "# Roadmap\n\n## Pending plans (from .cortex/plans)\n\n- **Task** - PENDING - Desc\n"
+    )
+    _ = (memory_bank_dir / "projectBrief.md").write_text("# Cortex\n")
+    for file_name in (
+        "progress.md",
+        "systemPatterns.md",
+        "techContext.md",
+        "productContext.md",
+    ):
+        _ = (memory_bank_dir / file_name).write_text(f"# {file_name}\n")
+    fs_manager = FileSystemManager(tmp_path)
+    metadata_index = MetadataIndex(tmp_path)
+    _ = await metadata_index.load()
+    await _seed_basic_metadata(memory_bank_dir, metadata_index)
+    return make_test_managers(
+        fs=fs_manager, index=metadata_index, tokens=TokenCounter()
+    )
+
+
+_ACTIVE_CONTEXT_PHASE54_FULL = """# Active Context
+
+## Current Focus
+
+Working on Phase 54.
+
+## Completed Work
+
+- ✅ Phase 50 - COMPLETE
+- ✅ Phase 51 - COMPLETE
+
+## Next Steps
+"""
+
+_ROADMAP_PHASE54_PENDING = """# Roadmap
+
+## Pending plans (from .cortex/plans)
+
+- **Phase 54** - PENDING - Session Start Initializer
+"""
+
+_ROADMAP_PHASE54_TOOL = """# Roadmap
+
+## Pending plans (from .cortex/plans)
+
+- **Phase 54** - PENDING - Description
+"""
+
+_MEMORY_BANK_ALL_REQUIRED = (
+    "projectBrief.md",
+    "activeContext.md",
+    "roadmap.md",
+    "progress.md",
+    "systemPatterns.md",
+    "techContext.md",
+    "productContext.md",
+)
+
+
+async def _managers_with_every_memory_bank_file(tmp_path: Path) -> ManagersDict:
+    """All seven memory-bank files on disk with metadata (health summary all-files test)."""
+    memory_bank_dir = ensure_test_cortex_structure(tmp_path)
+    for file_name in _MEMORY_BANK_ALL_REQUIRED:
+        _ = (memory_bank_dir / file_name).write_text(f"# {file_name}\n\nContent")
+    fs_manager = FileSystemManager(tmp_path)
+    metadata_index = MetadataIndex(tmp_path)
+    _ = await metadata_index.load()
+    for file_name in _MEMORY_BANK_ALL_REQUIRED:
+        file_path = memory_bank_dir / file_name
+        await metadata_index.update_file_metadata(
+            file_name=file_name,
+            path=file_path,
+            exists=True,
+            size_bytes=100,
+            token_count=50,
+            content_hash="sha256:test",
+            sections=[],
+        )
+    return make_test_managers(fs=fs_manager, index=metadata_index)
+
+
+async def _minimal_session_managers_custom_roadmap(
+    tmp_path: Path, *, roadmap: str, focus: str = "Test.\n"
+) -> ManagersDict:
+    """Minimal session files with a custom roadmap body (MCP unhealthy tests)."""
+    memory_bank_dir = ensure_test_cortex_structure(tmp_path)
+    _ = (memory_bank_dir / "activeContext.md").write_text(
+        f"# Active Context\n\n## Current Focus\n\n{focus}"
+    )
+    _ = (memory_bank_dir / "roadmap.md").write_text(roadmap)
+    _ = (memory_bank_dir / "projectBrief.md").write_text("# Cortex\n")
+    for file_name in (
+        "progress.md",
+        "systemPatterns.md",
+        "techContext.md",
+        "productContext.md",
+    ):
+        _ = (memory_bank_dir / file_name).write_text(f"# {file_name}\n")
+    fs_manager = FileSystemManager(tmp_path)
+    metadata_index = MetadataIndex(tmp_path)
+    _ = await metadata_index.load()
+    await _seed_basic_metadata(memory_bank_dir, metadata_index)
+    return make_test_managers(
+        fs=fs_manager, index=metadata_index, tokens=TokenCounter()
+    )
+
+
+_LIFECYCLE_ACTIVE = """# Active Context
+
+## Current Focus
+
+Test.
+
+## Completed Work (2026-02-01)
+
+- Old task
+"""
+
+
+def _write_lifecycle_memory_bank_files(memory_bank_dir: Path) -> None:
+    """Disk content for compact_session + session_start handoff integration."""
+    _ = (memory_bank_dir / "activeContext.md").write_text(_LIFECYCLE_ACTIVE)
+    _ = (memory_bank_dir / "progress.md").write_text(
+        "# Progress\n\n## 2026-02-21\n\n- Entry\n"
+    )
+    _ = (memory_bank_dir / "roadmap.md").write_text(
+        "# Roadmap\n\n## Pending\n\n- Item\n"
+    )
+    _ = (memory_bank_dir / "projectBrief.md").write_text("# Cortex\n")
+    for f in ["systemPatterns.md", "techContext.md", "productContext.md"]:
+        _ = (memory_bank_dir / f).write_text(f"# {f}\n")
+
+
+async def _build_lifecycle_managers_for_compact(tmp_path: Path) -> ManagersDict:
+    """Managers with version index after seeding lifecycle memory-bank files."""
+    memory_bank_dir = ensure_test_cortex_structure(tmp_path)
+    _write_lifecycle_memory_bank_files(memory_bank_dir)
+    fs_manager = FileSystemManager(tmp_path)
+    token_counter = TokenCounter()
+    metadata_index = MetadataIndex(tmp_path)
+    _ = await metadata_index.load()
+    version_manager = VersionManager(tmp_path)
+    await _seed_basic_metadata(memory_bank_dir, metadata_index)
+    return make_test_managers(
+        fs=fs_manager,
+        tokens=token_counter,
+        index=metadata_index,
+        versions=version_manager,
+    )
+
+
+async def _managers_after_compact_lifecycle(tmp_path: Path) -> ManagersDict:
+    """Run compact_session then return managers (integration handoff visibility)."""
+    managers = await _build_lifecycle_managers_for_compact(tmp_path)
+    with (
+        patch(
+            "cortex.tools.compaction_operations.get_current_managers",
+            return_value=managers,
+        ),
+        patch(
+            "cortex.tools.compaction_operations.get_or_resolve_project_root",
+            new_callable=AsyncMock,
+            return_value=tmp_path,
+        ),
+    ):
+        tool_fn = get_tool_fn(compact_session)
+        _ = await tool_fn(summary="Lifecycle integration test", ctx=None)
+    return managers
+
+
+async def _managers_for_phase54_session_start(tmp_path: Path) -> ManagersDict:
+    """Full memory-bank + metadata setup for Phase 54 session_start success tests."""
+    memory_bank_dir = ensure_test_cortex_structure(tmp_path)
+    _ = (memory_bank_dir / "activeContext.md").write_text(_ACTIVE_CONTEXT_PHASE54_FULL)
+    _ = (memory_bank_dir / "roadmap.md").write_text(_ROADMAP_PHASE54_PENDING)
+    _ = (memory_bank_dir / "projectBrief.md").write_text(
+        "# Cortex\n\nProject description."
+    )
+    for file_name in (
+        "progress.md",
+        "systemPatterns.md",
+        "techContext.md",
+        "productContext.md",
+    ):
+        _ = (memory_bank_dir / file_name).write_text(f"# {file_name}\n\nContent")
+    fs_manager = FileSystemManager(tmp_path)
+    metadata_index = MetadataIndex(tmp_path)
+    _ = await metadata_index.load()
+    await _seed_basic_metadata(memory_bank_dir, metadata_index)
+    return make_test_managers(
+        fs=fs_manager, index=metadata_index, tokens=TokenCounter()
+    )
+
+
+def _assert_phase54_success_brief(result: SessionStartResult) -> None:
+    assert isinstance(result, SessionStartResult)
+    assert result.status == "success"
+    assert result.brief is not None
+    assert result.brief.project_name == "Cortex"
+    assert "Phase 54" in result.brief.current_focus
+    assert len(result.brief.recent_completed) == 2
+    assert result.brief.next_work_item is not None
+    assert "Phase 54" in result.brief.next_work_item
+    assert result.token_count > 0
+    assert result.brief.mcp_healthy is True
+    assert result.brief.session_scope
+    assert result.brief.session_scope == SESSION_SCOPE_PROMPT
+    assert "Session Scope" in result.brief.session_scope
+    assert "Defer unrelated issues to a follow-up session" in result.brief.session_scope
+
+
+async def _managers_phase54_variant(
+    tmp_path: Path,
+    *,
+    active_context: str,
+    roadmap: str,
+    extra_content: str = "\n\nContent",
+) -> tuple[Path, ManagersDict]:
+    """Memory bank + managers for Phase 54 variants (handoff / missing handoff)."""
+    memory_bank_dir = ensure_test_cortex_structure(tmp_path)
+    _ = (memory_bank_dir / "activeContext.md").write_text(active_context)
+    _ = (memory_bank_dir / "roadmap.md").write_text(roadmap)
+    _ = (memory_bank_dir / "projectBrief.md").write_text(
+        "# Cortex\n\nProject description."
+    )
+    for file_name in (
+        "progress.md",
+        "systemPatterns.md",
+        "techContext.md",
+        "productContext.md",
+    ):
+        _ = (memory_bank_dir / file_name).write_text(f"# {file_name}{extra_content}")
+    fs_manager = FileSystemManager(tmp_path)
+    metadata_index = MetadataIndex(tmp_path)
+    _ = await metadata_index.load()
+    token_counter = TokenCounter()
+    await _seed_basic_metadata(memory_bank_dir, metadata_index)
+    managers = make_test_managers(
+        fs=fs_manager, index=metadata_index, tokens=token_counter
+    )
+    return memory_bank_dir, managers
+
+
+async def _run_session_start_patched_mcp_healthy(
+    tmp_path: Path, managers: ManagersDict
+) -> SessionStartResult | SessionStartErrorResult:
+    with patch(
+        "cortex.tools.session.health.get_mcp_health_status",
+        new_callable=AsyncMock,
+        return_value=(True, None),
+    ):
+        return await session_start_impl(
+            None,
+            tmp_path,
+            managers,  # type: ignore[arg-type]
         )
 
 
@@ -422,41 +689,7 @@ class TestCalculateHealthSummary:
     @pytest.mark.asyncio
     async def test_calculate_health_summary_all_files(self, tmp_path: Path) -> None:
         """Test health summary with all files present."""
-        memory_bank_dir = ensure_test_cortex_structure(tmp_path)
-
-        # Create all required files
-        required_files = [
-            "projectBrief.md",
-            "activeContext.md",
-            "roadmap.md",
-            "progress.md",
-            "systemPatterns.md",
-            "techContext.md",
-            "productContext.md",
-        ]
-        for file_name in required_files:
-            _ = (memory_bank_dir / file_name).write_text(f"# {file_name}\n\nContent")
-
-        # Create managers with metadata index
-        fs_manager = FileSystemManager(tmp_path)
-        metadata_index = MetadataIndex(tmp_path)
-        _ = await metadata_index.load()
-
-        # Update metadata for all files
-        for file_name in required_files:
-            file_path = memory_bank_dir / file_name
-            await metadata_index.update_file_metadata(
-                file_name=file_name,
-                path=file_path,
-                exists=True,
-                size_bytes=100,
-                token_count=50,
-                content_hash="sha256:test",
-                sections=[],
-            )
-
-        managers = make_test_managers(fs=fs_manager, index=metadata_index)
-
+        managers = await _managers_with_every_memory_bank_file(tmp_path)
         health = await calculate_health_summary(
             managers,
             tmp_path,  # type: ignore[arg-type]
@@ -599,6 +832,46 @@ class TestGenerateSessionSuggestions:
         assert len(suggestions) > 0
         assert "do not proceed without mcp" in suggestions[0].lower()
 
+    def test_generate_suggestions_memory_bank_sync_warning(self) -> None:
+        """Memory bank sync violation appears in suggestions."""
+        health = SessionHealthSummary(
+            file_count=7,
+            total_tokens=10000,
+            token_budget_status=TokenBudgetStatus.HEALTHY,
+            missing_files=[],
+            has_errors=False,
+        )
+        progress = "- **Auth System** - PARTIAL. Work remaining."
+        roadmap = "- **Unrelated Task** - PENDING - something else."
+        suggestions = generate_session_suggestions(
+            health,
+            None,
+            None,
+            progress_content=progress,
+            roadmap_content=roadmap,
+        )
+        assert any("Auth System" in s and "PARTIAL" in s for s in suggestions)
+
+    def test_generate_suggestions_no_memory_bank_sync_warning_when_clean(self) -> None:
+        """No sync warning when progress has no unresolved PARTIALs."""
+        health = SessionHealthSummary(
+            file_count=7,
+            total_tokens=10000,
+            token_budget_status=TokenBudgetStatus.HEALTHY,
+            missing_files=[],
+            has_errors=False,
+        )
+        progress = "- **Auth System** - COMPLETE. Done."
+        roadmap = ""
+        suggestions = generate_session_suggestions(
+            health,
+            None,
+            None,
+            progress_content=progress,
+            roadmap_content=roadmap,
+        )
+        assert not any("PARTIAL" in s for s in suggestions)
+
 
 class TestParseMCPHealth:
     """Tests for _parse_mcp_health helper."""
@@ -672,151 +945,17 @@ class TestSessionStartImpl:
     @pytest.mark.asyncio
     async def test_session_start_impl_success(self, tmp_path: Path) -> None:
         """Test successful session start."""
-        memory_bank_dir = ensure_test_cortex_structure(tmp_path)
-
-        # Create required files
-        active_context_content = """# Active Context
-
-## Current Focus
-
-Working on Phase 54.
-
-## Completed Work
-
-- ✅ Phase 50 - COMPLETE
-- ✅ Phase 51 - COMPLETE
-
-## Next Steps
-"""
-        _ = (memory_bank_dir / "activeContext.md").write_text(active_context_content)
-
-        roadmap_content = """# Roadmap
-
-## Pending plans (from .cortex/plans)
-
-- **Phase 54** - PENDING - Session Start Initializer
-"""
-        _ = (memory_bank_dir / "roadmap.md").write_text(roadmap_content)
-
-        project_brief_content = "# Cortex\n\nProject description."
-        _ = (memory_bank_dir / "projectBrief.md").write_text(project_brief_content)
-
-        # Create other required files
-        for file_name in [
-            "progress.md",
-            "systemPatterns.md",
-            "techContext.md",
-            "productContext.md",
-        ]:
-            _ = (memory_bank_dir / file_name).write_text(f"# {file_name}\n\nContent")
-
-        # Setup managers
-        fs_manager = FileSystemManager(tmp_path)
-        metadata_index = MetadataIndex(tmp_path)
-        _ = await metadata_index.load()
-
-        token_counter = TokenCounter()
-
-        # Update metadata
-        for file_name in [
-            "activeContext.md",
-            "roadmap.md",
-            "projectBrief.md",
-            "progress.md",
-            "systemPatterns.md",
-            "techContext.md",
-            "productContext.md",
-        ]:
-            await metadata_index.update_file_metadata(
-                file_name=file_name,
-                path=memory_bank_dir / file_name,
-                exists=True,
-                size_bytes=100,
-                token_count=50,
-                content_hash="sha256:test",
-                sections=[],
-            )
-
-        managers = make_test_managers(
-            fs=fs_manager, index=metadata_index, tokens=token_counter
-        )
-
-        with patch(
-            "cortex.tools.session.health.get_mcp_health_status",
-            new_callable=AsyncMock,
-            return_value=(True, None),
-        ):
-            result = await session_start_impl(
-                None,
-                tmp_path,
-                managers,  # type: ignore[arg-type]
-            )
-
+        managers = await _managers_for_phase54_session_start(tmp_path)
+        result = await _run_session_start_patched_mcp_healthy(tmp_path, managers)
         assert isinstance(result, SessionStartResult)
-        assert result.status == "success"
-        assert result.brief is not None
-        assert result.brief.project_name == "Cortex"
-        assert "Phase 54" in result.brief.current_focus
-        assert len(result.brief.recent_completed) == 2
-        assert result.brief.next_work_item is not None
-        assert "Phase 54" in result.brief.next_work_item
-        assert result.token_count > 0
-        assert result.brief.mcp_healthy is True
-        assert result.brief.session_scope
-        assert result.brief.session_scope == SESSION_SCOPE_PROMPT
-        assert "Session Scope" in result.brief.session_scope
-        assert (
-            "Defer unrelated issues to a follow-up session"
-            in result.brief.session_scope
-        )
+        _assert_phase54_success_brief(result)
 
     @pytest.mark.asyncio
     async def test_session_start_impl_seeds_context_telemetry_for_analysis(
         self, tmp_path: Path
     ) -> None:
         """Successful session_start writes one telemetry call to avoid no_data."""
-        memory_bank_dir = ensure_test_cortex_structure(tmp_path)
-        _ = (memory_bank_dir / "activeContext.md").write_text(
-            "# Active Context\n\n## Current Focus\n\nTest.\n"
-        )
-        _ = (memory_bank_dir / "roadmap.md").write_text(
-            "# Roadmap\n\n## Pending plans (from .cortex/plans)\n\n- **Task** - PENDING - Desc\n"
-        )
-        _ = (memory_bank_dir / "projectBrief.md").write_text("# Cortex\n")
-        for file_name in [
-            "progress.md",
-            "systemPatterns.md",
-            "techContext.md",
-            "productContext.md",
-        ]:
-            _ = (memory_bank_dir / file_name).write_text(f"# {file_name}\n")
-
-        fs_manager = FileSystemManager(tmp_path)
-        metadata_index = MetadataIndex(tmp_path)
-        _ = await metadata_index.load()
-        for file_name in [
-            "activeContext.md",
-            "roadmap.md",
-            "projectBrief.md",
-            "progress.md",
-            "systemPatterns.md",
-            "techContext.md",
-            "productContext.md",
-        ]:
-            await metadata_index.update_file_metadata(
-                file_name=file_name,
-                path=memory_bank_dir / file_name,
-                exists=True,
-                size_bytes=100,
-                token_count=50,
-                content_hash="sha256:test",
-                sections=[],
-            )
-        managers = make_test_managers(
-            fs=fs_manager,
-            index=metadata_index,
-            tokens=TokenCounter(),
-        )
+        managers = await _build_minimal_session_managers_with_focus(tmp_path, "Test.\n")
         env_key = "CORTEX_SESSION_ID"
         original = os.environ.get(env_key)
         os.environ[env_key] = "session_start_seed_1"
@@ -846,48 +985,7 @@ Working on Phase 54.
         self, tmp_path: Path
     ) -> None:
         """Repeated session_start in same session keeps a single seeded telemetry row."""
-        memory_bank_dir = ensure_test_cortex_structure(tmp_path)
-        _ = (memory_bank_dir / "activeContext.md").write_text(
-            "# Active Context\n\n## Current Focus\n\nTest.\n"
-        )
-        _ = (memory_bank_dir / "roadmap.md").write_text(
-            "# Roadmap\n\n## Pending plans (from .cortex/plans)\n\n- **Task** - PENDING - Desc\n"
-        )
-        _ = (memory_bank_dir / "projectBrief.md").write_text("# Cortex\n")
-        for file_name in [
-            "progress.md",
-            "systemPatterns.md",
-            "techContext.md",
-            "productContext.md",
-        ]:
-            _ = (memory_bank_dir / file_name).write_text(f"# {file_name}\n")
-
-        fs_manager = FileSystemManager(tmp_path)
-        metadata_index = MetadataIndex(tmp_path)
-        _ = await metadata_index.load()
-        for file_name in [
-            "activeContext.md",
-            "roadmap.md",
-            "projectBrief.md",
-            "progress.md",
-            "systemPatterns.md",
-            "techContext.md",
-            "productContext.md",
-        ]:
-            await metadata_index.update_file_metadata(
-                file_name=file_name,
-                path=memory_bank_dir / file_name,
-                exists=True,
-                size_bytes=100,
-                token_count=50,
-                content_hash="sha256:test",
-                sections=[],
-            )
-        managers = make_test_managers(
-            fs=fs_manager,
-            index=metadata_index,
-            tokens=TokenCounter(),
-        )
+        managers = await _build_minimal_session_managers_with_focus(tmp_path, "Test.\n")
         env_key = "CORTEX_SESSION_ID"
         original = os.environ.get(env_key)
         os.environ[env_key] = "session_start_seed_2"
@@ -914,9 +1012,6 @@ Working on Phase 54.
     @pytest.mark.asyncio
     async def test_session_start_impl_includes_handoff(self, tmp_path: Path) -> None:
         """Test that session_start includes handoff when it exists."""
-        memory_bank_dir = ensure_test_cortex_structure(tmp_path)
-
-        # Create required files
         active_context_content = """# Active Context
 
 ## Current Focus
@@ -927,56 +1022,11 @@ Working on Phase 54.
 
 - ✅ Phase 50 - COMPLETE
 """
-        _ = (memory_bank_dir / "activeContext.md").write_text(active_context_content)
-
-        roadmap_content = """# Roadmap
-
-## Pending plans (from .cortex/plans)
-
-- **Phase 54** - PENDING - Session Start Initializer
-"""
-        _ = (memory_bank_dir / "roadmap.md").write_text(roadmap_content)
-
-        project_brief_content = "# Cortex\n\nProject description."
-        _ = (memory_bank_dir / "projectBrief.md").write_text(project_brief_content)
-
-        # Create other required files
-        for file_name in [
-            "progress.md",
-            "systemPatterns.md",
-            "techContext.md",
-            "productContext.md",
-        ]:
-            _ = (memory_bank_dir / file_name).write_text(f"# {file_name}\n\nContent")
-
-        # Setup managers
-        fs_manager = FileSystemManager(tmp_path)
-        metadata_index = MetadataIndex(tmp_path)
-        _ = await metadata_index.load()
-
-        token_counter = TokenCounter()
-
-        # Update metadata
-        for file_name in [
-            "activeContext.md",
-            "roadmap.md",
-            "projectBrief.md",
-            "progress.md",
-            "systemPatterns.md",
-            "techContext.md",
-            "productContext.md",
-        ]:
-            await metadata_index.update_file_metadata(
-                file_name=file_name,
-                path=memory_bank_dir / file_name,
-                exists=True,
-                size_bytes=100,
-                token_count=50,
-                content_hash="sha256:test",
-                sections=[],
-            )
-
-        # Create a handoff file before calling session_start
+        _memory_bank_dir, managers = await _managers_phase54_variant(
+            tmp_path,
+            active_context=active_context_content,
+            roadmap=_ROADMAP_PHASE54_PENDING,
+        )
         handoff = SessionHandoff(
             session_id="2026-02-20T17-00",
             completed_tasks=["Phase 50 Step 1", "Phase 50 Step 2"],
@@ -985,23 +1035,8 @@ Working on Phase 54.
             blockers=[],
             next_actions=["Complete Phase 54"],
         )
-        await write_handoff(tmp_path, handoff, fs_manager)
-
-        managers = make_test_managers(
-            fs=fs_manager, index=metadata_index, tokens=token_counter
-        )
-
-        with patch(
-            "cortex.tools.session.health.get_mcp_health_status",
-            new_callable=AsyncMock,
-            return_value=(True, None),
-        ):
-            result = await session_start_impl(
-                None,
-                tmp_path,
-                managers,  # type: ignore[arg-type]
-            )
-
+        await write_handoff(tmp_path, handoff, managers.fs)
+        result = await _run_session_start_patched_mcp_healthy(tmp_path, managers)
         assert isinstance(result, SessionStartResult)
         assert result.status == "success"
         assert result.brief is not None
@@ -1017,81 +1052,18 @@ Working on Phase 54.
         self, tmp_path: Path
     ) -> None:
         """Test that session_start returns None handoff when file doesn't exist."""
-        memory_bank_dir = ensure_test_cortex_structure(tmp_path)
-
-        # Create required files
         active_context_content = """# Active Context
 
 ## Current Focus
 
 Working on Phase 54.
 """
-        _ = (memory_bank_dir / "activeContext.md").write_text(active_context_content)
-
-        roadmap_content = """# Roadmap
-
-## Pending plans (from .cortex/plans)
-
-- **Phase 54** - PENDING - Session Start Initializer
-"""
-        _ = (memory_bank_dir / "roadmap.md").write_text(roadmap_content)
-
-        project_brief_content = "# Cortex\n\nProject description."
-        _ = (memory_bank_dir / "projectBrief.md").write_text(project_brief_content)
-
-        # Create other required files
-        for file_name in [
-            "progress.md",
-            "systemPatterns.md",
-            "techContext.md",
-            "productContext.md",
-        ]:
-            _ = (memory_bank_dir / file_name).write_text(f"# {file_name}\n\nContent")
-
-        # Setup managers
-        fs_manager = FileSystemManager(tmp_path)
-        metadata_index = MetadataIndex(tmp_path)
-        _ = await metadata_index.load()
-
-        token_counter = TokenCounter()
-
-        # Update metadata
-        for file_name in [
-            "activeContext.md",
-            "roadmap.md",
-            "projectBrief.md",
-            "progress.md",
-            "systemPatterns.md",
-            "techContext.md",
-            "productContext.md",
-        ]:
-            await metadata_index.update_file_metadata(
-                file_name=file_name,
-                path=memory_bank_dir / file_name,
-                exists=True,
-                size_bytes=100,
-                token_count=50,
-                content_hash="sha256:test",
-                sections=[],
-            )
-
-        # Don't create handoff file - should return None
-
-        managers = make_test_managers(
-            fs=fs_manager, index=metadata_index, tokens=token_counter
+        _memory_bank_dir, managers = await _managers_phase54_variant(
+            tmp_path,
+            active_context=active_context_content,
+            roadmap=_ROADMAP_PHASE54_PENDING,
         )
-
-        with patch(
-            "cortex.tools.session.health.get_mcp_health_status",
-            new_callable=AsyncMock,
-            return_value=(True, None),
-        ):
-            result = await session_start_impl(
-                None,
-                tmp_path,
-                managers,  # type: ignore[arg-type]
-            )
-
+        result = await _run_session_start_patched_mcp_healthy(tmp_path, managers)
         assert isinstance(result, SessionStartResult)
         assert result.status == "success"
         assert result.brief is not None
@@ -1137,72 +1109,7 @@ Working on Phase 54.
         self, tmp_path: Path
     ) -> None:
         """Integration: compact_session then session_start returns handoff in brief."""
-        memory_bank_dir = ensure_test_cortex_structure(tmp_path)
-        active_content = """# Active Context
-
-## Current Focus
-
-Test.
-
-## Completed Work (2026-02-01)
-
-- Old task
-"""
-        _ = (memory_bank_dir / "activeContext.md").write_text(active_content)
-        _ = (memory_bank_dir / "progress.md").write_text(
-            "# Progress\n\n## 2026-02-21\n\n- Entry\n"
-        )
-        _ = (memory_bank_dir / "roadmap.md").write_text(
-            "# Roadmap\n\n## Pending\n\n- Item\n"
-        )
-        _ = (memory_bank_dir / "projectBrief.md").write_text("# Cortex\n")
-        for f in ["systemPatterns.md", "techContext.md", "productContext.md"]:
-            _ = (memory_bank_dir / f).write_text(f"# {f}\n")
-
-        fs_manager = FileSystemManager(tmp_path)
-        token_counter = TokenCounter()
-        metadata_index = MetadataIndex(tmp_path)
-        _ = await metadata_index.load()
-        version_manager = VersionManager(tmp_path)
-        for file_name in [
-            "activeContext.md",
-            "roadmap.md",
-            "projectBrief.md",
-            "progress.md",
-            "systemPatterns.md",
-            "techContext.md",
-            "productContext.md",
-        ]:
-            await metadata_index.update_file_metadata(
-                file_name=file_name,
-                path=memory_bank_dir / file_name,
-                exists=True,
-                size_bytes=100,
-                token_count=50,
-                content_hash="sha256:test",
-                sections=[],
-            )
-        managers = make_test_managers(
-            fs=fs_manager,
-            tokens=token_counter,
-            index=metadata_index,
-            versions=version_manager,
-        )
-        # Patch in compaction_operations so compact_session uses tmp_path and our test managers
-        with (
-            patch(
-                "cortex.tools.compaction_operations.get_current_managers",
-                return_value=managers,
-            ),
-            patch(
-                "cortex.tools.compaction_operations.get_or_resolve_project_root",
-                new_callable=AsyncMock,
-                return_value=tmp_path,
-            ),
-        ):
-            tool_fn = get_tool_fn(compact_session)
-            _ = await tool_fn(summary="Lifecycle integration test", ctx=None)
-
+        managers = await _managers_after_compact_lifecycle(tmp_path)
         with patch(
             "cortex.tools.session.health.get_mcp_health_status",
             new_callable=AsyncMock,
@@ -1222,44 +1129,9 @@ Test.
     @pytest.mark.asyncio
     async def test_session_start_impl_mcp_unhealthy(self, tmp_path: Path) -> None:
         """Test session start when MCP health check returns unhealthy."""
-        memory_bank_dir = ensure_test_cortex_structure(tmp_path)
-        _ = (memory_bank_dir / "activeContext.md").write_text(
-            "# Active Context\n\n## Current Focus\n\nTest.\n"
-        )
-        _ = (memory_bank_dir / "roadmap.md").write_text(
-            "# Roadmap\n\n## Pending\n\n- **Task** - PENDING\n"
-        )
-        _ = (memory_bank_dir / "projectBrief.md").write_text("# Cortex\n")
-        for f in [
-            "progress.md",
-            "systemPatterns.md",
-            "techContext.md",
-            "productContext.md",
-        ]:
-            _ = (memory_bank_dir / f).write_text(f"# {f}\n")
-        fs_manager = FileSystemManager(tmp_path)
-        metadata_index = MetadataIndex(tmp_path)
-        _ = await metadata_index.load()
-        for file_name in [
-            "activeContext.md",
-            "roadmap.md",
-            "projectBrief.md",
-            "progress.md",
-            "systemPatterns.md",
-            "techContext.md",
-            "productContext.md",
-        ]:
-            await metadata_index.update_file_metadata(
-                file_name=file_name,
-                path=memory_bank_dir / file_name,
-                exists=True,
-                size_bytes=100,
-                token_count=50,
-                content_hash="sha256:test",
-                sections=[],
-            )
-        managers = make_test_managers(
-            fs=fs_manager, index=metadata_index, tokens=TokenCounter()
+        managers = await _minimal_session_managers_custom_roadmap(
+            tmp_path,
+            roadmap="# Roadmap\n\n## Pending\n\n- **Task** - PENDING\n",
         )
         with patch(
             "cortex.tools.session.health.get_mcp_health_status",
@@ -1354,61 +1226,11 @@ class TestSessionStartTool:
     @pytest.mark.asyncio
     async def test_session_start_success(self, tmp_path: Path) -> None:
         """Test successful session_start tool call."""
-        memory_bank_dir = ensure_test_cortex_structure(tmp_path)
-
-        _ = (memory_bank_dir / "activeContext.md").write_text(
-            """# Active Context
-
-## Current Focus
-
-Working on Phase 54.
-"""
-        )
-        _ = (memory_bank_dir / "roadmap.md").write_text(
-            """# Roadmap
-
-## Pending plans (from .cortex/plans)
-
-- **Phase 54** - PENDING - Description
-"""
-        )
-        _ = (memory_bank_dir / "projectBrief.md").write_text("# Cortex")
-
-        for file_name in [
-            "progress.md",
-            "systemPatterns.md",
-            "techContext.md",
-            "productContext.md",
-        ]:
-            _ = (memory_bank_dir / file_name).write_text(f"# {file_name}")
-
-        fs_manager = FileSystemManager(tmp_path)
-        metadata_index = MetadataIndex(tmp_path)
-        _ = await metadata_index.load()
-
-        token_counter = TokenCounter()
-
-        for file_name in [
-            "activeContext.md",
-            "roadmap.md",
-            "projectBrief.md",
-            "progress.md",
-            "systemPatterns.md",
-            "techContext.md",
-            "productContext.md",
-        ]:
-            await metadata_index.update_file_metadata(
-                file_name=file_name,
-                path=memory_bank_dir / file_name,
-                exists=True,
-                size_bytes=100,
-                token_count=50,
-                content_hash="sha256:test",
-                sections=[],
-            )
-
-        managers = make_test_managers(
-            fs=fs_manager, index=metadata_index, tokens=token_counter
+        _mb, managers = await _managers_phase54_variant(
+            tmp_path,
+            active_context="# Active Context\n\n## Current Focus\n\nWorking on Phase 54.\n",
+            roadmap=_ROADMAP_PHASE54_TOOL,
+            extra_content="",
         )
 
         with (

@@ -10,6 +10,8 @@ This module handles:
 Part of Phase 2: DRY Linking and Transclusion
 """
 
+import json
+import logging
 import re
 from typing import cast
 
@@ -19,6 +21,8 @@ from cortex.core.models import JsonValue, ModelDict
 
 from .models import TransclusionOptions
 from .parser import LinkParser
+
+logger = logging.getLogger(__name__)
 
 
 def _coerce_transclusion_options(
@@ -340,9 +344,22 @@ class TransclusionEngine:
         """Apply section extraction or line limit."""
         if section:
             lines_limit = options.lines
-            return self.extract_section(
-                content=content, section_heading=section, lines_limit=lines_limit
-            )
+            # AI: Missing heading must not surface as a resolution error; docstring promises full-file fallback.
+            try:
+                return self.extract_section(
+                    content=content, section_heading=section, lines_limit=lines_limit
+                )
+            except ValueError:
+                logger.warning(
+                    "transclusion_section_not_found_fallback %s",
+                    json.dumps(
+                        {
+                            "section": section,
+                            "fallback": "full_file",
+                        }
+                    ),
+                )
+                return content
         elif options.lines is not None:
             lines = content.split("\n")
             return "\n".join(lines[: options.lines])

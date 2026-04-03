@@ -12,6 +12,9 @@ from cortex.tools.session.models import (
     GitStatusSummary,
     SessionHealthSummary,
 )
+from cortex.validation.roadmap_progress_consistency import (
+    check_roadmap_progress_consistency,
+)
 
 
 def extract_focus_and_completed(content: str) -> tuple[str, list[str]]:
@@ -116,6 +119,17 @@ def add_budget_and_missing_suggestions(
         )
 
 
+def add_memory_bank_sync_suggestions(
+    suggestions: list[str],
+    progress_content: str,
+    roadmap_content: str,
+) -> None:
+    """Append memory-bank sync warnings for unresolved PARTIAL entries."""
+    violations = check_roadmap_progress_consistency(progress_content, roadmap_content)
+    for violation in violations:
+        suggestions.append(f"⚠️ Memory-bank sync: {violation}")
+
+
 def generate_session_suggestions(
     health: SessionHealthSummary,
     git_status: GitStatusSummary | None,
@@ -123,12 +137,15 @@ def generate_session_suggestions(
     locked_tasks: list[str] | None = None,
     concurrent_sessions: list[ConcurrentSession] | None = None,
     mcp_healthy: bool = True,
+    progress_content: str = "",
+    roadmap_content: str = "",
 ) -> list[str]:
     """Generate actionable suggestions for the session."""
     suggestions: list[str] = []
     add_mcp_and_git_suggestions(suggestions, mcp_healthy, git_status)
     add_budget_and_missing_suggestions(suggestions, health)
     add_concurrency_suggestions(suggestions, locked_tasks, concurrent_sessions)
+    add_memory_bank_sync_suggestions(suggestions, progress_content, roadmap_content)
     if next_work_item:
         suggestions.append(f"Next roadmap item: {next_work_item}")
     return suggestions

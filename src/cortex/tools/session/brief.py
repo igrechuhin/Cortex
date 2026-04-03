@@ -231,6 +231,8 @@ def _compute_suggestions_and_create_brief(inp: _BriefInputs) -> SessionBrief:
             inp.locked_tasks,
             inp.concurrent_sessions,
             mcp_healthy=inp.mcp_healthy,
+            progress_content=inp.progress_content,
+            roadmap_content=inp.roadmap_content,
         ),
         session_brief_context_kwargs(
             inp.project_name,
@@ -251,41 +253,40 @@ def _compute_suggestions_and_create_brief(inp: _BriefInputs) -> SessionBrief:
     return brief.model_copy(update={"trace_id": trace_id})
 
 
-def _assemble_session_brief(
-    project_name: str,
-    current_focus: str,
-    recent_completed: list[str],
-    next_work_item: str | None,
-    next_work_plan_path: str | None,
-    health: SessionHealthSummary,
-    git_status: GitStatusSummary | None,
-    last_handoff: SessionHandoff | None,
-    concurrent_sessions: list[ConcurrentSession],
-    locked_tasks: list[str],
-    mcp_healthy: bool = True,
-    mcp_health_message: str | None = None,
-    gate_feedback_summary: str | None = None,
-) -> SessionBrief:
+def _assemble_session_brief(inp: _BriefInputs) -> SessionBrief:
     """Assemble session brief from collected components.
 
     Includes ``session_scope`` (single-goal discipline) via ``brief_helpers`` assembly.
     """
-    inp = _BriefInputs(
-        project_name=project_name,
-        current_focus=current_focus,
-        recent_completed=recent_completed,
+    return _compute_suggestions_and_create_brief(inp)
+
+
+def _brief_inputs_from_components(
+    c: "_BriefComponents",
+    next_work_item: str | None,
+    next_work_plan_path: str | None,
+    git_status: GitStatusSummary | None,
+    mcp_healthy: bool,
+    mcp_health_message: str | None,
+) -> _BriefInputs:
+    """Build ``BriefInputs`` from gathered components and caller git/MCP fields."""
+    return _BriefInputs(
+        project_name=c.project_name,
+        current_focus=c.current_focus,
+        recent_completed=c.recent_completed,
         next_work_item=next_work_item,
         next_work_plan_path=next_work_plan_path,
-        health=health,
+        health=c.health,
         git_status=git_status,
-        last_handoff=last_handoff,
-        concurrent_sessions=concurrent_sessions,
-        locked_tasks=locked_tasks,
+        last_handoff=c.last_handoff,
+        concurrent_sessions=c.concurrent_sessions,
+        locked_tasks=c.locked_tasks,
         mcp_healthy=mcp_healthy,
         mcp_health_message=mcp_health_message,
-        gate_feedback_summary=gate_feedback_summary,
+        gate_feedback_summary=c.gate_feedback_summary,
+        progress_content=c.progress_content,
+        roadmap_content=c.roadmap_content,
     )
-    return _compute_suggestions_and_create_brief(inp)
 
 
 def _assemble_brief_from_components(
@@ -296,22 +297,16 @@ def _assemble_brief_from_components(
     mcp_healthy: bool,
     mcp_health_message: str | None,
 ) -> SessionBrief:
-    """Unpack gathered components into _assemble_session_brief."""
-    return _assemble_session_brief(
-        c.project_name,
-        c.current_focus,
-        c.recent_completed,
+    """Unpack gathered components into ``_assemble_session_brief``."""
+    inp = _brief_inputs_from_components(
+        c,
         next_work_item,
         next_work_plan_path,
-        c.health,
         git_status,
-        c.last_handoff,
-        c.concurrent_sessions,
-        c.locked_tasks,
-        mcp_healthy=mcp_healthy,
-        mcp_health_message=mcp_health_message,
-        gate_feedback_summary=c.gate_feedback_summary,
+        mcp_healthy,
+        mcp_health_message,
     )
+    return _assemble_session_brief(inp)
 
 
 _BriefAsyncResult = tuple[
@@ -362,6 +357,38 @@ class _BriefComponents:
     concurrent_sessions: list[ConcurrentSession]
     locked_tasks: list[str]
     gate_feedback_summary: str | None
+    progress_content: str = ""
+    roadmap_content: str = ""
+
+
+def _brief_components_from_async_load(
+    current_focus: str,
+    recent_completed: list[str],
+    loaded: _BriefAsyncResult,
+    progress_content: str | None,
+    roadmap_content: str,
+) -> _BriefComponents:
+    """Build ``_BriefComponents`` from focus tuple and parallel-load results."""
+    (
+        health,
+        project_name,
+        last_handoff,
+        concurrent_sessions,
+        locked_tasks,
+        gate_feedback,
+    ) = loaded
+    return _BriefComponents(
+        current_focus=current_focus,
+        recent_completed=recent_completed,
+        health=health,
+        project_name=project_name,
+        last_handoff=last_handoff,
+        concurrent_sessions=concurrent_sessions,
+        locked_tasks=locked_tasks,
+        gate_feedback_summary=gate_feedback,
+        progress_content=progress_content or "",
+        roadmap_content=roadmap_content,
+    )
 
 
 async def _gather_brief_components(
@@ -372,28 +399,23 @@ async def _gather_brief_components(
     git_status: GitStatusSummary | None,
     next_work_item: str | None,
     next_work_plan_path: str | None,
+    roadmap_content: str = "",
 ) -> _BriefComponents:
     """Gather components needed to build a session brief (caller provides git/next)."""
     current_focus, recent_completed = extract_focus_and_completed(
         active_context_content
     )
-    (
-        health,
-        project_name,
-        last_handoff,
-        concurrent_sessions,
-        locked_tasks,
-        gate_feedback,
-    ) = await _load_brief_async(managers, project_root, fs_manager)
-    return _BriefComponents(
-        current_focus=current_focus,
-        recent_completed=recent_completed,
-        health=health,
-        project_name=project_name,
-        last_handoff=last_handoff,
-        concurrent_sessions=concurrent_sessions,
-        locked_tasks=locked_tasks,
-        gate_feedback_summary=gate_feedback,
+    loaded, progress_tuple = await asyncio.gather(
+        _load_brief_async(managers, project_root, fs_manager),
+        _read_memory_bank_file(fs_manager, MemoryBankFile.PROGRESS),
+    )
+    progress_content, _ = progress_tuple
+    return _brief_components_from_async_load(
+        current_focus,
+        recent_completed,
+        loaded,
+        progress_content,
+        roadmap_content,
     )
 
 
@@ -407,6 +429,7 @@ async def build_session_brief(
     next_work_plan_path: str | None,
     mcp_healthy: bool = True,
     mcp_health_message: str | None = None,
+    roadmap_content: str = "",
 ) -> SessionBrief:
     """Build session brief from extracted information (caller provides git/next).
 
@@ -420,6 +443,7 @@ async def build_session_brief(
         git_status,
         next_work_item,
         next_work_plan_path,
+        roadmap_content=roadmap_content,
     )
     assembled = _assemble_brief_from_components(
         c,

@@ -51,7 +51,8 @@ def test_build_quality_gate_log_events_failed_preflight() -> None:
     assert events[0].details.get("check") == "lint"
 
 
-def test_append_agent_log_mutates_result() -> None:
+def test_append_agent_log_omits_response_field_on_pass() -> None:
+    """Passing runs still emit events but omit bulky ``agent_log`` from the MCP payload."""
     r: ModelDict = cast(ModelDict, {"preflight_passed": True})
     with patch(
         "cortex.tools.logging.instrumentation.get_agent_log_context",
@@ -59,8 +60,27 @@ def test_append_agent_log_mutates_result() -> None:
     ):
         with patch("cortex.tools.logging.instrumentation.emit"):
             append_agent_log_to_quality_result(r)
+    assert "agent_log" not in r
+
+
+def test_append_agent_log_mutates_result_on_failure() -> None:
+    r: ModelDict = cast(
+        ModelDict,
+        {
+            "preflight_passed": False,
+            "checks": [
+                {"name": "lint", "status": "error", "message": "bad"},
+            ],
+        },
+    )
+    with patch(
+        "cortex.tools.logging.instrumentation.get_agent_log_context",
+        return_value=("t", None, None),
+    ):
+        with patch("cortex.tools.logging.instrumentation.emit"):
+            append_agent_log_to_quality_result(r)
     assert "agent_log" in r
-    assert "quality_gate.passed" in str(r["agent_log"])
+    assert "quality_gate.failed" in str(r["agent_log"])
 
 
 def test_emit_pipeline_handoff_log_skips_unknown_op() -> None:

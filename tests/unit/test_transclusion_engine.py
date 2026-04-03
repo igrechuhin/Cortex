@@ -323,6 +323,29 @@ Content of section two"""
         assert "Content of section two" not in result
 
     @pytest.mark.asyncio
+    async def test_resolve_transclusion_unknown_section_falls_back_to_full_file(
+        self, engine: TransclusionEngine, mock_fs: MagicMock
+    ) -> None:
+        """Missing section heading includes full target file (no error comment injection)."""
+        target_content = """# Title
+
+## Real Section
+
+Only this block exists."""
+
+        mock_fs.read_file = AsyncMock(return_value=(target_content, "hash123"))
+
+        with patch.object(Path, "exists", return_value=True):
+            result = await engine.resolve_transclusion(
+                target_file="target.md",
+                section="No Such Section",
+                source_file="source.md",
+            )
+
+        assert "Only this block exists." in result
+        assert "Real Section" in result
+
+    @pytest.mark.asyncio
     async def test_resolve_transclusion_with_lines_limit(
         self, engine: TransclusionEngine, mock_fs: MagicMock
     ) -> None:

@@ -121,7 +121,11 @@ class TestCommitPipelineAlignment:
     ) -> None:
         """Orchestrator runs all phases inline (no subagent delegation)."""
         lower = commit_prompt_content.lower()
-        assert "run inline" in lower or "no subagent" in lower
+        assert (
+            "run inline" in lower
+            or "run these steps inline" in lower
+            or "no subagent" in lower
+        )
 
     def test_orchestrator_uses_zero_arg_quality_tools(
         self, commit_prompt_content: str

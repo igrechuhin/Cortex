@@ -183,6 +183,7 @@ All phases run inline. Use zero-arg tools — do NOT use legacy pre-commit tools
 - Prefer scan-friendly emoji status markers (✅/⚠️/❌) in prompts and summaries for success/warn/error.
 - Keep final summaries concise (typically at most four sentences) and avoid heavy code blocks there; use headings and bolded bullet labels per the markdown formatting guide.
 - When a roadmap item is large, always make concrete partial progress in the current session (smallest meaningful subtask plus tests/quality) and update plans/status as PARTIAL instead of stopping with no changes.
+- For reflection, quality-gate adjuncts, and similar cross-cutting checks, prefer language-parameterized constants and language-specific checklists over Python-only naming or a single generic list.
 
 ## Learned Workspace Facts
 
@@ -196,6 +197,7 @@ All phases run inline. Use zero-arg tools — do NOT use legacy pre-commit tools
 - The docs gate `roadmap_progress_consistency` check fails when `progress.md` contains any `PARTIAL` line but `roadmap.md` has no `PENDING` backlog bullet; keep at least one real `PENDING` item while unfinished work remains in progress, or resolve the PARTIAL entries.
 - In this repo environment, prefer `python3` over `python` in shell commands (the `python` shim may point to a legacy interpreter).
 - Keep README and similar entrypoint docs aligned with current Cortex commands and resources (for example `/cortex/do`, `/cortex/commit`, `cortex://context`); avoid obsolete workflow shorthand such as "plan → implement → commit" when it no longer matches shipped names.
+- When resolving Cortex, Synapse, or repo-root paths in Python tools, use the shared path resolver (`cortex.core.path_resolver` and related helpers) instead of hardcoded filesystem strings.
 
 ## Cursor Cloud specific instructions
 

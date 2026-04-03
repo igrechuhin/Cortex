@@ -16,14 +16,6 @@
 
 ### Quality & Reliability Improvements
 
-- **Fix `_execute_transclusion_resolution` Reliability** — PENDING — `.cortex/plans/fix-transclusion-resolution-reliability.md`
-  Reduce 16.6% error rate (1,062/6,415 calls) to < 2% by hardening root resolution, defensive
-  validation, section-not-found fallback, and structured error logging.
-
-- **Reduce Quality Gate Latency and Pre-commit Token Bloat** — PENDING — `.cortex/plans/reduce-quality-gate-latency-tokens.md`
-  Cut `run_quality_gate` avg latency (56s) and response tokens (2,323) by gating cache clears,
-  trimming passing-run responses, activating dirty-state skip logic, and adaptive polling.
-
 ### Security
 
 ### Documentation Cleanup (DRY)

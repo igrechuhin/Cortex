@@ -2,9 +2,11 @@
 
 ## 2026-04-03
 
-- **Quality gate, transclusion, and pre-commit tooling** - PARTIAL. Refactored pre-commit quality modules and zero-arg tool checks; expanded reflection heuristics; hardened transclusion resolution and rules loading; refreshed linking and pre-commit unit tests; Synapse submodule pointer and plan stubs updated. Quality gate passed (≈91.7% coverage).
+- **Quality gate, transclusion, and pre-commit tooling** - COMPLETE. Refactored pre-commit quality modules and zero-arg tool checks; expanded reflection heuristics; hardened transclusion resolution and rules loading; refreshed linking and pre-commit unit tests; Synapse submodule pointer and plan stubs updated. Quality gate passed (≈91.7% coverage).
 
-- **Fix `_execute_transclusion_resolution` Reliability** - PARTIAL. Structured failure logging (`_log_transclusion_failure_category`), memory-bank root fallback when async root lacks `.cortex/memory-bank`, `PathError`/`FileNotFoundError` on validation errors; regression test for root fallback; helpers to satisfy function-length limits in structural-violation test.
+- **Fix `_execute_transclusion_resolution` Reliability** - COMPLETE. Structured failure logging, memory-bank root fallback, `PathError`/`FileNotFoundError` validation, section-not-found full-file fallback, resource payloads omitting `original_content` by default; regression tests; quality gate pass. Production error-rate monitoring remains via usage analytics.
+
+- **Reduce Quality Gate Latency and Pre-commit Token Bloat** - COMPLETE (2026-04-03). Conditional cache clear, trimmed passing responses, adaptive polling, dirty-tracker after pass, skip telemetry, markdown merge uses `compute_preflight_passed`; `run_quality_gate` verified. Success Criteria 1–3 (50-day window) tracked in analytics.
 
 ## 2026-04-02
 

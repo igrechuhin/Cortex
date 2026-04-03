@@ -4,7 +4,13 @@
 
 ## Completed Work (2026-04-03)
 
+- **Quality gate and linking stack (PARTIAL)** - Pre-commit quality pipelines and zero-arg governance tests refactored; reflection evaluation tightened; transclusion operations and rules operations updated with expanded regression coverage.
+
 - ✅ **Transclusion reliability (PARTIAL)** - COMPLETE (2026-04-03) - Hardened `resolve_transclusions` root selection and error typing; added JSON warning logs for uncaught exceptions in the resolution path.
+
+- ✅ **Fix `_execute_transclusion_resolution` Reliability** - COMPLETE (2026-04-03) - Structured failure logging, memory-bank root fallback, PathError/FileNotFoundError validation, section-not-found full-file fallback, resource omits original_content by default; regression tests and quality gate green. Production error-rate verification remains via usage analytics.
+
+- ✅ **Reduce Quality Gate Latency and Pre-commit Token Bloat** - COMPLETE (2026-04-03) - Conditional cache clear on `force_fresh`, trimmed passing gate responses, `agent_log` omitted on pass, `PipelineDirtyTracker` after successful gate, adaptive poll intervals, `checks.skipped` / `checks.executed` logs, `preflight_passed` from Phase A plus markdown; tests and `run_quality_gate` verified. Success criteria 1–3 (50-day latency/tokens/skip rate) remain operational analytics.
 
 ## Completed Work (2026-04-02)
 

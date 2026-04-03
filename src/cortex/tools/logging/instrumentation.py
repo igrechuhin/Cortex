@@ -123,11 +123,15 @@ def build_quality_gate_log_events(result: ModelDict) -> list[LogEvent]:
 
 
 def append_agent_log_to_quality_result(result: ModelDict) -> None:
-    """Emit stderr events and set ``agent_log`` markdown on ``result``."""
+    """Emit stderr events and set ``agent_log`` markdown on ``result`` (failures only).
+
+    Passing runs omit ``agent_log`` to keep MCP response payloads small; stderr
+    still receives structured ``quality_gate.passed`` events.
+    """
     events = build_quality_gate_log_events(result)
     for ev in events:
         emit(ev)
-    if events:
+    if events and result.get("preflight_passed") is not True:
         result["agent_log"] = format_for_agent(events)
 
 

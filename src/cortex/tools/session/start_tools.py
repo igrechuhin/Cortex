@@ -307,6 +307,7 @@ async def _load_and_build_brief(
         next_work_plan_path=next_work_plan_path,
         mcp_healthy=mcp_healthy,
         mcp_health_message=mcp_health_message,
+        roadmap_content=rdm,
     )
     return await _session_start_success_result(brief, managers)
 

@@ -175,3 +175,10 @@ structured logs in the next usage-event batch that the error rate has dropped.
   regression test — files: `src/cortex/tools/linking/transclusion_operations.py`,
   `tests/tools/test_linking_operations.py`, `tests/unit/test_pre_commit_tools.py`
   (structural test helpers only)
+
+- 2026-04-03: Steps 4–5 — `_apply_section_filter` catches missing section headings and
+  returns full target file with `transclusion_section_not_found_fallback` warning;
+  `_run_resolve_transclusions_pipeline` / resource path omit `original_content` from
+  JSON by default — files: `src/cortex/linking/transclusion_engine.py`,
+  `src/cortex/tools/linking/transclusion_operations.py`,
+  `tests/unit/test_transclusion_engine.py`, `tests/tools/test_linking_operations.py`

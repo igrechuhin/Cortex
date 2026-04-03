@@ -29,6 +29,8 @@ from cortex.tools.execution.pre_commit_phase_dispatch import PreCommitPhase
 from cortex.tools.execution.pre_commit_tools_inline_execution import (
     run_inline_pre_commit_checks,
 )
+from cortex.tools.logging.logger import emit
+from cortex.tools.logging.models import LogEvent, LogLevel
 
 logger = logging.getLogger(__name__)
 
@@ -177,6 +179,47 @@ def _build_skip_clean_result(
     )
 
 
+def _emit_checks_executed_tracker_inactive() -> None:
+    emit(
+        LogEvent(
+            event="checks.executed",
+            level=LogLevel.INFO,
+            component="execute_pre_commit_checks",
+            message="Dirty tracker inactive; running checks",
+            details={"reason": "tracker_inactive"},
+        )
+    )
+
+
+def _emit_checks_executed_blocked(check_name: str, reason: str) -> None:
+    emit(
+        LogEvent(
+            event="checks.executed",
+            level=LogLevel.INFO,
+            component="execute_pre_commit_checks",
+            message="Could not skip checks; running full suite",
+            details={"blocked_check": check_name, "reason": reason[:300]},
+        )
+    )
+
+
+def _emit_checks_skipped_structured(
+    check_names: list[str], first_skip_reason: str
+) -> None:
+    emit(
+        LogEvent(
+            event="checks.skipped",
+            level=LogLevel.INFO,
+            component="execute_pre_commit_checks",
+            message="Skipped checks (no source changes since Phase A)",
+            details={
+                "check_names": ",".join(check_names),
+                "skip_reason": first_skip_reason[:300],
+            },
+        )
+    )
+
+
 async def try_skip_clean_checks(
     checks: Sequence[PreCommitCheckName],
     ctx: MCPContext | None,
@@ -186,6 +229,7 @@ async def try_skip_clean_checks(
 
     tracker = PipelineDirtyTracker.get_instance()
     if not tracker.is_active:
+        _emit_checks_executed_tracker_inactive()
         return None
 
     skip_reasons: list[str] = []
@@ -193,10 +237,14 @@ async def try_skip_clean_checks(
         check_name = check.value
         decision = tracker.can_skip_check(check_name)
         if not decision.can_skip:
+            _emit_checks_executed_blocked(check_name, decision.reason)
             return None
         skip_reasons.append(f"{check_name}: {decision.reason}")
 
     check_names = [c.value for c in checks]
+    _emit_checks_skipped_structured(
+        check_names, skip_reasons[0] if skip_reasons else ""
+    )
     await log_client(
         ctx,
         "info",
