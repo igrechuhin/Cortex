@@ -3,14 +3,17 @@
 from pydantic import BaseModel, ConfigDict, Field
 
 from cortex.core.constants import MemoryBankFile
+from cortex.tools.models_base import ToolResultStatus
 
 
 class RegisterPlanResult(BaseModel):
     """Result of registering a plan in roadmap."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(
+        extra="forbid", validate_assignment=True, use_enum_values=True
+    )
 
-    status: str = Field(description="Operation status: 'success' or 'error'")
+    status: ToolResultStatus = Field(description="Operation status")
     file_name: str = Field(
         description=f"File that was modified ({MemoryBankFile.ROADMAP})"
     )

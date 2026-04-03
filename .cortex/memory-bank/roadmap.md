@@ -12,9 +12,6 @@
 
 ## Pending plans (from .cortex/plans)
 
-- **Reflection Quality Pass — Self-Evaluation Step in Cortex Pipelines** - PENDING - Optional reflection/critic pass after quality gate to catch semantic issues the gate misses. Plan: .cortex/plans/reflection-quality-pass.md
-- **AI Code Comments and BELIEF Annotations Support in Cortex Rules** - PENDING - Surface # AI: comment and BELIEF declaration conventions as a Cortex rule with gate warnings. Plan: .cortex/plans/ai-code-comments-belief-annotations.md
-
 ### Fixes
 
 ### Quality & Reliability Improvements

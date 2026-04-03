@@ -13,6 +13,10 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from cortex.core.context_logging import MCPContext, log_client, report_progress_safe
 from cortex.core.models import JsonValue, ModelDict, OperationStatus
+from cortex.tools.evaluation.reflection import collect_git_diff_text
+from cortex.tools.execution.autofix_ai_suggestions import (
+    collect_autofix_ai_comment_suggestions,
+)
 from cortex.tools.execution.pre_commit_detached import (  # noqa: E402
     fix_args_hash,
     fix_result_path,
@@ -30,6 +34,10 @@ from cortex.tools.execution.pre_commit_process import poll_for_result
 from cortex.tools.execution.session_paths import session_dir
 
 logger = logging.getLogger(__name__)
+
+
+def _default_ai_suggestions() -> list[dict[str, str]]:
+    return []
 
 
 class FixQualityResult(BaseModel):
@@ -52,6 +60,10 @@ class FixQualityResult(BaseModel):
     )
     remaining_issues: list[str] = Field(
         default_factory=list, description="List of remaining issues"
+    )
+    suggestions: list[dict[str, str]] = Field(
+        default_factory=_default_ai_suggestions,
+        description="Non-auto-applied hints (e.g. # AI: placement).",
     )
     error_message: str | None = Field(default=None, description="Error message if any")
 
@@ -137,6 +149,7 @@ def build_quality_response_json(
     type_errors_fixed: int,
     files_modified: list[str],
     remaining_issues: list[str],
+    suggestions: list[dict[str, str]] | None = None,
 ) -> str:
     """Build quality fix response as JSON string."""
     response = FixQualityResult(
@@ -148,6 +161,7 @@ def build_quality_response_json(
         type_errors_fixed=type_errors_fixed,
         files_modified=files_modified,
         remaining_issues=remaining_issues,
+        suggestions=list(suggestions or []),
         error_message=None,
     )
     data = response.model_dump(mode="json")
@@ -287,5 +301,20 @@ async def autofix_impl(
     out = _parse_fix_envelope(
         cast(ModelDict, envelope), files_modified_override=files_modified_override
     )
+    try:
+        parsed: object = json.loads(out)
+    except json.JSONDecodeError:
+        await log_client(ctx, "info", "autofix: completed", logger_name=__name__)
+        return out
+    if not isinstance(parsed, dict):
+        await log_client(ctx, "info", "autofix: completed", logger_name=__name__)
+        return out
+    data = cast(ModelDict, parsed)
+    if data.get("status") == OperationStatus.SUCCESS.value:
+        diff_text = collect_git_diff_text(root)
+        sugs = collect_autofix_ai_comment_suggestions(diff_text)
+        if sugs:
+            data["suggestions"] = cast(JsonValue, sugs)
+        out = json.dumps(data, separators=(",", ":"))
     await log_client(ctx, "info", "autofix: completed", logger_name=__name__)
     return out

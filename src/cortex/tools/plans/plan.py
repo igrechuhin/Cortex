@@ -86,10 +86,11 @@ async def _plan_handle_crud(
 
 
 def _plan_error_missing_register_params() -> str:
+    from cortex.tools.models_base import ToolResultStatus
     from cortex.tools.plans.register_models import RegisterPlanResult
 
     return RegisterPlanResult(
-        status="error",
+        status=ToolResultStatus.ERROR,
         file_name="roadmap.md",
         message="plan_title and description are required when operation is 'register'",
         line_inserted=None,

@@ -27,7 +27,9 @@ def read_session_config() -> dict[str, object]:
     selected_step. All values are strings or ints. ``operation`` is used by
     ``pipeline_handoff`` to recover the intended operation (e.g. "init") when
     Cursor strips all tool arguments. ``trace_id`` is persisted for structured
-    agent logging (see ``cortex.tools.logging``).
+    agent logging (see ``cortex.tools.logging``). Optional keys ``reflection`` and
+    ``force_reflection`` (booleans) enable the quality gate reflection pass when
+    the MCP bridge strips ``run_quality_gate`` arguments.
     """
     root = get_current_project_root()
     if root is None:

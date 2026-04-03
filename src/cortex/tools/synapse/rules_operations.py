@@ -7,8 +7,11 @@ Total: 1 tool
 - rules: Index/retrieve custom rules
 """
 
+import json
 from pathlib import Path
+from typing import cast
 
+from cortex.core.async_file_utils import open_async_text_file
 from cortex.core.constants import MCP_TOOL_TIMEOUT_MEDIUM
 from cortex.core.context_logging import MCPContext, log_client
 from cortex.core.mcp_stability import (
@@ -16,12 +19,15 @@ from cortex.core.mcp_stability import (
     mcp_resource_wrapper,
     mcp_tool_wrapper,
 )
+from cortex.core.models import ModelDict
+from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.core.project_root_resolver import resolve_project_root_async
 from cortex.managers.initialization import get_managers
 from cortex.managers.utils import get_manager
 from cortex.optimization.config import OptimizationConfig
 from cortex.optimization.rules_manager import RulesManager
 from cortex.server import mcp
+from cortex.tools.reflection_constants import REFLECTION_CHECKLIST_MARKDOWN
 from cortex.tools.synapse.rules_operation_helpers import (
     RulesOperation,
     build_invalid_operation_error,
@@ -318,10 +324,31 @@ async def get_relevant_rules() -> str:
 
     cfg = read_session_config()
     task = str(cfg.get("task_description", "general coding standards"))
-    return await rules(
+    payload = await rules(
         operation="get_relevant",
         force=False,
         task_description=task,
         max_tokens=None,
         min_relevance_score=None,
     )
+    try:
+        data: object = json.loads(payload)
+    except json.JSONDecodeError:
+        return payload
+    if isinstance(data, dict):
+        merged: ModelDict = cast(ModelDict, data)
+        merged["reflection_checklist"] = REFLECTION_CHECKLIST_MARKDOWN
+        root = await resolve_project_root_async(None, None)
+        ai_path = (
+            get_cortex_path(root, CortexResourceType.RULES) / "ai-code-comments.md"
+        )
+        try:
+            if ai_path.is_file():
+                async with open_async_text_file(ai_path, "r", "utf-8") as f:
+                    merged["ai_code_comments_rule"] = await f.read()
+            else:
+                merged["ai_code_comments_rule"] = ""
+        except OSError:
+            merged["ai_code_comments_rule"] = ""
+        return json.dumps(merged, indent=2)
+    return payload

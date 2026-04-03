@@ -12,6 +12,8 @@
 - **Structured Agent-Oriented Logging for Cortex MCP Tools** - PARTIAL. Added `cortex.tools.logging` with `LogEvent`/`LogLevel`, `emit` (JSON lines to stderr), `format_for_agent` markdown table, and unit tests; instrumentation deferred to follow-up.
 - **Structured Agent-Oriented Logging for Cortex MCP Tools** - COMPLETE. Structured LogEvent emission, agent_log on gate/autofix, pipeline_handoff logs, trace_id in session brief, agent-logging guide, unit tests.
 - **Synapse prompts: commit/fix zero-arg alignment** - COMPLETE. Submodule commits for `prompts/commit.md` and `prompts/fix.md` aligned with zero-arg `pipeline_handoff` and gate tool usage.
+- **Reflection Quality Pass — Self-Evaluation Step in Cortex Pipelines** - COMPLETE. Heuristic reflection after Phase A; rules resource checklist; documentation.
+- **AI Code Comments and BELIEF Annotations Support in Cortex Rules** - COMPLETE. Rules file, rules resource merge, reflection BELIEF heuristic, autofix suggestions, Synapse prompt lines, and guide doc with examples.
 
 ## 2026-04-01
 

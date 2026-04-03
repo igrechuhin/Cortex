@@ -4,10 +4,12 @@ from __future__ import annotations
 
 import logging
 import re
+from dataclasses import dataclass
 from pathlib import Path
 
 from cortex.core.constants import MemoryBankFile
 from cortex.core.exceptions import FileConflictError, FileLockTimeoutError
+from cortex.tools.models_base import ToolResultStatus
 from cortex.tools.plans.corruption import fix_roadmap_content_if_needed
 from cortex.tools.plans.register_models import RegisterPlanResult
 from cortex.validation.roadmap_models import KEY_TO_SECTION, SECTION_TO_KEY
@@ -182,6 +184,23 @@ def _insert_entry_in_section(
     return ("\n".join(lines), insert_line + 1)
 
 
+@dataclass(frozen=True, slots=True)
+class _ResolvedSection:
+    content: str
+    start: int
+    end: int
+
+
+def _resolve_section(content: str, section_id: str) -> _ResolvedSection | None:
+    """Return resolved section bounds after ensuring section exists, or None."""
+    sections = parse_roadmap_sections(content)
+    content, sections = _ensure_section_exists(content, sections, section_id)
+    if section_id not in sections:
+        return None
+    start, end = sections[section_id]
+    return _ResolvedSection(content=content, start=start, end=end)
+
+
 def register_plan_entry(
     content: str,
     plan_title: str,
@@ -193,14 +212,10 @@ def register_plan_entry(
     plan_relative_path: str | None = None,
 ) -> tuple[str, int | None]:
     """Register a plan entry in the roadmap."""
-    sections = parse_roadmap_sections(content)
-
-    content, sections = _ensure_section_exists(content, sections, section_id)
-    if section_id not in sections:
+    resolved = _resolve_section(content, section_id)
+    if resolved is None:
         return (content, None)
-
-    section_start, section_end = sections[section_id]
-    lines = content.split("\n")
+    content = resolved.content
     entry_text = _build_entry_text(
         plan_title,
         status,
@@ -209,9 +224,9 @@ def register_plan_entry(
         plan_relative_path=plan_relative_path,
     )
     updated_content, inserted_line = _insert_entry_in_section(
-        lines=lines,
-        section_start=section_start,
-        section_end=section_end,
+        lines=content.split("\n"),
+        section_start=resolved.start,
+        section_end=resolved.end,
         entry_text=entry_text,
         position=position,
     )
@@ -226,8 +241,14 @@ def is_completed_status(status: str) -> bool:
     return normalized in ("COMPLETED", "COMPLETE", "DONE")
 
 
-def validate_registration_section(section: str) -> tuple[str | None, str | None]:
-    """Validate section identifier. Returns (section_id, error_message)."""
+@dataclass(frozen=True, slots=True)
+class SectionValidation:
+    section_id: str | None
+    error_message: str | None
+
+
+def validate_registration_section(section: str) -> SectionValidation:
+    """Validate section identifier."""
     section_map = {
         "blockers": "blockers",
         "active_work": "active_work",
@@ -237,10 +258,11 @@ def validate_registration_section(section: str) -> tuple[str | None, str | None]
 
     section_id = section_map.get(section.lower())
     if not section_id:
-        error_msg = f"Section must be one of: {', '.join(section_map.keys())}"
-        return (None, error_msg)
-
-    return (section_id, None)
+        return SectionValidation(
+            section_id=None,
+            error_message=f"Section must be one of: {', '.join(section_map.keys())}",
+        )
+    return SectionValidation(section_id=section_id, error_message=None)
 
 
 def read_roadmap_file(roadmap_path: Path) -> tuple[str | None, str | None]:
@@ -285,7 +307,7 @@ async def write_roadmap_file(
 def create_register_error_result(error: str) -> RegisterPlanResult:
     """Create an error result for plan registration."""
     return RegisterPlanResult(
-        status="error",
+        status=ToolResultStatus.ERROR,
         file_name=MemoryBankFile.ROADMAP,
         message="Failed to register plan",
         line_inserted=None,
@@ -300,7 +322,7 @@ def create_register_success_result(
 ) -> RegisterPlanResult:
     """Create a success result for plan registration."""
     return RegisterPlanResult(
-        status="success",
+        status=ToolResultStatus.SUCCESS,
         file_name=MemoryBankFile.ROADMAP,
         message=f"Plan registered in '{section_id}' section at line {line_inserted}",
         line_inserted=line_inserted,

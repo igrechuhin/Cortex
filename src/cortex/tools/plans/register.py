@@ -4,6 +4,7 @@ Plan roadmap: register_plan_in_roadmap.
 Implementation module for registering plan entries in roadmap.md.
 """
 
+from dataclasses import dataclass
 from pathlib import Path
 
 from cortex.core.constants import (
@@ -14,7 +15,9 @@ from cortex.core.context_logging import MCPContext, log_client
 from cortex.core.mcp_stability import ensure_usage_context, mcp_tool_wrapper
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.core.project_root_resolver import resolve_project_root_async
+from cortex.tools.models_base import ToolResultStatus
 from cortex.tools.plans.register_helpers import (
+    SectionValidation,
     create_register_error_result,
     create_register_success_result,
     is_completed_status,
@@ -29,6 +32,12 @@ _ROADMAP_COMPLETED_STATUS_MESSAGE = (
     "Roadmap records future/upcoming work only. "
     "Completed work belongs in activeContext.md. Use status 'PENDING' or 'IN PROGRESS'."
 )
+
+
+@dataclass(frozen=True, slots=True)
+class _SectionCheck:
+    section_id: str | None
+    error_json: str | None
 
 
 async def _handle_roadmap_read(
@@ -120,6 +129,39 @@ async def _handle_entry_success(
     return create_register_success_result(section_id, line_inserted).model_dump_json()
 
 
+async def _read_and_register_entry(
+    roadmap_path: Path,
+    plan_title: str,
+    description: str,
+    status: str,
+    section_id: str,
+    plan_file_name: str | None,
+    plan_relative_path: str | None,
+    ctx: MCPContext | None,
+) -> tuple[str, int | None] | str:
+    """Read roadmap and register entry. Returns (updated_content, line) or error JSON."""
+    read_result = await _handle_roadmap_read(roadmap_path, ctx)
+    if read_result:
+        return read_result
+    current_content, _ = read_roadmap_file(roadmap_path)
+    assert current_content is not None
+    return _do_register_plan_entry(
+        current_content,
+        plan_title,
+        description,
+        status,
+        section_id,
+        plan_file_name,
+        plan_relative_path,
+    )
+
+
+def _roadmap_path(root: Path) -> Path:
+    return (
+        get_cortex_path(root, CortexResourceType.MEMORY_BANK) / MemoryBankFile.ROADMAP
+    )
+
+
 async def _execute_register_plan(
     root: Path,
     plan_title: str,
@@ -131,32 +173,58 @@ async def _execute_register_plan(
     ctx: MCPContext | None,
 ) -> str:
     """Execute plan registration. Returns JSON result."""
-    memory_bank_dir = get_cortex_path(root, CortexResourceType.MEMORY_BANK)
-    roadmap_path = memory_bank_dir / MemoryBankFile.ROADMAP
-
-    read_result = await _handle_roadmap_read(roadmap_path, ctx)
-    if read_result:
-        return read_result
-
-    current_content, _ = read_roadmap_file(roadmap_path)
-    assert current_content is not None
-    updated_content, line_inserted = _do_register_plan_entry(
-        current_content,
+    rp = _roadmap_path(root)
+    result = await _read_and_register_entry(
+        rp,
         plan_title,
         description,
         status,
         section_id,
         plan_file_name,
         plan_relative_path,
+        ctx,
     )
-
+    if isinstance(result, str):
+        return result
+    updated_content, line_inserted = result
     if line_inserted is None:
         return await _handle_entry_not_found(ctx, section_id)
-
     write_result = await _handle_roadmap_write(
-        roadmap_path, updated_content, section_id, ctx, root
+        rp, updated_content, section_id, ctx, root
     )
     return write_result or await _handle_entry_success(ctx, section_id, line_inserted)
+
+
+async def _check_status_and_section(
+    status: str, section: str, ctx: MCPContext | None
+) -> _SectionCheck:
+    """Validate status and section."""
+    if is_completed_status(status):
+        await log_client(
+            ctx,
+            "warning",
+            "register_plan_in_roadmap: rejected COMPLETED status",
+            logger_name=__name__,
+        )
+        return _SectionCheck(
+            section_id=None,
+            error_json=create_register_error_result(
+                _ROADMAP_COMPLETED_STATUS_MESSAGE
+            ).model_dump_json(),
+        )
+    sv: SectionValidation = validate_registration_section(section)
+    if sv.error_message:
+        await log_client(
+            ctx,
+            "warning",
+            f"register_plan_in_roadmap: {sv.error_message}",
+            logger_name=__name__,
+        )
+        return _SectionCheck(
+            section_id=None,
+            error_json=create_register_error_result(sv.error_message).model_dump_json(),
+        )
+    return _SectionCheck(section_id=sv.section_id, error_json=None)
 
 
 async def _validate_and_execute_register(
@@ -170,38 +238,31 @@ async def _validate_and_execute_register(
     ctx: MCPContext | None,
 ) -> str:
     """Validate section and execute registration."""
-    if is_completed_status(status):
-        await log_client(
-            ctx,
-            "warning",
-            "register_plan_in_roadmap: rejected COMPLETED status",
-            logger_name=__name__,
-        )
-        return create_register_error_result(
-            _ROADMAP_COMPLETED_STATUS_MESSAGE
-        ).model_dump_json()
-
-    section_id, section_error = validate_registration_section(section)
-    if section_error:
-        await log_client(
-            ctx,
-            "warning",
-            f"register_plan_in_roadmap: {section_error}",
-            logger_name=__name__,
-        )
-        return create_register_error_result(section_error).model_dump_json()
-
-    assert section_id is not None
+    check = await _check_status_and_section(status, section, ctx)
+    if check.error_json is not None:
+        return check.error_json
+    assert check.section_id is not None
     return await _execute_register_plan(
         root,
         plan_title,
         description,
         status,
-        section_id,
+        check.section_id,
         plan_file_name,
         plan_relative_path,
         ctx,
     )
+
+
+def _register_plan_error_result(e: Exception) -> str:
+    return RegisterPlanResult(
+        status=ToolResultStatus.ERROR,
+        file_name=MemoryBankFile.ROADMAP,
+        message="Unexpected error",
+        line_inserted=None,
+        section=None,
+        error=str(e),
+    ).model_dump_json()
 
 
 async def _register_plan_impl(
@@ -217,7 +278,6 @@ async def _register_plan_impl(
     await log_client(
         ctx, "info", "register_plan_in_roadmap: starting", logger_name=__name__
     )
-
     try:
         root = await resolve_project_root_async(None, ctx)
         return await _validate_and_execute_register(
@@ -232,19 +292,9 @@ async def _register_plan_impl(
         )
     except Exception as e:
         await log_client(
-            ctx,
-            "error",
-            f"register_plan_in_roadmap: {e}",
-            logger_name=__name__,
+            ctx, "error", f"register_plan_in_roadmap: {e}", logger_name=__name__
         )
-        return RegisterPlanResult(
-            status="error",
-            file_name=MemoryBankFile.ROADMAP,
-            message="Unexpected error",
-            line_inserted=None,
-            section=None,
-            error=str(e),
-        ).model_dump_json()
+        return _register_plan_error_result(e)
 
 
 @ensure_usage_context

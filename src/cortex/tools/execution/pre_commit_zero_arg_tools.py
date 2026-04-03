@@ -32,6 +32,7 @@ from cortex.core.usage_context import (
     get_current_project_root,
     get_or_resolve_project_root,
 )
+from cortex.tools.evaluation.reflection import apply_reflection_to_gate_result
 from cortex.tools.execution.pre_commit_config import (
     as_bool,
     as_float,
@@ -218,7 +219,13 @@ async def _run_quality_gate_inner(ctx: MCPContext | None) -> ModelDict:
         root,
         "commit",
         "checks",
-        {"coverage_threshold": 0.90, "test_timeout": 300, "force_fresh": True},
+        {
+            "coverage_threshold": 0.90,
+            "test_timeout": 300,
+            "force_fresh": True,
+            "reflection": False,
+            "force_reflection": False,
+        },
     )
     timeout = as_int(cfg.get("test_timeout"), 300)
     coverage_threshold = as_float(cfg.get("coverage_threshold"), 0.90)
@@ -230,6 +237,7 @@ async def _run_quality_gate_inner(ctx: MCPContext | None) -> ModelDict:
         force_fresh=force_fresh,
         ctx=ctx,
     )
+    apply_reflection_to_gate_result(root, result, cfg)
     await persist_gate_feedback(
         feedback_from_quality_result(cast(dict[str, object], result)),
         ctx,
@@ -259,7 +267,10 @@ async def run_quality_gate(
 
     Config is read from the pipeline session file written by
     pipeline_handoff(operation="write", pipeline="commit", phase="checks").
-    Supported keys: coverage_threshold (float), test_timeout (int), force_fresh (bool).
+    Supported keys: coverage_threshold (float), test_timeout (int), force_fresh (bool),
+    reflection (bool), force_reflection (bool). When reflection is enabled and primary
+    checks pass, a heuristic reflection pass runs; error-level findings set
+    preflight_passed to false.
 
     EXAMPLES:
     - run_quality_gate() before commit Phase A.

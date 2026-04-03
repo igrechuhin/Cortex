@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+from dataclasses import dataclass
 from pathlib import Path
 from typing import cast
 
@@ -288,16 +289,7 @@ def _assemble_session_brief(
 
 
 def _assemble_brief_from_components(
-    c: tuple[
-        str,
-        list[str],
-        SessionHealthSummary,
-        str,
-        SessionHandoff | None,
-        list[ConcurrentSession],
-        list[str],
-        str | None,
-    ],
+    c: "_BriefComponents",
     next_work_item: str | None,
     next_work_plan_path: str | None,
     git_status: GitStatusSummary | None,
@@ -306,50 +298,50 @@ def _assemble_brief_from_components(
 ) -> SessionBrief:
     """Unpack gathered components into _assemble_session_brief."""
     return _assemble_session_brief(
-        c[3],
-        c[0],
-        c[1],
+        c.project_name,
+        c.current_focus,
+        c.recent_completed,
         next_work_item,
         next_work_plan_path,
-        c[2],
+        c.health,
         git_status,
-        c[4],
-        c[5],
-        c[6],
+        c.last_handoff,
+        c.concurrent_sessions,
+        c.locked_tasks,
         mcp_healthy=mcp_healthy,
         mcp_health_message=mcp_health_message,
-        gate_feedback_summary=c[7],
+        gate_feedback_summary=c.gate_feedback_summary,
     )
 
 
-async def _load_brief_async(
-    managers: ManagersDict,
-    project_root: Path,
-    fs_manager: FileSystemManager,
-) -> tuple[
+_BriefAsyncResult = tuple[
     SessionHealthSummary,
     str,
     SessionHandoff | None,
     list[ConcurrentSession],
     list[str],
     str | None,
-]:
+]
+
+
+async def _load_brief_async(
+    managers: ManagersDict,
+    project_root: Path,
+    fs_manager: FileSystemManager,
+) -> _BriefAsyncResult:
     """Load health, project name, handoff, and concurrency for brief in parallel."""
     from cortex.tools.memory.compaction_operations import read_handoff
 
-    (
-        health,
-        project_name,
-        last_handoff,
-        (concurrent_sessions, locked_tasks),
-        gate_feedback,
-    ) = await asyncio.gather(
-        calculate_health_summary(managers, project_root),
-        _extract_project_name(fs_manager),
-        read_handoff(project_root, fs_manager),
-        _load_concurrency_info(project_root),
-        _load_gate_feedback_summary_safe(project_root),
+    health, project_name, last_handoff, concurrency, gate_feedback = (
+        await asyncio.gather(
+            calculate_health_summary(managers, project_root),
+            _extract_project_name(fs_manager),
+            read_handoff(project_root, fs_manager),
+            _load_concurrency_info(project_root),
+            _load_gate_feedback_summary_safe(project_root),
+        )
     )
+    concurrent_sessions, locked_tasks = concurrency
     return (
         health,
         project_name,
@@ -360,16 +352,16 @@ async def _load_brief_async(
     )
 
 
-_BriefComponents = tuple[
-    str,
-    list[str],
-    SessionHealthSummary,
-    str,
-    SessionHandoff | None,
-    list[ConcurrentSession],
-    list[str],
-    str | None,
-]
+@dataclass
+class _BriefComponents:
+    current_focus: str
+    recent_completed: list[str]
+    health: SessionHealthSummary
+    project_name: str
+    last_handoff: SessionHandoff | None
+    concurrent_sessions: list[ConcurrentSession]
+    locked_tasks: list[str]
+    gate_feedback_summary: str | None
 
 
 async def _gather_brief_components(
@@ -393,15 +385,15 @@ async def _gather_brief_components(
         locked_tasks,
         gate_feedback,
     ) = await _load_brief_async(managers, project_root, fs_manager)
-    return (
-        current_focus,
-        recent_completed,
-        health,
-        project_name,
-        last_handoff,
-        concurrent_sessions,
-        locked_tasks,
-        gate_feedback,
+    return _BriefComponents(
+        current_focus=current_focus,
+        recent_completed=recent_completed,
+        health=health,
+        project_name=project_name,
+        last_handoff=last_handoff,
+        concurrent_sessions=concurrent_sessions,
+        locked_tasks=locked_tasks,
+        gate_feedback_summary=gate_feedback,
     )
 
 

@@ -1091,6 +1091,38 @@ async def test_get_relevant_rules_returns_json(
 
 
 @pytest.mark.asyncio
+async def test_get_relevant_rules_merges_ai_code_comments_file(
+    mock_managers_enabled: dict[str, Any], mock_project_root: Path
+) -> None:
+    """cortex://rules includes `.cortex/rules/ai-code-comments.md` when present."""
+    rules_folder = mock_project_root / ".cortex" / "rules"
+    rules_folder.mkdir(parents=True, exist_ok=True)
+    _ = (rules_folder / "ai-code-comments.md").write_text(
+        "## AI Comment Convention\n\nBody.\n",
+        encoding="utf-8",
+    )
+    with (
+        patch(
+            "cortex.core.session_config.read_session_config",
+            return_value={"task_description": "general coding standards"},
+        ),
+        patch(
+            "cortex.tools.rules_operations.resolve_project_root_async",
+            new_callable=AsyncMock,
+            return_value=mock_project_root,
+        ),
+        patch(
+            "cortex.tools.rules_operations.get_managers",
+            AsyncMock(return_value=mock_managers_enabled),
+        ),
+    ):
+        result_str = await get_relevant_rules()
+    result_dict = json.loads(result_str)
+    assert "AI Comment Convention" in result_dict.get("ai_code_comments_rule", "")
+    assert "Reflection Checklist" in result_dict.get("reflection_checklist", "")
+
+
+@pytest.mark.asyncio
 async def test_rules_disabled(
     mock_managers_disabled: dict[str, Any], mock_project_root: Path
 ) -> None:

@@ -14,74 +14,36 @@ from cortex.tools.session.start_models import SessionBriefContextKwargs
 
 
 def _create_session_brief(
-    project_name: str,
-    current_focus: str,
-    recent_completed: list[str],
-    next_work_item: str | None,
-    next_work_plan_path: str | None,
-    health: SessionHealthSummary,
-    git_status: GitStatusSummary | None,
+    context: SessionBriefContextKwargs,
     session_suggestions: list[str],
-    last_handoff: SessionHandoff | None,
-    concurrent_sessions: list[ConcurrentSession],
-    locked_tasks: list[str],
-    mcp_healthy: bool = True,
-    mcp_health_message: str | None = None,
-    gate_feedback_summary: str | None = None,
 ) -> SessionBrief:
-    """Create SessionBrief from components."""
+    """Create SessionBrief from a context model and suggestions list."""
     return SessionBrief(
-        project_name=project_name,
-        current_focus=current_focus,
-        recent_completed=recent_completed,
-        next_work_item=next_work_item,
-        next_work_plan_path=next_work_plan_path,
-        health=health,
-        git_status=git_status,
+        project_name=context.project_name,
+        current_focus=context.current_focus,
+        recent_completed=context.recent_completed,
+        next_work_item=context.next_work_item,
+        next_work_plan_path=context.next_work_plan_path,
+        health=context.health,
+        git_status=context.git_status,
         session_suggestions=session_suggestions,
-        last_handoff=last_handoff,
-        concurrent_sessions=concurrent_sessions,
-        locked_tasks=locked_tasks,
-        mcp_healthy=mcp_healthy,
-        mcp_health_message=mcp_health_message,
-        gate_feedback_summary=gate_feedback_summary,
+        last_handoff=context.last_handoff,
+        concurrent_sessions=context.concurrent_sessions,
+        locked_tasks=context.locked_tasks,
+        mcp_healthy=context.mcp_healthy,
+        mcp_health_message=context.mcp_health_message,
+        gate_feedback_summary=context.gate_feedback_summary,
         session_scope=SESSION_SCOPE_PROMPT,
     )
 
 
 def _create_brief_with_suggestions(
     suggestions: list[str],
-    project_name: str,
-    current_focus: str,
-    recent_completed: list[str],
-    next_work_item: str | None,
-    next_work_plan_path: str | None,
-    health: SessionHealthSummary,
-    git_status: GitStatusSummary | None,
-    last_handoff: SessionHandoff | None,
-    concurrent_sessions: list[ConcurrentSession],
-    locked_tasks: list[str],
-    mcp_healthy: bool = True,
-    mcp_health_message: str | None = None,
-    gate_feedback_summary: str | None = None,
+    **kwargs: object,
 ) -> SessionBrief:
-    """Build SessionBrief from suggestions and components."""
-    return _create_session_brief(
-        project_name,
-        current_focus,
-        recent_completed,
-        next_work_item,
-        next_work_plan_path,
-        health,
-        git_status,
-        suggestions,
-        last_handoff,
-        concurrent_sessions,
-        locked_tasks,
-        mcp_healthy=mcp_healthy,
-        mcp_health_message=mcp_health_message,
-        gate_feedback_summary=gate_feedback_summary,
-    )
+    """Build SessionBrief from suggestions and context keyword arguments."""
+    context = SessionBriefContextKwargs.model_validate(kwargs)
+    return _create_session_brief(context, suggestions)
 
 
 def session_brief_context_kwargs(

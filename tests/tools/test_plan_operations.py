@@ -12,6 +12,7 @@ from unittest.mock import AsyncMock, patch
 import pytest
 
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
+from cortex.tools.models_base import ToolResultStatus
 from cortex.tools.plans.crud_helpers import (
     create_plan_file,
     extract_first_heading,
@@ -459,7 +460,7 @@ class TestRegisterPlanResult:
     def test_success_result(self) -> None:
         """Test success result serialization."""
         result = RegisterPlanResult(
-            status="success",
+            status=ToolResultStatus.SUCCESS,
             file_name="roadmap.md",
             message="Plan registered",
             line_inserted=42,
@@ -478,7 +479,7 @@ class TestRegisterPlanResult:
     def test_error_result(self) -> None:
         """Test error result serialization."""
         result = RegisterPlanResult(
-            status="error",
+            status=ToolResultStatus.ERROR,
             file_name="roadmap.md",
             message="Failed to register",
             line_inserted=None,
