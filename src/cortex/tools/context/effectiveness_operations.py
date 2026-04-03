@@ -207,24 +207,52 @@ def _update_global_stats(
     return stats, new_entries_added
 
 
+def _display_entries_for_response(
+    current_entries: list[ContextUsageEntry],
+    max_response_calls: int | None,
+) -> tuple[list[ContextUsageEntry], bool, int]:
+    """Return entries for JSON, whether truncated, and total call count."""
+    total_calls = len(current_entries)
+    if max_response_calls is not None and total_calls > max_response_calls:
+        return current_entries[:max_response_calls], True, total_calls
+    return current_entries, False, total_calls
+
+
+def _current_session_view_dict(
+    total_calls: int,
+    session_stats: SessionStats,
+    display_entries: list[ContextUsageEntry],
+) -> JsonDict:
+    """Serialized current-session block for analysis JSON."""
+    return JsonDict.from_dict(
+        {
+            "calls_analyzed": total_calls,
+            "statistics": session_stats.model_dump(mode="json"),
+            "entries": [e.model_dump(mode="json") for e in display_entries],
+        }
+    )
+
+
 def _build_current_session_result(
     session_id: str,
     current_entries: list[ContextUsageEntry],
     session_stats: SessionStats,
     stats: ContextUsageStatistics,
     new_entries_added: int,
+    *,
+    max_response_calls: int | None = None,
 ) -> CurrentSessionAnalysisResult:
     """Build result model for current session analysis."""
+    # AI: Truncation applies to serialized entries only; aggregates use full session data.
+    display_entries, truncated, total_calls = _display_entries_for_response(
+        current_entries, max_response_calls
+    )
     insights = stats.insights or create_empty_insights()
     return CurrentSessionAnalysisResult(
         status=ContextAnalysisStatus.SUCCESS,
         session_id=session_id,
-        current_session=JsonDict.from_dict(
-            {
-                "calls_analyzed": len(current_entries),
-                "statistics": session_stats.model_dump(mode="json"),
-                "entries": [e.model_dump(mode="json") for e in current_entries],
-            }
+        current_session=_current_session_view_dict(
+            total_calls, session_stats, display_entries
         ),
         global_statistics_updated=new_entries_added > 0,
         new_entries_added=new_entries_added,
@@ -232,27 +260,40 @@ def _build_current_session_result(
         total_entries=len(stats.entries),
         insights=JsonDict.from_dict(insights.model_dump(mode="json")),
         message=None,
+        truncated=True if truncated else None,
+        total_calls_in_session=total_calls if truncated else None,
+        calls_in_response=len(display_entries) if truncated else None,
     )
 
 
-def analyze_current_session(project_root: Path) -> CurrentSessionAnalysisResult:
+def _no_data_current_session(session_id: str) -> CurrentSessionAnalysisResult:
+    """Result when the session log has no load_context calls."""
+    return CurrentSessionAnalysisResult(
+        status=ContextAnalysisStatus.NO_DATA,
+        session_id=session_id,
+        current_session=None,
+        global_statistics_updated=None,
+        new_entries_added=None,
+        total_sessions=None,
+        total_entries=None,
+        insights=None,
+        message="No load_context calls in current session.",
+        truncated=None,
+        total_calls_in_session=None,
+        calls_in_response=None,
+    )
+
+
+def analyze_current_session(
+    project_root: Path,
+    *,
+    max_response_calls: int | None = None,
+) -> CurrentSessionAnalysisResult:
     """Analyze the current session's load_context calls and update statistics."""
     session_id = get_session_id()
-    log_path = get_session_log_path(project_root)
-    session_log = read_session_log(log_path)
+    session_log = read_session_log(get_session_log_path(project_root))
     if session_log is None or not session_log.load_context_calls:
-        return CurrentSessionAnalysisResult(
-            status=ContextAnalysisStatus.NO_DATA,
-            session_id=session_id,
-            current_session=None,
-            global_statistics_updated=None,
-            new_entries_added=None,
-            total_sessions=None,
-            total_entries=None,
-            insights=None,
-            message="No load_context calls in current session.",
-        )
-
+        return _no_data_current_session(session_id)
     current_entries = [
         analyze_log_entry(session_id, entry) for entry in session_log.load_context_calls
     ]
@@ -261,7 +302,12 @@ def analyze_current_session(project_root: Path) -> CurrentSessionAnalysisResult:
         project_root, session_id, current_entries
     )
     return _build_current_session_result(
-        session_id, current_entries, session_stats, stats, new_entries_added
+        session_id,
+        current_entries,
+        session_stats,
+        stats,
+        new_entries_added,
+        max_response_calls=max_response_calls,
     )
 
 
@@ -342,10 +388,14 @@ def analyze_session_logs(project_root: Path) -> SessionLogsAnalysisResult:
 
 
 def _build_success_statistics_result(
-    stats: ContextUsageStatistics, common_task_patterns_json: dict[str, JsonValue]
+    stats: ContextUsageStatistics,
+    common_task_patterns_json: dict[str, JsonValue],
+    *,
+    max_recent_entries: int = 10,
 ) -> ContextStatisticsResult:
     """Build success statistics result."""
     insights = stats.insights or create_empty_insights()
+    tail = stats.entries[-max_recent_entries:] if max_recent_entries > 0 else []
     return ContextStatisticsResult(
         status=ContextAnalysisStatus.SUCCESS,
         last_updated=stats.last_updated,
@@ -355,18 +405,21 @@ def _build_success_statistics_result(
             build_statistics_dict(stats, common_task_patterns_json)
         ),
         insights=JsonDict.from_dict(insights.model_dump(mode="json")),
-        recent_entries=[
-            JsonDict.from_dict(e.model_dump(mode="json")) for e in stats.entries[-10:]
-        ],
+        recent_entries=[JsonDict.from_dict(e.model_dump(mode="json")) for e in tail],
         message=None,
     )
 
 
-def get_context_statistics(project_root: Path) -> ContextStatisticsResult:
+def get_context_statistics(
+    project_root: Path,
+    *,
+    max_recent_entries: int | None = None,
+) -> ContextStatisticsResult:
     """Get current context usage statistics.
 
     Args:
         project_root: Project root directory
+        max_recent_entries: Max tail of persisted entries to include (default 10).
 
     Returns:
         Current statistics or empty structure if none exist
@@ -388,4 +441,7 @@ def get_context_statistics(project_root: Path) -> ContextStatisticsResult:
     common_task_patterns_json: dict[str, JsonValue] = {
         key: cast(JsonValue, value) for key, value in stats.common_task_patterns.items()
     }
-    return _build_success_statistics_result(stats, common_task_patterns_json)
+    cap = max_recent_entries if max_recent_entries is not None else 10
+    return _build_success_statistics_result(
+        stats, common_task_patterns_json, max_recent_entries=cap
+    )

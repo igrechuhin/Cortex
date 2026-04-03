@@ -8,6 +8,8 @@
 
 - **Reduce Quality Gate Latency and Pre-commit Token Bloat** - COMPLETE (2026-04-03). Conditional cache clear, trimmed passing responses, adaptive polling, dirty-tracker after pass, skip telemetry, markdown merge uses `compute_preflight_passed`; `run_quality_gate` verified. Success Criteria 1–3 (50-day window) tracked in analytics.
 
+- **Prune Dead/Near-Dead Tools and Reduce Token-Heavy Responses** - PARTIAL. list_plans/get_plan decoupled from MCP wrappers; analyze resource + context stats bounded; tests refactored for function-length compliance; plan log updated. Remaining: Synapse prompt audit, MEMORY/tool-registry doc touch-up if needed, measurement window for token avg.
+
 ## 2026-04-02
 
 - **Synapse prompt filenames (Do / Plan)** - COMPLETE. Renamed Synapse prompts to `do.md`/`plan.md` and updated prompts manifest plus all repo/test/docs references.

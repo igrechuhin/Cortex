@@ -180,8 +180,7 @@ All phases run inline. Use zero-arg tools — do NOT use legacy pre-commit tools
 - Treat overloaded terms (e.g. "clean") as prompt-specific; do not assume commit-pipeline git-clean semantics when a prompt defines issue-clean or workflow-clean semantics.
 - When refactoring, briefly explain why the new approach is better, especially when the change is non-obvious.
 - When consolidating or adding tools, keep names purpose-revealing and follow `docs/guides/tool-description-altitude-rubric.md` (target score ≥4).
-- Prefer scan-friendly emoji status markers (✅/⚠️/❌) in prompts and summaries for success/warn/error.
-- Keep final summaries concise (typically at most four sentences) and avoid heavy code blocks there; use headings and bolded bullet labels per the markdown formatting guide.
+- Prefer scan-friendly emoji status markers (✅/⚠️/❌) in prompts and summaries for success/warn/error; keep final summaries concise (typically at most four sentences), avoid heavy code blocks there, and use headings and bolded bullet labels per the markdown formatting guide.
 - When a roadmap item is large, always make concrete partial progress in the current session (smallest meaningful subtask plus tests/quality) and update plans/status as PARTIAL instead of stopping with no changes.
 - For reflection, quality-gate adjuncts, and similar cross-cutting checks, prefer language-parameterized constants and language-specific checklists over Python-only naming or a single generic list.
 
@@ -194,10 +193,11 @@ All phases run inline. Use zero-arg tools — do NOT use legacy pre-commit tools
 - When editing `roadmap.md` pending bullets, avoid bare dotted Python filenames, backticked paths such as `pre_commit_foo`/`pre_commit_bar`, and the root Node manifest name written as one token; the roadmap file-reference scanner can treat those as real paths and fail `roadmap_sync`. When a bullet should point at a real plan file, end the line with `Plan: .cortex/plans/<file>.md` (session tooling parses this). `plan(operation="register")` only accepts `section` values `blockers`, `active_work`, `future`, or `pending`.
 - Synapse Python standards forbid `from typing import TYPE_CHECKING` and `if TYPE_CHECKING:` conditional imports; use normal imports (including under `tests/`) instead of that pattern.
 - Phase A `run_quality_gate()` can reuse cached fingerprints so typecheck output may not match the current working tree; if pyright errors look stale versus local `pyright`, write `{"force_fresh": true}` via `pipeline_handoff(write, checks, ...)` then call `run_quality_gate()` once before treating results as ground truth.
-- The docs gate `roadmap_progress_consistency` check fails when `progress.md` contains any `PARTIAL` line but `roadmap.md` has no `PENDING` backlog bullet; keep at least one real `PENDING` item while unfinished work remains in progress, or resolve the PARTIAL entries.
+- The docs gate `roadmap_progress_consistency` check fails when `progress.md` contains any `PARTIAL` line but `roadmap.md` has no `PENDING` backlog bullet; keep at least one real `PENDING` item while unfinished work remains in progress, or resolve the PARTIAL entries. Roadmap backlog lines often use typographic dashes (em/en) before `PENDING`; matchers and validators must accept those characters, not only ASCII hyphens.
 - In this repo environment, prefer `python3` over `python` in shell commands (the `python` shim may point to a legacy interpreter).
 - Keep README and similar entrypoint docs aligned with current Cortex commands and resources (for example `/cortex/do`, `/cortex/commit`, `cortex://context`); avoid obsolete workflow shorthand such as "plan → implement → commit" when it no longer matches shipped names.
 - When resolving Cortex, Synapse, or repo-root paths in Python tools, use the shared path resolver (`cortex.core.path_resolver` and related helpers) instead of hardcoded filesystem strings.
+- After changing validation or other Python modules the Cortex MCP server loads from the repo, restart the MCP server so `run_docs_gate` and in-process checks match the working tree; a long-running process can otherwise disagree with local `make check` results.
 
 ## Cursor Cloud specific instructions
 

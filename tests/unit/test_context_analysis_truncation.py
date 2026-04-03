@@ -1,0 +1,59 @@
+"""Tests for context analysis response truncation (MCP resource size bounds)."""
+
+import json
+import os
+from pathlib import Path
+from typing import cast
+
+from cortex.core.path_resolver import CortexResourceType, get_cortex_path
+from cortex.tools.context.effectiveness_operations import analyze_current_session
+
+
+def _write_twelve_call_session_log(tmp_path: Path, session_id: str) -> None:
+    """Create a session log with 12 synthetic load_context rows."""
+    session_dir = get_cortex_path(tmp_path, CortexResourceType.SESSION)
+    _ = session_dir.mkdir(parents=True)
+    base: dict[str, object] = {
+        "task_description": "Task",
+        "token_budget": 5000,
+        "strategy": "dependency_aware",
+        "selected_files": ["a.md"],
+        "selected_sections": {},
+        "total_tokens": 1000,
+        "utilization": 0.2,
+        "excluded_files": [],
+        "relevance_scores": {"a.md": 0.8},
+    }
+    calls = [{**base, "timestamp": f"2026-01-21T10:{i:02d}"} for i in range(12)]
+    log_data: dict[str, object] = {
+        "session_id": session_id,
+        "session_start": "2026-01-21T10:00",
+        "load_context_calls": calls,
+    }
+    _ = (session_dir / f"context-session-{session_id}.json").write_text(
+        json.dumps(log_data)
+    )
+
+
+def test_truncates_entries_when_max_response_calls_set(tmp_path: Path) -> None:
+    """Response entries are capped while calls_analyzed reflects the full session."""
+    env_key = "CORTEX_SESSION_ID"
+    original = os.environ.get(env_key)
+    os.environ[env_key] = "truncate_test_sess"
+    _write_twelve_call_session_log(tmp_path, "truncate_test_sess")
+    try:
+        result = analyze_current_session(tmp_path, max_response_calls=10)
+        assert result.status == "success"
+        assert result.truncated is True
+        assert result.total_calls_in_session == 12
+        assert result.calls_in_response == 10
+        current_raw = result.current_session
+        assert current_raw is not None
+        current = cast(dict[str, object], current_raw.model_dump(mode="python"))
+        assert current["calls_analyzed"] == 12
+        assert len(cast(list[object], current["entries"])) == 10
+    finally:
+        if original:
+            os.environ[env_key] = original
+        else:
+            _ = os.environ.pop(env_key, None)

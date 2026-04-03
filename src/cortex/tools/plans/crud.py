@@ -7,7 +7,7 @@ Implementation module for plan file creation, listing, and reading.
 from pathlib import Path
 from typing import Literal
 
-from cortex.core.constants import MCP_TOOL_TIMEOUT_FAST, MCP_TOOL_TIMEOUT_MEDIUM
+from cortex.core.constants import MCP_TOOL_TIMEOUT_MEDIUM
 from cortex.core.context_logging import MCPContext, log_client
 from cortex.core.mcp_stability import ensure_usage_context, mcp_tool_wrapper
 from cortex.core.project_root_resolver import resolve_project_root_async
@@ -160,13 +160,14 @@ async def _list_plans_tool_impl(include_archive: bool, ctx: MCPContext | None) -
         ).model_dump_json()
 
 
-@ensure_usage_context
-@mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_FAST)
 async def list_plans(
     include_archive: bool = False,
     ctx: MCPContext | None = None,
 ) -> str:
-    """List plan files in the plans directory.
+    """List plan files in the plans directory (internal / tests; not MCP-registered).
+
+    Deprecated for agents: use ``plan(operation='list')`` (or ``create_plan`` with
+    ``operation='list'``) instead. This callable remains for programmatic callers.
 
     USE WHEN: Checking for existing plans before creating a new one (e.g. Plan prompt
     Step 2.5) or discovering plan slugs for get_plan.
@@ -208,14 +209,15 @@ async def _get_plan_tool_impl(
         ).model_dump_json()
 
 
-@ensure_usage_context
-@mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_FAST)
 async def get_plan(
     slug: str,
     response_format: str = "content",
     ctx: MCPContext | None = None,
 ) -> str:
-    """Read a plan by slug (filename without .md).
+    """Read a plan by slug (internal / tests; not MCP-registered).
+
+    Deprecated for agents: use ``plan(operation='get', slug=...)`` instead. This
+    callable remains for programmatic callers.
 
     USE WHEN: Enriching an existing plan or checking plan content without raw file reads.
 

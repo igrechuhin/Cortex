@@ -259,6 +259,20 @@ class CurrentSessionAnalysisResult(StrictBaseModel):
     total_entries: int | None = Field(None, ge=0, description="Total entries")
     insights: JsonDict | None = Field(None, description="Context insights")
     message: str | None = Field(None, description="Status message for no_data case")
+    truncated: bool | None = Field(
+        None,
+        description="True when entry lists were capped for response size (e.g. MCP resource)",
+    )
+    total_calls_in_session: int | None = Field(
+        None,
+        ge=0,
+        description="Full load_context call count before truncation (when truncated)",
+    )
+    calls_in_response: int | None = Field(
+        None,
+        ge=0,
+        description="Number of call rows included in current_session.entries (when truncated)",
+    )
 
     model_config = ConfigDict(extra="forbid", validate_assignment=True)
 

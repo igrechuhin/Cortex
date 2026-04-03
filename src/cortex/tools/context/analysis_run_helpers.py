@@ -108,16 +108,25 @@ async def get_analysis_managers(
     return pattern_analyzer, structure_analyzer, insight_engine
 
 
-async def run_context_analysis(target: str, root: Path) -> str:
+async def run_context_analysis(
+    target: str,
+    root: Path,
+    *,
+    max_sessions: int | None = None,
+    max_calls_per_session: int | None = None,
+) -> str:
     """Dispatch context-effectiveness and statistics analysis."""
     if target in ("context", "context_effectiveness"):
-        result = analyze_current_session(root)
+        result = analyze_current_session(
+            root,
+            max_response_calls=max_calls_per_session,
+        )
         return json.dumps(result.model_dump(mode="json"), indent=2)
     if target in ("context_all_sessions", "context_effectiveness_all"):
         result = analyze_session_logs(root)
         return json.dumps(result.model_dump(mode="json"), indent=2)
     if target in ("context_stats", "context_statistics"):
-        stats = get_context_statistics(root)
+        stats = get_context_statistics(root, max_recent_entries=max_sessions)
         return json.dumps(stats.model_dump(mode="json"), indent=2)
     return analysis_invalid_target_response(target)
 

@@ -51,6 +51,8 @@ async def analyze_impl(
     time_window_days: int | None = None,
     export_format: str = "json",
     categories: list[str] | None = None,
+    max_sessions: int | None = None,
+    max_calls_per_session: int | None = None,
     ctx: MCPContext | None = None,
 ) -> str:
     """Analyze Memory Bank, context effectiveness, or health-check data.
@@ -106,6 +108,10 @@ async def analyze_impl(
 
         categories: Specific insight categories to analyze for
             target="insights".
+        max_sessions: Optional cap for multi-session context analysis (reserved for
+            context_all_sessions style outputs; None = no cap).
+        max_calls_per_session: When set, caps load_context call rows in the current-session
+            context effectiveness payload (None = full detail). Used by cortex://analysis.
 
     Returns:
         JSON string. Success: status, target, and type-specific fields
@@ -125,7 +131,13 @@ async def analyze_impl(
           provides formatted documentation, "text" provides plain text summary.
     """
     return await _analyze_dispatch(
-        target, time_window_days, export_format, categories, ctx
+        target,
+        time_window_days,
+        export_format,
+        categories,
+        ctx,
+        max_sessions=max_sessions,
+        max_calls_per_session=max_calls_per_session,
     )
 
 
@@ -135,6 +147,9 @@ async def _analyze_dispatch(
     export_format: str,
     categories: list[str] | None,
     ctx: MCPContext | None,
+    *,
+    max_sessions: int | None = None,
+    max_calls_per_session: int | None = None,
 ) -> str:
     """Dispatch analysis to the appropriate handler."""
     await log_client(ctx, "info", "analyze: starting", logger_name=__name__)
@@ -146,17 +161,31 @@ async def _analyze_dispatch(
         return await _analyze_run_or_error(
             ctx, parsed_target, root, time_window_days, export_format, categories
         )
-    return await _analyze_consolidated_target(target_value, root, ctx)
+    return await _analyze_consolidated_target(
+        target_value,
+        root,
+        ctx,
+        max_sessions=max_sessions,
+        max_calls_per_session=max_calls_per_session,
+    )
 
 
 async def _analyze_consolidated_target(
     target_value: str,
     root: Path,
     ctx: MCPContext | None,
+    *,
+    max_sessions: int | None = None,
+    max_calls_per_session: int | None = None,
 ) -> str:
     """Handle consolidated analytics targets: context* and health."""
     if target_value.startswith("context"):
-        return await run_context_analysis(target_value, root)
+        return await run_context_analysis(
+            target_value,
+            root,
+            max_sessions=max_sessions,
+            max_calls_per_session=max_calls_per_session,
+        )
     if target_value in ("health", "health_check", "prompts", "rules", "tools", "all"):
         health_type = (
             "all" if target_value in ("health", "health_check") else target_value
@@ -204,9 +233,12 @@ async def analyze() -> str:
 
     cfg = read_session_config()
     target = str(cfg.get("analysis_target", "context"))
+    # AI: Bound default resource payload size for high-frequency cortex://analysis reads.
     return await analyze_impl(
         target=target,
         time_window_days=None,
         export_format="json",
         categories=None,
+        max_sessions=3,
+        max_calls_per_session=10,
     )

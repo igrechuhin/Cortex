@@ -8,12 +8,10 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from cortex.analysis.models import (
-    AntiPatternInfo,
     ComplexityAnalysisResult,
     ComplexityAnalysisStatus,
     ComplexityMetrics,
     InsightsResult,
-    SeverityLevel,
     SummaryModel,
     SummaryStatus,
 )
@@ -27,9 +25,6 @@ from cortex.refactoring.models import (
     ReorganizationPlanModel,
 )
 from cortex.refactoring.split_recommender import SplitRecommendation
-from cortex.tools.context.analysis_operations import (
-    analyze,
-)
 from cortex.tools.context.analysis_operations import (
     analyze_impl as _analyze_impl,
 )
@@ -56,7 +51,68 @@ from cortex.tools.refactoring.operation_helpers import (
     suggest_splits,
     validate_refactoring_type,
 )
+from tests.helpers.analysis_structure_mocks import (
+    naming_inconsistency_anti_pattern,
+    structure_analyzer_mock,
+)
 from tests.helpers.managers import make_test_managers
+
+_SAMPLE_CONSOLIDATION_OPPORTUNITY = ConsolidationOpportunity(
+    opportunity_id="opp1",
+    opportunity_type="similar_content",
+    affected_files=["a.md", "b.md"],
+    common_content="shared",
+    similarity_score=0.85,
+    token_savings=10,
+    suggested_action="Extract",
+    extraction_target="shared.md",
+    transclusion_syntax=["{{include:shared.md}}"],
+)
+
+_REORG_PLAN_MODEL_PLAN3 = ReorganizationPlanModel(
+    plan_id="plan-3",
+    optimization_goal="category",
+    estimated_impact=ReorganizationImpactModel(
+        files_moved=0,
+        categories_created=0,
+        dependency_depth_reduction=0.0,
+        complexity_reduction=0.0,
+        maintainability_improvement=0.0,
+        navigation_improvement=0.0,
+        estimated_effort=RiskLevel.LOW,
+    ),
+)
+
+
+async def _process_reorganization_request_result(tmp_path: Path) -> str:
+    """Exercise REORGANIZATION process_refactoring_request (test helper)."""
+    with patch(
+        "cortex.tools.refactoring.operation_helpers.get_managers",
+        new_callable=AsyncMock,
+    ) as mock_get_managers:
+        with patch(
+            "cortex.tools.refactoring.operation_helpers.get_project_root",
+            return_value=Path(str(tmp_path)),
+        ):
+            mock_planner = MagicMock()
+            mock_planner.create_reorganization_plan = AsyncMock(
+                return_value=_REORG_PLAN_MODEL_PLAN3
+            )
+            mock_graph = MagicMock()
+            mock_graph.to_dict.return_value = DependencyGraphDict()
+            mock_get_managers.return_value = make_test_managers(
+                reorganization_planner=mock_planner,
+                structure_analyzer=structure_analyzer_mock(file_count=0),
+                graph=mock_graph,
+            )
+            return await process_refactoring_request(
+                RefactoringSuggestionType.REORGANIZATION,
+                str(tmp_path),
+                None,
+                None,
+                "category",
+                None,
+            )
 
 
 @pytest.fixture(autouse=True)
@@ -449,18 +505,7 @@ class TestAnalyzeContextLogging:
         """When ctx is passed, analyze logs start and completion via log_client."""
         # Arrange
         mock_ctx = AsyncMock()
-        mock_structure_analyzer = MagicMock()
-        mock_structure_analyzer.analyze_file_organization = AsyncMock(
-            return_value=FileOrganizationResult(
-                status=ComplexityAnalysisStatus.ANALYZED, file_count=5
-            )
-        )
-        mock_structure_analyzer.detect_anti_patterns = AsyncMock(return_value=[])
-        mock_structure_analyzer.measure_complexity_metrics = AsyncMock(
-            return_value=ComplexityAnalysisResult(
-                status=ComplexityAnalysisStatus.ANALYZED
-            )
-        )
+        mock_structure_analyzer = structure_analyzer_mock(file_count=5)
         with (
             patch(
                 "cortex.tools.context.analysis_operations.log_client",
@@ -996,34 +1041,12 @@ class TestGetStructureData:
     @pytest.mark.asyncio
     async def test_get_structure_data_success(self) -> None:
         """Test successful structure data retrieval."""
-        # Arrange
-        mock_structure_analyzer = MagicMock()
-        mock_structure_analyzer.analyze_file_organization = AsyncMock(
-            return_value=FileOrganizationResult(
-                status=ComplexityAnalysisStatus.ANALYZED, file_count=10
-            )
+        mock_sa = structure_analyzer_mock(
+            file_count=10,
+            anti_patterns=[naming_inconsistency_anti_pattern()],
         )
-        mock_structure_analyzer.detect_anti_patterns = AsyncMock(
-            return_value=[
-                AntiPatternInfo(
-                    type="naming_inconsistency",
-                    severity=SeverityLevel.LOW,
-                    description="Naming inconsistency",
-                )
-            ]
-        )
-        mock_structure_analyzer.measure_complexity_metrics = AsyncMock(
-            return_value=ComplexityAnalysisResult(
-                status=ComplexityAnalysisStatus.ANALYZED,
-                metrics=ComplexityMetrics(max_dependency_depth=2),
-            )
-        )
-        mgrs = make_test_managers(structure_analyzer=mock_structure_analyzer)
-
-        # Act
+        mgrs = make_test_managers(structure_analyzer=mock_sa)
         result = await get_structure_data(mgrs)
-
-        # Assert
         result_dict = result
         analysis = cast(dict[str, object], result_dict["analysis"])
         file_org = cast(dict[str, object], analysis["file_organization"])
@@ -1059,24 +1082,10 @@ class TestSuggestReorganization:
             )
         )
 
-        mock_structure_analyzer = MagicMock()
-        mock_structure_analyzer.analyze_file_organization = AsyncMock(
-            return_value=FileOrganizationResult(
-                status=ComplexityAnalysisStatus.ANALYZED, file_count=1
-            )
-        )
-        mock_structure_analyzer.detect_anti_patterns = AsyncMock(return_value=[])
-        mock_structure_analyzer.measure_complexity_metrics = AsyncMock(
-            return_value=ComplexityAnalysisResult(
-                status=ComplexityAnalysisStatus.ANALYZED
-            )
-        )
-
         mock_graph = MagicMock()
         mock_graph.to_dict.return_value = DependencyGraphDict()
-
         mgrs = make_test_managers(
-            structure_analyzer=mock_structure_analyzer,
+            structure_analyzer=structure_analyzer_mock(file_count=1),
             graph=mock_graph,
         )
 
@@ -1110,23 +1119,10 @@ class TestSuggestReorganization:
             )
         )
 
-        mock_structure_analyzer = MagicMock()
-        mock_structure_analyzer.analyze_file_organization = AsyncMock(
-            return_value=FileOrganizationResult(
-                status=ComplexityAnalysisStatus.ANALYZED, file_count=1
-            )
-        )
-        mock_structure_analyzer.detect_anti_patterns = AsyncMock(return_value=[])
-        mock_structure_analyzer.measure_complexity_metrics = AsyncMock(
-            return_value=ComplexityAnalysisResult(
-                status=ComplexityAnalysisStatus.ANALYZED
-            )
-        )
-
         mock_graph = MagicMock()
         mock_graph.to_dict.return_value = DependencyGraphDict()
         mgrs = make_test_managers(
-            structure_analyzer=mock_structure_analyzer,
+            structure_analyzer=structure_analyzer_mock(file_count=1),
             graph=mock_graph,
         )
 
@@ -1223,69 +1219,8 @@ class TestProcessRefactoringRequest:
     @pytest.mark.asyncio
     async def test_process_reorganization_request(self, tmp_path: Path) -> None:
         """Test processing reorganization refactoring request."""
-        # Arrange
-        with patch(
-            "cortex.tools.refactoring.operation_helpers.get_managers",
-            new_callable=AsyncMock,
-        ) as mock_get_managers:
-            with patch(
-                "cortex.tools.refactoring.operation_helpers.get_project_root",
-                return_value=Path(str(tmp_path)),
-            ):
-                mock_planner = MagicMock()
-                mock_planner.create_reorganization_plan = AsyncMock(
-                    return_value=ReorganizationPlanModel(
-                        plan_id="plan-3",
-                        optimization_goal="category",
-                        estimated_impact=ReorganizationImpactModel(
-                            files_moved=0,
-                            categories_created=0,
-                            dependency_depth_reduction=0.0,
-                            complexity_reduction=0.0,
-                            maintainability_improvement=0.0,
-                            navigation_improvement=0.0,
-                            estimated_effort=RiskLevel.LOW,
-                        ),
-                    )
-                )
-
-                mock_structure_analyzer = MagicMock()
-                mock_structure_analyzer.analyze_file_organization = AsyncMock(
-                    return_value=FileOrganizationResult(
-                        status=ComplexityAnalysisStatus.ANALYZED, file_count=0
-                    )
-                )
-                mock_structure_analyzer.detect_anti_patterns = AsyncMock(
-                    return_value=[]
-                )
-                mock_structure_analyzer.measure_complexity_metrics = AsyncMock(
-                    return_value=ComplexityAnalysisResult(
-                        status=ComplexityAnalysisStatus.ANALYZED
-                    )
-                )
-
-                mock_graph = MagicMock()
-                mock_graph.to_dict.return_value = DependencyGraphDict()
-
-                mock_get_managers.return_value = make_test_managers(
-                    reorganization_planner=mock_planner,
-                    structure_analyzer=mock_structure_analyzer,
-                    graph=mock_graph,
-                )
-
-                # Act
-                result = await process_refactoring_request(
-                    RefactoringSuggestionType.REORGANIZATION,
-                    str(tmp_path),
-                    None,
-                    None,
-                    "category",
-                    None,
-                )
-
-            # Assert
-            result_data = json.loads(result)
-            assert result_data["type"] == "reorganization"
+        result = await _process_reorganization_request_result(tmp_path)
+        assert json.loads(result)["type"] == "reorganization"
 
     @pytest.mark.asyncio
     async def test_process_request_with_preview_mode(self, tmp_path: Path) -> None:
@@ -1336,20 +1271,9 @@ class TestSuggestRefactoringHandler:
         # so the real ConsolidationDetector is not used (avoids slow SequenceMatcher in CI).
         # get_manager() returns dict values as-is when they are not LazyManager, so the
         # consolidation_detector entry must implement detect_opportunities directly.
-        sample_opportunity = ConsolidationOpportunity(
-            opportunity_id="opp1",
-            opportunity_type="similar_content",
-            affected_files=["a.md", "b.md"],
-            common_content="shared",
-            similarity_score=0.85,
-            token_savings=10,
-            suggested_action="Extract",
-            extraction_target="shared.md",
-            transclusion_syntax=["{{include:shared.md}}"],
-        )
         mock_detector_mgr = MagicMock()
         mock_detector_mgr.detect_opportunities = AsyncMock(
-            return_value=[sample_opportunity]
+            return_value=[_SAMPLE_CONSOLIDATION_OPPORTUNITY]
         )
         mock_split_mgr = MagicMock()
         mock_reorg_mgr = MagicMock()
@@ -1445,56 +1369,6 @@ class TestRefactoringOperationsContextLogging:
         levels_and_messages = [(a[1], a[2]) for a in args_list]
         assert ("info", "suggest_refactoring: starting") in levels_and_messages
         assert ("info", "suggest_refactoring: completed") in levels_and_messages
-
-
-@pytest.mark.timeout(20)
-class TestAnalyzeResource:
-    """Test analyze resource (Phase 43 Phase 5 Analysis resource)."""
-
-    @pytest.mark.asyncio
-    async def test_analyze_returns_json_for_valid_target(self, tmp_path: Path) -> None:
-        """analyze returns valid JSON (zero-arg, reads session config)."""
-        with (
-            patch(
-                "cortex.core.session_config.read_session_config",
-                return_value={"analysis_target": "structure"},
-            ),
-            patch(
-                "cortex.tools.context.analysis_operations.analyze_impl",
-                new_callable=AsyncMock,
-                return_value=json.dumps(
-                    {"status": "success", "target": "structure", "analysis": {}},
-                    indent=2,
-                ),
-            ),
-        ):
-            result = await analyze()
-        result_data = json.loads(result)
-        assert result_data["status"] == "success"
-        assert result_data["target"] == "structure"
-
-    @pytest.mark.asyncio
-    async def test_analyze_default_target_is_context(self) -> None:
-        """analyze defaults to 'context' when no session config."""
-        with (
-            patch(
-                "cortex.core.session_config.read_session_config",
-                return_value={},
-            ),
-            patch(
-                "cortex.tools.context.analysis_operations.analyze_impl",
-                new_callable=AsyncMock,
-                return_value=json.dumps({"status": "success", "target": "context"}),
-            ) as mock_analyze,
-        ):
-            result = await analyze()
-        mock_analyze.assert_called_once_with(
-            target="context",
-            time_window_days=None,
-            export_format="json",
-            categories=None,
-        )
-        assert json.loads(result)["status"] == "success"
 
 
 @pytest.mark.timeout(20)

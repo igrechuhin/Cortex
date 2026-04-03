@@ -172,3 +172,7 @@ still works for list and get operations.
 - Unit: test `analyze` context target with > 3 sessions → assert truncation and `truncated=true`
 - Regression: full suite via `run_quality_gate()` after all changes
 - Manual: verify `tools/list` MCP response no longer contains `list_plans` or `get_plan`
+
+## Partial Progress Log
+
+- 2026-04-03: Removed MCP stability decorators from `list_plans`/`get_plan` (internal callables; surface is `plan()`). Added `cortex://analysis` default caps (`max_sessions=3`, `max_calls_per_session=10`), truncation metadata on current-session context analysis, `get_context_statistics` tail cap, shared test mocks, and `tests/tools/test_analyze_resource.py`. — files: `src/cortex/tools/plans/crud.py`, `src/cortex/tools/context/effectiveness_models.py`, `src/cortex/tools/context/effectiveness_operations.py`, `src/cortex/tools/context/analysis_operations.py`, `src/cortex/tools/context/analysis_run_helpers.py`, `tests/helpers/analysis_structure_mocks.py`, `tests/tools/test_analyze_resource.py`, `tests/unit/test_context_analysis_truncation.py`, `tests/tools/test_analysis_operations.py`, `tests/tools/test_analysis_operations_handlers.py`

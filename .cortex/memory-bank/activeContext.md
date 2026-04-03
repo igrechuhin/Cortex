@@ -12,6 +12,8 @@
 
 - ✅ **Reduce Quality Gate Latency and Pre-commit Token Bloat** - COMPLETE (2026-04-03) - Conditional cache clear on `force_fresh`, trimmed passing gate responses, `agent_log` omitted on pass, `PipelineDirtyTracker` after successful gate, adaptive poll intervals, `checks.skipped` / `checks.executed` logs, `preflight_passed` from Phase A plus markdown; tests and `run_quality_gate` verified. Success criteria 1–3 (50-day latency/tokens/skip rate) remain operational analytics.
 
+- ✅ **Prune dead tools / analyze truncation (PARTIAL)** - COMPLETE (2026-04-03) - cortex://analysis now passes default truncation parameters; context effectiveness responses can include truncated=true and caps on stats tail; list_plans/get_plan are plain async helpers.
+
 ## Completed Work (2026-04-02)
 
 - **Summary (2026-04-02)** - 1 entries archived.
