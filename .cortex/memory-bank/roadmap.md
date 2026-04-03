@@ -31,9 +31,3 @@ Completed investigations are recorded in [activeContext.md](activeContext.md). P
 ### Improvements
 
 ### Features & Enhancements
-
-- **Add Anthropic Prompt Cache-Control to MCP Resource Responses** — PENDING — `.cortex/plans/add-anthropic-prompt-cache-control.md`
-  Inject `cache_control` markers into `cortex://rules` and `cortex://context` resource responses
-  so the Anthropic API caches their KV state, cutting input-token costs by ~90% on cache reads.
-  Includes a mandatory spike to verify FastMCP + Claude Code annotation forwarding before
-  implementing, and raises Cortex in-process resource cache TTL from 30s to 300s.

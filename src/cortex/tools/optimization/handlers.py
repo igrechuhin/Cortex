@@ -18,7 +18,10 @@ from urllib.parse import unquote
 
 # Import via facade to allow test patching
 import cortex.tools.optimization as opt
+from cortex.core.cache import TTLCache
 from cortex.core.constants import (
+    CORTEX_CONTEXT_RESOURCE_READ_META,
+    MCP_STATIC_RESOURCE_CACHE_TTL_SECONDS,
     MCP_TOOL_TIMEOUT_COMPLEX,
     MCP_TOOL_TIMEOUT_FAST,
     MCP_TOOL_TIMEOUT_MEDIUM,
@@ -48,6 +51,16 @@ from .handlers_validation import (
 
 # Re-export for backward compatibility (tests import from this module)
 __all__ = ["is_non_trivial_task"]
+
+_context_resource_cache: TTLCache[str] = TTLCache(MCP_STATIC_RESOURCE_CACHE_TTL_SECONDS)
+
+
+def invalidate_context_resource_cache(key: str | None = None) -> None:
+    """Invalidate cached cortex://context payload by session key, or clear all."""
+    if key is None:
+        _context_resource_cache.clear()
+    else:
+        _context_resource_cache.invalidate(key)
 
 
 def _resolve_load_context_inputs(
@@ -364,7 +377,7 @@ def _append_session_scope_to_context_payload(payload: str) -> str:
     return json.dumps(payload_data, indent=2)
 
 
-@mcp.resource(uri="cortex://context")
+@mcp.resource(uri="cortex://context", meta=CORTEX_CONTEXT_RESOURCE_READ_META)
 @ensure_usage_context
 @mcp_resource_wrapper(timeout=MCP_TOOL_TIMEOUT_COMPLEX)
 async def load_context() -> str:
@@ -378,12 +391,18 @@ async def load_context() -> str:
     task = str(cfg.get("task_description", "general session context"))
     raw_budget = cfg.get("token_budget", _LOAD_CONTEXT_DEFAULT_BUDGET)
     budget = raw_budget if isinstance(raw_budget, int) else _LOAD_CONTEXT_DEFAULT_BUDGET
+    cache_key = f"context:{task}:{budget}"
+    cached = _context_resource_cache.get(cache_key)
+    if cached is not None:
+        return cached
     result = await load_context_impl(
         task_description=task,
         token_budget=budget,
         strategy="dependency_aware",
     )
-    return _append_session_scope_to_context_payload(result)
+    out = _append_session_scope_to_context_payload(result)
+    _context_resource_cache.set(cache_key, out)
+    return out
 
 
 # MCP resource registration removed

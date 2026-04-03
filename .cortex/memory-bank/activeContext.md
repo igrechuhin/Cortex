@@ -16,6 +16,10 @@
 
 - ✅ **Prune Dead/Near-Dead Tools and Reduce Token-Heavy Responses** - COMPLETE (2026-04-03) - Finished analyze resource size bounds: context stats now expose truncated when recent_entries tail is capped; unit test coverage. Prior work already removed list_plans/get_plan from MCP, added cortex://analysis defaults, and updated docs/tests.
 
+- ✅ **Anthropic cache hints on MCP resources (PARTIAL)** - COMPLETE (2026-04-03) - cortex://rules and cortex://context now register cache_control in resource meta (ephemeral TTLs) and use 300s in-process TTL caches; tests in tests/unit/test_mcp_resource_cache_control.py. Manual API token verification and Claude Code forwarding remain.
+
+- ✅ **Add Anthropic Prompt Cache-Control to MCP Resource Responses** - COMPLETE (2026-04-03) - Registered cache_control hints on cortex://rules (1h) and cortex://context (5m) via FastMCP @mcp.resource(meta); 300s in-process TTL caches for both resources; unit tests for meta and cache hits; constants documented.
+
 ## Completed Work (2026-04-02)
 
 - **Summary (2026-04-02)** - 1 entries archived.

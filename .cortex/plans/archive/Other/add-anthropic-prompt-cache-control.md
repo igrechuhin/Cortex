@@ -224,6 +224,11 @@ describing what upstream change is needed (FastMCP issue / Claude Code feature r
 4. No regression: all existing tests pass; `run_quality_gate()` returns `preflight_passed: true`
 5. In-process resource cache TTL raised to 300s for static resources
 
+## Partial Progress Log
+
+- 2026-04-03: Step 1 spike — FastMCP `FunctionResource.read()` only returns `str` | `bytes`; `list[TextContent]` is JSON-serialized, not wire-preserved. Cache hints are applied via `@mcp.resource(meta=...)` → `ReadResourceContents.meta` → `_meta` on `resources/read`. Wrapper passes return through unchanged. — files: `src/cortex/core/constants.py`, `src/cortex/tools/synapse/rules_operations.py`, `src/cortex/tools/optimization/handlers.py`, `tests/unit/test_mcp_resource_cache_control.py`
+- 2026-04-03: Steps 2–6 partial — `CORTEX_*_RESOURCE_READ_META`, `MCP_STATIC_RESOURCE_CACHE_TTL_SECONDS` + `TTLCache` for rules/context, governance tests. — files: same + `tests/unit/test_mcp_resource_cache_control.py`
+
 ## Testing Strategy
 
 - Unit: `get_relevant_rules()` returns `list[TextContent]`; `annotations["cache_control"]["type"] == "ephemeral"`

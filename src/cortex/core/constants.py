@@ -145,6 +145,18 @@ MCP_HEALTH_CHECK_INTERVAL_SECONDS = 60  # Interval for connection health checks
 MCP_RESOURCE_CACHE_TTL_SECONDS = (
     30  # TTL for cached MCP resource responses (drain queue faster)
 )
+# Longer TTL for high-churn, large payloads (cortex://rules, cortex://context).
+MCP_STATIC_RESOURCE_CACHE_TTL_SECONDS = 300
+
+# Passed to FastMCP @mcp.resource(meta=...) → resources/read contents._meta for IDE/API clients.
+# Step 1 (plan): list[TextContent] is not supported by FunctionResource.read(); meta is the
+# supported path for cache hints on resources/read responses.
+CORTEX_RULES_RESOURCE_READ_META: dict[str, object] = {
+    "cache_control": {"type": "ephemeral", "ttl": "1h"},
+}
+CORTEX_CONTEXT_RESOURCE_READ_META: dict[str, object] = {
+    "cache_control": {"type": "ephemeral", "ttl": "5m"},
+}
 MCP_USAGE_CONTEXT_INIT_LOCK_TIMEOUT_SECONDS = (
     25  # Timeout for usage context init lock acquisition (prevents indefinite hangs)
 )

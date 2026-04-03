@@ -12,7 +12,12 @@ from pathlib import Path
 from typing import cast
 
 from cortex.core.async_file_utils import open_async_text_file
-from cortex.core.constants import MCP_TOOL_TIMEOUT_MEDIUM
+from cortex.core.cache import TTLCache
+from cortex.core.constants import (
+    CORTEX_RULES_RESOURCE_READ_META,
+    MCP_STATIC_RESOURCE_CACHE_TTL_SECONDS,
+    MCP_TOOL_TIMEOUT_MEDIUM,
+)
 from cortex.core.context_logging import MCPContext, log_client
 from cortex.core.mcp_stability import (
     ensure_usage_context,
@@ -40,6 +45,16 @@ from cortex.tools.synapse.rules_operations_handlers import (
 
 # Type alias for operation names (must match RulesOperation enum).
 RulesOperationName = RulesOperation
+
+_rules_resource_cache: TTLCache[str] = TTLCache(MCP_STATIC_RESOURCE_CACHE_TTL_SECONDS)
+
+
+def invalidate_rules_resource_cache(key: str | None = None) -> None:
+    """Invalidate cached cortex://rules payload by session key, or clear all."""
+    if key is None:
+        _rules_resource_cache.clear()
+    else:
+        _rules_resource_cache.invalidate(key)
 
 
 # MCP tool removed — exposed as resource cortex://rules/{task_description}
@@ -343,7 +358,7 @@ async def _merge_rules_payload(payload: str) -> str:
     return json.dumps(merged, indent=2)
 
 
-@mcp.resource(uri="cortex://rules")
+@mcp.resource(uri="cortex://rules", meta=CORTEX_RULES_RESOURCE_READ_META)
 @ensure_usage_context
 @mcp_resource_wrapper(timeout=MCP_TOOL_TIMEOUT_MEDIUM)
 async def get_relevant_rules() -> str:
@@ -355,6 +370,10 @@ async def get_relevant_rules() -> str:
 
     cfg = read_session_config()
     task = str(cfg.get("task_description", "general coding standards"))
+    cache_key = f"rules:{task}"
+    cached = _rules_resource_cache.get(cache_key)
+    if cached is not None:
+        return cached
     payload = await rules(
         operation="get_relevant",
         force=False,
@@ -362,4 +381,6 @@ async def get_relevant_rules() -> str:
         max_tokens=None,
         min_relevance_score=None,
     )
-    return await _merge_rules_payload(payload)
+    merged = await _merge_rules_payload(payload)
+    _rules_resource_cache.set(cache_key, merged)
+    return merged

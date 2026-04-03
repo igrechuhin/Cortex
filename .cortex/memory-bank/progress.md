@@ -16,6 +16,8 @@
 
 - **Prune Dead/Near-Dead Tools and Reduce Token-Heavy Responses** - COMPLETE. Context statistics results now set truncated when persisted history exceeds max_recent_entries; tests added.
 
+- **Add Anthropic Prompt Cache-Control to MCP Resource Responses** - COMPLETE. FastMCP `@mcp.resource(meta=...)` cache_control for cortex://rules (1h) and cortex://context (5m), 300s in-process TTL caches, governance tests; Step 1: FunctionResource uses str payloads; meta is the supported wire path for cache hints.
+
 ## 2026-04-02
 
 - **Synapse prompt filenames (Do / Plan)** - COMPLETE. Renamed Synapse prompts to `do.md`/`plan.md` and updated prompts manifest plus all repo/test/docs references.
