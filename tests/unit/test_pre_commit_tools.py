@@ -5,7 +5,8 @@ import ast
 import json
 import subprocess
 import tempfile
-from collections.abc import Callable, Generator
+from collections.abc import Callable, Generator, Iterator
+from contextlib import contextmanager
 from pathlib import Path
 from typing import cast
 from unittest.mock import AsyncMock, MagicMock, patch
@@ -78,6 +79,451 @@ _EXECUTE_REQUIRED = {
     "strict_mode": False,
 }
 
+_DEFAULT_CHECKS_NAMES_EXPECTED = frozenset(
+    (
+        "fix_errors",
+        "format",
+        "synapse_format",
+        "synapse_lint",
+        "type_check",
+        "quality",
+        "tests",
+    )
+)
+
+
+def _minimal_python_project(project_root: Path) -> None:
+    _ = (project_root / "pyproject.toml").write_text("[project]\nname = 'test'")
+    get_project_path(project_root, ProjectResourceType.VENV).mkdir()
+
+
+def _python_language_info(confidence: float = 0.9) -> LanguageInfo:
+    return LanguageInfo(
+        language="python",
+        test_framework=None,
+        formatter=None,
+        linter=None,
+        type_checker=None,
+        build_tool=None,
+        confidence=confidence,
+    )
+
+
+def _to_thread_run_sync_inline(func: Callable[..., object], *args: object) -> object:
+    return func(*args)
+
+
+def _find_execute_all_checks_to_thread_call(
+    mock_to_thread: MagicMock,
+) -> object | None:
+    for call in mock_to_thread.call_args_list:
+        if call[0] and len(call[0]) > 0:
+            func = call[0][0]
+            if hasattr(func, "__name__") and func.__name__ == "execute_all_checks":
+                return call
+    return None
+
+
+@contextmanager
+def _patches_for_to_thread_inline(
+    project_root: Path,
+) -> Generator[tuple[MagicMock, MagicMock]]:
+    with (
+        patch(
+            "cortex.services.language_quality_router.LanguageQualityRouter.get_adapter",
+            return_value=MagicMock(),
+        ) as mock_get_adapter,
+        patch(
+            "cortex.tools.execution.pre_commit_tools_execute_checks.get_current_project_root",
+            return_value=project_root,
+        ),
+        patch(
+            "cortex.tools.execution.pre_commit_tools_execute_checks.get_or_resolve_project_root",
+            new_callable=AsyncMock,
+            return_value=project_root,
+        ),
+        patch(
+            "cortex.tools.execution.pre_commit_tools_run_helpers.asyncio.to_thread",
+            new_callable=AsyncMock,
+        ) as mock_to_thread,
+    ):
+        yield mock_get_adapter, mock_to_thread
+
+
+async def _async_to_thread_inline(func: Callable[..., object], *args: object) -> object:
+    return _to_thread_run_sync_inline(func, *args)
+
+
+async def _execute_pre_commit_with_to_thread_inline_sync(
+    project_root: Path,
+) -> tuple[ModelDict, MagicMock]:
+    """Run fix_errors check with to_thread forced to call targets inline (same thread)."""
+    with _patches_for_to_thread_inline(project_root) as (
+        mock_get_adapter,
+        mock_to_thread,
+    ):
+        mock_adapter = cast(MagicMock, mock_get_adapter.return_value)
+        mock_adapter.fix_errors.return_value = CheckResult(
+            check_type="fix_errors",
+            success=True,
+            output="Fixed",
+            errors=[],
+            warnings=[],
+            files_modified=[],
+        )
+        mock_to_thread.side_effect = _async_to_thread_inline
+
+        result = await execute_pre_commit_checks(
+            checks=["fix_errors"],
+            **_EXECUTE_REQUIRED,
+        )
+        return result, mock_to_thread
+
+
+def _eval_fast_to_thread_side_effect(
+    f: Callable[..., object], *args: object, **kwargs: object
+) -> object:
+    return f(*args, **kwargs)
+
+
+def _stub_adapter_default_checks_green(mock_adapter: MagicMock) -> None:
+    mock_result = CheckResult(
+        check_type="test",
+        success=True,
+        output="Success",
+        errors=[],
+        warnings=[],
+        files_modified=[],
+    )
+    mock_adapter.fix_errors.return_value = mock_result
+    mock_adapter.format_code.return_value = mock_result
+    mock_adapter.type_check.return_value = mock_result
+    mock_adapter.lint_code.return_value = mock_result
+    mock_adapter.run_tests.return_value = TestResult(
+        success=True,
+        tests_run=10,
+        tests_passed=10,
+        tests_failed=0,
+        pass_rate=1.0,
+        coverage=0.95,
+        output="All tests passed",
+        errors=[],
+    )
+
+
+def _project_with_minimal_src_module(project_root: Path) -> None:
+    _minimal_python_project(project_root)
+    src_dir = project_root / "src"
+    src_dir.mkdir()
+    _ = (src_dir / "module.py").write_text("x = 1\n")
+
+
+@contextmanager
+def _quality_pipeline_patches(project_root: Path) -> Generator[None]:
+    with (
+        patch(
+            "cortex.tools.execution.pre_commit_tools_execute_checks.get_or_resolve_project_root",
+            new_callable=AsyncMock,
+            return_value=project_root,
+        ),
+        patch(
+            "cortex.tools.execution.pre_commit_pipeline_quality.run_quality_checks_for_all_languages",
+            return_value=([], []),
+        ),
+    ):
+        yield
+
+
+def _stub_adapter_lint_and_type_green(mock_adapter: MagicMock) -> None:
+    mock_adapter.lint_code.return_value = CheckResult(
+        check_type="lint",
+        success=True,
+        output="All good",
+        errors=[],
+        warnings=[],
+        files_modified=[],
+    )
+    mock_adapter.type_check.return_value = CheckResult(
+        check_type="type_check",
+        success=True,
+        output="0 errors, 0 warnings",
+        errors=[],
+        warnings=[],
+        files_modified=[],
+    )
+
+
+def _execute_all_checks_stats_from_list(
+    checks_list: object, mock_result: CheckResult
+) -> tuple[dict[str, CheckResult], MagicMock]:
+    results: dict[str, CheckResult] = {}
+    if isinstance(checks_list, list):
+        checks_performed_list: list[str] = []
+        typed_checks: list[object] = cast(list[object], checks_list)
+        for item in typed_checks:
+            if isinstance(item, PreCommitCheck):
+                check_name = item.value
+                checks_performed_list.append(check_name)
+                results[check_name] = mock_result
+        stats = MagicMock(
+            total_errors=0,
+            total_warnings=0,
+            files_modified=[],
+            checks_performed=checks_performed_list,
+        )
+    else:
+        stats = MagicMock(
+            total_errors=0,
+            total_warnings=0,
+            files_modified=[],
+            checks_performed=[],
+        )
+    return results, stats
+
+
+def _mcp_log_levels_and_messages(mock_log: MagicMock) -> list[tuple[object, object]]:
+    args_list = [c[0] for c in mock_log.call_args_list]
+    return [(a[1], a[2]) for a in args_list]
+
+
+def _make_ctx_logging_to_thread_side_effect(
+    mock_result: CheckResult,
+) -> Callable[..., object]:
+    async def run_sync(func: Callable[..., object], *args: object) -> object:
+        if (
+            hasattr(func, "__name__")
+            and func.__name__ == "_execute_all_checks"
+            and len(args) >= 6
+        ):
+            checks_list = args[2]
+            return _execute_all_checks_stats_from_list(checks_list, mock_result)
+        return func(*args)
+
+    return run_sync
+
+
+@contextmanager
+def _patches_for_pre_commit_ctx_logging(
+    project_root: Path,
+) -> Iterator[tuple[MagicMock, MagicMock, MagicMock]]:
+    with (
+        patch(
+            "cortex.tools.execution.pre_commit_tools_inline_execution.log_client",
+            new_callable=AsyncMock,
+        ) as mock_log,
+        patch(
+            "cortex.services.language_quality_router.LanguageQualityRouter.get_adapter",
+            return_value=MagicMock(),
+        ) as mock_get_adapter,
+        patch(
+            "cortex.tools.execution.pre_commit_tools_execute_checks.get_current_project_root",
+            return_value=project_root,
+        ),
+        patch(
+            "cortex.tools.execution.pre_commit_tools_execute_checks.get_or_resolve_project_root",
+            new_callable=AsyncMock,
+            return_value=project_root,
+        ),
+        patch(
+            "cortex.tools.execution.pre_commit_tools_run_helpers.asyncio.to_thread",
+            new_callable=AsyncMock,
+        ) as mock_to_thread,
+    ):
+        yield mock_log, mock_get_adapter, mock_to_thread
+
+
+async def _execute_single_check_with_mock_adapter_project(
+    check_name: str,
+) -> ModelDict:
+    """Minimal Python project + adapter whose project_root matches resolved root."""
+    with tempfile.TemporaryDirectory() as tmpdir:
+        project_root = Path(tmpdir)
+        _minimal_python_project(project_root)
+        with (
+            patch(
+                "cortex.services.language_quality_router.LanguageQualityRouter.get_adapter",
+                return_value=MagicMock(),
+            ) as mock_get_adapter,
+            patch(
+                "cortex.tools.execution.pre_commit_tools_execute_checks.get_or_resolve_project_root",
+                new_callable=AsyncMock,
+                return_value=project_root,
+            ),
+        ):
+            mock_adapter = cast(MagicMock, mock_get_adapter.return_value)
+            mock_adapter.project_root = project_root
+            return await execute_pre_commit_checks(
+                checks=[check_name],
+                **_EXECUTE_REQUIRED,
+            )
+
+
+def _assert_skipped_synapse_script_check(result: ModelDict, check_name: str) -> None:
+    assert result["status"] == "success"
+    checks_performed = extract_list_from_object(
+        result.get("checks_performed", []),
+        [],
+    )
+    assert check_name in checks_performed
+    results_obj = result.get("results", {})
+    results = extract_dict_from_object(results_obj, {})
+    sub = extract_dict_from_object(results.get(check_name, {}), {})
+    assert sub["success"] is True
+    assert "skipped" in str(sub.get("output", ""))
+
+
+def _stub_adapter_quality_lint_fail_large_output(
+    mock_adapter: MagicMock, project_root: Path, large_output: str
+) -> None:
+    mock_adapter.project_root = project_root
+    mock_adapter.lint_code.return_value = CheckResult(
+        check_type="lint",
+        success=False,
+        output=large_output,
+        errors=["E1"],
+        warnings=[],
+        files_modified=[],
+    )
+    mock_adapter.type_check.return_value = CheckResult(
+        check_type="type_check",
+        success=True,
+        output="0 errors",
+        errors=[],
+        warnings=[],
+        files_modified=[],
+    )
+
+
+def _assert_quality_output_truncated(result: ModelDict) -> None:
+    assert result["status"] == "error"
+    results_obj = result.get("results", {})
+    results = extract_dict_from_object(results_obj, {})
+    quality_result = extract_dict_from_object(
+        results.get("quality", {}),
+        {},
+    )
+    truncated_output = str(quality_result.get("output", ""))
+    assert isinstance(truncated_output, str)
+    assert len(truncated_output) <= MAX_LOG_OUTPUT_LENGTH + 200
+    assert "truncated" in truncated_output
+
+
+def _assert_fix_quality_remaining_issues(result: ModelDict) -> None:
+    assert result["status"] == "success"
+    assert result.get("error_message") is None
+    errors_fixed = extract_int_from_object(result.get("errors_fixed", 0), 0)
+    assert errors_fixed == 1
+    remaining_issues = extract_list_from_object(result.get("remaining_issues", []), [])
+    assert len(remaining_issues) > 0
+    assert any(
+        "1 linting/formatting errors remain" in issue for issue in remaining_issues
+    )
+
+
+def _assert_execute_pre_commit_completion_log(mock_log: MagicMock) -> None:
+    levels = _mcp_log_levels_and_messages(mock_log)
+    assert ("info", "execute_pre_commit_checks: completed") in levels
+
+
+async def _execute_pre_commit_fix_errors_with_ctx_log(
+    project_root: Path,
+) -> tuple[ModelDict, MagicMock]:
+    mock_ctx = AsyncMock()
+    with _patches_for_pre_commit_ctx_logging(project_root) as (
+        mock_log,
+        mock_get_adapter,
+        mock_to_thread,
+    ):
+        mock_adapter = cast(MagicMock, mock_get_adapter.return_value)
+        mock_result = CheckResult(
+            check_type="fix_errors",
+            success=True,
+            output="OK",
+            errors=[],
+            warnings=[],
+            files_modified=[],
+        )
+        mock_adapter.fix_errors.return_value = mock_result
+        mock_to_thread.side_effect = _make_ctx_logging_to_thread_side_effect(
+            mock_result
+        )
+        result = await execute_pre_commit_checks(
+            checks=["fix_errors"],
+            **_EXECUTE_REQUIRED,
+            ctx=mock_ctx,
+        )
+        return result, mock_log
+
+
+async def _fix_errors_success_for_minimal_project(project_root: Path) -> ModelDict:
+    with (
+        patch(
+            "cortex.services.language_quality_router.LanguageQualityRouter.get_adapter",
+            return_value=MagicMock(),
+        ) as mock_get_adapter,
+        patch(
+            "cortex.tools.execution.pre_commit_tools_execute_checks.get_or_resolve_project_root",
+            new_callable=AsyncMock,
+            return_value=project_root,
+        ),
+    ):
+        mock_adapter = cast(MagicMock, mock_get_adapter.return_value)
+        mock_adapter.fix_errors.return_value = CheckResult(
+            check_type="fix_errors",
+            success=True,
+            output="Fixed errors",
+            errors=[],
+            warnings=[],
+            files_modified=[],
+        )
+        return await execute_pre_commit_checks(
+            checks=["fix_errors"],
+            **_EXECUTE_REQUIRED,
+        )
+
+
+def _install_synapse_parity_script_fixtures(root: Path) -> None:
+    scripts_dir = (
+        get_cortex_path(root, CortexResourceType.SYNAPSE) / "scripts" / "python"
+    )
+    scripts_dir.mkdir(parents=True)
+    script_path = scripts_dir / "check_formatting_ci_parity.py"
+    _ = script_path.write_text("#!/usr/bin/env python3\n")
+    get_project_path(root, ProjectResourceType.VENV).mkdir()
+    get_venv_bin_path(root).mkdir(parents=True)
+    python_bin = get_venv_bin_path(root) / "python"
+    _ = python_bin.write_text("")
+    python_bin.chmod(0o755)
+
+
+@contextmanager
+def _eval_fast_execution_patches(
+    project_root: Path, payload: str
+) -> Generator[MagicMock]:
+    python_info = _python_language_info()
+    with (
+        patch(
+            "cortex.tools.execution.pre_commit_tools_execute_checks.get_or_resolve_project_root",
+            new_callable=AsyncMock,
+            return_value=project_root,
+        ),
+        patch(
+            "cortex.tools.execution.pre_commit_tools_inline_execution.detect_or_use_language",
+            return_value=(python_info, str(project_root)),
+        ),
+        patch(
+            "cortex.tools.execution.pre_commit_tools_run_helpers.asyncio.to_thread",
+            new_callable=AsyncMock,
+        ) as mock_to_thread,
+        patch(
+            "cortex.tools.evaluation.run_tool_evaluation",
+            new_callable=AsyncMock,
+            return_value=payload,
+        ),
+    ):
+        mock_to_thread.side_effect = _eval_fast_to_thread_side_effect
+        yield mock_to_thread
+
 
 @pytest.fixture(autouse=True)
 def _disable_detached_pipeline() -> Generator[None]:
@@ -114,70 +560,15 @@ class TestExecutePreCommitChecks:
         """Verify execute_pre_commit_checks runs execute_all_checks via asyncio.to_thread."""
         with tempfile.TemporaryDirectory() as tmpdir:
             project_root = Path(tmpdir)
-            _ = (project_root / "pyproject.toml").write_text("[project]\nname = 'test'")
-            get_project_path(project_root, ProjectResourceType.VENV).mkdir()
+            _minimal_python_project(project_root)
+            result, mock_to_thread = (
+                await _execute_pre_commit_with_to_thread_inline_sync(project_root)
+            )
 
-            with (
-                patch(
-                    "cortex.services.language_quality_router.LanguageQualityRouter.get_adapter",
-                    return_value=MagicMock(),
-                ) as mock_get_adapter,
-                patch(
-                    "cortex.tools.execution.pre_commit_tools_execute_checks.get_current_project_root",
-                    return_value=project_root,
-                ),
-                patch(
-                    "cortex.tools.execution.pre_commit_tools_execute_checks.get_or_resolve_project_root",
-                    new_callable=AsyncMock,
-                    return_value=project_root,
-                ),
-                patch(
-                    "cortex.tools.execution.pre_commit_tools_run_helpers.asyncio.to_thread",
-                    new_callable=AsyncMock,
-                ) as mock_to_thread,
-            ):
-                mock_adapter = cast(MagicMock, mock_get_adapter.return_value)
-                mock_result = CheckResult(
-                    check_type="fix_errors",
-                    success=True,
-                    output="Fixed",
-                    errors=[],
-                    warnings=[],
-                    files_modified=[],
-                )
-                mock_adapter.fix_errors.return_value = mock_result
-
-                async def run_sync(
-                    func: Callable[..., object], *args: object
-                ) -> object:  # run in same thread for test
-                    return func(*args)
-
-                mock_to_thread.side_effect = run_sync
-
-                result = await execute_pre_commit_checks(
-                    checks=["fix_errors"],
-                    **_EXECUTE_REQUIRED,
-                )
-
-                # Verify execute_all_checks was called via to_thread
-                # (get_or_resolve_project_root may also call to_thread, so check for at least one call)
-                assert mock_to_thread.call_count >= 1
-                # Find the call that invokes execute_all_checks
-                execute_all_checks_call = None
-                for call in mock_to_thread.call_args_list:
-                    if call[0] and len(call[0]) > 0:
-                        func = call[0][0]
-                        if (
-                            hasattr(func, "__name__")
-                            and func.__name__ == "execute_all_checks"
-                        ):
-                            execute_all_checks_call = call
-                            break
-                assert (
-                    execute_all_checks_call is not None
-                ), "Expected execute_all_checks to be called via to_thread"
-                assert result["status"] == "success"
-                assert result["language"] == "python"
+        assert mock_to_thread.call_count >= 1
+        assert _find_execute_all_checks_to_thread_call(mock_to_thread) is not None
+        assert result["status"] == "success"
+        assert result["language"] == "python"
 
     @pytest.mark.asyncio
     async def test_detect_language_error_when_no_language_detected(self) -> None:
@@ -280,44 +671,17 @@ class TestExecutePreCommitChecks:
         """Test success with Python project."""
         with tempfile.TemporaryDirectory() as tmpdir:
             project_root = Path(tmpdir)
-            _ = (project_root / "pyproject.toml").write_text("[project]\nname = 'test'")
-            get_project_path(project_root, ProjectResourceType.VENV).mkdir()
+            _minimal_python_project(project_root)
+            result = await _fix_errors_success_for_minimal_project(project_root)
 
-            with (
-                patch(
-                    "cortex.services.language_quality_router.LanguageQualityRouter.get_adapter",
-                    return_value=MagicMock(),
-                ) as mock_get_adapter,
-                patch(
-                    "cortex.tools.execution.pre_commit_tools_execute_checks.get_or_resolve_project_root",
-                    new_callable=AsyncMock,
-                    return_value=project_root,
-                ),
-            ):
-                mock_adapter = cast(MagicMock, mock_get_adapter.return_value)
-
-                mock_adapter.fix_errors.return_value = CheckResult(
-                    check_type="fix_errors",
-                    success=True,
-                    output="Fixed errors",
-                    errors=[],
-                    warnings=[],
-                    files_modified=[],
-                )
-
-                result = await execute_pre_commit_checks(
-                    checks=["fix_errors"],
-                    **_EXECUTE_REQUIRED,
-                )
-
-                assert result["status"] == "success"
-                assert result["language"] == "python"
-                checks_performed = extract_list_from_object(
-                    result.get("checks_performed", []),
-                    [],
-                )
-                assert "fix_errors" in checks_performed
-                assert result["total_errors"] == 0
+        assert result["status"] == "success"
+        assert result["language"] == "python"
+        checks_performed = extract_list_from_object(
+            result.get("checks_performed", []),
+            [],
+        )
+        assert "fix_errors" in checks_performed
+        assert result["total_errors"] == 0
 
     @pytest.mark.asyncio
     async def test_language_detected_by_walking_up_from_subdir(self) -> None:
@@ -342,38 +706,14 @@ class TestExecutePreCommitChecks:
         """Test that all checks are executed when checks parameter is None."""
         with tempfile.TemporaryDirectory() as tmpdir:
             project_root = Path(tmpdir)
-            _ = (project_root / "pyproject.toml").write_text("[project]\nname = 'test'")
-            get_project_path(project_root, ProjectResourceType.VENV).mkdir()
-
+            _minimal_python_project(project_root)
             with patch(
                 "cortex.services.language_quality_router.LanguageQualityRouter.get_adapter",
                 return_value=MagicMock(),
             ) as mock_get_adapter:
-                mock_adapter = cast(MagicMock, mock_get_adapter.return_value)
-
-                mock_result = CheckResult(
-                    check_type="test",
-                    success=True,
-                    output="Success",
-                    errors=[],
-                    warnings=[],
-                    files_modified=[],
+                _stub_adapter_default_checks_green(
+                    cast(MagicMock, mock_get_adapter.return_value)
                 )
-                mock_adapter.fix_errors.return_value = mock_result
-                mock_adapter.format_code.return_value = mock_result
-                mock_adapter.type_check.return_value = mock_result
-                mock_adapter.lint_code.return_value = mock_result
-                mock_adapter.run_tests.return_value = TestResult(
-                    success=True,
-                    tests_run=10,
-                    tests_passed=10,
-                    tests_failed=0,
-                    pass_rate=1.0,
-                    coverage=0.95,
-                    output="All tests passed",
-                    errors=[],
-                )
-
                 with patch(
                     "cortex.tools.execution.pre_commit_tools_execute_checks.get_or_resolve_project_root",
                     new_callable=AsyncMock,
@@ -383,20 +723,13 @@ class TestExecutePreCommitChecks:
                         checks=[c.value for c in DEFAULT_CHECKS],
                         **_EXECUTE_REQUIRED,
                     )
-
-                assert result["status"] == "success"
-                checks_performed = extract_list_from_object(
-                    result.get("checks_performed", []),
-                    [],
-                )
-                assert len(checks_performed) == 7
-                assert "fix_errors" in checks_performed
-                assert "format" in checks_performed
-                assert "synapse_format" in checks_performed
-                assert "synapse_lint" in checks_performed
-                assert "type_check" in checks_performed
-                assert "quality" in checks_performed
-                assert "tests" in checks_performed
+            assert result["status"] == "success"
+            checks_performed = extract_list_from_object(
+                result.get("checks_performed", []),
+                [],
+            )
+            assert len(checks_performed) == 7
+            assert set(checks_performed) == _DEFAULT_CHECKS_NAMES_EXPECTED
 
     @pytest.mark.asyncio
     async def test_error_handling(self) -> None:
@@ -437,61 +770,24 @@ class TestExecutePreCommitChecks:
         )
         with tempfile.TemporaryDirectory() as tmpdir:
             project_root = Path(tmpdir)
-            _ = (project_root / "pyproject.toml").write_text("[project]\nname = 'test'")
-            get_project_path(project_root, ProjectResourceType.VENV).mkdir()
-            python_info = LanguageInfo(
-                language="python",
-                test_framework=None,
-                formatter=None,
-                linter=None,
-                type_checker=None,
-                build_tool=None,
-                confidence=0.9,
-            )
-            with (
-                patch(
-                    "cortex.tools.execution.pre_commit_tools_execute_checks.get_or_resolve_project_root",
-                    new_callable=AsyncMock,
-                    return_value=project_root,
-                ),
-                patch(
-                    "cortex.tools.execution.pre_commit_tools_inline_execution.detect_or_use_language",
-                    return_value=(python_info, str(project_root)),
-                ),
-                patch(
-                    "cortex.tools.execution.pre_commit_tools_run_helpers.asyncio.to_thread",
-                    new_callable=AsyncMock,
-                ) as mock_to_thread,
-                patch(
-                    "cortex.tools.evaluation.run_tool_evaluation",
-                    new_callable=AsyncMock,
-                    return_value=payload_above,
-                ),
-            ):
-
-                def _run_sync(
-                    f: Callable[..., object], *args: object, **kwargs: object
-                ) -> object:
-                    return f(*args, **kwargs)
-
-                mock_to_thread.side_effect = _run_sync
-
+            _minimal_python_project(project_root)
+            with _eval_fast_execution_patches(project_root, payload_above):
                 result = await execute_pre_commit_checks(
                     checks=["eval_fast"],
                     **_EXECUTE_REQUIRED,
                 )
 
-            assert result["status"] == "success"
-            checks_performed = extract_list_from_object(
-                result.get("checks_performed", []),
-                [],
-            )
-            assert "eval_fast" in checks_performed
-            results_obj = result.get("results", {})
-            results = extract_dict_from_object(results_obj, {})
-            eval_result = extract_dict_from_object(results.get("eval_fast", {}), {})
-            assert eval_result["success"] is True
-            assert "90" in str(eval_result.get("output", ""))
+        assert result["status"] == "success"
+        checks_performed = extract_list_from_object(
+            result.get("checks_performed", []),
+            [],
+        )
+        assert "eval_fast" in checks_performed
+        results_obj = result.get("results", {})
+        results = extract_dict_from_object(results_obj, {})
+        eval_result = extract_dict_from_object(results.get("eval_fast", {}), {})
+        assert eval_result["success"] is True
+        assert "90" in str(eval_result.get("output", ""))
 
     @pytest.mark.asyncio
     async def test_eval_fast_check_fails_when_below_threshold(self) -> None:
@@ -509,188 +805,52 @@ class TestExecutePreCommitChecks:
         )
         with tempfile.TemporaryDirectory() as tmpdir:
             project_root = Path(tmpdir)
-            _ = (project_root / "pyproject.toml").write_text("[project]\nname = 'test'")
-            get_project_path(project_root, ProjectResourceType.VENV).mkdir()
-            python_info = LanguageInfo(
-                language="python",
-                test_framework=None,
-                formatter=None,
-                linter=None,
-                type_checker=None,
-                build_tool=None,
-                confidence=0.9,
-            )
-            with (
-                patch(
-                    "cortex.tools.execution.pre_commit_tools_execute_checks.get_or_resolve_project_root",
-                    new_callable=AsyncMock,
-                    return_value=project_root,
-                ),
-                patch(
-                    "cortex.tools.execution.pre_commit_tools_inline_execution.detect_or_use_language",
-                    return_value=(python_info, str(project_root)),
-                ),
-                patch(
-                    "cortex.tools.execution.pre_commit_tools_run_helpers.asyncio.to_thread",
-                    new_callable=AsyncMock,
-                ) as mock_to_thread,
-                patch(
-                    "cortex.tools.evaluation.run_tool_evaluation",
-                    new_callable=AsyncMock,
-                    return_value=payload_below,
-                ),
-            ):
-
-                def _run_sync(
-                    f: Callable[..., object], *args: object, **kwargs: object
-                ) -> object:
-                    return f(*args, **kwargs)
-
-                mock_to_thread.side_effect = _run_sync
-
+            _minimal_python_project(project_root)
+            with _eval_fast_execution_patches(project_root, payload_below):
                 result = await execute_pre_commit_checks(
                     checks=["eval_fast"],
                     **_EXECUTE_REQUIRED,
                 )
 
-            assert result["status"] == "error"
-            checks_performed = extract_list_from_object(
-                result.get("checks_performed", []),
-                [],
-            )
-            assert "eval_fast" in checks_performed
-            results_obj = result.get("results", {})
-            results = extract_dict_from_object(results_obj, {})
-            eval_result = extract_dict_from_object(results.get("eval_fast", {}), {})
-            assert eval_result["success"] is False
-            assert "70" in str(eval_result.get("output", ""))
+        assert result["status"] == "error"
+        checks_performed = extract_list_from_object(
+            result.get("checks_performed", []),
+            [],
+        )
+        assert "eval_fast" in checks_performed
+        results_obj = result.get("results", {})
+        results = extract_dict_from_object(results_obj, {})
+        eval_result = extract_dict_from_object(results.get("eval_fast", {}), {})
+        assert eval_result["success"] is False
+        assert "70" in str(eval_result.get("output", ""))
 
     @pytest.mark.asyncio
     async def test_format_ci_parity_check_when_script_missing_returns_skipped(
         self,
     ) -> None:
         """format_ci_parity when script not present returns success (skipped)."""
-        with tempfile.TemporaryDirectory() as tmpdir:
-            project_root = Path(tmpdir)
-            _ = (project_root / "pyproject.toml").write_text("[project]\nname = 'test'")
-            get_project_path(project_root, ProjectResourceType.VENV).mkdir()
-            # No .cortex/synapse/scripts/python/check_formatting_ci_parity.py
-
-            with patch(
-                "cortex.services.language_quality_router.LanguageQualityRouter.get_adapter",
-                return_value=MagicMock(),
-            ) as mock_get_adapter:
-                mock_adapter = cast(MagicMock, mock_get_adapter.return_value)
-                mock_adapter.project_root = project_root
-
-                with patch(
-                    "cortex.tools.execution.pre_commit_tools_execute_checks.get_or_resolve_project_root",
-                    new_callable=AsyncMock,
-                    return_value=project_root,
-                ):
-                    result = await execute_pre_commit_checks(
-                        checks=["format_ci_parity"],
-                        **_EXECUTE_REQUIRED,
-                    )
-
-                assert result["status"] == "success"
-                checks_performed = extract_list_from_object(
-                    result.get("checks_performed", []),
-                    [],
-                )
-                assert "format_ci_parity" in checks_performed
-                results_obj = result.get("results", {})
-                results = extract_dict_from_object(results_obj, {})
-                format_ci_parity_result = extract_dict_from_object(
-                    results.get("format_ci_parity", {}),
-                    {},
-                )
-                assert format_ci_parity_result["success"] is True
-                assert "skipped" in str(format_ci_parity_result.get("output", ""))
+        result = await _execute_single_check_with_mock_adapter_project(
+            "format_ci_parity"
+        )
+        _assert_skipped_synapse_script_check(result, "format_ci_parity")
 
     @pytest.mark.asyncio
     async def test_test_naming_check_when_script_missing_returns_skipped(
         self,
     ) -> None:
         """test_naming when script not present returns success (skipped)."""
-        with tempfile.TemporaryDirectory() as tmpdir:
-            project_root = Path(tmpdir)
-            _ = (project_root / "pyproject.toml").write_text("[project]\nname = 'test'")
-            get_project_path(project_root, ProjectResourceType.VENV).mkdir()
-
-            with patch(
-                "cortex.services.language_quality_router.LanguageQualityRouter.get_adapter",
-                return_value=MagicMock(),
-            ) as mock_get_adapter:
-                mock_adapter = cast(MagicMock, mock_get_adapter.return_value)
-                mock_adapter.project_root = project_root
-
-                with patch(
-                    "cortex.tools.execution.pre_commit_tools_execute_checks.get_or_resolve_project_root",
-                    new_callable=AsyncMock,
-                    return_value=project_root,
-                ):
-                    result = await execute_pre_commit_checks(
-                        checks=["test_naming"],
-                        **_EXECUTE_REQUIRED,
-                    )
-
-                assert result["status"] == "success"
-                checks_performed = extract_list_from_object(
-                    result.get("checks_performed", []),
-                    [],
-                )
-                assert "test_naming" in checks_performed
-                results_obj = result.get("results", {})
-                results = extract_dict_from_object(results_obj, {})
-                test_naming_result = extract_dict_from_object(
-                    results.get("test_naming", {}),
-                    {},
-                )
-                assert test_naming_result["success"] is True
-                assert "skipped" in str(test_naming_result.get("output", ""))
+        result = await _execute_single_check_with_mock_adapter_project("test_naming")
+        _assert_skipped_synapse_script_check(result, "test_naming")
 
     @pytest.mark.asyncio
     async def test_check_async_tests_check_when_script_missing_returns_skipped(
         self,
     ) -> None:
         """check_async_tests when script not present returns success (skipped)."""
-        with tempfile.TemporaryDirectory() as tmpdir:
-            project_root = Path(tmpdir)
-            _ = (project_root / "pyproject.toml").write_text("[project]\nname = 'test'")
-            get_project_path(project_root, ProjectResourceType.VENV).mkdir()
-
-            with patch(
-                "cortex.services.language_quality_router.LanguageQualityRouter.get_adapter",
-                return_value=MagicMock(),
-            ) as mock_get_adapter:
-                mock_adapter = cast(MagicMock, mock_get_adapter.return_value)
-                mock_adapter.project_root = project_root
-
-                with patch(
-                    "cortex.tools.execution.pre_commit_tools_execute_checks.get_or_resolve_project_root",
-                    new_callable=AsyncMock,
-                    return_value=project_root,
-                ):
-                    result = await execute_pre_commit_checks(
-                        checks=["check_async_tests"],
-                        **_EXECUTE_REQUIRED,
-                    )
-
-                assert result["status"] == "success"
-                checks_performed = extract_list_from_object(
-                    result.get("checks_performed", []),
-                    [],
-                )
-                assert "check_async_tests" in checks_performed
-                results_obj = result.get("results", {})
-                results = extract_dict_from_object(results_obj, {})
-                check_async_tests_result = extract_dict_from_object(
-                    results.get("check_async_tests", {}),
-                    {},
-                )
-                assert check_async_tests_result["success"] is True
-                assert "skipped" in str(check_async_tests_result.get("output", ""))
+        result = await _execute_single_check_with_mock_adapter_project(
+            "check_async_tests"
+        )
+        _assert_skipped_synapse_script_check(result, "check_async_tests")
 
 
 class TestRunSynapseScript:
@@ -815,17 +975,7 @@ class TestRunSynapseScript:
         """When script returns non-zero with empty output, error shows exit code."""
         with tempfile.TemporaryDirectory() as tmpdir:
             root = Path(tmpdir)
-            scripts_dir = (
-                get_cortex_path(root, CortexResourceType.SYNAPSE) / "scripts" / "python"
-            )
-            scripts_dir.mkdir(parents=True)
-            script_path = scripts_dir / "check_formatting_ci_parity.py"
-            _ = script_path.write_text("#!/usr/bin/env python3\n")
-            get_project_path(root, ProjectResourceType.VENV).mkdir()
-            get_venv_bin_path(root).mkdir(parents=True)
-            python_bin = get_venv_bin_path(root) / "python"
-            _ = python_bin.write_text("")
-            python_bin.chmod(0o755)
+            _install_synapse_parity_script_fixtures(root)
 
             with patch(
                 "cortex.tools.execution.pre_commit_synapse.subprocess.run"
@@ -843,9 +993,9 @@ class TestRunSynapseScript:
                     "format_ci_parity",
                 )
 
-                assert result.success is False
-                assert len(result.errors) == 1
-                assert "Exit code 2" in result.errors[0]
+            assert result.success is False
+            assert len(result.errors) == 1
+            assert "Exit code 2" in result.errors[0]
 
     def test_run_synapse_script_when_subprocess_raises_returns_exception_result(
         self,
@@ -1141,32 +1291,24 @@ class TestFixQualityCheck:
                 files_modified=["file1.py"],
                 remaining_issues=["1 linting/formatting errors remain"],
             )
-            with patch(
-                "cortex.tools.execution.pre_commit_tools_execute_checks.autofix_impl",
-                new_callable=AsyncMock,
-                return_value=fix_json,
-            ):
-                with patch(
+            with (
+                patch(
+                    "cortex.tools.execution.pre_commit_tools_execute_checks.autofix_impl",
+                    new_callable=AsyncMock,
+                    return_value=fix_json,
+                ),
+                patch(
                     "cortex.tools.execution.pre_commit_tools_execute_checks.get_or_resolve_project_root",
                     new_callable=AsyncMock,
                     return_value=project_root,
-                ):
-                    result = await execute_pre_commit_checks(
-                        checks=["fix_quality"],
-                        **_EXECUTE_REQUIRED,
-                    )
+                ),
+            ):
+                result = await execute_pre_commit_checks(
+                    checks=["fix_quality"],
+                    **_EXECUTE_REQUIRED,
+                )
 
-            assert result["status"] == "success"
-            assert result.get("error_message") is None
-            errors_fixed = extract_int_from_object(result.get("errors_fixed", 0), 0)
-            assert errors_fixed == 1
-            remaining_issues_obj = result.get("remaining_issues", [])
-            remaining_issues = extract_list_from_object(remaining_issues_obj, [])
-            assert len(remaining_issues) > 0
-            assert any(
-                "1 linting/formatting errors remain" in issue
-                for issue in remaining_issues
-            )
+            _assert_fix_quality_remaining_issues(result)
 
     @pytest.mark.asyncio
     async def test_fix_quality_exception_handling(self) -> None:
@@ -1583,13 +1725,7 @@ class TestQualityCheckIntegration:
         """Test that quality check includes file size violations."""
         with tempfile.TemporaryDirectory() as tmpdir:
             project_root = Path(tmpdir)
-            _ = (project_root / "pyproject.toml").write_text("[project]\nname = 'test'")
-            get_project_path(project_root, ProjectResourceType.VENV).mkdir()
-            src_dir = project_root / "src"
-            src_dir.mkdir()
-
-            # Create a small valid file
-            _ = (src_dir / "module.py").write_text("x = 1\n")
+            _project_with_minimal_src_module(project_root)
 
             with patch(
                 "cortex.services.language_quality_router.LanguageQualityRouter.get_adapter",
@@ -1597,58 +1733,29 @@ class TestQualityCheckIntegration:
             ) as mock_get_adapter:
                 mock_adapter = cast(MagicMock, mock_get_adapter.return_value)
                 mock_adapter.project_root = project_root
+                _stub_adapter_lint_and_type_green(mock_adapter)
 
-                mock_adapter.lint_code.return_value = CheckResult(
-                    check_type="lint",
-                    success=True,
-                    output="All good",
-                    errors=[],
-                    warnings=[],
-                    files_modified=[],
-                )
-                # Quality gate includes type_check (Option A: pipelines run type_check with quality)
-                mock_adapter.type_check.return_value = CheckResult(
-                    check_type="type_check",
-                    success=True,
-                    output="0 errors, 0 warnings",
-                    errors=[],
-                    warnings=[],
-                    files_modified=[],
-                )
-
-                with (
-                    patch(
-                        "cortex.tools.execution.pre_commit_tools_execute_checks.get_or_resolve_project_root",
-                        new_callable=AsyncMock,
-                        return_value=project_root,
-                    ),
-                    patch(
-                        "cortex.tools.execution.pre_commit_pipeline_quality.run_quality_checks_for_all_languages",
-                        return_value=([], []),
-                    ),
-                ):
+                with _quality_pipeline_patches(project_root):
                     result = await execute_pre_commit_checks(
                         checks=["quality"],
                         **_EXECUTE_REQUIRED,
                     )
 
-                assert result["status"] == "success"
-                checks_performed = extract_list_from_object(
-                    result.get("checks_performed", []),
-                    [],
-                )
-                assert "quality" in checks_performed
-                assert "type_check" in checks_performed
-                # Quality result should include file_size_violations and
-                # function_length_violations
-                results_obj = result.get("results", {})
-                results = extract_dict_from_object(results_obj, {})
-                quality_result = extract_dict_from_object(
-                    results.get("quality", {}),
-                    {},
-                )
-                assert "file_size_violations" in quality_result
-                assert "function_length_violations" in quality_result
+            assert result["status"] == "success"
+            checks_performed = extract_list_from_object(
+                result.get("checks_performed", []),
+                [],
+            )
+            assert "quality" in checks_performed
+            assert "type_check" in checks_performed
+            results_obj = result.get("results", {})
+            results = extract_dict_from_object(results_obj, {})
+            quality_result = extract_dict_from_object(
+                results.get("quality", {}),
+                {},
+            )
+            assert "file_size_violations" in quality_result
+            assert "function_length_violations" in quality_result
 
 
 class TestLogTruncationBehavior:
@@ -1659,12 +1766,7 @@ class TestLogTruncationBehavior:
         """Large quality output logs should be truncated to keep JSON compact."""
         with tempfile.TemporaryDirectory() as tmpdir:
             project_root = Path(tmpdir)
-            _ = (project_root / "pyproject.toml").write_text("[project]\nname = 'test'")
-            get_project_path(project_root, ProjectResourceType.VENV).mkdir()
-            src_dir = project_root / "src"
-            src_dir.mkdir()
-            _ = (src_dir / "module.py").write_text("x = 1\n")
-
+            _project_with_minimal_src_module(project_root)
             large_output = "X" * (MAX_LOG_OUTPUT_LENGTH * 2)
 
             with patch(
@@ -1672,53 +1774,36 @@ class TestLogTruncationBehavior:
                 return_value=MagicMock(),
             ) as mock_get_adapter:
                 mock_adapter = cast(MagicMock, mock_get_adapter.return_value)
-                mock_adapter.project_root = project_root
-
-                mock_adapter.lint_code.return_value = CheckResult(
-                    check_type="lint",
-                    success=False,
-                    output=large_output,
-                    errors=["E1"],
-                    warnings=[],
-                    files_modified=[],
-                )
-                # Quality gate includes type_check
-                mock_adapter.type_check.return_value = CheckResult(
-                    check_type="type_check",
-                    success=True,
-                    output="0 errors",
-                    errors=[],
-                    warnings=[],
-                    files_modified=[],
+                _stub_adapter_quality_lint_fail_large_output(
+                    mock_adapter, project_root, large_output
                 )
 
-                with (
-                    patch(
-                        "cortex.tools.execution.pre_commit_tools_execute_checks.get_or_resolve_project_root",
-                        new_callable=AsyncMock,
-                        return_value=project_root,
-                    ),
-                    patch(
-                        "cortex.tools.execution.pre_commit_pipeline_quality.run_quality_checks_for_all_languages",
-                        return_value=([], []),
-                    ),
-                ):
+                with _quality_pipeline_patches(project_root):
                     result = await execute_pre_commit_checks(
                         checks=["quality"],
                         **_EXECUTE_REQUIRED,
                     )
 
-                assert result["status"] == "error"
-                results_obj = result.get("results", {})
-                results = extract_dict_from_object(results_obj, {})
-                quality_result = extract_dict_from_object(
-                    results.get("quality", {}),
-                    {},
-                )
-                truncated_output = str(quality_result.get("output", ""))
-                assert isinstance(truncated_output, str)
-                assert len(truncated_output) <= MAX_LOG_OUTPUT_LENGTH + 200
-                assert "truncated" in truncated_output
+            _assert_quality_output_truncated(result)
+
+
+def _git_commit_short_function_module(root: Path, py_file: Path) -> None:
+    """Initial commit: module.py with short_func (10-line body)."""
+    short_body = "\n".join(f"    x{i} = {i}" for i in range(10))
+    _ = py_file.write_text(f"def short_func():\n{short_body}\n    return x0\n")
+    _ = subprocess.run(["git", "add", "."], cwd=root, check=True, capture_output=True)
+    _ = subprocess.run(
+        ["git", "commit", "-m", "init"],
+        cwd=root,
+        check=True,
+        capture_output=True,
+    )
+
+
+def _write_long_function_version_of_short_func(py_file: Path) -> None:
+    """Overwrite module with short_func whose body exceeds MAX_FUNCTION_LINES."""
+    long_body = "\n".join(f"    x{i} = {i}" for i in range(35))
+    _ = py_file.write_text(f"def short_func():\n{long_body}\n    return x0\n")
 
 
 class TestStructuralViolationFiltering:
@@ -1758,7 +1843,9 @@ class TestStructuralViolationFiltering:
         )
         return src / "renamed.py"
 
-    def test_filters_preexisting_file_and_function_violations_for_rename(self) -> None:
+    def test_rename_file_size_filtered_function_length_reported(self) -> None:
+        """For a renamed file: file-size pre-existing violations are suppressed;
+        function-length violations are always reported to match CI behaviour."""
         with tempfile.TemporaryDirectory() as tmpdir:
             root = Path(tmpdir)
             line_count = MAX_FILE_LINES + 20
@@ -1785,8 +1872,37 @@ class TestStructuralViolationFiltering:
             filtered_file, filtered_func = filter_preexisting_structural_violations(
                 root, [new], file_violations, func_violations
             )
+            # File-size: pre-existing in a tracked rename → suppressed
             assert filtered_file == []
-            assert filtered_func == []
+            # Function-length: always reported to match CI (no hunk filtering)
+            assert len(filtered_func) == 1
+            assert filtered_func[0].function == "too_long"
+
+    def test_reports_violation_when_lines_added_inside_existing_function(self) -> None:
+        """Internal growth past 30 lines must be reported (filter uses full span, not hunk start)."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            src = root / "src"
+            src.mkdir()
+            py_file = src / "module.py"
+            self._init_git_repo(root)
+            _git_commit_short_function_module(root, py_file)
+            _write_long_function_version_of_short_func(py_file)
+            func_violations = [
+                FunctionLengthViolation(
+                    file="src/module.py",
+                    function="short_func",
+                    line=1,
+                    lines=35,
+                    max_lines=MAX_FUNCTION_LINES,
+                    excess=35 - MAX_FUNCTION_LINES,
+                )
+            ]
+            filtered_file, filtered_func = filter_preexisting_structural_violations(
+                root, [py_file], [], func_violations
+            )
+            assert filtered_file == []
+            assert len(filtered_func) == 1 and filtered_func[0].function == "short_func"
 
     def test_run_git_diff_output_handles_binary_bytes(self) -> None:
         """Binary bytes in git diff output should not crash decoding."""
@@ -1834,99 +1950,12 @@ class TestPreCommitToolsContextLogging:
     async def test_execute_pre_commit_checks_calls_log_client_when_ctx_passed(
         self,
     ) -> None:
-        """When ctx is passed, execute_pre_commit_checks logs completion via log_client.
-
-        Note: the start log was moved from log_client to server-side logger.info
-        to avoid MCP stream writes that race with concurrent tool responses.
-        """
-        mock_ctx = AsyncMock()
+        """execute_pre_commit_checks logs completion via log_client when ctx is passed."""
         with tempfile.TemporaryDirectory() as tmpdir:
             project_root = Path(tmpdir)
-            _ = (project_root / "pyproject.toml").write_text("[project]\nname = 'test'")
-            get_project_path(project_root, ProjectResourceType.VENV).mkdir()
-            with (
-                patch(
-                    "cortex.tools.execution.pre_commit_tools_inline_execution.log_client",
-                    new_callable=AsyncMock,
-                ) as mock_log,
-                patch(
-                    "cortex.services.language_quality_router.LanguageQualityRouter.get_adapter",
-                    return_value=MagicMock(),
-                ) as mock_get_adapter,
-                patch(
-                    "cortex.tools.execution.pre_commit_tools_execute_checks.get_current_project_root",
-                    return_value=project_root,
-                ),
-                patch(
-                    "cortex.tools.execution.pre_commit_tools_execute_checks.get_or_resolve_project_root",
-                    new_callable=AsyncMock,
-                    return_value=project_root,
-                ),
-                patch(
-                    "cortex.tools.execution.pre_commit_tools_run_helpers.asyncio.to_thread",
-                    new_callable=AsyncMock,
-                ) as mock_to_thread,
-            ):
-                mock_adapter = cast(MagicMock, mock_get_adapter.return_value)
-                mock_result = CheckResult(
-                    check_type="fix_errors",
-                    success=True,
-                    output="OK",
-                    errors=[],
-                    warnings=[],
-                    files_modified=[],
-                )
-                mock_adapter.fix_errors.return_value = mock_result
-
-                async def run_sync(
-                    func: Callable[..., object], *args: object
-                ) -> object:  # run in same thread for test
-                    # Handle _execute_all_checks call
-                    if (
-                        hasattr(func, "__name__")
-                        and func.__name__ == "_execute_all_checks"
-                    ):
-                        # Extract arguments for _execute_all_checks
-                        if len(args) >= 6:
-                            checks_list = args[2]  # checks_to_perform is 3rd arg
-                            results: dict[str, CheckResult] = {}
-                            if isinstance(checks_list, list):
-                                checks_performed_list: list[str] = []
-                                for item in checks_list:  # type: ignore[reportUnknownVariableType]
-                                    if isinstance(item, PreCommitCheck):
-                                        check_name = item.value
-                                        checks_performed_list.append(check_name)
-                                        results[check_name] = mock_result
-                                stats: MagicMock = MagicMock(
-                                    total_errors=0,
-                                    total_warnings=0,
-                                    files_modified=[],
-                                    checks_performed=checks_performed_list,
-                                )
-                            else:
-                                stats = MagicMock(
-                                    total_errors=0,
-                                    total_warnings=0,
-                                    files_modified=[],
-                                    checks_performed=[],
-                                )
-                            return results, stats
-                    # For other functions (e.g., from get_or_resolve_project_root), call normally
-                    return func(*args)
-
-                mock_to_thread.side_effect = run_sync
-
-                result = await execute_pre_commit_checks(
-                    checks=["fix_errors"],
-                    **_EXECUTE_REQUIRED,
-                    ctx=mock_ctx,
-                )
-            assert result["status"] == "success"
-            args_list = [c[0] for c in mock_log.call_args_list]
-            levels_and_messages = [(a[1], a[2]) for a in args_list]
-            # Start log now uses server-side logger.info (not log_client),
-            # so only the completion log is sent to the MCP client.
-            assert (
-                "info",
-                "execute_pre_commit_checks: completed",
-            ) in levels_and_messages
+            _minimal_python_project(project_root)
+            result, mock_log = await _execute_pre_commit_fix_errors_with_ctx_log(
+                project_root
+            )
+        assert result["status"] == "success"
+        _assert_execute_pre_commit_completion_log(mock_log)

@@ -10,6 +10,7 @@ This test suite provides comprehensive coverage for:
 """
 
 import json
+from contextlib import ExitStack, contextmanager
 from pathlib import Path
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
@@ -49,6 +50,172 @@ async def _stability_passthrough(func: Any, *args: Any, **kwargs: Any) -> object
     return await func(*args, **kwargs)
 
 
+_LINKING_TOOL_MODULES_FULL_STACK = (
+    "cortex.tools.linking.parser_operations",
+    "cortex.tools.linking.transclusion_operations",
+    "cortex.tools.linking.validation_operations",
+    "cortex.tools.linking.graph_operations",
+)
+
+
+@contextmanager
+def _patch_full_linking_tool_stack(
+    mock_project_root: Path, mock_managers: ManagersDict
+) -> Any:
+    """Apply resolve/get_managers/get_manager patches for all linking tool modules."""
+    with ExitStack() as stack:
+        for mod in _LINKING_TOOL_MODULES_FULL_STACK:
+            _ = stack.enter_context(
+                patch(
+                    f"{mod}.resolve_project_root_async",
+                    new_callable=AsyncMock,
+                    return_value=mock_project_root,
+                )
+            )
+            _ = stack.enter_context(
+                patch(f"{mod}.get_managers", return_value=mock_managers)
+            )
+            _ = stack.enter_context(
+                patch(
+                    f"{mod}.get_manager",
+                    side_effect=_get_manager_helper,
+                )
+            )
+        yield
+
+
+_ERROR_HANDLING_LINKING_MODULES = (
+    "cortex.tools.linking.parser_operations",
+    "cortex.tools.linking.transclusion_operations",
+    "cortex.tools.linking.validation_operations",
+)
+
+
+@contextmanager
+def _patch_error_handling_linking_tools(
+    mock_project_root: Path, mock_managers: ManagersDict
+) -> Any:
+    """Patches parser/transclusion/validation roots for missing-file error paths."""
+    with ExitStack() as stack:
+        for mod in _ERROR_HANDLING_LINKING_MODULES:
+            _ = stack.enter_context(
+                patch(
+                    f"{mod}.resolve_project_root_async",
+                    new_callable=AsyncMock,
+                    return_value=mock_project_root,
+                )
+            )
+            _ = stack.enter_context(
+                patch(f"{mod}.get_managers", return_value=mock_managers)
+            )
+        yield
+
+
+async def _run_full_linking_workflow_success_steps() -> None:
+    """Parse → resolve → validate → graph with patches applied."""
+    parse_result = await parse_file_links(file_name="test.md")
+    parse_data = json.loads(parse_result)
+    assert parse_data["status"] == "success"
+    assert parse_data["summary"]["total"] > 0
+
+    resolve_result = await resolve_transclusions(file_name="test.md")
+    resolve_data = json.loads(resolve_result)
+    assert resolve_data["status"] == "success"
+    assert resolve_data["has_transclusions"] is True
+
+    validate_result = await validate_links(file_name="test.md")
+    validate_data = json.loads(validate_result)
+    assert validate_data["status"] == "success"
+
+    graph_result = await get_link_graph()
+    graph_data = json.loads(graph_result)
+    assert graph_data["status"] == "success"
+    assert "summary" in graph_data
+
+
+def _log_levels_and_messages(mock_log: MagicMock) -> list[tuple[object, object]]:
+    args_list = [c[0] for c in mock_log.call_args_list]
+    return [(a[1], a[2]) for a in args_list]
+
+
+@contextmanager
+def _linking_tool_logging_patches(
+    module: str,
+    mock_project_root: Path,
+    mock_managers: ManagersDict,
+) -> Any:
+    """log_client + resolve root + get_managers + get_manager for a linking tool module."""
+    with (
+        patch(f"{module}.log_client", new_callable=AsyncMock) as mock_log,
+        patch(
+            f"{module}.resolve_project_root_async",
+            new_callable=AsyncMock,
+            return_value=mock_project_root,
+        ),
+        patch(f"{module}.get_managers", return_value=mock_managers),
+        patch(
+            f"{module}.get_manager",
+            side_effect=_get_manager_helper,
+        ),
+    ):
+        yield mock_log
+
+
+@contextmanager
+def _patch_resolve_transclusions_success_tool(
+    mock_project_root: Path, mock_managers: ManagersDict
+) -> Any:
+    """Patches for resolve_transclusions happy path with stability wrapper."""
+    with (
+        patch(
+            "cortex.tools.linking.transclusion_operations.resolve_project_root_async",
+            new_callable=AsyncMock,
+            return_value=mock_project_root,
+        ),
+        patch(
+            "cortex.tools.linking.transclusion_operations.execute_tool_with_stability",
+            new_callable=AsyncMock,
+            side_effect=_stability_passthrough,
+        ),
+        patch(
+            "cortex.tools.linking.transclusion_operations.get_managers",
+            return_value=mock_managers,
+        ),
+        patch(
+            "cortex.tools.linking.transclusion_operations.get_manager",
+            side_effect=_get_manager_helper,
+        ),
+    ):
+        yield
+
+
+@contextmanager
+def _resolve_transclusions_fallback_patches(
+    bad_root: Path, good_root: Path, mock_managers: ManagersDict
+):
+    """Patches for async root without memory-bank vs in-process good root."""
+    with (
+        patch(
+            "cortex.tools.linking.transclusion_operations.resolve_project_root_async",
+            new_callable=AsyncMock,
+            return_value=bad_root,
+        ),
+        patch(
+            "cortex.tools.linking.transclusion_operations.get_current_project_root",
+            return_value=good_root,
+        ),
+        patch(
+            "cortex.tools.linking.transclusion_operations.get_managers",
+            return_value=mock_managers,
+        ),
+        patch(
+            "cortex.tools.linking.transclusion_operations.get_manager",
+            side_effect=_get_manager_helper,
+        ),
+    ):
+        yield
+
+
 # ============================================================================
 # Fixtures
 # ============================================================================
@@ -77,21 +244,25 @@ def mock_parsed_links() -> dict[str, list[dict[str, Any]]]:
     }
 
 
-@pytest.fixture
-def mock_managers(
-    mock_parsed_links: dict[str, list[dict[str, Any]]],
-) -> ManagersDict:
-    """Create typed mock managers container."""
+def _mock_fs_manager_for_linking() -> MagicMock:
     fs_manager = MagicMock()
     fs_manager.read_file = AsyncMock(return_value=("Test content", None))
     fs_manager.construct_safe_path = MagicMock(
         return_value=Path("/mock/.cortex/memory-bank/test.md")
     )
+    return fs_manager
 
+
+def _mock_link_parser_for_linking(
+    mock_parsed_links: dict[str, list[dict[str, Any]]],
+) -> MagicMock:
     link_parser = MagicMock()
     link_parser.parse_file = AsyncMock(return_value=mock_parsed_links)
     link_parser.has_transclusions = MagicMock(return_value=True)
+    return link_parser
 
+
+def _mock_transclusion_engine_for_linking() -> MagicMock:
     transclusion_engine = MagicMock()
     transclusion_engine.resolve_content = AsyncMock(
         return_value="Resolved content with transclusions"
@@ -100,7 +271,10 @@ def mock_managers(
         return_value={"hits": 5, "misses": 2, "entries": 3}
     )
     transclusion_engine.max_depth = 5
+    return transclusion_engine
 
+
+def _mock_link_validator_for_linking() -> MagicMock:
     link_validator = MagicMock()
     link_validator.validate_file = AsyncMock(
         return_value={
@@ -121,7 +295,10 @@ def mock_managers(
         }
     )
     link_validator.generate_report = MagicMock(return_value="Validation report")
+    return link_validator
 
+
+def _mock_dependency_graph_for_linking() -> MagicMock:
     dependency_graph = MagicMock()
     dependency_graph.build_from_links = AsyncMock()
     dependency_graph.detect_cycles = MagicMock(return_value=[])
@@ -143,14 +320,28 @@ def mock_managers(
         "file1.md": {"file2.md": "reference"},
         "file2.md": {"file3.md": "transclusion"},
     }
+    return dependency_graph
 
+
+def _build_mock_managers(
+    mock_parsed_links: dict[str, list[dict[str, Any]]],
+) -> ManagersDict:
+    """Wire default Phase 2 linking mocks into a typed managers container."""
     return make_test_managers(
-        fs=fs_manager,
-        graph=dependency_graph,
-        link_parser=link_parser,
-        transclusion=transclusion_engine,
-        link_validator=link_validator,
+        fs=_mock_fs_manager_for_linking(),
+        graph=_mock_dependency_graph_for_linking(),
+        link_parser=_mock_link_parser_for_linking(mock_parsed_links),
+        transclusion=_mock_transclusion_engine_for_linking(),
+        link_validator=_mock_link_validator_for_linking(),
     )
+
+
+@pytest.fixture
+def mock_managers(
+    mock_parsed_links: dict[str, list[dict[str, Any]]],
+) -> ManagersDict:
+    """Create typed mock managers container."""
+    return _build_mock_managers(mock_parsed_links)
 
 
 # ============================================================================
@@ -307,42 +498,22 @@ class TestResolveTransclusions:
         self, mock_project_root: Path, mock_managers: ManagersDict
     ) -> None:
         """Test successful transclusion resolution."""
-        # Arrange
         file_path = get_test_memory_bank_dir(mock_project_root) / "test.md"
         file_path.touch()
         mock_managers.fs.construct_safe_path.return_value = file_path  # type: ignore[attr-defined]
 
-        with (
-            patch(
-                "cortex.tools.linking.transclusion_operations.resolve_project_root_async",
-                new_callable=AsyncMock,
-                return_value=mock_project_root,
-            ),
-            patch(
-                "cortex.tools.linking.transclusion_operations.execute_tool_with_stability",
-                new_callable=AsyncMock,
-                side_effect=_stability_passthrough,
-            ),
-            patch(
-                "cortex.tools.linking.transclusion_operations.get_managers",
-                return_value=mock_managers,
-            ),
-            patch(
-                "cortex.tools.linking.transclusion_operations.get_manager",
-                side_effect=_get_manager_helper,
-            ),
+        with _patch_resolve_transclusions_success_tool(
+            mock_project_root, mock_managers
         ):
-            # Act
             result_str = await resolve_transclusions(file_name="test.md")
             result = json.loads(result_str)
 
-            # Assert
-            assert result["status"] == "success"
-            assert result["file"] == "test.md"
-            assert "original_content" in result
-            assert "resolved_content" in result
-            assert result["has_transclusions"] is True
-            assert "cache_stats" in result
+        assert result["status"] == "success"
+        assert result["file"] == "test.md"
+        assert "original_content" in result
+        assert "resolved_content" in result
+        assert result["has_transclusions"] is True
+        assert "cache_stats" in result
 
     async def test_resolve_transclusions_no_transclusions(
         self, mock_project_root: Path, mock_managers: ManagersDict
@@ -510,6 +681,7 @@ class TestResolveTransclusions:
             # Assert
             assert result["status"] == "error"
             assert "Invalid file name" in result["error"]
+            assert result["error_type"] == "PathError"
 
     async def test_resolve_transclusions_file_not_found(
         self, mock_project_root: Path, mock_managers: ManagersDict
@@ -537,6 +709,25 @@ class TestResolveTransclusions:
             # Assert
             assert result["status"] == "error"
             assert "not found" in result["error"]
+            assert result["error_type"] == "FileNotFoundError"
+
+    async def test_resolve_transclusions_falls_back_when_async_root_lacks_memory_bank(
+        self, mock_project_root: Path, mock_managers: ManagersDict
+    ) -> None:
+        """When async root has no .cortex/memory-bank, use get_current_project_root."""
+        bad_root = mock_project_root.parent / "other_workspace"
+        bad_root.mkdir()
+        file_path = get_test_memory_bank_dir(mock_project_root) / "test.md"
+        file_path.touch()
+        mock_managers.fs.construct_safe_path.return_value = file_path  # type: ignore[attr-defined]
+        mock_managers.link_parser.has_transclusions.return_value = False  # type: ignore[attr-defined]
+        with _resolve_transclusions_fallback_patches(
+            bad_root, mock_project_root, mock_managers
+        ):
+            result_str = await resolve_transclusions(file_name="test.md")
+            result = json.loads(result_str)
+        assert result["status"] == "success"
+        assert result["has_transclusions"] is False
 
 
 # ============================================================================
@@ -885,34 +1076,19 @@ class TestPhase2LinkingContextLogging:
         file_path.touch()
         mock_managers.fs.construct_safe_path.return_value = file_path  # type: ignore[attr-defined]
         mock_ctx = AsyncMock()
-        with (
-            patch(
-                "cortex.tools.linking.parser_operations.log_client",
-                new_callable=AsyncMock,
-            ) as mock_log,
-            patch(
-                "cortex.tools.linking.parser_operations.resolve_project_root_async",
-                new_callable=AsyncMock,
-                return_value=mock_project_root,
-            ),
-            patch(
-                "cortex.tools.linking.parser_operations.get_managers",
-                return_value=mock_managers,
-            ),
-            patch(
-                "cortex.tools.linking.parser_operations.get_manager",
-                side_effect=_get_manager_helper,
-            ),
-        ):
+        with _linking_tool_logging_patches(
+            "cortex.tools.linking.parser_operations",
+            mock_project_root,
+            mock_managers,
+        ) as mock_log:
             result = await parse_file_links(
                 file_name="test.md",
                 ctx=mock_ctx,
             )
-            assert json.loads(result)["status"] == "success"
-            args_list = [c[0] for c in mock_log.call_args_list]
-            levels_and_messages = [(a[1], a[2]) for a in args_list]
-            assert ("info", "parse_file_links: starting") in levels_and_messages
-            assert ("info", "parse_file_links: completed") in levels_and_messages
+        assert json.loads(result)["status"] == "success"
+        levels_and_messages = _log_levels_and_messages(mock_log)
+        assert ("info", "parse_file_links: starting") in levels_and_messages
+        assert ("info", "parse_file_links: completed") in levels_and_messages
 
     async def test_parse_file_links_calls_log_client_warning_when_validation_failed_when_ctx_passed(
         self, mock_project_root: Path, mock_managers: ManagersDict
@@ -977,33 +1153,18 @@ class TestPhase2LinkingContextLogging:
     ) -> None:
         """When ctx is passed, validate_links logs start and completion."""
         mock_ctx = AsyncMock()
-        with (
-            patch(
-                "cortex.tools.linking.validation_operations.log_client",
-                new_callable=AsyncMock,
-            ) as mock_log,
-            patch(
-                "cortex.tools.linking.validation_operations.resolve_project_root_async",
-                new_callable=AsyncMock,
-                return_value=mock_project_root,
-            ),
-            patch(
-                "cortex.tools.linking.validation_operations.get_managers",
-                return_value=mock_managers,
-            ),
-            patch(
-                "cortex.tools.linking.validation_operations.get_manager",
-                side_effect=_get_manager_helper,
-            ),
-        ):
+        with _linking_tool_logging_patches(
+            "cortex.tools.linking.validation_operations",
+            mock_project_root,
+            mock_managers,
+        ) as mock_log:
             result = await validate_links(
                 ctx=mock_ctx,
             )
-            assert json.loads(result)["status"] == "success"
-            args_list = [c[0] for c in mock_log.call_args_list]
-            levels_and_messages = [(a[1], a[2]) for a in args_list]
-            assert ("info", "validate_links: starting") in levels_and_messages
-            assert ("info", "validate_links: completed") in levels_and_messages
+        assert json.loads(result)["status"] == "success"
+        levels_and_messages = _log_levels_and_messages(mock_log)
+        assert ("info", "validate_links: starting") in levels_and_messages
+        assert ("info", "validate_links: completed") in levels_and_messages
 
     async def test_validate_links_calls_log_client_error_on_exception_when_ctx_passed(
         self, mock_project_root: Path
@@ -1037,34 +1198,19 @@ class TestPhase2LinkingContextLogging:
         file_path.touch()
         mock_managers.fs.construct_safe_path.return_value = file_path  # type: ignore[attr-defined]
         mock_ctx = AsyncMock()
-        with (
-            patch(
-                "cortex.tools.linking.transclusion_operations.log_client",
-                new_callable=AsyncMock,
-            ) as mock_log,
-            patch(
-                "cortex.tools.linking.transclusion_operations.resolve_project_root_async",
-                new_callable=AsyncMock,
-                return_value=mock_project_root,
-            ),
-            patch(
-                "cortex.tools.linking.transclusion_operations.get_managers",
-                return_value=mock_managers,
-            ),
-            patch(
-                "cortex.tools.linking.transclusion_operations.get_manager",
-                side_effect=_get_manager_helper,
-            ),
-        ):
+        with _linking_tool_logging_patches(
+            "cortex.tools.linking.transclusion_operations",
+            mock_project_root,
+            mock_managers,
+        ) as mock_log:
             result = await resolve_transclusions(
                 file_name="test.md",
                 ctx=mock_ctx,
             )
-            assert json.loads(result)["status"] == "success"
-            args_list = [c[0] for c in mock_log.call_args_list]
-            levels_and_messages = [(a[1], a[2]) for a in args_list]
-            assert ("info", "resolve_transclusions: starting") in levels_and_messages
-            assert ("info", "resolve_transclusions: completed") in levels_and_messages
+        assert json.loads(result)["status"] == "success"
+        levels_and_messages = _log_levels_and_messages(mock_log)
+        assert ("info", "resolve_transclusions: starting") in levels_and_messages
+        assert ("info", "resolve_transclusions: completed") in levels_and_messages
 
     async def test_resolve_transclusions_calls_log_client_error_on_exception_when_ctx_passed(
         self, mock_project_root: Path
@@ -1096,33 +1242,18 @@ class TestPhase2LinkingContextLogging:
     ) -> None:
         """When ctx is passed, get_link_graph logs start and completion."""
         mock_ctx = AsyncMock()
-        with (
-            patch(
-                "cortex.tools.linking.graph_operations.log_client",
-                new_callable=AsyncMock,
-            ) as mock_log,
-            patch(
-                "cortex.tools.linking.graph_operations.resolve_project_root_async",
-                new_callable=AsyncMock,
-                return_value=mock_project_root,
-            ),
-            patch(
-                "cortex.tools.linking.graph_operations.get_managers",
-                return_value=mock_managers,
-            ),
-            patch(
-                "cortex.tools.linking.graph_operations.get_manager",
-                side_effect=_get_manager_helper,
-            ),
-        ):
+        with _linking_tool_logging_patches(
+            "cortex.tools.linking.graph_operations",
+            mock_project_root,
+            mock_managers,
+        ) as mock_log:
             result = await get_link_graph(
                 ctx=mock_ctx,
             )
-            assert json.loads(result)["status"] == "success"
-            args_list = [c[0] for c in mock_log.call_args_list]
-            levels_and_messages = [(a[1], a[2]) for a in args_list]
-            assert ("info", "get_link_graph: starting") in levels_and_messages
-            assert ("info", "get_link_graph: completed") in levels_and_messages
+        assert json.loads(result)["status"] == "success"
+        levels_and_messages = _log_levels_and_messages(mock_log)
+        assert ("info", "get_link_graph: starting") in levels_and_messages
+        assert ("info", "get_link_graph: completed") in levels_and_messages
 
     async def test_get_link_graph_calls_log_client_error_on_exception_when_ctx_passed(
         self, mock_project_root: Path
@@ -1165,141 +1296,26 @@ class TestIntegration:
         file_path.touch()
         mock_managers.fs.construct_safe_path.return_value = file_path  # type: ignore[attr-defined]
 
-        with (
-            patch(
-                "cortex.tools.linking.parser_operations.resolve_project_root_async",
-                new_callable=AsyncMock,
-                return_value=mock_project_root,
-            ),
-            patch(
-                "cortex.tools.linking.parser_operations.get_managers",
-                return_value=mock_managers,
-            ),
-            patch(
-                "cortex.tools.linking.parser_operations.get_manager",
-                side_effect=_get_manager_helper,
-            ),
-            patch(
-                "cortex.tools.linking.transclusion_operations.resolve_project_root_async",
-                new_callable=AsyncMock,
-                return_value=mock_project_root,
-            ),
-            patch(
-                "cortex.tools.linking.transclusion_operations.get_managers",
-                return_value=mock_managers,
-            ),
-            patch(
-                "cortex.tools.linking.transclusion_operations.get_manager",
-                side_effect=_get_manager_helper,
-            ),
-            patch(
-                "cortex.tools.linking.validation_operations.resolve_project_root_async",
-                new_callable=AsyncMock,
-                return_value=mock_project_root,
-            ),
-            patch(
-                "cortex.tools.linking.validation_operations.get_managers",
-                return_value=mock_managers,
-            ),
-            patch(
-                "cortex.tools.linking.validation_operations.get_manager",
-                side_effect=_get_manager_helper,
-            ),
-            patch(
-                "cortex.tools.linking.graph_operations.resolve_project_root_async",
-                new_callable=AsyncMock,
-                return_value=mock_project_root,
-            ),
-            patch(
-                "cortex.tools.linking.graph_operations.get_managers",
-                return_value=mock_managers,
-            ),
-            patch(
-                "cortex.tools.linking.graph_operations.get_manager",
-                side_effect=_get_manager_helper,
-            ),
-        ):
-            # Act 1: Parse links
-            parse_result = await parse_file_links(file_name="test.md")
-            parse_data = json.loads(parse_result)
-
-            # Assert 1
-            assert parse_data["status"] == "success"
-            assert parse_data["summary"]["total"] > 0
-
-            # Act 2: Resolve transclusions
-            resolve_result = await resolve_transclusions(file_name="test.md")
-            resolve_data = json.loads(resolve_result)
-
-            # Assert 2
-            assert resolve_data["status"] == "success"
-            assert resolve_data["has_transclusions"] is True
-
-            # Act 3: Validate links
-            validate_result = await validate_links(file_name="test.md")
-            validate_data = json.loads(validate_result)
-
-            # Assert 3
-            assert validate_data["status"] == "success"
-
-            # Act 4: Get link graph
-            graph_result = await get_link_graph()
-            graph_data = json.loads(graph_result)
-
-            # Assert 4
-            assert graph_data["status"] == "success"
-            assert "summary" in graph_data
+        with _patch_full_linking_tool_stack(mock_project_root, mock_managers):
+            await _run_full_linking_workflow_success_steps()
 
     async def test_error_handling_workflow(
         self, mock_project_root: Path, mock_managers: ManagersDict
     ) -> None:
         """Test error handling across multiple operations."""
-        # Arrange - simulate file not found
         file_path = get_test_memory_bank_dir(mock_project_root) / "missing.md"
         mock_managers.fs.construct_safe_path.return_value = file_path  # type: ignore[attr-defined]
 
-        with (
-            patch(
-                "cortex.tools.linking.parser_operations.resolve_project_root_async",
-                new_callable=AsyncMock,
-                return_value=mock_project_root,
-            ),
-            patch(
-                "cortex.tools.linking.parser_operations.get_managers",
-                return_value=mock_managers,
-            ),
-            patch(
-                "cortex.tools.linking.transclusion_operations.resolve_project_root_async",
-                new_callable=AsyncMock,
-                return_value=mock_project_root,
-            ),
-            patch(
-                "cortex.tools.linking.transclusion_operations.get_managers",
-                return_value=mock_managers,
-            ),
-            patch(
-                "cortex.tools.linking.validation_operations.resolve_project_root_async",
-                new_callable=AsyncMock,
-                return_value=mock_project_root,
-            ),
-            patch(
-                "cortex.tools.linking.validation_operations.get_managers",
-                return_value=mock_managers,
-            ),
-        ):
-            # Act & Assert: Parse should fail
-            parse_result = await parse_file_links(file_name="missing.md")
-            parse_data = json.loads(parse_result)
+        with _patch_error_handling_linking_tools(mock_project_root, mock_managers):
+            parse_data = json.loads(await parse_file_links(file_name="missing.md"))
             assert parse_data["status"] == "error"
 
-            # Act & Assert: Resolve should fail
-            resolve_result = await resolve_transclusions(file_name="missing.md")
-            resolve_data = json.loads(resolve_result)
+            resolve_data = json.loads(
+                await resolve_transclusions(file_name="missing.md")
+            )
             assert resolve_data["status"] == "error"
 
-            # Act & Assert: Validate should fail
-            validate_result = await validate_links(file_name="missing.md")
-            validate_data = json.loads(validate_result)
+            validate_data = json.loads(await validate_links(file_name="missing.md"))
             assert validate_data["status"] == "error"
 
 

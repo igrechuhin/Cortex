@@ -2,6 +2,12 @@
 
 **This file records completed work only.** For current status and upcoming work see [roadmap.md](roadmap.md).
 
+## Completed Work (2026-04-03)
+
+- **Quality gate and linking stack (PARTIAL)** - Pre-commit quality pipelines and zero-arg governance tests refactored; reflection evaluation tightened; transclusion operations and rules operations updated with expanded regression coverage.
+
+- ✅ **Transclusion reliability (PARTIAL)** - COMPLETE (2026-04-03) - Hardened `resolve_transclusions` root selection and error typing; added JSON warning logs for uncaught exceptions in the resolution path.
+
 ## Completed Work (2026-04-02)
 
 - **Summary (2026-04-02)** - 1 entries archived.

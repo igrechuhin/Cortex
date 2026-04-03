@@ -312,6 +312,37 @@ async def _execute_rules_operation(
         return _format_rules_error(e)
 
 
+async def _read_ai_code_comments_rule(root: Path) -> str:
+    ai_path = (
+        get_cortex_path(root, CortexResourceType.SYNAPSE)
+        / "rules"
+        / "general"
+        / "ai-code-comments.mdc"
+    )
+    try:
+        if ai_path.is_file():
+            async with open_async_text_file(ai_path, "r", "utf-8") as f:
+                return await f.read()
+    except OSError:
+        pass
+    return ""
+
+
+async def _merge_rules_payload(payload: str) -> str:
+    """Inject reflection checklist and AI comment rule into a rules JSON payload."""
+    try:
+        data: object = json.loads(payload)
+    except json.JSONDecodeError:
+        return payload
+    if not isinstance(data, dict):
+        return payload
+    merged: ModelDict = cast(ModelDict, data)
+    merged["reflection_checklist"] = REFLECTION_CHECKLIST_MARKDOWN
+    root = await resolve_project_root_async(None, None)
+    merged["ai_code_comments_rule"] = await _read_ai_code_comments_rule(root)
+    return json.dumps(merged, indent=2)
+
+
 @mcp.resource(uri="cortex://rules")
 @ensure_usage_context
 @mcp_resource_wrapper(timeout=MCP_TOOL_TIMEOUT_MEDIUM)
@@ -331,27 +362,4 @@ async def get_relevant_rules() -> str:
         max_tokens=None,
         min_relevance_score=None,
     )
-    try:
-        data: object = json.loads(payload)
-    except json.JSONDecodeError:
-        return payload
-    if isinstance(data, dict):
-        merged: ModelDict = cast(ModelDict, data)
-        merged["reflection_checklist"] = REFLECTION_CHECKLIST_MARKDOWN
-        root = await resolve_project_root_async(None, None)
-        ai_path = (
-            get_cortex_path(root, CortexResourceType.SYNAPSE)
-            / "rules"
-            / "general"
-            / "ai-code-comments.mdc"
-        )
-        try:
-            if ai_path.is_file():
-                async with open_async_text_file(ai_path, "r", "utf-8") as f:
-                    merged["ai_code_comments_rule"] = await f.read()
-            else:
-                merged["ai_code_comments_rule"] = ""
-        except OSError:
-            merged["ai_code_comments_rule"] = ""
-        return json.dumps(merged, indent=2)
-    return payload
+    return await _merge_rules_payload(payload)

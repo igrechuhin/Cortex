@@ -94,26 +94,6 @@ def _collect_git_renames(project_root: Path) -> dict[str, str]:
     return renames
 
 
-def _collect_changed_line_ranges(
-    project_root: Path,
-) -> dict[str, list[tuple[int, int]]]:
-    """Collect changed line ranges by file from staged and unstaged diffs."""
-    ranges: dict[str, list[tuple[int, int]]] = {}
-    for args in _changed_lines_git_commands():
-        output = run_git_diff_output(project_root, args)
-        if output is not None:
-            _parse_changed_line_output(output, ranges)
-    return ranges
-
-
-def _changed_lines_git_commands() -> tuple[list[str], ...]:
-    """Return git commands used to collect changed line ranges."""
-    return (
-        ["git", "diff", "--unified=0"],
-        ["git", "diff", "--cached", "--unified=0"],
-    )
-
-
 def run_git_diff_output(project_root: Path, args: list[str]) -> str | None:
     """Run git diff and return stdout on success."""
     try:
@@ -129,32 +109,6 @@ def run_git_diff_output(project_root: Path, args: list[str]) -> str | None:
     if result.returncode != 0:
         return None
     return result.stdout.decode("utf-8", errors="replace")
-
-
-def _parse_changed_line_output(
-    output: str, ranges: dict[str, list[tuple[int, int]]]
-) -> None:
-    """Parse unified diff output and update changed line ranges."""
-    current_file: str | None = None
-    for line in output.splitlines():
-        if line.startswith("+++ b/"):
-            current_file = line[6:].strip()
-            _ = ranges.setdefault(current_file, [])
-            continue
-        if not line.startswith("@@") or current_file is None:
-            continue
-        ranges[current_file].append(_parse_diff_hunk_range(line))
-
-
-def _parse_diff_hunk_range(line: str) -> tuple[int, int]:
-    """Parse @@ hunk header and return new-file line range."""
-    header = line.split("@@")[1].strip()
-    plus_part = header.split(" ")[1].lstrip("+")
-    start_text, _comma, len_text = plus_part.partition(",")
-    start = int(start_text)
-    length = int(len_text) if len_text else 1
-    end = start + max(length, 1) - 1
-    return start, end
 
 
 def read_head_source(project_root: Path, rel_path: str) -> str | None:
@@ -202,15 +156,6 @@ def _build_baseline_function_lines(
     return tracked, baseline
 
 
-def _violation_in_changed_lines(
-    violation: FunctionLengthViolation,
-    changed_line_ranges: dict[str, list[tuple[int, int]]],
-) -> bool:
-    """Return True if function start line is in changed diff hunks."""
-    ranges = changed_line_ranges.get(violation.file, [])
-    return any(start <= violation.line <= end for start, end in ranges)
-
-
 def filter_preexisting_structural_violations(
     project_root: Path,
     delta_files: list[Path],
@@ -249,17 +194,16 @@ def _filter_with_baseline(
     file_violations: list[FileSizeViolation],
     func_violations: list[FunctionLengthViolation],
 ) -> tuple[list[FileSizeViolation], list[FunctionLengthViolation]]:
-    """Filter violations using changed-line and HEAD baseline context."""
-    changed_line_ranges = _collect_changed_line_ranges(project_root)
+    """Filter violations: file-size uses HEAD baseline; function-length uses no filtering."""
     rename_map = _collect_git_renames(project_root)
-    tracked_files, baseline_function_lines = _build_baseline_function_lines(
+    tracked_files, _ = _build_baseline_function_lines(
         project_root, changed_rel, rename_map
     )
     filtered_files = _filter_file_violations(
         file_violations, changed_rel, tracked_files
     )
     filtered_functions = _filter_function_violations(
-        func_violations, changed_rel, changed_line_ranges, baseline_function_lines
+        func_violations, changed_rel, {}, {}
     )
     return filtered_files, filtered_functions
 
@@ -283,20 +227,14 @@ def _filter_function_violations(
     changed_line_ranges: dict[str, list[tuple[int, int]]],
     baseline_function_lines: dict[str, dict[str, int]],
 ) -> list[FunctionLengthViolation]:
-    """Keep changed-line function violations only when newly introduced/worsened."""
-    filtered: list[FunctionLengthViolation] = []
-    for violation in func_violations:
-        if violation.file not in changed_rel:
-            filtered.append(violation)
-            continue
-        if not _violation_in_changed_lines(violation, changed_line_ranges):
-            continue
-        previous_lines = baseline_function_lines.get(violation.file, {}).get(
-            violation.function
-        )
-        if previous_lines is None or violation.lines > previous_lines:
-            filtered.append(violation)
-    return filtered
+    """Report all function violations in staged files — no hunk-boundary filtering.
+
+    CI's check_function_lengths.py checks every function unconditionally. The
+    local gate must match: any function exceeding the limit in a staged file is
+    a violation, regardless of whether the def line or body additions are in the
+    diff hunk.
+    """
+    return [v for v in func_violations if v.file in changed_rel]
 
 
 def _collect_violations_from_file(

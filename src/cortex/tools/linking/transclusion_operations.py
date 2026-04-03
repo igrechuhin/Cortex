@@ -5,6 +5,7 @@ for resolving {{include:}} transclusion directives.
 """
 
 import json
+import logging
 from pathlib import Path
 from typing import cast
 
@@ -20,6 +21,10 @@ from cortex.core.mcp_stability import (
 from cortex.core.models import ModelDict
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.core.project_root_resolver import resolve_project_root_async
+from cortex.core.usage_context import (
+    get_current_project_root,
+    get_or_resolve_project_root,
+)
 from cortex.linking.parser import LinkParser
 from cortex.linking.transclusion_engine import TransclusionEngine
 from cortex.managers.initialization import get_managers
@@ -33,6 +38,23 @@ from cortex.tools.linking.transclusion_response_helpers import (
     build_transclusion_success_response,
     resolve_transclusions_error_json,
 )
+
+logger = logging.getLogger(__name__)
+
+
+def _memory_bank_dir_exists(root: Path) -> bool:
+    """True when this root has a memory-bank directory (valid Cortex project layout)."""
+    return get_cortex_path(root, CortexResourceType.MEMORY_BANK).is_dir()
+
+
+def _log_transclusion_failure_category(
+    err_type: str, file_name: str, root: Path
+) -> None:
+    """Emit one JSON line for usage analytics (error_type, file_name, root)."""
+    logger.warning(
+        "transclusion_resolution_failure %s",
+        json.dumps({"error_type": err_type, "file_name": file_name, "root": str(root)}),
+    )
 
 
 # Tool consolidated into query_memory_bank (Phase 50); kept as callable for dispatch.
@@ -171,6 +193,13 @@ async def resolve_transclusions(
         ctx, "info", "resolve_transclusions: starting", logger_name=__name__
     )
     root = await resolve_project_root_async(None, ctx)
+    # AI: Multi-root clients may resolve a workspace without .cortex/memory-bank; reuse in-process root.
+    if not _memory_bank_dir_exists(root):
+        candidate = get_current_project_root()
+        if candidate is None:
+            candidate = await get_or_resolve_project_root(ctx)
+        if _memory_bank_dir_exists(candidate):
+            root = candidate
     return await _resolve_transclusions_run_or_error(ctx, file_name, root, max_depth)
 
 
@@ -201,6 +230,7 @@ async def _resolve_transclusions_run_or_error(
         )
         return json.dumps(result.model_dump(), indent=2)
     except Exception as e:
+        _log_transclusion_failure_category(type(e).__name__, file_name, root)
         await log_client(
             ctx,
             "error",
@@ -277,12 +307,14 @@ async def _validate_transclusion_file(
         return ResolveTransclusionsErrorResult(
             error=f"Invalid file name: {e}",
             file=file_name,
+            error_type="PathError",
         )
 
     if not file_path.exists():
         return ResolveTransclusionsErrorResult(
             error=f"File not found: {file_name}",
             file=file_name,
+            error_type="FileNotFoundError",
         )
 
     return file_path

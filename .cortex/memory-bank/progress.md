@@ -1,5 +1,11 @@
 # Progress Log
 
+## 2026-04-03
+
+- **Quality gate, transclusion, and pre-commit tooling** - PARTIAL. Refactored pre-commit quality modules and zero-arg tool checks; expanded reflection heuristics; hardened transclusion resolution and rules loading; refreshed linking and pre-commit unit tests; Synapse submodule pointer and plan stubs updated. Quality gate passed (≈91.7% coverage).
+
+- **Fix `_execute_transclusion_resolution` Reliability** - PARTIAL. Structured failure logging (`_log_transclusion_failure_category`), memory-bank root fallback when async root lacks `.cortex/memory-bank`, `PathError`/`FileNotFoundError` on validation errors; regression test for root fallback; helpers to satisfy function-length limits in structural-violation test.
+
 ## 2026-04-02
 
 - **Synapse prompt filenames (Do / Plan)** - COMPLETE. Renamed Synapse prompts to `do.md`/`plan.md` and updated prompts manifest plus all repo/test/docs references.

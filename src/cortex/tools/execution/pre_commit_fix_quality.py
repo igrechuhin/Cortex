@@ -277,6 +277,23 @@ def _get_tracked_git_changes(root: Path) -> set[str] | None:
     return changed_files
 
 
+def _annotate_autofix_output(root: Path, out: str) -> str:
+    """Inject AI comment suggestions into a successful autofix JSON output."""
+    try:
+        parsed: object = json.loads(out)
+    except json.JSONDecodeError:
+        return out
+    if not isinstance(parsed, dict):
+        return out
+    data = cast(ModelDict, parsed)
+    if data.get("status") == OperationStatus.SUCCESS.value:
+        sugs = collect_autofix_ai_comment_suggestions(collect_git_diff_text(root))
+        if sugs:
+            data["suggestions"] = cast(JsonValue, sugs)
+        return json.dumps(data, separators=(",", ":"))
+    return out
+
+
 async def autofix_impl(
     root: Path,
     include_untracked_markdown: bool,
@@ -291,30 +308,19 @@ async def autofix_impl(
     tracked_before = _get_tracked_git_changes(root)
     await report_progress_safe(ctx, 5.0, 100.0)
     _ = start_fix_job_impl(root, include_untracked_markdown)
-    args_hash = fix_args_hash(include_untracked_markdown)
-    rp = fix_result_path(session_dir(root), args_hash)
+    rp = fix_result_path(session_dir(root), fix_args_hash(include_untracked_markdown))
     envelope = await poll_for_result(rp, ctx=ctx, timeout=960.0)
     tracked_after = _get_tracked_git_changes(root)
-    files_modified_override: list[str] | None = None
-    if tracked_before is not None and tracked_after is not None:
-        files_modified_override = sorted(tracked_after - tracked_before)
-    out = _parse_fix_envelope(
-        cast(ModelDict, envelope), files_modified_override=files_modified_override
+    files_modified_override = (
+        sorted(tracked_after - tracked_before)
+        if tracked_before is not None and tracked_after is not None
+        else None
     )
-    try:
-        parsed: object = json.loads(out)
-    except json.JSONDecodeError:
-        await log_client(ctx, "info", "autofix: completed", logger_name=__name__)
-        return out
-    if not isinstance(parsed, dict):
-        await log_client(ctx, "info", "autofix: completed", logger_name=__name__)
-        return out
-    data = cast(ModelDict, parsed)
-    if data.get("status") == OperationStatus.SUCCESS.value:
-        diff_text = collect_git_diff_text(root)
-        sugs = collect_autofix_ai_comment_suggestions(diff_text)
-        if sugs:
-            data["suggestions"] = cast(JsonValue, sugs)
-        out = json.dumps(data, separators=(",", ":"))
+    out = _annotate_autofix_output(
+        root,
+        _parse_fix_envelope(
+            cast(ModelDict, envelope), files_modified_override=files_modified_override
+        ),
+    )
     await log_client(ctx, "info", "autofix: completed", logger_name=__name__)
     return out

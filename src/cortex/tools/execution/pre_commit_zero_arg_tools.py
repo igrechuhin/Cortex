@@ -211,25 +211,31 @@ async def _spawn_and_poll_phase_a(
         return await poll_phase_a_result(root, job_id, timeout=timeout, ctx=ctx)
 
 
+_QUALITY_GATE_DEFAULTS: dict[str, object] = {
+    "coverage_threshold": 0.90,
+    "test_timeout": 300,
+    "force_fresh": True,
+    "reflection": False,
+    "force_reflection": False,
+}
+
+
+def _read_quality_gate_config(root: Path) -> tuple[int, float, bool, dict[str, object]]:
+    """Read pipeline config and return (timeout, coverage_threshold, force_fresh, cfg)."""
+    cfg = read_pipeline_phase_config(root, "commit", "checks", _QUALITY_GATE_DEFAULTS)
+    return (
+        as_int(cfg.get("test_timeout"), 300),
+        as_float(cfg.get("coverage_threshold"), 0.90),
+        as_bool(cfg.get("force_fresh"), True),
+        cfg,
+    )
+
+
 async def _run_quality_gate_inner(ctx: MCPContext | None) -> ModelDict:
     """Resolve config and spawn Phase A quality gate."""
     root = get_current_project_root() or Path(await get_or_resolve_project_root(ctx))
     _ = clear_all_cached_results(root)
-    cfg = read_pipeline_phase_config(
-        root,
-        "commit",
-        "checks",
-        {
-            "coverage_threshold": 0.90,
-            "test_timeout": 300,
-            "force_fresh": True,
-            "reflection": False,
-            "force_reflection": False,
-        },
-    )
-    timeout = as_int(cfg.get("test_timeout"), 300)
-    coverage_threshold = as_float(cfg.get("coverage_threshold"), 0.90)
-    force_fresh = as_bool(cfg.get("force_fresh"), True)
+    timeout, coverage_threshold, force_fresh, cfg = _read_quality_gate_config(root)
     result = await _spawn_and_poll_phase_a(
         root,
         timeout=timeout,
@@ -239,8 +245,7 @@ async def _run_quality_gate_inner(ctx: MCPContext | None) -> ModelDict:
     )
     apply_reflection_to_gate_result(root, result, cfg)
     await persist_gate_feedback(
-        feedback_from_quality_result(cast(dict[str, object], result)),
-        ctx,
+        feedback_from_quality_result(cast(dict[str, object], result)), ctx
     )
     append_agent_log_to_quality_result(result)
     return result
