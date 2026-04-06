@@ -128,3 +128,4 @@ Target: 95% coverage on all new code paths.
 ## Partial Progress Log
 
 - 2026-04-06: Steps 1-2: ClarificationMarker model and find_clarification_markers() with unit tests — files: `src/cortex/core/models/_plan_markers.py`, `src/cortex/core/models/__init__.py`, `src/cortex/core/plan_utils.py`, `tests/unit/test_plan_utils_markers.py`
+- 2026-04-06: Step 3: Added clarifications summary insertion in plan create flow and marker-count logging — files: `src/cortex/core/plan_utils.py`, `src/cortex/tools/plans/crud.py`, `tests/unit/test_plan_clarifications_summary.py`, `tests/integration/test_structured_plan_tools.py`

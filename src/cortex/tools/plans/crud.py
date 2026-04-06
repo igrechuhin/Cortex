@@ -10,6 +10,7 @@ from typing import Literal
 from cortex.core.constants import MCP_TOOL_TIMEOUT_MEDIUM
 from cortex.core.context_logging import MCPContext, log_client
 from cortex.core.mcp_stability import ensure_usage_context, mcp_tool_wrapper
+from cortex.core.plan_utils import apply_clarifications_summary_to_plan
 from cortex.core.project_root_resolver import resolve_project_root_async
 from cortex.tools.plans.constitutional_scan import apply_constitutional_compliance
 from cortex.tools.plans.crud_helpers import (
@@ -61,6 +62,30 @@ async def _handle_plan_result(
     return create_success_result(plan_path).model_dump_json()
 
 
+def _prepare_plan_markdown_for_create(
+    project_root: Path, content: str
+) -> tuple[str, int]:
+    """Run constitution compliance scan and clarification summary insertion."""
+    md, _ = apply_constitutional_compliance(project_root, content)
+    return apply_clarifications_summary_to_plan(md)
+
+
+async def _log_clarification_marker_count(
+    ctx: MCPContext | None, n_markers: int
+) -> None:
+    if not n_markers:
+        return
+    await log_client(
+        ctx,
+        "info",
+        (
+            f"create_plan: plan contains {n_markers} NEEDS CLARIFICATION marker(s); "
+            "## Clarifications Needed section inserted."
+        ),
+        logger_name=__name__,
+    )
+
+
 async def _create_plan_impl(
     title: str,
     content: str,
@@ -72,16 +97,14 @@ async def _create_plan_impl(
 
     try:
         root = await resolve_project_root_async(None, ctx)
-        final_content, _ = apply_constitutional_compliance(root, content)
+        final_content, n_clarifications = _prepare_plan_markdown_for_create(
+            root, content
+        )
+        await _log_clarification_marker_count(ctx, n_clarifications)
         plan_path, error = create_plan_file(root, title, slug, final_content)
         return await _handle_plan_result(plan_path, error, ctx)
     except Exception as e:
-        await log_client(
-            ctx,
-            "error",
-            f"create_plan: {e}",
-            logger_name=__name__,
-        )
+        await log_client(ctx, "error", f"create_plan: {e}", logger_name=__name__)
         return CreatePlanResult(
             status="error",
             file_path=None,

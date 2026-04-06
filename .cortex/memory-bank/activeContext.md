@@ -10,6 +10,8 @@
 
 - ✅ **NEEDS CLARIFICATION Markers in Plans (PARTIAL)** - COMPLETE (2026-04-06) - Introduced core ClarificationMarker model and plan_utils.find_clarification_markers(); unit tests cover zero/one/many markers, blocking flag, code fences, empty reason.
 
+- ✅ **NEEDS CLARIFICATION Markers in Plans (PARTIAL)** - COMPLETE (2026-04-06) - Implemented Step 3 in plan creation: `## Clarifications Needed` summary generation/placement and clarification marker count logging; covered by new unit and integration tests.
+
 ## Completed Work (2026-04-04)
 
 - **Summary (2026-04-04)** - 1 entries archived.

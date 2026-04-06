@@ -47,6 +47,49 @@ def temp_project_with_roadmap(tmp_path: Path) -> Path:
     return tmp_path
 
 
+async def _create_then_register_in_temp(
+    root: Path, *, title: str, slug: str, content: str, description: str
+) -> tuple[CreatePlanResult, RegisterPlanResult]:
+    cr = patch(
+        "cortex.tools.plans.crud.resolve_project_root_async",
+        new_callable=AsyncMock,
+        return_value=root,
+    )
+    rg = patch(
+        "cortex.tools.plans.register.resolve_project_root_async",
+        new_callable=AsyncMock,
+        return_value=root,
+    )
+    with cr, rg:
+        cs = await create_plan(title=title, content=content, slug=slug, ctx=None)
+        cr_out = CreatePlanResult.model_validate_json(cs)
+        rs = await register_plan_in_roadmap(
+            plan_title=title,
+            description=description,
+            status="PENDING",
+            section="pending",
+            ctx=None,
+        )
+        rr = RegisterPlanResult.model_validate_json(rs)
+    return cr_out, rr
+
+
+async def _register_pending_new_plan(root: Path) -> RegisterPlanResult:
+    with patch(
+        "cortex.tools.plans.register.resolve_project_root_async",
+        new_callable=AsyncMock,
+        return_value=root,
+    ):
+        raw = await register_plan_in_roadmap(
+            plan_title="New Plan",
+            description="Reference. Plan: .cortex/plans/new-plan.md.",
+            status="PENDING",
+            section="pending",
+            ctx=None,
+        )
+    return RegisterPlanResult.model_validate_json(raw)
+
+
 class TestCreatePlanIntegration:
     """Integration tests for create_plan tool."""
 
@@ -108,6 +151,38 @@ class TestCreatePlanIntegration:
         assert "phase-60-structured-plan-tools" in plan_path.name
         assert plan_path.read_text(encoding="utf-8") == content
 
+    @pytest.mark.asyncio
+    async def test_create_plan_injects_clarifications_needed_section(
+        self, temp_project_with_roadmap: Path
+    ) -> None:
+        """Plans with NEEDS CLARIFICATION markers get an auto summary section."""
+        root = temp_project_with_roadmap
+        plans_dir = get_cortex_path(root, CortexResourceType.PLANS)
+        content = (
+            "## Goal\n\nDo [NEEDS CLARIFICATION: pick color].\n\n"
+            "## Context\n\nNotes.\n"
+        )
+        with patch(
+            "cortex.tools.plans.crud.resolve_project_root_async",
+            new_callable=AsyncMock,
+            return_value=root,
+        ):
+            result_str = await create_plan(
+                title="Clarifications Plan",
+                content=content,
+                slug="clarifications-plan",
+                ctx=None,
+            )
+        result = CreatePlanResult.model_validate_json(result_str)
+        assert result.status == "success" and result.file_path is not None
+        plan_path = Path(result.file_path)
+        assert plan_path.parent == plans_dir
+        written = plan_path.read_text(encoding="utf-8")
+        assert "## Clarifications Needed" in written and written.index(
+            "## Clarifications Needed"
+        ) < written.index("## Context")
+        assert "pick color" in written and "Summary of inline" in written
+
 
 class TestRegisterPlanInRoadmapIntegration:
     """Integration tests for register_plan_in_roadmap tool."""
@@ -118,37 +193,25 @@ class TestRegisterPlanInRoadmapIntegration:
     ) -> None:
         """register_plan_in_roadmap adds new entry; existing content unchanged."""
         root = temp_project_with_roadmap
-        memory_bank = get_cortex_path(root, CortexResourceType.MEMORY_BANK)
-        roadmap_path = memory_bank / MemoryBankFile.ROADMAP
-
-        with patch(
-            "cortex.tools.plans.register.resolve_project_root_async",
-            new_callable=AsyncMock,
-            return_value=root,
-        ):
-            result_str = await register_plan_in_roadmap(
-                plan_title="New Plan",
-                description="Reference. Plan: .cortex/plans/new-plan.md.",
-                status="PENDING",
-                section="pending",
-                ctx=None,
-            )
-
-        result = RegisterPlanResult.model_validate_json(result_str)
-        assert result.status == "success"
-        assert result.file_name == MemoryBankFile.ROADMAP
-        assert result.line_inserted is not None
-        assert result.section == "pending"
-        assert result.error is None
-
-        new_content = roadmap_path.read_text(encoding="utf-8")
-        assert (
-            "- **New Plan** - PENDING - Reference. Plan: .cortex/plans/new-plan.md."
-            in new_content
+        rp = (
+            get_cortex_path(root, CortexResourceType.MEMORY_BANK)
+            / MemoryBankFile.ROADMAP
         )
-        assert "- **Existing** - PENDING - Existing entry." in new_content
-        assert "Blockers (ASAP Priority)" in new_content
-        assert "Pending plans (from .cortex/plans)" in new_content
+        r = await _register_pending_new_plan(root)
+        assert (
+            r.status == "success"
+            and r.file_name == MemoryBankFile.ROADMAP
+            and r.line_inserted is not None
+            and r.section == "pending"
+            and r.error is None
+        )
+        nc = rp.read_text(encoding="utf-8")
+        want = "- **New Plan** - PENDING - Reference. Plan: .cortex/plans/new-plan.md."
+        assert want in nc and "- **Existing** - PENDING - Existing entry." in nc
+        assert (
+            "Blockers (ASAP Priority)" in nc
+            and "Pending plans (from .cortex/plans)" in nc
+        )
 
     @pytest.mark.asyncio
     async def test_register_plan_in_roadmap_appends_plan_path_when_provided(
@@ -253,54 +316,27 @@ class TestCreatePlanThenRegisterIntegration:
         """Full sequence: create plan file then register in roadmap; both succeed."""
         root = temp_project_with_roadmap
         plans_dir = get_cortex_path(root, CortexResourceType.PLANS)
-        memory_bank = get_cortex_path(root, CortexResourceType.MEMORY_BANK)
-        roadmap_path = memory_bank / MemoryBankFile.ROADMAP
-
+        roadmap_path = (
+            get_cortex_path(root, CortexResourceType.MEMORY_BANK)
+            / MemoryBankFile.ROADMAP
+        )
         title = "Structured planning Cortex MCP tools"
         slug = "structured-planning-cortex-mcp-tools"
-        content = "# Structured Plan Creation via Cortex MCP Tools\n\n**Status**: Pending\n\n## Goal\nReplace manual plan creation with tool-driven flow.\n"
+        content = (
+            "# Structured Plan Creation via Cortex MCP Tools\n\n**Status**: Pending\n\n"
+            "## Goal\nReplace manual plan creation with tool-driven flow.\n"
+        )
         description = (
             "Reference. Plan: .cortex/plans/structured-planning-cortex-mcp-tools.md."
         )
-
-        with (
-            patch(
-                "cortex.tools.plans.crud.resolve_project_root_async",
-                new_callable=AsyncMock,
-                return_value=root,
-            ),
-            patch(
-                "cortex.tools.plans.register.resolve_project_root_async",
-                new_callable=AsyncMock,
-                return_value=root,
-            ),
-        ):
-            create_result_str = await create_plan(
-                title=title,
-                content=content,
-                slug=slug,
-                ctx=None,
-            )
-            create_result = CreatePlanResult.model_validate_json(create_result_str)
-            assert create_result.status == "success"
-            assert create_result.file_path is not None
-
-            register_result_str = await register_plan_in_roadmap(
-                plan_title=title,
-                description=description,
-                status="PENDING",
-                section="pending",
-                ctx=None,
-            )
-            register_result = RegisterPlanResult.model_validate_json(
-                register_result_str
-            )
-            assert register_result.status == "success"
-
+        create_result, register_result = await _create_then_register_in_temp(
+            root, title=title, slug=slug, content=content, description=description
+        )
+        assert create_result.status == "success" and create_result.file_path
+        assert register_result.status == "success"
         plan_file = plans_dir / f"{slug}.md"
         assert plan_file.exists()
         assert plan_file.read_text(encoding="utf-8") == content
-
         roadmap_content = roadmap_path.read_text(encoding="utf-8")
         assert f"- **{title}** - PENDING - {description}" in roadmap_content
         assert "- **Existing** - PENDING - Existing entry." in roadmap_content

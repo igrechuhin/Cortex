@@ -73,3 +73,78 @@ def find_clarification_markers(content: str) -> list[ClarificationMarker]:
             )
         )
     return out
+
+
+_CLARIFICATIONS_HEADING = re.compile(r"^##\s+Clarifications Needed\s*$")
+
+
+def strip_clarifications_needed_section(content: str) -> str:
+    """Remove a ``## Clarifications Needed`` block through the next ``##`` heading."""
+    # AI: Drop prior auto-summary so create/enrich can regenerate without duplicate headings.
+    lines = content.splitlines(keepends=True)
+    out: list[str] = []
+    i = 0
+    while i < len(lines):
+        line = lines[i]
+        if _CLARIFICATIONS_HEADING.match(line.rstrip("\r\n")):
+            i += 1
+            while i < len(lines) and not re.match(r"^##\s+", lines[i]):
+                i += 1
+            continue
+        out.append(line)
+        i += 1
+    return "".join(out)
+
+
+def _format_clarifications_needed_section(markers: list[ClarificationMarker]) -> str:
+    lines = [
+        "## Clarifications Needed",
+        "",
+        "Summary of inline `[NEEDS CLARIFICATION]` markers (auto-generated on create):",
+        "",
+    ]
+    for m in markers:
+        # AI: Prefix distinguishes blocking markers without relying on bold in logs.
+        prefix = "(blocking) " if m.blocking else ""
+        lines.append(f"- {prefix}{m.reason} — {m.location}")
+    lines.append("")
+    return "\n".join(lines)
+
+
+def _insert_point_clarifications_section(text: str) -> int:
+    """Return the index where the Clarifications Needed section should start."""
+    ctx = re.search(r"(?m)^##\s+context\s*$", text)
+    if ctx:
+        return ctx.start()
+    goal = re.search(r"(?m)^##\s+goal\s*$", text)
+    if goal:
+        start = goal.end()
+        rest = text[start:]
+        nxt = re.search(r"(?m)^##\s+", rest)
+        if nxt:
+            return start + nxt.start()
+        return len(text)
+    # AI: Prefer inserting after YAML front matter when standard headings are absent.
+    fm = re.match(r"^---[ \t]*\r?\n.*?\r?\n---[ \t]*\r?\n", text, re.DOTALL)
+    if fm:
+        return fm.end()
+    return 0
+
+
+def apply_clarifications_summary_to_plan(content: str) -> tuple[str, int]:
+    """Strip any prior summary, then insert ``## Clarifications Needed`` when markers exist.
+
+    Returns ``(updated_markdown, marker_count)``. When there are no markers, the
+    body is returned with any stale summary section removed.
+    """
+    stripped = strip_clarifications_needed_section(content)
+    markers = find_clarification_markers(stripped)
+    if not markers:
+        return stripped, 0
+    section = _format_clarifications_needed_section(markers)
+    pos = _insert_point_clarifications_section(stripped)
+    before = stripped[:pos]
+    after = stripped[pos:]
+    if before and not before.endswith(("\n", "\r")):
+        before += "\n"
+    return before + section + after, len(markers)

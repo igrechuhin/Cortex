@@ -6,9 +6,11 @@
 
 - ✅ **Pre-commit MCP heartbeat follow-up** - COMPLETE (2026-04-06) - Unit tests for pre_commit_tools_run_helpers; markdown_operations_batch refactor; context_logging and progress test updates; logging guidelines; archived mcp-pre-commit-heartbeat-dots plan.
 
-- **Constitutional Layer for Projects (PARTIAL)** - Added governance foundations used by upcoming constitution workflow: new `ConstitutionDoc` model and canonical constitution memory-bank path plumbing in constants/path resolver with unit coverage.
+- ✅ **Constitutional Layer for Projects** - COMPLETE (2026-04-06) - Constitution template, manage_file init_constitution, plan compliance scanning (`constitutional_scan`), `constitution_init_flow`, cortex://context immutable_governance, session constitution_notice, unit tests; plan archived under `.cortex/plans/archive/Other/`; Synapse `templates/constitution.md`.
 
-- ✅ **Constitutional Layer for Projects** - COMPLETE (2026-04-06) - Implemented constitution template, manage_file init_constitution, plan compliance scanning, cortex://context immutable_governance, session constitution_notice, and tests.
+- ✅ **NEEDS CLARIFICATION Markers in Plans (PARTIAL)** - COMPLETE (2026-04-06) - Introduced core ClarificationMarker model and plan_utils.find_clarification_markers(); unit tests cover zero/one/many markers, blocking flag, code fences, empty reason.
+
+- ✅ **NEEDS CLARIFICATION Markers in Plans (PARTIAL)** - COMPLETE (2026-04-06) - Implemented Step 3 in plan creation: `## Clarifications Needed` summary generation/placement and clarification marker count logging; covered by new unit and integration tests.
 
 ## Completed Work (2026-04-04)
 

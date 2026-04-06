@@ -21,7 +21,7 @@ from cortex.tools.execution.session_paths import session_dir
 
 logger = logging.getLogger(__name__)
 
-_HEARTBEAT_TOTAL = 500
+_HEARTBEAT_MAX_DOTS = 500
 
 # AI: Fast runs finish in <30s; 1s polling reduces idle wait vs 2s fixed interval.
 _POLL_FAST_SECONDS = 1.0
@@ -197,17 +197,24 @@ async def poll_for_result(
     ctx: MCPContext | None,
     timeout: float = 900.0,
 ) -> dict[str, object]:
-    """Poll for result file completion, sending heartbeat progress."""
+    """Poll for result file completion, sending heartbeat progress as dots.
+
+    Each poll appends one dot to the message (capped at _HEARTBEAT_MAX_DOTS).
+    Numeric progress increases monotonically with total=None to avoid implying
+    a fake completion fraction while still satisfying clients that require
+    numeric deltas for keepalive.
+    """
     poll_start = time.time()
     deadline = poll_start + timeout
-    tick = 0
+    dot_count = 0
     while time.time() < deadline:
         elapsed = time.time() - poll_start
         await asyncio.sleep(poll_interval_for_elapsed(elapsed))
-        tick += 1
+        dot_count = min(dot_count + 1, _HEARTBEAT_MAX_DOTS)
         if ctx is not None:
+            # AI: total=None avoids a fake denominator; dots encode honest keepalive semantics.
             await report_progress_safe(
-                ctx, float(min(tick, _HEARTBEAT_TOTAL)), float(_HEARTBEAT_TOTAL)
+                ctx, float(dot_count), None, message="." * dot_count
             )
         data, status = await _read_result_file(result_path)
         if data is None:
