@@ -51,8 +51,10 @@ For long-running operations, use `report_progress_safe()` so progress is only se
 ```python
 from cortex.core.context_logging import report_progress_safe
 
-await report_progress_safe(ctx, progress=50, total=100)
+await report_progress_safe(ctx, 50.0, 100.0)
 ```
+
+An optional keyword-only `message` is forwarded to the client when you need short status text (for example capped heartbeat dots) without changing numeric progress semantics.
 
 ### Fatal Errors
 
@@ -60,7 +62,7 @@ Use `ToolError` (from MCP/FastMCP) for errors that should stop execution and be 
 
 ### Context Availability
 
-Context is only available during MCP request handling. Tools and helpers accept `ctx: MCPContext | None = None` and use `log_client(ctx, level, message)` and `report_progress_safe(ctx, progress, total)` so logging is a no-op when `ctx` is None (e.g. in tests or after client disconnect).
+Context is only available during MCP request handling. Tools and helpers accept `ctx: MCPContext | None = None` and use `log_client(ctx, level, message)` and `report_progress_safe(ctx, progress, total, message=...)` (message optional) so logging is a no-op when `ctx` is None (e.g. in tests or after client disconnect).
 
 ## Standard Logging (Server-Side)
 

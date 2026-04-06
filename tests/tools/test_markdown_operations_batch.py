@@ -1,5 +1,6 @@
 """Tests for markdown operations sequential processing."""
 
+from collections.abc import Awaitable, Callable
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from unittest.mock import AsyncMock, patch
@@ -11,6 +12,75 @@ from cortex.tools.files.markdown_operations import (
     process_markdown_files_sequential,
 )
 
+_PATCH_TARGET = "cortex.tools.files.markdown_lint_run.run_markdownlint_batch"
+
+
+async def _mock_batch_ok_results(
+    file_paths: list[Path],
+    root: Path,
+    _cmd: list[str],
+    _config_path: Path | None,
+    _dry_run: bool,
+) -> list[FileResult]:
+    return [
+        FileResult(
+            file=str(p.relative_to(root)),
+            fixed=False,
+            errors=[],
+            error_message=None,
+        )
+        for p in file_paths
+    ]
+
+
+def _make_counting_batch_mock(
+    call_counter: list[int],
+) -> Callable[..., Awaitable[list[FileResult]]]:
+    async def mock_run(
+        file_paths: list[Path],
+        root: Path,
+        cmd: list[str],
+        config_path: Path | None,
+        dry_run: bool,
+    ) -> list[FileResult]:
+        call_counter[0] += 1
+        return await _mock_batch_ok_results(file_paths, root, cmd, config_path, dry_run)
+
+    return mock_run
+
+
+async def _mock_batch_file2_error(
+    file_paths: list[Path],
+    root: Path,
+    _cmd: list[str],
+    _config_path: Path | None,
+    _dry_run: bool,
+) -> list[FileResult]:
+    results: list[FileResult] = []
+    for file_path in file_paths:
+        rel = str(file_path.relative_to(root))
+        err = "Test error" if "file2" in rel else None
+        results.append(FileResult(file=rel, fixed=False, errors=[], error_message=err))
+    return results
+
+
+def _progress_ctx_with_capture() -> tuple[AsyncMock, list[tuple[float, float]]]:
+    mock_ctx = AsyncMock()
+    progress_calls: list[tuple[float, float]] = []
+
+    async def capture_progress(
+        progress: float,
+        total: float | None,
+        *,
+        message: str | None = None,
+    ) -> None:
+        _ = message
+        if total is not None:
+            progress_calls.append((progress, total))
+
+    mock_ctx.report_progress = capture_progress
+    return mock_ctx, progress_calls
+
 
 class TestSequentialProcessing:
     """Test sequential processing functionality."""
@@ -18,120 +88,48 @@ class TestSequentialProcessing:
     @pytest.mark.asyncio
     async def test_process_markdown_files_all_files(self):
         """Test that all files are processed sequentially."""
-        # Arrange
         with TemporaryDirectory() as tmpdir:
             project_root = Path(tmpdir)
             files = [project_root / f"file{i}.md" for i in range(10)]
             for f in files:
                 _ = f.write_text("# Test\n")
-
-            markdownlint_cmd = ["rumdl", "check"]
-            call_count = 0
-
-            async def mock_run_markdownlint_batch(
-                file_paths: list[Path],
-                root: Path,
-                cmd: list[str],
-                config_path: Path | None,
-                dry_run: bool,
-            ) -> list[FileResult]:
-                nonlocal call_count
-                call_count += 1
-                return [
-                    FileResult(
-                        file=str(file_path.relative_to(root)),
-                        fixed=False,
-                        errors=[],
-                        error_message=None,
-                    )
-                    for file_path in file_paths
-                ]
-
-            # Act
-            with patch(
-                "cortex.tools.files.markdown_lint_run.run_markdownlint_batch",
-                side_effect=mock_run_markdownlint_batch,
-            ):
+            counter: list[int] = [0]
+            with patch(_PATCH_TARGET, side_effect=_make_counting_batch_mock(counter)):
                 results: list[FileResult] = await process_markdown_files_sequential(
                     files,
                     project_root,
-                    markdownlint_cmd,
+                    ["rumdl", "check"],
                     None,
                     False,
                 )
-
-            # Assert
-            assert len(results) == 10
-            assert call_count == 1  # All files processed in a single batch
+        assert len(results) == 10
+        assert counter[0] == 1
 
     @pytest.mark.asyncio
     async def test_process_markdown_files_handles_exceptions(self):
         """Test that exceptions are properly handled and converted to error results."""
-        # Arrange
         with TemporaryDirectory() as tmpdir:
             project_root = Path(tmpdir)
             files = [project_root / f"file{i}.md" for i in range(5)]
             for f in files:
                 _ = f.write_text("# Test\n")
-
-            markdownlint_cmd = ["rumdl", "check"]
-
-            async def mock_run_markdownlint_batch(
-                file_paths: list[Path],
-                root: Path,
-                cmd: list[str],
-                config_path: Path | None,
-                dry_run: bool,
-            ) -> list[FileResult]:
-                results: list[FileResult] = []
-                for file_path in file_paths:
-                    rel = str(file_path.relative_to(root))
-                    if "file2" in rel:
-                        results.append(
-                            FileResult(
-                                file=rel,
-                                fixed=False,
-                                errors=[],
-                                error_message="Test error",
-                            )
-                        )
-                    else:
-                        results.append(
-                            FileResult(
-                                file=rel,
-                                fixed=False,
-                                errors=[],
-                                error_message=None,
-                            )
-                        )
-                return results
-
-            # Act
-            with patch(
-                "cortex.tools.files.markdown_lint_run.run_markdownlint_batch",
-                side_effect=mock_run_markdownlint_batch,
-            ):
+            with patch(_PATCH_TARGET, side_effect=_mock_batch_file2_error):
                 results: list[FileResult] = await process_markdown_files_sequential(
                     files,
                     project_root,
-                    markdownlint_cmd,
+                    ["rumdl", "check"],
                     None,
                     False,
                 )
-
-            # Assert
-            assert len(results) == 5
-            # Find the error result
-            error_results: list[FileResult] = [r for r in results if r.error_message]
-            assert len(error_results) == 1
-            error_msg = error_results[0].error_message
-            assert error_msg is not None
-            assert "Test error" in error_msg
+        assert len(results) == 5
+        error_results = [r for r in results if r.error_message]
+        assert len(error_results) == 1
+        assert error_results[0].error_message is not None
+        assert "Test error" in error_results[0].error_message
 
     @pytest.mark.asyncio
     async def test_process_markdown_files_skips_nonexistent_files(self):
         """Test that nonexistent files are skipped."""
-        # Arrange
         with TemporaryDirectory() as tmpdir:
             project_root = Path(tmpdir)
             files = [
@@ -141,46 +139,19 @@ class TestSequentialProcessing:
             ]
             _ = (project_root / "exists.md").write_text("# Test\n")
             _ = (project_root / "also_exists.md").write_text("# Test\n")
-
-            markdownlint_cmd = ["rumdl", "check"]
-
-            async def mock_run_markdownlint_batch(
-                file_paths: list[Path],
-                root: Path,
-                cmd: list[str],
-                config_path: Path | None,
-                dry_run: bool,
-            ) -> list[FileResult]:
-                return [
-                    FileResult(
-                        file=str(file_path.relative_to(root)),
-                        fixed=False,
-                        errors=[],
-                        error_message=None,
-                    )
-                    for file_path in file_paths
-                ]
-
-            # Act
-            with patch(
-                "cortex.tools.files.markdown_lint_run.run_markdownlint_batch",
-                side_effect=mock_run_markdownlint_batch,
-            ):
+            with patch(_PATCH_TARGET, side_effect=_mock_batch_ok_results):
                 results: list[FileResult] = await process_markdown_files_sequential(
                     files,
                     project_root,
-                    markdownlint_cmd,
+                    ["rumdl", "check"],
                     None,
                     False,
                 )
-
-            # Assert
-            # Should only process existing files
-            assert len(results) == 2
-            file_names: set[str] = {r.file for r in results}
-            assert "exists.md" in file_names
-            assert "also_exists.md" in file_names
-            assert "nonexistent.md" not in file_names
+        assert len(results) == 2
+        file_names = {r.file for r in results}
+        assert "exists.md" in file_names
+        assert "also_exists.md" in file_names
+        assert "nonexistent.md" not in file_names
 
     @pytest.mark.asyncio
     async def test_process_markdown_files_reports_progress_every_file_and_heartbeat_cancelled(
@@ -196,53 +167,22 @@ class TestSequentialProcessing:
             ]
             for f in files:
                 _ = f.write_text("# x\n")
-            markdownlint_cmd = ["rumdl", "check"]
-            mock_ctx = AsyncMock()
-            progress_calls: list[tuple[float, float]] = []
-
-            async def capture_progress(progress: float, total: float | None) -> None:
-                if total is not None:
-                    progress_calls.append((progress, total))
-
-            mock_ctx.report_progress = capture_progress
-
-            async def mock_run_markdownlint_batch(
-                file_paths: list[Path],
-                root: Path,
-                cmd: list[str],
-                config_path: Path | None,
-                dry_run: bool,
-            ) -> list[FileResult]:
-                return [
-                    FileResult(
-                        file=str(file_path.relative_to(root)),
-                        fixed=False,
-                        errors=[],
-                        error_message=None,
-                    )
-                    for file_path in file_paths
-                ]
-
-            with patch(
-                "cortex.tools.files.markdown_lint_run.run_markdownlint_batch",
-                side_effect=mock_run_markdownlint_batch,
-            ):
+            mock_ctx, progress_calls = _progress_ctx_with_capture()
+            with patch(_PATCH_TARGET, side_effect=_mock_batch_ok_results):
                 results: list[FileResult] = await process_markdown_files_sequential(
                     files,
                     project_root,
-                    markdownlint_cmd,
+                    ["rumdl", "check"],
                     None,
                     False,
                     progress_ctx=mock_ctx,
                     progress_total=3,
                 )
-
-            assert len(results) == 3
-            # Progress after each file: (1,3), (2,3), (3,3); may also have (0,3) from start
-            assert (1.0, 3.0) in progress_calls
-            assert (2.0, 3.0) in progress_calls
-            assert (3.0, 3.0) in progress_calls
-            assert len(progress_calls) >= 3
+        assert len(results) == 3
+        assert (1.0, 3.0) in progress_calls
+        assert (2.0, 3.0) in progress_calls
+        assert (3.0, 3.0) in progress_calls
+        assert len(progress_calls) >= 3
 
 
 class TestRoadmapCorruption:

@@ -49,7 +49,7 @@ async def test_report_progress_safe_when_ctx_present_calls_report_progress() -> 
     ctx = AsyncMock()
     ctx.report_progress = AsyncMock()
     await report_progress_safe(ctx, 50, 100)
-    ctx.report_progress.assert_awaited_once_with(50, 100)
+    ctx.report_progress.assert_awaited_once_with(50, 100, message=None)
 
 
 @pytest.mark.asyncio
@@ -58,7 +58,25 @@ async def test_report_progress_safe_with_total_none() -> None:
     ctx = AsyncMock()
     ctx.report_progress = AsyncMock()
     await report_progress_safe(ctx, 25)
-    ctx.report_progress.assert_awaited_once_with(25, None)
+    ctx.report_progress.assert_awaited_once_with(25, None, message=None)
+
+
+@pytest.mark.asyncio
+async def test_report_progress_safe_forwards_message_when_provided() -> None:
+    """report_progress_safe passes message through to ctx.report_progress."""
+    ctx = AsyncMock()
+    ctx.report_progress = AsyncMock()
+    await report_progress_safe(ctx, 1.0, None, message="..")
+    ctx.report_progress.assert_awaited_once_with(1.0, None, message="..")
+
+
+@pytest.mark.asyncio
+async def test_report_progress_safe_message_with_explicit_total() -> None:
+    """Optional message works together with a real total (semantic progress)."""
+    ctx = AsyncMock()
+    ctx.report_progress = AsyncMock()
+    await report_progress_safe(ctx, 3.0, 10.0, message=".")
+    ctx.report_progress.assert_awaited_once_with(3.0, 10.0, message=".")
 
 
 @pytest.mark.asyncio
@@ -82,7 +100,7 @@ async def test_report_progress_safe_swallows_connection_error_when_ctx_present()
     ctx.report_progress = AsyncMock(side_effect=anyio.BrokenResourceError())
     with patch(f"{_CONTEXT_LOGGING_LOGGER}.logger") as mock_logger:
         await report_progress_safe(ctx, 50, 100)
-    ctx.report_progress.assert_awaited_once_with(50, 100)
+    ctx.report_progress.assert_awaited_once_with(50, 100, message=None)
     mock_logger.debug.assert_called_once()
     assert "connection closed" in mock_logger.debug.call_args[0][0].lower()
 
@@ -118,7 +136,7 @@ async def test_report_progress_safe_swallows_oserror_broken_pipe() -> None:
     ctx.report_progress = AsyncMock(side_effect=OSError("Broken pipe"))
     with patch(f"{_CONTEXT_LOGGING_LOGGER}.logger") as mock_logger:
         await report_progress_safe(ctx, 50, 100)
-    ctx.report_progress.assert_awaited_once()
+    ctx.report_progress.assert_awaited_once_with(50, 100, message=None)
     mock_logger.debug.assert_called_once()
     assert "connection closed" in mock_logger.debug.call_args[0][0].lower()
 

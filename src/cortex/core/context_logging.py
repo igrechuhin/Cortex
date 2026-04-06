@@ -79,6 +79,8 @@ async def report_progress_safe(
     ctx: MCPContext | None,
     progress: float,
     total: float | None = None,
+    *,
+    message: str | None = None,
 ) -> None:
     """Report progress to the client when ctx is available.
 
@@ -88,10 +90,11 @@ async def report_progress_safe(
         ctx: MCP Context; may be None.
         progress: Current progress value (e.g. 50).
         total: Optional total value (e.g. 100) for percentage display.
+        message: Optional short client-visible status text (e.g. heartbeat dots).
     """
     if ctx is not None:
         try:
-            await ctx.report_progress(progress, total)
+            await ctx.report_progress(progress, total, message=message)
         except BaseException as e:
             if isinstance(e, asyncio.CancelledError):
                 raise

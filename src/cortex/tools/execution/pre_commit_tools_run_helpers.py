@@ -34,6 +34,12 @@ from cortex.tools.execution.pre_commit_helpers_remaining import (
 from cortex.tools.execution.pre_commit_pipeline import run_checks_pipeline
 
 _HEARTBEAT_INTERVAL_SECONDS = 10
+_HEARTBEAT_MAX_DOTS = 500
+
+
+async def _async_sleep(seconds: float) -> None:
+    """Delegate to ``asyncio.sleep`` (separate symbol for tests to monkeypatch)."""
+    await asyncio.sleep(seconds)
 
 
 def execute_all_checks(
@@ -149,20 +155,26 @@ def _callbacks_for_ctx(
     return phase_cb, progress_callback
 
 
-async def _heartbeat_loop(ctx: MCPContext, interval: float) -> None:
+async def heartbeat_loop(ctx: MCPContext, interval: float) -> None:
     """Send periodic progress heartbeats to keep MCP connection alive.
 
-    Runs as a background task alongside the pipeline. Uses a fixed
-    total of 500 and increments progress each tick so Cursor sees
-    continuous activity even during long subprocess calls (pytest
-    collection, typecheck, etc.).
+    Runs as a background task alongside the pipeline. Each tick appends one
+    dot to the MCP progress ``message`` (capped) so liveness is visible
+    without implying a meaningful fraction of work. Numeric ``progress``
+    still increases monotonically with ``total=None`` for clients that
+    rely on numeric deltas rather than message text.
     """
-    tick = 0
-    total = 500
+    dot_count = 0
     while True:
-        await asyncio.sleep(interval)
-        tick = min(tick + 1, total)
-        await report_progress_safe(ctx, float(tick), float(total))
+        await _async_sleep(interval)
+        dot_count = min(dot_count + 1, _HEARTBEAT_MAX_DOTS)
+        # AI: total=None avoids a fake denominator; dots encode honest keepalive semantics.
+        await report_progress_safe(
+            ctx,
+            float(dot_count),
+            None,
+            message="." * dot_count,
+        )
 
 
 def _setup_heartbeat_and_callbacks(
@@ -181,7 +193,7 @@ def _setup_heartbeat_and_callbacks(
     phase_cb, progress_callback = _callbacks_for_ctx(
         ctx, loop, checks_to_perform, language
     )
-    heartbeat = asyncio.create_task(_heartbeat_loop(ctx, _HEARTBEAT_INTERVAL_SECONDS))
+    heartbeat = asyncio.create_task(heartbeat_loop(ctx, _HEARTBEAT_INTERVAL_SECONDS))
     return progress_callback, phase_cb, heartbeat
 
 

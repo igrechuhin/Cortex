@@ -1,6 +1,12 @@
 # Progress Log
 
+## 2026-04-04
+
+- **Pre-commit MCP heartbeat — dot message instead of fake N/K progress** - COMPLETE. Extended report_progress_safe with optional message; heartbeat uses capped dots and total=None; tests and logging guidelines updated.
+
 ## 2026-04-03
+
+- **Quality gate: agent_log on failure only** - COMPLETE (2026-04-03). `append_agent_log_to_quality_result` runs only when `preflight_passed` is false; passing gates omit the agent log table and keep trimmed results.
 
 - **Quality gate, transclusion, and pre-commit tooling** - COMPLETE. Refactored pre-commit quality modules and zero-arg tool checks; expanded reflection heuristics; hardened transclusion resolution and rules loading; refreshed linking and pre-commit unit tests; Synapse submodule pointer and plan stubs updated. Quality gate passed (≈91.7% coverage).
 

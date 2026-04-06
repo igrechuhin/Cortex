@@ -2,25 +2,17 @@
 
 **This file records completed work only.** For current status and upcoming work see [roadmap.md](roadmap.md).
 
+## Completed Work (2026-04-06)
+
+- ✅ **Pre-commit MCP heartbeat follow-up** - COMPLETE (2026-04-06) - Unit tests for pre_commit_tools_run_helpers; markdown_operations_batch refactor; context_logging and progress test updates; logging guidelines; archived mcp-pre-commit-heartbeat-dots plan.
+
+## Completed Work (2026-04-04)
+
+- **Summary (2026-04-04)** - 1 entries archived.
+
 ## Completed Work (2026-04-03)
 
-- ✅ **Quality gate: append agent_log only on failed preflight** - COMPLETE (2026-04-03) - `run_quality_gate_inner` calls `append_agent_log_to_quality_result` only when the gate does not pass; successful runs keep trimmed payloads without agent log table noise.
-
-- **Quality gate and linking stack (PARTIAL)** - Pre-commit quality pipelines and zero-arg governance tests refactored; reflection evaluation tightened; transclusion operations and rules operations updated with expanded regression coverage.
-
-- ✅ **Transclusion reliability (PARTIAL)** - COMPLETE (2026-04-03) - Hardened `resolve_transclusions` root selection and error typing; added JSON warning logs for uncaught exceptions in the resolution path.
-
-- ✅ **Fix `_execute_transclusion_resolution` Reliability** - COMPLETE (2026-04-03) - Structured failure logging, memory-bank root fallback, PathError/FileNotFoundError validation, section-not-found full-file fallback, resource omits original_content by default; regression tests and quality gate green. Production error-rate verification remains via usage analytics.
-
-- ✅ **Reduce Quality Gate Latency and Pre-commit Token Bloat** - COMPLETE (2026-04-03) - Conditional cache clear on `force_fresh`, trimmed passing gate responses, `agent_log` omitted on pass, `PipelineDirtyTracker` after successful gate, adaptive poll intervals, `checks.skipped` / `checks.executed` logs, `preflight_passed` from Phase A plus markdown; tests and `run_quality_gate` verified. Success criteria 1–3 (50-day latency/tokens/skip rate) remain operational analytics.
-
-- ✅ **Prune dead tools / analyze truncation (PARTIAL)** - COMPLETE (2026-04-03) - cortex://analysis now passes default truncation parameters; context effectiveness responses can include truncated=true and caps on stats tail; list_plans/get_plan are plain async helpers.
-
-- ✅ **Prune Dead/Near-Dead Tools and Reduce Token-Heavy Responses** - COMPLETE (2026-04-03) - Finished analyze resource size bounds: context stats now expose truncated when recent_entries tail is capped; unit test coverage. Prior work already removed list_plans/get_plan from MCP, added cortex://analysis defaults, and updated docs/tests.
-
-- ✅ **Anthropic cache hints on MCP resources (PARTIAL)** - COMPLETE (2026-04-03) - cortex://rules and cortex://context now register cache_control in resource meta (ephemeral TTLs) and use 300s in-process TTL caches; tests in tests/unit/test_mcp_resource_cache_control.py. Manual API token verification and Claude Code forwarding remain.
-
-- ✅ **Add Anthropic Prompt Cache-Control to MCP Resource Responses** - COMPLETE (2026-04-03) - Registered cache_control hints on cortex://rules (1h) and cortex://context (5m) via FastMCP @mcp.resource(meta); 300s in-process TTL caches for both resources; unit tests for meta and cache hits; constants documented.
+- **Summary (2026-04-03)** - 1 entries archived.
 
 ## Completed Work (2026-04-02)
 

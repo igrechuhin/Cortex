@@ -144,7 +144,10 @@ class TestContextLoggingIntegration:
         # Arrange
         progress_calls: list[tuple[float, float | None]] = []
 
-        async def capture_progress(p: float, t: float | None = None) -> None:
+        async def capture_progress(
+            p: float, t: float | None = None, *, message: str | None = None
+        ) -> None:
+            _ = message
             progress_calls.append((p, t))
 
         mock_ctx.report_progress = AsyncMock(side_effect=capture_progress)
