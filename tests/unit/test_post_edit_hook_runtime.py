@@ -39,6 +39,27 @@ def _read_hook_command(project_root: Path) -> str | None:
     return command if isinstance(command, str) else None
 
 
+def _read_matcher(project_root: Path) -> str | None:
+    settings_path = project_root / ".claude" / "settings.json"
+    settings = cast(
+        dict[str, object], json.loads(settings_path.read_text(encoding="utf-8"))
+    )
+    hooks_value = settings.get("hooks")
+    if not isinstance(hooks_value, dict):
+        return None
+    hooks = cast(dict[str, object], hooks_value)
+    post_tool_use_value = hooks.get("PostToolUse")
+    if not isinstance(post_tool_use_value, list) or not post_tool_use_value:
+        return None
+    post_tool_use = cast(list[object], post_tool_use_value)
+    first_entry_value = post_tool_use[0]
+    if not isinstance(first_entry_value, dict):
+        return None
+    entry = cast(dict[str, object], first_entry_value)
+    matcher = entry.get("matcher")
+    return matcher if isinstance(matcher, str) else None
+
+
 def test_apply_project_post_edit_hook_writes_python_hook(tmp_path: Path) -> None:
     _ = (tmp_path / "pyproject.toml").write_text(
         "[project]\nname = 'myapp'\n", encoding="utf-8"
@@ -52,6 +73,7 @@ def test_apply_project_post_edit_hook_writes_python_hook(tmp_path: Path) -> None
         _read_hook_command(tmp_path)
         == "python3 -m pytest tests/ --timeout=30 -x -q 2>&1 | tail -20"
     )
+    assert _read_matcher(tmp_path) == "Edit(**/*.py)"
 
 
 def test_apply_project_post_edit_hook_is_idempotent(tmp_path: Path) -> None:

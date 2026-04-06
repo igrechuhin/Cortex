@@ -15,25 +15,24 @@ async def _yielding_sleep(_interval: float) -> None:
     await asyncio.sleep(0)
 
 
-def _make_fake_report(
+def _make_fake_log(
     recorded: Recorded,
-) -> Callable[[object, float, float | None], Coroutine[None, None, None]]:
-    async def fake_report(
+) -> Callable[[object, str, str], Coroutine[None, None, None]]:
+    async def fake_log(
         _ctx: object,
-        progress: float,
-        total: float | None = None,
-        *,
-        message: str | None = None,
+        _level: str,
+        message: str,
     ) -> None:
-        recorded.append((progress, total, message))
+        progress = float(len(message))
+        recorded.append((progress, None, message))
 
-    return fake_report
+    return fake_log
 
 
 def _patch_heartbeat_mocks(monkeypatch: pytest.MonkeyPatch, recorded: Recorded) -> None:
     monkeypatch.setattr(
-        "cortex.tools.execution.pre_commit_tools_run_helpers.report_progress_safe",
-        _make_fake_report(recorded),
+        "cortex.tools.execution.pre_commit_tools_run_helpers.log_client",
+        _make_fake_log(recorded),
     )
     monkeypatch.setattr(
         "cortex.tools.execution.pre_commit_tools_run_helpers._async_sleep",

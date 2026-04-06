@@ -7,6 +7,7 @@
 - **NEEDS CLARIFICATION Markers in Plans** - PARTIAL. Added ClarificationMarker model, find_clarification_markers() with fenced-block skipping and tests (Steps 1-2).
 - **NEEDS CLARIFICATION Markers in Plans** - PARTIAL. Completed Step 3: plan create flow now injects/refreshes `## Clarifications Needed` summary and logs marker counts; added unit and integration coverage for summary insertion behavior.
 - **Conditional Hook Execution DSL** - PARTIAL. Added typed hook condition models and matcher-aware post-edit hook dedup logic with unit tests (5 tests) in setup/claude settings paths.
+- **Conditional Hook Execution DSL** - PARTIAL. Exposed HookCondition from hook templates and threaded condition-aware matcher emission through post-edit hook runtime/settings with tests.
 
 ## 2026-04-04
 

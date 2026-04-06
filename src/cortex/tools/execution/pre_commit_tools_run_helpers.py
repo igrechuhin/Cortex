@@ -7,7 +7,12 @@ import asyncio
 from collections.abc import Callable
 from typing import cast
 
-from cortex.core.context_logging import MCPContext, report_progress_safe
+from cortex.core.context_logging import (
+    LogLevel,
+    MCPContext,
+    log_client,
+    report_progress_safe,
+)
 from cortex.core.models import ModelDict, OperationStatus
 from cortex.services.framework_adapters.base import (
     CheckResult,
@@ -156,19 +161,16 @@ def _callbacks_for_ctx(
 
 
 async def heartbeat_loop(ctx: MCPContext, interval: float) -> None:
-    """Send periodic progress heartbeats to keep MCP connection alive.
+    """Send periodic log heartbeats to keep MCP connection alive.
 
-    Runs as a background task alongside the pipeline. Each tick appends one
-    dot to the MCP progress ``message`` (capped at ``_HEARTBEAT_MAX_DOTS``).
-    Numeric fields are fixed at ``0/0`` so only the dot string is visible.
+    Each tick sends one additional dot via ctx.log (debug level) so liveness
+    is visible as plain text without numeric progress fields.
     """
     dot_count = 0
     while True:
         await _async_sleep(interval)
         dot_count = min(dot_count + 1, _HEARTBEAT_MAX_DOTS)
-        # AI: Keep numeric heartbeat monotonic and unbounded-total so clients can
-        # treat it as liveness without implying finite completion percentage.
-        await report_progress_safe(ctx, float(dot_count), None, message="." * dot_count)
+        await log_client(ctx, LogLevel.DEBUG, "." * dot_count)
 
 
 def _setup_heartbeat_and_callbacks(

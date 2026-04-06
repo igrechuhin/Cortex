@@ -47,16 +47,34 @@ def _hook_command(settings: dict[str, object]) -> str | None:
     return command if isinstance(command, str) else None
 
 
+def _matcher(settings: dict[str, object]) -> str | None:
+    hooks_value = settings.get("hooks")
+    if not isinstance(hooks_value, dict):
+        return None
+    hooks = cast(dict[str, object], hooks_value)
+    post_tool_use_value = hooks.get("PostToolUse")
+    if not isinstance(post_tool_use_value, list) or not post_tool_use_value:
+        return None
+    post_tool_use = cast(list[object], post_tool_use_value)
+    first_entry = post_tool_use[0]
+    if not isinstance(first_entry, dict):
+        return None
+    entry = cast(dict[str, object], first_entry)
+    matcher = entry.get("matcher")
+    return matcher if isinstance(matcher, str) else None
+
+
 class TestPythonProjectHookEmission:
     def test_python_project_gets_pytest_hook(self, tmp_path: Path) -> None:
         _ = (tmp_path / "pyproject.toml").write_text(
             "[project]\nname = 'myapp'\n", encoding="utf-8"
         )
 
-        command = HookTemplates.get_post_edit_hook("python")
-        assert command is not None
+        hook_spec = HookTemplates.get_post_edit_hook("python")
+        assert hook_spec is not None
+        command, condition = hook_spec
         changed = ensure_post_edit_hook_in_project_claude_settings(
-            tmp_path, command=command
+            tmp_path, command=command, condition=condition
         )
 
         assert changed is True
@@ -65,14 +83,18 @@ class TestPythonProjectHookEmission:
             _hook_command(settings)
             == "python3 -m pytest tests/ --timeout=30 -x -q 2>&1 | tail -20"
         )
+        assert _matcher(settings) == "Edit(**/*.py)"
 
     def test_python_hook_idempotent_on_second_call(self, tmp_path: Path) -> None:
-        command = HookTemplates.get_post_edit_hook("python")
-        assert command is not None
-        _ = ensure_post_edit_hook_in_project_claude_settings(tmp_path, command=command)
+        hook_spec = HookTemplates.get_post_edit_hook("python")
+        assert hook_spec is not None
+        command, condition = hook_spec
+        _ = ensure_post_edit_hook_in_project_claude_settings(
+            tmp_path, command=command, condition=condition
+        )
 
         changed = ensure_post_edit_hook_in_project_claude_settings(
-            tmp_path, command=command
+            tmp_path, command=command, condition=condition
         )
 
         assert changed is False
@@ -87,9 +109,12 @@ class TestPythonProjectHookEmission:
             encoding="utf-8",
         )
 
-        command = HookTemplates.get_post_edit_hook("python")
-        assert command is not None
-        _ = ensure_post_edit_hook_in_project_claude_settings(tmp_path, command=command)
+        hook_spec = HookTemplates.get_post_edit_hook("python")
+        assert hook_spec is not None
+        command, condition = hook_spec
+        _ = ensure_post_edit_hook_in_project_claude_settings(
+            tmp_path, command=command, condition=condition
+        )
 
         settings = _read_settings(tmp_path)
         assert settings.get("permissions") == {"allow": ["Bash(pytest:*)"]}
@@ -102,10 +127,11 @@ class TestSwiftProjectHookEmission:
             "// swift-tools-version:5.9\nimport PackageDescription\n", encoding="utf-8"
         )
 
-        command = HookTemplates.get_post_edit_hook("swift")
-        assert command is not None
+        hook_spec = HookTemplates.get_post_edit_hook("swift")
+        assert hook_spec is not None
+        command, condition = hook_spec
         changed = ensure_post_edit_hook_in_project_claude_settings(
-            tmp_path, command=command
+            tmp_path, command=command, condition=condition
         )
 
         assert changed is True
@@ -113,12 +139,15 @@ class TestSwiftProjectHookEmission:
         assert _hook_command(settings) == "swift build 2>&1 | tail -20"
 
     def test_swift_hook_idempotent_on_second_call(self, tmp_path: Path) -> None:
-        command = HookTemplates.get_post_edit_hook("swift")
-        assert command is not None
-        _ = ensure_post_edit_hook_in_project_claude_settings(tmp_path, command=command)
+        hook_spec = HookTemplates.get_post_edit_hook("swift")
+        assert hook_spec is not None
+        command, condition = hook_spec
+        _ = ensure_post_edit_hook_in_project_claude_settings(
+            tmp_path, command=command, condition=condition
+        )
 
         changed = ensure_post_edit_hook_in_project_claude_settings(
-            tmp_path, command=command
+            tmp_path, command=command, condition=condition
         )
 
         assert changed is False
@@ -151,11 +180,12 @@ class TestUnknownLanguageFallback:
 def test_all_supported_languages_produce_valid_hook_in_project(
     tmp_path: Path, language: str, expected_fragment: str
 ) -> None:
-    command = HookTemplates.get_post_edit_hook(language)
-    assert command is not None, f"Expected a command for {language}"
+    hook_spec = HookTemplates.get_post_edit_hook(language)
+    assert hook_spec is not None, f"Expected a command for {language}"
+    command, condition = hook_spec
 
     changed = ensure_post_edit_hook_in_project_claude_settings(
-        tmp_path, command=command
+        tmp_path, command=command, condition=condition
     )
 
     assert changed is True

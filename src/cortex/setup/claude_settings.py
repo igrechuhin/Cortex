@@ -58,11 +58,13 @@ def _get_or_create_post_tool_use_list(settings: dict[str, object]) -> list[objec
 
 
 def ensure_post_edit_hook_in_project_claude_settings(
-    project_root: Path, *, command: str
+    project_root: Path, *, command: str, condition: HookCondition | None = None
 ) -> bool:
     settings_path = project_root / ".claude" / "settings.json"
     settings = _load_settings_or_empty(settings_path)
-    merged, changed = merge_post_tool_use_edit_hook(settings, command=command)
+    merged, changed = merge_post_tool_use_edit_hook(
+        settings, command=command, condition=condition
+    )
     if not changed and settings_path.exists():
         return False
     _ = settings_path.parent.mkdir(parents=True, exist_ok=True)

@@ -16,7 +16,7 @@ import time
 from pathlib import Path
 from typing import cast
 
-from cortex.core.context_logging import MCPContext, report_progress_safe
+from cortex.core.context_logging import LogLevel, MCPContext, log_client
 from cortex.tools.execution.session_paths import session_dir
 
 logger = logging.getLogger(__name__)
@@ -210,7 +210,7 @@ async def poll_for_result(
         await asyncio.sleep(poll_interval_for_elapsed(elapsed))
         dot_count = min(dot_count + 1, _HEARTBEAT_MAX_DOTS)
         if ctx is not None:
-            await report_progress_safe(ctx, 0.0, 0.0, message="." * dot_count)
+            await log_client(ctx, LogLevel.DEBUG, "." * dot_count)
         data, status = await _read_result_file(result_path)
         if data is None:
             continue
