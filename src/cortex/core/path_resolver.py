@@ -250,6 +250,12 @@ def has_memory_bank(project_root: Path) -> bool:
     return get_cortex_path(project_root, CortexResourceType.MEMORY_BANK).is_dir()
 
 
+def get_constitution_path(project_root: Path) -> Path:
+    """Return `.cortex/memory-bank/constitution.md` for the project root."""
+    memory_bank_dir = get_cortex_path(project_root, CortexResourceType.MEMORY_BANK)
+    return memory_bank_dir / MemoryBankFile.CONSTITUTION
+
+
 # Core Memory Bank files; kept in sync with the canonical spec
 # in the Memory Bank workflow rule (memory-bank-workflow.mdc).
 # Import here to avoid circular dependency (constants imports from path_resolver)

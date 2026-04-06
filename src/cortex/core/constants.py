@@ -313,6 +313,7 @@ class MemoryBankFile(StrEnum):
     TECH_CONTEXT = "techContext.md"
     PROGRESS = "progress.md"
     ROADMAP = "roadmap.md"
+    CONSTITUTION = "constitution.md"
 
 
 # =============================================================================

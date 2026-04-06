@@ -107,3 +107,7 @@ Target: 95% coverage on all new code paths.
 - **Unit**: Model validation, file operations (mock filesystem), compliance scanner (parametrized: violating / non-violating plans).
 - **Integration**: End-to-end flow using a real temp directory; no mocks for file I/O.
 - **Edge cases**: Missing constitution (non-blocking), malformed constitution (graceful degradation), plan with multiple violations (all listed).
+
+## Partial Progress Log
+
+- 2026-04-06: Implement Step 1 foundation: add ConstitutionDoc schema and canonical constitution path primitives — files: src/cortex/core/models/_governance.py, src/cortex/core/models/**init**.py, src/cortex/core/constants.py, src/cortex/core/path_resolver.py, tests/unit/test_constitution_models.py, tests/unit/test_path_resolver.py

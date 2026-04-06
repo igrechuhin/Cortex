@@ -180,7 +180,7 @@ All phases run inline. Use zero-arg tools — do NOT use legacy pre-commit tools
 - Treat overloaded terms (e.g. "clean") as prompt-specific; do not assume commit-pipeline git-clean semantics when a prompt defines issue-clean or workflow-clean semantics.
 - When refactoring, briefly explain why the new approach is better, especially when the change is non-obvious.
 - When consolidating or adding tools, keep names purpose-revealing and follow `docs/guides/tool-description-altitude-rubric.md` (target score ≥4).
-- Prefer scan-friendly emoji status markers (✅/⚠️/❌) in prompts and summaries for success/warn/error; keep final summaries concise (typically at most four sentences), avoid heavy code blocks there, and use headings and bolded bullet labels per the markdown formatting guide.
+- Prefer scan-friendly emoji status markers (✅/⚠️/❌) in prompts and summaries for success/warn/error; keep final summaries concise (typically at most four sentences), avoid heavy code blocks there, and use headings and bolded bullet labels per the markdown formatting guide. For heartbeat or liveness output, avoid opaque N/K-style counters when they convey no clear meaning; prefer a simple cumulative indicator (e.g. one dot per ping).
 - When a roadmap item is large, always make concrete partial progress in the current session (smallest meaningful subtask plus tests/quality) and update plans/status as PARTIAL instead of stopping with no changes.
 - For reflection, quality-gate adjuncts, and similar cross-cutting checks, prefer language-parameterized constants and language-specific checklists over Python-only naming or a single generic list.
 

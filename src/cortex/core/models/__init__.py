@@ -24,6 +24,7 @@ from ._enums import (
     ResponseStatus,
     RiskLevel,
 )
+from ._governance import ConstitutionDoc
 from ._metadata import (
     AccessPatternModel,
     CacheStatsModel,
@@ -108,6 +109,7 @@ __all__ = [
     "CacheWarmingResultModel",
     "ChangeType",
     "ConnectionHealth",
+    "ConstitutionDoc",
     "ConsolidationImpactAnalysis",
     "ContextDepth",
     "ContextSizeEstimate",

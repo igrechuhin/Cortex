@@ -3,6 +3,7 @@
 ## 2026-04-06
 
 - **Pre-commit MCP heartbeat follow-up** - COMPLETE. Added unit tests for pre-commit run helpers; refactored markdown batch tests; aligned context logging, integration, and progress tests; updated logging guidelines; archived plan. Quality gate ~92% coverage.
+- **Constitutional Layer for Projects** - PARTIAL. Implemented Step 1 foundation with `ConstitutionDoc` schema and canonical constitution path primitives (`MemoryBankFile.CONSTITUTION`, `get_constitution_path`) plus 3 focused unit tests; remaining steps include template/init, plan compliance scanning, context/session integration.
 
 ## 2026-04-04
 

@@ -8,6 +8,7 @@ from cortex.core.path_resolver import (
     ProjectResourceType,
     augmented_environ_with_project_venv_bins,
     get_cache_path,
+    get_constitution_path,
     get_cortex_path,
     get_legacy_venv_bin_path,
     get_node_modules_bin_dir,
@@ -41,6 +42,20 @@ class TestGetCortexPath:
             tmp_path
             / CortexResourceType.CORTEX_DIR.value
             / CortexResourceType.MEMORY_BANK.value
+        )
+        assert result == expected
+
+    def test_get_constitution_path(self, tmp_path: Path) -> None:
+        """Test getting constitution file path."""
+        # Act
+        result = get_constitution_path(tmp_path)
+
+        # Assert
+        expected = (
+            tmp_path
+            / CortexResourceType.CORTEX_DIR.value
+            / CortexResourceType.MEMORY_BANK.value
+            / "constitution.md"
         )
         assert result == expected
 

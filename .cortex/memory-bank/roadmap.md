@@ -8,6 +8,8 @@
 
 ## Active Work (in progress)
 
+- Constitutional Layer for Projects — Continue remaining implementation after Step 1 foundation (`ConstitutionDoc`, canonical constitution path plumbing, and unit coverage) is complete. PENDING.
+
 ## Future Enhancements
 
 ## Pending plans (from .cortex/plans)
