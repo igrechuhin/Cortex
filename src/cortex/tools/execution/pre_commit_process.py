@@ -200,9 +200,7 @@ async def poll_for_result(
     """Poll for result file completion, sending heartbeat progress as dots.
 
     Each poll appends one dot to the message (capped at _HEARTBEAT_MAX_DOTS).
-    Numeric progress increases monotonically with total=None to avoid implying
-    a fake completion fraction while still satisfying clients that require
-    numeric deltas for keepalive.
+    Numeric fields are fixed at 0/0 so only the dot string is visible.
     """
     poll_start = time.time()
     deadline = poll_start + timeout
@@ -212,10 +210,7 @@ async def poll_for_result(
         await asyncio.sleep(poll_interval_for_elapsed(elapsed))
         dot_count = min(dot_count + 1, _HEARTBEAT_MAX_DOTS)
         if ctx is not None:
-            # AI: total=None avoids a fake denominator; dots encode honest keepalive semantics.
-            await report_progress_safe(
-                ctx, float(dot_count), None, message="." * dot_count
-            )
+            await report_progress_safe(ctx, 0.0, 0.0, message="." * dot_count)
         data, status = await _read_result_file(result_path)
         if data is None:
             continue

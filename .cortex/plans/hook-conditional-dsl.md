@@ -109,3 +109,7 @@ Coverage target: 95%+.
 - No mocking of `open()` — use real temp files.
 - AAA pattern throughout.
 - Run via `run_quality_gate()` after implementation.
+
+## Partial Progress Log
+
+- 2026-04-06: Add HookCondition models and matcher-aware merge dedup with unit tests — files: src/cortex/setup/hook_models.py, src/cortex/setup/claude_settings.py, tests/unit/test_claude_settings_post_edit_hook.py, tests/unit/setup/test_hook_models.py

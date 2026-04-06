@@ -4,17 +4,40 @@ import json
 from pathlib import Path
 from typing import cast
 
+from cortex.setup.hook_models import HookCondition
+
 
 class ClaudeSettingsError(ValueError):
     pass
 
 
 def merge_post_tool_use_edit_hook(
-    settings: dict[str, object], *, command: str
+    settings: dict[str, object], *, command: str, condition: HookCondition | None = None
 ) -> tuple[dict[str, object], bool]:
     if not command.strip():
         raise ClaudeSettingsError("command must be non-empty")
 
+    post_tool_use = _get_or_create_post_tool_use_list(settings)
+    matcher_value = _resolve_matcher(condition)
+
+    matcher_entry, matcher_entry_idx = _find_post_tool_use_matcher_entry(
+        post_tool_use, matcher=matcher_value
+    )
+    if matcher_entry is None:
+        post_tool_use.append(_new_post_tool_use_entry(command, matcher=matcher_value))
+        return (settings, True)
+
+    changed = _ensure_command_hook(matcher_entry, command=command)
+    if changed:
+        post_tool_use[matcher_entry_idx] = matcher_entry
+    return (settings, changed)
+
+
+def _resolve_matcher(condition: HookCondition | None) -> str:
+    return condition.to_matcher_string() if condition is not None else "Edit"
+
+
+def _get_or_create_post_tool_use_list(settings: dict[str, object]) -> list[object]:
     hooks_value = settings.get("hooks")
     if hooks_value is None:
         hooks: dict[str, object] = {}
@@ -28,22 +51,10 @@ def merge_post_tool_use_edit_hook(
     if post_tool_use_value is None:
         post_tool_use: list[object] = []
         hooks["PostToolUse"] = post_tool_use
-    elif isinstance(post_tool_use_value, list):
-        post_tool_use = cast(list[object], post_tool_use_value)
-    else:
-        raise ClaudeSettingsError('"hooks.PostToolUse" must be an array when present')
-
-    matcher_entry, matcher_entry_idx = _find_post_tool_use_matcher_entry(
-        post_tool_use, matcher="Edit"
-    )
-    if matcher_entry is None:
-        post_tool_use.append(_new_post_tool_use_entry(command))
-        return (settings, True)
-
-    changed = _ensure_command_hook(matcher_entry, command=command)
-    if changed:
-        post_tool_use[matcher_entry_idx] = matcher_entry
-    return (settings, changed)
+        return post_tool_use
+    if isinstance(post_tool_use_value, list):
+        return cast(list[object], post_tool_use_value)
+    raise ClaudeSettingsError('"hooks.PostToolUse" must be an array when present')
 
 
 def ensure_post_edit_hook_in_project_claude_settings(
@@ -83,9 +94,9 @@ def _find_post_tool_use_matcher_entry(
     return (None, -1)
 
 
-def _new_post_tool_use_entry(command: str) -> dict[str, object]:
+def _new_post_tool_use_entry(command: str, *, matcher: str) -> dict[str, object]:
     return {
-        "matcher": "Edit",
+        "matcher": matcher,
         "hooks": [{"type": "command", "command": command}],
     }
 

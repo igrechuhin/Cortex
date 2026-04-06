@@ -159,22 +159,16 @@ async def heartbeat_loop(ctx: MCPContext, interval: float) -> None:
     """Send periodic progress heartbeats to keep MCP connection alive.
 
     Runs as a background task alongside the pipeline. Each tick appends one
-    dot to the MCP progress ``message`` (capped) so liveness is visible
-    without implying a meaningful fraction of work. Numeric ``progress``
-    still increases monotonically with ``total=None`` for clients that
-    rely on numeric deltas rather than message text.
+    dot to the MCP progress ``message`` (capped at ``_HEARTBEAT_MAX_DOTS``).
+    Numeric fields are fixed at ``0/0`` so only the dot string is visible.
     """
     dot_count = 0
     while True:
         await _async_sleep(interval)
         dot_count = min(dot_count + 1, _HEARTBEAT_MAX_DOTS)
-        # AI: total=None avoids a fake denominator; dots encode honest keepalive semantics.
-        await report_progress_safe(
-            ctx,
-            float(dot_count),
-            None,
-            message="." * dot_count,
-        )
+        # AI: Keep numeric heartbeat monotonic and unbounded-total so clients can
+        # treat it as liveness without implying finite completion percentage.
+        await report_progress_safe(ctx, float(dot_count), None, message="." * dot_count)
 
 
 def _setup_heartbeat_and_callbacks(

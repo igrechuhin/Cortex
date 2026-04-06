@@ -12,6 +12,8 @@
 
 - ✅ **NEEDS CLARIFICATION Markers in Plans (PARTIAL)** - COMPLETE (2026-04-06) - Implemented Step 3 in plan creation: `## Clarifications Needed` summary generation/placement and clarification marker count logging; covered by new unit and integration tests.
 
+- ✅ **Conditional Hook Execution DSL (PARTIAL)** - COMPLETE (2026-04-06) - Implemented HookCondition/HookEntry models and matcher-aware merge_post_tool_use_edit_hook dedup by matcher+command; added 5 unit tests; remaining template/caller/conditions serialization steps pending.
+
 ## Completed Work (2026-04-04)
 
 - **Summary (2026-04-04)** - 1 entries archived.

@@ -9,6 +9,7 @@ from cortex.setup.claude_settings import (
     ensure_post_edit_hook_in_project_claude_settings,
     merge_post_tool_use_edit_hook,
 )
+from cortex.setup.hook_models import HookCondition
 
 
 def test_merge_adds_hook_to_empty_settings() -> None:
@@ -129,3 +130,53 @@ def test_ensure_is_noop_when_command_already_present(tmp_path: Path) -> None:
     )
 
     assert changed is False
+
+
+def test_merge_deduplicates_by_same_matcher_and_command_with_condition() -> None:
+    settings: dict[str, object] = {
+        "hooks": {
+            "PostToolUse": [
+                {
+                    "matcher": "Edit(**/*.py)",
+                    "hooks": [
+                        {"type": "command", "command": "python3 -m pytest tests/ -q"}
+                    ],
+                }
+            ]
+        }
+    }
+
+    merged, changed = merge_post_tool_use_edit_hook(
+        settings,
+        command="python3 -m pytest tests/ -q",
+        condition=HookCondition(tool="Edit", pattern="**/*.py"),
+    )
+
+    assert changed is False
+    assert merged == settings
+
+
+def test_merge_allows_same_command_for_different_matchers() -> None:
+    settings: dict[str, object] = {
+        "hooks": {
+            "PostToolUse": [
+                {
+                    "matcher": "Edit(**/*.py)",
+                    "hooks": [
+                        {"type": "command", "command": "python3 -m pytest tests/ -q"}
+                    ],
+                }
+            ]
+        }
+    }
+
+    merged, changed = merge_post_tool_use_edit_hook(
+        settings,
+        command="python3 -m pytest tests/ -q",
+        condition=HookCondition(tool="Edit", pattern="**/*.ts"),
+    )
+
+    assert changed is True
+    hooks = cast(dict[str, object], merged["hooks"])
+    post_tool_use = cast(list[object], hooks["PostToolUse"])
+    assert len(post_tool_use) == 2
