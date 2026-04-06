@@ -41,6 +41,7 @@ from ._metadata import (
     UsageAnalytics,
     WarmingStrategyModel,
 )
+from ._plan_markers import ClarificationMarker
 from ._responses import (
     CacheConfig,
     ConnectionHealth,
@@ -108,6 +109,7 @@ __all__ = [
     "CacheStatsModel",
     "CacheWarmingResultModel",
     "ChangeType",
+    "ClarificationMarker",
     "ConnectionHealth",
     "ConstitutionDoc",
     "ConsolidationImpactAnalysis",

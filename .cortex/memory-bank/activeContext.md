@@ -8,6 +8,8 @@
 
 - ✅ **Constitutional Layer for Projects** - COMPLETE (2026-04-06) - Constitution template, manage_file init_constitution, plan compliance scanning (`constitutional_scan`), `constitution_init_flow`, cortex://context immutable_governance, session constitution_notice, unit tests; plan archived under `.cortex/plans/archive/Other/`; Synapse `templates/constitution.md`.
 
+- ✅ **NEEDS CLARIFICATION Markers in Plans (PARTIAL)** - COMPLETE (2026-04-06) - Introduced core ClarificationMarker model and plan_utils.find_clarification_markers(); unit tests cover zero/one/many markers, blocking flag, code fences, empty reason.
+
 ## Completed Work (2026-04-04)
 
 - **Summary (2026-04-04)** - 1 entries archived.

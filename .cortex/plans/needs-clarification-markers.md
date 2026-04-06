@@ -2,7 +2,7 @@
 title: "NEEDS CLARIFICATION Markers in Plans"
 component: planning
 work_type: feature
-status: PENDING
+status: IN_PROGRESS
 priority: high
 created: 2026-04-06
 depends_on: []
@@ -124,3 +124,7 @@ Target: 95% coverage on all new code paths.
 - **Unit**: Marker detection (regex correctness, edge cases), registration logic, resolution logic.
 - **Integration**: Full create → review → resolve → register cycle.
 - **Edge cases**: Marker with no reason text; nested brackets in marker; marker inside code block (should not match); all markers resolved (section removed).
+
+## Partial Progress Log
+
+- 2026-04-06: Steps 1-2: ClarificationMarker model and find_clarification_markers() with unit tests — files: `src/cortex/core/models/_plan_markers.py`, `src/cortex/core/models/__init__.py`, `src/cortex/core/plan_utils.py`, `tests/unit/test_plan_utils_markers.py`

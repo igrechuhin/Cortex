@@ -4,6 +4,7 @@
 
 - **Pre-commit MCP heartbeat follow-up** - COMPLETE. Added unit tests for pre-commit run helpers; refactored markdown batch tests; aligned context logging, integration, and progress tests; updated logging guidelines; archived plan. Quality gate ~92% coverage.
 - **Constitutional Layer for Projects** - COMPLETE. Template, init_constitution, compliance scanning (`constitutional_scan`), constitution init flow, context and session surfacing, tests; plan archived; Synapse constitution template in submodule.
+- **NEEDS CLARIFICATION Markers in Plans** - PARTIAL. Added ClarificationMarker model, find_clarification_markers() with fenced-block skipping and tests (Steps 1-2).
 
 ## 2026-04-04
 
