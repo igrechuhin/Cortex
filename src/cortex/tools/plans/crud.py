@@ -11,6 +11,7 @@ from cortex.core.constants import MCP_TOOL_TIMEOUT_MEDIUM
 from cortex.core.context_logging import MCPContext, log_client
 from cortex.core.mcp_stability import ensure_usage_context, mcp_tool_wrapper
 from cortex.core.project_root_resolver import resolve_project_root_async
+from cortex.tools.plans.constitutional_scan import apply_constitutional_compliance
 from cortex.tools.plans.crud_helpers import (
     create_error_result,
     create_plan_file,
@@ -71,7 +72,8 @@ async def _create_plan_impl(
 
     try:
         root = await resolve_project_root_async(None, ctx)
-        plan_path, error = create_plan_file(root, title, slug, content)
+        final_content, _ = apply_constitutional_compliance(root, content)
+        plan_path, error = create_plan_file(root, title, slug, final_content)
         return await _handle_plan_result(plan_path, error, ctx)
     except Exception as e:
         await log_client(

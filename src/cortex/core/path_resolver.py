@@ -261,6 +261,14 @@ def get_constitution_path(project_root: Path) -> Path:
 # Import here to avoid circular dependency (constants imports from path_resolver)
 from cortex.core.constants import MemoryBankFile  # noqa: E402
 
+
+def get_constitution_template_path(project_root: Path) -> Path:
+    # AI: Synapse ships the starter template; memory bank holds the project-specific copy.
+    """Return `.cortex/synapse/templates/constitution.md` (Synapse template)."""
+    synapse_dir = get_cortex_path(project_root, CortexResourceType.SYNAPSE)
+    return synapse_dir / "templates" / MemoryBankFile.CONSTITUTION
+
+
 _MEMORY_BANK_CORE_FILES = (
     MemoryBankFile.PROJECT_BRIEF,
     MemoryBankFile.PRODUCT_CONTEXT,

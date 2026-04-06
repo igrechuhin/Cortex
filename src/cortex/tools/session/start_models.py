@@ -27,6 +27,7 @@ class SessionBriefContextKwargs(DictLikeModel):
     mcp_healthy: bool
     mcp_health_message: str | None
     gate_feedback_summary: str | None
+    constitution_notice: str | None = None
 
 
 class BriefInputs(DictLikeModel):
@@ -45,5 +46,6 @@ class BriefInputs(DictLikeModel):
     mcp_healthy: bool
     mcp_health_message: str | None
     gate_feedback_summary: str | None
+    constitution_notice: str | None = None
     progress_content: str = ""
     roadmap_content: str = ""

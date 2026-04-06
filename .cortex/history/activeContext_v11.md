@@ -2,6 +2,14 @@
 
 **This file records completed work only.** For current status and upcoming work see [roadmap.md](roadmap.md).
 
+## Completed Work (2026-04-06)
+
+- ✅ **Pre-commit MCP heartbeat follow-up** - COMPLETE (2026-04-06) - Unit tests for pre_commit_tools_run_helpers; markdown_operations_batch refactor; context_logging and progress test updates; logging guidelines; archived mcp-pre-commit-heartbeat-dots plan.
+
+- **Constitutional Layer for Projects (PARTIAL)** - Added governance foundations used by upcoming constitution workflow: new `ConstitutionDoc` model and canonical constitution memory-bank path plumbing in constants/path resolver with unit coverage.
+
+- ✅ **Constitutional Layer for Projects** - COMPLETE (2026-04-06) - Implemented constitution template, manage_file init_constitution, plan compliance scanning, cortex://context immutable_governance, session constitution_notice, and tests.
+
 ## Completed Work (2026-04-04)
 
 - **Summary (2026-04-04)** - 1 entries archived.

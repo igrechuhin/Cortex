@@ -1,5 +1,10 @@
 # Progress Log
 
+## 2026-04-06
+
+- **Pre-commit MCP heartbeat follow-up** - COMPLETE. Added unit tests for pre-commit run helpers; refactored markdown batch tests; aligned context logging, integration, and progress tests; updated logging guidelines; archived plan. Quality gate ~92% coverage.
+- **Constitutional Layer for Projects** - COMPLETE. Template, init_constitution, compliance section on plan create, context and session surfacing, tests.
+
 ## 2026-04-04
 
 - **Pre-commit MCP heartbeat — dot message instead of fake N/K progress** - COMPLETE. Extended report_progress_safe with optional message; heartbeat uses capped dots and total=None; tests and logging guidelines updated.

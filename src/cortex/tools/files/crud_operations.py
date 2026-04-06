@@ -54,6 +54,9 @@ def _resolve_manage_file_defaults(
         file_name = str(cfg.get("file_name", "activeContext.md"))
     if operation is None:
         operation = FileOperation.READ
+    # AI: init_constitution always targets the canonical memory-bank filename.
+    if operation == FileOperation.INIT_CONSTITUTION:
+        file_name = MemoryBankFile.CONSTITUTION
     return file_name, operation
 
 

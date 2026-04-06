@@ -2,14 +2,7 @@
 
 from __future__ import annotations
 
-from cortex.tools.session.models import (
-    SESSION_SCOPE_PROMPT,
-    ConcurrentSession,
-    GitStatusSummary,
-    SessionBrief,
-    SessionHandoff,
-    SessionHealthSummary,
-)
+from cortex.tools.session.models import SESSION_SCOPE_PROMPT, SessionBrief
 from cortex.tools.session.start_models import SessionBriefContextKwargs
 
 
@@ -34,6 +27,7 @@ def _create_session_brief(
         mcp_health_message=context.mcp_health_message,
         gate_feedback_summary=context.gate_feedback_summary,
         session_scope=SESSION_SCOPE_PROMPT,
+        constitution_notice=context.constitution_notice,
     )
 
 
@@ -44,39 +38,6 @@ def _create_brief_with_suggestions(
     """Build SessionBrief from suggestions and context keyword arguments."""
     context = SessionBriefContextKwargs.model_validate(kwargs)
     return _create_session_brief(context, suggestions)
-
-
-def session_brief_context_kwargs(
-    project_name: str,
-    current_focus: str,
-    recent_completed: list[str],
-    next_work_item: str | None,
-    next_work_plan_path: str | None,
-    health: SessionHealthSummary,
-    git_status: GitStatusSummary | None,
-    last_handoff: SessionHandoff | None,
-    concurrent_sessions: list[ConcurrentSession],
-    locked_tasks: list[str],
-    mcp_healthy: bool = True,
-    mcp_health_message: str | None = None,
-    gate_feedback_summary: str | None = None,
-) -> SessionBriefContextKwargs:
-    """Build kwargs model for _create_brief_with_suggestions from context."""
-    return SessionBriefContextKwargs(
-        project_name=project_name,
-        current_focus=current_focus,
-        recent_completed=recent_completed,
-        next_work_item=next_work_item,
-        next_work_plan_path=next_work_plan_path,
-        health=health,
-        git_status=git_status,
-        last_handoff=last_handoff,
-        concurrent_sessions=concurrent_sessions,
-        locked_tasks=locked_tasks,
-        mcp_healthy=mcp_healthy,
-        mcp_health_message=mcp_health_message,
-        gate_feedback_summary=gate_feedback_summary,
-    )
 
 
 def brief_from_suggestions_and_context(

@@ -43,6 +43,7 @@ class FileOperation(str, Enum):
     WRITE = "write"
     METADATA = "metadata"
     ROLLBACK = "rollback"
+    INIT_CONSTITUTION = "init_constitution"
 
 
 def parse_file_operation(value: str | None) -> FileOperation | None:

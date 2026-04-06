@@ -24,6 +24,7 @@ from cortex.core.usage_context import (
 from cortex.managers.initialization import get_managers
 from cortex.managers.types import ManagersDict
 from cortex.managers.utils import get_manager
+from cortex.tools.files.constitution_init_flow import handle_init_constitution_operation
 from cortex.tools.files.crud_flow import (
     handle_read_operation,
     handle_rollback_operation,
@@ -309,6 +310,10 @@ async def _dispatch_operation(
     if operation == FileOperation.ROLLBACK:
         assert version is not None
         return await handle_rollback_operation(file_name, version, root)
+    if operation == FileOperation.INIT_CONSTITUTION:
+        return await handle_init_constitution_operation(
+            file_path, file_name, root, managers
+        )
     return build_invalid_operation_error(operation.value)
 
 

@@ -31,6 +31,24 @@ from .handlers_validation import (
 )
 
 
+def _finalize_load_context_output(
+    out: str,
+    response_format: ResponseFormat,
+    agent_role_value: str,
+    task_description: str,
+    token_budget: int | None,
+    root: Path,
+) -> str:
+    return format_and_add_warnings_if_needed(
+        out,
+        response_format,
+        agent_role_value,
+        task_description,
+        token_budget,
+        project_root=root,
+    )
+
+
 async def resolve_project_root_async(
     project_root: str | None, ctx: MCPContext | None
 ) -> Path:
@@ -226,19 +244,23 @@ async def execute_load_context_preinitialized(
 ) -> str:
     """Execute load_context assuming root and managers are already available."""
     agent_role = determine_agent_role(role, task_description)
-    effective_depth = determine_depth_from_budget(depth, token_budget)
     out = await load_context_with_error_handling(
         mgrs,
         task_description,
         token_budget,
         strategy,
         loading_strategy,
-        effective_depth.value,
+        determine_depth_from_budget(depth, token_budget).value,
         root,
         agent_role,
     )
-    return format_and_add_warnings_if_needed(
-        out, response_format, agent_role.value, task_description, token_budget
+    return _finalize_load_context_output(
+        out,
+        response_format,
+        agent_role.value,
+        task_description,
+        token_budget,
+        root,
     )
 
 

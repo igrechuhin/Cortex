@@ -5,6 +5,7 @@ Format load_context responses, add zero-file warnings, and build concise payload
 """
 
 import json
+from pathlib import Path
 from typing import cast
 
 from cortex.core.models import ResponseFormat
@@ -168,15 +169,49 @@ def format_load_context_response(
     return build_concise_payload(typed, role)
 
 
+def inject_constitution_into_context_result(
+    result_str: str, project_root: Path | None
+) -> str:
+    """Append constitution.md to successful load_context JSON when the file exists."""
+    # AI: Merges governance into load_context JSON so agents need not issue a separate read.
+    if project_root is None:
+        return result_str
+    from cortex.core.path_resolver import get_constitution_path
+
+    path = get_constitution_path(project_root)
+    if not path.is_file():
+        return result_str
+    try:
+        constitution_text = path.read_text(encoding="utf-8")
+    except OSError:
+        return result_str
+    try:
+        data = json.loads(result_str)
+    except json.JSONDecodeError:
+        return result_str
+    if not isinstance(data, dict):
+        return result_str
+    typed = cast(dict[str, object], data)
+    if typed.get("status") != "success":
+        return result_str
+    typed["immutable_governance"] = {
+        "source": "constitution.md",
+        "content": constitution_text,
+    }
+    return json.dumps(typed, indent=2)
+
+
 def format_and_add_warnings_if_needed(
     out: str,
     response_format: ResponseFormat,
     role: str,
     task_description: str,
     token_budget: int | None,
+    project_root: Path | None = None,
 ) -> str:
     """Format response and add zero-file warnings if needed."""
     result_str = format_load_context_response(out, response_format, role)
+    result_str = inject_constitution_into_context_result(result_str, project_root)
     if is_non_trivial_task(task_description):
         result_str = add_zero_file_warning_if_needed(
             result_str, task_description, token_budget

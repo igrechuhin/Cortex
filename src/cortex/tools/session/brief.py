@@ -20,10 +20,7 @@ from cortex.tools.session.brief_extraction_helpers import (
     extract_focus_and_completed,
     generate_session_suggestions,
 )
-from cortex.tools.session.brief_helpers import (
-    brief_from_suggestions_and_context,
-    session_brief_context_kwargs,
-)
+from cortex.tools.session.brief_helpers import brief_from_suggestions_and_context
 from cortex.tools.session.health import calculate_health_summary
 from cortex.tools.session.models import (
     ConcurrentSession,
@@ -34,7 +31,12 @@ from cortex.tools.session.models import (
     SessionStartErrorResult,
 )
 from cortex.tools.session.registry import list_concurrent_sessions
-from cortex.tools.session.start_models import BriefInputs as _BriefInputs
+from cortex.tools.session.start_models import (
+    BriefInputs as _BriefInputs,
+)
+from cortex.tools.session.start_models import (
+    SessionBriefContextKwargs,
+)
 
 # Bound string fields so session_start tool JSON stays compact and clients cannot choke on
 # oversized payloads (mitigates JSONDecodeError / truncation when composing composite tools).
@@ -109,6 +111,17 @@ def _truncate_optional(value: str | None, max_chars: int) -> str | None:
     return _truncate_for_brief_text(value, max_chars)
 
 
+def _constitution_notice_if_missing(project_root: Path) -> str | None:
+    from cortex.core.path_resolver import get_constitution_path
+
+    if get_constitution_path(project_root).is_file():
+        return None
+    return (
+        "No constitution.md found. Run manage_file(operation='init_constitution') "
+        "to create one."
+    )
+
+
 def _cap_concurrent_session_tasks(
     sessions: list[ConcurrentSession],
 ) -> list[ConcurrentSession]:
@@ -145,6 +158,7 @@ def _session_brief_cap_update(brief: SessionBrief) -> dict[str, object]:
         "locked_tasks": [_truncate_for_brief_text(t, line) for t in brief.locked_tasks],
         "mcp_health_message": _truncate_optional(brief.mcp_health_message, line),
         "gate_feedback_summary": _truncate_optional(brief.gate_feedback_summary, line),
+        "constitution_notice": _truncate_optional(brief.constitution_notice, line),
     }
 
 
@@ -234,20 +248,21 @@ def _compute_suggestions_and_create_brief(inp: _BriefInputs) -> SessionBrief:
             progress_content=inp.progress_content,
             roadmap_content=inp.roadmap_content,
         ),
-        session_brief_context_kwargs(
-            inp.project_name,
-            inp.current_focus,
-            inp.recent_completed,
-            inp.next_work_item,
-            inp.next_work_plan_path,
-            inp.health,
-            inp.git_status,
-            inp.last_handoff,
-            inp.concurrent_sessions,
-            inp.locked_tasks,
-            inp.mcp_healthy,
-            inp.mcp_health_message,
-            inp.gate_feedback_summary,
+        SessionBriefContextKwargs(
+            project_name=inp.project_name,
+            current_focus=inp.current_focus,
+            recent_completed=inp.recent_completed,
+            next_work_item=inp.next_work_item,
+            next_work_plan_path=inp.next_work_plan_path,
+            health=inp.health,
+            git_status=inp.git_status,
+            last_handoff=inp.last_handoff,
+            concurrent_sessions=inp.concurrent_sessions,
+            locked_tasks=inp.locked_tasks,
+            mcp_healthy=inp.mcp_healthy,
+            mcp_health_message=inp.mcp_health_message,
+            gate_feedback_summary=inp.gate_feedback_summary,
+            constitution_notice=inp.constitution_notice,
         ),
     )
     return brief.model_copy(update={"trace_id": trace_id})
@@ -284,6 +299,7 @@ def _brief_inputs_from_components(
         mcp_healthy=mcp_healthy,
         mcp_health_message=mcp_health_message,
         gate_feedback_summary=c.gate_feedback_summary,
+        constitution_notice=c.constitution_notice,
         progress_content=c.progress_content,
         roadmap_content=c.roadmap_content,
     )
@@ -357,6 +373,7 @@ class _BriefComponents:
     concurrent_sessions: list[ConcurrentSession]
     locked_tasks: list[str]
     gate_feedback_summary: str | None
+    constitution_notice: str | None = None
     progress_content: str = ""
     roadmap_content: str = ""
 
@@ -367,6 +384,7 @@ def _brief_components_from_async_load(
     loaded: _BriefAsyncResult,
     progress_content: str | None,
     roadmap_content: str,
+    constitution_notice: str | None,
 ) -> _BriefComponents:
     """Build ``_BriefComponents`` from focus tuple and parallel-load results."""
     (
@@ -386,6 +404,7 @@ def _brief_components_from_async_load(
         concurrent_sessions=concurrent_sessions,
         locked_tasks=locked_tasks,
         gate_feedback_summary=gate_feedback,
+        constitution_notice=constitution_notice,
         progress_content=progress_content or "",
         roadmap_content=roadmap_content,
     )
@@ -410,12 +429,14 @@ async def _gather_brief_components(
         _read_memory_bank_file(fs_manager, MemoryBankFile.PROGRESS),
     )
     progress_content, _ = progress_tuple
+    constitution_notice = _constitution_notice_if_missing(project_root)
     return _brief_components_from_async_load(
         current_focus,
         recent_completed,
         loaded,
         progress_content,
         roadmap_content,
+        constitution_notice,
     )
 
 

@@ -171,6 +171,12 @@ class SessionBrief(StrictBaseModel):
             "(markdown/plain text for tool output)"
         ),
     )
+    constitution_notice: str | None = Field(
+        default=None,
+        description=(
+            "When memory-bank constitution.md is missing, one-line hint to initialize it"
+        ),
+    )
 
 
 class SessionStartResult(ToolResultBase):
