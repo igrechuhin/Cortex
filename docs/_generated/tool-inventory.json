@@ -29,7 +29,8 @@
     "run_quality_gate",
     "session",
     "think",
-    "update_memory_bank"
+    "update_memory_bank",
+    "write_artifact"
   ],
-  "tools_count": 9
+  "tools_count": 10
 }

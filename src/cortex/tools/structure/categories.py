@@ -109,7 +109,7 @@ TOOL_CATEGORIES: tuple[ToolCategoryEntry, ...] = (
         category=ToolCategory.ALWAYS_LOADED,
         rationale="Reasoning scratchpad: lightweight or full sequential mode",
     ),
-    # ── Deferred medium tools (2 tools) ───────────────────────────────
+    # ── Deferred medium tools (3 tools) ───────────────────────────────
     ToolCategoryEntry(
         name="run_docs_gate",
         category=ToolCategory.DEFERRED_MEDIUM,
@@ -119,6 +119,11 @@ TOOL_CATEGORIES: tuple[ToolCategoryEntry, ...] = (
         name="pipeline_handoff",
         category=ToolCategory.DEFERRED_MEDIUM,
         rationale="Inter-phase state exchange via session-scoped JSON files",
+    ),
+    ToolCategoryEntry(
+        name="write_artifact",
+        category=ToolCategory.DEFERRED_MEDIUM,
+        rationale="Allowlisted writes for skill JSON and Synapse rule artifacts",
     ),
 )
 

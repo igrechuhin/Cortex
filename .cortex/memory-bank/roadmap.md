@@ -14,7 +14,7 @@
 
 ### Fixes
 
-- Plan: [MCP Tool for Writing Skills and Rules from Analysis Agents](../plans/skill-rule-write-mcp-tool.md) — Add `write_artifact` MCP tool with allowlisted paths (`src/cortex/resources/skills/`, `.cortex/synapse/rules/`) and content validation (SkillPackManifest schema for skills; frontmatter check for rules); update `analyze.md`, `analyze-compact.md`, and `post-prompt-hook.md` routing prompts to call it; 10 tests, ≥95% coverage. PENDING.
+- Plan: [MCP Tool for Writing Skills and Rules from Analysis Agents](../plans/skill-rule-write-mcp-tool.md) — Add `write_artifact` MCP tool with allowlisted paths (`src/cortex/resources/skills/`, `.cortex/synapse/rules/`) and content validation (SkillPackManifest schema for skills; frontmatter check for rules); update `.cortex/synapse/prompts/analyze.md`, `.cortex/synapse/cursor-agents/analyze-compact.md`, and `.cortex/synapse/prompts/post-prompt-hook.md` routing prompts to call it; 10 tests, ≥95% coverage. PENDING.
 
 ### Quality & Reliability Improvements
 
@@ -34,10 +34,10 @@ Completed investigations are recorded in [activeContext.md](activeContext.md). P
 
 #### Knowledge Base & Wiki (High Priority)
 
-- Plan: [Memory Bank Operations Log (log.md)](../plans/memory-bank-operations-log.md) — Append-only `log.md` with parseable `## [date] operation | title` entries; surfaced in `cortex://context` as `## Recent Operations`; wired into plan, commit, and quality-gate flows. PENDING.
+- Plan: [Memory Bank Operations Log (operations log)](../plans/memory-bank-operations-log.md) — Append-only operations log with parseable `## [date] operation | title` entries; surfaced in `cortex://context` as `## Recent Operations`; wired into plan, commit, and quality-gate flows. PENDING.
 - Plan: [Memory Bank Lint (/cortex/lint-wiki)](../plans/memory-bank-lint.md) — Health-check tool for orphaned plans, missing plan files, stale activeContext entries, orphaned/unlinked wiki pages, and code-claim verification; exposed as `/cortex/lint-wiki` prompt and integrated into `/cortex/analyze`. PENDING.
 - Plan: [File Review Reports into Memory Bank](../plans/file-review-reports-into-memory-bank.md) — File review and analyze artifacts as named pages in `.cortex/memory-bank/reviews/` and `analyses/`; cross-reference from `activeContext.md`; surface 5 most recent in `cortex://context`. PENDING.
-- Plan: [Ingest Tool for Cortex Memory Bank (/cortex/ingest)](../plans/memory-bank-ingest-tool.md) — MCP `ingest` tool + `/cortex/ingest` prompt to integrate external sources into the memory bank; flags contradictions with existing content; updates cross-references; logs to `log.md`. Depends on memory-bank-operations-log, file-review-reports. PENDING.
+- Plan: [Ingest Tool for Cortex Memory Bank (/cortex/ingest)](../plans/memory-bank-ingest-tool.md) — MCP `ingest` tool + `/cortex/ingest` prompt to integrate external sources into the memory bank; flags contradictions with existing content; updates cross-references; logs to the operations log. Depends on memory-bank-operations-log, file-review-reports. PENDING.
 
 #### Token Efficiency (High Priority)
 
@@ -74,7 +74,7 @@ Completed investigations are recorded in [activeContext.md](activeContext.md). P
 
 #### Wiki for Attached Projects (High Priority)
 
-- Plan: [Project Wiki for Attached Projects (.cortex/wiki/)](../plans/project-wiki-attached-projects.md) — Full `.cortex/wiki/` knowledge base for attached projects: `init-wiki`, `query`, per-category pages, `index.md`, wired into review/analyze/commit pipelines; works when Cortex is attached to itself. Depends on memory-bank-ingest-tool, file-review-reports, memory-bank-lint. PENDING.
+- Plan: [Project Wiki for Attached Projects (.cortex/wiki/)](../plans/project-wiki-attached-projects.md) — Full `.cortex/wiki/` knowledge base for attached projects: `init-wiki`, `query`, per-category pages, wiki index page, wired into review/analyze/commit pipelines; works when Cortex is attached to itself. Depends on memory-bank-ingest-tool, file-review-reports, memory-bank-lint. PENDING.
 - Plan: [Auto-Ingest from Git Hooks (Wiki Auto-Update)](../plans/wiki-auto-ingest-git-hooks.md) — Post-commit hook auto-ingests changed doc files matching configurable glob patterns; idempotent (update vs create); registers via `/cortex/init-wiki`. Depends on project-wiki-attached-projects, hook-conditional-dsl. PENDING.
 
 #### Planning & Brainstorming (Low Priority)

@@ -282,3 +282,7 @@ No changes to `manage_file` or `plan()` — they remain unchanged.
 - **Integration smoke**: after implementation, manually trigger `analyze-compact` in a
   test session and confirm the artifact summary table shows `Skill: Yes` or `Rule: Yes`
   when findings warrant it.
+
+## Partial Progress Log
+
+- 2026-04-07: Implemented and registered `write_artifact` MCP tool with allowlisted skill/rule paths, validation, atomic writes, and focused unit tests — files: src/cortex/tools/artifacts/write_artifact.py, src/cortex/tools/artifacts/**init**.py, src/cortex/tools/**init**.py, src/cortex/tools/structure/categories.py, tests/tools/test_write_artifact.py, docs/_generated/tool-inventory.json, README.md

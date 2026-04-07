@@ -1,5 +1,9 @@
 # Progress Log
 
+## 2026-04-07
+
+- **MCP Tool for Writing Skills and Rules from Analysis Agents** - PARTIAL. Implemented and registered `write_artifact` with allowlisted path resolution, validation, atomic writes, and initial unit-test coverage; prompt routing updates remain.
+
 ## 2026-04-06
 
 - **Pre-commit MCP heartbeat follow-up** - COMPLETE. Added unit tests for pre-commit run helpers; refactored markdown batch tests; aligned context logging, integration, and progress tests; updated logging guidelines; archived plan. Quality gate ~92% coverage.

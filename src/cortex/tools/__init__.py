@@ -10,6 +10,7 @@ the live ``tools/list`` from this package layout alone.
 
 # Import all tool modules to register their decorators
 from . import (
+    artifacts,  # noqa: F401
     cache_json_tools,  # noqa: F401
     config,  # noqa: F401 - registers configure tool and get_config_resource
     evaluation,  # noqa: F401
@@ -87,6 +88,7 @@ _ = synapse_prompts
 
 __all__ = [
     "analysis_operations",
+    "artifacts",
     "cache_json_tools",
     "compaction_operations",
     "config",

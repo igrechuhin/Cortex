@@ -2,6 +2,10 @@
 
 **This file records completed work only.** For current status and upcoming work see [roadmap.md](roadmap.md).
 
+## Completed Work (2026-04-07)
+
+- ✅ **MCP Tool for Writing Skills and Rules from Analysis Agents (PARTIAL)** - COMPLETE (2026-04-07) - Added `write_artifact` tool and supporting tests so analysis agents can write skills/rules through MCP; next slice should update routing prompts and extend test matrix to full plan scope.
+
 ## Completed Work (2026-04-06)
 
 - **Summary (2026-04-06)** - 1 entries archived.
