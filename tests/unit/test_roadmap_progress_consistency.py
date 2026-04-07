@@ -28,6 +28,26 @@ def test_partial_with_em_dash_pending_passes() -> None:
     assert check_roadmap_progress_consistency(progress, roadmap) == []
 
 
+def test_partial_with_plan_link_pending_passes() -> None:
+    """Plan-link roadmap entries with trailing PENDING are accepted."""
+    progress = "- **Conditional Hook Execution DSL** - PARTIAL. Work remains."
+    roadmap = (
+        "- Plan: [Conditional Hook Execution DSL](../plans/hook-conditional-dsl.md) "
+        + "— matcher entries for hooks. PENDING."
+    )
+    assert check_roadmap_progress_consistency(progress, roadmap) == []
+
+
+def test_partial_with_plan_link_pending_for_clarifications_passes() -> None:
+    """Plan-link format also matches clarification plan titles."""
+    progress = "- **NEEDS CLARIFICATION Markers in Plans** - PARTIAL. Work remains."
+    roadmap = (
+        "- Plan: [NEEDS CLARIFICATION Markers in Plans]"
+        + "(../plans/needs-clarification-markers.md) — gate implementation. PENDING."
+    )
+    assert check_roadmap_progress_consistency(progress, roadmap) == []
+
+
 def test_partial_with_unrelated_pending_fails() -> None:
     """PARTIAL progress with an unrelated PENDING entry produces a violation."""
     progress = "- **Auth System** - PARTIAL. Work remaining."

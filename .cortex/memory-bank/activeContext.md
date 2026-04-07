@@ -10,6 +10,14 @@
 
 - ✅ **MCP Tool for Writing Skills and Rules from Analysis Agents** - COMPLETE (2026-04-07) - Completed write_artifact integration by aligning analyze prompt skill routing with registered tool behavior and updating structural tests; quality gate passes.
 
+- ✅ **Memory Bank Operations Log (log.md) (PARTIAL)** - COMPLETE (2026-04-07) - Completed Step 1 foundation by adding `MemoryBankFile.LOG` (`log.md`), new operations-log formatter/types module, and tests validating parseable entry format.
+
+- ✅ **Memory Bank Operations Log (operations log) (PARTIAL)** - COMPLETE (2026-04-07) - Implemented Step 2 partial slice by wiring `update_memory_bank(operation="log_append")` with append-only log writes and validation, plus expanded operations-log tests.
+
+- ✅ **Memory Bank Operations Log (operations log) (PARTIAL)** - COMPLETE (2026-04-07) - Implemented Step 4 partial slice by surfacing `## Recent Operations` in `cortex://context` from `.cortex/memory-bank/log.md` and adding resource tests for log-present and log-missing behavior.
+
+- ✅ **Memory Bank Operations Log (operations log)** - COMPLETE (2026-04-07) - Finalized Step 5 with explicit `manage_file(file_name="log.md", operation="read")` test coverage and completed the roadmap plan.
+
 ## Completed Work (2026-04-06)
 
 - **Summary (2026-04-06)** - 1 entries archived.

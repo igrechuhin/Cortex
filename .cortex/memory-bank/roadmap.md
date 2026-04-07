@@ -10,6 +10,8 @@
 
 ## Future Enhancements
 
+- **Cleanup Function-Length Exclusions in Constants** - PENDING - Remove ad-hoc test-file exclusions from FUNCTION_LENGTH_EXCLUDED_PATHS and replace with explicit checker policy + tests. Plan: .cortex/plans/cleanup-function-length-exclusions-in-constants.md
+
 ## Pending plans (from .cortex/plans)
 
 ### Fixes
@@ -32,7 +34,6 @@ Completed investigations are recorded in [activeContext.md](activeContext.md). P
 
 #### Knowledge Base & Wiki (High Priority)
 
-- Plan: [Memory Bank Operations Log (operations log)](../plans/memory-bank-operations-log.md) — Append-only operations log with parseable `## [date] operation | title` entries; surfaced in `cortex://context` as `## Recent Operations`; wired into plan, commit, and quality-gate flows. PENDING.
 - Plan: [Memory Bank Lint (/cortex/lint-wiki)](../plans/memory-bank-lint.md) — Health-check tool for orphaned plans, missing plan files, stale activeContext entries, orphaned/unlinked wiki pages, and code-claim verification; exposed as `/cortex/lint-wiki` prompt and integrated into `/cortex/analyze`. PENDING.
 - Plan: [File Review Reports into Memory Bank](../plans/file-review-reports-into-memory-bank.md) — File review and analyze artifacts as named pages in `.cortex/memory-bank/reviews/` and `analyses/`; cross-reference from `activeContext.md`; surface 5 most recent in `cortex://context`. PENDING.
 - Plan: [Ingest Tool for Cortex Memory Bank (/cortex/ingest)](../plans/memory-bank-ingest-tool.md) — MCP `ingest` tool + `/cortex/ingest` prompt to integrate external sources into the memory bank; flags contradictions with existing content; updates cross-references; logs to the operations log. Depends on memory-bank-operations-log, file-review-reports. PENDING.

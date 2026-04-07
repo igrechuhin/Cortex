@@ -26,6 +26,7 @@ from cortex.tools.optimization import (
     summarize_content_resource,
 )
 from cortex.tools.optimization.handlers import (
+    invalidate_context_resource_cache,
     is_non_trivial_task,
 )
 from cortex.tools.optimization.handlers import (
@@ -43,6 +44,27 @@ from tests.helpers.managers import make_test_managers
 def _get_manager_helper(mgrs: ManagersDict, key: str, _: object) -> object:
     """Helper function to get manager by field name."""
     return getattr(mgrs, key)
+
+
+def _write_test_operations_log(mock_project_root: Path) -> None:
+    """Create a small operations log fixture under .cortex/memory-bank."""
+    memory_bank_dir = mock_project_root / ".cortex" / "memory-bank"
+    memory_bank_dir.mkdir(parents=True, exist_ok=True)
+    log_content = "\n".join(
+        [
+            "# Cortex Operations Log",
+            "",
+            "## [2026-04-07T10:00] plan | Created plan: One",
+            "",
+            "A",
+            "",
+            "## [2026-04-07T10:05] fix | Applied autofix",
+            "",
+            "B",
+            "",
+        ]
+    )
+    _ = (memory_bank_dir / "log.md").write_text(log_content, encoding="utf-8")
 
 
 # ============================================================================
@@ -1317,6 +1339,67 @@ class TestPhase4OptimizationResources:
         assert (
             "Defer unrelated issues to a follow-up session" in result["session_scope"]
         )
+
+    async def test_load_context_includes_recent_operations_when_log_exists(
+        self, mock_project_root: Path, mock_managers: dict[str, Any]
+    ) -> None:
+        """load_context includes recent_operations section when log.md exists."""
+        invalidate_context_resource_cache()
+        _write_test_operations_log(mock_project_root)
+        with (
+            patch(
+                "cortex.core.session_config.read_session_config",
+                return_value={"task_description": "Test task with log"},
+            ),
+            patch(
+                "cortex.tools.optimization.handlers.resolve_project_root_async",
+                new_callable=AsyncMock,
+                return_value=mock_project_root,
+            ),
+            patch(
+                "cortex.tools.optimization.get_managers",
+                return_value=mock_managers,
+            ),
+            patch(
+                "cortex.tools.context.load_operations.get_manager",
+                side_effect=_get_manager_helper,
+            ),
+        ):
+            result_str = await load_context()
+            result = json.loads(result_str)
+        assert result["status"] == "success"
+        assert "recent_operations" in result
+        assert "## Recent Operations" in result["recent_operations"]
+        assert "Created plan: One" in result["recent_operations"]
+
+    async def test_load_context_omits_recent_operations_when_log_missing(
+        self, mock_project_root: Path, mock_managers: dict[str, Any]
+    ) -> None:
+        """load_context omits recent_operations section when log.md is absent."""
+        invalidate_context_resource_cache()
+        with (
+            patch(
+                "cortex.core.session_config.read_session_config",
+                return_value={"task_description": "Test task without log"},
+            ),
+            patch(
+                "cortex.tools.optimization.handlers.resolve_project_root_async",
+                new_callable=AsyncMock,
+                return_value=mock_project_root,
+            ),
+            patch(
+                "cortex.tools.optimization.get_managers",
+                return_value=mock_managers,
+            ),
+            patch(
+                "cortex.tools.context.load_operations.get_manager",
+                side_effect=_get_manager_helper,
+            ),
+        ):
+            result_str = await load_context()
+            result = json.loads(result_str)
+        assert result["status"] == "success"
+        assert "recent_operations" not in result
 
     async def test_get_relevance_scores_resource_returns_success(
         self, mock_project_root: Path, mock_managers: dict[str, Any]

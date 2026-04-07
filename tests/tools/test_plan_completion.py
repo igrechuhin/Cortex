@@ -6,7 +6,9 @@ roadmap and append_entry operations).
 """
 
 import json
+from contextlib import ExitStack, contextmanager
 from pathlib import Path
+from typing import cast
 from unittest.mock import AsyncMock, patch
 
 import pytest
@@ -18,13 +20,32 @@ from cortex.tools.plans.plan import plan as plan_tool
 from cortex.tools.plans.update_memory_bank import update_memory_bank
 
 
+@contextmanager
 def _patch_root(tmp_path: Path):
-    """Context manager to patch resolve_project_root_async to return tmp_path."""
-    return patch(
-        "cortex.tools.plans.completion.resolve_project_root_async",
-        new_callable=AsyncMock,
-        return_value=tmp_path,
-    )
+    """Patch all project-root resolvers used by plan/complete/log hooks."""
+    with ExitStack() as stack:
+        _ = stack.enter_context(
+            patch(
+                "cortex.tools.plans.completion.resolve_project_root_async",
+                new_callable=AsyncMock,
+                return_value=tmp_path,
+            )
+        )
+        _ = stack.enter_context(
+            patch(
+                "cortex.tools.plans.operations_log_hooks.resolve_project_root_async",
+                new_callable=AsyncMock,
+                return_value=tmp_path,
+            )
+        )
+        _ = stack.enter_context(
+            patch(
+                "cortex.tools.plans.crud.resolve_project_root_async",
+                new_callable=AsyncMock,
+                return_value=tmp_path,
+            )
+        )
+        yield
 
 
 def _append_progress(date_str: str, entry_text: str):
@@ -42,6 +63,24 @@ def _append_active_context(date_str: str, title: str, summary: str):
         title=title,
         summary=summary,
     )
+
+
+def _parse_wrapper_result(result_str: str) -> dict[str, object]:
+    outer = json.loads(result_str)
+    inner_raw = outer.get("result", outer)
+    return json.loads(inner_raw) if isinstance(inner_raw, str) else inner_raw
+
+
+def _setup_complete_smoke_files(tmp_path: Path) -> tuple[Path, Path]:
+    mem = get_cortex_path(tmp_path, CortexResourceType.MEMORY_BANK)
+    mem.mkdir(parents=True)
+    roadmap = mem / "roadmap.md"
+    _ = roadmap.write_text(
+        "# Roadmap\n\n## Pending\n\n- **Wire optimization** - PENDING - Connect config.\n"
+    )
+    active = mem / "activeContext.md"
+    _ = active.write_text("# Active Context\n\n## Completed Work (2026-02-05)\n\n")
+    return roadmap, active
 
 
 class TestCompletePlanFindRoadmapBullet:
@@ -597,11 +636,25 @@ class TestCompletePlanIntegration:
     async def test_complete_plan_with_plan_file_name_archives_file(
         self, tmp_path: Path
     ) -> None:
+        plan_basename = "session-optimization-roadmap-full-content-enforcement.md"
+        plan_in_root = self._seed_archive_candidate(tmp_path, plan_basename)
+        with _patch_root(tmp_path):
+            result_str = await complete_plan(
+                plan_title="Roadmap full-content enforcement",
+                summary="Strengthened plan workflow and memory-bank-updater.",
+                completion_date="2026-02-09",
+                progress_entry="**Roadmap full-content enforcement** - COMPLETE. Summary.",
+                plan_file_name=plan_basename,
+            )
+        result = json.loads(result_str)
+        self._assert_archive_result(tmp_path, plan_basename, plan_in_root, result)
+
+    @staticmethod
+    def _seed_archive_candidate(tmp_path: Path, plan_basename: str) -> Path:
         mem = get_cortex_path(tmp_path, CortexResourceType.MEMORY_BANK)
         mem.mkdir(parents=True)
         plans_dir = get_cortex_path(tmp_path, CortexResourceType.PLANS)
         plans_dir.mkdir(parents=True)
-        plan_basename = "session-optimization-roadmap-full-content-enforcement.md"
         plan_in_root = plans_dir / plan_basename
         _ = plan_in_root.write_text("# Plan\n\n**Status**: COMPLETE\n")
         _ = (mem / "roadmap.md").write_text(
@@ -614,19 +667,20 @@ class TestCompletePlanIntegration:
             "# Active\n\n## Completed Work (2026-02-09)\n\n"
         )
         _ = (mem / "progress.md").write_text("# Progress\n\n## 2026-02-09\n\n")
-        with _patch_root(tmp_path):
-            result_str = await complete_plan(
-                plan_title="Roadmap full-content enforcement",
-                summary="Strengthened plan workflow and memory-bank-updater.",
-                completion_date="2026-02-09",
-                progress_entry="**Roadmap full-content enforcement** - COMPLETE. Summary.",
-                plan_file_name=plan_basename,
-            )
-        result = json.loads(result_str)
+        return plan_in_root
+
+    @staticmethod
+    def _assert_archive_result(
+        tmp_path: Path,
+        plan_basename: str,
+        plan_in_root: Path,
+        result: dict[str, object],
+    ) -> None:
+        archive_path_str = cast(str, result["archive_path"])
         assert result["status"] == "success"
-        assert result["archive_path"]
-        assert "SessionOptimization" in result["archive_path"]
-        assert result["archive_path"].endswith(plan_basename)
+        assert archive_path_str
+        assert "SessionOptimization" in archive_path_str
+        assert archive_path_str.endswith(plan_basename)
         assert not plan_in_root.exists()
         archive_path = (
             get_cortex_path(tmp_path, CortexResourceType.PLANS_ARCHIVE)
@@ -646,15 +700,7 @@ class TestPlanToolCompleteSmoke:
         self, tmp_path: Path
     ) -> None:
         """plan(operation='complete', ...) updates roadmap and activeContext like complete_plan."""
-        mem = get_cortex_path(tmp_path, CortexResourceType.MEMORY_BANK)
-        mem.mkdir(parents=True)
-        roadmap = mem / "roadmap.md"
-        _ = roadmap.write_text(
-            "# Roadmap\n\n## Pending\n\n"
-            + "- **Wire optimization** - PENDING - Connect config.\n"
-        )
-        active = mem / "activeContext.md"
-        _ = active.write_text("# Active Context\n\n## Completed Work (2026-02-05)\n\n")
+        roadmap, active = _setup_complete_smoke_files(tmp_path)
 
         with _patch_root(tmp_path):
             result_str = await plan_tool(
@@ -665,12 +711,7 @@ class TestPlanToolCompleteSmoke:
                 progress_entry=None,
                 plan_file_name=None,
             )
-
-        outer = json.loads(result_str)
-        inner_raw = outer.get("result", outer)
-        wrapper_result = (
-            json.loads(inner_raw) if isinstance(inner_raw, str) else inner_raw
-        )
+        wrapper_result = _parse_wrapper_result(result_str)
         assert wrapper_result["status"] == "success"
         assert wrapper_result["roadmap_line_removed"] is not None
         assert wrapper_result["active_context_line_inserted"] is not None
@@ -678,6 +719,55 @@ class TestPlanToolCompleteSmoke:
         active_text = active.read_text()
         assert "Wire optimization" in active_text
         assert "Connected config to runtime." in active_text
+
+    @pytest.mark.asyncio
+    async def test_plan_tool_create_appends_operations_log_entry(
+        self, tmp_path: Path
+    ) -> None:
+        """plan(operation='create') appends a parseable operations-log entry."""
+        with _patch_root(tmp_path):
+            result_str = await plan_tool(
+                operation="create",
+                title="Operations log hook test",
+                content="# Test plan\n\nBody.",
+                slug="operations-log-hook-test",
+            )
+        result = json.loads(result_str)
+        assert result["status"] == "success"
+        log_path = get_cortex_path(tmp_path, CortexResourceType.MEMORY_BANK) / "log.md"
+        log_text = log_path.read_text(encoding="utf-8")
+        assert "plan | Created plan: Operations log hook test" in log_text
+
+    @pytest.mark.asyncio
+    async def test_plan_tool_complete_appends_operations_log_entry(
+        self, tmp_path: Path
+    ) -> None:
+        """plan(operation='complete') appends a parseable operations-log entry."""
+        mem = get_cortex_path(tmp_path, CortexResourceType.MEMORY_BANK)
+        mem.mkdir(parents=True)
+        _ = (mem / "roadmap.md").write_text(
+            "# Roadmap\n\n## Pending\n\n- **Hook target** - PENDING\n"
+        )
+        _ = (mem / "activeContext.md").write_text(
+            "# Active Context\n\n## Completed Work (2026-02-05)\n\n"
+        )
+
+        with _patch_root(tmp_path):
+            result_str = await plan_tool(
+                operation="complete",
+                plan_title="Hook target",
+                summary="Marked complete via wrapper.",
+                completion_date="2026-02-05",
+            )
+        outer = json.loads(result_str)
+        inner_raw = outer.get("result", outer)
+        wrapper_result = (
+            json.loads(inner_raw) if isinstance(inner_raw, str) else inner_raw
+        )
+        assert wrapper_result["status"] == "success"
+        log_path = mem / "log.md"
+        log_text = log_path.read_text(encoding="utf-8")
+        assert "plan | Completed plan: Hook target" in log_text
 
 
 # ---------------------------------------------------------------------------

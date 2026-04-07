@@ -54,6 +54,8 @@ from cortex.tools.logging.instrumentation import (
     append_agent_log_to_autofix_result,
     append_agent_log_to_quality_result,
 )
+from cortex.tools.plans.operations_log import OperationsLogType
+from cortex.tools.plans.operations_log_hooks import append_log_entry_best_effort
 from cortex.tools.session.gate_feedback import (
     feedback_from_docs_result,
     feedback_from_quality_result,
@@ -282,6 +284,14 @@ async def run_quality_gate_inner(ctx: MCPContext | None) -> ModelDict:
         PipelineDirtyTracker.get_instance().record_phase_a(root, True)
     else:
         append_agent_log_to_quality_result(result)
+    gate_passed = result.get("preflight_passed") is True
+    await append_log_entry_best_effort(
+        operation_type=OperationsLogType.LINT,
+        title=f"Quality gate {'passed' if gate_passed else 'failed'}",
+        summary=str(result.get("summary", "")).strip() or None,
+        ctx=ctx,
+        project_root=root,
+    )
     return result
 
 
@@ -393,4 +403,13 @@ async def autofix(
     _ = clear_all_cached_results(root)
     parsed = cast(ModelDict, json.loads(result_json))
     append_agent_log_to_autofix_result(parsed)
+    await append_log_entry_best_effort(
+        operation_type=OperationsLogType.FIX,
+        title="Autofix completed",
+        summary=(
+            f"status={parsed.get('status')}; changed_files={parsed.get('changed_files')}"
+        ),
+        ctx=ctx,
+        project_root=root,
+    )
     return parsed

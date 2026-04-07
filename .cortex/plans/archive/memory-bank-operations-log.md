@@ -2,7 +2,7 @@
 title: "Memory Bank Operations Log (log.md)"
 component: memory-bank
 work_type: feature
-status: PENDING
+status: COMPLETE
 priority: high
 created: 2026-04-07
 depends_on: []
@@ -97,3 +97,11 @@ Ensure `manage_file(file_name="log.md", operation="read")` works and returns the
 - Integration test: run `plan(operation="create")` in test harness → verify `log.md` gains an entry
 - Integration test: `cortex://context` includes `## Recent Operations` when `log.md` exists; omits section when absent
 - Edge cases: `log.md` with 0 entries, 1 entry, 1000 entries; concurrent appends (file lock)
+
+## Partial Progress Log
+
+- 2026-04-07: Step 1 foundation — added canonical `log.md` memory-bank file support and parseable operations-log formatter/types with unit tests — files: src/cortex/core/constants.py, src/cortex/tools/plans/operations_log.py, tests/unit/tools/plans/test_operations_log.py
+- 2026-04-07: Step 2 update_memory_bank wiring — added `operation="log_append"` dispatch with append-only `log.md` writer/validation and expanded operations-log unit coverage — files: src/cortex/tools/plans/update_memory_bank.py, src/cortex/tools/plans/operations_log.py, tests/unit/tools/plans/test_operations_log.py
+- 2026-04-07: Step 3 partial wiring — added best-effort operations-log hooks for `plan(create|complete)` and `run_quality_gate`/`autofix` with focused coverage tests — files: src/cortex/tools/plans/operations_log_hooks.py, src/cortex/tools/plans/plan.py, src/cortex/tools/execution/pre_commit_zero_arg_tools.py, src/cortex/tools/plans/operations_log.py, tests/tools/test_plan_completion.py, tests/unit/test_quality_gate_latency_helpers.py, tests/unit/tools/plans/test_operations_log.py
+- 2026-04-07: Step 4 context integration — added `## Recent Operations` surfacing in `cortex://context` from `.cortex/memory-bank/log.md` and tests for present/missing log behavior — files: src/cortex/tools/optimization/handlers.py, tests/tools/test_phase4_optimization.py
+- 2026-04-07: Step 5 manage_file coverage — added focused test for `manage_file(file_name="log.md", operation="read")` content retrieval — files: tests/tools/test_file_operations.py

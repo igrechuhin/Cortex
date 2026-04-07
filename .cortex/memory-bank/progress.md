@@ -6,6 +6,11 @@
 - **MCP Tool for Writing Skills and Rules from Analysis Agents** - PARTIAL. Updated Synapse analyze/post-prompt routing instructions to call `write_artifact` for skill/rule artifacts (instead of `manage_file`), keeping unrelated memory-bank reads unchanged.
 - **MCP Tool for Writing Skills and Rules from Analysis Agents** - PARTIAL. Added remaining Step-5 test scenarios for `write_artifact` (required-fields validation, absolute-path rejection, `skill_pack` load discoverability, and nested rule parent-directory creation); roadmap item remains open for final completion/archival.
 - **MCP Tool for Writing Skills and Rules from Analysis Agents** - COMPLETE. Aligned analyze skill routing to write_artifact flow, updated structural test expectations, and verified with passing quality gate.
+- **Memory Bank Operations Log (operations log)** - PARTIAL. Implemented Step 1 foundation: added canonical `log.md` memory-bank file support plus operations-log formatter/types and unit tests.
+- **Memory Bank Operations Log (operations log)** - PARTIAL. Implemented Step 2: added `update_memory_bank(operation="log_append")` with append-only `log.md` entry writing, operation/date validation, and expanded unit tests.
+- **Memory Bank Operations Log (operations log)** - PARTIAL. Wired best-effort operations-log hooks for `plan(create|complete)` and `run_quality_gate`/`autofix` flows, added focused tests, and kept quality gate green.
+- **Memory Bank Operations Log (operations log)** - PARTIAL. Implemented Step 4 context slice: `cortex://context` now includes `## Recent Operations` from `.cortex/memory-bank/log.md` when available, with coverage for both present and missing-log paths.
+- **Memory Bank Operations Log (operations log)** - COMPLETE. Finalized Step 5 with explicit `manage_file(file_name="log.md", operation="read")` coverage and closed the plan slice.
 
 ## 2026-04-06
 

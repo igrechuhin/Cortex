@@ -268,6 +268,44 @@ class TestManageFileEdgeCases:
                 # metadata should not be included if not found
                 assert "metadata" not in result or result["metadata"] is None
 
+    async def test_manage_file_read_log_md_returns_content(self) -> None:
+        """manage_file read supports log.md content retrieval."""
+        file_name = "log.md"
+        content = (
+            "# Cortex Operations Log\n\n## [2026-04-07T14:01] plan | Created plan\n\n"
+        )
+
+        mock_path = MagicMock(spec=Path)
+        mock_path.exists.return_value = True
+        mock_path.name = file_name
+
+        mock_fs = AsyncMock()
+        mock_fs.read_file = AsyncMock(return_value=(content, "hash-log"))
+        mock_fs.construct_safe_path = MagicMock(return_value=mock_path)
+
+        mock_managers_dict = {
+            "fs": mock_fs,
+            "index": AsyncMock(),
+            "tokens": MagicMock(),
+            "versions": AsyncMock(),
+        }
+
+        with patch(
+            "cortex.tools.files.manage_file_helpers.get_managers",
+            new_callable=AsyncMock,
+            return_value=make_test_managers(**mock_managers_dict),
+        ):
+            with patch(
+                "cortex.tools.files.manage_file_helpers.get_or_resolve_project_root",
+                new_callable=AsyncMock,
+                return_value=Path("/tmp/test"),
+            ):
+                result_str = await manage_file(file_name=file_name, operation="read")
+
+        result = json.loads(result_str)
+        assert result["status"] == "success"
+        assert result["file_name"] == file_name and result["content"] == content
+
     async def test_manage_file_metadata_not_found_returns_warning(self):
         """Test metadata operation when file exists but no metadata found."""
         # Arrange

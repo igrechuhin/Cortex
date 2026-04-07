@@ -190,6 +190,62 @@ async def _plan_handle_archive_completed(ctx: MCPContext | None) -> str:
     )
 
 
+def _plan_required_args_present(
+    operation: str,
+    *,
+    plan_title: str | None,
+    summary: str | None,
+    description: str | None,
+    title: str | None,
+    content: str | None,
+) -> bool:
+    if operation == "complete":
+        return bool(plan_title and summary)
+    if operation == "register":
+        return bool(plan_title and description)
+    if operation == "create":
+        return bool(title and content)
+    return True
+
+
+async def _append_plan_create_log(
+    result_str: str, title: str | None, ctx: MCPContext | None
+) -> None:
+    from cortex.tools.plans.operations_log import OperationsLogType
+    from cortex.tools.plans.operations_log_hooks import (
+        append_log_entry_best_effort,
+        parse_json_object,
+    )
+
+    result_obj = parse_json_object(result_str)
+    if result_obj and result_obj.get("status") == "success" and title:
+        await append_log_entry_best_effort(
+            operation_type=OperationsLogType.PLAN,
+            title=f"Created plan: {title.strip()}",
+            summary=None,
+            ctx=ctx,
+        )
+
+
+async def _append_plan_complete_log(
+    result_str: str, plan_title: str | None, summary: str | None, ctx: MCPContext | None
+) -> None:
+    from cortex.tools.plans.operations_log import OperationsLogType
+    from cortex.tools.plans.operations_log_hooks import (
+        append_log_entry_best_effort,
+        parse_json_object,
+    )
+
+    result_obj = parse_json_object(result_str)
+    if result_obj and result_obj.get("status") == "success" and plan_title:
+        await append_log_entry_best_effort(
+            operation_type=OperationsLogType.PLAN,
+            title=f"Completed plan: {plan_title.strip()}",
+            summary=summary.strip() if summary else None,
+            ctx=ctx,
+        )
+
+
 async def _plan_dispatch(
     operation: str | None,
     title: str | None,
@@ -209,33 +265,71 @@ async def _plan_dispatch(
     ctx: MCPContext | None,
 ) -> str:
     """Dispatch plan(operation=...) to the appropriate handler."""
-    # Zero-arg fallback: default to listing plans
     if not operation:
         operation = "list"
     valid_ops = ("create", "list", "get", "complete", "register", "archive_completed")
     if operation not in valid_ops:
         return _plan_error_invalid_operation(operation)
-    # Lightweight logging for MCP argument-passing diagnostics (no sensitive content).
-    if operation == "complete":
-        has_required = bool(plan_title and summary)
-    elif operation == "register":
-        has_required = bool(plan_title and description)
-    elif operation == "create":
-        has_required = bool(title and content)
-    else:
-        has_required = True  # list/get have no required payload fields
+    has_required = _plan_required_args_present(
+        operation,
+        plan_title=plan_title,
+        summary=summary,
+        description=description,
+        title=title,
+        content=content,
+    )
     await log_client(
         ctx,
         "info",
         f"plan: operation={operation}, required_args_present={has_required}",
         logger_name=__name__,
     )
+    return await _plan_dispatch_valid_operation(
+        operation,
+        title,
+        content,
+        slug,
+        include_archive,
+        response_format,
+        plan_title,
+        summary,
+        completion_date,
+        progress_entry,
+        plan_file_name,
+        plan_relative_path,
+        description,
+        status,
+        section,
+        ctx,
+    )
+
+
+async def _plan_dispatch_valid_operation(
+    operation: str,
+    title: str | None,
+    content: str | None,
+    slug: str | None,
+    include_archive: bool,
+    response_format: str,
+    plan_title: str | None,
+    summary: str | None,
+    completion_date: str | None,
+    progress_entry: str | None,
+    plan_file_name: str | None,
+    plan_relative_path: str | None,
+    description: str | None,
+    status: str,
+    section: str,
+    ctx: MCPContext | None,
+) -> str:
     if operation == "archive_completed":
         return await _plan_handle_archive_completed(ctx)
     if operation == "complete":
-        return await _plan_dispatch_complete(
+        result_str = await _plan_dispatch_complete(
             plan_title, summary, completion_date, progress_entry, plan_file_name, ctx
         )
+        await _append_plan_complete_log(result_str, plan_title, summary, ctx)
+        return result_str
     if operation == "register":
         return await _plan_dispatch_register(
             plan_title,
@@ -246,9 +340,12 @@ async def _plan_dispatch(
             plan_relative_path,
             ctx,
         )
-    return await _plan_handle_crud(
+    result_str = await _plan_handle_crud(
         operation, title, content, slug, include_archive, response_format, ctx
     )
+    if operation == "create":
+        await _append_plan_create_log(result_str, title, ctx)
+    return result_str
 
 
 @mcp.tool(
@@ -276,16 +373,8 @@ async def plan(
 ) -> str:
     """Plan lifecycle: create, list, get, complete, register, or archive_completed.
 
-    USE WHEN: You need to create or update plans under .cortex/plans/, mark a
-    plan as complete, register a plan in roadmap, or bulk-archive all completed plans.
-
-    EXAMPLES:
-    - plan(operation="create", title="Phase 92", content="...")
-    - plan(operation="complete", plan_title="Phase 92", summary="Done",
-        plan_file_name="phase-92-foo.md", progress_entry="Phase 92 - COMPLETE. ...")
-    - plan(operation="register", plan_title="Phase 92", description="Improve tool docs")
-    - plan(operation="archive_completed") — scans plans/ for status: COMPLETE,
-        archives each to plans/archive/, removes roadmap entries. Zero-arg safe.
+    USE WHEN: managing plan files, marking plans complete, or registering roadmap entries.
+    EXAMPLES: plan(operation="create", ...), plan(operation="complete", ...), plan(operation="register", ...).
     """
     return await _plan_dispatch(
         operation,

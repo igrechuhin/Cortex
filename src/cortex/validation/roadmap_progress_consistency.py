@@ -13,6 +13,10 @@ _PENDING_LINE = re.compile(
     r"^\s*-\s+\*\*(?P<title>.+?)\*\*\s+[-\u2013\u2014]\s+PENDING\b",
     re.MULTILINE,
 )
+_PENDING_PLAN_LINK_LINE = re.compile(
+    r"^\s*-\s+Plan:\s+\[(?P<title>[^\]]+)\]\([^)]+\).*?\bPENDING\b",
+    re.MULTILINE,
+)
 
 
 def _title_has_pending_match(title: str, pending_titles: set[str]) -> bool:
@@ -71,4 +75,8 @@ def check_roadmap_progress_consistency(
         match.group("title").strip()
         for match in _PENDING_LINE.finditer(roadmap_content)
     }
+    pending_titles.update(
+        match.group("title").strip()
+        for match in _PENDING_PLAN_LINK_LINE.finditer(roadmap_content)
+    )
     return _orphan_partial_messages(unresolved_partial_titles, pending_titles)

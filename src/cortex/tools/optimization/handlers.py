@@ -13,6 +13,7 @@ Note: load_progressive_context has been merged into load_context with strategy="
 """
 
 import json
+from pathlib import Path
 from typing import cast
 from urllib.parse import unquote
 
@@ -33,6 +34,7 @@ from cortex.core.mcp_stability import (
     mcp_tool_wrapper,
 )
 from cortex.core.models import ContextDepth, ResponseFormat
+from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.core.project_root_resolver import resolve_project_root_async
 from cortex.server import mcp
 from cortex.tools.optimization.relevance_operations import get_relevance_scores_impl
@@ -377,6 +379,38 @@ def _append_session_scope_to_context_payload(payload: str) -> str:
     return json.dumps(payload_data, indent=2)
 
 
+def _read_recent_operations_lines(project_root: Path) -> str | None:
+    """Read up to the last 10 non-empty lines from memory-bank log.md."""
+    log_path = get_cortex_path(project_root, CortexResourceType.MEMORY_BANK) / "log.md"
+    if not log_path.exists():
+        return None
+    lines = [line for line in log_path.read_text(encoding="utf-8").splitlines() if line]
+    if not lines:
+        return None
+    return "\n".join(lines[-10:])
+
+
+def _append_recent_operations_to_context_payload(
+    payload: str, recent_operations_lines: str | None
+) -> str:
+    """Attach a markdown recent-operations section to successful context payloads."""
+    if recent_operations_lines is None:
+        return payload
+    try:
+        parsed = json.loads(payload)
+    except json.JSONDecodeError:
+        return payload
+    if not isinstance(parsed, dict):
+        return payload
+    payload_data = cast(dict[str, object], parsed)
+    if payload_data.get("status") != "success":
+        return payload
+    payload_data["recent_operations"] = (
+        "## Recent Operations\n\n" f"{recent_operations_lines}"
+    )
+    return json.dumps(payload_data, indent=2)
+
+
 @mcp.resource(uri="cortex://context", meta=CORTEX_CONTEXT_RESOURCE_READ_META)
 @ensure_usage_context
 @mcp_resource_wrapper(timeout=MCP_TOOL_TIMEOUT_COMPLEX)
@@ -400,7 +434,11 @@ async def load_context() -> str:
         token_budget=budget,
         strategy="dependency_aware",
     )
-    out = _append_session_scope_to_context_payload(result)
+    root = await resolve_project_root_async(None, None)
+    recent_ops = _read_recent_operations_lines(root)
+    out = _append_recent_operations_to_context_payload(
+        _append_session_scope_to_context_payload(result), recent_ops
+    )
     _context_resource_cache.set(cache_key, out)
     return out
 

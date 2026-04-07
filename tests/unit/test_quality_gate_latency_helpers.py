@@ -16,6 +16,7 @@ import pytest
 from cortex.core.models import ModelDict
 from cortex.tools.execution.pre_commit_process import poll_interval_for_elapsed
 from cortex.tools.execution.pre_commit_zero_arg_tools import (
+    autofix,
     run_quality_gate_inner,
     trim_passing_quality_gate_result,
 )
@@ -84,6 +85,23 @@ def _enter_trim_fail_mocks(
     mock_gi = stack.enter_context(patch(f"{mod}.PipelineDirtyTracker.get_instance"))
     mock_gi.return_value.record_phase_a = MagicMock()
     return mock_append, mock_trim, mock_gi
+
+
+def _enter_autofix_hook_mocks(stack: ExitStack, root: Path) -> AsyncMock:
+    mod = "cortex.tools.execution.pre_commit_zero_arg_tools"
+    _ = stack.enter_context(patch(f"{mod}.get_current_project_root", return_value=root))
+    _ = stack.enter_context(
+        patch(
+            f"{mod}.autofix_impl",
+            new_callable=AsyncMock,
+            return_value='{"status":"success","changed_files":2}',
+        )
+    )
+    _ = stack.enter_context(patch(f"{mod}.append_agent_log_to_autofix_result"))
+    _ = stack.enter_context(patch(f"{mod}.clear_all_cached_results"))
+    return stack.enter_context(
+        patch(f"{mod}.append_log_entry_best_effort", new_callable=AsyncMock)
+    )
 
 
 class TestPollIntervalAdaptive:
@@ -175,3 +193,29 @@ class TestRunQualityGateInnerTrimPass:
         mock_append.assert_called_once()
         mock_gi.return_value.record_phase_a.assert_not_called()
         assert out["checks"] == [{"name": "type_check", "output": "detail-for-agent"}]
+
+
+class TestOperationsLogHooks:
+    """Quality tools should append best-effort operations-log entries."""
+
+    @pytest.mark.asyncio
+    async def test_run_quality_gate_inner_appends_operations_log(self) -> None:
+        root = Path("/tmp/cortex-qg-log-hook")
+        with ExitStack() as stack:
+            _ = _enter_quality_gate_inner_mocks(stack, root, False)
+            mock_log = stack.enter_context(
+                patch(
+                    "cortex.tools.execution.pre_commit_zero_arg_tools.append_log_entry_best_effort",
+                    new_callable=AsyncMock,
+                )
+            )
+            _ = await run_quality_gate_inner(None)
+        mock_log.assert_awaited_once()
+
+    @pytest.mark.asyncio
+    async def test_autofix_appends_operations_log(self) -> None:
+        root = Path("/tmp/cortex-autofix-log-hook")
+        with ExitStack() as stack:
+            mock_log = _enter_autofix_hook_mocks(stack, root)
+            _ = await autofix(None)
+        mock_log.assert_awaited_once()
