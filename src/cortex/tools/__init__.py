@@ -35,6 +35,7 @@ from .files import (
     operations as file_operations,  # noqa: F401 - alias for backward compat
 )
 from .linking import linking_operations  # noqa: F401
+from .lint import build_memory_bank_lint_checks  # noqa: F401
 from .memory import (
     compaction_operations,  # noqa: F401
     foundation_dependency,  # noqa: F401
@@ -103,6 +104,7 @@ __all__ = [
     "foundation_stats",
     "foundation_version",
     "linking_operations",
+    "build_memory_bank_lint_checks",
     "optimization",
     "analysis_usage",
     "evaluation",

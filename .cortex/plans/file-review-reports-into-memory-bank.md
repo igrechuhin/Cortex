@@ -77,7 +77,7 @@ After `file_artifact` writes a file:
 2. At the end of the review pipeline (after `review-performance` step), add:
    - If the overall review score ≥ 7/10: call `manage_file(operation="file_artifact", artifact_type="review_report", ...)` with the full report content.
    - Log the filing to `log.md` via `update_memory_bank(operation="log_append")` (non-blocking if log feature not yet implemented).
-3. The threshold (7/10) is configurable via `.cortex/lint-config.json` → `review_filing_threshold`.
+3. The threshold (7/10) is configurable via `.cortex/config/lint-config.json` → `review_filing_threshold`.
 
 **Verification**: Run `/cortex/review` on a test file with score ≥ 7; confirm report filed under `.cortex/memory-bank/reviews/`.
 

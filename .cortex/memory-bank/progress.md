@@ -16,7 +16,12 @@
 - **Memory Bank Lint (/cortex/lint-wiki)** - PARTIAL. Implemented `StaleActiveContextCheck` with threshold/date matching behavior and added focused unit tests for stale, resolved, and recent entries.
 - **Memory Bank Lint (/cortex/lint-wiki)** - PARTIAL. Implemented wiki-only `CrossRefCheck` for missing `.cortex/wiki` page references and added unit tests covering missing-reference detection plus no-wiki no-op behavior.
 - **Memory Bank Lint (/cortex/lint-wiki)** - PARTIAL. Implemented wiki-only `OrphanedWikiPagesCheck` for pages lacking inbound links from wiki or memory-bank files, with unit tests for orphaned/linked/no-wiki paths.
-- **Memory Bank Lint (/cortex/lint-wiki)** - PARTIAL. Implemented `CodeClaimCheck` with optional `.cortex/lint-config.json` loading (including malformed/missing-config no-op behavior) and added focused unit tests.
+- **Memory Bank Lint (/cortex/lint-wiki)** - PARTIAL. Implemented `CodeClaimCheck` with optional `.cortex/config/lint-config.json` loading (including malformed/missing-config no-op behavior) and added focused unit tests.
+- **Memory Bank Lint (/cortex/lint-wiki)** - PARTIAL. Implemented `lint_memory_bank` MCP tool with structured `LintReport` aggregation/counts, added unit tests for aggregation and zero-findings behavior, and registered the tool in exports/inventory docs.
+- **Memory Bank Lint (/cortex/lint-wiki)** - PARTIAL. Implemented Step 3 prompt-registration slice by adding `.cortex/synapse/prompts/lint-wiki.md`, wiring prompt manifest/icon mapping, and adding structural integration coverage for prompt registration and workflow requirements.
+- **Memory Bank Lint (/cortex/lint-wiki)** - PARTIAL. Integrated non-blocking `lint_memory_bank()` execution into `/cortex/analyze` with a `## Memory Bank Health` report section and added structural integration tests for prompt/tool wiring.
+- **Memory Bank Lint (/cortex/lint-wiki)** - PARTIAL. Completed Step 5 slice by wiring `stale_threshold_days` from `.cortex/config/lint-config.json` through `lint_memory_bank`, documenting config format in `docs/guides/lint-config.md`, and expanding unit coverage for configured-threshold behavior.
+- **Memory Bank Lint (/cortex/lint-wiki)** - COMPLETE. Completed lint tool/prompt/analyze integration and fixed markdown-link roadmap Plan parsing false positives with regression tests.
 
 ## 2026-04-06
 

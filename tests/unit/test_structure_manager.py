@@ -305,6 +305,42 @@ class TestStructureCreation:
             assert isinstance(errors, list)
             assert len(errors) > 0
 
+    async def test_create_structure_seeds_optimization_json(self, tmp_path: Path):
+        """Test create_structure seeds optimization.json when it does not exist."""
+        # Arrange
+        manager = StructureManager(tmp_path)
+        optimization_path = (
+            get_cortex_path(tmp_path, CortexResourceType.CONFIG) / "optimization.json"
+        )
+
+        # Act
+        _ = await manager.create_structure()
+
+        # Assert
+        assert optimization_path.exists()
+        import json
+
+        data = json.loads(optimization_path.read_text())
+        assert data.get("enabled") is True
+
+    async def test_create_structure_does_not_overwrite_existing_optimization_json(
+        self, tmp_path: Path
+    ):
+        """Test create_structure skips optimization.json when it already exists."""
+        # Arrange
+        manager = StructureManager(tmp_path)
+        config_dir = get_cortex_path(tmp_path, CortexResourceType.CONFIG)
+        config_dir.mkdir(parents=True, exist_ok=True)
+        optimization_path = config_dir / "optimization.json"
+        existing_content = '{"enabled": false, "custom": true}'
+        _ = optimization_path.write_text(existing_content)
+
+        # Act
+        _ = await manager.create_structure()
+
+        # Assert — file unchanged
+        assert optimization_path.read_text() == existing_content
+
 
 # ============================================================================
 # Test Legacy Structure Detection

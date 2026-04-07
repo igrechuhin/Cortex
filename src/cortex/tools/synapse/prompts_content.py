@@ -24,6 +24,7 @@ CORTEX_TOOL_NAMES: frozenset[str] = frozenset(
         "session",
         "think",
         "update_memory_bank",
+        "write_artifact",
     ]
 )
 

@@ -13,6 +13,7 @@ _PLAN_PATH_PATTERN = "Plan:"
 _DATE_PATTERN = re.compile(r"\b(\d{4}-\d{2}-\d{2})\b")
 _WIKI_LINK_PATTERN = re.compile(r"\[\[([^\]]+)\]\]|\[[^\]]+\]\(([^)]+)\)")
 _CLAIM_PATTERN_GROUP = re.compile(r"\((?P<key>[^)]+)\):\s*(?P<value>.+)")
+_MARKDOWN_LINK_PATH_PATTERN = re.compile(r"\[[^\]]+\]\(([^)]+)\)")
 
 
 class LintFinding(BaseModel):
@@ -64,6 +65,7 @@ class _LintConfig(BaseModel):
     model_config = ConfigDict(extra="forbid", validate_assignment=True)
 
     code_claim_checks: list[_CodeClaimSpec] = []
+    stale_threshold_days: int = Field(default=30, ge=1)
 
 
 def _read_text(path: Path) -> str:
@@ -92,11 +94,23 @@ def _memory_bank_root(project_root: Path) -> Path:
 
 
 def _lint_config_path(project_root: Path) -> Path:
-    """Return `.cortex/lint-config.json` path for this project."""
+    """Return `.cortex/config/lint-config.json` path for this project."""
     return (
         get_cortex_path(project_root, CortexResourceType.CORTEX_DIR)
+        / "config"
         / "lint-config.json"
     )
+
+
+def load_lint_config(project_root: Path) -> _LintConfig | None:
+    """Load optional `.cortex/config/lint-config.json` and validate schema."""
+    config_path = _lint_config_path(project_root)
+    if not config_path.exists():
+        return None
+    try:
+        return _LintConfig.model_validate_json(_read_text(config_path))
+    except ValueError:
+        return None
 
 
 def _resolve_project_relative_path(project_root: Path, raw_path: str) -> Path:
@@ -132,7 +146,14 @@ def _extract_plan_references(roadmap_content: str) -> list[_PlanReference]:
         path_part = line[marker_index + len(_PLAN_PATH_PATTERN) :].strip()
         if not path_part:
             continue
-        references.append(_PlanReference(raw_path=path_part.split()[0], line=line_num))
+        normalized_path_part = path_part
+        markdown_match = _MARKDOWN_LINK_PATH_PATTERN.search(path_part)
+        if markdown_match is not None:
+            normalized_path_part = markdown_match.group(1)
+        raw_path = normalized_path_part.strip().split()[0].strip("<>")
+        if not raw_path:
+            continue
+        references.append(_PlanReference(raw_path=raw_path, line=line_num))
     return references
 
 
@@ -436,15 +457,6 @@ class CodeClaimCheck:
 
     name = "code_claim"
 
-    def _load_config(self, project_root: Path) -> _LintConfig | None:
-        config_path = _lint_config_path(project_root)
-        if not config_path.exists():
-            return None
-        try:
-            return _LintConfig.model_validate_json(_read_text(config_path))
-        except ValueError:
-            return None
-
     def _extract_claim_value(
         self,
         *,
@@ -553,7 +565,7 @@ class CodeClaimCheck:
         return findings
 
     def run(self, project_root: Path) -> list[LintFinding]:
-        config = self._load_config(project_root)
+        config = load_lint_config(project_root)
         if config is None or not config.code_claim_checks:
             return []
 

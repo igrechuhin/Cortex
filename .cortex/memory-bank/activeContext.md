@@ -28,7 +28,13 @@
 
 - ✅ **Memory Bank Lint orphaned-wiki check (PARTIAL)** - COMPLETE (2026-04-07) - Added wiki-only `OrphanedWikiPagesCheck` to detect `.cortex/wiki` pages without inbound links from wiki or memory-bank markdown files, with focused unit tests.
 
-- ✅ **Memory Bank Lint code-claim check (PARTIAL)** - COMPLETE (2026-04-07) - Added `CodeClaimCheck` with optional `.cortex/lint-config.json` support and malformed-config fallback behavior, with unit coverage for mismatch, missing-config, and malformed-config flows.
+- ✅ **Memory Bank Lint code-claim check (PARTIAL)** - COMPLETE (2026-04-07) - Added `CodeClaimCheck` with optional `.cortex/config/lint-config.json` support and malformed-config fallback behavior, with unit coverage for mismatch, missing-config, and malformed-config flows.
+
+- ✅ **Memory Bank Lint (/cortex/lint-wiki) (PARTIAL)** - COMPLETE (2026-04-07) - Added `lint_memory_bank` tool (Step 2 slice) to execute lint checks and return structured report metrics; wired tool registration and tests.
+
+- ✅ **Memory Bank Lint stale-threshold config wiring (PARTIAL)** - COMPLETE (2026-04-07) - Wired `stale_threshold_days` from `.cortex/config/lint-config.json` into `lint_memory_bank` execution, documented config usage, and added tests for configured threshold behavior.
+
+- ✅ **Memory Bank Lint (/cortex/lint-wiki)** - COMPLETE (2026-04-07) - Completed memory-bank lint workflow and closed remaining parsing gap for roadmap markdown-linked plan references with regression coverage.
 
 ## Completed Work (2026-04-06)
 

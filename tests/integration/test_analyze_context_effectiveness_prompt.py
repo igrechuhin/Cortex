@@ -154,6 +154,11 @@ class TestUnifiedAnalyzePromptContent:
         assert "Context Effectiveness Analysis" in prompt_content
         assert "Session Optimization Analysis" in prompt_content
 
+    def test_includes_memory_bank_health_lint_step(self, prompt_content: str) -> None:
+        """Prompt notes that memory-bank lint runs via autofix in commit pipeline."""
+        assert "Memory Bank Health" in prompt_content
+        assert "autofix" in prompt_content
+
     def test_includes_usage_analysis_or_scoring(self, prompt_content: str) -> None:
         """Prompt includes usage/scoring concepts for manual fallback."""
         assert "precision" in prompt_content or "recall" in prompt_content

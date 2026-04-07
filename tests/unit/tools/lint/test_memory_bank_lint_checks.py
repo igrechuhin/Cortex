@@ -21,7 +21,7 @@ def _write(path: Path, content: str) -> None:
 
 
 def _write_code_claim_fixture(tmp_path: Path, *, config_content: str) -> None:
-    _write(tmp_path / ".cortex" / "lint-config.json", config_content)
+    _write(tmp_path / ".cortex" / "config" / "lint-config.json", config_content)
     _write(
         tmp_path / ".cortex" / "memory-bank" / "techContext.md",
         "- Runtime (python): 3.11\n",
@@ -84,6 +84,21 @@ def test_missing_plan_files_check_reports_missing_reference_with_line(
     assert findings[0].file == ".cortex/memory-bank/roadmap.md"
     assert findings[0].line == 2
     assert "missing.md" in findings[0].message
+
+
+def test_missing_plan_files_check_parses_markdown_link_plan_path(
+    tmp_path: Path,
+) -> None:
+    _write(
+        tmp_path / ".cortex" / "memory-bank" / "roadmap.md",
+        "- Plan: [Memory Bank Lint](../plans/memory-bank-lint.md) - PENDING.\n",
+    )
+    _write(tmp_path / ".cortex" / "plans" / "memory-bank-lint.md", "# existing\n")
+
+    check: LintCheck = cast(LintCheck, MissingPlanFilesCheck())
+    findings = check.run(tmp_path)
+
+    assert findings == []
 
 
 def test_stale_active_context_check_reports_old_date_missing_from_progress(

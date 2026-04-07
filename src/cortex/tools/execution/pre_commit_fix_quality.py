@@ -5,7 +5,9 @@ Extracted from pre_commit_tools to keep it under 400 lines.
 
 import json
 import logging
+import re
 import subprocess
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import cast
 
@@ -32,8 +34,10 @@ from cortex.tools.execution.pre_commit_helpers_remaining import (
 )
 from cortex.tools.execution.pre_commit_process import poll_for_result
 from cortex.tools.execution.session_paths import session_dir
+from cortex.tools.lint.lint_memory_bank import build_memory_bank_lint_checks
 
 logger = logging.getLogger(__name__)
+_MISSING_PLAN_PATH_RE = re.compile(r"missing plan file:\s*(?P<path>\S+)")
 
 
 def _default_ai_suggestions() -> list[dict[str, str]]:
@@ -294,6 +298,86 @@ def _annotate_autofix_output(root: Path, out: str) -> str:
     return out
 
 
+def _build_plan_stub_content(plan_title: str) -> str:
+    """Create a minimal valid plan stub for missing roadmap references."""
+    created_date = datetime.now(UTC).strftime("%Y-%m-%d")
+    return (
+        "---\n"
+        f'title: "{plan_title}"\n'
+        "component: memory-bank\n"
+        "work_type: task\n"
+        "status: PENDING\n"
+        "priority: medium\n"
+        f"created: {created_date}\n"
+        "depends_on: []\n"
+        "---\n\n"
+        f"## {plan_title}\n\n"
+        "## Goal\n\n"
+        "Auto-created placeholder for missing roadmap reference.\n"
+    )
+
+
+def _extract_missing_plan_paths_from_findings(root: Path) -> list[Path]:
+    """Return absolute missing plan paths from lint findings."""
+    missing_paths: list[Path] = []
+    for check in build_memory_bank_lint_checks(root):
+        for finding in check.run(root):
+            if finding.check != "missing_plan_files":
+                continue
+            match = _MISSING_PLAN_PATH_RE.search(finding.message)
+            if match is None:
+                continue
+            raw_path = match.group("path").rstrip(".,)")
+            if not raw_path.startswith(".cortex/plans/"):
+                continue
+            missing_paths.append(root / raw_path)
+    return missing_paths
+
+
+def _apply_memory_bank_lint_autofix(root: Path) -> list[str]:
+    """Apply safe memory-bank housekeeping fixes and return changed files."""
+    changed_files: list[str] = []
+    for path in _extract_missing_plan_paths_from_findings(root):
+        if path.exists():
+            continue
+        path.parent.mkdir(parents=True, exist_ok=True)
+        plan_title = path.stem.replace("-", " ").strip().title() or "Auto Created Plan"
+        _ = path.write_text(_build_plan_stub_content(plan_title), encoding="utf-8")
+        changed_files.append(str(path.relative_to(root)))
+    return changed_files
+
+
+def _merge_memory_bank_autofix_output(root: Path, out: str) -> str:
+    """Apply memory-bank lint autofix and merge results into JSON output."""
+    try:
+        parsed_obj = json.loads(out)
+    except json.JSONDecodeError:
+        return out
+    if not isinstance(parsed_obj, dict):
+        return out
+    parsed = cast(ModelDict, parsed_obj)
+    if parsed.get("status") != OperationStatus.SUCCESS.value:
+        return out
+    lint_autofix_files = _apply_memory_bank_lint_autofix(root)
+    if not lint_autofix_files:
+        return out
+    files_modified_raw = parsed.get("files_modified", [])
+    files_modified = (
+        cast(list[str], files_modified_raw)
+        if isinstance(files_modified_raw, list)
+        else []
+    )
+    for file_path in lint_autofix_files:
+        if file_path not in files_modified:
+            files_modified.append(file_path)
+    warnings_fixed_raw = parsed.get("warnings_fixed", 0)
+    warnings_fixed = warnings_fixed_raw if isinstance(warnings_fixed_raw, int) else 0
+    parsed["files_modified"] = cast(JsonValue, files_modified)
+    parsed["warnings_fixed"] = warnings_fixed + len(lint_autofix_files)
+    parsed["remaining_issues"] = cast(JsonValue, list[str]())
+    return json.dumps(parsed, separators=(",", ":"))
+
+
 async def autofix_impl(
     root: Path,
     include_untracked_markdown: bool,
@@ -322,5 +406,6 @@ async def autofix_impl(
             cast(ModelDict, envelope), files_modified_override=files_modified_override
         ),
     )
+    out = _merge_memory_bank_autofix_output(root, out)
     await log_client(ctx, "info", "autofix: completed", logger_name=__name__)
     return out

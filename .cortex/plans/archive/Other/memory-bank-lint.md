@@ -37,7 +37,7 @@ Create `src/cortex/tools/lint/memory_bank_lint_checks.py` with a `LintCheck` pro
 3. **StaleActiveContextCheck** — `activeContext.md` entries older than 30 days with no corresponding `progress.md` entry
 4. **CrossRefCheck** (wiki-only) — `.cortex/wiki/**/*.md` pages mentioned by name in other pages but lacking a corresponding file
 5. **OrphanedWikiPagesCheck** (wiki-only) — wiki pages with no inbound links from other wiki pages or memory-bank files
-6. **CodeClaimCheck** — configurable list of claims to verify (e.g., Python version in `techContext.md` vs `pyproject.toml`); extensible via `.cortex/lint-config.json`
+6. **CodeClaimCheck** — configurable list of claims to verify (e.g., Python version in `techContext.md` vs `pyproject.toml`); extensible via `.cortex/config/lint-config.json`
 
 Each check returns a list of `LintFinding(severity: Literal["error","warning","info"], check: str, message: str, file: str | None, line: int | None)`.
 
@@ -82,7 +82,7 @@ Each check returns a list of `LintFinding(severity: Literal["error","warning","i
 
 ### Step 5: Add `lint-config.json` support
 
-1. Define schema for `.cortex/lint-config.json`:
+1. Define schema for `.cortex/config/lint-config.json`:
 
    ```json
    {
@@ -96,7 +96,7 @@ Each check returns a list of `LintFinding(severity: Literal["error","warning","i
 2. `CodeClaimCheck` reads this config if present; no-ops if absent.
 3. Document the config format in `docs/guides/lint-config.md`.
 
-**Verification**: Create a `.cortex/lint-config.json` with one check; confirm it runs and detects a seeded mismatch.
+**Verification**: Create a `.cortex/config/lint-config.json` with one check; confirm it runs and detects a seeded mismatch.
 
 ## Dependencies
 
@@ -127,4 +127,8 @@ Each check returns a list of `LintFinding(severity: Literal["error","warning","i
 - 2026-04-07: Implemented `StaleActiveContextCheck` with date-threshold/progress resolution logic and unit tests — files: src/cortex/tools/lint/memory_bank_lint_checks.py, src/cortex/tools/lint/**init**.py, tests/unit/tools/lint/test_memory_bank_lint_checks.py
 - 2026-04-07: Implemented `CrossRefCheck` (wiki-only missing-page references) and unit tests for missing refs and missing-wiki no-op behavior — files: src/cortex/tools/lint/memory_bank_lint_checks.py, src/cortex/tools/lint/**init**.py, tests/unit/tools/lint/test_memory_bank_lint_checks.py
 - 2026-04-07: Implemented `OrphanedWikiPagesCheck` (wiki-only inbound-link validation) and unit tests for orphaned page detection, wiki-linked pages, memory-bank-linked pages, and missing-wiki no-op — files: src/cortex/tools/lint/memory_bank_lint_checks.py, src/cortex/tools/lint/**init**.py, tests/unit/tools/lint/test_memory_bank_lint_checks.py
-- 2026-04-07: Implemented `CodeClaimCheck` with `.cortex/lint-config.json` support and no-op handling for missing/malformed config, plus unit tests — files: src/cortex/tools/lint/memory_bank_lint_checks.py, src/cortex/tools/lint/**init**.py, tests/unit/tools/lint/test_memory_bank_lint_checks.py
+- 2026-04-07: Implemented `CodeClaimCheck` with `.cortex/config/lint-config.json` support and no-op handling for missing/malformed config, plus unit tests — files: src/cortex/tools/lint/memory_bank_lint_checks.py, src/cortex/tools/lint/**init**.py, tests/unit/tools/lint/test_memory_bank_lint_checks.py
+- 2026-04-07: Implemented Step 2 MCP tool slice by adding `lint_memory_bank` with structured `LintReport` aggregation/counts, plus unit tests and tool registration wiring — files: src/cortex/tools/lint/lint_memory_bank.py, src/cortex/tools/lint/**init**.py, src/cortex/tools/**init**.py, src/cortex/tools/structure/categories.py, tests/unit/tools/lint/test_lint_memory_bank.py, docs/_generated/tool-inventory.json, README.md
+- 2026-04-07: Implemented Step 3 prompt-registration slice by adding `.cortex/synapse/prompts/lint-wiki.md`, registering it in `prompts-manifest.json` and prompt icon mapping, plus structural integration tests — files: .cortex/synapse/prompts/lint-wiki.md, .cortex/synapse/prompts/prompts-manifest.json, src/cortex/tools/synapse/prompts_content.py, tests/integration/test_lint_wiki_prompt_structural.py
+- 2026-04-07: Integrated Step 4 analyze flow by calling `lint_memory_bank()` non-blockingly in `/cortex/analyze`, emitting `## Memory Bank Health` in reports, and adding integration coverage for prompt/tool wiring — files: .cortex/synapse/prompts/analyze.md, src/cortex/tools/synapse/prompts_content.py, tests/integration/test_analyze_context_effectiveness_prompt.py, tests/tools/test_prompts_agents.py
+- 2026-04-07: Wired Step 5 `stale_threshold_days` config through `lint_memory_bank`, documented `.cortex/config/lint-config.json` in `docs/guides/lint-config.md`, and added configured-threshold unit coverage — files: src/cortex/tools/lint/lint_memory_bank.py, src/cortex/tools/lint/memory_bank_lint_checks.py, tests/unit/tools/lint/test_lint_memory_bank.py, docs/guides/lint-config.md

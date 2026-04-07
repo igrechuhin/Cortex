@@ -1,5 +1,6 @@
 """Lint checks and handlers for memory-bank health tooling."""
 
+from .lint_memory_bank import LintReport, build_memory_bank_lint_checks
 from .memory_bank_lint_checks import (
     CodeClaimCheck,
     CrossRefCheck,
@@ -20,4 +21,6 @@ __all__ = [
     "OrphanedPlansCheck",
     "OrphanedWikiPagesCheck",
     "StaleActiveContextCheck",
+    "LintReport",
+    "build_memory_bank_lint_checks",
 ]

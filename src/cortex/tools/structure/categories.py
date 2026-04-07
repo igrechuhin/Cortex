@@ -28,7 +28,7 @@ from pydantic import BaseModel, ConfigDict
 # MAX_REGISTERED_TOOLS is enforced by governance tests. Hard cap: to raise it,
 # create a plan documenting why the new tool cannot be consolidated into an
 # existing one, then bump this constant in the same change as the registration.
-MAX_REGISTERED_TOOLS = 12
+MAX_REGISTERED_TOOLS = 10
 
 # Long-term target from consolidation plans (not enforced in tests).
 TARGET_REGISTERED_TOOLS = 10

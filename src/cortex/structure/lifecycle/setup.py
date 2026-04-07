@@ -9,6 +9,7 @@ This module handles:
 
 from pathlib import Path
 
+from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.structure.models import SetupReport
 from cortex.structure.structure_config import StructureConfig
 from cortex.structure.structure_templates import (
@@ -45,6 +46,7 @@ class StructureSetup:
 
         self._create_required_directories(created_directories, skipped, errors, force)
         await self._create_config_file(created_files, errors)
+        await self._seed_optimization_config(created_files, errors)
         self._create_readme_files(created_files, errors, force)
 
         return SetupReport(
@@ -125,6 +127,36 @@ class StructureSetup:
             created_files.append(str(self.config.structure_config_path))
         except Exception as e:
             errors.append(f"Failed to create config: {e}")
+
+    async def _seed_optimization_config(
+        self, created_files: list[str], errors: list[str]
+    ) -> None:
+        """Seed optimization.json with defaults if it does not already exist.
+
+        Args:
+            created_files: List to append created files to
+            errors: List to append errors to
+        """
+        config_dir = get_cortex_path(
+            self.config.project_root, CortexResourceType.CONFIG
+        )
+        optimization_path = config_dir / "optimization.json"
+        if optimization_path.exists():
+            return
+        try:
+            from cortex.optimization.config_loading import (
+                get_default_config_with_tool_search,
+                save_config_async,
+            )
+
+            default_config = get_default_config_with_tool_search()
+            saved = await save_config_async(optimization_path, default_config)
+            if saved:
+                created_files.append(str(optimization_path))
+            else:
+                errors.append(f"Failed to seed {optimization_path}")
+        except Exception as e:
+            errors.append(f"Failed to seed optimization config: {e}")
 
     def _create_readme_files(
         self, created_files: list[str], errors: list[str], force: bool
