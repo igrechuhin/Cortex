@@ -115,3 +115,10 @@ After `file_artifact` writes a file:
 - Integration test: full `/cortex/review` run → artifact filed when score ≥ threshold, not filed when below
 - Integration test: full `/cortex/analyze` run → session analysis always filed
 - Edge cases: `reviews/` dir doesn't exist (auto-created), duplicate titles (filename deduplication via counter suffix)
+
+## Partial Progress Log
+
+- 2026-04-07: Step 1 vertical slice completed (ArtifactType enum + metadata mapping and helper, with tests) — files: src/cortex/tools/artifacts/artifact_types.py, src/cortex/tools/artifacts/**init**.py, tests/tools/test_artifact_types.py
+- 2026-04-07: Step 2 vertical slice completed (`manage_file(operation="file_artifact")` with path resolution, naming, dedupe, and tests) — files: src/cortex/tools/files/artifact_operations.py, src/cortex/tools/files/crud_operations.py, src/cortex/tools/files/manage_file_helpers.py, src/cortex/tools/files/operation_helpers.py, tests/tools/test_file_artifact_operation.py
+- 2026-04-07: Step 3 vertical slice completed (auto-cross-reference in `activeContext.md` after filing artifacts, with async dispatch wiring and tests) — files: src/cortex/tools/files/artifact_operations.py, src/cortex/tools/files/manage_file_helpers.py, tests/tools/test_file_artifact_operation.py
+- 2026-04-07: Step 4/5 prompt wiring slice completed (threshold-gated review artifact filing and always-on analyze artifact filing, with integration tests) — files: .cortex/synapse/prompts/review.md, .cortex/synapse/prompts/analyze.md, tests/integration/test_prompt_artifact_filing_wiring.py

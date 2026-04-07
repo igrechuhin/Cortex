@@ -4,6 +4,8 @@
 
 ## Completed Work (2026-04-07)
 
+- ✅ **File Review Reports into Memory Bank (PARTIAL)** - COMPLETE (2026-04-07) - Implemented Step 1 foundation by adding `ArtifactType` enum + typed metadata mapping for fileable artifact storage/naming conventions and added focused unit tests.
+
 - ✅ **MCP Tool for Writing Skills and Rules from Analysis Agents (PARTIAL)** - COMPLETE (2026-04-07) - Added `write_artifact` tool and supporting tests so analysis agents can write skills/rules through MCP; next slice should update routing prompts and extend test matrix to full plan scope.
 
 - ✅ **MCP Tool for Writing Skills and Rules from Analysis Agents (PARTIAL)** - COMPLETE (2026-04-07) - Updated Synapse analyze and post-prompt routing guidance to use `write_artifact` for skills/rules, aligning prompt instructions with the implemented MCP write path.
@@ -35,6 +37,8 @@
 - ✅ **Memory Bank Lint stale-threshold config wiring (PARTIAL)** - COMPLETE (2026-04-07) - Wired `stale_threshold_days` from `.cortex/config/lint-config.json` into `lint_memory_bank` execution, documented config usage, and added tests for configured threshold behavior.
 
 - ✅ **Memory Bank Lint (/cortex/lint-wiki)** - COMPLETE (2026-04-07) - Completed memory-bank lint workflow and closed remaining parsing gap for roadmap markdown-linked plan references with regression coverage.
+
+- ✅ **File Review Reports into Memory Bank** - COMPLETE (2026-04-07) - Completed Step 6: cortex://context now includes a recent_artifacts markdown field with the five most recently modified files under memory-bank/reviews|analyses, plus cache invalidation after file_artifact. Phase 4 test helpers refactored for function-length compliance.
 
 ## Completed Work (2026-04-06)
 

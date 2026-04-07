@@ -2,6 +2,42 @@
 
 **This file records completed work only.** For current status and upcoming work see [roadmap.md](roadmap.md).
 
+## Completed Work (2026-04-07)
+
+- ✅ **File Review Reports into Memory Bank (PARTIAL)** - COMPLETE (2026-04-07) - Implemented Step 1 foundation by adding `ArtifactType` enum + typed metadata mapping for fileable artifact storage/naming conventions and added focused unit tests.
+
+- ✅ **MCP Tool for Writing Skills and Rules from Analysis Agents (PARTIAL)** - COMPLETE (2026-04-07) - Added `write_artifact` tool and supporting tests so analysis agents can write skills/rules through MCP; next slice should update routing prompts and extend test matrix to full plan scope.
+
+- ✅ **MCP Tool for Writing Skills and Rules from Analysis Agents (PARTIAL)** - COMPLETE (2026-04-07) - Updated Synapse analyze and post-prompt routing guidance to use `write_artifact` for skills/rules, aligning prompt instructions with the implemented MCP write path.
+
+- ✅ **MCP Tool for Writing Skills and Rules from Analysis Agents** - COMPLETE (2026-04-07) - Completed write_artifact integration by aligning analyze prompt skill routing with registered tool behavior and updating structural tests; quality gate passes.
+
+- ✅ **Memory Bank Operations Log (log.md) (PARTIAL)** - COMPLETE (2026-04-07) - Completed Step 1 foundation by adding `MemoryBankFile.LOG` (`log.md`), new operations-log formatter/types module, and tests validating parseable entry format.
+
+- ✅ **Memory Bank Operations Log (operations log) (PARTIAL)** - COMPLETE (2026-04-07) - Implemented Step 2 partial slice by wiring `update_memory_bank(operation="log_append")` with append-only log writes and validation, plus expanded operations-log tests.
+
+- ✅ **Memory Bank Operations Log (operations log) (PARTIAL)** - COMPLETE (2026-04-07) - Implemented Step 4 partial slice by surfacing `## Recent Operations` in `cortex://context` from `.cortex/memory-bank/log.md` and adding resource tests for log-present and log-missing behavior.
+
+- ✅ **Memory Bank Operations Log (operations log)** - COMPLETE (2026-04-07) - Finalized Step 5 with explicit `manage_file(file_name="log.md", operation="read")` test coverage and completed the roadmap plan.
+
+- ✅ **Cleanup Function-Length Exclusions in Constants** - COMPLETE (2026-04-07) - Removed ad-hoc test path exclusions from FUNCTION_LENGTH_EXCLUDED_PATHS and moved test-file handling into deterministic checker policy for FILES mode, with regression tests covering the behavior.
+
+- ✅ **Memory Bank Lint taxonomy slice (PARTIAL)** - COMPLETE (2026-04-07) - Implemented foundational lint check types and first two checks (orphaned plans and missing plan files) with tests under `src/cortex/tools/lint/` and `tests/unit/tools/lint/`.
+
+- ✅ **Memory Bank Lint stale-context check (PARTIAL)** - COMPLETE (2026-04-07) - Added `StaleActiveContextCheck` to flag unresolved stale `activeContext.md` dates against `progress.md`, plus unit coverage for stale/resolved/recent cases.
+
+- ✅ **Memory Bank Lint cross-reference check (PARTIAL)** - COMPLETE (2026-04-07) - Added wiki-only `CrossRefCheck` to flag missing `.cortex/wiki` page targets referenced via wiki/markdown links, with unit coverage for missing refs and absent wiki directories.
+
+- ✅ **Memory Bank Lint orphaned-wiki check (PARTIAL)** - COMPLETE (2026-04-07) - Added wiki-only `OrphanedWikiPagesCheck` to detect `.cortex/wiki` pages without inbound links from wiki or memory-bank markdown files, with focused unit tests.
+
+- ✅ **Memory Bank Lint code-claim check (PARTIAL)** - COMPLETE (2026-04-07) - Added `CodeClaimCheck` with optional `.cortex/config/lint-config.json` support and malformed-config fallback behavior, with unit coverage for mismatch, missing-config, and malformed-config flows.
+
+- ✅ **Memory Bank Lint (/cortex/lint-wiki) (PARTIAL)** - COMPLETE (2026-04-07) - Added `lint_memory_bank` tool (Step 2 slice) to execute lint checks and return structured report metrics; wired tool registration and tests.
+
+- ✅ **Memory Bank Lint stale-threshold config wiring (PARTIAL)** - COMPLETE (2026-04-07) - Wired `stale_threshold_days` from `.cortex/config/lint-config.json` into `lint_memory_bank` execution, documented config usage, and added tests for configured threshold behavior.
+
+- ✅ **Memory Bank Lint (/cortex/lint-wiki)** - COMPLETE (2026-04-07) - Completed memory-bank lint workflow and closed remaining parsing gap for roadmap markdown-linked plan references with regression coverage.
+
 ## Completed Work (2026-04-06)
 
 - **Summary (2026-04-06)** - 1 entries archived.

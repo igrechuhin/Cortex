@@ -24,6 +24,7 @@ from cortex.core.usage_context import (
 from cortex.managers.initialization import get_managers
 from cortex.managers.types import ManagersDict
 from cortex.managers.utils import get_manager
+from cortex.tools.files.artifact_operations import file_artifact_from_payload
 from cortex.tools.files.constitution_init_flow import handle_init_constitution_operation
 from cortex.tools.files.crud_flow import (
     handle_read_operation,
@@ -297,6 +298,66 @@ async def _dispatch_operation(
     version: int | None = None,
 ) -> str:
     """Dispatch operation to appropriate handler."""
+    delegated = await _dispatch_known_operation(
+        operation,
+        file_path,
+        file_name,
+        content,
+        change_description,
+        include_metadata,
+        root,
+        managers,
+        sections,
+        version,
+    )
+    if delegated is not None:
+        return delegated
+    return build_invalid_operation_error(operation.value)
+
+
+async def _dispatch_known_operation(
+    operation: FileOperation,
+    file_path: Path,
+    file_name: str,
+    content: str | None,
+    change_description: str | None,
+    include_metadata: bool,
+    root: Path,
+    managers: ManagersDict,
+    sections: list[str] | None,
+    version: int | None,
+) -> str | None:
+    """Dispatch known operations and return None for unsupported operation."""
+    primary = await _dispatch_primary_operation(
+        operation,
+        file_path,
+        file_name,
+        content,
+        change_description,
+        include_metadata,
+        root,
+        managers,
+        sections,
+    )
+    if primary is not None:
+        return primary
+    return await _dispatch_secondary_operation(
+        operation, file_path, file_name, content, root, managers, version
+    )
+
+
+async def _dispatch_primary_operation(
+    operation: FileOperation,
+    file_path: Path,
+    file_name: str,
+    content: str | None,
+    change_description: str | None,
+    include_metadata: bool,
+    root: Path,
+    managers: ManagersDict,
+    sections: list[str] | None,
+) -> str | None:
+    """Dispatch read/write/metadata operations."""
     if operation == FileOperation.READ:
         return await _dispatch_read_operation(
             file_path, file_name, root, managers, include_metadata, sections
@@ -307,6 +368,19 @@ async def _dispatch_operation(
         )
     if operation == FileOperation.METADATA:
         return await handle_metadata_operation(file_path, file_name, managers.index)
+    return None
+
+
+async def _dispatch_secondary_operation(
+    operation: FileOperation,
+    file_path: Path,
+    file_name: str,
+    content: str | None,
+    root: Path,
+    managers: ManagersDict,
+    version: int | None,
+) -> str | None:
+    """Dispatch rollback/init/file_artifact operations."""
     if operation == FileOperation.ROLLBACK:
         assert version is not None
         return await handle_rollback_operation(file_name, version, root)
@@ -314,7 +388,12 @@ async def _dispatch_operation(
         return await handle_init_constitution_operation(
             file_path, file_name, root, managers
         )
-    return build_invalid_operation_error(operation.value)
+    if operation == FileOperation.FILE_ARTIFACT:
+        return await file_artifact_from_payload(
+            memory_bank_dir=get_cortex_path(root, CortexResourceType.MEMORY_BANK),
+            payload=content,
+        )
+    return None
 
 
 async def _dispatch_read_operation(

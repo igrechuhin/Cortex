@@ -44,6 +44,7 @@ class FileOperation(str, Enum):
     METADATA = "metadata"
     ROLLBACK = "rollback"
     INIT_CONSTITUTION = "init_constitution"
+    FILE_ARTIFACT = "file_artifact"
 
 
 def parse_file_operation(value: str | None) -> FileOperation | None:
@@ -154,7 +155,7 @@ def validate_manage_file_operation(
             missing_params.append("operation")
             return (None, build_missing_parameters_error(missing_params))
         return (None, build_invalid_operation_error(str(operation)))
-    if not file_name:
+    if parsed_op != FileOperation.FILE_ARTIFACT and not file_name:
         return (None, build_missing_parameters_error(["file_name"]))
     if parsed_op == FileOperation.ROLLBACK and version is None:
         return (

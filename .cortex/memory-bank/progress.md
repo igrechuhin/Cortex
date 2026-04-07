@@ -2,6 +2,7 @@
 
 ## 2026-04-07
 
+- **File Review Reports into Memory Bank** - PARTIAL. Completed Step 1 vertical slice by adding `ArtifactType` metadata mapping (`reviews/` and `analyses/` conventions) with dedicated tests; follow-up steps (file_artifact wiring and prompt/resource integration) remain.
 - **MCP Tool for Writing Skills and Rules from Analysis Agents** - PARTIAL. Implemented and registered `write_artifact` with allowlisted path resolution, validation, atomic writes, and initial unit-test coverage; prompt routing updates remain.
 - **MCP Tool for Writing Skills and Rules from Analysis Agents** - PARTIAL. Updated Synapse analyze/post-prompt routing instructions to call `write_artifact` for skill/rule artifacts (instead of `manage_file`), keeping unrelated memory-bank reads unchanged.
 - **MCP Tool for Writing Skills and Rules from Analysis Agents** - PARTIAL. Added remaining Step-5 test scenarios for `write_artifact` (required-fields validation, absolute-path rejection, `skill_pack` load discoverability, and nested rule parent-directory creation); roadmap item remains open for final completion/archival.
@@ -22,6 +23,10 @@
 - **Memory Bank Lint (/cortex/lint-wiki)** - PARTIAL. Integrated non-blocking `lint_memory_bank()` execution into `/cortex/analyze` with a `## Memory Bank Health` report section and added structural integration tests for prompt/tool wiring.
 - **Memory Bank Lint (/cortex/lint-wiki)** - PARTIAL. Completed Step 5 slice by wiring `stale_threshold_days` from `.cortex/config/lint-config.json` through `lint_memory_bank`, documenting config format in `docs/guides/lint-config.md`, and expanding unit coverage for configured-threshold behavior.
 - **Memory Bank Lint (/cortex/lint-wiki)** - COMPLETE. Completed lint tool/prompt/analyze integration and fixed markdown-link roadmap Plan parsing false positives with regression tests.
+- **File Review Reports into Memory Bank** - PARTIAL. Implemented Step 2 vertical slice by adding `manage_file(operation="file_artifact")` with artifact path/naming/dedupe behavior and tests.
+- **File Review Reports into Memory Bank** - PARTIAL. Implemented Step 3: `manage_file(file_artifact)` now auto-appends a markdown cross-reference in `activeContext.md` for each filed artifact, with async wiring and tests.
+- **File Review Reports into Memory Bank** - PARTIAL. Wired artifact filing behavior into review/analyze prompts: threshold-gated review report filing (`review_filing_threshold`, default 7) and always-on session analysis filing; added integration tests for prompt wiring.
+- **File Review Reports into Memory Bank** - COMPLETE. Recent Artifacts section in cortex://context; filing invalidates context cache; tests updated.
 
 ## 2026-04-06
 

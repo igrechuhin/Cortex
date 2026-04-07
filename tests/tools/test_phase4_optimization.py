@@ -16,7 +16,6 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from cortex.core.models import DetailedFileMetadata
 from cortex.managers.types import ManagersDict
 from cortex.tools.optimization import (
     get_relevance_scores,
@@ -33,8 +32,15 @@ from cortex.tools.optimization.handlers import (
     load_context_impl as _load_context_impl,
 )
 from cortex.tools.session.models import SESSION_SCOPE_PROMPT
-from tests.helpers.fixture_validator import validate_optimization_config_mock
 from tests.helpers.managers import make_test_managers
+from tests.helpers.phase4_optimization_managers import build_phase4_mock_managers
+from tests.helpers.phase4_optimization_test_helpers import (
+    run_concise_load_context_with_payload,
+    run_full_context_score_summarize_workflow,
+    run_load_context_impl_with_zero_files_handling_mock,
+    run_load_context_with_log_client_patched,
+    run_summarize_with_config_overrides,
+)
 
 # ============================================================================
 # Helper Functions
@@ -65,6 +71,16 @@ def _write_test_operations_log(mock_project_root: Path) -> None:
         ]
     )
     _ = (memory_bank_dir / "log.md").write_text(log_content, encoding="utf-8")
+
+
+def _write_test_artifact_pages(mock_project_root: Path) -> None:
+    """Create sample filed artifact pages under memory-bank/reviews."""
+    memory_bank_dir = mock_project_root / ".cortex" / "memory-bank"
+    reviews = memory_bank_dir / "reviews"
+    reviews.mkdir(parents=True)
+    _ = (reviews / "review-auth-2026-04-07.md").write_text(
+        "# Auth Review\n\nFirst finding text.", encoding="utf-8"
+    )
 
 
 # ============================================================================
@@ -121,92 +137,8 @@ def mock_loaded_content() -> list[Any]:
 def mock_managers(
     mock_optimization_result: MagicMock, mock_loaded_content: list[Any]
 ) -> ManagersDict:
-    """Create typed mock managers container.
-
-    optimization_config mock must expose all members required by Phase 4 tools;
-    see tests/FIXTURE_REQUIREMENTS.md and validate_optimization_config_mock().
-    """
-    optimization_config = MagicMock()
-    optimization_config.get_token_budget.return_value = 10000
-    optimization_config.get_max_token_budget.return_value = 100000
-    optimization_config.get_reserve_for_response.return_value = 10000
-    optimization_config.get_priority_order.return_value = ["file1.md", "file2.md"]
-    optimization_config.get_mandatory_files.return_value = ["file1.md"]
-    optimization_config.is_summarization_enabled.return_value = True
-    optimization_config.is_optimization_enabled.return_value = True
-    optimization_config.get_summarization_target_reduction.return_value = 0.5
-    optimization_config.get_summarization_strategy.return_value = "extract_key_sections"
-
-    validation = validate_optimization_config_mock(optimization_config)
-    if not validation.valid:
-        pytest.fail(validation.message)
-
-    context_optimizer = MagicMock()
-    context_optimizer.optimize_context = AsyncMock(
-        return_value=mock_optimization_result
-    )
-
-    progressive_loader = MagicMock()
-    progressive_loader.load_by_priority = AsyncMock(return_value=mock_loaded_content)
-    progressive_loader.load_by_dependencies = AsyncMock(
-        return_value=mock_loaded_content
-    )
-    progressive_loader.load_by_relevance = AsyncMock(return_value=mock_loaded_content)
-
-    summarization_engine = MagicMock()
-    summarization_engine.summarize_file = AsyncMock(
-        return_value={
-            "original_tokens": 1000,
-            "summary_tokens": 500,
-            "reduction": 0.5,
-            "summary": "Test summary",
-            "strategy": "extract_key_sections",
-            "sections_kept": 0,
-            "sections_removed": 0,
-        }
-    )
-
-    relevance_scorer = MagicMock()
-    relevance_scorer.score_files = AsyncMock(
-        return_value={
-            "file1.md": {"total_score": 0.9, "keyword_score": 0.8},
-            "file2.md": {"total_score": 0.7, "keyword_score": 0.6},
-        }
-    )
-    relevance_scorer.score_sections = AsyncMock(
-        return_value=[
-            MagicMock(section="Section 1", title=None, score=0.9, reason="match"),
-            MagicMock(section="Section 2", title=None, score=0.8, reason="match"),
-        ]
-    )
-
-    # get_file_metadata must return a model with .model_dump() (DetailedFileMetadata)
-    _file_metadata_model = DetailedFileMetadata(
-        path="/mock/memory-bank/file.md",
-        exists=True,
-        size_bytes=100,
-        token_count=1000,
-        token_model="cl100k_base",
-        last_modified="2026-01-01T00:00:00",
-        content_hash="mock",
-    )
-    metadata_index = MagicMock()
-    metadata_index.list_all_files = AsyncMock(return_value=["file1.md", "file2.md"])
-    metadata_index.get_file_metadata = AsyncMock(return_value=_file_metadata_model)
-    metadata_index.memory_bank_dir = Path("/mock/memory-bank")
-
-    fs_manager = MagicMock()
-    fs_manager.read_file = AsyncMock(return_value=("Test content", None))
-
-    return make_test_managers(
-        optimization_config=optimization_config,
-        context_optimizer=context_optimizer,
-        progressive_loader=progressive_loader,
-        summarization_engine=summarization_engine,
-        relevance_scorer=relevance_scorer,
-        index=metadata_index,
-        fs=fs_manager,
-    )
+    """Create typed mock managers container (see tests/FIXTURE_REQUIREMENTS.md)."""
+    return build_phase4_mock_managers(mock_optimization_result, mock_loaded_content)
 
 
 # ============================================================================
@@ -665,95 +597,37 @@ class TestLoadContext:
         self, mock_project_root: Path, mock_managers: dict[str, Any]
     ) -> None:
         """Test concise format when selected_files is not a dict (edge case)."""
-        # Arrange - patch load_context_impl to return response with selected_files as list
-
-        async def mock_load_context_impl(*args: Any, **kwargs: Any) -> str:
-            """Mock that returns response with selected_files as list."""
-            return json.dumps(
-                {
-                    "status": "success",
-                    "task_description": "Test",
-                    "strategy": "priority",
-                    "selected_files": ["file1.md", "file2.md"],  # List, not dict
-                    "total_tokens": 1000,
-                    "utilization": 0.5,
-                },
-                indent=2,
-            )
-
-        with (
-            patch(
-                "cortex.tools.optimization.handlers.resolve_project_root_async",
-                new_callable=AsyncMock,
-                return_value=mock_project_root,
-            ),
-            patch(
-                "cortex.tools.optimization.get_managers",
-                return_value=mock_managers,
-            ),
-            patch(
-                "cortex.tools.optimization.handlers_load.load_context_impl",
-                side_effect=mock_load_context_impl,
-            ),
-        ):
-            # Act
-            result_str = await _load_context_impl(
-                task_description="Test task",
-                token_budget=50000,
-                response_format="concise",
-            )
-            result = json.loads(result_str)
-
-            # Assert - file_names should be empty list when selected_files is not dict
-            assert result["status"] == "success"
-            assert result["file_names"] == []
+        payload = {
+            "status": "success",
+            "task_description": "Test",
+            "strategy": "priority",
+            "selected_files": ["file1.md", "file2.md"],
+            "total_tokens": 1000,
+            "utilization": 0.5,
+        }
+        result = await run_concise_load_context_with_payload(
+            mock_project_root, mock_managers, payload
+        )
+        assert result["status"] == "success"
+        assert result["file_names"] == []
 
     async def test_load_context_concise_format_with_none_selected_files(
         self, mock_project_root: Path, mock_managers: dict[str, Any]
     ) -> None:
         """Test concise format when selected_files is None (edge case)."""
-
-        # Arrange - patch load_context_impl to return response with selected_files as None
-        async def mock_load_context_impl(*args: Any, **kwargs: Any) -> str:
-            """Mock that returns response with selected_files as None."""
-            return json.dumps(
-                {
-                    "status": "success",
-                    "task_description": "Test",
-                    "strategy": "priority",
-                    "selected_files": None,  # None instead of dict
-                    "total_tokens": 1000,
-                    "utilization": 0.5,
-                },
-                indent=2,
-            )
-
-        with (
-            patch(
-                "cortex.tools.optimization.handlers.resolve_project_root_async",
-                new_callable=AsyncMock,
-                return_value=mock_project_root,
-            ),
-            patch(
-                "cortex.tools.optimization.get_managers",
-                return_value=mock_managers,
-            ),
-            patch(
-                "cortex.tools.optimization.handlers_load.load_context_impl",
-                side_effect=mock_load_context_impl,
-            ),
-        ):
-            # Act
-            result_str = await _load_context_impl(
-                task_description="Test task",
-                token_budget=50000,
-                response_format="concise",
-            )
-            result = json.loads(result_str)
-
-            # Assert - file_names should be empty list when selected_files is None
-            assert result["status"] == "success"
-            assert result["file_names"] == []
+        payload = {
+            "status": "success",
+            "task_description": "Test",
+            "strategy": "priority",
+            "selected_files": None,
+            "total_tokens": 1000,
+            "utilization": 0.5,
+        }
+        result = await run_concise_load_context_with_payload(
+            mock_project_root, mock_managers, payload
+        )
+        assert result["status"] == "success"
+        assert result["file_names"] == []
 
     async def test_load_context_concise_format_with_invalid_json(
         self, mock_project_root: Path, mock_managers: dict[str, Any]
@@ -868,7 +742,6 @@ class TestSummarizeContent:
         self, mock_project_root: Path, mock_managers: dict[str, Any]
     ) -> None:
         """Test summarize_content uses config defaults when target_reduction and strategy are None."""
-        # Arrange
         mock_optimization_config = MagicMock()
         mock_optimization_config.is_summarization_enabled.return_value = True
         mock_optimization_config.get_summarization_target_reduction.return_value = 0.6
@@ -877,38 +750,17 @@ class TestSummarizeContent:
         )
         mock_optimization_config.is_optimization_enabled.return_value = True
 
-        def get_manager_helper(mgrs: ManagersDict, key: str, _: object) -> object:
-            if key == "optimization_config":
-                return mock_optimization_config
-            return _get_manager_helper(mgrs, key, _)
-
-        with (
-            patch(
-                "cortex.tools.optimization.handlers.resolve_project_root_async",
-                new_callable=AsyncMock,
-                return_value=mock_project_root,
-            ),
-            patch(
-                "cortex.tools.optimization.get_managers",
-                return_value=mock_managers,
-            ),
-            patch(
-                "cortex.tools.optimization.summarization_operations.get_manager",
-                side_effect=get_manager_helper,
-            ),
-        ):
-            # Act - pass None for target_reduction and strategy
-            result_str = await summarize_content(
-                file_name="file1.md", target_reduction=None, strategy=None
-            )
-            result = json.loads(result_str)
-
-            # Assert
-            assert result["status"] == "success"
-            assert result["target_reduction"] == 0.6  # From config
-            assert result["strategy"] == "compress_verbose"  # From config
-            mock_optimization_config.get_summarization_target_reduction.assert_called_once()
-            mock_optimization_config.get_summarization_strategy.assert_called_once()
+        result = await run_summarize_with_config_overrides(
+            mock_project_root,
+            mock_managers,
+            mock_optimization_config,
+            _get_manager_helper,
+        )
+        assert result["status"] == "success"
+        assert result["target_reduction"] == 0.6
+        assert result["strategy"] == "compress_verbose"
+        mock_optimization_config.get_summarization_target_reduction.assert_called_once()
+        mock_optimization_config.get_summarization_strategy.assert_called_once()
 
     async def test_summarize_gated_on_summarization_enabled(
         self, mock_project_root: Path, mock_managers: dict[str, Any]
@@ -1200,51 +1052,14 @@ class TestIntegration:
         self, mock_project_root: Path, mock_managers: dict[str, Any]
     ) -> None:
         """Test complete workflow: load context -> score -> summarize."""
-        with (
-            patch(
-                "cortex.tools.optimization.handlers.resolve_project_root_async",
-                new_callable=AsyncMock,
-                return_value=mock_project_root,
-            ),
-            patch(
-                "cortex.tools.optimization.get_managers",
-                return_value=mock_managers,
-            ),
-            patch(
-                "cortex.tools.context.load_operations.get_manager",
-                side_effect=_get_manager_helper,
-            ),
-            patch(
-                "cortex.tools.optimization.relevance_operations.get_manager",
-                side_effect=_get_manager_helper,
-            ),
-            patch(
-                "cortex.tools.optimization.summarization_operations.get_manager",
-                side_effect=_get_manager_helper,
-            ),
-        ):
-            # Act 1: Load context
-            opt_result = await _load_context_impl(
-                task_description="Test task", token_budget=50000
+        opt_data, scores_data, summary_data = (
+            await run_full_context_score_summarize_workflow(
+                mock_project_root, mock_managers, _get_manager_helper
             )
-            opt_data = json.loads(opt_result)
-
-            # Assert 1
-            assert opt_data["status"] == "success"
-
-            # Act 2: Get relevance scores
-            scores_result = await get_relevance_scores(task_description="Test task")
-            scores_data = json.loads(scores_result)
-
-            # Assert 2
-            assert scores_data["status"] == "success"
-
-            # Act 3: Summarize content
-            summary_result = await summarize_content()
-            summary_data = json.loads(summary_result)
-
-            # Assert 3
-            assert summary_data["status"] == "success"
+        )
+        assert opt_data["status"] == "success"
+        assert scores_data["status"] == "success"
+        assert summary_data["status"] == "success"
 
 
 # ============================================================================
@@ -1262,38 +1077,14 @@ class TestPhase4OptimizationContextLogging:
         """When ctx is passed, load_context logs start and completion."""
         mock_ctx = AsyncMock()
         mock_log = AsyncMock()
-        with (
-            patch(
-                "cortex.tools.optimization.handlers.log_client",
-                mock_log,
-            ),
-            patch(
-                "cortex.core.context_logging.log_client",
-                mock_log,
-            ),
-            patch(
-                "cortex.tools.optimization.handlers.resolve_project_root_async",
-                new_callable=AsyncMock,
-                return_value=mock_project_root,
-            ),
-            patch(
-                "cortex.tools.optimization.get_managers",
-                new=AsyncMock(return_value=mock_managers),
-            ),
-            patch(
-                "cortex.tools.context.load_operations.get_manager",
-                side_effect=_get_manager_helper,
-            ),
-        ):
-            result_str = await _load_context_impl(
-                task_description="Test task",
-                token_budget=5000,
-                ctx=mock_ctx,
-            )
-            result = json.loads(result_str)
+        result, levels_and_messages = await run_load_context_with_log_client_patched(
+            mock_project_root,
+            mock_managers,
+            mock_ctx,
+            mock_log,
+            _get_manager_helper,
+        )
         assert result.get("status") == "success"
-        args_list = [c[0] for c in mock_log.call_args_list]
-        levels_and_messages = [(a[1], a[2]) for a in args_list]
         assert ("info", "load_context: starting") in levels_and_messages
         assert ("info", "load_context: completed") in levels_and_messages
 
@@ -1400,6 +1191,68 @@ class TestPhase4OptimizationResources:
             result = json.loads(result_str)
         assert result["status"] == "success"
         assert "recent_operations" not in result
+
+    async def test_load_context_includes_recent_artifacts_when_present(
+        self, mock_project_root: Path, mock_managers: dict[str, Any]
+    ) -> None:
+        """load_context includes recent_artifacts when reviews/ or analyses/ have .md files."""
+        invalidate_context_resource_cache()
+        _write_test_artifact_pages(mock_project_root)
+        with (
+            patch(
+                "cortex.core.session_config.read_session_config",
+                return_value={"task_description": "Test task with artifacts"},
+            ),
+            patch(
+                "cortex.tools.optimization.handlers.resolve_project_root_async",
+                new_callable=AsyncMock,
+                return_value=mock_project_root,
+            ),
+            patch(
+                "cortex.tools.optimization.get_managers",
+                return_value=mock_managers,
+            ),
+            patch(
+                "cortex.tools.context.load_operations.get_manager",
+                side_effect=_get_manager_helper,
+            ),
+        ):
+            result_str = await load_context()
+            result = json.loads(result_str)
+        assert result["status"] == "success"
+        assert "recent_artifacts" in result
+        assert "## Recent Artifacts" in result["recent_artifacts"]
+        assert "reviews/review-auth-2026-04-07.md" in result["recent_artifacts"]
+        assert "Auth Review" in result["recent_artifacts"]
+
+    async def test_load_context_omits_recent_artifacts_when_none(
+        self, mock_project_root: Path, mock_managers: dict[str, Any]
+    ) -> None:
+        """load_context omits recent_artifacts when no filed pages exist."""
+        invalidate_context_resource_cache()
+        with (
+            patch(
+                "cortex.core.session_config.read_session_config",
+                return_value={"task_description": "Test task no artifacts"},
+            ),
+            patch(
+                "cortex.tools.optimization.handlers.resolve_project_root_async",
+                new_callable=AsyncMock,
+                return_value=mock_project_root,
+            ),
+            patch(
+                "cortex.tools.optimization.get_managers",
+                return_value=mock_managers,
+            ),
+            patch(
+                "cortex.tools.context.load_operations.get_manager",
+                side_effect=_get_manager_helper,
+            ),
+        ):
+            result_str = await load_context()
+            result = json.loads(result_str)
+        assert result["status"] == "success"
+        assert "recent_artifacts" not in result
 
     async def test_get_relevance_scores_resource_returns_success(
         self, mock_project_root: Path, mock_managers: dict[str, Any]
@@ -1597,7 +1450,6 @@ class TestContextBudgetValidation:
         self, mock_project_root: Path, mock_managers: ManagersDict
     ) -> None:
         """load_context adds warning when non-trivial task results in zero files."""
-        # Mock a result with zero selected files
         mock_result = json.dumps(
             {
                 "status": "success",
@@ -1607,34 +1459,15 @@ class TestContextBudgetValidation:
                 "total_tokens": 0,
             }
         )
-
-        with (
-            patch(
-                "cortex.tools.optimization.handlers.resolve_project_root_async",
-                new_callable=AsyncMock,
-                return_value=mock_project_root,
-            ),
-            patch(
-                "cortex.tools.optimization.get_managers",
-                return_value=mock_managers,
-            ),
-            patch(
-                "cortex.tools.optimization.handlers_load.load_context_with_error_handling",
-                new_callable=AsyncMock,
-                return_value=mock_result,
-            ),
-        ):
-            result_str = await _load_context_impl(
-                task_description="Implement a new feature",
-                token_budget=10000,
-            )
-            result = json.loads(result_str)
-            assert result.get("status") == "success"
-            warnings = result.get("warnings", [])
-            assert len(warnings) > 0
-            assert any(
-                w.get("type") == "zero_files_selected" for w in warnings
-            ), f"Expected zero_files_selected warning, got: {warnings}"
+        result = await run_load_context_impl_with_zero_files_handling_mock(
+            mock_project_root, mock_managers, mock_result
+        )
+        assert result.get("status") == "success"
+        warnings = result.get("warnings", [])
+        assert len(warnings) > 0
+        assert any(
+            w.get("type") == "zero_files_selected" for w in warnings
+        ), f"Expected zero_files_selected warning, got: {warnings}"
 
 
 # ============================================================================

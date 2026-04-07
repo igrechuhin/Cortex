@@ -37,6 +37,9 @@ from cortex.core.models import ContextDepth, ResponseFormat
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.core.project_root_resolver import resolve_project_root_async
 from cortex.server import mcp
+from cortex.tools.context.recent_artifacts_context import (
+    build_recent_artifacts_markdown,
+)
 from cortex.tools.optimization.relevance_operations import get_relevance_scores_impl
 from cortex.tools.optimization.summarization_operations import summarize_content_impl
 from cortex.tools.session.models import SESSION_SCOPE_PROMPT
@@ -411,6 +414,31 @@ def _append_recent_operations_to_context_payload(
     return json.dumps(payload_data, indent=2)
 
 
+def _read_recent_artifacts_markdown(project_root: Path) -> str | None:
+    """Build Recent Artifacts markdown from filed pages under memory-bank/reviews|analyses."""
+    memory_bank = get_cortex_path(project_root, CortexResourceType.MEMORY_BANK)
+    return build_recent_artifacts_markdown(memory_bank)
+
+
+def _append_recent_artifacts_to_context_payload(
+    payload: str, recent_artifacts_markdown: str | None
+) -> str:
+    """Attach a markdown Recent Artifacts section to successful context payloads."""
+    if recent_artifacts_markdown is None:
+        return payload
+    try:
+        parsed = json.loads(payload)
+    except json.JSONDecodeError:
+        return payload
+    if not isinstance(parsed, dict):
+        return payload
+    payload_data = cast(dict[str, object], parsed)
+    if payload_data.get("status") != "success":
+        return payload
+    payload_data["recent_artifacts"] = recent_artifacts_markdown
+    return json.dumps(payload_data, indent=2)
+
+
 @mcp.resource(uri="cortex://context", meta=CORTEX_CONTEXT_RESOURCE_READ_META)
 @ensure_usage_context
 @mcp_resource_wrapper(timeout=MCP_TOOL_TIMEOUT_COMPLEX)
@@ -436,8 +464,12 @@ async def load_context() -> str:
     )
     root = await resolve_project_root_async(None, None)
     recent_ops = _read_recent_operations_lines(root)
-    out = _append_recent_operations_to_context_payload(
-        _append_session_scope_to_context_payload(result), recent_ops
+    recent_artifacts = _read_recent_artifacts_markdown(root)
+    out = _append_recent_artifacts_to_context_payload(
+        _append_recent_operations_to_context_payload(
+            _append_session_scope_to_context_payload(result), recent_ops
+        ),
+        recent_artifacts,
     )
     _context_resource_cache.set(cache_key, out)
     return out

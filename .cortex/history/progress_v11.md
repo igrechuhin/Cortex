@@ -1,5 +1,31 @@
 # Progress Log
 
+## 2026-04-07
+
+- **File Review Reports into Memory Bank** - PARTIAL. Completed Step 1 vertical slice by adding `ArtifactType` metadata mapping (`reviews/` and `analyses/` conventions) with dedicated tests; follow-up steps (file_artifact wiring and prompt/resource integration) remain.
+- **MCP Tool for Writing Skills and Rules from Analysis Agents** - PARTIAL. Implemented and registered `write_artifact` with allowlisted path resolution, validation, atomic writes, and initial unit-test coverage; prompt routing updates remain.
+- **MCP Tool for Writing Skills and Rules from Analysis Agents** - PARTIAL. Updated Synapse analyze/post-prompt routing instructions to call `write_artifact` for skill/rule artifacts (instead of `manage_file`), keeping unrelated memory-bank reads unchanged.
+- **MCP Tool for Writing Skills and Rules from Analysis Agents** - PARTIAL. Added remaining Step-5 test scenarios for `write_artifact` (required-fields validation, absolute-path rejection, `skill_pack` load discoverability, and nested rule parent-directory creation); roadmap item remains open for final completion/archival.
+- **MCP Tool for Writing Skills and Rules from Analysis Agents** - COMPLETE. Aligned analyze skill routing to write_artifact flow, updated structural test expectations, and verified with passing quality gate.
+- **Memory Bank Operations Log (operations log)** - PARTIAL. Implemented Step 1 foundation: added canonical `log.md` memory-bank file support plus operations-log formatter/types and unit tests.
+- **Memory Bank Operations Log (operations log)** - PARTIAL. Implemented Step 2: added `update_memory_bank(operation="log_append")` with append-only `log.md` entry writing, operation/date validation, and expanded unit tests.
+- **Memory Bank Operations Log (operations log)** - PARTIAL. Wired best-effort operations-log hooks for `plan(create|complete)` and `run_quality_gate`/`autofix` flows, added focused tests, and kept quality gate green.
+- **Memory Bank Operations Log (operations log)** - PARTIAL. Implemented Step 4 context slice: `cortex://context` now includes `## Recent Operations` from `.cortex/memory-bank/log.md` when available, with coverage for both present and missing-log paths.
+- **Memory Bank Operations Log (operations log)** - COMPLETE. Finalized Step 5 with explicit `manage_file(file_name="log.md", operation="read")` coverage and closed the plan slice.
+- **Cleanup Function-Length Exclusions in Constants** - COMPLETE. Replaced ad-hoc constant path exclusions with checker-level deterministic FILES-mode test-file handling and added regressions.
+- **Memory Bank Lint (/cortex/lint-wiki)** - PARTIAL. Added lint taxonomy foundation with `LintFinding`/`LintCheck` plus `OrphanedPlansCheck` and `MissingPlanFilesCheck`, including unit tests.
+- **Memory Bank Lint (/cortex/lint-wiki)** - PARTIAL. Implemented `StaleActiveContextCheck` with threshold/date matching behavior and added focused unit tests for stale, resolved, and recent entries.
+- **Memory Bank Lint (/cortex/lint-wiki)** - PARTIAL. Implemented wiki-only `CrossRefCheck` for missing `.cortex/wiki` page references and added unit tests covering missing-reference detection plus no-wiki no-op behavior.
+- **Memory Bank Lint (/cortex/lint-wiki)** - PARTIAL. Implemented wiki-only `OrphanedWikiPagesCheck` for pages lacking inbound links from wiki or memory-bank files, with unit tests for orphaned/linked/no-wiki paths.
+- **Memory Bank Lint (/cortex/lint-wiki)** - PARTIAL. Implemented `CodeClaimCheck` with optional `.cortex/config/lint-config.json` loading (including malformed/missing-config no-op behavior) and added focused unit tests.
+- **Memory Bank Lint (/cortex/lint-wiki)** - PARTIAL. Implemented `lint_memory_bank` MCP tool with structured `LintReport` aggregation/counts, added unit tests for aggregation and zero-findings behavior, and registered the tool in exports/inventory docs.
+- **Memory Bank Lint (/cortex/lint-wiki)** - PARTIAL. Implemented Step 3 prompt-registration slice by adding `.cortex/synapse/prompts/lint-wiki.md`, wiring prompt manifest/icon mapping, and adding structural integration coverage for prompt registration and workflow requirements.
+- **Memory Bank Lint (/cortex/lint-wiki)** - PARTIAL. Integrated non-blocking `lint_memory_bank()` execution into `/cortex/analyze` with a `## Memory Bank Health` report section and added structural integration tests for prompt/tool wiring.
+- **Memory Bank Lint (/cortex/lint-wiki)** - PARTIAL. Completed Step 5 slice by wiring `stale_threshold_days` from `.cortex/config/lint-config.json` through `lint_memory_bank`, documenting config format in `docs/guides/lint-config.md`, and expanding unit coverage for configured-threshold behavior.
+- **Memory Bank Lint (/cortex/lint-wiki)** - COMPLETE. Completed lint tool/prompt/analyze integration and fixed markdown-link roadmap Plan parsing false positives with regression tests.
+- **File Review Reports into Memory Bank** - PARTIAL. Implemented Step 2 vertical slice by adding `manage_file(operation="file_artifact")` with artifact path/naming/dedupe behavior and tests.
+- **File Review Reports into Memory Bank** - PARTIAL. Implemented Step 3: `manage_file(file_artifact)` now auto-appends a markdown cross-reference in `activeContext.md` for each filed artifact, with async wiring and tests.
+
 ## 2026-04-06
 
 - **Pre-commit MCP heartbeat follow-up** - COMPLETE. Added unit tests for pre-commit run helpers; refactored markdown batch tests; aligned context logging, integration, and progress tests; updated logging guidelines; archived plan. Quality gate ~92% coverage.

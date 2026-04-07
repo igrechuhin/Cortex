@@ -4,6 +4,8 @@ Thin layer that delegates to manage_file_helpers. Kept separate to meet
 file size limit while preserving full manage_file docstring.
 """
 
+import json
+
 from cortex.core.constants import MCP_TOOL_TIMEOUT_MEDIUM, MemoryBankFile
 from cortex.core.context_logging import MCPContext, log_client
 from cortex.core.mcp_annotations import safe_write_annotations
@@ -14,6 +16,7 @@ from cortex.core.mcp_stability import (
 )
 from cortex.core.usage_context import get_or_resolve_project_root
 from cortex.server import mcp
+from cortex.tools.artifacts.artifact_types import ArtifactType
 from cortex.tools.files.manage_file_helpers import (
     execute_file_operation,
     manage_file_validate_and_run,
@@ -60,6 +63,53 @@ def _resolve_manage_file_defaults(
     return file_name, operation
 
 
+def _build_file_artifact_payload(
+    operation: FileOperation,
+    artifact_type: ArtifactType | None,
+    title: str | None,
+    content: str | None,
+    tags: list[str] | None,
+) -> str | None:
+    if operation != FileOperation.FILE_ARTIFACT:
+        return content
+    return json.dumps(
+        {
+            "artifact_type": artifact_type.value if artifact_type is not None else None,
+            "title": title,
+            "content": content,
+            "tags": tags,
+        }
+    )
+
+
+async def _run_manage_file_operation(
+    ctx: MCPContext | None,
+    file_name: str,
+    operation: FileOperation,
+    payload: str | None,
+    include_metadata: bool,
+    change_description: str | None,
+    sections: list[str] | None,
+    version: int | None,
+) -> str:
+    await log_client(
+        ctx,
+        "info",
+        f"manage_file: starting file_name={file_name!r} operation={operation!r}",
+        logger_name=__name__,
+    )
+    return await manage_file_validate_and_run(
+        ctx,
+        file_name,
+        operation,
+        payload,
+        include_metadata,
+        change_description,
+        sections,
+        version,
+    )
+
+
 @mcp.tool(
     annotations=safe_write_annotations("Manage Memory Bank Files"),
     meta={
@@ -76,6 +126,9 @@ async def manage_file(
     include_metadata: bool = False,
     change_description: str | None = None,
     sections: list[str] | None = None,
+    artifact_type: ArtifactType | None = None,
+    title: str | None = None,
+    tags: list[str] | None = None,
     version: int | None = None,
     ctx: MCPContext | None = None,
 ) -> str:
@@ -254,17 +307,14 @@ async def manage_file(
           atomically
     """
     file_name, operation = _resolve_manage_file_defaults(file_name, operation)
-    await log_client(
-        ctx,
-        "info",
-        f"manage_file: starting file_name={file_name!r} operation={operation!r}",
-        logger_name=__name__,
+    payload = _build_file_artifact_payload(
+        operation, artifact_type, title, content, tags
     )
-    return await manage_file_validate_and_run(
+    return await _run_manage_file_operation(
         ctx,
         file_name,
         operation,
-        content,
+        payload,
         include_metadata,
         change_description,
         sections,
