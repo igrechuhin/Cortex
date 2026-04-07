@@ -10,8 +10,6 @@
 
 ## Future Enhancements
 
-- **Cleanup Function-Length Exclusions in Constants** - PENDING - Remove ad-hoc test-file exclusions from FUNCTION_LENGTH_EXCLUDED_PATHS and replace with explicit checker policy + tests. Plan: .cortex/plans/cleanup-function-length-exclusions-in-constants.md
-
 ## Pending plans (from .cortex/plans)
 
 ### Fixes

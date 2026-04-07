@@ -11,6 +11,12 @@
 - **Memory Bank Operations Log (operations log)** - PARTIAL. Wired best-effort operations-log hooks for `plan(create|complete)` and `run_quality_gate`/`autofix` flows, added focused tests, and kept quality gate green.
 - **Memory Bank Operations Log (operations log)** - PARTIAL. Implemented Step 4 context slice: `cortex://context` now includes `## Recent Operations` from `.cortex/memory-bank/log.md` when available, with coverage for both present and missing-log paths.
 - **Memory Bank Operations Log (operations log)** - COMPLETE. Finalized Step 5 with explicit `manage_file(file_name="log.md", operation="read")` coverage and closed the plan slice.
+- **Cleanup Function-Length Exclusions in Constants** - COMPLETE. Replaced ad-hoc constant path exclusions with checker-level deterministic FILES-mode test-file handling and added regressions.
+- **Memory Bank Lint (/cortex/lint-wiki)** - PARTIAL. Added lint taxonomy foundation with `LintFinding`/`LintCheck` plus `OrphanedPlansCheck` and `MissingPlanFilesCheck`, including unit tests.
+- **Memory Bank Lint (/cortex/lint-wiki)** - PARTIAL. Implemented `StaleActiveContextCheck` with threshold/date matching behavior and added focused unit tests for stale, resolved, and recent entries.
+- **Memory Bank Lint (/cortex/lint-wiki)** - PARTIAL. Implemented wiki-only `CrossRefCheck` for missing `.cortex/wiki` page references and added unit tests covering missing-reference detection plus no-wiki no-op behavior.
+- **Memory Bank Lint (/cortex/lint-wiki)** - PARTIAL. Implemented wiki-only `OrphanedWikiPagesCheck` for pages lacking inbound links from wiki or memory-bank files, with unit tests for orphaned/linked/no-wiki paths.
+- **Memory Bank Lint (/cortex/lint-wiki)** - PARTIAL. Implemented `CodeClaimCheck` with optional `.cortex/lint-config.json` loading (including malformed/missing-config no-op behavior) and added focused unit tests.
 
 ## 2026-04-06
 

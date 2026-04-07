@@ -120,3 +120,11 @@ Each check returns a list of `LintFinding(severity: Literal["error","warning","i
 - Integration test: `.cortex/wiki/` absent → wiki checks return empty findings (no error)
 - Integration test: `.cortex/wiki/` present with an orphaned page → OrphanedWikiPagesCheck fires
 - Test `lint-config.json` loading: valid config, missing config, malformed config
+
+## Partial Progress Log
+
+- 2026-04-07: Implemented lint taxonomy foundation plus `OrphanedPlansCheck` and `MissingPlanFilesCheck` with unit tests — files: src/cortex/tools/lint/**init**.py, src/cortex/tools/lint/memory_bank_lint_checks.py, tests/unit/tools/lint/test_memory_bank_lint_checks.py
+- 2026-04-07: Implemented `StaleActiveContextCheck` with date-threshold/progress resolution logic and unit tests — files: src/cortex/tools/lint/memory_bank_lint_checks.py, src/cortex/tools/lint/**init**.py, tests/unit/tools/lint/test_memory_bank_lint_checks.py
+- 2026-04-07: Implemented `CrossRefCheck` (wiki-only missing-page references) and unit tests for missing refs and missing-wiki no-op behavior — files: src/cortex/tools/lint/memory_bank_lint_checks.py, src/cortex/tools/lint/**init**.py, tests/unit/tools/lint/test_memory_bank_lint_checks.py
+- 2026-04-07: Implemented `OrphanedWikiPagesCheck` (wiki-only inbound-link validation) and unit tests for orphaned page detection, wiki-linked pages, memory-bank-linked pages, and missing-wiki no-op — files: src/cortex/tools/lint/memory_bank_lint_checks.py, src/cortex/tools/lint/**init**.py, tests/unit/tools/lint/test_memory_bank_lint_checks.py
+- 2026-04-07: Implemented `CodeClaimCheck` with `.cortex/lint-config.json` support and no-op handling for missing/malformed config, plus unit tests — files: src/cortex/tools/lint/memory_bank_lint_checks.py, src/cortex/tools/lint/**init**.py, tests/unit/tools/lint/test_memory_bank_lint_checks.py

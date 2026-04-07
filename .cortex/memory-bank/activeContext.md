@@ -18,6 +18,18 @@
 
 - ✅ **Memory Bank Operations Log (operations log)** - COMPLETE (2026-04-07) - Finalized Step 5 with explicit `manage_file(file_name="log.md", operation="read")` test coverage and completed the roadmap plan.
 
+- ✅ **Cleanup Function-Length Exclusions in Constants** - COMPLETE (2026-04-07) - Removed ad-hoc test path exclusions from FUNCTION_LENGTH_EXCLUDED_PATHS and moved test-file handling into deterministic checker policy for FILES mode, with regression tests covering the behavior.
+
+- ✅ **Memory Bank Lint taxonomy slice (PARTIAL)** - COMPLETE (2026-04-07) - Implemented foundational lint check types and first two checks (orphaned plans and missing plan files) with tests under `src/cortex/tools/lint/` and `tests/unit/tools/lint/`.
+
+- ✅ **Memory Bank Lint stale-context check (PARTIAL)** - COMPLETE (2026-04-07) - Added `StaleActiveContextCheck` to flag unresolved stale `activeContext.md` dates against `progress.md`, plus unit coverage for stale/resolved/recent cases.
+
+- ✅ **Memory Bank Lint cross-reference check (PARTIAL)** - COMPLETE (2026-04-07) - Added wiki-only `CrossRefCheck` to flag missing `.cortex/wiki` page targets referenced via wiki/markdown links, with unit coverage for missing refs and absent wiki directories.
+
+- ✅ **Memory Bank Lint orphaned-wiki check (PARTIAL)** - COMPLETE (2026-04-07) - Added wiki-only `OrphanedWikiPagesCheck` to detect `.cortex/wiki` pages without inbound links from wiki or memory-bank markdown files, with focused unit tests.
+
+- ✅ **Memory Bank Lint code-claim check (PARTIAL)** - COMPLETE (2026-04-07) - Added `CodeClaimCheck` with optional `.cortex/lint-config.json` support and malformed-config fallback behavior, with unit coverage for mismatch, missing-config, and malformed-config flows.
+
 ## Completed Work (2026-04-06)
 
 - **Summary (2026-04-06)** - 1 entries archived.
