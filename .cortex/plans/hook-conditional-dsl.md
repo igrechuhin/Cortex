@@ -114,3 +114,4 @@ Coverage target: 95%+.
 
 - 2026-04-06: Add HookCondition models and matcher-aware merge dedup with unit tests — files: src/cortex/setup/hook_models.py, src/cortex/setup/claude_settings.py, tests/unit/test_claude_settings_post_edit_hook.py, tests/unit/setup/test_hook_models.py
 - 2026-04-06: Expose HookCondition from templates and thread condition-aware matcher emission through runtime/settings with tests — files: src/cortex/setup/hook_templates.py, src/cortex/setup/claude_settings.py, src/cortex/setup/post_edit_hook_runtime.py, tests/unit/test_hook_templates.py, tests/unit/test_post_edit_hook_integration.py, tests/unit/test_post_edit_hook_runtime.py
+- 2026-04-06: Serialize patterned hook `conditions` into `.claude/settings.json` and cover with focused tests — files: src/cortex/setup/claude_settings.py, tests/unit/test_claude_settings_post_edit_hook.py, tests/unit/test_post_edit_hook_integration.py

@@ -64,6 +64,33 @@ def _matcher(settings: dict[str, object]) -> str | None:
     return matcher if isinstance(matcher, str) else None
 
 
+def _conditions(settings: dict[str, object]) -> list[object] | None:
+    hooks_value = settings.get("hooks")
+    if not isinstance(hooks_value, dict):
+        return None
+    hooks = cast(dict[str, object], hooks_value)
+    post_tool_use_value = hooks.get("PostToolUse")
+    if not isinstance(post_tool_use_value, list) or not post_tool_use_value:
+        return None
+    post_tool_use = cast(list[object], post_tool_use_value)
+    first_entry = post_tool_use[0]
+    if not isinstance(first_entry, dict):
+        return None
+    entry = cast(dict[str, object], first_entry)
+    hook_list_value = entry.get("hooks")
+    if not isinstance(hook_list_value, list) or not hook_list_value:
+        return None
+    hook_list = cast(list[object], hook_list_value)
+    first_hook = hook_list[0]
+    if not isinstance(first_hook, dict):
+        return None
+    hook = cast(dict[str, object], first_hook)
+    conditions = hook.get("conditions")
+    if not isinstance(conditions, list):
+        return None
+    return cast(list[object], conditions)
+
+
 class TestPythonProjectHookEmission:
     def test_python_project_gets_pytest_hook(self, tmp_path: Path) -> None:
         _ = (tmp_path / "pyproject.toml").write_text(
@@ -84,6 +111,7 @@ class TestPythonProjectHookEmission:
             == "python3 -m pytest tests/ --timeout=30 -x -q 2>&1 | tail -20"
         )
         assert _matcher(settings) == "Edit(**/*.py)"
+        assert _conditions(settings) == [{"tool": "Edit", "pattern": "**/*.py"}]
 
     def test_python_hook_idempotent_on_second_call(self, tmp_path: Path) -> None:
         hook_spec = HookTemplates.get_post_edit_hook("python")

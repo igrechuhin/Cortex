@@ -14,6 +14,8 @@
 
 ### Fixes
 
+- Plan: [MCP Tool for Writing Skills and Rules from Analysis Agents](../plans/skill-rule-write-mcp-tool.md) — Add `write_artifact` MCP tool with allowlisted paths (`src/cortex/resources/skills/`, `.cortex/synapse/rules/`) and content validation (SkillPackManifest schema for skills; frontmatter check for rules); update `analyze.md`, `analyze-compact.md`, and `post-prompt-hook.md` routing prompts to call it; 10 tests, ≥95% coverage. PENDING.
+
 ### Quality & Reliability Improvements
 
 ### Security
@@ -30,7 +32,23 @@ Completed investigations are recorded in [activeContext.md](activeContext.md). P
 
 ### Improvements
 
+#### Knowledge Base & Wiki (High Priority)
+
+- Plan: [Memory Bank Operations Log (log.md)](../plans/memory-bank-operations-log.md) — Append-only `log.md` with parseable `## [date] operation | title` entries; surfaced in `cortex://context` as `## Recent Operations`; wired into plan, commit, and quality-gate flows. PENDING.
+- Plan: [Memory Bank Lint (/cortex/lint-wiki)](../plans/memory-bank-lint.md) — Health-check tool for orphaned plans, missing plan files, stale activeContext entries, orphaned/unlinked wiki pages, and code-claim verification; exposed as `/cortex/lint-wiki` prompt and integrated into `/cortex/analyze`. PENDING.
+- Plan: [File Review Reports into Memory Bank](../plans/file-review-reports-into-memory-bank.md) — File review and analyze artifacts as named pages in `.cortex/memory-bank/reviews/` and `analyses/`; cross-reference from `activeContext.md`; surface 5 most recent in `cortex://context`. PENDING.
+- Plan: [Ingest Tool for Cortex Memory Bank (/cortex/ingest)](../plans/memory-bank-ingest-tool.md) — MCP `ingest` tool + `/cortex/ingest` prompt to integrate external sources into the memory bank; flags contradictions with existing content; updates cross-references; logs to `log.md`. Depends on memory-bank-operations-log, file-review-reports. PENDING.
+
+#### Token Efficiency (High Priority)
+
+- Plan: [Compress Cortex Synapse Prompts and Memory Bank Files](../plans/compress-synapse-memory-files.md) — One-time compression of `.cortex/synapse/prompts/`, `cursor-agents/`, and `memory-bank/` files using a validate-before-overwrite pipeline; targets ≥35% token reduction per file. PENDING.
+- Plan: [Agent-Internal Brevity Rule for Sub-Agent Communication](../plans/agent-internal-brevity-rule.md) — Add `## Agent-Internal Communication` brevity rule to `cortex://rules`; update sub-agent prompts and `pipeline_handoff` field docstrings; user-facing output excluded. PENDING.
+
 ### Features & Enhancements
+
+#### Token Efficiency (Medium Priority)
+
+- Plan: [compress_memory_bank MCP Tool and Token Budget Tracking](../plans/compress-memory-bank-mcp-tool.md) — MCP tool to compress attached-project memory files; token-budget metric in `/cortex/analyze` flags files >500 words as compression candidates. Depends on compress-synapse-memory-files. PENDING.
 
 #### Claude Code Harness Improvements (High Priority)
 
@@ -53,6 +71,11 @@ Completed investigations are recorded in [activeContext.md](activeContext.md). P
 - Plan: [Parallel Task Markers [P]](../plans/parallel-task-markers.md) — Mark independent implementation steps with `[P]`; orchestrator spawns concurrent `implement-code` agents in isolated worktrees. PENDING.
 - Plan: [Schema-Defined Workflow Variants](../plans/schema-defined-workflow-variants.md) — Define custom Cortex pipeline variants in `.cortex/schemas/` (fast-path, compliance, data-science); active schema selected from session config. PENDING.
 - Plan: [Artifact Graph for Plan Dependencies](../plans/artifact-graph-plan-dependencies.md) — Enforce `depends_on` field; compute real-time READY/BLOCKED/DONE graph; unblock plans automatically when dependencies complete. PENDING.
+
+#### Wiki for Attached Projects (High Priority)
+
+- Plan: [Project Wiki for Attached Projects (.cortex/wiki/)](../plans/project-wiki-attached-projects.md) — Full `.cortex/wiki/` knowledge base for attached projects: `init-wiki`, `query`, per-category pages, `index.md`, wired into review/analyze/commit pipelines; works when Cortex is attached to itself. Depends on memory-bank-ingest-tool, file-review-reports, memory-bank-lint. PENDING.
+- Plan: [Auto-Ingest from Git Hooks (Wiki Auto-Update)](../plans/wiki-auto-ingest-git-hooks.md) — Post-commit hook auto-ingests changed doc files matching configurable glob patterns; idempotent (update vs create); registers via `/cortex/init-wiki`. Depends on project-wiki-attached-projects, hook-conditional-dsl. PENDING.
 
 #### Planning & Brainstorming (Low Priority)
 

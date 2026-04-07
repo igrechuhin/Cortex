@@ -4,15 +4,7 @@
 
 ## Completed Work (2026-04-06)
 
-- ✅ **Pre-commit MCP heartbeat follow-up** - COMPLETE (2026-04-06) - Unit tests for pre_commit_tools_run_helpers; markdown_operations_batch refactor; context_logging and progress test updates; logging guidelines; archived mcp-pre-commit-heartbeat-dots plan.
-
-- ✅ **Constitutional Layer for Projects** - COMPLETE (2026-04-06) - Constitution template, manage_file init_constitution, plan compliance scanning (`constitutional_scan`), `constitution_init_flow`, cortex://context immutable_governance, session constitution_notice, unit tests; plan archived under `.cortex/plans/archive/Other/`; Synapse `templates/constitution.md`.
-
-- ✅ **NEEDS CLARIFICATION Markers in Plans (PARTIAL)** - COMPLETE (2026-04-06) - Introduced core ClarificationMarker model and plan_utils.find_clarification_markers(); unit tests cover zero/one/many markers, blocking flag, code fences, empty reason.
-
-- ✅ **NEEDS CLARIFICATION Markers in Plans (PARTIAL)** - COMPLETE (2026-04-06) - Implemented Step 3 in plan creation: `## Clarifications Needed` summary generation/placement and clarification marker count logging; covered by new unit and integration tests.
-
-- ✅ **Conditional Hook Execution DSL (PARTIAL)** - COMPLETE (2026-04-06) - Implemented HookCondition/HookEntry models and matcher-aware merge_post_tool_use_edit_hook dedup by matcher+command; added 5 unit tests; remaining template/caller/conditions serialization steps pending.
+- **Summary (2026-04-06)** - 1 entries archived.
 
 ## Completed Work (2026-04-04)
 

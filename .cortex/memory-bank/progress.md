@@ -8,6 +8,7 @@
 - **NEEDS CLARIFICATION Markers in Plans** - PARTIAL. Completed Step 3: plan create flow now injects/refreshes `## Clarifications Needed` summary and logs marker counts; added unit and integration coverage for summary insertion behavior.
 - **Conditional Hook Execution DSL** - PARTIAL. Added typed hook condition models and matcher-aware post-edit hook dedup logic with unit tests (5 tests) in setup/claude settings paths.
 - **Conditional Hook Execution DSL** - PARTIAL. Exposed HookCondition from hook templates and threaded condition-aware matcher emission through post-edit hook runtime/settings with tests.
+- **Conditional Hook Execution DSL** - PARTIAL. Added forward-compatible hook `conditions` serialization for patterned HookCondition in `.claude/settings.json`; expanded unit/integration coverage and passed quality gate (91.69%).
 
 ## 2026-04-04
 

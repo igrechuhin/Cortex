@@ -180,3 +180,39 @@ def test_merge_allows_same_command_for_different_matchers() -> None:
     hooks = cast(dict[str, object], merged["hooks"])
     post_tool_use = cast(list[object], hooks["PostToolUse"])
     assert len(post_tool_use) == 2
+
+
+def test_merge_writes_conditions_for_patterned_condition() -> None:
+    settings: dict[str, object] = {}
+
+    merged, changed = merge_post_tool_use_edit_hook(
+        settings,
+        command="python3 -m pytest tests/ -q",
+        condition=HookCondition(tool="Edit", pattern="**/*.py"),
+    )
+
+    assert changed is True
+    hooks = cast(dict[str, object], merged["hooks"])
+    post_tool_use = cast(list[object], hooks["PostToolUse"])
+    entry = cast(dict[str, object], post_tool_use[0])
+    hook_list = cast(list[object], entry["hooks"])
+    first_hook = cast(dict[str, object], hook_list[0])
+    assert first_hook["conditions"] == [{"tool": "Edit", "pattern": "**/*.py"}]
+
+
+def test_merge_omits_conditions_for_unpatterned_condition() -> None:
+    settings: dict[str, object] = {}
+
+    merged, changed = merge_post_tool_use_edit_hook(
+        settings,
+        command="swift build 2>&1 | tail -20",
+        condition=HookCondition(tool="Edit"),
+    )
+
+    assert changed is True
+    hooks = cast(dict[str, object], merged["hooks"])
+    post_tool_use = cast(list[object], hooks["PostToolUse"])
+    entry = cast(dict[str, object], post_tool_use[0])
+    hook_list = cast(list[object], entry["hooks"])
+    first_hook = cast(dict[str, object], hook_list[0])
+    assert "conditions" not in first_hook

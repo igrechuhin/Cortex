@@ -24,10 +24,14 @@ def merge_post_tool_use_edit_hook(
         post_tool_use, matcher=matcher_value
     )
     if matcher_entry is None:
-        post_tool_use.append(_new_post_tool_use_entry(command, matcher=matcher_value))
+        post_tool_use.append(
+            _new_post_tool_use_entry(
+                command, matcher=matcher_value, condition=condition
+            )
+        )
         return (settings, True)
 
-    changed = _ensure_command_hook(matcher_entry, command=command)
+    changed = _ensure_command_hook(matcher_entry, command=command, condition=condition)
     if changed:
         post_tool_use[matcher_entry_idx] = matcher_entry
     return (settings, changed)
@@ -96,17 +100,21 @@ def _find_post_tool_use_matcher_entry(
     return (None, -1)
 
 
-def _new_post_tool_use_entry(command: str, *, matcher: str) -> dict[str, object]:
+def _new_post_tool_use_entry(
+    command: str, *, matcher: str, condition: HookCondition | None
+) -> dict[str, object]:
     return {
         "matcher": matcher,
-        "hooks": [{"type": "command", "command": command}],
+        "hooks": [_command_hook_payload(command=command, condition=condition)],
     }
 
 
-def _ensure_command_hook(entry: dict[str, object], *, command: str) -> bool:
+def _ensure_command_hook(
+    entry: dict[str, object], *, command: str, condition: HookCondition | None
+) -> bool:
     hooks_value = entry.get("hooks")
     if hooks_value is None:
-        entry["hooks"] = [{"type": "command", "command": command}]
+        entry["hooks"] = [_command_hook_payload(command=command, condition=condition)]
         return True
     if not isinstance(hooks_value, list):
         raise ClaudeSettingsError(
@@ -116,9 +124,25 @@ def _ensure_command_hook(entry: dict[str, object], *, command: str) -> bool:
     hooks_list = cast(list[object], hooks_value)
     if _hooks_list_contains_command(hooks_list, command=command):
         return False
-    hooks_list.append({"type": "command", "command": command})
+    hooks_list.append(_command_hook_payload(command=command, condition=condition))
     entry["hooks"] = hooks_list
     return True
+
+
+def _command_hook_payload(
+    *, command: str, condition: HookCondition | None
+) -> dict[str, object]:
+    payload: dict[str, object] = {"type": "command", "command": command}
+    if condition is None:
+        return payload
+
+    pattern = condition.pattern.strip() if condition.pattern is not None else None
+    if not pattern:
+        return payload
+
+    # AI: Keep the forward-compatible matcher metadata so Claude can scope hook firing.
+    payload["conditions"] = [{"tool": condition.tool.strip(), "pattern": pattern}]
+    return payload
 
 
 def _hooks_list_contains_command(hooks_list: list[object], *, command: str) -> bool:
