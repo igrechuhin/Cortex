@@ -5,7 +5,10 @@
 ## Completed Work (2026-04-07)
 
 - ✅ **MCP Tool for Writing Skills and Rules from Analysis Agents (PARTIAL)** - COMPLETE (2026-04-07) - Added `write_artifact` tool and supporting tests so analysis agents can write skills/rules through MCP; next slice should update routing prompts and extend test matrix to full plan scope.
+
 - ✅ **MCP Tool for Writing Skills and Rules from Analysis Agents (PARTIAL)** - COMPLETE (2026-04-07) - Updated Synapse analyze and post-prompt routing guidance to use `write_artifact` for skills/rules, aligning prompt instructions with the implemented MCP write path.
+
+- ✅ **MCP Tool for Writing Skills and Rules from Analysis Agents** - COMPLETE (2026-04-07) - Completed write_artifact integration by aligning analyze prompt skill routing with registered tool behavior and updating structural tests; quality gate passes.
 
 ## Completed Work (2026-04-06)
 

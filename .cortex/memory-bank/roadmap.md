@@ -14,8 +14,6 @@
 
 ### Fixes
 
-- Plan: [MCP Tool for Writing Skills and Rules from Analysis Agents](../plans/skill-rule-write-mcp-tool.md) — Add `write_artifact` MCP tool with allowlisted paths (`src/cortex/resources/skills/`, `.cortex/synapse/rules/`) and content validation (SkillPackManifest schema for skills; frontmatter check for rules); update `.cortex/synapse/prompts/analyze.md`, `.cortex/synapse/cursor-agents/analyze-compact.md`, and `.cortex/synapse/prompts/post-prompt-hook.md` routing prompts to call it; 10 tests, ≥95% coverage. PENDING.
-
 ### Quality & Reliability Improvements
 
 ### Security

@@ -141,8 +141,8 @@ class TestAnalyzePromptRouter:
     def test_router_skill_path_hint(self, analyze_content: str) -> None:
         """Skill Router references the skills resource directory."""
         assert (
-            ".cortex/resources/skills" in analyze_content
-        ), "analyze.md Step 9a should reference .cortex/resources/skills/"
+            "src/cortex/resources/skills" in analyze_content
+        ), "analyze.md Step 9a should reference src/cortex/resources/skills/"
 
     def test_router_rule_path_hint(self, analyze_content: str) -> None:
         """Rule Router references the synapse rules directory."""
