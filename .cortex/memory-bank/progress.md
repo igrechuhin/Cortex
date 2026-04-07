@@ -3,6 +3,7 @@
 ## 2026-04-07
 
 - **MCP Tool for Writing Skills and Rules from Analysis Agents** - PARTIAL. Implemented and registered `write_artifact` with allowlisted path resolution, validation, atomic writes, and initial unit-test coverage; prompt routing updates remain.
+- **MCP Tool for Writing Skills and Rules from Analysis Agents** - PARTIAL. Updated Synapse analyze/post-prompt routing instructions to call `write_artifact` for skill/rule artifacts (instead of `manage_file`), keeping unrelated memory-bank reads unchanged.
 
 ## 2026-04-06
 

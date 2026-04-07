@@ -286,3 +286,4 @@ No changes to `manage_file` or `plan()` — they remain unchanged.
 ## Partial Progress Log
 
 - 2026-04-07: Implemented and registered `write_artifact` MCP tool with allowlisted skill/rule paths, validation, atomic writes, and focused unit tests — files: src/cortex/tools/artifacts/write_artifact.py, src/cortex/tools/artifacts/**init**.py, src/cortex/tools/**init**.py, src/cortex/tools/structure/categories.py, tests/tools/test_write_artifact.py, docs/_generated/tool-inventory.json, README.md
+- 2026-04-07: Updated skill/rule routing instructions to call `write_artifact` across Synapse analyze and hook prompts (kept unrelated `manage_file` usage intact) — files: .cortex/synapse/prompts/analyze.md, .cortex/synapse/cursor-agents/analyze-compact.md, .cortex/synapse/prompts/post-prompt-hook.md
