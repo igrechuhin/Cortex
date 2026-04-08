@@ -3,7 +3,7 @@
 from datetime import datetime
 from pathlib import Path
 
-from cortex.core.constants import MemoryBankFile
+from cortex.core.constants import OPERATIONS_LOG_MAX_ENTRIES, MemoryBankFile
 from cortex.tools.plans.operations_log import (
     OperationsLogType,
     append_operations_log_entry,
@@ -80,3 +80,23 @@ def test_append_operations_log_entry_appends_without_overwrite(tmp_path: Path) -
     assert second_line == 5
     assert "## [2026-04-07T10:00] plan | Create plan\n\n" in contents
     assert "## [2026-04-07T10:05] commit | Finalize changes\n" in contents
+
+
+def test_append_operations_log_entry_trims_old_entries(tmp_path: Path) -> None:
+    """Appender keeps only most recent OPERATIONS_LOG_MAX_ENTRIES entries."""
+    log_path = tmp_path / "log.md"
+    total_entries = OPERATIONS_LOG_MAX_ENTRIES + 2
+    for idx in range(total_entries):
+        _ = append_operations_log_entry(
+            log_path=log_path,
+            operation_type=OperationsLogType.LINT,
+            title=f"Entry {idx}",
+            timestamp=datetime(2026, 4, 7, 10, idx % 60),
+        )
+
+    contents = log_path.read_text(encoding="utf-8")
+    assert contents.startswith("# Cortex Operations Log\n\n")
+    assert contents.count("\n## [") == OPERATIONS_LOG_MAX_ENTRIES
+    assert " | Entry 0\n" not in contents
+    assert " | Entry 1\n" not in contents
+    assert f"Entry {total_entries - 1}" in contents

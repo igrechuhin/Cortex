@@ -34,7 +34,6 @@ Completed investigations are recorded in [activeContext.md](activeContext.md). P
 
 #### Token Efficiency (High Priority)
 
-- Plan: [Compress Cortex Synapse Prompts and Memory Bank Files](../plans/compress-synapse-memory-files.md) — One-time compression of `.cortex/synapse/prompts/`, `cursor-agents/`, and `memory-bank/` files using a validate-before-overwrite pipeline; targets ≥35% token reduction per file. PENDING.
 - Plan: [Agent-Internal Brevity Rule for Sub-Agent Communication](../plans/agent-internal-brevity-rule.md) — Add `## Agent-Internal Communication` brevity rule to `cortex://rules`; update sub-agent prompts and `pipeline_handoff` field docstrings; user-facing output excluded. PENDING.
 
 ### Features & Enhancements

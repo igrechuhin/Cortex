@@ -9,6 +9,7 @@ from pytest import MonkeyPatch
 from cortex.tools.compress.batch import (
     compress_cortex_internal_files,
     compress_directory,
+    run_and_verify_cortex_compression,
     summarize_compression_results,
     verify_compression_success_criteria,
 )
@@ -16,8 +17,12 @@ from cortex.tools.compress.compress import CompressResult
 
 
 def _create_cortex_target_tree(tmp_path: Path) -> None:
-    _ = (tmp_path / ".cortex" / "synapse" / "prompts").mkdir(parents=True)
-    _ = (tmp_path / ".cortex" / "synapse" / "cursor-agents").mkdir(parents=True)
+    prompts = tmp_path / ".cortex" / "synapse" / "prompts"
+    agents = tmp_path / ".cortex" / "synapse" / "cursor-agents"
+    _ = prompts.mkdir(parents=True)
+    _ = agents.mkdir(parents=True)
+    _ = (prompts / "plan.md").write_text("# Prompt\n", encoding="utf-8")
+    _ = (agents / "implement-code.md").write_text("# Agent\n", encoding="utf-8")
     memory_bank = tmp_path / ".cortex" / "memory-bank"
     _ = memory_bank.mkdir(parents=True)
     _ = (memory_bank / "activeContext.md").write_text("# Active\n", encoding="utf-8")
@@ -64,6 +69,7 @@ def test_compress_directory_skips_backup_files(
     # Assert
     assert len(results) == 1
     assert called_paths == [normal]
+    assert results[0].path == normal
 
 
 def test_compress_directory_collects_results_for_all_selected_files(
@@ -92,6 +98,8 @@ def test_compress_directory_collects_results_for_all_selected_files(
     assert len(results) == 2
     assert results[0].success is True
     assert results[1].success is False
+    assert results[0].path == first
+    assert results[1].path == second
     assert results[1].skipped_reason == "unsupported_file_type:code"
 
 
@@ -152,8 +160,10 @@ def test_compress_directory_continues_after_exception(
     # Assert
     assert len(results) == 2
     assert results[0].success is False
+    assert results[0].path == first
     assert results[0].errors == ["exception:RuntimeError:transient claude failure"]
     assert results[1].success is True
+    assert results[1].path == second
     assert any("compress failure" in message for message in error_logs)
     assert any("compress success" in message for message in info_logs)
 
@@ -164,22 +174,12 @@ def test_compress_cortex_internal_files_targets_expected_locations(
     # Arrange
     _create_cortex_target_tree(tmp_path)
 
-    directory_calls: list[tuple[Path, str, bool]] = []
     file_calls: list[tuple[Path, bool]] = []
-
-    def fake_compress_directory(
-        root: Path, *, glob: str = "**/*.md", dry_run: bool = False
-    ) -> list[CompressResult]:
-        directory_calls.append((root, glob, dry_run))
-        return [CompressResult(success=True, token_ratio=0.5)]
 
     def fake_compress_file(path: Path, *, dry_run: bool = False) -> CompressResult:
         file_calls.append((path, dry_run))
-        return CompressResult(success=True, token_ratio=0.6)
+        return CompressResult(success=True, path=path, token_ratio=0.6)
 
-    monkeypatch.setattr(
-        "cortex.tools.compress.batch.compress_directory", fake_compress_directory
-    )
     monkeypatch.setattr("cortex.tools.compress.batch.compress_file", fake_compress_file)
 
     # Act
@@ -187,14 +187,18 @@ def test_compress_cortex_internal_files_targets_expected_locations(
 
     # Assert
     assert len(results) == 4
-    assert directory_calls == [
-        (tmp_path / ".cortex" / "synapse" / "prompts", "**/*.md", True),
-        (tmp_path / ".cortex" / "synapse" / "cursor-agents", "**/*.md", True),
-    ]
+    assert (
+        sum(
+            result.skipped_reason == "protected_target:prompt_integrity_policy"
+            for result in results
+        )
+        == 2
+    )
     assert file_calls == [
         (tmp_path / ".cortex" / "memory-bank" / "activeContext.md", True),
         (tmp_path / ".cortex" / "memory-bank" / "progress.md", True),
     ]
+    assert all(result.path is not None for result in results)
 
 
 def test_compress_cortex_internal_files_skips_missing_paths(
@@ -213,8 +217,38 @@ def test_compress_cortex_internal_files_skips_missing_paths(
     results = compress_cortex_internal_files(tmp_path)
 
     # Assert
-    assert results == []
+    assert len(results) == 4
+    assert all(result.success is False for result in results)
+    assert all(result.skipped_reason is not None for result in results)
+    assert all(
+        (reason is not None and reason.startswith("missing_target:"))
+        for reason in (result.skipped_reason for result in results)
+    )
+    assert {result.path for result in results} == {
+        tmp_path / ".cortex" / "synapse" / "prompts",
+        tmp_path / ".cortex" / "synapse" / "cursor-agents",
+        tmp_path / ".cortex" / "memory-bank" / "activeContext.md",
+        tmp_path / ".cortex" / "memory-bank" / "progress.md",
+    }
     assert called == []
+
+
+def test_summarize_compression_results_counts_missing_targets_as_skipped() -> None:
+    # Arrange
+    results = [
+        CompressResult(success=False, skipped_reason="missing_target:prompts_root"),
+        CompressResult(success=False, skipped_reason="missing_target:progress.md"),
+        CompressResult(success=True, token_ratio=0.6),
+    ]
+
+    # Act
+    summary = summarize_compression_results(results, target_reduction=0.35)
+
+    # Assert
+    assert summary.total_files == 3
+    assert summary.successful_files == 1
+    assert summary.skipped_files == 2
+    assert summary.failed_files == 0
 
 
 def test_summarize_compression_results_computes_counts_and_target_hits() -> None:
@@ -365,3 +399,141 @@ def test_verify_compression_success_criteria_validates_configuration() -> None:
         assert "allowed_failed_files" in str(error)
     else:  # pragma: no cover - defensive assertion
         raise AssertionError("Expected ValueError for negative allowed_failed_files")
+
+
+def test_run_and_verify_cortex_compression_returns_integrated_report(
+    tmp_path: Path, monkeypatch: MonkeyPatch
+) -> None:
+    # Arrange
+    mocked_results = [
+        CompressResult(success=True, token_ratio=0.60),
+        CompressResult(success=True, token_ratio=0.62),
+        CompressResult(success=True, token_ratio=0.64),
+        CompressResult(success=True, token_ratio=0.80),
+        CompressResult(success=True, token_ratio=0.90),
+    ]
+
+    def fake_compress_internal(
+        repo_root: Path, *, dry_run: bool = True
+    ) -> list[CompressResult]:
+        assert repo_root == tmp_path
+        assert dry_run is True
+        return mocked_results
+
+    monkeypatch.setattr(
+        "cortex.tools.compress.batch.compress_cortex_internal_files",
+        fake_compress_internal,
+    )
+
+    # Act
+    report = run_and_verify_cortex_compression(tmp_path, dry_run=True)
+
+    # Assert
+    assert report.results == mocked_results
+    assert report.summary.total_files == 5
+    assert report.summary.files_meeting_target == 3
+    assert report.verification.passed is True
+    assert report.verification.errors == []
+
+
+def test_run_and_verify_cortex_compression_applies_custom_thresholds(
+    tmp_path: Path, monkeypatch: MonkeyPatch
+) -> None:
+    mocked_results = [
+        CompressResult(success=True, token_ratio=0.60),
+        CompressResult(success=True, token_ratio=0.70),
+        CompressResult(success=True, token_ratio=0.80),
+        CompressResult(success=False, errors=["runtime failure"]),
+    ]
+
+    def fake_compress_internal(
+        repo_root: Path, *, dry_run: bool = True
+    ) -> list[CompressResult]:
+        return mocked_results
+
+    monkeypatch.setattr(
+        "cortex.tools.compress.batch.compress_cortex_internal_files",
+        fake_compress_internal,
+    )
+    report = run_and_verify_cortex_compression(
+        tmp_path,
+        dry_run=False,
+        target_reduction=0.20,
+        required_sample_size=3,
+        minimum_target_hits=2,
+        allowed_failed_files=1,
+    )
+    assert report.summary.target_reduction == 0.20
+    assert report.summary.total_files == 4
+    assert report.summary.failed_files == 1
+    assert report.summary.files_meeting_target == 3
+    assert report.verification.passed is True
+
+
+def test_run_and_verify_cortex_compression_relaxes_target_hits_in_protected_mode(
+    tmp_path: Path, monkeypatch: MonkeyPatch
+) -> None:
+    mocked_results = [
+        CompressResult(
+            success=False,
+            skipped_reason="protected_target:prompt_integrity_policy",
+        ),
+        CompressResult(
+            success=False, skipped_reason="protected_target:prompt_integrity_policy"
+        ),
+        CompressResult(success=True, token_ratio=0.95),
+        CompressResult(success=True, token_ratio=0.92),
+    ]
+
+    def fake_compress_internal(
+        repo_root: Path, *, dry_run: bool = True
+    ) -> list[CompressResult]:
+        return mocked_results
+
+    monkeypatch.setattr(
+        "cortex.tools.compress.batch.compress_cortex_internal_files",
+        fake_compress_internal,
+    )
+
+    report = run_and_verify_cortex_compression(tmp_path, dry_run=False)
+
+    assert report.verification.required_sample_size == 2
+    assert report.verification.minimum_target_hits == 0
+    assert report.verification.passed is True
+
+
+def test_run_and_verify_cortex_compression_fails_when_zero_success_in_protected_mode(
+    tmp_path: Path, monkeypatch: MonkeyPatch
+) -> None:
+    mocked_results = [
+        CompressResult(
+            success=False,
+            skipped_reason="protected_target:prompt_integrity_policy",
+        ),
+        CompressResult(
+            success=False, skipped_reason="protected_target:prompt_integrity_policy"
+        ),
+        CompressResult(
+            success=False,
+            errors=["Compressed token count must be lower than original."],
+        ),
+    ]
+
+    def fake_compress_internal(
+        repo_root: Path, *, dry_run: bool = True
+    ) -> list[CompressResult]:
+        return mocked_results
+
+    monkeypatch.setattr(
+        "cortex.tools.compress.batch.compress_cortex_internal_files",
+        fake_compress_internal,
+    )
+
+    report = run_and_verify_cortex_compression(tmp_path, dry_run=False)
+
+    assert report.verification.passed is False
+    assert report.verification.successful_files == 0
+    assert any(
+        e.startswith("insufficient_successful_files")
+        for e in report.verification.errors
+    )

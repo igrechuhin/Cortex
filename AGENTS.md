@@ -180,7 +180,7 @@ All phases run inline. Use zero-arg tools — do NOT use legacy pre-commit tools
 - When fixing private/public access issues, prefer making the original symbol public (rename `_name` → `name` and update call sites) instead of adding public alias shims like `name = _name`. When a handoff or validation key is shown in prompts or other agent-visible text, prefer renaming away from a leading underscore (and updating allowlists) rather than exposing `_prefixed` identifiers in user-facing surfaces.
 - Prompts must be language agnostic; avoid language- or tool-specific identifiers in prompt instructions (e.g. specific typechecker rule names).
 - Treat overloaded terms (e.g. "clean") as prompt-specific; do not assume commit-pipeline git-clean semantics when a prompt defines issue-clean or workflow-clean semantics.
-- When refactoring, briefly explain why the new approach is better, especially when the change is non-obvious.
+- When refactoring or bulk-simplifying prompts and docs, briefly explain why the change helps when it is non-obvious; re-check that sentence meaning and markdown markers (including **bold** labels and inline code) remain correct after edits.
 - When consolidating or adding tools, keep names purpose-revealing and follow `docs/guides/tool-description-altitude-rubric.md` (target score ≥4).
 - Prefer scan-friendly emoji status markers (✅/⚠️/❌) in prompts and summaries for success/warn/error; keep final summaries concise (typically at most four sentences), avoid heavy code blocks there, and use headings and bolded bullet labels per the markdown formatting guide. For heartbeat or liveness output, avoid opaque N/K-style counters when they convey no clear meaning; prefer a simple cumulative indicator (e.g. one dot per ping).
 - When a roadmap item is large, always make concrete partial progress in the current session (smallest meaningful subtask plus tests/quality) and update plans/status as PARTIAL instead of stopping with no changes.
@@ -188,7 +188,8 @@ All phases run inline. Use zero-arg tools — do NOT use legacy pre-commit tools
 
 ## Learned Workspace Facts
 
-- Do not edit files under `.venv` or other third-party package directories; apply coding standards (e.g. enums, types) only to project source code.
+- Do not edit files under `.venv` or other third-party package directories; apply coding standards (e.g. enums, types) only to project source code. Prefer `python3` over `python` in shell commands when the `python` shim may point to a legacy interpreter.
+- Append-only logs under `.cortex/memory-bank/` (e.g. `log.md`) should stay bounded; avoid unbounded append-only growth (rotation, caps, or archival as appropriate).
 - Respect the project's defined structure; do not introduce new top-level directories or concepts (e.g., `scripts`) that deviate from it; avoid workflow or automation artifacts that pollute the project layout.
 - When tests need cursor/agent paths and project_root is the repo root, use a session-scoped temp directory instead of creating `_cursor` in the workspace.
 - Archived plans must live under `.cortex/plans/archive` (not `.cortex/archived/plans`) so completed plans stay in the canonical archive tree. `.cursor/synapse` is a symlink to `.cortex/synapse`; Synapse prompts edited via either path refer to the same submodule files.
@@ -196,7 +197,6 @@ All phases run inline. Use zero-arg tools — do NOT use legacy pre-commit tools
 - Synapse Python standards forbid `from typing import TYPE_CHECKING` and `if TYPE_CHECKING:` conditional imports; use normal imports (including under `tests/`) instead of that pattern.
 - Phase A `run_quality_gate()` can reuse cached fingerprints so typecheck output may not match the current working tree; if pyright errors look stale versus local `pyright`, write `{"force_fresh": true}` via `pipeline_handoff(write, checks, ...)` then call `run_quality_gate()` once before treating results as ground truth.
 - The docs gate `roadmap_progress_consistency` check fails when `progress.md` contains any `PARTIAL` line but `roadmap.md` has no `PENDING` backlog bullet; keep at least one real `PENDING` item while unfinished work remains in progress, or resolve the PARTIAL entries. Roadmap backlog lines often use typographic dashes (em/en) before `PENDING`; matchers and validators must accept those characters, not only ASCII hyphens.
-- In this repo environment, prefer `python3` over `python` in shell commands (the `python` shim may point to a legacy interpreter).
 - Keep README and similar entrypoint docs aligned with current Cortex commands and resources (for example `/cortex/do`, `/cortex/commit`, `cortex://context`); avoid obsolete workflow shorthand such as "plan → implement → commit" when it no longer matches shipped names.
 - When resolving Cortex, Synapse, or repo-root paths in Python tools, use the shared path resolver (`cortex.core.path_resolver` and related helpers) instead of hardcoded filesystem strings.
 - After changing validation or other Python modules the Cortex MCP server loads from the repo, restart the MCP server so `run_docs_gate` and in-process checks match the working tree; a long-running process can otherwise disagree with local `make check` results.

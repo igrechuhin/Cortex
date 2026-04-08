@@ -276,6 +276,9 @@ INSIGHT_TOKEN_SAVINGS_PER_KB_OVER_AVG = 100  # Estimated savings per KB over rec
 MIN_ACCESS_COUNT_FOR_PATTERN = 3  # Minimum accesses to establish pattern
 CO_ACCESS_TIME_WINDOW_SECONDS = 300  # Time window for co-access detection (5 min)
 ACCESS_LOG_MAX_ENTRIES = 10_000  # Maximum access log entries before cleanup
+OPERATIONS_LOG_MAX_ENTRIES = (
+    1_000  # Keep most recent operations in memory-bank/log.md; trim older entries
+)
 
 # =============================================================================
 # Refactoring Thresholds

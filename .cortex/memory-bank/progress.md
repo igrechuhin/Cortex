@@ -21,6 +21,8 @@
 - **Compress Cortex Synapse Prompts and Memory Bank Files** - PARTIAL. Added structured verification for compression success criteria (sample-size and >=35% target-hit thresholds), exported the API, and added regression tests in compress batch module.
 - **Compress Cortex Synapse Prompts and Memory Bank Files** - PARTIAL. Hardened Step 6 verification so success criteria fail when runtime compression failures exceed allowed budget; added failed-files accounting and regression tests; quality gate passed.
 - **Compress pipeline work** - COMPLETE. Finalized detect/batch enhancements with targeted unit tests and passed quality/docs checks ahead of commit pipeline execution.
+- **Compression tooling semantics repair** - COMPLETE (2026-04-08). Replaced aggressive fallback simplifier with phrase-level filler removal only (no function-word stripping or line truncation); removed protected-mode verification shortcut that could pass with zero successful compressions; updated unit tests; reset memory-bank prose to last committed canonical revision after bad `.original` backups.
+- **Compress Cortex Synapse Prompts and Memory Bank Files** - COMPLETE (2026-04-08). Plan archived; compression stack hardened with semantics-safe CLI fallback and Step 6 verification that cannot pass with zero successful compressions.
 
 ## 2026-04-07
 
