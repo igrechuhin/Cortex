@@ -12,6 +12,8 @@
 - **Compress Cortex Synapse Prompts and Memory Bank Files** - PARTIAL. Implemented Step 5 batch directory runner with backup-file filtering and aggregation tests.
 - **Compress Cortex Synapse Prompts and Memory Bank Files** - PARTIAL. Implemented prompt-builder rules and added prompt tests for compression/fix prompts.
 - **Compress Cortex Synapse Prompts and Memory Bank Files** - PARTIAL. Added a safe Step 6 batch entrypoint (`compress_cortex_internal_files`) targeting Cortex internal directories with dry-run default behavior, exported it, and added batch coverage for expected targeting and missing-path skips.
+- **Compress Cortex Synapse Prompts and Memory Bank Files** - PARTIAL. Added per-file batch outcome logging in `compress_directory` (success/skip/failure with path and token ratio) and covered all log branches with a focused unit test.
+- **Compress Cortex Synapse Prompts and Memory Bank Files** - PARTIAL. Added Step 7 export-contract coverage with a package-level unit test to enforce required `cortex.tools.compress` public symbols (`compress_file`, `compress_directory`, `ValidationResult`, `CompressResult`, `detect_file_type`).
 - **Compress pipeline work** - PARTIAL. Added `src/cortex/tools/compress/*` and unit tests under `tests/unit/`; Phase A quality gate passed and commit pipeline proceeded to docs/validation phases.
 
 ## 2026-04-07

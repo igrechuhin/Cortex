@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from pathlib import Path
 
 from .compress import CompressResult, compress_file
@@ -9,10 +10,33 @@ from .compress import CompressResult, compress_file
 _SYNAPSE_PROMPTS_GLOB = "**/*.md"
 _CURSOR_AGENTS_GLOB = "**/*.md"
 _MEMORY_BANK_FILES: tuple[str, ...] = ("activeContext.md", "progress.md")
+logger = logging.getLogger(__name__)
 
 
 def _is_backup_file(path: Path) -> bool:
     return ".original." in path.name
+
+
+def _log_outcome(path: Path, result: CompressResult) -> None:
+    ratio = f"{result.token_ratio:.3f}" if result.token_ratio is not None else "n/a"
+    if result.skipped_reason is not None:
+        logger.info(
+            "compress skip path=%s token_ratio=%s reason=%s",
+            path,
+            ratio,
+            result.skipped_reason,
+        )
+        return
+    if result.success:
+        logger.info("compress success path=%s token_ratio=%s", path, ratio)
+        return
+    error_detail = ", ".join(result.errors) if result.errors else "unknown"
+    logger.error(
+        "compress failure path=%s token_ratio=%s errors=%s",
+        path,
+        ratio,
+        error_detail,
+    )
 
 
 def compress_directory(
@@ -24,7 +48,9 @@ def compress_directory(
     for path in sorted(root.glob(glob)):
         if not path.is_file() or _is_backup_file(path):
             continue
-        results.append(compress_file(path, dry_run=dry_run))
+        result = compress_file(path, dry_run=dry_run)
+        _log_outcome(path, result)
+        results.append(result)
     return results
 
 

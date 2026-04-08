@@ -227,3 +227,5 @@ Use `tmp_path` fixtures. Mock `subprocess.run` for pipeline tests to avoid real
 - 2026-04-08: Implemented Step 5 batch runner and tests — files: src/cortex/tools/compress/batch.py, src/cortex/tools/compress/**init**.py, tests/unit/test_compress_batch.py
 - 2026-04-08: Implemented Step 4 prompt behavior hardening and prompt tests — files: src/cortex/tools/compress/prompts.py, tests/unit/test_compress_prompts.py
 - 2026-04-08: Implemented safe Step 6 targeting helper and tests — files: src/cortex/tools/compress/batch.py, src/cortex/tools/compress/**init**.py, tests/unit/test_compress_batch.py
+- 2026-04-08: Implemented Step 5 per-file outcome logging and tests — files: src/cortex/tools/compress/batch.py, tests/unit/test_compress_batch.py
+- 2026-04-08: Implemented Step 7 export contract verification test — files: tests/unit/test_compress_exports.py

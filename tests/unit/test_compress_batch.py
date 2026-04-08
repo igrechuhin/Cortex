@@ -23,6 +23,23 @@ def _create_cortex_target_tree(tmp_path: Path) -> None:
     _ = (memory_bank / "roadmap.md").write_text("# Roadmap\n", encoding="utf-8")
 
 
+def _patch_batch_logger(
+    monkeypatch: MonkeyPatch,
+) -> tuple[list[str], list[str]]:
+    info_logs: list[str] = []
+    error_logs: list[str] = []
+
+    def fake_info(message: str, *args: object) -> None:
+        info_logs.append(message % args)
+
+    def fake_error(message: str, *args: object) -> None:
+        error_logs.append(message % args)
+
+    monkeypatch.setattr("cortex.tools.compress.batch.logger.info", fake_info)
+    monkeypatch.setattr("cortex.tools.compress.batch.logger.error", fake_error)
+    return info_logs, error_logs
+
+
 def test_compress_directory_skips_backup_files(
     tmp_path: Path, monkeypatch: MonkeyPatch
 ) -> None:
@@ -74,6 +91,40 @@ def test_compress_directory_collects_results_for_all_selected_files(
     assert results[0].success is True
     assert results[1].success is False
     assert results[1].skipped_reason == "unsupported_file_type:code"
+
+
+def test_compress_directory_logs_per_file_outcome(
+    tmp_path: Path, monkeypatch: MonkeyPatch
+) -> None:
+    # Arrange
+    success_file = tmp_path / "success.md"
+    skipped_file = tmp_path / "skipped.md"
+    failure_file = tmp_path / "failure.md"
+    _ = success_file.write_text("# One\n", encoding="utf-8")
+    _ = skipped_file.write_text("# Two\n", encoding="utf-8")
+    _ = failure_file.write_text("# Three\n", encoding="utf-8")
+
+    def fake_compress_file(path: Path, *, dry_run: bool = False) -> CompressResult:
+        if path.name == "success.md":
+            return CompressResult(success=True, token_ratio=0.5)
+        if path.name == "skipped.md":
+            return CompressResult(
+                success=False,
+                token_ratio=0.95,
+                skipped_reason="unsupported_file_type:code",
+            )
+        return CompressResult(success=False, token_ratio=1.0, errors=["missing URL"])
+
+    monkeypatch.setattr("cortex.tools.compress.batch.compress_file", fake_compress_file)
+    info_logs, error_logs = _patch_batch_logger(monkeypatch)
+
+    # Act
+    _ = compress_directory(tmp_path, dry_run=True)
+
+    # Assert
+    assert any("compress success" in message for message in info_logs)
+    assert any("compress skip" in message for message in info_logs)
+    assert any("compress failure" in message for message in error_logs)
 
 
 def test_compress_cortex_internal_files_targets_expected_locations(
