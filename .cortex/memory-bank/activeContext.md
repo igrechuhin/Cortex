@@ -12,6 +12,12 @@
 
 - ✅ **Ingest Tool for Cortex Memory Bank (/cortex/ingest)** - COMPLETE (2026-04-08) - Completed ingest pipeline end-to-end: ingest tool, ingest prompt workflow, recent-ingested-sources context exposure, and memory-bank lint source/summary consistency checks are implemented and validated.
 
+- ✅ **Compress Cortex Synapse Prompts and Memory Bank Files (PARTIAL)** - COMPLETE (2026-04-08) - Implemented Step 2 file-type classifier (`detect_file_type` with extension map + fallback heuristic), exported symbols via compress package init, and added unit coverage with a passing quality gate.
+
+- ✅ **Compress Cortex Synapse Prompts and Memory Bank Files (PARTIAL)** - COMPLETE (2026-04-08) - Added `compress_cortex_internal_files` safe Step 6 entrypoint for Cortex internal targets (prompts, cursor-agents, activeContext/progress), defaulting to dry-run; exported symbol and added focused unit tests.
+
+- ✅ **Compress tools and tests prepared** - COMPLETE (2026-04-08) - Added compress tool modules and unit tests, then executed commit pipeline preflight and Phase A checks successfully.
+
 ## Completed Work (2026-04-07)
 
 - **Summary (2026-04-07)** - 1 entries archived.

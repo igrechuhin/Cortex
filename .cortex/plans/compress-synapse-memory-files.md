@@ -218,3 +218,12 @@ Target: 95% coverage of `src/cortex/tools/compress/`.
 
 Use `tmp_path` fixtures. Mock `subprocess.run` for pipeline tests to avoid real
 `claude --print` invocations in CI.
+
+## Partial Progress Log
+
+- 2026-04-08: Implemented Step 1 structural validator and tests — files: src/cortex/tools/compress/**init**.py, src/cortex/tools/compress/validate.py, tests/unit/test_compress_validate.py
+- 2026-04-08: Implemented Step 2 file-type classifier and tests — files: src/cortex/tools/compress/detect.py, src/cortex/tools/compress/**init**.py, tests/unit/test_compress_detect.py
+- 2026-04-08: Implemented Step 3 compress pipeline and tests — files: src/cortex/tools/compress/compress.py, src/cortex/tools/compress/prompts.py, src/cortex/tools/compress/**init**.py, tests/unit/test_compress_pipeline.py
+- 2026-04-08: Implemented Step 5 batch runner and tests — files: src/cortex/tools/compress/batch.py, src/cortex/tools/compress/**init**.py, tests/unit/test_compress_batch.py
+- 2026-04-08: Implemented Step 4 prompt behavior hardening and prompt tests — files: src/cortex/tools/compress/prompts.py, tests/unit/test_compress_prompts.py
+- 2026-04-08: Implemented safe Step 6 targeting helper and tests — files: src/cortex/tools/compress/batch.py, src/cortex/tools/compress/**init**.py, tests/unit/test_compress_batch.py

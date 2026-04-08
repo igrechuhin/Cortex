@@ -6,6 +6,13 @@
 - **Ingest Tool for Cortex Memory Bank (/cortex/ingest)** - PARTIAL. Implemented Step 4 by surfacing the 5 most recent ingested sources in `cortex://context` with title extraction/fallback plus tests; full roadmap step remains in progress.
 - **Ingest Tool for Cortex Memory Bank (/cortex/ingest)** - PARTIAL. Implemented Step 5 memory-bank lint checks for ingest source/summary consistency, including orphaned source detection and missing-source reference warnings with unit tests.
 - **Ingest Tool for Cortex Memory Bank (/cortex/ingest)** - COMPLETE. Implemented ingest tool + prompt workflow, context surfacing for recent ingests, and lint consistency checks with tests.
+- **Compress Cortex Synapse Prompts and Memory Bank Files** - PARTIAL. Implemented Step 1 structural validator (`ValidationResult` + `validate_compressed`) with invariant checks and added unit tests; quality gate passed for this slice.
+- **Compress Cortex Synapse Prompts and Memory Bank Files** - PARTIAL. Implemented Step 2 file-type detection (`detect_file_type` + `FileType`) with extension mapping and fallback code-ratio heuristic; added focused unit tests and passed quality gate.
+- **Compress Cortex Synapse Prompts and Memory Bank Files** - PARTIAL. Implemented Step 3 `compress_file` pipeline (`CompressResult`, backup/restore, validation retry flow, dry-run behavior) plus targeted unit tests; quality gate passed.
+- **Compress Cortex Synapse Prompts and Memory Bank Files** - PARTIAL. Implemented Step 5 batch directory runner with backup-file filtering and aggregation tests.
+- **Compress Cortex Synapse Prompts and Memory Bank Files** - PARTIAL. Implemented prompt-builder rules and added prompt tests for compression/fix prompts.
+- **Compress Cortex Synapse Prompts and Memory Bank Files** - PARTIAL. Added a safe Step 6 batch entrypoint (`compress_cortex_internal_files`) targeting Cortex internal directories with dry-run default behavior, exported it, and added batch coverage for expected targeting and missing-path skips.
+- **Compress pipeline work** - PARTIAL. Added `src/cortex/tools/compress/*` and unit tests under `tests/unit/`; Phase A quality gate passed and commit pipeline proceeded to docs/validation phases.
 
 ## 2026-04-07
 
