@@ -28,7 +28,9 @@ from pydantic import BaseModel, ConfigDict
 # MAX_REGISTERED_TOOLS is enforced by governance tests. Hard cap: to raise it,
 # create a plan documenting why the new tool cannot be consolidated into an
 # existing one, then bump this constant in the same change as the registration.
-MAX_REGISTERED_TOOLS = 11
+# compress_memory_bank: first-class memory compression MCP tool (see
+# .cortex/plans/compress-memory-bank-mcp-tool.md); not merged into manage_file.
+MAX_REGISTERED_TOOLS = 12
 
 # Long-term target from consolidation plans (not enforced in tests).
 TARGET_REGISTERED_TOOLS = 10
@@ -129,6 +131,11 @@ TOOL_CATEGORIES: tuple[ToolCategoryEntry, ...] = (
         name="write_artifact",
         category=ToolCategory.DEFERRED_MEDIUM,
         rationale="Allowlisted writes for skill JSON and Synapse rule artifacts",
+    ),
+    ToolCategoryEntry(
+        name="compress_memory_bank",
+        category=ToolCategory.DEFERRED_MEDIUM,
+        rationale="Compress project CLAUDE.md and memory-bank markdown to reduce session tokens",
     ),
 )
 

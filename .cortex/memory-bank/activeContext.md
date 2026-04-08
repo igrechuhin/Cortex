@@ -26,6 +26,12 @@
 
 - ✅ **Agent-Internal Brevity Rule for Sub-Agent Communication** - COMPLETE (2026-04-08) - Added agent-internal-communication.mdc rule, merged into cortex://rules resource, updated implement-code and shared-defaults prompts, extended pipeline_handoff data docstring, added tests and brevity word-count fixtures (no top-level scripts/).
 
+- ✅ **compress_memory_bank MCP Tool and Token Budget Tracking** - COMPLETE (2026-04-08) - Added compress_memory_bank MCP tool (memory paths + compress_file), token_budget helpers, token_budget section on cortex://analysis JSON, analyze Step 6.4 / analyze-compact Step 2.5, TOOL_CATEGORIES + docs inventory (12 tools).
+
+- ✅ **Synapse submodule: token budget analyze steps** - COMPLETE (2026-04-08) - Committed Synapse at f1754b1: added Step 6.4 (analyze.md) and Step 2.5 (analyze-compact.md) for token_budget from cortex://analysis and compress_memory_bank() guidance; pushed to origin/main; superproject gitlink staged.
+
+- ✅ **compress_memory_bank wiring and analysis helpers** - COMPLETE (2026-04-08) - Added `memory_compress_tool` MCP implementation using `cortex.tools.analysis.token_budget` for memory-bank path iteration; registered tool, updated TOOL_CATEGORIES and docs (README, architecture, api/tools, index); extended analyze-resource and governance tests; archived compress-memory-bank plan under `.cortex/plans/archive/Other/`.
+
 ## Completed Work (2026-04-07)
 
 - **Summary (2026-04-07)** - 1 entries archived.

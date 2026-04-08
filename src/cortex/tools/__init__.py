@@ -17,6 +17,7 @@ from . import (
     config,  # noqa: F401 - registers configure tool and get_config_resource
     evaluation,  # noqa: F401
     execution,  # noqa: F401
+    memory_compress_tool,  # noqa: F401
     optimization,  # noqa: F401
     prompts,  # noqa: F401
     refactoring,  # noqa: F401
@@ -87,6 +88,7 @@ from .usage import query_operations, usage_analytics  # noqa: F401
 _ = skill_pack
 _ = plan
 _ = update_memory_bank
+_ = memory_compress_tool
 _ = synapse_prompts
 # Ingest MCP tool registration (reference fn so pyright accepts the import).
 _: object = _ingest_handler_mod.ingest

@@ -21,6 +21,10 @@ from cortex.core.project_root_resolver import resolve_project_root_async
 from cortex.managers import initialization
 from cortex.managers.types import ManagersDict
 from cortex.server import mcp
+from cortex.tools.analysis.token_budget import (
+    compute_token_budget,
+    format_token_budget_report,
+)
 from cortex.tools.context.analysis_helpers import (
     AnalysisTarget,
     normalize_analysis_target,
@@ -234,7 +238,7 @@ async def analyze() -> str:
     cfg = read_session_config()
     target = str(cfg.get("analysis_target", "context"))
     # AI: Bound default resource payload size for high-frequency cortex://analysis reads.
-    return await analyze_impl(
+    base = await analyze_impl(
         target=target,
         time_window_days=None,
         export_format="json",
@@ -242,3 +246,18 @@ async def analyze() -> str:
         max_sessions=3,
         max_calls_per_session=10,
     )
+    root = await resolve_project_root_async(None, None)
+    entries = compute_token_budget(root)
+    report_md = format_token_budget_report(entries)
+    token_payload = {
+        "markdown": "## Token Budget\n\n" + report_md,
+        "entries": [e.model_dump(mode="json") for e in entries],
+    }
+    try:
+        parsed: object = json.loads(base)
+    except json.JSONDecodeError:
+        return f"{base}\n\n## Token Budget\n\n{report_md}"
+    if isinstance(parsed, dict):
+        parsed["token_budget"] = token_payload
+        return json.dumps(parsed, indent=2)
+    return f"{base}\n\n## Token Budget\n\n{report_md}"

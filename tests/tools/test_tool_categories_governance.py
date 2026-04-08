@@ -81,7 +81,7 @@ class TestToolCategoriesGovernance:
 
     def test_max_registered_tools_cap(self) -> None:
         """Budget cap matches target (see docs/api/tools.md)."""
-        assert MAX_REGISTERED_TOOLS == 11
+        assert MAX_REGISTERED_TOOLS == 12
         assert TARGET_REGISTERED_TOOLS <= MAX_REGISTERED_TOOLS
 
 

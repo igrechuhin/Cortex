@@ -38,8 +38,6 @@ Completed investigations are recorded in [activeContext.md](activeContext.md). P
 
 #### Token Efficiency (Medium Priority)
 
-- Plan: [compress_memory_bank MCP Tool and Token Budget Tracking](../plans/compress-memory-bank-mcp-tool.md) — MCP tool to compress attached-project memory files; token-budget metric in `/cortex/analyze` flags files >500 words as compression candidates. Depends on compress-synapse-memory-files. PENDING.
-
 #### Claude Code Harness Improvements (High Priority)
 
 - Plan: [Conditional Hook Execution DSL](../plans/hook-conditional-dsl.md) — Write `matcher` entries with wildcard glob sub-patterns (`FileEdit(/src/*)`, `Bash(git *)`) so hooks only fire on matching tool+pattern. PENDING.

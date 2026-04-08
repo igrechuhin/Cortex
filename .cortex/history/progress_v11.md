@@ -1,5 +1,33 @@
 # Progress Log
 
+## 2026-04-08
+
+- **Ingest Tool for Cortex Memory Bank (/cortex/ingest)** - PARTIAL. Added and registered `/cortex/ingest` prompt workflow (plan Step 3): source intake, ingest-tool storage handoff, synthesis/file-artifact instructions, relevant-page updates, log append, and final reporting.
+- **Ingest Tool for Cortex Memory Bank (/cortex/ingest)** - PARTIAL. Implemented Step 4 by surfacing the 5 most recent ingested sources in `cortex://context` with title extraction/fallback plus tests; full roadmap step remains in progress.
+- **Ingest Tool for Cortex Memory Bank (/cortex/ingest)** - PARTIAL. Implemented Step 5 memory-bank lint checks for ingest source/summary consistency, including orphaned source detection and missing-source reference warnings with unit tests.
+- **Ingest Tool for Cortex Memory Bank (/cortex/ingest)** - COMPLETE. Implemented ingest tool + prompt workflow, context surfacing for recent ingests, and lint consistency checks with tests.
+- **Compress Cortex Synapse Prompts and Memory Bank Files** - PARTIAL. Implemented Step 1 structural validator (`ValidationResult` + `validate_compressed`) with invariant checks and added unit tests; quality gate passed for this slice.
+- **Compress Cortex Synapse Prompts and Memory Bank Files** - PARTIAL. Implemented Step 2 file-type detection (`detect_file_type` + `FileType`) with extension mapping and fallback code-ratio heuristic; added focused unit tests and passed quality gate.
+- **Compress Cortex Synapse Prompts and Memory Bank Files** - PARTIAL. Implemented Step 3 `compress_file` pipeline (`CompressResult`, backup/restore, validation retry flow, dry-run behavior) plus targeted unit tests; quality gate passed.
+- **Compress Cortex Synapse Prompts and Memory Bank Files** - PARTIAL. Implemented Step 5 batch directory runner with backup-file filtering and aggregation tests.
+- **Compress Cortex Synapse Prompts and Memory Bank Files** - PARTIAL. Implemented prompt-builder rules and added prompt tests for compression/fix prompts.
+- **Compress Cortex Synapse Prompts and Memory Bank Files** - PARTIAL. Added a safe Step 6 batch entrypoint (`compress_cortex_internal_files`) targeting Cortex internal directories with dry-run default behavior, exported it, and added batch coverage for expected targeting and missing-path skips.
+- **Compress Cortex Synapse Prompts and Memory Bank Files** - PARTIAL. Added per-file batch outcome logging in `compress_directory` (success/skip/failure with path and token ratio) and covered all log branches with a focused unit test.
+- **Compress Cortex Synapse Prompts and Memory Bank Files** - PARTIAL. Added Step 7 export-contract coverage with a package-level unit test to enforce required `cortex.tools.compress` public symbols (`compress_file`, `compress_directory`, `ValidationResult`, `CompressResult`, `detect_file_type`).
+- **Compress pipeline work** - PARTIAL. Added `src/cortex/tools/compress/*` and unit tests under `tests/unit/`; Phase A quality gate passed and commit pipeline proceeded to docs/validation phases.
+- **Compress Cortex Synapse Prompts and Memory Bank Files** - PARTIAL. Hardened compression batch reliability by converting per-file exceptions into structured failure results and continuing processing; added regression test coverage for continue-on-error behavior.
+- **Compress Cortex Synapse Prompts and Memory Bank Files** - PARTIAL. Extended compression file-type detection to classify `.yml` as config and added targeted unit coverage to lock alias behavior.
+- **Compress Cortex Synapse Prompts and Memory Bank Files** - PARTIAL. Added batch-level compression summary metrics (`CompressionBatchSummary`, `summarize_compression_results`) to verify Step 6 one-time runs against the >=35% reduction target, exported new APIs, and added unit tests.
+- **Compress Cortex Synapse Prompts and Memory Bank Files** - PARTIAL. Added structured verification for compression success criteria (sample-size and >=35% target-hit thresholds), exported the API, and added regression tests in compress batch module.
+- **Compress Cortex Synapse Prompts and Memory Bank Files** - PARTIAL. Hardened Step 6 verification so success criteria fail when runtime compression failures exceed allowed budget; added failed-files accounting and regression tests; quality gate passed.
+- **Compress pipeline work** - COMPLETE. Finalized detect/batch enhancements with targeted unit tests and passed quality/docs checks ahead of commit pipeline execution.
+- **Compression tooling semantics repair** - COMPLETE (2026-04-08). Replaced aggressive fallback simplifier with phrase-level filler removal only (no function-word stripping or line truncation); removed protected-mode verification shortcut that could pass with zero successful compressions; updated unit tests; reset memory-bank prose to last committed canonical revision after bad `.original` backups.
+- **Compress Cortex Synapse Prompts and Memory Bank Files** - COMPLETE (2026-04-08). Plan archived; compression stack hardened with semantics-safe CLI fallback and Step 6 verification that cannot pass with zero successful compressions.
+- **Agent-Internal Brevity Rule for Sub-Agent Communication** - COMPLETE. Rules merge, prompts, pipeline_handoff docs, tests, and sample fixtures for manual word-count baselines.
+- **Agent-internal brevity (commit)** - COMPLETE. Committed Synapse submodule (agent-internal-communication.mdc, cursor-agents, rules manifest) and superproject Cortex wiring (rules merge + pipeline_handoff docstring + tests/fixtures).
+- **compress_memory_bank MCP Tool and Token Budget Tracking** - COMPLETE. MCP tool, token budget in cortex://analysis, prompt updates, tests and docs.
+- **Cortex commit pipeline (compress_memory_bank + Synapse)** - COMPLETE (2026-04-08). Phase A green (91.46% coverage); Synapse submodule advanced with analyze/analyze-compact token budget steps; superproject gitlink staged; docs and memory bank aligned for release commit.
+
 ## 2026-04-07
 
 - **File Review Reports into Memory Bank** - PARTIAL. Completed Step 1 vertical slice by adding `ArtifactType` metadata mapping (`reviews/` and `analyses/` conventions) with dedicated tests; follow-up steps (file_artifact wiring and prompt/resource integration) remain.

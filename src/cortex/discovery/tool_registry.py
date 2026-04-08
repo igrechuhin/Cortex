@@ -37,6 +37,7 @@ _KNOWN_TOOL_NAMES: list[str] = [
     "get_structure_info",
     "get_file_metadata",
     "ingest",
+    "compress_memory_bank",
     "initialize_memory_bank",
     "list_session_scripts",
     "load_context",

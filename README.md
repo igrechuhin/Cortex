@@ -164,9 +164,9 @@ For local development, use these Make targets (after running `bash scripts/boots
 
 ## Key Tools
 
-<!-- cortex-published-inventory: tools=11 resources=6 prompts-max=4 -->
+<!-- cortex-published-inventory: tools=12 resources=6 prompts-max=4 -->
 
-Cortex exposes **11 MCP tools**, **6 static `cortex://` resources**, and **up to 4 setup prompts** (one always-on plus up to three configuration-dependent). Machine-readable inventory: [docs/_generated/tool-inventory.json](docs/_generated/tool-inventory.json) (must match `cortex.discovery.published_inventory`; CI enforces parity).
+Cortex exposes **12 MCP tools**, **6 static `cortex://` resources**, and **up to 4 setup prompts** (one always-on plus up to three configuration-dependent). Machine-readable inventory: [docs/_generated/tool-inventory.json](docs/_generated/tool-inventory.json) (must match `cortex.discovery.published_inventory`; CI enforces parity).
 
 | Workflow                                                                 | Tools / entrypoints                                                                 |
 | ------------------------------------------------------------------------ | ----------------------------------------------------------------------------------- |
