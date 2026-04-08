@@ -14,6 +14,9 @@ _DATE_PATTERN = re.compile(r"\b(\d{4}-\d{2}-\d{2})\b")
 _WIKI_LINK_PATTERN = re.compile(r"\[\[([^\]]+)\]\]|\[[^\]]+\]\(([^)]+)\)")
 _CLAIM_PATTERN_GROUP = re.compile(r"\((?P<key>[^)]+)\):\s*(?P<value>.+)")
 _MARKDOWN_LINK_PATH_PATTERN = re.compile(r"\[[^\]]+\]\(([^)]+)\)")
+_SOURCE_PATH_PATTERN = re.compile(
+    r"(?:\.cortex/memory-bank/)?sources/(?P<slug>[a-zA-Z0-9._-]+)\.md"
+)
 
 
 class LintFinding(BaseModel):
@@ -441,15 +444,108 @@ class OrphanedWikiPagesCheck:
             )
         return findings
 
+    def _source_slug_references(self, content: str) -> set[str]:
+        slugs: set[str] = set()
+        for match in _SOURCE_PATH_PATTERN.finditer(content):
+            slugs.add(match.group("slug"))
+        return slugs
+
+    def _iter_summary_files(self, queries_dir: Path) -> list[Path]:
+        if not queries_dir.exists():
+            return []
+        return sorted(queries_dir.glob("*.md"))
+
+    def _missing_source_findings(
+        self,
+        *,
+        summary_path: Path,
+        summary_slugs: set[str],
+        sources_dir: Path,
+        memory_bank_root: Path,
+    ) -> list[LintFinding]:
+        findings: list[LintFinding] = []
+        for source_slug in summary_slugs:
+            source_path = sources_dir / f"{source_slug}.md"
+            if source_path.exists():
+                continue
+            summary_rel = summary_path.relative_to(memory_bank_root).as_posix()
+            findings.append(
+                LintFinding(
+                    severity="warning",
+                    check=self.name,
+                    message=(
+                        "Summary page references missing ingest source: "
+                        f"sources/{source_slug}.md"
+                    ),
+                    file=f".cortex/memory-bank/{summary_rel}",
+                    line=None,
+                )
+            )
+        return findings
+
+    def _orphaned_source_findings(
+        self, *, source_slugs: set[str], referenced_slugs: set[str]
+    ) -> list[LintFinding]:
+        findings: list[LintFinding] = []
+        # AI: Source-to-summary association is explicit only via source path links inside summary pages.
+        for source_slug in sorted(source_slugs - referenced_slugs):
+            findings.append(
+                LintFinding(
+                    severity="warning",
+                    check=self.name,
+                    message=(
+                        "Ingest source has no corresponding summary page reference: "
+                        f"sources/{source_slug}.md"
+                    ),
+                    file=f".cortex/memory-bank/sources/{source_slug}.md",
+                    line=None,
+                )
+            )
+        return findings
+
+    def _source_summary_findings(self, project_root: Path) -> list[LintFinding]:
+        memory_bank_root = _memory_bank_root(project_root)
+        sources_dir = memory_bank_root / "sources"
+        queries_dir = memory_bank_root / "queries"
+        source_slugs: set[str] = (
+            {source_path.stem for source_path in sources_dir.glob("*.md")}
+            if sources_dir.exists()
+            else set[str]()
+        )
+        findings: list[LintFinding] = []
+        referenced_slugs: set[str] = set()
+        for summary_path in self._iter_summary_files(queries_dir):
+            summary_content = _read_text(summary_path)
+            summary_slugs = self._source_slug_references(summary_content)
+            referenced_slugs.update(summary_slugs)
+            findings.extend(
+                self._missing_source_findings(
+                    summary_path=summary_path,
+                    summary_slugs=summary_slugs,
+                    sources_dir=sources_dir,
+                    memory_bank_root=memory_bank_root,
+                )
+            )
+        findings.extend(
+            self._orphaned_source_findings(
+                source_slugs=source_slugs, referenced_slugs=referenced_slugs
+            )
+        )
+        return findings
+
     def run(self, project_root: Path) -> list[LintFinding]:
+        findings = self._source_summary_findings(project_root)
         wiki_root = _wiki_root(project_root)
         if not wiki_root.exists():
-            return []
+            return findings
         wiki_pages = sorted(wiki_root.rglob("*.md"))
         inbound_links, linked_roots = self._collect_inbound_links(
             project_root, wiki_root, wiki_pages
         )
-        return self._build_findings(wiki_root, wiki_pages, inbound_links, linked_roots)
+        findings.extend(
+            self._build_findings(wiki_root, wiki_pages, inbound_links, linked_roots)
+        )
+        return findings
 
 
 class CodeClaimCheck:

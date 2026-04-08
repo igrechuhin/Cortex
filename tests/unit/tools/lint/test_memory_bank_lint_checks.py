@@ -235,6 +235,56 @@ def test_orphaned_wiki_pages_check_returns_empty_when_wiki_missing(
     assert findings == []
 
 
+def test_orphaned_wiki_pages_check_reports_source_without_summary_reference(
+    tmp_path: Path,
+) -> None:
+    _write(
+        tmp_path / ".cortex" / "memory-bank" / "sources" / "rfc-update.md", "# source\n"
+    )
+    _write(
+        tmp_path
+        / ".cortex"
+        / "memory-bank"
+        / "queries"
+        / "query-not-related-2026-04-08.md",
+        "# unrelated query artifact\n",
+    )
+
+    check: LintCheck = cast(LintCheck, OrphanedWikiPagesCheck())
+    findings = check.run(tmp_path)
+
+    assert len(findings) == 1
+    finding = findings[0]
+    assert finding.check == "orphaned_wiki_pages"
+    assert finding.severity == "warning"
+    assert finding.file == ".cortex/memory-bank/sources/rfc-update.md"
+    assert "no corresponding summary page reference" in finding.message
+
+
+def test_orphaned_wiki_pages_check_reports_summary_referencing_missing_source(
+    tmp_path: Path,
+) -> None:
+    _write(
+        tmp_path
+        / ".cortex"
+        / "memory-bank"
+        / "queries"
+        / "query-rfc-update-2026-04-08.md",
+        "- Source: [.cortex/memory-bank/sources/missing-source.md](.cortex/memory-bank/sources/missing-source.md)\n",
+    )
+
+    check: LintCheck = cast(LintCheck, OrphanedWikiPagesCheck())
+    findings = check.run(tmp_path)
+
+    assert len(findings) == 1
+    finding = findings[0]
+    assert finding.check == "orphaned_wiki_pages"
+    assert finding.severity == "warning"
+    assert finding.file == ".cortex/memory-bank/queries/query-rfc-update-2026-04-08.md"
+    assert "references missing ingest source" in finding.message
+    assert "sources/missing-source.md" in finding.message
+
+
 def test_stale_active_context_check_skips_recent_date(
     tmp_path: Path,
 ) -> None:

@@ -40,6 +40,9 @@ from cortex.server import mcp
 from cortex.tools.context.recent_artifacts_context import (
     build_recent_artifacts_markdown,
 )
+from cortex.tools.context.recent_ingested_sources_context import (
+    build_recent_ingested_sources_markdown,
+)
 from cortex.tools.optimization.relevance_operations import get_relevance_scores_impl
 from cortex.tools.optimization.summarization_operations import summarize_content_impl
 from cortex.tools.session.models import SESSION_SCOPE_PROMPT
@@ -439,6 +442,31 @@ def _append_recent_artifacts_to_context_payload(
     return json.dumps(payload_data, indent=2)
 
 
+def _read_recent_ingested_sources_markdown(project_root: Path) -> str | None:
+    """Build Recently Ingested Sources markdown from memory-bank/sources."""
+    memory_bank = get_cortex_path(project_root, CortexResourceType.MEMORY_BANK)
+    return build_recent_ingested_sources_markdown(memory_bank)
+
+
+def _append_recent_ingested_sources_to_context_payload(
+    payload: str, recent_ingested_sources_markdown: str | None
+) -> str:
+    """Attach a markdown Recently Ingested Sources section to successful payloads."""
+    if recent_ingested_sources_markdown is None:
+        return payload
+    try:
+        parsed = json.loads(payload)
+    except json.JSONDecodeError:
+        return payload
+    if not isinstance(parsed, dict):
+        return payload
+    payload_data = cast(dict[str, object], parsed)
+    if payload_data.get("status") != "success":
+        return payload
+    payload_data["recent_ingested_sources"] = recent_ingested_sources_markdown
+    return json.dumps(payload_data, indent=2)
+
+
 @mcp.resource(uri="cortex://context", meta=CORTEX_CONTEXT_RESOURCE_READ_META)
 @ensure_usage_context
 @mcp_resource_wrapper(timeout=MCP_TOOL_TIMEOUT_COMPLEX)
@@ -465,9 +493,14 @@ async def load_context() -> str:
     root = await resolve_project_root_async(None, None)
     recent_ops = _read_recent_operations_lines(root)
     recent_artifacts = _read_recent_artifacts_markdown(root)
+    recent_ingested_sources = _read_recent_ingested_sources_markdown(root)
     out = _append_recent_artifacts_to_context_payload(
         _append_recent_operations_to_context_payload(
-            _append_session_scope_to_context_payload(result), recent_ops
+            _append_recent_ingested_sources_to_context_payload(
+                _append_session_scope_to_context_payload(result),
+                recent_ingested_sources,
+            ),
+            recent_ops,
         ),
         recent_artifacts,
     )

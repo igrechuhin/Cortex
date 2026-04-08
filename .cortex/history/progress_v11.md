@@ -25,6 +25,9 @@
 - **Memory Bank Lint (/cortex/lint-wiki)** - COMPLETE. Completed lint tool/prompt/analyze integration and fixed markdown-link roadmap Plan parsing false positives with regression tests.
 - **File Review Reports into Memory Bank** - PARTIAL. Implemented Step 2 vertical slice by adding `manage_file(operation="file_artifact")` with artifact path/naming/dedupe behavior and tests.
 - **File Review Reports into Memory Bank** - PARTIAL. Implemented Step 3: `manage_file(file_artifact)` now auto-appends a markdown cross-reference in `activeContext.md` for each filed artifact, with async wiring and tests.
+- **File Review Reports into Memory Bank** - PARTIAL. Wired artifact filing behavior into review/analyze prompts: threshold-gated review report filing (`review_filing_threshold`, default 7) and always-on session analysis filing; added integration tests for prompt wiring.
+- **File Review Reports into Memory Bank** - COMPLETE. Recent Artifacts section in cortex://context; filing invalidates context cache; tests updated.
+- **Ingest Tool for Cortex Memory Bank (/cortex/ingest)** - PARTIAL. Implemented ingest MCP tool (steps 1–2): source types, immutable staging under memory-bank/sources/, tests, tool budget 11, docs/inventory. Remaining: /cortex/ingest prompt, cortex://context ingests section, memory-bank lint for sources.
 
 ## 2026-04-06
 

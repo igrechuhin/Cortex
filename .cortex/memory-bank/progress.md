@@ -1,5 +1,12 @@
 # Progress Log
 
+## 2026-04-08
+
+- **Ingest Tool for Cortex Memory Bank (/cortex/ingest)** - PARTIAL. Added and registered `/cortex/ingest` prompt workflow (plan Step 3): source intake, ingest-tool storage handoff, synthesis/file-artifact instructions, relevant-page updates, log append, and final reporting.
+- **Ingest Tool for Cortex Memory Bank (/cortex/ingest)** - PARTIAL. Implemented Step 4 by surfacing the 5 most recent ingested sources in `cortex://context` with title extraction/fallback plus tests; full roadmap step remains in progress.
+- **Ingest Tool for Cortex Memory Bank (/cortex/ingest)** - PARTIAL. Implemented Step 5 memory-bank lint checks for ingest source/summary consistency, including orphaned source detection and missing-source reference warnings with unit tests.
+- **Ingest Tool for Cortex Memory Bank (/cortex/ingest)** - COMPLETE. Implemented ingest tool + prompt workflow, context surfacing for recent ingests, and lint consistency checks with tests.
+
 ## 2026-04-07
 
 - **File Review Reports into Memory Bank** - PARTIAL. Completed Step 1 vertical slice by adding `ArtifactType` metadata mapping (`reviews/` and `analyses/` conventions) with dedicated tests; follow-up steps (file_artifact wiring and prompt/resource integration) remain.

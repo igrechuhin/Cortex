@@ -32,8 +32,6 @@ Completed investigations are recorded in [activeContext.md](activeContext.md). P
 
 #### Knowledge Base & Wiki (High Priority)
 
-- Plan: [Ingest Tool for Cortex Memory Bank (/cortex/ingest)](../plans/memory-bank-ingest-tool.md) — MCP `ingest` tool + `/cortex/ingest` prompt to integrate external sources into the memory bank; flags contradictions with existing content; updates cross-references; logs to the operations log. Depends on memory-bank-operations-log, file-review-reports. PENDING.
-
 #### Token Efficiency (High Priority)
 
 - Plan: [Compress Cortex Synapse Prompts and Memory Bank Files](../plans/compress-synapse-memory-files.md) — One-time compression of `.cortex/synapse/prompts/`, `cursor-agents/`, and `memory-bank/` files using a validate-before-overwrite pipeline; targets ≥35% token reduction per file. PENDING.
