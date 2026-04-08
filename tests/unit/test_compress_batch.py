@@ -9,6 +9,8 @@ from pytest import MonkeyPatch
 from cortex.tools.compress.batch import (
     compress_cortex_internal_files,
     compress_directory,
+    summarize_compression_results,
+    verify_compression_success_criteria,
 )
 from cortex.tools.compress.compress import CompressResult
 
@@ -127,6 +129,35 @@ def test_compress_directory_logs_per_file_outcome(
     assert any("compress failure" in message for message in error_logs)
 
 
+def test_compress_directory_continues_after_exception(
+    tmp_path: Path, monkeypatch: MonkeyPatch
+) -> None:
+    # Arrange
+    first = tmp_path / "a.md"
+    second = tmp_path / "b.md"
+    _ = first.write_text("# One\n", encoding="utf-8")
+    _ = second.write_text("# Two\n", encoding="utf-8")
+    info_logs, error_logs = _patch_batch_logger(monkeypatch)
+
+    def fake_compress_file(path: Path, *, dry_run: bool = False) -> CompressResult:
+        if path.name == "a.md":
+            raise RuntimeError("transient claude failure")
+        return CompressResult(success=True, token_ratio=0.4)
+
+    monkeypatch.setattr("cortex.tools.compress.batch.compress_file", fake_compress_file)
+
+    # Act
+    results = compress_directory(tmp_path, dry_run=True)
+
+    # Assert
+    assert len(results) == 2
+    assert results[0].success is False
+    assert results[0].errors == ["exception:RuntimeError:transient claude failure"]
+    assert results[1].success is True
+    assert any("compress failure" in message for message in error_logs)
+    assert any("compress success" in message for message in info_logs)
+
+
 def test_compress_cortex_internal_files_targets_expected_locations(
     tmp_path: Path, monkeypatch: MonkeyPatch
 ) -> None:
@@ -184,3 +215,153 @@ def test_compress_cortex_internal_files_skips_missing_paths(
     # Assert
     assert results == []
     assert called == []
+
+
+def test_summarize_compression_results_computes_counts_and_target_hits() -> None:
+    # Arrange
+    results = [
+        CompressResult(success=True, token_ratio=0.60),
+        CompressResult(success=True, token_ratio=0.80),
+        CompressResult(success=False, errors=["validation failure"]),
+        CompressResult(success=False, skipped_reason="unsupported_file_type:code"),
+    ]
+
+    # Act
+    summary = summarize_compression_results(results, target_reduction=0.35)
+
+    # Assert
+    assert summary.total_files == 4
+    assert summary.successful_files == 2
+    assert summary.failed_files == 1
+    assert summary.skipped_files == 1
+    assert summary.files_meeting_target == 1
+    assert summary.average_token_ratio == 0.7
+
+
+def test_summarize_compression_results_rejects_invalid_target() -> None:
+    # Arrange
+    results = [CompressResult(success=True, token_ratio=0.60)]
+
+    # Act / Assert
+    try:
+        _ = summarize_compression_results(results, target_reduction=1.0)
+    except ValueError as error:
+        assert "target_reduction" in str(error)
+    else:  # pragma: no cover - defensive assertion
+        raise AssertionError("Expected ValueError for invalid target_reduction")
+
+
+def test_verify_compression_success_criteria_passes_when_thresholds_met() -> None:
+    # Arrange
+    summary = summarize_compression_results(
+        [
+            CompressResult(success=True, token_ratio=0.60),
+            CompressResult(success=True, token_ratio=0.62),
+            CompressResult(success=True, token_ratio=0.64),
+            CompressResult(success=True, token_ratio=0.80),
+            CompressResult(success=True, token_ratio=0.90),
+        ],
+        target_reduction=0.35,
+    )
+
+    # Act
+    result = verify_compression_success_criteria(summary)
+
+    # Assert
+    assert result.passed is True
+    assert result.errors == []
+    assert result.successful_files == 5
+    assert result.failed_files == 0
+    assert result.files_meeting_target == 3
+
+
+def test_verify_compression_success_criteria_fails_with_insufficient_successes() -> (
+    None
+):
+    # Arrange
+    summary = summarize_compression_results(
+        [
+            CompressResult(success=True, token_ratio=0.60),
+            CompressResult(success=True, token_ratio=0.70),
+            CompressResult(success=False, errors=["failed"]),
+        ],
+        target_reduction=0.35,
+    )
+
+    # Act
+    result = verify_compression_success_criteria(summary)
+
+    # Assert
+    assert result.passed is False
+    assert "insufficient_successful_files:2<5" in result.errors
+    assert "too_many_failed_files:1>0" in result.errors
+
+
+def test_verify_compression_success_criteria_fails_when_failed_files_exceed_limit() -> (
+    None
+):
+    # Arrange
+    summary = summarize_compression_results(
+        [
+            CompressResult(success=True, token_ratio=0.60),
+            CompressResult(success=True, token_ratio=0.62),
+            CompressResult(success=True, token_ratio=0.64),
+            CompressResult(success=True, token_ratio=0.66),
+            CompressResult(success=True, token_ratio=0.68),
+            CompressResult(success=False, errors=["runtime failure"]),
+        ],
+        target_reduction=0.35,
+    )
+
+    # Act
+    result = verify_compression_success_criteria(summary)
+
+    # Assert
+    assert result.passed is False
+    assert "too_many_failed_files:1>0" in result.errors
+
+
+def test_verify_compression_success_criteria_allows_configured_failure_budget() -> None:
+    # Arrange
+    summary = summarize_compression_results(
+        [
+            CompressResult(success=True, token_ratio=0.60),
+            CompressResult(success=True, token_ratio=0.62),
+            CompressResult(success=True, token_ratio=0.64),
+            CompressResult(success=True, token_ratio=0.66),
+            CompressResult(success=True, token_ratio=0.68),
+            CompressResult(success=False, errors=["runtime failure"]),
+        ],
+        target_reduction=0.35,
+    )
+
+    # Act
+    result = verify_compression_success_criteria(summary, allowed_failed_files=1)
+
+    # Assert
+    assert result.passed is True
+    assert result.failed_files == 1
+
+
+def test_verify_compression_success_criteria_validates_configuration() -> None:
+    # Arrange
+    summary = summarize_compression_results([], target_reduction=0.35)
+
+    # Act / Assert
+    try:
+        _ = verify_compression_success_criteria(
+            summary,
+            required_sample_size=2,
+            minimum_target_hits=3,
+        )
+    except ValueError as error:
+        assert "minimum_target_hits" in str(error)
+    else:  # pragma: no cover - defensive assertion
+        raise AssertionError("Expected ValueError for invalid verification thresholds")
+
+    try:
+        _ = verify_compression_success_criteria(summary, allowed_failed_files=-1)
+    except ValueError as error:
+        assert "allowed_failed_files" in str(error)
+    else:  # pragma: no cover - defensive assertion
+        raise AssertionError("Expected ValueError for negative allowed_failed_files")

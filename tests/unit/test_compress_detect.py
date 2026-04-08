@@ -41,6 +41,18 @@ def test_detect_file_type_uses_extension_map_for_config(tmp_path: Path) -> None:
     assert result == "config"
 
 
+def test_detect_file_type_uses_extension_map_for_yml_config(tmp_path: Path) -> None:
+    # Arrange
+    path = tmp_path / "settings.yml"
+    _ = path.write_text("mode: test\n", encoding="utf-8")
+
+    # Act
+    result = detect_file_type(path)
+
+    # Assert
+    assert result == "config"
+
+
 def test_detect_file_type_fallback_marks_code_when_ratio_above_threshold(
     tmp_path: Path,
 ) -> None:

@@ -14,6 +14,7 @@ _EXTENSION_TO_TYPE: dict[str, FileType] = {
     ".js": "code",
     ".json": "config",
     ".yaml": "config",
+    ".yml": "config",
     ".toml": "config",
 }
 

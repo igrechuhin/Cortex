@@ -15,6 +15,12 @@
 - **Compress Cortex Synapse Prompts and Memory Bank Files** - PARTIAL. Added per-file batch outcome logging in `compress_directory` (success/skip/failure with path and token ratio) and covered all log branches with a focused unit test.
 - **Compress Cortex Synapse Prompts and Memory Bank Files** - PARTIAL. Added Step 7 export-contract coverage with a package-level unit test to enforce required `cortex.tools.compress` public symbols (`compress_file`, `compress_directory`, `ValidationResult`, `CompressResult`, `detect_file_type`).
 - **Compress pipeline work** - PARTIAL. Added `src/cortex/tools/compress/*` and unit tests under `tests/unit/`; Phase A quality gate passed and commit pipeline proceeded to docs/validation phases.
+- **Compress Cortex Synapse Prompts and Memory Bank Files** - PARTIAL. Hardened compression batch reliability by converting per-file exceptions into structured failure results and continuing processing; added regression test coverage for continue-on-error behavior.
+- **Compress Cortex Synapse Prompts and Memory Bank Files** - PARTIAL. Extended compression file-type detection to classify `.yml` as config and added targeted unit coverage to lock alias behavior.
+- **Compress Cortex Synapse Prompts and Memory Bank Files** - PARTIAL. Added batch-level compression summary metrics (`CompressionBatchSummary`, `summarize_compression_results`) to verify Step 6 one-time runs against the >=35% reduction target, exported new APIs, and added unit tests.
+- **Compress Cortex Synapse Prompts and Memory Bank Files** - PARTIAL. Added structured verification for compression success criteria (sample-size and >=35% target-hit thresholds), exported the API, and added regression tests in compress batch module.
+- **Compress Cortex Synapse Prompts and Memory Bank Files** - PARTIAL. Hardened Step 6 verification so success criteria fail when runtime compression failures exceed allowed budget; added failed-files accounting and regression tests; quality gate passed.
+- **Compress pipeline work** - COMPLETE. Finalized detect/batch enhancements with targeted unit tests and passed quality/docs checks ahead of commit pipeline execution.
 
 ## 2026-04-07
 

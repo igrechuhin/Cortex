@@ -229,3 +229,8 @@ Use `tmp_path` fixtures. Mock `subprocess.run` for pipeline tests to avoid real
 - 2026-04-08: Implemented safe Step 6 targeting helper and tests — files: src/cortex/tools/compress/batch.py, src/cortex/tools/compress/**init**.py, tests/unit/test_compress_batch.py
 - 2026-04-08: Implemented Step 5 per-file outcome logging and tests — files: src/cortex/tools/compress/batch.py, tests/unit/test_compress_batch.py
 - 2026-04-08: Implemented Step 7 export contract verification test — files: tests/unit/test_compress_exports.py
+- 2026-04-08: Hardened batch reliability with continue-on-error exception handling and logging for one-time compression runs — files: src/cortex/tools/compress/batch.py, tests/unit/test_compress_batch.py
+- 2026-04-08: Extended file-type extension coverage to classify `.yml` as config with dedicated regression test — files: src/cortex/tools/compress/detect.py, tests/unit/test_compress_detect.py
+- 2026-04-08: Added compression batch summary metrics and validation helpers for Step 6 verification (>=35% target attainment reporting) — files: src/cortex/tools/compress/batch.py, src/cortex/tools/compress/**init**.py, tests/unit/test_compress_batch.py
+- 2026-04-08: Added structured success-criteria verification for Step 6 (minimum successful sample and >=35% target-hit threshold) with regression tests — files: src/cortex/tools/compress/batch.py, src/cortex/tools/compress/**init**.py, tests/unit/test_compress_batch.py
+- 2026-04-08: Hardened Step 6 verification to fail when compression failures exceed explicit budget and track failed file count — files: src/cortex/tools/compress/batch.py, tests/unit/test_compress_batch.py

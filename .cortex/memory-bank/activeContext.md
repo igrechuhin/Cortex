@@ -18,6 +18,10 @@
 
 - ✅ **Compress tools and tests prepared** - COMPLETE (2026-04-08) - Added compress tool modules and unit tests, then executed commit pipeline preflight and Phase A checks successfully.
 
+- ✅ **Compress pipeline verification criteria (PARTIAL)** - COMPLETE (2026-04-08) - Implemented and tested batch-level success-criteria verification for compression outcomes to enforce plan Step 6 acceptance checks programmatically.
+
+- ✅ **Compress pipeline robustness updates** - COMPLETE (2026-04-08) - Added extension-based detection support and batch compression success criteria coverage; validated full quality/docs gates and prepared commit pipeline artifacts.
+
 ## Completed Work (2026-04-07)
 
 - **Summary (2026-04-07)** - 1 entries archived.
