@@ -40,6 +40,8 @@
 
 - ✅ **File Review Reports into Memory Bank** - COMPLETE (2026-04-07) - Completed Step 6: cortex://context now includes a recent_artifacts markdown field with the five most recently modified files under memory-bank/reviews|analyses, plus cache invalidation after file_artifact. Phase 4 test helpers refactored for function-length compliance.
 
+- ✅ **Ingest Tool for Cortex Memory Bank (PARTIAL)** - COMPLETE (2026-04-07) - New `ingest` MCP tool stages raw external content under `.cortex/memory-bank/sources/` with slug collision handling; registered with bumped tool budget (11). Prompt workflow and context surfacing not yet done.
+
 ## Completed Work (2026-04-06)
 
 - **Summary (2026-04-06)** - 1 entries archived.

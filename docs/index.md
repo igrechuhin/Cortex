@@ -24,7 +24,7 @@ Cortex provides a powerful set of tools for managing structured documentation (M
 
 ## Key Features
 
-Capabilities below follow the same historical phase labels used in the codebase and deep-dive docs. The **live MCP surface** is **10 tools**, **6 static resources**, and **up to 4 setup prompts** — see [MCP Tools Reference](./api/tools.md#current-published-mcp-surface-canonical).
+Capabilities below follow the same historical phase labels used in the codebase and deep-dive docs. The **live MCP surface** is **11 tools**, **6 static resources**, and **up to 4 setup prompts** — see [MCP Tools Reference](./api/tools.md#current-published-mcp-surface-canonical).
 
 ### Phase 1: Foundation
 
@@ -95,7 +95,7 @@ To get started with Cortex, see the [Getting Started Guide](./getting-started.md
 
 For detailed API documentation, see:
 
-- [MCP Tools Reference](./api/tools.md) - 10 MCP tools, 6 static resources
+- [MCP Tools Reference](./api/tools.md) - 11 MCP tools, 6 static resources
 - [Module Documentation](./api/modules.md) - All modules
 - [Exception Reference](./api/exceptions.md) - Exception hierarchy
 

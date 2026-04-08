@@ -9,6 +9,8 @@ the live ``tools/list`` from this package layout alone.
 """
 
 # Import all tool modules to register their decorators
+from cortex.tools.ingest import ingest_handler as _ingest_handler_mod
+
 from . import (
     artifacts,  # noqa: F401
     cache_json_tools,  # noqa: F401
@@ -86,6 +88,8 @@ _ = skill_pack
 _ = plan
 _ = update_memory_bank
 _ = synapse_prompts
+# Ingest MCP tool registration (reference fn so pyright accepts the import).
+_: object = _ingest_handler_mod.ingest
 
 __all__ = [
     "analysis_operations",

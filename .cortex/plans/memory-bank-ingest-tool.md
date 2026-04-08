@@ -131,3 +131,7 @@ In `memory-bank-lint.md` plan's `OrphanedWikiPagesCheck`, extend to also flag:
 - Integration test: ingest a test markdown file end-to-end via prompt → all 7 steps complete, files exist
 - Integration test: ingest a source that contradicts existing `techContext.md` → summary page contains `## Contradictions` section
 - Edge cases: empty content, very large content (>10k tokens — agent reads in chunks), title with special characters (slug sanitization)
+
+## Partial Progress Log
+
+- 2026-04-07: Plan steps 1–2 — `SourceType`/`IngestSource`, `ingest` MCP tool (immutable writes under `.cortex/memory-bank/sources/`), slug collision suffix, unit tests, `MAX_REGISTERED_TOOLS` 11 and inventory/docs — files: `src/cortex/tools/ingest/`, `src/cortex/tools/__init__.py`, `src/cortex/tools/structure/categories.py`, `src/cortex/discovery/tool_registry.py`, `tests/tools/test_ingest_tool.py`, `tests/tools/test_tool_categories_governance.py`, `docs/_generated/tool-inventory.json`, `README.md`, `docs/api/tools.md`, `docs/architecture.md`, `docs/index.md`, `docs/getting-started.md`

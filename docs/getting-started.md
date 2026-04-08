@@ -280,7 +280,7 @@ To share rules across projects, use the **setup_synapse** prompt. It sets up:
 ## Next Steps
 
 - **[Configuration Guide](./guides/configuration.md)** - Learn about all configuration options
-- **[API Reference](./api/tools.md)** - Published surface: 10 MCP tools and 6 resources
+- **[API Reference](./api/tools.md)** - Published surface: 11 MCP tools and 6 resources
 - **[Architecture](./architecture.md)** - Understand the system design
 - **[Troubleshooting](./guides/troubleshooting.md)** - Common issues and solutions
 

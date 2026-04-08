@@ -28,7 +28,7 @@ from pydantic import BaseModel, ConfigDict
 # MAX_REGISTERED_TOOLS is enforced by governance tests. Hard cap: to raise it,
 # create a plan documenting why the new tool cannot be consolidated into an
 # existing one, then bump this constant in the same change as the registration.
-MAX_REGISTERED_TOOLS = 10
+MAX_REGISTERED_TOOLS = 11
 
 # Long-term target from consolidation plans (not enforced in tests).
 TARGET_REGISTERED_TOOLS = 10
@@ -73,7 +73,7 @@ class ToolCategoryConfig(BaseModel):
 # ---------------------------------------------------------------------------
 
 TOOL_CATEGORIES: tuple[ToolCategoryEntry, ...] = (
-    # ── Always loaded tools (core workflow — 8 tools) ─────────────────
+    # ── Always loaded tools (core workflow — 9 tools) ─────────────────
     ToolCategoryEntry(
         name="manage_file",
         category=ToolCategory.ALWAYS_LOADED,
@@ -108,6 +108,11 @@ TOOL_CATEGORIES: tuple[ToolCategoryEntry, ...] = (
         name="think",
         category=ToolCategory.ALWAYS_LOADED,
         rationale="Reasoning scratchpad: lightweight or full sequential mode",
+    ),
+    ToolCategoryEntry(
+        name="ingest",
+        category=ToolCategory.ALWAYS_LOADED,
+        rationale="Stage raw external sources under memory-bank for /cortex/ingest workflows",
     ),
     # ── Deferred medium tools (3 tools) ───────────────────────────────
     ToolCategoryEntry(

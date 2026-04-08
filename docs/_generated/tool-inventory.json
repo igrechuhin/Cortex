@@ -22,6 +22,7 @@
   ],
   "tool_names": [
     "autofix",
+    "ingest",
     "manage_file",
     "pipeline_handoff",
     "plan",
@@ -32,5 +33,5 @@
     "update_memory_bank",
     "write_artifact"
   ],
-  "tools_count": 10
+  "tools_count": 11
 }

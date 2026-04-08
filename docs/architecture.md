@@ -4,7 +4,7 @@ This document describes the high-level architecture of Cortex.
 
 ## Overview
 
-Cortex is structured as an MCP (Model Context Protocol) server that exposes **10 tools** and **6 static resources** on the live surface (plus setup prompts), while managing structured documentation (Memory Bank files). The system is built with a modular, layered architecture designed for:
+Cortex is structured as an MCP (Model Context Protocol) server that exposes **11 tools** and **6 static resources** on the live surface (plus setup prompts), while managing structured documentation (Memory Bank files). The system is built with a modular, layered architecture designed for:
 
 - **Extensibility**: Easy to add new phases and features
 - **Maintainability**: Each module has a single, well-defined responsibility
@@ -23,7 +23,7 @@ Cortex is structured as an MCP (Model Context Protocol) server that exposes **10
                          ▼
 ┌─────────────────────────────────────────────────────────────┐
 │                    MCP Server (FastMCP)                     │
-│           10 tools + 6 resources (published MCP surface)    │
+│           11 tools + 6 resources (published MCP surface)    │
 └────────────┬────────────────────────────────────────────────┘
              │
              ▼
@@ -93,7 +93,7 @@ Cortex supports multiple MCP transports for different deployment scenarios.
 
 **Files**: `tools/` (many modules; see [API tools](api/tools.md))
 
-**Published MCP surface**: clients see **10 tools** and **6 static resources** — [Current published MCP surface](api/tools.md#current-published-mcp-surface-canonical). Inventory parity is enforced in CI (`docs/_generated/tool-inventory.json`, `cortex.discovery.published_inventory`).
+**Published MCP surface**: clients see **11 tools** and **6 static resources** — [Current published MCP surface](api/tools.md#current-published-mcp-surface-canonical). Inventory parity is enforced in CI (`docs/_generated/tool-inventory.json`, `cortex.discovery.published_inventory`).
 
 Implementation code remains grouped by historical phase and domain for maintainability (not a 1:1 map to MCP tool names):
 

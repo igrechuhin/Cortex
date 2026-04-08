@@ -6,7 +6,7 @@ Workspace-wide rules for all IDE/AI agents in this repository.
 
 This project has a **Cortex MCP server** that provides tools for everything agents need. **Always use Cortex MCP tools instead of reading files or running commands directly.**
 
-### Tools (10 — write/execute operations)
+### Tools (11 — write/execute operations)
 
 | Tool | Purpose |
 |------|---------|
@@ -14,11 +14,13 @@ This project has a **Cortex MCP server** that provides tools for everything agen
 | `manage_file()` | Memory bank read/write (zero-arg reads activeContext.md) |
 | `plan()` | Plan create/list/get/complete/register/archive_completed |
 | `update_memory_bank()` | Roadmap/progress/activeContext mutations |
-| `pipeline_handoff()` | Inter-phase state exchange (init/write/read/clear) |
 | `run_quality_gate()` | Phase A quality checks and Step 12 final gate (zero-arg) |
-| `run_docs_gate()` | Phase B docs validation (zero-arg) |
 | `autofix()` | Auto-fix lint/format/types/markdown (zero-arg) |
 | `think()` | Reasoning scratchpad |
+| `ingest()` | Stage raw external sources under memory-bank for `/cortex/ingest` |
+| `run_docs_gate()` | Phase B docs validation (zero-arg) |
+| `pipeline_handoff()` | Inter-phase state exchange (init/write/read/clear) |
+| `write_artifact()` | Allowlisted skill JSON and Synapse rule artifact writes |
 
 ### Resources (6 — read-only, all static/zero-arg)
 
