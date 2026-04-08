@@ -34,8 +34,6 @@ Completed investigations are recorded in [activeContext.md](activeContext.md). P
 
 #### Token Efficiency (High Priority)
 
-- Plan: [Agent-Internal Brevity Rule for Sub-Agent Communication](../plans/agent-internal-brevity-rule.md) — Add `## Agent-Internal Communication` brevity rule to `cortex://rules`; update sub-agent prompts and `pipeline_handoff` field docstrings; user-facing output excluded. PENDING.
-
 ### Features & Enhancements
 
 #### Token Efficiency (Medium Priority)

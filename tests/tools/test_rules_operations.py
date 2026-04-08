@@ -34,7 +34,11 @@ from cortex.tools.synapse.rules_operation_helpers import (
     parse_rules_operation,
     resolve_config_defaults,
 )
-from cortex.tools.synapse.rules_operations import get_relevant_rules, rules
+from cortex.tools.synapse.rules_operations import (
+    get_relevant_rules,
+    invalidate_rules_resource_cache,
+    rules,
+)
 from cortex.tools.synapse.rules_operations_handlers import (
     check_rules_enabled,
     dispatch_operation,
@@ -43,6 +47,61 @@ from cortex.tools.synapse.rules_operations_handlers import (
     validate_get_relevant_params,
 )
 from tests.helpers.managers import make_test_managers
+
+_MOCK_GET_RELEVANT_RULES_RESULT: dict[str, object] = {
+    "generic_rules": [
+        {
+            "file": "error-handling.mdc",
+            "category": "generic",
+            "relevance_score": 0.78,
+            "tokens": 620,
+            "title": "Error Handling Patterns",
+            "content": "Always validate inputs...",
+            "metadata": {"tags": ["errors", "validation"]},
+        }
+    ],
+    "language_rules": [
+        {
+            "file": "python-async.mdc",
+            "category": "language_specific",
+            "relevance_score": 0.92,
+            "tokens": 850,
+            "title": "Python Async Best Practices",
+            "content": "Use asyncio.timeout()...",
+            "metadata": {
+                "language": "python",
+                "tags": ["async", "concurrency"],
+            },
+        }
+    ],
+    "local_rules": [],
+    "total_tokens": 1470,
+    "context": {"filtered_count": 5, "truncated_count": 2},
+    "source": "indexed",
+}
+
+_MOCK_INDEX_RULES_RESULT: dict[str, object] = {
+    "indexed": 42,
+    "total_tokens": 15234,
+    "cache_hit": False,
+    "index_time_seconds": 2.5,
+    "rules_folder": ".cursor/rules",
+    "rules_by_category": {"generic": 15, "language_specific": 20, "local": 7},
+}
+
+
+def _attach_default_mock_indexer(manager: MagicMock) -> None:
+    mock_indexer = MagicMock()
+    mock_indexer.get_status.return_value = RulesManagerStatusModel(
+        enabled=True,
+        rules_folder=None,
+        indexed_files=42,
+        last_indexed="2026-01-04T10:30:00Z",
+        auto_reindex_enabled=True,
+        reindex_interval_minutes=30.0,
+        total_tokens=15234,
+    )
+    manager.indexer = mock_indexer
 
 
 def _get_manager_helper(mgrs: ManagersDict, key: str, _: object) -> object:
@@ -96,49 +155,8 @@ def mock_rules_manager(mock_project_root: Path) -> MagicMock:
     """Create mock rules manager."""
     manager = MagicMock()
     manager.project_root = mock_project_root
-    manager.index_rules = AsyncMock(
-        return_value={
-            "indexed": 42,
-            "total_tokens": 15234,
-            "cache_hit": False,
-            "index_time_seconds": 2.5,
-            "rules_folder": ".cursor/rules",
-            "rules_by_category": {"generic": 15, "language_specific": 20, "local": 7},
-        }
-    )
-    manager.get_relevant_rules = AsyncMock(
-        return_value={
-            "generic_rules": [
-                {
-                    "file": "error-handling.mdc",
-                    "category": "generic",
-                    "relevance_score": 0.78,
-                    "tokens": 620,
-                    "title": "Error Handling Patterns",
-                    "content": "Always validate inputs...",
-                    "metadata": {"tags": ["errors", "validation"]},
-                }
-            ],
-            "language_rules": [
-                {
-                    "file": "python-async.mdc",
-                    "category": "language_specific",
-                    "relevance_score": 0.92,
-                    "tokens": 850,
-                    "title": "Python Async Best Practices",
-                    "content": "Use asyncio.timeout()...",
-                    "metadata": {
-                        "language": "python",
-                        "tags": ["async", "concurrency"],
-                    },
-                }
-            ],
-            "local_rules": [],
-            "total_tokens": 1470,
-            "context": {"filtered_count": 5, "truncated_count": 2},
-            "source": "indexed",
-        }
-    )
+    manager.index_rules = AsyncMock(return_value=_MOCK_INDEX_RULES_RESULT)
+    manager.get_relevant_rules = AsyncMock(return_value=_MOCK_GET_RELEVANT_RULES_RESULT)
     manager.get_status.return_value = RulesManagerStatusModel(
         enabled=True,
         rules_folder=".cursor/rules",
@@ -147,18 +165,7 @@ def mock_rules_manager(mock_project_root: Path) -> MagicMock:
         total_tokens=15234,
     )
     manager.initialize = AsyncMock(return_value=None)
-    # Mock indexer for status building
-    mock_indexer = MagicMock()
-    mock_indexer.get_status.return_value = RulesManagerStatusModel(
-        enabled=True,
-        rules_folder=None,
-        indexed_files=42,
-        last_indexed="2026-01-04T10:30:00Z",
-        auto_reindex_enabled=True,
-        reindex_interval_minutes=30.0,
-        total_tokens=15234,
-    )
-    manager.indexer = mock_indexer
+    _attach_default_mock_indexer(manager)
     return manager
 
 
@@ -720,18 +727,11 @@ async def test_handle_get_relevant_operation_defaults(
     assert result_dict["min_relevance_score"] == 0.6  # From config
 
 
-@pytest.mark.asyncio
-async def test_handle_get_relevant_operation_status_reflects_current_config(
+def _configure_stale_rules_folder_status_mocks(
     mock_rules_manager: MagicMock,
     mock_optimization_config_enabled: MagicMock,
     mock_project_root: Path,
 ) -> None:
-    """Test that status reflects current config value, not stale manager initialization.
-
-    This test verifies Step 1 fix: rules manager status should use current
-    optimization.rules.rules_folder, not the value from initialization.
-    """
-    # Arrange: Create rules folder
     rules_folder = mock_project_root / ".cortex" / "rules"
     rules_folder.mkdir(parents=True, exist_ok=True)
     mock_optimization_config_enabled.get_rule_priority.return_value = (
@@ -739,12 +739,10 @@ async def test_handle_get_relevant_operation_status_reflects_current_config(
     )
     mock_optimization_config_enabled.is_context_aware_loading.return_value = True
     mock_optimization_config_enabled.get_rules_reindex_interval.return_value = 30
-
-    # Mock indexer.get_status() (used by _build_status_from_config)
     mock_indexer = MagicMock()
     mock_indexer.get_status.return_value = RulesManagerStatusModel(
         enabled=True,
-        rules_folder=None,  # Indexer doesn't store folder
+        rules_folder=None,
         indexed_files=42,
         last_indexed="2026-01-04T10:30:00Z",
         auto_reindex_enabled=True,
@@ -752,20 +750,26 @@ async def test_handle_get_relevant_operation_status_reflects_current_config(
         total_tokens=15234,
     )
     mock_rules_manager.indexer = mock_indexer
-
-    # Configure config to return different folder than manager's stale status
-    # (simulating config update after manager initialization)
     mock_optimization_config_enabled.get_rules_folder.return_value = ".cortex/rules"
-    # Manager's get_status() returns stale value (simulating old initialization)
     mock_rules_manager.get_status.return_value = RulesManagerStatusModel(
         enabled=True,
-        rules_folder=".cursorrules",  # Stale value
+        rules_folder=".cursorrules",
         indexed_files=42,
         last_indexed="2026-01-04T10:30:00Z",
         total_tokens=15234,
     )
 
-    # Act
+
+@pytest.mark.asyncio
+async def test_handle_get_relevant_operation_status_reflects_current_config(
+    mock_rules_manager: MagicMock,
+    mock_optimization_config_enabled: MagicMock,
+    mock_project_root: Path,
+) -> None:
+    """Status reflects current config rules_folder, not stale manager initialization."""
+    _configure_stale_rules_folder_status_mocks(
+        mock_rules_manager, mock_optimization_config_enabled, mock_project_root
+    )
     result = await handle_get_relevant_operation(
         mock_rules_manager,
         mock_optimization_config_enabled,
@@ -773,13 +777,11 @@ async def test_handle_get_relevant_operation_status_reflects_current_config(
         5000,
         0.7,
     )
-
-    # Assert: Status should reflect current config (.cortex/rules), not stale (.cursorrules)
     result_dict = json.loads(result)
     assert result_dict["status"] == "success"
     status = result_dict["rules_manager_status"]
-    assert status["rules_folder"] == ".cortex/rules"  # Current config value
-    assert status["rules_folder"] != ".cursorrules"  # Not stale value
+    assert status["rules_folder"] == ".cortex/rules"
+    assert status["rules_folder"] != ".cursorrules"
 
 
 # ============================================================================
@@ -787,9 +789,11 @@ async def test_handle_get_relevant_operation_status_reflects_current_config(
 # ============================================================================
 
 
-def test_build_get_relevant_response() -> None:
-    """Test build_get_relevant_response constructs correct JSON."""
-    # Arrange
+def _sample_build_get_relevant_inputs() -> tuple[
+    RulesManagerStatusModel,
+    ModelDict,
+    list[ModelDict],
+]:
     status = RulesManagerStatusModel(
         enabled=True,
         rules_folder=".cursor/rules",
@@ -805,8 +809,12 @@ def test_build_get_relevant_response() -> None:
         {"id": 1, "tokens": 100},
         {"id": 2, "tokens": 200},
     ]
+    return status, relevant_rules_dict, all_rules
 
-    # Act
+
+def test_build_get_relevant_response() -> None:
+    """Test build_get_relevant_response constructs correct JSON."""
+    status, relevant_rules_dict, all_rules = _sample_build_get_relevant_inputs()
     result = build_get_relevant_response(
         "Test task",
         5000,
@@ -816,8 +824,6 @@ def test_build_get_relevant_response() -> None:
         status,
         relevant_rules_dict,
     )
-
-    # Assert
     result_dict = json.loads(result)
     assert result_dict["status"] == "success"
     assert result_dict["operation"] == "get_relevant"
@@ -1095,6 +1101,7 @@ async def test_get_relevant_rules_merges_ai_code_comments_file(
     mock_managers_enabled: dict[str, Any], mock_project_root: Path
 ) -> None:
     """cortex://rules includes `.cortex/synapse/rules/general/ai-code-comments.mdc` when present."""
+    invalidate_rules_resource_cache()
     ai_rules_folder = mock_project_root / ".cortex" / "synapse" / "rules" / "general"
     ai_rules_folder.mkdir(parents=True, exist_ok=True)
     _ = (ai_rules_folder / "ai-code-comments.mdc").write_text(
@@ -1120,6 +1127,40 @@ async def test_get_relevant_rules_merges_ai_code_comments_file(
     result_dict = json.loads(result_str)
     assert "AI Comment Convention" in result_dict.get("ai_code_comments_rule", "")
     assert "Reflection Checklist" in result_dict.get("reflection_checklist", "")
+
+
+@pytest.mark.asyncio
+async def test_get_relevant_rules_merges_agent_internal_communication_file(
+    mock_managers_enabled: dict[str, Any], mock_project_root: Path
+) -> None:
+    """cortex://rules includes agent-internal communication text when file present."""
+    invalidate_rules_resource_cache()
+    rules_folder = mock_project_root / ".cortex" / "synapse" / "rules" / "general"
+    rules_folder.mkdir(parents=True, exist_ok=True)
+    _ = (rules_folder / "agent-internal-communication.mdc").write_text(
+        "## Agent-Internal Communication\n\nDoes NOT apply to users.\n",
+        encoding="utf-8",
+    )
+    with (
+        patch(
+            "cortex.core.session_config.read_session_config",
+            return_value={"task_description": "general coding standards"},
+        ),
+        patch(
+            "cortex.tools.rules_operations.resolve_project_root_async",
+            new_callable=AsyncMock,
+            return_value=mock_project_root,
+        ),
+        patch(
+            "cortex.tools.rules_operations.get_managers",
+            AsyncMock(return_value=mock_managers_enabled),
+        ),
+    ):
+        result_str = await get_relevant_rules()
+    result_dict = json.loads(result_str)
+    assert "Agent-Internal Communication" in result_dict.get(
+        "agent_internal_communication_rule", ""
+    )
 
 
 @pytest.mark.asyncio
@@ -1352,17 +1393,7 @@ class TestRulesContextLogging:
             )
 
 
-@pytest.mark.integration
-@pytest.mark.asyncio
-async def test_rules_get_relevant_returns_at_least_one_rule_for_commit_pipeline() -> (
-    None
-):
-    """Integration: rules(get_relevant, 'Commit pipeline, test coverage') returns >= 1 rule when rules present.
-
-    Ensures rules indexing is effective for commit/analyze workflows.
-    Uses real project root and real managers when .cortex/rules exists.
-    """
-    project_root = get_project_root()
+def _skip_if_no_cortex_rules_mdc(project_root: Path) -> None:
     rules_dir = project_root / ".cortex" / "rules"
     if not rules_dir.exists():
         pytest.skip(
@@ -1374,6 +1405,10 @@ async def test_rules_get_relevant_returns_at_least_one_rule_for_commit_pipeline(
             reason=".cortex/rules has no .mdc files (ref: cleanup-skipped-legacy-tests)"
         )
 
+
+async def _index_and_get_relevant_commit_pipeline(
+    project_root: Path,
+) -> dict[str, object]:
     async def _return_project_root(_: object, __: object) -> Path:
         return project_root
 
@@ -1382,23 +1417,36 @@ async def test_rules_get_relevant_returns_at_least_one_rule_for_commit_pipeline(
         new_callable=AsyncMock,
         side_effect=_return_project_root,
     ):
-        # Index first so get_relevant can return from index
         index_result = await rules(operation="index", force=True)
         index_data = json.loads(index_result)
         if index_data.get("status") == "disabled":
             pytest.skip(
                 reason="Rules indexing disabled in config (ref: cleanup-skipped-legacy-tests)"
             )
-
         get_result = await rules(
             operation="get_relevant",
             task_description="Commit pipeline, test coverage",
             min_relevance_score=0.1,
         )
-    get_data = json.loads(get_result)
+    return json.loads(get_result)
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_rules_get_relevant_returns_at_least_one_rule_for_commit_pipeline() -> (
+    None
+):
+    """Integration: rules(get_relevant, 'Commit pipeline, test coverage') returns >= 1 rule when rules present.
+
+    Ensures rules indexing is effective for commit/analyze workflows.
+    Uses real project root and real managers when .cortex/rules exists.
+    """
+    project_root = get_project_root()
+    _skip_if_no_cortex_rules_mdc(project_root)
+    get_data = await _index_and_get_relevant_commit_pipeline(project_root)
     assert get_data.get("status") == "success", get_data
-    rules_count = get_data.get("rules_count", 0)
-    rules_list = get_data.get("rules", [])
+    rules_count = cast(int, get_data.get("rules_count", 0))
+    rules_list = cast(list[object], get_data.get("rules", []))
     assert rules_count >= 1 or len(rules_list) >= 1, (
         "rules() should return at least one rule for 'Commit pipeline, test coverage' "
         "when rules are present and indexed"

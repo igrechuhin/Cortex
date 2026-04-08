@@ -32,3 +32,7 @@ These are the Synapse defaults. Projects override via their rules loaded by `rul
 ## Incremental Validation
 
 - After each refactor: run type check and quality check before the next change — do not batch
+
+## Agent-internal result text
+
+Sub-agent prose is for other agents, not end users. Keep it compact: drop filler and hedging; keep paths, errors, and identifiers verbatim. Full guidance: `cortex://rules` — **Agent-Internal Communication**.

@@ -343,6 +343,22 @@ async def _read_ai_code_comments_rule(root: Path) -> str:
     return ""
 
 
+async def _read_agent_internal_communication_rule(root: Path) -> str:
+    path = (
+        get_cortex_path(root, CortexResourceType.SYNAPSE)
+        / "rules"
+        / "general"
+        / "agent-internal-communication.mdc"
+    )
+    try:
+        if path.is_file():
+            async with open_async_text_file(path, "r", "utf-8") as f:
+                return await f.read()
+    except OSError:
+        pass
+    return ""
+
+
 async def _merge_rules_payload(payload: str) -> str:
     """Inject reflection checklist and AI comment rule into a rules JSON payload."""
     try:
@@ -355,6 +371,9 @@ async def _merge_rules_payload(payload: str) -> str:
     merged["reflection_checklist"] = REFLECTION_CHECKLIST_MARKDOWN
     root = await resolve_project_root_async(None, None)
     merged["ai_code_comments_rule"] = await _read_ai_code_comments_rule(root)
+    merged["agent_internal_communication_rule"] = (
+        await _read_agent_internal_communication_rule(root)
+    )
     return json.dumps(merged, indent=2)
 
 

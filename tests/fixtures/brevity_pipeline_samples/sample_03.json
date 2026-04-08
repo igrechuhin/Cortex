@@ -1,0 +1,3 @@
+{
+  "summary": "Error: TypeError: expected str, got None at tests/unit/test_x.py line 42"
+}

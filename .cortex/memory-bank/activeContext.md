@@ -24,6 +24,8 @@
 
 - ✅ **Compression semantics repair** - COMPLETE (2026-04-08) - Safe fallback compressor and stricter Step 6 verification; memory bank restored to committed canonical text.
 
+- ✅ **Agent-Internal Brevity Rule for Sub-Agent Communication** - COMPLETE (2026-04-08) - Added agent-internal-communication.mdc rule, merged into cortex://rules resource, updated implement-code and shared-defaults prompts, extended pipeline_handoff data docstring, added tests and brevity word-count fixtures (no top-level scripts/).
+
 ## Completed Work (2026-04-07)
 
 - **Summary (2026-04-07)** - 1 entries archived.

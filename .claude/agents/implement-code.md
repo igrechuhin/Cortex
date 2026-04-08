@@ -75,6 +75,10 @@ pipeline_handoff(operation="write", pipeline="implement", phase="code",
 
 ## Report Results
 
+<!-- AI: brevity rule applies — agent-internal output, not user-facing -->
+
+Write the result summary in compact technical prose: no filler openers, no step recaps, no hedging. File paths, error messages, and type names verbatim. See `cortex://rules` and the **Agent-Internal Communication** section in loaded rules.
+
 After quality gate passes (or fails after max iterations), report:
 
 - Subtask completed: {description}

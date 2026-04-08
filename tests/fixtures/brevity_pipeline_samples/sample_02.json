@@ -1,0 +1,4 @@
+{
+  "context": "First I read the file. Then I applied the patch. Finally I ran tests.",
+  "summary": "The quality gate might have reported warnings but could be acceptable."
+}

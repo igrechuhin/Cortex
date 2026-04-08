@@ -912,3 +912,11 @@ class TestRoutingKeysInData:
         assert (
             write_result["pipeline_state"]["phases"]["select"]["status"] == "complete"
         )
+
+
+def test_pipeline_handoff_docstring_mentions_agent_internal_brevity() -> None:
+    doc = pipeline_handoff.__doc__
+    assert doc is not None
+    assert "Agent-Internal Communication" in doc
+    assert "context" in doc
+    assert "summary" in doc

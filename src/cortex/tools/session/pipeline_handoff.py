@@ -252,6 +252,10 @@ async def pipeline_handoff(
         phase: Phase name (e.g. "preflight", "checks"). Required for write.
             For read: if given, reads that phase; if omitted, reads full state.
         data: Payload for write and init. Accepts JSON string or native object.
+            When the JSON includes free-text fields such as `context` or
+            `summary`, write compact technical prose (see cortex://rules,
+            Agent-Internal Communication): no filler or hedging; keep file
+            paths and error messages verbatim.
         ctx: MCP context (auto-provided).
     """
     await log_client(
