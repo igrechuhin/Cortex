@@ -30,12 +30,23 @@ def test_build_fix_prompt_lists_errors_and_payloads() -> None:
 
     # Assert
     assert "The previous compression failed validation." in prompt
-    assert (
-        "Fix only the listed issues while preserving as much compression as possible."
-        in prompt
-    )
+    assert "Meaning and completeness take priority over token reduction" in prompt
     assert "Keep verbatim (byte-for-byte)" in prompt
     assert "- Heading count/order mismatch." in prompt
     assert "- URL set mismatch." in prompt
     assert "Original content:\n# Original\n" in prompt
     assert "Current compressed content:\n# Compressed\n" in prompt
+
+
+def test_fix_prompt_prioritizes_meaning() -> None:
+    # Arrange
+    original = "# Doc\nSome prose.\n"
+    compressed = "# Doc\n"
+    errors = ["Compressed token count must be lower than original."]
+
+    # Act
+    prompt = build_fix_prompt(original, compressed, errors)
+
+    # Assert
+    assert "Meaning and completeness take priority over token reduction" in prompt
+    assert "restore any content that was removed to achieve compression" in prompt

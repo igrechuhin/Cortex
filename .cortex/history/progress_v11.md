@@ -1,5 +1,11 @@
 # Progress Log
 
+## 2026-04-09
+
+- **Conditional Hook Execution DSL** - PARTIAL. Added runtime-level assertions for conditional hook metadata emission/omission across patterned and unpatterned languages in post-edit hook runtime tests.
+- **Conditional Hook Execution DSL** - PARTIAL. Added runtime coverage for TypeScript matcher+conditions emission and JavaScript backward-compatible no-conditions behavior in post-edit hook runtime tests.
+- **Conditional Hook Execution DSL** - COMPLETE. Finalized compatibility behavior so legacy hooks gain patterned `conditions` metadata during merge without duplicate entries.
+
 ## 2026-04-08
 
 - **Ingest Tool for Cortex Memory Bank (/cortex/ingest)** - PARTIAL. Added and registered `/cortex/ingest` prompt workflow (plan Step 3): source intake, ingest-tool storage handoff, synthesis/file-artifact instructions, relevant-page updates, log append, and final reporting.

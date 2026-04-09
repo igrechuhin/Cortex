@@ -9,6 +9,8 @@ from pydantic import BaseModel, Field
 
 HEADING_PATTERN = re.compile(r"^#{1,6}\s+.*$", re.MULTILINE)
 FENCED_CODE_PATTERN = re.compile(r"```[^\n]*\n[\s\S]*?```")
+FRONTMATTER_PATTERN = re.compile(r"\A---\n[\s\S]*?\n---\n?", re.MULTILINE)
+INLINE_CODE_PATTERN = re.compile(r"`([^`\n]+)`")
 URL_PATTERN = re.compile(r"https?://\S+")
 FILE_PATH_PATTERN = re.compile(r"(?:\.cortex|src)/[^\s]+")
 LIST_ITEM_PATTERN = re.compile(r"^\s*(?:[-*+]|\d+\.)\s+", re.MULTILINE)
@@ -25,6 +27,35 @@ class ValidationResult(BaseModel):
 
 def _extract_fenced_code_blocks(text: str) -> list[str]:
     return FENCED_CODE_PATTERN.findall(text)
+
+
+def _collect_frontmatter_errors(original: str, compressed: str) -> list[str]:
+    original_match = FRONTMATTER_PATTERN.match(original)
+    if original_match is None:
+        return []
+    compressed_match = FRONTMATTER_PATTERN.match(compressed)
+    if compressed_match is None:
+        return ["YAML frontmatter missing from compressed output."]
+    if original_match.group(0) != compressed_match.group(0):
+        return ["YAML frontmatter changed in compressed output."]
+    return []
+
+
+def _strip_fenced_blocks(text: str) -> str:
+    return FENCED_CODE_PATTERN.sub("", text)
+
+
+def _collect_inline_code_errors(original: str, compressed: str) -> list[str]:
+    original_spans = Counter(
+        INLINE_CODE_PATTERN.findall(_strip_fenced_blocks(original))
+    )
+    compressed_spans = Counter(
+        INLINE_CODE_PATTERN.findall(_strip_fenced_blocks(compressed))
+    )
+    for span, count in original_spans.items():
+        if compressed_spans[span] < count:
+            return [f"Inline code span missing from compressed output: `{span}`."]
+    return []
 
 
 def _collect_structure_errors(original: str, compressed: str) -> list[str]:
@@ -69,10 +100,10 @@ def _validate_list_counts(
     original_list_count = len(LIST_ITEM_PATTERN.findall(original))
     compressed_list_count = len(LIST_ITEM_PATTERN.findall(compressed))
     if original_list_count > 0:
-        min_allowed = original_list_count * 0.85
-        max_allowed = original_list_count * 1.15
+        min_allowed = original_list_count * 0.90
+        max_allowed = original_list_count * 1.10
         if not (min_allowed <= compressed_list_count <= max_allowed):
-            errors.append("Bullet/numbered list item count outside +/-15% tolerance.")
+            errors.append("Bullet/numbered list item count outside +/-10% tolerance.")
     elif compressed_list_count > 0:
         warnings.append(
             "Compressed content introduced list items where original had none."
@@ -104,8 +135,10 @@ def _compute_token_ratio(
 def validate_compressed(original: str, compressed: str) -> ValidationResult:
     """Validate compressed content against required structural invariants."""
 
-    errors = _collect_structure_errors(original, compressed)
+    errors = _collect_frontmatter_errors(original, compressed)
+    errors.extend(_collect_structure_errors(original, compressed))
     errors.extend(_collect_reference_errors(original, compressed))
+    errors.extend(_collect_inline_code_errors(original, compressed))
     list_errors, warnings = _validate_list_counts(original, compressed)
     errors.extend(list_errors)
     token_ratio, token_errors, token_warnings = _compute_token_ratio(

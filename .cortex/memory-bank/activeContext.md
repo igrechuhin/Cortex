@@ -6,35 +6,11 @@
 
 - ✅ **Conditional Hook Execution DSL (PARTIAL)** - COMPLETE (2026-04-09) - Extended runtime coverage in post-edit hook integration path to assert patterned hooks write `conditions` metadata while unpatterned hooks preserve matcher-only behavior.
 
+- ✅ **Conditional Hook Execution DSL** - COMPLETE (2026-04-09) - Completed conditional hook DSL support including legacy-compat merge behavior that backfills patterned `conditions` metadata for existing matcher+command entries.
+
 ## Completed Work (2026-04-08)
 
-- ✅ **Ingest prompt workflow registered (PARTIAL)** - COMPLETE (2026-04-08) - Implemented plan Step 3 by adding `.cortex/synapse/prompts/ingest.md` and registering it in `prompts-manifest.json`; quality gate still failing due to unrelated `/cortex/plan` integration tests, so roadmap entry remains pending.
-
-- ✅ **Ingest Tool for Cortex Memory Bank (/cortex/ingest) (PARTIAL)** - COMPLETE (2026-04-08) - Completed plan Step 4 slice: `cortex://context` now includes `## Recently Ingested Sources` (top 5 from `.cortex/memory-bank/sources/`) with heading-based title extraction and filename fallback; added focused unit/resource tests.
-
-- ✅ **Ingest source-summary lint consistency (PARTIAL)** - COMPLETE (2026-04-08) - Extended `OrphanedWikiPagesCheck` to validate ingest source/summary consistency under `.cortex/memory-bank/sources/` and `.cortex/memory-bank/queries/`, adding tests for orphaned sources and summaries referencing missing source files.
-
-- ✅ **Ingest Tool for Cortex Memory Bank (/cortex/ingest)** - COMPLETE (2026-04-08) - Completed ingest pipeline end-to-end: ingest tool, ingest prompt workflow, recent-ingested-sources context exposure, and memory-bank lint source/summary consistency checks are implemented and validated.
-
-- ✅ **Compress Cortex Synapse Prompts and Memory Bank Files (PARTIAL)** - COMPLETE (2026-04-08) - Implemented Step 2 file-type classifier (`detect_file_type` with extension map + fallback heuristic), exported symbols via compress package init, and added unit coverage with a passing quality gate.
-
-- ✅ **Compress Cortex Synapse Prompts and Memory Bank Files (PARTIAL)** - COMPLETE (2026-04-08) - Added `compress_cortex_internal_files` safe Step 6 entrypoint for Cortex internal targets (prompts, cursor-agents, activeContext/progress), defaulting to dry-run; exported symbol and added focused unit tests.
-
-- ✅ **Compress tools and tests prepared** - COMPLETE (2026-04-08) - Added compress tool modules and unit tests, then executed commit pipeline preflight and Phase A checks successfully.
-
-- ✅ **Compress pipeline verification criteria (PARTIAL)** - COMPLETE (2026-04-08) - Implemented and tested batch-level success-criteria verification for compression outcomes to enforce plan Step 6 acceptance checks programmatically.
-
-- ✅ **Compress pipeline robustness updates** - COMPLETE (2026-04-08) - Added extension-based detection support and batch compression success criteria coverage; validated full quality/docs gates and prepared commit pipeline artifacts.
-
-- ✅ **Compression semantics repair** - COMPLETE (2026-04-08) - Safe fallback compressor and stricter Step 6 verification; memory bank restored to committed canonical text.
-
-- ✅ **Agent-Internal Brevity Rule for Sub-Agent Communication** - COMPLETE (2026-04-08) - Added agent-internal-communication.mdc rule, merged into cortex://rules resource, updated implement-code and shared-defaults prompts, extended pipeline_handoff data docstring, added tests and brevity word-count fixtures (no top-level scripts/).
-
-- ✅ **compress_memory_bank MCP Tool and Token Budget Tracking** - COMPLETE (2026-04-08) - Added compress_memory_bank MCP tool (memory paths + compress_file), token_budget helpers, token_budget section on cortex://analysis JSON, analyze Step 6.4 / analyze-compact Step 2.5, TOOL_CATEGORIES + docs inventory (12 tools).
-
-- ✅ **Synapse submodule: token budget analyze steps** - COMPLETE (2026-04-08) - Committed Synapse at f1754b1: added Step 6.4 (analyze.md) and Step 2.5 (analyze-compact.md) for token_budget from cortex://analysis and compress_memory_bank() guidance; pushed to origin/main; superproject gitlink staged.
-
-- ✅ **compress_memory_bank wiring and analysis helpers** - COMPLETE (2026-04-08) - Added `memory_compress_tool` MCP implementation using `cortex.tools.analysis.token_budget` for memory-bank path iteration; registered tool, updated TOOL_CATEGORIES and docs (README, architecture, api/tools, index); extended analyze-resource and governance tests; archived compress-memory-bank plan under `.cortex/plans/archive/Other/`.
+- **Summary (2026-04-08)** - 1 entries archived.
 
 ## Completed Work (2026-04-07)
 

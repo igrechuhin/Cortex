@@ -4,7 +4,7 @@ import json
 from pathlib import Path
 from typing import cast
 
-from cortex.setup.hook_models import HookCondition
+from cortex.setup.hook_models import HookCondition, HookConditionPayload
 
 
 class ClaudeSettingsError(ValueError):
@@ -122,8 +122,11 @@ def _ensure_command_hook(
         )
 
     hooks_list = cast(list[object], hooks_value)
-    if _hooks_list_contains_command(hooks_list, command=command):
-        return False
+    existing_idx = _find_command_hook_index(hooks_list, command=command)
+    if existing_idx >= 0:
+        return _merge_conditions_into_existing_hook(
+            hooks_list, index=existing_idx, condition=condition
+        )
     hooks_list.append(_command_hook_payload(command=command, condition=condition))
     entry["hooks"] = hooks_list
     return True
@@ -141,15 +144,42 @@ def _command_hook_payload(
         return payload
 
     # AI: Keep the forward-compatible matcher metadata so Claude can scope hook firing.
-    payload["conditions"] = [{"tool": condition.tool.strip(), "pattern": pattern}]
+    payload["conditions"] = [
+        HookConditionPayload(tool=condition.tool.strip(), pattern=pattern).model_dump()
+    ]
     return payload
 
 
-def _hooks_list_contains_command(hooks_list: list[object], *, command: str) -> bool:
-    for hook in hooks_list:
+def _find_command_hook_index(hooks_list: list[object], *, command: str) -> int:
+    for idx, hook in enumerate(hooks_list):
         if not isinstance(hook, dict):
             continue
         hook_dict = cast(dict[str, object], hook)
         if hook_dict.get("type") == "command" and hook_dict.get("command") == command:
-            return True
-    return False
+            return idx
+    return -1
+
+
+def _merge_conditions_into_existing_hook(
+    hooks_list: list[object], *, index: int, condition: HookCondition | None
+) -> bool:
+    if condition is None:
+        return False
+
+    pattern = condition.pattern.strip() if condition.pattern is not None else None
+    if not pattern:
+        return False
+
+    existing_hook_value = hooks_list[index]
+    if not isinstance(existing_hook_value, dict):
+        return False
+    existing_hook = cast(dict[str, object], existing_hook_value)
+    if existing_hook.get("conditions") is not None:
+        return False
+
+    # AI: Backfill conditions for legacy command hooks without duplicating entries.
+    existing_hook["conditions"] = [
+        HookConditionPayload(tool=condition.tool.strip(), pattern=pattern).model_dump()
+    ]
+    hooks_list[index] = existing_hook
+    return True

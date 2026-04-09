@@ -40,7 +40,6 @@ Completed investigations are recorded in [activeContext.md](activeContext.md). P
 
 #### Claude Code Harness Improvements (High Priority)
 
-- Plan: [Conditional Hook Execution DSL](../plans/hook-conditional-dsl.md) — Write `matcher` entries with wildcard glob sub-patterns (`FileEdit(/src/*)`, `Bash(git *)`) so hooks only fire on matching tool+pattern. PENDING.
 - Plan: [Once Flag on Hooks](../plans/hook-once-flag.md) — Write `"once": true` hook entries that auto-remove after first execution; cleanup leftover once-hooks on session deregister. PENDING.
 - Plan: [Prompt and Agent Hook Types](../plans/hook-prompt-agent-types.md) — Extend `HookEntry` to support `"type": "prompt"` and `"type": "agent"` entries for LLM-based post-edit verification. PENDING.
 - Plan: [File State Cache and Rollback](../plans/file-state-cache-rollback.md) — Snapshot file contents before pipeline edits; restore on failure via `pipeline_handoff(operation="rollback")`; cleanup on session deregister. PENDING.

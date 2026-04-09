@@ -29,6 +29,11 @@ class HookCondition(BaseModel):
         return f"{normalized_tool}({normalized_pattern})"
 
 
+class HookConditionPayload(BaseModel):
+    tool: str = Field(min_length=1)
+    pattern: str = Field(min_length=1)
+
+
 class HookEntry(BaseModel):
     type: HookType
     command: str = Field(min_length=1)

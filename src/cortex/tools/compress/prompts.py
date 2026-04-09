@@ -25,7 +25,8 @@ def build_fix_prompt(original: str, compressed: str, errors: list[str]) -> str:
     error_lines = "\n".join(f"- {error}" for error in errors)
     return (
         "The previous compression failed validation.\n"
-        "Fix only the listed issues while preserving as much compression as possible.\n"
+        "Fix the listed issues. Meaning and completeness take priority over token "
+        "reduction — restore any content that was removed to achieve compression.\n"
         "Keep verbatim (byte-for-byte): fenced code blocks, inline code, file paths, "
         "CLI commands, URLs, tool/model names, section headings, YAML frontmatter.\n"
         "Do not add commentary or preamble; output the corrected compressed document only.\n\n"

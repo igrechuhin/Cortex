@@ -1899,3 +1899,83 @@ status=success; changed_files=None
 ## [2026-04-09T11:04] plan | Created plan: Smoke Test Plan
 
 ## [2026-04-09T11:05] lint | Quality gate passed
+
+## [2026-04-09T11:17] plan | Created plan: Test Plan
+
+## [2026-04-09T11:17] plan | Created plan: Smoke Test Plan
+
+## [2026-04-09T11:18] lint | Quality gate passed
+
+## [2026-04-09T11:18] plan | Completed plan: Conditional Hook Execution DSL
+
+Completed conditional hook DSL support including legacy-compat merge behavior that backfills patterned `conditions` metadata for existing matcher+command entries.
+
+## [2026-04-09T11:19] fix | Autofix completed
+
+status=success; changed_files=None
+
+## [2026-04-09T11:19] plan | Created plan: Smoke Test Plan
+
+## [2026-04-09T11:19] plan | Created plan: Test Plan
+
+## [2026-04-09T11:20] lint | Quality gate passed
+
+## [2026-04-09T11:28] plan | Created plan: Test Plan
+
+## [2026-04-09T11:29] plan | Created plan: Smoke Test Plan
+
+## [2026-04-09T11:30] plan | Created plan: Test Plan
+
+## [2026-04-09T11:30] plan | Created plan: Smoke Test Plan
+
+## [2026-04-09T11:32] plan | Created plan: Smoke Test Plan
+
+## [2026-04-09T11:33] plan | Created plan: Test Plan
+
+## [2026-04-09T11:33] plan | Created plan: Smoke Test Plan
+
+## [2026-04-09T11:33] plan | Created plan: Test Plan
+
+## [2026-04-09T11:35] plan | Created plan: Test Plan
+
+## [2026-04-09T11:35] plan | Created plan: Smoke Test Plan
+
+## [2026-04-09T11:36] plan | Created plan: Test Plan
+
+## [2026-04-09T11:36] plan | Created plan: Smoke Test Plan
+
+## [2026-04-09T11:39] plan | Created plan: Test Plan
+
+## [2026-04-09T11:39] plan | Created plan: Smoke Test Plan
+
+## [2026-04-09T11:40] plan | Created plan: Smoke Test Plan
+
+## [2026-04-09T11:41] plan | Created plan: Test Plan
+
+## [2026-04-09T11:45] plan | Created plan: Test Plan
+
+## [2026-04-09T11:45] plan | Created plan: Smoke Test Plan
+
+## [2026-04-09T11:46] lint | Quality gate passed
+
+## [2026-04-09T11:47] plan | Created plan: Smoke Test Plan
+
+## [2026-04-09T11:47] plan | Created plan: Test Plan
+
+## [2026-04-09T11:47] lint | Quality gate passed
+
+## [2026-04-09T11:51] plan | Created plan: Test Plan
+
+## [2026-04-09T11:51] plan | Created plan: Smoke Test Plan
+
+## [2026-04-09T11:52] lint | Quality gate passed
+
+## [2026-04-09T11:53] fix | Autofix completed
+
+status=success; changed_files=None
+
+## [2026-04-09T11:54] plan | Created plan: Smoke Test Plan
+
+## [2026-04-09T11:55] plan | Created plan: Test Plan
+
+## [2026-04-09T11:55] lint | Quality gate passed

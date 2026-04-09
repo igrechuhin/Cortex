@@ -139,7 +139,11 @@ def test_merge_deduplicates_by_same_matcher_and_command_with_condition() -> None
                 {
                     "matcher": "Edit(**/*.py)",
                     "hooks": [
-                        {"type": "command", "command": "python3 -m pytest tests/ -q"}
+                        {
+                            "type": "command",
+                            "command": "python3 -m pytest tests/ -q",
+                            "conditions": [{"tool": "Edit", "pattern": "**/*.py"}],
+                        }
                     ],
                 }
             ]
@@ -216,3 +220,32 @@ def test_merge_omits_conditions_for_unpatterned_condition() -> None:
     hook_list = cast(list[object], entry["hooks"])
     first_hook = cast(dict[str, object], hook_list[0])
     assert "conditions" not in first_hook
+
+
+def test_merge_backfills_conditions_on_legacy_matching_command_hook() -> None:
+    settings: dict[str, object] = {
+        "hooks": {
+            "PostToolUse": [
+                {
+                    "matcher": "Edit(**/*.py)",
+                    "hooks": [
+                        {"type": "command", "command": "python3 -m pytest tests/ -q"}
+                    ],
+                }
+            ]
+        }
+    }
+
+    merged, changed = merge_post_tool_use_edit_hook(
+        settings,
+        command="python3 -m pytest tests/ -q",
+        condition=HookCondition(tool="Edit", pattern="**/*.py"),
+    )
+
+    assert changed is True
+    hooks = cast(dict[str, object], merged["hooks"])
+    post_tool_use = cast(list[object], hooks["PostToolUse"])
+    entry = cast(dict[str, object], post_tool_use[0])
+    hook_list = cast(list[object], entry["hooks"])
+    first_hook = cast(dict[str, object], hook_list[0])
+    assert first_hook["conditions"] == [{"tool": "Edit", "pattern": "**/*.py"}]

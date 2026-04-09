@@ -4,6 +4,7 @@
 
 - **Conditional Hook Execution DSL** - PARTIAL. Added runtime-level assertions for conditional hook metadata emission/omission across patterned and unpatterned languages in post-edit hook runtime tests.
 - **Conditional Hook Execution DSL** - PARTIAL. Added runtime coverage for TypeScript matcher+conditions emission and JavaScript backward-compatible no-conditions behavior in post-edit hook runtime tests.
+- **Conditional Hook Execution DSL** - COMPLETE. Finalized compatibility behavior so legacy hooks gain patterned `conditions` metadata during merge without duplicate entries.
 
 ## 2026-04-08
 
