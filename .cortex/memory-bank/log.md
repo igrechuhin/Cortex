@@ -1,41 +1,5 @@
 # Cortex Operations Log
 
-<!-- markdownlint-disable MD024 -->
-
-## [2026-04-07T13:54] plan | Completed plan: Wire optimization
-
-Connected config to runtime.
-
-## [2026-04-07T13:54] plan | Created plan: Operations log hook test
-
-## [2026-04-07T13:54] plan | Completed plan: Hook target
-
-Marked complete via wrapper.
-
-## [2026-04-07T13:54] plan | Created plan: Smoke Test Plan
-
-## [2026-04-07T13:54] plan | Created plan: Test Plan
-
-## [2026-04-07T13:58] plan | Created plan: Test Plan
-
-## [2026-04-07T13:58] plan | Created plan: Smoke Test Plan
-
-## [2026-04-07T14:00] plan | Created plan: Smoke Test Plan
-
-## [2026-04-07T14:01] plan | Created plan: Test Plan
-
-## [2026-04-07T14:02] plan | Created plan: Test Plan
-
-## [2026-04-07T14:02] plan | Created plan: Smoke Test Plan
-
-## [2026-04-07T14:04] plan | Created plan: Test Plan
-
-## [2026-04-07T14:04] plan | Created plan: Smoke Test Plan
-
-## [2026-04-07T14:06] plan | Created plan: Test Plan
-
-## [2026-04-07T14:06] plan | Created plan: Smoke Test Plan
-
 ## [2026-04-07T14:07] plan | Created plan: Test Plan
 
 ## [2026-04-07T14:07] plan | Created plan: Smoke Test Plan
@@ -580,9 +544,9 @@ Completed memory-bank lint workflow and closed remaining parsing gap for roadmap
 
 status=success; changed_files=None
 
-## [2026-04-07T18:44] plan | Created plan: Test Plan
+## [2026-04-07T18:44] plan | Created plan: Test Plan (duplicate entry)
 
-## [2026-04-07T18:44] plan | Created plan: Smoke Test Plan
+## [2026-04-07T18:44] plan | Created plan: Smoke Test Plan (duplicate entry)
 
 ## [2026-04-07T18:44] plan | Created plan: Test Plan
 
@@ -598,7 +562,7 @@ status=success; changed_files=None
 
 ## [2026-04-07T18:51] plan | Created plan: Test Plan
 
-## [2026-04-07T18:53] plan | Created plan: Smoke Test Plan
+## [2026-04-07T18:53] plan | Created plan: Smoke Test Plan (duplicate entry)
 
 ## [2026-04-07T18:53] plan | Created plan: Smoke Test Plan
 
@@ -1728,7 +1692,7 @@ status=success; changed_files=None
 
 ## [2026-04-08T20:59] lint | Quality gate passed
 
-## [2026-04-08T21:00] fix | Autofix completed
+## [2026-04-08T21:00] fix | Autofix completed (duplicate entry)
 
 status=success; changed_files=None
 
@@ -1930,7 +1894,7 @@ status=success; changed_files=None
 
 ## [2026-04-09T11:32] plan | Created plan: Smoke Test Plan
 
-## [2026-04-09T11:33] plan | Created plan: Test Plan
+## [2026-04-09T11:33] plan | Created plan: Test Plan (duplicate entry)
 
 ## [2026-04-09T11:33] plan | Created plan: Smoke Test Plan
 
@@ -2161,3 +2125,95 @@ status=success; changed_files=None
 ## [2026-04-09T16:05] plan | Created plan: Smoke Test Plan
 
 ## [2026-04-09T16:05] lint | Quality gate passed
+
+## [2026-04-09T16:12] plan | Created plan: Smoke Test Plan
+
+## [2026-04-09T16:12] plan | Created plan: Test Plan
+
+## [2026-04-09T16:12] lint | Quality gate failed
+
+## [2026-04-09T16:36] plan | Created plan: Smoke Test Plan
+
+## [2026-04-09T16:36] plan | Created plan: Test Plan
+
+## [2026-04-09T16:37] lint | Quality gate failed
+
+## [2026-04-09T16:39] plan | Created plan: Smoke Test Plan
+
+## [2026-04-09T16:39] plan | Created plan: Test Plan
+
+## [2026-04-09T16:39] lint | Quality gate failed
+
+## [2026-04-09T16:40] plan | Created plan: Smoke Test Plan
+
+## [2026-04-09T16:40] plan | Created plan: Test Plan
+
+## [2026-04-09T16:41] lint | Quality gate failed
+
+## [2026-04-09T16:41] plan | Completed plan: File State Cache and Rollback
+
+Implemented session-scoped file snapshots with rollback operations in pipeline handoff, added deregister cleanup, and covered behavior with new unit tests.
+
+## [2026-04-09T16:42] fix | Autofix completed
+
+status=success; changed_files=None
+
+## [2026-04-09T16:43] plan | Created plan: Smoke Test Plan
+
+## [2026-04-09T16:43] plan | Created plan: Test Plan
+
+## [2026-04-09T16:43] lint | Quality gate failed
+
+## [2026-04-09T16:44] fix | Autofix completed
+
+status=success; changed_files=None
+
+## [2026-04-09T16:44] plan | Created plan: Smoke Test Plan
+
+## [2026-04-09T16:44] plan | Created plan: Test Plan
+
+## [2026-04-09T16:45] lint | Quality gate failed
+
+## [2026-04-09T16:45] fix | Autofix completed
+
+status=success; changed_files=None
+
+## [2026-04-09T16:46] plan | Created plan: Smoke Test Plan
+
+## [2026-04-09T16:46] plan | Created plan: Test Plan
+
+## [2026-04-09T16:46] lint | Quality gate failed
+
+## [2026-04-09T17:00] plan | Created plan: Test Plan
+
+## [2026-04-09T17:00] plan | Created plan: Smoke Test Plan
+
+## [2026-04-09T17:01] lint | Quality gate failed
+
+## [2026-04-09T17:02] fix | Autofix completed
+
+status=success; changed_files=None
+
+## [2026-04-09T17:03] plan | Created plan: Test Plan
+
+## [2026-04-09T17:03] plan | Created plan: Smoke Test Plan
+
+## [2026-04-09T17:03] lint | Quality gate failed
+
+## [2026-04-09T17:04] plan | Created plan: Test Plan
+
+## [2026-04-09T17:04] plan | Created plan: Smoke Test Plan
+
+## [2026-04-09T17:05] lint | Quality gate passed
+
+## [2026-04-09T17:09] plan | Created plan: Test Plan
+
+## [2026-04-09T17:09] plan | Created plan: Smoke Test Plan
+
+## [2026-04-09T17:10] lint | Quality gate passed
+
+## [2026-04-09T17:12] plan | Created plan: Test Plan
+
+## [2026-04-09T17:12] plan | Created plan: Smoke Test Plan
+
+## [2026-04-09T17:12] lint | Quality gate passed

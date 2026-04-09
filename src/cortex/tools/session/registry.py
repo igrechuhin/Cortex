@@ -223,9 +223,11 @@ async def session_register(
 async def _deregister_session_impl(ctx: MCPContext | None) -> str:
     """Implementation of deregister_session MCP tool."""
     from cortex.setup.claude_settings import remove_once_hooks
+    from cortex.tools.session.pipeline_handoff_io import get_file_state_cache
 
     await log_client(ctx, "info", "deregister_session: starting", logger_name=__name__)
     root = await resolve_project_root_async(None, ctx)
+    session_id = get_session_id()
     settings_path = root / ".claude" / "settings.json"
     removed_once_count = remove_once_hooks(settings_path)
     logger.debug(
@@ -233,6 +235,7 @@ async def _deregister_session_impl(ctx: MCPContext | None) -> str:
         removed_once_count,
         settings_path,
     )
+    get_file_state_cache(session_id, root).drop_all()
 
     deregistered = await deregister_session(root)
     result = _deregister_result(deregistered)

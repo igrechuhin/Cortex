@@ -10,6 +10,7 @@
 - **Once Flag on Hooks** - PARTIAL. Implemented Step 3 by adding `write_once_hook(...)` in claude settings to register one-shot hooks through merge logic with dedup behavior; added focused unit tests.
 - **Once Flag on Hooks** - COMPLETE. Added once-hook cleanup/removal path and deregister lifecycle integration with tests.
 - **Prompt and Agent Hook Types** - COMPLETE. Finalized prompt/agent hook entry model support, write helpers with `(type, prompt)` dedup + default model behavior, and validated with unit coverage and green quality gate.
+- **File State Cache and Rollback** - COMPLETE. Added FileSnapshot/FileStateCache, pipeline snapshot/rollback operations, deregister cleanup, and test coverage for snapshot lifecycle.
 
 ## 2026-04-08
 

@@ -93,6 +93,59 @@ class TestSwiftAdapter:
             assert "\ufffd" in result.output or "Test run" in result.output
 
     @patch("cortex.services.framework_adapters.swift_adapter.subprocess.run")
+    def test_run_tests_parses_xctest_summary_format(self, mock_run: MagicMock) -> None:
+        """run_tests correctly parses XCTest 'Executed N tests, with M failures' format."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            _ = (Path(tmpdir) / "Package.swift").write_text(
+                "// swift-tools-version:5.9"
+            )
+            mock_result = MagicMock()
+            mock_result.returncode = 0
+            xctest_output = (
+                b"Test Suite 'MyTests' passed at 2026-04-09.\n"
+                b"\t Executed 7819 tests, with 0 failures (0 unexpected) in 120.0 (122.0) seconds\n"
+            )
+            mock_result.stdout = xctest_output
+            mock_result.stderr = b""
+            mock_run.return_value = mock_result
+
+            adapter = SwiftAdapter(str(tmpdir))
+            result = adapter.run_tests()
+
+            assert result.success is True
+            assert result.tests_run == 7819
+            assert result.tests_failed == 0
+            assert result.tests_passed == 7819
+            assert result.pass_rate == 1.0
+
+    @patch("cortex.services.framework_adapters.swift_adapter.subprocess.run")
+    def test_run_tests_xctest_summary_nonzero_failures(
+        self, mock_run: MagicMock
+    ) -> None:
+        """run_tests correctly extracts failure count from XCTest summary."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            _ = (Path(tmpdir) / "Package.swift").write_text(
+                "// swift-tools-version:5.9"
+            )
+            mock_result = MagicMock()
+            mock_result.returncode = 1
+            xctest_output = (
+                b"Test Suite 'MyTests' failed at 2026-04-09.\n"
+                b"\t Executed 100 tests, with 3 failures (0 unexpected) in 5.0 (5.1) seconds\n"
+            )
+            mock_result.stdout = xctest_output
+            mock_result.stderr = b""
+            mock_run.return_value = mock_result
+
+            adapter = SwiftAdapter(str(tmpdir))
+            result = adapter.run_tests()
+
+            assert result.success is False
+            assert result.tests_run == 100
+            assert result.tests_failed == 3
+            assert result.tests_passed == 97
+
+    @patch("cortex.services.framework_adapters.swift_adapter.subprocess.run")
     def test_run_tests_timeout(self, mock_run: MagicMock) -> None:
         """run_tests returns failure when execution times out."""
         with tempfile.TemporaryDirectory() as tmpdir:

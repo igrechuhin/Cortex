@@ -13,6 +13,12 @@ from cortex.services.language_detector import LanguageDetector, LanguageInfo
 
 from .base import CheckResult, FrameworkAdapter, ProgressCallback, TestResult
 
+# Matches XCTest summary: "Executed N tests, with M failures"
+_XCTEST_SUMMARY_RE = re.compile(
+    r"Executed\s+(?P<total>\d+)\s+tests?,\s+with\s+(?P<failed>\d+)\s+failures?",
+    re.IGNORECASE,
+)
+
 _SWIFT_ERROR_LINE_RE = re.compile(r"error:\s+.*|\.swift:\d+:\d+:\s+error:", re.I)
 
 
@@ -107,29 +113,32 @@ class SwiftAdapter(FrameworkAdapter):
         )
 
     def _extract_test_counts(self, output: str) -> tuple[int, int]:
-        """Extract passed/failed counts from swift test output."""
-        passed, failed = 0, 0
-        for line in output.splitlines():
-            line_lower = line.lower()
-            if "passed" in line_lower or "failed" in line_lower:
-                parts = line.replace(",", " ").split()
-                for i, part in enumerate(parts):
-                    if part == "passed" and i > 0:
-                        try:
-                            passed = int(parts[i - 1])
-                        except ValueError:
-                            pass
-                    if part == "failed" and i > 0:
-                        try:
-                            failed = int(parts[i - 1])
-                        except ValueError:
-                            pass
-        if passed == 0 and failed == 0 and "test" in output.lower():
+        """Extract passed/failed counts from swift test output.
+
+        Parses the XCTest summary line:
+          ``Executed N tests, with M failures (0 unexpected) in ...``
+        and accumulates counts across multiple summary lines (parallel suites).
+        Falls back to a heuristic scan if no summary line is found.
+        """
+        total_from_summary = 0
+        failed_from_summary = 0
+        found_summary = False
+        for m in _XCTEST_SUMMARY_RE.finditer(output):
+            total_from_summary = max(total_from_summary, int(m.group("total")))
+            failed_from_summary += int(m.group("failed"))
+            found_summary = True
+
+        if found_summary:
+            passed = total_from_summary - failed_from_summary
+            return max(passed, 0), failed_from_summary
+
+        # Fallback: output was truncated or format is unexpected.
+        if "test" in output.lower():
             if "passed" in output.lower():
-                passed = 1
-            elif "failed" in output.lower() or "error:" in output:
-                failed = 1
-        return passed, failed
+                return 1, 0
+            if "failed" in output.lower() or "error:" in output:
+                return 0, 1
+        return 0, 0
 
     def _timeout_test_result(self) -> TestResult:
         """Build test result for timeout."""

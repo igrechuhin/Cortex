@@ -434,3 +434,38 @@ class TestSessionRegistryMCPExceptionPaths:
                 _ = os.environ.pop(env_key, None)
             else:
                 os.environ[env_key] = original
+
+    @pytest.mark.asyncio
+    async def test_session_deregister_cleans_file_state_snapshots(
+        self, tmp_path: Path
+    ) -> None:
+        """session_deregister removes snapshot cache for current session."""
+        from cortex.tools.session.pipeline_handoff_io import get_file_state_cache
+
+        env_key = "CORTEX_SESSION_ID"
+        original = os.environ.get(env_key)
+        os.environ[env_key] = "cleanup_snapshots_session"
+        tracked = tmp_path / "tracked.txt"
+        _ = tracked.write_text("before", encoding="utf-8")
+
+        try:
+            _ = await register_session(tmp_path, "cleanup snapshots")
+            cache = get_file_state_cache("cleanup_snapshots_session", tmp_path)
+            _ = cache.snapshot([tracked])
+            assert cache.list_snapshots()
+
+            with patch(
+                "cortex.tools.session.registry.resolve_project_root_async",
+                new_callable=AsyncMock,
+                return_value=tmp_path,
+            ):
+                result_str = await session_deregister(ctx=None)
+
+            result = json.loads(result_str)
+            assert result.get("status") == "success"
+            assert cache.list_snapshots() == []
+        finally:
+            if original is None:
+                _ = os.environ.pop(env_key, None)
+            else:
+                os.environ[env_key] = original

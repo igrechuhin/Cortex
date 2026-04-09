@@ -11,6 +11,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import cast
 
+from cortex.core.file_snapshot import FileStateCache
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 
 logger = logging.getLogger(__name__)
@@ -46,6 +47,12 @@ def pipeline_dir(project_root: Path, pipeline: str) -> Path:
     session_id = get_session_id()
     base = get_cortex_path(project_root, CortexResourceType.SESSION)
     return base / session_id / pipeline
+
+
+def get_file_state_cache(session_id: str, project_root: Path) -> FileStateCache:
+    """Create a session-scoped file state cache instance."""
+    base = get_cortex_path(project_root, CortexResourceType.SESSION)
+    return FileStateCache(base / session_id)
 
 
 def task_path(pipeline_dir: Path, phase: str) -> Path:
@@ -333,3 +340,28 @@ def op_clear(project_root: Path, pipeline: str) -> str:
         )
     except OSError as e:
         return json.dumps({"status": "error", "error": str(e)}, indent=2)
+
+
+def op_snapshot(project_root: Path, paths: list[str]) -> str:
+    """Snapshot provided file paths for current session."""
+    session_id = get_session_id()
+    cache = get_file_state_cache(session_id, project_root)
+    snapshot_id = cache.snapshot([Path(path) for path in paths])
+    return json.dumps(
+        {"status": "ok", "snapshot_id": snapshot_id, "session_id": session_id},
+        indent=2,
+    )
+
+
+def op_rollback(project_root: Path, snapshot_id: str) -> str:
+    """Restore files from a session snapshot."""
+    cache = get_file_state_cache(get_session_id(), project_root)
+    restored = cache.restore(snapshot_id)
+    return json.dumps(
+        {
+            "status": "ok",
+            "snapshot_id": snapshot_id,
+            "restored": [str(p) for p in restored],
+        },
+        indent=2,
+    )

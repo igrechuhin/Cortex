@@ -14,6 +14,8 @@
 
 - ✅ **Prompt and Agent Hook Types** - COMPLETE (2026-04-09) - Added/verified prompt+agent hook entry support, post-edit write helpers with matcher-local `(type, prompt)` dedup and default model fallback, and associated regression coverage.
 
+- ✅ **File State Cache and Rollback** - COMPLETE (2026-04-09) - Implemented session-scoped file snapshots with rollback operations in pipeline handoff, added deregister cleanup, and covered behavior with new unit tests.
+
 ## Completed Work (2026-04-08)
 
 - **Summary (2026-04-08)** - 1 entries archived.

@@ -547,6 +547,69 @@ class TestDataCoercion:
 
 
 @pytest.mark.asyncio
+class TestSnapshotRollback:
+    async def test_snapshot_operation(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        _resolve_root(monkeypatch, tmp_path)
+        target = tmp_path / "tracked.txt"
+        _ = target.write_text("before", encoding="utf-8")
+
+        result = json.loads(
+            await pipeline_handoff(
+                operation="snapshot",
+                pipeline="implement",
+                data={"paths": [str(target)]},
+            )
+        )
+
+        assert result["status"] == "ok"
+        assert isinstance(result["snapshot_id"], str)
+        assert result["snapshot_id"]
+
+    async def test_rollback_operation(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        _resolve_root(monkeypatch, tmp_path)
+        target = tmp_path / "tracked.txt"
+        _ = target.write_text("before", encoding="utf-8")
+        snapshot = json.loads(
+            await pipeline_handoff(
+                operation="snapshot",
+                pipeline="implement",
+                data={"paths": [str(target)]},
+            )
+        )
+        _ = target.write_text("after", encoding="utf-8")
+
+        rollback = json.loads(
+            await pipeline_handoff(
+                operation="rollback",
+                pipeline="implement",
+                data={"snapshot_id": snapshot["snapshot_id"]},
+            )
+        )
+
+        assert rollback["status"] == "ok"
+        assert rollback["snapshot_id"] == snapshot["snapshot_id"]
+        assert rollback["restored"] == [str(target)]
+        assert target.read_text(encoding="utf-8") == "before"
+
+    async def test_snapshot_without_paths_returns_error(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        _resolve_root(monkeypatch, tmp_path)
+        result = json.loads(
+            await pipeline_handoff(
+                operation="snapshot",
+                pipeline="implement",
+            )
+        )
+        assert result["status"] == "error"
+        assert "paths is required" in result["error"]
+
+
+@pytest.mark.asyncio
 class TestReadTaskFallback:
     """read_task with no task file falls back to pipeline state."""
 

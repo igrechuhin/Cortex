@@ -28,6 +28,7 @@ from __future__ import annotations
 import asyncio
 import json
 from pathlib import Path
+from typing import cast
 
 from cortex.core.constants import MCP_TOOL_TIMEOUT_FAST
 from cortex.core.context_logging import MCPContext, log_client
@@ -43,6 +44,8 @@ from .pipeline_handoff_io import (
     op_init,
     op_read_state,
     op_read_task,
+    op_rollback,
+    op_snapshot,
     op_write_result,
     op_write_task,
 )
@@ -106,7 +109,7 @@ def _unknown_op_error(operation: str) -> str:
             "status": "error",
             "error": (
                 f"Unknown operation '{operation}'. "
-                "Use: init, write, read, clear "
+                "Use: init, write, read, clear, snapshot, rollback "
                 "(aliases: write_task, read_task, write_result, read_state)"
             ),
         },
@@ -119,6 +122,74 @@ def _phase_required_error(operation: str) -> str:
         {"status": "error", "error": f"phase is required for {operation}"},
         indent=2,
     )
+
+
+def _snapshot_paths_required_error() -> str:
+    return json.dumps(
+        {"status": "error", "error": "paths is required for snapshot"},
+        indent=2,
+    )
+
+
+def _rollback_snapshot_id_required_error() -> str:
+    return json.dumps(
+        {"status": "error", "error": "snapshot_id is required for rollback"},
+        indent=2,
+    )
+
+
+def _extract_snapshot_paths(data_str: str | None) -> list[str]:
+    if not data_str:
+        return []
+    try:
+        parsed = json.loads(data_str)
+    except json.JSONDecodeError:
+        return []
+    if not isinstance(parsed, dict):
+        return []
+    parsed_dict = cast(dict[str, object], parsed)
+    paths = parsed_dict.get("paths")
+    if not isinstance(paths, list):
+        return []
+    raw_paths = cast(list[object], paths)
+    return [path for path in raw_paths if isinstance(path, str) and path]
+
+
+def _extract_snapshot_id(data_str: str | None) -> str | None:
+    if not data_str:
+        return None
+    try:
+        parsed = json.loads(data_str)
+    except json.JSONDecodeError:
+        return None
+    if not isinstance(parsed, dict):
+        return None
+    parsed_dict = cast(dict[str, object], parsed)
+    snapshot_id = parsed_dict.get("snapshot_id")
+    return snapshot_id if isinstance(snapshot_id, str) and snapshot_id else None
+
+
+def _dispatch_read(project_root: Path, pipeline: str, phase: str | None) -> str:
+    ph = phase or ""
+    return (
+        op_read_task(project_root, pipeline, ph)
+        if phase
+        else op_read_state(project_root, pipeline)
+    )
+
+
+def _dispatch_snapshot_or_rollback(
+    project_root: Path, operation: str, data_str: str | None
+) -> str:
+    if operation == "snapshot":
+        snapshot_paths = _extract_snapshot_paths(data_str)
+        if not snapshot_paths:
+            return _snapshot_paths_required_error()
+        return op_snapshot(project_root, snapshot_paths)
+    snapshot_id = _extract_snapshot_id(data_str)
+    if snapshot_id is None:
+        return _rollback_snapshot_id_required_error()
+    return op_rollback(project_root, snapshot_id)
 
 
 def _dispatch_sync(
@@ -137,25 +208,22 @@ def _dispatch_sync(
     """
     if operation in _OPS_NEED_PHASE and not phase:
         return _phase_required_error(operation)
-    ph = phase or ""
     if operation == "init":
         return op_init(project_root, pipeline, data_str)
     if operation == "write_task":
-        return op_write_task(project_root, pipeline, ph, data_str)
+        return op_write_task(project_root, pipeline, phase or "", data_str)
     if operation in ("write_result", "write"):
-        return op_write_result(project_root, pipeline, ph, data_str)
+        return op_write_result(project_root, pipeline, phase or "", data_str)
     if operation == "read_task":
-        return op_read_task(project_root, pipeline, ph)
+        return op_read_task(project_root, pipeline, phase or "")
     if operation == "read_state":
         return op_read_state(project_root, pipeline)
     if operation == "read":
-        return (
-            op_read_task(project_root, pipeline, ph)
-            if phase
-            else op_read_state(project_root, pipeline)
-        )
+        return _dispatch_read(project_root, pipeline, phase)
     if operation == "clear":
         return op_clear(project_root, pipeline)
+    if operation in ("snapshot", "rollback"):
+        return _dispatch_snapshot_or_rollback(project_root, operation, data_str)
     return _unknown_op_error(operation)
 
 
@@ -215,6 +283,8 @@ async def pipeline_handoff(
     pipeline: str = "default",
     phase: str | None = None,
     data: object = None,
+    paths: list[str] | None = None,
+    snapshot_id: str | None = None,
     ctx: MCPContext | None = None,
 ) -> str:
     """Structured inter-agent communication for pipeline workflows.
@@ -246,7 +316,8 @@ async def pipeline_handoff(
     RETURNS: JSON with {status, ...} for write ops; JSON file content for reads.
 
     Args:
-        operation: init | write | read | clear (legacy: write_task, read_task,
+        operation: init | write | read | clear | snapshot | rollback
+            (legacy: write_task, read_task,
             write_result, read_state)
         pipeline: Pipeline name (e.g. "commit", "implement"). Default: "default".
         phase: Phase name (e.g. "preflight", "checks"). Required for write.
@@ -256,6 +327,10 @@ async def pipeline_handoff(
             `summary`, write compact technical prose (see cortex://rules,
             Agent-Internal Communication): no filler or hedging; keep file
             paths and error messages verbatim.
+        paths: Paths to snapshot for operation="snapshot". Can be passed via
+            this argument or via data={"paths":[...]} for arg-stripping clients.
+        snapshot_id: Snapshot id for operation="rollback". Can be passed via
+            this argument or via data={"snapshot_id":"..."}.
         ctx: MCP context (auto-provided).
     """
     await log_client(
@@ -264,6 +339,11 @@ async def pipeline_handoff(
         f"pipeline_handoff({operation}/{pipeline}/{phase})",
         logger_name=__name__,
     )
+    payload = data
+    if operation == "snapshot" and payload is None and paths is not None:
+        payload = {"paths": paths}
+    if operation == "rollback" and payload is None and snapshot_id is not None:
+        payload = {"snapshot_id": snapshot_id}
     return await _dispatch(
-        operation, pipeline, phase, data, ctx
+        operation, pipeline, phase, payload, ctx
     )  # data coerced inside _dispatch
