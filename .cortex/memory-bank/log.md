@@ -1,59 +1,5 @@
 # Cortex Operations Log
 
-## [2026-04-07T14:56] plan | Created plan: Test Plan
-
-## [2026-04-07T14:57] lint | Quality gate failed
-
-## [2026-04-07T15:02] plan | Created plan: Smoke Test Plan
-
-## [2026-04-07T15:02] plan | Created plan: Test Plan
-
-## [2026-04-07T15:03] lint | Quality gate failed
-
-## [2026-04-07T15:04] fix | Autofix completed
-
-status=success; changed_files=None
-
-## [2026-04-07T15:04] plan | Created plan: Test Plan
-
-## [2026-04-07T15:04] plan | Created plan: Smoke Test Plan
-
-## [2026-04-07T15:05] lint | Quality gate passed
-
-## [2026-04-07T15:06] plan | Created plan: Smoke Test Plan
-
-## [2026-04-07T15:07] plan | Created plan: Test Plan
-
-## [2026-04-07T15:07] lint | Quality gate passed
-
-## [2026-04-07T15:09] plan | Created plan: Test Plan
-
-## [2026-04-07T15:09] plan | Created plan: Smoke Test Plan
-
-## [2026-04-07T15:10] lint | Quality gate passed
-
-## [2026-04-07T15:10] fix | Autofix completed
-
-status=success; changed_files=None
-
-## [2026-04-07T15:12] plan | Created plan: Cleanup Function-Length Exclusions in Constants
-
-## [2026-04-07T15:16] plan | Created plan: Test Plan
-
-## [2026-04-07T15:16] plan | Created plan: Smoke Test Plan
-
-## [2026-04-07T15:17] lint | Quality gate failed
-
-## [2026-04-07T15:17] fix | Autofix completed
-
-status=success; changed_files=None
-
-## [2026-04-07T15:17] plan | Created plan: Test Plan
-
-## [2026-04-07T15:17] plan | Created plan: Smoke Test Plan
-
-## [2026-04-07T15:18] lint | Quality gate passed
-
 ## [2026-04-07T15:19] fix | Autofix completed
 
 status=success; changed_files=None
@@ -2225,3 +2171,57 @@ status=success; changed_files=None
 ## [2026-04-09T18:30] plan | Created plan: Smoke Test Plan
 
 ## [2026-04-09T18:31] lint | Quality gate passed
+
+## [2026-04-09T18:44] plan | Created plan: Test Plan
+
+## [2026-04-09T18:44] plan | Created plan: Smoke Test Plan
+
+## [2026-04-09T18:45] lint | Quality gate failed
+
+## [2026-04-09T18:47] plan | Created plan: Test Plan
+
+## [2026-04-09T18:47] plan | Created plan: Smoke Test Plan
+
+## [2026-04-09T18:47] lint | Quality gate passed
+
+## [2026-04-09T18:48] plan | Completed plan: NEEDS CLARIFICATION Markers in Plans
+
+Implemented register-time blocking/non-blocking clarification gating, enrich-time marker resolution, review/session marker surfacing, and tests covering new flows.
+
+## [2026-04-09T18:49] fix | Autofix completed
+
+status=success; changed_files=None
+
+## [2026-04-09T18:49] plan | Created plan: Test Plan
+
+## [2026-04-09T18:49] plan | Created plan: Smoke Test Plan
+
+## [2026-04-09T18:50] lint | Quality gate passed
+
+## [2026-04-09T18:58] plan | Created plan: Smoke Test Plan
+
+## [2026-04-09T18:58] plan | Created plan: Test Plan
+
+## [2026-04-09T18:59] lint | Quality gate passed
+
+## [2026-04-09T19:00] plan | Created plan: Smoke Test Plan
+
+## [2026-04-09T19:00] plan | Created plan: Test Plan
+
+## [2026-04-09T19:01] lint | Quality gate passed
+
+## [2026-04-09T19:06] plan | Created plan: Test Plan
+
+## [2026-04-09T19:06] plan | Created plan: Smoke Test Plan
+
+## [2026-04-09T19:06] lint | Quality gate passed
+
+## [2026-04-09T19:07] fix | Autofix completed
+
+status=success; changed_files=None
+
+## [2026-04-09T19:08] plan | Created plan: Test Plan
+
+## [2026-04-09T19:08] plan | Created plan: Smoke Test Plan
+
+## [2026-04-09T19:09] lint | Quality gate passed

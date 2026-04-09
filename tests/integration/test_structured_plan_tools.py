@@ -90,6 +90,31 @@ async def _register_pending_new_plan(root: Path) -> RegisterPlanResult:
     return RegisterPlanResult.model_validate_json(raw)
 
 
+async def _register_plan_with_marker(
+    root: Path,
+    *,
+    plan_name: str,
+    marker: str,
+    title: str,
+    status: str,
+) -> str:
+    plans_dir = get_cortex_path(root, CortexResourceType.PLANS)
+    _ = (plans_dir / plan_name).write_text(marker, encoding="utf-8")
+    with patch(
+        "cortex.tools.plans.register.resolve_project_root_async",
+        new_callable=AsyncMock,
+        return_value=root,
+    ):
+        return await register_plan_in_roadmap(
+            plan_title=title,
+            description="Needs details.",
+            status=status,
+            section="pending",
+            plan_relative_path=f".cortex/plans/{plan_name}",
+            ctx=None,
+        )
+
+
 class TestCreatePlanIntegration:
     """Integration tests for create_plan tool."""
 
@@ -304,6 +329,52 @@ class TestRegisterPlanInRoadmapIntegration:
         roadmap_path = memory_bank / MemoryBankFile.ROADMAP
         content = roadmap_path.read_text(encoding="utf-8")
         assert "- **Blocker Plan** - PENDING - Blocks release." in content
+
+    @pytest.mark.asyncio
+    async def test_register_plan_sets_blocked_when_blocking_markers_exist(
+        self, temp_project_with_roadmap: Path
+    ) -> None:
+        """Blocking markers force BLOCKED status and append blocking note."""
+        root = temp_project_with_roadmap
+        result_str = await _register_plan_with_marker(
+            root,
+            plan_name="gated-plan.md",
+            marker="## Goal\n\nUse [NEEDS CLARIFICATION(blocking): auth flow].\n",
+            title="Gated Plan",
+            status="PENDING",
+        )
+        result = RegisterPlanResult.model_validate_json(result_str)
+        assert result.status == "success"
+        roadmap_path = (
+            get_cortex_path(root, CortexResourceType.MEMORY_BANK)
+            / MemoryBankFile.ROADMAP
+        )
+        roadmap = roadmap_path.read_text(encoding="utf-8")
+        assert "- **Gated Plan** - BLOCKED -" in roadmap
+        assert "Blocked: 1 clarifications required before implementation." in roadmap
+
+    @pytest.mark.asyncio
+    async def test_register_plan_keeps_pending_for_non_blocking_markers(
+        self, temp_project_with_roadmap: Path
+    ) -> None:
+        """Non-blocking markers keep PENDING status and append pending note."""
+        root = temp_project_with_roadmap
+        result_str = await _register_plan_with_marker(
+            root,
+            plan_name="pending-plan.md",
+            marker="## Goal\n\nUse [NEEDS CLARIFICATION: naming].\n",
+            title="Pending Clarification Plan",
+            status="IN PROGRESS",
+        )
+        result = RegisterPlanResult.model_validate_json(result_str)
+        assert result.status == "success"
+        roadmap_path = (
+            get_cortex_path(root, CortexResourceType.MEMORY_BANK)
+            / MemoryBankFile.ROADMAP
+        )
+        roadmap = roadmap_path.read_text(encoding="utf-8")
+        assert "- **Pending Clarification Plan** - PENDING -" in roadmap
+        assert "1 clarifications pending (non-blocking)." in roadmap
 
 
 class TestCreatePlanThenRegisterIntegration:

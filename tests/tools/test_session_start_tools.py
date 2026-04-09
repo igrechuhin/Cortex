@@ -12,6 +12,7 @@ import pytest
 
 from cortex.core.file_system import FileSystemManager
 from cortex.core.metadata_index import MetadataIndex
+from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.core.token_counter import TokenCounter
 from cortex.core.version_manager import VersionManager
 from cortex.managers.types import ManagersDict
@@ -1103,6 +1104,33 @@ Working on Phase 54.
             in result.brief.gate_feedback_summary
         )
         assert "Top files: src/a.py, tests/b.py" in result.brief.gate_feedback_summary
+
+    @pytest.mark.asyncio
+    async def test_session_start_impl_includes_clarification_summary(
+        self, tmp_path: Path
+    ) -> None:
+        """session_start surfaces unresolved clarification counts from active plans."""
+        managers = await _build_minimal_session_managers(tmp_path)
+        plans_dir = get_cortex_path(tmp_path, CortexResourceType.PLANS)
+        plans_dir.mkdir(parents=True, exist_ok=True)
+        _ = (plans_dir / "clarify.md").write_text(
+            "status: IN_PROGRESS\n\n"
+            + "[NEEDS CLARIFICATION: api shape]\n"
+            + "[NEEDS CLARIFICATION(blocking): auth mode]\n",
+            encoding="utf-8",
+        )
+        with patch(
+            "cortex.tools.session.health.get_mcp_health_status",
+            new_callable=AsyncMock,
+            return_value=(True, None),
+        ):
+            result = await session_start_impl(None, tmp_path, managers)  # type: ignore[arg-type]
+        assert isinstance(result, SessionStartResult)
+        assert result.status == "success"
+        assert result.brief.clarification_summary is not None
+        assert "1 plans have unresolved clarifications (1 blocking)." in (
+            result.brief.clarification_summary
+        )
 
     @pytest.mark.asyncio
     async def test_session_lifecycle_compact_then_session_start_sees_handoff(

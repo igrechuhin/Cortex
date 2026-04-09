@@ -13,6 +13,8 @@ from typing import cast
 
 from cortex.core.constants import MemoryBankFile
 from cortex.core.file_system import FileSystemManager
+from cortex.core.path_resolver import CortexResourceType, get_cortex_path
+from cortex.core.plan_utils import find_clarification_markers
 from cortex.managers.types import ManagersDict
 from cortex.tools.logging.session_context import ensure_trace_id_persisted
 from cortex.tools.models_base import ToolResultStatus
@@ -158,6 +160,7 @@ def _session_brief_cap_update(brief: SessionBrief) -> dict[str, object]:
         "locked_tasks": [_truncate_for_brief_text(t, line) for t in brief.locked_tasks],
         "mcp_health_message": _truncate_optional(brief.mcp_health_message, line),
         "gate_feedback_summary": _truncate_optional(brief.gate_feedback_summary, line),
+        "clarification_summary": _truncate_optional(brief.clarification_summary, line),
         "constitution_notice": _truncate_optional(brief.constitution_notice, line),
     }
 
@@ -234,9 +237,48 @@ async def _load_concurrency_info(
     return concurrent_sessions, locked_tasks
 
 
+def _is_active_plan(plan_content: str) -> bool:
+    header = plan_content[:800]
+    return "status: COMPLETE" not in header and "status: COMPLETED" not in header
+
+
+def _format_clarification_summary(plan_count: int, blocking_count: int) -> str:
+    return (
+        f"{plan_count} plans have unresolved clarifications "
+        f"({blocking_count} blocking)."
+    )
+
+
+def _scan_plan_file_for_clarifications(plan_path: Path) -> tuple[int, int]:
+    content = plan_path.read_text(encoding="utf-8")
+    if not _is_active_plan(content):
+        return 0, 0
+    markers = find_clarification_markers(content)
+    if not markers:
+        return 0, 0
+    blocking = sum(1 for marker in markers if marker.blocking)
+    return 1, blocking
+
+
+def _compute_clarification_summary(project_root: Path) -> str | None:
+    plans_dir = get_cortex_path(project_root, CortexResourceType.PLANS)
+    if not plans_dir.exists():
+        return None
+    plans_with_markers = 0
+    blocking_markers = 0
+    for plan_path in sorted(plans_dir.glob("*.md")):
+        plan_count, blocking = _scan_plan_file_for_clarifications(plan_path)
+        plans_with_markers += plan_count
+        blocking_markers += blocking
+    if plans_with_markers == 0:
+        return None
+    return _format_clarification_summary(plans_with_markers, blocking_markers)
+
+
 def _compute_suggestions_and_create_brief(inp: _BriefInputs) -> SessionBrief:
     """Compute suggestions and build SessionBrief."""
     trace_id = ensure_trace_id_persisted()
+    context = _session_brief_context(inp)
     brief = brief_from_suggestions_and_context(
         generate_session_suggestions(
             inp.health,
@@ -248,24 +290,29 @@ def _compute_suggestions_and_create_brief(inp: _BriefInputs) -> SessionBrief:
             progress_content=inp.progress_content,
             roadmap_content=inp.roadmap_content,
         ),
-        SessionBriefContextKwargs(
-            project_name=inp.project_name,
-            current_focus=inp.current_focus,
-            recent_completed=inp.recent_completed,
-            next_work_item=inp.next_work_item,
-            next_work_plan_path=inp.next_work_plan_path,
-            health=inp.health,
-            git_status=inp.git_status,
-            last_handoff=inp.last_handoff,
-            concurrent_sessions=inp.concurrent_sessions,
-            locked_tasks=inp.locked_tasks,
-            mcp_healthy=inp.mcp_healthy,
-            mcp_health_message=inp.mcp_health_message,
-            gate_feedback_summary=inp.gate_feedback_summary,
-            constitution_notice=inp.constitution_notice,
-        ),
+        context,
     )
     return brief.model_copy(update={"trace_id": trace_id})
+
+
+def _session_brief_context(inp: _BriefInputs) -> SessionBriefContextKwargs:
+    return SessionBriefContextKwargs(
+        project_name=inp.project_name,
+        current_focus=inp.current_focus,
+        recent_completed=inp.recent_completed,
+        next_work_item=inp.next_work_item,
+        next_work_plan_path=inp.next_work_plan_path,
+        health=inp.health,
+        git_status=inp.git_status,
+        last_handoff=inp.last_handoff,
+        concurrent_sessions=inp.concurrent_sessions,
+        locked_tasks=inp.locked_tasks,
+        mcp_healthy=inp.mcp_healthy,
+        mcp_health_message=inp.mcp_health_message,
+        gate_feedback_summary=inp.gate_feedback_summary,
+        clarification_summary=inp.clarification_summary,
+        constitution_notice=inp.constitution_notice,
+    )
 
 
 def _assemble_session_brief(inp: _BriefInputs) -> SessionBrief:
@@ -299,6 +346,7 @@ def _brief_inputs_from_components(
         mcp_healthy=mcp_healthy,
         mcp_health_message=mcp_health_message,
         gate_feedback_summary=c.gate_feedback_summary,
+        clarification_summary=c.clarification_summary,
         constitution_notice=c.constitution_notice,
         progress_content=c.progress_content,
         roadmap_content=c.roadmap_content,
@@ -373,6 +421,7 @@ class _BriefComponents:
     concurrent_sessions: list[ConcurrentSession]
     locked_tasks: list[str]
     gate_feedback_summary: str | None
+    clarification_summary: str | None
     constitution_notice: str | None = None
     progress_content: str = ""
     roadmap_content: str = ""
@@ -385,6 +434,7 @@ def _brief_components_from_async_load(
     progress_content: str | None,
     roadmap_content: str,
     constitution_notice: str | None,
+    project_root: Path,
 ) -> _BriefComponents:
     """Build ``_BriefComponents`` from focus tuple and parallel-load results."""
     (
@@ -404,6 +454,7 @@ def _brief_components_from_async_load(
         concurrent_sessions=concurrent_sessions,
         locked_tasks=locked_tasks,
         gate_feedback_summary=gate_feedback,
+        clarification_summary=_compute_clarification_summary(project_root),
         constitution_notice=constitution_notice,
         progress_content=progress_content or "",
         roadmap_content=roadmap_content,
@@ -437,6 +488,7 @@ async def _gather_brief_components(
         progress_content,
         roadmap_content,
         constitution_notice,
+        project_root,
     )
 
 

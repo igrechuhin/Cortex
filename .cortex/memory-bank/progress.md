@@ -13,6 +13,7 @@
 - **File State Cache and Rollback** - COMPLETE. Added FileSnapshot/FileStateCache, pipeline snapshot/rollback operations, deregister cleanup, and test coverage for snapshot lifecycle.
 - **Per-Tool Structured Progress Types** - COMPLETE. Finalized typed progress reporting models and helper wiring, resolved function-length and strict typing regressions, and passed full quality gate.
 - **Structured progress types refactor** - COMPLETE. Added `src/cortex/core/progress_types.py`, wired `src/cortex/core/__init__.py` and session/execution call sites to the extracted types, and added `tests/unit/core/test_progress_types.py`.
+- **NEEDS CLARIFICATION Markers in Plans** - COMPLETE. Added marker-aware plan registration, enrich resolution flow, review/session surfacing, and tests.
 
 ## 2026-04-08
 

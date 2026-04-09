@@ -26,6 +26,7 @@ def _create_session_brief(
         mcp_healthy=context.mcp_healthy,
         mcp_health_message=context.mcp_health_message,
         gate_feedback_summary=context.gate_feedback_summary,
+        clarification_summary=context.clarification_summary,
         session_scope=SESSION_SCOPE_PROMPT,
         constitution_notice=context.constitution_notice,
     )

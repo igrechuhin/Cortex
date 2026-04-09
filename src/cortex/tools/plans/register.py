@@ -14,6 +14,7 @@ from cortex.core.constants import (
 from cortex.core.context_logging import MCPContext, log_client
 from cortex.core.mcp_stability import ensure_usage_context, mcp_tool_wrapper
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
+from cortex.core.plan_utils import find_clarification_markers
 from cortex.core.project_root_resolver import resolve_project_root_async
 from cortex.tools.models_base import ToolResultStatus
 from cortex.tools.plans.register_helpers import (
@@ -38,6 +39,64 @@ _ROADMAP_COMPLETED_STATUS_MESSAGE = (
 class _SectionCheck:
     section_id: str | None
     error_json: str | None
+
+
+@dataclass(frozen=True, slots=True)
+class _ClarificationGateDecision:
+    status: str
+    description: str
+
+
+def _resolve_plan_path_for_marker_scan(
+    root: Path, plan_file_name: str | None, plan_relative_path: str | None
+) -> Path | None:
+    if plan_relative_path:
+        return root / plan_relative_path
+    if plan_file_name:
+        return get_cortex_path(root, CortexResourceType.PLANS) / plan_file_name
+    return None
+
+
+def _append_clarification_note(base: str, note: str) -> str:
+    base_clean = base.rstrip()
+    if note in base_clean:
+        return base_clean
+    if not base_clean:
+        return note
+    if base_clean.endswith("."):
+        return f"{base_clean} {note}"
+    return f"{base_clean}. {note}"
+
+
+def _gate_registration_on_clarifications(
+    root: Path,
+    description: str,
+    status: str,
+    plan_file_name: str | None,
+    plan_relative_path: str | None,
+) -> _ClarificationGateDecision:
+    plan_path = _resolve_plan_path_for_marker_scan(
+        root, plan_file_name, plan_relative_path
+    )
+    if plan_path is None or not plan_path.exists():
+        return _ClarificationGateDecision(status=status, description=description)
+    markers = find_clarification_markers(plan_path.read_text(encoding="utf-8"))
+    if not markers:
+        return _ClarificationGateDecision(status=status, description=description)
+    blocking_count = sum(1 for marker in markers if marker.blocking)
+    if blocking_count > 0:
+        note = (
+            f"Blocked: {blocking_count} clarifications required before implementation."
+        )
+        return _ClarificationGateDecision(
+            status="BLOCKED",
+            description=_append_clarification_note(description, note),
+        )
+    note = f"{len(markers)} clarifications pending (non-blocking)."
+    return _ClarificationGateDecision(
+        status="PENDING",
+        description=_append_clarification_note(description, note),
+    )
 
 
 async def _handle_roadmap_read(
@@ -280,9 +339,9 @@ async def _register_plan_impl(
     )
     try:
         root = await resolve_project_root_async(None, ctx)
-        return await _validate_and_execute_register(
-            section,
+        return await _execute_register_with_clarification_gate(
             root,
+            section,
             plan_title,
             description,
             status,
@@ -295,6 +354,31 @@ async def _register_plan_impl(
             ctx, "error", f"register_plan_in_roadmap: {e}", logger_name=__name__
         )
         return _register_plan_error_result(e)
+
+
+async def _execute_register_with_clarification_gate(
+    root: Path,
+    section: str,
+    plan_title: str,
+    description: str,
+    status: str,
+    plan_file_name: str | None,
+    plan_relative_path: str | None,
+    ctx: MCPContext | None,
+) -> str:
+    gated = _gate_registration_on_clarifications(
+        root, description, status, plan_file_name, plan_relative_path
+    )
+    return await _validate_and_execute_register(
+        section,
+        root,
+        plan_title,
+        gated.description,
+        gated.status,
+        plan_file_name,
+        plan_relative_path,
+        ctx,
+    )
 
 
 @ensure_usage_context

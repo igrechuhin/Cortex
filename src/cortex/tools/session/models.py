@@ -159,6 +159,10 @@ class SessionBrief(StrictBaseModel):
         default=None,
         description="Summary of active quality/docs gate feedback from pipeline handoff",
     )
+    clarification_summary: str | None = Field(
+        default=None,
+        description="Summary of unresolved plan clarification markers across active plans",
+    )
     trace_id: str | None = Field(
         default=None,
         description="Session trace id for structured agent logs (stderr JSON lines)",

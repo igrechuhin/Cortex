@@ -7,6 +7,7 @@ Smoke tests: full-payload get/create to verify argument bridging end-to-end.
 
 import json
 from pathlib import Path
+from unittest.mock import AsyncMock, patch
 
 import pytest
 
@@ -119,3 +120,32 @@ class TestPlanToolSmoke:
         path = Path(file_path)
         assert path.is_file(), f"created plan file should exist: {file_path}"
         path.unlink(missing_ok=True)
+
+    @pytest.mark.asyncio
+    async def test_plan_operation_enrich_resolves_markers(self, tmp_path: Path) -> None:
+        """plan(operation='enrich') resolves markers and removes summary when done."""
+        plans_dir = tmp_path / ".cortex" / "plans"
+        plans_dir.mkdir(parents=True)
+        plan_path = plans_dir / "clarify.md"
+        _ = plan_path.write_text(
+            "## Clarifications Needed\n\n- theme — line 3\n\n## Goal\n\n"
+            + "Use [NEEDS CLARIFICATION: theme].\n",
+            encoding="utf-8",
+        )
+        with patch(
+            "cortex.tools.plans.enrich.resolve_project_root_async",
+            new_callable=AsyncMock,
+            return_value=tmp_path,
+        ):
+            result_str = await plan(
+                operation="enrich",
+                plan_relative_path=".cortex/plans/clarify.md",
+                resolved_clarifications={"theme": "dark mode"},
+                ctx=None,
+            )
+        result = json.loads(result_str)
+        assert result.get("status") == "success", result_str
+        updated = plan_path.read_text(encoding="utf-8")
+        assert "[NEEDS CLARIFICATION:" not in updated
+        assert "## Clarifications Needed" not in updated
+        assert "dark mode" in updated

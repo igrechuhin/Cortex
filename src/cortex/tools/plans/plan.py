@@ -22,7 +22,7 @@ def _plan_error_invalid_operation(operation: str) -> str:
         file_path=None,
         message=(
             "Invalid operation "
-            f"'{operation}'. Use create, list, get, complete, register, or archive_completed."
+            f"'{operation}'. Use create, list, get, complete, register, enrich, or archive_completed."
         ),
         error="Invalid operation",
     ).model_dump_json()
@@ -121,6 +121,24 @@ async def _plan_handle_register(
     )
 
 
+async def _plan_handle_enrich(
+    slug: str | None,
+    plan_file_name: str | None,
+    plan_relative_path: str | None,
+    resolved_clarifications: dict[str, str] | None,
+    ctx: MCPContext | None,
+) -> str:
+    from cortex.tools.plans.enrich import enrich_plan
+
+    return await enrich_plan(
+        slug=slug,
+        plan_file_name=plan_file_name,
+        plan_relative_path=plan_relative_path,
+        resolved_clarifications=resolved_clarifications,
+        ctx=ctx,
+    )
+
+
 async def _plan_dispatch_complete(
     plan_title: str | None,
     summary: str | None,
@@ -193,6 +211,9 @@ async def _plan_handle_archive_completed(ctx: MCPContext | None) -> str:
 def _plan_required_args_present(
     operation: str,
     *,
+    slug: str | None,
+    plan_file_name: str | None,
+    plan_relative_path: str | None,
     plan_title: str | None,
     summary: str | None,
     description: str | None,
@@ -205,6 +226,8 @@ def _plan_required_args_present(
         return bool(plan_title and description)
     if operation == "create":
         return bool(title and content)
+    if operation == "enrich":
+        return bool(slug or plan_file_name or plan_relative_path)
     return True
 
 
@@ -259,6 +282,7 @@ async def _plan_dispatch(
     progress_entry: str | None,
     plan_file_name: str | None,
     plan_relative_path: str | None,
+    resolved_clarifications: dict[str, str] | None,
     description: str | None,
     status: str,
     section: str,
@@ -267,11 +291,22 @@ async def _plan_dispatch(
     """Dispatch plan(operation=...) to the appropriate handler."""
     if not operation:
         operation = "list"
-    valid_ops = ("create", "list", "get", "complete", "register", "archive_completed")
+    valid_ops = (
+        "create",
+        "list",
+        "get",
+        "complete",
+        "register",
+        "enrich",
+        "archive_completed",
+    )
     if operation not in valid_ops:
         return _plan_error_invalid_operation(operation)
     has_required = _plan_required_args_present(
         operation,
+        slug=slug,
+        plan_file_name=plan_file_name,
+        plan_relative_path=plan_relative_path,
         plan_title=plan_title,
         summary=summary,
         description=description,
@@ -297,6 +332,7 @@ async def _plan_dispatch(
         progress_entry,
         plan_file_name,
         plan_relative_path,
+        resolved_clarifications,
         description,
         status,
         section,
@@ -317,6 +353,7 @@ async def _plan_dispatch_valid_operation(
     progress_entry: str | None,
     plan_file_name: str | None,
     plan_relative_path: str | None,
+    resolved_clarifications: dict[str, str] | None,
     description: str | None,
     status: str,
     section: str,
@@ -338,6 +375,14 @@ async def _plan_dispatch_valid_operation(
             section,
             plan_file_name,
             plan_relative_path,
+            ctx,
+        )
+    if operation == "enrich":
+        return await _plan_handle_enrich(
+            slug,
+            plan_file_name,
+            plan_relative_path,
+            resolved_clarifications,
             ctx,
         )
     result_str = await _plan_handle_crud(
@@ -366,6 +411,7 @@ async def plan(
     progress_entry: str | None = None,
     plan_file_name: str | None = None,
     plan_relative_path: str | None = None,
+    resolved_clarifications: dict[str, str] | None = None,
     description: str | None = None,
     status: str = "PENDING",
     section: str = "pending",
@@ -389,6 +435,7 @@ async def plan(
         progress_entry,
         plan_file_name,
         plan_relative_path,
+        resolved_clarifications,
         description,
         status,
         section,

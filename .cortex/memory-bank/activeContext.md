@@ -20,6 +20,8 @@
 
 - ✅ **Structured progress types extraction** - COMPLETE (2026-04-09) - Extracted progress state modeling into `src/cortex/core/progress_types.py`, updated imports/callers, and added focused unit tests for progress type behavior.
 
+- ✅ **NEEDS CLARIFICATION Markers in Plans** - COMPLETE (2026-04-09) - Implemented register-time blocking/non-blocking clarification gating, enrich-time marker resolution, review/session marker surfacing, and tests covering new flows.
+
 ## Completed Work (2026-04-08)
 
 - **Summary (2026-04-08)** - 1 entries archived.

@@ -148,3 +148,39 @@ def apply_clarifications_summary_to_plan(content: str) -> tuple[str, int]:
     if before and not before.endswith(("\n", "\r")):
         before += "\n"
     return before + section + after, len(markers)
+
+
+def resolve_clarification_markers(
+    content: str, resolved_clarifications: dict[str, str]
+) -> tuple[str, int]:
+    """Replace markers whose reason appears in ``resolved_clarifications``.
+
+    Matches inside fenced code blocks are ignored. Empty replacement values are
+    skipped. Returns ``(updated_markdown, resolved_count)``.
+    """
+    spans = _fenced_code_spans(content)
+    normalized: dict[str, str] = {}
+    for reason, replacement in resolved_clarifications.items():
+        reason_key = reason.strip()
+        replacement_value = replacement.strip()
+        if reason_key and replacement_value:
+            normalized[reason_key] = replacement_value
+    if not normalized:
+        return content, 0
+
+    resolved_count = 0
+
+    def _replace(match: re.Match[str]) -> str:
+        nonlocal resolved_count
+        if _in_fenced_block(match.start(), spans):
+            return match.group(0)
+        reason = (match.group("reason") or "").strip()
+        if not reason:
+            return match.group(0)
+        replacement = normalized.get(reason)
+        if replacement is None:
+            return match.group(0)
+        resolved_count += 1
+        return replacement
+
+    return _MARKER_PATTERN.sub(_replace, content), resolved_count
