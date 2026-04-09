@@ -27,6 +27,7 @@
 - **Agent-internal brevity (commit)** - COMPLETE. Committed Synapse submodule (agent-internal-communication.mdc, cursor-agents, rules manifest) and superproject Cortex wiring (rules merge + pipeline_handoff docstring + tests/fixtures).
 - **compress_memory_bank MCP Tool and Token Budget Tracking** - COMPLETE. MCP tool, token budget in cortex://analysis, prompt updates, tests and docs.
 - **Cortex commit pipeline (compress_memory_bank + Synapse)** - COMPLETE (2026-04-08). Phase A green (91.46% coverage); Synapse submodule advanced with analyze/analyze-compact token budget steps; superproject gitlink staged; docs and memory bank aligned for release commit.
+- **compress_memory_bank MCP tool (commit)** - COMPLETE (2026-04-08). Tool module, analysis/token_budget helpers, registry and category updates, documentation and tests; plan archived; quality/docs gates run in commit pipeline.
 
 ## 2026-04-07
 

@@ -2,6 +2,10 @@
 
 **This file records completed work only.** For current status and upcoming work see [roadmap.md](roadmap.md).
 
+## Completed Work (2026-04-09)
+
+- ✅ **Conditional Hook Execution DSL (PARTIAL)** - COMPLETE (2026-04-09) - Extended runtime coverage in post-edit hook integration path to assert patterned hooks write `conditions` metadata while unpatterned hooks preserve matcher-only behavior.
+
 ## Completed Work (2026-04-08)
 
 - ✅ **Ingest prompt workflow registered (PARTIAL)** - COMPLETE (2026-04-08) - Implemented plan Step 3 by adding `.cortex/synapse/prompts/ingest.md` and registering it in `prompts-manifest.json`; quality gate still failing due to unrelated `/cortex/plan` integration tests, so roadmap entry remains pending.

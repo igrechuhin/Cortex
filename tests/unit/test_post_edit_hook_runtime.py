@@ -60,6 +60,37 @@ def _read_matcher(project_root: Path) -> str | None:
     return matcher if isinstance(matcher, str) else None
 
 
+def _read_conditions(project_root: Path) -> list[object] | None:
+    settings_path = project_root / ".claude" / "settings.json"
+    settings = cast(
+        dict[str, object], json.loads(settings_path.read_text(encoding="utf-8"))
+    )
+    hooks_value = settings.get("hooks")
+    if not isinstance(hooks_value, dict):
+        return None
+    hooks = cast(dict[str, object], hooks_value)
+    post_tool_use_value = hooks.get("PostToolUse")
+    if not isinstance(post_tool_use_value, list) or not post_tool_use_value:
+        return None
+    post_tool_use = cast(list[object], post_tool_use_value)
+    first_entry_value = post_tool_use[0]
+    if not isinstance(first_entry_value, dict):
+        return None
+    entry = cast(dict[str, object], first_entry_value)
+    inner_hooks = entry.get("hooks")
+    if not isinstance(inner_hooks, list) or not inner_hooks:
+        return None
+    hook_items = cast(list[object], inner_hooks)
+    first_hook_value = hook_items[0]
+    if not isinstance(first_hook_value, dict):
+        return None
+    hook = cast(dict[str, object], first_hook_value)
+    conditions = hook.get("conditions")
+    if not isinstance(conditions, list):
+        return None
+    return cast(list[object], conditions)
+
+
 def test_apply_project_post_edit_hook_writes_python_hook(tmp_path: Path) -> None:
     _ = (tmp_path / "pyproject.toml").write_text(
         "[project]\nname = 'myapp'\n", encoding="utf-8"
@@ -74,6 +105,56 @@ def test_apply_project_post_edit_hook_writes_python_hook(tmp_path: Path) -> None
         == "python3 -m pytest tests/ --timeout=30 -x -q 2>&1 | tail -20"
     )
     assert _read_matcher(tmp_path) == "Edit(**/*.py)"
+    assert _read_conditions(tmp_path) == [{"tool": "Edit", "pattern": "**/*.py"}]
+
+
+def test_apply_project_post_edit_hook_writes_swift_hook_without_conditions(
+    tmp_path: Path,
+) -> None:
+    _ = (tmp_path / "Package.swift").write_text(
+        "// swift-tools-version:5.9\nimport PackageDescription\n", encoding="utf-8"
+    )
+
+    detected_language, changed = apply_project_post_edit_hook(tmp_path)
+
+    assert detected_language == "swift"
+    assert changed is True
+    assert _read_hook_command(tmp_path) == "swift build 2>&1 | tail -20"
+    assert _read_matcher(tmp_path) == "Edit"
+    assert _read_conditions(tmp_path) is None
+
+
+def test_apply_project_post_edit_hook_writes_typescript_hook_with_conditions(
+    tmp_path: Path,
+) -> None:
+    _ = (tmp_path / "package.json").write_text(
+        '{"name":"myapp","scripts":{"test":"vitest run"}}', encoding="utf-8"
+    )
+    _ = (tmp_path / "tsconfig.json").write_text("{}", encoding="utf-8")
+
+    detected_language, changed = apply_project_post_edit_hook(tmp_path)
+
+    assert detected_language == "typescript"
+    assert changed is True
+    assert _read_hook_command(tmp_path) == "npm test --if-present 2>&1 | tail -20"
+    assert _read_matcher(tmp_path) == "Edit(**/*.ts)"
+    assert _read_conditions(tmp_path) == [{"tool": "Edit", "pattern": "**/*.ts"}]
+
+
+def test_apply_project_post_edit_hook_writes_javascript_hook_without_conditions(
+    tmp_path: Path,
+) -> None:
+    _ = (tmp_path / "package.json").write_text(
+        '{"name":"myapp","scripts":{"test":"vitest run"}}', encoding="utf-8"
+    )
+
+    detected_language, changed = apply_project_post_edit_hook(tmp_path)
+
+    assert detected_language == "javascript"
+    assert changed is True
+    assert _read_hook_command(tmp_path) == "npm test --if-present 2>&1 | tail -20"
+    assert _read_matcher(tmp_path) == "Edit"
+    assert _read_conditions(tmp_path) is None
 
 
 def test_apply_project_post_edit_hook_is_idempotent(tmp_path: Path) -> None:
