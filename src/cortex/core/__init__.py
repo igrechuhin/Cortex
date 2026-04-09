@@ -11,14 +11,32 @@ from cortex.core.cache_warming import (
     CacheWarmingResult,
     warm_cache_on_startup,
 )
+from cortex.core.progress_types import (
+    AnyProgress,
+    BaseProgress,
+    CommitProgress,
+    DocsGateProgress,
+    PipelineProgress,
+    QualityGateProgress,
+    SessionProgress,
+    report_structured_progress,
+)
 
 __all__ = [
-    "TTLCache",
-    "LRUCache",
     "AdvancedCacheManager",
+    "AnyProgress",
+    "BaseProgress",
     "CacheStats",
     "create_cache_for_manager",
     "CacheWarmer",
     "CacheWarmingResult",
+    "CommitProgress",
+    "DocsGateProgress",
+    "LRUCache",
+    "PipelineProgress",
+    "QualityGateProgress",
+    "SessionProgress",
+    "TTLCache",
+    "report_structured_progress",
     "warm_cache_on_startup",
 ]

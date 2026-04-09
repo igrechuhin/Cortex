@@ -12,6 +12,7 @@ from cortex.core.constants import MCP_TOOL_TIMEOUT_FAST
 from cortex.core.context_logging import MCPContext, log_client
 from cortex.core.mcp_annotations import destructive_annotations
 from cortex.core.mcp_stability import ensure_usage_context, mcp_tool_wrapper
+from cortex.core.progress_types import SessionProgress, report_structured_progress
 from cortex.server import mcp
 
 
@@ -36,7 +37,7 @@ async def _session_handle_start(
     """Handle session(operation='start')."""
     from cortex.tools.session.start_tools import session_start as _session_start
 
-    await log_client(ctx, "info", "session(start): starting", logger_name=__name__)
+    await _emit_session_dispatch_progress(ctx, "start", "Starting session operation")
     return await _session_start(task_description=task_description, ctx=ctx)
 
 
@@ -50,7 +51,7 @@ async def _session_handle_register(
         session_register as _session_register,
     )
 
-    await log_client(ctx, "info", "session(register): starting", logger_name=__name__)
+    await _emit_session_dispatch_progress(ctx, "register", "Registering session task")
     return await _session_register(task_title=task_title, role=role, ctx=ctx)
 
 
@@ -60,8 +61,30 @@ async def _session_handle_deregister(ctx: MCPContext | None) -> str:
         session_deregister as _session_deregister,
     )
 
-    await log_client(ctx, "info", "session(deregister): starting", logger_name=__name__)
+    await _emit_session_dispatch_progress(
+        ctx, "deregister", "Deregistering current session"
+    )
     return await _session_deregister(ctx=ctx)
+
+
+async def _emit_session_dispatch_progress(
+    ctx: MCPContext | None, operation: str, message: str
+) -> None:
+    """Emit standard structured progress + log for session dispatch actions."""
+    await report_structured_progress(
+        ctx,
+        SessionProgress(
+            tool="session",
+            phase="dispatch",
+            message=message,
+            operation=operation,
+        ),
+        current=1,
+        total=1,
+    )
+    await log_client(
+        ctx, "info", f"session({operation}): starting", logger_name=__name__
+    )
 
 
 async def _session_handle_compact(
@@ -79,7 +102,7 @@ async def _session_handle_compact(
         compact_session as _compact_session,
     )
 
-    await log_client(ctx, "info", "session(compact): starting", logger_name=__name__)
+    await _emit_session_dispatch_progress(ctx, "compact", "Compacting session memory")
     return await _compact_session(
         summary=summary,
         completed_tasks=completed_tasks,

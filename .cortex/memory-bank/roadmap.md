@@ -40,8 +40,6 @@ Completed investigations are recorded in [activeContext.md](activeContext.md). P
 
 #### Claude Code Harness Improvements (High Priority)
 
-- Plan: [Per-Tool Structured Progress Types](../plans/structured-progress-types.md) — Replace plain string `ctx.report_progress()` calls with typed Pydantic models serialized as JSON for richer Cursor MCP UI rendering. PENDING.
-
 #### Planning & Brainstorming (High Priority)
 
 - Plan: [NEEDS CLARIFICATION Markers in Plans](../plans/needs-clarification-markers.md) — Embed `[NEEDS CLARIFICATION: <reason>]` markers inline during plan creation; gate implementation on resolution of blocking markers. PENDING.

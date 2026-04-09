@@ -4,16 +4,20 @@ Extracted to keep pre_commit_tools.py under 400 lines.
 """
 
 import asyncio
-from collections.abc import Callable
+from collections.abc import Callable, Coroutine
+from concurrent.futures import Future
 from typing import cast
 
 from cortex.core.context_logging import (
     LogLevel,
     MCPContext,
     log_client,
-    report_progress_safe,
 )
 from cortex.core.models import ModelDict, OperationStatus
+from cortex.core.progress_types import (
+    QualityGateProgress,
+    report_structured_progress,
+)
 from cortex.services.framework_adapters.base import (
     CheckResult,
     FrameworkAdapter,
@@ -45,6 +49,14 @@ _HEARTBEAT_MAX_DOTS = 500
 async def _async_sleep(seconds: float) -> None:
     """Delegate to ``asyncio.sleep`` (separate symbol for tests to monkeypatch)."""
     await asyncio.sleep(seconds)
+
+
+def _run_coroutine_threadsafe(
+    coro: Coroutine[object, object, object],
+    loop: asyncio.AbstractEventLoop,
+) -> Future[object]:
+    """Delegate to asyncio.run_coroutine_threadsafe for test monkeypatching."""
+    return asyncio.run_coroutine_threadsafe(coro, loop)
 
 
 def execute_all_checks(
@@ -116,8 +128,17 @@ def make_phase_progress_callback(
         return None
 
     def report(completed: int, total: int) -> None:
-        _ = asyncio.run_coroutine_threadsafe(
-            report_progress_safe(ctx, float(completed), float(total)), loop
+        progress = QualityGateProgress(
+            tool="quality_gate",
+            phase="quality_gate",
+            message=f"Completed check {completed}/{total}",
+            checks_completed=completed,
+            checks_total=total,
+            current_check="non_test_checks",
+        )
+        _ = _run_coroutine_threadsafe(
+            report_structured_progress(ctx, progress, completed, total),
+            loop,
         )
 
     return report
@@ -136,8 +157,17 @@ def make_test_progress_callback(
         return None
 
     def report(completed: int, total: int) -> None:
-        _ = asyncio.run_coroutine_threadsafe(
-            report_progress_safe(ctx, float(completed), float(total)), loop
+        progress = QualityGateProgress(
+            tool="quality_gate",
+            phase="quality_gate",
+            message=f"Tests progress {completed}/{total}",
+            checks_completed=completed,
+            checks_total=total,
+            current_check="tests",
+        )
+        _ = _run_coroutine_threadsafe(
+            report_structured_progress(ctx, progress, completed, total),
+            loop,
         )
 
     return report

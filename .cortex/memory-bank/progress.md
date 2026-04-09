@@ -11,6 +11,8 @@
 - **Once Flag on Hooks** - COMPLETE. Added once-hook cleanup/removal path and deregister lifecycle integration with tests.
 - **Prompt and Agent Hook Types** - COMPLETE. Finalized prompt/agent hook entry model support, write helpers with `(type, prompt)` dedup + default model behavior, and validated with unit coverage and green quality gate.
 - **File State Cache and Rollback** - COMPLETE. Added FileSnapshot/FileStateCache, pipeline snapshot/rollback operations, deregister cleanup, and test coverage for snapshot lifecycle.
+- **Per-Tool Structured Progress Types** - COMPLETE. Finalized typed progress reporting models and helper wiring, resolved function-length and strict typing regressions, and passed full quality gate.
+- **Structured progress types refactor** - COMPLETE. Added `src/cortex/core/progress_types.py`, wired `src/cortex/core/__init__.py` and session/execution call sites to the extracted types, and added `tests/unit/core/test_progress_types.py`.
 
 ## 2026-04-08
 
