@@ -24,6 +24,7 @@ from ._enums import (
     ResponseStatus,
     RiskLevel,
 )
+from ._explore import ExploreComplexity, ExploreOption, ExploreSession
 from ._governance import ConstitutionDoc
 from ._metadata import (
     AccessPatternModel,
@@ -124,6 +125,9 @@ __all__ = [
     "DiskUsageInfo",
     "ErrorContext",
     "ErrorResponseModel",
+    "ExploreComplexity",
+    "ExploreOption",
+    "ExploreSession",
     "EstimatedImpactMetrics",
     "FileCategory",
     "FileDependencyData",

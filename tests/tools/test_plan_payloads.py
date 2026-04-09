@@ -79,6 +79,7 @@ class TestPlanPayloadModels:
             title="Phase 1",
             content="# Plan\nBody",
             slug=None,
+            explore_log_path=None,
             include_archive=False,
             response_format="content",
         )
@@ -147,6 +148,7 @@ class TestToPlanArguments:
             title="Phase X",
             content="# Phase X\nBody",
             slug="phase-x",
+            explore_log_path=None,
             include_archive=False,
             response_format="content",
         )
@@ -260,6 +262,7 @@ class TestPlanPayloadGuardrails:
                 title="",
                 content="Body",
                 slug=None,
+                explore_log_path=None,
                 include_archive=False,
                 response_format="content",
             )
@@ -271,6 +274,7 @@ class TestPlanPayloadGuardrails:
                 title="Phase",
                 content="",
                 slug=None,
+                explore_log_path=None,
                 include_archive=False,
                 response_format="content",
             )

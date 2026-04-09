@@ -6,6 +6,7 @@ Extracted from file_operations to keep file size under limit.
 import json
 import logging
 import time
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import cast
 
@@ -248,7 +249,36 @@ def _validate_and_get_path(
     return _validate_file_path_impl(fs_manager, memory_bank_dir, file_name)
 
 
-async def execute_file_operation(
+# fmt: off
+async def execute_file_operation(root: Path, file_name: str, operation: FileOperation, content: str | None, include_metadata: bool, change_description: str | None, sections: list[str] | None, version: int | None = None) -> str:
+# fmt: on
+    managers, fs_manager = await get_managers_for_root(root)
+    if _is_explore_log_operation(operation):
+        return await _dispatch_explore_log_operation(
+            operation,
+            root,
+            file_name,
+            content,
+            change_description,
+            managers,
+            sections,
+            version,
+        )
+    return await _dispatch_standard_file_operation(
+        root,
+        file_name,
+        operation,
+        content,
+        include_metadata,
+        change_description,
+        sections,
+        version,
+        managers,
+        fs_manager,
+    )
+
+
+async def _dispatch_standard_file_operation(
     root: Path,
     file_name: str,
     operation: FileOperation,
@@ -256,10 +286,10 @@ async def execute_file_operation(
     include_metadata: bool,
     change_description: str | None,
     sections: list[str] | None,
-    version: int | None = None,
+    version: int | None,
+    managers: ManagersDict,
+    fs_manager: FileSystemManager,
 ) -> str:
-    """Execute file operation after validation. Reuses current managers when root matches."""
-    managers, fs_manager = await get_managers_for_root(root)
     file_path_result = _validate_and_get_path(fs_manager, root, file_name)
     if file_path_result[0] is None:
         return file_path_result[1]
@@ -270,6 +300,37 @@ async def execute_file_operation(
         content,
         change_description,
         include_metadata,
+        root,
+        managers,
+        sections,
+        version,
+    )
+
+
+def _is_explore_log_operation(operation: FileOperation) -> bool:
+    return operation in (
+        FileOperation.LIST_EXPLORE_LOGS,
+        FileOperation.CLEAR_EXPLORE_LOGS,
+    )
+
+
+async def _dispatch_explore_log_operation(
+    operation: FileOperation,
+    root: Path,
+    file_name: str,
+    content: str | None,
+    change_description: str | None,
+    managers: ManagersDict,
+    sections: list[str] | None,
+    version: int | None,
+) -> str:
+    return await _dispatch_operation(
+        operation,
+        root,
+        file_name,
+        content,
+        change_description,
+        False,
         root,
         managers,
         sections,
@@ -393,7 +454,45 @@ async def _dispatch_secondary_operation(
             memory_bank_dir=get_cortex_path(root, CortexResourceType.MEMORY_BANK),
             payload=content,
         )
+    if operation == FileOperation.LIST_EXPLORE_LOGS:
+        return _list_explore_logs(root)
+    if operation == FileOperation.CLEAR_EXPLORE_LOGS:
+        return _clear_explore_logs(root)
     return None
+
+
+def _explore_logs_dir(root: Path) -> Path:
+    return get_cortex_path(root, CortexResourceType.PLANS) / "explore"
+
+
+def _list_explore_logs(root: Path) -> str:
+    explore_dir = _explore_logs_dir(root)
+    if not explore_dir.exists():
+        return json.dumps({"status": "success", "logs": [], "count": 0}, indent=2)
+    logs = [
+        str(path.relative_to(root))
+        for path in sorted(explore_dir.glob("*.md"))
+        if path.is_file()
+    ]
+    return json.dumps({"status": "success", "logs": logs, "count": len(logs)}, indent=2)
+
+
+def _clear_explore_logs(root: Path) -> str:
+    explore_dir = _explore_logs_dir(root)
+    if not explore_dir.exists():
+        return json.dumps({"status": "success", "deleted": [], "count": 0}, indent=2)
+    cutoff = datetime.now(timezone.utc) - timedelta(days=7)
+    deleted: list[str] = []
+    for path in sorted(explore_dir.glob("*.md")):
+        if not path.is_file():
+            continue
+        modified = datetime.fromtimestamp(path.stat().st_mtime, tz=timezone.utc)
+        if modified < cutoff:
+            path.unlink(missing_ok=True)
+            deleted.append(str(path.relative_to(root)))
+    return json.dumps(
+        {"status": "success", "deleted": deleted, "count": len(deleted)}, indent=2
+    )
 
 
 async def _dispatch_read_operation(

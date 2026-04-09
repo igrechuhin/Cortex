@@ -148,4 +148,8 @@ def generate_session_suggestions(
     add_memory_bank_sync_suggestions(suggestions, progress_content, roadmap_content)
     if next_work_item:
         suggestions.append(f"Next roadmap item: {next_work_item}")
+    else:
+        suggestions.append(
+            "Use `/cortex/explore` before `/cortex/plan` for complex or novel tasks."
+        )
     return suggestions

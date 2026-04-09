@@ -90,6 +90,7 @@ async def _create_plan_impl(
     title: str,
     content: str,
     slug: str | None,
+    explore_log_path: str | None,
     ctx: MCPContext | None,
 ) -> str:
     """Implementation of create_plan logic."""
@@ -99,6 +100,11 @@ async def _create_plan_impl(
         root = await resolve_project_root_async(None, ctx)
         final_content, n_clarifications = _prepare_plan_markdown_for_create(
             root, content
+        )
+        final_content = _inject_decision_basis_from_explore_log(
+            project_root=root,
+            plan_content=final_content,
+            explore_log_path=explore_log_path,
         )
         await _log_clarification_marker_count(ctx, n_clarifications)
         plan_path, error = create_plan_file(root, title, slug, final_content)
@@ -120,6 +126,7 @@ async def create_plan(
     title: str | None = None,
     content: str | None = None,
     slug: str | None = None,
+    explore_log_path: str | None = None,
     include_archive: bool = False,
     response_format: str = "content",
     ctx: MCPContext | None = None,
@@ -147,17 +154,7 @@ async def create_plan(
     if operation == "list":
         return await _list_plans_tool_impl(include_archive, ctx)
     if operation == "get":
-        if not slug:
-            return GetPlanResult(
-                status="error",
-                slug=None,
-                content=None,
-                title=None,
-                plan_status=None,
-                message="slug is required when operation is 'get'",
-                error="Missing slug",
-            ).model_dump_json()
-        return await _get_plan_tool_impl(slug, response_format, ctx)
+        return await _handle_get_plan(slug, response_format, ctx)
     if not title or not content:
         return CreatePlanResult(
             status="error",
@@ -165,7 +162,77 @@ async def create_plan(
             message="title and content are required when operation is 'create'",
             error="Missing title or content",
         ).model_dump_json()
-    return await _create_plan_impl(title, content, slug, ctx)
+    return await _create_plan_impl(title, content, slug, explore_log_path, ctx)
+
+
+async def _handle_get_plan(
+    slug: str | None, response_format: str, ctx: MCPContext | None
+) -> str:
+    if not slug:
+        return GetPlanResult(
+            status="error",
+            slug=None,
+            content=None,
+            title=None,
+            plan_status=None,
+            message="slug is required when operation is 'get'",
+            error="Missing slug",
+        ).model_dump_json()
+    return await _get_plan_tool_impl(slug, response_format, ctx)
+
+
+def _inject_decision_basis_from_explore_log(
+    project_root: Path,
+    plan_content: str,
+    explore_log_path: str | None,
+) -> str:
+    if not explore_log_path:
+        return plan_content
+    # AI: Resolve explore logs relative to repo root for deterministic plan lineage.
+    log_path = (project_root / explore_log_path).resolve()
+    try:
+        if not log_path.is_file():
+            return plan_content
+        log_text = log_path.read_text(encoding="utf-8")
+    except OSError:
+        return plan_content
+    decision_basis = _build_decision_basis(log_text, explore_log_path)
+    if not decision_basis:
+        return plan_content
+    return f"{decision_basis}\n\n{plan_content}"
+
+
+def _build_decision_basis(log_text: str, explore_log_path: str) -> str:
+    selected = _extract_section(log_text, "## Selected Option")
+    recommendation = _extract_section(log_text, "## Recommendation")
+    if not selected and not recommendation:
+        return ""
+    parts: list[str] = [
+        "## Decision Basis",
+        f"- Explore log: `{explore_log_path}`",
+    ]
+    if selected:
+        parts.append(f"- Selected option: {selected.splitlines()[0].strip()}")
+    if recommendation:
+        parts.append(f"- Recommendation: {recommendation.splitlines()[0].strip()}")
+    return "\n".join(parts)
+
+
+def _extract_section(markdown: str, heading: str) -> str | None:
+    lines = markdown.splitlines()
+    in_section = False
+    section_lines: list[str] = []
+    for line in lines:
+        stripped = line.strip()
+        if stripped == heading:
+            in_section = True
+            continue
+        if in_section and stripped.startswith("## "):
+            break
+        if in_section:
+            section_lines.append(line)
+    content = "\n".join(section_lines).strip()
+    return content or None
 
 
 async def _list_plans_tool_impl(include_archive: bool, ctx: MCPContext | None) -> str:

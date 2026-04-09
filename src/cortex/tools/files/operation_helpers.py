@@ -45,6 +45,8 @@ class FileOperation(str, Enum):
     ROLLBACK = "rollback"
     INIT_CONSTITUTION = "init_constitution"
     FILE_ARTIFACT = "file_artifact"
+    LIST_EXPLORE_LOGS = "list_explore_logs"
+    CLEAR_EXPLORE_LOGS = "clear_explore_logs"
 
 
 def parse_file_operation(value: str | None) -> FileOperation | None:

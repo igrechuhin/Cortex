@@ -68,6 +68,7 @@ async def _plan_handle_crud(
     title: str | None,
     content: str | None,
     slug: str | None,
+    explore_log_path: str | None,
     include_archive: bool,
     response_format: str,
     ctx: MCPContext | None,
@@ -79,6 +80,7 @@ async def _plan_handle_crud(
         title=title,
         content=content,
         slug=slug,
+        explore_log_path=explore_log_path,
         include_archive=include_archive,
         response_format=response_format,
         ctx=ctx,
@@ -274,6 +276,7 @@ async def _plan_dispatch(
     title: str | None,
     content: str | None,
     slug: str | None,
+    explore_log_path: str | None,
     include_archive: bool,
     response_format: str,
     plan_title: str | None,
@@ -324,6 +327,7 @@ async def _plan_dispatch(
         title,
         content,
         slug,
+        explore_log_path,
         include_archive,
         response_format,
         plan_title,
@@ -345,6 +349,7 @@ async def _plan_dispatch_valid_operation(
     title: str | None,
     content: str | None,
     slug: str | None,
+    explore_log_path: str | None,
     include_archive: bool,
     response_format: str,
     plan_title: str | None,
@@ -386,7 +391,14 @@ async def _plan_dispatch_valid_operation(
             ctx,
         )
     result_str = await _plan_handle_crud(
-        operation, title, content, slug, include_archive, response_format, ctx
+        operation,
+        title,
+        content,
+        slug,
+        explore_log_path,
+        include_archive,
+        response_format,
+        ctx,
     )
     if operation == "create":
         await _append_plan_create_log(result_str, title, ctx)
@@ -403,6 +415,7 @@ async def plan(
     title: str | None = None,
     content: str | None = None,
     slug: str | None = None,
+    explore_log_path: str | None = None,
     include_archive: bool = False,
     response_format: str = "content",
     plan_title: str | None = None,
@@ -427,6 +440,7 @@ async def plan(
         title,
         content,
         slug,
+        explore_log_path,
         include_archive,
         response_format,
         plan_title,

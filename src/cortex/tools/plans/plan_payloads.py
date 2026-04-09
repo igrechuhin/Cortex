@@ -32,6 +32,14 @@ class PlanCreatePayload(StrictBaseModel):
     title: str = Field(..., min_length=1, description="Plan title")
     content: str = Field(..., min_length=1, description="Plan markdown content")
     slug: str | None = Field(None, description="Filename slug (no .md)")
+    explore_log_path: str | None = Field(
+        None,
+        description=(
+            "Optional explore decision log path (for example "
+            "`.cortex/plans/explore/decision-log-foo.md`) used to build "
+            "`## Decision Basis` in created plans"
+        ),
+    )
     include_archive: bool = Field(False, description="Include archive when listing")
     response_format: str = Field("content", description="Response format")
 
@@ -131,6 +139,7 @@ def build_plan_create_arguments(
     content: str,
     *,
     slug: str | None = None,
+    explore_log_path: str | None = None,
     include_archive: bool = False,
     response_format: str = "content",
 ) -> dict[str, object]:
@@ -140,6 +149,7 @@ def build_plan_create_arguments(
             title=title,
             content=content,
             slug=slug,
+            explore_log_path=explore_log_path,
             include_archive=include_archive,
             response_format=response_format,
         )

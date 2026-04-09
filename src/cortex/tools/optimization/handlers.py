@@ -467,6 +467,87 @@ def _append_recent_ingested_sources_to_context_payload(
     return json.dumps(payload_data, indent=2)
 
 
+def _read_explore_summary_markdown(project_root: Path) -> str | None:
+    from cortex.core.session_config import read_session_config
+
+    cfg = read_session_config()
+    log_path_raw = cfg.get("explore_log_path")
+    if not isinstance(log_path_raw, str) or not log_path_raw.strip():
+        return None
+    explore_path = (project_root / log_path_raw).resolve()
+    if not explore_path.is_file():
+        return None
+    try:
+        log_text = explore_path.read_text(encoding="utf-8")
+    except OSError:
+        return None
+    selected = _extract_markdown_section(log_text, "## Selected Option")
+    recommendation = _extract_markdown_section(log_text, "## Recommendation")
+    if not selected and not recommendation:
+        return None
+    lines = ["## Explore Summary", f"- Source: `{log_path_raw}`"]
+    if selected:
+        lines.append(f"- Selected option: {selected.splitlines()[0].strip()}")
+    if recommendation:
+        lines.append(f"- Recommendation: {recommendation.splitlines()[0].strip()}")
+    return "\n".join(lines)
+
+
+def _extract_markdown_section(markdown: str, heading: str) -> str | None:
+    lines = markdown.splitlines()
+    in_section = False
+    section_lines: list[str] = []
+    for line in lines:
+        stripped = line.strip()
+        if stripped == heading:
+            in_section = True
+            continue
+        if in_section and stripped.startswith("## "):
+            break
+        if in_section:
+            section_lines.append(line)
+    content = "\n".join(section_lines).strip()
+    return content or None
+
+
+def _append_explore_summary_to_context_payload(
+    payload: str, explore_summary_markdown: str | None
+) -> str:
+    if explore_summary_markdown is None:
+        return payload
+    try:
+        parsed = json.loads(payload)
+    except json.JSONDecodeError:
+        return payload
+    if not isinstance(parsed, dict):
+        return payload
+    payload_data = cast(dict[str, object], parsed)
+    if payload_data.get("status") != "success":
+        return payload
+    payload_data["explore_summary"] = explore_summary_markdown
+    return json.dumps(payload_data, indent=2)
+
+
+def _build_context_resource_payload(base_payload: str, project_root: Path) -> str:
+    recent_ops = _read_recent_operations_lines(project_root)
+    recent_artifacts = _read_recent_artifacts_markdown(project_root)
+    recent_ingested_sources = _read_recent_ingested_sources_markdown(project_root)
+    explore_summary = _read_explore_summary_markdown(project_root)
+    return _append_recent_artifacts_to_context_payload(
+        _append_recent_operations_to_context_payload(
+            _append_explore_summary_to_context_payload(
+                _append_recent_ingested_sources_to_context_payload(
+                    _append_session_scope_to_context_payload(base_payload),
+                    recent_ingested_sources,
+                ),
+                explore_summary,
+            ),
+            recent_ops,
+        ),
+        recent_artifacts,
+    )
+
+
 @mcp.resource(uri="cortex://context", meta=CORTEX_CONTEXT_RESOURCE_READ_META)
 @ensure_usage_context
 @mcp_resource_wrapper(timeout=MCP_TOOL_TIMEOUT_COMPLEX)
@@ -491,19 +572,7 @@ async def load_context() -> str:
         strategy="dependency_aware",
     )
     root = await resolve_project_root_async(None, None)
-    recent_ops = _read_recent_operations_lines(root)
-    recent_artifacts = _read_recent_artifacts_markdown(root)
-    recent_ingested_sources = _read_recent_ingested_sources_markdown(root)
-    out = _append_recent_artifacts_to_context_payload(
-        _append_recent_operations_to_context_payload(
-            _append_recent_ingested_sources_to_context_payload(
-                _append_session_scope_to_context_payload(result),
-                recent_ingested_sources,
-            ),
-            recent_ops,
-        ),
-        recent_artifacts,
-    )
+    out = _build_context_resource_payload(result, root)
     _context_resource_cache.set(cache_key, out)
     return out
 

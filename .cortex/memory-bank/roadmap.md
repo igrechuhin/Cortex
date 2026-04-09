@@ -42,7 +42,6 @@ Completed investigations are recorded in [activeContext.md](activeContext.md). P
 
 #### Planning & Brainstorming (High Priority)
 
-- Plan: [Explore-Before-Commit Workflow (/cortex/explore)](../plans/explore-before-commit-workflow.md) — Lightweight brainstorming phase before `/cortex/plan`; produces a decision log without committing a plan; transitions to `/cortex/plan` when direction is chosen. PENDING.
 - Plan: [Session Goal Anchoring with Drift Detection](../plans/session-goal-anchoring.md) — Write a session goal note at session start; detect and warn when agents touch out-of-scope files; end-of-session drift report. PENDING.
 - Plan: [Context-Scoped Instruction Assembly](../plans/context-scoped-instruction-assembly.md) — Assemble scoped context packets for `implement-code`: relevant plan + upstream dependencies + task-type-filtered rules. PENDING.
 

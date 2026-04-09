@@ -22,6 +22,8 @@
 
 - ✅ **NEEDS CLARIFICATION Markers in Plans** - COMPLETE (2026-04-09) - Implemented register-time blocking/non-blocking clarification gating, enrich-time marker resolution, review/session marker surfacing, and tests covering new flows.
 
+- ✅ **Explore-Before-Commit Workflow (/cortex/explore)** - COMPLETE (2026-04-09) - Implemented /cortex/explore workflow with explore models, prompt, ephemeral explore log operations, decision-basis propagation into plan creation, context/session integrations, and new workflow tests.
+
 ## Completed Work (2026-04-08)
 
 - **Summary (2026-04-08)** - 1 entries archived.

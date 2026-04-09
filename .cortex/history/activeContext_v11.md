@@ -12,6 +12,18 @@
 
 - ✅ **Once Flag on Hooks** - COMPLETE (2026-04-09) - Implemented once-hook lifecycle end-to-end by adding remove_once_hooks cleanup, wiring deregister-time cleanup in session registry, and adding targeted unit tests for cleanup and deregister behavior.
 
+- ✅ **Prompt and Agent Hook Types** - COMPLETE (2026-04-09) - Added/verified prompt+agent hook entry support, post-edit write helpers with matcher-local `(type, prompt)` dedup and default model fallback, and associated regression coverage.
+
+- ✅ **File State Cache and Rollback** - COMPLETE (2026-04-09) - Implemented session-scoped file snapshots with rollback operations in pipeline handoff, added deregister cleanup, and covered behavior with new unit tests.
+
+- ✅ **Per-Tool Structured Progress Types** - COMPLETE (2026-04-09) - Finalized structured progress typing in core and key callsites, tightened session dispatcher/progress helper internals for quality constraints, and cleared full quality gate with tests.
+
+- ✅ **Structured progress types extraction** - COMPLETE (2026-04-09) - Extracted progress state modeling into `src/cortex/core/progress_types.py`, updated imports/callers, and added focused unit tests for progress type behavior.
+
+- ✅ **NEEDS CLARIFICATION Markers in Plans** - COMPLETE (2026-04-09) - Implemented register-time blocking/non-blocking clarification gating, enrich-time marker resolution, review/session marker surfacing, and tests covering new flows.
+
+- ✅ **Explore-Before-Commit Workflow (/cortex/explore)** - COMPLETE (2026-04-09) - Implemented /cortex/explore workflow with explore models, prompt, ephemeral explore log operations, decision-basis propagation into plan creation, context/session integrations, and new workflow tests.
+
 ## Completed Work (2026-04-08)
 
 - **Summary (2026-04-08)** - 1 entries archived.

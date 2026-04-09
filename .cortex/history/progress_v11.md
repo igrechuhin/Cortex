@@ -9,6 +9,12 @@
 - **Once Flag on Hooks** - PARTIAL. Implemented Step 2 by exposing `once` in `merge_post_tool_use_edit_hook()` and updating dedup behavior so same-command persistent and one-shot hooks can coexist; added focused unit tests.
 - **Once Flag on Hooks** - PARTIAL. Implemented Step 3 by adding `write_once_hook(...)` in claude settings to register one-shot hooks through merge logic with dedup behavior; added focused unit tests.
 - **Once Flag on Hooks** - COMPLETE. Added once-hook cleanup/removal path and deregister lifecycle integration with tests.
+- **Prompt and Agent Hook Types** - COMPLETE. Finalized prompt/agent hook entry model support, write helpers with `(type, prompt)` dedup + default model behavior, and validated with unit coverage and green quality gate.
+- **File State Cache and Rollback** - COMPLETE. Added FileSnapshot/FileStateCache, pipeline snapshot/rollback operations, deregister cleanup, and test coverage for snapshot lifecycle.
+- **Per-Tool Structured Progress Types** - COMPLETE. Finalized typed progress reporting models and helper wiring, resolved function-length and strict typing regressions, and passed full quality gate.
+- **Structured progress types refactor** - COMPLETE. Added `src/cortex/core/progress_types.py`, wired `src/cortex/core/__init__.py` and session/execution call sites to the extracted types, and added `tests/unit/core/test_progress_types.py`.
+- **NEEDS CLARIFICATION Markers in Plans** - COMPLETE. Added marker-aware plan registration, enrich resolution flow, review/session surfacing, and tests.
+- **Explore-Before-Commit Workflow (/cortex/explore)** - COMPLETE. Added end-to-end explore flow with ephemeral logs, decision lineage into planning, and coverage-backed tests.
 
 ## 2026-04-08
 
