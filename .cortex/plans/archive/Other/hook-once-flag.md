@@ -104,3 +104,9 @@ Coverage target: 95%+.
 - AAA pattern throughout.
 - Session dispatcher test uses dependency injection to avoid real MCP calls.
 - Run via `run_quality_gate()` after implementation.
+
+## Partial Progress Log
+
+- 2026-04-09: Add once flag serialization to HookEntry and unit tests — files: src/cortex/setup/hook_models.py, tests/unit/setup/test_hook_models.py
+- 2026-04-09: Step 2 expose once in merge_post_tool_use_edit_hook and dedup by (command, once) — files: src/cortex/setup/claude_settings.py, tests/unit/test_claude_settings_post_edit_hook.py
+- 2026-04-09: Step 3 add write_once_hook helper and once-hook dedup tests — files: src/cortex/setup/claude_settings.py, tests/unit/test_claude_settings_post_edit_hook.py

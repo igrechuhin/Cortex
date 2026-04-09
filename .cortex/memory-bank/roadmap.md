@@ -40,8 +40,6 @@ Completed investigations are recorded in [activeContext.md](activeContext.md). P
 
 #### Claude Code Harness Improvements (High Priority)
 
-- Plan: [Once Flag on Hooks](../plans/hook-once-flag.md) — Write `"once": true` hook entries that auto-remove after first execution; cleanup leftover once-hooks on session deregister. PENDING.
-- Plan: [Prompt and Agent Hook Types](../plans/hook-prompt-agent-types.md) — Extend `HookEntry` to support `"type": "prompt"` and `"type": "agent"` entries for LLM-based post-edit verification. PENDING.
 - Plan: [File State Cache and Rollback](../plans/file-state-cache-rollback.md) — Snapshot file contents before pipeline edits; restore on failure via `pipeline_handoff(operation="rollback")`; cleanup on session deregister. PENDING.
 - Plan: [Per-Tool Structured Progress Types](../plans/structured-progress-types.md) — Replace plain string `ctx.report_progress()` calls with typed Pydantic models serialized as JSON for richer Cursor MCP UI rendering. PENDING.
 

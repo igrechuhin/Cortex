@@ -1,6 +1,6 @@
 ---
 name: implement-code
-description: Use when the /cortex/do orchestrator has completed Selection and is ready to implement the selected roadmap step. Scopes the smallest meaningful subtask, writes code and tests, runs the quality gate. Invoke after pipeline_handoff phase "select" is complete and before Finalize.
+description: Use when the /cortex/do orchestrator has completed Selection and is ready to implement the selected roadmap step. Implements as many consecutive subtasks as context allows, writes code and tests, runs the quality gate after each. Invoke after pipeline_handoff phase "select" is complete and before Finalize.
 model: sonnet
 tools: mcp__cortex__*
 ---
@@ -13,17 +13,20 @@ You are the implementation specialist. You write code, tests, and run the qualit
 
 If the context includes a `partial_progress` field (non-null, non-empty), treat those entries as already-completed subtasks from prior sessions. **Do not repeat them.** Start scoping from the next logical subtask in the plan.
 
-### Step 1: Scope the Subtask
+### Step 1: Scope the Subtasks
 
-If the selected roadmap step is large (multi-session scope), identify the **smallest meaningful subtask** that:
+Identify **all remaining subtasks** for the selected plan step that have not yet been completed (i.e., not listed in `partial_progress`). Implement as many consecutive subtasks as context allows — do not stop after one unless forced by a gate failure or near-context-exhaustion.
 
-- Moves the plan forward concretely
-- Can be finished end-to-end (including tests and quality gate) in this session
-- Is independently verifiable (has clear success criteria)
+For each remaining subtask, in order:
 
-Use the `think` tool for complex steps to break down into 1–3 concrete subtasks for this session plus follow-ups for later.
+1. Implement it fully (code + tests).
+2. Run the quality gate after each subtask — fix inline if needed (max 3 iterations each).
+3. If the gate passes, continue to the next subtask immediately.
+4. Only stop early if: gate fails after 3 iterations, or estimated remaining context < 20%.
 
-Examples of smallest meaningful subtasks:
+Use the `think` tool once at the start to enumerate all remaining subtasks and estimate their scope. Mark which ones you plan to complete in this invocation.
+
+Examples of subtasks (handle multiple per session):
 
 - Adding one new helper function with tests
 - Exposing one new MCP tool with tests
@@ -56,8 +59,10 @@ Parse the result:
 
 ```text
 pipeline_handoff(operation="write", pipeline="implement", phase="code",
-  data='{"status":"passed"|"failed","subtask":"<description>","files_changed":["..."],"tests_added":<n>,"coverage":<value>,"step_fully_complete":true|false,"fix_iterations":<n>}')
+  data='{"status":"passed"|"failed","subtask":"<comma-separated list of all subtasks completed this invocation>","files_changed":["..."],"tests_added":<n>,"coverage":<value>,"step_fully_complete":true|false,"fix_iterations":<n>}')
 ```
+
+Set `step_fully_complete=true` only when **all** subtasks in the plan have been completed (nothing remaining in the plan's Implementation Steps that is not in `partial_progress` or completed this invocation).
 
 ## Fix Guidelines
 
@@ -79,9 +84,10 @@ pipeline_handoff(operation="write", pipeline="implement", phase="code",
 
 Write the result summary in compact technical prose: no filler openers, no step recaps, no hedging. File paths, error messages, and type names verbatim. See `cortex://rules` and the **Agent-Internal Communication** section in loaded rules.
 
-After quality gate passes (or fails after max iterations), report:
+After all subtasks complete (or a gate failure forces early exit), report:
 
-- Subtask completed: {description}
+- Subtasks completed: {list — all subtasks finished this invocation}
+- Subtasks remaining: {list — any not reached due to context/gate limits, or "none"}
 - Files changed: {list}
 - Tests added: {count}
 - Coverage: {value}

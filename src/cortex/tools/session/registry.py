@@ -222,34 +222,50 @@ async def session_register(
 
 async def _deregister_session_impl(ctx: MCPContext | None) -> str:
     """Implementation of deregister_session MCP tool."""
+    from cortex.setup.claude_settings import remove_once_hooks
+
     await log_client(ctx, "info", "deregister_session: starting", logger_name=__name__)
     root = await resolve_project_root_async(None, ctx)
+    settings_path = root / ".claude" / "settings.json"
+    removed_once_count = remove_once_hooks(settings_path)
+    logger.debug(
+        "Deregister cleanup removed %d once hooks from %s",
+        removed_once_count,
+        settings_path,
+    )
 
     deregistered = await deregister_session(root)
+    result = _deregister_result(deregistered)
+    await _log_deregister_result(ctx, deregistered)
+    return result.model_dump_json()
 
+
+def _deregister_result(deregistered: bool) -> SessionRegistryResult:
     if deregistered:
-        result = SessionRegistryResult(
+        return SessionRegistryResult(
             status=OperationStatus.SUCCESS,
             message="Successfully deregistered session",
             error=None,
         )
+    return SessionRegistryResult(
+        status=OperationStatus.ERROR,
+        message="Session not found in registry",
+        error="Session not found",
+    )
+
+
+async def _log_deregister_result(ctx: MCPContext | None, deregistered: bool) -> None:
+    if deregistered:
         await log_client(
             ctx, "info", "deregister_session: success", logger_name=__name__
         )
-    else:
-        result = SessionRegistryResult(
-            status=OperationStatus.ERROR,
-            message="Session not found in registry",
-            error="Session not found",
-        )
-        await log_client(
-            ctx,
-            "warning",
-            "deregister_session: session not found",
-            logger_name=__name__,
-        )
-
-    return result.model_dump_json()
+        return
+    await log_client(
+        ctx,
+        "warning",
+        "deregister_session: session not found",
+        logger_name=__name__,
+    )
 
 
 # Internal; use session(operation="deregister") as MCP tool.

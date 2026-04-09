@@ -4,9 +4,13 @@
 
 ## Completed Work (2026-04-09)
 
+- ✅ **Once Flag on Hooks (PARTIAL)** - Added `HookEntry.once` support in hook model serialization so `once=false` is omitted from settings payloads while `once=true` is preserved; covered with targeted unit tests.
+
 - ✅ **Conditional Hook Execution DSL (PARTIAL)** - COMPLETE (2026-04-09) - Extended runtime coverage in post-edit hook integration path to assert patterned hooks write `conditions` metadata while unpatterned hooks preserve matcher-only behavior.
 
 - ✅ **Conditional Hook Execution DSL** - COMPLETE (2026-04-09) - Completed conditional hook DSL support including legacy-compat merge behavior that backfills patterned `conditions` metadata for existing matcher+command entries.
+
+- ✅ **Once Flag on Hooks** - COMPLETE (2026-04-09) - Implemented once-hook lifecycle end-to-end by adding remove_once_hooks cleanup, wiring deregister-time cleanup in session registry, and adding targeted unit tests for cleanup and deregister behavior.
 
 ## Completed Work (2026-04-08)
 

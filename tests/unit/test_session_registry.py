@@ -18,6 +18,31 @@ from cortex.tools.session.registry import (
 )
 
 
+def _write_once_cleanup_settings(settings_path: Path) -> None:
+    payload = {
+        "hooks": {
+            "PostToolUse": [
+                {
+                    "matcher": "Edit",
+                    "hooks": [
+                        {
+                            "type": "command",
+                            "command": "python3 -m pytest tests/ -q",
+                            "once": True,
+                        },
+                        {
+                            "type": "command",
+                            "command": "python3 -m pytest tests/unit -q",
+                        },
+                    ],
+                }
+            ]
+        }
+    }
+    settings_path.parent.mkdir(parents=True, exist_ok=True)
+    _ = settings_path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+
+
 class TestRegisterSession:
     """Tests for registering sessions."""
 
@@ -379,3 +404,33 @@ class TestSessionRegistryMCPExceptionPaths:
         result = json.loads(result_str)
         assert result.get("status") == "error"
         assert "error" in result
+
+    @pytest.mark.asyncio
+    async def test_session_deregister_cleans_once_hooks(self, tmp_path: Path) -> None:
+        """session_deregister removes leftover once hooks from .claude/settings.json."""
+        settings_path = tmp_path / ".claude" / "settings.json"
+        _write_once_cleanup_settings(settings_path)
+        env_key = "CORTEX_SESSION_ID"
+        original = os.environ.get(env_key)
+        os.environ[env_key] = "cleanup_session"
+
+        try:
+            _ = await register_session(tmp_path, "cleanup task")
+            with patch(
+                "cortex.tools.session.registry.resolve_project_root_async",
+                new_callable=AsyncMock,
+                return_value=tmp_path,
+            ):
+                result_str = await session_deregister(ctx=None)
+            result = json.loads(result_str)
+            assert result.get("status") == "success"
+            cleaned = json.loads(settings_path.read_text(encoding="utf-8"))
+            hooks = cleaned["hooks"]["PostToolUse"][0]["hooks"]
+            assert hooks == [
+                {"type": "command", "command": "python3 -m pytest tests/unit -q"}
+            ]
+        finally:
+            if original is None:
+                _ = os.environ.pop(env_key, None)
+            else:
+                os.environ[env_key] = original

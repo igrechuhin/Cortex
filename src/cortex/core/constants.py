@@ -63,6 +63,9 @@ LANGUAGE_POST_EDIT_HOOK_COMMANDS: dict[str, str | None] = {
     "csharp": "dotnet test 2>&1 | tail -20",
 }
 
+# Default Claude model for prompt/agent hook entries.
+HOOK_DEFAULT_MODEL = "claude-haiku-4-5"
+
 # Paths excluded from function-length check (MCP dispatchers; used by pre_commit + scripts)
 FUNCTION_LENGTH_EXCLUDED_PATHS: tuple[str, ...] = (
     "src/cortex/tools/plans/plan.py",
