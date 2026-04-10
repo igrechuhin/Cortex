@@ -20,6 +20,7 @@ from cortex.tools.files.operation_error_responses import (
 from cortex.validation.schema_validator import SchemaValidator
 
 __all__ = [
+    "GOAL_FILE_OPERATIONS",
     "FileOperation",
     "build_invalid_operation_error",
     "build_missing_parameters_error",
@@ -47,6 +48,9 @@ class FileOperation(str, Enum):
     FILE_ARTIFACT = "file_artifact"
     LIST_EXPLORE_LOGS = "list_explore_logs"
     CLEAR_EXPLORE_LOGS = "clear_explore_logs"
+    SET_GOAL = "set_goal"
+    CLEAR_GOAL = "clear_goal"
+    GET_GOAL = "get_goal"
 
 
 def parse_file_operation(value: str | None) -> FileOperation | None:
@@ -142,6 +146,15 @@ def validate_write_request(
     return validate_write_content(content)
 
 
+GOAL_FILE_OPERATIONS: frozenset[FileOperation] = frozenset(
+    {
+        FileOperation.SET_GOAL,
+        FileOperation.CLEAR_GOAL,
+        FileOperation.GET_GOAL,
+    }
+)
+
+
 def validate_manage_file_operation(
     operation: str | None,
     file_name: str | None,
@@ -157,6 +170,8 @@ def validate_manage_file_operation(
             missing_params.append("operation")
             return (None, build_missing_parameters_error(missing_params))
         return (None, build_invalid_operation_error(str(operation)))
+    if parsed_op in GOAL_FILE_OPERATIONS:
+        return (parsed_op, None)
     if parsed_op != FileOperation.FILE_ARTIFACT and not file_name:
         return (None, build_missing_parameters_error(["file_name"]))
     if parsed_op == FileOperation.ROLLBACK and version is None:

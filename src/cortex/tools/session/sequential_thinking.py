@@ -203,6 +203,39 @@ def _resolve_think_mode(
     return (tn, tt, ntn, lightweight)
 
 
+def _resolve_thought_from_config(thought: str | None) -> str:
+    if thought:
+        return thought
+    from cortex.core.session_config import read_session_config
+
+    cfg = read_session_config()
+    return str(cfg.get("task_description", "Reflect on current task"))
+
+
+def _build_thinking_input(
+    thought: str,
+    thought_number: int,
+    total_thoughts: int,
+    next_thought_needed: bool,
+    is_revision: bool,
+    revises_thought: int | None,
+    branch_from_thought: int | None,
+    branch_id: str | None,
+    needs_more_thoughts: bool,
+) -> SequentialThinkingInput:
+    return SequentialThinkingInput(
+        thought=thought,
+        next_thought_needed=next_thought_needed,
+        thought_number=thought_number,
+        total_thoughts=total_thoughts,
+        is_revision=is_revision,
+        revises_thought=revises_thought,
+        branch_from_thought=branch_from_thought,
+        branch_id=branch_id,
+        needs_more_thoughts=needs_more_thoughts,
+    )
+
+
 @mcp.tool(annotations=safe_write_annotations("Thinking"))
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_MEDIUM)
@@ -217,45 +250,21 @@ async def think(
     branch_id: str | None = None,
     needs_more_thoughts: bool = False,
 ) -> str:
-    """Append a thought to an internal scratchpad; lightweight (thought only) or full sequential mode (optional params).
+    """Append a thought to internal scratchpad.
 
-    USE WHEN: Agent needs to reason before acting, analyzing tool outputs,
-    checking policy compliance, planning multi-step operations, or formal
-    multi-step reasoning with revisions and branches (refactoring plans,
-    debugging tests, designing APIs).
-
-    LIGHTWEIGHT (default): Pass only thought. Returns {status, thought_number}.
-    FULL MODE: Pass thought_number, total_thoughts, next_thought_needed for full state.
-
-    RETURNS: Lightweight — {status, thought_number}. Full — JSON with
-    thoughtNumber, totalThoughts, nextThoughtNeeded, branches,
-    thoughtHistoryLength (camelCase).
-
-    EXAMPLES: think(thought="Which pre-commit checks apply?"),
-    think(thought="Step 1: identify scope", thought_number=1, total_thoughts=3,
-    next_thought_needed=True).
-
-    Args:
-        thought: Current thinking step (required).
-        thought_number, total_thoughts, next_thought_needed: Full mode params.
-        is_revision, revises_thought, branch_from_thought, branch_id,
-        needs_more_thoughts: Optional full-mode params.
+    USE WHEN: Agent needs reasoning before action or multi-step deliberation.
+    EXAMPLES: think(thought="Check constraints"), think(thought="Step 1", thought_number=1, total_thoughts=2, next_thought_needed=True).
     """
     core = _get_core()
-    # Zero-arg fallback: read thought from session config or use placeholder
-    if not thought:
-        from cortex.core.session_config import read_session_config
-
-        cfg = read_session_config()
-        thought = str(cfg.get("task_description", "Reflect on current task"))
+    thought = _resolve_thought_from_config(thought)
     thought_number, total_thoughts, next_thought_needed_val, lightweight = (
         _resolve_think_mode(core, thought_number, total_thoughts, next_thought_needed)
     )
-    inp = SequentialThinkingInput(
+    inp = _build_thinking_input(
         thought=thought,
-        next_thought_needed=next_thought_needed_val,
         thought_number=thought_number,
         total_thoughts=total_thoughts,
+        next_thought_needed=next_thought_needed_val,
         is_revision=is_revision,
         revises_thought=revises_thought,
         branch_from_thought=branch_from_thought,

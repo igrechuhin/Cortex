@@ -40,6 +40,7 @@ from cortex.managers.utils import get_manager
 from cortex.tools.models_base import ToolResultStatus
 from cortex.tools.session.brief import (
     build_session_brief,
+    cap_session_brief_payload,
     load_memory_bank_files,
 )
 from cortex.tools.session.models import (
@@ -49,6 +50,7 @@ from cortex.tools.session.models import (
     SessionStartResult,
     SessionStartResultUnion,
 )
+from cortex.tools.session.session_goal_brief import merge_session_goal_into_brief
 
 logger = logging.getLogger(__name__)
 
@@ -282,18 +284,31 @@ async def _get_session_optional_context(
     return (git_status, next_work_item, next_work_plan_path)
 
 
-async def _load_and_build_brief(
+def _apply_session_goal_and_cap(
+    brief: SessionBrief,
+    project_root: Path,
+    goal: str | None,
+    plan_slug: str | None,
+    blocked_files: list[str] | None,
+) -> SessionBrief:
+    merged = merge_session_goal_into_brief(
+        brief, project_root, goal, plan_slug, blocked_files
+    )
+    return cap_session_brief_payload(merged)
+
+
+async def _build_capped_brief_from_memory(
+    act: str,
+    rdm: str,
     fs_manager: FileSystemManager,
     managers: ManagersDict,
     project_root: Path,
     mcp_healthy: bool,
     mcp_health_message: str | None,
-) -> SessionStartResultUnion:
-    """Load memory bank files, build brief, return success result or error."""
-    memory_bank_result = await load_memory_bank_files(fs_manager)
-    if isinstance(memory_bank_result, SessionStartErrorResult):
-        return memory_bank_result
-    act, rdm = memory_bank_result
+    goal: str | None,
+    plan_slug: str | None,
+    blocked_files: list[str] | None,
+) -> SessionBrief:
     git_status, next_work_item, next_work_plan_path = (
         await _get_session_optional_context(rdm, project_root)
     )
@@ -309,7 +324,39 @@ async def _load_and_build_brief(
         mcp_health_message=mcp_health_message,
         roadmap_content=rdm,
     )
-    return await _session_start_success_result(brief, managers)
+    return _apply_session_goal_and_cap(
+        brief, project_root, goal, plan_slug, blocked_files
+    )
+
+
+async def _load_and_build_brief(
+    fs_manager: FileSystemManager,
+    managers: ManagersDict,
+    project_root: Path,
+    mcp_healthy: bool,
+    mcp_health_message: str | None,
+    goal: str | None = None,
+    plan_slug: str | None = None,
+    blocked_files: list[str] | None = None,
+) -> SessionStartResultUnion:
+    """Load memory bank files, build brief, return success result or error."""
+    memory_bank_result = await load_memory_bank_files(fs_manager)
+    if isinstance(memory_bank_result, SessionStartErrorResult):
+        return memory_bank_result
+    act, rdm = memory_bank_result
+    capped = await _build_capped_brief_from_memory(
+        act,
+        rdm,
+        fs_manager,
+        managers,
+        project_root,
+        mcp_healthy,
+        mcp_health_message,
+        goal,
+        plan_slug,
+        blocked_files,
+    )
+    return await _session_start_success_result(capped, managers)
 
 
 async def _load_brief_and_return_result(
@@ -318,11 +365,21 @@ async def _load_brief_and_return_result(
     project_root: Path,
     mcp_healthy: bool,
     mcp_health_message: str | None,
+    goal: str | None = None,
+    plan_slug: str | None = None,
+    blocked_files: list[str] | None = None,
 ) -> SessionStartResultUnion:
     """Load memory bank, build brief, return result or error."""
     try:
         return await _load_and_build_brief(
-            fs_manager, managers, project_root, mcp_healthy, mcp_health_message
+            fs_manager,
+            managers,
+            project_root,
+            mcp_healthy,
+            mcp_health_message,
+            goal,
+            plan_slug,
+            blocked_files,
         )
     except Exception as e:
         logger.exception("Error in session_start")
@@ -336,8 +393,10 @@ async def session_start_impl(
     task_description: str | None,
     project_root: Path,
     managers: ManagersDict,
+    goal: str | None = None,
+    plan_slug: str | None = None,
+    blocked_files: list[str] | None = None,
 ) -> SessionStartResultUnion:
-    """Implementation of session_start tool."""
     fs_manager: FileSystemManager = await get_manager(managers, "fs", FileSystemManager)
     # Import inside function so tests patching cortex.tools.session.health work
     # as expected without relying on re-importing this module.
@@ -350,6 +409,9 @@ async def session_start_impl(
         project_root,
         mcp_healthy,
         mcp_health_message,
+        goal,
+        plan_slug,
+        blocked_files,
     )
     if (
         isinstance(result, SessionStartResult)
@@ -364,45 +426,12 @@ async def session_start_impl(
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_FAST)
 async def session_start(
     task_description: str | None = None,
+    goal: str | None = None,
+    plan_slug: str | None = None,
+    blocked_files: list[str] | None = None,
     ctx: MCPContext | None = None,
 ) -> str:
-    """Get session orientation brief combining multiple orientation tasks.
-
-    USE WHEN: Starting a new session, user wants project context, user needs
-    orientation, user requests session brief.
-
-    EXAMPLES: 'session start', 'get session brief', 'orient me to the project',
-    'what should I work on next'.
-
-    RETURNS: JSON with SessionBrief containing current focus, next work item,
-    health check, git status, and actionable suggestions.
-
-    This tool combines 3-5 manual orientation calls into a single call:
-    - Reads activeContext.md for current focus and recent completed work
-    - Reads roadmap.md to find next PENDING work item
-    - Runs lightweight health check (file count, token budget, missing files)
-    - Optionally reads git status (uncommitted changes count)
-    - Generates actionable suggestions
-
-    The brief is designed to be < 1000 tokens, providing efficient orientation
-    without loading full context.
-
-    Args:
-        task_description: Optional task description for future relevance scoring.
-            Currently unused but reserved for future enhancements.
-
-    Returns:
-        JSON string containing SessionStartResult with:
-        - status: "success" or "error"
-        - brief: SessionBrief with orientation data
-        - token_count: Token count of the brief
-        - error: Error message (only if status is "error")
-
-    Example:
-        >>> session_start()
-        {"status": "success", "brief": {"current_focus": "...", "next_work_item": "...",
-         "health": {...}, "git_status": {...}, "session_suggestions": [...]}, "token_count": 261}
-    """
+    """Session orientation brief (memory bank, roadmap, health, git, suggestions)."""
     await log_client(ctx, "info", "session_start: starting", logger_name=__name__)
 
     project_root: Path = await get_or_resolve_project_root(ctx)
@@ -414,6 +443,13 @@ async def session_start(
         ).model_dump_json(exclude_none=True)
     managers = cast(ManagersDict, managers_raw)
 
-    result = await session_start_impl(task_description, project_root, managers)
+    result = await session_start_impl(
+        task_description,
+        project_root,
+        managers,
+        goal=goal,
+        plan_slug=plan_slug,
+        blocked_files=blocked_files,
+    )
 
     return _session_start_union_to_json(result)

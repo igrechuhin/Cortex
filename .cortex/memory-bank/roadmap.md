@@ -42,7 +42,6 @@ Completed investigations are recorded in [activeContext.md](activeContext.md). P
 
 #### Planning & Brainstorming (High Priority)
 
-- Plan: [Session Goal Anchoring with Drift Detection](../plans/session-goal-anchoring.md) — Write a session goal note at session start; detect and warn when agents touch out-of-scope files; end-of-session drift report. PENDING.
 - Plan: [Context-Scoped Instruction Assembly](../plans/context-scoped-instruction-assembly.md) — Assemble scoped context packets for `implement-code`: relevant plan + upstream dependencies + task-type-filtered rules. PENDING.
 
 #### Planning & Brainstorming (Medium Priority)

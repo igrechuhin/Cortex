@@ -35,6 +35,8 @@ Examples of subtasks (handle multiple per session):
 
 ### Step 2: Implement
 
+**Session goal drift (non-blocking)**: If `.cortex/.session/session-goal.md` exists, before editing a file path, conceptually classify it against the goal (allowed/blocked patterns). If the edit would be out of scope, emit a visible warning: `[DRIFT WARNING: editing <path> may be out of scope. Goal: <goal>. Reason: <reason>. Proceeding — if you continue, add a brief # AI: comment on why scope expansion is justified.]`
+
 Write the code changes:
 
 - Follow coding standards from loaded rules — see `shared-defaults.md` for Synapse defaults

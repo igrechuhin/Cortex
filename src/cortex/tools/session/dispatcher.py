@@ -14,6 +14,23 @@ from cortex.core.mcp_annotations import destructive_annotations
 from cortex.core.mcp_stability import ensure_usage_context, mcp_tool_wrapper
 from cortex.core.progress_types import SessionProgress, report_structured_progress
 from cortex.server import mcp
+from cortex.tools.models_base import StrictBaseModel
+
+
+class _SessionDispatchArgs(StrictBaseModel):
+    task_description: str | None
+    task_title: str | None
+    role: str | None
+    summary: str | None
+    completed_tasks: list[str] | None
+    in_progress_task: str | None
+    in_progress_notes: str | None
+    blockers: list[str] | None
+    decisions_made: list[str] | None
+    create_checkpoint: bool
+    goal: str | None
+    plan_slug: str | None
+    blocked_files: list[str] | None
 
 
 def _session_error_invalid_operation(operation: str) -> str:
@@ -32,13 +49,22 @@ def _session_error_invalid_operation(operation: str) -> str:
 
 async def _session_handle_start(
     task_description: str | None,
+    goal: str | None,
+    plan_slug: str | None,
+    blocked_files: list[str] | None,
     ctx: MCPContext | None,
 ) -> str:
     """Handle session(operation='start')."""
     from cortex.tools.session.start_tools import session_start as _session_start
 
     await _emit_session_dispatch_progress(ctx, "start", "Starting session operation")
-    return await _session_start(task_description=task_description, ctx=ctx)
+    return await _session_start(
+        task_description=task_description,
+        goal=goal,
+        plan_slug=plan_slug,
+        blocked_files=blocked_files,
+        ctx=ctx,
+    )
 
 
 async def _session_handle_register(
@@ -136,9 +162,87 @@ def _session_error_register_missing_title() -> str:
     )
 
 
+async def _session_dispatch_start(
+    task_description: str | None,
+    goal: str | None,
+    plan_slug: str | None,
+    blocked_files: list[str] | None,
+    ctx: MCPContext | None,
+) -> str:
+    return await _session_handle_start(
+        task_description, goal, plan_slug, blocked_files, ctx
+    )
+
+
+async def _session_dispatch_register(
+    task_title: str | None, role: str | None, ctx: MCPContext | None
+) -> str:
+    assert task_title is not None and str(task_title).strip()
+    return await _session_handle_register(
+        task_title=str(task_title).strip(), role=role, ctx=ctx
+    )
+
+
+async def _session_dispatch_compact(
+    summary: str | None,
+    completed_tasks: list[str] | None,
+    in_progress_task: str | None,
+    in_progress_notes: str | None,
+    blockers: list[str] | None,
+    decisions_made: list[str] | None,
+    create_checkpoint: bool,
+    ctx: MCPContext | None,
+) -> str:
+    return await _session_handle_compact(
+        summary,
+        completed_tasks,
+        in_progress_task,
+        in_progress_notes,
+        blockers,
+        decisions_made,
+        create_checkpoint,
+        ctx,
+    )
+
+
 async def _session_dispatch_impl(
     op: str,
+    args: _SessionDispatchArgs,
+    ctx: MCPContext | None,
+) -> str:
+    if op == "start":
+        return await _session_dispatch_start(
+            args.task_description, args.goal, args.plan_slug, args.blocked_files, ctx
+        )
+    if op == "register":
+        return await _session_dispatch_register(args.task_title, args.role, ctx)
+    if op == "deregister":
+        return await _session_handle_deregister(ctx)
+    return await _session_dispatch_compact_from_args(args, ctx)
+
+
+async def _session_dispatch_compact_from_args(
+    args: _SessionDispatchArgs,
+    ctx: MCPContext | None,
+) -> str:
+    return await _session_dispatch_compact(
+        args.summary,
+        args.completed_tasks,
+        args.in_progress_task,
+        args.in_progress_notes,
+        args.blockers,
+        args.decisions_made,
+        args.create_checkpoint,
+        ctx,
+    )
+
+
+async def _session_run(
+    operation: str,
     task_description: str | None,
+    goal: str | None,
+    plan_slug: str | None,
+    blocked_files: list[str] | None,
     task_title: str | None,
     role: str | None,
     summary: str | None,
@@ -150,19 +254,29 @@ async def _session_dispatch_impl(
     create_checkpoint: bool,
     ctx: MCPContext | None,
 ) -> str:
-    """Dispatch to operation-specific handler."""
-    if op == "start":
-        return await _session_handle_start(task_description, ctx)
-    if op == "register":
-        assert task_title is not None and str(task_title).strip()
-        return await _session_handle_register(
-            task_title=str(task_title).strip(), role=role, ctx=ctx
-        )
-    if op == "deregister":
-        return await _session_handle_deregister(ctx)
-    args = (summary, completed_tasks, in_progress_task, in_progress_notes)
-    rest = (blockers, decisions_made, create_checkpoint, ctx)
-    return await _session_handle_compact(*args, *rest)
+    err, op = _session_validate(operation, task_title)
+    if err is not None:
+        return err
+    args = _session_build_dispatch_args(
+        {
+            k: v
+            for k, v in locals().items()
+            if k not in {"operation", "ctx", "err", "op"}
+        }
+    )
+    return await _session_dispatch_impl_from_args(op, args, ctx)
+
+
+async def _session_dispatch_impl_from_args(
+    op: str,
+    args: _SessionDispatchArgs,
+    ctx: MCPContext | None,
+) -> str:
+    return await _session_dispatch_impl(op, args, ctx)
+
+
+def _session_build_dispatch_args(values: dict[str, object]) -> _SessionDispatchArgs:
+    return _SessionDispatchArgs.model_validate(values)
 
 
 @mcp.tool(
@@ -172,59 +286,21 @@ async def _session_dispatch_impl(
 )
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_FAST)
-async def session(
-    operation: str = "start",
-    # start params
-    task_description: str | None = None,
-    # register params
-    task_title: str | None = None,
-    role: str | None = None,
-    # compact params
-    summary: str | None = None,
-    completed_tasks: list[str] | None = None,
-    in_progress_task: str | None = None,
-    in_progress_notes: str | None = None,
-    blockers: list[str] | None = None,
-    decisions_made: list[str] | None = None,
-    create_checkpoint: bool = False,
-    ctx: MCPContext | None = None,
-) -> str:
-    """Session lifecycle: orientation, register, deregister, or compact (single tool).
-
-    USE WHEN: Starting a session (orientation brief), registering a task for
-    multi-agent visibility (Phase 58), deregistering when done, or compacting
-    memory bank and writing handoff at end of session.
-
-    RETURNS: JSON. For start: SessionStartResult (brief, token_count). For
-    register/deregister: SessionRegistryResult (status, message). For compact:
-    status, token_savings, tokens_after, rollback_snapshots. On error:
-    status "error" and error message.
+# fmt: off
+async def session(operation: str = "start", task_description: str | None = None, goal: str | None = None, plan_slug: str | None = None, blocked_files: list[str] | None = None, task_title: str | None = None, role: str | None = None, summary: str | None = None, completed_tasks: list[str] | None = None, in_progress_task: str | None = None, in_progress_notes: str | None = None, blockers: list[str] | None = None, decisions_made: list[str] | None = None, create_checkpoint: bool = False, ctx: MCPContext | None = None) -> str:
+# fmt: on
+    """USE WHEN: Session lifecycle (orientation, registry, compaction).
 
     EXAMPLES:
-    - session(operation="start") — orientation brief at session start
-    - session(operation="register", task_title="Implement Phase 58", role="feature")
-    - session(operation="deregister") — when finishing a task
-    - session(operation="compact", summary="Implemented Step 1; next: audit")
-
-    Args:
-        operation: "start" (default), "register", "deregister", or "compact".
-        task_description: For start. Optional task description (reserved).
-        task_title: For register. Task title being worked on (required).
-        role: For register. Optional agent role (feature, quality, testing, etc.).
-        summary: For compact. Optional free-form handoff summary.
-        completed_tasks: For compact. Optional list of completed tasks.
-        in_progress_task: For compact. Optional task in progress.
-        in_progress_notes: For compact. Optional notes for in-progress task.
-        blockers: For compact. Optional list of blockers.
-        decisions_made: For compact. Optional list of key decisions.
-        create_checkpoint: For compact. If True, create git tag cortex/session-*.
+    - session(operation="start", goal="Fix auth bug")
+    - session(operation="compact", summary="Session handoff")
     """
-    err, op = _session_validate(operation, task_title)
-    if err is not None:
-        return err
-    return await _session_dispatch_impl(
-        op,
+    return await _session_run(
+        operation,
         task_description,
+        goal,
+        plan_slug,
+        blocked_files,
         task_title,
         role,
         summary,

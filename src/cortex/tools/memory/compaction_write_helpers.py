@@ -9,6 +9,7 @@ import json
 import logging
 from dataclasses import dataclass
 from pathlib import Path
+from typing import cast
 
 from cortex.core.constants import MemoryBankFile
 from cortex.core.exceptions import (
@@ -399,6 +400,35 @@ async def compact_session_run(
     )
     if isinstance(read_result, str):
         return read_result
-    return await _apply_write_and_result(
+    out = await _apply_write_and_result(
         ctx, read_result, summary, handoff_params, create_checkpoint
     )
+    return await compact_attach_session_drift_json(out, project_root)
+
+
+async def compact_attach_session_drift_json(
+    result_json: str, project_root: Path
+) -> str:
+    """Attach session_drift to successful compact JSON when a goal anchor exists."""
+    try:
+        parsed = json.loads(result_json)
+    except json.JSONDecodeError:
+        return result_json
+    if not isinstance(parsed, dict):
+        return result_json
+    payload = cast(dict[str, object], parsed)
+    if payload.get("status") != "success":
+        return result_json
+    from cortex.tools.session.session_drift_report import (
+        build_session_drift_summary_safe,
+    )
+
+    drift = await build_session_drift_summary_safe(project_root)
+    if drift is not None:
+        payload["session_drift"] = drift
+        summary_line = drift.get("summary_line")
+        high_msg = drift.get("high_drift_message")
+        parts = [p for p in (summary_line, high_msg) if isinstance(p, str) and p]
+        if parts:
+            payload["drift_summary"] = " ".join(parts)
+    return json.dumps(payload, indent=2)

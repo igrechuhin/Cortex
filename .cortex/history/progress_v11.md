@@ -15,6 +15,7 @@
 - **Structured progress types refactor** - COMPLETE. Added `src/cortex/core/progress_types.py`, wired `src/cortex/core/__init__.py` and session/execution call sites to the extracted types, and added `tests/unit/core/test_progress_types.py`.
 - **NEEDS CLARIFICATION Markers in Plans** - COMPLETE. Added marker-aware plan registration, enrich resolution flow, review/session surfacing, and tests.
 - **Explore-Before-Commit Workflow (/cortex/explore)** - COMPLETE. Added end-to-end explore flow with ephemeral logs, decision lineage into planning, and coverage-backed tests.
+- **Session Goal Anchoring with Drift Detection** - COMPLETE. Session goal file, drift checks, manage_file ops, context + compact integration, tests.
 
 ## 2026-04-08
 

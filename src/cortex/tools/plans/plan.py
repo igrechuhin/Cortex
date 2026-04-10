@@ -12,6 +12,27 @@ from cortex.core.context_logging import MCPContext, log_client
 from cortex.core.mcp_annotations import destructive_annotations
 from cortex.core.mcp_stability import ensure_usage_context, mcp_tool_wrapper
 from cortex.server import mcp
+from cortex.tools.models_base import StrictBaseModel
+
+
+class _PlanDispatchRequest(StrictBaseModel):
+    operation: str
+    title: str | None
+    content: str | None
+    slug: str | None
+    explore_log_path: str | None
+    include_archive: bool
+    response_format: str
+    plan_title: str | None
+    summary: str | None
+    completion_date: str | None
+    progress_entry: str | None
+    plan_file_name: str | None
+    plan_relative_path: str | None
+    resolved_clarifications: dict[str, str] | None
+    description: str | None
+    status: str
+    section: str
 
 
 def _plan_error_invalid_operation(operation: str) -> str:
@@ -271,6 +292,29 @@ async def _append_plan_complete_log(
         )
 
 
+def _plan_valid_operations() -> tuple[str, ...]:
+    return (
+        "create",
+        "list",
+        "get",
+        "complete",
+        "register",
+        "enrich",
+        "archive_completed",
+    )
+
+
+async def _log_plan_operation(
+    ctx: MCPContext | None, operation: str, has_required: bool
+) -> None:
+    await log_client(
+        ctx,
+        "info",
+        f"plan: operation={operation}, required_args_present={has_required}",
+        logger_name=__name__,
+    )
+
+
 async def _plan_dispatch(
     operation: str | None,
     title: str | None,
@@ -292,116 +336,114 @@ async def _plan_dispatch(
     ctx: MCPContext | None,
 ) -> str:
     """Dispatch plan(operation=...) to the appropriate handler."""
-    if not operation:
-        operation = "list"
-    valid_ops = (
-        "create",
-        "list",
-        "get",
-        "complete",
-        "register",
-        "enrich",
-        "archive_completed",
-    )
-    if operation not in valid_ops:
+    operation = operation or "list"
+    if operation not in _plan_valid_operations():
         return _plan_error_invalid_operation(operation)
-    has_required = _plan_required_args_present(
-        operation,
-        slug=slug,
-        plan_file_name=plan_file_name,
-        plan_relative_path=plan_relative_path,
-        plan_title=plan_title,
-        summary=summary,
-        description=description,
-        title=title,
-        content=content,
+    request = _build_plan_dispatch_request(
+        {k: v for k, v in locals().items() if k != "ctx"}
     )
-    await log_client(
-        ctx,
-        "info",
-        f"plan: operation={operation}, required_args_present={has_required}",
-        logger_name=__name__,
-    )
-    return await _plan_dispatch_valid_operation(
-        operation,
-        title,
-        content,
-        slug,
-        explore_log_path,
-        include_archive,
-        response_format,
-        plan_title,
-        summary,
-        completion_date,
-        progress_entry,
-        plan_file_name,
-        plan_relative_path,
-        resolved_clarifications,
-        description,
-        status,
-        section,
-        ctx,
+    has_required = _plan_request_has_required_args(request)
+    await _log_plan_operation(ctx, operation, has_required)
+    return await _plan_dispatch_valid_operation(request, ctx)
+
+
+def _build_plan_dispatch_request(
+    values: dict[str, object],
+) -> _PlanDispatchRequest:
+    return _PlanDispatchRequest.model_validate(values)
+
+
+def _plan_request_has_required_args(request: _PlanDispatchRequest) -> bool:
+    return _plan_required_args_present(
+        request.operation,
+        slug=request.slug,
+        plan_file_name=request.plan_file_name,
+        plan_relative_path=request.plan_relative_path,
+        plan_title=request.plan_title,
+        summary=request.summary,
+        description=request.description,
+        title=request.title,
+        content=request.content,
     )
 
 
-async def _plan_dispatch_valid_operation(
-    operation: str,
-    title: str | None,
-    content: str | None,
-    slug: str | None,
-    explore_log_path: str | None,
-    include_archive: bool,
-    response_format: str,
+async def _handle_special_plan_operations(
+    request: _PlanDispatchRequest,
+    ctx: MCPContext | None,
+) -> str | None:
+    if request.operation == "archive_completed":
+        return await _plan_handle_archive_completed(ctx)
+    if request.operation == "complete":
+        return await _dispatch_complete_with_log(
+            request.plan_title,
+            request.summary,
+            request.completion_date,
+            request.progress_entry,
+            request.plan_file_name,
+            ctx,
+        )
+    return await _handle_register_or_enrich(request, ctx)
+
+
+async def _handle_register_or_enrich(
+    request: _PlanDispatchRequest,
+    ctx: MCPContext | None,
+) -> str | None:
+    if request.operation == "register":
+        return await _plan_dispatch_register(
+            request.plan_title,
+            request.description,
+            request.status,
+            request.section,
+            request.plan_file_name,
+            request.plan_relative_path,
+            ctx,
+        )
+    if request.operation == "enrich":
+        return await _plan_handle_enrich(
+            request.slug,
+            request.plan_file_name,
+            request.plan_relative_path,
+            request.resolved_clarifications,
+            ctx,
+        )
+    return None
+
+
+async def _dispatch_complete_with_log(
     plan_title: str | None,
     summary: str | None,
     completion_date: str | None,
     progress_entry: str | None,
     plan_file_name: str | None,
-    plan_relative_path: str | None,
-    resolved_clarifications: dict[str, str] | None,
-    description: str | None,
-    status: str,
-    section: str,
     ctx: MCPContext | None,
 ) -> str:
-    if operation == "archive_completed":
-        return await _plan_handle_archive_completed(ctx)
-    if operation == "complete":
-        result_str = await _plan_dispatch_complete(
-            plan_title, summary, completion_date, progress_entry, plan_file_name, ctx
-        )
-        await _append_plan_complete_log(result_str, plan_title, summary, ctx)
-        return result_str
-    if operation == "register":
-        return await _plan_dispatch_register(
-            plan_title,
-            description,
-            status,
-            section,
-            plan_file_name,
-            plan_relative_path,
-            ctx,
-        )
-    if operation == "enrich":
-        return await _plan_handle_enrich(
-            slug,
-            plan_file_name,
-            plan_relative_path,
-            resolved_clarifications,
-            ctx,
-        )
+    result_str = await _plan_dispatch_complete(
+        plan_title, summary, completion_date, progress_entry, plan_file_name, ctx
+    )
+    await _append_plan_complete_log(result_str, plan_title, summary, ctx)
+    return result_str
+
+
+async def _plan_dispatch_valid_operation(
+    request: _PlanDispatchRequest,
+    ctx: MCPContext | None,
+) -> str:
+    special_result = await _handle_special_plan_operations(request, ctx)
+    if special_result is not None:
+        return special_result
     result_str = await _plan_handle_crud(
-        operation,
-        title,
-        content,
-        slug,
-        explore_log_path,
-        include_archive,
-        response_format,
+        request.operation,
+        request.title,
+        request.content,
+        request.slug,
+        request.explore_log_path,
+        request.include_archive,
+        request.response_format,
         ctx,
     )
-    if operation == "create":
-        await _append_plan_create_log(result_str, title, ctx)
+    if request.operation == "create":
+        await _append_plan_create_log(result_str, request.title, ctx)
     return result_str
 
 
@@ -410,26 +452,9 @@ async def _plan_dispatch_valid_operation(
 )
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_MEDIUM)
-async def plan(
-    operation: str | None = None,
-    title: str | None = None,
-    content: str | None = None,
-    slug: str | None = None,
-    explore_log_path: str | None = None,
-    include_archive: bool = False,
-    response_format: str = "content",
-    plan_title: str | None = None,
-    summary: str | None = None,
-    completion_date: str | None = None,
-    progress_entry: str | None = None,
-    plan_file_name: str | None = None,
-    plan_relative_path: str | None = None,
-    resolved_clarifications: dict[str, str] | None = None,
-    description: str | None = None,
-    status: str = "PENDING",
-    section: str = "pending",
-    ctx: MCPContext | None = None,
-) -> str:
+# fmt: off
+async def plan(operation: str | None = None, title: str | None = None, content: str | None = None, slug: str | None = None, explore_log_path: str | None = None, include_archive: bool = False, response_format: str = "content", plan_title: str | None = None, summary: str | None = None, completion_date: str | None = None, progress_entry: str | None = None, plan_file_name: str | None = None, plan_relative_path: str | None = None, resolved_clarifications: dict[str, str] | None = None, description: str | None = None, status: str = "PENDING", section: str = "pending", ctx: MCPContext | None = None) -> str:
+# fmt: on
     """Plan lifecycle: create, list, get, complete, register, or archive_completed.
 
     USE WHEN: managing plan files, marking plans complete, or registering roadmap entries.

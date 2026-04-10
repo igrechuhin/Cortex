@@ -49,51 +49,93 @@ def _run_non_test_checks(
         if phase_callback is not None and total_checks > 0:
             phase_callback(completed, total_checks)
 
-    process_fix_errors_check(adapter, checks_to_perform, strict_mode, results, stats)
-    _tick()
-    process_quality_check(adapter, language, checks_to_perform, results, stats)
-    _tick()
-    process_format_check(adapter, checks_to_perform, results, stats)
-    _tick()
-    process_synapse_format_check(adapter, language, checks_to_perform, results, stats)
-    _tick()
-    process_synapse_lint_check(adapter, language, checks_to_perform, results, stats)
-    _tick()
-    process_script_based_checks(
-        adapter,
-        language,
-        checks_to_perform,
-        results,
-        stats,
+    _run_standard_non_test_processors(
+        adapter, language, checks_to_perform, strict_mode, results, stats, _tick
     )
-    _tick()
-    process_type_check(adapter, checks_to_perform, results, stats)
-    _tick()
     return completed
 
 
-def run_checks_pipeline(
+def _run_standard_non_test_processors(
     adapter: FrameworkAdapter,
     language: str,
     checks_to_perform: list[PreCommitCheck],
     strict_mode: bool,
-    timeout: int | None,
-    coverage_threshold: float,
-    progress_callback: Callable[[int, int], None] | None,
     results: dict[str, CheckResult | TestResult | QualityCheckResult],
     stats: CheckStats,
-    include_slow_tests: bool = False,
-    phase_callback: Callable[[int, int], None] | None = None,
+    tick: Callable[[], None],
 ) -> None:
-    """Run all check processors in order (mutates results and stats).
+    process_fix_errors_check(adapter, checks_to_perform, strict_mode, results, stats)
+    tick()
+    process_quality_check(adapter, language, checks_to_perform, results, stats)
+    tick()
+    process_format_check(adapter, checks_to_perform, results, stats)
+    tick()
+    process_synapse_format_check(adapter, language, checks_to_perform, results, stats)
+    tick()
+    process_synapse_lint_check(adapter, language, checks_to_perform, results, stats)
+    tick()
+    process_script_based_checks(adapter, language, checks_to_perform, results, stats)
+    tick()
+    process_type_check(adapter, checks_to_perform, results, stats)
+    tick()
 
-    Args:
-        phase_callback: Optional (completed, total) callback fired after each
-            non-test check completes, used as a heartbeat to keep the MCP
-            connection alive during long-running pipelines.
-    """
-    # 7 non-test processor slots + 1 for tests = total_checks
-    total_checks = 8
+
+def _run_tests_step(
+    adapter: FrameworkAdapter,
+    checks_to_perform: list[PreCommitCheck],
+    timeout: int | None,
+    coverage_threshold: float,
+    results: dict[str, CheckResult | TestResult | QualityCheckResult],
+    stats: CheckStats,
+    progress_callback: Callable[[int, int], None] | None,
+    include_slow_tests: bool,
+) -> None:
+    process_tests_check(
+        adapter,
+        checks_to_perform,
+        timeout,
+        coverage_threshold,
+        results,
+        stats,
+        progress_callback,
+        include_slow_tests,
+    )
+
+
+# fmt: off
+def run_checks_pipeline(adapter: FrameworkAdapter, language: str, checks_to_perform: list[PreCommitCheck], strict_mode: bool, timeout: int | None, coverage_threshold: float, progress_callback: Callable[[int, int], None] | None, results: dict[str, CheckResult | TestResult | QualityCheckResult], stats: CheckStats, include_slow_tests: bool = False, phase_callback: Callable[[int, int], None] | None = None) -> None:
+# fmt: on
+    """Run all check processors in order."""
+    _run_non_test_phase(
+        adapter,
+        language,
+        checks_to_perform,
+        strict_mode,
+        results,
+        stats,
+        phase_callback,
+    )
+    _run_tests_phase(
+        adapter,
+        checks_to_perform,
+        timeout,
+        coverage_threshold,
+        results,
+        stats,
+        progress_callback,
+        include_slow_tests,
+    )
+
+
+def _run_non_test_phase(
+    adapter: FrameworkAdapter,
+    language: str,
+    checks_to_perform: list[PreCommitCheck],
+    strict_mode: bool,
+    results: dict[str, CheckResult | TestResult | QualityCheckResult],
+    stats: CheckStats,
+    phase_callback: Callable[[int, int], None] | None,
+) -> None:
     _ = _run_non_test_checks(
         adapter,
         language,
@@ -102,9 +144,21 @@ def run_checks_pipeline(
         results,
         stats,
         phase_callback=phase_callback,
-        total_checks=total_checks,
+        total_checks=8,
     )
-    process_tests_check(
+
+
+def _run_tests_phase(
+    adapter: FrameworkAdapter,
+    checks_to_perform: list[PreCommitCheck],
+    timeout: int | None,
+    coverage_threshold: float,
+    results: dict[str, CheckResult | TestResult | QualityCheckResult],
+    stats: CheckStats,
+    progress_callback: Callable[[int, int], None] | None,
+    include_slow_tests: bool,
+) -> None:
+    _run_tests_step(
         adapter,
         checks_to_perform,
         timeout,

@@ -162,6 +162,10 @@ def _session_brief_cap_update(brief: SessionBrief) -> dict[str, object]:
         "gate_feedback_summary": _truncate_optional(brief.gate_feedback_summary, line),
         "clarification_summary": _truncate_optional(brief.clarification_summary, line),
         "constitution_notice": _truncate_optional(brief.constitution_notice, line),
+        "primary_session_goal": _truncate_optional(brief.primary_session_goal, line),
+        "session_goal_drift_hint": _truncate_optional(
+            brief.session_goal_drift_hint, line
+        ),
     }
 
 

@@ -181,6 +181,14 @@ class SessionBrief(StrictBaseModel):
             "When memory-bank constitution.md is missing, one-line hint to initialize it"
         ),
     )
+    primary_session_goal: str | None = Field(
+        default=None,
+        description="One-line primary goal from .cortex/.session/session-goal.md when set or resumed.",
+    )
+    session_goal_drift_hint: str | None = Field(
+        default=None,
+        description="Whether drift detection is active or how to set a session goal.",
+    )
 
 
 class SessionStartResult(ToolResultBase):

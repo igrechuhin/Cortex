@@ -107,6 +107,7 @@ eval_results.json
 .cortex/.session/
 .cortex/.cache/
 .cortex/history/
+.cortex/.session/session-goal.md
 .cortex-backup-*/
 
 # Cortex agent sync outputs (generated at MCP startup — do not commit)

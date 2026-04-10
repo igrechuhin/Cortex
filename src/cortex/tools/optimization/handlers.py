@@ -368,6 +368,29 @@ async def _get_relevance_scores_body(
 _LOAD_CONTEXT_DEFAULT_BUDGET = 10000
 
 
+def append_session_goal_to_context_payload(payload: str, project_root: Path) -> str:
+    """Prepend session_goal to successful context payloads when anchor file exists."""
+    try:
+        parsed = json.loads(payload)
+    except json.JSONDecodeError:
+        return payload
+    if not isinstance(parsed, dict):
+        return payload
+    data = cast(dict[str, object], parsed)
+    if data.get("status") != "success":
+        return payload
+    from cortex.core.session_goal_store import read_session_goal
+
+    sg = read_session_goal(project_root)
+    if sg is None:
+        return payload
+    merged: dict[str, object] = {
+        "session_goal": json.loads(sg.model_dump_json()),
+    }
+    merged.update(data)
+    return json.dumps(merged, indent=2)
+
+
 def _append_session_scope_to_context_payload(payload: str) -> str:
     """Add session scope guidance to successful context payloads."""
     try:
@@ -533,11 +556,13 @@ def _build_context_resource_payload(base_payload: str, project_root: Path) -> st
     recent_artifacts = _read_recent_artifacts_markdown(project_root)
     recent_ingested_sources = _read_recent_ingested_sources_markdown(project_root)
     explore_summary = _read_explore_summary_markdown(project_root)
+    with_goal = append_session_goal_to_context_payload(base_payload, project_root)
+    scoped = _append_session_scope_to_context_payload(with_goal)
     return _append_recent_artifacts_to_context_payload(
         _append_recent_operations_to_context_payload(
             _append_explore_summary_to_context_payload(
                 _append_recent_ingested_sources_to_context_payload(
-                    _append_session_scope_to_context_payload(base_payload),
+                    scoped,
                     recent_ingested_sources,
                 ),
                 explore_summary,

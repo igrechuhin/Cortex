@@ -37,10 +37,12 @@ from cortex.tools.files.crud_flow import (
 )
 from cortex.tools.files.metadata_operations import handle_metadata_operation
 from cortex.tools.files.operation_helpers import (
+    GOAL_FILE_OPERATIONS,
     FileOperation,
     build_invalid_operation_error,
     validate_manage_file_operation,
 )
+from cortex.tools.files.session_goal_file_ops import execute_session_goal_operation
 from cortex.tools.response_builder import error_response
 from cortex.validation.schema_validator import SchemaValidator
 
@@ -64,24 +66,36 @@ async def _log_validation_failure(
     )
 
 
-def _validate_manage_file_input_limits(
-    content: str | None, sections: list[str] | None, operation: FileOperation
-) -> str | None:
-    """Validate content and sections input limits. Returns error JSON or None."""
-    if operation == FileOperation.WRITE and content is not None:
-        size_bytes = len(content.encode("utf-8"))
-        if size_bytes > MAX_MANAGE_FILE_CONTENT_BYTES:
-            return json.dumps(
-                error_response(
-                    error=(
-                        f"Content too large: {size_bytes} bytes exceeds "
-                        f"limit of {MAX_MANAGE_FILE_CONTENT_BYTES} bytes"
-                    ),
-                    error_type="ValueError",
+def _validate_set_goal_content_present(content: str | None) -> str | None:
+    if content is None or not str(content).strip():
+        return json.dumps(
+            error_response(
+                error="content is required for set_goal (JSON with goal, optional plan_slug)",
+                error_type="ValueError",
+            ),
+            indent=2,
+        )
+    return None
+
+
+def _validate_write_content_byte_limit(content: str) -> str | None:
+    size_bytes = len(content.encode("utf-8"))
+    if size_bytes > MAX_MANAGE_FILE_CONTENT_BYTES:
+        return json.dumps(
+            error_response(
+                error=(
+                    f"Content too large: {size_bytes} bytes exceeds "
+                    f"limit of {MAX_MANAGE_FILE_CONTENT_BYTES} bytes"
                 ),
-                indent=2,
-            )
-    if sections is not None and len(sections) > MAX_SECTIONS_LIST_SIZE:
+                error_type="ValueError",
+            ),
+            indent=2,
+        )
+    return None
+
+
+def _validate_sections_list_limit(sections: list[str]) -> str | None:
+    if len(sections) > MAX_SECTIONS_LIST_SIZE:
         return json.dumps(
             error_response(
                 error=(
@@ -93,6 +107,28 @@ def _validate_manage_file_input_limits(
             indent=2,
         )
     return None
+
+
+def _validate_manage_file_input_limits(
+    content: str | None, sections: list[str] | None, operation: FileOperation
+) -> str | None:
+    """Validate content and sections input limits. Returns error JSON or None."""
+    if operation == FileOperation.SET_GOAL:
+        return _validate_set_goal_content_present(content)
+    if operation == FileOperation.WRITE and content is not None:
+        size_err = _validate_write_content_byte_limit(content)
+        if size_err is not None:
+            return size_err
+    if sections is not None:
+        return _validate_sections_list_limit(sections)
+    return None
+
+
+def _resolve_manage_file_name(parsed_op: FileOperation, file_name: str | None) -> str:
+    if parsed_op in GOAL_FILE_OPERATIONS:
+        return file_name or "_session_goal"
+    assert file_name is not None
+    return file_name
 
 
 async def manage_file_validate_and_run(
@@ -111,24 +147,17 @@ async def manage_file_validate_and_run(
         await _log_validation_failure(ctx, file_name, operation)
         return err
 
-    assert parsed_op is not None and file_name is not None
+    assert parsed_op is not None
+    resolved_name = _resolve_manage_file_name(parsed_op, file_name)
     limits_err = _validate_manage_file_input_limits(content, sections, parsed_op)
     if limits_err is not None:
-        await _log_validation_failure(ctx, file_name, operation)
+        await _log_validation_failure(ctx, resolved_name, operation)
         return limits_err
 
     root = await _manage_file_get_root(ctx)
-    return await _manage_file_run_or_error(
-        ctx,
-        file_name,
-        parsed_op,
-        content,
-        root,
-        include_metadata,
-        change_description,
-        sections,
-        version,
-    )
+    # fmt: off
+    return await _manage_file_run_or_error(ctx, resolved_name, parsed_op, content, root, include_metadata, change_description, sections, version)
+    # fmt: on
 
 
 def _manage_file_error_response(exc: Exception) -> str:
@@ -253,6 +282,8 @@ def _validate_and_get_path(
 async def execute_file_operation(root: Path, file_name: str, operation: FileOperation, content: str | None, include_metadata: bool, change_description: str | None, sections: list[str] | None, version: int | None = None) -> str:
 # fmt: on
     managers, fs_manager = await get_managers_for_root(root)
+    if operation in GOAL_FILE_OPERATIONS:
+        return await execute_session_goal_operation(root, operation, content, managers)
     if _is_explore_log_operation(operation):
         return await _dispatch_explore_log_operation(
             operation,
