@@ -1,0 +1,15 @@
+name: default
+description: Standard plan → implement → review → commit pipeline
+phases:
+  - name: plan
+    tool: /cortex/plan
+    required: true
+  - name: implement
+    tool: /cortex/do
+    required: true
+  - name: review
+    tool: /cortex/review
+    required: true
+  - name: commit
+    tool: /cortex/commit
+    required: true

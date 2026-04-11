@@ -189,6 +189,18 @@ class SessionBrief(StrictBaseModel):
         default=None,
         description="Whether drift detection is active or how to set a session goal.",
     )
+    workflow_schema: str = Field(
+        default="default",
+        description="Active workflow schema stem from .cortex/session.yaml (after load/resolve).",
+    )
+    workflow_schema_description: str = Field(
+        default="",
+        description="Human-readable summary of the active workflow schema.",
+    )
+    workflow_phases: list[str] = Field(
+        default_factory=list,
+        description="Ordered phase labels for the active schema (name and tool).",
+    )
 
 
 class SessionStartResult(ToolResultBase):

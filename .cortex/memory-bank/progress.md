@@ -12,6 +12,12 @@
 - **Parallel Task Markers [P]** - PARTIAL. Step 7: `merge_order_for_parallel_batch` and `clarification_markers_for_shared_paths` in `src/cortex/core/parallel_worktree_merge.py`; unit tests in `tests/unit/test_parallel_worktree_merge.py`.
 - **Parallel Task Markers [P]** - COMPLETE. Step 8 tests: parser edges, get_plan metadata task_graph, create_plan parallel markers integration.
 - **Parallel task markers [P] (commit)** - COMPLETE. Shipped task graph models, frontier scheduling, merge-order and conflict-marker helpers, plan tool metadata and tests, Synapse do prompt guidance, archived plan; memory-bank log duplicate heading removed for MD024.
+- **Schema-Defined Workflow Variants** - PARTIAL. Step 1 complete: `WorkflowPhase` and `WorkflowSchema` models in `cortex.core.models` with unit tests.
+- **Schema-Defined Workflow Variants** - PARTIAL. Step 2 complete: shipped four built-in workflow YAML schemas under `.cortex/schemas/` and added parametrized YAML→`WorkflowSchema` parse tests.
+- **Schema-Defined Workflow Variants** - PARTIAL. Step 3 complete: `load_schema` (project `.cortex/schemas` first, bundled `cortex/resources/workflow_schemas` fallback), `inherits` merge with cycle detection, `evaluate_workflow_condition`, unit tests in `tests/unit/test_schema_loader.py`.
+- **Schema-Defined Workflow Variants** - PARTIAL. Session `workflow_schema` from `.cortex/session.yaml`, brief phase list, `read_session_config` merge, `manage_file` list_schemas/fork_schema, do.md workflow guidance; tests added.
+- **Schema-Defined Workflow Variants** - COMPLETE. Phase conditions filter `workflow_phases` in session brief; `ProjectSessionConfig` allows extra session.yaml keys for conditions; compliance and data-science session_start tests; plan archived.
+- **Workflow schema stack + commit** - COMPLETE. Landed schema loader, bundled YAML, session config merge, brief_workflow, manage_file schema ops, split session_start tests; Synapse do.md guidance; submodule pushed.
 
 ## 2026-04-10
 

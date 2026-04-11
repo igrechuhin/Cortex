@@ -171,4 +171,5 @@ include-package-data = true
 [tool.setuptools.package-data]
 cortex = [
     "resources/tiktoken_cache/*",
+    "resources/workflow_schemas/*.yaml",
 ]

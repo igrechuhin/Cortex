@@ -24,6 +24,7 @@ class CortexResourceType(Enum):
     SYNAPSE = "synapse"
     ARCHIVED = "archived"
     REVIEWS = "reviews"
+    SCHEMAS = "schemas"
     SESSION = ".session"
     CACHE = ".cache"
     INDEX = "index.json"

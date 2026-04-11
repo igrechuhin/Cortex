@@ -23,6 +23,7 @@ from cortex.tools.session.brief_extraction_helpers import (
     generate_session_suggestions,
 )
 from cortex.tools.session.brief_helpers import brief_from_suggestions_and_context
+from cortex.tools.session.brief_workflow import load_workflow_brief_fields
 from cortex.tools.session.health import calculate_health_summary
 from cortex.tools.session.models import (
     ConcurrentSession,
@@ -140,9 +141,7 @@ def _cap_concurrent_session_tasks(
     ]
 
 
-def _session_brief_cap_update(brief: SessionBrief) -> dict[str, object]:
-    """Build ``model_copy(update=...)`` for capped string fields."""
-    line = _MAX_SESSION_BRIEF_LINE_CHARS
+def _session_brief_cap_core_fields(brief: SessionBrief, line: int) -> dict[str, object]:
     return {
         "current_focus": _truncate_for_brief_text(
             brief.current_focus, _MAX_SESSION_BRIEF_CURRENT_FOCUS_CHARS
@@ -167,6 +166,27 @@ def _session_brief_cap_update(brief: SessionBrief) -> dict[str, object]:
             brief.session_goal_drift_hint, line
         ),
     }
+
+
+def _session_brief_cap_workflow_fields(
+    brief: SessionBrief, line: int
+) -> dict[str, object]:
+    return {
+        "workflow_schema_description": _truncate_optional(
+            brief.workflow_schema_description, line
+        ),
+        "workflow_phases": [
+            _truncate_for_brief_text(p, line) for p in brief.workflow_phases[:50]
+        ],
+    }
+
+
+def _session_brief_cap_update(brief: SessionBrief) -> dict[str, object]:
+    """Build ``model_copy(update=...)`` for capped string fields."""
+    line = _MAX_SESSION_BRIEF_LINE_CHARS
+    merged = _session_brief_cap_core_fields(brief, line)
+    merged.update(_session_brief_cap_workflow_fields(brief, line))
+    return merged
 
 
 def cap_session_brief_payload(brief: SessionBrief) -> SessionBrief:
@@ -283,19 +303,19 @@ def _compute_suggestions_and_create_brief(inp: _BriefInputs) -> SessionBrief:
     """Compute suggestions and build SessionBrief."""
     trace_id = ensure_trace_id_persisted()
     context = _session_brief_context(inp)
-    brief = brief_from_suggestions_and_context(
-        generate_session_suggestions(
-            inp.health,
-            inp.git_status,
-            inp.next_work_item,
-            inp.locked_tasks,
-            inp.concurrent_sessions,
-            mcp_healthy=inp.mcp_healthy,
-            progress_content=inp.progress_content,
-            roadmap_content=inp.roadmap_content,
-        ),
-        context,
+    suggestions = generate_session_suggestions(
+        inp.health,
+        inp.git_status,
+        inp.next_work_item,
+        inp.locked_tasks,
+        inp.concurrent_sessions,
+        mcp_healthy=inp.mcp_healthy,
+        progress_content=inp.progress_content,
+        roadmap_content=inp.roadmap_content,
     )
+    if inp.workflow_schema_warning:
+        suggestions = [*suggestions, inp.workflow_schema_warning]
+    brief = brief_from_suggestions_and_context(suggestions, context)
     return brief.model_copy(update={"trace_id": trace_id})
 
 
@@ -316,6 +336,9 @@ def _session_brief_context(inp: _BriefInputs) -> SessionBriefContextKwargs:
         gate_feedback_summary=inp.gate_feedback_summary,
         clarification_summary=inp.clarification_summary,
         constitution_notice=inp.constitution_notice,
+        workflow_schema=inp.workflow_schema,
+        workflow_schema_description=inp.workflow_schema_description,
+        workflow_phases=inp.workflow_phases,
     )
 
 
@@ -354,6 +377,10 @@ def _brief_inputs_from_components(
         constitution_notice=c.constitution_notice,
         progress_content=c.progress_content,
         roadmap_content=c.roadmap_content,
+        workflow_schema=c.workflow_schema,
+        workflow_schema_description=c.workflow_schema_description,
+        workflow_phases=list(c.workflow_phases or []),
+        workflow_schema_warning=c.workflow_schema_warning,
     )
 
 
@@ -429,6 +456,10 @@ class _BriefComponents:
     constitution_notice: str | None = None
     progress_content: str = ""
     roadmap_content: str = ""
+    workflow_schema: str = "default"
+    workflow_schema_description: str = ""
+    workflow_phases: list[str] | None = None
+    workflow_schema_warning: str | None = None
 
 
 def _brief_components_from_async_load(
@@ -441,27 +472,45 @@ def _brief_components_from_async_load(
     project_root: Path,
 ) -> _BriefComponents:
     """Build ``_BriefComponents`` from focus tuple and parallel-load results."""
-    (
-        health,
-        project_name,
-        last_handoff,
-        concurrent_sessions,
-        locked_tasks,
-        gate_feedback,
-    ) = loaded
+    return _assemble_brief_components(
+        current_focus,
+        recent_completed,
+        loaded,
+        progress_content,
+        roadmap_content,
+        constitution_notice,
+        project_root,
+    )
+
+
+def _assemble_brief_components(
+    current_focus: str,
+    recent_completed: list[str],
+    loaded: _BriefAsyncResult,
+    progress_content: str | None,
+    roadmap_content: str,
+    constitution_notice: str | None,
+    project_root: Path,
+) -> _BriefComponents:
+    h, pn, lh, cs, lt, gf = loaded
+    wn, wd, wp, ww = load_workflow_brief_fields(project_root)
     return _BriefComponents(
         current_focus=current_focus,
         recent_completed=recent_completed,
-        health=health,
-        project_name=project_name,
-        last_handoff=last_handoff,
-        concurrent_sessions=concurrent_sessions,
-        locked_tasks=locked_tasks,
-        gate_feedback_summary=gate_feedback,
+        health=h,
+        project_name=pn,
+        last_handoff=lh,
+        concurrent_sessions=cs,
+        locked_tasks=lt,
+        gate_feedback_summary=gf,
         clarification_summary=_compute_clarification_summary(project_root),
         constitution_notice=constitution_notice,
         progress_content=progress_content or "",
         roadmap_content=roadmap_content,
+        workflow_schema=wn,
+        workflow_schema_description=wd,
+        workflow_phases=wp,
+        workflow_schema_warning=ww,
     )
 
 

@@ -29,6 +29,9 @@ class SessionBriefContextKwargs(DictLikeModel):
     gate_feedback_summary: str | None
     clarification_summary: str | None = None
     constitution_notice: str | None = None
+    workflow_schema: str = "default"
+    workflow_schema_description: str = ""
+    workflow_phases: list[str] = []
 
 
 class BriefInputs(DictLikeModel):
@@ -49,5 +52,9 @@ class BriefInputs(DictLikeModel):
     gate_feedback_summary: str | None
     clarification_summary: str | None = None
     constitution_notice: str | None = None
+    workflow_schema: str = "default"
+    workflow_schema_description: str = ""
+    workflow_phases: list[str] = []
+    workflow_schema_warning: str | None = None
     progress_content: str = ""
     roadmap_content: str = ""

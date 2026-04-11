@@ -18,6 +18,10 @@
 
 - ✅ **Parallel task markers and worktree merge (commit)** - COMPLETE (2026-04-11) - Committed TaskNode model, task graph parsing and next_execution_frontier in plan_utils, parallel_worktree_merge helpers, plan create/register/get wiring for task_graph and can_parallelize, integration and unit tests; Synapse do.md documents parallel [P] waves with plan(get) metadata; parallel-task-markers plan archived under .cortex/plans/archive/Other; fixed duplicate log.md heading for markdown lint.
 
+- ✅ **Schema-Defined Workflow Variants** - COMPLETE (2026-04-11) - Built-in workflow YAML, `load_schema` with project override and `inherits`, `evaluate_workflow_condition`, session brief fields (`workflow_schema`, `workflow_phases`) filtered by phase conditions using extra keys from `.cortex/session.yaml`, `manage_file` list_schemas/fork_schema, Synapse do.md workflow-schema guidance; compliance and data-science session tests added. Plan archived under `.cortex/plans/archive/Other/`.
+
+- ✅ **Workflow schema stack and session_start test split (commit)** - COMPLETE (2026-04-11) - Committed project workflow schemas (YAML, loader, inherits, conditions), session brief workflow fields and manage_file schema ops, split session_start tests into session_start_fixtures + focused modules under file-size limits, brief_workflow helper extraction for function length; Synapse submodule at do.md workflow-schema guidance.
+
 ## Completed Work (2026-04-10)
 
 - **Summary (2026-04-10)** - 1 entries archived.

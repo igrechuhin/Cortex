@@ -38,6 +38,7 @@ from cortex.tools.files.crud_flow import (
 from cortex.tools.files.metadata_operations import handle_metadata_operation
 from cortex.tools.files.operation_helpers import (
     GOAL_FILE_OPERATIONS,
+    SCHEMA_FILE_OPERATIONS,
     FileOperation,
     build_invalid_operation_error,
     validate_manage_file_operation,
@@ -115,6 +116,8 @@ def _validate_manage_file_input_limits(
     """Validate content and sections input limits. Returns error JSON or None."""
     if operation == FileOperation.SET_GOAL:
         return _validate_set_goal_content_present(content)
+    if operation == FileOperation.FORK_SCHEMA:
+        return _validate_set_goal_content_present(content)
     if operation == FileOperation.WRITE and content is not None:
         size_err = _validate_write_content_byte_limit(content)
         if size_err is not None:
@@ -127,6 +130,8 @@ def _validate_manage_file_input_limits(
 def _resolve_manage_file_name(parsed_op: FileOperation, file_name: str | None) -> str:
     if parsed_op in GOAL_FILE_OPERATIONS:
         return file_name or "_session_goal"
+    if parsed_op in SCHEMA_FILE_OPERATIONS:
+        return "_workflow_schemas"
     assert file_name is not None
     return file_name
 
@@ -281,31 +286,20 @@ def _validate_and_get_path(
 # fmt: off
 async def execute_file_operation(root: Path, file_name: str, operation: FileOperation, content: str | None, include_metadata: bool, change_description: str | None, sections: list[str] | None, version: int | None = None) -> str:
 # fmt: on
+    if operation in SCHEMA_FILE_OPERATIONS:
+        from cortex.tools.files.workflow_schema_file_ops import (
+            execute_workflow_schema_operation,
+        )
+        return await execute_workflow_schema_operation(root, operation, content)
     managers, fs_manager = await get_managers_for_root(root)
     if operation in GOAL_FILE_OPERATIONS:
         return await execute_session_goal_operation(root, operation, content, managers)
     if _is_explore_log_operation(operation):
         return await _dispatch_explore_log_operation(
-            operation,
-            root,
-            file_name,
-            content,
-            change_description,
-            managers,
-            sections,
-            version,
+            operation, root, file_name, content, change_description, managers, sections, version
         )
     return await _dispatch_standard_file_operation(
-        root,
-        file_name,
-        operation,
-        content,
-        include_metadata,
-        change_description,
-        sections,
-        version,
-        managers,
-        fs_manager,
+        root, file_name, operation, content, include_metadata, change_description, sections, version, managers, fs_manager
     )
 
 

@@ -36,19 +36,20 @@ def read_session_config() -> dict[str, object]:
         return {}
     session_dir = get_cortex_path(root, CortexResourceType.SESSION)
     config_path = session_dir / "current-task.json"
-    if not config_path.exists():
-        return {}
-    try:
-        data: object = json.loads(config_path.read_text())
-    except (OSError, json.JSONDecodeError):
-        return {}
-    if not isinstance(data, dict):
-        return {}
-    # Ensure stable return type: only keep string keys.
     cleaned: dict[str, object] = {}
-    for k, v in cast(dict[object, object], data).items():
-        if isinstance(k, str):
-            cleaned[k] = v
+    if config_path.is_file():
+        try:
+            data: object = json.loads(config_path.read_text())
+        except (OSError, json.JSONDecodeError):
+            data = None
+        if isinstance(data, dict):
+            for k, v in cast(dict[object, object], data).items():
+                if isinstance(k, str):
+                    cleaned[k] = v
+    if "workflow_schema" not in cleaned:
+        from cortex.core.project_session_config import load_project_session_config
+
+        cleaned["workflow_schema"] = load_project_session_config(root).workflow_schema
     return cleaned
 
 

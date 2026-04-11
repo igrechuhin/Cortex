@@ -1,0 +1,22 @@
+name: data-science
+description: explore → plan → EDA → implement → experiment-log → review → commit
+phases:
+  - name: explore
+    tool: /cortex/explore
+    required: false
+  - name: plan
+    tool: /cortex/plan
+    required: true
+  - name: eda
+    tool: /cortex/do
+    required: false
+    condition: "session_config.get('eda_required', False)"
+  - name: implement
+    tool: /cortex/do
+    required: true
+  - name: review
+    tool: /cortex/review
+    required: true
+  - name: commit
+    tool: /cortex/commit
+    required: true

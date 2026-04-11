@@ -2,7 +2,7 @@
 title: "Schema-Defined Workflow Variants"
 component: planning
 work_type: feature
-status: PENDING
+status: COMPLETE
 priority: medium
 created: 2026-04-06
 depends_on: []
@@ -207,3 +207,11 @@ Target: 95% coverage on all new code paths.
 - **Unit**: Model validation; loader search order; `inherits` merging; condition evaluation.
 - **Integration**: `fast-path` schema run (review skipped); `compliance` schema run (two review phases).
 - **Edge cases**: Schema not found; cyclic `inherits` (detect and error); condition expression with syntax error.
+
+## Partial Progress Log
+
+- 2026-04-11: Step 1: Define `WorkflowSchema` and `WorkflowPhase` Pydantic models — files: `src/cortex/core/models/_workflow_schema.py`, `src/cortex/core/models/__init__.py`, `tests/unit/test_workflow_schema_models.py`
+- 2026-04-11: Step 2: Add built-in workflow YAML schemas (`default`, `fast-path`, `compliance`, `data-science`) under `.cortex/schemas/` and YAML parse tests — files: `.cortex/schemas/default.yaml`, `.cortex/schemas/fast-path.yaml`, `.cortex/schemas/compliance.yaml`, `.cortex/schemas/data-science.yaml`, `tests/unit/test_workflow_schema_models.py`
+- 2026-04-11: Step 3: Add `load_schema` with project-local precedence, bundled fallbacks, `inherits` merge and cycle detection; `evaluate_workflow_condition`; `CortexResourceType.SCHEMAS`; bundled YAML under `src/cortex/resources/workflow_schemas/` — files: `src/cortex/core/schema_loader.py`, `src/cortex/core/path_resolver.py`, `src/cortex/resources/workflow_schemas/*.yaml`, `pyproject.toml`, `tests/unit/test_schema_loader.py`
+- 2026-04-11: Steps 4–6 (partial Step 7): `.cortex/session.yaml` via `ProjectSessionConfig`; `session()` brief adds `workflow_schema`, `workflow_schema_description`, `workflow_phases`; `read_session_config()` merges `workflow_schema`; `manage_file` operations `list_schemas` / `fork_schema`; Synapse `do.md` workflow-schema section; tests — files: `src/cortex/core/project_session_config.py`, `src/cortex/core/session_config.py`, `src/cortex/tools/session/brief.py`, `src/cortex/tools/session/brief_workflow.py`, `src/cortex/tools/session/models.py`, `src/cortex/tools/session/start_models.py`, `src/cortex/tools/session/brief_helpers.py`, `src/cortex/tools/files/workflow_schema_paths.py`, `src/cortex/tools/files/workflow_schema_fork.py`, `src/cortex/tools/files/workflow_schema_file_ops.py`, `src/cortex/tools/files/manage_file_helpers.py`, `src/cortex/tools/files/operation_helpers.py`, `src/cortex/core/schema_loader.py`, `.cortex/synapse/prompts/do.md`, `tests/unit/test_project_session_config.py`, `tests/unit/test_workflow_schema_file_ops.py`, `tests/tools/test_session_start_tools.py`
+- 2026-04-11: Step 7 / success criteria close-out: `workflow_phases` filtered with `evaluate_workflow_condition` and `ProjectSessionConfig` `extra="allow"` for session.yaml flags; session_start tests for compliance (dual review) and data-science EDA toggle — files: `src/cortex/core/project_session_config.py`, `src/cortex/tools/session/brief_workflow.py`, `tests/unit/test_project_session_config.py`, `tests/tools/test_session_start_tools.py`

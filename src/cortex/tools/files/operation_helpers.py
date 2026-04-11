@@ -21,6 +21,7 @@ from cortex.validation.schema_validator import SchemaValidator
 
 __all__ = [
     "GOAL_FILE_OPERATIONS",
+    "SCHEMA_FILE_OPERATIONS",
     "FileOperation",
     "build_invalid_operation_error",
     "build_missing_parameters_error",
@@ -51,6 +52,8 @@ class FileOperation(str, Enum):
     SET_GOAL = "set_goal"
     CLEAR_GOAL = "clear_goal"
     GET_GOAL = "get_goal"
+    LIST_SCHEMAS = "list_schemas"
+    FORK_SCHEMA = "fork_schema"
 
 
 def parse_file_operation(value: str | None) -> FileOperation | None:
@@ -154,6 +157,13 @@ GOAL_FILE_OPERATIONS: frozenset[FileOperation] = frozenset(
     }
 )
 
+SCHEMA_FILE_OPERATIONS: frozenset[FileOperation] = frozenset(
+    {
+        FileOperation.LIST_SCHEMAS,
+        FileOperation.FORK_SCHEMA,
+    }
+)
+
 
 def validate_manage_file_operation(
     operation: str | None,
@@ -170,7 +180,7 @@ def validate_manage_file_operation(
             missing_params.append("operation")
             return (None, build_missing_parameters_error(missing_params))
         return (None, build_invalid_operation_error(str(operation)))
-    if parsed_op in GOAL_FILE_OPERATIONS:
+    if parsed_op in GOAL_FILE_OPERATIONS | SCHEMA_FILE_OPERATIONS:
         return (parsed_op, None)
     if parsed_op != FileOperation.FILE_ARTIFACT and not file_name:
         return (None, build_missing_parameters_error(["file_name"]))

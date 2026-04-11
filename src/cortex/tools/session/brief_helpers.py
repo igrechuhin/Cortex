@@ -29,6 +29,9 @@ def _create_session_brief(
         clarification_summary=context.clarification_summary,
         session_scope=SESSION_SCOPE_PROMPT,
         constitution_notice=context.constitution_notice,
+        workflow_schema=context.workflow_schema,
+        workflow_schema_description=context.workflow_schema_description,
+        workflow_phases=context.workflow_phases,
     )
 
 

@@ -44,7 +44,6 @@ Completed investigations are recorded in [activeContext.md](activeContext.md). P
 
 #### Planning & Brainstorming (Medium Priority)
 
-- Plan: [Schema-Defined Workflow Variants](../plans/schema-defined-workflow-variants.md) — Define custom Cortex pipeline variants in `.cortex/schemas/` (fast-path, compliance, data-science); active schema selected from session config. PENDING.
 - Plan: [Artifact Graph for Plan Dependencies](../plans/artifact-graph-plan-dependencies.md) — Enforce `depends_on` field; compute real-time READY/BLOCKED/DONE graph; unblock plans automatically when dependencies complete. PENDING.
 
 #### Wiki for Attached Projects (High Priority)

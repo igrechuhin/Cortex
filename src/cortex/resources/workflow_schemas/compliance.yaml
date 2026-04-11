@@ -1,0 +1,20 @@
+name: compliance
+description: plan → implement → security-review → review → commit
+phases:
+  - name: plan
+    tool: /cortex/plan
+    required: true
+  - name: implement
+    tool: /cortex/do
+    required: true
+  - name: security-review
+    tool: /cortex/review
+    required: true
+    config:
+      mode: security-only
+  - name: review
+    tool: /cortex/review
+    required: true
+  - name: commit
+    tool: /cortex/commit
+    required: true

@@ -105,6 +105,7 @@ from ._version import (
     VersionHistoryMetadata,
     VersionMetadata,
 )
+from ._workflow_schema import WorkflowPhase, WorkflowSchema
 
 __all__ = [
     "AccessPatternModel",
@@ -196,5 +197,7 @@ __all__ = [
     "VersionHistoryEntryModel",
     "VersionHistoryMetadata",
     "VersionMetadata",
+    "WorkflowPhase",
+    "WorkflowSchema",
     "WarmingStrategyModel",
 ]
