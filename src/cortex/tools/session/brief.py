@@ -18,6 +18,7 @@ from cortex.core.plan_utils import find_clarification_markers
 from cortex.managers.types import ManagersDict
 from cortex.tools.logging.session_context import ensure_trace_id_persisted
 from cortex.tools.models_base import ToolResultStatus
+from cortex.tools.plans.plan_graph import build_plan_graph_surface_bundle
 from cortex.tools.session.brief_extraction_helpers import (
     extract_focus_and_completed,
     generate_session_suggestions,
@@ -47,6 +48,21 @@ _MAX_SESSION_BRIEF_CONCURRENT_TASK_CHARS = 512
 _MAX_SESSION_BRIEF_CURRENT_FOCUS_CHARS = 20000
 _MAX_SESSION_BRIEF_LINE_CHARS = 1000
 _MAX_SESSION_BRIEF_SUGGESTION_CHARS = 800
+_MAX_SESSION_BRIEF_PLAN_GRAPH_SUMMARY_CHARS = 500
+_MAX_SESSION_BRIEF_PLAN_GRAPH_ASCII_CHARS = 2500
+
+
+def _plan_graph_brief_fields(project_root: Path) -> tuple[str | None, str | None]:
+    """READY/BLOCKED summary and truncated edge list for session orientation."""
+    plans_dir = get_cortex_path(project_root, CortexResourceType.PLANS)
+    bundle = build_plan_graph_surface_bundle(
+        plans_dir, include_archive=False, max_ascii_edges=10
+    )
+    if bundle is None:
+        return None, None
+    summary = str(bundle["plan_graph_summary"])
+    ascii_edges = str(bundle["plan_graph_ascii_edges"])
+    return summary, ascii_edges
 
 
 def _format_gate_feedback_summary(payload: dict[str, object]) -> str | None:
@@ -164,6 +180,12 @@ def _session_brief_cap_core_fields(brief: SessionBrief, line: int) -> dict[str, 
         "primary_session_goal": _truncate_optional(brief.primary_session_goal, line),
         "session_goal_drift_hint": _truncate_optional(
             brief.session_goal_drift_hint, line
+        ),
+        "plan_graph_summary": _truncate_optional(
+            brief.plan_graph_summary, _MAX_SESSION_BRIEF_PLAN_GRAPH_SUMMARY_CHARS
+        ),
+        "plan_graph_ascii_edges": _truncate_optional(
+            brief.plan_graph_ascii_edges, _MAX_SESSION_BRIEF_PLAN_GRAPH_ASCII_CHARS
         ),
     }
 
@@ -339,6 +361,8 @@ def _session_brief_context(inp: _BriefInputs) -> SessionBriefContextKwargs:
         workflow_schema=inp.workflow_schema,
         workflow_schema_description=inp.workflow_schema_description,
         workflow_phases=inp.workflow_phases,
+        plan_graph_summary=inp.plan_graph_summary,
+        plan_graph_ascii_edges=inp.plan_graph_ascii_edges,
     )
 
 
@@ -350,6 +374,70 @@ def _assemble_session_brief(inp: _BriefInputs) -> SessionBrief:
     return _compute_suggestions_and_create_brief(inp)
 
 
+def _brief_inputs_core_mapping(
+    c: "_BriefComponents",
+    next_work_item: str | None,
+    next_work_plan_path: str | None,
+    git_status: GitStatusSummary | None,
+    mcp_healthy: bool,
+    mcp_health_message: str | None,
+) -> dict[str, object]:
+    """Identity, health, and MCP fields for ``BriefInputs``."""
+    return {
+        "project_name": c.project_name,
+        "current_focus": c.current_focus,
+        "recent_completed": c.recent_completed,
+        "next_work_item": next_work_item,
+        "next_work_plan_path": next_work_plan_path,
+        "health": c.health,
+        "git_status": git_status,
+        "last_handoff": c.last_handoff,
+        "concurrent_sessions": c.concurrent_sessions,
+        "locked_tasks": c.locked_tasks,
+        "mcp_healthy": mcp_healthy,
+        "mcp_health_message": mcp_health_message,
+    }
+
+
+def _brief_inputs_tail_mapping(c: "_BriefComponents") -> dict[str, object]:
+    """Workflow, progress, and plan-graph fields for ``BriefInputs``."""
+    return {
+        "gate_feedback_summary": c.gate_feedback_summary,
+        "clarification_summary": c.clarification_summary,
+        "constitution_notice": c.constitution_notice,
+        "progress_content": c.progress_content,
+        "roadmap_content": c.roadmap_content,
+        "workflow_schema": c.workflow_schema,
+        "workflow_schema_description": c.workflow_schema_description,
+        "workflow_phases": list(c.workflow_phases or []),
+        "workflow_schema_warning": c.workflow_schema_warning,
+        "plan_graph_summary": c.plan_graph_summary,
+        "plan_graph_ascii_edges": c.plan_graph_ascii_edges,
+    }
+
+
+def _brief_inputs_mapping(
+    c: "_BriefComponents",
+    next_work_item: str | None,
+    next_work_plan_path: str | None,
+    git_status: GitStatusSummary | None,
+    mcp_healthy: bool,
+    mcp_health_message: str | None,
+) -> dict[str, object]:
+    """Assemble kwargs for ``BriefInputs`` without exceeding per-function line limits."""
+    return {
+        **_brief_inputs_core_mapping(
+            c,
+            next_work_item,
+            next_work_plan_path,
+            git_status,
+            mcp_healthy,
+            mcp_health_message,
+        ),
+        **_brief_inputs_tail_mapping(c),
+    }
+
+
 def _brief_inputs_from_components(
     c: "_BriefComponents",
     next_work_item: str | None,
@@ -359,28 +447,15 @@ def _brief_inputs_from_components(
     mcp_health_message: str | None,
 ) -> _BriefInputs:
     """Build ``BriefInputs`` from gathered components and caller git/MCP fields."""
-    return _BriefInputs(
-        project_name=c.project_name,
-        current_focus=c.current_focus,
-        recent_completed=c.recent_completed,
-        next_work_item=next_work_item,
-        next_work_plan_path=next_work_plan_path,
-        health=c.health,
-        git_status=git_status,
-        last_handoff=c.last_handoff,
-        concurrent_sessions=c.concurrent_sessions,
-        locked_tasks=c.locked_tasks,
-        mcp_healthy=mcp_healthy,
-        mcp_health_message=mcp_health_message,
-        gate_feedback_summary=c.gate_feedback_summary,
-        clarification_summary=c.clarification_summary,
-        constitution_notice=c.constitution_notice,
-        progress_content=c.progress_content,
-        roadmap_content=c.roadmap_content,
-        workflow_schema=c.workflow_schema,
-        workflow_schema_description=c.workflow_schema_description,
-        workflow_phases=list(c.workflow_phases or []),
-        workflow_schema_warning=c.workflow_schema_warning,
+    return _BriefInputs.model_validate(
+        _brief_inputs_mapping(
+            c,
+            next_work_item,
+            next_work_plan_path,
+            git_status,
+            mcp_healthy,
+            mcp_health_message,
+        )
     )
 
 
@@ -412,6 +487,18 @@ _BriefAsyncResult = tuple[
     list[str],
     str | None,
 ]
+
+
+@dataclass(frozen=True)
+class _LoadedAsyncBundle:
+    """Unpacked ``_BriefAsyncResult`` tuple passed into brief component assembly."""
+
+    health: SessionHealthSummary
+    project_name: str
+    last_handoff: SessionHandoff | None
+    concurrent_sessions: list[ConcurrentSession]
+    locked_tasks: list[str]
+    gate_feedback_summary: str | None
 
 
 async def _load_brief_async(
@@ -460,6 +547,8 @@ class _BriefComponents:
     workflow_schema_description: str = ""
     workflow_phases: list[str] | None = None
     workflow_schema_warning: str | None = None
+    plan_graph_summary: str | None = None
+    plan_graph_ascii_edges: str | None = None
 
 
 def _brief_components_from_async_load(
@@ -483,6 +572,48 @@ def _brief_components_from_async_load(
     )
 
 
+def _workflow_fields_and_plan_graph(
+    project_root: Path,
+) -> tuple[str, str, list[str], str | None, str | None, str | None]:
+    """Load workflow schema fields plus plan-graph summary lines for the brief."""
+    wn, wd, wp, ww = load_workflow_brief_fields(project_root)
+    pg_summary, pg_ascii = _plan_graph_brief_fields(project_root)
+    return wn, wd, wp, ww, pg_summary, pg_ascii
+
+
+def _brief_components_after_loaded_unpack(
+    current_focus: str,
+    recent_completed: list[str],
+    loaded: _LoadedAsyncBundle,
+    progress_content: str | None,
+    roadmap_content: str,
+    constitution_notice: str | None,
+    project_root: Path,
+) -> _BriefComponents:
+    """Build dataclass after ``_BriefAsyncResult`` tuple has been unpacked."""
+    wn, wd, wp, ww, pg_summary, pg_ascii = _workflow_fields_and_plan_graph(project_root)
+    return _BriefComponents(
+        current_focus=current_focus,
+        recent_completed=recent_completed,
+        health=loaded.health,
+        project_name=loaded.project_name,
+        last_handoff=loaded.last_handoff,
+        concurrent_sessions=loaded.concurrent_sessions,
+        locked_tasks=loaded.locked_tasks,
+        gate_feedback_summary=loaded.gate_feedback_summary,
+        clarification_summary=_compute_clarification_summary(project_root),
+        constitution_notice=constitution_notice,
+        progress_content=progress_content or "",
+        roadmap_content=roadmap_content,
+        workflow_schema=wn,
+        workflow_schema_description=wd,
+        workflow_phases=wp,
+        workflow_schema_warning=ww,
+        plan_graph_summary=pg_summary,
+        plan_graph_ascii_edges=pg_ascii,
+    )
+
+
 def _assemble_brief_components(
     current_focus: str,
     recent_completed: list[str],
@@ -493,24 +624,15 @@ def _assemble_brief_components(
     project_root: Path,
 ) -> _BriefComponents:
     h, pn, lh, cs, lt, gf = loaded
-    wn, wd, wp, ww = load_workflow_brief_fields(project_root)
-    return _BriefComponents(
-        current_focus=current_focus,
-        recent_completed=recent_completed,
-        health=h,
-        project_name=pn,
-        last_handoff=lh,
-        concurrent_sessions=cs,
-        locked_tasks=lt,
-        gate_feedback_summary=gf,
-        clarification_summary=_compute_clarification_summary(project_root),
-        constitution_notice=constitution_notice,
-        progress_content=progress_content or "",
-        roadmap_content=roadmap_content,
-        workflow_schema=wn,
-        workflow_schema_description=wd,
-        workflow_phases=wp,
-        workflow_schema_warning=ww,
+    bundle = _LoadedAsyncBundle(h, pn, lh, cs, lt, gf)
+    return _brief_components_after_loaded_unpack(
+        current_focus,
+        recent_completed,
+        bundle,
+        progress_content,
+        roadmap_content,
+        constitution_notice,
+        project_root,
     )
 
 

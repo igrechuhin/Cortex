@@ -147,6 +147,9 @@ def build_concise_payload(data: dict[str, object], role: str | None) -> str:
     }
     if role is not None:
         concise_payload["role"] = role
+    summary = data.get("plan_graph_summary")
+    if isinstance(summary, str) and summary.strip():
+        concise_payload["plan_graph_summary"] = summary
     return json.dumps(concise_payload, indent=2)
 
 
@@ -201,6 +204,38 @@ def inject_constitution_into_context_result(
     return json.dumps(typed, indent=2)
 
 
+def inject_plan_graph_into_context_result(
+    result_str: str, project_root: Path | None
+) -> str:
+    """Merge active-plan dependency snapshot into successful load_context JSON."""
+    # AI: Mirrors session brief dependency snapshot so agents see READY/BLOCKED without a separate plan(graph) call.
+    if project_root is None:
+        return result_str
+    from cortex.core.path_resolver import CortexResourceType, get_cortex_path
+    from cortex.tools.plans.plan_graph import build_plan_graph_surface_bundle
+
+    plans_dir = get_cortex_path(project_root, CortexResourceType.PLANS)
+    bundle = build_plan_graph_surface_bundle(
+        plans_dir, include_archive=False, max_ascii_edges=10
+    )
+    if bundle is None:
+        return result_str
+    try:
+        data = json.loads(result_str)
+    except json.JSONDecodeError:
+        return result_str
+    if not isinstance(data, dict):
+        return result_str
+    typed = cast(dict[str, object], data)
+    if typed.get("status") != "success":
+        return result_str
+    typed["plan_graph_summary"] = bundle["plan_graph_summary"]
+    typed["plan_graph_ready"] = bundle["plan_graph_ready"]
+    typed["plan_graph_blocked"] = bundle["plan_graph_blocked"]
+    typed["plan_graph_ascii_edges"] = bundle["plan_graph_ascii_edges"]
+    return json.dumps(typed, indent=2)
+
+
 def format_and_add_warnings_if_needed(
     out: str,
     response_format: ResponseFormat,
@@ -212,6 +247,7 @@ def format_and_add_warnings_if_needed(
     """Format response and add zero-file warnings if needed."""
     result_str = format_load_context_response(out, response_format, role)
     result_str = inject_constitution_into_context_result(result_str, project_root)
+    result_str = inject_plan_graph_into_context_result(result_str, project_root)
     if is_non_trivial_task(task_description):
         result_str = add_zero_file_warning_if_needed(
             result_str, task_description, token_budget

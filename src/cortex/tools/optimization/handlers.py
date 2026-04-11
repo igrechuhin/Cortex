@@ -49,6 +49,7 @@ from cortex.tools.optimization.summarization_operations import summarize_content
 from cortex.tools.session.models import SESSION_SCOPE_PROMPT
 from cortex.tools.synapse.rules_operations import get_relevant_rules
 
+from .handlers_format import inject_plan_graph_into_context_result
 from .handlers_load import (
     check_optimization_enabled,
     execute_load_context_with_logging,
@@ -590,7 +591,7 @@ def _resolve_context_cache_scope() -> str:
     return ""
 
 
-async def _build_context_resource_payload_async(
+async def build_context_resource_payload_async(
     base_payload: str, project_root: Path
 ) -> str:
     recent_ops = _read_recent_operations_lines(project_root)
@@ -600,7 +601,7 @@ async def _build_context_resource_payload_async(
     with_goal = append_session_goal_to_context_payload(base_payload, project_root)
     scoped = _append_session_scope_to_context_payload(with_goal)
     scoped = await _append_scoped_context_to_payload(scoped, project_root)
-    return _append_recent_artifacts_to_context_payload(
+    result = _append_recent_artifacts_to_context_payload(
         _append_recent_operations_to_context_payload(
             _append_explore_summary_to_context_payload(
                 _append_recent_ingested_sources_to_context_payload(
@@ -613,6 +614,7 @@ async def _build_context_resource_payload_async(
         ),
         recent_artifacts,
     )
+    return inject_plan_graph_into_context_result(result, project_root)
 
 
 async def _append_scoped_context_to_payload(payload: str, project_root: Path) -> str:
@@ -667,7 +669,7 @@ async def load_context() -> str:
         strategy="dependency_aware",
     )
     root = await resolve_project_root_async(None, None)
-    out = await _build_context_resource_payload_async(result, root)
+    out = await build_context_resource_payload_async(result, root)
     _context_resource_cache.set(cache_key, out)
     return out
 

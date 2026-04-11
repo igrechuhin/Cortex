@@ -32,6 +32,8 @@ class SessionBriefContextKwargs(DictLikeModel):
     workflow_schema: str = "default"
     workflow_schema_description: str = ""
     workflow_phases: list[str] = []
+    plan_graph_summary: str | None = None
+    plan_graph_ascii_edges: str | None = None
 
 
 class BriefInputs(DictLikeModel):
@@ -56,5 +58,7 @@ class BriefInputs(DictLikeModel):
     workflow_schema_description: str = ""
     workflow_phases: list[str] = []
     workflow_schema_warning: str | None = None
+    plan_graph_summary: str | None = None
+    plan_graph_ascii_edges: str | None = None
     progress_content: str = ""
     roadmap_content: str = ""

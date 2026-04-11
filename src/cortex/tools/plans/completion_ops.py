@@ -47,6 +47,7 @@ def complete_plan_error(
         progress_line_inserted=None,
         archive_path=None,
         error=error,
+        plans_unblocked=None,
     )
 
 
@@ -60,6 +61,7 @@ def complete_plan_invalid_date_json(date_err: str) -> str:
         progress_line_inserted=None,
         archive_path=None,
         error=date_err,
+        plans_unblocked=None,
     ).model_dump_json()
 
 
@@ -73,6 +75,7 @@ def complete_plan_success(roadmap_line: int, active_line: int) -> CompletePlanRe
         progress_line_inserted=None,
         archive_path=None,
         error=None,
+        plans_unblocked=None,
     )
 
 

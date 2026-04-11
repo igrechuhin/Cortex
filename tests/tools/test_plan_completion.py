@@ -17,6 +17,9 @@ from cortex.core.models import OperationStatus
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.tools.plans.completion import CompletePlanResult, complete_plan
 from cortex.tools.plans.plan import plan as plan_tool
+from cortex.tools.plans.register_artifact_graph import (
+    sync_plan_dependency_statuses_after_completion,
+)
 from cortex.tools.plans.update_memory_bank import update_memory_bank
 
 
@@ -408,6 +411,7 @@ class TestCompletePlanResult:
             progress_line_inserted=None,
             archive_path=None,
             error=None,
+            plans_unblocked=None,
         )
         data = json.loads(result.model_dump_json())
         assert data["status"] == "success"
@@ -423,10 +427,91 @@ class TestCompletePlanResult:
             progress_line_inserted=None,
             archive_path=None,
             error="No bullet",
+            plans_unblocked=None,
         )
         data = json.loads(result.model_dump_json())
         assert data["status"] == "error"
         assert "No bullet" in data.get("error", "")
+
+
+def _write_plan_frontmatter(
+    path: Path, *, title: str, status: str, depends_on: list[str]
+) -> None:
+    deps = ", ".join(f'"{d}"' for d in depends_on)
+    body = (
+        "---\n"
+        + f"title: {title}\n"
+        + f"status: {status}\n"
+        + f"depends_on: [{deps}]\n"
+        + "---\n\n"
+    )
+    _ = path.write_text(body, encoding="utf-8")
+
+
+def _seed_sweep_roadmap_and_blocked_follower(tmp_path: Path) -> Path:
+    """Memory bank + plans: DONE foundation, BLOCKED follow, roadmap **Sweep**."""
+    mem = get_cortex_path(tmp_path, CortexResourceType.MEMORY_BANK)
+    mem.mkdir(parents=True)
+    plans = get_cortex_path(tmp_path, CortexResourceType.PLANS)
+    plans.mkdir(parents=True)
+    _write_plan_frontmatter(
+        plans / "foundation.md",
+        title="foundation",
+        status="DONE",
+        depends_on=[],
+    )
+    _write_plan_frontmatter(
+        plans / "follow.md",
+        title="follow",
+        status="BLOCKED",
+        depends_on=["foundation"],
+    )
+    _ = (mem / "roadmap.md").write_text(
+        "# Roadmap\n\n## Pending\n\n- **Sweep** - PENDING\n",
+        encoding="utf-8",
+    )
+    _ = (mem / "activeContext.md").write_text(
+        "# Active\n\n## Completed Work (2026-04-11)\n\n", encoding="utf-8"
+    )
+    return plans
+
+
+class TestCompletePlanDependencyResync:
+    """Post-complete artifact graph resync (Step 5)."""
+
+    @pytest.mark.asyncio
+    async def test_sync_unblocks_when_dependency_done_in_archive(
+        self, tmp_path: Path
+    ) -> None:
+        plans = get_cortex_path(tmp_path, CortexResourceType.PLANS)
+        arch = plans / "archive" / "Other"
+        arch.mkdir(parents=True)
+        _write_plan_frontmatter(
+            arch / "base.md", title="base", status="DONE", depends_on=[]
+        )
+        _write_plan_frontmatter(
+            plans / "leaf.md", title="leaf", status="BLOCKED", depends_on=["base"]
+        )
+
+        n = await sync_plan_dependency_statuses_after_completion(tmp_path, None)
+        assert n == 1
+        assert "status: READY" in (plans / "leaf.md").read_text(encoding="utf-8")
+
+    @pytest.mark.asyncio
+    async def test_complete_plan_reports_plans_unblocked(self, tmp_path: Path) -> None:
+        plans = _seed_sweep_roadmap_and_blocked_follower(tmp_path)
+        with _patch_root(tmp_path):
+            result_str = await complete_plan(
+                plan_title="Sweep",
+                summary="Done.",
+                completion_date="2026-04-11",
+                plan_file_name=None,
+            )
+        result = json.loads(result_str)
+        assert result["status"] == "success"
+        assert result.get("plans_unblocked") == 1
+        assert "Unblocked 1 dependent" in (result.get("message") or "")
+        assert "status: READY" in (plans / "follow.md").read_text(encoding="utf-8")
 
 
 class TestCompletePlanArchive:

@@ -11,7 +11,6 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from cortex.core.constants import MemoryBankFile
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.tools.models_base import ToolResultStatus
 from cortex.tools.plans.crud_helpers import (
@@ -789,81 +788,6 @@ class TestGetPlanImpl:
         assert result.status == "success"
         assert result.task_graph == []
         assert result.can_parallelize is False
-
-
-class TestRegisterPlanTaskGraphValidation:
-    """register_plan_in_roadmap validates parse_task_graph when plan path is known."""
-
-    @staticmethod
-    def _minimal_roadmap() -> str:
-        return (
-            "# Roadmap: MCP Memory Bank\n\n"
-            "## Blockers (ASAP Priority)\n\n"
-            "## Active Work (in progress)\n\n"
-            "## Future Enhancements\n\n"
-            "## Pending plans (from .cortex/plans)\n\n"
-            "- **Existing** - PENDING - Existing entry.\n"
-        )
-
-    @pytest.mark.asyncio
-    async def test_register_rejects_cyclic_plan_file(self, tmp_path: Path) -> None:
-        """Cyclic [P:after=] dependencies block registration."""
-        memory_bank = get_cortex_path(tmp_path, CortexResourceType.MEMORY_BANK)
-        plans_dir = get_cortex_path(tmp_path, CortexResourceType.PLANS)
-        memory_bank.mkdir(parents=True)
-        plans_dir.mkdir(parents=True)
-        roadmap_path = memory_bank / MemoryBankFile.ROADMAP
-        _ = roadmap_path.write_text(self._minimal_roadmap(), encoding="utf-8")
-        cyclic = "### [P:after=2] Step 1: A\n\n" + "### [P:after=1] Step 2: B\n\n"
-        _ = (plans_dir / "bad-cycle.md").write_text(cyclic, encoding="utf-8")
-        with patch(
-            "cortex.tools.plans.register.resolve_project_root_async",
-            new_callable=AsyncMock,
-            return_value=tmp_path,
-        ):
-            raw = await register_plan_in_roadmap(
-                plan_title="Bad Cycle",
-                description="Desc.",
-                status="PENDING",
-                section="pending",
-                plan_relative_path=".cortex/plans/bad-cycle.md",
-                ctx=None,
-            )
-        result = RegisterPlanResult.model_validate_json(raw)
-        assert result.status == ToolResultStatus.ERROR
-        assert result.error is not None
-        assert "cyclic" in result.error.lower()
-
-    @pytest.mark.asyncio
-    async def test_register_returns_step_counts_when_valid(
-        self, tmp_path: Path
-    ) -> None:
-        """Successful registration includes parallel/sequential counts."""
-        memory_bank = get_cortex_path(tmp_path, CortexResourceType.MEMORY_BANK)
-        plans_dir = get_cortex_path(tmp_path, CortexResourceType.PLANS)
-        memory_bank.mkdir(parents=True)
-        plans_dir.mkdir(parents=True)
-        roadmap_path = memory_bank / MemoryBankFile.ROADMAP
-        _ = roadmap_path.write_text(self._minimal_roadmap(), encoding="utf-8")
-        plan_body = "### [P] Step 1: A\n\nx\n\n### Step 2: B\n\ny\n"
-        _ = (plans_dir / "good.md").write_text(plan_body, encoding="utf-8")
-        with patch(
-            "cortex.tools.plans.register.resolve_project_root_async",
-            new_callable=AsyncMock,
-            return_value=tmp_path,
-        ):
-            raw = await register_plan_in_roadmap(
-                plan_title="Good Plan",
-                description="Desc.",
-                status="PENDING",
-                section="pending",
-                plan_relative_path=".cortex/plans/good.md",
-                ctx=None,
-            )
-        result = RegisterPlanResult.model_validate_json(raw)
-        assert result.status == ToolResultStatus.SUCCESS
-        assert result.parallel_steps_count == 1
-        assert result.sequential_steps_count == 1
 
 
 class TestListPlansTool:

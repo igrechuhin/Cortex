@@ -5,6 +5,8 @@ Verifies end-to-end behavior with a temporary project root: plan file creation
 and roadmap registration without mutating the real repository.
 """
 
+import json
+from contextlib import ExitStack, contextmanager
 from pathlib import Path
 from unittest.mock import AsyncMock, patch
 
@@ -24,6 +26,7 @@ from cortex.core.plan_utils import (
     next_execution_frontier,
     parse_task_graph,
 )
+from cortex.tools.plans.completion import complete_plan
 from cortex.tools.plans.enrich import enrich_plan
 from cortex.tools.plans.enrich_models import EnrichPlanResult
 from cortex.tools.plans.operations import (
@@ -102,6 +105,61 @@ async def _register_pending_new_plan(root: Path) -> RegisterPlanResult:
             ctx=None,
         )
     return RegisterPlanResult.model_validate_json(raw)
+
+
+def _depends_on_integration_plan_bodies() -> tuple[str, str]:
+    foundation = (
+        "---\n"
+        "title: foundation\n"
+        "status: PENDING\n"
+        "depends_on: []\n"
+        "---\n\n"
+        "### Step 1\n\nx\n"
+    )
+    leaf = (
+        "---\n"
+        "title: leaf\n"
+        "status: PENDING\n"
+        "depends_on: [foundation]\n"
+        "---\n\n"
+        "### Step 1\n\ny\n"
+    )
+    return foundation, leaf
+
+
+async def _register_foundation_and_leaf_plans(root: Path) -> None:
+    with patch(
+        "cortex.tools.plans.register.resolve_project_root_async",
+        new_callable=AsyncMock,
+        return_value=root,
+    ):
+        for title, rel, desc in (
+            ("Foundation", ".cortex/plans/foundation.md", "Base."),
+            ("Leaf", ".cortex/plans/leaf.md", "Follower."),
+        ):
+            raw = await register_plan_in_roadmap(
+                plan_title=title,
+                description=desc,
+                status="PENDING",
+                section="pending",
+                plan_relative_path=rel,
+                ctx=None,
+            )
+            assert RegisterPlanResult.model_validate_json(raw).status == "success"
+
+
+@contextmanager
+def _patch_roots_for_complete_plan(root: Path):
+    with ExitStack() as stack:
+        for mod in (
+            "cortex.tools.plans.completion.resolve_project_root_async",
+            "cortex.tools.plans.operations_log_hooks.resolve_project_root_async",
+            "cortex.tools.plans.crud.resolve_project_root_async",
+        ):
+            _ = stack.enter_context(
+                patch(mod, new_callable=AsyncMock, return_value=root)
+            )
+        yield
 
 
 async def _register_plan_with_marker(
@@ -663,3 +721,37 @@ class TestParallelPlanFrontierAndMergeIntegration:
         assert len(markers) == 1
         assert markers[0].blocking is True
         assert "src/shared/utils.py" in markers[0].reason
+
+
+class TestPlanDependsOnRegisterThenCompleteIntegration:
+    """End-to-end: register dependent plan as BLOCKED, then unblock via complete_plan."""
+
+    @pytest.mark.asyncio
+    async def test_complete_base_unblocks_registered_dependent_plan(
+        self, temp_project_with_roadmap: Path
+    ) -> None:
+        root = temp_project_with_roadmap
+        memory_bank = get_cortex_path(root, CortexResourceType.MEMORY_BANK)
+        _ = (memory_bank / "activeContext.md").write_text(
+            "# Active Context\n\n## Completed Work (2026-04-10)\n\n",
+            encoding="utf-8",
+        )
+        plans_dir = get_cortex_path(root, CortexResourceType.PLANS)
+        foundation_body, leaf_body = _depends_on_integration_plan_bodies()
+        leaf_path = plans_dir / "leaf.md"
+        _ = (plans_dir / "foundation.md").write_text(foundation_body, encoding="utf-8")
+        _ = leaf_path.write_text(leaf_body, encoding="utf-8")
+        await _register_foundation_and_leaf_plans(root)
+        assert "status: BLOCKED" in leaf_path.read_text(encoding="utf-8")
+        done_body = foundation_body.replace("status: PENDING", "status: DONE", 1)
+        _ = (plans_dir / "foundation.md").write_text(done_body, encoding="utf-8")
+        with _patch_roots_for_complete_plan(root):
+            out = await complete_plan(
+                plan_title="Foundation",
+                summary="Base done.",
+                completion_date="2026-04-11",
+            )
+        result = json.loads(out)
+        assert result["status"] == "success"
+        assert result.get("plans_unblocked") == 1
+        assert "status: READY" in leaf_path.read_text(encoding="utf-8")

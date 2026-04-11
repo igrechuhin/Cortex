@@ -43,7 +43,8 @@ def _plan_error_invalid_operation(operation: str) -> str:
         file_path=None,
         message=(
             "Invalid operation "
-            f"'{operation}'. Use create, list, get, complete, register, enrich, or archive_completed."
+            f"'{operation}'. Use create, list, get, complete, register, enrich, "
+            "graph, or archive_completed."
         ),
         error="Invalid operation",
     ).model_dump_json()
@@ -61,6 +62,7 @@ def _plan_error_missing_complete_params() -> str:
         progress_line_inserted=None,
         archive_path=None,
         error="Missing plan_title or summary",
+        plans_unblocked=None,
     ).model_dump_json()
 
 
@@ -302,6 +304,7 @@ def _plan_valid_operations() -> tuple[str, ...]:
         "complete",
         "register",
         "enrich",
+        "graph",
         "archive_completed",
     )
 
@@ -373,6 +376,10 @@ async def _handle_special_plan_operations(
     request: _PlanDispatchRequest,
     ctx: MCPContext | None,
 ) -> str | None:
+    if request.operation == "graph":
+        from cortex.tools.plans.plan_graph import plan_graph_json
+
+        return await plan_graph_json(ctx, include_archive=request.include_archive)
     if request.operation == "archive_completed":
         return await _plan_handle_archive_completed(ctx)
     if request.operation == "complete":
@@ -457,10 +464,11 @@ async def _plan_dispatch_valid_operation(
 # fmt: off
 async def plan(operation: str | None = None, title: str | None = None, content: str | None = None, slug: str | None = None, explore_log_path: str | None = None, include_archive: bool = False, response_format: str = "content", plan_title: str | None = None, summary: str | None = None, completion_date: str | None = None, progress_entry: str | None = None, plan_file_name: str | None = None, plan_relative_path: str | None = None, resolved_clarifications: dict[str, str] | None = None, description: str | None = None, status: str = "PENDING", section: str = "pending", ctx: MCPContext | None = None) -> str:
 # fmt: on
-    """Plan lifecycle: create, list, get, complete, register, or archive_completed.
+    """Plan lifecycle: create, list, get, complete, register, graph, or archive_completed.
 
-    USE WHEN: managing plan files, marking plans complete, or registering roadmap entries.
-    EXAMPLES: plan(operation="create", ...), plan(operation="complete", ...), plan(operation="register", ...).
+    USE WHEN: managing plan files, marking plans complete, registering roadmap entries,
+    or reading the plan dependency graph (operation=\"graph\").
+    EXAMPLES: plan(operation=\"create\", ...), plan(operation=\"graph\"), plan(operation=\"register\", ...).
     """
     return await _plan_dispatch(
         operation,

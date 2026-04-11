@@ -18,6 +18,13 @@
 - **Schema-Defined Workflow Variants** - PARTIAL. Session `workflow_schema` from `.cortex/session.yaml`, brief phase list, `read_session_config` merge, `manage_file` list_schemas/fork_schema, do.md workflow guidance; tests added.
 - **Schema-Defined Workflow Variants** - COMPLETE. Phase conditions filter `workflow_phases` in session brief; `ProjectSessionConfig` allows extra session.yaml keys for conditions; compliance and data-science session_start tests; plan archived.
 - **Workflow schema stack + commit** - COMPLETE. Landed schema loader, bundled YAML, session config merge, brief_workflow, manage_file schema ops, split session_start tests; Synapse do.md guidance; submodule pushed.
+- **Artifact Graph for Plan Dependencies** - PARTIAL. PlanStatus enum and compute_artifact_graph (PlanNode, ArtifactGraph, Tarjan cycles, ready/blocked); unit tests for graph scenarios.
+- **Artifact Graph for Plan Dependencies** - PARTIAL. Step 3: register validates dependency cycles, warns on missing depends_on slugs, syncs plan frontmatter status after roadmap write.
+- **Artifact Graph for Plan Dependencies** - PARTIAL. Step 4: added plan(operation="graph") returning ready/blocked/in_progress/done/cycles and ASCII DAG (plan_graph.py + tests).
+- **Artifact Graph for Plan Dependencies** - PARTIAL. Step 5: after successful plan(complete), recomputed dependency graph with archived DONE nodes, updated active plan frontmatter (BLOCKED→READY), and exposed plans_unblocked on CompletePlanResult.
+- **Artifact Graph for Plan Dependencies** - PARTIAL. Steps 6–7: session brief and cortex://context expose plan dependency READY/BLOCKED snapshot; roadmap.md reads annotate blocked plan bullets; unit tests for annotation and context merge.
+- **Artifact Graph for Plan Dependencies** - COMPLETE. depends_on enforcement, READY/BLOCKED graph, completion unblock cascade, session/context/roadmap surfacing, register-to-unblock integration test.
+- **Plan dependency graph stack (commit)** - COMPLETE. Shipped plan_graph, register dependency validation, completion unblock metadata, session brief and cortex://context plan graph summary, roadmap BLOCKED annotation helper, artifact_graph extensions, integration/unit tests; archived artifact-graph-plan-dependencies plan; Synapse submodule pointer updated.
 
 ## 2026-04-10
 

@@ -84,3 +84,13 @@ class ResponseStatus(str, Enum):
     """Status value for error response model."""
 
     ERROR = "error"
+
+
+class PlanStatus(str, Enum):
+    """Lifecycle status for a plan file (YAML frontmatter ``status``)."""
+
+    PENDING = "PENDING"
+    IN_PROGRESS = "IN_PROGRESS"
+    BLOCKED = "BLOCKED"
+    DONE = "DONE"
+    READY = "READY"

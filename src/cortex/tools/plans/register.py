@@ -21,6 +21,10 @@ from cortex.core.plan_utils import (
 )
 from cortex.core.project_root_resolver import resolve_project_root_async
 from cortex.tools.models_base import ToolResultStatus
+from cortex.tools.plans.register_artifact_graph import (
+    sync_plan_frontmatter_status_after_register,
+    validate_register_artifact_graph_for_plan,
+)
 from cortex.tools.plans.register_helpers import (
     SectionValidation,
     create_register_error_result,
@@ -63,6 +67,8 @@ class _RegisterPlanExecParams:
     ctx: MCPContext | None
     parallel_steps_count: int | None
     sequential_steps_count: int | None
+    resolved_plan_path: Path | None = None
+    clarification_blocked: bool = False
 
 
 def _resolve_plan_path_for_marker_scan(
@@ -283,28 +289,26 @@ def _roadmap_path(root: Path) -> Path:
 
 async def _finish_register_from_read_result(
     rp: Path,
-    root: Path,
-    ctx: MCPContext | None,
-    section_id: str,
+    params: _RegisterPlanExecParams,
     read_result: str | tuple[str, int | None],
-    parallel_steps_count: int | None,
-    sequential_steps_count: int | None,
 ) -> str:
     """Branch on read/merge outcome and persist when possible."""
     if isinstance(read_result, str):
         return read_result
     updated_content, line_inserted = read_result
     if line_inserted is None:
-        return await _handle_entry_not_found(ctx, section_id)
+        return await _handle_entry_not_found(params.ctx, params.section_id)
     return await _persist_register_merge(
         rp,
-        root,
-        section_id,
-        ctx,
+        params.root,
+        params.section_id,
+        params.ctx,
         updated_content,
         line_inserted,
-        parallel_steps_count,
-        sequential_steps_count,
+        params.parallel_steps_count,
+        params.sequential_steps_count,
+        params.resolved_plan_path,
+        params.clarification_blocked,
     )
 
 
@@ -317,12 +321,19 @@ async def _persist_register_merge(
     line_inserted: int,
     parallel_steps_count: int | None,
     sequential_steps_count: int | None,
+    resolved_plan_path: Path | None,
+    clarification_blocked: bool,
 ) -> str:
     """Write roadmap after merge and emit success JSON."""
     write_result = await _handle_roadmap_write(
         rp, updated_content, section_id, ctx, root
     )
-    return write_result or await _handle_entry_success(
+    if write_result:
+        return write_result
+    await sync_plan_frontmatter_status_after_register(
+        root, resolved_plan_path, clarification_blocked, ctx
+    )
+    return await _handle_entry_success(
         ctx,
         section_id,
         line_inserted,
@@ -344,15 +355,7 @@ async def _execute_register_plan(params: _RegisterPlanExecParams) -> str:
         params.plan_relative_path,
         params.ctx,
     )
-    return await _finish_register_from_read_result(
-        rp,
-        params.root,
-        params.ctx,
-        params.section_id,
-        read_result,
-        params.parallel_steps_count,
-        params.sequential_steps_count,
-    )
+    return await _finish_register_from_read_result(rp, params, read_result)
 
 
 async def _check_status_and_section(
@@ -387,6 +390,27 @@ async def _check_status_and_section(
     return _SectionCheck(section_id=sv.section_id, error_json=None)
 
 
+async def _register_preflight_graph_checks(
+    root: Path,
+    plan_file_name: str | None,
+    plan_relative_path: str | None,
+    ctx: MCPContext | None,
+) -> tuple[str | None, Path | None, int | None, int | None]:
+    """Task-graph validation plus artifact-graph rules; returns error JSON or plan path."""
+    ge, pc, sc = _validate_plan_task_graph_before_register(
+        root, plan_file_name, plan_relative_path
+    )
+    if ge is not None:
+        return ge, None, pc, sc
+    plan_path = _resolve_plan_path_for_marker_scan(
+        root, plan_file_name, plan_relative_path
+    )
+    ag_err = await validate_register_artifact_graph_for_plan(root, plan_path, ctx)
+    if ag_err is not None:
+        return ag_err, None, pc, sc
+    return None, plan_path, pc, sc
+
+
 async def _register_after_section_ok(
     root: Path,
     plan_title: str,
@@ -398,11 +422,11 @@ async def _register_after_section_ok(
     ctx: MCPContext | None,
 ) -> str:
     """Run task-graph validation then persist roadmap entry."""
-    ge, pc, sc = _validate_plan_task_graph_before_register(
-        root, plan_file_name, plan_relative_path
+    err, plan_path, pc, sc = await _register_preflight_graph_checks(
+        root, plan_file_name, plan_relative_path, ctx
     )
-    if ge is not None:
-        return ge
+    if err is not None:
+        return err
     return await _execute_register_plan(
         _RegisterPlanExecParams(
             root=root,
@@ -415,6 +439,8 @@ async def _register_after_section_ok(
             ctx=ctx,
             parallel_steps_count=pc,
             sequential_steps_count=sc,
+            resolved_plan_path=plan_path,
+            clarification_blocked=status.strip().casefold() == "blocked",
         )
     )
 

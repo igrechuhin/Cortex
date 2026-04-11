@@ -30,3 +30,7 @@ class CompletePlanResult(BaseModel):
         description="Path where plan file was archived (if plan_file_name provided)",
     )
     error: str | None = Field(None, description="Error message if status is error")
+    plans_unblocked: int | None = Field(
+        default=None,
+        description="Plans moved from BLOCKED to READY after dependency graph resync",
+    )

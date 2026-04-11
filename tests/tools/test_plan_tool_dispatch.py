@@ -149,3 +149,47 @@ class TestPlanToolSmoke:
         assert "[NEEDS CLARIFICATION:" not in updated
         assert "## Clarifications Needed" not in updated
         assert "dark mode" in updated
+
+
+class TestPlanGraphOperation:
+    """plan(operation=\"graph\") returns artifact graph snapshot."""
+
+    @pytest.mark.asyncio
+    async def test_graph_missing_plans_dir_returns_message(
+        self, tmp_path: Path
+    ) -> None:
+        """When .cortex/plans is absent, graph still returns success with empty lists."""
+        with patch(
+            "cortex.tools.plans.plan_graph.get_or_resolve_project_root",
+            new_callable=AsyncMock,
+            return_value=str(tmp_path),
+        ):
+            raw = await plan(operation="graph", include_archive=False, ctx=None)
+        data = json.loads(raw)
+        assert data["status"] == "success"
+        assert "plans directory" in (data.get("message") or "").lower()
+        assert data["ready"] == []
+
+    @pytest.mark.asyncio
+    async def test_graph_reports_ready_blocked_and_dag_edges(
+        self, tmp_path: Path
+    ) -> None:
+        """A leaf depending on a non-DONE base is blocked; ASCII lists dependent → dep."""
+        plans_dir = tmp_path / ".cortex" / "plans"
+        plans_dir.mkdir(parents=True)
+        base = "---\ntitle: base\nstatus: PENDING\ndepends_on: []\n---\n\n# B\n"
+        leaf = "---\ntitle: leaf\nstatus: PENDING\ndepends_on: [base]\n---\n\n# L\n"
+        _ = (plans_dir / "base.md").write_text(base, encoding="utf-8")
+        _ = (plans_dir / "leaf.md").write_text(leaf, encoding="utf-8")
+        with patch(
+            "cortex.tools.plans.plan_graph.get_or_resolve_project_root",
+            new_callable=AsyncMock,
+            return_value=str(tmp_path),
+        ):
+            raw = await plan(operation="graph", ctx=None)
+        data = json.loads(raw)
+        assert data["status"] == "success"
+        assert "base" in data["ready"]
+        assert "leaf" in data["blocked"]
+        assert data["blocked"]["leaf"] == ["base"]
+        assert "leaf → base" in data["ascii_dag"]

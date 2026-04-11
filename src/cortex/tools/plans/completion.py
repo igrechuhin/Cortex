@@ -29,6 +29,9 @@ from cortex.tools.plans.completion_ops import (
     execute_append_progress,
 )
 from cortex.tools.plans.completion_validation import validate_date_str
+from cortex.tools.plans.register_artifact_graph import (
+    sync_plan_dependency_statuses_after_completion,
+)
 
 
 async def _complete_plan_impl(
@@ -54,6 +57,11 @@ async def _complete_plan_impl(
     await apply_progress_and_archive(
         root, date_str, progress_entry, plan_file_name, result
     )
+    if result.status == OperationStatus.SUCCESS:
+        n = await sync_plan_dependency_statuses_after_completion(root, ctx)
+        result.plans_unblocked = n
+        if n:
+            result.message = f"{result.message} Unblocked {n} dependent plan(s)."
     await log_client(
         ctx, "info", f"complete_plan: {result.status}", logger_name=__name__
     )
@@ -109,6 +117,7 @@ async def complete_plan(
             progress_line_inserted=None,
             archive_path=None,
             error=str(e),
+            plans_unblocked=None,
         ).model_dump_json()
 
 

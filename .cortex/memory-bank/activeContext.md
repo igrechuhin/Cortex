@@ -22,6 +22,12 @@
 
 - ✅ **Workflow schema stack and session_start test split (commit)** - COMPLETE (2026-04-11) - Committed project workflow schemas (YAML, loader, inherits, conditions), session brief workflow fields and manage_file schema ops, split session_start tests into session_start_fixtures + focused modules under file-size limits, brief_workflow helper extraction for function length; Synapse submodule at do.md workflow-schema guidance.
 
+- ✅ **Artifact graph (PARTIAL)** - COMPLETE (2026-04-11) - compute_artifact_graph in cortex.core.artifact_graph classifies plans as ready/blocked and detects dependency cycles; PlanStatus enum exported from cortex.core.models.
+
+- ✅ **Artifact Graph for Plan Dependencies** - COMPLETE (2026-04-11) - depends_on graph, register/complete resync, session and cortex://context and roadmap BLOCKED hints; Step 8 register-to-unblock integration test.
+
+- ✅ **Plan dependency graph stack (commit)** - COMPLETE (2026-04-11) - Committed plan graph tooling, register/completion wiring, brief/context/roadmap surfacing, tests, plan archive move, and Synapse gitlink.
+
 ## Completed Work (2026-04-10)
 
 - **Summary (2026-04-10)** - 1 entries archived.

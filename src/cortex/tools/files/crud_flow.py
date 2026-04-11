@@ -36,6 +36,7 @@ from cortex.tools.files.operation_helpers import (
 )
 from cortex.tools.files.section_helpers import extract_content_sections
 from cortex.tools.plans.corruption import fix_memory_bank_content_if_needed
+from cortex.tools.plans.roadmap_plan_graph_annotate import annotate_roadmap_for_project
 from cortex.validation.schema_validator import SchemaValidator
 
 # Avoid circular import: file_lock_guard used only at runtime in _verify_write_lock
@@ -96,6 +97,8 @@ async def handle_read_operation(
         return build_read_error_response(file_name, root)
 
     content_str, _ = await fs_manager.read_file(file_path)
+    if file_name == MemoryBankFile.ROADMAP:
+        content_str = annotate_roadmap_for_project(content_str, root)
     extracted_content, section_warning = extract_content_sections(content_str, sections)
 
     return await _build_read_response(

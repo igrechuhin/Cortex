@@ -201,6 +201,20 @@ class SessionBrief(StrictBaseModel):
         default_factory=list,
         description="Ordered phase labels for the active schema (name and tool).",
     )
+    plan_graph_summary: str | None = Field(
+        default=None,
+        description=(
+            "One-line READY/BLOCKED counts from the active plans dependency graph "
+            "(empty when plans directory is missing)."
+        ),
+    )
+    plan_graph_ascii_edges: str | None = Field(
+        default=None,
+        description=(
+            "Truncated dependent→dependency edge list for the plan graph "
+            "(session cap applies)."
+        ),
+    )
 
 
 class SessionStartResult(ToolResultBase):

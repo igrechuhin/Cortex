@@ -224,7 +224,7 @@ async def load_context_scope_cache_results(
             side_effect=[payload_one, payload_two],
         ) as mock_load_context_impl,
         patch(
-            "cortex.tools.optimization.handlers._build_context_resource_payload_async",
+            "cortex.tools.optimization.handlers.build_context_resource_payload_async",
             new_callable=AsyncMock,
             side_effect=[payload_one, payload_two],
         ),
