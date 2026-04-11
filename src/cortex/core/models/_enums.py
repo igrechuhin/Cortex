@@ -25,6 +25,20 @@ class ContextDepth(str, Enum):
     FULL = "full"
 
 
+class TaskType(str, Enum):
+    """Task categories used to scope context and rule assembly."""
+
+    ALL = "ALL"
+    CORE_LOGIC = "CORE_LOGIC"
+    MCP_TOOL = "MCP_TOOL"
+    MCP_RESOURCE = "MCP_RESOURCE"
+    TEST = "TEST"
+    PROMPT = "PROMPT"
+    SCHEMA = "SCHEMA"
+    INFRA = "INFRA"
+    DOCUMENTATION = "DOCUMENTATION"
+
+
 class HandlerKind(str, Enum):
     """Whether the handler is an MCP tool or resource (Phase 43)."""
 

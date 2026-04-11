@@ -1,255 +1,5 @@
 # Cortex Operations Log
 
-## [2026-04-07T17:59] plan | Created plan: Test Plan
-
-## [2026-04-07T17:59] plan | Created plan: Smoke Test Plan
-
-## [2026-04-07T17:59] lint | Quality gate passed
-
-## [2026-04-07T18:35] plan | Created plan: Test Plan
-
-## [2026-04-07T18:35] plan | Created plan: Smoke Test Plan
-
-## [2026-04-07T18:35] lint | Quality gate passed
-
-## [2026-04-07T18:40] plan | Created plan: Test Plan
-
-## [2026-04-07T18:40] plan | Created plan: Smoke Test Plan
-
-## [2026-04-07T18:41] lint | Quality gate passed
-
-## [2026-04-07T18:43] plan | Completed plan: Memory Bank Lint (/cortex/lint-wiki)
-
-Completed memory-bank lint workflow and closed remaining parsing gap for roadmap markdown-linked plan references with regression coverage.
-
-## [2026-04-07T18:43] fix | Autofix completed
-
-status=success; changed_files=None
-
-## [2026-04-07T18:44] plan | Created plan: Test Plan (duplicate entry)
-
-## [2026-04-07T18:44] plan | Created plan: Smoke Test Plan (duplicate entry)
-
-## [2026-04-07T18:44] plan | Created plan: Test Plan
-
-## [2026-04-07T18:44] plan | Created plan: Smoke Test Plan
-
-## [2026-04-07T18:44] lint | Quality gate failed
-
-## [2026-04-07T18:49] plan | Created plan: Test Plan
-
-## [2026-04-07T18:49] plan | Created plan: Smoke Test Plan
-
-## [2026-04-07T18:51] plan | Created plan: Smoke Test Plan
-
-## [2026-04-07T18:51] plan | Created plan: Test Plan
-
-## [2026-04-07T18:53] plan | Created plan: Smoke Test Plan (duplicate entry)
-
-## [2026-04-07T18:53] plan | Created plan: Smoke Test Plan
-
-## [2026-04-07T18:55] plan | Created plan: Test Plan
-
-## [2026-04-07T18:56] plan | Created plan: Smoke Test Plan
-
-## [2026-04-07T18:59] plan | Created plan: Test Plan
-
-## [2026-04-07T18:59] plan | Created plan: Smoke Test Plan
-
-## [2026-04-07T19:00] plan | Created plan: Smoke Test Plan
-
-## [2026-04-07T19:00] plan | Created plan: Test Plan
-
-## [2026-04-07T19:02] plan | Created plan: Smoke Test Plan
-
-## [2026-04-07T19:02] plan | Created plan: Test Plan
-
-## [2026-04-07T19:44] plan | Created plan: Test Plan
-
-## [2026-04-07T19:45] plan | Created plan: Smoke Test Plan
-
-## [2026-04-07T19:45] lint | Quality gate failed
-
-## [2026-04-07T19:46] plan | Created plan: Test Plan
-
-## [2026-04-07T19:46] plan | Created plan: Smoke Test Plan
-
-## [2026-04-07T19:47] lint | Quality gate passed
-
-## [2026-04-07T19:48] plan | Created plan: Test Plan
-
-## [2026-04-07T19:48] plan | Created plan: Smoke Test Plan
-
-## [2026-04-07T19:48] lint | Quality gate passed
-
-## [2026-04-07T19:49] fix | Autofix completed
-
-status=success; changed_files=None
-
-## [2026-04-07T19:50] plan | Created plan: Test Plan
-
-## [2026-04-07T19:50] plan | Created plan: Smoke Test Plan
-
-## [2026-04-07T19:51] lint | Quality gate passed
-
-## [2026-04-07T20:29] plan | Created plan: Test Plan
-
-## [2026-04-07T20:29] plan | Created plan: Smoke Test Plan
-
-## [2026-04-07T20:29] lint | Quality gate passed
-
-## [2026-04-07T20:31] fix | Autofix completed
-
-status=success; changed_files=None
-
-## [2026-04-07T20:32] plan | Created plan: Test Plan
-
-## [2026-04-07T20:32] plan | Created plan: Smoke Test Plan
-
-## [2026-04-07T20:33] lint | Quality gate passed
-
-## [2026-04-07T20:40] plan | Created plan: Smoke Test Plan
-
-## [2026-04-07T20:40] plan | Created plan: Test Plan
-
-## [2026-04-07T20:41] lint | Quality gate failed
-
-## [2026-04-07T20:43] plan | Created plan: Smoke Test Plan
-
-## [2026-04-07T20:43] plan | Created plan: Test Plan
-
-## [2026-04-07T20:44] lint | Quality gate failed
-
-## [2026-04-07T20:46] plan | Created plan: Test Plan
-
-## [2026-04-07T20:46] plan | Created plan: Smoke Test Plan
-
-## [2026-04-07T20:46] lint | Quality gate failed
-
-## [2026-04-07T20:47] plan | Created plan: Test Plan
-
-## [2026-04-07T20:47] plan | Created plan: Smoke Test Plan
-
-## [2026-04-07T20:48] lint | Quality gate failed
-
-## [2026-04-07T20:48] plan | Created plan: Test Plan
-
-## [2026-04-07T20:48] plan | Created plan: Smoke Test Plan
-
-## [2026-04-07T20:49] lint | Quality gate passed
-
-## [2026-04-07T20:51] fix | Autofix completed
-
-status=success; changed_files=None
-
-## [2026-04-07T20:51] plan | Created plan: Smoke Test Plan
-
-## [2026-04-07T20:51] plan | Created plan: Test Plan
-
-## [2026-04-07T20:52] lint | Quality gate passed
-
-## [2026-04-07T21:12] plan | Created plan: Smoke Test Plan
-
-## [2026-04-07T21:12] plan | Created plan: Test Plan
-
-## [2026-04-07T21:13] lint | Quality gate failed
-
-## [2026-04-07T21:14] plan | Created plan: Test Plan
-
-## [2026-04-07T21:14] plan | Created plan: Smoke Test Plan
-
-## [2026-04-07T21:14] lint | Quality gate passed
-
-## [2026-04-07T21:16] fix | Autofix completed
-
-status=success; changed_files=None
-
-## [2026-04-07T21:16] plan | Created plan: Test Plan
-
-## [2026-04-07T21:16] plan | Created plan: Smoke Test Plan
-
-## [2026-04-07T21:17] lint | Quality gate passed
-
-## [2026-04-07T21:29] plan | Created plan: Smoke Test Plan
-
-## [2026-04-07T21:29] plan | Created plan: Test Plan
-
-## [2026-04-07T21:30] lint | Quality gate passed
-
-## [2026-04-07T21:31] fix | Autofix completed
-
-status=success; changed_files=None
-
-## [2026-04-07T21:32] plan | Created plan: Test Plan
-
-## [2026-04-07T21:32] plan | Created plan: Smoke Test Plan
-
-## [2026-04-07T21:32] lint | Quality gate passed
-
-## [2026-04-07T21:39] plan | Created plan: Smoke Test Plan
-
-## [2026-04-07T21:39] plan | Created plan: Test Plan
-
-## [2026-04-07T21:40] lint | Quality gate failed
-
-## [2026-04-07T21:40] fix | Autofix completed
-
-status=success; changed_files=None
-
-## [2026-04-07T21:43] plan | Created plan: Test Plan
-
-## [2026-04-07T21:43] plan | Created plan: Smoke Test Plan
-
-## [2026-04-07T21:44] lint | Quality gate failed
-
-## [2026-04-07T21:45] plan | Created plan: Test Plan
-
-## [2026-04-07T21:45] plan | Created plan: Smoke Test Plan
-
-## [2026-04-07T21:45] lint | Quality gate passed
-
-## [2026-04-07T21:45] plan | Completed plan: File Review Reports into Memory Bank
-
-Completed Step 6: cortex://context now includes a recent_artifacts markdown field with the five most recently modified files under memory-bank/reviews|analyses, plus cache invalidation after file_artifact. Phase 4 test helpers refactored for function-length compliance.
-
-## [2026-04-07T21:56] plan | Created plan: Test Plan
-
-## [2026-04-07T21:56] plan | Created plan: Smoke Test Plan
-
-## [2026-04-07T21:57] lint | Quality gate passed
-
-## [2026-04-07T22:10] plan | Created plan: Smoke Test Plan
-
-## [2026-04-07T22:10] plan | Created plan: Test Plan
-
-## [2026-04-07T22:10] lint | Quality gate passed
-
-## [2026-04-07T22:11] fix | Autofix completed
-
-status=success; changed_files=None
-
-## [2026-04-07T22:12] fix | Autofix completed
-
-status=success; changed_files=None
-
-## [2026-04-07T22:13] plan | Created plan: Smoke Test Plan
-
-## [2026-04-07T22:13] plan | Created plan: Test Plan
-
-## [2026-04-07T22:13] lint | Quality gate passed
-
-## [2026-04-07T22:21] plan | Created plan: Smoke Test Plan
-
-## [2026-04-07T22:21] plan | Created plan: Test Plan
-
-## [2026-04-07T22:22] lint | Quality gate failed
-
-## [2026-04-07T22:23] plan | Created plan: Test Plan
-
-## [2026-04-07T22:23] plan | Created plan: Smoke Test Plan
-
-## [2026-04-07T22:23] lint | Quality gate failed
-
 ## [2026-04-07T22:24] plan | Created plan: Smoke Test Plan
 
 ## [2026-04-07T22:24] plan | Created plan: Test Plan
@@ -2217,3 +1967,247 @@ status=success; changed_files=None
 ## [2026-04-10T15:34] plan | Created plan: Test Plan
 
 ## [2026-04-10T15:34] lint | Quality gate passed
+
+## [2026-04-10T16:08] plan | Created plan: Smoke Test Plan
+
+## [2026-04-10T16:09] plan | Created plan: Test Plan
+
+## [2026-04-10T16:09] lint | Quality gate failed
+
+## [2026-04-10T16:11] plan | Created plan: Test Plan
+
+## [2026-04-10T16:11] plan | Created plan: Smoke Test Plan
+
+## [2026-04-10T16:12] lint | Quality gate failed
+
+## [2026-04-10T16:13] plan | Created plan: Test Plan
+
+## [2026-04-10T16:13] plan | Created plan: Smoke Test Plan
+
+## [2026-04-10T16:13] lint | Quality gate passed
+
+## [2026-04-10T16:16] fix | Autofix completed
+
+status=success; changed_files=None
+
+## [2026-04-10T16:16] plan | Created plan: Test Plan
+
+## [2026-04-10T16:16] plan | Created plan: Smoke Test Plan
+
+## [2026-04-10T16:17] lint | Quality gate passed
+
+## [2026-04-10T16:24] plan | Created plan: Smoke Test Plan
+
+## [2026-04-10T16:24] plan | Created plan: Test Plan
+
+## [2026-04-10T16:25] lint | Quality gate failed
+
+## [2026-04-10T16:28] plan | Created plan: Smoke Test Plan
+
+## [2026-04-10T16:28] plan | Created plan: Test Plan
+
+## [2026-04-10T16:29] lint | Quality gate failed
+
+## [2026-04-10T16:30] plan | Created plan: Smoke Test Plan
+
+## [2026-04-10T16:30] plan | Created plan: Test Plan
+
+## [2026-04-10T16:31] lint | Quality gate failed
+
+## [2026-04-10T16:32] plan | Created plan: Test Plan
+
+## [2026-04-10T16:32] plan | Created plan: Smoke Test Plan
+
+## [2026-04-10T16:33] lint | Quality gate passed
+
+## [2026-04-10T16:35] fix | Autofix completed
+
+status=success; changed_files=None
+
+## [2026-04-10T16:36] plan | Created plan: Test Plan
+
+## [2026-04-10T16:36] plan | Created plan: Smoke Test Plan
+
+## [2026-04-10T16:37] lint | Quality gate passed
+
+## [2026-04-10T17:44] plan | Created plan: Test Plan
+
+## [2026-04-10T17:44] plan | Created plan: Smoke Test Plan
+
+## [2026-04-10T17:45] lint | Quality gate passed
+
+## [2026-04-10T17:47] plan | Created plan: Smoke Test Plan
+
+## [2026-04-10T17:47] plan | Created plan: Test Plan
+
+## [2026-04-10T17:48] lint | Quality gate failed
+
+## [2026-04-10T17:49] plan | Created plan: Test Plan
+
+## [2026-04-10T17:49] plan | Created plan: Smoke Test Plan
+
+## [2026-04-10T17:50] lint | Quality gate failed
+
+## [2026-04-10T17:52] lint | Quality gate failed
+
+## [2026-04-10T17:57] fix | Autofix completed
+
+status=success; changed_files=None
+
+## [2026-04-10T17:57] lint | Quality gate failed
+
+## [2026-04-10T18:00] plan | Created plan: Test Plan
+
+## [2026-04-10T18:00] plan | Created plan: Smoke Test Plan
+
+## [2026-04-10T18:00] lint | Quality gate failed
+
+## [2026-04-10T18:01] plan | Created plan: Test Plan
+
+## [2026-04-10T18:01] plan | Created plan: Smoke Test Plan
+
+## [2026-04-10T18:02] lint | Quality gate passed
+
+## [2026-04-10T18:03] plan | Created plan: Test Plan
+
+## [2026-04-10T18:04] plan | Created plan: Smoke Test Plan
+
+## [2026-04-10T18:04] lint | Quality gate passed
+
+## [2026-04-10T18:09] plan | Created plan: Test Plan
+
+## [2026-04-10T18:10] plan | Created plan: Smoke Test Plan
+
+## [2026-04-10T18:11] plan | Created plan: Test Plan
+
+## [2026-04-10T18:12] plan | Created plan: Test Plan
+
+## [2026-04-10T18:14] plan | Created plan: Test Plan
+
+## [2026-04-10T18:15] plan | Created plan: Smoke Test Plan
+
+## [2026-04-10T18:16] plan | Created plan: Smoke Test Plan
+
+## [2026-04-10T18:17] plan | Created plan: Test Plan
+
+## [2026-04-10T18:18] plan | Created plan: Test Plan
+
+## [2026-04-10T18:19] plan | Created plan: Smoke Test Plan
+
+## [2026-04-10T18:19] plan | Created plan: Test Plan
+
+## [2026-04-10T18:34] plan | Created plan: Test Plan
+
+## [2026-04-10T18:34] plan | Created plan: Smoke Test Plan
+
+## [2026-04-10T18:35] lint | Quality gate failed
+
+## [2026-04-10T18:36] fix | Autofix completed
+
+status=success; changed_files=None
+
+## [2026-04-10T18:37] plan | Created plan: Test Plan
+
+## [2026-04-10T18:37] plan | Created plan: Smoke Test Plan
+
+## [2026-04-10T18:37] lint | Quality gate passed
+
+## [2026-04-10T18:38] plan | Created plan: Smoke Test Plan
+
+## [2026-04-10T18:39] plan | Created plan: Test Plan
+
+## [2026-04-10T18:39] lint | Quality gate passed
+
+## [2026-04-11T11:21] plan | Created plan: Test Plan
+
+## [2026-04-11T11:21] plan | Created plan: Smoke Test Plan
+
+## [2026-04-11T11:23] plan | Created plan: Smoke Test Plan
+
+## [2026-04-11T11:23] plan | Created plan: Test Plan
+
+## [2026-04-11T11:27] plan | Created plan: Smoke Test Plan
+
+## [2026-04-11T11:27] plan | Created plan: Test Plan
+
+## [2026-04-11T11:28] lint | Quality gate failed
+
+## [2026-04-11T11:29] fix | Autofix completed
+
+status=success; changed_files=None
+
+## [2026-04-11T11:29] plan | Created plan: Test Plan
+
+## [2026-04-11T11:29] plan | Created plan: Smoke Test Plan
+
+## [2026-04-11T11:30] lint | Quality gate passed
+
+## [2026-04-11T11:30] plan | Created plan: Test Plan
+
+## [2026-04-11T11:30] plan | Created plan: Smoke Test Plan
+
+## [2026-04-11T11:41] plan | Created plan: Test Plan
+
+## [2026-04-11T11:41] plan | Created plan: Smoke Test Plan
+
+## [2026-04-11T11:42] lint | Quality gate passed
+
+## [2026-04-11T11:42] plan | Created plan: Smoke Test Plan
+
+## [2026-04-11T11:42] plan | Created plan: Test Plan
+
+## [2026-04-11T11:43] lint | Quality gate passed
+
+## [2026-04-11T11:44] plan | Created plan: Smoke Test Plan
+
+## [2026-04-11T11:44] plan | Created plan: Test Plan
+
+## [2026-04-11T11:45] lint | Quality gate passed
+
+## [2026-04-11T11:47] plan | Created plan: Test Plan
+
+## [2026-04-11T11:47] plan | Created plan: Smoke Test Plan
+
+## [2026-04-11T11:48] lint | Quality gate passed
+
+## [2026-04-11T11:48] plan | Created plan: Test Plan
+
+## [2026-04-11T11:48] plan | Created plan: Smoke Test Plan
+
+## [2026-04-11T12:08] plan | Created plan: Test Plan
+
+## [2026-04-11T12:09] plan | Created plan: Smoke Test Plan
+
+## [2026-04-11T12:11] plan | Created plan: Test Plan
+
+## [2026-04-11T12:11] plan | Created plan: Smoke Test Plan
+
+## [2026-04-11T12:17] plan | Created plan: Test Plan
+
+## [2026-04-11T12:17] plan | Created plan: Smoke Test Plan
+
+## [2026-04-11T12:18] lint | Quality gate failed
+
+## [2026-04-11T12:18] fix | Autofix completed
+
+status=success; changed_files=None
+
+## [2026-04-11T12:19] plan | Created plan: Test Plan
+
+## [2026-04-11T12:19] plan | Created plan: Smoke Test Plan
+
+## [2026-04-11T12:19] lint | Quality gate passed
+
+## [2026-04-11T12:20] fix | Autofix completed
+
+status=success; changed_files=None
+
+## [2026-04-11T12:21] fix | Autofix completed
+
+status=success; changed_files=None
+
+## [2026-04-11T12:21] plan | Created plan: Test Plan
+
+## [2026-04-11T12:21] plan | Created plan: Smoke Test Plan
+
+## [2026-04-11T12:22] lint | Quality gate passed

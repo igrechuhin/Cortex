@@ -42,8 +42,6 @@ Completed investigations are recorded in [activeContext.md](activeContext.md). P
 
 #### Planning & Brainstorming (High Priority)
 
-- Plan: [Context-Scoped Instruction Assembly](../plans/context-scoped-instruction-assembly.md) — Assemble scoped context packets for `implement-code`: relevant plan + upstream dependencies + task-type-filtered rules. PENDING.
-
 #### Planning & Brainstorming (Medium Priority)
 
 - Plan: [Delta Specs for Plans](../plans/delta-specs-for-plans.md) — Track plan revisions with explicit `ADDED/MODIFIED/REMOVED/RENAMED` delta entries; never silently overwrite history. PENDING.

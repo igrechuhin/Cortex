@@ -1,5 +1,13 @@
 # Progress Log
 
+## 2026-04-11
+
+- **Context-scoped instruction assembly (commit)** - COMPLETE. Scoped context stack (artifact_graph, rules_filter, task_classifier, scoped_context, optimization handlers), Phase 4 optimization test split and new cases, plan archived; Synapse run_tests.py matches CI pytest xdist flags.
+
+## 2026-04-10
+
+- **Context-Scoped Instruction Assembly** - COMPLETE. Completed scoped context assembly end-to-end by wiring implement-flow scope propagation, adding scope-aware cache behavior, integrating context/resource handling, and expanding tests for scoped behavior with a passing quality gate.
+
 ## 2026-04-09
 
 - **Once Flag on Hooks** - PARTIAL. Implemented Step 1 by adding `HookEntry.once` serialization semantics (omit default `once=false`, emit `once=true`) and added focused unit tests for both branches.

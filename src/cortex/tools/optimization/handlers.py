@@ -33,7 +33,7 @@ from cortex.core.mcp_stability import (
     mcp_resource_wrapper,
     mcp_tool_wrapper,
 )
-from cortex.core.models import ContextDepth, ResponseFormat
+from cortex.core.models import ContextDepth, ModelDict, ResponseFormat
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.core.project_root_resolver import resolve_project_root_async
 from cortex.server import mcp
@@ -43,9 +43,11 @@ from cortex.tools.context.recent_artifacts_context import (
 from cortex.tools.context.recent_ingested_sources_context import (
     build_recent_ingested_sources_markdown,
 )
+from cortex.tools.context.scoped_context import append_scoped_context_payload
 from cortex.tools.optimization.relevance_operations import get_relevance_scores_impl
 from cortex.tools.optimization.summarization_operations import summarize_content_impl
 from cortex.tools.session.models import SESSION_SCOPE_PROMPT
+from cortex.tools.synapse.rules_operations import get_relevant_rules
 
 from .handlers_load import (
     check_optimization_enabled,
@@ -551,13 +553,53 @@ def _append_explore_summary_to_context_payload(
     return json.dumps(payload_data, indent=2)
 
 
-def _build_context_resource_payload(base_payload: str, project_root: Path) -> str:
+def _extract_rules_markdown(rules_payload: str) -> str:
+    """Extract merged rules markdown text from cortex://rules JSON payload."""
+    try:
+        parsed = json.loads(rules_payload)
+    except json.JSONDecodeError:
+        return rules_payload
+    if not isinstance(parsed, dict):
+        return rules_payload
+    parsed_dict = cast(dict[str, object], parsed)
+    rules_raw = parsed_dict.get("rules")
+    if not isinstance(rules_raw, list):
+        return rules_payload
+    chunks: list[str] = []
+    for rule_raw in cast(list[object], rules_raw):
+        rule = cast(dict[str, object], rule_raw) if isinstance(rule_raw, dict) else None
+        if isinstance(rule, dict):
+            content = rule.get("content")
+            if isinstance(content, str) and content.strip():
+                chunks.append(content.strip())
+    if not chunks:
+        return rules_payload
+    return "\n\n".join(chunks)
+
+
+def _resolve_context_cache_scope() -> str:
+    from cortex.core.session_config import read_session_config
+
+    cfg = read_session_config()
+    scope_raw = cfg.get("scope")
+    if isinstance(scope_raw, str) and scope_raw.strip():
+        return scope_raw.strip()
+    plan_file_raw = cfg.get("plan_file")
+    if isinstance(plan_file_raw, str) and plan_file_raw.strip():
+        return f"plan-file:{Path(plan_file_raw.strip()).name}"
+    return ""
+
+
+async def _build_context_resource_payload_async(
+    base_payload: str, project_root: Path
+) -> str:
     recent_ops = _read_recent_operations_lines(project_root)
     recent_artifacts = _read_recent_artifacts_markdown(project_root)
     recent_ingested_sources = _read_recent_ingested_sources_markdown(project_root)
     explore_summary = _read_explore_summary_markdown(project_root)
     with_goal = append_session_goal_to_context_payload(base_payload, project_root)
     scoped = _append_session_scope_to_context_payload(with_goal)
+    scoped = await _append_scoped_context_to_payload(scoped, project_root)
     return _append_recent_artifacts_to_context_payload(
         _append_recent_operations_to_context_payload(
             _append_explore_summary_to_context_payload(
@@ -571,6 +613,33 @@ def _build_context_resource_payload(base_payload: str, project_root: Path) -> st
         ),
         recent_artifacts,
     )
+
+
+async def _append_scoped_context_to_payload(payload: str, project_root: Path) -> str:
+    """Attach scoped context packet to successful context payloads."""
+    try:
+        payload_data = json.loads(payload)
+    except json.JSONDecodeError:
+        return payload
+    payload_dict = (
+        cast(dict[str, object], payload_data)
+        if isinstance(payload_data, dict)
+        else None
+    )
+    if payload_dict is None or payload_dict.get("status") != "success":
+        return payload
+    from cortex.core.session_config import read_session_config
+
+    session_cfg = read_session_config()
+    rules_payload = await get_relevant_rules()
+    rules_markdown = _extract_rules_markdown(rules_payload)
+    merged = append_scoped_context_payload(
+        cast(ModelDict, payload_dict),
+        project_root=project_root,
+        session_config=session_cfg,
+        rules_payload=rules_markdown,
+    )
+    return json.dumps(merged, indent=2)
 
 
 @mcp.resource(uri="cortex://context", meta=CORTEX_CONTEXT_RESOURCE_READ_META)
@@ -587,7 +656,8 @@ async def load_context() -> str:
     task = str(cfg.get("task_description", "general session context"))
     raw_budget = cfg.get("token_budget", _LOAD_CONTEXT_DEFAULT_BUDGET)
     budget = raw_budget if isinstance(raw_budget, int) else _LOAD_CONTEXT_DEFAULT_BUDGET
-    cache_key = f"context:{task}:{budget}"
+    scope_key = _resolve_context_cache_scope()
+    cache_key = f"context:{task}:{budget}:{scope_key}"
     cached = _context_resource_cache.get(cache_key)
     if cached is not None:
         return cached
@@ -597,7 +667,7 @@ async def load_context() -> str:
         strategy="dependency_aware",
     )
     root = await resolve_project_root_async(None, None)
-    out = _build_context_resource_payload(result, root)
+    out = await _build_context_resource_payload_async(result, root)
     _context_resource_cache.set(cache_key, out)
     return out
 

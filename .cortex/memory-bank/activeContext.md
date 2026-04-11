@@ -2,6 +2,14 @@
 
 **This file records completed work only.** For current status and upcoming work see [roadmap.md](roadmap.md).
 
+## Completed Work (2026-04-11)
+
+- ✅ **Context-scoped optimization and Synapse test parity** - COMPLETE (2026-04-11) - Shipped scoped context assembly support: artifact graph, rules filter, task classifier, scoped_context module, Phase 4 optimization handler wiring, split integration tests, and unit tests. Archived context-scoped-instruction-assembly plan under .cortex/plans/archive. Synapse: pytest args aligned with CI (-n auto -x -q --no-header) and commit prompt trimmed; Black formatting applied to run_tests.py.
+
+## Completed Work (2026-04-10)
+
+- **Summary (2026-04-10)** - 1 entries archived.
+
 ## Completed Work (2026-04-09)
 
 - **Summary (2026-04-09)** - 1 entries archived.

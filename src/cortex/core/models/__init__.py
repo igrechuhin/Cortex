@@ -23,6 +23,7 @@ from ._enums import (
     ResponseFormat,
     ResponseStatus,
     RiskLevel,
+    TaskType,
 )
 from ._explore import ExploreComplexity, ExploreOption, ExploreSession
 from ._governance import ConstitutionDoc
@@ -180,6 +181,7 @@ __all__ = [
     "SubmoduleInitResult",
     "SubmoduleSyncResult",
     "SuccessResponseData",
+    "TaskType",
     "TokenCountSectionsResult",
     "Totals",
     "TransclusionEdge",
