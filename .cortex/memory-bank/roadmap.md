@@ -44,7 +44,6 @@ Completed investigations are recorded in [activeContext.md](activeContext.md). P
 
 #### Planning & Brainstorming (Medium Priority)
 
-- Plan: [Delta Specs for Plans](../plans/delta-specs-for-plans.md) — Track plan revisions with explicit `ADDED/MODIFIED/REMOVED/RENAMED` delta entries; never silently overwrite history. PENDING.
 - Plan: [Parallel Task Markers [P]](../plans/parallel-task-markers.md) — Mark independent implementation steps with `[P]`; orchestrator spawns concurrent `implement-code` agents in isolated worktrees. PENDING.
 - Plan: [Schema-Defined Workflow Variants](../plans/schema-defined-workflow-variants.md) — Define custom Cortex pipeline variants in `.cortex/schemas/` (fast-path, compliance, data-science); active schema selected from session config. PENDING.
 - Plan: [Artifact Graph for Plan Dependencies](../plans/artifact-graph-plan-dependencies.md) — Enforce `depends_on` field; compute real-time READY/BLOCKED/DONE graph; unblock plans automatically when dependencies complete. PENDING.

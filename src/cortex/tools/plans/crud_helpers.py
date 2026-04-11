@@ -200,6 +200,9 @@ def get_plan_result_success(
     title: str | None,
     plan_status: str | None,
     message: str,
+    *,
+    change_count: int = 0,
+    latest_delta: str | None = None,
 ) -> GetPlanResult:
     """Build success GetPlanResult."""
     return GetPlanResult(
@@ -210,11 +213,15 @@ def get_plan_result_success(
         plan_status=plan_status,
         message=message,
         error=None,
+        change_count=change_count,
+        latest_delta=latest_delta,
     )
 
 
 def get_plan_impl(root: Path, slug: str, response_format: str) -> GetPlanResult:
     """Read plan by slug. Returns GetPlanResult."""
+    from cortex.core.plan_change_history import change_history_stats
+
     path = get_plan_path(root, slug)
     if path is None:
         return get_plan_result_error(
@@ -223,9 +230,16 @@ def get_plan_impl(root: Path, slug: str, response_format: str) -> GetPlanResult:
     content, read_err = get_plan_read_content(path)
     if read_err:
         return get_plan_result_error(slug, "Failed to read plan", read_err)
+    chg_count, latest_d = change_history_stats(content or "")
     if response_format == "content":
         return get_plan_result_success(
-            slug, content, None, None, f"Plan '{slug}' read successfully"
+            slug,
+            content,
+            None,
+            None,
+            f"Plan '{slug}' read successfully",
+            change_count=chg_count,
+            latest_delta=latest_d,
         )
     return get_plan_result_success(
         slug,
@@ -233,4 +247,6 @@ def get_plan_impl(root: Path, slug: str, response_format: str) -> GetPlanResult:
         extract_first_heading(content or ""),
         extract_status_line(content or ""),
         f"Plan '{slug}' metadata",
+        change_count=chg_count,
+        latest_delta=latest_d,
     )

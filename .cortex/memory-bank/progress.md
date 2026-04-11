@@ -3,6 +3,8 @@
 ## 2026-04-11
 
 - **Context-scoped instruction assembly (commit)** - COMPLETE. Scoped context stack (artifact_graph, rules_filter, task_classifier, scoped_context, optimization handlers), Phase 4 optimization test split and new cases, plan archived; Synapse run_tests.py matches CI pytest xdist flags.
+- **Delta Specs for Plans** - COMPLETE. PlanDelta, change history append on enrich, get metadata, scoped context hint.
+- **Plan delta change history (commit)** - COMPLETE. Landed PlanDelta model, plan_change_history, plan CRUD/enrich metadata and scoped_context last_change wiring; integration and unit tests; archived delta-specs plan under .cortex/plans/archive/Other.
 
 ## 2026-04-10
 

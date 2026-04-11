@@ -10,6 +10,7 @@ from typing import Literal
 from cortex.core.constants import MCP_TOOL_TIMEOUT_MEDIUM
 from cortex.core.context_logging import MCPContext, log_client
 from cortex.core.mcp_stability import ensure_usage_context, mcp_tool_wrapper
+from cortex.core.plan_change_history import ensure_change_history_section
 from cortex.core.plan_utils import apply_clarifications_summary_to_plan
 from cortex.core.project_root_resolver import resolve_project_root_async
 from cortex.tools.plans.constitutional_scan import apply_constitutional_compliance
@@ -101,6 +102,7 @@ async def _create_plan_impl(
         final_content, n_clarifications = _prepare_plan_markdown_for_create(
             root, content
         )
+        final_content = ensure_change_history_section(final_content)
         final_content = _inject_decision_basis_from_explore_log(
             project_root=root,
             plan_content=final_content,

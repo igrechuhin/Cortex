@@ -9,6 +9,7 @@ from typing import cast
 from cortex.core.artifact_graph import resolve_upstream_plans
 from cortex.core.models import JsonValue, ModelDict
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
+from cortex.core.plan_change_history import last_change_context_line
 from cortex.core.rules_filter import filter_rules
 from cortex.core.task_classifier import infer_task_type
 
@@ -101,6 +102,17 @@ def _load_upstream_plan_content(plans_dir: Path, slug: str) -> list[dict[str, st
     return upstream_plans
 
 
+def _current_plan_and_stats_payloads(
+    slug: str, plan_text: str
+) -> tuple[dict[str, object], dict[str, str]]:
+    last_change = last_change_context_line(plan_text)
+    current_plan: dict[str, object] = {"slug": slug, "content": plan_text}
+    if last_change is not None:
+        current_plan["last_change"] = last_change
+    stats_plan: dict[str, str] = {"slug": slug, "content": plan_text}
+    return current_plan, stats_plan
+
+
 def _assemble_scoped_packet(
     scope: str,
     slug: str,
@@ -114,7 +126,7 @@ def _assemble_scoped_packet(
     filtered_rules = filter_rules(rules_payload, task_types)
     total_sections = _count_rules_sections(rules_payload)
     included_sections = _count_rules_sections(filtered_rules)
-    current_plan = {"slug": slug, "content": current_plan_text}
+    current_plan, stats_plan = _current_plan_and_stats_payloads(slug, current_plan_text)
     return {
         "scope": scope,
         "task_types": [task_type.value for task_type in task_types],
@@ -123,7 +135,7 @@ def _assemble_scoped_packet(
         "filtered_rules": filtered_rules,
         "context_stats": _build_context_stats(
             upstream_plans,
-            current_plan,
+            stats_plan,
             filtered_rules,
             included_sections,
             total_sections,

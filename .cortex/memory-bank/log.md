@@ -1,53 +1,5 @@
 # Cortex Operations Log
 
-## [2026-04-07T22:24] plan | Created plan: Smoke Test Plan
-
-## [2026-04-07T22:24] plan | Created plan: Test Plan
-
-## [2026-04-07T22:25] lint | Quality gate failed
-
-## [2026-04-07T22:26] plan | Created plan: Smoke Test Plan
-
-## [2026-04-07T22:26] plan | Created plan: Test Plan
-
-## [2026-04-07T22:26] lint | Quality gate passed
-
-## [2026-04-07T22:27] plan | Created plan: Test Plan
-
-## [2026-04-07T22:27] plan | Created plan: Smoke Test Plan
-
-## [2026-04-07T22:28] lint | Quality gate passed
-
-## [2026-04-07T22:49] plan | Created plan: Test Plan
-
-## [2026-04-07T22:49] plan | Created plan: Smoke Test Plan
-
-## [2026-04-07T22:50] lint | Quality gate passed
-
-## [2026-04-07T22:50] plan | Created plan: Test Plan
-
-## [2026-04-07T22:50] plan | Created plan: Smoke Test Plan
-
-## [2026-04-07T22:50] fix | Autofix completed
-
-status=success; changed_files=None
-
-## [2026-04-07T22:51] plan | Created plan: Test Plan
-
-## [2026-04-07T22:51] plan | Created plan: Smoke Test Plan
-
-## [2026-04-07T22:52] plan | Created plan: Test Plan
-
-## [2026-04-07T22:52] plan | Created plan: Smoke Test Plan
-
-## [2026-04-07T22:52] lint | Quality gate passed
-
-## [2026-04-08T09:57] plan | Created plan: Smoke Test Plan
-
-## [2026-04-08T09:57] plan | Created plan: Test Plan
-
-## [2026-04-08T09:58] lint | Quality gate passed
-
 ## [2026-04-08T09:59] fix | Autofix completed
 
 status=success; changed_files=None
@@ -2211,3 +2163,55 @@ status=success; changed_files=None
 ## [2026-04-11T12:21] plan | Created plan: Smoke Test Plan
 
 ## [2026-04-11T12:22] lint | Quality gate passed
+
+## [2026-04-11T12:37] plan | Created plan: Smoke Test Plan
+
+## [2026-04-11T12:37] plan | Created plan: Test Plan
+
+## [2026-04-11T12:37] lint | Quality gate failed
+
+## [2026-04-11T12:39] plan | Created plan: Smoke Test Plan
+
+## [2026-04-11T12:39] plan | Created plan: Test Plan
+
+## [2026-04-11T12:40] lint | Quality gate passed
+
+## [2026-04-11T12:40] plan | Completed plan: Delta Specs for Plans
+
+Added PlanDelta model, change history on plan create, implementation-step diff on enrich, change_count/latest_delta on plan get, and last_change in scoped context; unit and integration tests updated.
+
+## [2026-04-11T13:18] plan | Created plan: Smoke Test Plan
+
+## [2026-04-11T13:19] plan | Created plan: Test Plan
+
+## [2026-04-11T13:19] lint | Quality gate passed
+
+## [2026-04-11T13:20] fix | Autofix completed
+
+status=success; changed_files=None
+
+## [2026-04-11T13:20] plan | Created plan: Test Plan
+
+## [2026-04-11T13:20] plan | Created plan: Smoke Test Plan
+
+## [2026-04-11T13:31] plan | Created plan: Smoke Test Plan
+
+## [2026-04-11T13:31] plan | Created plan: Test Plan
+
+## [2026-04-11T13:32] lint | Quality gate passed
+
+## [2026-04-11T13:35] plan | Created plan: Test Plan
+
+## [2026-04-11T13:35] plan | Created plan: Smoke Test Plan
+
+## [2026-04-11T13:35] lint | Quality gate passed
+
+## [2026-04-11T13:36] fix | Autofix completed
+
+status=success; changed_files=None
+
+## [2026-04-11T13:37] plan | Created plan: Test Plan
+
+## [2026-04-11T13:37] plan | Created plan: Smoke Test Plan
+
+## [2026-04-11T13:38] lint | Quality gate passed

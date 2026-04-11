@@ -147,7 +147,9 @@ class TestCreatePlanIntegration:
         plan_path = Path(result.file_path)
         assert plan_path.parent == plans_dir
         assert plan_path.name == "test-plan-integration.md"
-        assert plan_path.read_text(encoding="utf-8") == content
+        written = plan_path.read_text(encoding="utf-8")
+        assert written.startswith(content.rstrip())
+        assert "## Change History" in written
 
     @pytest.mark.asyncio
     async def test_create_plan_with_generated_slug(
@@ -174,7 +176,9 @@ class TestCreatePlanIntegration:
         assert result.file_path is not None
         plan_path = Path(result.file_path)
         assert "phase-60-structured-plan-tools" in plan_path.name
-        assert plan_path.read_text(encoding="utf-8") == content
+        written = plan_path.read_text(encoding="utf-8")
+        assert written.startswith(content.rstrip())
+        assert "## Change History" in written
 
     @pytest.mark.asyncio
     async def test_create_plan_injects_clarifications_needed_section(
@@ -407,7 +411,9 @@ class TestCreatePlanThenRegisterIntegration:
         assert register_result.status == "success"
         plan_file = plans_dir / f"{slug}.md"
         assert plan_file.exists()
-        assert plan_file.read_text(encoding="utf-8") == content
+        written = plan_file.read_text(encoding="utf-8")
+        assert written.startswith(content.rstrip())
+        assert "## Change History" in written
         roadmap_content = roadmap_path.read_text(encoding="utf-8")
         assert f"- **{title}** - PENDING - {description}" in roadmap_content
         assert "- **Existing** - PENDING - Existing entry." in roadmap_content

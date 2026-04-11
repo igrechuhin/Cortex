@@ -8,6 +8,11 @@ from cortex.core.constants import MCP_TOOL_TIMEOUT_MEDIUM
 from cortex.core.context_logging import MCPContext, log_client
 from cortex.core.mcp_stability import ensure_usage_context, mcp_tool_wrapper
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
+from cortex.core.plan_change_history import (
+    append_change_history_entry,
+    compute_plan_delta,
+    render_plan_delta_markdown,
+)
 from cortex.core.plan_utils import (
     apply_clarifications_summary_to_plan,
     find_clarification_markers,
@@ -95,6 +100,23 @@ def _plan_not_found_result(target: Path) -> str:
     ).model_dump_json()
 
 
+def _append_implementation_delta_if_needed(
+    original: str, enriched: str, resolved_count: int
+) -> str:
+    reason_parts = ["Implementation steps updated via plan enrich."]
+    if resolved_count > 0:
+        reason_parts.append(f"Resolved {resolved_count} clarification marker(s).")
+    delta = compute_plan_delta(
+        original,
+        enriched,
+        author="agent",
+        reason=" ".join(reason_parts),
+    )
+    if delta is None:
+        return enriched
+    return append_change_history_entry(enriched, render_plan_delta_markdown(delta))
+
+
 async def _enrich_existing_plan(
     target: Path,
     resolved_clarifications: dict[str, str],
@@ -104,6 +126,7 @@ async def _enrich_existing_plan(
     enriched, resolved_count, remaining_count = _enrich_plan_content(
         content, resolved_clarifications
     )
+    enriched = _append_implementation_delta_if_needed(content, enriched, resolved_count)
     _ = target.write_text(enriched, encoding="utf-8")
     await log_client(
         ctx,

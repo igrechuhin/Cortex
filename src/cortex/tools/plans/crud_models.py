@@ -60,3 +60,12 @@ class GetPlanResult(BaseModel):
     )
     message: str = Field(description="Success or error message")
     error: str | None = Field(None, description="Error message if status is error")
+    change_count: int = Field(
+        default=0,
+        ge=0,
+        description="Number of entries under ## Change History",
+    )
+    latest_delta: str | None = Field(
+        default=None,
+        description="One-line summary of the most recent change history entry",
+    )
