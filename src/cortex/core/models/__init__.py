@@ -75,6 +75,7 @@ from ._structure import (
     SubmoduleSyncResult,
     TokenCountSectionsResult,
 )
+from ._task_node import TaskNode
 from ._version import (
     BackupInfo,
     DependencyEdge,
@@ -183,6 +184,7 @@ __all__ = [
     "SubmoduleInitResult",
     "SubmoduleSyncResult",
     "SuccessResponseData",
+    "TaskNode",
     "TaskType",
     "TokenCountSectionsResult",
     "Totals",

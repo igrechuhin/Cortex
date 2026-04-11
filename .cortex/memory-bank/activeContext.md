@@ -10,6 +10,14 @@
 
 - ✅ **Plan delta change history (commit)** - COMPLETE (2026-04-11) - Committed PlanDelta model, plan_change_history module, plan CRUD/enrich metadata and scoped_context last_change wiring; integration and unit tests; archived delta-specs plan under .cortex/plans/archive/Other.
 
+- ✅ **Parallel Task Markers [P] (PARTIAL)** - COMPLETE (2026-04-11) - Plan(create) auto-tags disjoint `src/` steps with `[P]`; plan(register) rejects invalid task graphs and returns parallel/sequential counts; plan(get) returns serialized task graph + can_parallelize.
+
+- ✅ **Parallel Task Markers [P] (PARTIAL — Step 6)** - COMPLETE (2026-04-11) - Orchestrator can derive parallel batches via plan_utils.next_execution_frontier; do.md instructs plan(get) + up to 3 implement-code worktrees when can_parallelize.
+
+- ✅ **Parallel Task Markers [P]** - COMPLETE (2026-04-11) - Step 8 tests: multi-dep parse, empty-token and self-cycle validation, task_graph metadata on plan get, create_plan [P] integration for disjoint src paths.
+
+- ✅ **Parallel task markers and worktree merge (commit)** - COMPLETE (2026-04-11) - Committed TaskNode model, task graph parsing and next_execution_frontier in plan_utils, parallel_worktree_merge helpers, plan create/register/get wiring for task_graph and can_parallelize, integration and unit tests; Synapse do.md documents parallel [P] waves with plan(get) metadata; parallel-task-markers plan archived under .cortex/plans/archive/Other; fixed duplicate log.md heading for markdown lint.
+
 ## Completed Work (2026-04-10)
 
 - **Summary (2026-04-10)** - 1 entries archived.

@@ -5,6 +5,10 @@ Pydantic models for plan CRUD tool (create_plan, list_plans, get_plan).
 from pydantic import BaseModel, ConfigDict, Field
 
 
+def _empty_task_graph() -> list[dict[str, object]]:
+    return []
+
+
 class CreatePlanResult(BaseModel):
     """Result of creating a plan file."""
 
@@ -68,4 +72,12 @@ class GetPlanResult(BaseModel):
     latest_delta: str | None = Field(
         default=None,
         description="One-line summary of the most recent change history entry",
+    )
+    task_graph: list[dict[str, object]] = Field(
+        default_factory=_empty_task_graph,
+        description="Parsed implementation steps (TaskNode.model_dump) on success",
+    )
+    can_parallelize: bool = Field(
+        default=False,
+        description="True when any step uses a [P] parallel marker",
     )

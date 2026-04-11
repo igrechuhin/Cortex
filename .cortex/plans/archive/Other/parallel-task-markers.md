@@ -2,7 +2,7 @@
 title: "Parallel Task Markers [P]"
 component: planning
 work_type: feature
-status: PENDING
+status: COMPLETE
 priority: medium
 created: 2026-04-06
 depends_on: []
@@ -130,3 +130,11 @@ Target: 95% coverage on all new code paths.
 - **Unit**: Parser (all marker variants), cycle detection, frontier computation, `can_parallelize`.
 - **Integration**: Parallel agent orchestration with real worktrees (or mocked subagents).
 - **Edge cases**: Plan with a single step (no parallelism); step depending on itself (cycle); `[P:after=99]` referencing non-existent step.
+
+## Partial Progress Log
+
+- 2026-04-11: Step 1 — `TaskNode` model in `src/cortex/core/models/_task_node.py`, exported from `cortex.core.models`, marker formats documented; tests in `tests/unit/test_task_node.py` — files: `src/cortex/core/models/_task_node.py`, `src/cortex/core/models/__init__.py`, `tests/unit/test_task_node.py`
+- 2026-04-11: Step 2 — `parse_task_graph` and `PlanValidationError` in `src/cortex/core/plan_utils.py` (fence-aware headings, cycle and missing-ref checks); tests in `tests/unit/test_parse_task_graph.py` — files: `src/cortex/core/plan_utils.py`, `tests/unit/test_parse_task_graph.py`
+- 2026-04-11: Steps 3–5 — `apply_independence_parallel_markers` on `plan(create)`; register-time `parse_task_graph` validation with `parallel_steps_count` / `sequential_steps_count`; `plan(get)` returns `task_graph` and `can_parallelize`; tests — files: `src/cortex/core/plan_utils.py`, `src/cortex/tools/plans/crud.py`, `src/cortex/tools/plans/crud_models.py`, `src/cortex/tools/plans/crud_helpers.py`, `src/cortex/tools/plans/register.py`, `src/cortex/tools/plans/register_models.py`, `src/cortex/tools/plans/register_helpers.py`, `src/cortex/tools/plans/plan.py`, `tests/unit/test_parse_task_graph.py`, `tests/tools/test_plan_operations.py`
+- 2026-04-11: Step 6 — `next_execution_frontier` / `is_task_execution_ready` in `src/cortex/core/plan_utils.py` (parallel batch vs sequential spine); `/cortex/do` prompt documents `plan(get)` + frontier + max 3 worktrees; unit tests — files: `src/cortex/core/plan_utils.py`, `tests/unit/test_parse_task_graph.py`, `.cortex/synapse/prompts/do.md`
+- 2026-04-11: Step 7 — `merge_order_for_parallel_batch` and `clarification_markers_for_shared_paths` in `src/cortex/core/parallel_worktree_merge.py` (dependency-respecting merge order within a batch; overlapping paths → blocking `ClarificationMarker` payloads); tests in `tests/unit/test_parallel_worktree_merge.py` — files: `src/cortex/core/parallel_worktree_merge.py`, `tests/unit/test_parallel_worktree_merge.py`

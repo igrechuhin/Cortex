@@ -11,7 +11,21 @@ from unittest.mock import AsyncMock, patch
 import pytest
 
 from cortex.core.constants import MemoryBankFile
+from cortex.core.parallel_worktree_merge import (
+    clarification_markers_for_shared_paths,
+    merge_order_for_parallel_batch,
+)
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
+from cortex.core.plan_change_history import (
+    CHANGE_HISTORY_HEADING,
+    change_history_stats,
+)
+from cortex.core.plan_utils import (
+    next_execution_frontier,
+    parse_task_graph,
+)
+from cortex.tools.plans.enrich import enrich_plan
+from cortex.tools.plans.enrich_models import EnrichPlanResult
 from cortex.tools.plans.operations import (
     CreatePlanResult,
     RegisterPlanResult,
@@ -115,6 +129,25 @@ async def _register_plan_with_marker(
         )
 
 
+async def _enrich_plan_with_root_patched(
+    root: Path,
+    *,
+    plan_relative_path: str,
+    resolved_clarifications: dict[str, str],
+) -> str:
+    """Invoke ``enrich_plan`` with ``resolve_project_root_async`` returning ``root``."""
+    with patch(
+        "cortex.tools.plans.enrich.resolve_project_root_async",
+        new_callable=AsyncMock,
+        return_value=root,
+    ):
+        return await enrich_plan(
+            plan_relative_path=plan_relative_path,
+            resolved_clarifications=resolved_clarifications,
+            ctx=None,
+        )
+
+
 class TestCreatePlanIntegration:
     """Integration tests for create_plan tool."""
 
@@ -211,6 +244,38 @@ class TestCreatePlanIntegration:
             "## Clarifications Needed"
         ) < written.index("## Context")
         assert "pick color" in written and "Summary of inline" in written
+
+    @pytest.mark.asyncio
+    async def test_create_plan_applies_parallel_markers_disjoint_steps(
+        self, temp_project_with_roadmap: Path
+    ) -> None:
+        """Disjoint ``src/`` footprints get ``[P]`` on later steps (plan create path)."""
+        root = temp_project_with_roadmap
+        content = (
+            "## Goal\n\nWork.\n\n"
+            "## Implementation Steps\n\n"
+            "### Step 1: First\n\n"
+            "Edit `src/a/one.py`.\n\n"
+            "### Step 2: Second\n\n"
+            "Edit `src/b/two.py`.\n"
+        )
+        with patch(
+            "cortex.tools.plans.crud.resolve_project_root_async",
+            new_callable=AsyncMock,
+            return_value=root,
+        ):
+            result_str = await create_plan(
+                title="Parallel markers plan",
+                content=content,
+                slug="parallel-markers-create",
+                ctx=None,
+            )
+        result = CreatePlanResult.model_validate_json(result_str)
+        assert result.status == "success" and result.file_path is not None
+        written = Path(result.file_path).read_text(encoding="utf-8")
+        assert "### Step 1: First" in written
+        assert "### [P] Step 2: Second" in written
+        assert written.index("### Step 1:") < written.index("### [P] Step 2:")
 
 
 class TestRegisterPlanInRoadmapIntegration:
@@ -417,3 +482,184 @@ class TestCreatePlanThenRegisterIntegration:
         roadmap_content = roadmap_path.read_text(encoding="utf-8")
         assert f"- **{title}** - PENDING - {description}" in roadmap_content
         assert "- **Existing** - PENDING - Existing entry." in roadmap_content
+
+
+class TestEnrichPlanDeltaIntegration:
+    """Integration tests for enrich_plan delta tracking (delta-specs feature).
+
+    Delta entries are appended when ``resolved_clarifications`` actually change
+    implementation-step text.  Tests use ``[NEEDS CLARIFICATION: ...]`` markers
+    inside step bodies so that resolving them produces a real text diff.
+    """
+
+    def _make_plan_file(self, plans_dir: Path, slug: str, content: str) -> Path:
+        plans_dir.mkdir(parents=True, exist_ok=True)
+        path = plans_dir / f"{slug}.md"
+        _ = path.write_text(content, encoding="utf-8")
+        return path
+
+    @pytest.mark.asyncio
+    async def test_enrich_appends_delta_entry_when_step_text_changes(
+        self, temp_project_with_roadmap: Path
+    ) -> None:
+        """Resolving a clarification marker inside a step body appends one delta entry."""
+        root = temp_project_with_roadmap
+        plans_dir = get_cortex_path(root, CortexResourceType.PLANS)
+        content = (
+            "## Implementation Steps\n\n"
+            "### Step 1: Setup\n\n"
+            "Use [NEEDS CLARIFICATION: framework] to scaffold.\n\n"
+            "## Change History\n\n"
+            "_No revisions recorded yet._\n"
+        )
+        plan_path = self._make_plan_file(plans_dir, "enrich-delta-test", content)
+
+        result_str = await _enrich_plan_with_root_patched(
+            root,
+            plan_relative_path=".cortex/plans/enrich-delta-test.md",
+            resolved_clarifications={"framework": "FastAPI"},
+        )
+
+        result = EnrichPlanResult.model_validate_json(result_str)
+        assert result.status == "success"
+        assert result.resolved_markers == 1
+
+        written = plan_path.read_text(encoding="utf-8")
+        assert CHANGE_HISTORY_HEADING in written
+        count, latest = change_history_stats(written)
+        assert count == 1
+        assert latest is not None
+        assert "FastAPI" in written
+
+    @pytest.mark.asyncio
+    async def test_enrich_idempotent_on_unchanged_steps(
+        self, temp_project_with_roadmap: Path
+    ) -> None:
+        """Enriching a plan whose steps are unchanged appends no history entry."""
+        root = temp_project_with_roadmap
+        plans_dir = get_cortex_path(root, CortexResourceType.PLANS)
+        content = (
+            "## Implementation Steps\n\n"
+            "### Step 1: Only step\n\nDo the thing.\n\n"
+            "## Change History\n\n"
+            "_No revisions recorded yet._\n"
+        )
+        plan_path = self._make_plan_file(plans_dir, "enrich-idempotent-test", content)
+
+        result_str = await _enrich_plan_with_root_patched(
+            root,
+            plan_relative_path=".cortex/plans/enrich-idempotent-test.md",
+            resolved_clarifications={},
+        )
+
+        result = EnrichPlanResult.model_validate_json(result_str)
+        assert result.status == "success"
+
+        written = plan_path.read_text(encoding="utf-8")
+        count, _ = change_history_stats(written)
+        assert count == 0
+
+    @pytest.mark.asyncio
+    async def test_enrich_history_grows_monotonically(
+        self, temp_project_with_roadmap: Path
+    ) -> None:
+        """Two enrichments that each resolve a marker produce two distinct entries."""
+        root = temp_project_with_roadmap
+        plans_dir = get_cortex_path(root, CortexResourceType.PLANS)
+        # Two independent clarification markers — resolve one per call.
+        content = (
+            "## Implementation Steps\n\n"
+            "### Step 1: Alpha\n\n"
+            "Use [NEEDS CLARIFICATION: db] for storage.\n\n"
+            "### Step 2: Beta\n\n"
+            "Use [NEEDS CLARIFICATION: cache] for caching.\n\n"
+            "## Change History\n\n"
+            "_No revisions recorded yet._\n"
+        )
+        plan_path = self._make_plan_file(plans_dir, "enrich-monotonic-test", content)
+
+        _ = await _enrich_plan_with_root_patched(
+            root,
+            plan_relative_path=".cortex/plans/enrich-monotonic-test.md",
+            resolved_clarifications={"db": "PostgreSQL"},
+        )
+
+        after_first = plan_path.read_text(encoding="utf-8")
+        count_after_first, _ = change_history_stats(after_first)
+        assert count_after_first == 1
+
+        _ = await _enrich_plan_with_root_patched(
+            root,
+            plan_relative_path=".cortex/plans/enrich-monotonic-test.md",
+            resolved_clarifications={"cache": "Redis"},
+        )
+
+        after_second = plan_path.read_text(encoding="utf-8")
+        count_after_second, _ = change_history_stats(after_second)
+        assert count_after_second == 2
+
+
+class TestParallelPlanFrontierAndMergeIntegration:
+    """Integration tests for parallel task markers: frontier + merge strategy."""
+
+    _PLAN_WITH_PARALLEL_STEPS = (
+        "## Implementation Steps\n\n"
+        "### Step 1: Foundation\n\nBuild `src/core/base.py`.\n\n"
+        "### [P] Step 2: Module A\n\nBuild `src/a/alpha.py`.\n\n"
+        "### [P] Step 3: Module B\n\nBuild `src/b/beta.py`.\n\n"
+        "### Step 4: Integration\n\nWire modules together.\n"
+    )
+
+    def test_frontier_after_step1_complete_yields_parallel_batch(self) -> None:
+        """After step 1 finishes, frontier returns steps 2 and 3 as a parallel batch."""
+        nodes = parse_task_graph(self._PLAN_WITH_PARALLEL_STEPS)
+        frontier = next_execution_frontier(nodes, completed={1}, max_parallel=3)
+        frontier_ids = {n.step_id for n in frontier}
+        assert frontier_ids == {2, 3}
+        assert all(n.parallel for n in frontier)
+
+    def test_frontier_before_any_complete_yields_sequential_step1(self) -> None:
+        """With nothing complete, frontier returns only step 1 (sequential)."""
+        nodes = parse_task_graph(self._PLAN_WITH_PARALLEL_STEPS)
+        frontier = next_execution_frontier(nodes, completed=set(), max_parallel=3)
+        assert len(frontier) == 1
+        assert frontier[0].step_id == 1
+        assert not frontier[0].parallel
+
+    def test_frontier_after_all_parallel_complete_yields_step4(self) -> None:
+        """After steps 1–3 complete, frontier is the final sequential step 4."""
+        nodes = parse_task_graph(self._PLAN_WITH_PARALLEL_STEPS)
+        frontier = next_execution_frontier(nodes, completed={1, 2, 3}, max_parallel=3)
+        assert len(frontier) == 1
+        assert frontier[0].step_id == 4
+
+    def test_merge_order_for_independent_parallel_batch(self) -> None:
+        """Independent parallel steps merge in ascending step_id order."""
+        nodes = parse_task_graph(self._PLAN_WITH_PARALLEL_STEPS)
+        batch = [n for n in nodes if n.step_id in {2, 3}]
+        order = merge_order_for_parallel_batch(batch)
+        assert order == [2, 3]
+
+    def test_no_conflict_markers_for_disjoint_paths(self) -> None:
+        """Steps touching different files produce no clarification markers."""
+        nodes = parse_task_graph(self._PLAN_WITH_PARALLEL_STEPS)
+        batch = [n for n in nodes if n.step_id in {2, 3}]
+        changed: dict[int, set[str]] = {
+            2: {"src/a/alpha.py"},
+            3: {"src/b/beta.py"},
+        }
+        markers = clarification_markers_for_shared_paths(batch, changed)
+        assert markers == []
+
+    def test_conflict_markers_for_shared_path(self) -> None:
+        """Steps that both touch the same file produce one blocking marker."""
+        nodes = parse_task_graph(self._PLAN_WITH_PARALLEL_STEPS)
+        batch = [n for n in nodes if n.step_id in {2, 3}]
+        changed: dict[int, set[str]] = {
+            2: {"src/shared/utils.py"},
+            3: {"src/shared/utils.py"},
+        }
+        markers = clarification_markers_for_shared_paths(batch, changed)
+        assert len(markers) == 1
+        assert markers[0].blocking is True
+        assert "src/shared/utils.py" in markers[0].reason

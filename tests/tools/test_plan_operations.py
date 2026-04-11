@@ -11,6 +11,7 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
+from cortex.core.constants import MemoryBankFile
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.tools.models_base import ToolResultStatus
 from cortex.tools.plans.crud_helpers import (
@@ -467,6 +468,8 @@ class TestRegisterPlanResult:
             line_inserted=42,
             section="pending",
             error=None,
+            parallel_steps_count=None,
+            sequential_steps_count=None,
         )
 
         json_str = result.model_dump_json()
@@ -486,6 +489,8 @@ class TestRegisterPlanResult:
             line_inserted=None,
             section=None,
             error="Section not found",
+            parallel_steps_count=None,
+            sequential_steps_count=None,
         )
 
         json_str = result.model_dump_json()
@@ -732,6 +737,23 @@ class TestGetPlanImpl:
         assert result.plan_status == "Pending"
         assert result.content is None
 
+    def test_metadata_includes_task_graph_and_can_parallelize(self) -> None:
+        """metadata response includes parsed task graph and can_parallelize flag."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            plans_dir = get_cortex_path(root, CortexResourceType.PLANS)
+            plans_dir.mkdir(parents=True)
+            body = "# P\n\n### Step 1: One\n\nx\n\n### [P] Step 2: Two\n\ny\n"
+            _ = (plans_dir / "meta-par.md").write_text(body, encoding="utf-8")
+            result = get_plan_impl(root, "meta-par", "metadata")
+        assert result.status == "success"
+        assert result.content is None
+        assert len(result.task_graph) == 2
+        assert result.task_graph[0]["step_id"] == 1
+        assert result.task_graph[0]["parallel"] is False
+        assert result.task_graph[1]["parallel"] is True
+        assert result.can_parallelize is True
+
     def test_not_found_returns_error(self) -> None:
         """Unknown slug returns error result."""
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -740,6 +762,108 @@ class TestGetPlanImpl:
             result = get_plan_impl(root, "missing", "content")
         assert result.status == "error"
         assert "not found" in result.message.lower()
+
+    def test_invalid_task_graph_returns_error(self) -> None:
+        """Duplicate step ids in the plan body surface as get errors."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            plans_dir = get_cortex_path(root, CortexResourceType.PLANS)
+            plans_dir.mkdir(parents=True)
+            _ = (plans_dir / "bad.md").write_text(
+                "### Step 1: A\n\n### Step 1: B\n\n",
+                encoding="utf-8",
+            )
+            result = get_plan_impl(root, "bad", "content")
+        assert result.status == "error"
+        assert result.error is not None
+        assert "duplicate" in result.error.lower()
+
+    def test_content_includes_task_graph_defaults(self) -> None:
+        """Plans without implementation steps yield an empty task graph."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            plans_dir = get_cortex_path(root, CortexResourceType.PLANS)
+            plans_dir.mkdir(parents=True)
+            _ = (plans_dir / "t.md").write_text("# T\n\nBody\n", encoding="utf-8")
+            result = get_plan_impl(root, "t", "content")
+        assert result.status == "success"
+        assert result.task_graph == []
+        assert result.can_parallelize is False
+
+
+class TestRegisterPlanTaskGraphValidation:
+    """register_plan_in_roadmap validates parse_task_graph when plan path is known."""
+
+    @staticmethod
+    def _minimal_roadmap() -> str:
+        return (
+            "# Roadmap: MCP Memory Bank\n\n"
+            "## Blockers (ASAP Priority)\n\n"
+            "## Active Work (in progress)\n\n"
+            "## Future Enhancements\n\n"
+            "## Pending plans (from .cortex/plans)\n\n"
+            "- **Existing** - PENDING - Existing entry.\n"
+        )
+
+    @pytest.mark.asyncio
+    async def test_register_rejects_cyclic_plan_file(self, tmp_path: Path) -> None:
+        """Cyclic [P:after=] dependencies block registration."""
+        memory_bank = get_cortex_path(tmp_path, CortexResourceType.MEMORY_BANK)
+        plans_dir = get_cortex_path(tmp_path, CortexResourceType.PLANS)
+        memory_bank.mkdir(parents=True)
+        plans_dir.mkdir(parents=True)
+        roadmap_path = memory_bank / MemoryBankFile.ROADMAP
+        _ = roadmap_path.write_text(self._minimal_roadmap(), encoding="utf-8")
+        cyclic = "### [P:after=2] Step 1: A\n\n" + "### [P:after=1] Step 2: B\n\n"
+        _ = (plans_dir / "bad-cycle.md").write_text(cyclic, encoding="utf-8")
+        with patch(
+            "cortex.tools.plans.register.resolve_project_root_async",
+            new_callable=AsyncMock,
+            return_value=tmp_path,
+        ):
+            raw = await register_plan_in_roadmap(
+                plan_title="Bad Cycle",
+                description="Desc.",
+                status="PENDING",
+                section="pending",
+                plan_relative_path=".cortex/plans/bad-cycle.md",
+                ctx=None,
+            )
+        result = RegisterPlanResult.model_validate_json(raw)
+        assert result.status == ToolResultStatus.ERROR
+        assert result.error is not None
+        assert "cyclic" in result.error.lower()
+
+    @pytest.mark.asyncio
+    async def test_register_returns_step_counts_when_valid(
+        self, tmp_path: Path
+    ) -> None:
+        """Successful registration includes parallel/sequential counts."""
+        memory_bank = get_cortex_path(tmp_path, CortexResourceType.MEMORY_BANK)
+        plans_dir = get_cortex_path(tmp_path, CortexResourceType.PLANS)
+        memory_bank.mkdir(parents=True)
+        plans_dir.mkdir(parents=True)
+        roadmap_path = memory_bank / MemoryBankFile.ROADMAP
+        _ = roadmap_path.write_text(self._minimal_roadmap(), encoding="utf-8")
+        plan_body = "### [P] Step 1: A\n\nx\n\n### Step 2: B\n\ny\n"
+        _ = (plans_dir / "good.md").write_text(plan_body, encoding="utf-8")
+        with patch(
+            "cortex.tools.plans.register.resolve_project_root_async",
+            new_callable=AsyncMock,
+            return_value=tmp_path,
+        ):
+            raw = await register_plan_in_roadmap(
+                plan_title="Good Plan",
+                description="Desc.",
+                status="PENDING",
+                section="pending",
+                plan_relative_path=".cortex/plans/good.md",
+                ctx=None,
+            )
+        result = RegisterPlanResult.model_validate_json(raw)
+        assert result.status == ToolResultStatus.SUCCESS
+        assert result.parallel_steps_count == 1
+        assert result.sequential_steps_count == 1
 
 
 class TestListPlansTool:

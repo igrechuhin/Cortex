@@ -119,6 +119,8 @@ def _plan_error_missing_register_params() -> str:
         line_inserted=None,
         section=None,
         error="Missing plan_title or description",
+        parallel_steps_count=None,
+        sequential_steps_count=None,
     ).model_dump_json()
 
 

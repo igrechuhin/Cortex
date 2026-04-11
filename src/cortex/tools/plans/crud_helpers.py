@@ -191,7 +191,40 @@ def get_plan_result_error(slug: str, message: str, error: str) -> GetPlanResult:
         plan_status=None,
         message=message,
         error=error,
+        task_graph=[],
+        can_parallelize=False,
     )
+
+
+def _load_plan_raw_or_error(root: Path, slug: str) -> GetPlanResult | tuple[Path, str]:
+    """Resolve plan path and read raw markdown, or return an error result."""
+    path = get_plan_path(root, slug)
+    if path is None:
+        return get_plan_result_error(
+            slug, "Plan not found", f"No plan file with slug '{slug}'"
+        )
+    content, read_err = get_plan_read_content(path)
+    if read_err:
+        return get_plan_result_error(slug, "Failed to read plan", read_err)
+    return (path, content or "")
+
+
+def _plan_task_graph_or_parse_error(
+    slug: str, raw: str
+) -> GetPlanResult | tuple[list[dict[str, object]], bool]:
+    """Parse task graph or return a structured error result."""
+    from cortex.core.plan_utils import (
+        PlanValidationError,
+        parse_task_graph,
+        task_graph_can_parallelize,
+    )
+
+    try:
+        nodes = parse_task_graph(raw)
+    except PlanValidationError as exc:
+        return get_plan_result_error(slug, "Invalid plan task graph", str(exc))
+    task_graph = [node.model_dump() for node in nodes]
+    return (task_graph, task_graph_can_parallelize(nodes))
 
 
 def get_plan_result_success(
@@ -203,6 +236,8 @@ def get_plan_result_success(
     *,
     change_count: int = 0,
     latest_delta: str | None = None,
+    task_graph: list[dict[str, object]] | None = None,
+    can_parallelize: bool = False,
 ) -> GetPlanResult:
     """Build success GetPlanResult."""
     return GetPlanResult(
@@ -215,6 +250,8 @@ def get_plan_result_success(
         error=None,
         change_count=change_count,
         latest_delta=latest_delta,
+        task_graph=list(task_graph or []),
+        can_parallelize=can_parallelize,
     )
 
 
@@ -222,31 +259,28 @@ def get_plan_impl(root: Path, slug: str, response_format: str) -> GetPlanResult:
     """Read plan by slug. Returns GetPlanResult."""
     from cortex.core.plan_change_history import change_history_stats
 
-    path = get_plan_path(root, slug)
-    if path is None:
-        return get_plan_result_error(
-            slug, "Plan not found", f"No plan file with slug '{slug}'"
-        )
-    content, read_err = get_plan_read_content(path)
-    if read_err:
-        return get_plan_result_error(slug, "Failed to read plan", read_err)
-    chg_count, latest_d = change_history_stats(content or "")
-    if response_format == "content":
-        return get_plan_result_success(
-            slug,
-            content,
-            None,
-            None,
-            f"Plan '{slug}' read successfully",
-            change_count=chg_count,
-            latest_delta=latest_d,
-        )
+    loaded = _load_plan_raw_or_error(root, slug)
+    if isinstance(loaded, GetPlanResult):
+        return loaded
+    _path, raw = loaded
+    chg_count, latest_d = change_history_stats(raw)
+    parsed = _plan_task_graph_or_parse_error(slug, raw)
+    if isinstance(parsed, GetPlanResult):
+        return parsed
+    task_graph, can_parallelize = parsed
+    want_content = response_format == "content"
     return get_plan_result_success(
         slug,
-        None,
-        extract_first_heading(content or ""),
-        extract_status_line(content or ""),
-        f"Plan '{slug}' metadata",
+        raw if want_content else None,
+        None if want_content else extract_first_heading(raw),
+        None if want_content else extract_status_line(raw),
+        (
+            f"Plan '{slug}' read successfully"
+            if want_content
+            else f"Plan '{slug}' metadata"
+        ),
         change_count=chg_count,
         latest_delta=latest_d,
+        task_graph=task_graph,
+        can_parallelize=can_parallelize,
     )

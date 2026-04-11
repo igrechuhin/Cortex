@@ -313,12 +313,17 @@ def create_register_error_result(error: str) -> RegisterPlanResult:
         line_inserted=None,
         section=None,
         error=error,
+        parallel_steps_count=None,
+        sequential_steps_count=None,
     )
 
 
 def create_register_success_result(
     section_id: str,
     line_inserted: int,
+    *,
+    parallel_steps_count: int | None = None,
+    sequential_steps_count: int | None = None,
 ) -> RegisterPlanResult:
     """Create a success result for plan registration."""
     return RegisterPlanResult(
@@ -328,4 +333,6 @@ def create_register_success_result(
         line_inserted=line_inserted,
         section=section_id,
         error=None,
+        parallel_steps_count=parallel_steps_count,
+        sequential_steps_count=sequential_steps_count,
     )

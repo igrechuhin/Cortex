@@ -11,7 +11,10 @@ from cortex.core.constants import MCP_TOOL_TIMEOUT_MEDIUM
 from cortex.core.context_logging import MCPContext, log_client
 from cortex.core.mcp_stability import ensure_usage_context, mcp_tool_wrapper
 from cortex.core.plan_change_history import ensure_change_history_section
-from cortex.core.plan_utils import apply_clarifications_summary_to_plan
+from cortex.core.plan_utils import (
+    apply_clarifications_summary_to_plan,
+    apply_independence_parallel_markers,
+)
 from cortex.core.project_root_resolver import resolve_project_root_async
 from cortex.tools.plans.constitutional_scan import apply_constitutional_compliance
 from cortex.tools.plans.crud_helpers import (
@@ -108,6 +111,7 @@ async def _create_plan_impl(
             plan_content=final_content,
             explore_log_path=explore_log_path,
         )
+        final_content = apply_independence_parallel_markers(final_content)
         await _log_clarification_marker_count(ctx, n_clarifications)
         plan_path, error = create_plan_file(root, title, slug, final_content)
         return await _handle_plan_result(plan_path, error, ctx)

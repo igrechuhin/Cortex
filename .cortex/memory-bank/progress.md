@@ -5,6 +5,13 @@
 - **Context-scoped instruction assembly (commit)** - COMPLETE. Scoped context stack (artifact_graph, rules_filter, task_classifier, scoped_context, optimization handlers), Phase 4 optimization test split and new cases, plan archived; Synapse run_tests.py matches CI pytest xdist flags.
 - **Delta Specs for Plans** - COMPLETE. PlanDelta, change history append on enrich, get metadata, scoped context hint.
 - **Plan delta change history (commit)** - COMPLETE. Landed PlanDelta model, plan_change_history, plan CRUD/enrich metadata and scoped_context last_change wiring; integration and unit tests; archived delta-specs plan under .cortex/plans/archive/Other.
+- **Parallel Task Markers [P]** - PARTIAL. Step 1 complete: added `TaskNode` in `models/_task_node.py`, exported from `cortex.core.models`, unit tests in `tests/unit/test_task_node.py`; marker formats documented in module docstring.
+- **Parallel Task Markers [P]** - PARTIAL. Step 2 complete: added `parse_task_graph` and `PlanValidationError` in `plan_utils.py` with cycle detection, missing dependency validation, and fenced-code-aware step heading scan; unit tests in `tests/unit/test_parse_task_graph.py`.
+- **Parallel Task Markers [P]** - PARTIAL. Steps 3–5: `[P]` heuristic on `plan(create)`, `parse_task_graph` gate + parallel/sequential counts on `plan(register)`, `task_graph` + `can_parallelize` on `plan(get)`; tests added. Remaining: steps 6–8 (do orchestrator parallelism, merge, broader tests).
+- **Parallel Task Markers [P]** - PARTIAL. Step 6: shared `next_execution_frontier` / `is_task_execution_ready` in plan_utils; do.md documents parallel dispatch with plan(get) task_graph and max 3 worktrees.
+- **Parallel Task Markers [P]** - PARTIAL. Step 7: `merge_order_for_parallel_batch` and `clarification_markers_for_shared_paths` in `src/cortex/core/parallel_worktree_merge.py`; unit tests in `tests/unit/test_parallel_worktree_merge.py`.
+- **Parallel Task Markers [P]** - COMPLETE. Step 8 tests: parser edges, get_plan metadata task_graph, create_plan parallel markers integration.
+- **Parallel task markers [P] (commit)** - COMPLETE. Shipped task graph models, frontier scheduling, merge-order and conflict-marker helpers, plan tool metadata and tests, Synapse do prompt guidance, archived plan; memory-bank log duplicate heading removed for MD024.
 
 ## 2026-04-10
 

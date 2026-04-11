@@ -23,3 +23,13 @@ class RegisterPlanResult(BaseModel):
     )
     section: str | None = Field(None, description="Section where entry was added")
     error: str | None = Field(None, description="Error message if status is error")
+    parallel_steps_count: int | None = Field(
+        default=None,
+        ge=0,
+        description="Parallel [P] steps when the plan file was validated (else null)",
+    )
+    sequential_steps_count: int | None = Field(
+        default=None,
+        ge=0,
+        description="Sequential steps when the plan file was validated (else null)",
+    )

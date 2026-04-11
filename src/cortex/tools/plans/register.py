@@ -14,7 +14,11 @@ from cortex.core.constants import (
 from cortex.core.context_logging import MCPContext, log_client
 from cortex.core.mcp_stability import ensure_usage_context, mcp_tool_wrapper
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
-from cortex.core.plan_utils import find_clarification_markers
+from cortex.core.plan_utils import (
+    PlanValidationError,
+    find_clarification_markers,
+    parse_task_graph,
+)
 from cortex.core.project_root_resolver import resolve_project_root_async
 from cortex.tools.models_base import ToolResultStatus
 from cortex.tools.plans.register_helpers import (
@@ -47,6 +51,20 @@ class _ClarificationGateDecision:
     description: str
 
 
+@dataclass(frozen=True, slots=True)
+class _RegisterPlanExecParams:
+    root: Path
+    plan_title: str
+    description: str
+    status: str
+    section_id: str
+    plan_file_name: str | None
+    plan_relative_path: str | None
+    ctx: MCPContext | None
+    parallel_steps_count: int | None
+    sequential_steps_count: int | None
+
+
 def _resolve_plan_path_for_marker_scan(
     root: Path, plan_file_name: str | None, plan_relative_path: str | None
 ) -> Path | None:
@@ -55,6 +73,40 @@ def _resolve_plan_path_for_marker_scan(
     if plan_file_name:
         return get_cortex_path(root, CortexResourceType.PLANS) / plan_file_name
     return None
+
+
+def _validate_plan_task_graph_before_register(
+    root: Path,
+    plan_file_name: str | None,
+    plan_relative_path: str | None,
+) -> tuple[str | None, int | None, int | None]:
+    """Validate plan task graph when a plan path is known.
+
+    Returns ``(error_json, parallel_steps_count, sequential_steps_count)``.
+    When no plan file is resolved, returns ``(None, None, None)`` (skip validation).
+    """
+    plan_path = _resolve_plan_path_for_marker_scan(
+        root, plan_file_name, plan_relative_path
+    )
+    if plan_path is None or not plan_path.exists():
+        return (None, None, None)
+    try:
+        raw = plan_path.read_text(encoding="utf-8")
+    except OSError as exc:
+        return (
+            create_register_error_result(
+                f"Cannot read plan for task graph: {exc}"
+            ).model_dump_json(),
+            None,
+            None,
+        )
+    try:
+        nodes = parse_task_graph(raw)
+    except PlanValidationError as exc:
+        return (create_register_error_result(str(exc)).model_dump_json(), None, None)
+    parallel_steps_count = sum(1 for node in nodes if node.parallel)
+    sequential_steps_count = sum(1 for node in nodes if not node.parallel)
+    return (None, parallel_steps_count, sequential_steps_count)
 
 
 def _append_clarification_note(base: str, note: str) -> str:
@@ -177,6 +229,9 @@ async def _handle_entry_success(
     ctx: MCPContext | None,
     section_id: str,
     line_inserted: int,
+    *,
+    parallel_steps_count: int | None = None,
+    sequential_steps_count: int | None = None,
 ) -> str:
     """Handle successful plan registration."""
     await log_client(
@@ -185,7 +240,12 @@ async def _handle_entry_success(
         f"register_plan_in_roadmap: success - line {line_inserted}",
         logger_name=__name__,
     )
-    return create_register_success_result(section_id, line_inserted).model_dump_json()
+    return create_register_success_result(
+        section_id,
+        line_inserted,
+        parallel_steps_count=parallel_steps_count,
+        sequential_steps_count=sequential_steps_count,
+    ).model_dump_json()
 
 
 async def _read_and_register_entry(
@@ -221,37 +281,78 @@ def _roadmap_path(root: Path) -> Path:
     )
 
 
-async def _execute_register_plan(
+async def _finish_register_from_read_result(
+    rp: Path,
     root: Path,
-    plan_title: str,
-    description: str,
-    status: str,
-    section_id: str,
-    plan_file_name: str | None,
-    plan_relative_path: str | None,
     ctx: MCPContext | None,
+    section_id: str,
+    read_result: str | tuple[str, int | None],
+    parallel_steps_count: int | None,
+    sequential_steps_count: int | None,
 ) -> str:
-    """Execute plan registration. Returns JSON result."""
-    rp = _roadmap_path(root)
-    result = await _read_and_register_entry(
-        rp,
-        plan_title,
-        description,
-        status,
-        section_id,
-        plan_file_name,
-        plan_relative_path,
-        ctx,
-    )
-    if isinstance(result, str):
-        return result
-    updated_content, line_inserted = result
+    """Branch on read/merge outcome and persist when possible."""
+    if isinstance(read_result, str):
+        return read_result
+    updated_content, line_inserted = read_result
     if line_inserted is None:
         return await _handle_entry_not_found(ctx, section_id)
+    return await _persist_register_merge(
+        rp,
+        root,
+        section_id,
+        ctx,
+        updated_content,
+        line_inserted,
+        parallel_steps_count,
+        sequential_steps_count,
+    )
+
+
+async def _persist_register_merge(
+    rp: Path,
+    root: Path,
+    section_id: str,
+    ctx: MCPContext | None,
+    updated_content: str,
+    line_inserted: int,
+    parallel_steps_count: int | None,
+    sequential_steps_count: int | None,
+) -> str:
+    """Write roadmap after merge and emit success JSON."""
     write_result = await _handle_roadmap_write(
         rp, updated_content, section_id, ctx, root
     )
-    return write_result or await _handle_entry_success(ctx, section_id, line_inserted)
+    return write_result or await _handle_entry_success(
+        ctx,
+        section_id,
+        line_inserted,
+        parallel_steps_count=parallel_steps_count,
+        sequential_steps_count=sequential_steps_count,
+    )
+
+
+async def _execute_register_plan(params: _RegisterPlanExecParams) -> str:
+    """Execute plan registration. Returns JSON result."""
+    rp = _roadmap_path(params.root)
+    read_result = await _read_and_register_entry(
+        rp,
+        params.plan_title,
+        params.description,
+        params.status,
+        params.section_id,
+        params.plan_file_name,
+        params.plan_relative_path,
+        params.ctx,
+    )
+    return await _finish_register_from_read_result(
+        rp,
+        params.root,
+        params.ctx,
+        params.section_id,
+        read_result,
+        params.parallel_steps_count,
+        params.sequential_steps_count,
+    )
 
 
 async def _check_status_and_section(
@@ -286,6 +387,38 @@ async def _check_status_and_section(
     return _SectionCheck(section_id=sv.section_id, error_json=None)
 
 
+async def _register_after_section_ok(
+    root: Path,
+    plan_title: str,
+    description: str,
+    status: str,
+    section_id: str,
+    plan_file_name: str | None,
+    plan_relative_path: str | None,
+    ctx: MCPContext | None,
+) -> str:
+    """Run task-graph validation then persist roadmap entry."""
+    ge, pc, sc = _validate_plan_task_graph_before_register(
+        root, plan_file_name, plan_relative_path
+    )
+    if ge is not None:
+        return ge
+    return await _execute_register_plan(
+        _RegisterPlanExecParams(
+            root=root,
+            plan_title=plan_title,
+            description=description,
+            status=status,
+            section_id=section_id,
+            plan_file_name=plan_file_name,
+            plan_relative_path=plan_relative_path,
+            ctx=ctx,
+            parallel_steps_count=pc,
+            sequential_steps_count=sc,
+        )
+    )
+
+
 async def _validate_and_execute_register(
     section: str,
     root: Path,
@@ -301,7 +434,7 @@ async def _validate_and_execute_register(
     if check.error_json is not None:
         return check.error_json
     assert check.section_id is not None
-    return await _execute_register_plan(
+    return await _register_after_section_ok(
         root,
         plan_title,
         description,
@@ -321,6 +454,8 @@ def _register_plan_error_result(e: Exception) -> str:
         line_inserted=None,
         section=None,
         error=str(e),
+        parallel_steps_count=None,
+        sequential_steps_count=None,
     ).model_dump_json()
 
 
