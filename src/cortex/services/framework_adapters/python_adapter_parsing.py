@@ -179,18 +179,27 @@ def extract_failed_test_lines(output: str) -> list[str]:
     return failed
 
 
+def _coverage_fraction_from_total_summary_row(line: str) -> float | None:
+    """Parse Cover %% from a coverage.py ``TOTAL`` summary row (last %% token)."""
+    stripped = line.strip()
+    if not stripped.startswith("TOTAL") or "%" not in stripped:
+        return None
+    for part in reversed(stripped.split()):
+        if not part.endswith("%"):
+            continue
+        try:
+            val = float(part[:-1])
+        except ValueError:
+            continue
+        if 0.0 <= val <= 100.0:
+            return val / 100.0
+    return None
+
+
 def parse_coverage(output: str) -> float | None:
     """Parse coverage percentage from pytest/coverage output."""
+    last_total_row: float | None = None
     for line in output.split("\n"):
-        if "TOTAL" in line and "%" in line:
-            try:
-                parts = line.split()
-                for part in reversed(parts):
-                    if "%" in part:
-                        coverage_str = part.replace("%", "")
-                        return float(coverage_str) / 100.0
-            except (ValueError, IndexError):
-                pass
         if "Total coverage:" in line and "%" in line:
             try:
                 coverage_part = line.split("Total coverage:")[-1].strip()
@@ -198,7 +207,10 @@ def parse_coverage(output: str) -> float | None:
                 return float(coverage_str) / 100.0
             except (ValueError, IndexError):
                 pass
-    return None
+        row_cov = _coverage_fraction_from_total_summary_row(line)
+        if row_cov is not None:
+            last_total_row = row_cov
+    return last_total_row
 
 
 def build_test_errors(

@@ -137,6 +137,27 @@ class TestParseCoverage:
         """parse_coverage returns None when no percentage found."""
         assert parse_coverage("no coverage here") is None
 
+    def test_prefers_last_total_summary_row(self) -> None:
+        """parse_coverage uses the last coverage.py TOTAL row (xdist-safe)."""
+        output = (
+            "noise\n"
+            "TOTAL                                                              100  50  50.00%\n"
+            "TOTAL                                                              42511  4000  90.62%\n"
+        )
+        coverage = parse_coverage(output)
+        assert coverage is not None
+        assert abs(coverage - 0.9062) < 0.0001
+
+    def test_ignores_non_summary_lines_with_total_substring(self) -> None:
+        """Only lines starting with TOTAL are summary rows (avoid spurious %% tokens)."""
+        output = (
+            "log: prefixTOTALsuffix 37.41% more text\n"
+            "TOTAL                                                              42511  4000  90.00%\n"
+        )
+        coverage = parse_coverage(output)
+        assert coverage is not None
+        assert abs(coverage - 0.90) < 0.0001
+
 
 class TestParseTestCounts:
     """Tests for parse_test_counts."""

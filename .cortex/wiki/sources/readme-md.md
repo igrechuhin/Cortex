@@ -153,12 +153,12 @@ Add to your `mcp.json`:
 For local development, use these Make targets (after running `bash scripts/bootstrap.sh` once to create the virtualenv and install dependencies):
 
 - **Restricted network / offline**: If `uv sync` or installs fail (proxy, air-gap, SSL), use [Offline and network-restricted verification](docs/guides/troubleshooting.md#offline-and-network-restricted-verification) to bootstrap a test-running environment and triage fetch vs test failures.
-- **`make preflight`**: Probe PyPI or `UV_INDEX_URL` before `uv sync` when triaging connectivity; see [Offline bootstrap and preflight](docs/offline-bootstrap-preflight.md).
+- **`make preflight`**: Probe PyPI or `UV_INDEX_URL` before `uv sync` when triaging connectivity; see [Offline and network-restricted verification](docs/guides/troubleshooting.md#offline-and-network-restricted-verification).
 
 ### Restricted-network / offline setup
 
 1. Run `make preflight-offline` (or `bash scripts/preflight.sh --offline`) from the repo root to verify `uv`, `git`, `python3`, `uv.lock`, and a local `uv_build` wheel (cache, `vendor/`, or `wheelhouse/`).
-2. If `uv_build` is missing: `uv pip download uv-build --dest vendor/ && uv pip install --no-index --find-links vendor/ uv-build` (or populate `wheelhouse/` as in [contributing — offline](docs/development/contributing.md#offline--restricted-network-setup)).
+2. If `uv_build` is missing: `uv pip download uv-build --dest vendor/ && uv pip install --no-index --find-links vendor/ uv-build` (or populate `wheelhouse/` as described under [Offline and network-restricted verification](docs/guides/troubleshooting.md#offline-and-network-restricted-verification)).
 3. Install deps without the index: `uv sync --offline --frozen` (with `UV_NO_INDEX=1` and `UV_FIND_LINKS` pointing at your wheelhouse when using `make bootstrap-offline`).
 4. Run tests offline: `uv run --offline pytest tests/ -q`. Long-form triage: [Offline and network-restricted verification](docs/guides/troubleshooting.md#offline-and-network-restricted-verification).
 

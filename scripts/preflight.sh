@@ -1,11 +1,10 @@
 #!/usr/bin/env bash
 # Check that the configured package index (UV_INDEX_URL or PyPI) is reachable
-# before running bootstrap (scripts/bootstrap.sh / uv sync), or with --offline
-# verify local wheels, lockfile, and toolchain for no-index workflows.
+# before running bootstrap (scripts/bootstrap.sh / uv sync).
 #
 # Exit codes:
-#   0 - registry reachable (--offline: offline readiness OK)
-#   2 - registry unreachable or offline checks failed
+#   0 - registry reachable
+#   2 - registry unreachable
 #   1 - reserved for invalid CLI usage (none yet; python -m may use 1 internally)
 #
 # Implementation: thin wrapper; logic lives in cortex.cli.preflight (stdlib urllib).

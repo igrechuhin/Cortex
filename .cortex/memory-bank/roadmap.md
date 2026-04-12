@@ -14,13 +14,7 @@
 
 ### Fixes
 
-- **README Tool Inventory Parity Fix** — Align README "Key Tools" table with canonical 12-tool inventory; add CI parity test. Plan: `.cortex/plans/readme-tool-inventory-parity.md`
-
 ### Quality & Reliability Improvements
-
-- **Type Policy Hardening: Remove Any from Production Code** — Remove `typing.Any` from `src/cortex/tools/execution/pre_commit_status.py`; add ruff/pyright guard to prevent re-entry. Plan: `.cortex/plans/type-policy-hardening-any-removal.md`
-
-- **Deprecation Completion: Legacy Quality Entrypoints Migration** — PENDING — Migration matrix and sunset schedule for `execute_pre_commit_checks`, `start_quality_job`, `get_quality_job_status`; ≥50% reference reduction in one release. Plan: `.cortex/plans/deprecation-legacy-quality-entrypoints.md` (matrix: `.cortex/plans/deprecation-legacy-quality-entrypoints-migration-matrix.md`).
 
 ### Security
 

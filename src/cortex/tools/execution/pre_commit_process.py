@@ -160,7 +160,16 @@ def spawn_detached_worker(
     return rp
 
 
-async def _read_result_file(
+def _malformed_result_envelope(message: str) -> dict[str, object]:
+    """Return a poll envelope so callers stop waiting (non-object JSON in result file)."""
+    return {
+        "version": 1,
+        "status": OperationStatus.ERROR.value,
+        "error": message,
+    }
+
+
+async def read_result_file(
     result_path: Path,
 ) -> tuple[dict[str, object] | None, str | None]:
     """Read result JSON if present. Returns (data, status) or (None, None)."""
@@ -169,10 +178,20 @@ async def _read_result_file(
     try:
         # Avoid blocking the async event loop: file I/O runs on a worker thread.
         text = await asyncio.to_thread(result_path.read_text)
-        data = json.loads(text)
-        return cast(dict[str, object], data), data.get("status")
+        parsed: object = json.loads(text)
     except (json.JSONDecodeError, OSError):
         return None, None
+    # AI: json.loads can return str/list/primitive; .get would raise AttributeError and
+    # break run_quality_gate / run_composite_workflow during poll (seen in production).
+    if not isinstance(parsed, dict):
+        bad = _malformed_result_envelope(
+            f"Detached worker result file must contain a JSON object; got {type(parsed).__name__}"
+        )
+        return bad, OperationStatus.ERROR.value
+    data = cast(dict[str, object], parsed)
+    raw_status = data.get("status")
+    status_str: str | None = raw_status if isinstance(raw_status, str) else None
+    return data, status_str
 
 
 def worker_died_error(pid: int) -> dict[str, object]:
@@ -212,7 +231,7 @@ async def poll_for_result(
         dot_count = min(dot_count + 1, _HEARTBEAT_MAX_DOTS)
         if ctx is not None:
             await log_client(ctx, LogLevel.DEBUG, "." * dot_count)
-        data, status = await _read_result_file(result_path)
+        data, status = await read_result_file(result_path)
         if data is None:
             continue
         if status == "completed" or status == "error":

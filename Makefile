@@ -1,8 +1,6 @@
 VENV_PY := ./.venv/bin/python
 TIMEOUT := $(shell command -v gtimeout >/dev/null 2>&1 && echo "gtimeout -k 5" || echo "timeout -k 5")
-WHEELHOUSE ?= wheelhouse
-
-.PHONY: help test test-full typecheck format format-check lint compile check check-ci-parity check-dep-parity fix bootstrap bootstrap-offline preflight preflight-offline env-check synapse-check commit-check
+.PHONY: help test test-full typecheck format format-check lint compile check check-ci-parity check-dep-parity fix bootstrap preflight env-check synapse-check commit-check
 
 help:
 	@echo "Common targets:"
@@ -19,34 +17,12 @@ help:
 	@echo "  make check-ci-parity    - broader CI-equivalent checks via uv run (see README)"
 	@echo "  make commit-check       - same as make check before /cortex/commit in Cursor"
 	@echo "  make preflight          - probe UV_INDEX_URL or PyPI (scripts/preflight.sh)"
-	@echo "  make preflight-offline  - verify vendor/wheelhouse, lockfile, uv (scripts/preflight.sh --offline)"
-	@echo "  make bootstrap-offline  - uv sync --offline using WHEELHOUSE (default: wheelhouse/)"
 
 bootstrap:
 	bash scripts/bootstrap.sh
 
-# Offline install: requires a populated wheelhouse and Synapse submodule present (see
-# docs/development/contributing.md — does not run git submodule init).
-bootstrap-offline:
-	@if [ ! -d "$(WHEELHOUSE)" ]; then \
-		echo "error: wheelhouse directory is missing: $(WHEELHOUSE)"; \
-		echo "Create it at the repo root and populate wheels (see docs/development/contributing.md#offline--restricted-network-setup)."; \
-		exit 1; \
-	fi
-	@_wh_first="$$(find "$(WHEELHOUSE)" -mindepth 1 2>/dev/null | head -n 1)"; \
-	if [ -z "$$_wh_first" ]; then \
-		echo "error: wheelhouse is empty: $(WHEELHOUSE)"; \
-		echo "On a machine with network: uv export + python3 -m pip download into $(WHEELHOUSE) (see docs/development/contributing.md#offline--restricted-network-setup)."; \
-		exit 1; \
-	fi
-	UV_NO_INDEX=1 UV_FIND_LINKS="$(CURDIR)/$(WHEELHOUSE)" uv python install 3.13
-	UV_NO_INDEX=1 UV_FIND_LINKS="$(CURDIR)/$(WHEELHOUSE)" uv sync --offline --group dev --extra dev --find-links "$(CURDIR)/$(WHEELHOUSE)"
-
 preflight:
 	bash scripts/preflight.sh
-
-preflight-offline:
-	bash scripts/preflight.sh --offline
 
 env-check:
 	@if [ ! -x "$(VENV_PY)" ]; then \

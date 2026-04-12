@@ -32,7 +32,7 @@ Cortex is structured as an MCP (Model Context Protocol) server with a modular, l
 - **Language-Agnostic Script Pattern** - All procedures use scripts from the Synapse scripts directory (path resolved via project structure or Cortex tools) instead of hardcoded commands
 - **Semantic Names and Cortex Tools** - Prompts and procedures use semantic names ("plans directory", "memory bank", "Synapse agents directory") and resolve paths via Cortex MCP tools (`get_structure_info()`, `manage_file()`, `rules()`); hardcoding `.cortex/` or `.cursor/` paths is forbidden
 - **Cursor-Agent Delegation Pattern** - Top-level prompts (`commit.md`, `do.md`) are thin orchestrators; all substantive logic lives in named cursor-agents (`commit-preflight`, `commit-checks`, `commit-docs`, `commit-validate`, `commit-final-gate`, `implement-select`, `implement-code`, `implement-finalize`, `implement-verify`). Agents are auto-synced from `.cortex/synapse/cursor-agents/` to `.cursor/agents/` on every MCP startup via `sync_cursor_agents()`. Presence enforced by `TestRequiredAgentFilesPresent`.
-- **Job-Based Quality Gate Pattern** - Long-running quality checks use `start_quality_job(phase="A"|"B"|"full")` (returns in <5s with a `job_id`) + polling loop via `get_quality_job_status(job_id)`. This avoids MCP `-32000` connection-closed timeouts from blocking stdio calls. Phase-to-checks mapping lives in `pre_commit_phase_dispatch.py`.
+- **Zero-Arg Quality Gate Pattern** - Long-running quality checks use `run_quality_gate()` (Phase A), `run_docs_gate()` (Phase B), and `autofix()`. These zero-arg tools spawn detached subprocesses with heartbeat polling internally, avoiding MCP `-32000` connection-closed timeouts. Legacy `start_quality_job`/`get_quality_job_status`/`execute_pre_commit_checks` are deprecated (sunset 2026-07-01); migrate all callers to zero-arg tools.
 - **Shared-Defaults Reference** - Quality thresholds (30 lines/fn, 400 lines/file, 90%/95% coverage, 3 fix iterations) are declared once in `cursor-agents/shared-defaults.md`. Individual agents cite this file instead of hardcoding numbers. Projects using Cortex MCP can override thresholds via their `rules()` configuration.
 
 ## Synapse Architecture (CRITICAL)
@@ -61,7 +61,7 @@ All prompts in the Synapse prompts directory MUST be language-agnostic:
 
 **Correct Pattern**:
 
-- Use Cortex MCP tool `execute_pre_commit_checks(checks=["format"])` (or similar), or reference "Synapse scripts directory" and language-specific script name (path resolved by tool or project structure).
+- Use Cortex MCP zero-arg tools (`run_quality_gate()`, `autofix()`, `run_docs_gate()`), or reference "Synapse scripts directory" and language-specific script name (path resolved by tool or project structure).
 
 **Wrong Pattern**:
 

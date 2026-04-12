@@ -34,6 +34,10 @@
 
 - ✅ **Commit: legacy quality + preflight + tests** - COMPLETE (2026-04-12) - Shipped deprecation compat, offline bootstrap contract, wiki ingest for README/tools.md, and modular phase-tool unit tests.
 
+- ✅ **README Tool Inventory Parity Fix** - COMPLETE (2026-04-12) - README Key Tools and AGENTS.md list all 12 MCP tools per TOOL_CATEGORIES; docs/_generated/tool-inventory.json matches; tests/docs/test_tool_inventory_parity.py enforces parity; full pytest suite in CI covers the test.
+
+- ✅ **Legacy quality entrypoints and offline-bootstrap cleanup** - COMPLETE (2026-04-12) - Removed the offline-bootstrap GitHub workflow and dedicated offline preflight doc; deleted deprecation plan stubs; aligned Makefile/scripts/preflight CLI, README, contributing, getting-started, troubleshooting, and security docs with run_quality_gate-first flows; tightened composite/pre_commit_process tests including read_result coverage; Synapse submodule documents zero-arg autofix() in formatter/quality agent prompts.
+
 ## Completed Work (2026-04-11)
 
 - **Summary (2026-04-11)** - 1 entries archived.

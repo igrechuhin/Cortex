@@ -17,10 +17,12 @@
 - **Fast-Forward vs. Step-by-Step Planning Modes** - PARTIAL. Step 6: `/cortex/plan` prompt documents `planning_mode` ff/step and resume flow. Step 7: `manage_file` `list_drafts` / `discard_draft` and stale-draft hints in `session()` suggestions. Step 8: unit tests for drafts + session suggestion + parse.
 - **Fast-Forward vs. Step-by-Step Planning Modes** - COMPLETE. Planning modes shipped with tests, manage_file draft ops, session hints, and log heading uniqueness for MD024.
 - **Type Policy Hardening: Remove Any from Production Code** - COMPLETE. Typed PreCommitRunSummary, ModelDict returns, Ruff ANN401 guard.
-- **Deprecation Completion: Legacy Quality Entrypoints Migration** - PARTIAL. Preflight uses detached Phase A runner shared with run_quality_gate; e2e uses run_quality_gate; sunset marker module + docs migration table + migration matrix file.
+- **Deprecation Completion: Legacy Quality Entrypoints Migration** - COMPLETE. Preflight uses the detached Phase A runner aligned with `run_quality_gate`; E2E flows use `run_quality_gate`; offline-bootstrap workflow and dedicated deprecation plan files removed; Synapse agent prompts prefer zero-arg `autofix()` over deprecated pre-commit tool names.
 - **README Tool Inventory Parity Fix** - COMPLETE. README Key Tools table + AGENTS 12-tool parity; tests/docs/test_tool_inventory_parity.py; uv-build in dev deps; test refactors for governance.
 - **Network-Resilience Onboarding** - COMPLETE. Offline preflight, Makefile, README, CI workflow, tests.
 - **Quality tooling** - Committed legacy quality MCP compat, offline preflight/bootstrap, deprecation plans, split pre-commit phase tests, roadmap sync wording, and wiki sources for README/tools docs.
+- **Phase: Investigate run_composite_workflow MCP Tool Failure** - COMPLETE. Detached worker result JSON must be an object; non-object payloads return error envelope instead of AttributeError during poll. Added tests; removed unused composite helper.
+- **Chore: legacy quality + offline-bootstrap cleanup** - COMPLETE. Preflight and docs point agents at autofix/run_quality_gate; offline bootstrap workflow removed; plans and tests updated; Synapse agent prompt sync.
 
 ## 2026-04-11
 

@@ -2,11 +2,8 @@
 
 from __future__ import annotations
 
-import os
-import time
 from email.message import Message
 from io import BytesIO
-from pathlib import Path
 from unittest.mock import MagicMock
 from urllib.error import HTTPError, URLError
 from urllib.request import Request
@@ -251,75 +248,3 @@ def test_response_status_uses_getcode(monkeypatch: pytest.MonkeyPatch) -> None:
     ok, reason = preflight.registry_reachable("https://example.com/")
     assert ok is True
     assert reason == ""
-
-
-def test_main_offline_success(monkeypatch: pytest.MonkeyPatch) -> None:
-    def _offline_ok(_root: Path) -> tuple[bool, list[str]]:
-        return True, []
-
-    monkeypatch.setattr(preflight, "offline_readiness", _offline_ok)
-    assert preflight.main(["--offline"]) == 0
-
-
-def test_main_offline_failures(
-    capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
-) -> None:
-    def _offline_fail(_root: Path) -> tuple[bool, list[str]]:
-        return False, ["[FAIL] missing widget"]
-
-    monkeypatch.setattr(preflight, "offline_readiness", _offline_fail)
-    assert preflight.main(["--offline"]) == 2
-    assert "[FAIL] missing widget" in capsys.readouterr().out
-
-
-def _fake_which(_cmd: str) -> str | None:
-    return "/fake/bin"
-
-
-def _fake_run_cmd(
-    _args: list[str], *, timeout_sec: float = 30.0
-) -> tuple[int, str, str]:
-    _ = timeout_sec
-    return 0, "uv 0.5.0", ""
-
-
-def _uv_build_always(_repo: Path, _cache: Path | None) -> bool:
-    _ = (_repo, _cache)
-    return True
-
-
-def test_offline_readiness_missing_uv_lock(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    root = tmp_path
-    monkeypatch.setattr("cortex.cli.preflight.shutil.which", _fake_which)
-    monkeypatch.setattr(preflight, "_run_cmd", _fake_run_cmd)
-    monkeypatch.setattr(preflight, "_uv_build_available", _uv_build_always)
-    ok, failures = preflight.offline_readiness(root)
-    assert ok is False
-    joined = "\n".join(failures)
-    assert "uv.lock is missing" in joined
-
-
-def test_offline_lockfile_warns_when_pyproject_newer(
-    tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
-    capsys: pytest.CaptureFixture[str],
-) -> None:
-    root = tmp_path
-    lock = root / "uv.lock"
-    pyproject = root / "pyproject.toml"
-    _ = lock.write_text("lock", encoding="utf-8")
-    _ = pyproject.write_text("[project]\nname=x\n", encoding="utf-8")
-    old = time.time() - 7200.0
-    _ = os.utime(lock, (old, old))
-    new = time.time()
-    _ = os.utime(pyproject, (new, new))
-    monkeypatch.setattr("cortex.cli.preflight.shutil.which", _fake_which)
-    monkeypatch.setattr(preflight, "_run_cmd", _fake_run_cmd)
-    monkeypatch.setattr(preflight, "_uv_build_available", _uv_build_always)
-    ok, failures = preflight.offline_readiness(root)
-    assert ok is True
-    assert failures == []
-    err = capsys.readouterr().err
-    assert "[WARN]" in err and "uv.lock" in err

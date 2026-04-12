@@ -2,7 +2,7 @@
 
 Consolidates agent-skills operations into a single dispatcher:
 - quick_start: session_start + load_context
-- quality_check: execute_pre_commit_checks(quality) + optional fix_quality
+- quality_check: run_quality_gate() + optional autofix()
 - safe_manage_file: validate + manage_file + validate (write with guard)
 - suggest_workflow: recommend workflow templates for task description
 """
@@ -73,18 +73,17 @@ async def _quick_start_impl(
 
 
 async def _quality_check_impl() -> str:
-    """Run execute_pre_commit_checks(quality) then fix_quality if needed."""
-    from cortex.tools.execution.pre_commit_tools import execute_pre_commit_checks
-
-    pre_result = await execute_pre_commit_checks(checks=["quality"])
-    success = (
-        pre_result.get("status") == "success" and pre_result.get("total_errors", 0) == 0
+    """Run run_quality_gate() then autofix() if needed."""
+    from cortex.tools.execution.pre_commit_zero_arg_tools import (
+        autofix,
+        run_quality_gate,
     )
+
+    pre_result = await run_quality_gate()
+    success = pre_result.get("preflight_passed") is True
     fix_result: ModelDict | None = None
     if not success:
-        fix_result = await execute_pre_commit_checks(
-            checks=["fix_quality"], include_untracked_markdown=True
-        )
+        fix_result = await autofix()
     payload: dict[str, JsonValue] = {
         "pre_commit_result": cast(JsonValue, pre_result),
         "fix_applied": fix_result is not None,
@@ -203,85 +202,39 @@ def _fix_all_payload(
     }
 
 
-async def _resolve_detached(result: ModelDict, root: object) -> ModelDict:
-    """If result is a detached job stub {job_id, status}, poll to completion.
-
-    In detached mode execute_pre_commit_checks returns {job_id, status} immediately.
-    This helper waits for the worker to finish and returns the full inner result dict
-    so callers get output/errors fields for targeted fix application.
-    """
-    from pathlib import Path
-
-    from cortex.tools.execution.pre_commit_detached import poll_job_to_completion
-
-    job_id = result.get("job_id")
-    status = result.get("status")
-    if not isinstance(job_id, str) or status not in ("started", "already_running"):
-        return result  # Already a full result or a cache hit — return as-is.
-    if not isinstance(root, Path):
-        return result  # Cannot poll without a valid root.
-    polled = await poll_job_to_completion(root, job_id)
-    return cast(ModelDict, polled)
-
-
 async def _run_fix_quality_job() -> ModelDict:
-    from cortex.tools.execution.pre_commit_tools import execute_pre_commit_checks
+    from cortex.tools.execution.pre_commit_zero_arg_tools import autofix
 
-    return await execute_pre_commit_checks(
-        checks=["fix_quality"], include_untracked_markdown=True
-    )
+    return await autofix()
 
 
 async def _run_verify_job() -> ModelDict:
-    from cortex.tools.execution.pre_commit_tools import execute_pre_commit_checks
+    from cortex.tools.execution.pre_commit_zero_arg_tools import run_quality_gate
 
-    return await execute_pre_commit_checks(
-        checks=["type_check", "quality", "format", "markdown"],
-        test_timeout=300,
-        coverage_threshold=0.90,
-        strict_mode=False,
-    )
+    return await run_quality_gate()
 
 
 async def _run_tests_job() -> ModelDict:
-    from cortex.tools.execution.pre_commit_tools import execute_pre_commit_checks
+    from cortex.tools.execution.pre_commit_zero_arg_tools import run_quality_gate
 
-    return await execute_pre_commit_checks(
-        checks=["tests"],
-        test_timeout=600,
-        coverage_threshold=0.90,
-        strict_mode=False,
-    )
+    return await run_quality_gate()
 
 
 async def _run_docs_job() -> ModelDict:
-    from cortex.tools.execution.pre_commit_tools import execute_pre_commit_checks
+    from cortex.tools.execution.pre_commit_zero_arg_tools import run_docs_gate
 
-    return await execute_pre_commit_checks(
-        phase="B",
-        test_timeout=600,
-        coverage_threshold=0.90,
-        strict_mode=False,
-    )
+    return await run_docs_gate()
 
 
 async def _fix_all_impl() -> str:
-    """Run full fix sequence: quality → tests → docs. Zero args required."""
-    from cortex.core.usage_context import get_current_project_root
-    from cortex.tools.execution.pre_commit_detached import clear_all_cached_results
+    """Run full fix sequence: quality → gate → docs. Zero args required."""
     from cortex.tools.validation.helpers import ValidationCheckType
     from cortex.tools.validation.operations import validate_impl as validate
 
-    root = get_current_project_root()
     quality = await _run_fix_quality_job()
-    if root is not None:
-        _ = clear_all_cached_results(root)
-    verify_raw = await _run_verify_job()
-    tests_raw = await _run_tests_job()
-    docs_raw = await _run_docs_job()
-    verify = await _resolve_detached(verify_raw, root)
-    tests = await _resolve_detached(tests_raw, root)
-    docs = await _resolve_detached(docs_raw, root)
+    verify = await _run_verify_job()
+    tests = await _run_tests_job()
+    docs = await _run_docs_job()
     ts = await validate(check_type=ValidationCheckType("timestamps"))
     rs = await validate(check_type=ValidationCheckType("roadmap_sync"))
     return json.dumps(
