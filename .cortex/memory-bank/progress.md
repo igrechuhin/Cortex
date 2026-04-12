@@ -16,6 +16,11 @@
 - **Fast-Forward vs. Step-by-Step Planning Modes** - PARTIAL. Implemented step draft file format, plan(create) planning_mode=step, continue_step/approve_step/finalize_step operations, and tests; prompt/draft-list/session polish (plan steps 6–7) still open.
 - **Fast-Forward vs. Step-by-Step Planning Modes** - PARTIAL. Step 6: `/cortex/plan` prompt documents `planning_mode` ff/step and resume flow. Step 7: `manage_file` `list_drafts` / `discard_draft` and stale-draft hints in `session()` suggestions. Step 8: unit tests for drafts + session suggestion + parse.
 - **Fast-Forward vs. Step-by-Step Planning Modes** - COMPLETE. Planning modes shipped with tests, manage_file draft ops, session hints, and log heading uniqueness for MD024.
+- **Type Policy Hardening: Remove Any from Production Code** - COMPLETE. Typed PreCommitRunSummary, ModelDict returns, Ruff ANN401 guard.
+- **Deprecation Completion: Legacy Quality Entrypoints Migration** - PARTIAL. Preflight uses detached Phase A runner shared with run_quality_gate; e2e uses run_quality_gate; sunset marker module + docs migration table + migration matrix file.
+- **README Tool Inventory Parity Fix** - COMPLETE. README Key Tools table + AGENTS 12-tool parity; tests/docs/test_tool_inventory_parity.py; uv-build in dev deps; test refactors for governance.
+- **Network-Resilience Onboarding** - COMPLETE. Offline preflight, Makefile, README, CI workflow, tests.
+- **Quality tooling** - Committed legacy quality MCP compat, offline preflight/bootstrap, deprecation plans, split pre-commit phase tests, roadmap sync wording, and wiki sources for README/tools docs.
 
 ## 2026-04-11
 

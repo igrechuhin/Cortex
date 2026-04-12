@@ -50,6 +50,8 @@ dev = [
     "pyright>=1.1.400",  # Primary type checker (CI + local); mypy config kept for optional local runs
     "detect-secrets>=1.5.0",
     "rumdl>=0.1.29",
+    # PEP 517 build backend for this package; offline preflight checks it is importable in .venv.
+    "uv-build>=0.11.0",
 ]
 
 [tool.black]
@@ -67,10 +69,14 @@ select = [
     "I",   # import sorting (isort replacement)
     "B",   # flake8-bugbear
     "UP",  # pyupgrade
+    "ANN401",  # disallow typing.Any in annotations (src/; tests per-file ignored)
 ]
 ignore = [
     "E501",  # Line too long (handled by Black)
 ]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["ANN401"]
 
 [tool.ruff.lint.isort]
 # Configure ruff's isort (compatible with isort's black profile by default)

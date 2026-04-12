@@ -24,6 +24,16 @@
 
 - ✅ **Fast-Forward vs. Step-by-Step Planning Modes** - COMPLETE (2026-04-12) - Planning modes: fast-forward and step-by-step MCP flows, draft hygiene, session stale-draft hints, tests, and quality fixes (operations log timestamps, test helpers).
 
+- ✅ **Type Policy Hardening: Remove Any from Production Code** - COMPLETE (2026-04-12) - Replaced pre-commit status summaries with Pydantic BaseModel and StrEnum; return ModelDict; added Ruff ANN401 for src with tests ignored; narrowed numeric assertions in unit tests.
+
+- ✅ **Deprecation Completion: Legacy Quality Entrypoints Migration (PARTIAL)** - COMPLETE (2026-04-12) - Preflight Phase A now delegates to run_detached_phase_a_checks; e2e uses run_quality_gate with session checks-task.json; sunset 2026-07-01 documented; migration matrix + compat marker module.
+
+- ✅ **README Tool Inventory Parity Fix** - COMPLETE (2026-04-12) - README Key Tools and AGENTS.md list all 12 MCP tools; added tests/docs parity tests; dev group includes uv-build for offline preflight; Phase B test helpers for function-length limits.
+
+- ✅ **Network-Resilience Onboarding** - COMPLETE (2026-04-12) - Added --offline preflight, make preflight-offline, README restricted-network steps, bootstrap-offline preflight contract, CORTEX_REPO_ROOT test hook, integration smoke test.
+
+- ✅ **Commit: legacy quality + preflight + tests** - COMPLETE (2026-04-12) - Shipped deprecation compat, offline bootstrap contract, wiki ingest for README/tools.md, and modular phase-tool unit tests.
+
 ## Completed Work (2026-04-11)
 
 - **Summary (2026-04-11)** - 1 entries archived.

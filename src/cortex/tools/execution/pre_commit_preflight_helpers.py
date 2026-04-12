@@ -9,32 +9,19 @@ testability and type safety.
 from __future__ import annotations
 
 import json
-from collections.abc import Sequence
+from pathlib import Path
 from typing import cast
 
-from cortex.core.context_logging import MCPContext, log_client
+from cortex.core.context_logging import MCPContext
 from cortex.core.models import JsonDict, JsonValue, ModelDict, OperationStatus
-from cortex.tools.execution.pre_commit_tools import (
-    PreCommitCheckName,
-    execute_pre_commit_checks,
+from cortex.core.usage_context import (
+    get_current_project_root,
+    get_or_resolve_project_root,
 )
-from cortex.tools.files.markdown_lint import run_markdown_lint_all_files_check
 from cortex.tools.models import (
     PreflightCheckSummary,
     RunPreflightChecksErrorResult,
     RunPreflightChecksResult,
-)
-
-_PRE_FLIGHT_DEFAULT_CHECKS: tuple[PreCommitCheckName, ...] = (
-    PreCommitCheckName.FIX_ERRORS,
-    PreCommitCheckName.FORMAT,
-    PreCommitCheckName.SYNAPSE_FORMAT,
-    PreCommitCheckName.SYNAPSE_LINT,
-    PreCommitCheckName.TYPE_CHECK,
-    PreCommitCheckName.QUALITY,
-    PreCommitCheckName.SPELLING,
-    PreCommitCheckName.TESTS,
-    PreCommitCheckName.EVAL_FAST,
 )
 
 
@@ -171,34 +158,6 @@ def build_check_summaries(
     return summaries
 
 
-async def _run_markdown_phase(
-    include_untracked_markdown: bool,
-    ctx: MCPContext | None,
-) -> JsonDict | None:
-    """Run markdown lint on all repo files (CI parity) and parse JSON into a dict."""
-    _ = include_untracked_markdown  # Preflight always lints all files to match CI
-    markdown_json = await run_markdown_lint_all_files_check(ctx=ctx)
-    try:
-        decoded = json.loads(markdown_json)
-    except json.JSONDecodeError as exc:
-        await log_client(
-            ctx,
-            "error",
-            f"run_preflight_checks: failed to decode markdown result: {exc!s}",
-            logger_name=__name__,
-        )
-        return None
-    if not isinstance(decoded, dict):
-        await log_client(
-            ctx,
-            "error",
-            "run_preflight_checks: markdown result was not a JSON object",
-            logger_name=__name__,
-        )
-        return None
-    return cast(JsonDict, decoded)
-
-
 async def _run_preflight_checks_phase_tools(
     test_timeout: int,
     coverage_threshold: float,
@@ -206,19 +165,29 @@ async def _run_preflight_checks_phase_tools(
     include_untracked_markdown: bool,
     ctx: MCPContext | None,
 ) -> tuple[ModelDict, str | None, JsonDict | None]:
-    """Run execute_pre_commit_checks and markdown lint once for preflight."""
-    checks: Sequence[PreCommitCheckName] = _PRE_FLIGHT_DEFAULT_CHECKS
-    raw_result = await execute_pre_commit_checks(
-        checks=checks,
+    """Run Phase A checks via the same detached runner as ``run_quality_gate``."""
+    _ = include_untracked_markdown  # Markdown runs inside the detached Phase A worker.
+
+    from cortex.tools.execution.pre_commit_zero_arg_tools import (
+        run_detached_phase_a_checks,
+    )
+
+    root = get_current_project_root()
+    if root is None:
+        root = Path(await get_or_resolve_project_root(ctx))
+    raw_result = await run_detached_phase_a_checks(
+        root,
         test_timeout=test_timeout,
         coverage_threshold=coverage_threshold,
         strict_mode=strict_mode,
+        force_fresh=False,
         ctx=ctx,
     )
     execute_result = _ensure_result_dict(raw_result)
     language_value = execute_result.get("language")
     language = str(language_value) if isinstance(language_value, str) else None
-    markdown_result = await _run_markdown_phase(include_untracked_markdown, ctx)
+    md_raw = execute_result.get("markdown_result")
+    markdown_result = cast(JsonDict, md_raw) if isinstance(md_raw, dict) else None
     return execute_result, language, markdown_result
 
 

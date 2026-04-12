@@ -8,11 +8,14 @@ from __future__ import annotations
 
 import json
 import time
-from dataclasses import dataclass
+from enum import StrEnum
 from pathlib import Path
-from typing import Any, Literal, cast
+from typing import cast
+
+from pydantic import BaseModel, ConfigDict
 
 from cortex.core.context_logging import MCPContext
+from cortex.core.models import ModelDict
 from cortex.tools.execution.session_paths import session_dir
 
 _RESULT_PREFIX = "pre_commit_result_"
@@ -20,22 +23,24 @@ _RESULT_SUFFIX = ".json"
 _MAX_RUNNING_AGE_SECONDS = 1800.0
 
 
-PreCommitJobStatus = Literal[
-    "no_runs",
-    "queued",
-    "running",
-    "completed",
-    "error",
-    "timeout",
-    "unknown",
-]
+class PreCommitJobStatusEnum(StrEnum):
+    """Lifecycle status of a detached pre-commit job."""
+
+    NO_RUNS = "no_runs"
+    QUEUED = "queued"
+    RUNNING = "running"
+    COMPLETED = "completed"
+    ERROR = "error"
+    TIMEOUT = "timeout"
+    UNKNOWN = "unknown"
 
 
-@dataclass
-class PreCommitRunSummary:
+class PreCommitRunSummary(BaseModel):
     """Summary of the most recent detached pre-commit run."""
 
-    status: PreCommitJobStatus
+    model_config = ConfigDict(extra="forbid")
+
+    status: PreCommitJobStatusEnum
     args_hash: str | None = None
     checks: list[str] | None = None
     preflight_passed: bool | None = None
@@ -46,30 +51,9 @@ class PreCommitRunSummary:
     log_path: str | None = None
     checks_summary: dict[str, bool] | None = None
 
-    def to_dict(self) -> dict[str, Any]:
-        """Convert summary to a JSON-serializable dict."""
-        out: dict[str, Any] = {
-            "status": self.status,
-        }
-        if self.args_hash is not None:
-            out["args_hash"] = self.args_hash
-        if self.checks is not None:
-            out["checks"] = self.checks
-        if self.preflight_passed is not None:
-            out["preflight_passed"] = self.preflight_passed
-        if self.docs_phase_passed is not None:
-            out["docs_phase_passed"] = self.docs_phase_passed
-        if self.coverage is not None:
-            out["coverage"] = self.coverage
-        if self.completed_at is not None:
-            out["completed_at"] = self.completed_at
-        if self.error is not None:
-            out["error"] = self.error
-        if self.log_path is not None:
-            out["log_path"] = self.log_path
-        if self.checks_summary is not None:
-            out["checks_summary"] = self.checks_summary
-        return out
+    def to_summary_dict(self) -> ModelDict:
+        """Convert summary to a JSON-serializable dict for MCP payloads."""
+        return cast(ModelDict, self.model_dump(mode="json", exclude_none=True))
 
 
 def _iter_result_files(session_dir: Path) -> list[Path]:
@@ -144,7 +128,7 @@ def _summarize_completed(
     raw_result = data.get("result")
     if not isinstance(raw_result, dict):
         return PreCommitRunSummary(
-            status="error",
+            status=PreCommitJobStatusEnum.ERROR,
             args_hash=args_hash,
             error="Completed worker result missing 'result' object",
         )
@@ -154,7 +138,7 @@ def _summarize_completed(
     coverage = result_obj.get("coverage")
     checks_summary = _build_checks_summary(result_obj)
     return PreCommitRunSummary(
-        status="completed",
+        status=PreCommitJobStatusEnum.COMPLETED,
         args_hash=args_hash,
         checks=_extract_checks_list(result_obj),
         preflight_passed=bool(preflight) if preflight is not None else None,
@@ -175,7 +159,7 @@ def _summarize_timeout_status(
     """Build summary for timeout-like statuses."""
     error_val = data.get("error")
     return PreCommitRunSummary(
-        status="timeout",
+        status=PreCommitJobStatusEnum.TIMEOUT,
         args_hash=args_hash,
         completed_at=_extract_completed_at(data),
         error=str(error_val) if error_val else default_message,
@@ -204,7 +188,7 @@ def _summarize_running_status(
                 ),
             )
     return PreCommitRunSummary(
-        status="running",
+        status=PreCommitJobStatusEnum.RUNNING,
         args_hash=args_hash,
         error=str(error_val) if error_val else "",
         log_path=log_path,
@@ -221,10 +205,15 @@ def _summarize_result_error_or_unknown(
     error_val = data.get("error")
     if status_value == "error":
         msg = str(error_val) if error_val else "Detached worker reported error"
-    else:
-        msg = str(error_val) if error_val else "Unknown detached worker status"
+        return PreCommitRunSummary(
+            status=PreCommitJobStatusEnum.ERROR,
+            args_hash=args_hash,
+            error=msg,
+            log_path=log_path,
+        )
+    msg = str(error_val) if error_val else "Unknown detached worker status"
     return PreCommitRunSummary(
-        status="error" if status_value == "error" else "unknown",
+        status=PreCommitJobStatusEnum.UNKNOWN,
         args_hash=args_hash,
         error=msg,
         log_path=log_path,
@@ -239,7 +228,7 @@ def _summarize_result(
     if status_value == "queued":
         error_val = data.get("error")
         return PreCommitRunSummary(
-            status="queued",
+            status=PreCommitJobStatusEnum.QUEUED,
             args_hash=args_hash,
             error=str(error_val) if error_val else None,
             log_path=log_path,
@@ -261,7 +250,7 @@ def _summarize_result(
 async def get_last_pre_commit_status_impl(
     project_root: Path,
     ctx: MCPContext | None,
-) -> dict[str, Any]:
+) -> ModelDict:
     """Return summary of the most recent detached pre-commit run.
 
     This helper is used by the MCP tool to provide a lightweight way for agents
@@ -273,14 +262,16 @@ async def get_last_pre_commit_status_impl(
     sd = session_dir(project_root)
     result_files = _iter_result_files(sd)
     if not result_files:
-        return PreCommitRunSummary(status="no_runs").to_dict()
+        return PreCommitRunSummary(
+            status=PreCommitJobStatusEnum.NO_RUNS
+        ).to_summary_dict()
     latest = result_files[0]
     data = _load_result(latest)
     if data is None:
         return PreCommitRunSummary(
-            status="error",
+            status=PreCommitJobStatusEnum.ERROR,
             error=f"Failed to read or parse result file: {latest.name}",
-        ).to_dict()
+        ).to_summary_dict()
     args_hash: str | None = None
     name = latest.name
     if name.startswith(_RESULT_PREFIX) and name.endswith(_RESULT_SUFFIX):
@@ -289,27 +280,29 @@ async def get_last_pre_commit_status_impl(
     if args_hash is not None:
         log_path = str(sd / f"pre_commit_worker_{args_hash}.log")
     summary = _summarize_result(data, args_hash=args_hash, log_path=log_path)
-    return summary.to_dict()
+    return summary.to_summary_dict()
 
 
 async def get_pre_commit_status_impl(
     project_root: Path,
     job_id: str,
     ctx: MCPContext | None,
-) -> dict[str, Any]:
+) -> ModelDict:
     """Return summary of a specific detached pre-commit job by job_id."""
     _ = ctx
     sd = session_dir(project_root)
     path = sd / f"{_RESULT_PREFIX}{job_id}{_RESULT_SUFFIX}"
     if not path.exists():
-        return PreCommitRunSummary(status="no_runs", args_hash=job_id).to_dict()
+        return PreCommitRunSummary(
+            status=PreCommitJobStatusEnum.NO_RUNS, args_hash=job_id
+        ).to_summary_dict()
     data = _load_result(path)
     if data is None:
         return PreCommitRunSummary(
-            status="error",
+            status=PreCommitJobStatusEnum.ERROR,
             args_hash=job_id,
             error=f"Failed to read or parse result file: {path.name}",
-        ).to_dict()
+        ).to_summary_dict()
     log_path = str(sd / f"pre_commit_worker_{job_id}.log")
     summary = _summarize_result(data, args_hash=job_id, log_path=log_path)
-    return summary.to_dict()
+    return summary.to_summary_dict()

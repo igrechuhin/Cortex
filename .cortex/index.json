@@ -1,7 +1,7 @@
 {
   "schema_version": "1.0.0",
   "created_at": "2026-01-25T21:38:36.940164",
-  "last_updated": "2026-04-12T18:45:37.437289",
+  "last_updated": "2026-04-12T21:00:17.170683",
   "project_root": ".",
   "memory_bank_dir": ".cortex/memory-bank",
   "files": {
@@ -202,7 +202,7 @@
       "size_bytes": 47695,
       "token_count": 7525,
       "token_model": "cl100k_base",
-      "last_modified": "2026-04-12T18:45:37.436714",
+      "last_modified": "2026-04-12T21:00:17.169876",
       "content_hash": "sha256:df272707954fec571708ec197b362c223d06743cef19b818b53aa693796aea20",
       "sections": [
         {
@@ -351,18 +351,18 @@
         }
       ],
       "read_count": 1,
-      "write_count": 5338,
-      "last_read": "2026-04-12T18:45:37.436714",
+      "write_count": 5390,
+      "last_read": "2026-04-12T21:00:17.169876",
       "current_version": 11
     },
     "activeContext.md": {
       "path": ".cortex/memory-bank/activeContext.md",
       "exists": true,
-      "size_bytes": 9311,
+      "size_bytes": 9325,
       "token_count": 1536,
       "token_model": "cl100k_base",
-      "last_modified": "2026-04-12T18:45:37.433030",
-      "content_hash": "sha256:4dbccab40268ad930db838bf8d2b8ebf8d49f651083bc56176f9558c5f5fc116",
+      "last_modified": "2026-04-12T21:00:17.165450",
+      "content_hash": "sha256:fa45f287ec7acbb3dd552f2bb3d011cc66daa44469ec1a7a6b7493737ee1cced",
       "sections": [
         {
           "heading": "# Active Context: Cortex",
@@ -841,7 +841,7 @@
           "level": 2,
           "line_start": 255,
           "line_end": 258,
-          "content_hash": "sha256:f503ca007729d02264360ce8ce92bccfe4f5e8067724a4f6dc26e94b6175401d",
+          "content_hash": "sha256:1c0dc8bd274e01eb93f17bf26272ee6b9f93821cf8db6f4c68101c1b5c0b6dc4",
           "token_count": 19
         },
         {
@@ -862,8 +862,8 @@
         }
       ],
       "read_count": 0,
-      "write_count": 5340,
-      "last_read": "2026-04-12T18:45:37.433030",
+      "write_count": 5392,
+      "last_read": "2026-04-12T21:00:17.165450",
       "current_version": 11
     },
     "projectBrief.md": {
@@ -1279,8 +1279,8 @@
   },
   "totals": {
     "total_files": 7,
-    "total_size_bytes": 86793,
+    "total_size_bytes": 86807,
     "total_tokens": 15682,
-    "last_full_scan": "2026-04-12T18:45:37.436739"
+    "last_full_scan": "2026-04-12T21:00:17.169909"
   }
 }

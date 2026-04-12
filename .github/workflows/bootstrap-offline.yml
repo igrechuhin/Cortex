@@ -1,4 +1,6 @@
 # Validates offline bootstrap using a pre-populated wheelhouse and a network-isolated container.
+# Offline contract: wheelhouse must include runtime deps plus the ``uv_build`` backend wheel
+# (see pyproject.toml [build-system]) so ``uv sync --offline`` can install without PyPI.
 # Triggered only when bootstrap-related paths change.
 
 name: Bootstrap offline
@@ -66,4 +68,4 @@ jobs:
             -v "${GITHUB_WORKSPACE}:/repo" \
             -w /repo \
             ghcr.io/astral-sh/uv:python3.13-bookworm-slim \
-            bash -lc 'set -euo pipefail; UV_NO_INDEX=1 UV_FIND_LINKS="/repo/wheelhouse" uv python install 3.13; UV_NO_INDEX=1 UV_FIND_LINKS="/repo/wheelhouse" uv sync --offline --group dev --extra dev --find-links "/repo/wheelhouse"; set +e; bash scripts/preflight.sh; code=$?; set -e; test "$code" -eq 2'
+            bash -lc 'set -euo pipefail; UV_NO_INDEX=1 UV_FIND_LINKS="/repo/wheelhouse" UV_PYTHON_PREFERENCE=only-system uv sync --offline --group dev --extra dev --find-links "/repo/wheelhouse"; bash scripts/preflight.sh --offline'

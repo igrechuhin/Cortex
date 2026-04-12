@@ -127,16 +127,7 @@ Day-to-day agent workflows should follow [AGENTS.md](../../AGENTS.md) and the [C
 
 ## Deprecated agent entrypoints (legacy names)
 
-**Sunset (hard removal target): 2026-07-01.** After this date the legacy MCP tools below may be removed or reduced to a non-agent surface.
-
 `execute_pre_commit_checks`, `start_quality_job`, and `get_quality_job_status` remain in the codebase for specialized programmatic callers. Agent prompts, README-style onboarding, and troubleshooting should **not** tell users to invoke them when the MCP bridge cannot forward parameters. Use the zero-arg tools in the [Commit and quality pipeline (zero-arg MCP tools)](#commit-and-quality-pipeline-zero-arg-mcp-tools) section instead.
-
-### Migration from legacy quality tools to zero-arg tools
-
-| Legacy | Zero-arg replacement | Notes |
-|--------|----------------------|-------|
-| `execute_pre_commit_checks(...)` with explicit checks or phase | `run_quality_gate()` for Phase A; `run_docs_gate()` for Phase B docs/memory validation | Write `pipeline_handoff` **commit** / **checks** task JSON first when you need non-default `test_timeout`, `coverage_threshold`, `force_fresh`, or reflection flags. |
-| `start_quality_job` + `get_quality_job_status` polling | `run_quality_gate()` (blocking end-to-end) or `autofix()` then `run_quality_gate()` | Cursor's MCP bridge often delivers `{}` to parameterized tools; zero-arg tools read session config instead. |
 
 ### MCP Tool Annotations
 

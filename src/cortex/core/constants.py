@@ -180,7 +180,7 @@ PROGRESS_REPORT_INTERVAL_SECONDS = 10  # Report progress every N seconds
 PROGRESS_REPORT_INTERVAL_LONG_RUNNING_SECONDS = (
     5  # Shorter interval for tools with timeout >= 300s to avoid client idle timeout
 )
-PROGRESS_REPORT_INTERVAL_VERY_FREQUENT_SECONDS = 2  # Very frequent interval for tools prone to connection closed errors (e.g. execute_pre_commit_checks)
+PROGRESS_REPORT_INTERVAL_VERY_FREQUENT_SECONDS = 2  # Very frequent interval for long-running MCP quality tools (detached Phase A / quality gate)
 PROGRESS_THRESHOLD_TIMEOUT_SECONDS = (
     120.0  # Enable progress for tools with timeout >= this
 )

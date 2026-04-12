@@ -6,14 +6,14 @@ Workspace-wide rules for all IDE/AI agents in this repository.
 
 This project has a **Cortex MCP server** that provides tools for everything agents need. **Always use Cortex MCP tools instead of reading files or running commands directly.**
 
-### Tools (11 — write/execute operations)
+### Tools (12 — write/execute operations)
 
 | Tool | Purpose |
 |------|---------|
-| `session()` | Session start, orientation, compact |
 | `manage_file()` | Memory bank read/write (zero-arg reads activeContext.md) |
 | `plan()` | Plan create/list/get/complete/register/archive_completed |
 | `update_memory_bank()` | Roadmap/progress/activeContext mutations |
+| `session()` | Session start, orientation, compact |
 | `run_quality_gate()` | Phase A quality checks and Step 12 final gate (zero-arg) |
 | `autofix()` | Auto-fix lint/format/types/markdown (zero-arg) |
 | `think()` | Reasoning scratchpad |
@@ -21,6 +21,7 @@ This project has a **Cortex MCP server** that provides tools for everything agen
 | `run_docs_gate()` | Phase B docs validation (zero-arg) |
 | `pipeline_handoff()` | Inter-phase state exchange (init/write/read/clear) |
 | `write_artifact()` | Allowlisted skill JSON and Synapse rule artifact writes |
+| `compress_memory_bank()` | Compress project CLAUDE.md and memory-bank markdown to reduce session tokens |
 
 ### Resources (6 — read-only, all static/zero-arg)
 
@@ -176,7 +177,7 @@ All phases run inline. Use zero-arg tools — do NOT use legacy pre-commit tools
 - When the user says to add something to a plan instead of coding (e.g. "Don't code now. Add it in plan"), add it to the plan and do not implement immediately.
 - When naming modules within a package, drop redundant package-name prefixes (e.g., in cortex.tools.linking use graph_operations not link_graph_operations).
 - When adding or changing tools, prefer consolidation and removal of redundant or poorly used tools over adding new ones; tool count should decrease as functionality improves, and strengthen tool descriptions and governance tests so agents naturally use the intended entrypoints.
-- When enforcing new coding standards (e.g., Literal→enum) or introducing repeated canonical layout tokens (such as wiki filenames), update `.cortex/synapse/rules/python` so the rule is reflected there and prefer enums or module constants over scattered string literals.
+- When enforcing new coding standards (e.g., Literal→enum) or introducing repeated canonical layout tokens (such as wiki filenames), update `.cortex/synapse/rules/python` so the rule is reflected there and prefer enums or module constants over scattered string literals; internal tool dispatch and plan routing request models should use enums for operation discriminators, not raw strings.
 - When fixing private/public access issues, prefer making the original symbol public (rename `_name` → `name` and update call sites) instead of adding public alias shims like `name = _name`. When a handoff or validation key is shown in prompts or other agent-visible text, prefer renaming away from a leading underscore (and updating allowlists) rather than exposing `_prefixed` identifiers in user-facing surfaces.
 - Prompts must be language agnostic; avoid language- or tool-specific identifiers in prompt instructions (e.g. specific typechecker rule names).
 - Treat overloaded terms (e.g. "clean") as prompt-specific; do not assume commit-pipeline git-clean semantics when a prompt defines issue-clean or workflow-clean semantics.
@@ -192,7 +193,7 @@ All phases run inline. Use zero-arg tools — do NOT use legacy pre-commit tools
 - Append-only logs under `.cortex/memory-bank/` (e.g. `log.md`) should stay bounded; avoid unbounded append-only growth (rotation, caps, or archival as appropriate).
 - Respect the project's defined structure; do not introduce new top-level directories or concepts (e.g., `scripts`) that deviate from it; avoid workflow or automation artifacts that pollute the project layout. Project wiki files belong under `.cortex/wiki/` (for example `schema.md`), not ad hoc sibling paths directly under `.cortex/`.
 - When tests need cursor/agent paths and project_root is the repo root, use a session-scoped temp directory instead of creating `_cursor` in the workspace.
-- Archived plans must live under `.cortex/plans/archive` (not `.cortex/archived/plans`) so completed plans stay in the canonical archive tree. Step-mode planning may leave interim `draft-<slug>.md` files under `.cortex/plans/` (with a `CORTEX_STEP_PLAN_STATE` footer) until they are finalized to `<slug>.md`. `.cursor/synapse` is a symlink to `.cortex/synapse`; Synapse prompts edited via either path refer to the same submodule files.
+- Archived plans must live under `.cortex/plans/archive` (not `.cortex/archived/plans`) so completed plans stay in the canonical archive tree. Step-mode planning may leave interim `draft-<slug>.md` files under `.cortex/plans/` (with a `CORTEX_STEP_PLAN_STATE` footer) until they are finalized to `<slug>.md`; remove session-only draft or scratch plan files after local MCP or planning-mode tests so `.cortex/plans/` does not accumulate throwaway artifacts. `.cursor/synapse` is a symlink to `.cortex/synapse`; Synapse prompts edited via either path refer to the same submodule files.
 - When editing `roadmap.md` pending bullets, avoid bare dotted Python filenames, backticked paths such as `pre_commit_foo`/`pre_commit_bar`, and the root Node manifest name written as one token; the roadmap file-reference scanner can treat those as real paths and fail `roadmap_sync`. When a bullet should point at a real plan file, end the line with `Plan: .cortex/plans/<file>.md` (session tooling parses this). `plan(operation="register")` only accepts `section` values `blockers`, `active_work`, `future`, or `pending`.
 - Synapse Python standards forbid `from typing import TYPE_CHECKING` and `if TYPE_CHECKING:` conditional imports; use normal imports (including under `tests/`) instead of that pattern.
 - Phase A `run_quality_gate()` can reuse cached fingerprints so typecheck output may not match the current working tree; if pyright errors look stale versus local `pyright`, write `{"force_fresh": true}` via `pipeline_handoff(write, checks, ...)` then call `run_quality_gate()` once before treating results as ground truth.

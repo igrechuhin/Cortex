@@ -19,6 +19,12 @@ from cortex.tools.execution.pre_commit_tools import (
 )
 
 
+def _json_number(value: object) -> float:
+    """Narrow MCP summary numeric fields (JsonValue) for strict type checks."""
+    assert isinstance(value, (int, float))
+    return float(value)
+
+
 def _write_result(
     dir_path: Path,
     name: str,
@@ -28,6 +34,38 @@ def _write_result(
     path = dir_path / name
     _ = path.write_text(json.dumps(payload))
     return path
+
+
+def _completed_result_file_payload(
+    now: float,
+    *,
+    preflight_passed: bool,
+    docs_phase_passed: bool,
+    result_status: str,
+    coverage: float,
+    results: dict[str, object],
+) -> dict[str, object]:
+    return {
+        "version": 1,
+        "status": "completed",
+        "completed_at": now,
+        "result": {
+            "status": result_status,
+            "preflight_passed": preflight_passed,
+            "docs_phase_passed": docs_phase_passed,
+            "coverage": coverage,
+            "checks": ["tests"],
+            "results": results,
+        },
+    }
+
+
+_COMPLETED_ALL_CHECKS_OK: dict[str, object] = {
+    "tests": {"success": True},
+    "format": {"success": True},
+    "type_check": {"success": True},
+    "quality": {"success": True},
+}
 
 
 @pytest.mark.asyncio
@@ -44,24 +82,14 @@ async def test_completed_result_summarized_correctly(tmp_path: Path) -> None:
     project_root = tmp_path
     session_dir = project_root / ".cortex" / ".session"
     now = time.time()
-    payload: dict[str, object] = {
-        "version": 1,
-        "status": "completed",
-        "completed_at": now,
-        "result": {
-            "status": "success",
-            "preflight_passed": True,
-            "docs_phase_passed": False,
-            "coverage": 0.95,
-            "checks": ["tests"],
-            "results": {
-                "tests": {"success": True},
-                "format": {"success": True},
-                "type_check": {"success": True},
-                "quality": {"success": True},
-            },
-        },
-    }
+    payload = _completed_result_file_payload(
+        now,
+        preflight_passed=True,
+        docs_phase_passed=False,
+        result_status="success",
+        coverage=0.95,
+        results=_COMPLETED_ALL_CHECKS_OK,
+    )
     _ = _write_result(session_dir, "pre_commit_result_abc123456789.json", payload)
 
     result = await get_last_pre_commit_status_impl(project_root, ctx=None)
@@ -69,8 +97,8 @@ async def test_completed_result_summarized_correctly(tmp_path: Path) -> None:
     assert result["args_hash"] == "abc123456789"
     assert result["preflight_passed"] is True
     assert result["docs_phase_passed"] is False
-    assert abs(float(result["coverage"]) - 0.95) < 1e-9
-    assert abs(float(result["completed_at"]) - now) < 1e-6
+    assert abs(_json_number(result["coverage"]) - 0.95) < 1e-9
+    assert abs(_json_number(result["completed_at"]) - now) < 1e-6
     assert result["checks"] == ["tests"]
     # Per-category summary and log path should be present
     assert result["checks_summary"] == {
@@ -162,7 +190,7 @@ async def test_explicit_timeout_status_in_result_file_is_preserved(
     assert result["status"] == "timeout"
     assert result["args_hash"] == "timeout2"
     assert "Timeout waiting for worker result" in str(result.get("error", ""))
-    assert abs(float(result["completed_at"]) - now) < 1e-6
+    assert abs(_json_number(result["completed_at"]) - now) < 1e-6
 
 
 @pytest.mark.asyncio
@@ -222,21 +250,14 @@ async def test_get_pre_commit_status_impl_completed_failure_flags(
     project_root = tmp_path
     session_dir = project_root / ".cortex" / ".session"
     now = time.time()
-    payload: dict[str, object] = {
-        "version": 1,
-        "status": "completed",
-        "completed_at": now,
-        "result": {
-            "status": "failed",
-            "preflight_passed": False,
-            "docs_phase_passed": False,
-            "coverage": 0.75,
-            "checks": ["tests"],
-            "results": {
-                "tests": {"success": False},
-            },
-        },
-    }
+    payload = _completed_result_file_payload(
+        now,
+        preflight_passed=False,
+        docs_phase_passed=False,
+        result_status="failed",
+        coverage=0.75,
+        results={"tests": {"success": False}},
+    )
     _ = _write_result(session_dir, "pre_commit_result_failjob.json", payload)
 
     result = await get_pre_commit_status_impl(
@@ -248,7 +269,7 @@ async def test_get_pre_commit_status_impl_completed_failure_flags(
     assert result["args_hash"] == "failjob"
     assert result["preflight_passed"] is False
     assert result["docs_phase_passed"] is False
-    assert abs(float(result["coverage"]) - 0.75) < 1e-9
+    assert abs(_json_number(result["coverage"]) - 0.75) < 1e-9
     assert result["checks"] == ["tests"]
     # checks_summary should reflect failing tests
     assert result["checks_summary"] == {"tests": False}

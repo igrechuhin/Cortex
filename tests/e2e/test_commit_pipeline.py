@@ -11,7 +11,8 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from cortex.tools.execution.pre_commit_tools import execute_pre_commit_checks
+from cortex.core.path_resolver import CortexResourceType, get_cortex_path
+from cortex.tools.execution.pre_commit_zero_arg_tools import run_quality_gate
 from cortex.tools.files.operations import manage_file
 from cortex.tools.validation.operations import validate_impl as validate
 from tests.helpers.path_helpers import ensure_test_cortex_structure
@@ -51,10 +52,25 @@ async def _step_validate_schema(file_name: str) -> object:
 @pytest.mark.slow
 @pytest.mark.timeout(180)
 @pytest.mark.asyncio
-async def test_commit_pipeline_manage_file_validate_pre_commit(tmp_path: Path) -> None:
-    """E2E: manage_file read -> validate -> execute_pre_commit_checks (3 tools)."""
+async def test_commit_pipeline_manage_file_validate_pre_commit(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """E2E: manage_file read -> validate -> run_quality_gate (3 tools)."""
     memory_bank_dir = ensure_test_cortex_structure(tmp_path)
     _write_minimal_memory_bank(memory_bank_dir)
+
+    session_id = "e2ecommitpipe01"
+    monkeypatch.setenv("CORTEX_SESSION_ID", session_id)
+    checks_dir = (
+        get_cortex_path(tmp_path, CortexResourceType.SESSION) / session_id / "commit"
+    )
+    checks_dir.mkdir(parents=True, exist_ok=True)
+    _ = (checks_dir / "checks-task.json").write_text(
+        json.dumps(
+            {"test_timeout": 60, "coverage_threshold": 0.0, "force_fresh": False}
+        ),
+        encoding="utf-8",
+    )
 
     with patch(
         "cortex.core.project_root_resolver.resolve_project_root_async",
@@ -64,15 +80,9 @@ async def test_commit_pipeline_manage_file_validate_pre_commit(tmp_path: Path) -
         _ = await _step_manage_file_read("activeContext.md")
         _ = await _step_validate_schema("activeContext.md")
 
-        pre_commit_result = await execute_pre_commit_checks(
-            checks=["format"],
-            test_timeout=60,
-            coverage_threshold=0.0,
-            strict_mode=False,
-            ctx=None,
-        )
+        pre_commit_result = await run_quality_gate(ctx=None)
         result_dict = cast(dict[str, object], pre_commit_result)
-        assert "status" in result_dict or "checks" in result_dict
+        assert "preflight_passed" in result_dict or "status" in result_dict
 
 
 @pytest.mark.slow

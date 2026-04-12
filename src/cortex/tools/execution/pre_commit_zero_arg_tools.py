@@ -99,6 +99,8 @@ def _start_phase_a_job(
     timeout: int,
     coverage_threshold: float,
     force_fresh: bool,
+    *,
+    strict_mode: bool = False,
 ) -> ModelDict:
     """Start detached Phase A pre-commit job and return {job_id,status}."""
     from cortex.tools.execution.pre_commit_detached import start_pre_commit_job_impl
@@ -109,7 +111,7 @@ def _start_phase_a_job(
         checks=checks,
         timeout=timeout,
         coverage_threshold=coverage_threshold,
-        strict_mode=False,
+        strict_mode=strict_mode,
         include_markdown_lint=True,
         force_fresh=force_fresh,
     )
@@ -188,6 +190,35 @@ async def poll_phase_a_result(
     return cast(ModelDict, inner)
 
 
+async def run_detached_phase_a_checks(
+    root: Path,
+    *,
+    test_timeout: int,
+    coverage_threshold: float,
+    strict_mode: bool,
+    force_fresh: bool,
+    ctx: MCPContext | None,
+) -> ModelDict:
+    """Run Phase A via the detached subprocess path (same engine as ``run_quality_gate``).
+
+    ``run_quality_gate`` reads timeouts and thresholds from the commit pipeline
+    task file; preflight and tests call this helper with explicit parameters.
+    """
+    async with get_phase_a_lock():
+        job = _start_phase_a_job(
+            root,
+            timeout=test_timeout,
+            coverage_threshold=coverage_threshold,
+            force_fresh=force_fresh,
+            strict_mode=strict_mode,
+        )
+        job_id = str(job.get("job_id", ""))
+        status = str(job.get("status", ""))
+        if status == "error":
+            return job
+        return await poll_phase_a_result(root, job_id, timeout=test_timeout, ctx=ctx)
+
+
 async def _spawn_and_poll_phase_a(
     root: Path,
     timeout: int,
@@ -205,18 +236,14 @@ async def _spawn_and_poll_phase_a(
     Acquires ``get_phase_a_lock()`` before spawning to prevent concurrent
     Phase-A jobs, which race on shared session files and crash the MCP server.
     """
-    async with get_phase_a_lock():
-        job = _start_phase_a_job(
-            root,
-            timeout=timeout,
-            coverage_threshold=coverage_threshold,
-            force_fresh=force_fresh,
-        )
-        job_id = str(job.get("job_id", ""))
-        status = str(job.get("status", ""))
-        if status == "error":
-            return job
-        return await poll_phase_a_result(root, job_id, timeout=timeout, ctx=ctx)
+    return await run_detached_phase_a_checks(
+        root,
+        test_timeout=timeout,
+        coverage_threshold=coverage_threshold,
+        strict_mode=False,
+        force_fresh=force_fresh,
+        ctx=ctx,
+    )
 
 
 _QUALITY_GATE_DEFAULTS: dict[str, object] = {
