@@ -8,6 +8,7 @@ from unittest.mock import AsyncMock, patch
 import pytest
 
 from cortex.tools.session.script_capture_tools import (
+    SessionScriptAnalysisField,
     analyze_session_scripts,
     analyze_session_scripts_resource,
     capture_session_script,
@@ -139,10 +140,12 @@ class TestAnalyzeSessionScripts:
             ):
                 result = await analyze_session_scripts()
                 data = json.loads(result)
-            assert data["status"] == "success"
-            assert "count" in data
-            assert "analyses" in data
-            assert data["count"] == len(data["analyses"])
+            assert data[SessionScriptAnalysisField.STATUS.value] == "success"
+            assert SessionScriptAnalysisField.COUNT.value in data
+            assert SessionScriptAnalysisField.ANALYSES.value in data
+            assert data[SessionScriptAnalysisField.COUNT.value] == len(
+                data[SessionScriptAnalysisField.ANALYSES.value]
+            )
 
     @pytest.mark.asyncio
     async def test_analyzes_captured_scripts(self) -> None:
@@ -161,9 +164,9 @@ class TestAnalyzeSessionScripts:
                 )
                 result = await analyze_session_scripts()
                 data = json.loads(result)
-            assert data["status"] == "success"
-            assert data["count"] == 1
-            analysis = data["analyses"][0]
+            assert data[SessionScriptAnalysisField.STATUS.value] == "success"
+            assert data[SessionScriptAnalysisField.COUNT.value] == 1
+            analysis = data[SessionScriptAnalysisField.ANALYSES.value][0]
             assert "script_id" in analysis
             assert "use_case_label" in analysis
             assert "gap_reason" in analysis
@@ -287,7 +290,11 @@ class TestSessionScriptsDispatcher:
     ) -> None:
         """manage_session_scripts('analyze') forwards to analyze_session_scripts."""
         payload = json.dumps(
-            {"status": "success", "count": 0, "analyses": []},
+            {
+                SessionScriptAnalysisField.STATUS.value: "success",
+                SessionScriptAnalysisField.COUNT.value: 0,
+                SessionScriptAnalysisField.ANALYSES.value: [],
+            },
             indent=2,
         )
         with patch(
@@ -345,7 +352,12 @@ class TestScriptCaptureResources:
     async def test_analyze_session_scripts_resource_returns_json(self) -> None:
         """analyze_session_scripts_resource returns JSON (Phase 43)."""
         payload = json.dumps(
-            {"status": "success", "count": 0, "analyses": []}, indent=2
+            {
+                SessionScriptAnalysisField.STATUS.value: "success",
+                SessionScriptAnalysisField.COUNT.value: 0,
+                SessionScriptAnalysisField.ANALYSES.value: [],
+            },
+            indent=2,
         )
         with patch(
             "cortex.tools.session.script_capture_tools.analyze_session_scripts",
@@ -358,7 +370,7 @@ class TestScriptCaptureResources:
         result = json.loads(result_str)
         assert result["status"] == "success"
         assert result["count"] == 0
-        assert "analyses" in result
+        assert SessionScriptAnalysisField.ANALYSES.value in result
 
     async def test_suggest_tool_improvements_resource_returns_json(
         self,

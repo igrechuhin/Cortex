@@ -4,6 +4,7 @@ from .lint_memory_bank import LintReport, build_memory_bank_lint_checks
 from .memory_bank_lint_checks import (
     CodeClaimCheck,
     CrossRefCheck,
+    IndexStalenessCheck,
     LintCheck,
     LintFinding,
     MissingPlanFilesCheck,
@@ -20,6 +21,7 @@ __all__ = [
     "MissingPlanFilesCheck",
     "OrphanedPlansCheck",
     "OrphanedWikiPagesCheck",
+    "IndexStalenessCheck",
     "StaleActiveContextCheck",
     "LintReport",
     "build_memory_bank_lint_checks",

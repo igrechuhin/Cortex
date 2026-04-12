@@ -4,8 +4,13 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from cortex.tools.artifacts.artifact_types import MemoryBankArtifactStorageSubdir
+
 # AI: Only reviews/ and analyses/ (per file-review-reports plan); findings/queries stay out of scope here.
-_ARTIFACT_SUBDIRS = ("reviews", "analyses")
+_ARTIFACT_SUBDIRS: tuple[MemoryBankArtifactStorageSubdir, ...] = (
+    MemoryBankArtifactStorageSubdir.REVIEWS,
+    MemoryBankArtifactStorageSubdir.ANALYSES,
+)
 _RECENT_ARTIFACT_LIMIT = 5
 _MAX_SUMMARY_LEN = 200
 
@@ -57,8 +62,8 @@ def _iter_markdown_files(subdir: Path) -> list[tuple[Path, float]]:
 def build_recent_artifacts_markdown(memory_bank_dir: Path) -> str | None:
     """Return markdown for ## Recent Artifacts, or None if there is nothing to show."""
     pairs: list[tuple[Path, float]] = []
-    for name in _ARTIFACT_SUBDIRS:
-        pairs.extend(_iter_markdown_files(memory_bank_dir / name))
+    for subdir in _ARTIFACT_SUBDIRS:
+        pairs.extend(_iter_markdown_files(memory_bank_dir / subdir.value))
     if not pairs:
         return None
     pairs.sort(key=lambda t: t[1], reverse=True)

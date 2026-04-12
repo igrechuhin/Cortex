@@ -6,6 +6,8 @@ SYNAPSE_PROMPT_ICONS: dict[str, str] = {
     "implement": "⚡",
     "plan": "📋",
     "analyze": "🔍",
+    "ask": "❓",
+    "init_wiki": "📖",
 }
 DEFAULT_PROMPT_ICON = "📝"
 

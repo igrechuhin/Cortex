@@ -9,7 +9,7 @@ import asyncio
 import json
 from dataclasses import dataclass
 from pathlib import Path
-from typing import cast
+from typing import NamedTuple, cast
 
 from cortex.core.constants import MemoryBankFile
 from cortex.core.file_system import FileSystemManager
@@ -33,6 +33,7 @@ from cortex.tools.session.models import (
     SessionHandoff,
     SessionHealthSummary,
     SessionStartErrorResult,
+    WikiStatusSummary,
 )
 from cortex.tools.session.registry import list_concurrent_sessions
 from cortex.tools.session.start_models import (
@@ -41,6 +42,7 @@ from cortex.tools.session.start_models import (
 from cortex.tools.session.start_models import (
     SessionBriefContextKwargs,
 )
+from cortex.tools.session.wiki_status import compute_wiki_status
 
 # Bound string fields so session_start tool JSON stays compact and clients cannot choke on
 # oversized payloads (mitigates JSONDecodeError / truncation when composing composite tools).
@@ -334,6 +336,8 @@ def _compute_suggestions_and_create_brief(inp: _BriefInputs) -> SessionBrief:
         mcp_healthy=inp.mcp_healthy,
         progress_content=inp.progress_content,
         roadmap_content=inp.roadmap_content,
+        wiki_status=inp.wiki_status,
+        project_root=inp.project_root,
     )
     if inp.workflow_schema_warning:
         suggestions = [*suggestions, inp.workflow_schema_warning]
@@ -363,6 +367,7 @@ def _session_brief_context(inp: _BriefInputs) -> SessionBriefContextKwargs:
         workflow_phases=inp.workflow_phases,
         plan_graph_summary=inp.plan_graph_summary,
         plan_graph_ascii_edges=inp.plan_graph_ascii_edges,
+        wiki_status=inp.wiki_status,
     )
 
 
@@ -413,6 +418,8 @@ def _brief_inputs_tail_mapping(c: "_BriefComponents") -> dict[str, object]:
         "workflow_schema_warning": c.workflow_schema_warning,
         "plan_graph_summary": c.plan_graph_summary,
         "plan_graph_ascii_edges": c.plan_graph_ascii_edges,
+        "wiki_status": c.wiki_status,
+        "project_root": c.project_root,
     }
 
 
@@ -501,6 +508,31 @@ class _LoadedAsyncBundle:
     gate_feedback_summary: str | None
 
 
+class _WorkflowBriefFields(NamedTuple):
+    """Workflow schema + plan-graph lines for ``_BriefComponents``."""
+
+    workflow_schema: str
+    workflow_schema_description: str
+    workflow_phases: list[str]
+    workflow_schema_warning: str | None
+    plan_graph_summary: str | None
+    plan_graph_ascii_edges: str | None
+
+
+@dataclass(frozen=True)
+class _BriefAssemblyParams:
+    """Arguments for ``_brief_components_from_loaded_bundle`` (single param for line limits)."""
+
+    current_focus: str
+    recent_completed: list[str]
+    loaded: _LoadedAsyncBundle
+    progress_content: str | None
+    roadmap_content: str
+    constitution_notice: str | None
+    project_root: Path
+    workflow: _WorkflowBriefFields
+
+
 async def _load_brief_async(
     managers: ManagersDict,
     project_root: Path,
@@ -540,6 +572,8 @@ class _BriefComponents:
     locked_tasks: list[str]
     gate_feedback_summary: str | None
     clarification_summary: str | None
+    project_root: Path
+    wiki_status: WikiStatusSummary
     constitution_notice: str | None = None
     progress_content: str = ""
     roadmap_content: str = ""
@@ -572,13 +606,41 @@ def _brief_components_from_async_load(
     )
 
 
-def _workflow_fields_and_plan_graph(
-    project_root: Path,
-) -> tuple[str, str, list[str], str | None, str | None, str | None]:
+def _workflow_fields_and_plan_graph(project_root: Path) -> _WorkflowBriefFields:
     """Load workflow schema fields plus plan-graph summary lines for the brief."""
     wn, wd, wp, ww = load_workflow_brief_fields(project_root)
     pg_summary, pg_ascii = _plan_graph_brief_fields(project_root)
-    return wn, wd, wp, ww, pg_summary, pg_ascii
+    return _WorkflowBriefFields(wn, wd, wp, ww, pg_summary, pg_ascii)
+
+
+def _brief_components_from_loaded_bundle(
+    params: _BriefAssemblyParams,
+) -> _BriefComponents:
+    loaded = params.loaded
+    workflow = params.workflow
+    project_root = params.project_root
+    return _BriefComponents(
+        current_focus=params.current_focus,
+        recent_completed=params.recent_completed,
+        health=loaded.health,
+        project_name=loaded.project_name,
+        last_handoff=loaded.last_handoff,
+        concurrent_sessions=loaded.concurrent_sessions,
+        locked_tasks=loaded.locked_tasks,
+        gate_feedback_summary=loaded.gate_feedback_summary,
+        clarification_summary=_compute_clarification_summary(project_root),
+        constitution_notice=params.constitution_notice,
+        progress_content=params.progress_content or "",
+        roadmap_content=params.roadmap_content,
+        workflow_schema=workflow.workflow_schema,
+        workflow_schema_description=workflow.workflow_schema_description,
+        workflow_phases=workflow.workflow_phases,
+        workflow_schema_warning=workflow.workflow_schema_warning,
+        plan_graph_summary=workflow.plan_graph_summary,
+        plan_graph_ascii_edges=workflow.plan_graph_ascii_edges,
+        project_root=project_root,
+        wiki_status=compute_wiki_status(project_root),
+    )
 
 
 def _brief_components_after_loaded_unpack(
@@ -590,27 +652,18 @@ def _brief_components_after_loaded_unpack(
     constitution_notice: str | None,
     project_root: Path,
 ) -> _BriefComponents:
-    """Build dataclass after ``_BriefAsyncResult`` tuple has been unpacked."""
-    wn, wd, wp, ww, pg_summary, pg_ascii = _workflow_fields_and_plan_graph(project_root)
-    return _BriefComponents(
-        current_focus=current_focus,
-        recent_completed=recent_completed,
-        health=loaded.health,
-        project_name=loaded.project_name,
-        last_handoff=loaded.last_handoff,
-        concurrent_sessions=loaded.concurrent_sessions,
-        locked_tasks=loaded.locked_tasks,
-        gate_feedback_summary=loaded.gate_feedback_summary,
-        clarification_summary=_compute_clarification_summary(project_root),
-        constitution_notice=constitution_notice,
-        progress_content=progress_content or "",
-        roadmap_content=roadmap_content,
-        workflow_schema=wn,
-        workflow_schema_description=wd,
-        workflow_phases=wp,
-        workflow_schema_warning=ww,
-        plan_graph_summary=pg_summary,
-        plan_graph_ascii_edges=pg_ascii,
+    workflow = _workflow_fields_and_plan_graph(project_root)
+    return _brief_components_from_loaded_bundle(
+        _BriefAssemblyParams(
+            current_focus=current_focus,
+            recent_completed=recent_completed,
+            loaded=loaded,
+            progress_content=progress_content,
+            roadmap_content=roadmap_content,
+            constitution_notice=constitution_notice,
+            project_root=project_root,
+            workflow=workflow,
+        )
     )
 
 

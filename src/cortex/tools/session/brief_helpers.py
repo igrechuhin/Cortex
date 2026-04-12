@@ -19,6 +19,7 @@ def _create_session_brief(
         next_work_plan_path=context.next_work_plan_path,
         health=context.health,
         git_status=context.git_status,
+        wiki_status=context.wiki_status,
         session_suggestions=session_suggestions,
         last_handoff=context.last_handoff,
         concurrent_sessions=context.concurrent_sessions,

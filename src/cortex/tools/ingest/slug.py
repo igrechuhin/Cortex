@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import re
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 
 
 def slugify_title(title: str) -> str:
@@ -14,6 +14,12 @@ def slugify_title(title: str) -> str:
     slug = re.sub(r"[^a-z0-9]+", "-", lowered)
     slug = slug.strip("-")
     return slug or "untitled"
+
+
+def slugify_repo_rel_path(rel: str) -> str:
+    """Stable slug from a repo-relative path (used for idempotent wiki ingest)."""
+    norm = PurePosixPath(rel.replace("\\", "/")).as_posix().lstrip("./")
+    return slugify_title(norm)
 
 
 def allocate_unique_source_path(sources_dir: Path, base_slug: str) -> tuple[str, Path]:

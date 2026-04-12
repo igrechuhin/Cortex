@@ -52,9 +52,11 @@ from __future__ import annotations
 import asyncio
 import logging
 from pathlib import Path
+from typing import cast
 
 from cortex.core.context_logging import MCPContext
 from cortex.core.icon_helpers import create_emoji_icon
+from cortex.core.models import ModelDict
 from cortex.core.project_root_resolver import resolve_project_root_async
 from cortex.core.synapse_submodule_startup import (
     try_sync_synapse_submodule_at_mcp_startup,
@@ -63,8 +65,17 @@ from cortex.server import mcp
 from cortex.setup import should_mount_setup
 from cortex.setup.post_edit_hook_runtime import apply_project_post_edit_hook
 from cortex.tools.config import get_project_config_status
-from cortex.tools.synapse.prompts import register_synapse_prompts, sync_cursor_agents
+from cortex.tools.synapse.prompts import (
+    create_prompt_function,
+    register_synapse_prompts,
+    sync_cursor_agents,
+)
 from cortex.tools.synapse.prompts_content import SYNAPSE_PROMPT_ICONS
+from cortex.tools.synapse.prompts_paths import (
+    load_prompt_content,
+    load_prompts_manifest,
+)
+from cortex.wiki.layout import wiki_has_content, wiki_scaffold_present
 
 logger = logging.getLogger(__name__)
 
@@ -117,6 +128,63 @@ def registered_prompt_names() -> frozenset[str]:
     """Return names of all prompts currently registered on the MCP server."""
     # FastMCP's _prompt_manager.list_prompts() is synchronous.
     return frozenset(p.name for p in mcp._prompt_manager.list_prompts())  # type: ignore[attr-defined]
+
+
+def _init_wiki_manifest_description(synapse_prompts_dir: Path) -> str:
+    """Return the manifest description for init-wiki, or a short fallback."""
+    fallback = (
+        "Seed .cortex/wiki from existing project docs, run ingest snapshots, "
+        "and rebuild index.md."
+    )
+    manifest = load_prompts_manifest(synapse_prompts_dir)
+    if manifest is None:
+        return fallback
+    categories = manifest.get("categories")
+    if not isinstance(categories, dict):
+        return fallback
+    general = categories.get("general")
+    if not isinstance(general, dict):
+        return fallback
+    prompts_raw = general.get("prompts", [])
+    if not isinstance(prompts_raw, list):
+        return fallback
+    for entry_raw in prompts_raw:
+        if not isinstance(entry_raw, dict):
+            continue
+        entry = cast(ModelDict, entry_raw)
+        if entry.get("file") != "init-wiki.md":
+            continue
+        desc = entry.get("description")
+        if isinstance(desc, str) and desc.strip():
+            return desc.strip()
+    return fallback
+
+
+def _register_init_wiki_prompt_if_needed(project_root: Path) -> bool:
+    """Register ``init_wiki`` when the wiki scaffold exists and has no pages yet."""
+    if "init_wiki" in registered_prompt_names():
+        return False
+    if not wiki_scaffold_present(project_root):
+        return False
+    if wiki_has_content(project_root):
+        return False
+
+    from cortex.core.path_resolver import CortexResourceType, get_cortex_path
+
+    synapse_prompts_dir = (
+        get_cortex_path(project_root, CortexResourceType.CORTEX_DIR)
+        / "synapse"
+        / "prompts"
+    )
+    if not synapse_prompts_dir.is_dir():
+        return False
+    content = load_prompt_content(synapse_prompts_dir, "general", "init-wiki.md")
+    if not content:
+        return False
+    description = _init_wiki_manifest_description(synapse_prompts_dir)
+    create_prompt_function("init_wiki", content, description, None)
+    logger.debug("lazy_prompt_registration: registered init_wiki for %s", project_root)
+    return True
 
 
 def prompt_manager_has_synapse_prompts() -> bool:
@@ -321,9 +389,10 @@ class LazyPromptRegistry:
         already_has_synapse = prompt_manager_has_synapse_prompts()
         _try_sync_synapse_prompts(project_root, already_has_synapse)
         await _run_startup_repair(project_root)
+        wiki_init_registered = _register_init_wiki_prompt_if_needed(project_root)
         setup_registered = _register_setup_if_needed(project_root)
         await _notify_prompt_list_changed_if_needed(
-            ctx, (not already_has_synapse) or setup_registered
+            ctx, (not already_has_synapse) or setup_registered or wiki_init_registered
         )
 
 

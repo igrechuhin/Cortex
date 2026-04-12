@@ -28,3 +28,18 @@ def test_collect_md_files_excludes_history_and_session_cache(tmp_path: Path) -> 
     assert str(keep) in out
     assert not any("history" in Path(p).parts for p in out)
     assert not any(".cache" in Path(p).parts for p in out)
+
+
+def test_collect_md_files_excludes_wiki_sources(tmp_path: Path) -> None:
+    """Wiki ingest snapshots are not linted; relative links are repo-relative."""
+    wiki_src = tmp_path / ".cortex" / "wiki" / "sources"
+    wiki_src.mkdir(parents=True)
+    snap = wiki_src / "readme-copy.md"
+    _ = snap.write_text("# copy\n", encoding="utf-8")
+    root_md = tmp_path / "top.md"
+    _ = root_md.write_text("# top\n", encoding="utf-8")
+
+    out = collect_pre_commit_markdown_paths(tmp_path)
+
+    assert str(root_md) in out
+    assert str(snap) not in out

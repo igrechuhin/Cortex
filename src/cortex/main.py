@@ -338,8 +338,11 @@ def main() -> None:
     When using sse or streamable-http, set CORTEX_MCP_PORT and optionally
     CORTEX_MCP_HOST. Ensures graceful shutdown on connection errors.
 
-    The server does not invoke any tools on startup; tools (including
+    The server does not invoke MCP tools on startup; tools (including
     execute_pre_commit_checks) run only when the client sends CallTool.
+    After the first successful :func:`resolve_project_root_async` for a
+    workspace, Cortex may create ``.cortex/wiki/`` from bundled defaults when
+    ``.cortex/`` exists (see ``bootstrap_wiki_if_cortex_present``).
     """
     if "--inner" in sys.argv or os.environ.get("CORTEX_INNER") == "1":
         if "--inner" in sys.argv:

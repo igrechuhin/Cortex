@@ -264,7 +264,8 @@ jobs:
             echo "::error::rumdl not found. Ensure 'uv sync --extra dev' has been run so rumdl is available in the virtualenv."
             exit 1
           fi
-          # Limit to 500 files for parity with internal tooling
+          # Limit to 500 files for parity with internal tooling.
+          # Wiki sources path must match WIKI_SOURCES_DIR_PROJECT_RELATIVE_PREFIX in src/cortex/core/path_resolver.py.
           MD_FILES=$(find . \( -name "*.md" -o -name "*.mdc" \) \
             -not -path "*/node_modules/*" \
             -not -path "*/.venv/*" \
@@ -273,7 +274,8 @@ jobs:
             -not -path "*/.git/*" \
             -not -path "./.cortex/plans/archive/*" \
             -not -path "./.cortex/history/*" \
-            -not -path "./.cortex/.cache/*" | head -500)
+            -not -path "./.cortex/.cache/*" \
+            -not -path "./.cortex/wiki/sources/*" | head -500)
           if [ -n "$MD_FILES" ]; then
             # rumdl exits non-zero when violations are present.
             # Pass --config explicitly: rumdl 0.1.x auto-discovery reports the

@@ -24,7 +24,10 @@ import time
 from pathlib import Path
 from typing import cast
 
-from cortex.core.path_resolver import augmented_environ_with_project_venv_bins
+from cortex.core.path_resolver import (
+    WIKI_SOURCES_DIR_PROJECT_RELATIVE_PREFIX,
+    augmented_environ_with_project_venv_bins,
+)
 from cortex.services.framework_adapters.base import (
     CheckResult,
     FrameworkAdapter,
@@ -184,7 +187,12 @@ def _run_checks(
 _MD_EXCLUDE_DIRS = frozenset(
     {"node_modules", ".venv", "venv", "__pycache__", ".git", ".build"}
 )
-_MD_EXCLUDE_PREFIXES = (".cortex/plans/archive", ".cortex/history/", ".cortex/.cache/")
+_MD_EXCLUDE_PREFIXES = (
+    ".cortex/plans/archive",
+    ".cortex/history/",
+    ".cortex/.cache/",
+    WIKI_SOURCES_DIR_PROJECT_RELATIVE_PREFIX,
+)
 
 
 def _is_collectable_markdown(path: Path, root: Path) -> bool:
@@ -204,9 +212,10 @@ def _is_collectable_markdown(path: Path, root: Path) -> bool:
 def collect_pre_commit_markdown_paths(root: Path, max_files: int = 500) -> list[str]:
     """Collect markdown file paths under root, excluding common dirs and archive.
 
-    Versioned memory-bank snapshots under ``.cortex/history/`` and session cache
-    markdown under ``.cortex/.cache/`` are excluded: they are not hand-edited
-    sources of truth and contain sibling-relative links invalid from those paths.
+    Versioned memory-bank snapshots under ``.cortex/history/``, session cache
+    markdown under ``.cortex/.cache/``, and wiki raw snapshots under
+    ``.cortex/wiki/sources/`` are excluded: they are not hand-edited sources of
+    truth and contain sibling-relative links invalid from those paths.
     """
     md_files: list[str] = []
     for path in sorted(root.rglob("*")):

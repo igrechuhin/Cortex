@@ -14,7 +14,7 @@ from cortex.tools.session.health import (
     determine_token_budget_status,
     parse_mcp_health,
 )
-from cortex.tools.session.models import TokenBudgetStatus
+from cortex.tools.session.models import TokenBudgetStatus, WikiStatusSummary
 from tests.helpers.managers import make_test_managers
 from tests.helpers.path_helpers import ensure_test_cortex_structure
 from tests.tools.session_start_fixtures import (
@@ -211,6 +211,29 @@ class TestGenerateSessionSuggestions:
             roadmap_content=roadmap,
         )
         assert not any("PARTIAL" in s for s in suggestions)
+
+    def test_generate_suggestions_wiki_init_hint(self, tmp_path: Path) -> None:
+        """When Cortex exists, wiki is absent, and README exists, suggest init-wiki."""
+        _ = (tmp_path / ".cortex").mkdir()
+        _ = (tmp_path / "README.md").write_text("# Project\n")
+        health = SessionHealthSummary(
+            file_count=7,
+            total_tokens=10000,
+            token_budget_status=TokenBudgetStatus.HEALTHY,
+            missing_files=[],
+            has_errors=False,
+        )
+        wiki = WikiStatusSummary(
+            wiki_enabled=False, wiki_page_count=0, wiki_path=".cortex/wiki"
+        )
+        suggestions = generate_session_suggestions(
+            health,
+            None,
+            None,
+            wiki_status=wiki,
+            project_root=tmp_path,
+        )
+        assert any("init-wiki" in s for s in suggestions)
 
 
 class TestParseMCPHealth:

@@ -2,31 +2,25 @@
 
 **This file records completed work only.** For current status and upcoming work see [roadmap.md](roadmap.md).
 
+## Completed Work (2026-04-12)
+
+- ✅ **Wiki ingest routing (PARTIAL)** - COMPLETE (2026-04-12) - When `.cortex/wiki/` exists, MCP `ingest` stores raw markdown under `wiki/sources/`, emits a frontmatter summary page (category from tags), appends `wiki/index.md`, and cortex://context recent-ingest prefers wiki `sources/` over memory-bank.
+
+- ✅ **Project Wiki for Attached Projects (PARTIAL)** - COMPLETE (2026-04-12) - Registered `/cortex/query` Synapse workflow: `query.md`, manifest, `query` prompt icon, `TestQuerySynapsePrompt`. Plan Step 5 done; Steps 6–8 remain.
+
+- ✅ **Wiki staged ingest helper (PARTIAL)** - COMPLETE (2026-04-12) - Added `cortex.tools.wiki` with `wiki_ingest_staged_docs` for commit-pipeline wiki updates; patterns configurable via schema frontmatter; `ingest_source_at_project_root` exposes sync ingest for tooling.
+
+- ✅ **Project Wiki (PARTIAL): commit wiki ingest bridge** - COMPLETE (2026-04-12) - Synapse commit.md documents Phase A→B call to wiki_ingest_staged_docs and staging wiki outputs before Phase B docs gate.
+
+- ✅ **Project Wiki (PARTIAL): idempotent staged wiki ingest** - COMPLETE (2026-04-12) - Commit-time `wiki_ingest_staged_docs` now keys on `stable_ingest_rel` (repo path slug): identical content returns skipped/unchanged; updates archive prior raw under `sources/{slug}-v{n}.md` and refreshes the deterministic wiki summary with a cumulative `## Revision` section.
+
+- ✅ **Project Wiki (PARTIAL): init_wiki lazy registration** - COMPLETE (2026-04-12) - `init_wiki` MCP prompt is no longer always registered from the Synapse manifest; it appears only when `.cortex/wiki/schema.md` exists and no summary pages exist under concepts/entities/decisions/workflows/analyses (sources-only does not suppress). Registration runs on first `list_prompts` after startup repair, independent of `should_mount_setup`.
+
+- ✅ **Project Wiki for Attached Projects (.cortex/wiki/)** - COMPLETE (2026-04-12) - Shipped .cortex/wiki layout, session wiki_status, conditional init-wiki registration, wiki-aware ingest and index updates, ask prompt, file_artifact mirror to wiki/analyses, wiki lint checks including index staleness, idempotent wiki_ingest_staged_docs for commits, self-hosted wiki seed; Synapse analyze/review prompts now record memory-bank and wiki mirror paths for filed analyses.
+
 ## Completed Work (2026-04-11)
 
-- ✅ **Context-scoped optimization and Synapse test parity** - COMPLETE (2026-04-11) - Shipped scoped context assembly support: artifact graph, rules filter, task classifier, scoped_context module, Phase 4 optimization handler wiring, split integration tests, and unit tests. Archived context-scoped-instruction-assembly plan under .cortex/plans/archive. Synapse: pytest args aligned with CI (-n auto -x -q --no-header) and commit prompt trimmed; Black formatting applied to run_tests.py.
-
-- ✅ **Delta Specs for Plans** - COMPLETE (2026-04-11) - Added PlanDelta model, change history on plan create, implementation-step diff on enrich, change_count/latest_delta on plan get, and last_change in scoped context; unit and integration tests updated.
-
-- ✅ **Plan delta change history (commit)** - COMPLETE (2026-04-11) - Committed PlanDelta model, plan_change_history module, plan CRUD/enrich metadata and scoped_context last_change wiring; integration and unit tests; archived delta-specs plan under .cortex/plans/archive/Other.
-
-- ✅ **Parallel Task Markers [P] (PARTIAL)** - COMPLETE (2026-04-11) - Plan(create) auto-tags disjoint `src/` steps with `[P]`; plan(register) rejects invalid task graphs and returns parallel/sequential counts; plan(get) returns serialized task graph + can_parallelize.
-
-- ✅ **Parallel Task Markers [P] (PARTIAL — Step 6)** - COMPLETE (2026-04-11) - Orchestrator can derive parallel batches via plan_utils.next_execution_frontier; do.md instructs plan(get) + up to 3 implement-code worktrees when can_parallelize.
-
-- ✅ **Parallel Task Markers [P]** - COMPLETE (2026-04-11) - Step 8 tests: multi-dep parse, empty-token and self-cycle validation, task_graph metadata on plan get, create_plan [P] integration for disjoint src paths.
-
-- ✅ **Parallel task markers and worktree merge (commit)** - COMPLETE (2026-04-11) - Committed TaskNode model, task graph parsing and next_execution_frontier in plan_utils, parallel_worktree_merge helpers, plan create/register/get wiring for task_graph and can_parallelize, integration and unit tests; Synapse do.md documents parallel [P] waves with plan(get) metadata; parallel-task-markers plan archived under .cortex/plans/archive/Other; fixed duplicate log.md heading for markdown lint.
-
-- ✅ **Schema-Defined Workflow Variants** - COMPLETE (2026-04-11) - Built-in workflow YAML, `load_schema` with project override and `inherits`, `evaluate_workflow_condition`, session brief fields (`workflow_schema`, `workflow_phases`) filtered by phase conditions using extra keys from `.cortex/session.yaml`, `manage_file` list_schemas/fork_schema, Synapse do.md workflow-schema guidance; compliance and data-science session tests added. Plan archived under `.cortex/plans/archive/Other/`.
-
-- ✅ **Workflow schema stack and session_start test split (commit)** - COMPLETE (2026-04-11) - Committed project workflow schemas (YAML, loader, inherits, conditions), session brief workflow fields and manage_file schema ops, split session_start tests into session_start_fixtures + focused modules under file-size limits, brief_workflow helper extraction for function length; Synapse submodule at do.md workflow-schema guidance.
-
-- ✅ **Artifact graph (PARTIAL)** - COMPLETE (2026-04-11) - compute_artifact_graph in cortex.core.artifact_graph classifies plans as ready/blocked and detects dependency cycles; PlanStatus enum exported from cortex.core.models.
-
-- ✅ **Artifact Graph for Plan Dependencies** - COMPLETE (2026-04-11) - depends_on graph, register/complete resync, session and cortex://context and roadmap BLOCKED hints; Step 8 register-to-unblock integration test.
-
-- ✅ **Plan dependency graph stack (commit)** - COMPLETE (2026-04-11) - Committed plan graph tooling, register/completion wiring, brief/context/roadmap surfacing, tests, plan archive move, and Synapse gitlink.
+- **Summary (2026-04-11)** - 1 entries archived.
 
 ## Completed Work (2026-04-10)
 

@@ -38,7 +38,11 @@ def _title_from_slug(path: Path) -> str:
 
 
 def build_recent_ingested_sources_markdown(memory_bank_dir: Path) -> str | None:
-    """Return markdown for ## Recently Ingested Sources, or None if no sources exist."""
+    """Return markdown for ## Recently Ingested Sources, or None if no sources exist.
+
+    ``memory_bank_dir`` is any project root-relative tree that contains a ``sources/``
+    directory of ``*.md`` snapshots (typically ``.cortex/memory-bank`` or ``.cortex/wiki``).
+    """
     sources_dir = memory_bank_dir / "sources"
     if not sources_dir.is_dir():
         return None

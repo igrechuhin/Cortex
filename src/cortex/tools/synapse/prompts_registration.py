@@ -107,6 +107,10 @@ def process_prompt_info(
     filename = prompt_info.get("file")
     if not isinstance(filename, str):
         return 0
+    # AI: init-wiki is registered lazily when the wiki scaffold exists but has no
+    # pages — see cortex.setup.lazy_prompt_registration._register_init_wiki_prompt_if_needed.
+    if filename == "init-wiki.md":
+        return 0
     prompt_name = prompt_info.get("name", filename.replace(".md", "").replace("-", "_"))
     if not isinstance(prompt_name, str):
         return 0

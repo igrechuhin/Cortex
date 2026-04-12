@@ -5,12 +5,15 @@
 from __future__ import annotations
 
 import asyncio
+import json
+from contextlib import ExitStack
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
 import cortex.setup.prompts_always  # noqa: F401  # registers setup_synapse on the MCP server
+from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.setup.lazy_prompt_registration import (
     LazyPromptRegistry,
     ensure_prompts_registered,
@@ -19,8 +22,11 @@ from cortex.setup.lazy_prompt_registration import (
     registered_prompt_names,
 )
 from cortex.tools.config import ProjectConfigStatus
+from cortex.wiki.layout import ensure_default_wiki_layout
 
 _ = cortex.setup.prompts_always
+
+_M = "cortex.setup.lazy_prompt_registration"
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -41,6 +47,52 @@ def _make_status(
         cursor_integration_configured=cursor_integration_configured,
         migration_needed=migration_needed,
         tiktoken_cache_available=tiktoken_cache_available,
+    )
+
+
+def _enter_lazy_root_patches(
+    stack: ExitStack,
+    tmp_path: Path,
+    *,
+    has_synapse: bool,
+    mount_setup: bool,
+    status: ProjectConfigStatus | None = None,
+) -> None:
+    st = status or _make_status()
+    _ = stack.enter_context(
+        patch(f"{_M}.prompt_manager_has_synapse_prompts", return_value=has_synapse)
+    )
+    _ = stack.enter_context(
+        patch(
+            f"{_M}.resolve_project_root_async",
+            new_callable=AsyncMock,
+            return_value=tmp_path,
+        )
+    )
+    _ = stack.enter_context(patch(f"{_M}.get_project_config_status", return_value=st))
+    _ = stack.enter_context(patch(f"{_M}.should_mount_setup", return_value=mount_setup))
+
+
+def _write_init_wiki_fixture_under_cortex(cortex: Path) -> None:
+    syn = cortex / "synapse" / "prompts"
+    syn.mkdir(parents=True)
+    _ = (syn / "init-wiki.md").write_text("# Init\n\nx.\n", encoding="utf-8")
+    payload = {
+        "version": "1.0",
+        "categories": {
+            "general": {
+                "prompts": [
+                    {
+                        "file": "init-wiki.md",
+                        "name": "Init Wiki",
+                        "description": "Manifest desc",
+                    }
+                ]
+            }
+        },
+    }
+    _ = (syn / "prompts-manifest.json").write_text(
+        json.dumps(payload), encoding="utf-8"
     )
 
 
@@ -169,34 +221,13 @@ class TestLazyPromptRegistry:
     ) -> None:
         """When synapse prompts are already present, synapse registration is skipped."""
         registry = LazyPromptRegistry()
-
-        with (
-            patch(
-                "cortex.setup.lazy_prompt_registration.prompt_manager_has_synapse_prompts",
-                return_value=True,
-            ),
-            patch(
-                "cortex.setup.lazy_prompt_registration.resolve_project_root_async",
-                new_callable=AsyncMock,
-                return_value=tmp_path,
-            ),
-            patch(
-                "cortex.setup.lazy_prompt_registration.register_synapse_prompts"
-            ) as mock_reg,
-            patch(
-                "cortex.setup.lazy_prompt_registration.sync_cursor_agents"
-            ) as mock_sync,
-            patch(
-                "cortex.setup.lazy_prompt_registration.get_project_config_status",
-                return_value=_make_status(),
-            ),
-            patch(
-                "cortex.setup.lazy_prompt_registration.should_mount_setup",
-                return_value=False,
-            ),
-        ):
+        with ExitStack() as stack:
+            _enter_lazy_root_patches(
+                stack, tmp_path, has_synapse=True, mount_setup=False
+            )
+            mock_reg = stack.enter_context(patch(f"{_M}.register_synapse_prompts"))
+            mock_sync = stack.enter_context(patch(f"{_M}.sync_cursor_agents"))
             await registry.do_register(None)
-
         mock_reg.assert_not_called()
         mock_sync.assert_not_called()
 
@@ -241,41 +272,21 @@ class TestLazyPromptRegistry:
     ) -> None:
         """Setup prompts are registered when project needs setup."""
         registry = LazyPromptRegistry()
-
-        with (
-            patch(
-                "cortex.setup.lazy_prompt_registration.prompt_manager_has_synapse_prompts",
-                return_value=True,
-            ),
-            patch(
-                "cortex.setup.lazy_prompt_registration.resolve_project_root_async",
-                new_callable=AsyncMock,
-                return_value=tmp_path,
-            ),
-            patch("cortex.setup.lazy_prompt_registration.register_synapse_prompts"),
-            patch("cortex.setup.lazy_prompt_registration.sync_cursor_agents"),
-            patch(
-                "cortex.setup.lazy_prompt_registration.get_project_config_status",
-                return_value=_make_status(
-                    memory_bank_initialized=False,
-                    structure_configured=False,
-                    migration_needed=False,
-                ),
-            ),
-            patch(
-                "cortex.setup.lazy_prompt_registration.should_mount_setup",
-                return_value=True,
-            ),
-            patch(
-                "cortex.setup.lazy_prompt_registration.register_setup_prompts"
-            ) as mock_setup,
-        ):
+        st = _make_status(
+            memory_bank_initialized=False,
+            structure_configured=False,
+            migration_needed=False,
+        )
+        with ExitStack() as stack:
+            _enter_lazy_root_patches(
+                stack, tmp_path, has_synapse=True, mount_setup=True, status=st
+            )
+            _ = stack.enter_context(patch(f"{_M}.register_synapse_prompts"))
+            _ = stack.enter_context(patch(f"{_M}.sync_cursor_agents"))
+            mock_setup = stack.enter_context(patch(f"{_M}.register_setup_prompts"))
             await registry.do_register(None)
-
         mock_setup.assert_called_once()
-        call_args = mock_setup.call_args.args
-        assert len(call_args) == 2
-        status_arg, root_arg = call_args
+        status_arg, root_arg = mock_setup.call_args.args
         assert isinstance(status_arg, ProjectConfigStatus)
         assert status_arg.memory_bank_initialized is False
         assert status_arg.structure_configured is False
@@ -393,6 +404,53 @@ class TestLazyPromptRegistry:
         ):
             # Must not raise
             await registry.do_register(None)
+
+    @pytest.mark.asyncio
+    async def test_do_register_calls_create_prompt_for_empty_wiki(
+        self, tmp_path: Path
+    ) -> None:
+        """When the wiki scaffold exists and has no pages, ``init_wiki`` is registered."""
+        registry = LazyPromptRegistry()
+        cortex = tmp_path / ".cortex"
+        cortex.mkdir()
+        _ = ensure_default_wiki_layout(tmp_path)
+        _write_init_wiki_fixture_under_cortex(cortex)
+        mock_create = MagicMock()
+        with ExitStack() as stack:
+            _enter_lazy_root_patches(
+                stack, tmp_path, has_synapse=True, mount_setup=False
+            )
+            _ = stack.enter_context(patch(f"{_M}.register_synapse_prompts"))
+            _ = stack.enter_context(patch(f"{_M}.sync_cursor_agents"))
+            _ = stack.enter_context(patch(f"{_M}.create_prompt_function", mock_create))
+            await registry.do_register(None)
+        mock_create.assert_called_once()
+        pos = mock_create.call_args[0]
+        assert pos[0] == "init_wiki"
+        assert pos[2] == "Manifest desc"
+        assert pos[3] is None
+
+    @pytest.mark.asyncio
+    async def test_do_register_skips_init_wiki_when_wiki_has_pages(
+        self, tmp_path: Path
+    ) -> None:
+        registry = LazyPromptRegistry()
+        cortex = tmp_path / ".cortex"
+        cortex.mkdir()
+        _ = ensure_default_wiki_layout(tmp_path)
+        wiki = get_cortex_path(tmp_path, CortexResourceType.WIKI)
+        _ = (wiki / "concepts" / "p.md").write_text("# P\n", encoding="utf-8")
+        _write_init_wiki_fixture_under_cortex(cortex)
+        mock_create = MagicMock()
+        with ExitStack() as stack:
+            _enter_lazy_root_patches(
+                stack, tmp_path, has_synapse=True, mount_setup=False
+            )
+            _ = stack.enter_context(patch(f"{_M}.register_synapse_prompts"))
+            _ = stack.enter_context(patch(f"{_M}.sync_cursor_agents"))
+            _ = stack.enter_context(patch(f"{_M}.create_prompt_function", mock_create))
+            await registry.do_register(None)
+        mock_create.assert_not_called()
 
 
 # ---------------------------------------------------------------------------

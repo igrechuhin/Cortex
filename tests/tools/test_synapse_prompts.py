@@ -440,6 +440,24 @@ class TestProcessPromptInfo:
         assert "# Test Prompt\n\nThis is a test prompt." in prompt_text
         assert "post-prompt-hook.md" in prompt_text
 
+    def test_returns_zero_for_init_wiki_deferred_registration(
+        self, tmp_path: Path
+    ) -> None:
+        """init-wiki is registered lazily when the wiki scaffold is empty — not via manifest."""
+        pdir = tmp_path / "prompts"
+        pdir.mkdir()
+        _ = (pdir / "init-wiki.md").write_text("# Init Wiki\n", encoding="utf-8")
+        prompt_info = {
+            "file": "init-wiki.md",
+            "name": "Init Wiki",
+            "description": "Seed wiki",
+        }
+        result = synapse_prompts.process_prompt_info(
+            cast(ModelDict, prompt_info), pdir, "general"
+        )
+        assert result == 0
+        assert "init_wiki" not in synapse_prompts.__dict__
+
     def test_returns_zero_when_filename_missing(self, prompts_dir: Path):
         """Test returns 0 when filename is missing."""
         # Arrange

@@ -172,4 +172,5 @@ include-package-data = true
 cortex = [
     "resources/tiktoken_cache/*",
     "resources/workflow_schemas/*.yaml",
+    "wiki/*.md",
 ]

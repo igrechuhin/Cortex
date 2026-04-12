@@ -111,7 +111,7 @@ def _register_context_read_stubs(stack: ExitStack) -> None:
     )
     _ = stack.enter_context(
         patch(
-            "cortex.tools.optimization.handlers._read_recent_ingested_sources_markdown",
+            "cortex.tools.optimization.handlers.read_recent_ingested_sources_markdown",
             return_value="",
         )
     )

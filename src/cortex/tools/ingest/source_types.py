@@ -28,3 +28,10 @@ class IngestSource(BaseModel):
     tags: list[str] | None = Field(
         default=None, description="Optional tags for downstream prompts"
     )
+    stable_ingest_rel: str | None = Field(
+        default=None,
+        description=(
+            "Optional repo-relative posix path (e.g. docs/auth.md). When set, ingest "
+            "uses a deterministic slug and idempotent wiki/raw updates for that path."
+        ),
+    )

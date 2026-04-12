@@ -51,6 +51,24 @@ class GitStatusSummary(StrictBaseModel):
     untracked_files_count: int = Field(ge=0, description="Number of untracked files")
 
 
+class WikiStatusSummary(StrictBaseModel):
+    """Wiki layout status for session orientation."""
+
+    wiki_enabled: bool = Field(
+        default=False,
+        description="True when `.cortex/wiki/` exists as a directory",
+    )
+    wiki_page_count: int = Field(
+        default=0,
+        ge=0,
+        description="Markdown files under `.cortex/wiki/` (capped for large trees)",
+    )
+    wiki_path: str | None = Field(
+        default=None,
+        description="Relative wiki root `.cortex/wiki` when `.cortex/` exists; else None",
+    )
+
+
 class InProgressTask(StrictBaseModel):
     """In-progress task from session handoff."""
 
@@ -131,6 +149,10 @@ class SessionBrief(StrictBaseModel):
     health: SessionHealthSummary = Field(description="Quick health check results")
     git_status: GitStatusSummary | None = Field(
         None, description="Git status summary if available"
+    )
+    wiki_status: WikiStatusSummary = Field(
+        default_factory=WikiStatusSummary,
+        description="Wiki directory presence and markdown page count",
     )
     session_suggestions: list[str] = Field(
         default_factory=list, description="Actionable suggestions for the session"

@@ -13,6 +13,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from cortex.tools.lint.memory_bank_lint_checks import (
     CodeClaimCheck,
     CrossRefCheck,
+    IndexStalenessCheck,
     LintCheck,
     LintFinding,
     MissingPlanFilesCheck,
@@ -48,5 +49,6 @@ def build_memory_bank_lint_checks(project_root: Path) -> list[LintCheck]:
         StaleActiveContextCheck(stale_threshold_days=stale_threshold_days),
         CrossRefCheck(),
         OrphanedWikiPagesCheck(),
+        IndexStalenessCheck(),
         CodeClaimCheck(),
     ]

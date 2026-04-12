@@ -25,9 +25,20 @@ class CortexResourceType(Enum):
     ARCHIVED = "archived"
     REVIEWS = "reviews"
     SCHEMAS = "schemas"
+    WIKI = "wiki"
     SESSION = ".session"
     CACHE = ".cache"
     INDEX = "index.json"
+
+
+# Project-root-relative posix paths for the wiki tree (same layout as
+# ``get_cortex_path(project_root, CortexResourceType.WIKI)``).
+WIKI_DIR_PROJECT_RELATIVE_POSIX: str = (
+    f"{CortexResourceType.CORTEX_DIR.value}/{CortexResourceType.WIKI.value}"
+)
+WIKI_SOURCES_DIR_PROJECT_RELATIVE_PREFIX: str = (
+    f"{WIKI_DIR_PROJECT_RELATIVE_POSIX}/sources/"
+)
 
 
 class CursorResourceType(Enum):

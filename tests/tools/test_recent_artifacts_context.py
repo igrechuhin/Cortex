@@ -5,6 +5,7 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
+from cortex.tools.artifacts.artifact_types import MemoryBankArtifactStorageSubdir
 from cortex.tools.context.recent_artifacts_context import (
     build_recent_artifacts_markdown,
 )
@@ -20,7 +21,7 @@ def test_build_recent_artifacts_lists_newest_first_and_limits_five(
     tmp_path: Path,
 ) -> None:
     mb = tmp_path / ".cortex" / "memory-bank"
-    reviews = mb / "reviews"
+    reviews = mb / MemoryBankArtifactStorageSubdir.REVIEWS.value
     reviews.mkdir(parents=True)
     # Six files; only five should appear, newest by mtime win.
     for i in range(6):
@@ -32,27 +33,35 @@ def test_build_recent_artifacts_lists_newest_first_and_limits_five(
     out = build_recent_artifacts_markdown(mb)
     assert out is not None
     assert "## Recent Artifacts" in out
-    assert out.count("- [reviews/") == 5
+    assert out.count(f"- [{MemoryBankArtifactStorageSubdir.REVIEWS.value}/") == 5
     assert "review-x-5.md" in out
     assert "review-x-0.md" not in out
 
 
 def test_build_recent_artifacts_includes_analyses_and_reviews(tmp_path: Path) -> None:
     mb = tmp_path / ".cortex" / "memory-bank"
-    (mb / "reviews").mkdir(parents=True)
-    (mb / "analyses").mkdir(parents=True)
-    _ = (mb / "reviews" / "r.md").write_text("Summary line one.", encoding="utf-8")
-    _ = (mb / "analyses" / "a.md").write_text(
+    (mb / MemoryBankArtifactStorageSubdir.REVIEWS.value).mkdir(parents=True)
+    (mb / MemoryBankArtifactStorageSubdir.ANALYSES.value).mkdir(parents=True)
+    _ = (mb / MemoryBankArtifactStorageSubdir.REVIEWS.value / "r.md").write_text(
+        "Summary line one.", encoding="utf-8"
+    )
+    _ = (mb / MemoryBankArtifactStorageSubdir.ANALYSES.value / "a.md").write_text(
         "---\ntitle: X\n---\n\nAfter frontmatter.", encoding="utf-8"
     )
-    os.utime(mb / "analyses" / "a.md", (2_000_000_000, 2_000_000_000))
-    os.utime(mb / "reviews" / "r.md", (1_000_000_000, 1_000_000_000))
+    os.utime(
+        mb / MemoryBankArtifactStorageSubdir.ANALYSES.value / "a.md",
+        (2_000_000_000, 2_000_000_000),
+    )
+    os.utime(
+        mb / MemoryBankArtifactStorageSubdir.REVIEWS.value / "r.md",
+        (1_000_000_000, 1_000_000_000),
+    )
 
     out = build_recent_artifacts_markdown(mb)
     assert out is not None
-    assert "analyses/a.md" in out
+    assert f"{MemoryBankArtifactStorageSubdir.ANALYSES.value}/a.md" in out
     assert "After frontmatter" in out
-    assert "reviews/r.md" in out
+    assert f"{MemoryBankArtifactStorageSubdir.REVIEWS.value}/r.md" in out
     assert "Summary line one" in out
 
 

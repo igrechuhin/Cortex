@@ -8,6 +8,9 @@ from typing import Literal, Protocol
 from pydantic import BaseModel, ConfigDict, Field
 
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
+from cortex.wiki.categories import WikiCategoryDir
+from cortex.wiki.ingest_wiki import index_catalog_linked_page_paths
+from cortex.wiki.wiki_root_files import WIKI_ROOT_DOCUMENT_NAMES, WikiRootDocument
 
 _PLAN_PATH_PATTERN = "Plan:"
 _DATE_PATTERN = re.compile(r"\b(\d{4}-\d{2}-\d{2})\b")
@@ -87,8 +90,8 @@ def _roadmap_path(project_root: Path) -> Path:
 
 
 def _wiki_root(project_root: Path) -> Path:
-    """Return `.cortex/wiki` root for this project."""
-    return get_cortex_path(project_root, CortexResourceType.CORTEX_DIR) / "wiki"
+    """Return wiki root for this project (same as ``get_cortex_path(..., WIKI)``)."""
+    return get_cortex_path(project_root, CortexResourceType.WIKI)
 
 
 def _memory_bank_root(project_root: Path) -> Path:
@@ -351,7 +354,7 @@ class CrossRefCheck:
         existing = self._existing_wiki_pages(wiki_root)
         findings: list[LintFinding] = []
         for source_file in wiki_root.rglob("*.md"):
-            relative_source = source_file.relative_to(wiki_root).as_posix()
+            rel_file = source_file.relative_to(project_root).as_posix()
             for target, line_num in self._iter_references(_read_text(source_file)):
                 if target in existing:
                     continue
@@ -360,7 +363,7 @@ class CrossRefCheck:
                         severity="warning",
                         check=self.name,
                         message=f"Wiki reference points to missing page: {target}",
-                        file=f".cortex/wiki/{relative_source}",
+                        file=rel_file,
                         line=line_num,
                     )
                 )
@@ -421,6 +424,7 @@ class OrphanedWikiPagesCheck:
 
     def _build_findings(
         self,
+        project_root: Path,
         wiki_root: Path,
         wiki_pages: list[Path],
         inbound_links: set[str],
@@ -429,7 +433,10 @@ class OrphanedWikiPagesCheck:
         findings: list[LintFinding] = []
         for wiki_page in wiki_pages:
             relative_page = wiki_page.relative_to(wiki_root).as_posix()
-            if relative_page == "index.md" and relative_page in linked_roots:
+            if (
+                relative_page == WikiRootDocument.INDEX.value
+                and relative_page in linked_roots
+            ):
                 continue
             if relative_page in inbound_links:
                 continue
@@ -438,7 +445,7 @@ class OrphanedWikiPagesCheck:
                     severity="warning",
                     check=self.name,
                     message=f"Wiki page has no inbound links: {relative_page}",
-                    file=f".cortex/wiki/{relative_page}",
+                    file=wiki_page.relative_to(project_root).as_posix(),
                     line=None,
                 )
             )
@@ -543,8 +550,52 @@ class OrphanedWikiPagesCheck:
             project_root, wiki_root, wiki_pages
         )
         findings.extend(
-            self._build_findings(wiki_root, wiki_pages, inbound_links, linked_roots)
+            self._build_findings(
+                project_root, wiki_root, wiki_pages, inbound_links, linked_roots
+            )
         )
+        return findings
+
+
+class IndexStalenessCheck:
+    """Find wiki pages that are missing from the wiki catalog table."""
+
+    name = "index_staleness"
+
+    @staticmethod
+    def _is_catalog_page(rel_posix: str) -> bool:
+        if rel_posix in WIKI_ROOT_DOCUMENT_NAMES:
+            return False
+        if rel_posix.startswith(f"{WikiCategoryDir.SOURCES.value}/"):
+            return False
+        return rel_posix.endswith(".md")
+
+    def run(self, project_root: Path) -> list[LintFinding]:
+        wiki_root = _wiki_root(project_root)
+        if not wiki_root.is_dir():
+            return []
+        index_path = wiki_root / WikiRootDocument.INDEX.value
+        index_text = _read_text(index_path) if index_path.is_file() else ""
+        listed = index_catalog_linked_page_paths(index_text)
+        findings: list[LintFinding] = []
+        for page in sorted(wiki_root.rglob("*.md")):
+            rel = page.relative_to(wiki_root).as_posix()
+            if not self._is_catalog_page(rel):
+                continue
+            if rel in listed:
+                continue
+            findings.append(
+                LintFinding(
+                    severity="warning",
+                    check=self.name,
+                    message=(
+                        "Wiki page missing from "
+                        f"{WikiRootDocument.INDEX.value} catalog: {rel}"
+                    ),
+                    file=page.relative_to(project_root).as_posix(),
+                    line=None,
+                )
+            )
         return findings
 
 

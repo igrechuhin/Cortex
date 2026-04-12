@@ -2,12 +2,17 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
+from pydantic import Field
+
 from cortex.core.models import DictLikeModel
 from cortex.tools.session.models import (
     ConcurrentSession,
     GitStatusSummary,
     SessionHandoff,
     SessionHealthSummary,
+    WikiStatusSummary,
 )
 
 
@@ -34,6 +39,7 @@ class SessionBriefContextKwargs(DictLikeModel):
     workflow_phases: list[str] = []
     plan_graph_summary: str | None = None
     plan_graph_ascii_edges: str | None = None
+    wiki_status: WikiStatusSummary = Field(default_factory=WikiStatusSummary)
 
 
 class BriefInputs(DictLikeModel):
@@ -60,5 +66,7 @@ class BriefInputs(DictLikeModel):
     workflow_schema_warning: str | None = None
     plan_graph_summary: str | None = None
     plan_graph_ascii_edges: str | None = None
+    wiki_status: WikiStatusSummary = Field(default_factory=WikiStatusSummary)
+    project_root: Path
     progress_content: str = ""
     roadmap_content: str = ""

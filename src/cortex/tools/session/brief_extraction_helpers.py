@@ -6,12 +6,15 @@ Extracted from brief to keep the main module under 400 lines.
 from __future__ import annotations
 
 import re
+from pathlib import Path
 
 from cortex.tools.session.models import (
     ConcurrentSession,
     GitStatusSummary,
     SessionHealthSummary,
+    WikiStatusSummary,
 )
+from cortex.tools.session.wiki_status import append_session_wiki_init_hint
 from cortex.validation.roadmap_progress_consistency import (
     check_roadmap_progress_consistency,
 )
@@ -139,6 +142,8 @@ def generate_session_suggestions(
     mcp_healthy: bool = True,
     progress_content: str = "",
     roadmap_content: str = "",
+    wiki_status: WikiStatusSummary | None = None,
+    project_root: Path | None = None,
 ) -> list[str]:
     """Generate actionable suggestions for the session."""
     suggestions: list[str] = []
@@ -146,6 +151,7 @@ def generate_session_suggestions(
     add_budget_and_missing_suggestions(suggestions, health)
     add_concurrency_suggestions(suggestions, locked_tasks, concurrent_sessions)
     add_memory_bank_sync_suggestions(suggestions, progress_content, roadmap_content)
+    append_session_wiki_init_hint(suggestions, wiki_status, project_root)
     if next_work_item:
         suggestions.append(f"Next roadmap item: {next_work_item}")
     else:

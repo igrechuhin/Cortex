@@ -1,4 +1,4 @@
-"""MCP tool: stage raw external sources under memory-bank (ingest pipeline step 1)."""
+"""MCP tool: stage raw external sources (memory-bank or wiki ``sources/``)."""
 
 from __future__ import annotations
 
@@ -16,7 +16,13 @@ from cortex.core.usage_context import get_or_resolve_project_root
 from cortex.server import mcp
 from cortex.tools.ingest.slug import allocate_unique_source_path, slugify_title
 from cortex.tools.ingest.source_types import IngestSource, SourceType
+from cortex.tools.ingest.stable_path_ingest import ingest_source_with_stable_rel_path
 from cortex.tools.response_builder import error_response, success_response
+from cortex.wiki.ingest_wiki import (
+    WikiIngestWriteResult,
+    wiki_ingest_enabled,
+    write_wiki_ingest_summary_and_index,
+)
 
 
 def _write_atomic(path: Path, content: str) -> None:
@@ -37,17 +43,18 @@ def _json_invalid_source_type(source_type: str) -> str:
     )
 
 
-async def _ingest_store_and_build_json(
-    payload: IngestSource,
-    ctx: MCPContext | None,
-) -> str:
-    project_root = await get_or_resolve_project_root(ctx)
+def _ingest_sources_dir(project_root: Path) -> tuple[Path, Path, bool]:
     memory_bank = get_cortex_path(project_root, CortexResourceType.MEMORY_BANK)
-    sources_dir = memory_bank / "sources"
-    base_slug = slugify_title(payload.title)
-    slug_used, dest = allocate_unique_source_path(sources_dir, base_slug)
+    wiki_root = get_cortex_path(project_root, CortexResourceType.WIKI)
+    use_wiki = wiki_ingest_enabled(wiki_root)
+    sources = (wiki_root / "sources") if use_wiki else (memory_bank / "sources")
+    return wiki_root, sources, use_wiki
+
+
+def _write_source_snapshot(dest: Path, content: str) -> str | None:
+    """Return JSON error string or None when write succeeds."""
     try:
-        _write_atomic(dest, payload.content)
+        _write_atomic(dest, content)
     except OSError as exc:
         return json.dumps(
             error_response(
@@ -55,19 +62,82 @@ async def _ingest_store_and_build_json(
             ),
             indent=2,
         )
+    return None
+
+
+def _wiki_follow_up_or_error(
+    project_root: Path,
+    wiki_root: Path,
+    slug_used: str,
+    payload: IngestSource,
+) -> WikiIngestWriteResult | str:
+    try:
+        return write_wiki_ingest_summary_and_index(
+            project_root=project_root,
+            wiki_root=wiki_root,
+            source_slug=slug_used,
+            title=payload.title,
+            content=payload.content,
+            tags=list(payload.tags) if payload.tags is not None else None,
+        )
+    except OSError as exc:
+        return json.dumps(
+            error_response(
+                error=f"Failed to write wiki summary or index: {exc}",
+                error_code="write_error",
+            ),
+            indent=2,
+        )
+
+
+def ingest_source_at_project_root(project_root: Path, payload: IngestSource) -> str:
+    # AI: Sync entrypoint so commit-pipeline helpers can ingest without an MCP context.
+    """Run ingest synchronously for ``project_root`` (MCP tool uses async resolver).
+
+    Returns a JSON string: either a success payload (same shape as ``ingest``) or an
+    ``error_response`` JSON string on failure.
+    """
+    wiki_root, sources_dir, use_wiki = _ingest_sources_dir(project_root)
+    if payload.stable_ingest_rel is not None:
+        return ingest_source_with_stable_rel_path(
+            project_root, wiki_root, sources_dir, use_wiki, payload
+        )
+
+    base_slug = slugify_title(payload.title)
+    slug_used, dest = allocate_unique_source_path(sources_dir, base_slug)
+    err = _write_source_snapshot(dest, payload.content)
+    if err is not None:
+        return err
     rel = dest.relative_to(project_root)
     base = success_response(
         slug=slug_used,
         source_path=str(rel).replace("\\", "/"),
         title=payload.title,
         source_type=payload.type.value,
+        ingest_target="wiki" if use_wiki else "memory_bank",
     )
     if payload.tags is not None:
         base["tags"] = list(payload.tags)
+    if use_wiki:
+        wiki_part = _wiki_follow_up_or_error(
+            project_root, wiki_root, slug_used, payload
+        )
+        if isinstance(wiki_part, str):
+            return wiki_part
+        base["wiki_summary_path"] = wiki_part.summary_project_posix
+        base["wiki_category"] = wiki_part.summary_category
     return json.dumps(base, indent=2)
 
 
-@mcp.tool(annotations=safe_write_annotations("Ingest Raw Source (Memory Bank)"))
+async def _ingest_store_and_build_json(
+    payload: IngestSource,
+    ctx: MCPContext | None,
+) -> str:
+    project_root = await get_or_resolve_project_root(ctx)
+    return ingest_source_at_project_root(project_root, payload)
+
+
+@mcp.tool(annotations=safe_write_annotations("Ingest Raw Source (Wiki / Memory Bank)"))
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_MEDIUM)
 async def ingest(
@@ -77,10 +147,14 @@ async def ingest(
     tags: list[str] | None = None,
     ctx: MCPContext | None = None,
 ) -> str:
-    """Store raw external content immutably under ``.cortex/memory-bank/sources/``.
+    """Store raw external content immutably under ``sources/``.
 
-    USE WHEN: Staging external markdown or text for the ``/cortex/ingest`` workflow
-    before synthesis updates memory-bank pages.
+    When ``.cortex/wiki/`` exists, writes to ``.cortex/wiki/sources/`` and creates a
+    summary page plus a wiki catalog table row (tag ``decisions`` / ``entities`` / … selects
+    the category directory; default ``concepts``). Otherwise uses
+    ``.cortex/memory-bank/sources/`` (legacy memory-bank ingest path).
+
+    USE WHEN: Staging external markdown or text for the ``/cortex/ingest`` workflow.
 
     DO NOT: Replace ``manage_file`` for curated pages; only immutable ``sources/`` snapshots.
 
@@ -88,7 +162,8 @@ async def ingest(
     - ingest(source_type="text", content="# RFC\\n...", title="Draft RFC")
     - ingest(source_type="markdown_file", content=file_body, title="ADR 12")
 
-    RETURNS: JSON with ``status``, ``slug``, ``source_path``, ``title``, ``source_type``.
+    RETURNS: JSON with ``status``, ``slug``, ``source_path``, ``title``, ``source_type``,
+    ``ingest_target``, and when wiki mode: ``wiki_summary_path``, ``wiki_category``.
     """
     try:
         st = SourceType(source_type)

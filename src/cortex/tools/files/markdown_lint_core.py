@@ -16,6 +16,7 @@ import aiofiles
 from cortex.core.constants import GIT_OPERATION_TIMEOUT_SECONDS
 from cortex.core.models import GitCommandResult
 from cortex.core.path_resolver import (
+    WIKI_SOURCES_DIR_PROJECT_RELATIVE_PREFIX,
     get_node_modules_bin_path,
     iter_venv_executable_candidates,
 )
@@ -45,6 +46,8 @@ _ALL_MARKDOWN_EXCLUDE_PREFIXES = (
     ".cortex/plans/archive",
     ".cortex/history/",
     ".cortex/.cache/",
+    # Wiki ingest copies; relative links are valid only in original doc trees.
+    WIKI_SOURCES_DIR_PROJECT_RELATIVE_PREFIX,
 )
 _CI_PARITY_MAX_MARKDOWN_FILES = 500
 
@@ -287,7 +290,8 @@ def get_all_markdown_files_for_lint(
     """Get all markdown files for lint (CI parity with quality.yml markdown step).
 
     Excludes: node_modules, .venv, venv, __pycache__, .git, and paths under
-    ``.cortex/plans/archive``, ``.cortex/history/``, and ``.cortex/.cache/``
+    ``.cortex/plans/archive``, ``.cortex/history/``, ``.cortex/.cache/``, and
+    the wiki sources prefix from :data:`WIKI_SOURCES_DIR_PROJECT_RELATIVE_PREFIX`
     (mirrors detached worker markdown collection and CI/Makefile rumdl scope).
     Returns up to max_files paths, sorted.
     """

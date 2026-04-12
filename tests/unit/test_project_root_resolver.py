@@ -8,10 +8,12 @@ import pytest
 import cortex.core.project_root_resolver as project_root_resolver_mod
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.core.project_root_resolver import (
+    clear_cached_root,
     file_uri_to_path,
     handle_roots_list_changed,
     resolve_project_root_async,
 )
+from cortex.wiki.wiki_root_files import WikiRootDocument
 
 
 class TestFileUriToPath:
@@ -29,6 +31,26 @@ class TestFileUriToPath:
 
 class TestResolveProjectRootAsync:
     """Test resolve_project_root_async."""
+
+    @pytest.mark.asyncio
+    async def test_resolve_bootstraps_wiki_when_dot_cortex_present(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """First successful resolve creates ``.cortex/wiki/`` (Cursor: no list_roots)."""
+        _ = (tmp_path / ".cortex").mkdir()
+        clear_cached_root()
+
+        def _stub_get_project_root(project_root: Path | None = None) -> Path:
+            _ = project_root
+            return tmp_path
+
+        monkeypatch.setattr(
+            "cortex.core.project_root_resolver.get_project_root",
+            _stub_get_project_root,
+        )
+        result = await resolve_project_root_async(None, None)
+        assert result == tmp_path
+        assert (tmp_path / ".cortex" / "wiki" / WikiRootDocument.SCHEMA.value).is_file()
 
     @pytest.mark.asyncio
     async def test_when_project_root_provided_returns_resolved(
@@ -170,8 +192,10 @@ class TestRootsListChanged:
         stale.mkdir()
         resolved = stale.resolve()
         project_root_resolver_mod.cached_root = resolved
+        project_root_resolver_mod.wiki_bootstrapped_roots.add(resolved.as_posix())
         await handle_roots_list_changed()
         assert project_root_resolver_mod.cached_root is None
+        assert project_root_resolver_mod.wiki_bootstrapped_roots == set()
 
     @pytest.mark.asyncio
     async def test_roots_list_changed_noop_when_no_cache(self) -> None:

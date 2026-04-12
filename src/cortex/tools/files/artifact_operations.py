@@ -182,6 +182,10 @@ async def _file_artifact_with_cross_reference(
 ) -> str:
     date_iso = datetime.now(UTC).date().isoformat()
     final_path = _write_artifact_file(memory_bank_dir, params)
+    project_root = memory_bank_dir.parent.parent
+    from cortex.wiki.artifact_mirror import mirror_file_artifact_to_wiki_if_enabled
+
+    _ = mirror_file_artifact_to_wiki_if_enabled(project_root, params)
     cross_ref_err = await execute_append_artifact_cross_reference(
         memory_bank_dir=memory_bank_dir,
         artifact_type=params.artifact_type,

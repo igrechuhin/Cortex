@@ -1,5 +1,17 @@
 # Progress Log
 
+## 2026-04-12
+
+- **Project Wiki for Attached Projects (.cortex/wiki/)** - PARTIAL. Step 4: MCP `ingest` routes raw snapshots to `.cortex/wiki/sources/` when the wiki exists, writes an auto summary page (category from tags, default concepts), updates `index.md`, and `read_recent_ingested_sources_markdown` prefers wiki sources for cortex://context.
+- **Project Wiki for Attached Projects (.cortex/wiki/)** - PARTIAL. Step 5: added Synapse `/cortex/query` prompt (`query.md`), manifest entry, query icon in `prompts_content.py`, and unit test for prompt registration.
+- **Project Wiki for Attached Projects (.cortex/wiki/)** - PARTIAL. Step 6: `manage_file(file_artifact)` for `review_report` and `session_analysis` now mirrors into `.cortex/wiki/analyses/` with schema frontmatter and `index.md` catalog rows when the wiki tree exists.
+- **Project Wiki for Attached Projects (.cortex/wiki/)** - PARTIAL. Step 8: seeded Cortex self-hosted wiki with 12 ingest-derived pages (README, AGENTS, CLAUDE, core docs/ADRs); `index.md` catalog updated. Step 6 commit prompt wiring landed in Synapse `commit.md`; ingest idempotency remains in `wiki-auto-ingest-git-hooks.md`.
+- **Auto-Ingest from Git Hooks (Wiki Auto-Update)** - PARTIAL. Implemented default auto-ingest glob patterns, optional schema frontmatter override, `wiki_ingest_staged_docs` calling synchronous ingest for matched staged paths, unit tests, and Synapse commit prompt wiring for Phase A→B ingest + `git add`. Step 4 partial: stable-path idempotent ingest (skip unchanged, versioned raw, summary upsert + `## Revision`). Remaining: deeper diff/revision semantics and broader verification.
+- **Project Wiki for Attached Projects (.cortex/wiki/)** - PARTIAL. Step 6 commit slice: Synapse commit prompt now runs wiki staged ingest (`wiki_ingest_staged_docs` + `git add` wiki paths) after Phase A and before Phase B; plans partial logs updated.
+- **Project Wiki for Attached Projects (.cortex/wiki/)** - PARTIAL. Idempotent wiki staged ingest: stable path slug, skip unchanged content, versioned raw snapshots, summary upsert with revision history.
+- **Project Wiki for Attached Projects (.cortex/wiki/)** - PARTIAL. Completed Step 3 conditional `/cortex/init-wiki` MCP prompt registration: `wiki_has_content` / `wiki_scaffold_present`, skip `init-wiki.md` in manifest bulk load, register `init_wiki` lazily after startup repair when wiki scaffold exists and summary categories have no `.md` pages.
+- **Project Wiki for Attached Projects (.cortex/wiki/)** - COMPLETE. Wiki KB end-to-end: ingest, ask, lint, commit-time staged ingest, review/analyze filing to wiki/analyses; prompts aligned for dual-path artifact reporting.
+
 ## 2026-04-11
 
 - **Context-scoped instruction assembly (commit)** - COMPLETE. Scoped context stack (artifact_graph, rules_filter, task_classifier, scoped_context, optimization handlers), Phase 4 optimization test split and new cases, plan archived; Synapse run_tests.py matches CI pytest xdist flags.
@@ -25,6 +37,9 @@
 - **Artifact Graph for Plan Dependencies** - PARTIAL. Steps 6–7: session brief and cortex://context expose plan dependency READY/BLOCKED snapshot; roadmap.md reads annotate blocked plan bullets; unit tests for annotation and context merge.
 - **Artifact Graph for Plan Dependencies** - COMPLETE. depends_on enforcement, READY/BLOCKED graph, completion unblock cascade, session/context/roadmap surfacing, register-to-unblock integration test.
 - **Plan dependency graph stack (commit)** - COMPLETE. Shipped plan_graph, register dependency validation, completion unblock metadata, session brief and cortex://context plan graph summary, roadmap BLOCKED annotation helper, artifact_graph extensions, integration/unit tests; archived artifact-graph-plan-dependencies plan; Synapse submodule pointer updated.
+- **Project Wiki for Attached Projects (.cortex/wiki/)** - PARTIAL. Step 1: `.cortex/wiki/schema.md` (bundled default in `src/cortex/wiki/default_wiki_schema.md`), `CortexResourceType.WIKI`, `ensure_default_wiki_layout` in `src/cortex/wiki/layout.py` with unit tests. Next: `wiki_status` in `session()` and `/cortex/init-wiki`.
+- **Project Wiki for Attached Projects (.cortex/wiki/)** - PARTIAL. Step 2: session() brief includes wiki_status (wiki_enabled, wiki_page_count, wiki_path) and suggests /cortex/init-wiki when wiki is absent and README/docs seeds exist.
+- **Project Wiki for Attached Projects (.cortex/wiki/)** - PARTIAL. Step 3: added Synapse `/cortex/init-wiki` workflow prompt (`init-wiki.md`), registered in `prompts-manifest.json`, and a unit test that the prompt file exists and is listed in the manifest.
 
 ## 2026-04-10
 

@@ -6,6 +6,7 @@ from typing import cast
 from cortex.tools.lint.memory_bank_lint_checks import (
     CodeClaimCheck,
     CrossRefCheck,
+    IndexStalenessCheck,
     LintCheck,
     LintFinding,
     MissingPlanFilesCheck,
@@ -13,6 +14,7 @@ from cortex.tools.lint.memory_bank_lint_checks import (
     OrphanedWikiPagesCheck,
     StaleActiveContextCheck,
 )
+from cortex.wiki.wiki_root_files import WikiRootDocument
 
 
 def _write(path: Path, content: str) -> None:
@@ -144,7 +146,7 @@ def test_stale_active_context_check_skips_old_date_when_progress_matches(
 
 def test_cross_ref_check_reports_missing_wiki_page_references(tmp_path: Path) -> None:
     _write(
-        tmp_path / ".cortex" / "wiki" / "index.md",
+        tmp_path / ".cortex" / "wiki" / WikiRootDocument.INDEX.value,
         "\n".join(
             [
                 "- Existing wiki link: [[pages/known]]",
@@ -162,7 +164,7 @@ def test_cross_ref_check_reports_missing_wiki_page_references(tmp_path: Path) ->
     assert len(findings) == 2
     assert all(finding.check == "cross_ref" for finding in findings)
     assert findings[0].severity == "warning"
-    assert findings[0].file == ".cortex/wiki/index.md"
+    assert findings[0].file == f".cortex/wiki/{WikiRootDocument.INDEX.value}"
     assert "pages/missing.md" in findings[0].message
     assert findings[1].line == 3
 
@@ -175,7 +177,7 @@ def test_cross_ref_check_returns_empty_when_wiki_missing(tmp_path: Path) -> None
 
 
 def test_orphaned_wiki_pages_check_reports_unlinked_page(tmp_path: Path) -> None:
-    _write(tmp_path / ".cortex" / "wiki" / "index.md", "# Index\n")
+    _write(tmp_path / ".cortex" / "wiki" / WikiRootDocument.INDEX.value, "# Index\n")
     _write(tmp_path / ".cortex" / "wiki" / "guides" / "linked.md", "# linked\n")
     _write(tmp_path / ".cortex" / "wiki" / "guides" / "orphan.md", "# orphan\n")
     _write(
@@ -195,12 +197,63 @@ def test_orphaned_wiki_pages_check_reports_unlinked_page(tmp_path: Path) -> None
 
 def test_orphaned_wiki_pages_check_skips_page_linked_from_wiki(tmp_path: Path) -> None:
     _write(
-        tmp_path / ".cortex" / "wiki" / "index.md",
+        tmp_path / ".cortex" / "wiki" / WikiRootDocument.INDEX.value,
         "- link: [[guides/child]]\n",
     )
     _write(tmp_path / ".cortex" / "wiki" / "guides" / "child.md", "# child\n")
 
     check: LintCheck = cast(LintCheck, OrphanedWikiPagesCheck())
+    findings = check.run(tmp_path)
+
+    assert findings == []
+
+
+def test_index_staleness_check_reports_page_missing_from_catalog_table(
+    tmp_path: Path,
+) -> None:
+    _write(
+        tmp_path / ".cortex" / "wiki" / WikiRootDocument.INDEX.value,
+        "\n".join(
+            [
+                "| Page | Category | Summary | Sources |",
+                "|------|----------|---------|---------|",
+                "| [Listed](concepts/listed.md) | concepts | one | src |",
+                "",
+            ]
+        ),
+    )
+    _write(tmp_path / ".cortex" / "wiki" / "concepts" / "listed.md", "# ok\n")
+    _write(tmp_path / ".cortex" / "wiki" / "concepts" / "missing.md", "# orphan\n")
+
+    check: LintCheck = cast(LintCheck, IndexStalenessCheck())
+    findings = check.run(tmp_path)
+
+    assert len(findings) == 1
+    assert findings[0].check == "index_staleness"
+    assert findings[0].severity == "warning"
+    assert findings[0].file == ".cortex/wiki/concepts/missing.md"
+    assert f"missing from {WikiRootDocument.INDEX.value} catalog" in findings[0].message
+
+
+def test_index_staleness_check_skips_sources_and_schema(tmp_path: Path) -> None:
+    _write(
+        tmp_path / ".cortex" / "wiki" / WikiRootDocument.INDEX.value,
+        "| Page | Category | Summary | Sources |\n|------|----------|---------|---------|\n",
+    )
+    _write(
+        tmp_path / ".cortex" / "wiki" / WikiRootDocument.SCHEMA.value,
+        "# schema\n",
+    )
+    _write(tmp_path / ".cortex" / "wiki" / "sources" / "raw.md", "# raw\n")
+
+    check: LintCheck = cast(LintCheck, IndexStalenessCheck())
+    findings = check.run(tmp_path)
+
+    assert findings == []
+
+
+def test_index_staleness_check_returns_empty_when_wiki_missing(tmp_path: Path) -> None:
+    check: LintCheck = cast(LintCheck, IndexStalenessCheck())
     findings = check.run(tmp_path)
 
     assert findings == []

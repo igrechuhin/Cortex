@@ -468,9 +468,18 @@ def _append_recent_artifacts_to_context_payload(
     return json.dumps(payload_data, indent=2)
 
 
-def _read_recent_ingested_sources_markdown(project_root: Path) -> str | None:
-    """Build Recently Ingested Sources markdown from memory-bank/sources."""
+def read_recent_ingested_sources_markdown(project_root: Path) -> str | None:
+    """Build Recently Ingested Sources markdown from wiki or memory-bank ``sources/``."""
+    from cortex.wiki.ingest_wiki import wiki_ingest_enabled
+
     memory_bank = get_cortex_path(project_root, CortexResourceType.MEMORY_BANK)
+    wiki_root = get_cortex_path(project_root, CortexResourceType.WIKI)
+    if wiki_ingest_enabled(wiki_root):
+        wiki_sources = wiki_root / "sources"
+        if wiki_sources.is_dir() and any(wiki_sources.glob("*.md")):
+            wiki_md = build_recent_ingested_sources_markdown(wiki_root)
+            if wiki_md is not None:
+                return wiki_md
     return build_recent_ingested_sources_markdown(memory_bank)
 
 
@@ -596,7 +605,7 @@ async def build_context_resource_payload_async(
 ) -> str:
     recent_ops = _read_recent_operations_lines(project_root)
     recent_artifacts = _read_recent_artifacts_markdown(project_root)
-    recent_ingested_sources = _read_recent_ingested_sources_markdown(project_root)
+    recent_ingested_sources = read_recent_ingested_sources_markdown(project_root)
     explore_summary = _read_explore_summary_markdown(project_root)
     with_goal = append_session_goal_to_context_payload(base_payload, project_root)
     scoped = _append_session_scope_to_context_payload(with_goal)

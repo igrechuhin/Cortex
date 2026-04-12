@@ -48,6 +48,8 @@ logger = logging.getLogger(__name__)
 # return the cached value immediately without touching the transport.
 cached_root: Path | None = None
 _root_cache_lock: asyncio.Lock | None = None
+# Wiki bootstrap once per resolved workspace (cleared with clear_cached_root).
+wiki_bootstrapped_roots: set[str] = set()
 
 
 def _get_root_cache_lock() -> asyncio.Lock:
@@ -59,8 +61,9 @@ def _get_root_cache_lock() -> asyncio.Lock:
 
 def clear_cached_root() -> None:
     """Reset the root cache (used in tests and on explicit project-root override)."""
-    global cached_root
+    global cached_root, wiki_bootstrapped_roots
     cached_root = None
+    wiki_bootstrapped_roots.clear()
 
 
 async def handle_roots_list_changed() -> None:
@@ -69,13 +72,12 @@ async def handle_roots_list_changed() -> None:
     Called when the MCP server receives ``notifications/roots/list_changed``.
     The next :func:`resolve_project_root_async` call issues a new ``list_roots``.
     """
-    global cached_root
     if cached_root is not None:
         logger.info(
             "project_root_resolver: roots/list_changed received, clearing cached root %s",
             cached_root,
         )
-        cached_root = None
+    clear_cached_root()
 
 
 def file_uri_to_path(uri: str) -> Path | None:
@@ -87,6 +89,33 @@ def file_uri_to_path(uri: str) -> Path | None:
     if not path_str:
         return None
     return Path(path_str).resolve()
+
+
+async def _bootstrap_wiki_once_per_root(root: Path) -> None:
+    """Ensure ``.cortex/wiki/`` exists at most once per resolved root per process."""
+    key = root.resolve().as_posix()
+    if key in wiki_bootstrapped_roots:
+        return
+
+    def _work() -> None:
+        try:
+            from cortex.wiki.layout import bootstrap_wiki_if_cortex_present
+
+            _ = bootstrap_wiki_if_cortex_present(root)
+        except Exception:
+            logger.warning(
+                "wiki layout bootstrap failed for %s (non-fatal)",
+                root,
+                exc_info=True,
+            )
+
+    await asyncio.to_thread(_work)
+    wiki_bootstrapped_roots.add(key)
+
+
+async def _return_root_with_wiki_bootstrap(root: Path) -> Path:
+    await _bootstrap_wiki_once_per_root(root)
+    return root
 
 
 def _fallback_root() -> Path:
@@ -200,19 +229,21 @@ async def resolve_project_root_async(
         Resolved absolute Path to project root.
     """
     if project_root:
-        return get_project_root(project_root)
+        return await _return_root_with_wiki_bootstrap(get_project_root(project_root))
     use_fallback = os.environ.get("CORTEX_USE_FALLBACK_ROOT", "").strip().lower()
     if use_fallback in ("1", "true", "yes"):
         logger.info(
             "project_root_resolver: using fallback root (CORTEX_USE_FALLBACK_ROOT=1)"
         )
-        return await asyncio.to_thread(_fallback_root)
+        root_fb = await asyncio.to_thread(_fallback_root)
+        return await _return_root_with_wiki_bootstrap(root_fb)
     # Fast path: if a previous list_roots() call already resolved the root,
     # return it immediately even when ctx is None (e.g. inside list_prompts handler).
     if cached_root is not None:
-        return cached_root
+        return await _return_root_with_wiki_bootstrap(cached_root)
     if ctx is not None and getattr(ctx, "session", None) is not None:
         path = await _try_roots_from_ctx(ctx)
         if path is not None:
-            return path
-    return await asyncio.to_thread(_fallback_root)
+            return await _return_root_with_wiki_bootstrap(path)
+    root_fb2 = await asyncio.to_thread(_fallback_root)
+    return await _return_root_with_wiki_bootstrap(root_fb2)

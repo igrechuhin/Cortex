@@ -4,6 +4,8 @@ from pathlib import Path
 
 from cortex.core.cache_utils import CacheType
 from cortex.core.path_resolver import (
+    WIKI_DIR_PROJECT_RELATIVE_POSIX,
+    WIKI_SOURCES_DIR_PROJECT_RELATIVE_PREFIX,
     CortexResourceType,
     ProjectResourceType,
     augmented_environ_with_project_venv_bins,
@@ -110,6 +112,28 @@ class TestGetCortexPath:
             / CortexResourceType.SCRIPT_CAPTURE.value
         )
         assert result == expected
+
+    def test_get_wiki_path(self, tmp_path: Path) -> None:
+        """Test getting project wiki directory path."""
+        result = get_cortex_path(tmp_path, CortexResourceType.WIKI)
+        expected = (
+            tmp_path
+            / CortexResourceType.CORTEX_DIR.value
+            / CortexResourceType.WIKI.value
+        )
+        assert result == expected
+
+    def test_wiki_project_relative_constants_match_get_cortex_path(
+        self, tmp_path: Path
+    ) -> None:
+        """Wiki posix constants stay aligned with ``get_cortex_path(..., WIKI)``."""
+        wiki = get_cortex_path(tmp_path, CortexResourceType.WIKI)
+        assert wiki.relative_to(tmp_path).as_posix() == WIKI_DIR_PROJECT_RELATIVE_POSIX
+        sources = wiki / "sources"
+        assert (
+            f"{sources.relative_to(tmp_path).as_posix()}/"
+            == WIKI_SOURCES_DIR_PROJECT_RELATIVE_PREFIX
+        )
 
 
 class TestGetCachePath:

@@ -12,6 +12,7 @@ Total: 5 tools
 """
 
 import json
+from enum import Enum
 from urllib.parse import unquote
 
 from cortex.core.constants import MCP_TOOL_TIMEOUT_FAST, MCP_TOOL_TIMEOUT_MEDIUM
@@ -34,6 +35,14 @@ from cortex.tools.session.script_capture_helpers import (
     build_promote_payload,
     record_to_summary,
 )
+
+
+class SessionScriptAnalysisField(str, Enum):
+    """JSON object keys for ``analyze_session_scripts`` tool responses."""
+
+    STATUS = "status"
+    COUNT = "count"
+    ANALYSES = "analyses"
 
 
 @ensure_usage_context
@@ -167,9 +176,9 @@ async def analyze_session_scripts(
         result = analyze_script(record, tool_names, script_names)
         analyses.append(analysis_to_summary(result))
     payload = {
-        "status": "success",
-        "count": len(analyses),
-        "analyses": analyses,
+        SessionScriptAnalysisField.STATUS.value: "success",
+        SessionScriptAnalysisField.COUNT.value: len(analyses),
+        SessionScriptAnalysisField.ANALYSES.value: analyses,
     }
     await log_client(ctx, "info", "analyze_session_scripts: completed")
     return json.dumps(payload, indent=2)
