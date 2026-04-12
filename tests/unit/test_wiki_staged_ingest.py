@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 from pathlib import Path
+from unittest.mock import patch
 
+from cortex.tools.wiki import staged_ingest as staged_ingest_mod
 from cortex.tools.wiki.staged_ingest import wiki_ingest_staged_docs
 from cortex.wiki.layout import ensure_default_wiki_layout
 
@@ -90,3 +92,172 @@ def test_wiki_ingest_skips_dot_cortex_wiki_paths(tmp_path: Path) -> None:
     result = wiki_ingest_staged_docs([p], tmp_path)
     assert p in result.skipped
     assert result.ingested == []
+
+
+def test_wiki_ingest_deduplicates_staged_paths(tmp_path: Path) -> None:
+    _ = (tmp_path / ".cortex").mkdir(parents=True)
+    _bootstrap = ensure_default_wiki_layout(tmp_path)
+    assert _bootstrap.wiki_root
+    doc = tmp_path / "docs" / "once.md"
+    doc.parent.mkdir(parents=True)
+    _ = doc.write_text("# One\n\nbody\n", encoding="utf-8")
+    result = wiki_ingest_staged_docs(["docs/once.md", "docs/once.md"], tmp_path)
+    assert result.ingested == ["docs/once.md"]
+    assert result.errors == []
+
+
+def test_wiki_ingest_skips_empty_file(tmp_path: Path) -> None:
+    _ = (tmp_path / ".cortex").mkdir(parents=True)
+    _bootstrap = ensure_default_wiki_layout(tmp_path)
+    assert _bootstrap.wiki_root
+    doc = tmp_path / "docs" / "empty.md"
+    doc.parent.mkdir(parents=True)
+    _ = doc.write_text("   \n\t\n", encoding="utf-8")
+    result = wiki_ingest_staged_docs(["docs/empty.md"], tmp_path)
+    assert result.ingested == []
+    assert "docs/empty.md" in result.skipped
+
+
+def test_wiki_ingest_errors_on_path_escape(tmp_path: Path) -> None:
+    _ = (tmp_path / ".cortex").mkdir(parents=True)
+    _bootstrap = ensure_default_wiki_layout(tmp_path)
+    assert _bootstrap.wiki_root
+    with patch.object(
+        staged_ingest_mod,
+        "paths_matching_patterns",
+        return_value={"docs/../secret.md"},
+    ):
+        result = wiki_ingest_staged_docs(["docs/../secret.md"], tmp_path)
+    assert result.ingested == []
+    assert any("path escapes root" in e for e in result.errors)
+
+
+def test_wiki_ingest_errors_when_eligible_file_missing(tmp_path: Path) -> None:
+    _ = (tmp_path / ".cortex").mkdir(parents=True)
+    _bootstrap = ensure_default_wiki_layout(tmp_path)
+    assert _bootstrap.wiki_root
+    with patch.object(
+        staged_ingest_mod,
+        "paths_matching_patterns",
+        return_value={"docs/missing.md"},
+    ):
+        result = wiki_ingest_staged_docs(["docs/missing.md"], tmp_path)
+    assert result.ingested == []
+    assert any("not a file" in e for e in result.errors)
+
+
+def test_wiki_ingest_errors_on_read_oserror(tmp_path: Path) -> None:
+    _ = (tmp_path / ".cortex").mkdir(parents=True)
+    _bootstrap = ensure_default_wiki_layout(tmp_path)
+    assert _bootstrap.wiki_root
+    doc = tmp_path / "docs" / "blocked.md"
+    doc.parent.mkdir(parents=True)
+    _ = doc.write_text("# B\n\nx\n", encoding="utf-8")
+    real_read_text = Path.read_text
+
+    def selective_read(
+        self: Path,
+        encoding: str | None = None,
+        errors: str | None = None,
+        newline: str | None = None,
+    ) -> str:
+        if self.resolve() == doc.resolve():
+            raise OSError("denied")
+        return real_read_text(self, encoding=encoding, errors=errors, newline=newline)
+
+    with patch.object(Path, "read_text", selective_read):
+        result = wiki_ingest_staged_docs(["docs/blocked.md"], tmp_path)
+    assert result.ingested == []
+    assert any("read failed" in e for e in result.errors)
+
+
+def test_wiki_ingest_title_fallback_without_heading(tmp_path: Path) -> None:
+    _ = (tmp_path / ".cortex").mkdir(parents=True)
+    _bootstrap = ensure_default_wiki_layout(tmp_path)
+    assert _bootstrap.wiki_root
+    doc = tmp_path / "docs" / "plain-prose.md"
+    doc.parent.mkdir(parents=True)
+    _ = doc.write_text("no hash lines at all\n", encoding="utf-8")
+    result = wiki_ingest_staged_docs(["docs/plain-prose.md"], tmp_path)
+    assert result.errors == []
+    assert result.ingested == ["docs/plain-prose.md"]
+
+
+def test_wiki_ingest_skips_only_hash_heading_lines(tmp_path: Path) -> None:
+    _ = (tmp_path / ".cortex").mkdir(parents=True)
+    _bootstrap = ensure_default_wiki_layout(tmp_path)
+    assert _bootstrap.wiki_root
+    doc = tmp_path / "docs" / "hash-only.md"
+    doc.parent.mkdir(parents=True)
+    _ = doc.write_text("\n##\n###   \n\nbody after blanks\n", encoding="utf-8")
+    result = wiki_ingest_staged_docs(["docs/hash-only.md"], tmp_path)
+    assert result.errors == []
+    assert result.ingested == ["docs/hash-only.md"]
+
+
+def test_wiki_ingest_errors_on_invalid_ingest_json(tmp_path: Path) -> None:
+    _ = (tmp_path / ".cortex").mkdir(parents=True)
+    _bootstrap = ensure_default_wiki_layout(tmp_path)
+    assert _bootstrap.wiki_root
+    doc = tmp_path / "docs" / "bad-json.md"
+    doc.parent.mkdir(parents=True)
+    _ = doc.write_text("# X\n\ny\n", encoding="utf-8")
+    with patch.object(
+        staged_ingest_mod,
+        "ingest_source_at_project_root",
+        return_value="not json",
+    ):
+        result = wiki_ingest_staged_docs(["docs/bad-json.md"], tmp_path)
+    assert result.ingested == []
+    assert any("invalid JSON" in e for e in result.errors)
+
+
+def test_wiki_ingest_errors_on_non_dict_ingest_payload(tmp_path: Path) -> None:
+    _ = (tmp_path / ".cortex").mkdir(parents=True)
+    _bootstrap = ensure_default_wiki_layout(tmp_path)
+    assert _bootstrap.wiki_root
+    doc = tmp_path / "docs" / "list-payload.md"
+    doc.parent.mkdir(parents=True)
+    _ = doc.write_text("# X\n\ny\n", encoding="utf-8")
+    with patch.object(
+        staged_ingest_mod,
+        "ingest_source_at_project_root",
+        return_value='["unexpected"]',
+    ):
+        result = wiki_ingest_staged_docs(["docs/list-payload.md"], tmp_path)
+    assert result.ingested == []
+    assert any("unexpected payload" in e for e in result.errors)
+
+
+def test_wiki_ingest_errors_on_ingest_failure_status(tmp_path: Path) -> None:
+    _ = (tmp_path / ".cortex").mkdir(parents=True)
+    _bootstrap = ensure_default_wiki_layout(tmp_path)
+    assert _bootstrap.wiki_root
+    doc = tmp_path / "docs" / "fail-ingest.md"
+    doc.parent.mkdir(parents=True)
+    _ = doc.write_text("# X\n\ny\n", encoding="utf-8")
+    with patch.object(
+        staged_ingest_mod,
+        "ingest_source_at_project_root",
+        return_value='{"status": "error", "error": "boom"}',
+    ):
+        result = wiki_ingest_staged_docs(["docs/fail-ingest.md"], tmp_path)
+    assert result.ingested == []
+    assert any("boom" in e for e in result.errors)
+
+
+def test_wiki_ingest_errors_on_non_string_ingest_error_field(tmp_path: Path) -> None:
+    _ = (tmp_path / ".cortex").mkdir(parents=True)
+    _bootstrap = ensure_default_wiki_layout(tmp_path)
+    assert _bootstrap.wiki_root
+    doc = tmp_path / "docs" / "weird-err.md"
+    doc.parent.mkdir(parents=True)
+    _ = doc.write_text("# X\n\ny\n", encoding="utf-8")
+    with patch.object(
+        staged_ingest_mod,
+        "ingest_source_at_project_root",
+        return_value='{"status": "error", "error": {"nested": true}}',
+    ):
+        result = wiki_ingest_staged_docs(["docs/weird-err.md"], tmp_path)
+    assert result.ingested == []
+    assert any("unknown error" in e for e in result.errors)

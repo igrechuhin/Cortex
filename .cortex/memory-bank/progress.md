@@ -11,6 +11,7 @@
 - **Project Wiki for Attached Projects (.cortex/wiki/)** - PARTIAL. Idempotent wiki staged ingest: stable path slug, skip unchanged content, versioned raw snapshots, summary upsert with revision history.
 - **Project Wiki for Attached Projects (.cortex/wiki/)** - PARTIAL. Completed Step 3 conditional `/cortex/init-wiki` MCP prompt registration: `wiki_has_content` / `wiki_scaffold_present`, skip `init-wiki.md` in manifest bulk load, register `init_wiki` lazily after startup repair when wiki scaffold exists and summary categories have no `.md` pages.
 - **Project Wiki for Attached Projects (.cortex/wiki/)** - COMPLETE. Wiki KB end-to-end: ingest, ask, lint, commit-time staged ingest, review/analyze filing to wiki/analyses; prompts aligned for dual-path artifact reporting.
+- **Auto-Ingest from Git Hooks (Wiki Auto-Update)** - COMPLETE. Commit pipeline runs wiki_ingest_staged_docs after Phase A; patterns from schema; idempotent ingest with archived raw snapshots and revision notes; tests cover staged_ingest edge and error paths.
 
 ## 2026-04-11
 

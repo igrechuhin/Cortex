@@ -66,4 +66,4 @@ jobs:
             -v "${GITHUB_WORKSPACE}:/repo" \
             -w /repo \
             ghcr.io/astral-sh/uv:python3.13-bookworm-slim \
-            bash -lc 'set -euo pipefail; make bootstrap-offline WHEELHOUSE=wheelhouse; set +e; make preflight; code=$?; set -e; test "$code" -eq 2'
+            bash -lc 'set -euo pipefail; make bootstrap-offline; set +e; make preflight; code=$?; set -e; test "$code" -eq 2'

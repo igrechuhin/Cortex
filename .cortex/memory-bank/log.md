@@ -1,75 +1,5 @@
 # Cortex Operations Log
 
-## [2026-04-08T18:39] plan | Completed plan: Compress Cortex Synapse Prompts and Memory Bank Files
-
-Finalized Step 6 with safe execution mode: protected Synapse prompt/agent markdown targets are skipped to preserve integrity-guard semantics, memory-bank targets execute with backup/restore safety, and verification now adapts to protected-mode sample constraints. Added fallback compression behavior/tests for environments without Claude CLI and kept quality/docs gates green.
-
-## [2026-04-08T18:39] plan | Created plan: Test Plan
-
-## [2026-04-08T18:39] plan | Created plan: Smoke Test Plan
-
-## [2026-04-08T18:40] lint | Quality gate passed
-
-## [2026-04-08T20:11] plan | Created plan: Smoke Test Plan
-
-## [2026-04-08T20:11] plan | Created plan: Test Plan
-
-## [2026-04-08T20:12] lint | Quality gate passed
-
-## [2026-04-08T20:24] plan | Created plan: Test Plan
-
-## [2026-04-08T20:24] plan | Created plan: Smoke Test Plan
-
-## [2026-04-08T20:25] lint | Quality gate passed
-
-## [2026-04-08T20:25] fix | Autofix completed
-
-status=success; changed_files=None
-
-## [2026-04-08T20:42] fix | Autofix completed
-
-status=success; changed_files=None
-
-## [2026-04-08T20:42] plan | Created plan: Test Plan
-
-## [2026-04-08T20:42] plan | Created plan: Smoke Test Plan
-
-## [2026-04-08T20:43] lint | Quality gate failed
-
-## [2026-04-08T20:44] plan | Created plan: Smoke Test Plan
-
-## [2026-04-08T20:44] plan | Created plan: Test Plan
-
-## [2026-04-08T20:45] lint | Quality gate failed
-
-## [2026-04-08T20:46] plan | Created plan: Smoke Test Plan
-
-## [2026-04-08T20:46] plan | Created plan: Test Plan
-
-## [2026-04-08T20:47] lint | Quality gate failed
-
-## [2026-04-08T20:47] plan | Created plan: Test Plan
-
-## [2026-04-08T20:47] plan | Created plan: Smoke Test Plan
-
-## [2026-04-08T20:48] lint | Quality gate passed
-
-## [2026-04-08T20:48] plan | Completed plan: Agent-Internal Brevity Rule for Sub-Agent Communication
-
-Added agent-internal-communication.mdc rule, merged into cortex://rules resource, updated implement-code and shared-defaults prompts, extended pipeline_handoff data docstring, added tests and brevity word-count fixtures (no top-level scripts/).
-
-## [2026-04-08T20:53] plan | Created plan: Test Plan
-
-## [2026-04-08T20:53] plan | Created plan: Smoke Test Plan
-
-## [2026-04-08T20:54] lint | Quality gate failed
-
-## [2026-04-08T20:55] fix | Autofix completed
-
-status=success; changed_files=None
-
-## [2026-04-08T20:55] plan | Created plan: Smoke Test Plan
-
 ## [2026-04-08T20:55] plan | Created plan: Test Plan
 
 ## [2026-04-08T20:56] lint | Quality gate passed
@@ -2203,3 +2133,71 @@ status=success; changed_files=None
 ## [2026-04-12T11:40] plan | Created plan: Test Plan
 
 ## [2026-04-12T11:41] lint | Quality gate passed
+
+## [2026-04-12T11:48] plan | Completed plan: Auto-Ingest from Git Hooks (Wiki Auto-Update)
+
+Wiki staged ingest wired into commit prompt; idempotent slug ingest, revision notes, and 100% unit coverage on staged_ingest.
+
+## [2026-04-12T11:48] fix | Autofix completed
+
+status=success; changed_files=None
+
+## [2026-04-12T11:49] plan | Created plan: Smoke Test Plan
+
+## [2026-04-12T11:49] plan | Created plan: Test Plan
+
+## [2026-04-12T11:49] lint | Quality gate failed
+
+## [2026-04-12T11:50] plan | Created plan: Test Plan
+
+## [2026-04-12T11:50] plan | Created plan: Smoke Test Plan
+
+## [2026-04-12T11:51] plan | Created plan: Smoke Test Plan
+
+## [2026-04-12T11:51] plan | Created plan: Test Plan
+
+## [2026-04-12T11:51] lint | Quality gate passed
+
+## [2026-04-12T11:53] plan | Created plan: Smoke Test Plan
+
+## [2026-04-12T11:54] plan | Created plan: Test Plan
+
+## [2026-04-12T11:54] plan | Created plan: Smoke Test Plan
+
+## [2026-04-12T11:55] plan | Created plan: Test Plan
+
+## [2026-04-12T11:57] plan | Created plan: Test Plan
+
+## [2026-04-12T11:57] plan | Created plan: Smoke Test Plan
+
+## [2026-04-12T11:59] plan | Created plan: Test Plan
+
+## [2026-04-12T11:59] plan | Created plan: Smoke Test Plan
+
+## [2026-04-12T12:00] lint | Quality gate failed
+
+## [2026-04-12T12:01] fix | Autofix completed
+
+status=success; changed_files=None
+
+## [2026-04-12T12:01] plan | Created plan: Test Plan
+
+## [2026-04-12T12:01] plan | Created plan: Smoke Test Plan
+
+## [2026-04-12T12:02] lint | Quality gate passed
+
+## [2026-04-12T12:04] plan | Created plan: Smoke Test Plan
+
+## [2026-04-12T12:04] plan | Created plan: Test Plan
+
+## [2026-04-12T12:05] lint | Quality gate passed
+
+## [2026-04-12T12:06] fix | Autofix completed
+
+status=success; changed_files=None
+
+## [2026-04-12T12:07] plan | Created plan: Test Plan
+
+## [2026-04-12T12:07] plan | Created plan: Smoke Test Plan
+
+## [2026-04-12T12:08] lint | Quality gate passed

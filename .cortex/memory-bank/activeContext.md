@@ -18,6 +18,8 @@
 
 - ✅ **Project Wiki for Attached Projects (.cortex/wiki/)** - COMPLETE (2026-04-12) - Shipped .cortex/wiki layout, session wiki_status, conditional init-wiki registration, wiki-aware ingest and index updates, ask prompt, file_artifact mirror to wiki/analyses, wiki lint checks including index staleness, idempotent wiki_ingest_staged_docs for commits, self-hosted wiki seed; Synapse analyze/review prompts now record memory-bank and wiki mirror paths for filed analyses.
 
+- ✅ **Auto-Ingest from Git Hooks (Wiki Auto-Update)** - COMPLETE (2026-04-12) - Wiki staged ingest wired into commit prompt; idempotent slug ingest, revision notes, and 100% unit coverage on staged_ingest.
+
 ## Completed Work (2026-04-11)
 
 - **Summary (2026-04-11)** - 1 entries archived.
@@ -248,7 +250,7 @@
 
 ## Current Focus
 
-Next implementation slice: **[QG-S1] Add EXTENSION_SCRIPT_MAP** per [roadmap.md](roadmap.md) Blockers and `.cortex/plans/swift-qg-s1-add-extension-script-map.plan.md`.
+Next roadmap item: **[Fast-Forward vs. Step-by-Step Planning Modes](../plans/fast-forward-vs-step-by-step-modes.md)** (see [roadmap.md](roadmap.md) pending plans).
 
 ## Recent Changes
 
