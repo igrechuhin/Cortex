@@ -330,6 +330,32 @@ def scan_timestamps(content: str) -> TimestampScanResult:
     )
 
 
+async def _read_memory_bank_file_text(
+    fs_manager: FileSystemManager, root: Path, file_name: str
+) -> tuple[str, str]:
+    """Return (text, error_json); error_json is empty on success."""
+    memory_bank_dir = get_cortex_path(root, CortexResourceType.MEMORY_BANK)
+    try:
+        file_path = fs_manager.construct_safe_path(memory_bank_dir, file_name)
+    except (ValueError, PermissionError) as e:
+        err = json.dumps(
+            {"status": OperationStatus.ERROR.value, "error": f"Invalid file name: {e}"},
+            indent=2,
+        )
+        return "", err
+    if not file_path.exists():
+        err = json.dumps(
+            {
+                "status": OperationStatus.ERROR.value,
+                "error": f"File {file_name} does not exist",
+            },
+            indent=2,
+        )
+        return "", err
+    content, _ = await fs_manager.read_file(file_path)
+    return content, ""
+
+
 async def validate_timestamps_single_file(
     fs_manager: FileSystemManager, root: Path, file_name: str
 ) -> str:
@@ -343,19 +369,10 @@ async def validate_timestamps_single_file(
     Returns:
         JSON string with timestamp validation results
     """
-    memory_bank_dir = get_cortex_path(root, CortexResourceType.MEMORY_BANK)
-    try:
-        file_path = fs_manager.construct_safe_path(memory_bank_dir, file_name)
-    except (ValueError, PermissionError) as e:
-        return json.dumps(
-            {"status": "error", "error": f"Invalid file name: {e}"}, indent=2
-        )
-    if not file_path.exists():
-        return json.dumps(
-            {"status": "error", "error": f"File {file_name} does not exist"}, indent=2
-        )
-    content, _ = await fs_manager.read_file(file_path)
-    scan_result = scan_timestamps(content)
+    text, err_json = await _read_memory_bank_file_text(fs_manager, root, file_name)
+    if err_json:
+        return err_json
+    scan_result = scan_timestamps(text)
 
     has_blocking_violations = (
         scan_result.invalid_format_count > 0 or scan_result.invalid_year_count > 0

@@ -64,7 +64,7 @@ async def rollback_file_version(
     Example (Success):
         ```json
         {
-          "status": "success",
+          "status": OperationStatus.SUCCESS.value,
           "file_name": "projectBrief.md",
           "rolled_back_from_version": 3,
           "new_version": 6,
@@ -75,7 +75,7 @@ async def rollback_file_version(
     Example (Error - version not found):
         ```json
         {
-          "status": "error",
+          "status": OperationStatus.ERROR.value,
           "error": "Version 10 not found for 'projectBrief.md'",
           "error_type": "ValueError"
         }

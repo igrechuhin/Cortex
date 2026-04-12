@@ -13,7 +13,7 @@ from pathlib import Path
 from typing import cast
 
 from cortex.core.context_logging import MCPContext
-from cortex.core.models import ModelDict
+from cortex.core.models import ModelDict, OperationStatus
 from cortex.core.usage_context import get_or_resolve_project_root
 
 logger = logging.getLogger(__name__)
@@ -77,7 +77,9 @@ def ensure_dict(value: ModelDict | str) -> ModelDict:
             cast(ModelDict, parsed) if isinstance(parsed, dict) else cast(ModelDict, {})
         )
     except (json.JSONDecodeError, TypeError):
-        return cast(ModelDict, {"status": "error", "error": str(value)})
+        return cast(
+            ModelDict, {"status": OperationStatus.ERROR.value, "error": str(value)}
+        )
 
 
 class PreCommitPhase(str, Enum):
@@ -176,7 +178,7 @@ async def _run_phase_full(
     return cast(
         ModelDict,
         {
-            "status": "success",
+            "status": OperationStatus.SUCCESS.value,
             "phase": "full",
             "phase_a": phase_a_dict,
             "phase_b": phase_b_dict,

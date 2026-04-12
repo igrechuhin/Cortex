@@ -20,7 +20,10 @@ from ._enums import (
     HandlerKind,
     MigrationResultStatus,
     OperationStatus,
+    PlanningMode,
+    PlanSectionStatus,
     PlanStatus,
+    PlanToolOperation,
     ResponseFormat,
     ResponseStatus,
     RiskLevel,
@@ -46,6 +49,7 @@ from ._metadata import (
 )
 from ._plan_delta import PlanDelta
 from ._plan_markers import ClarificationMarker
+from ._plan_section import PlanSection
 from ._responses import (
     CacheConfig,
     ConnectionHealth,
@@ -168,7 +172,11 @@ __all__ = [
     "ParsedLink",
     "ParsedMarkdownSection",
     "PlanDelta",
+    "PlanSection",
+    "PlanSectionStatus",
     "PlanStatus",
+    "PlanningMode",
+    "PlanToolOperation",
     "ReorganizationActionPreview",
     "ReorganizationPreview",
     "ReferenceEdge",

@@ -133,7 +133,7 @@ async def analyze_error_patterns_impl(root: Path, task_ids: list[str] | None) ->
     await persist_error_patterns(root, analysis)
     cache_path = get_cache_path(root, "evals") / "error_patterns.json"
     payload = {
-        "status": "success",
+        "status": OperationStatus.SUCCESS.value,
         "project_root": str(root),
         "tasks_loaded": len(tasks),
         "generated_at": suite.generated_at,

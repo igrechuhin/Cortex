@@ -6,6 +6,7 @@ Extracted from pre_commit_helpers to keep modules under 400 lines.
 import json
 from pathlib import Path
 
+from cortex.core.models import OperationStatus
 from cortex.core.path_resolver import has_memory_bank
 from cortex.managers.initialization import get_project_root
 from cortex.services.framework_adapters.detection import detect_language_at_path
@@ -17,7 +18,7 @@ _MAX_ANCESTOR_WALK = 20
 def _create_error_result(msg: str, error_type: str = "ValueError") -> str:
     """Create error response JSON for language detection failures."""
     return json.dumps(
-        {"status": "error", "error": msg, "error_type": error_type},
+        {"status": OperationStatus.ERROR.value, "error": msg, "error_type": error_type},
         indent=2,
     )
 

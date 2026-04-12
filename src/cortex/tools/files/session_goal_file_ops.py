@@ -6,6 +6,7 @@ import json
 from pathlib import Path
 from typing import cast
 
+from cortex.core.models import OperationStatus
 from cortex.core.session_goal_builder import build_session_goal
 from cortex.core.session_goal_store import (
     delete_session_goal,
@@ -28,7 +29,10 @@ def _parse_set_goal_fields(
     goal_raw = payload.get("goal")
     if not isinstance(goal_raw, str) or not goal_raw.strip():
         return json.dumps(
-            {"status": "error", "error": "goal must be a non-empty string"},
+            {
+                "status": OperationStatus.ERROR.value,
+                "error": "goal must be a non-empty string",
+            },
             indent=2,
         )
     plan_slug = payload.get("plan_slug")
@@ -48,12 +52,15 @@ def _set_goal_from_json(root: Path, content: str) -> str:
         data = json.loads(content)
     except json.JSONDecodeError as e:
         return json.dumps(
-            {"status": "error", "error": f"Invalid JSON: {e}"},
+            {"status": OperationStatus.ERROR.value, "error": f"Invalid JSON: {e}"},
             indent=2,
         )
     if not isinstance(data, dict):
         return json.dumps(
-            {"status": "error", "error": "set_goal content must be a JSON object"},
+            {
+                "status": OperationStatus.ERROR.value,
+                "error": "set_goal content must be a JSON object",
+            },
             indent=2,
         )
     parsed = _parse_set_goal_fields(cast(dict[str, object], data))
@@ -65,7 +72,7 @@ def _set_goal_from_json(root: Path, content: str) -> str:
     _invalidate_context_cache()
     return json.dumps(
         {
-            "status": "success",
+            "status": OperationStatus.SUCCESS.value,
             "operation": "set_goal",
             "session_goal": json.loads(sg.model_dump_json()),
         },
@@ -77,7 +84,11 @@ def _clear_goal_json(root: Path) -> str:
     deleted = delete_session_goal(root)
     _invalidate_context_cache()
     return json.dumps(
-        {"status": "success", "operation": "clear_goal", "removed": deleted},
+        {
+            "status": OperationStatus.SUCCESS.value,
+            "operation": "clear_goal",
+            "removed": deleted,
+        },
         indent=2,
     )
 
@@ -86,12 +97,16 @@ def _get_goal_json(root: Path) -> str:
     sg = read_session_goal(root)
     if sg is None:
         return json.dumps(
-            {"status": "success", "operation": "get_goal", "session_goal": None},
+            {
+                "status": OperationStatus.SUCCESS.value,
+                "operation": "get_goal",
+                "session_goal": None,
+            },
             indent=2,
         )
     return json.dumps(
         {
-            "status": "success",
+            "status": OperationStatus.SUCCESS.value,
             "operation": "get_goal",
             "session_goal": json.loads(sg.model_dump_json()),
         },
@@ -109,7 +124,10 @@ async def execute_session_goal_operation(
     if operation == FileOperation.SET_GOAL:
         if content is None or not str(content).strip():
             return json.dumps(
-                {"status": "error", "error": "content required for set_goal"},
+                {
+                    "status": OperationStatus.ERROR.value,
+                    "error": "content required for set_goal",
+                },
                 indent=2,
             )
         return _set_goal_from_json(root, content)
@@ -118,6 +136,9 @@ async def execute_session_goal_operation(
     if operation == FileOperation.GET_GOAL:
         return _get_goal_json(root)
     return json.dumps(
-        {"status": "error", "error": f"Unsupported goal operation: {operation}"},
+        {
+            "status": OperationStatus.ERROR.value,
+            "error": f"Unsupported goal operation: {operation}",
+        },
         indent=2,
     )

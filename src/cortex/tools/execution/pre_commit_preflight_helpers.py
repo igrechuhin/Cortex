@@ -52,7 +52,9 @@ def _ensure_result_dict(value: ModelDict | str) -> ModelDict:
             cast(ModelDict, parsed) if isinstance(parsed, dict) else cast(ModelDict, {})
         )
     except (json.JSONDecodeError, TypeError):
-        return cast(ModelDict, {"status": "error", "error": str(value)})
+        return cast(
+            ModelDict, {"status": OperationStatus.ERROR.value, "error": str(value)}
+        )
 
 
 def has_pre_commit_tool_error(execute_result: ModelDict) -> bool:

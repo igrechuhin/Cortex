@@ -15,6 +15,7 @@ from cortex.core.mcp_stability import (
     mcp_resource_wrapper,
     mcp_tool_wrapper,
 )
+from cortex.core.models import OperationStatus
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.core.project_root_resolver import resolve_project_root_async
 from cortex.linking.validator import LinkValidator
@@ -76,7 +77,7 @@ async def validate_links(
     Example (Success - single file with issues):
         ```json
         {
-          "status": "success",
+          "status": OperationStatus.SUCCESS.value,
           "mode": "single_file",
           "files_checked": 1,
           "total_links": 8,
@@ -108,7 +109,7 @@ async def validate_links(
     Example (Success - all files):
         ```json
         {
-          "status": "success",
+          "status": OperationStatus.SUCCESS.value,
           "mode": "all_files",
           "files_checked": 7,
           "total_links": 45,
@@ -147,7 +148,7 @@ async def validate_links(
     Example (Success - no issues):
         ```json
         {
-          "status": "success",
+          "status": OperationStatus.SUCCESS.value,
           "mode": "all_files",
           "files_checked": 7,
           "total_links": 45,
@@ -166,7 +167,7 @@ async def validate_links(
     Example (Error - file not found):
         ```json
         {
-          "status": "error",
+          "status": OperationStatus.ERROR.value,
           "error": "File not found: nonexistent.md"
         }
         ```
@@ -202,7 +203,11 @@ async def validate_links(
             ctx, "error", f"validate_links: failed: {e}", logger_name=__name__
         )
         return json.dumps(
-            {"status": "error", "error": str(e), "error_type": type(e).__name__},
+            {
+                "status": OperationStatus.ERROR.value,
+                "error": str(e),
+                "error_type": type(e).__name__,
+            },
             indent=2,
         )
 
@@ -236,19 +241,26 @@ async def _validate_single_file(
         file_path = fs_manager.construct_safe_path(memory_bank_dir, file_name)
     except (ValueError, PermissionError) as e:
         return json.dumps(
-            {"status": "error", "error": f"Invalid file name: {e}"},
+            {"status": OperationStatus.ERROR.value, "error": f"Invalid file name: {e}"},
             indent=2,
         )
 
     if not file_path.exists():
         return json.dumps(
-            {"status": "error", "error": f"File not found: {file_name}"},
+            {
+                "status": OperationStatus.ERROR.value,
+                "error": f"File not found: {file_name}",
+            },
             indent=2,
         )
 
     validation_result = await link_validator.validate_file(file_path)
     return json.dumps(
-        {"status": "success", "mode": "single_file", **validation_result},
+        {
+            "status": OperationStatus.SUCCESS.value,
+            "mode": "single_file",
+            **validation_result,
+        },
         indent=2,
     )
 
@@ -270,7 +282,7 @@ async def _validate_all_files(
 
     return json.dumps(
         {
-            "status": "success",
+            "status": OperationStatus.SUCCESS.value,
             "mode": "all_files",
             **validation_result,
             "report": report,

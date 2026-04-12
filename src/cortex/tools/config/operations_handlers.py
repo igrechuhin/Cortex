@@ -6,7 +6,7 @@ Extracted from configuration_operations to keep main module under 400 lines.
 import json
 from typing import cast
 
-from cortex.core.models import JsonValue, ModelDict
+from cortex.core.models import JsonValue, ModelDict, OperationStatus
 from cortex.managers.types import ManagersDict
 from cortex.managers.utils import get_manager
 from cortex.optimization.config import OptimizationConfig
@@ -181,7 +181,7 @@ def handle_learning_view(
     patterns = get_learned_patterns(learning_engine)
     return json.dumps(
         {
-            "status": "success",
+            "status": OperationStatus.SUCCESS.value,
             "component": "learning",
             "configuration": adaptation_config.to_dict(),
             "learned_patterns": {
@@ -225,7 +225,7 @@ async def handle_learning_reset(
     _ = await optimization_config.save_config()
     return json.dumps(
         {
-            "status": "success",
+            "status": OperationStatus.SUCCESS.value,
             "message": "Learning data and configuration reset to defaults",
             "configuration": adaptation_config.to_dict(),
         },

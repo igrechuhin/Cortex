@@ -130,7 +130,7 @@ async def rules(
 
         For "index" operation:
         {
-            "status": "success",
+            "status": OperationStatus.SUCCESS.value,
             "operation": "index",
             "result": {
                 "indexed": 42,                    # Number of rules indexed
@@ -148,7 +148,7 @@ async def rules(
 
         For "get_relevant" operation:
         {
-            "status": "success",
+            "status": OperationStatus.SUCCESS.value,
             "operation": "get_relevant",
             "task_description": "Implementing async file operations",
             "max_tokens": 5000,
@@ -185,7 +185,7 @@ async def rules(
 
         For errors:
         {
-            "status": "error",
+            "status": OperationStatus.ERROR.value,
             "error": "task_description is required for get_relevant operation",
             "error_type": "ValueError"
         }

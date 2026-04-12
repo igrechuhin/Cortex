@@ -8,6 +8,7 @@ and non-trivial task detection.
 import json
 
 from cortex.core.constants import MAX_TASK_DESCRIPTION_CHARS
+from cortex.core.models import OperationStatus
 
 
 def is_non_trivial_task(task_description: str) -> bool:
@@ -44,7 +45,7 @@ def validate_explicit_budget_for_non_trivial(
         return None
     return json.dumps(
         {
-            "status": "error",
+            "status": OperationStatus.ERROR.value,
             "error": (
                 "Explicit non-zero token_budget is required for non-trivial tasks "
                 "(implement/add, fix/debug, refactor, test, optimize). "
@@ -90,7 +91,7 @@ def validate_task_description_length(task_description: str) -> str | None:
         return None
     return json.dumps(
         {
-            "status": "error",
+            "status": OperationStatus.ERROR.value,
             "error": (
                 f"task_description too long: {len(task_description)} chars "
                 f"exceeds limit of {MAX_TASK_DESCRIPTION_CHARS}"

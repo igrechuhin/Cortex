@@ -5,6 +5,17 @@ from collections.abc import Awaitable, Callable
 from typing import cast
 
 from cortex.core.context_logging import MCPContext
+from cortex.core.models import OperationStatus
+
+
+def _unsupported_session_scripts_operation_error(operation: str) -> str:
+    message = (
+        f"Unsupported operation '{operation}'. "
+        + "Expected one of: capture, list, analyze, suggest, promote."
+    )
+    return json.dumps(
+        {"status": OperationStatus.ERROR.value, "error": message}, indent=2
+    )
 
 
 async def _session_scripts_capture_handler(
@@ -19,7 +30,7 @@ async def _session_scripts_capture_handler(
 ) -> str:
     if script_path is None or script_content is None or task_description is None:
         error_payload = {
-            "status": "error",
+            "status": OperationStatus.ERROR.value,
             "error": (
                 "script_path, script_content, and task_description are required for "
                 "operation 'capture'"
@@ -67,7 +78,7 @@ async def _session_scripts_suggest_handler(
 ) -> str:
     if task_description is None:
         error_payload = {
-            "status": "error",
+            "status": OperationStatus.ERROR.value,
             "error": "task_description is required for operation 'suggest'",
         }
         return json.dumps(error_payload, indent=2)
@@ -89,7 +100,7 @@ async def _session_scripts_promote_handler(
 ) -> str:
     if script_id is None:
         error_payload = {
-            "status": "error",
+            "status": OperationStatus.ERROR.value,
             "error": "script_id is required for operation 'promote'",
         }
         return json.dumps(error_payload, indent=2)
@@ -126,11 +137,7 @@ async def dispatch_session_scripts(
     """Route manage_session_scripts operation to the appropriate handler."""
     handler = _SESSION_SCRIPTS_HANDLERS.get(operation.lower())
     if handler is None:
-        error_message = (
-            f"Unsupported operation '{operation}'. "
-            + "Expected one of: capture, list, analyze, suggest, promote."
-        )
-        return json.dumps({"status": "error", "error": error_message}, indent=2)
+        return _unsupported_session_scripts_operation_error(operation)
 
     kwargs = {
         "script_path": script_path,

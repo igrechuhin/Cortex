@@ -117,7 +117,12 @@ def create_plan_file(
         return (None, f"Failed to write plan file: {str(e)}")
 
 
-def create_success_result(plan_path: Path | None) -> CreatePlanResult:
+def create_success_result(
+    plan_path: Path | None,
+    *,
+    planning_mode: str | None = None,
+    review_prompt: str | None = None,
+) -> CreatePlanResult:
     """Create a success result for plan creation."""
     if plan_path is None:
         return CreatePlanResult(
@@ -131,6 +136,8 @@ def create_success_result(plan_path: Path | None) -> CreatePlanResult:
         file_path=str(plan_path),
         message=f"Plan created at {plan_path}",
         error=None,
+        planning_mode=planning_mode,
+        review_prompt=review_prompt,
     )
 
 

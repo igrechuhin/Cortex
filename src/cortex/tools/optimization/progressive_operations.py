@@ -6,6 +6,7 @@ This module contains the implementation logic for the load_progressive_context t
 
 import json
 
+from cortex.core.models import OperationStatus
 from cortex.managers.types import ManagersDict
 from cortex.managers.utils import get_manager
 from cortex.optimization.config import OptimizationConfig
@@ -165,7 +166,7 @@ def _build_invalid_strategy_error(loading_strategy: str) -> str:
     """Build error response for invalid strategy."""
     return json.dumps(
         {
-            "status": "error",
+            "status": OperationStatus.ERROR.value,
             "error": (
                 f"Invalid loading_strategy: {loading_strategy}. "
                 "Use 'by_priority', 'by_dependencies', or 'by_relevance'."

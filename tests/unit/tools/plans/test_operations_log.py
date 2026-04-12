@@ -2,6 +2,7 @@
 
 from datetime import datetime
 from pathlib import Path
+from unittest.mock import patch
 
 from cortex.core.constants import OPERATIONS_LOG_MAX_ENTRIES, MemoryBankFile
 from cortex.tools.plans.operations_log import (
@@ -80,6 +81,32 @@ def test_append_operations_log_entry_appends_without_overwrite(tmp_path: Path) -
     assert second_line == 5
     assert "## [2026-04-07T10:00] plan | Create plan\n\n" in contents
     assert "## [2026-04-07T10:05] commit | Finalize changes\n" in contents
+
+
+def test_append_operations_log_entry_disambiguates_live_same_minute(
+    tmp_path: Path,
+) -> None:
+    """Live appends (``timestamp=None``) reuse minute precision and suffix duplicates."""
+    log_path = tmp_path / "log.md"
+    fixed = datetime(2026, 4, 7, 10, 0, 5, 123456)
+    with patch("cortex.tools.plans.operations_log.datetime") as mock_dt:
+        mock_dt.now.return_value = fixed
+        _ = append_operations_log_entry(
+            log_path=log_path,
+            operation_type=OperationsLogType.PLAN,
+            title="Dup title",
+            timestamp=None,
+        )
+        _ = append_operations_log_entry(
+            log_path=log_path,
+            operation_type=OperationsLogType.PLAN,
+            title="Dup title",
+            timestamp=None,
+        )
+    contents = log_path.read_text(encoding="utf-8")
+    assert "## [2026-04-07T10:00] plan | Dup title\n\n" in contents
+    assert "## [2026-04-07T10:00] plan | Dup title ·2" in contents
+    assert "T10:00:0" not in contents
 
 
 def test_append_operations_log_entry_trims_old_entries(tmp_path: Path) -> None:

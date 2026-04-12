@@ -34,6 +34,7 @@ from cortex.core.constants import MCP_TOOL_TIMEOUT_FAST
 from cortex.core.context_logging import MCPContext, log_client
 from cortex.core.mcp_annotations import safe_write_annotations
 from cortex.core.mcp_stability import ensure_usage_context, mcp_tool_wrapper
+from cortex.core.models import OperationStatus
 from cortex.core.usage_context import get_or_resolve_project_root
 from cortex.server import mcp
 from cortex.tools.logging.instrumentation import emit_pipeline_handoff_log
@@ -106,7 +107,7 @@ def _coerce_data(data: object) -> str | None:
 def _unknown_op_error(operation: str) -> str:
     return json.dumps(
         {
-            "status": "error",
+            "status": OperationStatus.ERROR.value,
             "error": (
                 f"Unknown operation '{operation}'. "
                 "Use: init, write, read, clear, snapshot, rollback "
@@ -119,21 +120,30 @@ def _unknown_op_error(operation: str) -> str:
 
 def _phase_required_error(operation: str) -> str:
     return json.dumps(
-        {"status": "error", "error": f"phase is required for {operation}"},
+        {
+            "status": OperationStatus.ERROR.value,
+            "error": f"phase is required for {operation}",
+        },
         indent=2,
     )
 
 
 def _snapshot_paths_required_error() -> str:
     return json.dumps(
-        {"status": "error", "error": "paths is required for snapshot"},
+        {
+            "status": OperationStatus.ERROR.value,
+            "error": "paths is required for snapshot",
+        },
         indent=2,
     )
 
 
 def _rollback_snapshot_id_required_error() -> str:
     return json.dumps(
-        {"status": "error", "error": "snapshot_id is required for rollback"},
+        {
+            "status": OperationStatus.ERROR.value,
+            "error": "snapshot_id is required for rollback",
+        },
         indent=2,
     )
 

@@ -104,11 +104,11 @@ GET_STRUCTURE_INFO_DOC = """Get current project structure configuration, paths, 
         status field.
 
     Example (success):
-        {"status": "success", "structure_info": {"paths": {"memory_bank": "..."}, ...},
+        {"status": OperationStatus.SUCCESS.value, "structure_info": {"paths": {"memory_bank": "..."}, ...},
          "message": "✅ Structure information retrieved successfully"}
 
     Example (error):
-        {"status": "error", "error": "Project root not found", "error_type": "ValueError"}
+        {"status": OperationStatus.ERROR.value, "error": "Project root not found", "error_type": "ValueError"}
 
     Note:
         - This is a read-only tool that does not modify any files or directories

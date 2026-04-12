@@ -10,6 +10,7 @@ from cortex.core.context_logging import MCPContext, log_client
 from cortex.core.file_system import FileSystemManager
 from cortex.core.mcp_stability import ensure_usage_context, mcp_tool_wrapper
 from cortex.core.metadata_index import MetadataIndex
+from cortex.core.models import OperationStatus
 from cortex.core.token_counter import TokenCounter
 from cortex.core.version_manager import VersionManager
 from cortex.managers.types import ManagersDict
@@ -103,7 +104,11 @@ async def compact_session(
     managers_raw = get_current_managers()
     if managers_raw is None:
         return json.dumps(
-            {"status": "error", "error": "Managers not initialized"}, indent=2
+            {
+                "status": OperationStatus.ERROR.value,
+                "error": "Managers not initialized",
+            },
+            indent=2,
         )
     hp = to_handoff_params(
         completed_tasks,

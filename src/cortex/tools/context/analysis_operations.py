@@ -17,6 +17,7 @@ from cortex.core.mcp_stability import (
     mcp_resource_wrapper,
     mcp_tool_wrapper,
 )
+from cortex.core.models import OperationStatus
 from cortex.core.project_root_resolver import resolve_project_root_async
 from cortex.managers import initialization
 from cortex.managers.types import ManagersDict
@@ -219,7 +220,11 @@ async def _analyze_run_or_error(
     except Exception as e:
         await log_client(ctx, "error", f"analyze: failed: {e}", logger_name=__name__)
         return json.dumps(
-            {"status": "error", "error": str(e), "error_type": type(e).__name__},
+            {
+                "status": OperationStatus.ERROR.value,
+                "error": str(e),
+                "error_type": type(e).__name__,
+            },
             indent=2,
         )
 

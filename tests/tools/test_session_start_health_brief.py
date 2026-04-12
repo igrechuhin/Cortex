@@ -1,12 +1,15 @@
 """Tests for session_start health, suggestions, and token budget helpers."""
 
 import json
+import os
+import time
 from pathlib import Path
 
 import pytest
 
 from cortex.core.file_system import FileSystemManager
 from cortex.core.metadata_index import MetadataIndex
+from cortex.core.path_resolver import CortexResourceType
 from cortex.tools.models import GitStatusSummary, SessionHealthSummary
 from cortex.tools.session.brief_extraction_helpers import generate_session_suggestions
 from cortex.tools.session.health import (
@@ -16,7 +19,10 @@ from cortex.tools.session.health import (
 )
 from cortex.tools.session.models import TokenBudgetStatus, WikiStatusSummary
 from tests.helpers.managers import make_test_managers
-from tests.helpers.path_helpers import ensure_test_cortex_structure
+from tests.helpers.path_helpers import (
+    ensure_test_cortex_structure,
+    get_test_cortex_path,
+)
 from tests.tools.session_start_fixtures import (
     managers_with_every_memory_bank_file,
     mcp_health_json,
@@ -234,6 +240,27 @@ class TestGenerateSessionSuggestions:
             project_root=tmp_path,
         )
         assert any("init-wiki" in s for s in suggestions)
+
+    def test_generate_suggestions_stale_plan_drafts(self, tmp_path: Path) -> None:
+        """Stale draft-*.md files yield a session suggestion."""
+        _ = ensure_test_cortex_structure(tmp_path)
+        plans = get_test_cortex_path(tmp_path, CortexResourceType.PLANS)
+        plans.mkdir(parents=True, exist_ok=True)
+        draft = plans / "draft-stale-session.md"
+        _ = draft.write_text("x", encoding="utf-8")
+        old = time.time() - (50 * 60 * 60)
+        os.utime(draft, (old, old))
+        health = SessionHealthSummary(
+            file_count=7,
+            total_tokens=10000,
+            token_budget_status=TokenBudgetStatus.HEALTHY,
+            missing_files=[],
+            has_errors=False,
+        )
+        suggestions = generate_session_suggestions(
+            health, None, None, project_root=tmp_path
+        )
+        assert any("stale plan draft" in s.lower() for s in suggestions)
 
 
 class TestParseMCPHealth:

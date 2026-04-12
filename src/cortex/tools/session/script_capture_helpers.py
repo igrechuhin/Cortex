@@ -1,5 +1,6 @@
 """Helper functions for script capture tools (payload building, summaries)."""
 
+from cortex.core.models import OperationStatus
 from cortex.script_analysis.models import ScriptAnalysisResult
 from cortex.script_detection.models import ScriptCaptureRecord
 from cortex.script_promotion.models import ValidationResult
@@ -28,7 +29,7 @@ def build_promote_payload(
 ) -> dict[str, object]:
     """Build JSON payload for promote_session_script success response."""
     payload: dict[str, object] = {
-        "status": "success",
+        "status": OperationStatus.SUCCESS.value,
         "script_id": script_id,
         "validation_passed": validation.passed,
         "quality_score": validation.quality_score,

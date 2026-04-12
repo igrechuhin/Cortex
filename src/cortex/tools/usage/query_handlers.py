@@ -9,6 +9,7 @@ from typing import cast
 
 # Import MCPContext for type hints; avoid circular import
 from cortex.core.context_logging import MCPContext
+from cortex.core.models import OperationStatus
 
 from .query_models import QueryUsageParams
 
@@ -16,7 +17,11 @@ from .query_models import QueryUsageParams
 def _usage_error_payload(message: str) -> str:
     """Return a JSON error payload for query_usage."""
     return json.dumps(
-        {"status": "error", "error": message, "error_type": "ValueError"},
+        {
+            "status": OperationStatus.ERROR.value,
+            "error": message,
+            "error_type": "ValueError",
+        },
         indent=2,
     )
 
@@ -321,7 +326,7 @@ def _build_tool_classification_payload(
     total_events = int(ev_val) if isinstance(ev_val, (int, float)) else 0
     return json.dumps(
         {
-            "status": "success",
+            "status": OperationStatus.SUCCESS.value,
             "project_root": str(root),
             "days": days,
             "total_tools": len(rows),

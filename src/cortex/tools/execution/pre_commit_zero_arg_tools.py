@@ -26,7 +26,7 @@ from cortex.core.mcp_stability import (
     mcp_tool_wrapper,
     typed_mcp_tool,
 )
-from cortex.core.models import JsonDict, ModelDict
+from cortex.core.models import JsonDict, ModelDict, OperationStatus
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.core.usage_context import (
     get_current_project_root,
@@ -179,7 +179,10 @@ async def poll_phase_a_result(
         return cast(ModelDict, envelope)
     inner = envelope.get("result")
     if not isinstance(inner, dict):
-        return cast(ModelDict, {"status": "error", "error": "Missing result key"})
+        return cast(
+            ModelDict,
+            {"status": OperationStatus.ERROR.value, "error": "Missing result key"},
+        )
     inner_dict = cast(dict[str, object], inner)
     _merge_markdown_into_inner(envelope, inner_dict)
     return cast(ModelDict, inner)

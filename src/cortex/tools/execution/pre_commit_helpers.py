@@ -9,7 +9,7 @@ import math
 from collections.abc import Sequence
 from typing import cast
 
-from cortex.core.models import JsonValue, ModelDict
+from cortex.core.models import JsonValue, ModelDict, OperationStatus
 from cortex.tools.execution.pre_commit_helpers_models import (
     DEFAULT_CHECKS,
     PreCommitCheck,
@@ -19,7 +19,11 @@ from cortex.tools.execution.pre_commit_helpers_models import (
 def create_error_result(error: str, error_type: str = "ValueError") -> str:
     """Create error response JSON."""
     return json.dumps(
-        {"status": "error", "error": error, "error_type": error_type},
+        {
+            "status": OperationStatus.ERROR.value,
+            "error": error,
+            "error_type": error_type,
+        },
         indent=2,
     )
 

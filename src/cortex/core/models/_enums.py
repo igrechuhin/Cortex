@@ -94,3 +94,35 @@ class PlanStatus(str, Enum):
     BLOCKED = "BLOCKED"
     DONE = "DONE"
     READY = "READY"
+
+
+class PlanningMode(str, Enum):
+    """How `/cortex/plan` materializes sections (fast-forward vs human-in-the-loop)."""
+
+    FAST_FORWARD = "ff"
+    STEP_BY_STEP = "step"
+
+
+class PlanSectionStatus(str, Enum):
+    """Per-section lifecycle during step-by-step planning."""
+
+    PENDING = "pending"
+    DRAFT = "draft"
+    APPROVED = "approved"
+    SKIPPED = "skipped"
+
+
+class PlanToolOperation(str, Enum):
+    """Discriminator for the unified ``plan()`` MCP tool (internal dispatch)."""
+
+    CREATE = "create"
+    LIST = "list"
+    GET = "get"
+    COMPLETE = "complete"
+    REGISTER = "register"
+    ENRICH = "enrich"
+    GRAPH = "graph"
+    ARCHIVE_COMPLETED = "archive_completed"
+    CONTINUE_STEP = "continue_step"
+    APPROVE_STEP = "approve_step"
+    FINALIZE_STEP = "finalize_step"

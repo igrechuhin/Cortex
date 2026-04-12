@@ -12,7 +12,7 @@ from pathlib import Path
 from typing import cast
 
 from cortex.core.context_logging import MCPContext, log_client
-from cortex.core.models import ModelDict
+from cortex.core.models import ModelDict, OperationStatus
 from cortex.core.usage_context import (
     get_current_project_root,
     get_or_resolve_project_root,
@@ -164,7 +164,7 @@ def _build_skip_clean_result(
     return cast(
         ModelDict,
         {
-            "status": "success",
+            "status": OperationStatus.SUCCESS.value,
             "skipped": True,
             "skip_reason": "No source files changed since Phase A",
             "checks_skipped": check_names,

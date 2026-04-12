@@ -19,7 +19,7 @@ from cortex.core.mcp_stability import (
     ensure_usage_context,
     mcp_tool_wrapper,
 )
-from cortex.core.models import ResponseFormat
+from cortex.core.models import OperationStatus, ResponseFormat
 from cortex.core.project_root_resolver import resolve_project_root_async
 from cortex.managers.usage_tracker import UsageTracker
 from cortex.tools.usage.analytics_collection import (
@@ -130,7 +130,7 @@ async def get_unused_tools(
     unused = await tracker.get_unused_tools(days=days, min_usage_count=min_usage_count)
     return json.dumps(
         {
-            "status": "success",
+            "status": OperationStatus.SUCCESS.value,
             "project_root": str(root),
             "days": days,
             "min_usage_count": min_usage_count,
@@ -241,7 +241,7 @@ async def get_optimization_recommendations(
     )
     return json.dumps(
         {
-            "status": "success",
+            "status": OperationStatus.SUCCESS.value,
             "project_root": str(root),
             "min_usage_threshold": min_usage_threshold,
             "days": days,

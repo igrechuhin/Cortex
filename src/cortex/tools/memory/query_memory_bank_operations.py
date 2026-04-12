@@ -18,7 +18,7 @@ from cortex.core.mcp_stability import (
     ensure_usage_context,
     mcp_tool_wrapper,
 )
-from cortex.core.models import ResponseFormat
+from cortex.core.models import OperationStatus, ResponseFormat
 
 
 class QueryMemoryBankParams(BaseModel):
@@ -40,7 +40,11 @@ class QueryMemoryBankParams(BaseModel):
 def _error_payload(message: str) -> str:
     """Return a JSON error payload."""
     return json.dumps(
-        {"status": "error", "error": message, "error_type": "ValueError"},
+        {
+            "status": OperationStatus.ERROR.value,
+            "error": message,
+            "error_type": "ValueError",
+        },
         indent=2,
     )
 
@@ -186,7 +190,11 @@ async def _query_memory_bank_impl(
         return await handler(params, ctx)
     except Exception as e:
         return json.dumps(
-            {"status": "error", "error": str(e), "error_type": type(e).__name__},
+            {
+                "status": OperationStatus.ERROR.value,
+                "error": str(e),
+                "error_type": type(e).__name__,
+            },
             indent=2,
         )
 

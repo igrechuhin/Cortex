@@ -177,7 +177,7 @@ async def skill_pack(
     Example (discover):
         >>> await skill_pack(operation="discover", task_description="implement feature", limit=3)
         {
-          "status": "success",
+          "status": OperationStatus.SUCCESS.value,
           "operation": "discover",
           "count": 2,
           "packs": [
@@ -189,7 +189,7 @@ async def skill_pack(
     Example (load):
         >>> await skill_pack(operation="load", pack_name="core")
         {
-          "status": "success",
+          "status": OperationStatus.SUCCESS.value,
           "operation": "load",
           "pack_name": "core",
           "manifest": {"tools": [...], "workflows": [...], "examples": [...]}
@@ -197,7 +197,7 @@ async def skill_pack(
 
     Example (error — unknown operation):
         >>> await skill_pack(operation="other")
-        {"status": "error", "error": "Unknown operation: 'other'. Use discover or load."}
+        {"status": OperationStatus.ERROR.value, "error": "Unknown operation: 'other'. Use discover or load."}
     """
     op = (operation or "").strip().lower()
     if op == "discover":

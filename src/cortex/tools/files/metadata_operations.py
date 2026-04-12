@@ -12,7 +12,12 @@ from typing import Protocol, cast
 
 from cortex.core.file_system import FileSystemManager
 from cortex.core.metadata_index import MetadataIndex
-from cortex.core.models import DetailedFileMetadata, ModelDict, VersionMetadata
+from cortex.core.models import (
+    DetailedFileMetadata,
+    ModelDict,
+    OperationStatus,
+    VersionMetadata,
+)
 from cortex.core.token_counter import TokenCounter
 from cortex.core.version_manager import VersionManager
 from cortex.tools.files.section_operations import extract_sections
@@ -36,7 +41,7 @@ async def _path_exists(file_path: _ExistsPath) -> bool:
 def _metadata_error_missing_file(file_name: str) -> str:
     return json.dumps(
         {
-            "status": "error",
+            "status": OperationStatus.ERROR.value,
             "error": f"File {file_name} does not exist",
             "file_name": file_name,
         },
@@ -61,7 +66,7 @@ def _metadata_success(
 ) -> str:
     return json.dumps(
         {
-            "status": "success",
+            "status": OperationStatus.SUCCESS.value,
             "file_name": file_name,
             "file_exists": file_exists,
             "metadata": metadata.model_dump(mode="json"),

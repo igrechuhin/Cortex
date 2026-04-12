@@ -11,6 +11,7 @@ from cortex.core.constants import MCP_TOOL_TIMEOUT_COMPLEX
 from cortex.core.context_logging import MCPContext, log_client
 from cortex.core.mcp_annotations import safe_write_annotations
 from cortex.core.mcp_stability import ensure_usage_context, mcp_tool_wrapper
+from cortex.core.models import OperationStatus
 from cortex.core.project_root_resolver import resolve_project_root_async
 from cortex.server import mcp
 from cortex.tools.analysis.token_budget import iter_memory_bank_text_paths
@@ -164,6 +165,9 @@ async def compress_memory_bank(
         logger_name=__name__,
     )
     return json.dumps(
-        {"status": "success", "result": payload.model_dump(mode="json")},
+        {
+            "status": OperationStatus.SUCCESS.value,
+            "result": payload.model_dump(mode="json"),
+        },
         indent=2,
     )

@@ -6,7 +6,12 @@ Extracted from foundation_stats to keep that file under 400 lines.
 from pathlib import Path
 from typing import cast
 
-from cortex.core.models import JsonValue, ModelDict, ResponseFormat
+from cortex.core.models import (
+    JsonValue,
+    ModelDict,
+    OperationStatus,
+    ResponseFormat,
+)
 from cortex.tools.session.models import TokenBudgetStatus
 
 
@@ -94,7 +99,7 @@ def build_base_stats_result(
         file_name: cast(JsonValue, meta) for file_name, meta in files_metadata.items()
     }
     return {
-        "status": "success",
+        "status": OperationStatus.SUCCESS.value,
         "project_root": str(root),
         "summary": summary,
         "last_updated": last_updated,

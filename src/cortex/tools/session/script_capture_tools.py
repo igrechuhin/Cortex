@@ -22,6 +22,7 @@ from cortex.core.mcp_stability import (
     mcp_resource_wrapper,
     mcp_tool_wrapper,
 )
+from cortex.core.models import OperationStatus
 from cortex.core.project_root_resolver import resolve_project_root_async
 from cortex.discovery.recommendation_engine import recommend_tools_and_scripts
 from cortex.discovery.tool_registry import get_known_script_names, get_known_tool_names
@@ -80,7 +81,7 @@ async def capture_session_script(
         ...     script_content="import black; black.check(...)",
         ...     task_description="Format check fallback"
         ... )
-        {"status": "success", "script_id": "cap-20260224-123456", "timestamp": "...", "message": "Captured script ..."}
+        {"status": OperationStatus.SUCCESS.value, "script_id": "cap-20260224-123456", "timestamp": "...", "message": "Captured script ..."}
     """
     root = await resolve_project_root_async(None, ctx)
     await log_client(ctx, "info", "capture_session_script: starting")
@@ -94,7 +95,7 @@ async def capture_session_script(
         usage_context=usage_context,
     )
     payload = {
-        "status": "success",
+        "status": OperationStatus.SUCCESS.value,
         "script_id": record.script_id,
         "timestamp": record.timestamp,
         "message": f"Captured script {record.script_id}",
@@ -123,7 +124,7 @@ async def list_session_scripts(
     Example (Success):
         ```json
         {
-          "status": "success",
+          "status": OperationStatus.SUCCESS.value,
           "count": 2,
           "scripts": [
             {
@@ -140,7 +141,7 @@ async def list_session_scripts(
     records = await list_captures(root)
     summaries = [record_to_summary(r) for r in records]
     payload = {
-        "status": "success",
+        "status": OperationStatus.SUCCESS.value,
         "count": len(summaries),
         "scripts": summaries,
     }
@@ -176,7 +177,7 @@ async def analyze_session_scripts(
         result = analyze_script(record, tool_names, script_names)
         analyses.append(analysis_to_summary(result))
     payload = {
-        SessionScriptAnalysisField.STATUS.value: "success",
+        SessionScriptAnalysisField.STATUS.value: OperationStatus.SUCCESS.value,
         SessionScriptAnalysisField.COUNT.value: len(analyses),
         SessionScriptAnalysisField.ANALYSES.value: analyses,
     }
@@ -220,7 +221,7 @@ async def suggest_tool_improvements(
         {"name": name, "type": typ, "score": score} for name, typ, score in recs
     ]
     payload = {
-        "status": "success",
+        "status": OperationStatus.SUCCESS.value,
         "task_description": task_description,
         "recommendations": recommendations,
     }
@@ -279,7 +280,7 @@ async def promote_session_script(
     Example (Success):
         ```json
         {
-          "status": "success",
+          "status": OperationStatus.SUCCESS.value,
           "script_id": "abc-123",
           "validation_passed": true,
           "quality_score": 0.85,
@@ -291,7 +292,7 @@ async def promote_session_script(
     Example (Error - script not found):
         ```json
         {
-          "status": "error",
+          "status": OperationStatus.ERROR.value,
           "error": "Script abc-123 not found"
         }
         ```
@@ -301,7 +302,7 @@ async def promote_session_script(
     record = await get_capture_by_id(root, script_id)
     if record is None:
         payload = {
-            "status": "error",
+            "status": OperationStatus.ERROR.value,
             "error": f"Script {script_id} not found",
         }
         await log_client(ctx, "info", "promote_session_script: completed")

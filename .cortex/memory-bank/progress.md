@@ -12,6 +12,10 @@
 - **Project Wiki for Attached Projects (.cortex/wiki/)** - PARTIAL. Completed Step 3 conditional `/cortex/init-wiki` MCP prompt registration: `wiki_has_content` / `wiki_scaffold_present`, skip `init-wiki.md` in manifest bulk load, register `init_wiki` lazily after startup repair when wiki scaffold exists and summary categories have no `.md` pages.
 - **Project Wiki for Attached Projects (.cortex/wiki/)** - COMPLETE. Wiki KB end-to-end: ingest, ask, lint, commit-time staged ingest, review/analyze filing to wiki/analyses; prompts aligned for dual-path artifact reporting.
 - **Auto-Ingest from Git Hooks (Wiki Auto-Update)** - COMPLETE. Commit pipeline runs wiki_ingest_staged_docs after Phase A; patterns from schema; idempotent ingest with archived raw snapshots and revision notes; tests cover staged_ingest edge and error paths.
+- **Fast-Forward vs. Step-by-Step Planning Modes** - PARTIAL. Step 1 complete: `PlanningMode`, `PlanSectionStatus`, and `PlanSection` models in `cortex.core.models` with unit tests.
+- **Fast-Forward vs. Step-by-Step Planning Modes** - PARTIAL. Implemented step draft file format, plan(create) planning_mode=step, continue_step/approve_step/finalize_step operations, and tests; prompt/draft-list/session polish (plan steps 6–7) still open.
+- **Fast-Forward vs. Step-by-Step Planning Modes** - PARTIAL. Step 6: `/cortex/plan` prompt documents `planning_mode` ff/step and resume flow. Step 7: `manage_file` `list_drafts` / `discard_draft` and stale-draft hints in `session()` suggestions. Step 8: unit tests for drafts + session suggestion + parse.
+- **Fast-Forward vs. Step-by-Step Planning Modes** - COMPLETE. Planning modes shipped with tests, manage_file draft ops, session hints, and log heading uniqueness for MD024.
 
 ## 2026-04-11
 

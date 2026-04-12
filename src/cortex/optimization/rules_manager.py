@@ -16,7 +16,7 @@ from typing import cast
 
 from cortex.core.file_system import FileSystemManager
 from cortex.core.metadata_index import MetadataIndex
-from cortex.core.models import ModelDict
+from cortex.core.models import ModelDict, OperationStatus
 from cortex.core.token_counter import TokenCounter
 from cortex.rules.synapse_manager import SynapseManager
 
@@ -129,7 +129,11 @@ class RulesManager(RulesScoringMixin, RulesHybridMixin):
         """
         if not self.rules_folder:
             error = "No rules folder configured"
-            return {"status": "error", "error": error, "message": error}
+            return {
+                "status": OperationStatus.ERROR.value,
+                "error": error,
+                "message": error,
+            }
         return await self.indexer.index_rules(self.rules_folder, force)
 
     # ---- retrieval ----------------------------------------------------------

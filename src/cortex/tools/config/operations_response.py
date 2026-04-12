@@ -6,7 +6,7 @@ Extracted from configuration_operations to keep main module under 400 lines.
 import json
 from typing import Protocol
 
-from cortex.core.models import JsonValue, ModelDict
+from cortex.core.models import JsonValue, ModelDict, OperationStatus
 from cortex.refactoring.learning_engine import LearningEngine
 from cortex.tools.models import LearnedPatternsResult
 
@@ -41,7 +41,7 @@ def apply_config_updates(
     else:
         return json.dumps(
             {
-                "status": "error",
+                "status": OperationStatus.ERROR.value,
                 "error": "Either settings or key+value required for update",
             },
             indent=2,
@@ -53,7 +53,7 @@ def create_success_response(
 ) -> str:
     """Create a success response with configuration."""
     response: ModelDict = {
-        "status": "success",
+        "status": OperationStatus.SUCCESS.value,
         "component": component,
         "configuration": configuration,
     }
@@ -80,7 +80,7 @@ def export_learned_patterns(learning_engine: LearningEngine) -> str:
     patterns = get_learned_patterns(learning_engine)
     return json.dumps(
         {
-            "status": "success",
+            "status": OperationStatus.SUCCESS.value,
             "component": "learning",
             "action": "export_patterns",
             "patterns": {

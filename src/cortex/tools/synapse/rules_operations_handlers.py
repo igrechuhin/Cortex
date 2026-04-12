@@ -6,7 +6,7 @@ Handlers for index and get_relevant operations.
 
 import json
 
-from cortex.core.models import ModelDict
+from cortex.core.models import ModelDict, OperationStatus
 from cortex.optimization.config import OptimizationConfig
 from cortex.optimization.models import RulesManagerStatusModel
 from cortex.optimization.rules_manager import RulesManager
@@ -49,6 +49,27 @@ async def check_rules_enabled(
     return None
 
 
+def _format_rules_index_error_response(
+    result_payload: ModelDict, rules_folder: str
+) -> str:
+    from cortex.tools.execution.error_formatters import format_tool_error
+
+    error_msg = result_payload.get("error", "Unknown error")
+    return format_tool_error(
+        FileNotFoundError(str(error_msg)),
+        suggestion=(
+            "Create the rules folder at the configured path or update "
+            "rules.rules_folder in .cortex/config/optimization.json "
+            "to point to an existing directory."
+        ),
+        example={"rules": {"enabled": True, "rules_folder": ".cortex/rules"}},
+        context={
+            "configured_path": rules_folder,
+            "config_path": ".cortex/config/optimization.json",
+        },
+    )
+
+
 async def handle_index_operation(
     rules_manager: RulesManager,
     optimization_config: OptimizationConfig,
@@ -67,30 +88,20 @@ async def handle_index_operation(
     rules_folder, config_error = validate_rules_folder_config(optimization_config)
     if config_error:
         return config_error
+    assert rules_folder is not None
 
     result = await rules_manager.index_rules(force=force)
     result_payload: ModelDict = result
 
     if result_payload.get("status") == "error":
-        from cortex.tools.execution.error_formatters import format_tool_error
-
-        error_msg = result_payload.get("error", "Unknown error")
-        return format_tool_error(
-            FileNotFoundError(str(error_msg)),
-            suggestion=(
-                "Create the rules folder at the configured path or update "
-                "rules.rules_folder in .cortex/config/optimization.json "
-                "to point to an existing directory."
-            ),
-            example={"rules": {"enabled": True, "rules_folder": ".cortex/rules"}},
-            context={
-                "configured_path": rules_folder,
-                "config_path": ".cortex/config/optimization.json",
-            },
-        )
+        return _format_rules_index_error_response(result_payload, rules_folder)
 
     return json.dumps(
-        {"status": "success", "operation": "index", "result": result_payload},
+        {
+            "status": OperationStatus.SUCCESS.value,
+            "operation": "index",
+            "result": result_payload,
+        },
         indent=2,
     )
 
@@ -107,7 +118,7 @@ async def validate_get_relevant_params(task_description: str | None) -> str | No
     if not task_description:
         return json.dumps(
             {
-                "status": "error",
+                "status": OperationStatus.ERROR.value,
                 "error": "task_description is required for get_relevant operation",
             },
             indent=2,

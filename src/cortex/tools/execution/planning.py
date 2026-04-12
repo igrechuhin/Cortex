@@ -6,6 +6,7 @@ Extracted to keep execution module under 400 lines.
 import json
 
 from cortex.core.context_logging import MCPContext, log_client
+from cortex.core.models import OperationStatus
 from cortex.managers.initialization import get_managers, get_project_root
 from cortex.managers.types import ManagersDict
 from cortex.refactoring.approval_manager import ApprovalManager
@@ -169,7 +170,10 @@ async def get_suggestion_for_feedback(
     suggestion = await refactoring_engine.get_suggestion(suggestion_id)
     if not suggestion:
         return json.dumps(
-            {"status": "error", "error": f"Suggestion '{suggestion_id}' not found"},
+            {
+                "status": OperationStatus.ERROR.value,
+                "error": f"Suggestion '{suggestion_id}' not found",
+            },
             indent=2,
         )
     return suggestion

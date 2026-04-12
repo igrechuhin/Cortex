@@ -203,7 +203,7 @@ async def manage_file(
 
         Read operation (success):
         {
-          "status": "success",
+          "status": OperationStatus.SUCCESS.value,
           "file_name": "projectBrief.md",
           "content": "# Project Brief\\n\\n## Overview\\n...",
           "metadata": {  // Only if include_metadata=true
@@ -226,7 +226,7 @@ async def manage_file(
 
         Write operation (success):
         {
-          "status": "success",
+          "status": OperationStatus.SUCCESS.value,
           "file_name": "projectBrief.md",
           "message": "File projectBrief.md written successfully",
           "snapshot_id": "/path/to/snapshots/projectBrief.md.v2.snapshot",
@@ -236,7 +236,7 @@ async def manage_file(
 
         Metadata operation (success):
         {
-          "status": "success",
+          "status": OperationStatus.SUCCESS.value,
           "file_name": "projectBrief.md",
           "metadata": {
             "size_bytes": 1024,
@@ -251,7 +251,7 @@ async def manage_file(
 
         Error responses:
         {
-          "status": "error",
+          "status": OperationStatus.ERROR.value,
           "error": "File projectBrief.md does not exist",
           "available_files": ["activeContext.md", "systemPatterns.md"]
         }
@@ -289,9 +289,10 @@ async def manage_file(
         ... )
 
     Note:
-        - All file operations are performed within .cortex/memory-bank/
-          directory for security
-        - Write operations create versioned snapshots in .cortex/history/
+        - Routine read/write/metadata paths use ``.cortex/memory-bank/``; ``list_drafts``
+          and ``discard_draft`` list or delete ``.cortex/plans/draft-*.md`` instead.
+        - Write operations under the memory bank create versioned snapshots in
+          ``.cortex/history/``
         - Conflict detection prevents concurrent modification
           (uses content_hash)
         - File locking prevents race conditions during write operations

@@ -7,7 +7,13 @@ ensuring uniform error handling and success responses across the server.
 
 import json
 
-from cortex.core.models import ErrorContext, JsonDict, JsonValue, SuccessResponseData
+from cortex.core.models import (
+    ErrorContext,
+    JsonDict,
+    JsonValue,
+    OperationStatus,
+    SuccessResponseData,
+)
 
 
 def success_response(
@@ -33,7 +39,7 @@ def success_response(
         data_dict = data
     else:
         data_dict = data.to_dict()
-    return json.dumps({"status": "success", **data_dict}, indent=2)
+    return json.dumps({"status": OperationStatus.SUCCESS.value, **data_dict}, indent=2)
 
 
 def error_response(

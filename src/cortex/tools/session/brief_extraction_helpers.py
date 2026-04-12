@@ -8,6 +8,7 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
+from cortex.tools.files.plan_draft_file_ops import count_stale_plan_drafts
 from cortex.tools.session.models import (
     ConcurrentSession,
     GitStatusSummary,
@@ -122,6 +123,22 @@ def add_budget_and_missing_suggestions(
         )
 
 
+def add_stale_plan_draft_suggestions(
+    suggestions: list[str], project_root: Path | None
+) -> None:
+    """Surface old step-by-step plan drafts so agents can list or discard them."""
+    if project_root is None:
+        return
+    stale = count_stale_plan_drafts(project_root)
+    if stale <= 0:
+        return
+    suggestions.append(
+        f"{stale} stale plan draft(s) older than 48h — call manage_file with operation "
+        + "list_drafts to inspect them, or operation discard_draft with JSON content "
+        + "that includes a plan_slug string to delete one draft file."
+    )
+
+
 def add_memory_bank_sync_suggestions(
     suggestions: list[str],
     progress_content: str,
@@ -152,6 +169,7 @@ def generate_session_suggestions(
     add_concurrency_suggestions(suggestions, locked_tasks, concurrent_sessions)
     add_memory_bank_sync_suggestions(suggestions, progress_content, roadmap_content)
     append_session_wiki_init_hint(suggestions, wiki_status, project_root)
+    add_stale_plan_draft_suggestions(suggestions, project_root)
     if next_work_item:
         suggestions.append(f"Next roadmap item: {next_work_item}")
     else:

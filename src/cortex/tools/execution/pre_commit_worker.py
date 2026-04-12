@@ -24,6 +24,7 @@ import time
 from pathlib import Path
 from typing import cast
 
+from cortex.core.models import OperationStatus
 from cortex.core.path_resolver import (
     WIKI_SOURCES_DIR_PROJECT_RELATIVE_PREFIX,
     augmented_environ_with_project_venv_bins,
@@ -95,12 +96,12 @@ def resolve_adapter_worker(
 
     lang_result = detect_or_use_language(None, project_root)
     if isinstance(lang_result, str):
-        return {"status": "error", "error": lang_result}
+        return {"status": OperationStatus.ERROR.value, "error": lang_result}
     language_info, root_to_use = lang_result
     adapter = LanguageQualityRouter.get_adapter(language_info.language, root_to_use)
     if adapter is None:
         return {
-            "status": "error",
+            "status": OperationStatus.ERROR.value,
             "error": f"Unsupported language: {language_info.language}",
         }
     return (adapter, language_info)
@@ -226,6 +227,19 @@ def collect_pre_commit_markdown_paths(root: Path, max_files: int = 500) -> list[
     return md_files
 
 
+def _rumdl_result_from_completed_process(
+    proc: subprocess.CompletedProcess[str],
+) -> dict[str, object]:
+    """Map a completed rumdl process to the coarse worker result shape."""
+    if proc.returncode == 0:
+        return {"files_with_errors": 0, "status": OperationStatus.SUCCESS.value}
+    return {
+        "files_with_errors": 1,
+        "status": OperationStatus.ERROR.value,
+        "output": (proc.stdout + "\n" + proc.stderr)[:2000],
+    }
+
+
 def _run_subprocess_attempt(
     attempt: list[str],
     env: dict[str, str],
@@ -244,16 +258,18 @@ def _run_subprocess_attempt(
     except FileNotFoundError:
         return None
     except subprocess.TimeoutExpired:
-        return {"files_with_errors": 1, "status": "error", "error": "timeout"}
+        return {
+            "files_with_errors": 1,
+            "status": OperationStatus.ERROR.value,
+            "error": "timeout",
+        }
     except OSError as e:
-        return {"files_with_errors": 0, "status": "error", "error": str(e)}
-    if proc.returncode == 0:
-        return {"files_with_errors": 0, "status": "success"}
-    return {
-        "files_with_errors": 1,
-        "status": "error",
-        "output": (proc.stdout + "\n" + proc.stderr)[:2000],
-    }
+        return {
+            "files_with_errors": 0,
+            "status": OperationStatus.ERROR.value,
+            "error": str(e),
+        }
+    return _rumdl_result_from_completed_process(proc)
 
 
 def _build_rumdl_attempts(
@@ -300,7 +316,11 @@ def _run_markdownlint_subprocess(
         )
         if uv_result is not None:
             return uv_result
-    return {"files_with_errors": 0, "status": "error", "error": "rumdl not found"}
+    return {
+        "files_with_errors": 0,
+        "status": OperationStatus.ERROR.value,
+        "error": "rumdl not found",
+    }
 
 
 def _run_markdown_lint(project_root: str) -> dict[str, object]:
@@ -390,7 +410,7 @@ def main() -> None:
             result_path,
             {
                 "version": 1,
-                "status": "error",
+                "status": OperationStatus.ERROR.value,
                 "started_at": started,
                 "completed_at": time.time(),
                 "pid": pid,

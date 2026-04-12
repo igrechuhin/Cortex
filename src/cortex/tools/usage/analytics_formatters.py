@@ -7,7 +7,7 @@ import json
 from datetime import datetime
 from typing import cast
 
-from cortex.core.models import ResponseFormat
+from cortex.core.models import OperationStatus, ResponseFormat
 from cortex.tools.usage.analytics_models import SearchUsageResponse
 
 
@@ -35,13 +35,13 @@ def _format_tool_usage_stats_response(
             calls = int(calls_val) if isinstance(calls_val, (int, float)) else 0
             concise_tools.append({"tool_name": name, "total_calls": calls})
         concise_payload: dict[str, object] = {
-            "status": "success",
+            "status": OperationStatus.SUCCESS.value,
             "project_root": str(root),
             "top_5_tools": concise_tools,
         }
         return json.dumps(concise_payload, indent=2)
     return json.dumps(
-        {"status": "success", "project_root": str(root), **result},
+        {"status": OperationStatus.SUCCESS.value, "project_root": str(root), **result},
         indent=2,
     )
 

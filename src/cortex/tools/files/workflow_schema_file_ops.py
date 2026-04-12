@@ -8,6 +8,7 @@ from pathlib import Path
 
 import yaml
 
+from cortex.core.models import OperationStatus
 from cortex.core.schema_loader import (
     SchemaNotFoundError,
     bundled_workflow_schema_dir,
@@ -56,7 +57,12 @@ def list_workflow_schemas(project_root: Path) -> str:
             }
         )
     return json.dumps(
-        {"status": "success", "schemas": items, "count": len(items)}, indent=2
+        {
+            "status": OperationStatus.SUCCESS.value,
+            "schemas": items,
+            "count": len(items),
+        },
+        indent=2,
     )
 
 

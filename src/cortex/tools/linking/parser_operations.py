@@ -16,7 +16,7 @@ from cortex.core.mcp_stability import (
     mcp_resource_wrapper,
     mcp_tool_wrapper,
 )
-from cortex.core.models import JsonValue, ModelDict
+from cortex.core.models import JsonValue, ModelDict, OperationStatus
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.core.project_root_resolver import resolve_project_root_async
 from cortex.linking.parser import LinkParser
@@ -71,7 +71,7 @@ async def parse_file_links(
     Example (Success with links):
         ```json
         {
-          "status": "success",
+          "status": OperationStatus.SUCCESS.value,
           "file": "activeContext.md",
           "markdown_links": [
             {
@@ -111,7 +111,7 @@ async def parse_file_links(
     Example (Success with no links):
         ```json
         {
-          "status": "success",
+          "status": OperationStatus.SUCCESS.value,
           "file": "progress.md",
           "markdown_links": [],
           "transclusions": [],
@@ -127,7 +127,7 @@ async def parse_file_links(
     Example (Error - file not found):
         ```json
         {
-          "status": "error",
+          "status": OperationStatus.ERROR.value,
           "error": "File not found: nonexistent.md"
         }
         ```
@@ -149,7 +149,11 @@ async def parse_file_links(
             ctx, "error", f"parse_file_links: failed: {e}", logger_name=__name__
         )
         return json.dumps(
-            {"status": "error", "error": str(e), "error_type": type(e).__name__},
+            {
+                "status": OperationStatus.ERROR.value,
+                "error": str(e),
+                "error_type": type(e).__name__,
+            },
             indent=2,
         )
 
@@ -182,7 +186,11 @@ async def _parse_file_links_run_or_error(
             ctx, "error", f"parse_file_links: failed: {e}", logger_name=__name__
         )
         return json.dumps(
-            {"status": "error", "error": str(e), "error_type": type(e).__name__},
+            {
+                "status": OperationStatus.ERROR.value,
+                "error": str(e),
+                "error_type": type(e).__name__,
+            },
             indent=2,
         )
 
@@ -196,7 +204,10 @@ async def _parse_file_links_impl(
     file_path, error_response = await _get_validated_file_path(mgrs, root, file_name)
     if error_response or file_path is None:
         err = error_response or json.dumps(
-            {"status": "error", "error": "File path validation failed"},
+            {
+                "status": OperationStatus.ERROR.value,
+                "error": "File path validation failed",
+            },
             indent=2,
         )
         return (err, "validation_failed")
@@ -213,7 +224,7 @@ def _build_parse_file_links_success(
     """Build success JSON string for parse_file_links."""
     return json.dumps(
         {
-            "status": "success",
+            "status": OperationStatus.SUCCESS.value,
             "file": file_name,
             "markdown_links": cast(list[JsonValue], parsed.get("markdown_links", [])),
             "transclusions": cast(list[JsonValue], parsed.get("transclusions", [])),
@@ -301,12 +312,17 @@ def _validate_and_get_file_path(
         file_path = fs_manager.construct_safe_path(memory_bank_dir, file_name)
     except (ValueError, PermissionError) as e:
         return None, json.dumps(
-            {"status": "error", "error": f"Invalid file name: {e}"}, indent=2
+            {"status": OperationStatus.ERROR.value, "error": f"Invalid file name: {e}"},
+            indent=2,
         )
 
     if not file_path.exists():
         return None, json.dumps(
-            {"status": "error", "error": f"File not found: {file_name}"}, indent=2
+            {
+                "status": OperationStatus.ERROR.value,
+                "error": f"File not found: {file_name}",
+            },
+            indent=2,
         )
 
     return file_path, None

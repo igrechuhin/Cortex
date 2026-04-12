@@ -33,7 +33,7 @@ from cortex.core.mcp_stability import (
     mcp_resource_wrapper,
     mcp_tool_wrapper,
 )
-from cortex.core.models import ContextDepth, ModelDict, ResponseFormat
+from cortex.core.models import ContextDepth, ModelDict, OperationStatus, ResponseFormat
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.core.project_root_resolver import resolve_project_root_async
 from cortex.server import mcp
@@ -223,7 +223,7 @@ async def summarize_content(
     Example (Success):
         ```json
         {
-          "status": "success",
+          "status": OperationStatus.SUCCESS.value,
           "file_name": "activeContext.md",
           "original_tokens": 1200,
           "summarized_tokens": 600,
@@ -235,7 +235,7 @@ async def summarize_content(
     Example (Error - optimization disabled):
         ```json
         {
-          "status": "error",
+          "status": OperationStatus.ERROR.value,
           "error": "Context optimization is disabled",
           "error_type": "ValueError"
         }
@@ -268,7 +268,11 @@ async def _summarize_content_body(
             ctx, "error", f"summarize_content: {e!s}", logger_name=__name__
         )
         return json.dumps(
-            {"status": "error", "error": str(e), "error_type": type(e).__name__},
+            {
+                "status": OperationStatus.ERROR.value,
+                "error": str(e),
+                "error_type": type(e).__name__,
+            },
             indent=2,
         )
 
@@ -303,7 +307,7 @@ async def get_relevance_scores(
     Example (Success):
         ```json
         {
-          "status": "success",
+          "status": OperationStatus.SUCCESS.value,
           "task_description": "refactoring memory bank",
           "files": [
             { "file_name": "activeContext.md", "relevance_score": 0.92, "tokens": 1200 },
@@ -316,7 +320,7 @@ async def get_relevance_scores(
     Example (Error - optimization disabled):
         ```json
         {
-          "status": "error",
+          "status": OperationStatus.ERROR.value,
           "error": "Context optimization is disabled",
           "error_type": "ValueError"
         }
@@ -335,6 +339,23 @@ def _resolve_relevance_task(task_description: str | None) -> str:
     return str(cfg.get("task_description", "session context"))
 
 
+async def _execute_relevance_scores_core(
+    resolved_task: str,
+    include_sections: bool,
+    ctx: MCPContext | None,
+) -> str:
+    root = await resolve_project_root_async(None, ctx)
+    mgrs = await opt.get_managers(root)
+    enabled_error = await check_optimization_enabled(mgrs)
+    if enabled_error:
+        return enabled_error
+    out = await get_relevance_scores_impl(mgrs, resolved_task, include_sections)
+    await log_client(
+        ctx, "info", "get_relevance_scores: completed", logger_name=__name__
+    )
+    return out
+
+
 async def _get_relevance_scores_body(
     task_description: str | None,
     include_sections: bool,
@@ -346,22 +367,19 @@ async def _get_relevance_scores_body(
     )
     resolved_task = _resolve_relevance_task(task_description)
     try:
-        root = await resolve_project_root_async(None, ctx)
-        mgrs = await opt.get_managers(root)
-        enabled_error = await check_optimization_enabled(mgrs)
-        if enabled_error:
-            return enabled_error
-        out = await get_relevance_scores_impl(mgrs, resolved_task, include_sections)
-        await log_client(
-            ctx, "info", "get_relevance_scores: completed", logger_name=__name__
+        return await _execute_relevance_scores_core(
+            resolved_task, include_sections, ctx
         )
-        return out
     except Exception as e:
         await log_client(
             ctx, "error", f"get_relevance_scores: {e!s}", logger_name=__name__
         )
         return json.dumps(
-            {"status": "error", "error": str(e), "error_type": type(e).__name__},
+            {
+                "status": OperationStatus.ERROR.value,
+                "error": str(e),
+                "error_type": type(e).__name__,
+            },
             indent=2,
         )
 

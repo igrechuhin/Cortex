@@ -17,6 +17,7 @@ from pathlib import Path
 from typing import cast
 
 from cortex.core.context_logging import LogLevel, MCPContext, log_client
+from cortex.core.models import OperationStatus
 from cortex.tools.execution.session_paths import session_dir
 
 logger = logging.getLogger(__name__)
@@ -178,7 +179,7 @@ def worker_died_error(pid: int) -> dict[str, object]:
     """Build error dict when worker process died."""
     return {
         "version": 1,
-        "status": "error",
+        "status": OperationStatus.ERROR.value,
         "error": f"Worker process {pid} died without writing result",
     }
 

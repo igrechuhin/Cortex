@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import cast
 
 from cortex.core.cache_json_access import read_cache_json, write_cache_json
+from cortex.core.models import OperationStatus
 from cortex.core.path_resolver import get_cache_path
 
 from ._models import (
@@ -150,7 +151,7 @@ def build_optimization_workflow_payload(
 ) -> str:
     """Build JSON payload string for run_tool_optimization_workflow response."""
     payload = {
-        "status": "success",
+        "status": OperationStatus.SUCCESS.value,
         "project_root": str(root),
         "run_id": run_id,
         "baseline_success_rate": baseline_analysis.overall_success_rate,

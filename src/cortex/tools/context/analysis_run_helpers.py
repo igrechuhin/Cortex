@@ -9,6 +9,7 @@ from pathlib import Path
 from cortex.analysis.insight_engine import InsightEngine
 from cortex.analysis.pattern_analyzer import PatternAnalyzer
 from cortex.analysis.structure_analyzer import StructureAnalyzer
+from cortex.core.models import OperationStatus
 from cortex.managers.types import ManagersDict
 from cortex.managers.utils import get_manager
 from cortex.tools.context.analysis_helpers import AnalysisTarget, parse_analysis_target
@@ -45,7 +46,7 @@ async def analyze_usage_patterns(
 
     return json.dumps(
         {
-            "status": "success",
+            "status": OperationStatus.SUCCESS.value,
             "target": "usage_patterns",
             "time_window_days": time_window_days,
             "patterns": patterns,
@@ -67,7 +68,12 @@ async def analyze_structure(structure_analyzer: StructureAnalyzer) -> str:
     }
 
     return json.dumps(
-        {"status": "success", "target": "structure", "analysis": analysis}, indent=2
+        {
+            "status": OperationStatus.SUCCESS.value,
+            "target": "structure",
+            "analysis": analysis,
+        },
+        indent=2,
     )
 
 
@@ -87,7 +93,7 @@ async def analyze_insights(
 
     return json.dumps(
         {
-            "status": "success",
+            "status": OperationStatus.SUCCESS.value,
             "target": "insights",
             "format": export_format,
             "insights": exported,
@@ -158,7 +164,7 @@ def analysis_invalid_target_response(target_display: str) -> str:
     valid = [t.value for t in AnalysisTarget]
     return json.dumps(
         {
-            "status": "error",
+            "status": OperationStatus.ERROR.value,
             "error": f"Invalid target: {target_display}",
             "valid_targets": valid,
         },

@@ -20,7 +20,7 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from typing import cast
 
-from cortex.core.models import JsonValue, ModelDict
+from cortex.core.models import JsonValue, ModelDict, OperationStatus
 from cortex.core.token_counter import TokenCounter
 from cortex.optimization.models import (
     IndexedRuleModel,
@@ -102,7 +102,7 @@ class RulesIndexer:
         if not rules_path.exists():
             error = f"Rules folder not found: {rules_folder}"
             return {
-                "status": "error",
+                "status": OperationStatus.ERROR.value,
                 "rules_folder": rules_folder,
                 "error": error,
                 "message": error,
@@ -323,7 +323,7 @@ class RulesIndexer:
         indexed_count = counts["indexed"]
         updated_count = counts["updated"]
         return {
-            "status": "success",
+            "status": OperationStatus.SUCCESS.value,
             "rules_folder": rules_folder,
             "total_files": len(rule_files),
             "indexed": indexed_count,

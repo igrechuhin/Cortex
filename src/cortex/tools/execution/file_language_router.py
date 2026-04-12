@@ -200,6 +200,15 @@ def _completed_process_to_check_result(
     )
 
 
+def _prepend_src_to_pythonpath(env: dict[str, str], project_root: Path) -> None:
+    """Ensure ``project_root/src`` is first on PYTHONPATH for Synapse script imports."""
+    src_dir = project_root / "src"
+    if not src_dir.is_dir():
+        return
+    prev = env.get("PYTHONPATH", "")
+    env["PYTHONPATH"] = str(src_dir) if not prev else f"{src_dir}{os.pathsep}{prev}"
+
+
 def _execute_synapse_with_files_env(
     python_bin: Path,
     script_path: Path,
@@ -209,6 +218,7 @@ def _execute_synapse_with_files_env(
 ) -> CheckResult:
     """Run synapse script with FILES merged into the process environment."""
     env = {**os.environ, "FILES": _files_env_value(files)}
+    _prepend_src_to_pythonpath(env, project_root)
     try:
         completed = subprocess.run(
             [str(python_bin), str(script_path)],

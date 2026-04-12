@@ -8,6 +8,7 @@ from typing import cast
 
 import yaml
 
+from cortex.core.models import OperationStatus
 from cortex.core.project_session_config import validate_schema_fork_name
 from cortex.tools.files.workflow_schema_paths import (
     fork_schema_source_file,
@@ -66,7 +67,12 @@ def write_forked_schema_file(project_root: Path, base: str, new_name: str) -> st
         return _err_json(str(e), type(e).__name__)
     rel = dest.relative_to(project_root)
     return json.dumps(
-        {"status": "success", "path": str(rel), "base": base, "new_name": new_name},
+        {
+            "status": OperationStatus.SUCCESS.value,
+            "path": str(rel),
+            "base": base,
+            "new_name": new_name,
+        },
         indent=2,
     )
 

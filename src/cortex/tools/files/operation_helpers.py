@@ -7,6 +7,7 @@ from pathlib import Path
 
 from cortex.core.file_system import FileSystemManager
 from cortex.core.metadata_index import MetadataIndex
+from cortex.core.models import OperationStatus
 from cortex.core.token_counter import TokenCounter
 from cortex.core.version_manager import VersionManager
 from cortex.tools.files.operation_error_responses import (
@@ -21,6 +22,7 @@ from cortex.validation.schema_validator import SchemaValidator
 
 __all__ = [
     "GOAL_FILE_OPERATIONS",
+    "PLAN_DRAFT_FILE_OPERATIONS",
     "SCHEMA_FILE_OPERATIONS",
     "FileOperation",
     "build_invalid_operation_error",
@@ -54,6 +56,8 @@ class FileOperation(str, Enum):
     GET_GOAL = "get_goal"
     LIST_SCHEMAS = "list_schemas"
     FORK_SCHEMA = "fork_schema"
+    LIST_DRAFTS = "list_drafts"
+    DISCARD_DRAFT = "discard_draft"
 
 
 def parse_file_operation(value: str | None) -> FileOperation | None:
@@ -120,13 +124,16 @@ def validate_write_content(content: str | None) -> str | None:
     """Validate content for write operation (required, no null bytes)."""
     if content is None:
         return json.dumps(
-            {"status": "error", "error": "Content is required for write operation"},
+            {
+                "status": OperationStatus.ERROR.value,
+                "error": "Content is required for write operation",
+            },
             indent=2,
         )
     if "\x00" in content:
         return json.dumps(
             {
-                "status": "error",
+                "status": OperationStatus.ERROR.value,
                 "error": "Content must not contain null bytes (invalid for text files)",
                 "hint": "Remove binary or control characters and retry.",
             },
@@ -141,7 +148,10 @@ def validate_write_request(
     """Validate write request parameters. Returns error JSON or None."""
     if content is None:
         return json.dumps(
-            {"status": "error", "error": "Content is required for write operation"},
+            {
+                "status": OperationStatus.ERROR.value,
+                "error": "Content is required for write operation",
+            },
             indent=2,
         )
     if not file_path.exists():
@@ -164,6 +174,26 @@ SCHEMA_FILE_OPERATIONS: frozenset[FileOperation] = frozenset(
     }
 )
 
+PLAN_DRAFT_FILE_OPERATIONS: frozenset[FileOperation] = frozenset(
+    {
+        FileOperation.LIST_DRAFTS,
+        FileOperation.DISCARD_DRAFT,
+    }
+)
+
+
+def _rollback_version_required_error_json() -> str:
+    return json.dumps(
+        {
+            "status": OperationStatus.ERROR.value,
+            "error": "Version is required for rollback operation",
+            "hint": (
+                "Call manage_file(operation='rollback', file_name='...', version=<int>)"
+            ),
+        },
+        indent=2,
+    )
+
 
 def validate_manage_file_operation(
     operation: str | None,
@@ -180,20 +210,13 @@ def validate_manage_file_operation(
             missing_params.append("operation")
             return (None, build_missing_parameters_error(missing_params))
         return (None, build_invalid_operation_error(str(operation)))
-    if parsed_op in GOAL_FILE_OPERATIONS | SCHEMA_FILE_OPERATIONS:
+    if (
+        parsed_op
+        in GOAL_FILE_OPERATIONS | SCHEMA_FILE_OPERATIONS | PLAN_DRAFT_FILE_OPERATIONS
+    ):
         return (parsed_op, None)
     if parsed_op != FileOperation.FILE_ARTIFACT and not file_name:
         return (None, build_missing_parameters_error(["file_name"]))
     if parsed_op == FileOperation.ROLLBACK and version is None:
-        return (
-            None,
-            json.dumps(
-                {
-                    "status": "error",
-                    "error": "Version is required for rollback operation",
-                    "hint": "Call manage_file(operation='rollback', file_name='...', version=<int>)",
-                },
-                indent=2,
-            ),
-        )
+        return (None, _rollback_version_required_error_json())
     return (parsed_op, None)

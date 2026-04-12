@@ -22,6 +22,7 @@ import time
 from pathlib import Path
 from typing import cast
 
+from cortex.core.models import OperationStatus
 from cortex.core.path_resolver import augmented_environ_with_project_venv_bins
 from cortex.tools.execution.pre_commit_helpers_models import PreCommitCheck
 from cortex.tools.execution.pre_commit_rumdl_resolve import (
@@ -166,7 +167,7 @@ def main() -> None:
             result_path,
             {
                 "version": 1,
-                "status": "error",
+                "status": OperationStatus.ERROR.value,
                 "started_at": started,
                 "completed_at": time.time(),
                 "pid": pid,

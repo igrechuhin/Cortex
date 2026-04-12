@@ -16,6 +16,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from cortex.core.cache_json_access import read_cache_json, write_cache_json
 from cortex.core.context_logging import MCPContext, log_client
+from cortex.core.models import OperationStatus
 from cortex.core.path_resolver import get_cache_path
 from cortex.core.project_root_resolver import resolve_project_root_async
 
@@ -340,7 +341,7 @@ def _build_benchmark_output(
     """Build JSON-serializable output dict for benchmark_model."""
     cache_file = str(get_cache_path(root, "evals") / "model_benchmarks.json")
     out: dict[str, object] = {
-        "status": "success",
+        "status": OperationStatus.SUCCESS.value,
         "project_root": str(root),
         "model_name": model_name,
         "generated_at": record.generated_at,

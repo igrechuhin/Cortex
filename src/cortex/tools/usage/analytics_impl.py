@@ -8,6 +8,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import cast
 
+from cortex.core.models import OperationStatus
 from cortex.managers.usage_models import ToolUsageEvent
 from cortex.managers.usage_tracker import UsageTracker
 from cortex.tools.usage.analytics_formatters import build_usage_report_text
@@ -106,7 +107,7 @@ async def get_usage_observation_impl(
     if event is None:
         return json.dumps(
             {
-                "status": "error",
+                "status": OperationStatus.ERROR.value,
                 "error": f"Usage event not found for id {id}",
                 "error_type": "UsageEventNotFound",
                 "id": id,
@@ -115,7 +116,7 @@ async def get_usage_observation_impl(
         )
     return json.dumps(
         {
-            "status": "success",
+            "status": OperationStatus.SUCCESS.value,
             "project_root": str(root),
             "event": event.model_dump(),
         },
@@ -193,7 +194,7 @@ async def get_usage_timeline_impl(
     results = [entry.model_dump() for entry in timeline_entries]
     return json.dumps(
         {
-            "status": "success",
+            "status": OperationStatus.SUCCESS.value,
             "project_root": str(root),
             "around_id": around_id,
             "results": results,
@@ -218,7 +219,7 @@ async def fetch_report_data(
     total = int(tot_val) if isinstance(tot_val, (int, float)) else 0
     report = build_usage_report_text(tools, start, end, total)
     out: dict[str, str | dict[str, object]] = {
-        "status": "success",
+        "status": OperationStatus.SUCCESS.value,
         "project_root": str(root),
         "report": report,
     }

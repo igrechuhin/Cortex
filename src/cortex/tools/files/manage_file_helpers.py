@@ -16,6 +16,7 @@ from cortex.core.constants import (
 )
 from cortex.core.context_logging import MCPContext, log_client
 from cortex.core.file_system import FileSystemManager
+from cortex.core.models import OperationStatus
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.core.usage_context import (
     get_current_managers,
@@ -42,6 +43,10 @@ from cortex.tools.files.operation_helpers import (
     FileOperation,
     build_invalid_operation_error,
     validate_manage_file_operation,
+)
+from cortex.tools.files.plan_draft_file_ops import (
+    execute_plan_draft_operation,
+    validate_discard_draft_content,
 )
 from cortex.tools.files.session_goal_file_ops import execute_session_goal_operation
 from cortex.tools.response_builder import error_response
@@ -122,6 +127,8 @@ def _validate_manage_file_input_limits(
         size_err = _validate_write_content_byte_limit(content)
         if size_err is not None:
             return size_err
+    if operation == FileOperation.DISCARD_DRAFT:
+        return validate_discard_draft_content(content)
     if sections is not None:
         return _validate_sections_list_limit(sections)
     return None
@@ -291,6 +298,8 @@ async def execute_file_operation(root: Path, file_name: str, operation: FileOper
             execute_workflow_schema_operation,
         )
         return await execute_workflow_schema_operation(root, operation, content)
+    if _is_plan_draft_file_operation(operation):
+        return execute_plan_draft_operation(root, operation, content)
     managers, fs_manager = await get_managers_for_root(root)
     if operation in GOAL_FILE_OPERATIONS:
         return await execute_session_goal_operation(root, operation, content, managers)
@@ -329,6 +338,13 @@ async def _dispatch_standard_file_operation(
         managers,
         sections,
         version,
+    )
+
+
+def _is_plan_draft_file_operation(operation: FileOperation) -> bool:
+    return operation in (
+        FileOperation.LIST_DRAFTS,
+        FileOperation.DISCARD_DRAFT,
     )
 
 
@@ -493,19 +509,19 @@ def _explore_logs_dir(root: Path) -> Path:
 def _list_explore_logs(root: Path) -> str:
     explore_dir = _explore_logs_dir(root)
     if not explore_dir.exists():
-        return json.dumps({"status": "success", "logs": [], "count": 0}, indent=2)
+        return json.dumps({"status": OperationStatus.SUCCESS.value, "logs": [], "count": 0}, indent=2)
     logs = [
         str(path.relative_to(root))
         for path in sorted(explore_dir.glob("*.md"))
         if path.is_file()
     ]
-    return json.dumps({"status": "success", "logs": logs, "count": len(logs)}, indent=2)
+    return json.dumps({"status": OperationStatus.SUCCESS.value, "logs": logs, "count": len(logs)}, indent=2)
 
 
 def _clear_explore_logs(root: Path) -> str:
     explore_dir = _explore_logs_dir(root)
     if not explore_dir.exists():
-        return json.dumps({"status": "success", "deleted": [], "count": 0}, indent=2)
+        return json.dumps({"status": OperationStatus.SUCCESS.value, "deleted": [], "count": 0}, indent=2)
     cutoff = datetime.now(timezone.utc) - timedelta(days=7)
     deleted: list[str] = []
     for path in sorted(explore_dir.glob("*.md")):
@@ -516,7 +532,7 @@ def _clear_explore_logs(root: Path) -> str:
             path.unlink(missing_ok=True)
             deleted.append(str(path.relative_to(root)))
     return json.dumps(
-        {"status": "success", "deleted": deleted, "count": len(deleted)}, indent=2
+        {"status": OperationStatus.SUCCESS.value, "deleted": deleted, "count": len(deleted)}, indent=2
     )
 
 

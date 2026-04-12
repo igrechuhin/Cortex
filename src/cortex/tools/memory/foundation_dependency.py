@@ -58,7 +58,7 @@ async def get_dependency_graph(
     Example (JSON format):
         ```json
         {
-          "status": "success",
+          "status": OperationStatus.SUCCESS.value,
           "format": "json",
           "graph": {
             "files": {
@@ -79,7 +79,7 @@ async def get_dependency_graph(
     Example (Mermaid format):
         ```json
         {
-          "status": "success",
+          "status": OperationStatus.SUCCESS.value,
           "format": "mermaid",
           "diagram": "graph TD\n  projectBrief.md --> activeContext.md\n  ..."
         }
@@ -88,7 +88,7 @@ async def get_dependency_graph(
     Example (Error):
         ```json
         {
-          "status": "error",
+          "status": OperationStatus.ERROR.value,
           "error": "<exception message>",
           "error_type": "ValueError"
         }

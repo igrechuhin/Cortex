@@ -143,7 +143,7 @@ async def resolve_transclusions(
     Example (Success with transclusions):
         ```json
         {
-          "status": "success",
+          "status": OperationStatus.SUCCESS.value,
           "file": "activeContext.md",
           "original_content": (
               "# Active Context\\n\\n{{include:techContext.md#stack}}\\n\\n"
@@ -165,7 +165,7 @@ async def resolve_transclusions(
     Example (Success without transclusions):
         ```json
         {
-          "status": "success",
+          "status": OperationStatus.SUCCESS.value,
           "file": "progress.md",
           "original_content": (
               "# Progress\\n\\n## Completed\\n- Feature A\\n- Feature B"
@@ -181,7 +181,7 @@ async def resolve_transclusions(
     Example (Error - circular dependency):
         ```json
         {
-          "status": "error",
+          "status": OperationStatus.ERROR.value,
           "error": (
               "Circular dependency detected: activeContext.md -> "
               "techContext.md -> activeContext.md"
@@ -197,7 +197,7 @@ async def resolve_transclusions(
     Example (Error - max depth exceeded):
         ```json
         {
-          "status": "error",
+          "status": OperationStatus.ERROR.value,
           "error": "Maximum depth 5 exceeded while resolving systemPatterns.md",
           "error_type": "MaxDepthExceededError",
           "message": "Maximum transclusion depth (5) exceeded"

@@ -12,6 +12,7 @@ from cortex.core.constants import MCP_TOOL_TIMEOUT_FAST
 from cortex.core.context_logging import MCPContext, log_client
 from cortex.core.mcp_annotations import destructive_annotations
 from cortex.core.mcp_stability import ensure_usage_context, mcp_tool_wrapper
+from cortex.core.models import OperationStatus
 from cortex.core.progress_types import SessionProgress, report_structured_progress
 from cortex.server import mcp
 from cortex.tools.models_base import StrictBaseModel
@@ -37,7 +38,7 @@ def _session_error_invalid_operation(operation: str) -> str:
     """Build error JSON for invalid session operation."""
     return json.dumps(
         {
-            "status": "error",
+            "status": OperationStatus.ERROR.value,
             "error": (
                 f"Invalid operation '{operation}'. "
                 "Use start, register, deregister, or compact."
@@ -155,7 +156,7 @@ def _session_error_register_missing_title() -> str:
     """Build error JSON when register is missing task_title."""
     return json.dumps(
         {
-            "status": "error",
+            "status": OperationStatus.ERROR.value,
             "error": "task_title is required when operation is 'register'",
         },
         indent=2,

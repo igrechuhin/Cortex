@@ -16,6 +16,7 @@ from pathlib import Path
 from typing import cast
 
 from cortex.core.context_logging import MCPContext
+from cortex.core.models import OperationStatus
 from cortex.tools.execution.pre_commit_process import (
     build_fix_worker_cmd,
     is_process_alive,
@@ -136,7 +137,7 @@ def _interpret_existing_job(
             }
         return {
             "job_id": args_hash,
-            "status": "error",
+            "status": OperationStatus.ERROR.value,
             "error": str(existing.get("error") or "Detached worker reported error"),
         }
 
@@ -208,7 +209,10 @@ async def poll_job_to_completion(
     inner = envelope.get("result")
     if isinstance(inner, dict):
         return cast(dict[str, object], inner)
-    return {"status": "error", "error": "Worker result missing 'result' key"}
+    return {
+        "status": OperationStatus.ERROR.value,
+        "error": "Worker result missing 'result' key",
+    }
 
 
 def start_pre_commit_job_impl(
@@ -253,8 +257,14 @@ def _interpret_poll_data(  # pyright: ignore[reportUnusedFunction]
         result = data.get("result")
         if isinstance(result, dict):
             return cast(dict[str, object], result)
-        return {"status": "error", "error": "Worker result missing 'result' key"}
-    return {"status": "error", "error": str(data.get("error", "Unknown worker error"))}
+        return {
+            "status": OperationStatus.ERROR.value,
+            "error": "Worker result missing 'result' key",
+        }
+    return {
+        "status": OperationStatus.ERROR.value,
+        "error": str(data.get("error", "Unknown worker error")),
+    }
 
 
 async def run_checks_detached(

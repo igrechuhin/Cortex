@@ -9,7 +9,7 @@ from typing import cast
 
 from cortex.analysis.structure_analyzer import StructureAnalyzer
 from cortex.core.constants import CONSOLIDATION_MIN_SIMILARITY
-from cortex.core.models import ModelDict
+from cortex.core.models import ModelDict, OperationStatus
 from cortex.core.protocols.token import DependencyGraphProtocol
 from cortex.managers.initialization import get_managers, get_project_root
 from cortex.managers.types import ManagersDict
@@ -44,7 +44,7 @@ def validate_refactoring_type(type_val: str) -> str | None:
     if parse_refactoring_suggestion_type(type_val) is None:
         return json.dumps(
             {
-                "status": "error",
+                "status": OperationStatus.ERROR.value,
                 "error": (
                     f"Invalid type: {type_val}. Valid types: consolidation, "
                     "splits, reorganization"
@@ -74,7 +74,7 @@ def handle_preview_mode(preview_suggestion_id: str) -> str:
     """Handle preview mode for refactoring suggestions."""
     return json.dumps(
         {
-            "status": "success",
+            "status": OperationStatus.SUCCESS.value,
             "preview_mode": True,
             "suggestion_id": preview_suggestion_id,
             "message": "Preview functionality requires suggestion caching",
@@ -131,7 +131,10 @@ def validate_suggest_refactoring_type(type_val: str) -> str | None:
         return (
             err
             if err
-            else json.dumps({"status": "error", "error": "type is required"}, indent=2)
+            else json.dumps(
+                {"status": OperationStatus.ERROR.value, "error": "type is required"},
+                indent=2,
+            )
         )
     return None
 
@@ -197,7 +200,7 @@ async def suggest_consolidation(
     opportunities_list = convert_opportunities_to_dict(opportunities)
     return json.dumps(
         {
-            "status": "success",
+            "status": OperationStatus.SUCCESS.value,
             "type": "consolidation",
             "min_similarity": similarity,
             "opportunities": opportunities_list,
@@ -217,7 +220,7 @@ async def suggest_splits(
     recommendations_list = convert_recommendations_to_dict(recommendations)
     return json.dumps(
         {
-            "status": "success",
+            "status": OperationStatus.SUCCESS.value,
             "type": "splits",
             "recommendations": recommendations_list,
             "size_threshold": threshold,
@@ -247,7 +250,7 @@ async def suggest_reorganization(
     )
     return json.dumps(
         {
-            "status": "success",
+            "status": OperationStatus.SUCCESS.value,
             "type": "reorganization",
             "goal": reorg_goal,
             "plan": plan.model_dump(mode="json") if plan else None,
@@ -280,4 +283,6 @@ async def process_refactoring_request(
         return await suggest_splits(split_recommender, size_threshold)
     if type_enum == RefactoringSuggestionType.REORGANIZATION:
         return await suggest_reorganization(reorganization_planner, mgrs, goal)
-    return json.dumps({"status": "error", "error": "Unknown error"}, indent=2)
+    return json.dumps(
+        {"status": OperationStatus.ERROR.value, "error": "Unknown error"}, indent=2
+    )

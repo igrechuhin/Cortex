@@ -20,6 +20,14 @@ class CreatePlanResult(BaseModel):
     )
     message: str = Field(description="Success or error message")
     error: str | None = Field(None, description="Error message if status is error")
+    planning_mode: str | None = Field(
+        default=None,
+        description="When set, echoes create-time planning mode (ff or step)",
+    )
+    review_prompt: str | None = Field(
+        default=None,
+        description="Human-facing next step hint for step-by-step drafts",
+    )
 
 
 class PlanEntry(BaseModel):

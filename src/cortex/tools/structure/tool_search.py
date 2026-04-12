@@ -51,7 +51,7 @@ async def search_tools(
 
     Example:
         >>> search_tools(query="refactor", limit=5)
-        {"status": "success", "query": "refactor", "count": 2, "tools": [
+        {"status": OperationStatus.SUCCESS.value, "query": "refactor", "count": 2, "tools": [
           {"name": "apply_refactoring", "category": "deferred_medium", "rationale": "Apply refactoring..."},
           {"name": "suggest_refactoring", "category": "deferred_low", "rationale": "Suggest refactoring..."}
         ]}
@@ -136,11 +136,11 @@ async def list_available_tools(
 
     Example (no category — all tools):
         >>> list_available_tools()
-        {"status": "success", "by_category": {"always_loaded": [{"name": "session_start", "rationale": "..."}], ...}, "summary": {"always_loaded": 25, "deferred_medium": 30, "deferred_low": 46}}
+        {"status": OperationStatus.SUCCESS.value, "by_category": {"always_loaded": [{"name": "session_start", "rationale": "..."}], ...}, "summary": {"always_loaded": 25, "deferred_medium": 30, "deferred_low": 46}}
 
     Example (with category):
         >>> list_available_tools(category="always_loaded")
-        {"status": "success", "category": "always_loaded", "count": 25, "tools": [{"name": "session_start", "category": "always_loaded", "rationale": "..."}, ...]}
+        {"status": OperationStatus.SUCCESS.value, "category": "always_loaded", "count": 25, "tools": [{"name": "session_start", "category": "always_loaded", "rationale": "..."}, ...]}
     """
     if category is not None and category not in (
         "always_loaded",

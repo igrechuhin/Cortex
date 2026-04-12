@@ -12,6 +12,7 @@ from cortex.core.mcp_stability import (
     mcp_resource_wrapper,
     mcp_tool_wrapper,
 )
+from cortex.core.models import OperationStatus
 from cortex.server import mcp
 
 
@@ -49,7 +50,7 @@ async def health_check() -> str:
     Returns:
         JSON string with health metrics:
         {
-          "status": "success",
+          "status": OperationStatus.SUCCESS.value,
           "health": {
             "healthy": true,
             "concurrent_operations": 2,
@@ -61,18 +62,18 @@ async def health_check() -> str:
 
     Example (success):
         health_check()
-        → {"status": "success", "health": {"healthy": true, "concurrent_operations": 1,
+        → {"status": OperationStatus.SUCCESS.value, "health": {"healthy": true, "concurrent_operations": 1,
            "max_concurrent": 5, "semaphore_available": 4, "utilization_percent": 20.0}}
 
     Example (error):
         health_check() (when MCP disconnected or check fails)
-        → {"status": "error", "error": "Connection closed", "error_type": "ConnectionError"}
+        → {"status": OperationStatus.ERROR.value, "error": "Connection closed", "error_type": "ConnectionError"}
     """
     try:
         health = await check_connection_health()
         return json.dumps(
             {
-                "status": "success",
+                "status": OperationStatus.SUCCESS.value,
                 "health": health.model_dump(),
             },
             indent=2,
@@ -81,7 +82,7 @@ async def health_check() -> str:
     except Exception as e:
         return json.dumps(
             {
-                "status": "error",
+                "status": OperationStatus.ERROR.value,
                 "error": str(e),
                 "error_type": type(e).__name__,
             },

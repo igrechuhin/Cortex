@@ -63,7 +63,7 @@ async def get_version_history(
     Example (Success):
         ```json
         {
-          "status": "success",
+          "status": OperationStatus.SUCCESS.value,
           "file_name": "projectBrief.md",
           "total_versions": 5,
           "versions": [
@@ -90,7 +90,7 @@ async def get_version_history(
     Example (Error - file not found):
         ```json
         {
-          "status": "error",
+          "status": OperationStatus.ERROR.value,
           "error": "File 'missing.md' not found in memory bank",
           "error_type": "FileNotFoundError"
         }

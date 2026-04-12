@@ -8,6 +8,7 @@ from pathlib import Path
 from cortex.core.constants import MemoryBankFile
 from cortex.core.file_system import FileSystemManager
 from cortex.core.metadata_index import MetadataIndex
+from cortex.core.models import OperationStatus
 from cortex.core.path_resolver import get_constitution_template_path
 from cortex.core.token_counter import TokenCounter
 from cortex.core.version_manager import VersionManager
@@ -23,7 +24,7 @@ def _init_constitution_error_payload(message: str, error_type: str) -> str:
 def _skipped_already_exists(file_name: str) -> str:
     return json.dumps(
         {
-            "status": "success",
+            "status": OperationStatus.SUCCESS.value,
             "file_name": file_name,
             "skipped": True,
             "message": (

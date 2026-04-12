@@ -11,7 +11,7 @@ from pathlib import Path
 # Import via facade to allow test patching
 import cortex.tools.optimization as opt
 from cortex.core.context_logging import MCPContext
-from cortex.core.models import ContextDepth, ResponseFormat
+from cortex.core.models import ContextDepth, OperationStatus, ResponseFormat
 from cortex.managers.types import ManagersDict
 from cortex.managers.utils import get_manager
 from cortex.optimization.agent_roles import (
@@ -94,7 +94,7 @@ async def check_optimization_enabled(mgrs: ManagersDict) -> str | None:
     if not optimization_config.is_optimization_enabled():
         return json.dumps(
             {
-                "status": "error",
+                "status": OperationStatus.ERROR.value,
                 "error": "Optimization features are disabled in configuration",
             },
             indent=2,
@@ -170,7 +170,11 @@ async def load_context_with_error_handling(
         )
     except Exception as e:
         return json.dumps(
-            {"status": "error", "error": str(e), "error_type": type(e).__name__},
+            {
+                "status": OperationStatus.ERROR.value,
+                "error": str(e),
+                "error_type": type(e).__name__,
+            },
             indent=2,
         )
 
@@ -215,7 +219,9 @@ async def execute_load_context(
         task_description, token_budget, ctx
     )
     if error or root is None or mgrs is None:
-        return error or json.dumps({"status": "error", "error": "Failed to initialize"})
+        return error or json.dumps(
+            {"status": OperationStatus.ERROR.value, "error": "Failed to initialize"}
+        )
 
     return await execute_load_context_preinitialized(
         root=root,

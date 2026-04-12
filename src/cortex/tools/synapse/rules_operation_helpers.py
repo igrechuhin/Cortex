@@ -4,7 +4,7 @@ import json
 from enum import Enum
 from typing import cast
 
-from cortex.core.models import ModelDict
+from cortex.core.models import ModelDict, OperationStatus
 from cortex.optimization.config import OptimizationConfig
 from cortex.optimization.models import RulesManagerStatusModel
 from cortex.tools.execution.error_formatters import (
@@ -121,7 +121,7 @@ def build_get_relevant_response(
     status_payload = cast(ModelDict, status.model_dump(mode="json"))
     return json.dumps(
         {
-            "status": "success",
+            "status": OperationStatus.SUCCESS.value,
             "operation": "get_relevant",
             "task_description": task_description,
             "max_tokens": max_tokens,

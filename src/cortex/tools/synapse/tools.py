@@ -39,6 +39,7 @@ from cortex.core.mcp_stability import (
     mcp_resource_wrapper,
     mcp_tool_wrapper,
 )
+from cortex.core.models import OperationStatus
 from cortex.tools.synapse.tools_impl import (
     RulePriorityLiteral,
     get_synapse_handle_prompts,
@@ -54,7 +55,7 @@ def _synapse_error_invalid_operation(operation: str) -> str:
     """Build error JSON for invalid synapse operation."""
     return json.dumps(
         {
-            "status": "error",
+            "status": OperationStatus.ERROR.value,
             "error": f"Invalid operation '{operation}'. Use sync, update_rule, or update_prompt.",
         },
         indent=2,
@@ -65,7 +66,7 @@ def _synapse_error_update_missing_params(operation: str) -> str:
     """Build error JSON when update_rule/update_prompt params are missing."""
     return json.dumps(
         {
-            "status": "error",
+            "status": OperationStatus.ERROR.value,
             "error": f"category, file, content, and commit_message are required when operation is '{operation}'",
         },
         indent=2,
@@ -88,7 +89,11 @@ async def _synapse_handle_sync(pull: bool, push: bool, ctx: MCPContext | None) -
     except Exception as e:
         await log_client(ctx, "error", f"synapse(sync): {e!s}", logger_name=__name__)
         return json.dumps(
-            {"status": "error", "error": str(e), "error_type": type(e).__name__},
+            {
+                "status": OperationStatus.ERROR.value,
+                "error": str(e),
+                "error_type": type(e).__name__,
+            },
             indent=2,
         )
 
@@ -111,7 +116,11 @@ async def _synapse_handle_update(
     except Exception as e:
         await log_client(ctx, "error", f"synapse({op}): {e!s}", logger_name=__name__)
         return json.dumps(
-            {"status": "error", "error": str(e), "error_type": type(e).__name__},
+            {
+                "status": OperationStatus.ERROR.value,
+                "error": str(e),
+                "error_type": type(e).__name__,
+            },
             indent=2,
         )
 
@@ -275,7 +284,7 @@ async def get_synapse(
         return await get_synapse_handle_prompts(category, ctx)
     return json.dumps(
         {
-            "status": "error",
+            "status": OperationStatus.ERROR.value,
             "error": f"Unknown content_type: {content_type!r}. Use rules or prompts.",
         },
         indent=2,

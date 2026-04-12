@@ -17,7 +17,12 @@ from cortex.core.mcp_stability import (
     mcp_tool_wrapper,
 )
 from cortex.core.metadata_index import MetadataIndex
-from cortex.core.models import JsonValue, ModelDict, ResponseFormat
+from cortex.core.models import (
+    JsonValue,
+    ModelDict,
+    OperationStatus,
+    ResponseFormat,
+)
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.core.project_root_resolver import resolve_project_root_async
 from cortex.core.version_manager import VersionManager
@@ -47,6 +52,35 @@ __all__ = [
 ]
 
 
+def _memory_bank_stats_failure_json(exc: BaseException) -> str:
+    return json.dumps(
+        {
+            "status": OperationStatus.ERROR.value,
+            "error": str(exc),
+            "error_type": type(exc).__name__,
+        },
+        indent=2,
+    )
+
+
+async def _run_get_memory_bank_stats_tool(
+    ctx: MCPContext | None,
+    include_token_budget: bool,
+    include_refactoring_history: bool,
+    refactoring_days: int,
+    response_format: ResponseFormat,
+) -> str:
+    root = await resolve_project_root_async(None, ctx)
+    result_dict = await _get_memory_bank_stats_impl(
+        ctx,
+        root,
+        include_token_budget,
+        include_refactoring_history,
+        refactoring_days,
+    )
+    return format_memory_bank_stats_response(result_dict, response_format)
+
+
 # Tool consolidated into query_memory_bank (Phase 50); kept as callable for dispatch.
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_MEDIUM)
@@ -57,53 +91,21 @@ async def get_memory_bank_stats(
     response_format: ResponseFormat = ResponseFormat.CONCISE,
     ctx: MCPContext | None = None,
 ) -> str:
-    """Get overall Memory Bank statistics and analytics.
+    """Return Memory Bank statistics as JSON (counts, tokens, optional history).
 
-    USE WHEN: User asks about project status, user needs memory bank
-    statistics, user wants to check file counts or token usage, user requests
-    system overview.
-
-    EXAMPLES: 'get memory bank stats', 'show project statistics', 'how many
-    files in memory bank', 'what is the token usage'.
-
-    RETURNS: JSON with file counts, token usage, version history stats, and
-    system health metrics.
-
-    Returns comprehensive statistics about token usage, file sizes,
-    version history, usage patterns, token budget status, and optionally
-    refactoring history. This is the primary tool for monitoring Memory
-    Bank health and usage.
-
-    Args:
-        include_token_budget: Include token budget analysis (default: True)
-            Shows usage percentage, remaining tokens, and status
-        include_refactoring_history: Include refactoring history (default: False)
-            Shows recent refactorings, rollbacks, and success rates
-        refactoring_days: Days of refactoring history to include (default: 90)
-            Only used when include_refactoring_history=True
-        response_format: "concise" or "full" (default: concise)
-            Controls verbosity of the response
-
-    Returns:
-        JSON string with detailed statistics including:
-        - summary: Total files, tokens, size, reads, history size
-        - token_budget: Usage percentage, remaining tokens, status
-        - refactoring_history: Recent refactorings and rollbacks (optional)
-        - index_stats: Metadata index statistics
+    Primary entrypoint for project/memory-bank health; see tool schema for fields.
     """
     await log_client(
         ctx, "info", "get_memory_bank_stats: starting", logger_name=__name__
     )
     try:
-        root = await resolve_project_root_async(None, ctx)
-        result_dict = await _get_memory_bank_stats_impl(
+        return await _run_get_memory_bank_stats_tool(
             ctx,
-            root,
             include_token_budget,
             include_refactoring_history,
             refactoring_days,
+            response_format,
         )
-        return format_memory_bank_stats_response(result_dict, response_format)
     except Exception as e:
         await log_client(
             ctx,
@@ -111,10 +113,7 @@ async def get_memory_bank_stats(
             f"get_memory_bank_stats: failed: {e}",
             logger_name=__name__,
         )
-        return json.dumps(
-            {"status": "error", "error": str(e), "error_type": type(e).__name__},
-            indent=2,
-        )
+        return _memory_bank_stats_failure_json(e)
 
 
 # MCP resource registration removed
@@ -218,7 +217,7 @@ async def _build_refactoring_history_dict(
             "type": "execution",
             "timestamp": cast(JsonValue, exec.created_at),
             "files_affected": cast(JsonValue, list[JsonValue]()),
-            "status": "success",
+            "status": OperationStatus.SUCCESS.value,
         }
         for exec in history.executions
     ]

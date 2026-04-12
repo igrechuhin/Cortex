@@ -17,7 +17,7 @@ from cortex.core.exceptions import (
 )
 from cortex.core.file_system import FileSystemManager
 from cortex.core.metadata_index import MetadataIndex
-from cortex.core.models import JsonValue, ModelDict, VersionMetadata
+from cortex.core.models import JsonValue, ModelDict, OperationStatus, VersionMetadata
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.core.token_counter import TokenCounter
 from cortex.core.version_manager import VersionManager
@@ -67,7 +67,7 @@ async def _build_read_response(
 ) -> str:
     """Build read operation JSON response."""
     response: ModelDict = {
-        "status": "success",
+        "status": OperationStatus.SUCCESS.value,
         "file_name": file_name,
         "content": extracted_content,
     }
@@ -140,7 +140,7 @@ async def _verify_write_lock(
         assert lock_error is not None
         return json.dumps(
             {
-                "status": "error",
+                "status": OperationStatus.ERROR.value,
                 "error": f"Lock verification failed: {lock_error}",
                 "file_name": file_name,
             },
@@ -167,7 +167,7 @@ def build_write_response(
     """Build write operation response."""
     return json.dumps(
         {
-            "status": "success",
+            "status": OperationStatus.SUCCESS.value,
             "file_name": file_name,
             "message": f"✅ File {file_name} written successfully",
             "snapshot_id": version_info.snapshot_path,
@@ -316,7 +316,8 @@ def validate_file_path(
         return (file_path, "")
     except (ValueError, PermissionError) as e:
         error_json = json.dumps(
-            {"status": "error", "error": f"Invalid file name: {e}"}, indent=2
+            {"status": OperationStatus.ERROR.value, "error": f"Invalid file name: {e}"},
+            indent=2,
         )
         return (None, error_json)
 

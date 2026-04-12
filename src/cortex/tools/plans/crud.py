@@ -10,6 +10,7 @@ from typing import Literal
 from cortex.core.constants import MCP_TOOL_TIMEOUT_MEDIUM
 from cortex.core.context_logging import MCPContext, log_client
 from cortex.core.mcp_stability import ensure_usage_context, mcp_tool_wrapper
+from cortex.core.models import PlanningMode
 from cortex.core.plan_change_history import ensure_change_history_section
 from cortex.core.plan_utils import (
     apply_clarifications_summary_to_plan,
@@ -32,6 +33,7 @@ from cortex.tools.plans.crud_models import (
 )
 
 __all__ = [
+    "build_staged_plan_markdown",
     "create_plan",
     "list_plans",
     "get_plan",
@@ -90,31 +92,86 @@ async def _log_clarification_marker_count(
     )
 
 
-async def _create_plan_impl(
+def build_staged_plan_markdown(
+    root: Path,
+    content: str,
+    explore_log_path: str | None,
+) -> tuple[str, int]:
+    """Run the standard plan(create) markdown pipeline before writing a file."""
+    # AI: Single entrypoint so step-mode and fast-forward create share identical prep.
+    final_content, n_clarifications = _prepare_plan_markdown_for_create(root, content)
+    final_content = ensure_change_history_section(final_content)
+    final_content = _inject_decision_basis_from_explore_log(
+        project_root=root,
+        plan_content=final_content,
+        explore_log_path=explore_log_path,
+    )
+    final_content = apply_independence_parallel_markers(final_content)
+    return final_content, n_clarifications
+
+
+async def _create_step_mode_branch(
     title: str,
     content: str,
     slug: str | None,
     explore_log_path: str | None,
     ctx: MCPContext | None,
 ) -> str:
+    from cortex.tools.plans.step_plan_workflow import create_step_draft_plan
+
+    plan_path, error, review_prompt = await create_step_draft_plan(
+        title, content, slug, explore_log_path, ctx
+    )
+    if error:
+        return await _handle_plan_result(plan_path, error, ctx)
+    await log_client(
+        ctx,
+        "info",
+        "create_plan: step-by-step draft created",
+        logger_name=__name__,
+    )
+    return create_success_result(
+        plan_path,
+        planning_mode=PlanningMode.STEP_BY_STEP.value,
+        review_prompt=review_prompt,
+    ).model_dump_json()
+
+
+async def _create_fast_forward_branch(
+    title: str,
+    content: str,
+    slug: str | None,
+    explore_log_path: str | None,
+    ctx: MCPContext | None,
+) -> str:
+    root = await resolve_project_root_async(None, ctx)
+    final_content, n_clarifications = build_staged_plan_markdown(
+        root, content, explore_log_path
+    )
+    await _log_clarification_marker_count(ctx, n_clarifications)
+    plan_path, error = create_plan_file(root, title, slug, final_content)
+    return await _handle_plan_result(plan_path, error, ctx)
+
+
+async def _create_plan_impl(
+    title: str,
+    content: str,
+    slug: str | None,
+    explore_log_path: str | None,
+    ctx: MCPContext | None,
+    planning_mode: PlanningMode = PlanningMode.FAST_FORWARD,
+) -> str:
     """Implementation of create_plan logic."""
     await log_client(ctx, "info", "create_plan: starting", logger_name=__name__)
 
     try:
-        root = await resolve_project_root_async(None, ctx)
-        final_content, n_clarifications = _prepare_plan_markdown_for_create(
-            root, content
+        if planning_mode == PlanningMode.STEP_BY_STEP:
+            return await _create_step_mode_branch(
+                title, content, slug, explore_log_path, ctx
+            )
+        return await _create_fast_forward_branch(
+            title, content, slug, explore_log_path, ctx
         )
-        final_content = ensure_change_history_section(final_content)
-        final_content = _inject_decision_basis_from_explore_log(
-            project_root=root,
-            plan_content=final_content,
-            explore_log_path=explore_log_path,
-        )
-        final_content = apply_independence_parallel_markers(final_content)
-        await _log_clarification_marker_count(ctx, n_clarifications)
-        plan_path, error = create_plan_file(root, title, slug, final_content)
-        return await _handle_plan_result(plan_path, error, ctx)
     except Exception as e:
         await log_client(ctx, "error", f"create_plan: {e}", logger_name=__name__)
         return CreatePlanResult(
@@ -135,6 +192,7 @@ async def create_plan(
     explore_log_path: str | None = None,
     include_archive: bool = False,
     response_format: str = "content",
+    planning_mode: str | None = None,
     ctx: MCPContext | None = None,
 ) -> str:
     """Create, list, or get plan files (single tool for plan CRUD).
@@ -168,7 +226,12 @@ async def create_plan(
             message="title and content are required when operation is 'create'",
             error="Missing title or content",
         ).model_dump_json()
-    return await _create_plan_impl(title, content, slug, explore_log_path, ctx)
+    from cortex.tools.plans.step_plan_workflow import planning_mode_from_param
+
+    mode_enum = planning_mode_from_param(planning_mode)
+    return await _create_plan_impl(
+        title, content, slug, explore_log_path, ctx, mode_enum
+    )
 
 
 async def _handle_get_plan(
@@ -280,7 +343,7 @@ async def list_plans(
 
     Example:
         >>> list_plans()
-        {"status": "success", "plans": [{"slug": "phase-58-multi-agent", "title": "Phase 58..."}], "count": 5}
+        {"status": OperationStatus.SUCCESS.value, "plans": [{"slug": "phase-58-multi-agent", "title": "Phase 58..."}], "count": 5}
     """
     return await _list_plans_tool_impl(include_archive, ctx)
 
@@ -330,6 +393,6 @@ async def get_plan(
 
     Example:
         >>> get_plan(slug="phase-58-multi-agent", response_format="metadata")
-        {"status": "success", "slug": "phase-58-multi-agent", "title": "Phase 58...", "plan_status": "PENDING", "message": "..."}
+        {"status": OperationStatus.SUCCESS.value, "slug": "phase-58-multi-agent", "title": "Phase 58...", "plan_status": "PENDING", "message": "..."}
     """
     return await _get_plan_tool_impl(slug, response_format, ctx)

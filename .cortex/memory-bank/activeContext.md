@@ -20,6 +20,10 @@
 
 - ✅ **Auto-Ingest from Git Hooks (Wiki Auto-Update)** - COMPLETE (2026-04-12) - Wiki staged ingest wired into commit prompt; idempotent slug ingest, revision notes, and 100% unit coverage on staged_ingest.
 
+- ✅ **Planning modes (PARTIAL)** - COMPLETE (2026-04-12) - Plan tool supports planning_mode step with draft files, section state footer, continue/approve/finalize_step; fast-forward unchanged.
+
+- ✅ **Fast-Forward vs. Step-by-Step Planning Modes** - COMPLETE (2026-04-12) - Planning modes: fast-forward and step-by-step MCP flows, draft hygiene, session stale-draft hints, tests, and quality fixes (operations log timestamps, test helpers).
+
 ## Completed Work (2026-04-11)
 
 - **Summary (2026-04-11)** - 1 entries archived.
@@ -250,7 +254,7 @@
 
 ## Current Focus
 
-Next roadmap item: **[Fast-Forward vs. Step-by-Step Planning Modes](../plans/fast-forward-vs-step-by-step-modes.md)** (see [roadmap.md](roadmap.md) pending plans).
+Next roadmap item: **[Fast-Forward vs. Step-by-Step Planning Modes](../plans/archive/Other/fast-forward-vs-step-by-step-modes.md)** (see [roadmap.md](roadmap.md) pending plans).
 
 ## Recent Changes
 

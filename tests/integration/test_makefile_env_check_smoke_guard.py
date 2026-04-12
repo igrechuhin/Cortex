@@ -54,5 +54,5 @@ def test_bootstrap_offline_workflow_is_wired() -> None:
     assert "network none" in text
     assert "paths:" in text
     assert "uv.lock" in text
-    assert "make bootstrap-offline" in text
-    assert "make preflight" in text
+    assert "uv sync --offline" in text
+    assert "scripts/preflight.sh" in text

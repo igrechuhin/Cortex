@@ -93,7 +93,7 @@ def validate_rules_manager(managers: ManagersDict) -> ModelDict | None:
     """Validate rules manager exists."""
     if getattr(managers, "rules_manager", None) is None:
         return {
-            "status": "error",
+            "status": OperationStatus.ERROR.value,
             "error": (
                 "Rules manager not initialized. Enable rules in configuration first."
             ),

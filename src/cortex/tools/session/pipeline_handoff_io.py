@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import cast
 
 from cortex.core.file_snapshot import FileStateCache
+from cortex.core.models import OperationStatus
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 
 logger = logging.getLogger(__name__)
@@ -174,7 +175,9 @@ def op_read_task(project_root: Path, pipeline: str, phase: str) -> str:
         try:
             return tfile.read_text(encoding="utf-8")
         except OSError as e:
-            return json.dumps({"status": "error", "error": str(e)}, indent=2)
+            return json.dumps(
+                {"status": OperationStatus.ERROR.value, "error": str(e)}, indent=2
+            )
     sfile = state_path(pdir)
     prior_state = _load_pipeline_state_fallback(sfile)
     return json.dumps(
@@ -318,7 +321,9 @@ def op_read_state(project_root: Path, pipeline: str) -> str:
     try:
         return sfile.read_text(encoding="utf-8")
     except OSError as e:
-        return json.dumps({"status": "error", "error": str(e)}, indent=2)
+        return json.dumps(
+            {"status": OperationStatus.ERROR.value, "error": str(e)}, indent=2
+        )
 
 
 def op_clear(project_root: Path, pipeline: str) -> str:
@@ -339,7 +344,9 @@ def op_clear(project_root: Path, pipeline: str) -> str:
             {"status": "ok", "cleared": str(pdir), "pipeline": pipeline}, indent=2
         )
     except OSError as e:
-        return json.dumps({"status": "error", "error": str(e)}, indent=2)
+        return json.dumps(
+            {"status": OperationStatus.ERROR.value, "error": str(e)}, indent=2
+        )
 
 
 def op_snapshot(project_root: Path, paths: list[str]) -> str:

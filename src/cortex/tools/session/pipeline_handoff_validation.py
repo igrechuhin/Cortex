@@ -5,6 +5,8 @@ from __future__ import annotations
 import json
 import re
 
+from cortex.core.models import OperationStatus
+
 _SAFE_TOKEN_RE = re.compile(r"^[A-Za-z0-9_-]+$")
 
 # Allowlisted names only — derived from Synapse prompts and orchestrators.
@@ -35,7 +37,7 @@ def validate_pipeline(pipeline: str) -> str | None:
     if not pipeline or not _SAFE_TOKEN_RE.fullmatch(pipeline):
         return json.dumps(
             {
-                "status": "error",
+                "status": OperationStatus.ERROR.value,
                 "error": "Invalid pipeline token. Allowed characters: A-Za-z0-9_-",
             },
             indent=2,
@@ -44,7 +46,7 @@ def validate_pipeline(pipeline: str) -> str | None:
         allowed = ", ".join(sorted(_VALID_PIPELINES))
         return json.dumps(
             {
-                "status": "error",
+                "status": OperationStatus.ERROR.value,
                 "error": (f"Unknown pipeline '{pipeline}'. Allowed values: {allowed}."),
             },
             indent=2,
@@ -58,7 +60,7 @@ def validate_phase(phase: str) -> str | None:
     if not phase or not _SAFE_TOKEN_RE.fullmatch(phase):
         return json.dumps(
             {
-                "status": "error",
+                "status": OperationStatus.ERROR.value,
                 "error": "Invalid phase token. Allowed characters: A-Za-z0-9_-",
             },
             indent=2,
@@ -67,7 +69,7 @@ def validate_phase(phase: str) -> str | None:
         allowed = ", ".join(sorted(_VALID_PHASES))
         return json.dumps(
             {
-                "status": "error",
+                "status": OperationStatus.ERROR.value,
                 "error": f"Unknown phase '{phase}'. Allowed values: {allowed}.",
             },
             indent=2,

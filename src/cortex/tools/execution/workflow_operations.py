@@ -12,6 +12,7 @@ from pathlib import Path
 
 import yaml
 
+from cortex.core.models import OperationStatus
 from cortex.tools.execution.workflow_models import WorkflowTemplate
 
 logger = logging.getLogger(__name__)
@@ -90,7 +91,7 @@ async def suggest_workflow_impl(
     recommended = _recommended_workflows(templates, task, limit)
     return json.dumps(
         {
-            "status": "success",
+            "status": OperationStatus.SUCCESS.value,
             "task_description": task or "(none)",
             "count": len(recommended),
             "workflows": [

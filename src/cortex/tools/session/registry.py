@@ -291,11 +291,11 @@ async def session_deregister(
 
     Example (success):
         >>> await session_deregister()
-        {"status": "success", "message": "Successfully deregistered session", "error": null}
+        {"status": OperationStatus.SUCCESS.value, "message": "Successfully deregistered session", "error": null}
 
     Example (error — session not in registry):
         >>> await session_deregister()
-        {"status": "error", "message": "Session not found in registry", "error": "Session not found"}
+        {"status": OperationStatus.ERROR.value, "message": "Session not found in registry", "error": "Session not found"}
     """
     try:
         return await _deregister_session_impl(ctx)

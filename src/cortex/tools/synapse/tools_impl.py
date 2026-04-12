@@ -8,7 +8,7 @@ from collections.abc import Sequence
 from typing import Literal, Protocol
 
 from cortex.core.context_logging import MCPContext, log_client
-from cortex.core.models import ModelDict
+from cortex.core.models import ModelDict, OperationStatus
 from cortex.managers.initialization import get_managers, get_project_root
 from cortex.managers.utils import get_manager
 from cortex.optimization.rules_manager import RulesManager
@@ -44,7 +44,7 @@ def _synapse_not_initialized_json() -> str:
     """Build JSON error when Synapse is not initialized."""
     return json.dumps(
         {
-            "status": "error",
+            "status": OperationStatus.ERROR.value,
             "error": "Synapse not initialized. Run setup_synapse first.",
         },
         indent=2,
@@ -137,7 +137,7 @@ def _build_category_prompts_response(
     """Build JSON response for category-specific prompts."""
     return json.dumps(
         {
-            "status": "success",
+            "status": OperationStatus.SUCCESS.value,
             "category": category,
             "prompts": format_prompts_list(prompts),
             "total_count": len(prompts),
@@ -153,7 +153,7 @@ def _build_all_prompts_response(
     """Build JSON response for all prompts."""
     return json.dumps(
         {
-            "status": "success",
+            "status": OperationStatus.SUCCESS.value,
             "categories": categories,
             "prompts": format_prompts_list(prompts),
             "total_count": len(prompts),
@@ -165,7 +165,11 @@ def _build_all_prompts_response(
 def _get_synapse_rules_error_json(exc: Exception) -> str:
     """Build JSON error response for get_synapse_rules failures."""
     return json.dumps(
-        {"status": "error", "error": str(exc), "error_type": type(exc).__name__},
+        {
+            "status": OperationStatus.ERROR.value,
+            "error": str(exc),
+            "error_type": type(exc).__name__,
+        },
         indent=2,
     )
 
@@ -217,7 +221,7 @@ async def get_synapse_handle_rules(
     if not (task_description or "").strip():
         return json.dumps(
             {
-                "status": "error",
+                "status": OperationStatus.ERROR.value,
                 "error": "task_description required when content_type is rules",
             },
             indent=2,
@@ -272,7 +276,11 @@ async def get_synapse_handle_prompts(
             ctx, "error", f"get_synapse(prompts): {e!s}", logger_name=__name__
         )
         return json.dumps(
-            {"status": "error", "error": str(e), "error_type": type(e).__name__},
+            {
+                "status": OperationStatus.ERROR.value,
+                "error": str(e),
+                "error_type": type(e).__name__,
+            },
             indent=2,
         )
 

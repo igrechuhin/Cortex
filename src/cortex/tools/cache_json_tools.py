@@ -21,6 +21,7 @@ from cortex.core.cache_json_access import (
 from cortex.core.constants import MCP_TOOL_TIMEOUT_FAST
 from cortex.core.context_logging import MCPContext, log_client
 from cortex.core.mcp_stability import ensure_usage_context, mcp_tool_wrapper
+from cortex.core.models import OperationStatus
 from cortex.core.project_root_resolver import resolve_project_root_async
 
 
@@ -57,7 +58,7 @@ def _error_response(
 ) -> str:
     """Build JSON error response for cache tool."""
     out: dict[str, object] = {
-        "status": "error",
+        "status": OperationStatus.ERROR.value,
         "message": message,
         "relative_path": relative_path,
     }
@@ -84,13 +85,17 @@ async def _cache_json_read(root: Path, relative_path: str) -> str:
         return json.dumps(data, indent=2)
     except ValueError as e:
         return json.dumps(
-            {"status": "error", "message": str(e), "relative_path": relative_path},
+            {
+                "status": OperationStatus.ERROR.value,
+                "message": str(e),
+                "relative_path": relative_path,
+            },
             indent=2,
         )
     except Exception as e:
         return json.dumps(
             {
-                "status": "error",
+                "status": OperationStatus.ERROR.value,
                 "message": str(e),
                 "error_type": type(e).__name__,
                 "relative_path": relative_path,
@@ -115,7 +120,8 @@ async def _cache_json_write(root: Path, relative_path: str, content: str) -> str
             )
         await _write_cache_json(root, relative_path, payload)
         return json.dumps(
-            {"status": "success", "relative_path": relative_path}, indent=2
+            {"status": OperationStatus.SUCCESS.value, "relative_path": relative_path},
+            indent=2,
         )
     except ValueError as e:
         return _error_response(str(e), relative_path)
@@ -164,11 +170,11 @@ async def cache_json(
     Example (write — success):
         cache_json(operation="write", relative_path="session/last_handoff.json",
                    content='{"session_id": "2026-02-24"}')
-        → {"status": "success", "relative_path": "session/last_handoff.json"}
+        → {"status": OperationStatus.SUCCESS.value, "relative_path": "session/last_handoff.json"}
 
     Example (write — error, invalid JSON):
         cache_json(operation="write", relative_path="x.json", content="not json")
-        → {"status": "error", "message": "Invalid JSON: ...", "relative_path": "x.json"}
+        → {"status": OperationStatus.ERROR.value, "message": "Invalid JSON: ...", "relative_path": "x.json"}
     """
     if ctx is not None:
         await log_client(ctx, "debug", f"cache_json({operation}): starting")

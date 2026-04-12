@@ -9,18 +9,12 @@ evaluation_models) import from here to avoid circular imports.
 
 from __future__ import annotations
 
-from enum import Enum
-
 from pydantic import BaseModel, ConfigDict, Field
 
-from cortex.core.models import JsonDict
+from cortex.core.models import JsonDict, OperationStatus
 
-
-class ToolResultStatus(str, Enum):
-    """Status for tool result responses."""
-
-    SUCCESS = "success"
-    ERROR = "error"
+# Backward-compatible alias so existing imports of ToolResultStatus keep working.
+ToolResultStatus = OperationStatus
 
 
 # ConfigValue type for configuration values - supports primitive and nested structures.

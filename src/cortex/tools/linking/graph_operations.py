@@ -82,7 +82,7 @@ async def get_link_graph(
     Example (JSON format with cycles):
         ```json
         {
-          "status": "success",
+          "status": OperationStatus.SUCCESS.value,
           "format": "json",
           "nodes": [
             {
@@ -142,7 +142,7 @@ async def get_link_graph(
     Example (JSON format without transclusions):
         ```json
         {
-          "status": "success",
+          "status": OperationStatus.SUCCESS.value,
           "format": "json",
           "nodes": [
             {
@@ -179,7 +179,7 @@ async def get_link_graph(
     Example (Mermaid format):
         ```json
         {
-          "status": "success",
+          "status": OperationStatus.SUCCESS.value,
           "format": "mermaid",
           "diagram": (
               "graph TD\\n  activeContext[activeContext.md]\\n  "
@@ -199,7 +199,7 @@ async def get_link_graph(
     Example (Error):
         ```json
         {
-          "status": "error",
+          "status": OperationStatus.ERROR.value,
           "error": "Failed to parse links in systemPatterns.md: Invalid syntax",
           "error_type": "ParseError"
         }

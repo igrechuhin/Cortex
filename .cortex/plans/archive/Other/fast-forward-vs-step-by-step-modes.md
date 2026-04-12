@@ -125,6 +125,12 @@ Inspired by OpenSpec's distinction between `/opsx:ff` (fast-forward) and `/opsx:
 - Existing `/cortex/plan` prompt
 - `PlanningMode` enum and `PlanSection` model (Step 1)
 
+## Partial Progress Log
+
+- 2026-04-12: Step 1 — Define `PlanningMode`, `PlanSectionStatus`, and `PlanSection` in core models with unit tests — files: `src/cortex/core/models/_enums.py`, `src/cortex/core/models/_plan_section.py`, `src/cortex/core/models/__init__.py`, `tests/unit/test_planning_mode_models.py`
+- 2026-04-12: Steps 2–5 (partial) — `planning_mode` on create (`ff`/`step`), draft footer state, `continue_step` / `approve_step` / `finalize_step` MCP operations, `build_staged_plan_markdown`, tests — files: `src/cortex/tools/plans/plan.py`, `src/cortex/tools/plans/crud.py`, `src/cortex/tools/plans/step_draft_core.py`, `src/cortex/tools/plans/step_plan_internal.py`, `src/cortex/tools/plans/step_plan_workflow.py`, `src/cortex/tools/plans/step_plan_models.py`, `src/cortex/tools/plans/crud_models.py`, `src/cortex/tools/plans/crud_helpers.py`, `tests/unit/test_step_plan_draft_core.py`, `tests/tools/test_plan_step_workflow.py`
+- 2026-04-12: Steps 6–8 (prompt + draft hygiene + tests) — `/cortex/plan` mode instructions, `manage_file` `list_drafts`/`discard_draft`, stale-draft `session()` suggestion, unit tests — files: `.cortex/synapse/prompts/plan.md`, `src/cortex/tools/files/plan_draft_file_ops.py`, `src/cortex/tools/files/operation_helpers.py`, `src/cortex/tools/files/manage_file_helpers.py`, `src/cortex/tools/files/crud_operations.py`, `src/cortex/tools/session/brief_extraction_helpers.py`, `tests/tools/test_plan_drafts_manage_file.py`, `tests/tools/test_session_start_health_brief.py`, `tests/tools/test_file_operations.py`
+
 ## Success Criteria
 
 - `--ff` mode produces a complete plan in one shot (existing behavior preserved).

@@ -8,6 +8,7 @@ import json
 
 from cortex.core.file_system import FileSystemManager
 from cortex.core.metadata_index import MetadataIndex
+from cortex.core.models import OperationStatus
 from cortex.managers.types import ManagersDict
 from cortex.managers.utils import get_manager
 from cortex.optimization.config import OptimizationConfig
@@ -22,7 +23,7 @@ async def _check_summarization_enabled(
     if not optimization_config.is_summarization_enabled():
         return json.dumps(
             {
-                "status": "error",
+                "status": OperationStatus.ERROR.value,
                 "error": "Summarization is disabled in optimization configuration",
             },
             indent=2,
@@ -134,7 +135,7 @@ def _validate_summarize_inputs(target_reduction: float, strategy: str) -> str | 
     if not 0 < target_reduction < 1:
         return json.dumps(
             {
-                "status": "error",
+                "status": OperationStatus.ERROR.value,
                 "error": "target_reduction must be between 0 and 1",
             },
             indent=2,
@@ -144,7 +145,7 @@ def _validate_summarize_inputs(target_reduction: float, strategy: str) -> str | 
     if strategy not in valid_strategies:
         return json.dumps(
             {
-                "status": "error",
+                "status": OperationStatus.ERROR.value,
                 "error": (
                     f"Invalid strategy: {strategy}. Use {', '.join(valid_strategies)}."
                 ),
@@ -209,7 +210,7 @@ def _build_summarize_response(
 
     return json.dumps(
         {
-            "status": "success",
+            "status": OperationStatus.SUCCESS.value,
             "strategy": strategy,
             "target_reduction": target_reduction,
             "files_summarized": len(results),

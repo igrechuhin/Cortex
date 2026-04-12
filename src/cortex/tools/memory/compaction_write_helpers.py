@@ -19,6 +19,7 @@ from cortex.core.exceptions import (
 )
 from cortex.core.file_system import FileSystemManager
 from cortex.core.metadata_index import MetadataIndex
+from cortex.core.models import OperationStatus
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.core.security import acquire_git_operation_slot
 from cortex.core.token_counter import TokenCounter
@@ -52,14 +53,14 @@ def _pre_compact_snapshot_path(project_root: Path, file_name: str) -> Path:
 
 def _compact_error(msg: str) -> str:
     """Return error JSON for compaction."""
-    return json.dumps({"status": "error", "error": msg}, indent=2)
+    return json.dumps({"status": OperationStatus.ERROR.value, "error": msg}, indent=2)
 
 
 def _compact_rollback_error(exc: Exception) -> str:
     """Build rollback error JSON."""
     return json.dumps(
         {
-            "status": "error",
+            "status": OperationStatus.ERROR.value,
             "error": str(exc),
             "rollback": "Use snapshot in .cortex/.cache/session/",
         },
@@ -290,7 +291,7 @@ def compact_success_result(
     savings_active = max(0, tokens_before_active - ta)
     savings_progress = max(0, tokens_before_progress - tp)
     payload: dict[str, object] = {
-        "status": "success",
+        "status": OperationStatus.SUCCESS.value,
         "message": "Session compacted; handoff written.",
         "token_savings": {
             "activeContext": savings_active,

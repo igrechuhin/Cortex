@@ -14,7 +14,7 @@ from typing import cast
 from cortex.core.exceptions import FileOperationError
 from cortex.core.file_system import FileSystemManager
 from cortex.core.metadata_index import MetadataIndex
-from cortex.core.models import ModelDict
+from cortex.core.models import ModelDict, OperationStatus
 from cortex.core.version_manager import VersionManager
 
 from .models import (
@@ -303,7 +303,7 @@ class RollbackManager:
         snapshot_id = self.find_snapshot_for_execution(execution_id)
         if not snapshot_id:
             return {
-                "status": "error",
+                "status": OperationStatus.ERROR.value,
                 "execution_id": execution_id,
                 "total_files": 0,
                 "conflicts": 0,
@@ -335,7 +335,7 @@ class RollbackManager:
         affected_files_json = cast(list[JsonValue], affected_files)
         conflicts_json = cast(list[JsonValue], conflicts)
         return {
-            "status": "success",
+            "status": OperationStatus.SUCCESS.value,
             "execution_id": execution_id,
             "total_files": len(affected_files),
             "conflicts": len(conflicts),

@@ -11,19 +11,50 @@ from cortex.core.constants import MCP_TOOL_TIMEOUT_MEDIUM
 from cortex.core.context_logging import MCPContext, log_client
 from cortex.core.mcp_annotations import destructive_annotations
 from cortex.core.mcp_stability import ensure_usage_context, mcp_tool_wrapper
+from cortex.core.models import PlanToolOperation
 from cortex.server import mcp
 from cortex.tools.models_base import StrictBaseModel
 
 
+class _PlanDispatchWire(StrictBaseModel):
+    """Raw ``plan()`` tool parameters (``operation`` is a wire string until coercion)."""
+
+    operation: str | None = None
+    title: str | None = None
+    content: str | None = None
+    slug: str | None = None
+    explore_log_path: str | None = None
+    include_archive: bool = False
+    response_format: str = "content"
+    plan_title: str | None = None
+    summary: str | None = None
+    completion_date: str | None = None
+    progress_entry: str | None = None
+    plan_file_name: str | None = None
+    plan_relative_path: str | None = None
+    resolved_clarifications: dict[str, str] | None = None
+    description: str | None = None
+    status: str = "PENDING"
+    section: str = "pending"
+    planning_mode: str | None = None
+    step_section: str | None = None
+    step_skip: bool = False
+    section_corrections: str | None = None
+
+
+_PLAN_WIRE_KEYS: frozenset[str] = frozenset(_PlanDispatchWire.model_fields.keys())
+
+
 class _PlanDispatchRequest(StrictBaseModel):
-    operation: str
-    title: str | None
+    """Normalized ``plan()`` kwargs; wire-level ``title`` is merged into ``plan_title`` before validate."""
+
+    operation: PlanToolOperation
+    plan_title: str | None
     content: str | None
     slug: str | None
     explore_log_path: str | None
     include_archive: bool
     response_format: str
-    plan_title: str | None
     summary: str | None
     completion_date: str | None
     progress_entry: str | None
@@ -33,6 +64,10 @@ class _PlanDispatchRequest(StrictBaseModel):
     description: str | None
     status: str
     section: str
+    planning_mode: str | None = None
+    step_section: str | None = None
+    step_skip: bool = False
+    section_corrections: str | None = None
 
 
 def _plan_error_invalid_operation(operation: str) -> str:
@@ -44,7 +79,7 @@ def _plan_error_invalid_operation(operation: str) -> str:
         message=(
             "Invalid operation "
             f"'{operation}'. Use create, list, get, complete, register, enrich, "
-            "graph, or archive_completed."
+            "graph, archive_completed, continue_step, approve_step, or finalize_step."
         ),
         error="Invalid operation",
     ).model_dump_json()
@@ -94,6 +129,7 @@ async def _plan_handle_crud(
     explore_log_path: str | None,
     include_archive: bool,
     response_format: str,
+    planning_mode: str | None,
     ctx: MCPContext | None,
 ) -> str:
     from cortex.tools.plans.crud import create_plan as _create_plan
@@ -106,6 +142,7 @@ async def _plan_handle_crud(
         explore_log_path=explore_log_path,
         include_archive=include_archive,
         response_format=response_format,
+        planning_mode=planning_mode,
         ctx=ctx,
     )
 
@@ -235,26 +272,25 @@ async def _plan_handle_archive_completed(ctx: MCPContext | None) -> str:
     )
 
 
-def _plan_required_args_present(
-    operation: str,
-    *,
-    slug: str | None,
-    plan_file_name: str | None,
-    plan_relative_path: str | None,
-    plan_title: str | None,
-    summary: str | None,
-    description: str | None,
-    title: str | None,
-    content: str | None,
-) -> bool:
-    if operation == "complete":
-        return bool(plan_title and summary)
-    if operation == "register":
-        return bool(plan_title and description)
-    if operation == "create":
-        return bool(title and content)
-    if operation == "enrich":
-        return bool(slug or plan_file_name or plan_relative_path)
+def _plan_request_has_required_args(request: _PlanDispatchRequest) -> bool:
+    """Return True when required fields for *request.operation* are populated."""
+    op = request.operation
+    if op == PlanToolOperation.COMPLETE:
+        return bool(request.plan_title and request.summary)
+    if op == PlanToolOperation.REGISTER:
+        return bool(request.plan_title and request.description)
+    if op == PlanToolOperation.CREATE:
+        return bool(request.plan_title and request.content)
+    if op == PlanToolOperation.ENRICH:
+        return bool(
+            request.slug or request.plan_file_name or request.plan_relative_path
+        )
+    if op == PlanToolOperation.CONTINUE_STEP:
+        return bool(request.slug and request.content and request.content.strip())
+    if op == PlanToolOperation.APPROVE_STEP:
+        return bool(request.slug and request.step_section)
+    if op == PlanToolOperation.FINALIZE_STEP:
+        return bool(request.slug and request.plan_title and request.description)
     return True
 
 
@@ -296,17 +332,14 @@ async def _append_plan_complete_log(
         )
 
 
-def _plan_valid_operations() -> tuple[str, ...]:
-    return (
-        "create",
-        "list",
-        "get",
-        "complete",
-        "register",
-        "enrich",
-        "graph",
-        "archive_completed",
-    )
+def _coerce_plan_tool_operation(raw: str | None) -> PlanToolOperation | None:
+    """Map wire string to :class:`PlanToolOperation`; ``None``/empty defaults to list."""
+    if raw is None or raw == "":
+        return PlanToolOperation.LIST
+    try:
+        return PlanToolOperation(raw)
+    except ValueError:
+        return None
 
 
 async def _log_plan_operation(
@@ -321,68 +354,113 @@ async def _log_plan_operation(
 
 
 async def _plan_dispatch(
-    operation: str | None,
-    title: str | None,
-    content: str | None,
-    slug: str | None,
-    explore_log_path: str | None,
-    include_archive: bool,
-    response_format: str,
-    plan_title: str | None,
-    summary: str | None,
-    completion_date: str | None,
-    progress_entry: str | None,
-    plan_file_name: str | None,
-    plan_relative_path: str | None,
-    resolved_clarifications: dict[str, str] | None,
-    description: str | None,
-    status: str,
-    section: str,
+    inputs: _PlanDispatchWire,
     ctx: MCPContext | None,
 ) -> str:
     """Dispatch plan(operation=...) to the appropriate handler."""
-    operation = operation or "list"
-    if operation not in _plan_valid_operations():
-        return _plan_error_invalid_operation(operation)
-    request = _build_plan_dispatch_request(
-        {k: v for k, v in locals().items() if k != "ctx"}
-    )
+    resolved_op = _coerce_plan_tool_operation(inputs.operation)
+    if resolved_op is None:
+        return _plan_error_invalid_operation(inputs.operation or "")
+    request = _request_from_plan_wire(inputs, resolved_op)
     has_required = _plan_request_has_required_args(request)
-    await _log_plan_operation(ctx, operation, has_required)
+    await _log_plan_operation(ctx, resolved_op.value, has_required)
     return await _plan_dispatch_valid_operation(request, ctx)
+
+
+def _merge_create_title_into_plan_title(payload: dict[str, object]) -> None:
+    """Fold legacy ``title`` into ``plan_title`` so one field serves create and lifecycle ops."""
+    legacy = payload.pop("title", None)
+    current = payload.get("plan_title")
+    if current is not None and isinstance(current, str) and current.strip():
+        return
+    if legacy is not None:
+        payload["plan_title"] = legacy
 
 
 def _build_plan_dispatch_request(
     values: dict[str, object],
 ) -> _PlanDispatchRequest:
-    return _PlanDispatchRequest.model_validate(values)
+    data = dict(values)
+    _merge_create_title_into_plan_title(data)
+    return _PlanDispatchRequest.model_validate(data)
 
 
-def _plan_request_has_required_args(request: _PlanDispatchRequest) -> bool:
-    return _plan_required_args_present(
-        request.operation,
-        slug=request.slug,
-        plan_file_name=request.plan_file_name,
-        plan_relative_path=request.plan_relative_path,
-        plan_title=request.plan_title,
-        summary=request.summary,
-        description=request.description,
-        title=request.title,
-        content=request.content,
+def _request_from_plan_wire(
+    inputs: _PlanDispatchWire,
+    resolved_op: PlanToolOperation,
+) -> _PlanDispatchRequest:
+    data: dict[str, object] = {**inputs.model_dump(), "operation": resolved_op}
+    return _build_plan_dispatch_request(data)
+
+
+async def _dispatch_continue_step(
+    request: _PlanDispatchRequest,
+    ctx: MCPContext | None,
+) -> str:
+    from cortex.tools.plans.step_plan_workflow import handle_continue_step
+
+    return await handle_continue_step(request.slug, request.content, ctx)
+
+
+async def _dispatch_approve_step(
+    request: _PlanDispatchRequest,
+    ctx: MCPContext | None,
+) -> str:
+    from cortex.tools.plans.step_plan_workflow import handle_approve_step
+
+    return await handle_approve_step(
+        request.slug,
+        request.step_section,
+        request.section_corrections,
+        request.step_skip,
+        ctx,
     )
+
+
+async def _dispatch_finalize_step(
+    request: _PlanDispatchRequest,
+    ctx: MCPContext | None,
+) -> str:
+    from cortex.tools.plans.step_plan_workflow import handle_finalize_step
+
+    return await handle_finalize_step(
+        request.slug,
+        request.plan_title,
+        request.description,
+        request.status,
+        request.section,
+        request.plan_file_name,
+        request.plan_relative_path,
+        ctx,
+    )
+
+
+async def _try_dispatch_step_plan_tool(
+    request: _PlanDispatchRequest,
+    ctx: MCPContext | None,
+) -> str | None:
+    op = request.operation
+    if op == PlanToolOperation.CONTINUE_STEP:
+        return await _dispatch_continue_step(request, ctx)
+    if op == PlanToolOperation.APPROVE_STEP:
+        return await _dispatch_approve_step(request, ctx)
+    if op == PlanToolOperation.FINALIZE_STEP:
+        return await _dispatch_finalize_step(request, ctx)
+    return None
 
 
 async def _handle_special_plan_operations(
     request: _PlanDispatchRequest,
     ctx: MCPContext | None,
 ) -> str | None:
-    if request.operation == "graph":
+    op = request.operation
+    if op == PlanToolOperation.GRAPH:
         from cortex.tools.plans.plan_graph import plan_graph_json
 
         return await plan_graph_json(ctx, include_archive=request.include_archive)
-    if request.operation == "archive_completed":
+    if op == PlanToolOperation.ARCHIVE_COMPLETED:
         return await _plan_handle_archive_completed(ctx)
-    if request.operation == "complete":
+    if op == PlanToolOperation.COMPLETE:
         return await _dispatch_complete_with_log(
             request.plan_title,
             request.summary,
@@ -391,6 +469,9 @@ async def _handle_special_plan_operations(
             request.plan_file_name,
             ctx,
         )
+    step_result = await _try_dispatch_step_plan_tool(request, ctx)
+    if step_result is not None:
+        return step_result
     return await _handle_register_or_enrich(request, ctx)
 
 
@@ -398,7 +479,7 @@ async def _handle_register_or_enrich(
     request: _PlanDispatchRequest,
     ctx: MCPContext | None,
 ) -> str | None:
-    if request.operation == "register":
+    if request.operation == PlanToolOperation.REGISTER:
         return await _plan_dispatch_register(
             request.plan_title,
             request.description,
@@ -408,7 +489,7 @@ async def _handle_register_or_enrich(
             request.plan_relative_path,
             ctx,
         )
-    if request.operation == "enrich":
+    if request.operation == PlanToolOperation.ENRICH:
         return await _plan_handle_enrich(
             request.slug,
             request.plan_file_name,
@@ -442,17 +523,18 @@ async def _plan_dispatch_valid_operation(
     if special_result is not None:
         return special_result
     result_str = await _plan_handle_crud(
-        request.operation,
-        request.title,
+        request.operation.value,
+        request.plan_title,
         request.content,
         request.slug,
         request.explore_log_path,
         request.include_archive,
         request.response_format,
+        request.planning_mode,
         ctx,
     )
-    if request.operation == "create":
-        await _append_plan_create_log(result_str, request.title, ctx)
+    if request.operation == PlanToolOperation.CREATE:
+        await _append_plan_create_log(result_str, request.plan_title, ctx)
     return result_str
 
 
@@ -462,7 +544,7 @@ async def _plan_dispatch_valid_operation(
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_MEDIUM)
 # fmt: off
-async def plan(operation: str | None = None, title: str | None = None, content: str | None = None, slug: str | None = None, explore_log_path: str | None = None, include_archive: bool = False, response_format: str = "content", plan_title: str | None = None, summary: str | None = None, completion_date: str | None = None, progress_entry: str | None = None, plan_file_name: str | None = None, plan_relative_path: str | None = None, resolved_clarifications: dict[str, str] | None = None, description: str | None = None, status: str = "PENDING", section: str = "pending", ctx: MCPContext | None = None) -> str:
+async def plan(operation: str | None = None, title: str | None = None, content: str | None = None, slug: str | None = None, explore_log_path: str | None = None, include_archive: bool = False, response_format: str = "content", plan_title: str | None = None, summary: str | None = None, completion_date: str | None = None, progress_entry: str | None = None, plan_file_name: str | None = None, plan_relative_path: str | None = None, resolved_clarifications: dict[str, str] | None = None, description: str | None = None, status: str = "PENDING", section: str = "pending", planning_mode: str | None = None, step_section: str | None = None, step_skip: bool = False, section_corrections: str | None = None, ctx: MCPContext | None = None) -> str:
 # fmt: on
     """Plan lifecycle: create, list, get, complete, register, graph, or archive_completed.
 
@@ -470,23 +552,8 @@ async def plan(operation: str | None = None, title: str | None = None, content: 
     or reading the plan dependency graph (operation=\"graph\").
     EXAMPLES: plan(operation=\"create\", ...), plan(operation=\"graph\"), plan(operation=\"register\", ...).
     """
+    wire_payload = {name: locals()[name] for name in _PLAN_WIRE_KEYS}
     return await _plan_dispatch(
-        operation,
-        title,
-        content,
-        slug,
-        explore_log_path,
-        include_archive,
-        response_format,
-        plan_title,
-        summary,
-        completion_date,
-        progress_entry,
-        plan_file_name,
-        plan_relative_path,
-        resolved_clarifications,
-        description,
-        status,
-        section,
+        _PlanDispatchWire.model_validate(wire_payload),
         ctx,
     )

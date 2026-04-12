@@ -12,7 +12,7 @@ from cortex.core.exceptions import (
     FileLockTimeoutError,
     GitConflictError,
 )
-from cortex.core.models import JsonValue
+from cortex.core.models import JsonValue, OperationStatus
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.validation.models import ValidationResult
 
@@ -56,7 +56,7 @@ def build_new_file_creation_error(file_name: str, memory_bank_dir: Path) -> str:
     available_files = [f.name for f in memory_bank_dir.glob("*.md") if f.is_file()]
     return json.dumps(
         {
-            "status": "error",
+            "status": OperationStatus.ERROR.value,
             "error": (
                 "Cannot create new Memory Bank file via manage_file: "
                 f"{file_name} does not exist. Only existing Memory Bank files "

@@ -131,7 +131,7 @@ async def apply_refactoring(
 
         For action="apply" (success):
         {
-          "status": "success",
+          "status": OperationStatus.SUCCESS.value,
           "execution_id": "exec-ref-consolidate-20240115123045-20240115124530",
           "operations_completed": 3,
           "snapshot_id": "snapshot-20240115124530",
@@ -145,7 +145,7 @@ async def apply_refactoring(
 
         Example (Error - invalid action or missing suggestion_id):
         {
-          "status": "error",
+          "status": OperationStatus.ERROR.value,
           "error": "suggestion_id is required for action 'apply'",
           "error_type": "ValueError"
         }
@@ -161,7 +161,7 @@ async def apply_refactoring(
 
         For action="rollback" (success):
         {
-          "status": "success",
+          "status": OperationStatus.SUCCESS.value,
           "rollback_id": "rollback-exec-123456-20240115130000",
           "execution_id": "exec-ref-consolidate-20240115123045-20240115124530",
           "files_restored": 3,
@@ -201,7 +201,7 @@ async def apply_refactoring(
         ...     dry_run=True
         ... )
         {
-          "status": "success",
+          "status": OperationStatus.SUCCESS.value,
           "execution_id": "exec-ref-consolidate-20240115123045-20240115124530",
           "operations_completed": 3,
           "snapshot_id": null,
@@ -220,7 +220,7 @@ async def apply_refactoring(
         ...     preserve_manual_changes=True
         ... )
         {
-          "status": "success",
+          "status": OperationStatus.SUCCESS.value,
           "rollback_id": "rollback-exec-123456-20240115130000",
           "execution_id": "exec-ref-consolidate-20240115123045-20240115124530",
           "files_restored": 3,
