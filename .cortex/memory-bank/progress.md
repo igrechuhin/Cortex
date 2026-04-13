@@ -6,6 +6,7 @@
 - **migrate-check-function-lengths-callers** - COMPLETE. Migrated direct callers to router path, replaced legacy function with compatibility shim, and validated parity behavior.
 - **BLOCKER: Fix mcp>=1.26.0 Structured-Output Crash on Startup** - COMPLETE. Prevented structured-output startup crash by setting structured_output=False in typed tool registration and added startup import regression coverage.
 - **FastMCP v3 — Phase 1: Dependency Swap and Import Migration** - COMPLETE. Added `fastmcp>=3.0,<4`; migrated all FastMCP/Context imports to `fastmcp`; fixed mount_path→path for SSE transport; fixed _log_with_compat bound-method signature check; fixed registered_prompt_names to use _local_provider._components directly; 6505 tests pass, pyright clean, all three transports smoke-tested.
+- **requirements.txt fastmcp parity (CI)** - COMPLETE. Added `fastmcp>=3.0,<4` to root `requirements.txt` to match `pyproject.toml` runtime deps; fixes `scripts/check_dep_parity.py` / quality workflow failure on fork CI.
 
 ## 2026-04-12
 

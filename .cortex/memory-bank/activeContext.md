@@ -16,6 +16,8 @@
 
 - **FastMCP v3 — Phase 1: Dependency Swap and Import Migration (PARTIAL)** - Updated dependency and import wiring for FastMCP v3 migration baseline, but quality gate remains blocked by prompt-internals compatibility and typing regressions.
 
+- ✅ **Sync requirements.txt with fastmcp for CI dep parity** - COMPLETE (2026-04-13) - Added fastmcp>=3.0,<4 to requirements.txt to match pyproject.toml [project.dependencies] so scripts/check_dep_parity.py and GitHub Actions quality job pass.
+
 ## Completed Work (2026-04-11)
 
 - **Summary (2026-04-11)** - 1 entries archived.
