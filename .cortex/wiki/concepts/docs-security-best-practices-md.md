@@ -5,7 +5,7 @@ source_count: 1
 last_updated: "2026-04-12"
 ---
 
-# Security Best Practices
+## Security Best Practices
 
 Ingested source: [docs-security-best-practices-md.md](../sources/docs-security-best-practices-md.md)
 

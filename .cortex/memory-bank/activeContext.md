@@ -4,39 +4,11 @@
 
 ## Completed Work (2026-04-12)
 
-- ✅ **Wiki ingest routing (PARTIAL)** - COMPLETE (2026-04-12) - When `.cortex/wiki/` exists, MCP `ingest` stores raw markdown under `wiki/sources/`, emits a frontmatter summary page (category from tags), appends `wiki/index.md`, and cortex://context recent-ingest prefers wiki `sources/` over memory-bank.
+- **Summary (2026-04-12)** - 1 entries archived.
 
-- ✅ **Project Wiki for Attached Projects (PARTIAL)** - COMPLETE (2026-04-12) - Registered `/cortex/query` Synapse workflow: `query.md`, manifest, `query` prompt icon, `TestQuerySynapsePrompt`. Plan Step 5 done; Steps 6–8 remain.
+## Completed Work (2026-04-13)
 
-- ✅ **Wiki staged ingest helper (PARTIAL)** - COMPLETE (2026-04-12) - Added `cortex.tools.wiki` with `wiki_ingest_staged_docs` for commit-pipeline wiki updates; patterns configurable via schema frontmatter; `ingest_source_at_project_root` exposes sync ingest for tooling.
-
-- ✅ **Project Wiki (PARTIAL): commit wiki ingest bridge** - COMPLETE (2026-04-12) - Synapse commit.md documents Phase A→B call to wiki_ingest_staged_docs and staging wiki outputs before Phase B docs gate.
-
-- ✅ **Project Wiki (PARTIAL): idempotent staged wiki ingest** - COMPLETE (2026-04-12) - Commit-time `wiki_ingest_staged_docs` now keys on `stable_ingest_rel` (repo path slug): identical content returns skipped/unchanged; updates archive prior raw under `sources/{slug}-v{n}.md` and refreshes the deterministic wiki summary with a cumulative `## Revision` section.
-
-- ✅ **Project Wiki (PARTIAL): init_wiki lazy registration** - COMPLETE (2026-04-12) - `init_wiki` MCP prompt is no longer always registered from the Synapse manifest; it appears only when `.cortex/wiki/schema.md` exists and no summary pages exist under concepts/entities/decisions/workflows/analyses (sources-only does not suppress). Registration runs on first `list_prompts` after startup repair, independent of `should_mount_setup`.
-
-- ✅ **Project Wiki for Attached Projects (.cortex/wiki/)** - COMPLETE (2026-04-12) - Shipped .cortex/wiki layout, session wiki_status, conditional init-wiki registration, wiki-aware ingest and index updates, ask prompt, file_artifact mirror to wiki/analyses, wiki lint checks including index staleness, idempotent wiki_ingest_staged_docs for commits, self-hosted wiki seed; Synapse analyze/review prompts now record memory-bank and wiki mirror paths for filed analyses.
-
-- ✅ **Auto-Ingest from Git Hooks (Wiki Auto-Update)** - COMPLETE (2026-04-12) - Wiki staged ingest wired into commit prompt; idempotent slug ingest, revision notes, and 100% unit coverage on staged_ingest.
-
-- ✅ **Planning modes (PARTIAL)** - COMPLETE (2026-04-12) - Plan tool supports planning_mode step with draft files, section state footer, continue/approve/finalize_step; fast-forward unchanged.
-
-- ✅ **Fast-Forward vs. Step-by-Step Planning Modes** - COMPLETE (2026-04-12) - Planning modes: fast-forward and step-by-step MCP flows, draft hygiene, session stale-draft hints, tests, and quality fixes (operations log timestamps, test helpers).
-
-- ✅ **Type Policy Hardening: Remove Any from Production Code** - COMPLETE (2026-04-12) - Replaced pre-commit status summaries with Pydantic BaseModel and StrEnum; return ModelDict; added Ruff ANN401 for src with tests ignored; narrowed numeric assertions in unit tests.
-
-- ✅ **Deprecation Completion: Legacy Quality Entrypoints Migration (PARTIAL)** - COMPLETE (2026-04-12) - Preflight Phase A now delegates to run_detached_phase_a_checks; e2e uses run_quality_gate with session checks-task.json; sunset 2026-07-01 documented; migration matrix + compat marker module.
-
-- ✅ **README Tool Inventory Parity Fix** - COMPLETE (2026-04-12) - README Key Tools and AGENTS.md list all 12 MCP tools; added tests/docs parity tests; dev group includes uv-build for offline preflight; Phase B test helpers for function-length limits.
-
-- ✅ **Network-Resilience Onboarding** - COMPLETE (2026-04-12) - Added --offline preflight, make preflight-offline, README restricted-network steps, bootstrap-offline preflight contract, CORTEX_REPO_ROOT test hook, integration smoke test.
-
-- ✅ **Commit: legacy quality + preflight + tests** - COMPLETE (2026-04-12) - Shipped deprecation compat, offline bootstrap contract, wiki ingest for README/tools.md, and modular phase-tool unit tests.
-
-- ✅ **README Tool Inventory Parity Fix** - COMPLETE (2026-04-12) - README Key Tools and AGENTS.md list all 12 MCP tools per TOOL_CATEGORIES; docs/_generated/tool-inventory.json matches; tests/docs/test_tool_inventory_parity.py enforces parity; full pytest suite in CI covers the test.
-
-- ✅ **Legacy quality entrypoints and offline-bootstrap cleanup** - COMPLETE (2026-04-12) - Removed the offline-bootstrap GitHub workflow and dedicated offline preflight doc; deleted deprecation plan stubs; aligned Makefile/scripts/preflight CLI, README, contributing, getting-started, troubleshooting, and security docs with run_quality_gate-first flows; tightened composite/pre_commit_process tests including read_result coverage; Synapse submodule documents zero-arg autofix() in formatter/quality agent prompts.
+- **Commit pipeline execution** - Ran `/cortex/fix` and `/cortex/commit` flow with clean Phase A/docs gates, parity checks, and Synapse prompt updates staged for commit.
 
 ## Completed Work (2026-04-11)
 

@@ -5,7 +5,7 @@ source_count: 1
 last_updated: "2026-04-12"
 ---
 
-# Troubleshooting Guide
+## Troubleshooting Guide
 
 Ingested source: [docs-guides-troubleshooting-md.md](../sources/docs-guides-troubleshooting-md.md)
 

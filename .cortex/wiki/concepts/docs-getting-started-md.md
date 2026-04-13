@@ -5,7 +5,7 @@ source_count: 1
 last_updated: "2026-04-12"
 ---
 
-# Getting Started with Cortex
+## Getting Started with Cortex
 
 Ingested source: [docs-getting-started-md.md](../sources/docs-getting-started-md.md)
 

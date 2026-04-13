@@ -5,7 +5,7 @@ source_count: 1
 last_updated: "2026-04-12"
 ---
 
-# Contributing Guide
+## Contributing Guide
 
 Ingested source: [docs-development-contributing-md.md](../sources/docs-development-contributing-md.md)
 

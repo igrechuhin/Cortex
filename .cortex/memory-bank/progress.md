@@ -1,5 +1,9 @@
 # Progress Log
 
+## 2026-04-13
+
+- **Commit + fix pipeline run** - COMPLETE. Executed `/cortex/fix` (quality/tests/docs all green), then `/cortex/commit` pipeline preflight and Phase A parity checks; committed `.cortex/synapse` prompt updates and prepared superproject commit artifacts.
+
 ## 2026-04-12
 
 - **Project Wiki for Attached Projects (.cortex/wiki/)** - PARTIAL. Step 4: MCP `ingest` routes raw snapshots to `.cortex/wiki/sources/` when the wiki exists, writes an auto summary page (category from tags, default concepts), updates `index.md`, and `read_recent_ingested_sources_markdown` prefers wiki sources for cortex://context.

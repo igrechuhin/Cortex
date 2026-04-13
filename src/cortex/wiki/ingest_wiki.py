@@ -157,7 +157,7 @@ def _build_summary_page_markdown(
     one_line = _first_summary_line(title, content)
     fm = "\n".join(_frontmatter_lines(title, category, iso, tags))
     body = (
-        f"{fm}\n\n# {title}\n\nIngested source: "
+        f"{fm}\n\n## {title}\n\nIngested source: "
         f"[{source_slug}.md]({rel})\n\n## Summary\n\n{one_line}\n"
     )
     return body, one_line
