@@ -120,14 +120,30 @@ omit = [
     "*/protocols/*.py",
     # Benchmark harnesses (run separately, not production paths)
     "*/benchmarks/*.py",
-    # Pydantic/re-export only; logic tested via callers (Phase 82 evaluated: kept)
-    "*/models.py",
+    # Pydantic field declarations only; no validators or runtime logic.
+    # Exceptions NOT excluded: script_detection/models.py (has make_timestamp_utc()
+    # and from_storage_dict()); managers/types.py (has __get_pydantic_json_schema__).
+    "*/analysis/models.py",
+    "*/health_check/models.py",
+    "*/linking/models.py",
+    "*/managers/models.py",
+    "*/rules/models.py",
+    "*/script_analysis/models.py",
+    "*/script_promotion/models.py",
+    "*/services/models.py",
+    "*/structure/models.py",
+    "*/tools/logging/models.py",
+    "*/tools/models.py",
+    "*/tools/session/models.py",
+    "*/tools/skill_pack/models.py",
+    "*/validation/models.py",
     # Template files contain only string constants
     "*/templates/*.py",
     # Guide files contain only string constants for documentation
     "*/guides/*.py",
-    # Type alias files contain only type definitions (no runtime logic)
-    "*/types.py",
+    # Type alias files contain only type definitions (no runtime logic).
+    # Exception NOT excluded: managers/types.py (has __get_pydantic_json_schema__ overrides).
+    "*/core/types.py",
     # Optimization types contain only type aliases
     "*/optimization_types.py",
     # Strategy metrics contain Pydantic models (tested via integration)

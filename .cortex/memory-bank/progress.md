@@ -3,6 +3,7 @@
 ## 2026-04-13
 
 - **Commit + fix pipeline run** - COMPLETE. Executed `/cortex/fix` (quality/tests/docs all green), then `/cortex/commit` pipeline preflight and Phase A parity checks; committed `.cortex/synapse` prompt updates and prepared superproject commit artifacts.
+- **migrate-check-function-lengths-callers** - COMPLETE. Migrated direct callers to router path, replaced legacy function with compatibility shim, and validated parity behavior.
 
 ## 2026-04-12
 

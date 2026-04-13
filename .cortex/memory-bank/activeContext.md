@@ -10,6 +10,8 @@
 
 - **Commit pipeline execution** - Ran `/cortex/fix` and `/cortex/commit` flow with clean Phase A/docs gates, parity checks, and Synapse prompt updates staged for commit.
 
+- ✅ **migrate-check-function-lengths-callers** - COMPLETE (2026-04-13) - Migrated direct check_function_lengths callers to router-based quality checks, replaced check_function_lengths with a compatibility shim, removed legacy path, and aligned parity/test coverage with router behavior.
+
 ## Completed Work (2026-04-11)
 
 - **Summary (2026-04-11)** - 1 entries archived.

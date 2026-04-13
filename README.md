@@ -204,6 +204,7 @@ Prompts are for setup and migration; for daily work use **plan → do → commit
 | New project, no Memory Bank | `initialize` |
 | Legacy Memory Bank under IDE `.cursor/` (`memory-bank/`) | `migrate` |
 | Share rules across projects | `setup_synapse` |
+| tiktoken cache missing (offline encoding support) | `populate_tiktoken_cache` |
 
 Full prompt list: [docs/prompts](docs/prompts/README.md)
 

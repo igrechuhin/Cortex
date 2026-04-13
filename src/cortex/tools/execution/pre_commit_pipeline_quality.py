@@ -10,7 +10,6 @@ from pathlib import Path
 
 from cortex.core.constants import (
     EXTENSION_SCRIPT_MAP,
-    FUNCTION_LENGTH_EXCLUDED_PATHS,
     MAX_FILE_LINES,
     MAX_FUNCTION_LINES,
 )
@@ -24,7 +23,6 @@ from cortex.tools.execution.pre_commit_helpers_models import (
     QualityCheckResult,
 )
 from cortex.tools.execution.pre_commit_helpers_quality import (
-    check_function_lengths_in_file,
     check_function_lengths_in_source,
 )
 
@@ -237,55 +235,10 @@ def _filter_function_violations(
     return [v for v in func_violations if v.file in changed_rel]
 
 
-def _collect_violations_from_file(
-    py_file: Path, project_root: Path
-) -> list[FunctionLengthViolation]:
-    """Collect function length violations from a single file."""
-    violations: list[FunctionLengthViolation] = []
-    file_violations = check_function_lengths_in_file(py_file)
-    for func_name, logical_lines, start_line in file_violations:
-        try:
-            relative_path = str(py_file.relative_to(project_root))
-        except ValueError:
-            relative_path = str(py_file)
-        violations.append(
-            FunctionLengthViolation(
-                file=relative_path,
-                function=func_name,
-                line=start_line,
-                lines=logical_lines,
-                max_lines=MAX_FUNCTION_LINES,
-                excess=logical_lines - MAX_FUNCTION_LINES,
-            )
-        )
-    return violations
-
-
 def check_function_lengths(project_root: Path) -> list[FunctionLengthViolation]:
-    """Check all Python files for function length violations.
-
-    TODO: migrate callers to file_language_router / synapse scripts when tests
-    are updated to use the router path exclusively.
-    """
-    violations: list[FunctionLengthViolation] = []
-    src_dir = project_root / "src"
-
-    if not src_dir.exists():
-        return violations
-
-    excluded = frozenset(FUNCTION_LENGTH_EXCLUDED_PATHS)
-    for py_file in src_dir.glob("**/*.py"):
-        if "__pycache__" in str(py_file) or py_file.name.startswith("test_"):
-            continue
-        try:
-            rel = py_file.relative_to(project_root).as_posix()
-        except ValueError:
-            rel = str(py_file)
-        if rel in excluded:
-            continue
-        violations.extend(_collect_violations_from_file(py_file, project_root))
-
-    return violations
+    """Compatibility shim that delegates function checks to the language router."""
+    _, function_violations = run_quality_checks_for_all_languages(project_root)
+    return function_violations
 
 
 def execute_quality(adapter: FrameworkAdapter, language: str) -> QualityCheckResult:
