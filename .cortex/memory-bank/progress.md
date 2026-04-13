@@ -4,6 +4,7 @@
 
 - **Commit + fix pipeline run** - COMPLETE. Executed `/cortex/fix` (quality/tests/docs all green), then `/cortex/commit` pipeline preflight and Phase A parity checks; committed `.cortex/synapse` prompt updates and prepared superproject commit artifacts.
 - **migrate-check-function-lengths-callers** - COMPLETE. Migrated direct callers to router path, replaced legacy function with compatibility shim, and validated parity behavior.
+- **BLOCKER: Fix mcp>=1.26.0 Structured-Output Crash on Startup** - COMPLETE. Prevented structured-output startup crash by setting structured_output=False in typed tool registration and added startup import regression coverage.
 
 ## 2026-04-12
 

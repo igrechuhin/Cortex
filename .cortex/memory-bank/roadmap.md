@@ -6,8 +6,6 @@
 
 ## Blockers (ASAP Priority)
 
-- [ ] **BLOCKER: Fix mcp>=1.26.0 Structured-Output Crash on Startup** — server crashes at import with `PydanticUserError: run_quality_gateOutput is not fully defined`; root cause: mcp 1.26 auto-enables structured output for `ModelDict`-returning tools, Pydantic cannot resolve the recursive type alias; fix: pass `structured_output=False` in `typed_mcp_tool`. Plan: [../plans/fix-mcp-1-26-structured-output-crash.md](../plans/fix-mcp-1-26-structured-output-crash.md) (PENDING)
-
 ## Active Work (in progress)
 
 ## Future Enhancements

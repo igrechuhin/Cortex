@@ -78,7 +78,10 @@ def typed_mcp_tool(
     """
     from cortex.server import mcp as _mcp
 
-    decorator = _mcp.tool(annotations=annotations)
+    # AI: FastMCP >=1.26 infers structured output from return annotations and
+    # may attempt Pydantic schema generation for aliases like ModelDict, which
+    # crashes server startup; disable inference for this shared wrapper.
+    decorator = _mcp.tool(annotations=annotations, structured_output=False)
 
     def _wrapper(func: TToolFunc) -> TToolFunc:
         return cast(TToolFunc, decorator(func))
