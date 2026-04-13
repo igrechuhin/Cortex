@@ -358,10 +358,12 @@ async def _apply_write_and_result(
 ) -> str:
     """Apply compaction, handoff, write back; return result JSON."""
     (ac, pc, tba, tbp, sa, sp) = read_result
-    compacted_active, compacted_progress, checkpoint_created = (
-        await _apply_handoff_and_checkpoint(
-            ctx, ac, pc, tbp, summary, handoff_params, create_checkpoint
-        )
+    (
+        compacted_active,
+        compacted_progress,
+        checkpoint_created,
+    ) = await _apply_handoff_and_checkpoint(
+        ctx, ac, pc, tbp, summary, handoff_params, create_checkpoint
     )
     err = await _write_back_or_error(ctx, compacted_active, compacted_progress)
     if err is not None:

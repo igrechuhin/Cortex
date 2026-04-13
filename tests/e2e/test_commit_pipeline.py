@@ -36,7 +36,7 @@ def _write_minimal_memory_bank(memory_bank_dir: Path) -> None:
 async def _step_manage_file_read(file_name: str) -> dict[str, object]:
     """Read a memory bank file and assert success."""
     read_result = await manage_file(operation="read", file_name=file_name)
-    read_data = json.loads(read_result) if isinstance(read_result, str) else read_result
+    read_data = json.loads(read_result)
     assert read_data.get("status") == "success"
     return cast(dict[str, object], read_data)
 

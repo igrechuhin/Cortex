@@ -204,13 +204,13 @@ class TestMCPToolWorkflows:
 
     async def _write_two_versions(self) -> None:
         """Write two versions of test.md to create version history."""
-        await manage_file(
+        _ = await manage_file(
             operation="write",
             file_name="test.md",
             content="# Version 1\n\nInitial content.",
             change_description="Initial version",
         )
-        await manage_file(
+        _ = await manage_file(
             operation="write",
             file_name="test.md",
             content="# Version 2\n\nUpdated content.",

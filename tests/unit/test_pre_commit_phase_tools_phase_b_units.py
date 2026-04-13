@@ -40,8 +40,8 @@ class TestDocsMemoryHelperFunctions:
         assert _compute_docs_memory_bank_passed(None, rm, []) is False
 
     def test_compute_passed_consistency_violation(self) -> None:
-        """Consistency violations are warning-only for phase pass/fail."""
-        assert _compute_docs_memory_bank_passed(None, None, ["drift"]) is True
+        """Consistency violations are errors — phase fails when violations present."""
+        assert _compute_docs_memory_bank_passed(None, None, ["drift"]) is False
 
     def test_build_timestamps_summary_none(self) -> None:
         """Returns None when timestamps_result is None."""
@@ -186,7 +186,7 @@ class TestDocsMemoryHelperFunctions:
         assert row0.get("name") == "roadmap_progress_consistency"
 
     def test_build_docs_memory_bank_model_consistency_failure(self) -> None:
-        """Consistency violations are warning-only while validations are green."""
+        """Consistency violations are errors — phase fails even when other checks pass."""
         ts = cast(JsonDict, {"status": "success", "valid": True})
         rm = cast(
             JsonDict,
@@ -202,8 +202,7 @@ class TestDocsMemoryHelperFunctions:
             },
         )
         model = _build_docs_memory_bank_model(ts, rm, ["roadmap drift"])
-        assert model["status"] == "success"
-        assert model["docs_phase_passed"] is True
+        assert model["docs_phase_passed"] is False
         checks_raw = cast(JsonDict, model).get("checks")
         assert isinstance(checks_raw, list)
         cons_row = next(
@@ -211,5 +210,5 @@ class TestDocsMemoryHelperFunctions:
             for c in checks_raw
             if isinstance(c, dict) and c.get("name") == "roadmap_progress_consistency"
         )
-        assert cons_row.get("status") == "success"
-        assert cons_row.get("warnings") == 1
+        assert cons_row.get("status") == "error"
+        assert cons_row.get("errors") == 1

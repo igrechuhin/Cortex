@@ -456,7 +456,7 @@ def _append_recent_operations_to_context_payload(
     if payload_data.get("status") != "success":
         return payload
     payload_data["recent_operations"] = (
-        "## Recent Operations\n\n" f"{recent_operations_lines}"
+        f"## Recent Operations\n\n{recent_operations_lines}"
     )
     return json.dumps(payload_data, indent=2)
 

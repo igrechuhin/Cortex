@@ -11,6 +11,7 @@ MCP, so the next session gets a fresh Initialize handshake with no user action.
 Set CORTEX_AUTO_RESTART=1 to run an in-process restart loop (server respawns
 under the same pipe; may require reloading MCP after disconnect to restore tools).
 """
+
 import logging
 import os
 import subprocess
@@ -282,7 +283,8 @@ def _run_mcp_with_transport_handlers(transport: str) -> None:
         if transport == "stdio":
             mcp.run(transport="stdio")
         elif transport == TRANSPORT_SSE:
-            mcp.run(transport="sse", mount_path=get_mount_path(transport))
+            # AI: FastMCP v3 renamed mount_path → path in run_http_async.
+            mcp.run(transport="sse", path=get_mount_path(transport))
         else:
             mcp.run(transport="streamable-http")
     except KeyboardInterrupt:

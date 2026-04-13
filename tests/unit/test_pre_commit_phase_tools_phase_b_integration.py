@@ -219,17 +219,16 @@ class TestRunDocsAndMemoryBankProgressConsistency:
     """Phase B progress/roadmap consistency uses real memory-bank files (no autouse patch)."""
 
     @pytest.mark.asyncio
-    async def test_docs_phase_warns_when_partial_without_pending(
+    async def test_docs_phase_fails_when_partial_without_pending(
         self, tmp_path: Path
     ) -> None:
-        """Synthetic memory bank: PARTIAL/no-PENDING yields warning-only consistency."""
+        """Synthetic memory bank: PARTIAL/no-PENDING is a consistency error."""
         result = await run_phase_b_for_partial_without_pending(tmp_path)
-        assert result["status"] == "success"
-        assert result["docs_phase_passed"] is True
+        assert result["docs_phase_passed"] is False
         cons = next(
             e
             for e in get_checks_list(result)
             if e.get("name") == "roadmap_progress_consistency"
         )
-        assert cons.get("status") == "success"
-        assert cons.get("warnings") == 1
+        assert cons.get("status") == "error"
+        assert cons.get("errors") == 1

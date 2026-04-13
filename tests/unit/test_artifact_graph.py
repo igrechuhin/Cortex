@@ -16,13 +16,7 @@ from cortex.tools.plans.register_artifact_graph import replace_plan_frontmatter_
 
 def _write_plan(plans_dir: Path, slug: str, status: str, depends_on: list[str]) -> None:
     deps = ", ".join(f'"{dep}"' for dep in depends_on)
-    content = (
-        "---\n"
-        f"title: {slug}\n"
-        f"status: {status}\n"
-        f"depends_on: [{deps}]\n"
-        "---\n"
-    )
+    content = f"---\ntitle: {slug}\nstatus: {status}\ndepends_on: [{deps}]\n---\n"
     _ = (plans_dir / f"{slug}.md").write_text(content, encoding="utf-8")
 
 

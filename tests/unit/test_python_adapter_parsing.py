@@ -45,8 +45,7 @@ class TestParseTypeErrors:
     def test_captures_pyright_error_line(self) -> None:
         """Canonical pyright error line is captured."""
         line = (
-            "src/foo.py:10:5 - error: Name 'x' is not defined "
-            "(reportUndefinedVariable)"
+            "src/foo.py:10:5 - error: Name 'x' is not defined (reportUndefinedVariable)"
         )
         assert parse_type_errors(line) == [line]
 

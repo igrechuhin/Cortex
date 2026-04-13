@@ -10,6 +10,7 @@ from collections.abc import Awaitable, Callable
 from datetime import datetime
 from pathlib import Path
 
+from cortex.core.async_subprocess import reap_orphaned_subprocess
 from cortex.core.constants import GIT_OPERATION_TIMEOUT_SECONDS
 from cortex.core.models import OperationStatus
 from cortex.core.security import CommitMessageSanitizer, acquire_git_operation_slot
@@ -90,6 +91,7 @@ class SynapseRepository:
         self, cmd: list[str], timeout: int = GIT_OPERATION_TIMEOUT_SECONDS
     ) -> GitCommandResult:
         """Internal method to run git command with timeout (Phase 34)."""
+        process: asyncio.subprocess.Process | None = None
         try:
             cmd = [c for c in cmd if c]
             async with asyncio.timeout(timeout):
@@ -100,11 +102,15 @@ class SynapseRepository:
                     stderr=asyncio.subprocess.PIPE,
                 )
                 stdout, stderr = await process.communicate()
-            return self._build_git_success_response(process, stdout, stderr)
         except TimeoutError:
+            await reap_orphaned_subprocess(process)
             return self._build_git_timeout_response(timeout)
         except Exception as e:
+            await reap_orphaned_subprocess(process)
             return GitCommandResult(success=False, error=str(e), stdout="", stderr="")
+        else:
+            assert process is not None
+            return self._build_git_success_response(process, stdout, stderr)
 
     def _build_git_success_response(
         self, process: asyncio.subprocess.Process, stdout: bytes, stderr: bytes

@@ -126,8 +126,17 @@ def _synapse_prompt_names() -> frozenset[str]:
 
 def registered_prompt_names() -> frozenset[str]:
     """Return names of all prompts currently registered on the MCP server."""
-    # FastMCP's _prompt_manager.list_prompts() is synchronous.
-    return frozenset(p.name for p in mcp._prompt_manager.list_prompts())  # type: ignore[attr-defined]
+    # AI: FastMCP v3 list_prompts is async and requires a running Context; read
+    # the local provider's component registry directly (sync, no event loop needed).
+    provider = getattr(mcp, "_local_provider", None)
+    components: dict[object, object] = cast(
+        dict[object, object], getattr(provider, "_components", {})
+    )
+    return frozenset(
+        name
+        for v in components.values()
+        if isinstance((name := getattr(v, "name", None)), str)
+    )
 
 
 def _init_wiki_manifest_description(synapse_prompts_dir: Path) -> str:

@@ -541,9 +541,10 @@ class TestExecutePreCommitChecks:
         with tempfile.TemporaryDirectory() as tmpdir:
             project_root = Path(tmpdir)
             _minimal_python_project(project_root)
-            result, mock_to_thread = (
-                await _execute_pre_commit_with_to_thread_inline_sync(project_root)
-            )
+            (
+                result,
+                mock_to_thread,
+            ) = await _execute_pre_commit_with_to_thread_inline_sync(project_root)
 
         assert mock_to_thread.call_count >= 1
         assert _find_execute_all_checks_to_thread_call(mock_to_thread) is not None

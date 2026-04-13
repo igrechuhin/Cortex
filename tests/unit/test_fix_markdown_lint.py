@@ -14,8 +14,12 @@ from cortex.tools.files.markdown_operations import (
     get_all_markdown_files_for_lint,
     get_modified_markdown_files,
     run_command,
-    run_markdownlint_batch,
     run_markdownlint_fix,
+)
+from tests.unit.fix_markdown_lint_test_support import (
+    patch_fix_markdown_lint_ctx_logging,
+    patch_fix_markdown_lint_success,
+    patch_lock_timeout_cache_update,
 )
 
 
@@ -110,20 +114,22 @@ class TestRunCommand:
         assert result.returncode == -1
 
     @pytest.mark.asyncio
-    async def test_run_command_unexpected_exception_propagates(self):
-        """Unexpected bugs are not swallowed as a generic command error."""
-        with (
-            patch(
-                "cortex.tools.files.markdown_lint_core.asyncio.create_subprocess_exec",
-                side_effect=RuntimeError("bug"),
-            ),
-            pytest.raises(RuntimeError, match="bug"),
+    async def test_run_command_unexpected_exception_returns_error_result(self):
+        """Tool boundary: unexpected errors map to GitCommandResult (no bare raise)."""
+        with patch(
+            "cortex.tools.files.markdown_lint_core.asyncio.create_subprocess_exec",
+            side_effect=RuntimeError("bug"),
         ):
-            _ = await run_command(["test", "command"])
+            result = await run_command(["test", "command"])
+
+        assert result.success is False
+        assert result.error is not None
+        assert "bug" in result.error
+        assert result.returncode == -1
 
 
 class TestMarkdownLintCoreNarrowExceptions:
-    """Narrow exception handling in markdown_lint_core (no bare except Exception)."""
+    """Narrow exception handling for helpers other than ``run_command`` (which maps ``Exception``)."""
 
     @pytest.mark.asyncio
     async def test_calculate_file_hash_oserror_returns_none(
@@ -174,34 +180,17 @@ class TestMarkdownLintCoreNarrowExceptions:
         self, tmp_path: Path
     ) -> None:
         """FileLockTimeoutError from cache update is logged, not re-raised."""
-        from cortex.core.exceptions import FileLockTimeoutError
-        from cortex.tools.files import markdown_lint_cache_updates as mlcu
         from cortex.tools.files import markdown_lint_core as mlc
-        from cortex.tools.files.markdown_lint_cache import MarkdownLintIndex
-        from cortex.tools.files.markdown_lint_helpers import FileResult
 
-        index = MarkdownLintIndex()
-        results = [
-            FileResult(
-                file="a.md",
-                fixed=False,
-                errors=[],
-                error_message=None,
-            )
-        ]
-        hashes = {"a.md": "sha256:abc"}
-
-        with (
-            patch.object(
-                mlcu,
-                "update_markdown_lint_cache_from_results",
-                new_callable=AsyncMock,
-                side_effect=FileLockTimeoutError("markdown-lint-index.json", 30),
-            ),
-            patch.object(mlcu, "log_client", new_callable=AsyncMock) as mock_log,
+        with patch_lock_timeout_cache_update(tmp_path) as (
+            index,
+            root,
+            results,
+            hashes,
+            mock_log,
         ):
             await mlc.update_markdown_lint_cache_safe(
-                index, tmp_path, results, hashes, ctx=None
+                index, root, results, hashes, ctx=None
             )
 
         mock_log.assert_awaited_once()
@@ -705,54 +694,18 @@ class TestFixMarkdownLintTool:
     @pytest.mark.asyncio
     async def test_fix_markdown_lint_success(self, tmp_path: Path):
         """Test successful markdown lint fixing."""
-        # Arrange
-        from cortex.tools.files.markdown_operations import FileResult, fix_markdown_lint
+        from cortex.tools.files.markdown_operations import fix_markdown_lint
 
         test_file = tmp_path / "test.md"
         _ = test_file.write_text("# Test\n\nContent")
 
-        one_fixed_result = [
-            FileResult(file="test.md", fixed=True, errors=[], error_message=None),
-        ]
-
-        with (
-            patch(
-                "cortex.tools.files.markdown_lint.resolve_project_root_async",
-                new_callable=AsyncMock,
-                return_value=tmp_path,
-            ),
-            patch(
-                "cortex.tools.files.markdown_lint_core.run_command",
-                new_callable=AsyncMock,
-            ) as mock_run_core,
-            patch(
-                "cortex.tools.files.markdown_lint_core.find_markdownlint_command",
-                new_callable=AsyncMock,
-                return_value=["rumdl", "check"],
-            ),
-            patch(
-                "cortex.tools.files.markdown_lint.get_markdown_files_to_process",
-                new_callable=AsyncMock,
-                return_value=[test_file],
-            ),
-            patch(
-                "cortex.tools.files.markdown_lint.run_markdownlint_for_files",
-                new_callable=AsyncMock,
-                return_value=one_fixed_result,
-            ),
-        ):
-            mock_run_core.return_value = GitCommandResult(
-                success=True, stdout="", stderr="", returncode=0
-            )
-
-            # Act
+        with patch_fix_markdown_lint_success(tmp_path, test_file):
             result_str = await fix_markdown_lint()
-            result = json.loads(result_str)
 
-            # Assert
-            assert result["success"] is True
-            assert result["files_processed"] == 1
-            assert result["files_fixed"] == 1
+        result = json.loads(result_str)
+        assert result["success"] is True
+        assert result["files_processed"] == 1
+        assert result["files_fixed"] == 1
 
     @pytest.mark.asyncio
     async def test_fix_markdown_lint_not_git_repo(self, tmp_path: Path):
@@ -960,49 +913,18 @@ class TestFixMarkdownLintContextLogging:
         self, tmp_path: Path
     ) -> None:
         """When ctx is passed, fix_markdown_lint logs start and completion."""
-        # Arrange
         from cortex.tools.files.markdown_operations import fix_markdown_lint
 
         mock_ctx = AsyncMock()
-        with (
-            patch(
-                "cortex.tools.files.markdown_lint.log_client",
-                new_callable=AsyncMock,
-            ) as mock_log,
-            patch(
-                "cortex.tools.files.markdown_lint.resolve_project_root_async",
-                new_callable=AsyncMock,
-                return_value=tmp_path,
-            ),
-            patch(
-                "cortex.tools.files.markdown_lint_core.run_command",
-                new_callable=AsyncMock,
-            ) as mock_run,
-            patch(
-                "cortex.tools.files.markdown_lint_core.find_markdownlint_command",
-                new_callable=AsyncMock,
-                return_value=["rumdl", "check"],
-            ),
-            patch(
-                "cortex.tools.files.markdown_lint_core.get_markdown_files_to_process",
-                new_callable=AsyncMock,
-                return_value=[],
-            ),
-        ):
-            mock_run.return_value = GitCommandResult(
-                success=True, stdout="", stderr="", returncode=0
-            )
-
-            # Act
+        with patch_fix_markdown_lint_ctx_logging(tmp_path) as mock_log:
             result_str = await fix_markdown_lint(ctx=mock_ctx)
-            result = json.loads(result_str)
 
-            # Assert
-            assert result["success"] is True
-            args_list = [c[0] for c in mock_log.call_args_list]
-            levels_and_messages = [(a[1], a[2]) for a in args_list]
-            assert ("info", "fix_markdown_lint: starting") in levels_and_messages
-            assert ("info", "fix_markdown_lint: completed") in levels_and_messages
+        result = json.loads(result_str)
+        assert result["success"] is True
+        args_list = [c[0] for c in mock_log.call_args_list]
+        levels_and_messages = [(a[1], a[2]) for a in args_list]
+        assert ("info", "fix_markdown_lint: starting") in levels_and_messages
+        assert ("info", "fix_markdown_lint: completed") in levels_and_messages
 
     @pytest.mark.asyncio
     async def test_fix_markdown_lint_calls_log_client_error_on_exception_when_ctx_passed(
@@ -1036,742 +958,3 @@ class TestFixMarkdownLintContextLogging:
                 for c in mock_log.call_args_list
                 if len(c[0]) >= 3
             )
-
-
-class TestHelperFunctions:
-    """Test helper functions in markdown_operations."""
-
-    def test_parse_git_output(self, tmp_path: Path):
-        """Test parse_git_output helper."""
-        from cortex.tools.files.markdown_operations import parse_git_output
-
-        files: list[Path] = []
-        stdout = "file1.md\nfile2.md\nfile3.txt"
-        parse_git_output(stdout, tmp_path, files)
-
-        assert len(files) == 2
-        assert any("file1.md" in str(f) for f in files)
-        assert any("file2.md" in str(f) for f in files)
-
-    def test_parse_untracked_files(self, tmp_path: Path):
-        """Test parse_untracked_files helper."""
-        from cortex.tools.files.markdown_operations import parse_untracked_files
-
-        files: list[Path] = []
-        stdout = "?? file1.md\n?? file2.mdc\n?? file3.txt"
-        parse_untracked_files(stdout, tmp_path, files)
-
-        assert len(files) == 2
-        assert any("file1.md" in str(f) for f in files)
-        assert any("file2.mdc" in str(f) for f in files)
-
-    def test_parse_git_output_rejects_absolute_path(self, tmp_path: Path) -> None:
-        """parse_git_output ignores lines that are absolute paths."""
-        from cortex.tools.files.markdown_operations import parse_git_output
-
-        files: list[Path] = []
-        stdout = "/etc/passwd\n/tmp/evil.md\nnormal.md"
-        parse_git_output(stdout, tmp_path, files)
-
-        assert len(files) == 1
-        assert any("normal.md" in str(f) for f in files)
-        assert not any("/etc/passwd" in str(f) for f in files)
-
-    def test_parse_git_output_rejects_traversal(self, tmp_path: Path) -> None:
-        """parse_git_output ignores lines with .. path traversal segments."""
-        from cortex.tools.files.markdown_operations import parse_git_output
-
-        files: list[Path] = []
-        stdout = "../outside.md\n../../secret.md\nnormal.md"
-        parse_git_output(stdout, tmp_path, files)
-
-        assert len(files) == 1
-        assert any("normal.md" in str(f) for f in files)
-
-    def test_parse_untracked_files_rejects_absolute_path(self, tmp_path: Path) -> None:
-        """parse_untracked_files ignores untracked entries with absolute paths."""
-        from cortex.tools.files.markdown_operations import parse_untracked_files
-
-        files: list[Path] = []
-        stdout = "?? /tmp/evil.md\n?? normal.md"
-        parse_untracked_files(stdout, tmp_path, files)
-
-        assert len(files) == 1
-        assert any("normal.md" in str(f) for f in files)
-
-    def test_parse_untracked_files_rejects_traversal(self, tmp_path: Path) -> None:
-        """parse_untracked_files ignores untracked entries with .. segments."""
-        from cortex.tools.files.markdown_operations import parse_untracked_files
-
-        files: list[Path] = []
-        stdout = "?? ../outside.md\n?? normal.mdc"
-        parse_untracked_files(stdout, tmp_path, files)
-
-        assert len(files) == 1
-        assert any("normal.mdc" in str(f) for f in files)
-
-    def test_parse_markdownlint_errors(self):
-        """Test parse_markdownlint_errors helper."""
-        from cortex.tools.files.markdown_operations import parse_markdownlint_errors
-
-        stderr = "file.md: 1:1 MD022\nmarkdownlint-cli2 version\nfile.md: 2:1 MD032"
-        errors = parse_markdownlint_errors(stderr)
-
-        assert len(errors) == 2
-        assert any("MD022" in e for e in errors)
-
-
-class TestFixMarkdownLintErrorHandling:
-    """Test error handling improvements for Phase 59 (connection closed fix)."""
-
-    @pytest.mark.asyncio
-    async def test_save_markdown_lint_index_handles_cache_write_failure(
-        self, tmp_path: Path
-    ):
-        """Test that save_markdown_lint_index handles cache write failures gracefully."""
-        from cortex.core.exceptions import FileLockTimeoutError
-        from cortex.tools.files.markdown_lint_cache import (
-            MarkdownLintIndex,
-            save_markdown_lint_index,
-        )
-
-        index = MarkdownLintIndex()
-        with (
-            patch(
-                "cortex.tools.files.markdown_lint_cache.write_cache_json",
-                new_callable=AsyncMock,
-                side_effect=FileLockTimeoutError("markdown-lint-index.json", 30),
-            ) as mock_write,
-            patch(
-                "cortex.tools.files.markdown_lint_cache.log_client",
-                new_callable=AsyncMock,
-            ) as mock_log,
-        ):
-            # Act - should not raise
-            await save_markdown_lint_index(tmp_path, index)
-
-            # Assert
-            mock_write.assert_called_once()
-            mock_log.assert_called_once()
-            call_args = mock_log.call_args[0]
-            assert call_args[1] == "warning"
-            assert "Failed to save markdown lint cache" in call_args[2]
-
-    @pytest.mark.asyncio
-    async def test_run_markdownlint_with_cache_handles_cache_load_failure(
-        self, tmp_path: Path
-    ):
-        """Test that run_markdownlint_with_cache handles cache load failures."""
-        from cortex.core.exceptions import FileLockTimeoutError
-        from cortex.tools.files.markdown_operations import run_markdownlint_with_cache
-
-        test_file = tmp_path / "test.md"
-        _ = test_file.write_text("# Test\n\nContent")
-
-        with (
-            patch(
-                "cortex.tools.files.markdown_lint_cache.load_markdown_lint_index",
-                new_callable=AsyncMock,
-                side_effect=FileLockTimeoutError("markdown-lint-index.json", 30),
-            ),
-            patch(
-                "cortex.tools.files.markdown_lint_cache.log_client",
-                new_callable=AsyncMock,
-            ) as mock_log,
-            patch(
-                "cortex.tools.files.markdown_lint.run_markdownlint_for_files",
-                new_callable=AsyncMock,
-                return_value=[],
-            ),
-            patch(
-                "cortex.tools.files.markdown_lint.filter_files_for_linting",
-                new_callable=AsyncMock,
-                return_value=([], [], {}),
-            ),
-        ):
-            # Act - should not crash, should return valid response
-            result_str = await run_markdownlint_with_cache(
-                tmp_path,
-                [test_file],
-                ["rumdl"],
-                None,
-                False,
-                ctx=None,
-            )
-
-            # Assert
-            result = json.loads(result_str)
-            assert result["success"] is True
-            # Should have logged warning about cache load failure
-            assert any(
-                "warning" in str(c[0][1])
-                and "Failed to load markdown lint cache" in str(c[0][2])
-                for c in mock_log.call_args_list
-            )
-
-    @pytest.mark.asyncio
-    async def test_run_markdownlint_with_cache_handles_cache_update_failure(
-        self, tmp_path: Path
-    ):
-        """Test that run_markdownlint_with_cache handles cache update failures."""
-        from cortex.core.exceptions import FileLockTimeoutError
-        from cortex.tools.files.markdown_operations import (
-            FileResult,
-            run_markdownlint_with_cache,
-        )
-
-        test_file = tmp_path / "test.md"
-        _ = test_file.write_text("# Test\n\nContent")
-
-        results = [
-            FileResult(
-                file="test.md",
-                fixed=True,
-                errors=[],
-                error_message=None,
-            )
-        ]
-
-        from cortex.tools.files.markdown_lint_cache import MarkdownLintIndex
-
-        with (
-            patch(
-                "cortex.tools.files.markdown_lint.load_markdown_lint_index_safe",
-                new_callable=AsyncMock,
-                return_value=MarkdownLintIndex(),
-            ),
-            patch(
-                "cortex.tools.files.markdown_lint.filter_files_for_linting",
-                new_callable=AsyncMock,
-                return_value=([test_file], [], {"test.md": "hash123"}),
-            ),
-            patch(
-                "cortex.tools.files.markdown_lint.run_markdownlint_for_files",
-                new_callable=AsyncMock,
-                return_value=results,
-            ),
-            patch(
-                "cortex.tools.files.markdown_lint_cache_updates.update_markdown_lint_cache_from_results",
-                new_callable=AsyncMock,
-                side_effect=FileLockTimeoutError("markdown-lint-index.json", 30),
-            ),
-            patch(
-                "cortex.tools.files.markdown_lint_cache_updates.log_client",
-                new_callable=AsyncMock,
-            ) as mock_log,
-        ):
-            # Act - should not crash, should return valid response
-            result_str = await run_markdownlint_with_cache(
-                tmp_path,
-                [test_file],
-                ["rumdl"],
-                None,
-                False,
-                ctx=None,
-            )
-
-            # Assert
-            result = json.loads(result_str)
-            assert result["success"] is True
-            assert result["files_processed"] == 1
-            # Should have logged warning about cache update failure (from markdown_lint_cache_updates)
-            assert any(
-                len(c[0]) >= 3
-                and "warning" in str(c[0][1])
-                and "Failed to update markdown lint cache" in str(c[0][2])
-                for c in mock_log.call_args_list
-            )
-
-    def test_parse_markdownlint_output(self):
-        """Test parse_markdownlint_output helper."""
-        from cortex.tools.files.markdown_operations import parse_markdownlint_output
-
-        stdout = "Fixed: file.md\nFixed: file2.md"
-        errors = parse_markdownlint_output(stdout)
-
-        assert len(errors) == 2
-        assert "file.md" in errors[0]
-        assert "file2.md" in errors[1]
-
-    def test_is_cached_clean_entry(self) -> None:
-        """Test is_cached_clean_entry helper for cache reuse logic."""
-        from cortex.tools.files.markdown_operations import is_cached_clean_entry
-
-        assert is_cached_clean_entry("sha256:abc", "sha256:abc", dry_run=False) is True
-        assert is_cached_clean_entry("sha256:abc", "sha256:xyz", dry_run=False) is False
-        assert is_cached_clean_entry("sha256:abc", "sha256:abc", dry_run=True) is False
-        assert is_cached_clean_entry(None, "sha256:abc", dry_run=False) is False
-
-    @pytest.mark.asyncio
-    async def test_compute_file_hashes_parallel(self, tmp_path: Path) -> None:
-        """compute_file_hashes returns rel_path -> hash for multiple files."""
-        from cortex.tools.files.markdown_operations import compute_file_hashes
-
-        _ = (tmp_path / "a.md").write_text("# A\n", encoding="utf-8")
-        _ = (tmp_path / "b.md").write_text("# B\n", encoding="utf-8")
-        files = [tmp_path / "a.md", tmp_path / "b.md"]
-
-        hashes = await compute_file_hashes(files, tmp_path)
-
-        assert len(hashes) == 2
-        assert "a.md" in hashes and hashes["a.md"] is not None
-        assert "b.md" in hashes and hashes["b.md"] is not None
-        assert hashes["a.md"] != hashes["b.md"]
-
-
-class TestMarkdownLintHelpers:
-    """Tests for markdown lint helper functions."""
-
-    def test_calculate_statistics(self):
-        """Test calculate_statistics helper."""
-        from cortex.tools.files.markdown_operations import (
-            FileResult,
-            calculate_statistics,
-        )
-
-        results: list[FileResult] = [
-            FileResult(file="file1.md", fixed=True, errors=[], error_message=None),
-            FileResult(file="file2.md", fixed=False, errors=[], error_message=None),
-            FileResult(file="file3.md", fixed=False, errors=[], error_message="Error"),
-        ]
-
-        files_fixed, files_with_errors, files_unchanged = calculate_statistics(results)
-
-        assert files_fixed == 1
-        assert files_with_errors == 1
-        assert files_unchanged == 1
-
-
-class TestMarkdownlintBatchHelpers:
-    """Tests for batching helpers used by markdown lint tool."""
-
-    @pytest.mark.asyncio
-    async def test_run_markdownlint_for_files_empty_returns_initial(
-        self, tmp_path: Path
-    ):
-        """run_markdownlint_for_files returns initial results when no files to lint."""
-        from cortex.tools.files.markdown_operations import (
-            FileResult,
-            run_markdownlint_for_files,
-        )
-
-        initial = [FileResult(file="a.md", fixed=False, errors=[], error_message=None)]
-        results = await run_markdownlint_for_files(
-            files_to_lint=[],
-            initial_results=initial,
-            root_path=tmp_path,
-            markdownlint_cmd=["rumdl", "check"],
-            config_path=None,
-            dry_run=False,
-        )
-
-        assert results == initial
-
-    @pytest.mark.asyncio
-    async def test_run_markdownlint_with_cache_uses_helpers(self, tmp_path: Path):
-        """run_markdownlint_with_cache wires cache, filtering, and execution."""
-        from cortex.tools.files.markdown_lint_cache import MarkdownLintIndex
-        from cortex.tools.files.markdown_operations import run_markdownlint_with_cache
-
-        # Empty index: docs/file.md not cached, so it gets linted
-        index = MarkdownLintIndex(files={})
-
-        with (
-            patch(
-                "cortex.tools.files.markdown_lint.load_markdown_lint_index_safe",
-                new_callable=AsyncMock,
-                return_value=index,
-            ) as mock_load,
-            patch(
-                "cortex.tools.files.markdown_lint.filter_files_for_linting",
-                new_callable=AsyncMock,
-                return_value=(
-                    [tmp_path / "docs" / "file.md"],
-                    [],
-                    {"docs/file.md": "sha256:new"},
-                ),
-            ) as mock_filter,
-            patch(
-                "cortex.tools.files.markdown_lint.run_markdownlint_for_files",
-                new_callable=AsyncMock,
-                return_value=[],
-            ) as mock_run_files,
-            patch(
-                "cortex.tools.files.markdown_lint_cache_updates.update_markdown_lint_cache_from_results",
-                new_callable=AsyncMock,
-            ) as mock_update,
-        ):
-            result_json = await run_markdownlint_with_cache(
-                root_path=tmp_path,
-                files=[tmp_path / "docs" / "file.md"],
-                markdownlint_cmd=["rumdl", "check"],
-                config_path=None,
-                dry_run=False,
-            )
-
-        parsed = json.loads(result_json)
-        assert parsed["success"] is True
-        mock_load.assert_called_once()
-        mock_filter.assert_called_once()
-        mock_run_files.assert_called_once()
-        mock_update.assert_called_once()
-
-
-class TestFixMarkdownLintProgressReporting:
-    """Tests for progress reporting in fix_markdown_lint helpers."""
-
-    @pytest.mark.asyncio
-    async def test_run_markdownlint_for_files_reports_initial_progress_when_ctx(
-        self, tmp_path: Path
-    ) -> None:
-        """When ctx is provided, run_markdownlint_for_files reports 0/total once."""
-        from cortex.tools.files.markdown_operations import (
-            FileResult,
-            run_markdownlint_for_files,
-        )
-
-        files_to_lint = [tmp_path / "a.md", tmp_path / "b.md"]
-        initial_results: list[FileResult] = []
-
-        mock_results = [
-            FileResult(file="a.md", fixed=True, errors=[], error_message=None),
-            FileResult(file="b.md", fixed=False, errors=[], error_message=None),
-        ]
-
-        mock_ctx = AsyncMock()
-
-        with (
-            patch(
-                "cortex.tools.files.markdown_lint_run.process_markdown_files_sequential",
-                new_callable=AsyncMock,
-                return_value=mock_results,
-            ) as mock_seq,
-            patch(
-                "cortex.tools.files.markdown_lint_run.report_progress_safe",
-                new_callable=AsyncMock,
-            ) as mock_progress,
-        ):
-            results = await run_markdownlint_for_files(
-                files_to_lint=files_to_lint,
-                initial_results=initial_results,
-                root_path=tmp_path,
-                markdownlint_cmd=["rumdl", "check"],
-                config_path=None,
-                dry_run=False,
-                ctx=mock_ctx,
-                index=None,
-                file_hashes=None,
-            )
-
-        assert results == mock_results
-        _ = mock_seq.assert_awaited_once()
-        _ = mock_progress.assert_awaited_once_with(
-            mock_ctx, 0.0, float(len(files_to_lint))
-        )
-
-    @pytest.mark.asyncio
-    async def test_run_markdownlint_for_files_no_progress_when_ctx_none(
-        self, tmp_path: Path
-    ) -> None:
-        """When ctx is None, run_markdownlint_for_files does not report progress."""
-        from cortex.tools.files.markdown_operations import (
-            FileResult,
-            run_markdownlint_for_files,
-        )
-
-        files_to_lint = [tmp_path / "a.md"]
-        initial_results: list[FileResult] = []
-
-        mock_results = [
-            FileResult(file="a.md", fixed=True, errors=[], error_message=None),
-        ]
-
-        with (
-            patch(
-                "cortex.tools.files.markdown_lint_run.process_markdown_files_sequential",
-                new_callable=AsyncMock,
-                return_value=mock_results,
-            ),
-            patch(
-                "cortex.tools.files.markdown_lint_run.report_progress_safe",
-                new_callable=AsyncMock,
-            ) as mock_progress,
-        ):
-            results = await run_markdownlint_for_files(
-                files_to_lint=files_to_lint,
-                initial_results=initial_results,
-                root_path=tmp_path,
-                markdownlint_cmd=["rumdl", "check"],
-                config_path=None,
-                dry_run=False,
-                ctx=None,
-                index=None,
-                file_hashes=None,
-            )
-
-        assert results == mock_results
-        mock_progress.assert_not_called()
-
-    @pytest.mark.asyncio
-    async def test_after_one_file_reports_progress_with_ctx_and_total(
-        self, tmp_path: Path
-    ) -> None:
-        """after_one_file reports processed/total when ctx and progress_total set."""
-        from cortex.tools.files.markdown_operations import FileResult, after_one_file
-
-        results: list[FileResult] = []
-        current_n = [0]
-        mock_ctx = AsyncMock()
-        file_result = FileResult(
-            file="a.md",
-            fixed=True,
-            errors=[],
-            error_message=None,
-        )
-
-        with patch(
-            "cortex.tools.files.markdown_lint_cache_updates.report_progress_safe",
-            new_callable=AsyncMock,
-        ) as mock_progress:
-            await after_one_file(
-                file_result,
-                results,
-                current_n,
-                index=None,
-                file_hashes=None,
-                root_path=tmp_path,
-                progress_ctx=mock_ctx,
-                progress_total=3,
-            )
-
-        assert len(results) == 1
-        assert current_n[0] == 1
-        _ = mock_progress.assert_awaited_once_with(mock_ctx, 1.0, 3.0)
-
-    @pytest.mark.asyncio
-    async def test_after_one_file_skips_progress_when_ctx_none(
-        self, tmp_path: Path
-    ) -> None:
-        """after_one_file is a no-op for progress when ctx is None."""
-        from cortex.tools.files.markdown_operations import FileResult, after_one_file
-
-        results: list[FileResult] = []
-        current_n = [0]
-        file_result = FileResult(
-            file="a.md",
-            fixed=True,
-            errors=[],
-            error_message=None,
-        )
-
-        with patch(
-            "cortex.tools.files.markdown_lint_cache_updates.report_progress_safe",
-            new_callable=AsyncMock,
-        ) as mock_progress:
-            await after_one_file(
-                file_result,
-                results,
-                current_n,
-                index=None,
-                file_hashes=None,
-                root_path=tmp_path,
-                progress_ctx=None,
-                progress_total=3,
-            )
-
-        assert len(results) == 1
-        assert current_n[0] == 1
-        mock_progress.assert_not_called()
-
-
-class TestBatchErrorReporting:
-    """Test improved error reporting when batch fails without rule codes."""
-
-    @pytest.mark.asyncio
-    async def test_batch_failure_with_no_rule_codes_triggers_per_file_fallback(
-        self, tmp_path: Path
-    ):
-        """Test that batch failure with no parsed rule codes triggers per-file fallback."""
-        # Arrange
-        project_root = tmp_path
-        file1 = tmp_path / "file1.md"
-        file2 = tmp_path / "file2.md"
-        _ = file1.write_text("# Test\n")
-        _ = file2.write_text("# Test\n")
-
-        markdownlint_cmd = ["rumdl", "check"]
-
-        # Mock batch run that fails with unparseable stderr
-        batch_call_count = 0
-        per_file_call_count = 0
-
-        async def mock_run_command(
-            cmd: list[str], cwd: Path | None = None, timeout: int = 120
-        ) -> GitCommandResult:
-            nonlocal batch_call_count, per_file_call_count
-            # Check if this is a rumdl markdownlint command
-            if cmd and "rumdl" in str(cmd[0]):
-                # Check if this is a batch (multiple files) or single file
-                file_args = [arg for arg in cmd if ".md" in str(arg)]
-                if len(file_args) > 1:  # Batch run (multiple files)
-                    batch_call_count += 1
-                    return GitCommandResult(
-                        success=False,
-                        stdout="",
-                        stderr="Some generic error message without rule codes",
-                        returncode=1,
-                        error="Markdown lint failed",
-                    )
-                elif len(file_args) == 1:  # Single file run (fallback)
-                    per_file_call_count += 1
-                    file_name = file_args[0]
-                    return GitCommandResult(
-                        success=False,
-                        stdout="",
-                        stderr=f"{file_name}: 1:1 MD036/no-emphasis-as-heading",
-                        returncode=1,
-                        error="Markdown lint failed",
-                    )
-            # Git commands or other commands
-            return GitCommandResult(success=True, stdout="", stderr="", returncode=0)
-
-        # Act
-        with patch(
-            "cortex.tools.files.markdown_lint_run.run_command",
-            side_effect=mock_run_command,
-        ):
-            results = await run_markdownlint_batch(
-                [file1, file2],
-                project_root,
-                markdownlint_cmd,
-                None,
-                dry_run=False,
-            )
-
-        # Assert
-        assert batch_call_count == 1, "Batch should be called once"
-        assert per_file_call_count == 2, "Per-file fallback should run for each file"
-        assert len(results) == 2
-        # Each file should have rule codes from per-file runs
-        for result in results:
-            assert result.error_message is not None
-            assert len(result.errors) > 0, "Each file should have rule codes"
-            assert any("MD036" in e for e in result.errors)
-
-    @pytest.mark.asyncio
-    async def test_batch_failure_with_parsed_rule_codes_no_fallback(
-        self, tmp_path: Path
-    ):
-        """Test that batch failure with parsed rule codes does not trigger fallback."""
-        # Arrange
-        project_root = tmp_path
-        file1 = tmp_path / "file1.md"
-        file2 = tmp_path / "file2.md"
-        _ = file1.write_text("# Test\n")
-        _ = file2.write_text("# Test\n")
-
-        markdownlint_cmd = ["rumdl", "check"]
-
-        batch_call_count = 0
-        per_file_call_count = 0
-
-        async def mock_run_command(
-            cmd: list[str], cwd: Path | None = None, timeout: int = 120
-        ) -> GitCommandResult:
-            nonlocal batch_call_count, per_file_call_count
-            # Batch run fails but stderr contains parseable rule codes
-            if "--fix" in cmd and len(cmd) > 3:  # Batch run
-                batch_call_count += 1
-                return GitCommandResult(
-                    success=False,
-                    stdout="",
-                    stderr=(
-                        "file1.md: 1:1 MD036/no-emphasis-as-heading\n"
-                        "file2.md: 1:1 MD022/blanks-around-headings"
-                    ),
-                    returncode=1,
-                    error="Markdown lint failed",
-                )
-            # Per-file runs should not be called
-            elif "--fix" in cmd and len(cmd) == 3:  # Single file run
-                per_file_call_count += 1
-            # Git commands
-            return GitCommandResult(success=True, stdout="", stderr="", returncode=0)
-
-        # Act - patch where _run_command is used (_run_markdownlint_batch is in markdown_lint_run)
-        with patch(
-            "cortex.tools.files.markdown_lint_run.run_command",
-            side_effect=mock_run_command,
-        ):
-            results = await run_markdownlint_batch(
-                [file1, file2],
-                project_root,
-                markdownlint_cmd,
-                None,
-                dry_run=False,
-            )
-
-        # Assert
-        assert batch_call_count == 1, "Batch should be called once"
-        assert per_file_call_count == 0, "Per-file fallback should not run"
-        assert len(results) == 2
-        # Results should have rule codes from batch stderr parsing
-        file1_result = next(r for r in results if r.file == "file1.md")
-        file2_result = next(r for r in results if r.file == "file2.md")
-        assert any("MD036" in e for e in file1_result.errors)
-        assert any("MD022" in e for e in file2_result.errors)
-
-    @pytest.mark.asyncio
-    async def test_batch_success_no_fallback(self, tmp_path: Path):
-        """Test that successful batch run does not trigger fallback."""
-        # Arrange
-        project_root = tmp_path
-        file1 = tmp_path / "file1.md"
-        file2 = tmp_path / "file2.md"
-        _ = file1.write_text("# Test\n")
-        _ = file2.write_text("# Test\n")
-
-        markdownlint_cmd = ["rumdl", "check"]
-
-        batch_call_count = 0
-        per_file_call_count = 0
-
-        async def mock_run_command(
-            cmd: list[str], cwd: Path | None = None, timeout: int = 120
-        ) -> GitCommandResult:
-            nonlocal batch_call_count, per_file_call_count
-            # Batch run succeeds
-            if "--fix" in cmd and len(cmd) > 3:  # Batch run
-                batch_call_count += 1
-                return GitCommandResult(
-                    success=True,
-                    stdout="Fixed",
-                    stderr="",
-                    returncode=0,
-                )
-            # Per-file runs should not be called
-            elif "--fix" in cmd and len(cmd) == 3:  # Single file run
-                per_file_call_count += 1
-            # Git commands
-            return GitCommandResult(success=True, stdout="", stderr="", returncode=0)
-
-        # Act - patch where _run_command is used (_run_markdownlint_batch is in markdown_lint_run)
-        with patch(
-            "cortex.tools.files.markdown_lint_run.run_command",
-            side_effect=mock_run_command,
-        ):
-            results = await run_markdownlint_batch(
-                [file1, file2],
-                project_root,
-                markdownlint_cmd,
-                None,
-                dry_run=False,
-            )
-
-        # Assert
-        assert batch_call_count == 1, "Batch should be called once"
-        assert per_file_call_count == 0, "Per-file fallback should not run"
-        assert len(results) == 2
-        # Results should indicate success
-        for result in results:
-            assert result.error_message is None

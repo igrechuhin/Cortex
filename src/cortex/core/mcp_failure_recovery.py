@@ -67,10 +67,7 @@ Auto-generated on MCP tool failure. Tool: {tool_name}, Error:
 def _format_error_cause(error: Exception) -> str:
     """Format error cause string for plan template."""
     if error.__cause__:
-        return (
-            f"\n\n**Caused by**: "
-            f"{type(error.__cause__).__name__}: {error.__cause__}"
-        )
+        return f"\n\n**Caused by**: {type(error.__cause__).__name__}: {error.__cause__}"
     return ""
 
 

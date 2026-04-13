@@ -73,9 +73,7 @@ async def check_connection_error(
         "broken resource",
     ]
     if any(kw in error_str for kw in connection_keywords):
-        msg = (
-            f"Detected connection error in {tool_name} during " f"{step_name}: {error}"
-        )
+        msg = f"Detected connection error in {tool_name} during {step_name}: {error}"
         await log_client(ctx, "error", msg)
         logger.debug(f"Connection error details: {error}")
         return True
@@ -103,10 +101,7 @@ async def check_type_attribute_key_error(
         "keyerror",
     ]
     if any(kw in error_str for kw in unexpected_keywords):
-        msg = (
-            f"Detected unexpected behavior in {tool_name} during "
-            f"{step_name}: {error}"
-        )
+        msg = f"Detected unexpected behavior in {tool_name} during {step_name}: {error}"
         await log_client(ctx, "error", msg)
         logger.debug(f"Unexpected behavior details: {error}")
         return True
@@ -182,10 +177,7 @@ async def detect_failure(
     if await check_unexpected_behavior(error, error_str, tool_name, step_name, ctx):
         return True
     if "fastmcp" in error_str or "mcp error" in error_str:
-        msg = (
-            f"Detected MCP protocol error in {tool_name} during "
-            f"{step_name}: {error}"
-        )
+        msg = f"Detected MCP protocol error in {tool_name} during {step_name}: {error}"
         await log_client(ctx, "error", msg)
         logger.debug(f"MCP protocol error details: {error}")
         return True

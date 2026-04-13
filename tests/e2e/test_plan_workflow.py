@@ -10,6 +10,7 @@ tool uses tmp_path and does not pollute the real project.
 
 import json
 import re
+from collections.abc import Awaitable, Callable
 from contextlib import contextmanager
 from pathlib import Path
 from typing import cast
@@ -26,6 +27,86 @@ from cortex.tools.plans.entries import (
 )
 from tests.helpers.path_helpers import ensure_test_cortex_structure
 from tests.helpers.tool_call_helpers import get_tool_fn, to_dict
+
+
+def _tool_result_dict(result: object) -> dict[str, object]:
+    return cast(
+        dict[str, object],
+        (
+            to_dict(cast(object, result))
+            if isinstance(result, dict)
+            else json.loads(str(result))
+        ),
+    )
+
+
+def _assert_plan_path_under_tmp(file_path: object, tmp_path: Path) -> None:
+    if isinstance(file_path, str):
+        assert (
+            Path(file_path).resolve().is_relative_to(tmp_path.resolve())
+        ), f"Plan must be under tmp_path, got {file_path!r}"
+
+
+def _force_e2e_plan_marked_complete(plan_path: Path) -> None:
+    if not plan_path.exists():
+        return
+    content = plan_path.read_text()
+    if re.search(r"^\*\*Status:\*\*", content, re.MULTILINE):
+        content = re.sub(
+            r"^\*\*Status:\*\*\s*.*$",
+            "**Status:** COMPLETE",
+            content,
+            count=1,
+            flags=re.MULTILINE,
+        )
+    else:
+        content = content.replace("# E2E Plan", "# E2E Plan\n\n**Status:** COMPLETE")
+    _ = plan_path.write_text(content)
+
+
+async def _call_create_plan_e2e(
+    create_fn: Callable[..., Awaitable[object]],
+) -> dict[str, object]:
+    create_result = await create_fn(
+        title="E2E Plan Test",
+        content="# E2E Plan\n\n**Status:** COMPLETE\n\n## Step 1\n\nDone.\n",
+        slug="e2e-plan-test",
+        ctx=None,
+    )
+    data = _tool_result_dict(create_result)
+    assert data.get("status") == "success" or "plan_path" in str(data)
+    return data
+
+
+async def _call_add_roadmap_e2e(
+    add_fn: Callable[..., Awaitable[object]],
+) -> None:
+    add_result = await add_fn(
+        section="pending",
+        entry_text="- **E2E Plan Test** - PENDING - Plan: .cortex/plans/e2e-plan-test.md",
+        position="last",
+        ctx=None,
+    )
+    add_data = _tool_result_dict(add_result)
+    assert add_data.get("status") in ("success", "error") or "line_inserted" in str(
+        add_data
+    )
+
+
+async def _call_list_plans_e2e(
+    list_fn: Callable[..., Awaitable[object]],
+) -> None:
+    list_result = await list_fn(operation="list", include_archive=False, ctx=None)
+    list_data = _tool_result_dict(list_result)
+    assert "plans" in list_data or "status" in list_data
+
+
+async def _call_remove_roadmap_e2e(
+    remove_fn: Callable[..., Awaitable[object]],
+) -> None:
+    remove_result = await remove_fn(entry_contains="E2E Plan Test", ctx=None)
+    remove_data = _tool_result_dict(remove_result)
+    assert remove_data.get("status") == "success"
 
 
 @contextmanager
@@ -85,92 +166,12 @@ async def test_plan_workflow_create_add_list(tmp_path: Path) -> None:
     _write_minimal_memory_bank_and_roadmap(memory_bank_dir, plans_dir)
 
     with _isolated_root_patches(tmp_path):
-        # 1) create_plan
-        create_fn = get_tool_fn(create_plan)
-        create_result = await create_fn(
-            title="E2E Plan Test",
-            content="# E2E Plan\n\n**Status:** COMPLETE\n\n## Step 1\n\nDone.\n",
-            slug="e2e-plan-test",
-            ctx=None,
-        )
-        create_data = cast(
-            dict[str, object],
-            (
-                to_dict(cast(object, create_result))
-                if isinstance(create_result, dict)
-                else json.loads(str(create_result))
-            ),
-        )
-        assert create_data.get("status") == "success" or "plan_path" in str(create_data)
-        file_path = create_data.get("file_path")
-        if isinstance(file_path, str):
-            assert (
-                Path(file_path).resolve().is_relative_to(tmp_path.resolve())
-            ), f"Plan must be under tmp_path, got {file_path!r}"
-
-        # 2) add_roadmap_entry (register the plan)
-        add_fn = get_tool_fn(add_roadmap_entry)
-        add_result = await add_fn(
-            section="pending",
-            entry_text="- **E2E Plan Test** - PENDING - Plan: .cortex/plans/e2e-plan-test.md",
-            position="last",
-            ctx=None,
-        )
-        add_data = cast(
-            dict[str, object],
-            (
-                to_dict(cast(object, add_result))
-                if isinstance(add_result, dict)
-                else json.loads(str(add_result))
-            ),
-        )
-        assert add_data.get("status") in ("success", "error") or "line_inserted" in str(
-            add_data
-        )
-
-        # 3) create_plan(operation="list")
-        list_fn = get_tool_fn(create_plan)
-        list_result = await list_fn(operation="list", include_archive=False, ctx=None)
-        list_data = cast(
-            dict[str, object],
-            (
-                to_dict(cast(object, list_result))
-                if isinstance(list_result, dict)
-                else json.loads(str(list_result))
-            ),
-        )
-        assert "plans" in list_data or "status" in list_data
-
-        # 4) Mark plan COMPLETE so remove_roadmap_entry guardrail allows removal
-        plan_path = plans_dir / "e2e-plan-test.md"
-        if plan_path.exists():
-            content = plan_path.read_text()
-            if re.search(r"^\*\*Status:\*\*", content, re.MULTILINE):
-                content = re.sub(
-                    r"^\*\*Status:\*\*\s*.*$",
-                    "**Status:** COMPLETE",
-                    content,
-                    count=1,
-                    flags=re.MULTILINE,
-                )
-            else:
-                content = content.replace(
-                    "# E2E Plan", "# E2E Plan\n\n**Status:** COMPLETE"
-                )
-            _ = plan_path.write_text(content)
-
-        # 5) remove_roadmap_entry (cleanup the test entry)
-        remove_fn = get_tool_fn(remove_roadmap_entry)
-        remove_result = await remove_fn(entry_contains="E2E Plan Test", ctx=None)
-        remove_data = cast(
-            dict[str, object],
-            (
-                to_dict(cast(object, remove_result))
-                if isinstance(remove_result, dict)
-                else json.loads(str(remove_result))
-            ),
-        )
-        assert remove_data.get("status") == "success"
+        create_data = await _call_create_plan_e2e(get_tool_fn(create_plan))
+        _assert_plan_path_under_tmp(create_data.get("file_path"), tmp_path)
+        await _call_add_roadmap_e2e(get_tool_fn(add_roadmap_entry))
+        await _call_list_plans_e2e(get_tool_fn(create_plan))
+        _force_e2e_plan_marked_complete(plans_dir / "e2e-plan-test.md")
+        await _call_remove_roadmap_e2e(get_tool_fn(remove_roadmap_entry))
 
 
 @pytest.mark.slow
@@ -183,14 +184,11 @@ async def test_plan_workflow_manage_file_create_plan(tmp_path: Path) -> None:
     _write_minimal_memory_bank_and_roadmap(memory_bank_dir, plans_dir)
 
     with _isolated_root_patches(tmp_path):
-        # 1) manage_file read roadmap
-        read_result = await manage_file(operation="read", file_name="roadmap.md")
-        read_data = (
-            json.loads(read_result) if isinstance(read_result, str) else read_result
+        read_data = json.loads(
+            await manage_file(operation="read", file_name="roadmap.md")
         )
         assert read_data.get("status") == "success"
 
-        # 2) create_plan
         create_fn = get_tool_fn(create_plan)
         create_result = await create_fn(
             title="Workflow Plan",
@@ -198,29 +196,6 @@ async def test_plan_workflow_manage_file_create_plan(tmp_path: Path) -> None:
             ctx=None,
         )
         assert create_result is not None
-        create_data = cast(
-            dict[str, object],
-            (
-                to_dict(cast(object, create_result))
-                if isinstance(create_result, dict)
-                else json.loads(str(create_result))
-            ),
-        )
-        file_path = create_data.get("file_path")
-        if isinstance(file_path, str):
-            assert (
-                Path(file_path).resolve().is_relative_to(tmp_path.resolve())
-            ), f"Plan must be under tmp_path, got {file_path!r}"
-
-        # 3) create_plan(operation="list")
-        list_fn = get_tool_fn(create_plan)
-        list_result = await list_fn(operation="list", include_archive=False, ctx=None)
-        list_data = cast(
-            dict[str, object],
-            (
-                to_dict(cast(object, list_result))
-                if isinstance(list_result, dict)
-                else json.loads(str(list_result))
-            ),
-        )
-        assert "plans" in list_data or "status" in list_data
+        create_data = _tool_result_dict(create_result)
+        _assert_plan_path_under_tmp(create_data.get("file_path"), tmp_path)
+        await _call_list_plans_e2e(create_fn)

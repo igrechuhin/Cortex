@@ -544,8 +544,31 @@ async def _plan_dispatch_valid_operation(
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_MEDIUM)
 # fmt: off
-async def plan(operation: str | None = None, title: str | None = None, content: str | None = None, slug: str | None = None, explore_log_path: str | None = None, include_archive: bool = False, response_format: str = "content", plan_title: str | None = None, summary: str | None = None, completion_date: str | None = None, progress_entry: str | None = None, plan_file_name: str | None = None, plan_relative_path: str | None = None, resolved_clarifications: dict[str, str] | None = None, description: str | None = None, status: str = "PENDING", section: str = "pending", planning_mode: str | None = None, step_section: str | None = None, step_skip: bool = False, section_corrections: str | None = None, ctx: MCPContext | None = None) -> str:
-# fmt: on
+async def plan(
+    operation: str | None = None,
+    title: str | None = None,
+    content: str | None = None,
+    slug: str | None = None,
+    explore_log_path: str | None = None,
+    include_archive: bool = False,
+    response_format: str = "content",
+    plan_title: str | None = None,
+    summary: str | None = None,
+    completion_date: str | None = None,
+    progress_entry: str | None = None,
+    plan_file_name: str | None = None,
+    plan_relative_path: str | None = None,
+    resolved_clarifications: dict[str, str] | None = None,
+    description: str | None = None,
+    status: str = "PENDING",
+    section: str = "pending",
+    planning_mode: str | None = None,
+    step_section: str | None = None,
+    step_skip: bool = False,
+    section_corrections: str | None = None,
+    ctx: MCPContext | None = None,
+) -> str:
+    # fmt: on
     """Plan lifecycle: create, list, get, complete, register, graph, or archive_completed.
 
     USE WHEN: managing plan files, marking plans complete, registering roadmap entries,

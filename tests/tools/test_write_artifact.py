@@ -27,9 +27,7 @@ def _valid_skill_json(name: str) -> str:
 
 
 def _valid_rule_mdc() -> str:
-    return (
-        "---\n" "description: Test rule\n" "alwaysApply: false\n" "---\n\n" "Rule body."
-    )
+    return "---\ndescription: Test rule\nalwaysApply: false\n---\n\nRule body."
 
 
 @pytest.mark.asyncio

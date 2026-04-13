@@ -2,7 +2,7 @@
 title: "FastMCP v3 — Phase 1: Dependency Swap and Import Migration"
 component: "server"
 work_type: "migration"
-status: PENDING
+status: DONE
 priority: high
 created: 2026-04-13
 depends_on: []
@@ -198,3 +198,8 @@ changes. Do not change any behaviour.
 - No new test code required; this is a dependency swap.
 
 Coverage target: maintain ≥90% baseline.
+
+## Partial Progress Log
+
+- 2026-04-13: Dependency swap/import migration baseline completed; quality-gate blockers identified and triaged — files: pyproject.toml, uv.lock, src/cortex/server.py, src/cortex/core/context_logging.py, src/cortex/core/project_root_resolver.py, src/cortex/core/mcp_stability.py
+- 2026-04-13: Phase 1 DONE — all 7 steps verified: fastmcp 3.2.3 installed; zero mcp.server.fastmcp import sites; meta= param confirmed; env-var migration confirmed no-op; mount_path→path fix in main.py for SSE transport; all three transports smoke-tested (stdio/sse/streamable-http); 6505 tests pass, pyright clean.

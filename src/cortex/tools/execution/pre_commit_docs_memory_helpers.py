@@ -139,8 +139,7 @@ def compute_docs_memory_bank_passed(
 ) -> bool:
     """Determine whether docs/memory validations passed.
 
-    roadmap_progress_consistency is informational/warning-only to avoid forcing
-    synthetic backlog mutations in automated fix loops.
+    roadmap_progress_consistency violations are errors (zero-problems policy).
     """
     ts_valid = True
     if timestamps_result is not None:
@@ -148,7 +147,8 @@ def compute_docs_memory_bank_passed(
     roadmap_valid = True
     if roadmap_result is not None:
         roadmap_valid = bool(roadmap_result.get("valid", False))
-    return ts_valid and roadmap_valid
+    consistency_valid = len(consistency_violations) == 0
+    return ts_valid and roadmap_valid and consistency_valid
 
 
 def build_timestamps_summary(
@@ -211,12 +211,12 @@ def build_roadmap_sync_summary(
 def _build_roadmap_progress_consistency_summary(
     violations: list[str],
 ) -> PreflightCheckSummary:
-    """Summary for progress-vs-roadmap backlog invariant (warning-only)."""
+    """Summary for progress-vs-roadmap backlog invariant (error when violated)."""
     return PreflightCheckSummary(
         name="roadmap_progress_consistency",
-        status=OperationStatus.SUCCESS,
-        errors=None,
-        warnings=len(violations) if violations else None,
+        status=OperationStatus.ERROR if violations else OperationStatus.SUCCESS,
+        errors=len(violations) if violations else None,
+        warnings=None,
         message="; ".join(violations) if violations else None,
     )
 

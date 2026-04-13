@@ -201,7 +201,7 @@ class TestThinkFullMode:
             "cortex.tools.session.sequential_thinking._get_core",
             return_value=SequentialThinkingCore(),
         ):
-            await think(
+            _ = await think(
                 thought="First",
                 thought_number=1,
                 total_thoughts=2,
@@ -222,7 +222,7 @@ class TestThinkFullMode:
             "cortex.tools.session.sequential_thinking._get_core",
             return_value=SequentialThinkingCore(),
         ):
-            await think(
+            _ = await think(
                 thought="Root",
                 thought_number=1,
                 total_thoughts=2,
@@ -336,7 +336,7 @@ class TestThinkLightweightMode:
     async def test_think_lightweight_after_full_mode(self):
         """Lightweight think continues numbering after full-mode calls."""
         reset_core_for_testing()
-        await think(
+        _ = await think(
             thought="Full thought",
             thought_number=1,
             total_thoughts=1,
@@ -349,8 +349,8 @@ class TestThinkLightweightMode:
     async def test_think_full_after_lightweight(self):
         """Full-mode think continues numbering after lightweight calls."""
         reset_core_for_testing()
-        await think(thought="One")
-        await think(thought="Two")
+        _ = await think(thought="One")
+        _ = await think(thought="Two")
         result = await think(
             thought="Three (full)",
             thought_number=3,

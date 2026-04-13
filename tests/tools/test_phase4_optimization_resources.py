@@ -204,10 +204,12 @@ class TestPhase4OptimizationResources:
         _ = mock_managers
         payload_one = json.dumps({"status": "success", "task_description": "first"})
         payload_two = json.dumps({"status": "success", "task_description": "second"})
-        first_result, second_result, call_count = (
-            await load_context_scope_cache_results(
-                mock_project_root, payload_one, payload_two
-            )
+        (
+            first_result,
+            second_result,
+            call_count,
+        ) = await load_context_scope_cache_results(
+            mock_project_root, payload_one, payload_two
         )
         assert first_result["task_description"] == "first"
         assert second_result["task_description"] == "second"

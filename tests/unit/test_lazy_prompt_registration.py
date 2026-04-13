@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: MIT
 
 """Unit tests for cortex.setup.lazy_prompt_registration."""
+
 from __future__ import annotations
 
 import asyncio

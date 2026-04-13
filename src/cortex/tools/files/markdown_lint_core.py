@@ -8,11 +8,11 @@ compatibility so callers do not need to change imports when tooling is upgraded.
 
 import asyncio
 import hashlib
-import subprocess
 from pathlib import Path
 
 import aiofiles
 
+from cortex.core.async_subprocess import reap_orphaned_subprocess
 from cortex.core.constants import GIT_OPERATION_TIMEOUT_SECONDS
 from cortex.core.models import GitCommandResult
 from cortex.core.path_resolver import (
@@ -89,6 +89,9 @@ async def run_command(
 ) -> GitCommandResult:
     """Run a command asynchronously with timeout.
 
+    Like other MCP-facing command runners, failures (including unexpected
+    ``Exception`` subclasses) return ``GitCommandResult`` instead of raising.
+
     Args:
         cmd: Command and arguments as list
         cwd: Working directory (default: None)
@@ -97,6 +100,7 @@ async def run_command(
     Returns:
         GitCommandResult with success status, stdout, stderr, returncode
     """
+    process: asyncio.subprocess.Process | None = None
     try:
         async with asyncio.timeout(timeout):
             process = await asyncio.create_subprocess_exec(
@@ -106,16 +110,20 @@ async def run_command(
                 stderr=asyncio.subprocess.PIPE,
             )
             stdout, stderr = await process.communicate()
-            return GitCommandResult(
-                success=process.returncode == 0,
-                stdout=stdout.decode("utf-8", errors="replace"),
-                stderr=stderr.decode("utf-8", errors="replace"),
-                returncode=process.returncode,
-            )
     except TimeoutError:
+        await reap_orphaned_subprocess(process)
         return _create_error_result(f"Command timed out after {timeout}s")
-    except (subprocess.SubprocessError, OSError, ValueError) as e:
+    except Exception as e:
+        await reap_orphaned_subprocess(process)
         return _create_error_result(str(e))
+    else:
+        assert process is not None
+        return GitCommandResult(
+            success=process.returncode == 0,
+            stdout=stdout.decode("utf-8", errors="replace"),
+            stderr=stderr.decode("utf-8", errors="replace"),
+            returncode=process.returncode,
+        )
 
 
 def parse_git_output(stdout: str, project_root: Path, files: list[Path]) -> None:

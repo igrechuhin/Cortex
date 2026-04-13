@@ -288,13 +288,21 @@ def _session_build_dispatch_args(values: dict[str, object]) -> _SessionDispatchA
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_FAST)
 # fmt: off
-async def session(operation: str = "start", task_description: str | None = None, goal: str | None = None, plan_slug: str | None = None, blocked_files: list[str] | None = None, task_title: str | None = None, role: str | None = None, summary: str | None = None, completed_tasks: list[str] | None = None, in_progress_task: str | None = None, in_progress_notes: str | None = None, blockers: list[str] | None = None, decisions_made: list[str] | None = None, create_checkpoint: bool = False, ctx: MCPContext | None = None) -> str:
-# fmt: on
+async def session(
+    operation: str = "start", task_description: str | None = None,
+    goal: str | None = None, plan_slug: str | None = None,
+    blocked_files: list[str] | None = None, task_title: str | None = None,
+    role: str | None = None, summary: str | None = None,
+    completed_tasks: list[str] | None = None, in_progress_task: str | None = None,
+    in_progress_notes: str | None = None, blockers: list[str] | None = None,
+    decisions_made: list[str] | None = None, create_checkpoint: bool = False,
+    ctx: MCPContext | None = None,
+) -> str:
+    # fmt: on
     """USE WHEN: Session lifecycle (orientation, registry, compaction).
 
-    EXAMPLES:
-    - session(operation="start", goal="Fix auth bug")
-    - session(operation="compact", summary="Session handoff")
+    EXAMPLES: session(operation="start", goal="Fix auth bug");
+    session(operation="compact", summary="Session handoff").
     """
     return await _session_run(
         operation,

@@ -21,6 +21,7 @@ import re
 from pathlib import Path
 from typing import cast
 
+from cortex.core.async_subprocess import reap_orphaned_subprocess
 from cortex.core.constants import MCP_TOOL_TIMEOUT_FAST
 from cortex.core.context_logging import MCPContext, log_client
 from cortex.core.file_system import FileSystemManager
@@ -148,6 +149,7 @@ async def run_git_command(
 ) -> GitCommandResult:
     """Run a git command asynchronously with timeout."""
     await acquire_git_operation_slot()
+    process: asyncio.subprocess.Process | None = None
     try:
         async with asyncio.timeout(timeout):
             process = await asyncio.create_subprocess_exec(
@@ -157,16 +159,20 @@ async def run_git_command(
                 stderr=asyncio.subprocess.PIPE,
             )
             stdout, stderr = await process.communicate()
-            return GitCommandResult(
-                success=process.returncode == 0,
-                stdout=stdout.decode("utf-8", errors="replace"),
-                stderr=stderr.decode("utf-8", errors="replace"),
-                returncode=process.returncode,
-            )
     except TimeoutError:
+        await reap_orphaned_subprocess(process)
         return _create_error_result(f"Command timed out after {timeout}s")
     except Exception as e:
+        await reap_orphaned_subprocess(process)
         return _create_error_result(str(e))
+    else:
+        assert process is not None
+        return GitCommandResult(
+            success=process.returncode == 0,
+            stdout=stdout.decode("utf-8", errors="replace"),
+            stderr=stderr.decode("utf-8", errors="replace"),
+            returncode=process.returncode,
+        )
 
 
 async def _check_task_available_safe(project_root: Path | None, title: str) -> bool:
@@ -297,6 +303,38 @@ def _apply_session_goal_and_cap(
     return cap_session_brief_payload(merged)
 
 
+async def _assemble_capped_brief_from_context(
+    act: str,
+    rdm: str,
+    fs_manager: FileSystemManager,
+    managers: ManagersDict,
+    project_root: Path,
+    mcp_healthy: bool,
+    mcp_health_message: str | None,
+    git_status: GitStatusSummary | None,
+    next_work_item: str | None,
+    next_work_plan_path: str | None,
+    goal: str | None,
+    plan_slug: str | None,
+    blocked_files: list[str] | None,
+) -> SessionBrief:
+    brief = await build_session_brief(
+        act,
+        managers,
+        project_root,
+        fs_manager,
+        git_status=git_status,
+        next_work_item=next_work_item,
+        next_work_plan_path=next_work_plan_path,
+        mcp_healthy=mcp_healthy,
+        mcp_health_message=mcp_health_message,
+        roadmap_content=rdm,
+    )
+    return _apply_session_goal_and_cap(
+        brief, project_root, goal, plan_slug, blocked_files
+    )
+
+
 async def _build_capped_brief_from_memory(
     act: str,
     rdm: str,
@@ -312,20 +350,20 @@ async def _build_capped_brief_from_memory(
     git_status, next_work_item, next_work_plan_path = (
         await _get_session_optional_context(rdm, project_root)
     )
-    brief = await build_session_brief(
+    return await _assemble_capped_brief_from_context(
         act,
+        rdm,
+        fs_manager,
         managers,
         project_root,
-        fs_manager,
-        git_status=git_status,
-        next_work_item=next_work_item,
-        next_work_plan_path=next_work_plan_path,
-        mcp_healthy=mcp_healthy,
-        mcp_health_message=mcp_health_message,
-        roadmap_content=rdm,
-    )
-    return _apply_session_goal_and_cap(
-        brief, project_root, goal, plan_slug, blocked_files
+        mcp_healthy,
+        mcp_health_message,
+        git_status,
+        next_work_item,
+        next_work_plan_path,
+        goal,
+        plan_slug,
+        blocked_files,
     )
 
 

@@ -73,11 +73,7 @@ async def _step_load_context(task: str, budget: int = 2000) -> dict[str, object]
 async def _step_manage_file_read(file_name: str) -> dict[str, object]:
     """Read a memory bank file and return parsed data."""
     read_result = await manage_file(operation="read", file_name=file_name)
-    if isinstance(read_result, str):
-        return cast(dict[str, object], json.loads(read_result))
-    if hasattr(read_result, "model_dump"):
-        return cast(dict[str, object], read_result.model_dump())
-    return cast(dict[str, object], dict(read_result))
+    return cast(dict[str, object], json.loads(read_result))
 
 
 def _mixed_entrypoint_patches(tmp_path: Path):

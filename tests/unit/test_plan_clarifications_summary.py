@@ -13,12 +13,7 @@ def test_no_markers_leaves_body_unchanged_modulo_strip() -> None:
 
 
 def test_inserts_summary_before_context_when_present() -> None:
-    body = (
-        "## Goal\n\n"
-        "Ship [NEEDS CLARIFICATION: pick SLA].\n\n"
-        "## Context\n\n"
-        "Why.\n"
-    )
+    body = "## Goal\n\nShip [NEEDS CLARIFICATION: pick SLA].\n\n## Context\n\nWhy.\n"
     out, n = apply_clarifications_summary_to_plan(body)
     assert n == 1
     assert "## Clarifications Needed" in out

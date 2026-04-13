@@ -133,10 +133,12 @@ class TestIntegration:
         self, mock_project_root: Path, mock_managers: dict[str, Any]
     ) -> None:
         """Test complete workflow: load context -> score -> summarize."""
-        opt_data, scores_data, summary_data = (
-            await run_full_context_score_summarize_workflow(
-                mock_project_root, mock_managers, _get_manager_helper
-            )
+        (
+            opt_data,
+            scores_data,
+            summary_data,
+        ) = await run_full_context_score_summarize_workflow(
+            mock_project_root, mock_managers, _get_manager_helper
         )
         assert opt_data["status"] == "success"
         assert scores_data["status"] == "success"

@@ -74,9 +74,7 @@ def test_partial_without_pending_fails() -> None:
 
 def test_partial_with_matching_complete_no_pending_passes() -> None:
     """Historical PARTIAL rows are ignored when same title is COMPLETE."""
-    progress = (
-        "- **Big task** - PARTIAL. Started.\n" "- **Big task** - COMPLETE. Done.\n"
-    )
+    progress = "- **Big task** - PARTIAL. Started.\n- **Big task** - COMPLETE. Done.\n"
     assert (
         check_roadmap_progress_consistency(progress, "# Roadmap\n\n(no items)\n") == []
     )

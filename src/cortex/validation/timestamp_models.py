@@ -48,7 +48,7 @@ class TimestampScanResult(BaseModel):
         default=0,
         ge=0,
         description=(
-            "Number of timestamps with year outside allowed range " "(current ± 1)"
+            "Number of timestamps with year outside allowed range (current ± 1)"
         ),
     )
     violations: list[TimestampViolationModel] = Field(

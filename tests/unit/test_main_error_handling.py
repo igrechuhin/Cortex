@@ -373,12 +373,12 @@ class TestMainTransportSelection:
     def test_main_uses_sse_transport_when_configured(
         self, mock_mcp: MagicMock, _mock_get_transport: MagicMock
     ) -> None:
-        """Test that main() calls mcp.run(transport='sse', mount_path='/sse') when transport is sse."""
+        """Test that main() calls mcp.run(transport='sse', path='/sse') when transport is sse."""
         mock_mcp.run.side_effect = KeyboardInterrupt()
         with pytest.raises(SystemExit) as exc_info:
             main()
         assert exc_info.value.code == 0
-        mock_mcp.run.assert_called_once_with(transport="sse", mount_path="/sse")
+        mock_mcp.run.assert_called_once_with(transport="sse", path="/sse")
 
     @patch("cortex.main.get_effective_transport", return_value="streamable-http")
     @patch("cortex.main.mcp")

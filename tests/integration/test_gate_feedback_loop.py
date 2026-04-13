@@ -55,7 +55,7 @@ def isolated_project_root(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> Pa
 async def test_gate_failure_writes_gate_feedback_result_file(
     isolated_project_root: Path,
 ) -> None:
-    await pipeline_handoff(operation="init", pipeline="implement", ctx=None)
+    _ = await pipeline_handoff(operation="init", pipeline="implement", ctx=None)
     feedback = _sample_quality_feedback()
     await persist_gate_feedback(feedback, ctx=None)
 
@@ -80,7 +80,7 @@ async def test_gate_failure_writes_gate_feedback_result_file(
 async def test_gate_success_clears_implement_pipeline_dir(
     isolated_project_root: Path,
 ) -> None:
-    await pipeline_handoff(operation="init", pipeline="implement", ctx=None)
+    _ = await pipeline_handoff(operation="init", pipeline="implement", ctx=None)
     feedback = GateFeedback(
         gate=GateName.DOCS,
         errors=[GateError(file="<docs>", check="docs-gate", message="fail")],

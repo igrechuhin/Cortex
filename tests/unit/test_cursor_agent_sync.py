@@ -262,9 +262,7 @@ class TestInjectToolsIntoFrontmatter:
 
     def test_rewrites_multiple_tool_refs(self) -> None:
         """All Cortex tool references in the body are rewritten."""
-        content = (
-            "---\nname: test\n---\n\n" "Call `run_quality_gate()` then `autofix()`."
-        )
+        content = "---\nname: test\n---\n\nCall `run_quality_gate()` then `autofix()`."
         result = inject_tools_into_frontmatter(content)
         assert "`mcp__cortex__run_quality_gate(" in result
         assert "`mcp__cortex__autofix(" in result

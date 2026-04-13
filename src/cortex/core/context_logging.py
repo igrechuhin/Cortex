@@ -7,12 +7,14 @@ are caught so client disconnect does not propagate (avoids TaskGroup noise).
 """
 
 import asyncio
+import inspect
 import logging
+from collections.abc import Awaitable, Callable
 from enum import Enum
 from typing import Literal, cast
 
-from mcp.server.fastmcp import Context
-from mcp.server.session import ServerSession
+from fastmcp import Context
+from mcp.types import LoggingLevel
 
 from cortex.core.mcp_stability_config import is_connection_error
 
@@ -26,13 +28,31 @@ class LogLevel(str, Enum):
     DEBUG = "debug"
     INFO = "info"
     WARNING = "warning"
+    NOTICE = "notice"
     ERROR = "error"
+    CRITICAL = "critical"
 
 
-# Context is generic; use ServerSession and object to match SDK get_context().
-MCPContext = Context[ServerSession, object]
+# AI: fastmcp.Context is no longer generic in v3; keep MCPContext as direct alias.
+MCPContext = Context
 
 __all__ = ["LogLevel", "MCPContext", "log_client", "report_progress_safe"]
+
+
+async def _log_with_compat(
+    ctx: MCPContext, level: LoggingLevel, message: str, logger_name: str | None
+) -> None:
+    """Call Context.log across FastMCP signature variants.
+
+    inspect.signature on a bound method excludes 'self', so params[0] is
+    'message' for the v3 API (message-first) and 'level' for the legacy API.
+    """
+    log_params = tuple(inspect.signature(ctx.log).parameters.keys())
+    if log_params and log_params[0] == "message":
+        await ctx.log(message, level=level, logger_name=logger_name)
+        return
+    legacy_log = cast(Callable[..., Awaitable[None]], ctx.log)
+    await legacy_log(level, message, logger_name=logger_name)
 
 
 async def log_client(
@@ -55,12 +75,14 @@ async def log_client(
         logger_name: Optional logger name for Context logging.
     """
     level_str = level.value if isinstance(level, LogLevel) else level
-    _level: Literal["debug", "info", "warning", "error"] = cast(
-        Literal["debug", "info", "warning", "error"], level_str
+    _level: Literal["debug", "info", "notice", "warning", "error", "critical"] = cast(
+        Literal["debug", "info", "notice", "warning", "error", "critical"],
+        level_str,
     )
     if ctx is not None:
         try:
-            await ctx.log(_level, message, logger_name=logger_name)
+            logging_level = cast(LoggingLevel, _level)
+            await _log_with_compat(ctx, logging_level, message, logger_name)
         except BaseException as e:
             if isinstance(e, asyncio.CancelledError):
                 raise

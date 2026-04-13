@@ -541,14 +541,18 @@ async def _load_brief_async(
     """Load health, project name, handoff, and concurrency for brief in parallel."""
     from cortex.tools.memory.compaction_operations import read_handoff
 
-    health, project_name, last_handoff, concurrency, gate_feedback = (
-        await asyncio.gather(
-            calculate_health_summary(managers, project_root),
-            _extract_project_name(fs_manager),
-            read_handoff(project_root, fs_manager),
-            _load_concurrency_info(project_root),
-            _load_gate_feedback_summary_safe(project_root),
-        )
+    (
+        health,
+        project_name,
+        last_handoff,
+        concurrency,
+        gate_feedback,
+    ) = await asyncio.gather(
+        calculate_health_summary(managers, project_root),
+        _extract_project_name(fs_manager),
+        read_handoff(project_root, fs_manager),
+        _load_concurrency_info(project_root),
+        _load_gate_feedback_summary_safe(project_root),
     )
     concurrent_sessions, locked_tasks = concurrency
     return (

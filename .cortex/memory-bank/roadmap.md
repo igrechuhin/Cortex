@@ -14,7 +14,7 @@
 
 ### FastMCP v3 Migration
 
-- [ ] **FastMCP v3 — Phase 1: Dependency Swap and Import Migration** — swap `mcp>=1.26.0` bundled FastMCP for standalone `fastmcp>=3.0`; update all `from mcp.server.fastmcp` imports; verify `meta=` resource API and transport env vars; prerequisite for all subsequent phases. Plan: [../plans/fastmcp-v3-phase1-dependency-and-imports.md](../plans/fastmcp-v3-phase1-dependency-and-imports.md) (PENDING)
+- [x] **FastMCP v3 — Phase 1: Dependency Swap and Import Migration** — DONE 2026-04-13. Plan: [../plans/fastmcp-v3-phase1-dependency-and-imports.md](../plans/fastmcp-v3-phase1-dependency-and-imports.md)
 - [ ] **FastMCP v3 — Phase 2: Replace Internal Handler Patches with Official APIs** — remove all three `mcp._mcp_server.*` monkey-patches (`ListPromptsRequest`, `RootsListChangedNotification`, `_handle_request`) and replace with v3 lifespan hooks and official notification API. Plan: [../plans/fastmcp-v3-phase2-official-lifecycle-apis.md](../plans/fastmcp-v3-phase2-official-lifecycle-apis.md) (PENDING)
 - [ ] **FastMCP v3 — Phase 3: Middleware for Disconnect Handling and Request Logging** — replace `MethodType` `_handle_request` patch with `DisconnectMiddleware`; add `LoggingMiddleware` at debug level; add `ResponseLimitMiddleware` for context-window safety. Plan: [../plans/fastmcp-v3-phase3-middleware.md](../plans/fastmcp-v3-phase3-middleware.md) (PENDING)
 - [ ] **FastMCP v3 — Phase 4: Transport Configuration Cleanup** — pass `host`/`port` explicitly to `mcp.run()`; delete `apply_cortex_env_to_fastmcp()`; promote `streamable-http` as default for port-based mode. Plan: [../plans/fastmcp-v3-phase4-transport-cleanup.md](../plans/fastmcp-v3-phase4-transport-cleanup.md) (PENDING)

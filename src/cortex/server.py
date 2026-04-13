@@ -19,7 +19,7 @@ clients to discover deferred tools by query.
 
 from __future__ import annotations
 
-from mcp.server.fastmcp import FastMCP
+from fastmcp import FastMCP
 from mcp.types import ListPromptsRequest, RootsListChangedNotification, ServerResult
 
 from cortex.core.project_root_resolver import handle_roots_list_changed
@@ -51,13 +51,7 @@ async def _lazy_list_prompts_handler(req: ListPromptsRequest) -> ServerResult:
     """Low-level list_prompts handler that triggers lazy registration first."""
     from cortex.setup.lazy_prompt_registration import ensure_prompts_registered
 
-    ctx = None
-    try:
-        ctx = mcp.get_context()  # type: ignore[assignment]
-    except Exception:
-        pass
-
-    await ensure_prompts_registered(ctx)
+    await ensure_prompts_registered(None)
     return await _original_list_prompts_handler(req)  # type: ignore[arg-type]
 
 

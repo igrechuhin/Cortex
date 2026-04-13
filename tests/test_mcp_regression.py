@@ -1,7 +1,7 @@
 import asyncio
 import json
+from collections.abc import Awaitable, Callable
 from pathlib import Path
-from typing import cast
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -14,6 +14,7 @@ from cortex.core.usage_context import (
     set_current_managers,
     set_current_project_root,
 )
+from cortex.tools.execution.pre_commit_zero_arg_tools import run_quality_gate
 from cortex.tools.session.pipeline_handoff import pipeline_handoff
 
 
@@ -27,51 +28,92 @@ class _RootsResult:
         self.roots = roots
 
 
+class _ListRootsConcurrencyTracker:
+    """Async list_roots side_effect with call overlap detection."""
+
+    def __init__(self, temp_project_root: Path) -> None:
+        self._temp_project_root = temp_project_root
+        self.call_count = 0
+        self.in_progress = 0
+
+    async def list_roots(self) -> _RootsResult:
+        self.call_count += 1
+        self.in_progress += 1
+        assert (
+            self.in_progress == 1
+        ), "list_roots() overlapped; per-process cache/lock regression detected"
+        try:
+            await asyncio.sleep(0)
+            uri = f"file://{self._temp_project_root}"
+            return _RootsResult(roots=[_Root(uri=uri)])
+        finally:
+            self.in_progress -= 1
+
+
+def _phase_a_double_poll_side_effect() -> tuple[
+    asyncio.Event,
+    asyncio.Event,
+    asyncio.Event,
+    list[int],
+    Callable[..., Awaitable[dict[str, object]]],
+]:
+    poll_started = asyncio.Event()
+    allow_first_to_finish = asyncio.Event()
+    poll_second_started = asyncio.Event()
+    poll_calls: list[int] = [0]
+
+    async def fake_poll_phase_a_result(
+        *args: object, **kwargs: object
+    ) -> dict[str, object]:
+        poll_calls[0] += 1
+        if poll_calls[0] == 1:
+            _ = poll_started.set()
+            _ = await allow_first_to_finish.wait()
+            return {"status": "ok", "preflight_passed": True}
+        _ = poll_second_started.set()
+        return {"status": "ok", "preflight_passed": True}
+
+    return (
+        poll_started,
+        allow_first_to_finish,
+        poll_second_started,
+        poll_calls,
+        fake_poll_phase_a_result,
+    )
+
+
+def _ctx_with_tracked_list_roots(
+    tracker: _ListRootsConcurrencyTracker,
+) -> MagicMock:
+    ctx = MagicMock()
+    session = MagicMock()
+    session.check_client_capability = MagicMock(return_value=True)
+    session.list_roots = AsyncMock(side_effect=tracker.list_roots)
+    ctx.session = session
+    ctx.log = AsyncMock()
+    return ctx
+
+
+async def _run_parallel_pipeline_read_state(ctx: MagicMock) -> list[str]:
+    coros = [
+        pipeline_handoff(operation="read_state", pipeline="implement", ctx=ctx)
+        for _ in range(6)
+    ]
+    return await asyncio.wait_for(asyncio.gather(*coros), timeout=10.0)
+
+
 @pytest.mark.asyncio
 async def test_concurrent_tool_calls_saturation_does_not_trigger_roots_list_disconnects(
     temp_project_root: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Prevent: concurrent tool saturation crashing MCP via simultaneous `roots/list` requests."""
-    # Ensure the root resolver cache is cold so concurrent tool calls must
-    # contend for list_roots() if the synchronization is broken.
     clear_cached_root()
     monkeypatch.delenv("CORTEX_USE_FALLBACK_ROOT", raising=False)
     set_current_managers(None)
     set_current_project_root(None)
-
-    list_roots_call_count = 0
-    list_roots_in_progress = 0
-
-    async def list_roots() -> _RootsResult:
-        nonlocal list_roots_call_count, list_roots_in_progress
-        list_roots_call_count += 1
-        list_roots_in_progress += 1
-        assert (
-            list_roots_in_progress == 1
-        ), "list_roots() overlapped; per-process cache/lock regression detected"
-        try:
-            # Ensure any concurrent list_roots invocation overlaps at least
-            # once (if the protection regresses) for deterministic detection.
-            await asyncio.sleep(0)
-            uri = f"file://{temp_project_root}"
-            return _RootsResult(roots=[_Root(uri=uri)])
-        finally:
-            list_roots_in_progress -= 1
-
-    # Minimal MCP Context mock:
-    # - roots capability: True
-    # - list_roots: controlled async function
-    # - ctx.log: avoid log_client failures inside tool calls
-    ctx = MagicMock()
-    session = MagicMock()
-    session.check_client_capability = MagicMock(return_value=True)
-    session.list_roots = AsyncMock(side_effect=list_roots)
-    ctx.session = session
-    ctx.log = AsyncMock()
-
-    # Tool init (usage_context) would normally construct managers; it's
-    # irrelevant for root-resolution regression so we short-circuit.
+    tracker = _ListRootsConcurrencyTracker(temp_project_root)
+    ctx = _ctx_with_tracked_list_roots(tracker)
     with (
         patch(
             "cortex.managers.initialization.get_managers",
@@ -79,21 +121,8 @@ async def test_concurrent_tool_calls_saturation_does_not_trigger_roots_list_disc
             return_value={},
         ),
     ):
-        coros = [
-            pipeline_handoff(
-                operation="read_state",
-                pipeline="implement",
-                ctx=ctx,
-            )
-            for _ in range(6)
-        ]
-
-        results = cast(
-            list[str],
-            await asyncio.wait_for(asyncio.gather(*coros), timeout=10.0),
-        )
-
-    assert list_roots_call_count == 1
+        results = await _run_parallel_pipeline_read_state(ctx)
+    assert tracker.call_count == 1
     for r in results:
         parsed = json.loads(r)
         assert parsed["status"] in {"not_found", "error"}
@@ -113,7 +142,7 @@ async def test_pipeline_handoff_serialization_roundtrip_string_payload(
     init_r = json.loads(await pipeline_handoff(operation="init", pipeline="implement"))
     assert init_r["status"] == "ok"
 
-    await pipeline_handoff(
+    _ = await pipeline_handoff(
         operation="write_task",
         pipeline="implement",
         phase="code",
@@ -147,7 +176,7 @@ async def test_pipeline_handoff_serialization_roundtrip_object_payload(
     assert init_r["status"] == "ok"
 
     payload = {"status": "passed", "coverage": 0.99, "snapshot_ref": "deadbeef"}
-    await pipeline_handoff(
+    _ = await pipeline_handoff(
         operation="write_task",
         pipeline="implement",
         phase="code",
@@ -236,29 +265,11 @@ async def test_project_root_resolution_missing_list_roots_degrades_to_fallback(
 @pytest.mark.asyncio
 async def test_phase_a_prompt_execution_is_serialized_by_lock(tmp_path: Path) -> None:
     """Prevent: concurrent Phase-A quality/fix prompt execution overlapping and crashing MCP server."""
-    from cortex.tools.execution.pre_commit_zero_arg_tools import run_quality_gate
-
     set_current_managers({})
     set_current_project_root(tmp_path)
-
-    poll_started = asyncio.Event()
-    allow_first_to_finish = asyncio.Event()
-    poll_second_started = asyncio.Event()
-
-    poll_calls = 0
-
-    async def fake_poll_phase_a_result(
-        *args: object, **kwargs: object
-    ) -> dict[str, object]:
-        nonlocal poll_calls
-        poll_calls += 1
-        if poll_calls == 1:
-            _ = poll_started.set()
-            _ = await allow_first_to_finish.wait()
-            return {"status": "ok", "preflight_passed": True}
-        _ = poll_second_started.set()
-        return {"status": "ok", "preflight_passed": True}
-
+    poll_started, allow_first, poll_second, poll_calls, fake_poll = (
+        _phase_a_double_poll_side_effect()
+    )
     with (
         patch(
             "cortex.tools.execution.pre_commit_zero_arg_tools.read_pipeline_phase_config",
@@ -270,16 +281,14 @@ async def test_phase_a_prompt_execution_is_serialized_by_lock(tmp_path: Path) ->
         ),
         patch(
             "cortex.tools.execution.pre_commit_zero_arg_tools.poll_phase_a_result",
-            new=fake_poll_phase_a_result,
+            new=fake_poll,
         ),
     ):
         group = asyncio.gather(run_quality_gate(), run_quality_gate())
-
         _ = await asyncio.wait_for(poll_started.wait(), timeout=2.0)
-        assert poll_calls == 1
-        assert not poll_second_started.is_set()
-
-        _ = allow_first_to_finish.set()
+        assert poll_calls[0] == 1
+        assert not poll_second.is_set()
+        _ = allow_first.set()
         _ = await asyncio.wait_for(group, timeout=5.0)
 
-    assert poll_calls == 2
+    assert poll_calls[0] == 2

@@ -31,6 +31,7 @@ import time
 from pathlib import Path
 from urllib.parse import unquote, urlparse
 
+# AI: FastMCP v3 Context.session remains an MCP SDK ServerSession instance.
 from mcp.server.session import ServerSession
 from mcp.types import ClientCapabilities, RootsCapability
 

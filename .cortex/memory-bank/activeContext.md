@@ -14,6 +14,8 @@
 
 - ✅ **BLOCKER: Fix mcp>=1.26.0 Structured-Output Crash on Startup** - COMPLETE (2026-04-13) - Fixed startup crash under mcp>=1.26.0 by forcing typed tool registration to disable structured output and added an import-time regression test.
 
+- **FastMCP v3 — Phase 1: Dependency Swap and Import Migration (PARTIAL)** - Updated dependency and import wiring for FastMCP v3 migration baseline, but quality gate remains blocked by prompt-internals compatibility and typing regressions.
+
 ## Completed Work (2026-04-11)
 
 - **Summary (2026-04-11)** - 1 entries archived.

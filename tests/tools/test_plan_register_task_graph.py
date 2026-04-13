@@ -142,8 +142,7 @@ class TestRegisterPlanTaskGraphValidation:
         """When all declared dependencies are DONE, plan frontmatter stays PENDING."""
         plans_dir = self._init_register_workspace(tmp_path)
         base = (
-            "---\ntitle: base\nstatus: DONE\ndepends_on: []\n---\n\n"
-            "### Step 1\n\nx\n"
+            "---\ntitle: base\nstatus: DONE\ndepends_on: []\n---\n\n### Step 1\n\nx\n"
         )
         leaf = (
             "---\ntitle: leaf\nstatus: PENDING\ndepends_on: [base]\n---\n\n"

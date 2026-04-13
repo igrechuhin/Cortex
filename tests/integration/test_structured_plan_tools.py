@@ -279,8 +279,7 @@ class TestCreatePlanIntegration:
         root = temp_project_with_roadmap
         plans_dir = get_cortex_path(root, CortexResourceType.PLANS)
         content = (
-            "## Goal\n\nDo [NEEDS CLARIFICATION: pick color].\n\n"
-            "## Context\n\nNotes.\n"
+            "## Goal\n\nDo [NEEDS CLARIFICATION: pick color].\n\n## Context\n\nNotes.\n"
         )
         with patch(
             "cortex.tools.plans.crud.resolve_project_root_async",

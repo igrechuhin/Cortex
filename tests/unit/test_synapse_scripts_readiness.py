@@ -13,9 +13,7 @@ def _repo_root() -> pathlib.Path:
 
 def _run_readiness_check(repo_root: pathlib.Path) -> int:
     lib = _repo_root() / "scripts" / "_synapse_lib.sh"
-    script = (
-        f'source "{lib}"; ' "if _synapse_scripts_ready; then exit 0; else exit 1; fi"
-    )
+    script = f'source "{lib}"; if _synapse_scripts_ready; then exit 0; else exit 1; fi'
     env = {**os.environ, "REPO_ROOT": str(repo_root)}
     completed = subprocess.run(
         ["bash", "-c", script],

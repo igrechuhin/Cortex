@@ -69,7 +69,6 @@ def _git_side_effect(
 
 
 class TestComputeGitFileHash:
-
     def test_empty_diff(self, tmp_path: Path) -> None:
         with patch(_SUBPROC) as m:
             m.return_value.returncode = 0
@@ -119,7 +118,6 @@ class TestComputeGitFileHash:
 
 
 class TestPipelineDirtyTracker:
-
     def test_singleton(self) -> None:
         assert (
             PipelineDirtyTracker.get_instance() is PipelineDirtyTracker.get_instance()
@@ -161,7 +159,6 @@ class TestPipelineDirtyTracker:
 
 
 class TestSkipDecisions:
-
     _SOURCE_CHECKS = ("type_check", "tests", "format", "quality")
 
     def test_skip_no_source_changes(self, tmp_path: Path) -> None:
@@ -189,7 +186,6 @@ class TestSkipDecisions:
 
 
 class TestTrySkipCleanChecks:
-
     @pytest.mark.asyncio()
     async def test_skip_result(self, tmp_path: Path) -> None:
         from cortex.tools.execution.pre_commit_helpers_models import PreCommitCheck
@@ -245,7 +241,6 @@ class TestTrySkipCleanChecks:
 
 
 class TestRecordPhaseAFingerprint:
-
     def test_records_on_pass(self, tmp_path: Path) -> None:
         from cortex.tools.execution.pre_commit_phase_dispatch import (
             record_phase_a_fingerprint,
@@ -270,7 +265,6 @@ class TestRecordPhaseAFingerprint:
 
 
 class TestSkipDecision:
-
     def test_fields(self) -> None:
         d = SkipDecision(can_skip=True, reason="test")
         assert d.can_skip is True and d.reason == "test"
