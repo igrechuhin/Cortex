@@ -84,6 +84,7 @@ class _BriefComponents:
     workflow_schema_warning: str | None = None
     plan_graph_summary: str | None = None
     plan_graph_ascii_edges: str | None = None
+    memory_type_counts: dict[str, int] | None = None
 
 
 async def _load_brief_async(
@@ -180,6 +181,7 @@ def _brief_workflow_fields(project_root: Path) -> tuple[
 
 
 def _build_brief_components(
+    active_context_content: str,
     current_focus: str,
     recent_completed: list[str],
     loaded: _BriefAsyncResult,
@@ -190,6 +192,9 @@ def _build_brief_components(
 ) -> _BriefComponents:
     core = _brief_base_components(loaded)
     workflow = _brief_workflow_fields(project_root)
+    memory_type_counts = _memory_type_counts_from_active_context(
+        active_context_content, project_root
+    )
     return _BriefComponents(
         current_focus,
         recent_completed,
@@ -201,6 +206,7 @@ def _build_brief_components(
         progress_content or "",
         roadmap_content,
         *workflow,
+        memory_type_counts,
     )
 
 
@@ -225,6 +231,7 @@ async def _gather_brief_components(
     progress_content, _ = progress_tuple
     constitution_notice = constitution_notice_if_missing(project_root)
     return _build_brief_components(
+        active_context_content,
         current_focus,
         recent_completed,
         loaded,
@@ -271,6 +278,33 @@ async def build_session_brief(
 def cap_session_brief_payload(brief: SessionBrief) -> SessionBrief:
     """Backward-compatible export for tests importing from session.brief."""
     return _cap_session_brief_payload(brief)
+
+
+def _memory_type_counts_from_active_context(
+    active_context_content: str, project_root: Path
+) -> dict[str, int]:
+    from cortex.memory.memory_types import MemoryEntry, MemoryType, classify_text
+    from cortex.memory.typed_reader import TypedMemoryReader
+
+    if "<!-- memory_type:" in active_context_content:
+        from cortex.core.path_resolver import CortexResourceType, get_cortex_path
+
+        active_context_path = (
+            get_cortex_path(project_root, CortexResourceType.MEMORY_BANK)
+            / MemoryBankFile.ACTIVE_CONTEXT
+        )
+        entries = TypedMemoryReader().read_all(active_context_path)
+    else:
+        entries = [
+            MemoryEntry(
+                content=active_context_content,
+                memory_type=classify_text(active_context_content),
+            )
+        ]
+    counts = {memory_type.value: 0 for memory_type in MemoryType}
+    for entry in entries:
+        counts[entry.memory_type.value] = counts[entry.memory_type.value] + 1
+    return counts
 
 
 async def load_memory_bank_files(

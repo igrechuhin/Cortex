@@ -18,6 +18,8 @@
 - **Temporal store slice for Improvement: Temporal Memory with Validity Windows** - COMPLETE. Implemented the temporal SQLite store (`TemporalFact`, deterministic IDs, add/invalidate/query/current methods) and added focused unit tests for initialization, validity-window queries, invalidation, and idempotent inserts.
 - **Improvement: Temporal Memory with Validity Windows** - PARTIAL. Added temporal indexing (`TemporalIndexer`), contradiction detection warnings, timeline query models/handler, `manage_file` timeline/invalidation operations, and session-start background indexing with dedicated indexer/timeline tests.
 - **Improvement: Temporal Memory with Validity Windows** - COMPLETE. Implemented temporal fact storage, indexing, timeline retrieval, and session integration with tests.
+- <!-- memory_type: status -->
+- **Improvement: Typed Memory Classification for Memory Bank Entries** - COMPLETE. Implemented typed memory classification/reader paths and associated tests; stabilized quality-gate flow with scoped Phase-A locking and helper extraction updates.
 
 ## 2026-04-13
 

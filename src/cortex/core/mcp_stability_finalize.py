@@ -24,9 +24,17 @@ from cortex.managers.usage_tracker import UsageTracker
 _logger = logging.getLogger(__name__)
 
 
-def _release_lr_for_cancel(fn: str, we: bool) -> None:
+def _current_lock_scope() -> str | None:
+    """Resolve current project lock scope for long-running semaphore."""
+    from cortex.core.usage_context import get_current_project_root
+
+    root = get_current_project_root()
+    return str(root.resolve()) if root is not None else None
+
+
+def _release_lr_for_cancel(fn: str, we: bool, lock_scope: str | None) -> None:
     """Release long-running semaphore (used by release_semaphore_and_cancel_progress_if_needed)."""
-    release_long_running_semaphore(fn, was_exception=we)
+    release_long_running_semaphore(fn, was_exception=we, lock_scope=lock_scope)
 
 
 def attach_attempt_to_exception(exc: Exception | None, attempt: int) -> None:
@@ -185,11 +193,12 @@ async def _do_with_serial_semaphore[T](
     _do: Callable[[], Awaitable[T]], func_name: str
 ) -> T:
     """Run _do() with long-running semaphore acquired; release on exit."""
-    _ = await acquire_long_running_semaphore(func_name)
+    lock_scope = _current_lock_scope()
+    _ = await acquire_long_running_semaphore(func_name, lock_scope=lock_scope)
     try:
         return await _do()
     finally:
-        release_long_running_semaphore(func_name)
+        release_long_running_semaphore(func_name, lock_scope=lock_scope)
 
 
 async def _release_serial_and_reraise(
@@ -200,12 +209,13 @@ async def _release_serial_and_reraise(
     exc: BaseException,
 ) -> NoReturn:
     """Release semaphore and cancel progress if needed, then re-raise."""
+    lock_scope = _current_lock_scope()
     await release_semaphore_and_cancel_progress_if_needed(
         use_serial,
         semaphore_acquired,
         func_name,
         progress_task,
-        _release_lr_for_cancel,
+        lambda fn, we: _release_lr_for_cancel(fn, we, lock_scope),
         cancel_and_drain_progress_task,
     )
     raise exc

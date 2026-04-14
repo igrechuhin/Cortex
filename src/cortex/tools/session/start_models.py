@@ -40,6 +40,7 @@ class SessionBriefContextKwargs(DictLikeModel):
     plan_graph_summary: str | None = None
     plan_graph_ascii_edges: str | None = None
     wiki_status: WikiStatusSummary = Field(default_factory=WikiStatusSummary)
+    memory_type_counts: dict[str, int] = Field(default_factory=dict)
 
 
 class BriefInputs(DictLikeModel):
@@ -70,3 +71,4 @@ class BriefInputs(DictLikeModel):
     project_root: Path
     progress_content: str = ""
     roadmap_content: str = ""
+    memory_type_counts: dict[str, int] = Field(default_factory=dict)

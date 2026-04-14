@@ -222,6 +222,7 @@ def _session_brief_context(inp: _BriefInputs) -> SessionBriefContextKwargs:
         plan_graph_summary=inp.plan_graph_summary,
         plan_graph_ascii_edges=inp.plan_graph_ascii_edges,
         wiki_status=inp.wiki_status,
+        memory_type_counts=inp.memory_type_counts,
     )
 
 
@@ -284,6 +285,7 @@ def _brief_inputs_tail(data: dict[str, object]) -> dict[str, object]:
         "plan_graph_summary": data["plan_graph_summary"],
         "plan_graph_ascii_edges": data["plan_graph_ascii_edges"],
         "wiki_status": data["wiki_status"],
+        "memory_type_counts": data["memory_type_counts"],
         "project_root": data["project_root"],
     }
 

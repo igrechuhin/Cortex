@@ -7,10 +7,19 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
+from cortex.memory.memory_types import MemoryType
 from cortex.tools.context.layers import ContextConfig, ContextLayer, LayerResult
 
 _KEYWORDS = ("blocker", "active", "decision", "pending")
 _DATE_RE = re.compile(r"\b20\d{2}-\d{2}-\d{2}\b")
+_TYPE_RE = re.compile(r"<!--\s*memory_type:\s*([a-z_]+)\s*-->", re.IGNORECASE)
+_TYPE_WEIGHTS = {
+    MemoryType.DECISION: 3.0,
+    MemoryType.PREFERENCE: 2.5,
+    MemoryType.PROBLEM: 2.0,
+    MemoryType.MILESTONE: 1.5,
+    MemoryType.STATUS: 0.0,
+}
 
 
 @dataclass(frozen=True)
@@ -33,7 +42,20 @@ def score_paragraph(paragraph: str) -> float:
     keyword_score = sum(lowered.count(keyword) for keyword in _KEYWORDS) * 2.0
     recency_score = 3.0 if _DATE_RE.search(paragraph) else 0.0
     heading_bonus = 1.5 if paragraph.startswith("#") else 0.0
-    return keyword_score + recency_score + heading_bonus
+    return (
+        keyword_score + recency_score + heading_bonus + _memory_type_weight(paragraph)
+    )
+
+
+def _memory_type_weight(paragraph: str) -> float:
+    match = _TYPE_RE.search(paragraph)
+    if match is None:
+        return 0.0
+    try:
+        memory_type = MemoryType(match.group(1).lower())
+    except ValueError:
+        return 0.0
+    return _TYPE_WEIGHTS[memory_type]
 
 
 def _select_scored_paragraphs(

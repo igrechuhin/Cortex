@@ -67,6 +67,12 @@ async def test_build_l1_prefers_blocker_paragraphs(tmp_path: Path) -> None:
     assert score_paragraph("critical blocker") > score_paragraph("routine update")
 
 
+def test_score_paragraph_boosts_typed_decision() -> None:
+    decision = "<!-- memory_type: decision -->\nroutine update"
+    status = "<!-- memory_type: status -->\nroutine update"
+    assert score_paragraph(decision) > score_paragraph(status)
+
+
 @pytest.mark.asyncio
 async def test_build_l2_resolves_topic_and_empty_when_missing(tmp_path: Path) -> None:
     plans = tmp_path / ".cortex" / "plans"

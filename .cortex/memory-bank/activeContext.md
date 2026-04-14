@@ -32,6 +32,9 @@
 
 - ✅ **Improvement: Temporal Memory with Validity Windows** - COMPLETE (2026-04-14) - Implemented temporal fact storage, indexing, timeline retrieval, and session integration with comprehensive tests and quality gate passing.
 
+- ✅ **Improvement: Typed Memory Classification for Memory Bank Entries** - COMPLETE (2026-04-14) - <!-- memory_type: status -->
+Implemented typed memory models/reader plus session/context integration and quality-gate stability updates, with new memory/type and classification tests.
+
 ## Completed Work (2026-04-12)
 
 - **Summary (2026-04-12)** - 1 entries archived.

@@ -27,6 +27,7 @@ class TestSessionStartImpl:
         result = await run_session_start_patched_mcp_healthy(tmp_path, managers)
         assert isinstance(result, SessionStartResult)
         assert_phase54_success_brief(result)
+        assert isinstance(result.brief.memory_type_counts, dict)
 
     @pytest.mark.asyncio
     async def test_session_start_respects_session_yaml_workflow(

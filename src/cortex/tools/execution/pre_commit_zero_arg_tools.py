@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import logging
 from pathlib import Path
 from typing import cast
 
@@ -62,31 +63,38 @@ from cortex.tools.session.gate_feedback import (
     persist_gate_feedback,
 )
 
-# Serializes all Phase-A spawns (run_quality_gate, autofix).
-# Concurrent Phase-A subprocess jobs crash the MCP server
-# because they race on shared session files and stdout. One job at a time.
+logger = logging.getLogger(__name__)
+
+# Serializes Phase-A spawns (run_quality_gate, autofix) per project root.
+# Concurrent Phase-A subprocess jobs for the same project crash the MCP server
+# because they race on shared session files and stdout.
 #
 # Lazy per-loop: asyncio.Lock() binds to the running event loop at construction
 # time. A module-level singleton created at import time fails with
 # "bound to a different event loop" when tests (or xdist workers) each run in
-# their own fresh loop. We key the lock to the loop so each loop gets its own.
-_phase_a_lock_map: dict[asyncio.AbstractEventLoop, asyncio.Lock] = {}
+# their own fresh loop. We key the lock to (loop, root scope) so each loop
+# and project root pair gets its own lock, preventing cross-project contention.
+_phase_a_lock_map: dict[tuple[asyncio.AbstractEventLoop, str], asyncio.Lock] = {}
 
 
-def get_phase_a_lock() -> asyncio.Lock:
-    """Return the Phase-A serialization lock for the currently running loop.
+def get_phase_a_lock(lock_scope: str | None = None) -> asyncio.Lock:
+    """Return the Phase-A serialization lock for current loop and scope.
 
-    Creates a new asyncio.Lock on first call for each distinct event loop, so
-    pytest-asyncio and pytest-xdist workers that each spin up a fresh loop
-    never share a lock bound to a different loop (which raises RuntimeError).
+    Creates a new asyncio.Lock on first call for each distinct (event loop,
+    lock scope) key, so pytest-asyncio and pytest-xdist workers that each spin
+    up a fresh loop never share a lock bound to a different loop.
     """
     try:
         loop: asyncio.AbstractEventLoop = asyncio.get_running_loop()
     except RuntimeError:
         loop = asyncio.get_event_loop()
-    if loop not in _phase_a_lock_map:
-        _phase_a_lock_map[loop] = asyncio.Lock()
-    return _phase_a_lock_map[loop]
+    if lock_scope is None:
+        root = get_current_project_root()
+        lock_scope = str(root.resolve()) if root is not None else "__global__"
+    key = (loop, lock_scope)
+    if key not in _phase_a_lock_map:
+        _phase_a_lock_map[key] = asyncio.Lock()
+    return _phase_a_lock_map[key]
 
 
 # Backwards-compatible alias: older call sites referenced `phase_a_lock()`.
@@ -204,7 +212,8 @@ async def run_detached_phase_a_checks(
     ``run_quality_gate`` reads timeouts and thresholds from the commit pipeline
     task file; preflight and tests call this helper with explicit parameters.
     """
-    async with get_phase_a_lock():
+    lock_scope = str(root.resolve())
+    async with get_phase_a_lock(lock_scope):
         job = _start_phase_a_job(
             root,
             timeout=test_timeout,
@@ -295,6 +304,14 @@ async def run_quality_gate_inner(ctx: MCPContext | None) -> ModelDict:
     """Resolve config and spawn Phase A quality gate."""
     root = get_current_project_root() or Path(await get_or_resolve_project_root(ctx))
     timeout, coverage_threshold, force_fresh, cfg = _read_quality_gate_config(root)
+    scope = str(root.resolve())
+    logger.info(
+        "run_quality_gate: start scope=%s timeout=%ss coverage_threshold=%.2f force_fresh=%s",
+        scope,
+        timeout,
+        coverage_threshold,
+        force_fresh,
+    )
     # AI: Cache clears only when Step 12 / explicit force_fresh; default True preserves behavior.
     if force_fresh:
         _ = clear_all_cached_results(root)
@@ -305,16 +322,28 @@ async def run_quality_gate_inner(ctx: MCPContext | None) -> ModelDict:
         force_fresh=force_fresh,
         ctx=ctx,
     )
+    gate_passed = await _finalize_quality_gate_result(root, result, cfg, ctx)
+    logger.info("run_quality_gate: done scope=%s passed=%s", scope, gate_passed)
+    return result
+
+
+async def _finalize_quality_gate_result(
+    root: Path,
+    result: ModelDict,
+    cfg: dict[str, object],
+    ctx: MCPContext | None,
+) -> bool:
+    """Apply reflection/feedback and record quality-gate completion."""
     apply_reflection_to_gate_result(root, result, cfg)
     await persist_gate_feedback(
         feedback_from_quality_result(cast(dict[str, object], result)), ctx
     )
-    if result.get("preflight_passed") is True:
+    gate_passed = result.get("preflight_passed") is True
+    if gate_passed:
         _ = trim_passing_quality_gate_result(result)
         PipelineDirtyTracker.get_instance().record_phase_a(root, True)
     else:
         append_agent_log_to_quality_result(result)
-    gate_passed = result.get("preflight_passed") is True
     await append_log_entry_best_effort(
         operation_type=OperationsLogType.LINT,
         title=f"Quality gate {'passed' if gate_passed else 'failed'}",
@@ -322,7 +351,7 @@ async def run_quality_gate_inner(ctx: MCPContext | None) -> ModelDict:
         ctx=ctx,
         project_root=root,
     )
-    return result
+    return gate_passed
 
 
 @typed_mcp_tool(
@@ -428,7 +457,8 @@ async def autofix(
       the fix path before re-running the quality gate.
     """
     root = get_current_project_root() or Path(await get_or_resolve_project_root(ctx))
-    async with get_phase_a_lock():
+    lock_scope = str(root.resolve())
+    async with get_phase_a_lock(lock_scope):
         result_json = await autofix_impl(root, include_untracked_markdown=True, ctx=ctx)
     _ = clear_all_cached_results(root)
     parsed = cast(ModelDict, json.loads(result_json))

@@ -164,33 +164,56 @@ def _resolve_manage_file_name(parsed_op: FileOperation, file_name: str | None) -
     return file_name
 
 
-async def manage_file_validate_and_run(
-    ctx: MCPContext | None,
-    file_name: str | None,
-    operation: str | None,
-    content: str | None,
-    include_metadata: bool,
-    change_description: str | None,
-    sections: list[str] | None,
-    version: int | None = None,
-) -> str:
-    """Validate manage_file inputs and run operation or return error."""
+# fmt: off
+async def manage_file_validate_and_run(ctx: MCPContext | None, file_name: str | None, operation: str | None, content: str | None, include_metadata: bool, change_description: str | None, sections: list[str] | None, version: int | None = None, skip_classification: bool = False) -> str:
+# fmt: on
     parsed_op, err = validate_manage_file_operation(operation, file_name, version)
     if err is not None:
         await _log_validation_failure(ctx, file_name, operation)
         return err
-
     assert parsed_op is not None
     resolved_name = _resolve_manage_file_name(parsed_op, file_name)
     limits_err = _validate_manage_file_input_limits(content, sections, parsed_op)
     if limits_err is not None:
         await _log_validation_failure(ctx, resolved_name, operation)
         return limits_err
+    return await _run_validated_manage_file(
+        ctx,
+        resolved_name,
+        parsed_op,
+        content,
+        include_metadata,
+        change_description,
+        sections,
+        version,
+        skip_classification,
+    )
 
+
+async def _run_validated_manage_file(
+    ctx: MCPContext | None,
+    file_name: str,
+    parsed_op: FileOperation,
+    content: str | None,
+    include_metadata: bool,
+    change_description: str | None,
+    sections: list[str] | None,
+    version: int | None,
+    skip_classification: bool,
+) -> str:
     root = await _manage_file_get_root(ctx)
-    # fmt: off
-    return await _manage_file_run_or_error(ctx, resolved_name, parsed_op, content, root, include_metadata, change_description, sections, version)
-    # fmt: on
+    return await _manage_file_run_or_error(
+        ctx,
+        file_name,
+        parsed_op,
+        content,
+        root,
+        include_metadata,
+        change_description,
+        sections,
+        version,
+        skip_classification,
+    )
 
 
 def _manage_file_error_response(exc: Exception) -> str:
@@ -258,6 +281,7 @@ async def _manage_file_run_or_error(
     change_description: str | None,
     sections: list[str] | None,
     version: int | None = None,
+    skip_classification: bool = False,
 ) -> str:
     """Run execute_file_operation and handle exceptions with logging."""
     try:
@@ -270,6 +294,7 @@ async def _manage_file_run_or_error(
             change_description,
             sections,
             version,
+            skip_classification,
         )
         await log_result_by_status(ctx, file_name, parsed_op, result)
         return result
@@ -312,7 +337,7 @@ def _validate_and_get_path(
 
 
 # fmt: off
-async def execute_file_operation(root: Path, file_name: str, operation: FileOperation, content: str | None, include_metadata: bool, change_description: str | None, sections: list[str] | None, version: int | None = None) -> str:
+async def execute_file_operation(root: Path, file_name: str, operation: FileOperation, content: str | None, include_metadata: bool, change_description: str | None, sections: list[str] | None, version: int | None = None, skip_classification: bool = False) -> str:
 # fmt: on
     if operation in SCHEMA_FILE_OPERATIONS:
         from cortex.tools.files.workflow_schema_file_ops import (
@@ -329,7 +354,17 @@ async def execute_file_operation(root: Path, file_name: str, operation: FileOper
             operation, root, file_name, content, change_description, managers, sections, version
         )
     return await _dispatch_standard_file_operation(
-        root, file_name, operation, content, include_metadata, change_description, sections, version, managers, fs_manager
+        root,
+        file_name,
+        operation,
+        content,
+        include_metadata,
+        change_description,
+        sections,
+        version,
+        managers,
+        fs_manager,
+        skip_classification,
     )
 
 
@@ -344,6 +379,7 @@ async def _dispatch_standard_file_operation(
     version: int | None,
     managers: ManagersDict,
     fs_manager: FileSystemManager,
+    skip_classification: bool,
 ) -> str:
     file_path_result = _validate_and_get_path(fs_manager, root, file_name)
     if file_path_result[0] is None:
@@ -359,6 +395,7 @@ async def _dispatch_standard_file_operation(
         managers,
         sections,
         version,
+        skip_classification,
     )
 
 
@@ -419,6 +456,7 @@ async def _dispatch_operation(
     managers: ManagersDict,
     sections: list[str] | None,
     version: int | None = None,
+    skip_classification: bool = False,
 ) -> str:
     """Dispatch operation to appropriate handler."""
     delegated = await _dispatch_known_operation(
@@ -432,6 +470,7 @@ async def _dispatch_operation(
         managers,
         sections,
         version,
+        skip_classification,
     )
     if delegated is not None:
         return delegated
@@ -449,6 +488,7 @@ async def _dispatch_known_operation(
     managers: ManagersDict,
     sections: list[str] | None,
     version: int | None,
+    skip_classification: bool,
 ) -> str | None:
     """Dispatch known operations and return None for unsupported operation."""
     primary = await _dispatch_primary_operation(
@@ -461,6 +501,7 @@ async def _dispatch_known_operation(
         root,
         managers,
         sections,
+        skip_classification,
     )
     if primary is not None:
         return primary
@@ -479,6 +520,7 @@ async def _dispatch_primary_operation(
     root: Path,
     managers: ManagersDict,
     sections: list[str] | None,
+    skip_classification: bool,
 ) -> str | None:
     """Dispatch read/write/metadata operations."""
     if operation == FileOperation.READ:
@@ -487,8 +529,16 @@ async def _dispatch_primary_operation(
         )
     if operation == FileOperation.WRITE:
         return await _dispatch_write_operation(
-            file_path, file_name, content, change_description, managers, root
+            file_path,
+            file_name,
+            content,
+            change_description,
+            managers,
+            root,
+            skip_classification,
         )
+    if operation == FileOperation.READ_BY_TYPE:
+        return _dispatch_read_by_type_operation(root, file_name, content)
     if operation == FileOperation.METADATA:
         return await handle_metadata_operation(file_path, file_name, managers.index)
     return None
@@ -588,6 +638,7 @@ async def _dispatch_write_operation(
     change_description: str | None,
     managers: ManagersDict,
     root: Path,
+    skip_classification: bool,
 ) -> str:
     """Dispatch write operation."""
     if content is None:
@@ -596,10 +647,11 @@ async def _dispatch_write_operation(
             indent=2,
         )
     schema_validator = await resolve_schema_validator(managers)
+    final_content = _classify_write_content(content, skip_classification)
     result = await handle_write_operation(
         file_path,
         file_name,
-        content,
+        final_content,
         change_description,
         managers.fs,
         managers.index,
@@ -656,3 +708,35 @@ def _memory_timeline(root: Path, content: str | None) -> str:
     input_data = MemoryTimelineInput.model_validate(payload or {})
     result = memory_timeline_handle(input_data, root)
     return result.model_dump_json(indent=2)
+
+
+def _classify_write_content(content: str, skip_classification: bool) -> str:
+    if skip_classification or "<!-- memory_type:" in content:
+        return content
+    from cortex.memory.memory_types import classify_text
+
+    memory_type = classify_text(content).value
+    return f"<!-- memory_type: {memory_type} -->\n{content}"
+
+
+def _dispatch_read_by_type_operation(
+    root: Path, file_name: str, content: str | None
+) -> str:
+    from cortex.memory.memory_types import MemoryType
+    from cortex.memory.typed_reader import TypedMemoryReader
+
+    payload = _parse_json_content(content) or {}
+    requested_file = payload.get("file_name", file_name)
+    memory_type_raw = payload.get("memory_type", "")
+    try:
+        memory_type = MemoryType(memory_type_raw.lower())
+    except ValueError:
+        return json.dumps(
+            error_response(error=f"Invalid memory_type: {memory_type_raw}"), indent=2
+        )
+    memory_bank_dir = get_cortex_path(root, CortexResourceType.MEMORY_BANK)
+    entries = TypedMemoryReader().read_by_type(memory_bank_dir / requested_file, memory_type)
+    return json.dumps(
+        {"status": OperationStatus.SUCCESS.value, "entries": [e.model_dump() for e in entries]},
+        indent=2,
+    )

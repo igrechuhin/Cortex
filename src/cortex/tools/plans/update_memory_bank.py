@@ -10,6 +10,7 @@ from __future__ import annotations
 
 from datetime import datetime
 from pathlib import Path
+from typing import NamedTuple
 
 from cortex.core.constants import MCP_TOOL_TIMEOUT_MEDIUM
 from cortex.core.context_logging import MCPContext
@@ -22,6 +23,21 @@ _ROADMAP_OPS = frozenset({"roadmap_add", "roadmap_remove", "roadmap_remove_secti
 _APPEND_OPS = frozenset({"progress_append", "active_context_append"})
 _LOG_OPS = frozenset({"log_append"})
 _VALID_OPS = _ROADMAP_OPS | _APPEND_OPS | _LOG_OPS
+
+
+class _UpdateRequest(NamedTuple):
+    operation: str
+    section: str | None
+    entry_text: str | None
+    position: str
+    change_description: str | None
+    entry_contains: str | None
+    section_heading_contains: str | None
+    date_str: str | None
+    title: str | None
+    summary: str | None
+    operation_type: str | None
+    skip_classification: bool
 
 
 def _error_invalid_operation(operation: str) -> str:
@@ -42,61 +58,33 @@ def _error_invalid_operation(operation: str) -> str:
 @mcp.tool(annotations=safe_write_annotations("Update Memory Bank (Roadmap & Append)"))
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_MEDIUM)
+# fmt: off
 async def update_memory_bank(
-    operation: str = "roadmap_add",
-    # roadmap_add
-    section: str | None = None,
-    entry_text: str | None = None,
-    position: str = "last",
-    change_description: str | None = None,
-    # roadmap_remove
-    entry_contains: str | None = None,
-    # roadmap_remove_section
-    section_heading_contains: str | None = None,
-    # progress_append / active_context_append
-    date_str: str | None = None,
-    title: str | None = None,
-    summary: str | None = None,
-    # log_append
-    operation_type: str | None = None,
+    operation: str = "roadmap_add", section: str | None = None, entry_text: str | None = None,
+    position: str = "last", change_description: str | None = None, entry_contains: str | None = None,
+    section_heading_contains: str | None = None, date_str: str | None = None, title: str | None = None,
+    summary: str | None = None, operation_type: str | None = None, skip_classification: bool = False,
     ctx: MCPContext | None = None,
 ) -> str:
-    """Add/remove roadmap entries, append to progress or activeContext (single memory-bank mutation tool).
+# fmt: on
+    """Add/remove roadmap entries and append memory-bank entries.
 
-    USE WHEN: Adding or removing roadmap entries, or appending a single entry
-    to progress.md or activeContext.md. Prefer over manage_file(write) for
-    targeted mutations to avoid truncation and corruption.
+    USE WHEN: You need a single memory-bank mutation entrypoint for roadmap
+    edits (add/remove section entries) or append-style updates for progress,
+    active context, or operations log entries.
 
-    DO NOT:
-    - Use manage_file(write) directly on roadmap.md, progress.md, or
-      activeContext.md when you can express the change as a single bullet or
-      entry; prefer this tool instead.
-    - Use this tool for generic search/replace or bulk edits across Memory
-      Bank files; it is designed for small, structured mutations only.
+    DO NOT use this tool for free-form markdown rewrites; Prefer targeted
+    operation modes so validation and sync rules remain enforceable.
 
     EXAMPLES:
-    - update_memory_bank(operation="roadmap_add", section="pending", entry_text="- Plan: .cortex/plans/foo.md")
-    - update_memory_bank(operation="roadmap_remove", entry_contains="Plan: .cortex/plans/foo.md")
-    - update_memory_bank(operation="roadmap_remove_section", section_heading_contains="Session Optimization")
-    - update_memory_bank(operation="progress_append", date_str="2026-02-24", entry_text="**Phase X** - COMPLETE. Done.")
-    - update_memory_bank(operation="active_context_append", date_str="2026-02-24", title="Step 1", summary="Rubric added.")
-
-    RETURNS: JSON per operation (AddRoadmapEntryResult, RemoveRoadmapEntryResult,
-    RemoveRoadmapSectionResult, AppendProgressEntryResult, AppendActiveContextEntryResult,
-    or AppendLogEntryResult).
-
-    Parameters:
-    - operation: roadmap_add | roadmap_remove | roadmap_remove_section | progress_append | active_context_append | log_append
-    - roadmap_add: section, entry_text required; position (default 'last'), change_description optional
-    - roadmap_remove: entry_contains required (unique substring of bullet)
-    - roadmap_remove_section: section_heading_contains required
-    - progress_append: date_str (YYYY-MM-DD), entry_text required
-    - active_context_append: date_str (YYYY-MM-DD), title, summary required
-    - log_append: operation_type, title required; summary/date_str optional
+    - update_memory_bank(operation="roadmap_add", section="pending",
+      entry_text="- Improve retrieval scoring")
+    - update_memory_bank(operation="progress_append", date_str="2026-04-14",
+      entry_text="Implemented typed memory reader")
+    - update_memory_bank(operation="log_append", operation_type="fix",
+      title="Resolve docs gate mismatch", summary="Aligned roadmap and progress")
     """
-    if operation not in _VALID_OPS:
-        return _error_invalid_operation(operation)
-    return await _dispatch_update_memory_bank(
+    request = _UpdateRequest(
         operation,
         section,
         entry_text,
@@ -108,8 +96,11 @@ async def update_memory_bank(
         title,
         summary,
         operation_type,
-        ctx,
+        skip_classification,
     )
+    if operation not in _VALID_OPS:
+        return _error_invalid_operation(operation)
+    return await _dispatch_update_memory_bank(request, ctx)
 
 
 async def _handle_roadmap_op(
@@ -148,6 +139,7 @@ async def _handle_append_op(
     entry_text: str | None,
     title: str | None,
     summary: str | None,
+    skip_classification: bool,
     ctx: MCPContext | None,
 ) -> str:
     """Delegate append operations to append_entry_impl."""
@@ -163,41 +155,43 @@ async def _handle_append_op(
         entry_text=entry_text,
         title=title,
         summary=summary,
+        skip_classification=skip_classification,
         ctx=ctx,
     )
 
 
 async def _dispatch_update_memory_bank(
-    operation: str,
-    section: str | None,
-    entry_text: str | None,
-    position: str,
-    change_description: str | None,
-    entry_contains: str | None,
-    section_heading_contains: str | None,
-    date_str: str | None,
-    title: str | None,
-    summary: str | None,
-    operation_type: str | None,
-    ctx: MCPContext | None,
+    request: _UpdateRequest, ctx: MCPContext | None
 ) -> str:
     """Route to roadmap_impl or append_entry_impl based on operation."""
-    if operation in _LOG_OPS:
+    if request.operation in _LOG_OPS:
         return await _handle_log_append_op(
-            operation_type, title, summary, date_str, ctx
-        )
-    if operation in _ROADMAP_OPS:
-        return await _handle_roadmap_op(
-            operation,
-            section,
-            entry_text,
-            position,
-            change_description,
-            entry_contains,
-            section_heading_contains,
+            request.operation_type,
+            request.title,
+            request.summary,
+            request.date_str,
             ctx,
         )
-    return await _handle_append_op(operation, date_str, entry_text, title, summary, ctx)
+    if request.operation in _ROADMAP_OPS:
+        return await _handle_roadmap_op(
+            request.operation,
+            request.section,
+            request.entry_text,
+            request.position,
+            request.change_description,
+            request.entry_contains,
+            request.section_heading_contains,
+            ctx,
+        )
+    return await _handle_append_op(
+        request.operation,
+        request.date_str,
+        request.entry_text,
+        request.title,
+        request.summary,
+        request.skip_classification,
+        ctx,
+    )
 
 
 def _log_append_response(

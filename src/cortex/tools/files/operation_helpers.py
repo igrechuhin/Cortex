@@ -60,6 +60,7 @@ class FileOperation(str, Enum):
     DISCARD_DRAFT = "discard_draft"
     INVALIDATE_FACT = "invalidate_fact"
     MEMORY_TIMELINE = "memory_timeline"
+    READ_BY_TYPE = "read_by_type"
 
 
 def parse_file_operation(value: str | None) -> FileOperation | None:

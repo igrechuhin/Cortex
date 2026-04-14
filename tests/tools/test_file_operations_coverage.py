@@ -830,11 +830,12 @@ class TestEdgeCasesForCoverage:
                 assert result["tokens"] == 25
 
                 # Verify all helper functions were called
-                mock_fs.write_file.assert_called_once_with(
-                    mock_path,
-                    content,
-                    expected_hash="disk_hash",
-                )
+                mock_fs.write_file.assert_called_once()
+                write_call = mock_fs.write_file.await_args
+                assert write_call is not None
+                assert write_call.args[0] == mock_path
+                assert write_call.kwargs["expected_hash"] == "disk_hash"
+                assert content in str(write_call.args[1])
                 mock_versions.create_snapshot.assert_called_once()
                 mock_index.update_file_metadata.assert_called_once()
                 mock_index.add_version_to_history.assert_called_once()

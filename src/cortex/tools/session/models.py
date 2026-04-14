@@ -237,6 +237,10 @@ class SessionBrief(StrictBaseModel):
             "(session cap applies)."
         ),
     )
+    memory_type_counts: dict[str, int] = Field(
+        default_factory=dict,
+        description="Count of typed memory entries detected in activeContext.md.",
+    )
 
 
 class SessionStartResult(ToolResultBase):

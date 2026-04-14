@@ -35,6 +35,7 @@ def _create_session_brief(
         workflow_phases=context.workflow_phases,
         plan_graph_summary=context.plan_graph_summary,
         plan_graph_ascii_edges=context.plan_graph_ascii_edges,
+        memory_type_counts=context.memory_type_counts,
     )
 
 
