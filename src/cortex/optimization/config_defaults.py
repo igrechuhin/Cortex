@@ -10,6 +10,7 @@ from cortex.core.path_resolver import CortexResourceType
 
 DEFAULT_OPTIMIZATION_CONFIG: dict[str, object] = {
     "enabled": True,
+    "max_response_tokens": 50000,
     "token_budget": {
         "default_budget": 80000,
         "max_budget": 100000,

@@ -10,6 +10,8 @@
 
 - ✅ **FastMCP v3 — Phase 2: Replace Internal Handler Patches with Official APIs** - COMPLETE (2026-04-14) - Completed migration away from server-level private FastMCP patches for prompt and roots flows, with explicit defer of disconnect request wrapper removal to Phase 3 middleware work.
 
+- ✅ **FastMCP v3 — Phase 3: Middleware for Disconnect Handling and Request Logging** - COMPLETE (2026-04-14) - Replaced private request monkey-patching with FastMCP middleware chain, added debug-gated request logging and response limiting with optimization-config support, and added middleware-focused unit tests while removing the legacy disconnect patch path from startup.
+
 ## Completed Work (2026-04-12)
 
 - **Summary (2026-04-12)** - 1 entries archived.

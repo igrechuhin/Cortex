@@ -14,7 +14,6 @@
 
 ### FastMCP v3 Migration
 
-- [ ] **FastMCP v3 — Phase 3: Middleware for Disconnect Handling and Request Logging** — replace `MethodType` `_handle_request` patch with `DisconnectMiddleware`; add `LoggingMiddleware` at debug level; add `ResponseLimitMiddleware` for context-window safety. Plan: [../plans/fastmcp-v3-phase3-middleware.md](../plans/fastmcp-v3-phase3-middleware.md) (PENDING)
 - [ ] **FastMCP v3 — Phase 4: Transport Configuration Cleanup** — pass `host`/`port` explicitly to `mcp.run()`; delete `apply_cortex_env_to_fastmcp()`; promote `streamable-http` as default for port-based mode. Plan: [../plans/fastmcp-v3-phase4-transport-cleanup.md](../plans/fastmcp-v3-phase4-transport-cleanup.md) (PENDING)
 - [ ] **FastMCP v3 — Phase 5: New Features (Lifespan, Visibility, Auth, Transforms)** — server lifespan for DI; dynamic tool visibility for setup prompts; per-component auth on write tools; `ResourcesAsTools`/`PromptsAsTools` transforms; hot-reload dev mode. Plan: [../plans/fastmcp-v3-phase5-new-features.md](../plans/fastmcp-v3-phase5-new-features.md) (PENDING)
 

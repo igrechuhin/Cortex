@@ -33,6 +33,14 @@ def _validate_token_budget(config: ModelDict) -> str | None:
     return None
 
 
+def _validate_max_response_tokens(config: ModelDict) -> str | None:
+    """Validate max response token limit."""
+    max_response_tokens = _get(config, "max_response_tokens", 50000)
+    if not isinstance(max_response_tokens, int) or max_response_tokens <= 0:
+        return "max_response_tokens must be a positive integer"
+    return None
+
+
 def _validate_loading_strategy(config: ModelDict) -> str | None:
     """Validate loading strategy configuration."""
     strategy = _get(config, "loading_strategy.default", "dependency_aware")
@@ -80,6 +88,9 @@ def validate_optimization_config(config: ModelDict) -> tuple[bool, str | None]:
         Tuple of (is_valid, error_message).
     """
     err = _validate_token_budget(config)
+    if err:
+        return False, err
+    err = _validate_max_response_tokens(config)
     if err:
         return False, err
     err = _validate_loading_strategy(config)

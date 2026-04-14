@@ -1,12 +1,7 @@
 """Regression tests for Cortex server startup stability."""
 
-import asyncio
 import importlib
 import inspect
-from types import SimpleNamespace
-
-import anyio
-import pytest
 
 
 def test_import_cortex_server_does_not_raise() -> None:
@@ -40,55 +35,20 @@ def test_roots_notification_handler_registered_at_startup() -> None:
         lowlevel.notification_handlers.update(handlers)
 
 
-class _RaisingLowLevelServer:
-    """Fake low-level server whose handler always raises ClosedResourceError."""
+def test_server_registers_phase3_middlewares() -> None:
+    """Server startup should include lazy, disconnect, and response-limit middleware."""
+    server_module = importlib.import_module("cortex.server")
+    middleware_names = [
+        type(middleware).__name__ for middleware in server_module.mcp.middleware
+    ]
 
-    async def _handle_request(
-        self,
-        message: object,
-        req: object,
-        session: object,
-        lifespan_context: object,
-        raise_exceptions: bool = False,
-    ) -> None:
-        _ = (message, req, session, lifespan_context, raise_exceptions)
-        raise anyio.ClosedResourceError()
+    assert "_LazyPromptsMiddleware" in middleware_names
+    assert "DisconnectMiddleware" in middleware_names
+    assert "ResponseLimitingMiddleware" in middleware_names
 
 
-def test_handle_request_patch_absorbs_closed_resource_error() -> None:
-    """The temporary shim should swallow ClosedResourceError from response writes."""
-    main_module = importlib.import_module("cortex.main")
-    fake_lowlevel = _RaisingLowLevelServer()
-    original_lowlevel = main_module.mcp._mcp_server  # type: ignore[attr-defined]
-    message = SimpleNamespace(request_id="req-123")
-    try:
-        main_module.mcp._mcp_server = fake_lowlevel  # type: ignore[attr-defined]
-        main_module._patch_mcp_server_handle_request()
-        patched_handler = getattr(fake_lowlevel, "_handle_request")
-        asyncio.run(
-            patched_handler(
-                message=message,
-                req=object(),
-                session=object(),
-                lifespan_context=object(),
-                raise_exceptions=False,
-            )
-        )
-    finally:
-        main_module.mcp._mcp_server = original_lowlevel  # type: ignore[attr-defined]
-
-
-def test_without_patch_closed_resource_error_bubbles() -> None:
-    """Baseline behavior without shim still raises ClosedResourceError."""
-    fake_lowlevel = _RaisingLowLevelServer()
-    raw_handler = getattr(fake_lowlevel, "_handle_request")
-    with pytest.raises(anyio.ClosedResourceError):
-        asyncio.run(
-            raw_handler(
-                message=SimpleNamespace(request_id="req-123"),
-                req=object(),
-                session=object(),
-                lifespan_context=object(),
-                raise_exceptions=False,
-            )
-        )
+def test_main_module_has_no_handle_request_patch() -> None:
+    """main.py should not patch private _handle_request anymore."""
+    module = importlib.import_module("cortex.main")
+    source = inspect.getsource(module)
+    assert "_patch_mcp_server_handle_request" not in source

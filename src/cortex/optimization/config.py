@@ -101,6 +101,10 @@ class OptimizationConfig:
         value = self.get("token_budget.reserve_for_response", 10000)
         return int(value) if isinstance(value, int) else 10000
 
+    def get_max_response_tokens(self) -> int:
+        value = self.get("max_response_tokens", 50000)
+        return int(value) if isinstance(value, int) and value > 0 else 50000
+
     def get_loading_strategy(self) -> str:
         value = self.get("loading_strategy.default", "dependency_aware")
         return str(value) if isinstance(value, str) else "dependency_aware"

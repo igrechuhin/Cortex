@@ -257,56 +257,6 @@ def _inject_sequential_thinking_core() -> None:
     configure_sequential_thinking_core(SequentialThinkingCore())
 
 
-def _patch_mcp_server_handle_request() -> None:
-    """Wrap _handle_request to absorb ClosedResourceError on message.respond().
-
-    TODO(Phase 3): Replace with FastMCP v3 middleware once middleware supports
-    wrapping the full request dispatch (including response writes).  FastMCP v3
-    does not yet expose a public lifecycle hook that can intercept this low-level
-    response write path, so this temporary shim remains needed.
-
-    When the MCP client disconnects while two tool calls are in-flight, the
-    second tool's response write raises ClosedResourceError.  Without this
-    patch that exception propagates into the anyio TaskGroup, which then
-    cancels all remaining tasks and tears down the whole session.  Catching it
-    here turns a fatal server crash into a silent no-op: the response is lost
-    (the client is gone anyway) but the server process stays alive.
-    """
-    import types as _types
-
-    from anyio import ClosedResourceError
-
-    lowlevel = mcp._mcp_server  # type: ignore[attr-defined]
-    # Avoid `lowlevel._handle_request` attribute access so Pyright doesn't
-    # report `reportPrivateUsage` for a protected member.
-    _original_handle_request = getattr(lowlevel, "_handle_request")
-
-    async def _patched(
-        _self: object,
-        message: object,
-        req: object,
-        session: object,
-        lifespan_context: object,
-        raise_exceptions: bool = False,
-    ) -> None:
-        try:
-            # Forward to MCP server; params typed as object to avoid coupling to mcp internals
-            await _original_handle_request(
-                message,  # pyright: ignore[reportArgumentType]
-                req,  # pyright: ignore[reportArgumentType]
-                session,  # pyright: ignore[reportArgumentType]
-                lifespan_context,
-                raise_exceptions,
-            )
-        except ClosedResourceError:
-            logger.debug(
-                "Response for request %s dropped: client already disconnected",
-                getattr(message, "request_id", "?"),
-            )
-
-    setattr(lowlevel, "_handle_request", _types.MethodType(_patched, lowlevel))
-
-
 def _run_mcp_with_transport_handlers(transport: str) -> None:
     """Run FastMCP for transport and map connection errors to process exit."""
     try:
@@ -341,7 +291,6 @@ def _run_server_once() -> None:
     """Run the MCP server once (stdio or HTTP). Exits on disconnect or error."""
     _inject_sequential_thinking_core()
     _register_roots_list_changed_notification_handler()
-    _patch_mcp_server_handle_request()
     transport = get_effective_transport()
     if transport in (TRANSPORT_SSE, TRANSPORT_STREAMABLE_HTTP):
         _require_http_deps()

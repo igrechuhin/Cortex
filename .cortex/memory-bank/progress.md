@@ -5,6 +5,7 @@
 - **FastMCP v3 — Phase 2: Replace Internal Handler Patches with Official APIs** - PARTIAL. Removed direct `mcp._mcp_server.*` access from `server.py`, moved roots change-notification wiring into startup path in `main.py`, and added startup regression tests while keeping the remaining disconnect shim decision for follow-up.
 - **FastMCP v3 — Phase 2: Replace Internal Handler Patches with Official APIs** - PARTIAL. Evaluated `_patch_mcp_server_handle_request` disconnect handling and intentionally deferred removal to Phase 3; added regression tests covering unpatched vs patched `ClosedResourceError` behavior and validated no residual patch-related `type: ignore` in `server.py`.
 - **FastMCP v3 — Phase 2: Replace Internal Handler Patches with Official APIs** - COMPLETE. Removed server-level private patching for prompt/roots flows and documented intentional defer of disconnect wrapper removal to Phase 3 middleware replacement.
+- **FastMCP v3 — Phase 3: Middleware for Disconnect Handling and Request Logging** - COMPLETE. Replaced private `_handle_request` monkey patch with registered middleware for disconnect handling, debug logging, and response limiting; added optimization config key and middleware test coverage.
 
 ## 2026-04-13
 

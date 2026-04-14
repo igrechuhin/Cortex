@@ -310,6 +310,11 @@ class OptimizationConfigModel(OptimizationBaseModel):
     """Complete optimization configuration model."""
 
     enabled: bool = Field(default=True, description="Whether optimization is enabled")
+    max_response_tokens: int = Field(
+        default=50000,
+        ge=1,
+        description="Maximum response budget for MCP response-limiting middleware.",
+    )
     token_budget: TokenBudgetOptConfigModel = Field(
         default_factory=TokenBudgetOptConfigModel,
         description="Token budget configuration",
