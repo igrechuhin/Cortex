@@ -15,6 +15,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from cortex.core.context_logging import MCPContext, log_client, report_progress_safe
 from cortex.core.models import JsonValue, ModelDict, OperationStatus
+from cortex.services.framework_adapters.detection import detect_language_at_path
 from cortex.tools.evaluation.reflection import collect_git_diff_text
 from cortex.tools.execution.autofix_ai_suggestions import (
     collect_autofix_ai_comment_suggestions,
@@ -33,6 +34,7 @@ from cortex.tools.execution.pre_commit_helpers_remaining import (
     truncate_large_logs_in_data,
 )
 from cortex.tools.execution.pre_commit_process import poll_for_result
+from cortex.tools.execution.pre_commit_synapse import run_synapse_script
 from cortex.tools.execution.session_paths import session_dir
 from cortex.tools.lint.lint_memory_bank import build_memory_bank_lint_checks
 
@@ -394,6 +396,7 @@ async def autofix_impl(
     _ = start_fix_job_impl(root, include_untracked_markdown)
     rp = fix_result_path(session_dir(root), fix_args_hash(include_untracked_markdown))
     envelope = await poll_for_result(rp, ctx=ctx, timeout=960.0)
+    synapse_fix_issue = _run_synapse_formatter_autofix(root)
     tracked_after = _get_tracked_git_changes(root)
     files_modified_override = (
         sorted(tracked_after - tracked_before)
@@ -406,6 +409,51 @@ async def autofix_impl(
             cast(ModelDict, envelope), files_modified_override=files_modified_override
         ),
     )
+    out = _merge_autofix_issue(out, synapse_fix_issue)
     out = _merge_memory_bank_autofix_output(root, out)
     await log_client(ctx, "info", "autofix: completed", logger_name=__name__)
     return out
+
+
+def _run_synapse_formatter_autofix(root: Path) -> str | None:
+    """Run language-specific synapse formatter autofix when available."""
+    detected = detect_language_at_path(root)
+    if detected is None:
+        return None
+    language_info, _ = detected
+    result = run_synapse_script(
+        root,
+        language_info.language,
+        "fix_formatting.py",
+        "synapse_format_fix",
+    )
+    if result.success:
+        return None
+    return (
+        f"synapse formatter autofix failed for language '{language_info.language}': "
+        f"{result.errors[0] if result.errors else result.output.strip()}"
+    )
+
+
+def _merge_autofix_issue(out: str, issue: str | None) -> str:
+    """Merge non-fatal autofix issue into remaining_issues."""
+    if issue is None:
+        return out
+    try:
+        parsed_obj = json.loads(out)
+    except json.JSONDecodeError:
+        return out
+    if not isinstance(parsed_obj, dict):
+        return out
+    parsed = cast(ModelDict, parsed_obj)
+    if parsed.get("status") != OperationStatus.SUCCESS.value:
+        return out
+    remaining_raw = parsed.get("remaining_issues", [])
+    remaining = (
+        cast(list[str], remaining_raw)
+        if isinstance(remaining_raw, list)
+        else cast(list[str], [])
+    )
+    remaining.append(issue)
+    parsed["remaining_issues"] = cast(JsonValue, remaining)
+    return json.dumps(parsed, separators=(",", ":"))

@@ -242,6 +242,32 @@ class TestFixQualityIssuesImpl:
         assert data["status"] == "success"
         assert data["files_modified"] == ["new_fix.py"]
 
+    @pytest.mark.asyncio
+    async def test_records_synapse_formatter_issue_when_fix_fails(
+        self, tmp_path: Path
+    ) -> None:
+        envelope = _completed_envelope(results=_full_results_dict(), files_modified=[])
+        with (
+            patch(f"{_MOD}.start_fix_job_impl", return_value=_STARTED),
+            patch(
+                f"{_MOD}.poll_for_result", new_callable=AsyncMock, return_value=envelope
+            ),
+            patch(
+                f"{_MOD}._run_synapse_formatter_autofix",
+                return_value="synapse formatter autofix failed for language 'swift': boom",
+            ),
+        ):
+            from cortex.tools.execution.pre_commit_fix_quality import autofix_impl
+
+            out = await autofix_impl(
+                tmp_path, include_untracked_markdown=True, ctx=None
+            )
+        data = json.loads(out)
+        assert data["status"] == "success"
+        assert data["remaining_issues"] == [
+            "synapse formatter autofix failed for language 'swift': boom"
+        ]
+
 
 # ---------------------------------------------------------------------------
 # spawn_detached_fix_worker -- result path uses fix prefix
