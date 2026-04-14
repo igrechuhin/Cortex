@@ -46,6 +46,9 @@ from cortex.core.mcp_stability_semaphores import (  # noqa: E402
 )
 from cortex.core.project_root_resolver import handle_roots_list_changed
 from cortex.server import mcp  # noqa: E402
+from cortex.setup.lazy_prompt_registration import (
+    refresh_setup_prompt_visibility,
+)  # noqa: E402
 from cortex.transport_config import (  # noqa: E402
     TRANSPORT_SSE,
     TRANSPORT_STREAMABLE_HTTP,
@@ -90,6 +93,7 @@ def _register_roots_list_changed_notification_handler() -> None:
         _notification: object,
     ) -> None:
         await handle_roots_list_changed()
+        await refresh_setup_prompt_visibility(None)
 
     handlers[RootsListChangedNotification] = _roots_list_changed_notification_handler
 
@@ -243,16 +247,6 @@ def _require_http_deps() -> None:
         sys.exit(1)
 
 
-def _inject_sequential_thinking_core() -> None:
-    """Inject SequentialThinkingCore at composition root (Phase 9.2 DI)."""
-    from cortex.tools.session.sequential_thinking import (
-        SequentialThinkingCore,
-        configure_sequential_thinking_core,
-    )
-
-    configure_sequential_thinking_core(SequentialThinkingCore())
-
-
 def _run_http_transport(transport: str) -> None:
     """Run FastMCP for HTTP transports with explicit host/port."""
     host = get_host()
@@ -295,7 +289,6 @@ def _run_mcp_with_transport_handlers(transport: str) -> None:
 
 def _run_server_once() -> None:
     """Run the MCP server once (stdio or HTTP). Exits on disconnect or error."""
-    _inject_sequential_thinking_core()
     _register_roots_list_changed_notification_handler()
     transport = get_effective_transport()
     if transport in (TRANSPORT_SSE, TRANSPORT_STREAMABLE_HTTP):
@@ -311,6 +304,22 @@ def _run_auto_restart_loop() -> None:
         code = subprocess.call(cmd, env=inner_env)
         if code != 0:
             sys.exit(code)
+
+
+def _run_dev_mode() -> None:
+    """Run FastMCP inspector dev mode with auto-reload."""
+    cmd = [
+        "uv",
+        "run",
+        "fastmcp",
+        "dev",
+        "inspector",
+        "src/cortex/server.py:mcp",
+        "--project",
+        ".",
+    ]
+    code = subprocess.call(cmd, env=os.environ.copy())
+    raise SystemExit(code)
 
 
 def main() -> None:
@@ -334,6 +343,8 @@ def main() -> None:
     workspace, Cortex may create ``.cortex/wiki/`` from bundled defaults when
     ``.cortex/`` exists (see ``bootstrap_wiki_if_cortex_present``).
     """
+    if os.environ.get("CORTEX_DEV") == "1":
+        _run_dev_mode()
     if "--inner" in sys.argv or os.environ.get("CORTEX_INNER") == "1":
         if "--inner" in sys.argv:
             sys.argv = [a for a in sys.argv if a != "--inner"]

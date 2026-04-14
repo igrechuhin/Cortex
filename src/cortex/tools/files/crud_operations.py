@@ -15,7 +15,7 @@ from cortex.core.mcp_stability import (
     mcp_tool_wrapper,
 )
 from cortex.core.usage_context import get_or_resolve_project_root
-from cortex.server import mcp
+from cortex.server import cortex_agent_only_auth, mcp
 from cortex.tools.artifacts.artifact_types import ArtifactType
 from cortex.tools.files.manage_file_helpers import (
     execute_file_operation,
@@ -112,6 +112,7 @@ async def _run_manage_file_operation(
 
 @mcp.tool(
     annotations=safe_write_annotations("Manage Memory Bank Files"),
+    auth=cortex_agent_only_auth,
     meta={
         "input_examples": MANAGE_FILE_INPUT_EXAMPLES,
         "allowed_callers": list(ALLOWED_CALLERS_CODE_EXECUTION),

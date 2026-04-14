@@ -14,8 +14,6 @@
 
 ### FastMCP v3 Migration
 
-- [ ] **FastMCP v3 — Phase 5: New Features (Lifespan, Visibility, Auth, Transforms)** — server lifespan for DI; dynamic tool visibility for setup prompts; per-component auth on write tools; `ResourcesAsTools`/`PromptsAsTools` transforms; hot-reload dev mode. Plan: [../plans/fastmcp-v3-phase5-new-features.md](../plans/fastmcp-v3-phase5-new-features.md) (PENDING)
-
 ### Fixes
 
 - [ ] **Fix: Add Missing Makefile Offline Targets** — README documents `make preflight-offline` and `make bootstrap-offline` but neither target exists in `Makefile`; onboarding breaks for restricted-network users. Plan: [../plans/fix-makefile-offline-targets.md](../plans/fix-makefile-offline-targets.md) (PENDING)

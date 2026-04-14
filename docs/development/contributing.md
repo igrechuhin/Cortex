@@ -92,6 +92,18 @@ Bootstrap installs Python dependencies via `uv`. Run **`make preflight`** before
 > **Node.js**: The only Node.js dependency is `cspell` for spelling checks, which CI installs
 > on-demand via `npm install -g cspell@8.6.1`. No `npm install` step is required locally.
 
+### FastMCP hot-reload dev mode
+
+Use the FastMCP inspector dev workflow when iterating on MCP behavior:
+
+```bash
+make dev
+```
+
+This sets `CORTEX_DEV=1` and runs `fastmcp dev inspector src/cortex/server.py:mcp`
+with auto-reload enabled by default, so server changes are picked up without manually
+restarting the process.
+
 ### Python Version Management
 
 If you have multiple Python versions installed:

@@ -13,7 +13,7 @@ from cortex.core.mcp_annotations import safe_write_annotations
 from cortex.core.mcp_stability import ensure_usage_context, mcp_tool_wrapper
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.core.usage_context import get_or_resolve_project_root
-from cortex.server import mcp
+from cortex.server import ingest_caller_auth, mcp
 from cortex.tools.ingest.slug import allocate_unique_source_path, slugify_title
 from cortex.tools.ingest.source_types import IngestSource, SourceType
 from cortex.tools.ingest.stable_path_ingest import ingest_source_with_stable_rel_path
@@ -137,7 +137,10 @@ async def _ingest_store_and_build_json(
     return ingest_source_at_project_root(project_root, payload)
 
 
-@mcp.tool(annotations=safe_write_annotations("Ingest Raw Source (Wiki / Memory Bank)"))
+@mcp.tool(
+    annotations=safe_write_annotations("Ingest Raw Source (Wiki / Memory Bank)"),
+    auth=ingest_caller_auth,
+)
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_MEDIUM)
 async def ingest(

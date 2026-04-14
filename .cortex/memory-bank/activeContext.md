@@ -14,6 +14,8 @@
 
 - ✅ **FastMCP v3 — Phase 4: Transport Configuration Cleanup** - COMPLETE (2026-04-14) - Migrated transport startup to explicit FastMCP v3 run kwargs, removed legacy env forwarding, switched port-default transport to streamable-http, and updated tests/docs for the new behavior.
 
+- ✅ **FastMCP v3 — Phase 5: New Features (Lifespan, Visibility, Auth, Transforms)** - COMPLETE (2026-04-14) - Added server lifespan-managed startup injection, dynamic setup component visibility, server-enforced auth on write tools, optional ResourcesAsTools/PromptsAsTools compatibility transforms, and a `CORTEX_DEV` hot-reload dev workflow with test coverage.
+
 ## Completed Work (2026-04-12)
 
 - **Summary (2026-04-12)** - 1 entries archived.

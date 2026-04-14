@@ -1,6 +1,6 @@
 VENV_PY := ./.venv/bin/python
 TIMEOUT := $(shell command -v gtimeout >/dev/null 2>&1 && echo "gtimeout -k 5" || echo "timeout -k 5")
-.PHONY: help test test-full typecheck format format-check lint compile check check-ci-parity check-dep-parity fix bootstrap preflight env-check synapse-check commit-check
+.PHONY: help test test-full typecheck format format-check lint compile check check-ci-parity check-dep-parity fix bootstrap preflight env-check synapse-check commit-check dev
 
 help:
 	@echo "Common targets:"
@@ -16,6 +16,7 @@ help:
 	@echo "  make check-dep-parity   - verify pyproject.toml [project.dependencies] matches requirements.txt"
 	@echo "  make check-ci-parity    - broader CI-equivalent checks via uv run (see README)"
 	@echo "  make commit-check       - same as make check before /cortex/commit in Cursor"
+	@echo "  make dev                - run FastMCP inspector with hot reload"
 	@echo "  make preflight          - probe UV_INDEX_URL or PyPI (scripts/preflight.sh)"
 
 bootstrap:
@@ -96,3 +97,6 @@ check-ci-parity: env-check synapse-check
 	uv run python -m pytest tests/ -m "not slow" -n auto -v --cov=src/cortex --cov-report=xml --cov-report=term --cov-fail-under=90
 
 commit-check: check
+
+dev:
+	CORTEX_DEV=1 uv run cortex

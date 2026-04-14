@@ -12,7 +12,7 @@ from cortex.core.mcp_annotations import safe_write_annotations
 from cortex.core.mcp_stability import ensure_usage_context, mcp_tool_wrapper
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.core.usage_context import get_or_resolve_project_root
-from cortex.server import mcp
+from cortex.server import cortex_agent_only_auth, mcp
 from cortex.tools.response_builder import error_response, success_response
 from cortex.tools.skill_pack.models import SkillPackManifest
 
@@ -100,7 +100,10 @@ def _write_atomic(path: Path, content: str) -> None:
     _ = tmp_path.replace(path)
 
 
-@mcp.tool(annotations=safe_write_annotations("Write Skill or Rule Artifact"))
+@mcp.tool(
+    annotations=safe_write_annotations("Write Skill or Rule Artifact"),
+    auth=cortex_agent_only_auth,
+)
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_MEDIUM)
 async def write_artifact(

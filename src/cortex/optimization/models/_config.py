@@ -306,6 +306,19 @@ class ToolSearchConfigModel(OptimizationBaseModel):
     )
 
 
+class ToolCompatConfigModel(OptimizationBaseModel):
+    """Compatibility toggles for tool-only clients."""
+
+    expose_resources_as_tools: bool = Field(
+        default=False,
+        description="Expose resources through generated tool wrappers",
+    )
+    expose_prompts_as_tools: bool = Field(
+        default=False,
+        description="Expose prompts through generated tool wrappers",
+    )
+
+
 class OptimizationConfigModel(OptimizationBaseModel):
     """Complete optimization configuration model."""
 
@@ -350,4 +363,8 @@ class OptimizationConfigModel(OptimizationBaseModel):
     tool_search: ToolSearchConfigModel | None = Field(
         default=None,
         description="Tool search / deferred loading configuration",
+    )
+    tool_compat: ToolCompatConfigModel = Field(
+        default_factory=ToolCompatConfigModel,
+        description="Compatibility settings for tool-only clients",
     )

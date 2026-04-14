@@ -17,6 +17,7 @@ import cortex.setup.prompts_always  # noqa: F401  # registers setup_synapse on t
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.setup.lazy_prompt_registration import (
     LazyPromptRegistry,
+    apply_setup_prompt_visibility,
     ensure_prompts_registered,
     prompt_manager_has_synapse_prompts,
     register_setup_prompts,
@@ -138,28 +139,34 @@ class TestRegisterSetupPrompts:
         register_setup_prompts(status, Path.cwd())
         assert "migrate" in registered_prompt_names()
 
-    def test_skips_initialize_when_migration_needed(self) -> None:
-        # When migration_needed=True, initialize should NOT be registered
-        # (the logic: initialize requires migration_needed=False)
+    def test_registers_initialize_when_migration_needed(self) -> None:
+        # Registration is unconditional; visibility is controlled separately.
         status = _make_status(
             memory_bank_initialized=False,
             structure_configured=False,
             migration_needed=True,
         )
-        before = registered_prompt_names()
         register_setup_prompts(status, Path.cwd())
-        after = registered_prompt_names()
-        # initialize was not present before and should not be added now
-        if "initialize" not in before:
-            assert "initialize" not in after
+        assert "initialize" in registered_prompt_names()
 
-    def test_no_setup_prompts_when_fully_configured(self) -> None:
-        status = _make_status()  # all good
-        before = registered_prompt_names()
-        register_setup_prompts(status, Path.cwd())
-        after = registered_prompt_names()
-        # Nothing new should be added
-        assert after == before
+    def test_apply_setup_prompt_visibility_updates_initialize_and_migrate(self) -> None:
+        status = _make_status(
+            memory_bank_initialized=False,
+            structure_configured=False,
+            migration_needed=True,
+            tiktoken_cache_available=True,
+        )
+        with (
+            patch(f"{_M}.mcp.enable") as enable_mock,
+            patch(f"{_M}.mcp.disable") as disable_mock,
+        ):
+            changed = apply_setup_prompt_visibility(status)
+        assert changed is True
+        enable_mock.assert_called_once_with(names={"migrate"}, components={"prompt"})
+        disable_mock.assert_any_call(names={"initialize"}, components={"prompt"})
+        disable_mock.assert_any_call(
+            names={"populate_tiktoken_cache"}, components={"prompt"}
+        )
 
 
 # ---------------------------------------------------------------------------

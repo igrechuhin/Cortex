@@ -2,6 +2,15 @@
 
 This guide documents common workflows as sequences of Cortex MCP tool calls, with example inputs/outputs, decision points, and error recovery.
 
+## FastMCP v3 tool-compat flags
+
+Tool-only clients can opt into resource/prompt wrappers in `.cortex/config/optimization.json`:
+
+- `tool_compat.expose_resources_as_tools` (default `false`) enables `ResourcesAsTools`.
+- `tool_compat.expose_prompts_as_tools` (default `false`) enables `PromptsAsTools`.
+
+Keep both off for standard MCP clients to avoid unnecessary tool-list expansion.
+
 ## 1. New Project Setup Workflow
 
 **Goal:** Initialize a project with Cortex, configure it, create the memory bank, and validate.

@@ -247,25 +247,49 @@ def _register_tiktoken_prompt() -> None:
 
 
 def register_setup_prompts(status: object, project_root: Path) -> None:
-    """Register whichever setup prompts the project needs."""
+    """Register setup prompts once; visibility is controlled separately."""
+    _ = status
+    already = registered_prompt_names()
+    if "initialize" not in already:
+        _register_initialize_prompt(project_root)
+    if "migrate" not in already:
+        _register_migrate_prompt(project_root)
+    if "populate_tiktoken_cache" not in already:
+        _register_tiktoken_prompt()
+
+
+def apply_setup_prompt_visibility(status: object) -> bool:
+    """Enable/disable setup prompts based on current project status."""
     from cortex.tools.config import ProjectConfigStatus
 
     cfg: ProjectConfigStatus = status  # type: ignore[assignment]
-    already = registered_prompt_names()
-
-    if (
+    should_show_initialize = (
         not cfg.memory_bank_initialized
         and not cfg.structure_configured
         and not cfg.migration_needed
-        and "initialize" not in already
-    ):
-        _register_initialize_prompt(project_root)
-
-    if cfg.migration_needed and "migrate" not in already:
-        _register_migrate_prompt(project_root)
-
-    if not cfg.tiktoken_cache_available and "populate_tiktoken_cache" not in already:
-        _register_tiktoken_prompt()
+    )
+    should_show_migrate = cfg.migration_needed
+    should_show_tiktoken = not cfg.tiktoken_cache_available
+    visibility = {
+        "initialize": should_show_initialize,
+        "migrate": should_show_migrate,
+        "populate_tiktoken_cache": should_show_tiktoken,
+    }
+    changed = False
+    for prompt_name, should_enable in visibility.items():
+        try:
+            if should_enable:
+                _ = mcp.enable(names={prompt_name}, components={"prompt"})
+            else:
+                _ = mcp.disable(names={prompt_name}, components={"prompt"})
+            changed = True
+        except Exception as exc:
+            logger.debug(
+                "lazy_prompt_registration: prompt visibility update failed for %s: %s",
+                prompt_name,
+                exc,
+            )
+    return changed
 
 
 async def _run_startup_repair(project_root: Path) -> None:
@@ -304,14 +328,13 @@ def _try_sync_synapse_prompts(project_root: Path, already_has_synapse: bool) -> 
 def _register_setup_if_needed(project_root: Path) -> bool:
     try:
         status = get_project_config_status(project_root)
-        if not should_mount_setup(status):
-            return False
         register_setup_prompts(status, project_root)
+        visibility_changed = apply_setup_prompt_visibility(status)
         logger.debug(
-            "lazy_prompt_registration: registered setup prompts for %s",
+            "lazy_prompt_registration: setup prompt visibility synced for %s",
             project_root,
         )
-        return True
+        return should_mount_setup(status) or visibility_changed
     except Exception as exc:
         logger.warning(
             "lazy_prompt_registration: setup prompt registration failed: %s",
@@ -413,3 +436,12 @@ registry = LazyPromptRegistry()
 async def ensure_prompts_registered(ctx: MCPContext | None) -> None:
     """Module-level entry point used by the list_prompts hook in server.py."""
     await registry.ensure_registered(ctx)
+
+
+async def refresh_setup_prompt_visibility(ctx: MCPContext | None) -> None:
+    """Refresh setup prompt visibility for the currently resolved root."""
+    project_root = await _resolve_project_root(ctx)
+    if project_root is None:
+        return
+    status = get_project_config_status(project_root)
+    _ = apply_setup_prompt_visibility(status)

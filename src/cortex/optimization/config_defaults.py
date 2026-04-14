@@ -112,4 +112,8 @@ DEFAULT_OPTIMIZATION_CONFIG: dict[str, object] = {
             ],
         },
     },
+    "tool_compat": {
+        "expose_resources_as_tools": False,
+        "expose_prompts_as_tools": False,
+    },
 }
