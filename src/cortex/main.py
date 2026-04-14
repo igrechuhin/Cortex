@@ -24,14 +24,6 @@ from typing import cast
 import anyio
 from mcp.types import RootsListChangedNotification
 
-from cortex.core.mcp_stability_config import is_connection_error
-from cortex.core.project_root_resolver import handle_roots_list_changed
-
-# Apply Cortex transport env to FastMCP settings before server is imported
-from cortex.transport_config import apply_cortex_env_to_fastmcp
-
-apply_cortex_env_to_fastmcp()
-
 # Configure logging before FastMCP is created so root has our formatter first.
 # FastMCP.__init__ calls configure_logging() → basicConfig(); basicConfig() is a
 # no-op when root already has handlers, so we avoid RichHandler column format.
@@ -44,6 +36,7 @@ import cortex.tools  # noqa: F401, E402
 # Import synapse prompts so the import-time fast-path registration runs
 # (succeeds when CWD == project root; lazy registry handles the rest).
 import cortex.tools.synapse.prompts  # noqa: F401, E402
+from cortex.core.mcp_stability_config import is_connection_error
 from cortex.core.mcp_stability_semaphores import (  # noqa: E402
     get_long_running_elapsed_seconds,
     get_long_running_semaphore_holder,
@@ -51,12 +44,15 @@ from cortex.core.mcp_stability_semaphores import (  # noqa: E402
     get_semaphore,
     was_long_running_released_by_timeout,
 )
+from cortex.core.project_root_resolver import handle_roots_list_changed
 from cortex.server import mcp  # noqa: E402
 from cortex.transport_config import (  # noqa: E402
     TRANSPORT_SSE,
     TRANSPORT_STREAMABLE_HTTP,
     get_effective_transport,
+    get_host,
     get_mount_path,
+    get_port,
 )
 
 cortex.core.logging_config.apply_cortex_format_to_third_party_loggers()
@@ -257,16 +253,26 @@ def _inject_sequential_thinking_core() -> None:
     configure_sequential_thinking_core(SequentialThinkingCore())
 
 
+def _run_http_transport(transport: str) -> None:
+    """Run FastMCP for HTTP transports with explicit host/port."""
+    host = get_host()
+    port = get_port() or 8080
+    if transport == TRANSPORT_SSE:
+        logger.warning(
+            "SSE transport is supported but deprecated; set CORTEX_MCP_TRANSPORT=streamable-http to migrate."
+        )
+        mcp.run(transport="sse", host=host, port=port, path=get_mount_path(transport))
+        return
+    mcp.run(transport="streamable-http", host=host, port=port)
+
+
 def _run_mcp_with_transport_handlers(transport: str) -> None:
     """Run FastMCP for transport and map connection errors to process exit."""
     try:
         if transport == "stdio":
             mcp.run(transport="stdio")
-        elif transport == TRANSPORT_SSE:
-            # AI: FastMCP v3 renamed mount_path → path in run_http_async.
-            mcp.run(transport="sse", path=get_mount_path(transport))
         else:
-            mcp.run(transport="streamable-http")
+            _run_http_transport(transport)
     except KeyboardInterrupt:
         logger.info("MCP server interrupted by user")
         sys.exit(0)
@@ -317,8 +323,10 @@ def main() -> None:
 
     Handles MCP stdio or HTTP/SSE connection. Transport is selected via
     CORTEX_MCP_TRANSPORT (stdio|sse|streamable-http); default stdio.
-    When using sse or streamable-http, set CORTEX_MCP_PORT and optionally
-    CORTEX_MCP_HOST. Ensures graceful shutdown on connection errors.
+    When CORTEX_MCP_PORT is set and transport is not explicit, default transport
+    is streamable-http. SSE remains supported via CORTEX_MCP_TRANSPORT=sse.
+    HTTP transports pass CORTEX_MCP_HOST and CORTEX_MCP_PORT (or default 8080)
+    explicitly to FastMCP run(). Ensures graceful shutdown on connection errors.
 
     The server does not invoke MCP tools on startup; tools (including
     execute_pre_commit_checks) run only when the client sends CallTool.

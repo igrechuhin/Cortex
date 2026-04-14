@@ -373,24 +373,28 @@ class TestMainTransportSelection:
     def test_main_uses_sse_transport_when_configured(
         self, mock_mcp: MagicMock, _mock_get_transport: MagicMock
     ) -> None:
-        """Test that main() calls mcp.run(transport='sse', path='/sse') when transport is sse."""
+        """Test that main() calls mcp.run with explicit host/port for SSE."""
         mock_mcp.run.side_effect = KeyboardInterrupt()
         with pytest.raises(SystemExit) as exc_info:
             main()
         assert exc_info.value.code == 0
-        mock_mcp.run.assert_called_once_with(transport="sse", path="/sse")
+        mock_mcp.run.assert_called_once_with(
+            transport="sse", host="127.0.0.1", port=8080, path="/sse"
+        )
 
     @patch("cortex.main.get_effective_transport", return_value="streamable-http")
     @patch("cortex.main.mcp")
     def test_main_uses_streamable_http_transport_when_configured(
         self, mock_mcp: MagicMock, _mock_get_transport: MagicMock
     ) -> None:
-        """Test that main() calls mcp.run(transport='streamable-http') when so configured."""
+        """Test that main() calls mcp.run with explicit host/port for streamable HTTP."""
         mock_mcp.run.side_effect = KeyboardInterrupt()
         with pytest.raises(SystemExit) as exc_info:
             main()
         assert exc_info.value.code == 0
-        mock_mcp.run.assert_called_once_with(transport="streamable-http")
+        mock_mcp.run.assert_called_once_with(
+            transport="streamable-http", host="127.0.0.1", port=8080
+        )
 
 
 class TestMCPStabilityConnectionErrorDetection:

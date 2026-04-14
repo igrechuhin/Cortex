@@ -6,6 +6,7 @@
 - **FastMCP v3 — Phase 2: Replace Internal Handler Patches with Official APIs** - PARTIAL. Evaluated `_patch_mcp_server_handle_request` disconnect handling and intentionally deferred removal to Phase 3; added regression tests covering unpatched vs patched `ClosedResourceError` behavior and validated no residual patch-related `type: ignore` in `server.py`.
 - **FastMCP v3 — Phase 2: Replace Internal Handler Patches with Official APIs** - COMPLETE. Removed server-level private patching for prompt/roots flows and documented intentional defer of disconnect wrapper removal to Phase 3 middleware replacement.
 - **FastMCP v3 — Phase 3: Middleware for Disconnect Handling and Request Logging** - COMPLETE. Replaced private `_handle_request` monkey patch with registered middleware for disconnect handling, debug logging, and response limiting; added optimization config key and middleware test coverage.
+- **FastMCP v3 — Phase 4: Transport Configuration Cleanup** - COMPLETE. Transport run kwargs now pass explicit host/port, legacy FASTMCP host/port forwarding is removed, and streamable-http is the default for port-based mode with tests/docs aligned.
 
 ## 2026-04-13
 

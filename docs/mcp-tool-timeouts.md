@@ -332,10 +332,10 @@ To get **concurrent MCP request handling** (e.g. ReadResource while a long tool 
 
 - **Environment variables** (optional):
   - `CORTEX_MCP_TRANSPORT`: `stdio`, `sse`, or `streamable-http`. Overrides the default when set.
-  - `CORTEX_MCP_PORT`: Port for HTTP transport (e.g. `8000`). When set, values are passed through to the MCP server (e.g. `FASTMCP_PORT`).
+  - `CORTEX_MCP_PORT`: Port for HTTP transport (e.g. `8000`). Passed explicitly to `mcp.run()` for HTTP transports.
   - `CORTEX_MCP_HOST`: Bind address (default `127.0.0.1`). Use `127.0.0.1` or `localhost` for localhost-only; document any use of `0.0.0.0` for your environment.
-- **Default (Option C)**: When **port is set**, default transport is **sse** (HTTP/SSE). When **port is unset**, default is **stdio**. Set `CORTEX_MCP_TRANSPORT=stdio` to force stdio even when port is set (e.g. for clients that do not support URL).
-- **HTTP transport**: With port set, the server uses SSE by default. To use Streamable HTTP instead, set `CORTEX_MCP_TRANSPORT=streamable-http`. Requires optional dependencies: `uv sync --extra server` or `pip install cortex[server]`.
+- **Default (Option C)**: When **port is set**, default transport is **streamable-http**. When **port is unset**, default is **stdio**. Set `CORTEX_MCP_TRANSPORT=stdio` to force stdio even when port is set (e.g. for clients that do not support URL).
+- **HTTP transport**: With port set, the server uses Streamable HTTP by default. SSE remains supported when `CORTEX_MCP_TRANSPORT=sse` is set explicitly. Requires optional dependencies: `uv sync --extra server` or `pip install cortex[server]`.
 
 ### Security (Phase 1)
 

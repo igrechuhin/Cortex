@@ -1,7 +1,5 @@
 """Unit tests for cortex.transport_config."""
 
-import os
-
 import pytest
 
 from cortex.transport_config import (
@@ -10,7 +8,6 @@ from cortex.transport_config import (
     TRANSPORT_STDIO,
     TRANSPORT_STREAMABLE_HTTP,
     VALID_TRANSPORTS,
-    apply_cortex_env_to_fastmcp,
     get_effective_transport,
     get_host,
     get_mount_path,
@@ -79,13 +76,13 @@ class TestGetEffectiveTransport:
         monkeypatch.setenv("CORTEX_MCP_TRANSPORT", "SSE")
         assert get_effective_transport() == TRANSPORT_SSE
 
-    def test_returns_sse_when_port_set_and_transport_unset(
+    def test_returns_streamable_http_when_port_set_and_transport_unset(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        """Option C: when port set, default transport is sse."""
+        """When port is set, default transport is streamable-http."""
         monkeypatch.delenv("CORTEX_MCP_TRANSPORT", raising=False)
         monkeypatch.setenv("CORTEX_MCP_PORT", "8000")
-        assert get_effective_transport() == TRANSPORT_SSE
+        assert get_effective_transport() == TRANSPORT_STREAMABLE_HTTP
 
     def test_returns_stdio_when_port_set_but_transport_explicitly_stdio(
         self, monkeypatch: pytest.MonkeyPatch
@@ -107,54 +104,6 @@ class TestGetMountPath:
 
     def test_returns_mcp_path_for_stdio(self) -> None:
         assert get_mount_path(TRANSPORT_STDIO) == "/mcp"
-
-
-class TestApplyCortexEnvToFastmcp:
-    """Tests for apply_cortex_env_to_fastmcp()."""
-
-    def test_does_not_set_fastmcp_when_cortex_env_unset(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
-        """When CORTEX_MCP_PORT and CORTEX_MCP_HOST are unset, FASTMCP_* are unchanged."""
-        monkeypatch.delenv("CORTEX_MCP_PORT", raising=False)
-        monkeypatch.delenv("CORTEX_MCP_HOST", raising=False)
-        monkeypatch.delenv("FASTMCP_PORT", raising=False)
-        monkeypatch.delenv("FASTMCP_HOST", raising=False)
-        apply_cortex_env_to_fastmcp()
-        assert os.environ.get("FASTMCP_PORT") is None
-        assert os.environ.get("FASTMCP_HOST") is None
-
-    def test_sets_fastmcp_port_when_cortex_port_set(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
-        monkeypatch.delenv("FASTMCP_PORT", raising=False)
-        monkeypatch.setenv("CORTEX_MCP_PORT", "8001")
-        apply_cortex_env_to_fastmcp()
-        assert os.environ.get("FASTMCP_PORT") == "8001"
-
-    def test_sets_fastmcp_host_when_cortex_host_set(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
-        monkeypatch.delenv("FASTMCP_HOST", raising=False)
-        monkeypatch.setenv("CORTEX_MCP_HOST", "0.0.0.0")
-        apply_cortex_env_to_fastmcp()
-        assert os.environ.get("FASTMCP_HOST") == "0.0.0.0"
-
-    def test_does_not_overwrite_existing_fastmcp_port(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
-        monkeypatch.setenv("FASTMCP_PORT", "9999")
-        monkeypatch.setenv("CORTEX_MCP_PORT", "8001")
-        apply_cortex_env_to_fastmcp()
-        assert os.environ.get("FASTMCP_PORT") == "9999"
-
-    def test_does_not_overwrite_existing_fastmcp_host(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
-        monkeypatch.setenv("FASTMCP_HOST", "10.0.0.1")
-        monkeypatch.setenv("CORTEX_MCP_HOST", "0.0.0.0")
-        apply_cortex_env_to_fastmcp()
-        assert os.environ.get("FASTMCP_HOST") == "10.0.0.1"
 
 
 class TestConstants:

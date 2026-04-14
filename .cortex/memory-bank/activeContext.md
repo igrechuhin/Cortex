@@ -12,6 +12,8 @@
 
 - ✅ **FastMCP v3 — Phase 3: Middleware for Disconnect Handling and Request Logging** - COMPLETE (2026-04-14) - Replaced private request monkey-patching with FastMCP middleware chain, added debug-gated request logging and response limiting with optimization-config support, and added middleware-focused unit tests while removing the legacy disconnect patch path from startup.
 
+- ✅ **FastMCP v3 — Phase 4: Transport Configuration Cleanup** - COMPLETE (2026-04-14) - Migrated transport startup to explicit FastMCP v3 run kwargs, removed legacy env forwarding, switched port-default transport to streamable-http, and updated tests/docs for the new behavior.
+
 ## Completed Work (2026-04-12)
 
 - **Summary (2026-04-12)** - 1 entries archived.

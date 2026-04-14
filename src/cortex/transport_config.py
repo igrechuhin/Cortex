@@ -2,8 +2,8 @@
 """Cortex MCP transport configuration.
 
 Reads CORTEX_MCP_TRANSPORT, CORTEX_MCP_PORT, CORTEX_MCP_HOST from environment.
-Phase 1: default transport is stdio when port unset; explicit transport optional.
-Phase 2 (future): when port set, default transport becomes sse unless overridden.
+Default transport is stdio when port unset; explicit transport optional.
+When port is set, default transport is streamable-http unless overridden.
 """
 
 from __future__ import annotations
@@ -47,7 +47,7 @@ def get_host() -> str:
 def get_effective_transport() -> str:
     """Resolve effective transport from env.
 
-    Option C: When CORTEX_MCP_PORT is set, default transport is sse unless
+    When CORTEX_MCP_PORT is set, default transport is streamable-http unless
     CORTEX_MCP_TRANSPORT is set. When port is unset, default is stdio.
     Explicit CORTEX_MCP_TRANSPORT overrides in both cases.
     """
@@ -56,7 +56,7 @@ def get_effective_transport() -> str:
         return explicit
     port = get_port()
     if port is not None:
-        return TRANSPORT_SSE
+        return TRANSPORT_STREAMABLE_HTTP
     return TRANSPORT_STDIO
 
 
@@ -65,16 +65,3 @@ def get_mount_path(transport: str) -> str:
     if transport == TRANSPORT_SSE:
         return DEFAULT_SSE_MOUNT_PATH
     return "/mcp"
-
-
-def apply_cortex_env_to_fastmcp() -> None:
-    """Copy CORTEX_MCP_* to FASTMCP_* so FastMCP Settings see them.
-
-    Call before importing cortex.server (which creates FastMCP).
-    """
-    port = os.environ.get("CORTEX_MCP_PORT")
-    if port is not None:
-        _ = os.environ.setdefault("FASTMCP_PORT", port)
-    host = os.environ.get("CORTEX_MCP_HOST")
-    if host is not None:
-        _ = os.environ.setdefault("FASTMCP_HOST", host)
