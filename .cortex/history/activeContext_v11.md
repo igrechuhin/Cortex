@@ -2,19 +2,17 @@
 
 **This file records completed work only.** For current status and upcoming work see [roadmap.md](roadmap.md).
 
+## Completed Work (2026-04-14)
+
+- ✅ **FastMCP v3 — Phase 2 official lifecycle APIs (PARTIAL)** - COMPLETE (2026-04-14) - Server initialization now owns roots/list_changed handler wiring and server.py no longer patches FastMCP internals directly; startup tests added to lock this behavior while remaining disconnect shim work is deferred to next subtask.
+
 ## Completed Work (2026-04-12)
 
 - **Summary (2026-04-12)** - 1 entries archived.
 
 ## Completed Work (2026-04-13)
 
-- **Commit pipeline execution** - Ran `/cortex/fix` and `/cortex/commit` flow with clean Phase A/docs gates, parity checks, and Synapse prompt updates staged for commit.
-
-- ✅ **migrate-check-function-lengths-callers** - COMPLETE (2026-04-13) - Migrated direct check_function_lengths callers to router-based quality checks, replaced check_function_lengths with a compatibility shim, removed legacy path, and aligned parity/test coverage with router behavior.
-
-- ✅ **BLOCKER: Fix mcp>=1.26.0 Structured-Output Crash on Startup** - COMPLETE (2026-04-13) - Fixed startup crash under mcp>=1.26.0 by forcing typed tool registration to disable structured output and added an import-time regression test.
-
-- **FastMCP v3 — Phase 1: Dependency Swap and Import Migration (PARTIAL)** - Updated dependency and import wiring for FastMCP v3 migration baseline, but quality gate remains blocked by prompt-internals compatibility and typing regressions.
+- **Summary (2026-04-13)** - 1 entries archived.
 
 ## Completed Work (2026-04-11)
 

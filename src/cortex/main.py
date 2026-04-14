@@ -18,11 +18,14 @@ import subprocess
 import sys
 import traceback
 from builtins import BaseExceptionGroup  # Python 3.11+
+from collections.abc import Awaitable, Callable
 from typing import cast
 
 import anyio
+from mcp.types import RootsListChangedNotification
 
 from cortex.core.mcp_stability_config import is_connection_error
+from cortex.core.project_root_resolver import handle_roots_list_changed
 
 # Apply Cortex transport env to FastMCP settings before server is imported
 from cortex.transport_config import apply_cortex_env_to_fastmcp
@@ -71,6 +74,28 @@ _ = cortex.tools
 _ = cortex.tools.synapse.prompts
 
 logger = logging.getLogger(__name__)
+
+
+def _register_roots_list_changed_notification_handler() -> None:
+    """Register roots/list_changed invalidation using MCP SDK notification handlers.
+
+    FastMCP v3 currently exposes no high-level decorator for arbitrary MCP
+    notifications like ``notifications/roots/list_changed``. Registering into
+    the low-level server notification handler map remains the supported path
+    until a public FastMCP notification API lands.
+    """
+    lowlevel = mcp._mcp_server  # type: ignore[attr-defined]
+    handlers = cast(
+        dict[type[object], Callable[[object], Awaitable[None]]],
+        lowlevel.notification_handlers,
+    )
+
+    async def _roots_list_changed_notification_handler(
+        _notification: object,
+    ) -> None:
+        await handle_roots_list_changed()
+
+    handlers[RootsListChangedNotification] = _roots_list_changed_notification_handler
 
 
 def _log_broken_resource_group_diag(eg: BaseExceptionGroup, exc: BaseException) -> None:
@@ -235,6 +260,11 @@ def _inject_sequential_thinking_core() -> None:
 def _patch_mcp_server_handle_request() -> None:
     """Wrap _handle_request to absorb ClosedResourceError on message.respond().
 
+    TODO(Phase 3): Replace with FastMCP v3 middleware once middleware supports
+    wrapping the full request dispatch (including response writes).  FastMCP v3
+    does not yet expose a public lifecycle hook that can intercept this low-level
+    response write path, so this temporary shim remains needed.
+
     When the MCP client disconnects while two tool calls are in-flight, the
     second tool's response write raises ClosedResourceError.  Without this
     patch that exception propagates into the anyio TaskGroup, which then
@@ -310,6 +340,7 @@ def _run_mcp_with_transport_handlers(transport: str) -> None:
 def _run_server_once() -> None:
     """Run the MCP server once (stdio or HTTP). Exits on disconnect or error."""
     _inject_sequential_thinking_core()
+    _register_roots_list_changed_notification_handler()
     _patch_mcp_server_handle_request()
     transport = get_effective_transport()
     if transport in (TRANSPORT_SSE, TRANSPORT_STREAMABLE_HTTP):

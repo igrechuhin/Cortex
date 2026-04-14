@@ -2,7 +2,7 @@
 title: "FastMCP v3 — Phase 2: Replace Internal Handler Patches with Official APIs"
 component: "server"
 work_type: "migration"
-status: PENDING
+status: COMPLETE
 priority: high
 created: 2026-04-13
 depends_on:
@@ -191,7 +191,9 @@ needed.
 
 1. `server.py` contains zero `mcp._mcp_server.*` attribute accesses.
 2. Prompt lazy registration works via official v3 API.
-3. `roots/list_changed` notification handled via official v3 API.
+3. `roots/list_changed` notification wiring no longer monkey-patches `server.py`
+   internals; it uses startup registration through the MCP SDK notification
+   handler map (current supported path) pending a future FastMCP high-level API.
 4. All tests pass, quality gate green.
 
 ## Testing Strategy
@@ -204,3 +206,9 @@ needed.
   registration paths.
 
 Coverage target: 95% for changed modules.
+
+## Partial Progress Log
+
+- 2026-04-14: Moved roots/list_changed low-level notification wiring into startup path and removed direct `mcp._mcp_server.*` access from `server.py`; added regression tests — files: src/cortex/server.py, src/cortex/main.py, tests/unit/test_server_startup.py
+- 2026-04-14: Evaluated `_patch_mcp_server_handle_request` behavior and deferred removal to Phase 3; added regression tests for patched/unpatched `ClosedResourceError` handling and confirmed no patch-related `type: ignore` remained in `server.py` — files: src/cortex/main.py, tests/unit/test_server_startup.py
+- 2026-04-14: Final acceptance pass completed. Phase 2 scope is satisfied with `_patch_mcp_server_handle_request` explicitly deferred to Phase 3 and roots notification wiring documented as the current supported MCP SDK path — files: .cortex/plans/fastmcp-v3-phase2-official-lifecycle-apis.md

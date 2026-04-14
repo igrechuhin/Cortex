@@ -19,10 +19,12 @@ clients to discover deferred tools by query.
 
 from __future__ import annotations
 
-from fastmcp import FastMCP
-from mcp.types import ListPromptsRequest, RootsListChangedNotification, ServerResult
+from collections.abc import Sequence
 
-from cortex.core.project_root_resolver import handle_roots_list_changed
+import mcp.types as mt
+from fastmcp import FastMCP
+from fastmcp.prompts.base import Prompt
+from fastmcp.server.middleware import CallNext, Middleware, MiddlewareContext
 
 # FastMCP server instance (framework requirement)
 # This is an acceptable exception to the no-global-state rule
@@ -30,41 +32,29 @@ mcp = FastMCP("cortex")
 
 
 # ---------------------------------------------------------------------------
-# Lazy-registration hook
+# Lazy-registration middleware
 #
-# The MCP protocol calls ``list_prompts`` on every client request for the
-# prompt list.  We intercept the *low-level request handler* (the entry in
-# ``mcp._mcp_server.request_handlers``) to trigger lazy prompt registration
-# on the first call.  Replacing ``mcp.list_prompts`` (the FastMCP method)
-# does NOT work: FastMCP captures a bound-method reference to
-# ``FastMCP.list_prompts`` in a closure when ``_setup_handlers()`` runs at
-# ``__init__`` time, so a later attribute assignment on the instance is
-# invisible to the already-registered low-level handler.
+# FastMCP v3 routes `prompts/list` requests through the registered middleware
+# chain before calling the actual list handler.  We use `on_list_prompts` to
+# trigger lazy prompt registration on the first call.
+#
+# This replaces the previous approach of patching low-level request handler
+# maps directly, which relied on FastMCP internals and type suppressions.
 # ---------------------------------------------------------------------------
 
-_original_list_prompts_handler = mcp._mcp_server.request_handlers[  # type: ignore[index]
-    ListPromptsRequest
-]
+
+class _LazyPromptsMiddleware(Middleware):
+    """Trigger lazy prompt registration before each prompts/list response."""
+
+    async def on_list_prompts(
+        self,
+        context: MiddlewareContext[mt.ListPromptsRequest],
+        call_next: CallNext[mt.ListPromptsRequest, Sequence[Prompt]],
+    ) -> Sequence[Prompt]:
+        from cortex.setup.lazy_prompt_registration import ensure_prompts_registered
+
+        await ensure_prompts_registered(None)
+        return await call_next(context)
 
 
-async def _lazy_list_prompts_handler(req: ListPromptsRequest) -> ServerResult:
-    """Low-level list_prompts handler that triggers lazy registration first."""
-    from cortex.setup.lazy_prompt_registration import ensure_prompts_registered
-
-    await ensure_prompts_registered(None)
-    return await _original_list_prompts_handler(req)  # type: ignore[arg-type]
-
-
-mcp._mcp_server.request_handlers[ListPromptsRequest] = _lazy_list_prompts_handler  # type: ignore[index]
-
-
-async def _roots_list_changed_notification_handler(
-    _notification: RootsListChangedNotification,
-) -> None:
-    """Invalidate cached MCP root when the client sends roots/list_changed."""
-    await handle_roots_list_changed()
-
-
-mcp._mcp_server.notification_handlers[RootsListChangedNotification] = (  # type: ignore[index]
-    _roots_list_changed_notification_handler
-)
+mcp.add_middleware(_LazyPromptsMiddleware())

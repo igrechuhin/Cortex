@@ -14,8 +14,6 @@
 
 ### FastMCP v3 Migration
 
-- [x] **FastMCP v3 — Phase 1: Dependency Swap and Import Migration** — DONE 2026-04-13. Plan: [../plans/fastmcp-v3-phase1-dependency-and-imports.md](../plans/fastmcp-v3-phase1-dependency-and-imports.md)
-- [ ] **FastMCP v3 — Phase 2: Replace Internal Handler Patches with Official APIs** — remove all three `mcp._mcp_server.*` monkey-patches (`ListPromptsRequest`, `RootsListChangedNotification`, `_handle_request`) and replace with v3 lifespan hooks and official notification API. Plan: [../plans/fastmcp-v3-phase2-official-lifecycle-apis.md](../plans/fastmcp-v3-phase2-official-lifecycle-apis.md) (PENDING)
 - [ ] **FastMCP v3 — Phase 3: Middleware for Disconnect Handling and Request Logging** — replace `MethodType` `_handle_request` patch with `DisconnectMiddleware`; add `LoggingMiddleware` at debug level; add `ResponseLimitMiddleware` for context-window safety. Plan: [../plans/fastmcp-v3-phase3-middleware.md](../plans/fastmcp-v3-phase3-middleware.md) (PENDING)
 - [ ] **FastMCP v3 — Phase 4: Transport Configuration Cleanup** — pass `host`/`port` explicitly to `mcp.run()`; delete `apply_cortex_env_to_fastmcp()`; promote `streamable-http` as default for port-based mode. Plan: [../plans/fastmcp-v3-phase4-transport-cleanup.md](../plans/fastmcp-v3-phase4-transport-cleanup.md) (PENDING)
 - [ ] **FastMCP v3 — Phase 5: New Features (Lifespan, Visibility, Auth, Transforms)** — server lifespan for DI; dynamic tool visibility for setup prompts; per-component auth on write tools; `ResourcesAsTools`/`PromptsAsTools` transforms; hot-reload dev mode. Plan: [../plans/fastmcp-v3-phase5-new-features.md](../plans/fastmcp-v3-phase5-new-features.md) (PENDING)
@@ -42,6 +40,12 @@
 Completed investigations are recorded in [activeContext.md](activeContext.md). Plan files under `.cortex/plans/archive/` as needed.
 
 ### Improvements
+
+- [ ] **Improvement: Layered Context Budget (L0–L3 Tiering) for context resource** — Replace flat context loading with a 4-layer tiered system: L0 identity (~150 tokens), L1 essential story (~800 tokens, always loaded), L2 on-demand per topic, L3 deep search. Target: default response ≤ 1,200 tokens (down from 3–10K). Plan: [../plans/improve-layered-context-budget.md](../plans/improve-layered-context-budget.md) (PENDING)
+- [ ] **Improvement: Temporal Memory with Validity Windows** — Add SQLite-backed temporal store with valid_from/valid_to fields so agents can query 'what was true on date X'. Includes contradiction detection and new memory_timeline MCP tool. Plan: [../plans/improve-temporal-memory.md](../plans/improve-temporal-memory.md) (PENDING)
+- [ ] **Improvement: Typed Memory Classification for Memory Bank Entries** — Auto-classify every memory write into decision/preference/milestone/problem/status buckets using pure regex heuristics. Enables read_by_type retrieval and type-weighted L1 context scoring. Plan: [../plans/improve-typed-memory-classification.md](../plans/improve-typed-memory-classification.md) (PENDING)
+- [ ] **Improvement: Hybrid BM25 + Keyword Retrieval for Memory Bank Search** — Add Okapi BM25 scorer (pure Python stdlib, no external deps) to all memory bank retrieval paths. Adds manage_file(operation='search') MCP operation with ranked paragraph results. Plan: [../plans/improve-hybrid-bm25-retrieval.md](../plans/improve-hybrid-bm25-retrieval.md) (PENDING)
+- [ ] **Improvement: Memory Write-Ahead Log for Audit Trail and Rollback** — WAL that records every memory bank mutation to a dedicated write-log stream. Enables anomaly detection (shrink > 30%), snapshot, and restore. Adds memory_wal MCP tool. Plan: [../plans/improve-memory-write-ahead-log.md](../plans/improve-memory-write-ahead-log.md) (PENDING)
 
 #### Knowledge Base & Wiki (High Priority)
 
