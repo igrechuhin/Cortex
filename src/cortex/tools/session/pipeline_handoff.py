@@ -85,7 +85,7 @@ def _resolve_zero_arg_defaults(
     resolved_op = str(cfg.get("operation", operation))
     resolved_pipeline = str(cfg.get("pipeline", pipeline))
     resolved_phase = phase or (
-        str(cfg["phase"]) if isinstance(cfg.get("phase"), str) else phase
+        str(cfg.get("phase")) if isinstance(cfg.get("phase"), str) else phase
     )
     return resolved_op, resolved_pipeline, resolved_phase
 

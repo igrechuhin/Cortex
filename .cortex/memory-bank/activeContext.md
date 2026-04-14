@@ -24,6 +24,10 @@
 
 - ✅ **Refactor: Split Oversized `src/cortex/tools/session/brief.py` and `src/cortex/tools/optimization/handlers.py`** - COMPLETE (2026-04-14) - Completed verification of the module split, confirmed all six target modules are under the 400-line limit, and validated no regressions via a green quality gate.
 
+- ✅ **Improvement: Layered Context Budget (L0–L3 Tiering) for context resource** - COMPLETE (2026-04-14) - Implemented layered context loading (L0-L3), integrated context resource/session config support, and added tests validating layered behavior and token budgets.
+
+- ✅ **Layered context budget modules and routing** - COMPLETE (2026-04-14) - Implemented layered context helpers (L0-L3), updated optimization handlers/context appenders wiring, and added resource tests for layered context loading behavior.
+
 ## Completed Work (2026-04-12)
 
 - **Summary (2026-04-12)** - 1 entries archived.

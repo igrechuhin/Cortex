@@ -13,6 +13,8 @@
 - **Refactor: Split Oversized `src/cortex/tools/session/brief.py` and `src/cortex/tools/optimization/handlers.py`** - PARTIAL. Extracted `brief_cap`, `brief_loaders`, `context_appenders`, and `context_loaders` with compatibility shims preserved; quality gate remains blocked by structural debt (`memory_bank_lint_checks.py` > 400 lines) and one remaining oversized helper in `brief.py`.
 - **Fix: Stale Test-Count Metric in progress.md What Works Section** - COMPLETE. Updated stale What Works metrics and added StaleNumericClaimCheck protection.
 - **Refactor: Split Oversized `src/cortex/tools/session/brief.py` and `src/cortex/tools/optimization/handlers.py`** - COMPLETE. Verified split module sizes/imports and passed full quality gate.
+- **Improvement: Layered Context Budget L0-L3 Tiering** - COMPLETE. Implemented L0/L1/L2/L3 context layering builders, wired layered context responses, and added targeted layer/resource tests.
+- **Layered context budget (L0-L3)** - COMPLETE. Added layered context modules and integration wiring in optimization/session config paths; plan moved to archive path and tests/resources context layer coverage added.
 
 ## 2026-04-13
 

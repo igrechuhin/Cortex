@@ -15,11 +15,47 @@ from __future__ import annotations
 import json
 from typing import cast
 
+from pydantic import BaseModel, ConfigDict
+
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.core.usage_context import get_current_project_root
 
 
-def read_session_config() -> dict[str, object]:
+class SessionConfig(BaseModel):
+    """Structured session config with mapping-style compatibility access."""
+
+    model_config = ConfigDict(extra="allow")
+
+    task_description: str | None = None
+    pipeline: str | None = None
+    phase: str | None = None
+    operation: str | None = None
+    token_budget: int | None = None
+    file_name: str | None = None
+    check_type: str | None = None
+    trace_id: str | None = None
+    requirement_id: str | None = None
+    selected_step: str | None = None
+    workflow_schema: str | None = None
+    context_layers: list[str] | None = None
+
+    def _merged_dict(self) -> dict[str, object]:
+        data = cast(
+            dict[str, object], self.model_dump(mode="python", exclude_none=True)
+        )
+        if self.model_extra:
+            data.update(cast(dict[str, object], self.model_extra))
+        return data
+
+    def to_mapping(self) -> dict[str, object]:
+        """Return all config keys as a plain mapping."""
+        return self._merged_dict()
+
+    def get(self, key: str, default: object | None = None) -> object | None:
+        return self._merged_dict().get(key, default)
+
+
+def read_session_config() -> SessionConfig:
     """Read current task config from session file, or return empty dict.
 
     Returns a dict with optional keys: task_description, pipeline, phase,
@@ -33,7 +69,7 @@ def read_session_config() -> dict[str, object]:
     """
     root = get_current_project_root()
     if root is None:
-        return {}
+        return SessionConfig()
     session_dir = get_cortex_path(root, CortexResourceType.SESSION)
     config_path = session_dir / "current-task.json"
     cleaned: dict[str, object] = {}
@@ -50,10 +86,12 @@ def read_session_config() -> dict[str, object]:
         from cortex.core.project_session_config import load_project_session_config
 
         cleaned["workflow_schema"] = load_project_session_config(root).workflow_schema
-    return cleaned
+    if "context_layers" not in cleaned:
+        cleaned["context_layers"] = ["l0", "l1"]
+    return SessionConfig.model_validate(cleaned)
 
 
-def write_session_config(config: dict[str, object]) -> bool:
+def write_session_config(config: SessionConfig | dict[str, object]) -> bool:
     """Write current task config to session file. Returns True on success."""
     root = get_current_project_root()
     if root is None:
@@ -61,8 +99,13 @@ def write_session_config(config: dict[str, object]) -> bool:
     session_dir = get_cortex_path(root, CortexResourceType.SESSION)
     session_dir.mkdir(parents=True, exist_ok=True)
     config_path = session_dir / "current-task.json"
+    payload = (
+        cast(dict[str, object], config.model_dump(mode="python", exclude_none=True))
+        if isinstance(config, SessionConfig)
+        else config
+    )
     try:
-        _ = config_path.write_text(json.dumps(config, indent=2))
+        _ = config_path.write_text(json.dumps(payload, indent=2))
     except OSError:
         return False
     return True

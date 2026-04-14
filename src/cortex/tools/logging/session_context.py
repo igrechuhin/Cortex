@@ -33,7 +33,12 @@ def ensure_trace_id_persisted() -> str:
     if isinstance(raw, str) and raw.strip():
         return raw.strip()
     new_id = uuid4().hex[:12]
-    merged: dict[str, object] = {**cfg, "trace_id": new_id}
+    merged: dict[str, object]
+    if isinstance(cfg, dict):
+        merged = dict(cfg)
+    else:
+        merged = cfg.to_mapping()
+    merged["trace_id"] = new_id
     _ = write_session_config(merged)
     return new_id
 

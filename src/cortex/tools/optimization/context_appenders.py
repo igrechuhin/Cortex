@@ -230,6 +230,18 @@ def _extract_rules_markdown(rules_payload: str) -> str:
     return "\n\n".join(chunks)
 
 
+def _session_config_mapping(session_cfg: object) -> dict[str, object]:
+    """Convert SessionConfig-like objects or dicts to plain mappings."""
+    if isinstance(session_cfg, dict):
+        return cast(dict[str, object], session_cfg)
+    to_mapping = getattr(session_cfg, "to_mapping", None)
+    if callable(to_mapping):
+        mapped = to_mapping()
+        if isinstance(mapped, dict):
+            return cast(dict[str, object], mapped)
+    return {}
+
+
 def resolve_context_cache_scope() -> str:
     from cortex.core.session_config import read_session_config
 
@@ -266,7 +278,7 @@ async def append_context_scoped_payload(payload: str, project_root: Path) -> str
     merged = append_scoped_context_payload(
         cast(ModelDict, payload_dict),
         project_root=project_root,
-        session_config=session_cfg,
+        session_config=_session_config_mapping(session_cfg),
         rules_payload=rules_markdown,
     )
     return json.dumps(merged, indent=2)
