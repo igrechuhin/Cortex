@@ -1,9 +1,10 @@
 """Taxonomy and core checks for memory-bank linting."""
 
+import json
 import re
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
-from typing import Literal, Protocol
+from typing import Literal, Protocol, cast
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -17,8 +18,10 @@ _DATE_PATTERN = re.compile(r"\b(\d{4}-\d{2}-\d{2})\b")
 _WIKI_LINK_PATTERN = re.compile(r"\[\[([^\]]+)\]\]|\[[^\]]+\]\(([^)]+)\)")
 _CLAIM_PATTERN_GROUP = re.compile(r"\((?P<key>[^)]+)\):\s*(?P<value>.+)")
 _MARKDOWN_LINK_PATH_PATTERN = re.compile(r"\[[^\]]+\]\(([^)]+)\)")
-_SOURCE_PATH_PATTERN = re.compile(
-    r"(?:\.cortex/memory-bank/)?sources/(?P<slug>[a-zA-Z0-9._-]+)\.md"
+_WHAT_WORKS_HEADING = "## What Works"
+_H2_HEADING_PATTERN = re.compile(r"^##\s+")
+_TEST_COVERAGE_CLAIM_PATTERN = re.compile(
+    r"(?P<tests>\d{3,6})\s+tests(?:,\s*(?P<coverage>\d{1,3}(?:\.\d{1,2})?)%\s+coverage)?"
 )
 
 
@@ -72,6 +75,7 @@ class _LintConfig(BaseModel):
 
     code_claim_checks: list[_CodeClaimSpec] = []
     stale_threshold_days: int = Field(default=30, ge=1)
+    stale_test_count_threshold: int = Field(default=200, ge=1)
 
 
 def _read_text(path: Path) -> str:
@@ -128,6 +132,80 @@ def _resolve_project_relative_path(project_root: Path, raw_path: str) -> Path:
         normalized = normalized[len(".cortex/") :]
         return get_cortex_path(project_root, CortexResourceType.CORTEX_DIR) / normalized
     return project_root / normalized
+
+
+def _extract_section(content: str, *, heading: str) -> tuple[str, int] | None:
+    """Return markdown section body and first content line number."""
+    lines = content.splitlines()
+    start_idx: int | None = None
+    for idx, line in enumerate(lines):
+        if line.strip() == heading:
+            start_idx = idx
+            break
+    if start_idx is None:
+        return None
+
+    content_start = start_idx + 1
+    while content_start < len(lines) and not lines[content_start].strip():
+        content_start += 1
+    content_end = len(lines)
+    for idx in range(content_start, len(lines)):
+        if _H2_HEADING_PATTERN.match(lines[idx]):
+            content_end = idx
+            break
+    section_text = "\n".join(lines[content_start:content_end]).strip()
+    if not section_text:
+        return None
+    return section_text, content_start + 1
+
+
+def _parse_latest_quality_snapshot(
+    project_root: Path,
+) -> tuple[int, float | None] | None:
+    """Read most recent detached quality result from `.cortex/.session`."""
+    session_dir = (
+        get_cortex_path(project_root, CortexResourceType.CORTEX_DIR) / ".session"
+    )
+    if not session_dir.exists():
+        return None
+
+    candidates = sorted(
+        session_dir.glob("pre_commit_result_*.json"),
+        key=lambda path: path.stat().st_mtime,
+        reverse=True,
+    )
+    for candidate in candidates:
+        try:
+            payload: object = json.loads(_read_text(candidate))
+        except ValueError:
+            continue
+        snapshot = _extract_quality_snapshot(payload)
+        if snapshot is not None:
+            return snapshot
+    return None
+
+
+def _extract_quality_snapshot(payload: object) -> tuple[int, float | None] | None:
+    """Extract test/coverage values from one detached quality payload."""
+    if not isinstance(payload, dict):
+        return None
+    payload_dict = cast(dict[str, object], payload)
+    results_obj = payload_dict.get("results")
+    if not isinstance(results_obj, dict):
+        return None
+    results_dict = cast(dict[str, object], results_obj)
+    tests_obj = results_dict.get("tests")
+    if not isinstance(tests_obj, dict):
+        return None
+    tests_dict = cast(dict[str, object], tests_obj)
+    tests_run_obj = tests_dict.get("tests_run")
+    if not isinstance(tests_run_obj, int) or tests_run_obj <= 0:
+        return None
+    coverage_obj = tests_dict.get("coverage")
+    coverage_value = (
+        float(coverage_obj) if isinstance(coverage_obj, int | float) else None
+    )
+    return tests_run_obj, coverage_value
 
 
 def _normalize_plan_ref(raw_path: str) -> Path:
@@ -370,193 +448,6 @@ class CrossRefCheck:
         return findings
 
 
-class OrphanedWikiPagesCheck:
-    """Find wiki pages without inbound links from wiki or memory-bank files."""
-
-    name = "orphaned_wiki_pages"
-
-    def _normalize_target(self, target: str) -> str | None:
-        normalized = target.strip().replace("\\", "/")
-        if not normalized or normalized.startswith(("http://", "https://", "#")):
-            return None
-        if normalized.startswith("/"):
-            normalized = normalized[1:]
-        if not normalized.endswith(".md"):
-            normalized = f"{normalized}.md"
-        return normalized
-
-    def _iter_targets(self, content: str) -> list[str]:
-        targets: list[str] = []
-        for line in content.splitlines():
-            for match in _WIKI_LINK_PATTERN.finditer(line):
-                raw_target = match.group(1) or match.group(2)
-                if not raw_target:
-                    continue
-                normalized = self._normalize_target(raw_target)
-                if normalized is None:
-                    continue
-                targets.append(normalized)
-        return targets
-
-    def _memory_bank_sources(self, project_root: Path) -> list[Path]:
-        memory_bank_root = _memory_bank_root(project_root)
-        if not memory_bank_root.exists():
-            return []
-        return sorted(memory_bank_root.rglob("*.md"))
-
-    def _collect_inbound_links(
-        self, project_root: Path, wiki_root: Path, wiki_pages: list[Path]
-    ) -> tuple[set[str], set[str]]:
-        existing_pages = {page.relative_to(wiki_root).as_posix() for page in wiki_pages}
-        inbound_links: set[str] = set()
-        wiki_pages_with_outbound_links: set[str] = set()
-        for wiki_page in wiki_pages:
-            relative_source = wiki_page.relative_to(wiki_root).as_posix()
-            for target in self._iter_targets(_read_text(wiki_page)):
-                if target in existing_pages:
-                    wiki_pages_with_outbound_links.add(relative_source)
-                    inbound_links.add(target)
-        for memory_bank_file in self._memory_bank_sources(project_root):
-            for target in self._iter_targets(_read_text(memory_bank_file)):
-                if target in existing_pages:
-                    inbound_links.add(target)
-        return inbound_links, wiki_pages_with_outbound_links
-
-    def _build_findings(
-        self,
-        project_root: Path,
-        wiki_root: Path,
-        wiki_pages: list[Path],
-        inbound_links: set[str],
-        linked_roots: set[str],
-    ) -> list[LintFinding]:
-        findings: list[LintFinding] = []
-        for wiki_page in wiki_pages:
-            relative_page = wiki_page.relative_to(wiki_root).as_posix()
-            if (
-                relative_page == WikiRootDocument.INDEX.value
-                and relative_page in linked_roots
-            ):
-                continue
-            if relative_page in inbound_links:
-                continue
-            findings.append(
-                LintFinding(
-                    severity="warning",
-                    check=self.name,
-                    message=f"Wiki page has no inbound links: {relative_page}",
-                    file=wiki_page.relative_to(project_root).as_posix(),
-                    line=None,
-                )
-            )
-        return findings
-
-    def _source_slug_references(self, content: str) -> set[str]:
-        slugs: set[str] = set()
-        for match in _SOURCE_PATH_PATTERN.finditer(content):
-            slugs.add(match.group("slug"))
-        return slugs
-
-    def _iter_summary_files(self, queries_dir: Path) -> list[Path]:
-        if not queries_dir.exists():
-            return []
-        return sorted(queries_dir.glob("*.md"))
-
-    def _missing_source_findings(
-        self,
-        *,
-        summary_path: Path,
-        summary_slugs: set[str],
-        sources_dir: Path,
-        memory_bank_root: Path,
-    ) -> list[LintFinding]:
-        findings: list[LintFinding] = []
-        for source_slug in summary_slugs:
-            source_path = sources_dir / f"{source_slug}.md"
-            if source_path.exists():
-                continue
-            summary_rel = summary_path.relative_to(memory_bank_root).as_posix()
-            findings.append(
-                LintFinding(
-                    severity="warning",
-                    check=self.name,
-                    message=(
-                        "Summary page references missing ingest source: "
-                        f"sources/{source_slug}.md"
-                    ),
-                    file=f".cortex/memory-bank/{summary_rel}",
-                    line=None,
-                )
-            )
-        return findings
-
-    def _orphaned_source_findings(
-        self, *, source_slugs: set[str], referenced_slugs: set[str]
-    ) -> list[LintFinding]:
-        findings: list[LintFinding] = []
-        # AI: Source-to-summary association is explicit only via source path links inside summary pages.
-        for source_slug in sorted(source_slugs - referenced_slugs):
-            findings.append(
-                LintFinding(
-                    severity="warning",
-                    check=self.name,
-                    message=(
-                        "Ingest source has no corresponding summary page reference: "
-                        f"sources/{source_slug}.md"
-                    ),
-                    file=f".cortex/memory-bank/sources/{source_slug}.md",
-                    line=None,
-                )
-            )
-        return findings
-
-    def _source_summary_findings(self, project_root: Path) -> list[LintFinding]:
-        memory_bank_root = _memory_bank_root(project_root)
-        sources_dir = memory_bank_root / "sources"
-        queries_dir = memory_bank_root / "queries"
-        source_slugs: set[str] = (
-            {source_path.stem for source_path in sources_dir.glob("*.md")}
-            if sources_dir.exists()
-            else set[str]()
-        )
-        findings: list[LintFinding] = []
-        referenced_slugs: set[str] = set()
-        for summary_path in self._iter_summary_files(queries_dir):
-            summary_content = _read_text(summary_path)
-            summary_slugs = self._source_slug_references(summary_content)
-            referenced_slugs.update(summary_slugs)
-            findings.extend(
-                self._missing_source_findings(
-                    summary_path=summary_path,
-                    summary_slugs=summary_slugs,
-                    sources_dir=sources_dir,
-                    memory_bank_root=memory_bank_root,
-                )
-            )
-        findings.extend(
-            self._orphaned_source_findings(
-                source_slugs=source_slugs, referenced_slugs=referenced_slugs
-            )
-        )
-        return findings
-
-    def run(self, project_root: Path) -> list[LintFinding]:
-        findings = self._source_summary_findings(project_root)
-        wiki_root = _wiki_root(project_root)
-        if not wiki_root.exists():
-            return findings
-        wiki_pages = sorted(wiki_root.rglob("*.md"))
-        inbound_links, linked_roots = self._collect_inbound_links(
-            project_root, wiki_root, wiki_pages
-        )
-        findings.extend(
-            self._build_findings(
-                project_root, wiki_root, wiki_pages, inbound_links, linked_roots
-            )
-        )
-        return findings
-
-
 class IndexStalenessCheck:
     """Find wiki pages that are missing from the wiki catalog table."""
 
@@ -724,3 +615,72 @@ class CodeClaimCheck:
                 )
             )
         return findings
+
+
+class StaleNumericClaimCheck:
+    """Warn when `progress.md` What Works test count drifts from quality output."""
+
+    name = "stale_numeric_claim"
+
+    def _finding(
+        self,
+        *,
+        tests_claim: int,
+        tests_actual: int,
+        threshold: int,
+        line_num: int,
+    ) -> LintFinding:
+        return LintFinding(
+            severity="warning",
+            check=self.name,
+            message=(
+                "What Works test-count claim is stale: "
+                f"{tests_claim} tests vs latest quality result {tests_actual} tests "
+                f"(allowed drift <= {threshold})"
+            ),
+            file=".cortex/memory-bank/progress.md",
+            line=line_num,
+        )
+
+    def _extract_claim(self, project_root: Path) -> tuple[int, int] | None:
+        progress_path = _memory_bank_root(project_root) / "progress.md"
+        if not progress_path.exists():
+            return None
+        section = _extract_section(
+            _read_text(progress_path), heading=_WHAT_WORKS_HEADING
+        )
+        if section is None:
+            return None
+        section_text, section_line_num = section
+        claim_match = _TEST_COVERAGE_CLAIM_PATTERN.search(section_text)
+        if claim_match is None:
+            return None
+        return int(claim_match.group("tests")), section_line_num
+
+    def run(self, project_root: Path) -> list[LintFinding]:
+        claim = self._extract_claim(project_root)
+        if claim is None:
+            return []
+        tests_claim, section_line_num = claim
+
+        quality_snapshot = _parse_latest_quality_snapshot(project_root)
+        if quality_snapshot is None:
+            return []
+        tests_actual, _ = quality_snapshot
+        config = load_lint_config(project_root)
+        configured_threshold = (
+            200 if config is None else config.stale_test_count_threshold
+        )
+        percent_threshold = int(round(tests_actual * 0.10))
+        effective_threshold = max(configured_threshold, percent_threshold)
+        if abs(tests_actual - tests_claim) <= effective_threshold:
+            return []
+
+        return [
+            self._finding(
+                tests_claim=tests_claim,
+                tests_actual=tests_actual,
+                threshold=effective_threshold,
+                line_num=section_line_num,
+            )
+        ]

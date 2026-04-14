@@ -18,10 +18,11 @@ from cortex.tools.lint.memory_bank_lint_checks import (
     LintFinding,
     MissingPlanFilesCheck,
     OrphanedPlansCheck,
-    OrphanedWikiPagesCheck,
     StaleActiveContextCheck,
+    StaleNumericClaimCheck,
     load_lint_config,
 )
+from cortex.tools.lint.memory_bank_wiki_checks import OrphanedWikiPagesCheck
 
 
 class LintReport(BaseModel):
@@ -50,5 +51,6 @@ def build_memory_bank_lint_checks(project_root: Path) -> list[LintCheck]:
         CrossRefCheck(),
         OrphanedWikiPagesCheck(),
         IndexStalenessCheck(),
+        StaleNumericClaimCheck(),
         CodeClaimCheck(),
     ]

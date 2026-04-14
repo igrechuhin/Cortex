@@ -186,6 +186,7 @@ All phases run inline. Use zero-arg tools — do NOT use legacy pre-commit tools
 - Prefer scan-friendly emoji status markers (✅/⚠️/❌) in prompts and summaries for success/warn/error; keep final summaries concise (typically at most four sentences), avoid heavy code blocks there, and use headings and bolded bullet labels per the markdown formatting guide. For heartbeat or liveness output, avoid opaque N/K-style counters when they convey no clear meaning; prefer a simple cumulative indicator (e.g. one dot per ping).
 - When a roadmap item is large, always make concrete partial progress in the current session (smallest meaningful subtask plus tests/quality) and update plans/status as PARTIAL instead of stopping with no changes. For reflection, quality-gate adjuncts, and similar cross-cutting checks, prefer language-parameterized constants and language-specific checklists over Python-only naming or a single generic list.
 - When tests, typecheck, or CI are not green, stop further product development and focus on restoring a fully green state before taking on new scope.
+- The user explicitly does not want offline setup/bootstrap support; do not add `*-offline` commands, offline onboarding flows, or wheelhouse-based install guidance unless the user requests it again.
 
 ## Learned Workspace Facts
 
@@ -208,7 +209,7 @@ All phases run inline. Use zero-arg tools — do NOT use legacy pre-commit tools
 
 The VM update script handles: `uv sync --extra dev` (which also installs the `rumdl` CLI), and `git submodule update --init --recursive`. Python 3.13+ and `uv` must be pre-installed as system dependencies (the update script does not install them).
 
-If dependency download fails (network, proxy, air-gap, or SSL), use the preflight and triage flow in [Offline and network-restricted verification](docs/guides/troubleshooting.md#offline-and-network-restricted-verification) before treating failures as test regressions.
+If dependency download fails (network, proxy, or SSL), use the preflight and triage flow in [Dependency and network verification](docs/guides/troubleshooting.md#dependency-and-network-verification) before treating failures as test regressions.
 
 ### Running the Cortex MCP server
 

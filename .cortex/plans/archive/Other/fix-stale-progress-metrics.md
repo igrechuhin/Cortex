@@ -132,3 +132,7 @@ Run `run_quality_gate()` and `run_docs_gate()`. Fix any regressions.
 - **Regression**: existing `LintCheck` tests must still pass.
 
 Coverage target: 95% for `StaleNumericClaimCheck` and its helpers.
+
+## Partial Progress Log
+
+- 2026-04-14: Updated stale What Works metrics and implemented StaleNumericClaimCheck with tests/docs integration — files: .cortex/memory-bank/progress.md, src/cortex/tools/lint/memory_bank_lint_checks.py, src/cortex/tools/lint/lint_memory_bank.py, src/cortex/tools/lint/**init**.py, tests/unit/tools/lint/test_memory_bank_lint_checks.py, docs/guides/lint-config.md

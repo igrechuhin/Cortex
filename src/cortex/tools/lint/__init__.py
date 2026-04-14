@@ -9,9 +9,10 @@ from .memory_bank_lint_checks import (
     LintFinding,
     MissingPlanFilesCheck,
     OrphanedPlansCheck,
-    OrphanedWikiPagesCheck,
     StaleActiveContextCheck,
+    StaleNumericClaimCheck,
 )
+from .memory_bank_wiki_checks import OrphanedWikiPagesCheck
 
 __all__ = [
     "LintCheck",
@@ -22,6 +23,7 @@ __all__ = [
     "OrphanedPlansCheck",
     "OrphanedWikiPagesCheck",
     "IndexStalenessCheck",
+    "StaleNumericClaimCheck",
     "StaleActiveContextCheck",
     "LintReport",
     "build_memory_bank_lint_checks",

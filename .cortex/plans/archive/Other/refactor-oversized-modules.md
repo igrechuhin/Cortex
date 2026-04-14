@@ -206,3 +206,7 @@ change.
   the current baseline.
 
 Coverage target: maintain existing ≥90% baseline; no new uncovered code.
+
+## Partial Progress Log
+
+- 2026-04-14: Extracted `brief_cap.py`, `brief_loaders.py`, `context_appenders.py`, and `context_loaders.py`; updated `brief.py`/`handlers.py` imports and compatibility shims — files: src/cortex/tools/session/brief.py, src/cortex/tools/session/brief_cap.py, src/cortex/tools/session/brief_loaders.py, src/cortex/tools/optimization/handlers.py, src/cortex/tools/optimization/context_appenders.py, src/cortex/tools/optimization/context_loaders.py

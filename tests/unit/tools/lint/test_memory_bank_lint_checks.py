@@ -11,9 +11,10 @@ from cortex.tools.lint.memory_bank_lint_checks import (
     LintFinding,
     MissingPlanFilesCheck,
     OrphanedPlansCheck,
-    OrphanedWikiPagesCheck,
     StaleActiveContextCheck,
+    StaleNumericClaimCheck,
 )
+from cortex.tools.lint.memory_bank_wiki_checks import OrphanedWikiPagesCheck
 from cortex.wiki.wiki_root_files import WikiRootDocument
 
 
@@ -29,6 +30,28 @@ def _write_code_claim_fixture(tmp_path: Path, *, config_content: str) -> None:
         "- Runtime (python): 3.11\n",
     )
     _write(tmp_path / "pyproject.toml", "- Runtime (python): 3.13\n")
+
+
+def _write_quality_snapshot(
+    tmp_path: Path, *, tests_run: int, coverage: float = 0.91
+) -> None:
+    payload = "\n".join(
+        [
+            "{",
+            '  "results": {',
+            '    "tests": {',
+            f'      "tests_run": {tests_run},',
+            f'      "coverage": {coverage}',
+            "    }",
+            "  }",
+            "}",
+            "",
+        ]
+    )
+    _write(
+        tmp_path / ".cortex" / ".session" / "pre_commit_result_latest.json",
+        payload,
+    )
 
 
 def test_lint_finding_is_valid_pydantic_model() -> None:
@@ -406,6 +429,72 @@ def test_code_claim_check_returns_empty_when_lint_config_is_malformed(
     _write_code_claim_fixture(tmp_path, config_content="{ invalid json\n")
 
     check: LintCheck = cast(LintCheck, CodeClaimCheck())
+    findings = check.run(tmp_path)
+
+    assert findings == []
+
+
+def test_stale_numeric_claim_check_warns_for_stale_test_count(tmp_path: Path) -> None:
+    _write_quality_snapshot(tmp_path, tests_run=6500)
+    _write(
+        tmp_path / ".cortex" / "memory-bank" / "progress.md",
+        "\n".join(
+            [
+                "# Progress Log",
+                "",
+                "## What Works",
+                "",
+                "Pre-commit pipeline; 3702 tests, 90.36% coverage.",
+                "",
+            ]
+        ),
+    )
+
+    check: LintCheck = cast(LintCheck, StaleNumericClaimCheck())
+    findings = check.run(tmp_path)
+
+    assert len(findings) == 1
+    finding = findings[0]
+    assert finding.check == "stale_numeric_claim"
+    assert finding.severity == "warning"
+    assert finding.file == ".cortex/memory-bank/progress.md"
+    assert "3702 tests vs latest quality result 6500 tests" in finding.message
+
+
+def test_stale_numeric_claim_check_returns_empty_for_fresh_count(
+    tmp_path: Path,
+) -> None:
+    _write_quality_snapshot(tmp_path, tests_run=6500)
+    _write(
+        tmp_path / ".cortex" / "memory-bank" / "progress.md",
+        "\n".join(
+            [
+                "# Progress Log",
+                "",
+                "## What Works",
+                "",
+                "Pre-commit pipeline; 6500 tests, 91.00% coverage.",
+                "",
+            ]
+        ),
+    )
+
+    check: LintCheck = cast(LintCheck, StaleNumericClaimCheck())
+    findings = check.run(tmp_path)
+
+    assert findings == []
+
+
+def test_stale_numeric_claim_check_noops_without_what_works_section(
+    tmp_path: Path,
+) -> None:
+    _write_quality_snapshot(tmp_path, tests_run=6500)
+    _write(
+        tmp_path / ".cortex" / "memory-bank" / "progress.md",
+        "# Progress Log\n\n## 2026-04-14\n- entry\n",
+    )
+
+    check: LintCheck = cast(LintCheck, StaleNumericClaimCheck())
     findings = check.run(tmp_path)
 
     assert findings == []

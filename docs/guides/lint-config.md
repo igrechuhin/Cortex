@@ -13,7 +13,8 @@ Use `.cortex/config/lint-config.json` to tune the `.cortex/synapse/prompts/lint-
       "verify_against": "pyproject.toml"
     }
   ],
-  "stale_threshold_days": 30
+  "stale_threshold_days": 30,
+  "stale_test_count_threshold": 200
 }
 ```
 
@@ -24,9 +25,11 @@ Use `.cortex/config/lint-config.json` to tune the `.cortex/synapse/prompts/lint-
 - `code_claim_checks[].pattern`: Regex used to locate claim lines in `file`.
 - `code_claim_checks[].verify_against`: Source-of-truth file for comparisons.
 - `stale_threshold_days`: Age threshold for `StaleActiveContextCheck` (must be `>= 1`).
+- `stale_test_count_threshold`: Absolute test-count drift floor for `StaleNumericClaimCheck` (must be `>= 1`, default `200`).
 
 ## Behavior Notes
 
 - If `.cortex/config/lint-config.json` is missing, lint uses defaults.
 - If config is malformed, lint safely falls back to defaults/no-op behavior.
 - Paths can be project-relative (for example `pyproject.toml`) or `.cortex/...`.
+- `StaleNumericClaimCheck` compares the `## What Works` claim against the latest `.cortex/.session/pre_commit_result_*.json` snapshot and warns when drift exceeds `max(stale_test_count_threshold, 10% of latest tests_run)`.

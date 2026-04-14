@@ -16,9 +16,6 @@
 
 ### Fixes
 
-- [ ] **Fix: Add Missing Makefile Offline Targets** — README documents `make preflight-offline` and `make bootstrap-offline` but neither target exists in `Makefile`; onboarding breaks for restricted-network users. Plan: [../plans/fix-makefile-offline-targets.md](../plans/fix-makefile-offline-targets.md) (PENDING)
-- [ ] **Fix: Stale Test-Count Metric in progress.md What Works Section** — "What Works" hardcodes `3702 tests, 90.36% coverage`; current suite is 5000+ tests; adds `StaleNumericClaimCheck` to `lint_memory_bank` to prevent future drift. Plan: [../plans/fix-stale-progress-metrics.md](../plans/fix-stale-progress-metrics.md) (PENDING)
-
 ### Quality & Reliability Improvements
 
 ### Security
@@ -27,13 +24,13 @@
 
 ### Refactoring
 
-- [ ] **Refactor: Split Oversized `src/cortex/tools/session/brief.py` and `src/cortex/tools/optimization/handlers.py`** — both files are 700+ lines (well over the 400-line rule); split along existing responsibility boundaries into `brief_cap`, `brief_loaders`, `context_appenders`, `context_loaders`; no behaviour change. Plan: [../plans/refactor-oversized-modules.md](../plans/refactor-oversized-modules.md) (PENDING)
-
 ### Cleanup
 
 ### Investigation Plans (Archive / Reference)
 
 Completed investigations are recorded in [activeContext.md](activeContext.md). Plan files under `.cortex/plans/archive/` as needed.
+
+- Plan: [Fix: Add Missing Makefile Offline Targets](../plans/archive/Other/fix-makefile-offline-targets.md)
 
 ### Improvements
 

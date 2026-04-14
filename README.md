@@ -152,16 +152,8 @@ Add to your `mcp.json`:
 
 For local development, use these Make targets (after running `bash scripts/bootstrap.sh` once to create the virtualenv and install dependencies):
 
-- **Restricted network / offline**: If `uv sync` or installs fail (proxy, air-gap, SSL), use [Offline and network-restricted verification](docs/guides/troubleshooting.md#offline-and-network-restricted-verification) to bootstrap a test-running environment and triage fetch vs test failures.
-- **`make preflight`**: Probe PyPI or `UV_INDEX_URL` before `uv sync` when triaging connectivity; see [Offline and network-restricted verification](docs/guides/troubleshooting.md#offline-and-network-restricted-verification).
-
-### Restricted-network / offline setup
-
-1. Run `make preflight-offline` (or `bash scripts/preflight.sh --offline`) from the repo root to verify `uv`, `git`, `python3`, `uv.lock`, and a local `uv_build` wheel (cache, `vendor/`, or `wheelhouse/`).
-2. If `uv_build` is missing: `uv pip download uv-build --dest vendor/ && uv pip install --no-index --find-links vendor/ uv-build` (or populate `wheelhouse/` as described under [Offline and network-restricted verification](docs/guides/troubleshooting.md#offline-and-network-restricted-verification)).
-3. Install deps without the index: `uv sync --offline --frozen` (with `UV_NO_INDEX=1` and `UV_FIND_LINKS` pointing at your wheelhouse when using `make bootstrap-offline`).
-4. Run tests offline: `uv run --offline pytest tests/ -q`. Long-form triage: [Offline and network-restricted verification](docs/guides/troubleshooting.md#offline-and-network-restricted-verification).
-
+- **Dependency setup / connectivity triage**: If `uv sync` or installs fail (proxy, SSL, or registry access), use [Dependency and network verification](docs/guides/troubleshooting.md#dependency-and-network-verification) to separate environment setup failures from actual test failures.
+- **`make preflight`**: Probe PyPI or `UV_INDEX_URL` before `uv sync` when triaging connectivity; see [Dependency and network verification](docs/guides/troubleshooting.md#dependency-and-network-verification).
 - **`make bootstrap`**: Run `scripts/bootstrap.sh` to create or update the `.venv` and install all dependencies.
 - **`make check`**: Non-mutating local gate: verify Black on `src/` and `tests/`, Ruff lint, Pyright, then the fast test suite. Does not rewrite files; use `make fix` when checks fail for formatting or auto-fixable lint.
 - **`make fix`**: Apply Black, Ruff import sorting (`I`), and Ruff `--fix` on `src/` and `tests/` (mutating).
@@ -204,7 +196,7 @@ Prompts are for setup and migration; for daily work use **plan → do → commit
 | New project, no Memory Bank | `initialize` |
 | Legacy Memory Bank under IDE `.cursor/` (`memory-bank/`) | `migrate` |
 | Share rules across projects | `setup_synapse` |
-| tiktoken cache missing (offline encoding support) | `populate_tiktoken_cache` |
+| tiktoken cache missing (local encoding cache setup) | `populate_tiktoken_cache` |
 
 Full prompt list: [docs/prompts](docs/prompts/README.md)
 

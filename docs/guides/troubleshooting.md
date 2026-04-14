@@ -53,7 +53,7 @@ pyenv global 3.13.0
 
 For a **stable MCP connection**, see [Getting started: Stable MCP setup](../getting-started.md#stable-mcp-setup-recommended): Cortex exits on disconnect by default (client starts a new process when needed, so you get fresh Initialize with no user action), optional bridge, faster markdown lint, and usage tips. The sections below cover individual issues and causes.
 
-#### Network-restricted verification {#offline-and-network-restricted-verification}
+#### Dependency and network verification {#dependency-and-network-verification}
 
 Use this when proxies or corporate filters block PyPI (or to separate **”the environment never finished installing”** from **”pytest failed”**).
 
