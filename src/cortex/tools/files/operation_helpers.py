@@ -58,6 +58,8 @@ class FileOperation(str, Enum):
     FORK_SCHEMA = "fork_schema"
     LIST_DRAFTS = "list_drafts"
     DISCARD_DRAFT = "discard_draft"
+    INVALIDATE_FACT = "invalidate_fact"
+    MEMORY_TIMELINE = "memory_timeline"
 
 
 def parse_file_operation(value: str | None) -> FileOperation | None:

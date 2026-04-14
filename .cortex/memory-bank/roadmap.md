@@ -34,7 +34,6 @@ Completed investigations are recorded in [activeContext.md](activeContext.md). P
 
 ### Improvements
 
-- [ ] **Improvement: Temporal Memory with Validity Windows** — Add SQLite-backed temporal store with valid_from/valid_to fields so agents can query 'what was true on date X'. Includes contradiction detection and new memory_timeline MCP tool. Plan: [../plans/improve-temporal-memory.md](../plans/improve-temporal-memory.md) (PENDING)
 - [ ] **Improvement: Typed Memory Classification for Memory Bank Entries** — Auto-classify every memory write into decision/preference/milestone/problem/status buckets using pure regex heuristics. Enables read_by_type retrieval and type-weighted L1 context scoring. Plan: [../plans/improve-typed-memory-classification.md](../plans/improve-typed-memory-classification.md) (PENDING)
 - [ ] **Improvement: Hybrid BM25 + Keyword Retrieval for Memory Bank Search** — Add Okapi BM25 scorer (pure Python stdlib, no external deps) to all memory bank retrieval paths. Adds manage_file(operation='search') MCP operation with ranked paragraph results. Plan: [../plans/improve-hybrid-bm25-retrieval.md](../plans/improve-hybrid-bm25-retrieval.md) (PENDING)
 - [ ] **Improvement: Memory Write-Ahead Log for Audit Trail and Rollback** — WAL that records every memory bank mutation to a dedicated write-log stream. Enables anomaly detection (shrink > 30%), snapshot, and restore. Adds memory_wal MCP tool. Plan: [../plans/improve-memory-write-ahead-log.md](../plans/improve-memory-write-ahead-log.md) (PENDING)

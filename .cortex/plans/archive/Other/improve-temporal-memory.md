@@ -174,3 +174,8 @@ Files:
 - **Integration**: Index real `.cortex/memory-bank/` fixture; assert `fastmcp-v3-phase2` status fact present.
 - **Regression**: Session start with mocked `TemporalMemoryStore` failure; assert no exception propagates.
 - Target: 95% line coverage for all new files.
+
+## Partial Progress Log
+
+- 2026-04-14: Implemented temporal SQLite store and CRUD/query operations with deterministic fact IDs, plus store-focused unit tests — files: src/cortex/memory/temporal_store.py, src/cortex/memory/**init**.py, tests/memory/test_temporal_store.py
+- 2026-04-14: Implemented temporal indexer extraction/contradiction checks, timeline query models and manage_file operations, plus session-start background indexing and tests — files: src/cortex/memory/temporal_indexer.py, src/cortex/memory/timeline.py, src/cortex/tools/files/operation_helpers.py, src/cortex/tools/files/manage_file_helpers.py, src/cortex/tools/session/brief.py, tests/memory/test_temporal_indexer.py, tests/tools/memory/test_memory_timeline.py

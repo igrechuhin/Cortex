@@ -15,6 +15,9 @@
 - **Refactor: Split Oversized `src/cortex/tools/session/brief.py` and `src/cortex/tools/optimization/handlers.py`** - COMPLETE. Verified split module sizes/imports and passed full quality gate.
 - **Improvement: Layered Context Budget L0-L3 Tiering** - COMPLETE. Implemented L0/L1/L2/L3 context layering builders, wired layered context responses, and added targeted layer/resource tests.
 - **Layered context budget (L0-L3)** - COMPLETE. Added layered context modules and integration wiring in optimization/session config paths; plan moved to archive path and tests/resources context layer coverage added.
+- **Temporal store slice for Improvement: Temporal Memory with Validity Windows** - COMPLETE. Implemented the temporal SQLite store (`TemporalFact`, deterministic IDs, add/invalidate/query/current methods) and added focused unit tests for initialization, validity-window queries, invalidation, and idempotent inserts.
+- **Improvement: Temporal Memory with Validity Windows** - PARTIAL. Added temporal indexing (`TemporalIndexer`), contradiction detection warnings, timeline query models/handler, `manage_file` timeline/invalidation operations, and session-start background indexing with dedicated indexer/timeline tests.
+- **Improvement: Temporal Memory with Validity Windows** - COMPLETE. Implemented temporal fact storage, indexing, timeline retrieval, and session integration with tests.
 
 ## 2026-04-13
 

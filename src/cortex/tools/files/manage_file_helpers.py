@@ -26,6 +26,7 @@ from cortex.core.usage_context import (
 from cortex.managers.initialization import get_managers
 from cortex.managers.types import ManagersDict
 from cortex.managers.utils import get_manager
+from cortex.memory.timeline import MemoryTimelineInput, memory_timeline_handle
 from cortex.tools.files.artifact_operations import file_artifact_from_payload
 from cortex.tools.files.constitution_init_flow import handle_init_constitution_operation
 from cortex.tools.files.crud_flow import (
@@ -53,6 +54,26 @@ from cortex.tools.response_builder import error_response
 from cortex.validation.schema_validator import SchemaValidator
 
 logger = logging.getLogger(__name__)
+
+
+def _temporal_db_path(root: Path) -> Path:
+    return root / ".cortex" / "temporal.db"
+
+
+def _parse_json_content(content: str | None) -> dict[str, str] | None:
+    if content is None:
+        return None
+    try:
+        parsed_obj: object = json.loads(content)
+    except json.JSONDecodeError:
+        return None
+    if not isinstance(parsed_obj, dict):
+        return None
+    parsed_dict = cast(dict[object, object], parsed_obj)
+    typed_dict: dict[str, str] = {}
+    for raw_key, raw_value in parsed_dict.items():
+        typed_dict[str(raw_key)] = str(raw_value)
+    return typed_dict
 
 
 async def _manage_file_get_root(ctx: MCPContext | None) -> Path:
@@ -499,6 +520,10 @@ async def _dispatch_secondary_operation(
         return _list_explore_logs(root)
     if operation == FileOperation.CLEAR_EXPLORE_LOGS:
         return _clear_explore_logs(root)
+    if operation == FileOperation.INVALIDATE_FACT:
+        return _invalidate_temporal_fact(root, content)
+    if operation == FileOperation.MEMORY_TIMELINE:
+        return _memory_timeline(root, content)
     return None
 
 
@@ -571,7 +596,7 @@ async def _dispatch_write_operation(
             indent=2,
         )
     schema_validator = await resolve_schema_validator(managers)
-    return await handle_write_operation(
+    result = await handle_write_operation(
         file_path,
         file_name,
         content,
@@ -583,3 +608,51 @@ async def _dispatch_write_operation(
         schema_validator,
         project_root=root,
     )
+    index_temporal_file(root, file_path, result)
+    return result
+
+
+def index_temporal_file(root: Path, file_path: Path, result: str) -> None:
+    # AI: Index only confirmed successful writes so failed write attempts never create false timeline facts.
+    try:
+        payload_obj: object = json.loads(result)
+    except json.JSONDecodeError:
+        return
+    if not isinstance(payload_obj, dict):
+        return
+    payload_dict = cast(dict[str, object], payload_obj)
+    status = payload_dict.get("status")
+    if status != "success":
+        return
+    from cortex.memory.temporal_indexer import TemporalIndexer
+    from cortex.memory.temporal_store import TemporalMemoryStore
+
+    indexer = TemporalIndexer(TemporalMemoryStore(_temporal_db_path(root)), root)
+    _ = indexer.index_file(file_path)
+
+
+def _invalidate_temporal_fact(root: Path, content: str | None) -> str:
+    payload = _parse_json_content(content)
+    if payload is None:
+        return json.dumps(error_response(error="invalidate_fact requires JSON content"), indent=2)
+    required = ("subject", "predicate", "object", "ended")
+    missing = [key for key in required if not payload.get(key)]
+    if missing:
+        return json.dumps(error_response(error=f"Missing fields: {', '.join(missing)}"), indent=2)
+    from cortex.memory.temporal_store import TemporalMemoryStore
+
+    store = TemporalMemoryStore(_temporal_db_path(root))
+    changed = store.invalidate(
+        subject=payload["subject"],
+        predicate=payload["predicate"],
+        object=payload["object"],
+        ended=payload["ended"],
+    )
+    return json.dumps({"status": "success", "invalidated": changed}, indent=2)
+
+
+def _memory_timeline(root: Path, content: str | None) -> str:
+    payload = _parse_json_content(content)
+    input_data = MemoryTimelineInput.model_validate(payload or {})
+    result = memory_timeline_handle(input_data, root)
+    return result.model_dump_json(indent=2)

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 from dataclasses import dataclass
 from pathlib import Path
 from typing import NamedTuple
@@ -37,6 +38,8 @@ from cortex.tools.session.models import (
     WikiStatusSummary,
 )
 from cortex.tools.session.wiki_status import compute_wiki_status
+
+logger = logging.getLogger(__name__)
 
 __all__ = ["build_session_brief", "cap_session_brief_payload", "load_memory_bank_files"]
 
@@ -282,4 +285,26 @@ async def load_memory_bank_files(
     if roadmap_err:
         return SessionStartErrorResult(status=ToolResultStatus.ERROR, error=roadmap_err)
     assert active_content is not None and roadmap_content is not None
+    _schedule_temporal_index(fs_manager.memory_bank_dir.parent.parent)
     return active_content, roadmap_content
+
+
+def _schedule_temporal_index(project_root: Path) -> None:
+    try:
+        loop = asyncio.get_running_loop()
+    except RuntimeError:
+        return
+    _ = loop.create_task(index_temporal_async(project_root))
+
+
+async def index_temporal_async(project_root: Path) -> None:
+    try:
+        from cortex.memory.temporal_indexer import TemporalIndexer
+        from cortex.memory.temporal_store import TemporalMemoryStore
+
+        store = TemporalMemoryStore(project_root / ".cortex" / "temporal.db")
+        counts = await asyncio.to_thread(TemporalIndexer(store, project_root).index_all)
+        total = sum(counts.values())
+        logger.info("[temporal] Indexed %s facts from %s files", total, len(counts))
+    except Exception as exc:
+        logger.warning("[temporal] Failed to initialize temporal store: %s", exc)

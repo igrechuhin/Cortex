@@ -28,6 +28,10 @@
 
 - ✅ **Layered context budget modules and routing** - COMPLETE (2026-04-14) - Implemented layered context helpers (L0-L3), updated optimization handlers/context appenders wiring, and added resource tests for layered context loading behavior.
 
+- ✅ **Improvement: Temporal Memory with Validity Windows (PARTIAL)** - COMPLETE (2026-04-14) - Added temporal indexing and contradiction detection, introduced timeline query support wired through `manage_file` operations, and integrated best-effort background temporal indexing into session startup.
+
+- ✅ **Improvement: Temporal Memory with Validity Windows** - COMPLETE (2026-04-14) - Implemented temporal fact storage, indexing, timeline retrieval, and session integration with comprehensive tests and quality gate passing.
+
 ## Completed Work (2026-04-12)
 
 - **Summary (2026-04-12)** - 1 entries archived.
