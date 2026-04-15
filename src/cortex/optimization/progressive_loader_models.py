@@ -8,13 +8,14 @@ from dataclasses import dataclass
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from cortex.core.pydantic_extra import EXTRA_FORBID
 from cortex.optimization.models import FileContentMetadata
 
 
 class LoadedFileContent(BaseModel):
     """Type definition for loaded file content."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
     content: str = Field(description="File content")
     tokens: int = Field(ge=0, description="Token count")

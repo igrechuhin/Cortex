@@ -2,6 +2,8 @@
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from cortex.core.pydantic_extra import EXTRA_FORBID
+
 from ._base import DictLikeModel
 from ._enums import ChangeType, FileCategory, MigrationResultStatus
 
@@ -9,7 +11,7 @@ from ._enums import ChangeType, FileCategory, MigrationResultStatus
 class VersionMetadata(DictLikeModel):
     """Version snapshot metadata."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
     version: int = Field(ge=1, description="Version number")
     timestamp: str = Field(description="ISO format timestamp")
@@ -30,7 +32,7 @@ class VersionMetadata(DictLikeModel):
 class SnapshotInfo(BaseModel):
     """Snapshot file information."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
     content: str = Field(description="Snapshot content")
     metadata: VersionMetadata = Field(description="Version metadata")
@@ -39,7 +41,7 @@ class SnapshotInfo(BaseModel):
 class FileDependencyInfo(BaseModel):
     """File dependency information."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
     priority: int = Field(description="Loading priority")
     dependencies: list[str] = Field(
@@ -50,18 +52,18 @@ class FileDependencyInfo(BaseModel):
 class DependencyNode(BaseModel):
     """Dependency graph node."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
     file: str = Field(description="File name")
     priority: int = Field(description="Loading priority")
-    category: str = Field(description="File category")
+    category: FileCategory = Field(description="File category")
 
 
 class DependencyEdge(BaseModel):
     """Dependency graph edge."""
 
     model_config = ConfigDict(
-        extra="forbid", validate_assignment=True, populate_by_name=True
+        extra=EXTRA_FORBID, validate_assignment=True, populate_by_name=True
     )
 
     from_: str = Field(alias="from", description="Source file")
@@ -73,7 +75,7 @@ class DependencyEdge(BaseModel):
 class DependencyGraph(DictLikeModel):
     """Dependency graph export."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
     nodes: list[DependencyNode] = Field(description="Graph nodes")
     edges: list[DependencyEdge] = Field(description="Graph edges")
@@ -85,7 +87,7 @@ class DependencyGraph(DictLikeModel):
 class TransclusionNode(BaseModel):
     """Transclusion graph node."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
     file: str = Field(description="File name")
 
@@ -94,7 +96,7 @@ class TransclusionEdge(BaseModel):
     """Transclusion graph edge."""
 
     model_config = ConfigDict(
-        extra="forbid", validate_assignment=True, populate_by_name=True
+        extra=EXTRA_FORBID, validate_assignment=True, populate_by_name=True
     )
 
     from_: str = Field(alias="from", description="Source file")
@@ -105,7 +107,7 @@ class TransclusionEdge(BaseModel):
 class TransclusionGraph(DictLikeModel):
     """Transclusion graph export."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
     nodes: list[TransclusionNode] = Field(description="Graph nodes")
     edges: list[TransclusionEdge] = Field(description="Graph edges")
@@ -115,7 +117,7 @@ class ReferenceEdge(BaseModel):
     """Reference graph edge."""
 
     model_config = ConfigDict(
-        extra="forbid", validate_assignment=True, populate_by_name=True
+        extra=EXTRA_FORBID, validate_assignment=True, populate_by_name=True
     )
 
     from_: str = Field(alias="from", description="Source file")
@@ -126,7 +128,7 @@ class ReferenceEdge(BaseModel):
 class ReferenceGraph(DictLikeModel):
     """Reference graph export."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
     nodes: list[TransclusionNode] = Field(description="Graph nodes")
     edges: list[ReferenceEdge] = Field(description="Graph edges")
@@ -135,7 +137,7 @@ class ReferenceGraph(DictLikeModel):
 class FileDependencyDetail(BaseModel):
     """Detailed file dependency information."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
     depends_on: list[str] = Field(description="Files this file depends on")
     dependents: list[str] = Field(description="Files that depend on this file")
@@ -144,7 +146,7 @@ class FileDependencyDetail(BaseModel):
 class GraphDict(BaseModel):
     """Complete dependency graph dictionary."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
     dependencies: dict[str, FileDependencyDetail] = Field(
         description="File dependency details"
@@ -154,7 +156,7 @@ class GraphDict(BaseModel):
 class MigrationStatus(BaseModel):
     """Migration status information."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
     current_version: str = Field(description="Current schema version")
     target_version: str = Field(description="Target schema version")
@@ -167,7 +169,7 @@ class MigrationStatus(BaseModel):
 class DiskUsageInfo(DictLikeModel):
     """Disk usage information for version history."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
     total_bytes: int = Field(ge=0, description="Total bytes used")
     file_count: int = Field(ge=0, description="Number of files")
@@ -176,7 +178,7 @@ class DiskUsageInfo(DictLikeModel):
 class FormattedVersionMetadata(BaseModel):
     """Formatted version metadata for export."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
     version: int = Field(ge=1, description="Version number")
     timestamp: str = Field(description="ISO format timestamp")
@@ -195,7 +197,7 @@ class FormattedVersionMetadata(BaseModel):
 class MigrationInfo(BaseModel):
     """Migration information result."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
     needs_migration: bool = Field(description="Whether migration is needed")
     reason: str | None = Field(
@@ -221,7 +223,7 @@ class MigrationInfo(BaseModel):
 class VerificationResult(BaseModel):
     """Migration verification result."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
     success: bool = Field(description="Whether verification succeeded")
     error: str | None = Field(
@@ -239,7 +241,7 @@ class VerificationResult(BaseModel):
 class MigrationResult(BaseModel):
     """Migration execution result."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
     status: MigrationResultStatus = Field(description="Migration status")
     files_migrated: int = Field(ge=0, description="Number of files migrated")
@@ -252,7 +254,7 @@ class MigrationResult(BaseModel):
 class BackupInfo(BaseModel):
     """Backup information."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
     path: str = Field(description="Path to backup directory")
     timestamp: str = Field(description="Timestamp string from directory name")
@@ -265,7 +267,7 @@ class BackupInfo(BaseModel):
 class StaticDependencyInfo(BaseModel):
     """Static dependency configuration for a file."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
     depends_on: list[str] = Field(
         default_factory=list, description="List of files this file depends on"
@@ -277,7 +279,7 @@ class StaticDependencyInfo(BaseModel):
 class VersionHistoryMetadata(BaseModel):
     """Metadata for version history entry."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
     changed_sections: list[str] = Field(
         default_factory=list, description="Section headings that changed"
@@ -291,7 +293,7 @@ class VersionHistoryMetadata(BaseModel):
 class VersionHistoryEntryModel(BaseModel):
     """Entry in version history."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
     snapshot_id: str = Field(..., description="Snapshot identifier")
     timestamp: str = Field(..., description="ISO timestamp of snapshot")
@@ -307,7 +309,7 @@ class VersionHistoryEntryModel(BaseModel):
 class RollbackToVersionResult(BaseModel):
     """Result of rolling back to a specific version."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
     file_name: str = Field(..., description="File that was rolled back")
     content: str = Field(..., description="Restored content")
@@ -319,7 +321,7 @@ class RollbackToVersionResult(BaseModel):
 class DependencyGraphDict(BaseModel):
     """Dictionary representation of dependency graph."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
     graph: dict[str, list[str]] = Field(
         default_factory=dict, description="Forward dependencies"
@@ -338,7 +340,7 @@ class DependencyGraphDict(BaseModel):
 class FileDependencyData(BaseModel):
     """Dependency data for a single file."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
     priority: int = Field(ge=0, description="Loading priority")
     dependencies: list[str] = Field(
@@ -349,7 +351,7 @@ class FileDependencyData(BaseModel):
 class GraphDataDict(BaseModel):
     """Graph data dictionary for dependency visualization."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
     files: dict[str, FileDependencyData] = Field(
         default_factory=dict, description="File dependency data by file name"

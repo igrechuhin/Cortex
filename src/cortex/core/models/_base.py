@@ -4,6 +4,8 @@ from collections.abc import ItemsView, KeysView, ValuesView
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from cortex.core.pydantic_extra import EXTRA_ALLOW, EXTRA_FORBID
+
 # JSON-serializable value type (Python 3.13+ recursive type alias).
 type JsonPrimitive = str | int | float | bool | None
 type JsonValue = JsonPrimitive | list["JsonValue"] | dict[str, "JsonValue"]
@@ -47,12 +49,12 @@ class JsonDict(DictLikeModel):
 
     This model replaces `ModelDict` for type-safe JSON dictionary handling.
     It allows arbitrary keys and values, making it suitable for JSON data.
-    Uses extra="allow" to accept any keys dynamically.
+    Uses extra=EXTRA_ALLOW to accept any keys dynamically.
     Inherits from DictLikeModel to support dict-like access
     (__getitem__, __contains__, etc.).
     """
 
-    model_config = ConfigDict(extra="allow", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_ALLOW, validate_assignment=True)
 
     def to_dict(self) -> ModelDict:
         """Convert to plain dictionary."""
@@ -67,7 +69,7 @@ class JsonDict(DictLikeModel):
 class JsonList(BaseModel):
     """Pydantic model for JSON list structures."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
     items: list[JsonValue] = Field(
         default_factory=lambda: list[JsonValue](), description="List items"

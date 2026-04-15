@@ -12,6 +12,7 @@ from pathlib import Path
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from cortex.core.pydantic_extra import EXTRA_FORBID
 from cortex.managers.usage_models import ToolUsageEvent
 from cortex.managers.usage_tracker import UsageTracker
 
@@ -30,7 +31,7 @@ _TOOL_OPTIMIZATION_HINTS: dict[str, str] = {
 class TokenEfficiencyEntry(BaseModel):
     """Per-tool token efficiency summary."""
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra=EXTRA_FORBID)
 
     tool_name: str = Field(description="MCP tool name")
     total_response_tokens: int = Field(
@@ -52,7 +53,7 @@ def _empty_token_entries() -> list[TokenEfficiencyEntry]:
 class TokenEfficiencyPayload(BaseModel):
     """Response payload for token efficiency analysis."""
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra=EXTRA_FORBID)
 
     status: str = Field(description="success or unavailable")
     project_root: str = Field(default="", description="Project root path")

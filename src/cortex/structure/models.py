@@ -11,6 +11,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from cortex.core.models import JsonDict
 from cortex.core.path_resolver import CortexResourceType, CursorResourceType
+from cortex.core.pydantic_extra import EXTRA_ALLOW, EXTRA_FORBID
 
 # ============================================================================
 # Base Model
@@ -21,7 +22,7 @@ class StructureBaseModel(BaseModel):
     """Base model for structure types with strict validation."""
 
     model_config = ConfigDict(
-        extra="forbid",
+        extra=EXTRA_FORBID,
         validate_assignment=True,
         validate_default=True,
     )
@@ -117,7 +118,7 @@ class StructureConfigModel(StructureBaseModel):
     """
 
     model_config = ConfigDict(
-        extra="allow",  # Allow extra fields for forward compatibility
+        extra=EXTRA_ALLOW,  # Allow extra fields for forward compatibility
         validate_assignment=True,
         validate_default=True,
     )
@@ -262,7 +263,7 @@ class CursorIntegrationValidation(StructureBaseModel):
     """Result of cursor integration config validation."""
 
     model_config = ConfigDict(
-        extra="allow",  # Allow extra fields for schema evolution
+        extra=EXTRA_ALLOW,  # Allow extra fields for schema evolution
     )
 
     valid: bool = Field(..., description="Whether config is valid")
@@ -298,7 +299,7 @@ class StructureInfoResult(StructureBaseModel):
     """Result of get_structure_info operation."""
 
     model_config = ConfigDict(
-        extra="allow",  # Allow extra fields for forward compatibility
+        extra=EXTRA_ALLOW,  # Allow extra fields for forward compatibility
         validate_assignment=True,
         validate_default=True,
     )
@@ -469,7 +470,7 @@ class ProjectInfo(StructureBaseModel):
     used in template rendering and file generation.
     """
 
-    model_config = ConfigDict(extra="allow")  # Allow additional fields
+    model_config = ConfigDict(extra=EXTRA_ALLOW)  # Allow additional fields
 
     project_name: str = Field(default="", description="Project name")
     project_description: str = Field(default="", description="Project description")
@@ -521,7 +522,7 @@ class InteractiveSetupQuestion(StructureBaseModel):
     More flexible than ProjectSetupQuestion for various question types.
     """
 
-    model_config = ConfigDict(extra="allow")
+    model_config = ConfigDict(extra=EXTRA_ALLOW)
 
     id: str = Field(..., description="Question identifier")
     question: str = Field(..., description="Question text")

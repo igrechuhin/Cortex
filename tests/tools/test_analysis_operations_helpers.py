@@ -8,6 +8,7 @@ import pytest
 
 from cortex.analysis.models import (
     AntiPatternInfo,
+    AntiPatternKind,
     ComplexityAnalysisResult,
     ComplexityAnalysisStatus,
     ComplexityMetrics,
@@ -477,7 +478,7 @@ def _make_structure_analyzer_with_anti_patterns() -> MagicMock:
     mock_sa.detect_anti_patterns = AsyncMock(
         return_value=[
             AntiPatternInfo(
-                type="naming_inconsistency",
+                type=AntiPatternKind.NAMING_INCONSISTENCY,
                 severity=SeverityLevel.LOW,
                 description="Naming inconsistency",
             )

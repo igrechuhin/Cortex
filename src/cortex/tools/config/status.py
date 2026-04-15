@@ -17,6 +17,7 @@ from cortex.core.path_resolver import (
     get_cursor_path,
     is_memory_bank_fully_initialized,
 )
+from cortex.core.pydantic_extra import EXTRA_FORBID
 from cortex.core.tiktoken_cache import ensure_bundled_cache_available
 from cortex.managers.initialization import get_project_root
 
@@ -24,7 +25,7 @@ from cortex.managers.initialization import get_project_root
 class ProjectConfigStatus(DictLikeModel):
     """Project configuration status flags."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
     memory_bank_initialized: bool = Field(
         description="Whether memory bank is initialized"

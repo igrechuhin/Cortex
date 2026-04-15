@@ -9,6 +9,7 @@ from datetime import datetime
 from pydantic import ConfigDict, Field
 
 from cortex.core.models import RiskLevel
+from cortex.core.pydantic_extra import EXTRA_ALLOW, EXTRA_FORBID
 
 from ._base import RefactoringBaseModel, RefactoringImpactMetrics
 from ._enums import RefactoringStatus
@@ -154,7 +155,7 @@ class ReorganizationStructure(RefactoringBaseModel):
 class MemoryBankStructureData(RefactoringBaseModel):
     """Analyzed structure data for Memory Bank reorganization."""
 
-    model_config = ConfigDict(extra="allow", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_ALLOW, validate_assignment=True)
 
     total_files: int = Field(default=0, ge=0, description="Total number of files")
     files: list[str] = Field(default_factory=list, description="List of file paths")
@@ -198,7 +199,7 @@ class DependencyInfo(RefactoringBaseModel):
 class DependencyGraphInput(RefactoringBaseModel):
     """Dependency graph input for reorganization."""
 
-    model_config = ConfigDict(extra="allow", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_ALLOW, validate_assignment=True)
 
     dependencies: dict[str, DependencyInfo] = Field(
         default_factory=dict, description="File dependency information"
@@ -230,7 +231,7 @@ class ReorganizationImpactModel(RefactoringBaseModel):
 class ReorganizationPlanModel(RefactoringBaseModel):
     """Represents a complete reorganization plan."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
     plan_id: str = Field(..., description="Unique plan identifier")
     optimization_goal: str = Field(

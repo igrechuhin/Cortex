@@ -10,6 +10,7 @@ from tempfile import TemporaryDirectory
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.validation.roadmap_sync import (
     SyncValidationResult,
+    TodoCategory,
     parse_roadmap_references,
     scan_codebase_todos,
     validate_roadmap_sync,
@@ -312,7 +313,7 @@ class TestScanCodebaseTodos:
             assert todos[0].file_path == "src/module.py"
             assert todos[0].line == 1
             assert "TODO" in todos[0].snippet
-            assert todos[0].category == "todo"
+            assert todos[0].category == TodoCategory.TODO
 
     def test_scan_todos_finds_javascript_todos(self):
         """Test scanning finds JavaScript TODO comments."""

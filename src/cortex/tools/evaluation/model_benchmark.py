@@ -19,6 +19,7 @@ from cortex.core.context_logging import MCPContext, log_client
 from cortex.core.models import OperationStatus
 from cortex.core.path_resolver import get_cache_path
 from cortex.core.project_root_resolver import resolve_project_root_async
+from cortex.core.pydantic_extra import EXTRA_FORBID
 
 logger = logging.getLogger(__name__)
 
@@ -28,7 +29,7 @@ _MODEL_BENCHMARKS_KEY = "evals/model_benchmarks.json"
 class ModelBenchmarkRecord(BaseModel):
     """Single benchmark run for one model (stored for historical comparison)."""
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra=EXTRA_FORBID)
 
     model_name: str = Field(
         description="Model identifier (e.g. claude-sonnet-4, current)"
@@ -58,7 +59,7 @@ class ModelBenchmarkRecord(BaseModel):
 class ModelBenchmarkComparison(BaseModel):
     """Comparison of current run vs a baseline run."""
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra=EXTRA_FORBID)
 
     baseline_model: str = Field(description="Model name of the baseline run")
     baseline_generated_at: str = Field(description="Baseline run timestamp")

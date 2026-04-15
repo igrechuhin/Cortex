@@ -7,13 +7,14 @@ Extracted from refactoring/models.py for Phase 9.1.2 file size compliance.
 from pydantic import ConfigDict, Field
 
 from cortex.core.models import DictLikeModel, RiskLevel
+from cortex.core.pydantic_extra import EXTRA_ALLOW, EXTRA_FORBID
 
 
 class RefactoringBaseModel(DictLikeModel):
     """Base model for refactoring types with strict validation."""
 
     model_config = ConfigDict(
-        extra="forbid",
+        extra=EXTRA_FORBID,
         validate_assignment=True,
         validate_default=True,
     )
@@ -74,7 +75,7 @@ class RefactoringMetadata(RefactoringBaseModel):
 class ActionDetails(RefactoringBaseModel):
     """Details for a refactoring action."""
 
-    model_config = ConfigDict(extra="allow", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_ALLOW, validate_assignment=True)
 
     source_file: str | None = Field(default=None, description="Source file path")
     source_files: list[str] | None = Field(

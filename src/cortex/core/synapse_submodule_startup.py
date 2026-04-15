@@ -16,6 +16,7 @@ from pathlib import Path
 from pydantic import BaseModel, ConfigDict, Field
 
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
+from cortex.core.pydantic_extra import EXTRA_FORBID
 from cortex.tools.execution.pre_commit_submodule_guard import (
     submodule_path_has_local_changes,
 )
@@ -42,7 +43,7 @@ class SynapseStartupSyncOutcome(StrEnum):
 class SynapseStartupSyncResult(BaseModel):
     """Structured outcome of startup submodule sync."""
 
-    model_config = ConfigDict(extra="forbid", frozen=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, frozen=True)
 
     outcome: SynapseStartupSyncOutcome
     detail: str = Field(default="")

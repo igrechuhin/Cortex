@@ -10,6 +10,7 @@ from pydantic import ConfigDict, Field
 
 from cortex.core.file_system import FileSystemManager
 from cortex.core.metadata_index import MetadataIndex
+from cortex.core.pydantic_extra import EXTRA_FORBID
 from cortex.core.token_counter import TokenCounter
 from cortex.core.version_manager import VersionManager
 
@@ -148,7 +149,7 @@ class ManagersInitResult(StrictBaseModel):
     versions: VersionManager = Field(description="VersionManager instance")
 
     model_config = ConfigDict(
-        extra="forbid",
+        extra=EXTRA_FORBID,
         validate_assignment=True,
         arbitrary_types_allowed=True,
     )

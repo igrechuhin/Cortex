@@ -3,6 +3,7 @@
 from pydantic import BaseModel, ConfigDict, Field
 
 from cortex.core.constants import CACHE_MAX_SIZE, CACHE_TTL_SECONDS
+from cortex.core.pydantic_extra import EXTRA_ALLOW, EXTRA_FORBID
 
 from ._base import DictLikeModel, JsonDict, ModelDict
 from ._enums import ResponseStatus
@@ -11,7 +12,7 @@ from ._enums import ResponseStatus
 class ConnectionHealth(DictLikeModel):
     """MCP connection health metrics."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
     healthy: bool = Field(description="Whether connection is healthy")
     concurrent_operations: int = Field(
@@ -48,13 +49,13 @@ class ConnectionHealth(DictLikeModel):
 class MCPToolArguments(BaseModel):
     """Arguments for MCP tool execution."""
 
-    model_config = ConfigDict(extra="allow", validate_assignment=False)
+    model_config = ConfigDict(extra=EXTRA_ALLOW, validate_assignment=False)
 
 
 class CacheConfig(BaseModel):
     """Cache configuration settings."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
     ttl_seconds: int = Field(default=3600, ge=0, description="Time-to-live in seconds")
     lru_max_size: int = Field(default=100, ge=1, description="LRU cache maximum size")
@@ -67,7 +68,7 @@ class CacheConfig(BaseModel):
 class ManagerCacheDefaults(BaseModel):
     """Default cache configurations per manager type."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
     token_counter: CacheConfig = Field(
         default_factory=lambda: CacheConfig(ttl_seconds=600, lru_max_size=200),
@@ -105,7 +106,7 @@ class SuccessResponseData(BaseModel):
 
     file_count: int | None = None
     total_tokens: int | None = None
-    model_config = ConfigDict(extra="allow", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_ALLOW, validate_assignment=True)
 
     def to_dict(self) -> ModelDict:
         """Convert to dictionary for JSON serialization."""
@@ -116,7 +117,7 @@ class ErrorContext(BaseModel):
     """Context information for error responses."""
 
     provided_value: int | float | str | None = None
-    model_config = ConfigDict(extra="allow", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_ALLOW, validate_assignment=True)
 
     def to_dict(self) -> ModelDict:
         """Convert to dictionary for JSON serialization."""
@@ -126,7 +127,7 @@ class ErrorContext(BaseModel):
 class ErrorResponseModel(BaseModel):
     """Complete error response model."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
     status: ResponseStatus = Field(description="Response status")
     error: str = Field(description="Error message")

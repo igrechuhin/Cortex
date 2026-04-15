@@ -10,6 +10,7 @@ from cortex.core.models import ModelDict
 from cortex.rules.context_detector import ContextDetector
 from cortex.rules.models import GitCommandResult
 from cortex.rules.synapse_manager import SynapseManager
+from cortex.tools.synapse.synapse_models import SynapseCategory
 
 
 class TestSynapseManagerInitialization:
@@ -628,7 +629,7 @@ class TestUpdateSharedRule:
 
         # Act
         result = await manager.update_synapse_rule(
-            category="python",
+            category=SynapseCategory.PYTHON,
             file="new-rule.md",
             content="# New Rule\n\nContent here.",
             commit_message="Add new Python rule",
@@ -660,7 +661,7 @@ class TestUpdateSharedRule:
 
         # Act
         result = await manager.update_synapse_rule(
-            category="python",
+            category=SynapseCategory.PYTHON,
             file="existing.md",
             content="# Updated Content",
             commit_message="Update existing rule",
@@ -695,7 +696,7 @@ class TestUpdateSharedRule:
 
         # Act
         result = await manager.update_synapse_rule(
-            category="generic",
+            category=SynapseCategory.GENERIC,
             file="test.md",
             content="# Test",
             commit_message="Add test rule",
@@ -743,7 +744,7 @@ class TestCreateSharedRule:
 
         # Act
         result = await manager.create_synapse_rule(
-            category="python",
+            category=SynapseCategory.PYTHON,
             filename="new-rule.md",
             content="# New Rule",
             metadata={"priority": 75, "keywords": ["testing", "pytest"]},

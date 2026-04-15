@@ -8,6 +8,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from cortex.core.file_system import FileSystemManager
 from cortex.core.metadata_index import MetadataIndex
+from cortex.core.pydantic_extra import EXTRA_FORBID
 from cortex.managers import initialization
 from cortex.managers.utils import get_manager
 from cortex.tools.validation.duplication import (
@@ -45,7 +46,7 @@ type ValidationManagers = dict[
 class InfrastructureOptions(BaseModel):
     """Options for infrastructure validation."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
     commit_ci: bool = Field(description="Check commit prompt vs CI alignment")
     code_quality: bool = Field(description="Check code quality consistency")

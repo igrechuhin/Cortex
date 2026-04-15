@@ -60,7 +60,7 @@ from ._run_impl import analyze_error_patterns_impl, run_tool_evaluation_impl
 async def run_tool_evaluation(
     task_ids: list[str] | None = None,
     mode: str = "full",
-    category: str | None = None,
+    category: EvalTaskCategory | None = None,
     ctx: MCPContext | None = None,
 ) -> str:
     """Run the evaluation suite for MCP tools and return metrics.

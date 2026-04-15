@@ -11,6 +11,7 @@ from pathlib import Path
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from cortex.core.pydantic_extra import EXTRA_FORBID
 from cortex.managers.usage_models import ToolUsageEvent
 from cortex.managers.usage_tracker import UsageTracker
 
@@ -94,7 +95,7 @@ def compute_session_continuity(
 class SessionContinuityPayload(BaseModel):
     """Session continuity metrics for query_usage(session_continuity)."""
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra=EXTRA_FORBID)
 
     status: str = Field(description="success or unavailable")
     project_root: str = Field(description="Project root path")

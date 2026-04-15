@@ -11,6 +11,7 @@ This test suite provides comprehensive coverage for:
 """
 
 import json
+from contextlib import contextmanager
 from pathlib import Path
 from typing import cast
 from unittest.mock import AsyncMock, MagicMock, patch
@@ -20,6 +21,7 @@ import pytest
 from cortex.core.models import OperationStatus
 from cortex.managers.types import ManagersDict
 from cortex.rules.models import SynapseSyncResult, SyncChanges
+from cortex.tools.synapse.synapse_models import SynapseCategory
 from cortex.tools.synapse.tools import (
     get_synapse_prompts_resource,
     get_synapse_rules,
@@ -68,6 +70,115 @@ async def _get_manager_helper(
     return manager
 
 
+MOCK_RELEVANT_RULES_PAYLOAD: dict[str, object] = {
+    "generic_rules": [
+        {
+            "file": "coding-standards.md",
+            "tokens": 500,
+            "priority": "high",
+            "relevance_score": 0.8,
+        }
+    ],
+    "language_rules": [
+        {
+            "file": "python-style.md",
+            "category": "python",
+            "tokens": 300,
+            "priority": "medium",
+            "relevance_score": 0.9,
+        }
+    ],
+    "local_rules": [
+        {
+            "file": "project-rules.md",
+            "tokens": 200,
+            "priority": "high",
+            "relevance_score": 1.0,
+        }
+    ],
+    "context": {
+        "languages": ["python"],
+        "frameworks": ["django"],
+        "task_type": "authentication",
+    },
+    "total_tokens": 1000,
+    "source": "mixed",
+}
+
+
+@contextmanager
+def _patched_synapse_environment(
+    project_root: Path, managers: ManagersDict | dict[str, object]
+):
+    """Patch manager/project lookups for synapse tool tests."""
+    with (
+        patch(
+            "cortex.tools.synapse.tools_impl.get_project_root",
+            return_value=project_root,
+        ),
+        patch(
+            "cortex.tools.synapse.tools_impl.get_managers",
+            return_value=managers,
+        ),
+        patch(
+            "cortex.tools.synapse.tools_helpers.get_manager",
+            new=AsyncMock(side_effect=_get_manager_helper),
+        ),
+        patch(
+            "cortex.managers.utils.get_manager",
+            new=AsyncMock(side_effect=_get_manager_helper),
+        ),
+    ):
+        yield
+
+
+def _extract_levels_and_messages(mock_log: AsyncMock) -> list[tuple[str, str]]:
+    """Flatten mocked log_client calls for assertions."""
+    return [(call_args[0][1], call_args[0][2]) for call_args in mock_log.call_args_list]
+
+
+def _mock_synapse_rules_result() -> MagicMock:
+    """Build mock model result for execute_rules_with_context."""
+    return MagicMock(
+        model_dump=MagicMock(
+            return_value={
+                "status": "success",
+                "task_description": "test",
+                "rules_loaded": {},
+                "total_tokens": 0,
+                "token_budget": 10000,
+                "source": "mixed",
+            }
+        )
+    )
+
+
+@contextmanager
+def _patched_rules_logging_context(
+    project_root: Path, managers: ManagersDict, mock_result: MagicMock
+):
+    """Patch logging and rule execution for ctx logging tests."""
+    with (
+        patch(
+            "cortex.tools.synapse.tools_impl.log_client",
+            new_callable=AsyncMock,
+        ) as mock_log,
+        patch(
+            "cortex.tools.synapse.tools_impl.get_project_root",
+            return_value=project_root,
+        ),
+        patch(
+            "cortex.tools.synapse.tools_impl.get_managers",
+            new=AsyncMock(return_value=managers),
+        ),
+        patch(
+            "cortex.tools.synapse.tools_helpers.execute_rules_with_context",
+            new=AsyncMock(return_value=mock_result),
+        ),
+    ):
+        yield mock_log
+
+
 # ============================================================================
 # Fixtures
 # ============================================================================
@@ -106,42 +217,7 @@ def mock_rules_manager() -> MagicMock:
     """Create mock RulesManager."""
     manager = MagicMock()
     manager.index_rules = AsyncMock(return_value={"indexed": 5})
-    manager.get_relevant_rules = AsyncMock(
-        return_value={
-            "generic_rules": [
-                {
-                    "file": "coding-standards.md",
-                    "tokens": 500,
-                    "priority": "high",
-                    "relevance_score": 0.8,
-                }
-            ],
-            "language_rules": [
-                {
-                    "file": "python-style.md",
-                    "category": "python",
-                    "tokens": 300,
-                    "priority": "medium",
-                    "relevance_score": 0.9,
-                }
-            ],
-            "local_rules": [
-                {
-                    "file": "project-rules.md",
-                    "tokens": 200,
-                    "priority": "high",
-                    "relevance_score": 1.0,
-                }
-            ],
-            "context": {
-                "languages": ["python"],
-                "frameworks": ["django"],
-                "task_type": "authentication",
-            },
-            "total_tokens": 1000,
-            "source": "mixed",
-        }
-    )
+    manager.get_relevant_rules = AsyncMock(return_value=MOCK_RELEVANT_RULES_PAYLOAD)
     return manager
 
 
@@ -429,27 +505,12 @@ class TestUpdateSharedRule:
     ) -> None:
         """Test successful rule update."""
         # Arrange
-        with (
-            patch(
-                "cortex.tools.synapse.tools_impl.get_project_root",
-                return_value=mock_project_root,
-            ),
-            patch(
-                "cortex.tools.synapse.tools_impl.get_managers",
-                return_value=mock_managers_with_synapse,
-            ),
-            patch(
-                "cortex.tools.synapse.tools_helpers.get_manager",
-                new=AsyncMock(side_effect=_get_manager_helper),
-            ),
-            patch(
-                "cortex.managers.utils.get_manager",
-                new=AsyncMock(side_effect=_get_manager_helper),
-            ),
+        with _patched_synapse_environment(
+            mock_project_root, mock_managers_with_synapse
         ):
             # Act
             result_str = await update_synapse_rule(
-                category="python",
+                category=SynapseCategory.PYTHON,
                 file="style-guide.md",
                 content="# Updated Style Guide\n\nNew content...",
                 commit_message="Update Python style guide",
@@ -481,7 +542,7 @@ class TestUpdateSharedRule:
         ):
             # Act
             result_str = await update_synapse_rule(
-                category="python",
+                category=SynapseCategory.PYTHON,
                 file="test.md",
                 content="test",
                 commit_message="test",
@@ -509,7 +570,7 @@ class TestUpdateSharedRule:
         ):
             # Act
             result_str = await update_synapse_rule(
-                category="invalid",
+                category=cast(SynapseCategory, "invalid"),
                 file="test.md",
                 content="test",
                 commit_message="test",
@@ -537,23 +598,8 @@ class TestGetRulesWithContext:
     ) -> None:
         """Test successful rules retrieval with context."""
         # Arrange
-        with (
-            patch(
-                "cortex.tools.synapse.tools_impl.get_project_root",
-                return_value=mock_project_root,
-            ),
-            patch(
-                "cortex.tools.synapse.tools_impl.get_managers",
-                return_value=mock_managers_with_synapse,
-            ),
-            patch(
-                "cortex.tools.synapse.tools_helpers.get_manager",
-                new=AsyncMock(side_effect=_get_manager_helper),
-            ),
-            patch(
-                "cortex.managers.utils.get_manager",
-                new=AsyncMock(side_effect=_get_manager_helper),
-            ),
+        with _patched_synapse_environment(
+            mock_project_root, mock_managers_with_synapse
         ):
             # Act
             result_str = await get_synapse_rules(
@@ -616,23 +662,8 @@ class TestGetRulesWithContext:
     ) -> None:
         """Test rules retrieval with custom parameters."""
         # Arrange
-        with (
-            patch(
-                "cortex.tools.synapse.tools_impl.get_project_root",
-                return_value=mock_project_root,
-            ),
-            patch(
-                "cortex.tools.synapse.tools_impl.get_managers",
-                return_value=mock_managers_with_synapse,
-            ),
-            patch(
-                "cortex.tools.synapse.tools_helpers.get_manager",
-                new=AsyncMock(side_effect=_get_manager_helper),
-            ),
-            patch(
-                "cortex.managers.utils.get_manager",
-                new=AsyncMock(side_effect=_get_manager_helper),
-            ),
+        with _patched_synapse_environment(
+            mock_project_root, mock_managers_with_synapse
         ):
             # Act
             result_str = await get_synapse_rules(
@@ -895,23 +926,8 @@ class TestIntegration:
         mock_managers_with_synapse: ManagersDict,
     ) -> None:
         """Test complete workflow: sync -> get rules -> update."""
-        with (
-            patch(
-                "cortex.tools.synapse.tools_impl.get_project_root",
-                return_value=mock_project_root,
-            ),
-            patch(
-                "cortex.tools.synapse.tools_impl.get_managers",
-                return_value=mock_managers_with_synapse,
-            ),
-            patch(
-                "cortex.tools.synapse.tools_helpers.get_manager",
-                new=AsyncMock(side_effect=_get_manager_helper),
-            ),
-            patch(
-                "cortex.managers.utils.get_manager",
-                new=AsyncMock(side_effect=_get_manager_helper),
-            ),
+        with _patched_synapse_environment(
+            mock_project_root, mock_managers_with_synapse
         ):
             # Act 1: Sync
             sync_result = await sync_synapse()
@@ -929,7 +945,7 @@ class TestIntegration:
 
             # Act 3: Update
             update_result = await update_synapse_rule(
-                category="python",
+                category=SynapseCategory.PYTHON,
                 file="test.md",
                 content="test",
                 commit_message="test",
@@ -956,45 +972,16 @@ class TestSynapseToolsContextLogging:
     ) -> None:
         """When ctx is passed, get_synapse_rules logs start and completion."""
         mock_ctx = AsyncMock()
-        with (
-            patch(
-                "cortex.tools.synapse.tools_impl.log_client",
-                new_callable=AsyncMock,
-            ) as mock_log,
-            patch(
-                "cortex.tools.synapse.tools_impl.get_project_root",
-                return_value=mock_project_root,
-            ),
-            patch(
-                "cortex.tools.synapse.tools_impl.get_managers",
-                new=AsyncMock(return_value=mock_managers),
-            ),
-            patch(
-                "cortex.tools.synapse.tools_helpers.execute_rules_with_context",
-                new=AsyncMock(
-                    return_value=MagicMock(
-                        model_dump=MagicMock(
-                            return_value={
-                                "status": "success",
-                                "task_description": "test",
-                                "rules_loaded": {},
-                                "total_tokens": 0,
-                                "token_budget": 10000,
-                                "source": "mixed",
-                            }
-                        )
-                    )
-                ),
-            ),
-        ):
+        with _patched_rules_logging_context(
+            mock_project_root, mock_managers, _mock_synapse_rules_result()
+        ) as mock_log:
             result_str = await get_synapse_rules(
                 task_description="test task",
                 ctx=mock_ctx,
             )
             result = json.loads(result_str)
         assert result["status"] == "success"
-        args_list = [c[0] for c in mock_log.call_args_list]
-        levels_and_messages = [(a[1], a[2]) for a in args_list]
+        levels_and_messages = _extract_levels_and_messages(mock_log)
         assert ("info", "get_synapse_rules: starting") in levels_and_messages
         assert ("info", "get_synapse_rules: completed") in levels_and_messages
 

@@ -1,7 +1,7 @@
 """Insight Summary - Generate summary of insights."""
 
 from .insight_types import InsightDict, SummaryDict
-from .models import RecommendationEntry, SeverityLevel
+from .models import InsightSummaryStatus, RecommendationEntry, SeverityLevel
 
 
 class InsightSummaryGenerator:
@@ -54,7 +54,7 @@ class InsightSummaryGenerator:
     def _build_excellent_summary(self) -> SummaryDict:
         """Build summary for case with no insights."""
         return SummaryDict(
-            status="excellent",
+            status=InsightSummaryStatus.EXCELLENT,
             message="No significant issues found. Your Memory Bank is well-organized!",
             high_severity_count=0,
             medium_severity_count=0,
@@ -65,18 +65,18 @@ class InsightSummaryGenerator:
     def _count_by_severity(self, insights: list[InsightDict]) -> dict[str, int]:
         """Count insights by severity level."""
         return {
-            "high": len([i for i in insights if i.severity == "high"]),
-            "medium": len([i for i in insights if i.severity == "medium"]),
-            "low": len([i for i in insights if i.severity == "low"]),
+            "high": len([i for i in insights if i.severity == SeverityLevel.HIGH]),
+            "medium": len([i for i in insights if i.severity == SeverityLevel.MEDIUM]),
+            "low": len([i for i in insights if i.severity == SeverityLevel.LOW]),
         }
 
     def _determine_status_and_message(
         self, severity_counts: dict[str, int]
-    ) -> tuple[str, str]:
+    ) -> tuple[InsightSummaryStatus, str]:
         """Determine overall status and message based on severity counts."""
         if severity_counts["high"] > 0:
             return (
-                "needs_attention",
+                InsightSummaryStatus.NEEDS_ATTENTION,
                 (
                     f"Found {severity_counts['high']} high-priority issues "
                     "that should be addressed"
@@ -84,14 +84,14 @@ class InsightSummaryGenerator:
             )
         if severity_counts["medium"] >= 3:
             return (
-                "could_improve",
+                InsightSummaryStatus.COULD_IMPROVE,
                 (
                     f"Found {severity_counts['medium']} medium-priority "
                     "opportunities for improvement"
                 ),
             )
         return (
-            "good",
+            InsightSummaryStatus.GOOD,
             "Structure is generally good with some minor optimization opportunities",
         )
 

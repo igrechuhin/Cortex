@@ -539,7 +539,8 @@ async def _plan_dispatch_valid_operation(
 
 
 @mcp.tool(
-    annotations=destructive_annotations("Plan (Create/List/Get/Complete/Register)")
+    annotations=destructive_annotations("Plan (Create/List/Get/Complete/Register)"),
+    output_schema=None,
 )
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_MEDIUM)

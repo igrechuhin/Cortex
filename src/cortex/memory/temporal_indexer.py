@@ -8,7 +8,11 @@ from datetime import date
 from pathlib import Path
 
 from cortex.core.constants import MemoryBankFile
-from cortex.memory.temporal_store import TemporalFact, TemporalMemoryStore
+from cortex.memory.temporal_store import (
+    TemporalFact,
+    TemporalFactCategory,
+    TemporalMemoryStore,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -95,7 +99,7 @@ class TemporalIndexer:
             title, status = match.group(1).strip(), match.group(2).strip()
             facts.append(
                 TemporalFact(
-                    category="status",
+                    category=TemporalFactCategory.STATUS,
                     subject=_plan_slug_from_roadmap_line(title, line),
                     predicate="status",
                     object=status,
@@ -124,7 +128,7 @@ class TemporalIndexer:
             for dep in [item for item in values if item]:
                 facts.append(
                     TemporalFact(
-                        category="dependency",
+                        category=TemporalFactCategory.DEPENDENCY,
                         subject=slug,
                         predicate="depends_on",
                         object=dep,
@@ -146,7 +150,7 @@ class TemporalIndexer:
             completed_date = match.group(1)
             facts.append(
                 TemporalFact(
-                    category="status",
+                    category=TemporalFactCategory.STATUS,
                     subject="active-context-entry",
                     predicate="completed",
                     object="true",

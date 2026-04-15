@@ -12,6 +12,7 @@ from typing import cast
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from cortex.core.pydantic_extra import EXTRA_FORBID
 from cortex.managers.usage_models import ToolUsageEvent
 from cortex.managers.usage_tracker import UsageTracker
 
@@ -36,7 +37,7 @@ def _to_error_types_dict(val: object) -> dict[str, int]:
 class ToolDescriptionOptimizationPayload(BaseModel):
     """Payload for optimize_tool_description response."""
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra=EXTRA_FORBID)
 
     status: str = Field(description="success or unavailable")
     tool_name: str = Field(description="Target tool name")

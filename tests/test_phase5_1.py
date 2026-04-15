@@ -17,9 +17,6 @@ from pathlib import Path
 import pytest
 
 from cortex.analysis.insight_engine import InsightEngine
-from cortex.analysis.insight_types import InsightDict, InsightsResultDict, SummaryDict
-
-# Import Phase 5.1 modules
 from cortex.analysis.pattern_analyzer import PatternAnalyzer
 from cortex.analysis.structure_analyzer import StructureAnalyzer
 from cortex.core.dependency_graph import DependencyGraph
@@ -28,6 +25,7 @@ from cortex.core.dependency_graph import DependencyGraph
 from cortex.core.file_system import FileSystemManager
 from cortex.core.metadata_index import MetadataIndex
 from cortex.optimization.config import OptimizationConfig
+from tests.helpers.phase5_export_insights import export_test_insights_result
 
 
 @pytest.fixture
@@ -343,36 +341,7 @@ async def test_generate_organization_insights(insight_engine: InsightEngine) -> 
 @pytest.mark.asyncio
 async def test_export_insights_json(insight_engine: InsightEngine) -> None:
     """Test exporting insights as JSON."""
-    insights = InsightsResultDict(
-        generated_at="2025-01-01T00:00:00",
-        total_insights=1,
-        high_impact_count=1,
-        medium_impact_count=0,
-        low_impact_count=0,
-        estimated_total_token_savings=1000,
-        insights=[
-            InsightDict(
-                id="test",
-                category="test",
-                title="Test Insight",
-                description="Test",
-                impact_score=0.8,
-                severity="high",
-                recommendations=["Fix this"],
-                estimated_token_savings=1000,
-                affected_files=[],
-            )
-        ],
-        summary=SummaryDict(
-            status="good",
-            message="All good",
-            high_severity_count=1,
-            medium_severity_count=0,
-            low_severity_count=0,
-            top_recommendations=[],
-        ),
-    )
-
+    insights = export_test_insights_result()
     exported = await insight_engine.export_insights(insights, format="json")
 
     assert isinstance(exported, str)
@@ -383,36 +352,7 @@ async def test_export_insights_json(insight_engine: InsightEngine) -> None:
 @pytest.mark.asyncio
 async def test_export_insights_markdown(insight_engine: InsightEngine) -> None:
     """Test exporting insights as Markdown."""
-    insights = InsightsResultDict(
-        generated_at="2025-01-01T00:00:00",
-        total_insights=1,
-        high_impact_count=1,
-        medium_impact_count=0,
-        low_impact_count=0,
-        estimated_total_token_savings=1000,
-        insights=[
-            InsightDict(
-                id="test",
-                category="test",
-                title="Test Insight",
-                description="Test",
-                impact_score=0.8,
-                severity="high",
-                recommendations=["Fix this"],
-                estimated_token_savings=1000,
-                affected_files=[],
-            )
-        ],
-        summary=SummaryDict(
-            status="good",
-            message="All good",
-            high_severity_count=1,
-            medium_severity_count=0,
-            low_severity_count=0,
-            top_recommendations=[],
-        ),
-    )
-
+    insights = export_test_insights_result()
     exported = await insight_engine.export_insights(insights, format="markdown")
 
     assert isinstance(exported, str)

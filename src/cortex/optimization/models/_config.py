@@ -8,6 +8,7 @@ from enum import Enum
 from pydantic import ConfigDict, Field
 
 from cortex.core.constants import MemoryBankFile
+from cortex.core.pydantic_extra import EXTRA_ALLOW
 
 from ._base import OptimizationBaseModel
 
@@ -134,7 +135,7 @@ class RulePriority(str, Enum):
 class LanguageKeywordsModel(OptimizationBaseModel):
     """Language keywords for context detection."""
 
-    model_config = ConfigDict(extra="allow")
+    model_config = ConfigDict(extra=EXTRA_ALLOW)
 
     python: list[str] = Field(
         default_factory=lambda: ["python", "django", "flask", "fastapi", "pytest", "py"]

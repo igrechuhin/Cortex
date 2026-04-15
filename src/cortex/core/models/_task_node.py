@@ -16,6 +16,8 @@ from __future__ import annotations
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from cortex.core.pydantic_extra import EXTRA_FORBID
+
 
 def _empty_step_dependencies() -> list[int]:
     return []
@@ -24,7 +26,7 @@ def _empty_step_dependencies() -> list[int]:
 class TaskNode(BaseModel):
     """One implementation step extracted from a plan document."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
     step_id: int = Field(
         ...,

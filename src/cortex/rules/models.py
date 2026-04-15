@@ -10,6 +10,7 @@ from enum import Enum
 from pydantic import ConfigDict, Field
 
 from cortex.core.models import DictLikeModel, OperationStatus
+from cortex.core.pydantic_extra import EXTRA_ALLOW, EXTRA_FORBID
 
 # ============================================================================
 # Base Model
@@ -20,7 +21,7 @@ class RulesBaseModel(DictLikeModel):
     """Base model for rules types with strict validation."""
 
     model_config = ConfigDict(
-        extra="forbid",
+        extra=EXTRA_FORBID,
         validate_assignment=True,
         validate_default=True,
     )
@@ -90,7 +91,7 @@ class DetectedContext(RulesBaseModel):
 class SubmoduleInitResult(RulesBaseModel):
     """Result of submodule initialization."""
 
-    model_config = ConfigDict(extra="allow", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_ALLOW, validate_assignment=True)
 
     status: OperationStatus = Field(description="Operation status")
     action: str | None = Field(
@@ -135,7 +136,7 @@ class SyncResult(RulesBaseModel):
 class UpdateResult(RulesBaseModel):
     """Result of update operation."""
 
-    model_config = ConfigDict(extra="allow", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_ALLOW, validate_assignment=True)
 
     status: OperationStatus = Field(description="Operation status")
     file: str | None = Field(default=None, description="File updated")
@@ -172,7 +173,7 @@ class RuleFileInfo(RulesBaseModel):
 class RuleMetadataEntry(RulesBaseModel):
     """Metadata entry for a rule in the manifest."""
 
-    model_config = ConfigDict(extra="allow")  # Allow extra fields from manifest
+    model_config = ConfigDict(extra=EXTRA_ALLOW)  # Allow extra fields from manifest
 
     file: str = Field(description="Rule filename")
     priority: int = Field(default=50, ge=0, description="Rule priority")
@@ -183,7 +184,7 @@ class RuleMetadataEntry(RulesBaseModel):
 class CategoryInfo(RulesBaseModel):
     """Information about a rule category in the manifest."""
 
-    model_config = ConfigDict(extra="allow")  # Allow extra fields from manifest
+    model_config = ConfigDict(extra=EXTRA_ALLOW)  # Allow extra fields from manifest
 
     rules: list[RuleMetadataEntry] = Field(
         default_factory=lambda: list[RuleMetadataEntry](),
@@ -195,7 +196,7 @@ class CategoryInfo(RulesBaseModel):
 class RulesManifestModel(RulesBaseModel):
     """Pydantic model for rules manifest structure."""
 
-    model_config = ConfigDict(extra="allow")  # Allow extra fields from manifest
+    model_config = ConfigDict(extra=EXTRA_ALLOW)  # Allow extra fields from manifest
 
     version: str = Field(default="1.0", description="Manifest version")
     categories: dict[str, CategoryInfo] = Field(
@@ -226,7 +227,7 @@ class LoadedRule(RulesBaseModel):
 class PromptMetadataEntry(RulesBaseModel):
     """Metadata entry for a prompt in the manifest."""
 
-    model_config = ConfigDict(extra="allow")  # Allow extra fields from manifest
+    model_config = ConfigDict(extra=EXTRA_ALLOW)  # Allow extra fields from manifest
 
     file: str = Field(description="Prompt filename")
     name: str = Field(default="", description="Prompt name")
@@ -237,7 +238,7 @@ class PromptMetadataEntry(RulesBaseModel):
 class PromptCategoryInfo(RulesBaseModel):
     """Information about a prompt category in the manifest."""
 
-    model_config = ConfigDict(extra="allow")  # Allow extra fields from manifest
+    model_config = ConfigDict(extra=EXTRA_ALLOW)  # Allow extra fields from manifest
 
     prompts: list[PromptMetadataEntry] = Field(
         default_factory=lambda: list[PromptMetadataEntry](),
@@ -249,7 +250,7 @@ class PromptCategoryInfo(RulesBaseModel):
 class PromptsManifestModel(RulesBaseModel):
     """Pydantic model for prompts manifest structure."""
 
-    model_config = ConfigDict(extra="allow")  # Allow extra fields from manifest
+    model_config = ConfigDict(extra=EXTRA_ALLOW)  # Allow extra fields from manifest
 
     version: str = Field(default="1.0", description="Manifest version")
     categories: dict[str, PromptCategoryInfo] = Field(
@@ -320,7 +321,7 @@ class RuleCreationMetadata(RulesBaseModel):
     This model provides type-safe metadata for rule creation operations.
     """
 
-    model_config = ConfigDict(extra="allow")  # Allow extra fields for flexibility
+    model_config = ConfigDict(extra=EXTRA_ALLOW)  # Allow extra fields for flexibility
 
     priority: int = Field(default=50, ge=0, le=100, description="Rule priority (0-100)")
     keywords: list[str] = Field(

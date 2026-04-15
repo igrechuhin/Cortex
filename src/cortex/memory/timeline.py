@@ -7,12 +7,16 @@ from pathlib import Path
 
 from pydantic import BaseModel
 
-from cortex.memory.temporal_store import TemporalFact, TemporalMemoryStore
+from cortex.memory.temporal_store import (
+    TemporalFact,
+    TemporalFactCategory,
+    TemporalMemoryStore,
+)
 
 
 class MemoryTimelineInput(BaseModel):
     subject: str | None = None
-    category: str | None = None
+    category: TemporalFactCategory | None = None
     as_of: str | None = None
     show_invalidated: bool = False
 

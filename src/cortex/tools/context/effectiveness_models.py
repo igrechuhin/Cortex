@@ -10,6 +10,7 @@ from enum import Enum
 from pydantic import ConfigDict, Field, field_validator
 
 from cortex.core.models import JsonDict, OperationStatus
+from cortex.core.pydantic_extra import EXTRA_FORBID
 from cortex.tools.models_base import StrictBaseModel
 
 
@@ -31,7 +32,7 @@ class ContextTelemetryRecordQuality(str, Enum):
 class ContextTelemetryExclusionBreakdown(StrictBaseModel):
     """Single bucket of rollup-exclusion counts (in-process observability)."""
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra=EXTRA_FORBID)
 
     record_quality: str = Field(
         ...,
@@ -51,7 +52,7 @@ def _empty_telemetry_exclusion_breakdown() -> list[ContextTelemetryExclusionBrea
 class ContextTelemetryExclusionCountersSnapshot(StrictBaseModel):
     """Point-in-time view of context telemetry rollup exclusions."""
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra=EXTRA_FORBID)
 
     breakdown: list[ContextTelemetryExclusionBreakdown] = Field(
         default_factory=_empty_telemetry_exclusion_breakdown,
@@ -274,7 +275,7 @@ class CurrentSessionAnalysisResult(StrictBaseModel):
         description="Number of call rows included in current_session.entries (when truncated)",
     )
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
 
 class SessionLogsAnalysisResult(StrictBaseModel):
@@ -303,7 +304,7 @@ class SessionLogsAnalysisResult(StrictBaseModel):
     insights: JsonDict | None = Field(None, description="Context insights")
     message: str | None = Field(None, description="Status message for no_data case")
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
 
 class ContextStatisticsResult(StrictBaseModel):
@@ -332,7 +333,7 @@ class ContextStatisticsResult(StrictBaseModel):
         description="True when recent_entries omits older rows due to max_recent_entries cap",
     )
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
 
 class RulesExecutionResult(StrictBaseModel):
@@ -349,7 +350,7 @@ class RulesExecutionResult(StrictBaseModel):
     source: str | None = Field(None, description="Rules source")
     error: str | None = Field(None, description="Error message if status is error")
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
 
 class LearnedPatternsResult(StrictBaseModel):
@@ -359,4 +360,4 @@ class LearnedPatternsResult(StrictBaseModel):
         default_factory=dict, description="Dictionary of pattern_id -> pattern data"
     )
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)

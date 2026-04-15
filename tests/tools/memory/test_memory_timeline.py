@@ -5,7 +5,11 @@ from pathlib import Path
 
 import pytest
 
-from cortex.memory.temporal_store import TemporalFact, TemporalMemoryStore
+from cortex.memory.temporal_store import (
+    TemporalFact,
+    TemporalFactCategory,
+    TemporalMemoryStore,
+)
 from cortex.memory.timeline import MemoryTimelineInput, memory_timeline_handle
 from cortex.tools.files.manage_file_helpers import (
     execute_file_operation,
@@ -42,7 +46,7 @@ def test_memory_timeline_returns_subject_facts(tmp_path: Path) -> None:
     store = TemporalMemoryStore(root / ".cortex" / "temporal.db")
     store.add_fact(
         TemporalFact(
-            category="status",
+            category=TemporalFactCategory.STATUS,
             subject="fastmcp-v3-phase2",
             predicate="status",
             object="PENDING",
@@ -84,7 +88,7 @@ async def test_manage_file_invalidate_fact_operation(tmp_path: Path) -> None:
     store = TemporalMemoryStore(root / ".cortex" / "temporal.db")
     store.add_fact(
         TemporalFact(
-            category="status",
+            category=TemporalFactCategory.STATUS,
             subject="plan-x",
             predicate="status",
             object="PENDING",

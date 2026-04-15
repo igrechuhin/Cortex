@@ -17,6 +17,7 @@ from typing import cast
 from pydantic import BaseModel, ConfigDict, Field
 
 from cortex.core.models import ModelDict, OperationStatus
+from cortex.core.pydantic_extra import EXTRA_FORBID
 from cortex.services.framework_adapters.base import CheckResult
 from cortex.tools.execution.pre_commit_helpers import ensure_json_serializable_for_mcp
 from cortex.tools.execution.pre_commit_helpers_models import PreCommitResult
@@ -59,7 +60,7 @@ class SubmoduleHygieneCode(StrEnum):
 class SubmoduleHygieneViolation(BaseModel):
     """One submodule hygiene failure."""
 
-    model_config = ConfigDict(extra="forbid", frozen=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, frozen=True)
 
     path: str = Field(min_length=1)
     code: SubmoduleHygieneCode
@@ -68,7 +69,7 @@ class SubmoduleHygieneViolation(BaseModel):
 class SubmoduleHygieneReport(BaseModel):
     """Result of scanning the superproject for submodule issues."""
 
-    model_config = ConfigDict(extra="forbid", frozen=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, frozen=True)
 
     violations: tuple[SubmoduleHygieneViolation, ...] = Field(default_factory=tuple)
 

@@ -3,12 +3,13 @@
 from pydantic import BaseModel, ConfigDict, Field
 
 from cortex.core.models import ResponseFormat
+from cortex.core.pydantic_extra import EXTRA_FORBID
 
 
 class QueryUsageParams(BaseModel):
     """Parameters for query_usage dispatch; all query types use a subset."""
 
-    model_config = ConfigDict(extra="forbid", frozen=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, frozen=True)
 
     start_date: str | None = None
     end_date: str | None = None

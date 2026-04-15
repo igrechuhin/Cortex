@@ -9,6 +9,8 @@ from enum import Enum
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from cortex.core.pydantic_extra import EXTRA_FORBID
+
 # ============================================================================
 # Base Model
 # ============================================================================
@@ -18,7 +20,7 @@ class LinkingBaseModel(BaseModel):
     """Base model for linking types with strict validation."""
 
     model_config = ConfigDict(
-        extra="forbid",
+        extra=EXTRA_FORBID,
         validate_assignment=True,
         validate_default=True,
     )

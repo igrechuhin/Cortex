@@ -24,6 +24,7 @@ from cortex.core.mcp_stability_config import (
 )
 from cortex.core.mcp_stability_semaphores import get_long_running_elapsed_seconds
 from cortex.core.models import ConnectionHealth, JsonValue, MCPToolArguments
+from cortex.core.pydantic_extra import EXTRA_FORBID
 
 logger = logging.getLogger(__name__)
 
@@ -40,7 +41,7 @@ _HEALTH_CHECK_INTERVAL_SECONDS = 60.0
 class MCPConnectionState(BaseModel):
     """In-process connection state and circuit-breaker flags (Phase 86)."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
     connected: bool = Field(
         default=True,

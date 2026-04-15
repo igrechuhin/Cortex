@@ -9,6 +9,7 @@ from typing import Annotated
 
 from pydantic import BeforeValidator, ConfigDict, Field
 
+from cortex.core.pydantic_extra import EXTRA_FORBID
 from cortex.tools.models_base import (
     ErrorResultBase,
     StrictBaseModel,
@@ -38,6 +39,12 @@ class AnalyzeTarget(str, Enum):
     USAGE_PATTERNS = "usage_patterns"
     STRUCTURE = "structure"
     INSIGHTS = "insights"
+
+
+class InsightCategory(str, Enum):
+    """Insight category classification."""
+
+    PERFORMANCE = "performance"
 
 
 _StatusField = Annotated[
@@ -142,7 +149,7 @@ class ComplexityMetrics(StrictBaseModel):
     )
 
     model_config = ConfigDict(
-        extra="forbid",
+        extra=EXTRA_FORBID,
         validate_assignment=True,
     )
 
@@ -160,7 +167,7 @@ class StructureAnalysis(StrictBaseModel):
 class InsightEntry(StrictBaseModel):
     """Individual insight entry."""
 
-    category: str
+    category: InsightCategory
     description: str
     impact_score: float
     recommendation: str
@@ -184,7 +191,7 @@ class InsightsData(StrictBaseModel):
     )
 
     model_config = ConfigDict(
-        extra="forbid",
+        extra=EXTRA_FORBID,
         validate_assignment=True,
     )
 

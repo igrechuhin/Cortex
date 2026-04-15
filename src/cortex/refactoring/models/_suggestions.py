@@ -9,6 +9,7 @@ from datetime import datetime
 from pydantic import ConfigDict, Field
 
 from cortex.core.models import RiskLevel
+from cortex.core.pydantic_extra import EXTRA_FORBID
 
 from ._base import (
     ActionDetails,
@@ -36,7 +37,7 @@ class RefactoringSuggestionModel(RefactoringBaseModel):
     """Represents a refactoring suggestion."""
 
     model_config = ConfigDict(
-        extra="forbid",
+        extra=EXTRA_FORBID,
         validate_assignment=True,
     )
 
@@ -329,7 +330,7 @@ class LearnedPatternModel(RefactoringBaseModel):
     """Pattern learned from user feedback."""
 
     model_config = ConfigDict(
-        extra="forbid",
+        extra=EXTRA_FORBID,
         validate_assignment=True,
         use_enum_values=True,
     )

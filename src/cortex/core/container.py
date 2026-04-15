@@ -27,6 +27,7 @@ from cortex.core.file_watcher import FileWatcherManager
 from cortex.core.metadata_index import MetadataIndex
 from cortex.core.migration import MigrationManager
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
+from cortex.core.pydantic_extra import EXTRA_FORBID
 from cortex.core.token_counter import TokenCounter
 from cortex.core.version_manager import VersionManager
 from cortex.linking.parser import LinkParser
@@ -127,7 +128,7 @@ class ManagerContainer(BaseModel):
 
     model_config = ConfigDict(
         arbitrary_types_allowed=True,
-        extra="forbid",
+        extra=EXTRA_FORBID,
         validate_assignment=False,
     )
 

@@ -129,7 +129,7 @@ async def test_run_execution_suite_focused_mode_filters_by_category() -> None:
         return_value='{"structure_info": {}}',
     ):
         results = await run_execution_suite(
-            tasks, mode=EvalRunMode.FOCUSED, category="context"
+            tasks, mode=EvalRunMode.FOCUSED, category=EvalTaskCategory.CONTEXT
         )
     assert len(results) == 1
     assert results[0].task_id == "a"

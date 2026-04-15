@@ -4,7 +4,6 @@ All helpers are used by markdown_operations; reportUnusedFunction is disabled fo
 """
 
 # pyright: reportUnusedFunction=false
-
 import json
 import re
 from pathlib import Path
@@ -12,6 +11,7 @@ from pathlib import Path
 from pydantic import BaseModel, ConfigDict, Field
 
 from cortex.core.models import GitCommandResult
+from cortex.core.pydantic_extra import EXTRA_FORBID
 
 __all__ = [
     "FileResult",
@@ -37,7 +37,7 @@ __all__ = [
 class FileResult(BaseModel):
     """Result for a single file processing."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
     file: str = Field(description="File path")
     fixed: bool = Field(description="Whether file was fixed")

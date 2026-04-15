@@ -6,11 +6,13 @@ from datetime import datetime, timezone
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from cortex.core.pydantic_extra import EXTRA_FORBID
+
 
 class PlanDelta(BaseModel):
     """One revision record appended to a plan's ``## Change History`` section."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
     timestamp: datetime = Field(
         ...,

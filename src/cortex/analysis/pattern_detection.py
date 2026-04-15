@@ -8,7 +8,7 @@ from collections import defaultdict
 from datetime import UTC, datetime, timedelta
 from itertools import combinations
 
-from cortex.analysis.models import CoAccessPattern
+from cortex.analysis.models import CoAccessPattern, SeverityLevel
 from cortex.analysis.pattern_types import (
     AccessRecord,
     TaskPatternEntry,
@@ -108,7 +108,9 @@ def format_co_access_results(
             continue
         file_1, file_2 = files[0], files[1]
         correlation_strength = (
-            "high" if count >= 10 else "medium" if count >= 5 else "low"
+            SeverityLevel.HIGH
+            if count >= 10
+            else SeverityLevel.MEDIUM if count >= 5 else SeverityLevel.LOW
         )
         result.append(
             CoAccessPattern(

@@ -55,7 +55,10 @@ def _error_invalid_operation(operation: str) -> str:
     ).model_dump_json()
 
 
-@mcp.tool(annotations=safe_write_annotations("Update Memory Bank (Roadmap & Append)"))
+@mcp.tool(
+    annotations=safe_write_annotations("Update Memory Bank (Roadmap & Append)"),
+    output_schema=None,
+)
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_MEDIUM)
 # fmt: off

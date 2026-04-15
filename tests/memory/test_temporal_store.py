@@ -3,12 +3,17 @@ from __future__ import annotations
 import sqlite3
 from pathlib import Path
 
-from cortex.memory.temporal_store import TemporalFact, TemporalMemoryStore, fact_id
+from cortex.memory.temporal_store import (
+    TemporalFact,
+    TemporalFactCategory,
+    TemporalMemoryStore,
+    fact_id,
+)
 
 
 def _build_fact(valid_from: str = "2026-04-01") -> TemporalFact:
     return TemporalFact(
-        category="status",
+        category=TemporalFactCategory.STATUS,
         subject="improve-temporal-memory",
         predicate="state",
         object="PENDING",
@@ -60,7 +65,7 @@ def test_invalidate_closes_open_fact_window(tmp_path: Path) -> None:
 def test_add_fact_is_idempotent_for_same_deterministic_id(tmp_path: Path) -> None:
     store = TemporalMemoryStore(db_path=tmp_path / "temporal.db")
     expected_id = fact_id(
-        category="status",
+        category=TemporalFactCategory.STATUS,
         subject="improve-temporal-memory",
         predicate="state",
         object_value="PENDING",

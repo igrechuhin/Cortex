@@ -18,13 +18,14 @@ from typing import cast
 from pydantic import BaseModel, ConfigDict
 
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
+from cortex.core.pydantic_extra import EXTRA_ALLOW
 from cortex.core.usage_context import get_current_project_root
 
 
 class SessionConfig(BaseModel):
     """Structured session config with mapping-style compatibility access."""
 
-    model_config = ConfigDict(extra="allow")
+    model_config = ConfigDict(extra=EXTRA_ALLOW)
 
     task_description: str | None = None
     pipeline: str | None = None

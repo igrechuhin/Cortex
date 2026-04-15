@@ -10,6 +10,7 @@ from pathlib import Path
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from cortex.core.pydantic_extra import EXTRA_FORBID
 from cortex.tools.lint.memory_bank_lint_checks import (
     CodeClaimCheck,
     CrossRefCheck,
@@ -28,7 +29,7 @@ from cortex.tools.lint.memory_bank_wiki_checks import OrphanedWikiPagesCheck
 class LintReport(BaseModel):
     """Structured output for memory-bank lint runs."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
     findings: list[LintFinding] = Field(
         default_factory=lambda: list[LintFinding](),

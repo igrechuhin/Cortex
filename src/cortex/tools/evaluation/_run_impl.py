@@ -24,6 +24,7 @@ from ._models import (
     EvalRunMode,
     EvalSuiteResult,
     EvalTask,
+    EvalTaskCategory,
     RunToolEvaluationPayload,
 )
 
@@ -150,7 +151,7 @@ async def run_tool_evaluation_impl(
     root: Path,
     task_ids: list[str] | None,
     mode: EvalRunMode,
-    category: str | None,
+    category: EvalTaskCategory | None,
 ) -> str:
     """Run evaluation suite and execution harness; return JSON payload."""
     from cortex.tools.evaluation.evaluation_execution import (

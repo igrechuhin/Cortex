@@ -22,6 +22,7 @@ from cortex.core.file_system import FileSystemManager
 from cortex.core.file_watcher import FileWatcherManager
 from cortex.core.metadata_index import MetadataIndex
 from cortex.core.migration import MigrationManager
+from cortex.core.pydantic_extra import EXTRA_FORBID
 from cortex.core.token_counter import TokenCounter
 from cortex.core.version_manager import VersionManager
 from cortex.linking.parser import LinkParser
@@ -64,7 +65,7 @@ class CoreManagersDict(BaseModel):
         fs = core_managers.fs  # FileSystemProtocol
     """
 
-    model_config = ConfigDict(arbitrary_types_allowed=True, extra="forbid")
+    model_config = ConfigDict(arbitrary_types_allowed=True, extra=EXTRA_FORBID)
 
     @classmethod
     def __get_pydantic_json_schema__(
@@ -100,7 +101,7 @@ class ManagersDict(BaseModel):
         index = mgrs.index  # MetadataIndexProtocol - always available
     """
 
-    model_config = ConfigDict(arbitrary_types_allowed=True, extra="forbid")
+    model_config = ConfigDict(arbitrary_types_allowed=True, extra=EXTRA_FORBID)
 
     @classmethod
     def __get_pydantic_json_schema__(

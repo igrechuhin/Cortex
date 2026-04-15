@@ -13,6 +13,7 @@ from typing import cast
 
 from cortex.core.models import ModelDict
 from cortex.core.protocols.token import TokenCounterProtocol
+from cortex.optimization.models import OptimizationRuleCategory
 from cortex.rules.synapse_manager import SynapseManager
 
 from .models import (
@@ -22,6 +23,18 @@ from .models import (
 )
 
 logger = logging.getLogger(__name__)
+
+
+def _coerce_rule_category(raw_category: object) -> OptimizationRuleCategory:
+    """Convert untyped category payloads to the scoring model enum."""
+    if isinstance(raw_category, OptimizationRuleCategory):
+        return raw_category
+    if isinstance(raw_category, str):
+        try:
+            return OptimizationRuleCategory(raw_category)
+        except ValueError:
+            return OptimizationRuleCategory.UNKNOWN
+    return OptimizationRuleCategory.UNKNOWN
 
 
 class RulesHybridMixin:
@@ -171,7 +184,7 @@ class RulesHybridMixin:
             sections=[],
             source="shared",
             priority=getattr(loaded_rule, "priority", 0),
-            category=getattr(loaded_rule, "category", ""),
+            category=_coerce_rule_category(getattr(loaded_rule, "category", "")),
         )
 
     async def _get_tagged_local_rules(
@@ -199,7 +212,7 @@ class RulesHybridMixin:
         local_rules: list[ScoredRuleModel] = []
 
         for rule in selected_rules:
-            if rule.category == "generic":
+            if rule.category == OptimizationRuleCategory.UNKNOWN:
                 generic_rules.append(rule)
                 continue
             self._categorize_non_generic_rule(

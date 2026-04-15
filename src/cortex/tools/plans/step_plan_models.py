@@ -4,11 +4,13 @@ from __future__ import annotations
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from cortex.core.pydantic_extra import EXTRA_FORBID
+
 
 class StepContinueResult(BaseModel):
     """Result of ``plan(operation='continue_step')``."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
     status: str = Field(description="'success' or 'error'")
     message: str = Field(description="Human-readable summary")
@@ -20,7 +22,7 @@ class StepContinueResult(BaseModel):
 class StepApproveResult(BaseModel):
     """Result of ``plan(operation='approve_step')``."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
     status: str = Field(description="'success' or 'error'")
     message: str = Field(description="Human-readable summary")
@@ -33,7 +35,7 @@ class StepApproveResult(BaseModel):
 class StepFinalizeResult(BaseModel):
     """Result of ``plan(operation='finalize_step')``."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
     status: str = Field(description="'success' or 'error'")
     message: str = Field(description="Human-readable summary")

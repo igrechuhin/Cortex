@@ -23,6 +23,7 @@ from cortex.rules.synapse_manager import SynapseManager
 from .models import (
     DetectedContextModel,
     IndexedRuleModel,
+    OptimizationRuleCategory,
     RuleSectionModel,
     RulesManagerStatusModel,
     RulesResultModel,
@@ -263,7 +264,7 @@ class RulesManager(RulesScoringMixin, RulesHybridMixin):
             sections=indexed_rule.sections,
             source="local",
             priority=50,
-            category="",
+            category=OptimizationRuleCategory.UNKNOWN,
         )
 
     def _get_local_rules_models(

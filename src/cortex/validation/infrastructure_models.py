@@ -10,6 +10,7 @@ from typing import cast
 from pydantic import BaseModel, ConfigDict, Field
 
 from cortex.core.models import JsonValue, ModelDict, OperationStatus, RiskLevel
+from cortex.core.pydantic_extra import EXTRA_ALLOW, EXTRA_FORBID
 
 
 class CheckTypeInfrastructure(str, Enum):
@@ -24,7 +25,7 @@ class JobStepModel(BaseModel):
     This model replaces `ModelDict` for job step definitions.
     """
 
-    model_config = ConfigDict(extra="allow", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_ALLOW, validate_assignment=True)
 
     name: str = Field(..., description="Step name")
     run: str | None = Field(default=None, description="Command to run")
@@ -37,7 +38,7 @@ class JobConfigModel(BaseModel):
     This model replaces `ModelDict` for job configuration.
     """
 
-    model_config = ConfigDict(extra="allow", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_ALLOW, validate_assignment=True)
 
     name: str | None = Field(default=None, description="Job name")
     steps: list[JobStepModel] = Field(
@@ -72,7 +73,7 @@ class JobConfigModel(BaseModel):
 class InfrastructureIssueModel(BaseModel):
     """Infrastructure validation issue."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
     type: str = Field(description="Issue type")
     severity: RiskLevel = Field(description="Issue severity")
@@ -88,7 +89,7 @@ class InfrastructureIssueModel(BaseModel):
 class InfrastructureValidationResultModel(BaseModel):
     """Infrastructure validation result."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
     status: OperationStatus = Field(description="Validation status")
     check_type: CheckTypeInfrastructure = Field(description="Type of check")

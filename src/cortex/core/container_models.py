@@ -16,6 +16,7 @@ from cortex.core.file_system import FileSystemManager
 from cortex.core.file_watcher import FileWatcherManager
 from cortex.core.metadata_index import MetadataIndex
 from cortex.core.migration import MigrationManager
+from cortex.core.pydantic_extra import EXTRA_ALLOW, EXTRA_FORBID
 from cortex.core.token_counter import TokenCounter
 from cortex.core.version_manager import VersionManager
 from cortex.linking.parser import LinkParser
@@ -41,7 +42,7 @@ from cortex.refactoring.split_recommender import SplitRecommender
 class UnpackedManagers(BaseModel):
     """Unpacked managers for container initialization."""
 
-    model_config = ConfigDict(arbitrary_types_allowed=True, extra="forbid")
+    model_config = ConfigDict(arbitrary_types_allowed=True, extra=EXTRA_FORBID)
 
     # Phase 1: Foundation
     file_system: FileSystemManager = Field(description="File I/O operations")
@@ -97,7 +98,7 @@ class UnpackedManagers(BaseModel):
 class FoundationKwargs(BaseModel):
     """Keyword arguments for Phase 1 foundation managers."""
 
-    model_config = ConfigDict(arbitrary_types_allowed=True, extra="forbid")
+    model_config = ConfigDict(arbitrary_types_allowed=True, extra=EXTRA_FORBID)
 
     file_system: FileSystemManager = Field(description="File I/O operations")
     metadata_index: MetadataIndex = Field(description="Metadata tracking")
@@ -111,7 +112,7 @@ class FoundationKwargs(BaseModel):
 class LinkingKwargs(BaseModel):
     """Keyword arguments for Phase 2 linking managers."""
 
-    model_config = ConfigDict(arbitrary_types_allowed=True, extra="forbid")
+    model_config = ConfigDict(arbitrary_types_allowed=True, extra=EXTRA_FORBID)
 
     link_parser: LinkParser = Field(description="Link parsing")
     transclusion_engine: TransclusionEngine = Field(description="Content transclusion")
@@ -121,7 +122,7 @@ class LinkingKwargs(BaseModel):
 class OptimizationKwargs(BaseModel):
     """Keyword arguments for Phase 4 optimization managers."""
 
-    model_config = ConfigDict(arbitrary_types_allowed=True, extra="forbid")
+    model_config = ConfigDict(arbitrary_types_allowed=True, extra=EXTRA_FORBID)
 
     optimization_config: OptimizationConfig = Field(
         description="Configuration management"
@@ -138,7 +139,7 @@ class OptimizationKwargs(BaseModel):
 class AnalysisKwargs(BaseModel):
     """Keyword arguments for Phase 5.1 analysis managers."""
 
-    model_config = ConfigDict(arbitrary_types_allowed=True, extra="forbid")
+    model_config = ConfigDict(arbitrary_types_allowed=True, extra=EXTRA_FORBID)
 
     pattern_analyzer: PatternAnalyzer = Field(description="Usage pattern analysis")
     structure_analyzer: StructureAnalyzer = Field(description="Structure analysis")
@@ -148,7 +149,7 @@ class AnalysisKwargs(BaseModel):
 class RefactoringKwargs(BaseModel):
     """Keyword arguments for Phase 5.2 refactoring managers."""
 
-    model_config = ConfigDict(arbitrary_types_allowed=True, extra="forbid")
+    model_config = ConfigDict(arbitrary_types_allowed=True, extra=EXTRA_FORBID)
 
     refactoring_engine: RefactoringEngine = Field(description="Refactoring suggestions")
     consolidation_detector: ConsolidationDetector = Field(
@@ -163,7 +164,7 @@ class RefactoringKwargs(BaseModel):
 class ExecutionKwargs(BaseModel):
     """Keyword arguments for Phase 5.3-5.4 execution managers."""
 
-    model_config = ConfigDict(arbitrary_types_allowed=True, extra="forbid")
+    model_config = ConfigDict(arbitrary_types_allowed=True, extra=EXTRA_FORBID)
 
     refactoring_executor: RefactoringExecutor = Field(
         description="Safe refactoring execution"
@@ -177,4 +178,4 @@ class ExecutionKwargs(BaseModel):
 class ContainerKwargs(BaseModel):
     """Combined keyword arguments for container instantiation."""
 
-    model_config = ConfigDict(arbitrary_types_allowed=True, extra="allow")
+    model_config = ConfigDict(arbitrary_types_allowed=True, extra=EXTRA_ALLOW)

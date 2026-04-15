@@ -7,7 +7,7 @@ including oversized files, orphaned files, excessive dependencies, etc.
 
 from pathlib import Path
 
-from cortex.analysis.models import AntiPatternInfo, SeverityLevel
+from cortex.analysis.models import AntiPatternInfo, AntiPatternKind, SeverityLevel
 
 
 def detect_oversized_files(all_files: list[Path]) -> list[AntiPatternInfo]:
@@ -26,7 +26,7 @@ def detect_oversized_files(all_files: list[Path]) -> list[AntiPatternInfo]:
             size = file_path.stat().st_size
             if size > 100000:  # > 100KB
                 return AntiPatternInfo(
-                    type="oversized_file",
+                    type=AntiPatternKind.OVERSIZED_FILE,
                     severity=SeverityLevel.HIGH,
                     file=file_path.name,
                     files=[],
@@ -58,7 +58,7 @@ def detect_orphaned_files(
     """
     patterns: list[AntiPatternInfo] = [
         AntiPatternInfo(
-            type="orphaned_file",
+            type=AntiPatternKind.ORPHANED_FILE,
             severity=SeverityLevel.MEDIUM,
             file=file_path.name,
             files=[],
@@ -91,7 +91,7 @@ def detect_excessive_dependencies(
     """
     return [
         AntiPatternInfo(
-            type="excessive_dependencies",
+            type=AntiPatternKind.EXCESSIVE_DEPENDENCIES,
             severity=SeverityLevel.MEDIUM,
             file=file_name,
             files=[],
@@ -117,7 +117,7 @@ def detect_excessive_dependents(
     """
     return [
         AntiPatternInfo(
-            type="excessive_dependents",
+            type=AntiPatternKind.EXCESSIVE_DEPENDENTS,
             severity=SeverityLevel.LOW,
             file=file_name,
             files=[],
@@ -165,7 +165,7 @@ def detect_similar_filenames(all_files: list[Path]) -> list[AntiPatternInfo]:
 
     return [
         AntiPatternInfo(
-            type="similar_filenames",
+            type=AntiPatternKind.SIMILAR_FILENAMES,
             severity=SeverityLevel.LOW,
             file=None,
             files=[f"{name1}.md", f"{name2}.md"],

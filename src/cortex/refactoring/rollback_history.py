@@ -9,6 +9,7 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from cortex.core.pydantic_extra import EXTRA_FORBID
 from cortex.refactoring.models import RollbackRecordModel
 
 # ============================================================================
@@ -19,7 +20,7 @@ from cortex.refactoring.models import RollbackRecordModel
 class RollbackStatistics(BaseModel):
     """Statistics for rollback history."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
     total: int = Field(default=0, ge=0, description="Total rollbacks")
     successful: int = Field(default=0, ge=0, description="Successful rollbacks")
@@ -30,7 +31,7 @@ class RollbackStatistics(BaseModel):
 class RollbackHistoryResult(BaseModel):
     """Result of rollback history query."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
     time_range_days: int = Field(..., ge=0, description="Time range in days")
     total_rollbacks: int = Field(default=0, ge=0, description="Total rollbacks")

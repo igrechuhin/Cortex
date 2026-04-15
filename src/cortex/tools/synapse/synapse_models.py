@@ -9,6 +9,7 @@ from enum import Enum
 
 from pydantic import ConfigDict, Field
 
+from cortex.core.pydantic_extra import EXTRA_FORBID
 from cortex.tools.models_base import (
     ErrorResultBase,
     StrictBaseModel,
@@ -24,12 +25,20 @@ class SynapseUpdateType(str, Enum):
     RULE = "rule"
 
 
+class SynapseCategory(str, Enum):
+    """Supported Synapse category names for rules/prompts."""
+
+    PYTHON = "python"
+    GENERAL = "general"
+    GENERIC = "generic"
+
+
 class PromptInfo(StrictBaseModel):
     """Information about a prompt."""
 
     file: str
     name: str
-    category: str
+    category: SynapseCategory
     description: str
     keywords: list[str] = Field(default_factory=list)
 
@@ -38,8 +47,10 @@ class GetSynapsePromptsResult(ToolResultBase):
     """Result of get_synapse_prompts operation (success)."""
 
     status: ToolResultStatus = Field(default=ToolResultStatus.SUCCESS)
-    category: str | None = None
-    categories: list[str] = Field(default_factory=list)
+    category: SynapseCategory | None = None
+    categories: list[SynapseCategory] = Field(
+        default_factory=lambda: list[SynapseCategory]()
+    )
     prompts: list[PromptInfo] = Field(default_factory=lambda: list[PromptInfo]())
     total_count: int
 
@@ -55,7 +66,7 @@ class UpdateSynapsePromptResult(ToolResultBase):
     """Result of update_synapse_prompt operation (success)."""
 
     status: ToolResultStatus = Field(default=ToolResultStatus.SUCCESS)
-    category: str
+    category: SynapseCategory
     file: str
     message: str
     type: SynapseUpdateType = Field(default=SynapseUpdateType.PROMPT)
@@ -84,7 +95,7 @@ class CorruptionMatch(StrictBaseModel):
     )
 
     model_config = ConfigDict(
-        extra="forbid",
+        extra=EXTRA_FORBID,
         validate_assignment=True,
     )
 
@@ -150,7 +161,7 @@ class RuleInfoModel(StrictBaseModel):
     tokens: int
     priority: str | None = None
     relevance_score: float | None = None
-    category: str | None = None
+    category: SynapseCategory | None = None
 
 
 class ContextInfo(StrictBaseModel):
@@ -193,7 +204,7 @@ class UpdateSynapseRuleResult(ToolResultBase):
     """Result of update_synapse_rule operation."""
 
     status: ToolResultStatus = Field(default=ToolResultStatus.SUCCESS)
-    category: str
+    category: SynapseCategory
     file: str
     message: str
     commit_hash: str | None = None

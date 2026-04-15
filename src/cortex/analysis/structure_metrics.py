@@ -5,8 +5,13 @@ This module calculates structural complexity metrics including
 dependency depth, cyclomatic complexity, fan-in/fan-out, and hotspots.
 """
 
-from cortex.analysis.models import ComplexityHotspot, DependencyChainResult
+from cortex.analysis.models import (
+    ComplexityAssessmentStatus,
+    ComplexityHotspot,
+    DependencyChainResult,
+)
 from cortex.core.dependency_graph import DependencyGraph
+from cortex.structure.models import HealthGrade
 
 
 def build_complexity_graph(
@@ -221,7 +226,9 @@ def assess_dependency_complexity(
     return score, issues
 
 
-def determine_complexity_grade(score: int) -> tuple[str, str]:
+def determine_complexity_grade(
+    score: int,
+) -> tuple[HealthGrade, ComplexityAssessmentStatus]:
     """Determine grade and status from score.
 
     Args:
@@ -231,14 +238,14 @@ def determine_complexity_grade(score: int) -> tuple[str, str]:
         Tuple of (grade, status)
     """
     if score >= 90:
-        return ("A", "excellent")
+        return (HealthGrade.A, ComplexityAssessmentStatus.EXCELLENT)
     if score >= 80:
-        return ("B", "good")
+        return (HealthGrade.B, ComplexityAssessmentStatus.GOOD)
     if score >= 70:
-        return ("C", "acceptable")
+        return (HealthGrade.C, ComplexityAssessmentStatus.ACCEPTABLE)
     if score >= 60:
-        return ("D", "needs_improvement")
-    return ("F", "poor")
+        return (HealthGrade.D, ComplexityAssessmentStatus.NEEDS_IMPROVEMENT)
+    return (HealthGrade.F, ComplexityAssessmentStatus.POOR)
 
 
 def generate_complexity_recommendations(

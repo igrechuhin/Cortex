@@ -2,11 +2,13 @@
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from cortex.core.pydantic_extra import EXTRA_FORBID
+
 
 class CorruptionMatch(BaseModel):
     """A detected corruption match."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
     line_num: int = Field(ge=1, description="Line number")
     original: str = Field(description="Original corrupted text")
@@ -17,7 +19,7 @@ class CorruptionMatch(BaseModel):
 class FixRoadmapCorruptionResult(BaseModel):
     """Result of roadmap corruption fixing operation."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
     success: bool = Field(description="Whether operation succeeded")
     file_name: str = Field(description="File name")

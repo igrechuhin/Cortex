@@ -5,12 +5,13 @@ from uuid import uuid4
 from pydantic import BaseModel, ConfigDict, Field
 
 from cortex.core.models import HandlerKind
+from cortex.core.pydantic_extra import EXTRA_FORBID
 
 
 class ToolUsageEvent(BaseModel):
     """Single tool usage event for analytics."""
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra=EXTRA_FORBID)
 
     id: str = Field(
         default_factory=lambda: str(uuid4()),
@@ -71,7 +72,7 @@ class ToolUsageEvent(BaseModel):
 class ToolUsageStats(BaseModel):
     """Aggregated usage statistics for a tool."""
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra=EXTRA_FORBID)
 
     tool_name: str = Field(description="Name of the MCP tool")
     total_calls: int = Field(ge=0, description="Total number of calls")

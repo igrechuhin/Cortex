@@ -3,9 +3,12 @@
 Phase 9.1.5: Split from optimization/models.py for file size compliance.
 """
 
+from enum import Enum
+
 from pydantic import ConfigDict, Field
 
 from cortex.core.models import DictLikeModel
+from cortex.core.pydantic_extra import EXTRA_FORBID
 
 from ._base import OptimizationBaseModel
 
@@ -16,6 +19,17 @@ class RuleSectionModel(OptimizationBaseModel):
     name: str = Field(..., description="Section name/heading")
     content: str = Field(..., description="Section content")
     line_count: int = Field(..., ge=0, description="Number of lines")
+
+
+class OptimizationRuleCategory(str, Enum):
+    """Rule category for optimization scoring payloads."""
+
+    UNKNOWN = ""
+    GENERIC = "generic"
+    GENERAL = "general"
+    PYTHON = "python"
+    SWIFT = "swift"
+    MARKDOWN = "markdown"
 
 
 class RelevantRuleModel(OptimizationBaseModel):
@@ -74,7 +88,10 @@ class ScoredRuleModel(OptimizationBaseModel):
     )
     source: str = Field(default="local", description="Rule source: local or shared")
     priority: int = Field(default=50, ge=0, description="Rule priority")
-    category: str = Field(default="", description="Rule category")
+    category: OptimizationRuleCategory = Field(
+        default=OptimizationRuleCategory.UNKNOWN,
+        description="Rule category",
+    )
 
 
 class DetectedContextModel(OptimizationBaseModel):
@@ -121,7 +138,7 @@ class RulesManagerStatusModel(DictLikeModel):
     """Status information for rules manager."""
 
     model_config = ConfigDict(
-        extra="forbid",
+        extra=EXTRA_FORBID,
         validate_assignment=True,
         validate_default=True,
     )

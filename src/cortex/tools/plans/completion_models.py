@@ -3,12 +3,13 @@
 from pydantic import BaseModel, ConfigDict, Field
 
 from cortex.core.models import OperationStatus
+from cortex.core.pydantic_extra import EXTRA_FORBID
 
 
 class CompletePlanResult(BaseModel):
     """Result of completing a plan (move from roadmap to activeContext, optional progress and archive)."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
     status: OperationStatus = Field(
         description="Operation status: 'success' or 'error'"

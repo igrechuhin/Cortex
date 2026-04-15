@@ -16,6 +16,7 @@ from pydantic import BaseModel, ConfigDict
 
 from cortex.core.context_logging import MCPContext
 from cortex.core.models import ModelDict
+from cortex.core.pydantic_extra import EXTRA_FORBID
 from cortex.tools.execution.session_paths import session_dir
 
 _RESULT_PREFIX = "pre_commit_result_"
@@ -38,7 +39,7 @@ class PreCommitJobStatusEnum(StrEnum):
 class PreCommitRunSummary(BaseModel):
     """Summary of the most recent detached pre-commit run."""
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra=EXTRA_FORBID)
 
     status: PreCommitJobStatusEnum
     args_hash: str | None = None

@@ -4,6 +4,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 from cortex.analysis.models import (
     AntiPatternInfo,
+    AntiPatternKind,
     ComplexityAnalysisResult,
     ComplexityAnalysisStatus,
     ComplexityMetrics,
@@ -15,7 +16,7 @@ from cortex.core.models import FileOrganizationResult
 def naming_inconsistency_anti_pattern() -> AntiPatternInfo:
     """Single low-severity naming anti-pattern (structure tests)."""
     return AntiPatternInfo(
-        type="naming_inconsistency",
+        type=AntiPatternKind.NAMING_INCONSISTENCY,
         severity=SeverityLevel.LOW,
         description="Naming inconsistency",
     )

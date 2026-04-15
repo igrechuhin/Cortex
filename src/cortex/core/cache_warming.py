@@ -14,12 +14,13 @@ from pydantic import ConfigDict, Field
 
 from cortex.core.advanced_cache import AdvancedCacheManager
 from cortex.core.models import DictLikeModel, JsonValue, ModelDict
+from cortex.core.pydantic_extra import EXTRA_FORBID
 
 
 class WarmingStrategy(DictLikeModel):
     """Cache warming strategy configuration."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
     name: str = Field(description="Strategy name")
     enabled: bool = Field(description="Whether strategy is enabled")
@@ -30,7 +31,7 @@ class WarmingStrategy(DictLikeModel):
 class CacheWarmingResult(DictLikeModel):
     """Result of cache warming operation."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
     strategy: str = Field(description="Strategy name")
     items_warmed: int = Field(ge=0, description="Number of items warmed")

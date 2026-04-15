@@ -9,12 +9,14 @@ from typing import override
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from cortex.core.pydantic_extra import EXTRA_FORBID
+
 
 class ManagerGroupModel(BaseModel):
     """Group of related managers that should be initialized together."""
 
     model_config = ConfigDict(
-        extra="forbid",
+        extra=EXTRA_FORBID,
         validate_assignment=True,
         validate_default=True,
     )

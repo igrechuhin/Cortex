@@ -13,6 +13,7 @@ import time
 from cortex.tools.evaluation._models import (
     EvalRunMode,
     EvalTask,
+    EvalTaskCategory,
     ExecutionExpectSpec,
     ExecutionExpectType,
     ExecutionResultEntry,
@@ -130,12 +131,12 @@ async def run_one_execution(task: EvalTask) -> ExecutionResult:
 def _filter_tasks_by_mode(
     tasks: list[EvalTask],
     mode: EvalRunMode,
-    category: str | None,
+    category: EvalTaskCategory | None,
     fast_cap: int = 10,
 ) -> list[EvalTask]:
     """Filter tasks for fast (first N with execution), full (all), or focused (category)."""
     if mode == EvalRunMode.FOCUSED and category:
-        out = [t for t in tasks if t.category.value == category]
+        out = [t for t in tasks if t.category == category]
         return out
     if mode == EvalRunMode.FAST:
         with_exec = [t for t in tasks if t.execution is not None]
@@ -146,7 +147,7 @@ def _filter_tasks_by_mode(
 async def run_execution_suite(
     tasks: list[EvalTask],
     mode: EvalRunMode = EvalRunMode.FULL,
-    category: str | None = None,
+    category: EvalTaskCategory | None = None,
     fast_cap: int = 10,
 ) -> list[ExecutionResult]:
     """Run execution-based evals for tasks that have execution spec.

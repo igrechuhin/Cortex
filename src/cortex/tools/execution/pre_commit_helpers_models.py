@@ -9,6 +9,7 @@ from typing import cast
 from pydantic import BaseModel, ConfigDict, Field
 
 from cortex.core.models import OperationStatus
+from cortex.core.pydantic_extra import EXTRA_FORBID
 from cortex.services.framework_adapters.base import CheckResult, TestResult
 
 
@@ -44,7 +45,7 @@ DEFAULT_CHECKS: list[PreCommitCheck] = [
 class FileSizeViolation(BaseModel):
     """File size violation details."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
     file: str = Field(description="File path")
     lines: int = Field(ge=0, description="Number of lines")
@@ -55,7 +56,7 @@ class FileSizeViolation(BaseModel):
 class FunctionLengthViolation(BaseModel):
     """Function length violation details."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
     file: str = Field(description="File path")
     function: str = Field(description="Function name")
@@ -68,7 +69,7 @@ class FunctionLengthViolation(BaseModel):
 class QualityCheckResult(BaseModel):
     """Result of quality check including file size and function length."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
     check_type: str = Field(description="Type of check")
     success: bool = Field(description="Whether check succeeded")
@@ -91,7 +92,7 @@ class QualityCheckResult(BaseModel):
 class CheckStats(BaseModel):
     """Statistics for pre-commit checks."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
     total_errors: int = Field(ge=0, description="Total number of errors")
     total_warnings: int = Field(ge=0, description="Total number of warnings")
@@ -106,7 +107,7 @@ class CheckStats(BaseModel):
 class PreCommitResult(BaseModel):
     """Result of pre-commit checks execution."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
     status: OperationStatus = Field(description="Operation status")
     language: str | None = Field(default=None, description="Detected language")

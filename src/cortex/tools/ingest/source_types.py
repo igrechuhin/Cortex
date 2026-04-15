@@ -6,6 +6,8 @@ from enum import StrEnum
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from cortex.core.pydantic_extra import EXTRA_FORBID
+
 
 class SourceType(StrEnum):
     """How raw content was obtained before ingest."""
@@ -18,7 +20,7 @@ class SourceType(StrEnum):
 class IngestSource(BaseModel):
     """Validated ingest payload used by the ingest tool and tests."""
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra=EXTRA_FORBID)
 
     type: SourceType = Field(description="Source classification")
     content: str = Field(min_length=1, description="Raw source body")

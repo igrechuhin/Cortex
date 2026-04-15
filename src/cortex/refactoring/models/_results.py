@@ -7,6 +7,7 @@ Extracted from refactoring/models.py for Phase 9.1.2 file size compliance.
 from pydantic import ConfigDict, Field
 
 from cortex.core.models import DictLikeModel, ModelDict, OperationStatus
+from cortex.core.pydantic_extra import EXTRA_ALLOW, EXTRA_FORBID
 
 from ._base import RefactoringBaseModel, RefactoringImpactMetrics
 from ._enums import (
@@ -36,7 +37,7 @@ class ApprovalRequestResult(DictLikeModel):
     """Result of an approval request operation."""
 
     model_config = ConfigDict(
-        extra="forbid",
+        extra=EXTRA_FORBID,
         validate_assignment=True,
         validate_default=True,
     )
@@ -99,7 +100,7 @@ class RollbackHistoryEntry(RefactoringBaseModel):
 class FeedbackRecordResult(RefactoringBaseModel):
     """Result of recording feedback."""
 
-    model_config = ConfigDict(extra="allow", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_ALLOW, validate_assignment=True)
 
     status: FeedbackRecordStatus = Field(..., description="Record status")
     feedback_id: str | None = Field(default=None, description="Feedback ID if recorded")
@@ -130,7 +131,7 @@ class ConfidenceAdjustmentResult(RefactoringBaseModel):
 class LearningInsights(RefactoringBaseModel):
     """Learning insights and statistics."""
 
-    model_config = ConfigDict(extra="allow", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_ALLOW, validate_assignment=True)
 
     learning_enabled: bool = Field(
         default=True, description="Whether learning is enabled"

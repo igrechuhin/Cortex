@@ -8,6 +8,7 @@ migrated from legacy dict-based shapes for better validation.
 from pydantic import BaseModel, ConfigDict, Field
 
 from cortex.core.models import DictLikeModel
+from cortex.core.pydantic_extra import EXTRA_FORBID
 
 # ============================================================================
 # Base Model
@@ -18,7 +19,7 @@ class ServiceBaseModel(BaseModel):
     """Base model for service types with strict validation."""
 
     model_config = ConfigDict(
-        extra="forbid",
+        extra=EXTRA_FORBID,
         validate_assignment=True,
         validate_default=True,
     )
@@ -33,7 +34,7 @@ class LanguageInfoModel(DictLikeModel):
     """Language detection result."""
 
     model_config = ConfigDict(
-        extra="forbid",
+        extra=EXTRA_FORBID,
         validate_assignment=True,
         validate_default=True,
     )
@@ -58,7 +59,7 @@ class CheckResultModel(DictLikeModel):
     """Result of a single check operation."""
 
     model_config = ConfigDict(
-        extra="forbid",
+        extra=EXTRA_FORBID,
         validate_assignment=True,
         validate_default=True,
     )

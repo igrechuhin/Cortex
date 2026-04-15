@@ -41,6 +41,7 @@ from ._results import (
 from ._rules import (
     DetectedContextModel,
     IndexedRuleModel,
+    OptimizationRuleCategory,
     RelevantRuleModel,
     RelevantRulesResultModel,
     RuleSectionModel,
@@ -78,6 +79,7 @@ __all__ = [
     "LoadingStrategyConfigModel",
     "OptimizationBaseModel",
     "OptimizationConfigModel",
+    "OptimizationRuleCategory",
     "OptimizationMetadata",
     "OptimizationResultModel",
     "PerformanceConfigModel",

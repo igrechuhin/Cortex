@@ -12,6 +12,7 @@ from __future__ import annotations
 from pydantic import BaseModel, ConfigDict, Field
 
 from cortex.core.models import JsonDict, OperationStatus
+from cortex.core.pydantic_extra import EXTRA_FORBID
 
 # Backward-compatible alias so existing imports of ToolResultStatus keep working.
 ToolResultStatus = OperationStatus
@@ -37,7 +38,7 @@ class StrictBaseModel(BaseModel):
     """
 
     model_config = ConfigDict(
-        extra="forbid",
+        extra=EXTRA_FORBID,
         validate_assignment=True,
         validate_default=True,
         strict=True,
@@ -48,7 +49,7 @@ class ToolResultBase(StrictBaseModel):
     """Base class for all tool results with common status and error handling."""
 
     model_config = ConfigDict(
-        extra="forbid",
+        extra=EXTRA_FORBID,
         validate_assignment=True,
         validate_default=True,
         use_enum_values=True,

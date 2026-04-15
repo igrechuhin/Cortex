@@ -6,13 +6,14 @@ Phase 9.1.5: Split from optimization/models.py for file size compliance.
 from pydantic import ConfigDict, Field
 
 from cortex.core.models import DictLikeModel
+from cortex.core.pydantic_extra import EXTRA_ALLOW, EXTRA_FORBID
 
 
 class OptimizationBaseModel(DictLikeModel):
     """Base model for optimization types with strict validation."""
 
     model_config = ConfigDict(
-        extra="forbid",
+        extra=EXTRA_FORBID,
         validate_assignment=True,
         validate_default=True,
     )
@@ -21,7 +22,7 @@ class OptimizationBaseModel(DictLikeModel):
 class OptimizationMetadata(OptimizationBaseModel):
     """Metadata for optimization result."""
 
-    model_config = ConfigDict(extra="allow", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_ALLOW, validate_assignment=True)
 
     task_description: str | None = Field(
         default=None, description="Task description used for optimization"

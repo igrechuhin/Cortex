@@ -8,11 +8,13 @@ import re
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from cortex.core.pydantic_extra import EXTRA_FORBID
+
 
 class RoadmapSection(BaseModel):
     """Represents a section in the roadmap."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
     name: str = Field(description="Section name (e.g., 'blockers', 'active_work')")
     header: str = Field(description="Markdown header as it appears in file")

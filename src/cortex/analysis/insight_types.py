@@ -6,20 +6,27 @@ analysis modules to avoid circular imports.
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from cortex.analysis.models import InsightEvidence, RecommendationEntry
+from cortex.analysis.models import (
+    InsightCategory,
+    InsightEvidence,
+    InsightSummaryStatus,
+    RecommendationEntry,
+    SeverityLevel,
+)
+from cortex.core.pydantic_extra import EXTRA_FORBID
 
 
 class InsightDict(BaseModel):
     """Type definition for insight dictionary."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
     id: str = Field(description="Insight identifier")
-    category: str = Field(description="Insight category")
+    category: InsightCategory = Field(description="Insight category")
     title: str = Field(description="Insight title")
     description: str = Field(description="Insight description")
     impact_score: float = Field(ge=0.0, le=1.0, description="Impact score (0-1)")
-    severity: str = Field(description="Severity level")
+    severity: SeverityLevel = Field(description="Severity level")
     evidence: InsightEvidence | None = Field(
         default=None, description="Supporting evidence"
     )
@@ -35,9 +42,9 @@ class InsightDict(BaseModel):
 class SummaryDict(BaseModel):
     """Type definition for summary dictionary."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
-    status: str = Field(description="Summary status")
+    status: InsightSummaryStatus = Field(description="Summary status")
     message: str = Field(description="Summary message")
     high_severity_count: int = Field(ge=0, description="High severity count")
     medium_severity_count: int = Field(ge=0, description="Medium severity count")
@@ -51,7 +58,7 @@ class SummaryDict(BaseModel):
 class InsightsResultDict(BaseModel):
     """Type definition for generate_insights return value."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
     generated_at: str = Field(description="Generation timestamp")
     total_insights: int = Field(ge=0, description="Total number of insights")

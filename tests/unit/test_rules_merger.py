@@ -2,6 +2,7 @@ import pytest
 
 from cortex.rules.models import RulesManifestModel
 from cortex.rules.rules_merger import RulesMerger
+from cortex.tools.synapse.synapse_models import SynapseCategory
 
 
 @pytest.mark.asyncio
@@ -58,7 +59,7 @@ def test_add_rule_to_manifest_creates_category_and_normalizes_metadata() -> None
     # Act
     updated = merger.add_rule_to_manifest(
         manifest,
-        category="python",
+        category=SynapseCategory.PYTHON,
         filename="style.mdc",
         metadata={"priority": 10.5, "keywords": "not-a-list", "description": None},
     )

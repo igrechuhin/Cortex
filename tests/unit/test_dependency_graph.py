@@ -11,6 +11,7 @@ from cortex.core.dependency_graph import (
     DependencyGraph,
     FileDependencyInfo,
 )
+from cortex.core.models import FileCategory
 
 
 class TestDependencyGraphInitialization:
@@ -416,7 +417,7 @@ class TestCircularDependencyDetection:
         graph.add_dynamic_dependency("file3.md", "file1.md")
         # Add to static deps so they're checked
         graph.static_deps["file1.md"] = FileDependencyInfo(
-            depends_on=[], priority=10, category="test"
+            depends_on=[], priority=10, category=FileCategory.CONTEXT
         )
 
         # Act
@@ -487,10 +488,10 @@ class TestToDictExport:
         graph = DependencyGraph()
         graph.add_dynamic_dependency("file1.md", "file2.md")
         graph.static_deps["file1.md"] = FileDependencyInfo(
-            depends_on=[], priority=10, category="test"
+            depends_on=[], priority=10, category=FileCategory.CONTEXT
         )
         graph.static_deps["file2.md"] = FileDependencyInfo(
-            depends_on=[], priority=11, category="test"
+            depends_on=[], priority=11, category=FileCategory.CONTEXT
         )
 
         # Act
@@ -637,13 +638,13 @@ class TestGetTransclusionOrder:
         graph.add_link_dependency("file1.md", "file2.md", "transclusion")
         graph.add_link_dependency("file2.md", "file3.md", "transclusion")
         graph.static_deps["file1.md"] = FileDependencyInfo(
-            depends_on=[], priority=1, category="test"
+            depends_on=[], priority=1, category=FileCategory.CONTEXT
         )
         graph.static_deps["file2.md"] = FileDependencyInfo(
-            depends_on=[], priority=2, category="test"
+            depends_on=[], priority=2, category=FileCategory.CONTEXT
         )
         graph.static_deps["file3.md"] = FileDependencyInfo(
-            depends_on=[], priority=3, category="test"
+            depends_on=[], priority=3, category=FileCategory.CONTEXT
         )
 
         # Act
@@ -692,10 +693,10 @@ class TestDetectCycles:
         graph.add_dynamic_dependency("file1.md", "file2.md")
         graph.add_dynamic_dependency("file2.md", "file1.md")
         graph.static_deps["file1.md"] = FileDependencyInfo(
-            depends_on=[], priority=1, category="test"
+            depends_on=[], priority=1, category=FileCategory.CONTEXT
         )
         graph.static_deps["file2.md"] = FileDependencyInfo(
-            depends_on=[], priority=2, category="test"
+            depends_on=[], priority=2, category=FileCategory.CONTEXT
         )
 
         # Act

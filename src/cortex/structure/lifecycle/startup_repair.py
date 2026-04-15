@@ -28,6 +28,7 @@ from pathlib import Path
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from cortex.core.pydantic_extra import EXTRA_FORBID
 from cortex.structure.lifecycle.setup import StructureSetup
 from cortex.structure.lifecycle.symlinks import CursorSymlinkManager
 from cortex.structure.structure_config import StructureConfig
@@ -65,7 +66,7 @@ _GITIGNORE_BLOCK = (
 class StartupRepairReport(BaseModel):
     """Result of a startup repair pass."""
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra=EXTRA_FORBID)
 
     structure_repaired: bool = Field(
         default=False, description="Dirs/config were created or restored."

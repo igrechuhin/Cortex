@@ -10,6 +10,7 @@ from pathlib import Path
 from pydantic import BaseModel, ConfigDict, Field
 
 from cortex.core.models import OperationStatus
+from cortex.core.pydantic_extra import EXTRA_FORBID
 
 # ============================================================================
 # Pydantic Models for Rollback Analysis
@@ -19,7 +20,7 @@ from cortex.core.models import OperationStatus
 class FileRollbackAnalysis(BaseModel):
     """Analysis of a single file for rollback."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
     file: str = Field(..., description="File path")
     exists: bool = Field(..., description="Whether file exists on disk")
@@ -31,7 +32,7 @@ class FileRollbackAnalysis(BaseModel):
 class RollbackImpactAnalysis(BaseModel):
     """Result of rollback impact analysis."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
     status: OperationStatus = Field(..., description="Analysis status")
     execution_id: str = Field(..., description="Execution ID analyzed")

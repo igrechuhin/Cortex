@@ -7,6 +7,8 @@ Used by tests and tooling to assert invariants; commit execution is prompt-drive
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from cortex.core.pydantic_extra import EXTRA_FORBID
+
 _PARALLEL_GROUP_9_11 = "validation_parallel_block_9_11"
 
 _STEP_NAMES: dict[int, str] = {
@@ -31,7 +33,7 @@ _STEP_NAMES: dict[int, str] = {
 class CommitStepMetadata(BaseModel):
     """Metadata for a single commit workflow step."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
     step_id: int = Field(description="Step number (0–14)")
     name: str = Field(description="Step name/slug")

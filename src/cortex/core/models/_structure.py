@@ -2,6 +2,8 @@
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from cortex.core.pydantic_extra import EXTRA_ALLOW, EXTRA_FORBID
+
 from ._base import DictLikeModel
 from ._enums import OperationStatus, RiskLevel
 
@@ -9,7 +11,7 @@ from ._enums import OperationStatus, RiskLevel
 class ParsedLink(BaseModel):
     """Parsed markdown link information."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
     text: str = Field(description="Link text")
     target: str = Field(description="Link target")
@@ -19,7 +21,7 @@ class ParsedLink(BaseModel):
 class ConsolidationImpactAnalysis(BaseModel):
     """Impact analysis for consolidation opportunity."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
     opportunity_id: str = Field(description="Opportunity identifier")
     token_savings: int = Field(ge=0, description="Estimated token savings")
@@ -37,7 +39,7 @@ class ConsolidationImpactAnalysis(BaseModel):
 class ReorganizationActionPreview(BaseModel):
     """Preview of a single reorganization action."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
     type: str = Field(description="Action type")
     description: str = Field(description="Action description")
@@ -47,7 +49,7 @@ class ReorganizationActionPreview(BaseModel):
 class StructureMetrics(BaseModel):
     """Metrics for structure comparison."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
     total_files: int = Field(default=0, ge=0, description="Total number of files")
     total_directories: int = Field(
@@ -69,7 +71,7 @@ class StructureMetrics(BaseModel):
 class StructureComparison(BaseModel):
     """Comparison of current and proposed structure."""
 
-    model_config = ConfigDict(extra="allow", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_ALLOW, validate_assignment=True)
 
     current: StructureMetrics | None = Field(
         default=None, description="Current structure metrics"
@@ -82,7 +84,7 @@ class StructureComparison(BaseModel):
 class EstimatedImpactMetrics(BaseModel):
     """Estimated impact metrics for reorganization."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
     token_savings: int = Field(default=0, ge=0, description="Estimated token savings")
     files_affected: int = Field(default=0, ge=0, description="Number of files affected")
@@ -100,7 +102,7 @@ class EstimatedImpactMetrics(BaseModel):
 class ReorganizationPreview(BaseModel):
     """Preview of reorganization plan impact."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
     plan_id: str = Field(description="Plan identifier")
     optimization_goal: str = Field(description="Optimization goal")
@@ -123,7 +125,7 @@ class ReorganizationPreview(BaseModel):
 class HealthMetrics(BaseModel):
     """Health metrics for MCP connection."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
     healthy: bool = Field(description="Whether connection is healthy")
     concurrent_operations: int = Field(
@@ -145,7 +147,7 @@ class HealthMetrics(BaseModel):
 class GitCommandResult(DictLikeModel):
     """Result of a git command execution."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
     success: bool = Field(description="Whether command succeeded")
     stdout: str = Field(default="", description="Standard output")
@@ -157,7 +159,7 @@ class GitCommandResult(DictLikeModel):
 class GitTimeoutResponse(BaseModel):
     """Response for git command timeout."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
     success: bool = Field(default=False, description="Always False for timeout")
     error: str = Field(description="Timeout error message")
@@ -168,7 +170,7 @@ class GitTimeoutResponse(BaseModel):
 class SubmoduleInitResult(BaseModel):
     """Result of submodule initialization."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
     status: OperationStatus = Field(description="Operation status")
     action: str | None = Field(default=None, description="Action performed")
@@ -185,7 +187,7 @@ class SubmoduleInitResult(BaseModel):
 class SubmoduleSyncResult(BaseModel):
     """Result of submodule synchronization."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
     status: OperationStatus = Field(description="Sync status")
     pulled: bool = Field(default=False, description="Whether pull was performed")
@@ -197,7 +199,7 @@ class SubmoduleSyncResult(BaseModel):
 class FileSizeEntry(BaseModel):
     """File size information for organization analysis."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
     file: str = Field(description="File name")
     size_bytes: int = Field(ge=0, description="Size in bytes")
@@ -207,7 +209,7 @@ class FileSizeEntry(BaseModel):
 class FileOrganizationResult(BaseModel):
     """Result of file organization analysis."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
     status: str = Field(description="Analysis status: analyzed, empty, error")
     file_count: int = Field(ge=0, description="Total number of files")
@@ -231,7 +233,7 @@ class FileOrganizationResult(BaseModel):
 class SnapshotMetadataInput(BaseModel):
     """Input metadata for creating version snapshots."""
 
-    model_config = ConfigDict(extra="allow", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_ALLOW, validate_assignment=True)
 
     version: int | None = Field(default=None, ge=1, description="Version number")
     change_type: str | None = Field(default=None, description="Type of change")
@@ -247,7 +249,7 @@ class SnapshotMetadataInput(BaseModel):
 class SectionTokenCount(BaseModel):
     """Token count for a single section."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
     heading: str = Field(description="Section heading")
     token_count: int = Field(ge=0, description="Token count for this section")
@@ -259,7 +261,7 @@ class SectionTokenCount(BaseModel):
 class TokenCountSectionsResult(BaseModel):
     """Result of counting tokens per section."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
     total_tokens: int = Field(ge=0, description="Total token count")
     sections: list[SectionTokenCount] = Field(
@@ -271,7 +273,7 @@ class TokenCountSectionsResult(BaseModel):
 class ContextSizeEstimate(BaseModel):
     """Estimate of context size for loading files."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
     total_tokens: int = Field(ge=0, description="Total token count")
     estimated_cost_gpt4: float = Field(ge=0.0, description="Estimated cost in USD")
@@ -288,7 +290,7 @@ class ContextSizeEstimate(BaseModel):
 class ParsedMarkdownSection(BaseModel):
     """Parsed markdown section information."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
     title: str = Field(description="Section heading text")
     level: int = Field(ge=1, le=6, description="Heading level (1-6)")

@@ -12,6 +12,8 @@ from pathlib import Path
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
+from cortex.core.pydantic_extra import EXTRA_FORBID
+
 logger = logging.getLogger(__name__)
 
 _CONFIG_RELATIVE_PATH = ".cortex/config/quality.json"
@@ -20,7 +22,7 @@ _CONFIG_RELATIVE_PATH = ".cortex/config/quality.json"
 class QualityConfig(BaseModel):
     """Quality thresholds and scanning configuration."""
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra=EXTRA_FORBID)
 
     coverage_threshold: int = Field(
         default=90, ge=0, le=100, description="Minimum test coverage %"

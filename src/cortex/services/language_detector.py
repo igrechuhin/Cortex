@@ -11,6 +11,7 @@ from pydantic import ConfigDict, Field
 
 from cortex.core.models import DictLikeModel
 from cortex.core.path_resolver import get_venv_bin_path
+from cortex.core.pydantic_extra import EXTRA_FORBID
 
 logger = logging.getLogger(__name__)
 
@@ -18,7 +19,7 @@ logger = logging.getLogger(__name__)
 class LanguageInfo(DictLikeModel):
     """Language detection result."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
     language: str = Field(description="Detected programming language")
     test_framework: str | None = Field(

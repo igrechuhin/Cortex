@@ -6,6 +6,7 @@ Phase 9.1.5: Split from optimization/models.py for file size compliance.
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from cortex.core.models import JsonValue
+from cortex.core.pydantic_extra import EXTRA_ALLOW
 
 from ._base import OptimizationBaseModel
 
@@ -13,7 +14,7 @@ from ._base import OptimizationBaseModel
 class FileMetadataForScoring(OptimizationBaseModel):
     """Metadata for a file used in scoring and optimization operations."""
 
-    model_config = ConfigDict(extra="allow", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_ALLOW, validate_assignment=True)
 
     path: str | None = Field(default=None, description="File path")
     size: int | None = Field(default=None, ge=0, description="File size in bytes")
@@ -55,7 +56,7 @@ class FileMetadataForScoring(OptimizationBaseModel):
 class FileContentMetadata(OptimizationBaseModel):
     """Metadata for loaded file content."""
 
-    model_config = ConfigDict(extra="allow", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_ALLOW, validate_assignment=True)
 
     content_hash: str | None = Field(default=None, description="Content hash")
     last_modified: str | None = Field(

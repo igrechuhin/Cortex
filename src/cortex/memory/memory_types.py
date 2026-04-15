@@ -5,9 +5,9 @@ from __future__ import annotations
 import re
 from enum import Enum
 
-from pydantic import Field
+from pydantic import BaseModel, ConfigDict, Field
 
-from cortex.tools.models_base import StrictBaseModel
+from cortex.core.pydantic_extra import EXTRA_FORBID
 
 
 class MemoryType(str, Enum):
@@ -60,7 +60,16 @@ def classify_text(text: str) -> MemoryType:
     return MemoryType.STATUS
 
 
-class MemoryEntry(StrictBaseModel):
+class MemoryEntry(BaseModel):
+    # AI: Inline strict config — importing cortex.tools.models_base pulls
+    # cortex.tools.__init__, which imports l1_essential before memory_types finishes loading.
+    model_config = ConfigDict(
+        extra=EXTRA_FORBID,
+        validate_assignment=True,
+        validate_default=True,
+        strict=True,
+    )
+
     content: str
     memory_type: MemoryType
     tags: list[str] = Field(default_factory=list)

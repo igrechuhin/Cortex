@@ -2,9 +2,13 @@
 
 **This file records completed work only.** For current status and upcoming work see [roadmap.md](roadmap.md).
 
+## Completed Work (2026-04-15)
+
+- ✅ **Improvement: Typed Memory Classification for Memory Bank Entries** - COMPLETE (2026-04-15) - Resolved cortex.tools import cycle in memory_types by using inline Pydantic strict config on MemoryEntry; typed classification, tagging, read_by_type, session memory_type_counts, and L1 type weights were already implemented and covered by tests.
+
 ## Completed Work (2026-04-14)
 
-- ✅ **FastMCP v3 — Phase 2 official lifecycle APIs (PARTIAL)** - COMPLETE (2026-04-14) - Server initialization now owns roots/list_changed handler wiring and server.py no longer patches FastMCP internals directly; startup tests added to lock this behavior while remaining disconnect shim work is deferred to next subtask.
+- **Summary (2026-04-14)** - 1 entries archived.
 
 ## Completed Work (2026-04-12)
 
@@ -247,6 +251,8 @@
 Next roadmap item: **[Fast-Forward vs. Step-by-Step Planning Modes](../plans/archive/Other/fast-forward-vs-step-by-step-modes.md)** (see [roadmap.md](roadmap.md) pending plans).
 
 ## Recent Changes
+
+Refactor in progress (2026-04-14): split `session/brief.py` and `optimization/handlers.py` into `brief_cap.py`, `brief_loaders.py`, `context_appenders.py`, and `context_loaders.py`; compatibility symbols in `handlers.py` were retained for existing tests while finishing structural debt cleanup.
 
 Memory-bank guardrail (2026-04-01): when `roadmap_progress_consistency` fails, never create synthetic reconciliation/verification backlog entries. Only keep concrete, implementation-ready roadmap items tied to real deliverables.
 

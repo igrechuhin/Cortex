@@ -82,9 +82,12 @@ def typed_mcp_tool(
     tool_params = inspect.signature(_mcp.tool).parameters
     tool_factory = cast(Callable[..., object], _mcp.tool)
     tool_kwargs: dict[str, object] = {"annotations": annotations}
-    # AI: mcp SDK accepts structured_output; fastmcp v3 removed it. Keep behavior
-    # where supported while staying source-compatible with both APIs.
-    if "structured_output" in tool_params:
+    # AI: Suppress auto-generated outputSchema so Cursor doesn't require
+    # structuredContent in the response. fastmcp v3 uses output_schema=None;
+    # older SDK versions used structured_output=False.
+    if "output_schema" in tool_params:
+        tool_kwargs["output_schema"] = None
+    elif "structured_output" in tool_params:
         tool_kwargs["structured_output"] = False
     decorator = cast(Callable[[TToolFunc], object], tool_factory(**tool_kwargs))
 

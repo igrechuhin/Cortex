@@ -1,8 +1,31 @@
 # Progress Log
 
+## 2026-04-15
+
+- **Improvement: Typed Memory Classification for Memory Bank Entries** - COMPLETE. Fixed memory_types circular import; classification stack verified with unit tests.
+- <!-- memory_type: status -->
+**Quality follow-up** - COMPLETE. Split `_generate_orphaned_files_insight` in `insight_dep_quality.py` to satisfy the 30-line function cap (structural gate); behavior unchanged.
+
 ## 2026-04-14
 
+- **Remove offline setup/bootstrap support** - COMPLETE. Removed `preflight-offline` and `bootstrap-offline` targets plus related onboarding/docs guidance; offline setup flows are now intentionally out of scope unless explicitly requested again.
 - **FastMCP v3 — Phase 2: Replace Internal Handler Patches with Official APIs** - PARTIAL. Removed direct `mcp._mcp_server.*` access from `server.py`, moved roots change-notification wiring into startup path in `main.py`, and added startup regression tests while keeping the remaining disconnect shim decision for follow-up.
+- **FastMCP v3 — Phase 2: Replace Internal Handler Patches with Official APIs** - PARTIAL. Evaluated `_patch_mcp_server_handle_request` disconnect handling and intentionally deferred removal to Phase 3; added regression tests covering unpatched vs patched `ClosedResourceError` behavior and validated no residual patch-related `type: ignore` in `server.py`.
+- **FastMCP v3 — Phase 2: Replace Internal Handler Patches with Official APIs** - COMPLETE. Removed server-level private patching for prompt/roots flows and documented intentional defer of disconnect wrapper removal to Phase 3 middleware replacement.
+- **FastMCP v3 — Phase 3: Middleware for Disconnect Handling and Request Logging** - COMPLETE. Replaced private `_handle_request` monkey patch with registered middleware for disconnect handling, debug logging, and response limiting; added optimization config key and middleware test coverage.
+- **FastMCP v3 — Phase 4: Transport Configuration Cleanup** - COMPLETE. Transport run kwargs now pass explicit host/port, legacy FASTMCP host/port forwarding is removed, and streamable-http is the default for port-based mode with tests/docs aligned.
+- **FastMCP v3 — Phase 5: New Features (Lifespan, Visibility, Auth, Transforms)** - COMPLETE. Added FastMCP v3 lifespan startup injection, dynamic setup-prompt visibility toggling, per-component auth enforcement for write tools, tool-compat resource/prompt transforms behind config flags, and dev hot-reload workflow with tests/docs updates.
+- **Fix: Stale Test-Count Metric in progress.md What Works Section** - PARTIAL. Updated What Works metrics, added StaleNumericClaimCheck with tests/docs integration, but global quality/docs gates remain red due unrelated pre-existing issues.
+- **Refactor: Split Oversized `src/cortex/tools/session/brief.py` and `src/cortex/tools/optimization/handlers.py`** - PARTIAL. Extracted `brief_cap`, `brief_loaders`, `context_appenders`, and `context_loaders` with compatibility shims preserved; quality gate remains blocked by structural debt (`memory_bank_lint_checks.py` > 400 lines) and one remaining oversized helper in `brief.py`.
+- **Fix: Stale Test-Count Metric in progress.md What Works Section** - COMPLETE. Updated stale What Works metrics and added StaleNumericClaimCheck protection.
+- **Refactor: Split Oversized `src/cortex/tools/session/brief.py` and `src/cortex/tools/optimization/handlers.py`** - COMPLETE. Verified split module sizes/imports and passed full quality gate.
+- **Improvement: Layered Context Budget L0-L3 Tiering** - COMPLETE. Implemented L0/L1/L2/L3 context layering builders, wired layered context responses, and added targeted layer/resource tests.
+- **Layered context budget (L0-L3)** - COMPLETE. Added layered context modules and integration wiring in optimization/session config paths; plan moved to archive path and tests/resources context layer coverage added.
+- **Temporal store slice for Improvement: Temporal Memory with Validity Windows** - COMPLETE. Implemented the temporal SQLite store (`TemporalFact`, deterministic IDs, add/invalidate/query/current methods) and added focused unit tests for initialization, validity-window queries, invalidation, and idempotent inserts.
+- **Improvement: Temporal Memory with Validity Windows** - PARTIAL. Added temporal indexing (`TemporalIndexer`), contradiction detection warnings, timeline query models/handler, `manage_file` timeline/invalidation operations, and session-start background indexing with dedicated indexer/timeline tests.
+- **Improvement: Temporal Memory with Validity Windows** - COMPLETE. Implemented temporal fact storage, indexing, timeline retrieval, and session integration with tests.
+- <!-- memory_type: status -->
+- **Improvement: Typed Memory Classification for Memory Bank Entries** - COMPLETE. Implemented typed memory classification/reader paths and associated tests; stabilized quality-gate flow with scoped Phase-A locking and helper extraction updates.
 
 ## 2026-04-13
 
@@ -262,7 +285,7 @@
 
 ## What Works
 
-Pre-commit pipeline (fix_errors, format, type_check, quality, tests); 3702 tests, 90.36% coverage; integration tests for projectBrief schema; Option C HTTP/SSE transport (Phase 1 and 2). Plan prompt and memory-bank-updater mandate register_plan_in_roadmap for new plan entry to prevent roadmap corruption.
+Pre-commit pipeline (fix_errors, format, type_check, quality, tests); 6495 tests, 91.14% coverage (as of 2026-04-14); integration tests for projectBrief schema; Option C HTTP/SSE transport (Phase 1 and 2). Plan prompt and memory-bank-updater mandate register_plan_in_roadmap for new plan entry to prevent roadmap corruption.
 
 ## What's Left
 

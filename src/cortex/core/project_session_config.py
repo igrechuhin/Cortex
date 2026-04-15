@@ -10,6 +10,7 @@ import yaml
 from pydantic import BaseModel, ConfigDict, Field
 
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
+from cortex.core.pydantic_extra import EXTRA_ALLOW
 
 logger = logging.getLogger(__name__)
 
@@ -23,7 +24,7 @@ class ProjectSessionConfig(BaseModel):
     # AI: Allow unknown keys so workflow ``condition`` expressions (e.g. eda_required)
     # can read values from session.yaml via ``model_dump`` without extending the model
     # each time a schema adds a flag.
-    model_config = ConfigDict(extra="allow", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_ALLOW, validate_assignment=True)
 
     workflow_schema: str = Field(
         default="default",

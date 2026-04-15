@@ -12,12 +12,13 @@ from cortex.core.constants import (
     QUALITY_WEIGHT_STRUCTURE,
     SIMILARITY_THRESHOLD_DUPLICATE,
 )
+from cortex.core.pydantic_extra import EXTRA_ALLOW, EXTRA_FORBID
 
 
 class TokenBudgetConfigModel(BaseModel):
     """Token budget configuration."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
     max_total_tokens: int = Field(
         default=DEFAULT_TOKEN_BUDGET,
@@ -45,7 +46,7 @@ class TokenBudgetConfigModel(BaseModel):
 class DuplicationConfigModel(BaseModel):
     """Duplication detection configuration."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
     enabled: bool = Field(
         default=True,
@@ -71,7 +72,7 @@ class DuplicationConfigModel(BaseModel):
 class FileSchemaModel(BaseModel):
     """Schema definition for a single Memory Bank file."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
     required_sections: list[str] = Field(
         default_factory=list,
@@ -98,7 +99,7 @@ class FileSchemaModel(BaseModel):
 class SchemasConfigModel(BaseModel):
     """Schema validation configuration."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
     enforce_required_sections: bool = Field(
         default=True,
@@ -117,7 +118,7 @@ class SchemasConfigModel(BaseModel):
 class QualityWeightsModel(BaseModel):
     """Quality score weight configuration."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
     completeness: float = Field(
         default=QUALITY_WEIGHT_COMPLETENESS,
@@ -154,7 +155,7 @@ class QualityWeightsModel(BaseModel):
 class QualityConfigModel(BaseModel):
     """Quality metrics configuration."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
     minimum_score: float = Field(
         default=70.0,
@@ -178,7 +179,7 @@ class ValidationConfigModel(BaseModel):
     """Complete validation configuration."""
 
     # NOTE: Allow extra keys so users/tests can store experimental settings.
-    model_config = ConfigDict(extra="allow", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_ALLOW, validate_assignment=True)
 
     enabled: str | StrictBool = Field(
         default=True,

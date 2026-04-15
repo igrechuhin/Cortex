@@ -10,6 +10,7 @@ from cortex.core.constants import MCP_TOOL_TIMEOUT_VERY_COMPLEX
 from cortex.core.context_logging import MCPContext, log_client
 from cortex.core.mcp_stability import ensure_usage_context, mcp_tool_wrapper
 from cortex.core.project_root_resolver import resolve_project_root_async
+from cortex.core.pydantic_extra import EXTRA_FORBID
 from cortex.tools.files.markdown_link_validation import find_broken_links
 from cortex.tools.files.markdown_lint_cache import (
     MarkdownLintIndex,
@@ -45,7 +46,7 @@ __all__ = [
 class FixMarkdownLintResult(BaseModel):
     """Result of markdown lint fixing operation."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
     success: bool = Field(description="Whether operation succeeded")
     files_processed: int = Field(ge=0, description="Number of files processed")

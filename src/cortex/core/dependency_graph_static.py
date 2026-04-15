@@ -8,10 +8,11 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from cortex.core.constants import MemoryBankFile
 from cortex.core.models import ModelDict
+from cortex.core.pydantic_extra import EXTRA_FORBID
 from cortex.linking.parser import LinkParser
 
 from .async_file_utils import open_async_text_file
-from .models import DependencyEdge, DependencyNode
+from .models import DependencyEdge, DependencyNode, FileCategory
 
 # Re-export for use by dependency_graph and callers
 __all__ = [
@@ -27,13 +28,13 @@ __all__ = [
 class FileDependencyInfo(BaseModel):
     """Type definition for file dependency information."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
     depends_on: list[str] = Field(
         default_factory=list, description="List of files this file depends on"
     )
     priority: int = Field(ge=0, description="Loading priority (0 = highest)")
-    category: str = Field(description="File category")
+    category: FileCategory = Field(description="File category")
 
 
 # Static dependency hierarchy based on template structure
@@ -41,22 +42,22 @@ STATIC_DEPENDENCIES: dict[str, FileDependencyInfo] = {
     MemoryBankFile.PROJECT_BRIEF: FileDependencyInfo(
         depends_on=[],
         priority=0,  # Foundation — always load first
-        category="foundation",
+        category=FileCategory.FOUNDATION,
     ),
     MemoryBankFile.PRODUCT_CONTEXT: FileDependencyInfo(
         depends_on=[MemoryBankFile.PROJECT_BRIEF],
         priority=2,  # Context layer
-        category="context",
+        category=FileCategory.CONTEXT,
     ),
     MemoryBankFile.SYSTEM_PATTERNS: FileDependencyInfo(
         depends_on=[MemoryBankFile.PROJECT_BRIEF],
         priority=2,
-        category="context",
+        category=FileCategory.CONTEXT,
     ),
     MemoryBankFile.TECH_CONTEXT: FileDependencyInfo(
         depends_on=[MemoryBankFile.PROJECT_BRIEF],
         priority=2,
-        category="context",
+        category=FileCategory.CONTEXT,
     ),
     MemoryBankFile.ACTIVE_CONTEXT: FileDependencyInfo(
         depends_on=[
@@ -65,12 +66,12 @@ STATIC_DEPENDENCIES: dict[str, FileDependencyInfo] = {
             MemoryBankFile.TECH_CONTEXT,
         ],
         priority=3,  # Active work
-        category="active",
+        category=FileCategory.ACTIVE,
     ),
     MemoryBankFile.PROGRESS: FileDependencyInfo(
         depends_on=[MemoryBankFile.ACTIVE_CONTEXT],
         priority=4,  # Status
-        category="status",
+        category=FileCategory.STATUS,
     ),
 }
 

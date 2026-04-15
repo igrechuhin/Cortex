@@ -17,6 +17,22 @@ from unittest.mock import patch
 import pytest
 
 from cortex.rules.prompts_loader import PromptsLoader
+from cortex.tools.synapse.synapse_models import SynapseCategory
+
+
+def _write_manifest(prompts_path: Path, manifest_data: dict[str, object]) -> None:
+    """Write prompts manifest JSON for tests."""
+    manifest_path = prompts_path / "prompts-manifest.json"
+    _ = manifest_path.write_text(json.dumps(manifest_data))
+
+
+def _create_prompt_dirs(prompts_path: Path) -> tuple[Path, Path]:
+    """Create python and general prompt category folders."""
+    python_path = prompts_path / "python"
+    general_path = prompts_path / "general"
+    python_path.mkdir()
+    general_path.mkdir()
+    return python_path, general_path
 
 
 class TestPromptsLoaderInitialization:
@@ -237,12 +253,9 @@ class TestLoadCategory:
     @pytest.mark.asyncio
     async def test_load_category_success(self, tmp_path: Path):
         """Test loading category successfully."""
-        # Arrange
         prompts_path = tmp_path / "prompts"
         prompts_path.mkdir()
-        python_path = prompts_path / "python"
-        python_path.mkdir()
-
+        python_path, _ = _create_prompt_dirs(prompts_path)
         manifest_data: dict[str, object] = {
             "version": "1.0",
             "categories": {
@@ -258,18 +271,11 @@ class TestLoadCategory:
                 }
             },
         }
-        manifest_path = prompts_path / "prompts-manifest.json"
-        _ = manifest_path.write_text(json.dumps(manifest_data))
-
+        _write_manifest(prompts_path, manifest_data)
         prompt_file = python_path / "test.md"
         _ = prompt_file.write_text("# Test Prompt\n\nThis is a test prompt.")
-
         loader = PromptsLoader(prompts_path)
-
-        # Act
         prompts = await loader.load_category("python")
-
-        # Assert
         assert isinstance(prompts, list)
         assert len(prompts) == 1
         prompt = prompts[0]
@@ -319,8 +325,7 @@ class TestLoadCategory:
                 }
             },
         }
-        manifest_path = prompts_path / "prompts-manifest.json"
-        _ = manifest_path.write_text(json.dumps(manifest_data))
+        _write_manifest(prompts_path, manifest_data)
 
         loader = PromptsLoader(prompts_path)
 
@@ -343,8 +348,7 @@ class TestLoadCategory:
             "version": "1.0",
             "categories": {"python": {"prompts": []}},
         }
-        manifest_path = prompts_path / "prompts-manifest.json"
-        _ = manifest_path.write_text(json.dumps(manifest_data))
+        _write_manifest(prompts_path, manifest_data)
 
         loader = PromptsLoader(prompts_path)
         assert loader.manifest is None  # Manifest not loaded yet
@@ -362,16 +366,12 @@ class TestLoadPrompt:
     @pytest.mark.asyncio
     async def test_load_prompt_success(self, tmp_path: Path):
         """Test loading a single prompt successfully."""
-        # Arrange
         prompts_path = tmp_path / "prompts"
         prompts_path.mkdir()
-        python_path = prompts_path / "python"
-        python_path.mkdir()
-
+        python_path, _ = _create_prompt_dirs(prompts_path)
         prompt_file = python_path / "test.md"
         prompt_content = "# Test Prompt\n\nThis is test content."
         _ = prompt_file.write_text(prompt_content)
-
         manifest_data: dict[str, object] = {
             "version": "1.0",
             "categories": {
@@ -387,16 +387,10 @@ class TestLoadPrompt:
                 }
             },
         }
-        manifest_path = prompts_path / "prompts-manifest.json"
-        _ = manifest_path.write_text(json.dumps(manifest_data))
-
+        _write_manifest(prompts_path, manifest_data)
         loader = PromptsLoader(prompts_path)
         _ = await loader.load_manifest()
-
-        # Act
         prompts = await loader.load_category("python")
-
-        # Assert
         assert len(prompts) == 1
         prompt = prompts[0]
         assert prompt.content == prompt_content
@@ -541,7 +535,9 @@ class TestCreatePromptFile:
 
         # Act
         file_path = await loader.create_prompt_file(
-            category="python", filename="new-prompt.md", content="# New Prompt\nContent"
+            category=SynapseCategory.PYTHON,
+            filename="new-prompt.md",
+            content="# New Prompt\nContent",
         )
 
         # Assert
@@ -582,18 +578,11 @@ class TestGetAllPrompts:
     @pytest.mark.asyncio
     async def test_get_all_prompts_success(self, tmp_path: Path):
         """Test getting all prompts from all categories."""
-        # Arrange
         prompts_path = tmp_path / "prompts"
         prompts_path.mkdir()
-        python_path = prompts_path / "python"
-        python_path.mkdir()
-        general_path = prompts_path / "general"
-        general_path.mkdir()
-
-        # Create prompt files
+        python_path, general_path = _create_prompt_dirs(prompts_path)
         _ = (python_path / "test1.md").write_text("# Python Prompt 1")
         _ = (general_path / "test2.md").write_text("# General Prompt 1")
-
         manifest_data: dict[str, object] = {
             "version": "1.0",
             "categories": {
@@ -609,15 +598,9 @@ class TestGetAllPrompts:
                 },
             },
         }
-        manifest_path = prompts_path / "prompts-manifest.json"
-        _ = manifest_path.write_text(json.dumps(manifest_data))
-
+        _write_manifest(prompts_path, manifest_data)
         loader = PromptsLoader(prompts_path)
-
-        # Act
         all_prompts = await loader.get_all_prompts()
-
-        # Assert
         assert isinstance(all_prompts, list)
         assert len(all_prompts) == 2
         categories = {prompt.category for prompt in all_prompts}

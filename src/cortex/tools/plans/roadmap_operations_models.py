@@ -9,6 +9,7 @@ from pydantic import ConfigDict, Field
 
 from cortex.core.constants import MemoryBankFile
 from cortex.core.models import OperationStatus
+from cortex.core.pydantic_extra import EXTRA_FORBID
 from cortex.tools.models_base import StrictBaseModel
 
 
@@ -24,7 +25,7 @@ class AddRoadmapEntryResult(StrictBaseModel):
     section: str | None = Field(None, description="Section where entry was added")
     error: str | None = Field(None, description="Error message if status is error")
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
 
 class RemoveRoadmapEntryResult(StrictBaseModel):
@@ -38,7 +39,7 @@ class RemoveRoadmapEntryResult(StrictBaseModel):
     )
     error: str | None = Field(None, description="Error message if status is error")
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
 
 class RemoveRoadmapSectionResult(StrictBaseModel):
@@ -55,7 +56,7 @@ class RemoveRoadmapSectionResult(StrictBaseModel):
     )
     error: str | None = Field(None, description="Error message if status is error")
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
 
 class AppendProgressEntryResult(StrictBaseModel):
@@ -71,7 +72,7 @@ class AppendProgressEntryResult(StrictBaseModel):
     )
     error: str | None = Field(None, description="Error message if status is error")
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
 
 class AppendActiveContextEntryResult(StrictBaseModel):
@@ -87,4 +88,4 @@ class AppendActiveContextEntryResult(StrictBaseModel):
     )
     error: str | None = Field(None, description="Error message if status is error")
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)

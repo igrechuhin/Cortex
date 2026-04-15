@@ -14,12 +14,13 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from cortex.core.models import DictLikeModel
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
+from cortex.core.pydantic_extra import EXTRA_FORBID
 
 
 class LoadContextLogEntry(BaseModel):
     """Structure for a single load_context log entry."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
     timestamp: str = Field(description="ISO format timestamp")
     task_description: str = Field(description="Task description")
@@ -52,7 +53,7 @@ class LoadContextLogEntry(BaseModel):
 class SessionLog(DictLikeModel):
     """Structure for the entire session log."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
     session_id: str = Field(description="Session identifier")
     session_start: str = Field(description="Session start timestamp")

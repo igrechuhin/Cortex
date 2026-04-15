@@ -74,6 +74,9 @@ FUNCTION_LENGTH_EXCLUDED_PATHS: tuple[str, ...] = (
     "src/cortex/tools/session/dispatcher.py",
     "src/cortex/tools/session/sequential_thinking.py",
     "src/cortex/tools/execution/pre_commit_pipeline.py",
+    # Integration-style insight tests: many async tests exceed the default cap; new
+    # tests in this module should still prefer helpers to stay under MAX_FUNCTION_LINES.
+    "tests/unit/test_insight_engine.py",
 )
 
 # =============================================================================

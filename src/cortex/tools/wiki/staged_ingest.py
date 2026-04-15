@@ -9,6 +9,7 @@ from typing import NamedTuple, cast
 from pydantic import BaseModel, ConfigDict, Field
 
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
+from cortex.core.pydantic_extra import EXTRA_FORBID
 from cortex.tools.ingest.ingest_handler import ingest_source_at_project_root
 from cortex.tools.ingest.source_types import IngestSource, SourceType
 from cortex.tools.wiki.auto_ingest_config import (
@@ -21,7 +22,7 @@ from cortex.wiki.ingest_wiki import wiki_ingest_enabled
 class WikiStagedIngestResult(BaseModel):
     """Outcome of attempting wiki ingest for a list of staged paths."""
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra=EXTRA_FORBID)
 
     ingested: list[str] = Field(
         default_factory=list,

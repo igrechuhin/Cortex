@@ -4,6 +4,8 @@ Pydantic models for plan CRUD tool (create_plan, list_plans, get_plan).
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from cortex.core.pydantic_extra import EXTRA_FORBID
+
 
 def _empty_task_graph() -> list[dict[str, object]]:
     return []
@@ -12,7 +14,7 @@ def _empty_task_graph() -> list[dict[str, object]]:
 class CreatePlanResult(BaseModel):
     """Result of creating a plan file."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
     status: str = Field(description="Operation status: 'success' or 'error'")
     file_path: str | None = Field(
@@ -33,7 +35,7 @@ class CreatePlanResult(BaseModel):
 class PlanEntry(BaseModel):
     """Single plan entry for list_plans response."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
     slug: str = Field(description="Filename without .md (e.g. phase-60-feature)")
     title: str | None = Field(
@@ -44,7 +46,7 @@ class PlanEntry(BaseModel):
 class ListPlansResult(BaseModel):
     """Result of listing plans."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
     status: str = Field(description="Operation status: 'success' or 'error'")
     plans: list[PlanEntry] = Field(
@@ -58,7 +60,7 @@ class ListPlansResult(BaseModel):
 class GetPlanResult(BaseModel):
     """Result of reading a plan (content or metadata)."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
     status: str = Field(description="Operation status: 'success' or 'error'")
     slug: str | None = Field(None, description="Plan slug (filename without .md)")

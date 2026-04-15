@@ -4,7 +4,11 @@ from datetime import date
 from pathlib import Path
 
 from cortex.memory.temporal_indexer import TemporalIndexer
-from cortex.memory.temporal_store import TemporalFact, TemporalMemoryStore
+from cortex.memory.temporal_store import (
+    TemporalFact,
+    TemporalFactCategory,
+    TemporalMemoryStore,
+)
 
 
 def test_indexer_extracts_roadmap_status_facts(tmp_path: Path) -> None:
@@ -29,7 +33,9 @@ def test_indexer_extracts_roadmap_status_facts(tmp_path: Path) -> None:
     added = indexer.index_file(roadmap)
 
     assert added == 3
-    facts = store.query_as_of(date.today().isoformat(), category="status")
+    facts = store.query_as_of(
+        date.today().isoformat(), category=TemporalFactCategory.STATUS
+    )
     assert len(facts) == 3
     assert {fact.subject for fact in facts} == {"task-a", "task-b", "task-c"}
 
@@ -38,7 +44,7 @@ def test_check_contradiction_returns_open_conflicts(tmp_path: Path) -> None:
     store = TemporalMemoryStore(tmp_path / "temporal.db")
     indexer = TemporalIndexer(store, tmp_path)
     existing = TemporalFact(
-        category="status",
+        category=TemporalFactCategory.STATUS,
         subject="plan-alpha",
         predicate="status",
         object="PENDING",
@@ -48,7 +54,7 @@ def test_check_contradiction_returns_open_conflicts(tmp_path: Path) -> None:
     )
     store.add_fact(existing)
     new_fact = TemporalFact(
-        category="status",
+        category=TemporalFactCategory.STATUS,
         subject="plan-alpha",
         predicate="status",
         object="DONE",

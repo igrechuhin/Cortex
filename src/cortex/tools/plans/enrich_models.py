@@ -2,6 +2,7 @@
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from cortex.core.pydantic_extra import EXTRA_FORBID
 from cortex.tools.models_base import ToolResultStatus
 
 
@@ -9,7 +10,7 @@ class EnrichPlanResult(BaseModel):
     """Result of enriching a plan with clarification resolutions."""
 
     model_config = ConfigDict(
-        extra="forbid", validate_assignment=True, use_enum_values=True
+        extra=EXTRA_FORBID, validate_assignment=True, use_enum_values=True
     )
 
     status: ToolResultStatus = Field(description="Operation status")

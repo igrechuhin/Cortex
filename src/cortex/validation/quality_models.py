@@ -5,6 +5,7 @@ from enum import Enum
 from pydantic import BaseModel, ConfigDict, Field
 
 from cortex.core.models import DictLikeModel
+from cortex.core.pydantic_extra import EXTRA_ALLOW, EXTRA_FORBID
 from cortex.structure.models import HealthGrade
 
 from .schema_models import QualityConfigModel, QualityWeightsModel
@@ -29,7 +30,7 @@ class QualityHealthStatus(str, Enum):
 class FileMetadataForQuality(BaseModel):
     """File metadata used in quality calculations."""
 
-    model_config = ConfigDict(extra="allow", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_ALLOW, validate_assignment=True)
 
     last_modified: str | None = Field(
         default=None,
@@ -44,7 +45,7 @@ class FileMetadataForQuality(BaseModel):
 class DuplicateEntryData(BaseModel):
     """Duplicate entry data structure."""
 
-    model_config = ConfigDict(extra="allow", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_ALLOW, validate_assignment=True)
 
     file: str = Field(default="", description="File name")
     section: str = Field(default="", description="Section name")
@@ -54,7 +55,7 @@ class DuplicateEntryData(BaseModel):
 class DuplicationDataModel(BaseModel):
     """Duplication scan result data for quality calculations."""
 
-    model_config = ConfigDict(extra="allow", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_ALLOW, validate_assignment=True)
 
     duplicates_found: int = Field(
         default=0,
@@ -74,7 +75,7 @@ class DuplicationDataModel(BaseModel):
 class LinkValidationErrorData(BaseModel):
     """Link validation error data structure."""
 
-    model_config = ConfigDict(extra="allow", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_ALLOW, validate_assignment=True)
 
     file: str = Field(default="", description="File name")
     target: str = Field(default="", description="Link target")
@@ -84,7 +85,7 @@ class LinkValidationErrorData(BaseModel):
 class LinkValidationDataModel(BaseModel):
     """Link validation result data for quality calculations."""
 
-    model_config = ConfigDict(extra="allow", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_ALLOW, validate_assignment=True)
 
     validation_errors: list[LinkValidationErrorData] = Field(
         default_factory=lambda: list[LinkValidationErrorData](),
@@ -104,7 +105,7 @@ class LinkValidationDataModel(BaseModel):
 class SectionEntry(BaseModel):
     """Section entry for duplication detection."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
     file: str = Field(..., description="File name")
     section: str = Field(..., description="Section name")
@@ -114,7 +115,7 @@ class SectionEntry(BaseModel):
 class HashMapEntry(BaseModel):
     """Entry in the hash map for duplicate detection."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
     file: str = Field(..., description="File name")
     section: str = Field(..., description="Section name")
@@ -124,7 +125,7 @@ class HashMapEntry(BaseModel):
 class ValidationError(BaseModel):
     """Validation error structure."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
     type: str = Field(description="Error type identifier")
     severity: ValidationSeverity = Field(description="Error severity level")
@@ -135,7 +136,7 @@ class ValidationError(BaseModel):
 class ValidationResult(BaseModel):
     """Result of file validation."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
     valid: bool = Field(description="Whether validation passed")
     errors: list[ValidationError] = Field(
@@ -152,7 +153,7 @@ class ValidationResult(BaseModel):
 class DuplicateEntry(DictLikeModel):
     """Duplicate content entry."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
     file1: str = Field(description="First file name")
     section1: str = Field(description="First section name")
@@ -170,7 +171,7 @@ class DuplicateEntry(DictLikeModel):
 class DuplicationScanResult(DictLikeModel):
     """Result of duplication scan across files."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
     duplicates_found: int = Field(
         ge=0,
@@ -189,7 +190,7 @@ class DuplicationScanResult(DictLikeModel):
 class CategoryBreakdown(BaseModel):
     """Quality score category breakdown."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
     completeness: int = Field(ge=0, le=100, description="Completeness score")
     consistency: int = Field(ge=0, le=100, description="Consistency score")
@@ -205,7 +206,7 @@ class CategoryBreakdown(BaseModel):
 class QualityScoreResult(BaseModel):
     """Overall Memory Bank quality score result."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
     overall_score: int = Field(ge=0, le=100, description="Overall quality score")
     breakdown: CategoryBreakdown = Field(
@@ -226,7 +227,7 @@ class QualityScoreResult(BaseModel):
 class FileQualityScore(BaseModel):
     """Quality score for individual file."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
     file_name: str = Field(description="File name")
     score: int = Field(ge=0, le=100, description="File quality score")
@@ -239,7 +240,7 @@ class FileQualityScore(BaseModel):
 class TransclusionFix(BaseModel):
     """Transclusion fix suggestion for duplicated files."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
     files: list[str] = Field(
         ...,

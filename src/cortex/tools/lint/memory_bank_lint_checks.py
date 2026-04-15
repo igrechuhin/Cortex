@@ -9,6 +9,7 @@ from typing import Literal, Protocol, cast
 from pydantic import BaseModel, ConfigDict, Field
 
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
+from cortex.core.pydantic_extra import EXTRA_FORBID
 from cortex.wiki.categories import WikiCategoryDir
 from cortex.wiki.ingest_wiki import index_catalog_linked_page_paths
 from cortex.wiki.wiki_root_files import WIKI_ROOT_DOCUMENT_NAMES, WikiRootDocument
@@ -28,7 +29,7 @@ _TEST_COVERAGE_CLAIM_PATTERN = re.compile(
 class LintFinding(BaseModel):
     """Structured finding emitted by lint checks."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
     severity: Literal["error", "warning", "info"] = Field(
         description="Finding severity level"
@@ -52,7 +53,7 @@ class LintCheck(Protocol):
 class _PlanReference(BaseModel):
     """Roadmap plan reference parsed from one line."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
     raw_path: str = Field(description="Plan path as written in roadmap")
     line: int = Field(ge=1, description="1-based line index in roadmap")
@@ -61,7 +62,7 @@ class _PlanReference(BaseModel):
 class _CodeClaimSpec(BaseModel):
     """One configured code-claim assertion."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
     file: str = Field(description="Path to source claim file")
     pattern: str = Field(description="Regex pattern used to find claim")
@@ -71,7 +72,7 @@ class _CodeClaimSpec(BaseModel):
 class _LintConfig(BaseModel):
     """Subset of lint config used by CodeClaimCheck."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
     code_claim_checks: list[_CodeClaimSpec] = []
     stale_threshold_days: int = Field(default=30, ge=1)

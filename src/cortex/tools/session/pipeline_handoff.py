@@ -285,7 +285,10 @@ async def _dispatch(
 # ---------------------------------------------------------------------------
 
 
-@mcp.tool(annotations=safe_write_annotations("Pipeline Handoff (Inter-Agent State)"))
+@mcp.tool(
+    annotations=safe_write_annotations("Pipeline Handoff (Inter-Agent State)"),
+    output_schema=None,
+)
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_FAST)
 async def pipeline_handoff(

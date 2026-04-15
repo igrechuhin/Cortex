@@ -16,6 +16,7 @@ from cortex.tools.context.analysis_models import (
     AntiPattern,
     CoAccessPatternEntry,
     ComplexityMetrics,
+    InsightCategory,
     InsightEntry,
     InsightsData,
     OrganizationMetrics,
@@ -256,13 +257,13 @@ class TestInsightEntry:
 
     def test_valid(self) -> None:
         entry = InsightEntry(
-            category="performance",
+            category=InsightCategory.PERFORMANCE,
             description="Slow path",
             impact_score=0.8,
             recommendation="Optimize",
             affected_files=["a.py"],
         )
-        assert entry.category == "performance"
+        assert entry.category == InsightCategory.PERFORMANCE
         assert entry.affected_files == ["a.py"]
 
 

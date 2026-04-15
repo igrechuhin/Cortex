@@ -15,6 +15,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from cortex.core.context_logging import MCPContext, log_client, report_progress_safe
 from cortex.core.models import JsonValue, ModelDict, OperationStatus
+from cortex.core.pydantic_extra import EXTRA_FORBID
 from cortex.services.framework_adapters.detection import detect_language_at_path
 from cortex.tools.evaluation.reflection import collect_git_diff_text
 from cortex.tools.execution.autofix_ai_suggestions import (
@@ -49,7 +50,7 @@ def _default_ai_suggestions() -> list[dict[str, str]]:
 class FixQualityResult(BaseModel):
     """Result of autofix operation."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
     status: OperationStatus = Field(description="Operation status")
     errors_fixed: int = Field(ge=0, description="Number of errors fixed")

@@ -4,11 +4,13 @@ from datetime import date
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from cortex.core.pydantic_extra import EXTRA_FORBID
+
 
 class ConstitutionDoc(BaseModel):
     """Immutable project governance document stored in memory bank."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
     principles: list[str] = Field(
         default_factory=list, description="Immutable architectural principles"

@@ -5,6 +5,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from cortex.managers.types import ManagersDict
+from cortex.tools.synapse.synapse_models import SynapseCategory
 from cortex.tools.synapse.tools import (
     get_synapse_prompts,
     update_synapse_prompt,
@@ -94,7 +95,7 @@ class TestSynapsePromptsTools:
             ),
         ):
             # Act
-            result_str = await get_synapse_prompts(category="python")
+            result_str = await get_synapse_prompts(category=SynapseCategory.PYTHON)
             result = json.loads(result_str)
 
         # Assert
@@ -152,7 +153,7 @@ class TestSynapsePromptsTools:
         ):
             # Act
             result_str = await update_synapse_prompt(
-                category="general",
+                category=SynapseCategory.GENERAL,
                 file="code-review.md",
                 content="x",
                 commit_message="msg",
@@ -184,7 +185,7 @@ class TestSynapsePromptsTools:
         ):
             # Act
             result_str = await update_synapse_prompt(
-                category="general",
+                category=SynapseCategory.GENERAL,
                 file="code-review.md",
                 content="# Content",
                 commit_message="Update prompt",

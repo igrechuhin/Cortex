@@ -8,6 +8,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from cortex.core.file_system import FileSystemManager
 from cortex.core.metadata_index import MetadataIndex
 from cortex.core.models import SectionMetadata
+from cortex.core.pydantic_extra import EXTRA_FORBID
 from cortex.core.token_counter import TokenCounter
 from cortex.core.version_manager import VersionManager
 
@@ -15,7 +16,7 @@ from cortex.core.version_manager import VersionManager
 class RollbackManagers(BaseModel):
     """Typed manager bundle for rollback operations."""
 
-    model_config = ConfigDict(arbitrary_types_allowed=True, extra="forbid")
+    model_config = ConfigDict(arbitrary_types_allowed=True, extra=EXTRA_FORBID)
 
     fs_manager: FileSystemManager = Field(description="File system manager")
     token_counter: TokenCounter = Field(description="Token counter")
@@ -29,7 +30,7 @@ class RollbackProcessingData(BaseModel):
     This model replaces `ModelDict` for rollback processing data.
     """
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
     content_hash: str = Field(..., description="Content hash")
     sections: list[SectionMetadata] = Field(

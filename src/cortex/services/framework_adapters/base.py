@@ -10,6 +10,7 @@ from pathlib import Path
 from pydantic import ConfigDict, Field
 
 from cortex.core.models import DictLikeModel
+from cortex.core.pydantic_extra import EXTRA_FORBID
 from cortex.services.language_detector import LanguageInfo
 
 ProgressCallback = Callable[[int, int], None]
@@ -18,7 +19,7 @@ ProgressCallback = Callable[[int, int], None]
 class CheckResult(DictLikeModel):
     """Result of a single check operation."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
     check_type: str = Field(description="Type of check performed")
     success: bool = Field(description="Whether check succeeded")
@@ -37,7 +38,7 @@ COVERAGE_ACCEPT_MIN = 0.895
 class TestResult(DictLikeModel):
     """Test execution result."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
     success: bool = Field(description="Whether tests passed")
     tests_run: int = Field(ge=0, description="Number of tests run")

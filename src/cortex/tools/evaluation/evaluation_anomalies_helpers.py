@@ -8,6 +8,7 @@ from pathlib import Path
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from cortex.core.pydantic_extra import EXTRA_FORBID
 from cortex.managers.usage_models import ToolUsageEvent
 from cortex.managers.usage_tracker import UsageTracker
 
@@ -15,7 +16,7 @@ from cortex.managers.usage_tracker import UsageTracker
 class SessionToolUsageEntry(BaseModel):
     """Per-tool usage and anomaly counts for a session window."""
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra=EXTRA_FORBID)
 
     tool_name: str = Field(description="MCP tool name")
     calls: int = Field(ge=0, description="Number of calls")
@@ -31,7 +32,7 @@ def _empty_tools_used() -> list[SessionToolUsageEntry]:
 class SessionAnomaliesAggregate(BaseModel):
     """Aggregated session tool usage and anomaly lists."""
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra=EXTRA_FORBID)
 
     tools_used: list[SessionToolUsageEntry] = Field(
         default_factory=_empty_tools_used, description="Per-tool usage entries"
@@ -47,7 +48,7 @@ class SessionAnomaliesAggregate(BaseModel):
 class UnavailableSessionAnomaliesResponse(BaseModel):
     """Response when usage tracker is not available."""
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra=EXTRA_FORBID)
 
     status: str = "unavailable"
     message: str = Field(description="Reason unavailable")
@@ -57,7 +58,7 @@ class UnavailableSessionAnomaliesResponse(BaseModel):
 class SessionAnomaliesPayload(BaseModel):
     """Full success payload for get_session_tool_anomalies."""
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra=EXTRA_FORBID)
 
     status: str = "success"
     project_root: str = Field(description="Project root path")

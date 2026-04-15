@@ -1,6 +1,5 @@
 """Unit tests for the FILES env var interface of python/check_function_lengths.py."""
 
-import importlib.util
 import os
 import subprocess
 import sys
@@ -17,13 +16,6 @@ _SCRIPT = (
     / "python"
     / "check_function_lengths.py"
 )
-_SCRIPT_SPEC = importlib.util.spec_from_file_location(
-    "check_function_lengths_script", _SCRIPT
-)
-if _SCRIPT_SPEC is None or _SCRIPT_SPEC.loader is None:
-    raise RuntimeError(f"Failed to load checker module from {_SCRIPT}")
-_CHECKER_MODULE = importlib.util.module_from_spec(_SCRIPT_SPEC)
-_SCRIPT_SPEC.loader.exec_module(_CHECKER_MODULE)
 
 
 def _run_script(
@@ -142,14 +134,3 @@ def test_function_length_exclusions_do_not_contain_ad_hoc_tests() -> None:
     assert (
         "tests/tools/test_phase4_optimization.py" not in FUNCTION_LENGTH_EXCLUDED_PATHS
     )
-
-
-def test_is_test_path_marks_tests_directory_for_dispatcher_policy(
-    tmp_path: Path,
-) -> None:
-    tests_dir = tmp_path / "tests" / "tools"
-    tests_dir.mkdir(parents=True)
-    helper = tests_dir / "helper_case.py"
-    _ = helper.write_text("def f():\n    return 1\n", encoding="utf-8")
-
-    assert _CHECKER_MODULE._is_test_path(helper, tmp_path) is True

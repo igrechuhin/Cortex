@@ -10,6 +10,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from cortex.core.cache_json_access import read_cache_json, write_cache_json
 from cortex.core.context_logging import MCPContext, log_client
+from cortex.core.pydantic_extra import EXTRA_FORBID
 
 _MARKDOWN_LINT_CACHE_KEY = "markdown-lint-index.json"
 
@@ -17,7 +18,7 @@ _MARKDOWN_LINT_CACHE_KEY = "markdown-lint-index.json"
 class MarkdownLintIndex(BaseModel):
     """On-disk index for markdown lint cache: path -> content hash (clean files only)."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
     version: str = Field(default="2.0", description="Schema version")
     files: dict[str, str] = Field(

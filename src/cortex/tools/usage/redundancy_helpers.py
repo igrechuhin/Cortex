@@ -15,6 +15,7 @@ from typing import cast
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from cortex.core.pydantic_extra import EXTRA_FORBID
 from cortex.managers.usage_models import ToolUsageEvent
 from cortex.managers.usage_tracker import UsageTracker
 
@@ -208,7 +209,7 @@ def compute_redundancy_from_events(
 class RepeatedIdenticalEntry(BaseModel):
     """JSON-serializable repeated identical call pattern."""
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra=EXTRA_FORBID)
 
     tool_name: str = Field(description="MCP tool name")
     params_hash: str | None = Field(description="Hash of params or None")
@@ -220,7 +221,7 @@ class RepeatedIdenticalEntry(BaseModel):
 class SequentialSameToolEntry(BaseModel):
     """JSON-serializable sequential same-tool pattern."""
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra=EXTRA_FORBID)
 
     tool_name: str = Field(description="MCP tool name")
     max_run_length: int = Field(ge=0)
@@ -231,7 +232,7 @@ class SequentialSameToolEntry(BaseModel):
 class ErrorByParamEntry(BaseModel):
     """JSON-serializable error-by-param pattern."""
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra=EXTRA_FORBID)
 
     tool_name: str = Field(description="MCP tool name")
     param_or_error: str = Field(description="param_validation_failure or error_type")
@@ -250,7 +251,7 @@ class RedundancyStatus(str, Enum):
 class RedundancyPayload(BaseModel):
     """Full redundancy metrics payload for query_usage(redundancy)."""
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra=EXTRA_FORBID)
 
     status: RedundancyStatus = RedundancyStatus.SUCCESS
     project_root: str = Field(description="Project root path")

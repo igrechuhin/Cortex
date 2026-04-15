@@ -9,6 +9,7 @@ from pathlib import Path
 from pydantic import BaseModel, ConfigDict, Field
 
 from cortex.core.models._enums import PlanStatus
+from cortex.core.pydantic_extra import EXTRA_FORBID
 
 _DEPENDS_RE = re.compile(
     r"^depends_on\s*:\s*\[(.*?)\]\s*$", re.IGNORECASE | re.MULTILINE
@@ -19,7 +20,7 @@ _STATUS_RE = re.compile(r"^status\s*:\s*([A-Za-z_]+)\s*$", re.IGNORECASE | re.MU
 class PlanNode(BaseModel):
     """Single plan vertex with declared metadata and computed blockers."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
     slug: str = Field(description="Plan slug (filename without .md)")
     depends_on: list[str] = Field(
@@ -48,7 +49,7 @@ def _empty_cycle_list() -> list[list[str]]:
 class ArtifactGraph(BaseModel):
     """Directed dependency view over plan files under a directory."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
     nodes: dict[str, PlanNode] = Field(description="Plan slug → node metadata")
     edges: list[tuple[str, str]] = Field(

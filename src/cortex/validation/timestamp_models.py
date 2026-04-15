@@ -9,6 +9,7 @@ from enum import Enum
 from pydantic import BaseModel, ConfigDict, Field
 
 from cortex.core.models import OperationStatus
+from cortex.core.pydantic_extra import EXTRA_FORBID
 
 
 class CheckTypeTimestamps(str, Enum):
@@ -20,7 +21,7 @@ class CheckTypeTimestamps(str, Enum):
 class TimestampViolationModel(BaseModel):
     """Timestamp format violation."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
     line: int = Field(..., ge=1, description="Line number")
     content: str = Field(..., description="Line content (truncated)")
@@ -31,7 +32,7 @@ class TimestampViolationModel(BaseModel):
 class TimestampScanResult(BaseModel):
     """Result of scanning content for timestamps."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
     valid_count: int = Field(..., ge=0, description="Number of valid timestamps")
     invalid_format_count: int = Field(
@@ -60,7 +61,7 @@ class TimestampScanResult(BaseModel):
 class FileTimestampResultModel(BaseModel):
     """Timestamp validation result for a single file."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
     valid_count: int = Field(..., ge=0, description="Number of valid timestamps")
     invalid_format_count: int = Field(
@@ -83,7 +84,7 @@ class FileTimestampResultModel(BaseModel):
 class SingleFileTimestampResult(BaseModel):
     """Result of timestamp validation for a single file."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
     status: OperationStatus = Field(..., description="Operation status")
     check_type: CheckTypeTimestamps = Field(
@@ -126,7 +127,7 @@ class SingleFileTimestampResult(BaseModel):
 class AllFilesTimestampResult(BaseModel):
     """Result of timestamp validation for all files."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
     status: OperationStatus = Field(
         default=OperationStatus.SUCCESS,

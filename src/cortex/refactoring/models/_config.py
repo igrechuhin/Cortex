@@ -7,6 +7,7 @@ Extracted from refactoring/models.py for Phase 9.1.2 file size compliance.
 from pydantic import ConfigDict, Field
 
 from cortex.core.models import DictLikeModel
+from cortex.core.pydantic_extra import EXTRA_ALLOW, EXTRA_FORBID
 
 from ._base import RefactoringBaseModel
 from ._enums import LearningRate
@@ -31,7 +32,7 @@ class ApprovalManagerConfig(RefactoringBaseModel):
 class ApprovalFileData(RefactoringBaseModel):
     """Structure of approval history file."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
     last_updated: str = Field(..., description="ISO timestamp of last update")
     approvals: dict[str, ApprovalModel] = Field(
@@ -57,7 +58,7 @@ class RollbackManagerConfig(RefactoringBaseModel):
 class RollbackFileData(RefactoringBaseModel):
     """Structure of rollback history file."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
     last_updated: str = Field(..., description="ISO timestamp of last update")
     rollbacks: dict[str, RollbackRecordModel] = Field(
@@ -96,7 +97,7 @@ class RefactoringExecutorConfig(RefactoringBaseModel):
 class ApprovalRequestDetails(RefactoringBaseModel):
     """Details for an approval request."""
 
-    model_config = ConfigDict(extra="allow")
+    model_config = ConfigDict(extra=EXTRA_ALLOW)
 
     suggestion_type: str = Field(description="Type of refactoring suggestion")
     affected_files: list[str] = Field(
@@ -114,7 +115,7 @@ class ApprovalRequestDetails(RefactoringBaseModel):
 class SuggestionData(RefactoringBaseModel):
     """Data for a refactoring suggestion used in learning."""
 
-    model_config = ConfigDict(extra="allow")
+    model_config = ConfigDict(extra=EXTRA_ALLOW)
 
     suggestion_id: str = Field(description="Unique suggestion identifier")
     suggestion_type: str = Field(description="Type of suggestion")
@@ -132,7 +133,7 @@ class SuggestionData(RefactoringBaseModel):
 class FeedbackData(RefactoringBaseModel):
     """Additional data for feedback recording."""
 
-    model_config = ConfigDict(extra="allow")
+    model_config = ConfigDict(extra=EXTRA_ALLOW)
 
     user_comment: str | None = Field(default=None, description="User comment")
     execution_time_ms: int | None = Field(
@@ -146,7 +147,7 @@ class FeedbackData(RefactoringBaseModel):
 class SuggestionTypePreference(RefactoringBaseModel):
     """User preference for a suggestion type (e.g., consolidation, split)."""
 
-    model_config = ConfigDict(extra="allow", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_ALLOW, validate_assignment=True)
 
     total: int = Field(default=0, ge=0, description="Total feedback count")
     approved: int = Field(default=0, ge=0, description="Approved count")
@@ -171,7 +172,7 @@ class PreferenceSummary(RefactoringBaseModel):
 class LearningPreferences(RefactoringBaseModel):
     """User preferences for learning engine."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
     min_confidence_threshold: float = Field(
         default=0.5, ge=0.0, le=1.0, description="Minimum confidence threshold"
@@ -214,7 +215,7 @@ class LearningPreferences(RefactoringBaseModel):
 class ConfidenceAdjustmentDetails(RefactoringBaseModel):
     """Details of confidence adjustment calculation."""
 
-    model_config = ConfigDict(extra="allow")
+    model_config = ConfigDict(extra=EXTRA_ALLOW)
 
     adjustments: list[str] = Field(
         default_factory=list, description="List of adjustment descriptions"
@@ -229,7 +230,7 @@ class ConfidenceAdjustmentDetails(RefactoringBaseModel):
 class SuggestionInput(RefactoringBaseModel):
     """Input suggestion for confidence adjustment and filtering."""
 
-    model_config = ConfigDict(extra="allow")
+    model_config = ConfigDict(extra=EXTRA_ALLOW)
 
     suggestion_id: str | None = Field(default=None, description="Suggestion identifier")
     type: str | None = Field(default=None, description="Suggestion type")
@@ -244,7 +245,7 @@ class SuggestionInput(RefactoringBaseModel):
 class SuggestionDetails(RefactoringBaseModel):
     """Details about a suggestion for pattern extraction."""
 
-    model_config = ConfigDict(extra="allow")
+    model_config = ConfigDict(extra=EXTRA_ALLOW)
 
     type: str | None = Field(default=None, description="Suggestion type")
     similarity_threshold: float | None = Field(
@@ -274,7 +275,7 @@ class SuggestionDetails(RefactoringBaseModel):
 class InsightDataModel(RefactoringBaseModel):
     """Insight data for refactoring suggestion generation."""
 
-    model_config = ConfigDict(extra="allow", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_ALLOW, validate_assignment=True)
 
     duplicated_content: list[dict[str, str]] = Field(
         default_factory=lambda: list[dict[str, str]](),
@@ -301,7 +302,7 @@ class InsightDataModel(RefactoringBaseModel):
 class AnalysisDataModel(RefactoringBaseModel):
     """Analysis data for refactoring suggestion generation."""
 
-    model_config = ConfigDict(extra="allow", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_ALLOW, validate_assignment=True)
 
     file_sizes: dict[str, int] = Field(
         default_factory=dict, description="File sizes in bytes"
@@ -448,7 +449,7 @@ class AdaptationValidationResult(DictLikeModel):
     """Result of adaptation configuration validation."""
 
     model_config = ConfigDict(
-        extra="forbid",
+        extra=EXTRA_FORBID,
         validate_assignment=True,
         validate_default=True,
     )
@@ -462,7 +463,7 @@ class AdaptationSummary(DictLikeModel):
     """Summary of adaptation configuration settings."""
 
     model_config = ConfigDict(
-        extra="forbid",
+        extra=EXTRA_FORBID,
         validate_assignment=True,
         validate_default=True,
     )

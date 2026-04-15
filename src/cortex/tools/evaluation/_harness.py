@@ -79,7 +79,7 @@ class ToolEvaluationHarness:
         return EvalTaskResult(
             task_id=task.id,
             task_name=task.name,
-            category=task.category.value,
+            category=task.category,
             status=EvalTaskStatus.UNAVAILABLE,
             total_calls=0,
             successful_calls=0,
@@ -109,7 +109,7 @@ class ToolEvaluationHarness:
         return EvalTaskResult(
             task_id=task.id,
             task_name=task.name,
-            category=task.category.value,
+            category=task.category,
             status=status,
             total_calls=agg.total_calls,
             successful_calls=agg.successful_calls,

@@ -7,11 +7,13 @@ from __future__ import annotations
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from cortex.core.pydantic_extra import EXTRA_FORBID
+
 
 class ToolMetricSummary(BaseModel):
     """Per-tool metrics for a time window."""
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra=EXTRA_FORBID)
 
     tool_name: str = Field(description="MCP tool name")
     total_calls: int = Field(ge=0, description="Total calls in window")
@@ -28,7 +30,7 @@ class ToolMetricSummary(BaseModel):
 class GlobalMetricSummary(BaseModel):
     """Global (all-tools) metrics for a time window."""
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra=EXTRA_FORBID)
 
     total_calls: int = Field(ge=0)
     successful_calls: int = Field(ge=0)
@@ -40,7 +42,7 @@ class GlobalMetricSummary(BaseModel):
 class DriftAlert(BaseModel):
     """Single drift alert: metric deviates > sigma from baseline."""
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra=EXTRA_FORBID)
 
     tool_name: str = Field(description='Tool (or "global")')
     metric_name: str = Field(description="e.g. success_rate, avg_duration_ms")
@@ -61,7 +63,7 @@ def _default_drift_alerts() -> list[DriftAlert]:
 class ProductionMonitoringPayload(BaseModel):
     """Full payload for query_usage(query_type=\"production_monitoring\")."""
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra=EXTRA_FORBID)
 
     status: str = Field(description="success or unavailable")
     project_root: str = Field(default="", description="Project root path")

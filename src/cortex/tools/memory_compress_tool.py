@@ -126,7 +126,8 @@ def run_compress_memory_bank(project_root: Path) -> CompressMemoryBankResult:
 @mcp.tool(
     annotations=safe_write_annotations(
         "Compress Memory Bank (CLAUDE.md, .cortex/memory-bank/*.md)"
-    )
+    ),
+    output_schema=None,
 )
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_COMPLEX)

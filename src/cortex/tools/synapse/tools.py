@@ -40,6 +40,7 @@ from cortex.core.mcp_stability import (
     mcp_tool_wrapper,
 )
 from cortex.core.models import OperationStatus
+from cortex.tools.synapse.synapse_models import SynapseCategory
 from cortex.tools.synapse.tools_impl import (
     RulePriorityLiteral,
     get_synapse_handle_prompts,
@@ -100,7 +101,7 @@ async def _synapse_handle_sync(pull: bool, push: bool, ctx: MCPContext | None) -
 
 async def _synapse_handle_update(
     op: str,
-    category: str,
+    category: SynapseCategory,
     file: str,
     content: str,
     commit_message: str,
@@ -134,7 +135,7 @@ async def synapse(
     pull: bool = True,
     push: bool = False,
     # update_rule / update_prompt params
-    category: str | None = None,
+    category: SynapseCategory | None = None,
     file: str | None = None,
     content: str | None = None,
     commit_message: str | None = None,
@@ -195,7 +196,7 @@ async def sync_synapse(
 
 async def update_synapse(
     content_type: Literal["rule", "prompt"],
-    category: str,
+    category: SynapseCategory,
     file: str,
     content: str,
     commit_message: str,
@@ -214,7 +215,7 @@ async def update_synapse(
 
 
 async def update_synapse_rule(
-    category: str,
+    category: SynapseCategory,
     file: str,
     content: str,
     commit_message: str,
@@ -238,7 +239,7 @@ async def update_synapse_rule(
 async def get_synapse(
     content_type: str,
     task_description: str | None = None,
-    category: str | None = None,
+    category: SynapseCategory | None = None,
     max_tokens: int = 10000,
     min_relevance_score: float = 0.3,
     project_files: str | None = None,
@@ -292,7 +293,7 @@ async def get_synapse(
 
 
 async def get_synapse_prompts(
-    category: str | None = None,
+    category: SynapseCategory | None = None,
     ctx: MCPContext | None = None,
 ) -> str:
     """Get Synapse prompts (wrapper; use get_synapse(content_type=\"prompts\", category=...) as MCP tool)."""
@@ -304,7 +305,7 @@ async def get_synapse_prompts(
 
 
 async def update_synapse_prompt(
-    category: str,
+    category: SynapseCategory,
     file: str,
     content: str,
     commit_message: str,

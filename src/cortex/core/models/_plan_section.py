@@ -6,13 +6,15 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from cortex.core.pydantic_extra import EXTRA_FORBID
+
 from ._enums import PlanSectionStatus
 
 
 class PlanSection(BaseModel):
     """One section of a plan while iterating in step-by-step mode."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
     name: str = Field(
         ...,

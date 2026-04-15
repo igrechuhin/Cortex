@@ -20,6 +20,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from cortex.core.models import JsonValue, ModelDict
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
+from cortex.core.pydantic_extra import EXTRA_FORBID
 from cortex.validation.models import JobConfigModel
 
 # Exposed for tests (they patch `cortex.validation.infrastructure_validator.yaml`)
@@ -31,7 +32,7 @@ logger = logging.getLogger(__name__)
 class InfrastructureIssue(BaseModel):
     """Infrastructure validation issue."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
     type: str = Field(description="Issue type")
     severity: str = Field(description="Issue severity")
@@ -45,7 +46,7 @@ class InfrastructureIssue(BaseModel):
 class InfrastructureValidationResult(BaseModel):
     """Infrastructure validation result."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
     status: str = Field(description="Validation status")
     check_type: str = Field(description="Type of check performed")

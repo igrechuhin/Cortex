@@ -2,6 +2,8 @@
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from cortex.core.pydantic_extra import EXTRA_FORBID
+
 from ._base import DictLikeModel
 from ._version import VersionMetadata
 
@@ -9,7 +11,7 @@ from ._version import VersionMetadata
 class FileMetadata(BaseModel):
     """File metadata entry."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
     file_path: str = Field(description="Path to file")
     content_hash: str = Field(description="SHA-256 hash")
@@ -23,7 +25,7 @@ class SectionMetadata(DictLikeModel):
     """Section metadata within a file."""
 
     model_config = ConfigDict(
-        extra="forbid", validate_assignment=True, populate_by_name=True
+        extra=EXTRA_FORBID, validate_assignment=True, populate_by_name=True
     )
 
     title: str = Field(
@@ -46,7 +48,7 @@ class SectionMetadata(DictLikeModel):
 class DetailedFileMetadata(BaseModel):
     """Detailed file metadata including history and analytics."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
     path: str = Field(
         description="Path to file relative to project root (index.json portability)"
@@ -77,7 +79,7 @@ class DetailedFileMetadata(BaseModel):
 class FileFrequency(BaseModel):
     """File access frequency data."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
     file: str = Field(description="File name")
     reads: int = Field(ge=0, default=0, description="Read count")
@@ -87,7 +89,7 @@ class FileFrequency(BaseModel):
 class UsageAnalytics(BaseModel):
     """Usage analytics data."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
     total_reads: int = Field(ge=0, description="Total read operations")
     total_writes: int = Field(ge=0, description="Total write operations")
@@ -108,7 +110,7 @@ class UsageAnalytics(BaseModel):
 class Totals(BaseModel):
     """Total statistics."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
     total_files: int = Field(ge=0, description="Total number of files")
     total_size_bytes: int = Field(ge=0, description="Total size in bytes")
@@ -120,7 +122,7 @@ class IndexGraphEdge(BaseModel):
     """Edge in index dependency graph data structure."""
 
     model_config = ConfigDict(
-        extra="forbid", validate_assignment=True, populate_by_name=True
+        extra=EXTRA_FORBID, validate_assignment=True, populate_by_name=True
     )
 
     from_node: str = Field(alias="from", description="Source node identifier")
@@ -130,7 +132,7 @@ class IndexGraphEdge(BaseModel):
 class IndexDependencyGraphData(BaseModel):
     """Dependency graph structure for index storage."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
     nodes: list[str] = Field(
         default_factory=list, description="List of node identifiers"
@@ -147,7 +149,7 @@ class IndexDependencyGraphData(BaseModel):
 class IndexStats(BaseModel):
     """Index statistics."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
     totals: Totals = Field(description="Total statistics")
     usage_analytics: UsageAnalytics = Field(description="Usage analytics")
@@ -157,7 +159,7 @@ class IndexStats(BaseModel):
 class IndexData(BaseModel):
     """Complete index data structure."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
     schema_version: str = Field(description="Index schema version")
     created_at: str = Field(description="ISO format timestamp of index creation")
@@ -175,7 +177,7 @@ class IndexData(BaseModel):
 class CacheStatsModel(BaseModel):
     """Cache statistics for monitoring performance."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
     hits: int = Field(..., ge=0, description="Cache hits")
     misses: int = Field(..., ge=0, description="Cache misses")
@@ -187,7 +189,7 @@ class CacheStatsModel(BaseModel):
 class AccessPatternModel(BaseModel):
     """Access pattern for predictive prefetching."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
     file: str = Field(..., description="File path")
     co_accessed_files: list[str] = Field(
@@ -200,7 +202,7 @@ class AccessPatternModel(BaseModel):
 class WarmingStrategyModel(DictLikeModel):
     """Cache warming strategy configuration."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
     name: str = Field(..., description="Strategy name")
     enabled: bool = Field(..., description="Whether strategy is enabled")
@@ -211,7 +213,7 @@ class WarmingStrategyModel(DictLikeModel):
 class CacheWarmingResultModel(DictLikeModel):
     """Result of cache warming operation."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
     strategy: str = Field(..., description="Strategy used")
     items_warmed: int = Field(..., ge=0, description="Items warmed")

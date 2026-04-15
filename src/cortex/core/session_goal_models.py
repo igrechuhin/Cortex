@@ -7,9 +7,11 @@ from uuid import uuid4
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from cortex.core.pydantic_extra import EXTRA_FORBID
+
 # strict=False so JSON round-trip accepts ISO datetime strings from model_dump_json().
 _CORE_GOAL = ConfigDict(
-    extra="forbid",
+    extra=EXTRA_FORBID,
     validate_assignment=True,
     validate_default=True,
     strict=False,

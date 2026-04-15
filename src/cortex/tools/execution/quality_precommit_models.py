@@ -10,6 +10,7 @@ from enum import Enum
 from pydantic import ConfigDict, Field
 
 from cortex.core.models import DictLikeModel, JsonDict, OperationStatus
+from cortex.core.pydantic_extra import EXTRA_FORBID
 from cortex.tools.models_base import (
     ErrorResultBase,
     StrictBaseModel,
@@ -31,7 +32,7 @@ class CheckResult(DictLikeModel):
     """Result of a single pre-commit check."""
 
     model_config = ConfigDict(
-        extra="forbid",
+        extra=EXTRA_FORBID,
         validate_assignment=True,
         validate_default=True,
     )
@@ -263,7 +264,7 @@ class ProjectConfigStatusModel(DictLikeModel):
     """Project configuration status flags."""
 
     model_config = ConfigDict(
-        extra="forbid",
+        extra=EXTRA_FORBID,
         validate_assignment=True,
         validate_default=True,
     )
@@ -301,7 +302,7 @@ class PreCommitResultModel(StrictBaseModel):
     """Result of pre-commit checks execution."""
 
     model_config = ConfigDict(
-        extra="forbid",
+        extra=EXTRA_FORBID,
         validate_assignment=True,
     )
 

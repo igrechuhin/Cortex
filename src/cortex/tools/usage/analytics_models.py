@@ -5,6 +5,8 @@ Extracted from usage_analytics.py for Phase 9.1 file size compliance.
 
 from pydantic import BaseModel, ConfigDict
 
+from cortex.core.pydantic_extra import EXTRA_ALLOW
+
 
 class UsageEventPayload(BaseModel):
     """Looser wire model for usage events returned to external callers.
@@ -15,7 +17,7 @@ class UsageEventPayload(BaseModel):
     Pydantic's ``extra='allow'`` configuration.
     """
 
-    model_config = ConfigDict(extra="allow")
+    model_config = ConfigDict(extra=EXTRA_ALLOW)
 
     id: str
     tool_name: str | None = None

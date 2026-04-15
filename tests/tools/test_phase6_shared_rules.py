@@ -5,6 +5,7 @@ Complements tests/tools/test_synapse_tools.py with Phase 9.5 coverage targets.
 """
 
 import json
+from contextlib import contextmanager
 from pathlib import Path
 from typing import cast
 from unittest.mock import AsyncMock, MagicMock, patch
@@ -14,6 +15,7 @@ import pytest
 from cortex.core.models import OperationStatus
 from cortex.managers.types import ManagersDict
 from cortex.rules.models import SynapseSyncResult, SyncChanges
+from cortex.tools.synapse.synapse_models import SynapseCategory
 from cortex.tools.synapse.tools import (
     get_synapse_rules,
     sync_synapse,
@@ -40,6 +42,32 @@ async def _get_manager_helper(
     if isinstance(manager, LazyManager):
         return cast(object, await manager.get())
     return manager
+
+
+@contextmanager
+def _patched_synapse_environment(
+    project_root: Path, managers: ManagersDict | dict[str, object]
+):
+    """Patch manager/project lookups for synapse tool tests."""
+    with (
+        patch(
+            "cortex.tools.synapse.tools_impl.get_project_root",
+            return_value=project_root,
+        ),
+        patch(
+            "cortex.tools.synapse.tools_impl.get_managers",
+            return_value=managers,
+        ),
+        patch(
+            "cortex.tools.synapse.tools_helpers.get_manager",
+            new=AsyncMock(side_effect=_get_manager_helper),
+        ),
+        patch(
+            "cortex.managers.utils.get_manager",
+            new=AsyncMock(side_effect=_get_manager_helper),
+        ),
+    ):
+        yield
 
 
 # ============================================================================
@@ -149,23 +177,8 @@ class TestSyncSharedRulesEdgeCases:
         )
         synapse_mock = cast(MagicMock, mock_managers_with_synapse.synapse)
         synapse_mock.sync_synapse = AsyncMock(return_value=result_no_reindex)
-        with (
-            patch(
-                "cortex.tools.synapse.tools_impl.get_project_root",
-                return_value=mock_project_root,
-            ),
-            patch(
-                "cortex.tools.synapse.tools_impl.get_managers",
-                return_value=mock_managers_with_synapse,
-            ),
-            patch(
-                "cortex.tools.synapse.tools_helpers.get_manager",
-                new=AsyncMock(side_effect=_get_manager_helper),
-            ),
-            patch(
-                "cortex.managers.utils.get_manager",
-                new=AsyncMock(side_effect=_get_manager_helper),
-            ),
+        with _patched_synapse_environment(
+            mock_project_root, mock_managers_with_synapse
         ):
             _ = await sync_synapse(pull=True, push=False)
         rules_mock = cast(MagicMock, mock_managers_with_synapse.rules_manager)
@@ -187,27 +200,12 @@ class TestUpdateSynapseContentType:
         mock_managers_with_synapse: ManagersDict,
     ) -> None:
         """update_synapse(content_type='rule') calls update_synapse_rule_impl."""
-        with (
-            patch(
-                "cortex.tools.synapse.tools_impl.get_project_root",
-                return_value=mock_project_root,
-            ),
-            patch(
-                "cortex.tools.synapse.tools_impl.get_managers",
-                return_value=mock_managers_with_synapse,
-            ),
-            patch(
-                "cortex.tools.synapse.tools_helpers.get_manager",
-                new=AsyncMock(side_effect=_get_manager_helper),
-            ),
-            patch(
-                "cortex.managers.utils.get_manager",
-                new=AsyncMock(side_effect=_get_manager_helper),
-            ),
+        with _patched_synapse_environment(
+            mock_project_root, mock_managers_with_synapse
         ):
             result_str = await update_synapse(
                 content_type="rule",
-                category="python",
+                category=SynapseCategory.PYTHON,
                 file="style.md",
                 content="# Style",
                 commit_message="Update",
@@ -223,27 +221,12 @@ class TestUpdateSynapseContentType:
         mock_managers_with_synapse: ManagersDict,
     ) -> None:
         """update_synapse(content_type='prompt') calls update_synapse_prompt_impl."""
-        with (
-            patch(
-                "cortex.tools.synapse.tools_impl.get_project_root",
-                return_value=mock_project_root,
-            ),
-            patch(
-                "cortex.tools.synapse.tools_impl.get_managers",
-                return_value=mock_managers_with_synapse,
-            ),
-            patch(
-                "cortex.tools.synapse.tools_helpers.get_manager",
-                new=AsyncMock(side_effect=_get_manager_helper),
-            ),
-            patch(
-                "cortex.managers.utils.get_manager",
-                new=AsyncMock(side_effect=_get_manager_helper),
-            ),
+        with _patched_synapse_environment(
+            mock_project_root, mock_managers_with_synapse
         ):
             result_str = await update_synapse(
                 content_type="prompt",
-                category="general",
+                category=SynapseCategory.GENERAL,
                 file="implement.md",
                 content="# Implement",
                 commit_message="Update prompt",
@@ -270,7 +253,7 @@ class TestUpdateSynapseContentType:
         ):
             result_str = await update_synapse(
                 content_type="prompt",
-                category="general",
+                category=SynapseCategory.GENERAL,
                 file="test.md",
                 content="x",
                 commit_message="test",
@@ -364,26 +347,11 @@ class TestUpdateWrappers:
         mock_managers_with_synapse: ManagersDict,
     ) -> None:
         """update_synapse_rule delegates to update_synapse(content_type='rule')."""
-        with (
-            patch(
-                "cortex.tools.synapse.tools_impl.get_project_root",
-                return_value=mock_project_root,
-            ),
-            patch(
-                "cortex.tools.synapse.tools_impl.get_managers",
-                return_value=mock_managers_with_synapse,
-            ),
-            patch(
-                "cortex.tools.synapse.tools_helpers.get_manager",
-                new=AsyncMock(side_effect=_get_manager_helper),
-            ),
-            patch(
-                "cortex.managers.utils.get_manager",
-                new=AsyncMock(side_effect=_get_manager_helper),
-            ),
+        with _patched_synapse_environment(
+            mock_project_root, mock_managers_with_synapse
         ):
             result_str = await update_synapse_rule(
-                category="python",
+                category=SynapseCategory.PYTHON,
                 file="x.md",
                 content="c",
                 commit_message="m",

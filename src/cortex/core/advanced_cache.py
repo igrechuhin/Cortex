@@ -23,12 +23,13 @@ from cortex.core.models import (
     ManagerCacheDefaults,
     ModelDict,
 )
+from cortex.core.pydantic_extra import EXTRA_FORBID
 
 
 class CacheStats(DictLikeModel):
     """Cache statistics for monitoring performance."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
     hits: int = Field(ge=0, description="Number of cache hits")
     misses: int = Field(ge=0, description="Number of cache misses")
@@ -40,7 +41,7 @@ class CacheStats(DictLikeModel):
 class AccessPattern(DictLikeModel):
     """Access pattern for predictive prefetching."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
     file: str = Field(description="File path")
     co_accessed_files: list[str] = Field(

@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import sqlite3
 from datetime import UTC, date, datetime
+from enum import Enum
 from pathlib import Path
 
 from pydantic import BaseModel, Field, model_validator
@@ -12,9 +13,21 @@ from pydantic import BaseModel, Field, model_validator
 _FACT_KEY_SEPARATOR = "\x1f"
 
 
-def fact_id(category: str, subject: str, predicate: str, object_value: str) -> str:
+class TemporalFactCategory(str, Enum):
+    """Category for temporal memory facts."""
+
+    STATUS = "status"
+    DEPENDENCY = "dependency"
+
+
+def fact_id(
+    category: TemporalFactCategory,
+    subject: str,
+    predicate: str,
+    object_value: str,
+) -> str:
     """Return deterministic fact id for logical identity fields."""
-    key = _FACT_KEY_SEPARATOR.join([category, subject, predicate, object_value])
+    key = _FACT_KEY_SEPARATOR.join([category.value, subject, predicate, object_value])
     return hashlib.sha256(key.encode("utf-8")).hexdigest()
 
 
@@ -27,7 +40,7 @@ class TemporalFact(BaseModel):
     """Temporal memory fact row."""
 
     id: str | None = None
-    category: str
+    category: TemporalFactCategory
     subject: str
     predicate: str
     object: str
@@ -112,7 +125,10 @@ class TemporalMemoryStore:
         return cursor.rowcount > 0
 
     def query_as_of(
-        self, date: str, subject: str | None = None, category: str | None = None
+        self,
+        date: str,
+        subject: str | None = None,
+        category: TemporalFactCategory | None = None,
     ) -> list[TemporalFact]:
         filters = ["valid_from <= ?", "(valid_to IS NULL OR valid_to > ?)"]
         params: list[str] = [date, date]
@@ -121,7 +137,7 @@ class TemporalMemoryStore:
             params.append(subject)
         if category is not None:
             filters.append("category = ?")
-            params.append(category)
+            params.append(category.value)
         query = f"SELECT * FROM memory_facts WHERE {' AND '.join(filters)}"
         with sqlite3.connect(self._db_path) as connection:
             connection.row_factory = sqlite3.Row
@@ -133,7 +149,9 @@ class TemporalMemoryStore:
         return self.query_as_of(date=today, subject=subject)
 
     def all_facts(
-        self, subject: str | None = None, category: str | None = None
+        self,
+        subject: str | None = None,
+        category: TemporalFactCategory | None = None,
     ) -> list[TemporalFact]:
         filters: list[str] = []
         params: list[str] = []
@@ -142,7 +160,7 @@ class TemporalMemoryStore:
             params.append(subject)
         if category is not None:
             filters.append("category = ?")
-            params.append(category)
+            params.append(category.value)
         where = f" WHERE {' AND '.join(filters)}" if filters else ""
         query = "SELECT * FROM memory_facts" + where
         with sqlite3.connect(self._db_path) as connection:

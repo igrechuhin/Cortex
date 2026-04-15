@@ -7,6 +7,8 @@ from enum import Enum
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from cortex.core.pydantic_extra import EXTRA_FORBID
+
 from ._enums import RiskLevel
 
 
@@ -21,7 +23,7 @@ class ExploreComplexity(str, Enum):
 class ExploreOption(BaseModel):
     """Single approach captured during /cortex/explore brainstorming."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
     title: str = Field(..., min_length=1)
     description: str = Field(..., min_length=1)
@@ -38,7 +40,7 @@ def _empty_explore_options() -> list[ExploreOption]:
 class ExploreSession(BaseModel):
     """Explore brainstorming payload persisted in decision logs."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
     topic: str = Field(..., min_length=1)
     options: list[ExploreOption] = Field(default_factory=_empty_explore_options)

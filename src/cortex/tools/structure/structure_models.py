@@ -9,6 +9,7 @@ from enum import Enum
 from pydantic import ConfigDict, Field
 
 from cortex.core.models import JsonDict
+from cortex.core.pydantic_extra import EXTRA_FORBID
 from cortex.tools.models_base import (
     ErrorResultBase,
     StrictBaseModel,
@@ -72,7 +73,7 @@ class CleanupActionResult(StrictBaseModel):
     )
 
     model_config = ConfigDict(
-        extra="forbid",
+        extra=EXTRA_FORBID,
         validate_assignment=True,
     )
 
@@ -95,7 +96,7 @@ class CleanupReport(StrictBaseModel):
         description="Health check result after cleanup"
     )
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
 
 class PostCleanupHealth(StrictBaseModel):

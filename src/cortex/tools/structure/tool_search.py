@@ -15,10 +15,9 @@ from cortex.core.mcp_stability import (
     mcp_tool_wrapper,
 )
 from cortex.core.models import JsonValue, ModelDict
-from cortex.tools.response_builder import error_response, success_response
+from cortex.tools.response_builder import success_response
 from cortex.tools.structure.categories import (
     ToolCategory,
-    ToolCategoryName,
     get_tools_by_category,
     search_deferred_tools,
 )
@@ -29,7 +28,7 @@ from cortex.tools.structure.categories import (
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_FAST)
 async def search_tools(
     query: str,
-    category: str | None = None,
+    category: ToolCategory | None = None,
     limit: int = 20,
 ) -> str:
     """Search deferred tools by query (case-insensitive substring over name and rationale).
@@ -60,12 +59,7 @@ async def search_tools(
         limit = 1
     if limit > 50:
         limit = 50
-    cat: ToolCategoryName | None = (
-        ToolCategoryName(category)
-        if category in ("deferred_medium", "deferred_low")
-        else None
-    )
-    matches = search_deferred_tools(query, category=cat, limit=limit)
+    matches = search_deferred_tools(query, category=category, limit=limit)
     payload = success_response(
         query=query,
         count=len(matches),
@@ -79,19 +73,6 @@ async def search_tools(
         ],
     )
     return json.dumps(payload, indent=2)
-
-
-def _list_tools_invalid_category(category: str) -> str:
-    """Return error JSON for invalid category."""
-    return json.dumps(
-        error_response(
-            error=(
-                f"Invalid category: {category!r}. "
-                "Use always_loaded, deferred_medium, or deferred_low."
-            ),
-        ),
-        indent=2,
-    )
 
 
 def _list_tools_by_category_all() -> str:
@@ -115,7 +96,7 @@ def _list_tools_by_category_all() -> str:
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_FAST)
 async def list_available_tools(
-    category: str | None = None,
+    category: ToolCategory | None = None,
 ) -> str:
     """List MCP tools by loading tier (core vs extended).
 
@@ -142,17 +123,10 @@ async def list_available_tools(
         >>> list_available_tools(category="always_loaded")
         {"status": OperationStatus.SUCCESS.value, "category": "always_loaded", "count": 25, "tools": [{"name": "session_start", "category": "always_loaded", "rationale": "..."}, ...]}
     """
-    if category is not None and category not in (
-        "always_loaded",
-        "deferred_medium",
-        "deferred_low",
-    ):
-        return _list_tools_invalid_category(category)
     if category is not None:
-        cat = ToolCategory(category)
-        entries = get_tools_by_category(cat)
+        entries = get_tools_by_category(category)
         payload = success_response(
-            category=category,
+            category=category.value,
             count=len(entries),
             tools=[
                 {

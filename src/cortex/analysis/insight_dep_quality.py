@@ -19,11 +19,19 @@ from cortex.core.constants import (
 from .insight_types import InsightDict
 from .models import (
     AntiPatternInfo,
+    AntiPatternKind,
     ComplexityAnalysisResult,
     ComplexityAssessment,
     ComplexityHotspot,
+    SeverityLevel,
 )
 from .structure_analyzer import StructureAnalyzer
+
+_ORPHANED_FILES_RECOMMENDATIONS: tuple[str, ...] = (
+    "Add links from main files to orphaned files",
+    "Consider if orphaned files are still needed",
+    "Archive or remove truly unused files",
+)
 
 
 class DependencyQualityInsights:
@@ -67,10 +75,12 @@ class DependencyQualityInsights:
             return None
         return self._build_complexity_insight(complexity, assessment)
 
-    def _complexity_severity(self, score: int) -> str:
+    def _complexity_severity(self, score: int) -> SeverityLevel:
         """Return severity from complexity score."""
         return (
-            "high" if score < INSIGHT_COMPLEXITY_SEVERITY_HIGH_THRESHOLD else "medium"
+            SeverityLevel.HIGH
+            if score < INSIGHT_COMPLEXITY_SEVERITY_HIGH_THRESHOLD
+            else SeverityLevel.MEDIUM
         )
 
     def _build_complexity_insight(
@@ -117,11 +127,11 @@ class DependencyQualityInsights:
         self, anti_patterns: list[AntiPatternInfo]
     ) -> InsightDict | None:
         """Generate insight about orphaned files."""
-        orphaned = [ap for ap in anti_patterns if ap.type == "orphaned_file"]
-
+        orphaned = [
+            ap for ap in anti_patterns if ap.type == AntiPatternKind.ORPHANED_FILE
+        ]
         if len(orphaned) < 2:
             return None
-
         return InsightDict.model_validate(
             {
                 "id": "orphaned_files",
@@ -136,11 +146,7 @@ class DependencyQualityInsights:
                         ap.model_dump(mode="json") for ap in orphaned[:3]
                     ],
                 },
-                "recommendations": [
-                    "Add links from main files to orphaned files",
-                    "Consider if orphaned files are still needed",
-                    "Archive or remove truly unused files",
-                ],
+                "recommendations": list(_ORPHANED_FILES_RECOMMENDATIONS),
                 "estimated_token_savings": len(orphaned)
                 * INSIGHT_TOKEN_SAVINGS_PER_ORPHAN,
                 "affected_files": [ap.file for ap in orphaned if ap.file],
@@ -152,7 +158,9 @@ class DependencyQualityInsights:
     ) -> InsightDict | None:
         """Generate insight about excessive dependencies."""
         excessive_deps = [
-            ap for ap in anti_patterns if ap.type == "excessive_dependencies"
+            ap
+            for ap in anti_patterns
+            if ap.type == AntiPatternKind.EXCESSIVE_DEPENDENCIES
         ]
         if not excessive_deps:
             return None

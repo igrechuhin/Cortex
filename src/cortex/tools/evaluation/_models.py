@@ -11,6 +11,7 @@ from enum import Enum
 from pydantic import BaseModel, ConfigDict, Field
 
 from cortex.core.models import OperationStatus
+from cortex.core.pydantic_extra import EXTRA_ALLOW, EXTRA_FORBID
 
 
 class EvalTaskCategory(str, Enum):
@@ -51,7 +52,7 @@ class EvalRunMode(str, Enum):
 class ExecutionExpectSpec(BaseModel):
     """Expected outcome for a single execution (deterministic check)."""
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra=EXTRA_FORBID)
 
     type: ExecutionExpectType = Field(
         description="Check type: schema_valid (dict has keys), contains (output has substring), exact_match"
@@ -73,7 +74,7 @@ class ExecutionExpectSpec(BaseModel):
 class ExecutionSpec(BaseModel):
     """Spec to run one tool and check its output (for execution-based evals)."""
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra=EXTRA_FORBID)
 
     tool: str = Field(description="MCP tool name to invoke (e.g. get_structure_info).")
     arguments: dict[str, object] = Field(
@@ -88,7 +89,7 @@ class ExecutionSpec(BaseModel):
 class EvalTask(BaseModel):
     """Single evaluation task definition grounded in a real workflow."""
 
-    model_config = ConfigDict(extra="allow")
+    model_config = ConfigDict(extra=EXTRA_ALLOW)
 
     id: str = Field(description="Stable identifier for this evaluation task")
     name: str = Field(description="Human-readable task name")
@@ -129,7 +130,7 @@ class EvalTask(BaseModel):
 class ToolTaskMetrics(BaseModel):
     """Per-tool metrics within a single evaluation task."""
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra=EXTRA_FORBID)
 
     calls: int = Field(ge=0, description="Number of calls for this tool")
     successful: int = Field(ge=0, description="Number of successful calls")
@@ -139,11 +140,11 @@ class ToolTaskMetrics(BaseModel):
 class EvalTaskResult(BaseModel):
     """Computed metrics for a single evaluation task."""
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra=EXTRA_FORBID)
 
     task_id: str
     task_name: str
-    category: str
+    category: EvalTaskCategory
     status: EvalTaskStatus
     total_calls: int = 0
     successful_calls: int = 0
@@ -177,7 +178,7 @@ def _empty_eval_results() -> list[EvalTaskResult]:
 class EvalSuiteResult(BaseModel):
     """Aggregate results for an evaluation suite run."""
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra=EXTRA_FORBID)
 
     generated_at: str = Field(
         description="ISO 8601 timestamp when the suite was evaluated"
@@ -188,7 +189,7 @@ class EvalSuiteResult(BaseModel):
 class ErrorPattern(BaseModel):
     """Aggregated error pattern across tasks and tools."""
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra=EXTRA_FORBID)
 
     error_type: str
     count: int
@@ -198,7 +199,7 @@ class ErrorPattern(BaseModel):
 class ToolCombination(BaseModel):
     """Tool usage pattern: set of tools used together in tasks."""
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra=EXTRA_FORBID)
 
     tools: list[str] = Field(description="Tool names that co-occur in tasks")
     task_count: int = Field(ge=0, description="Number of tasks using this combination")
@@ -212,7 +213,7 @@ def _empty_tool_combinations() -> list[ToolCombination]:
 class EvalAnalysis(BaseModel):
     """High-level analysis of an evaluation suite."""
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra=EXTRA_FORBID)
 
     overall_success_rate: float
     total_tasks: int
@@ -256,7 +257,7 @@ class OptimizationRunWinner(str, Enum):
 class ABComparisonResult(BaseModel):
     """Result of comparing baseline vs optimized evaluation analyses (A/B)."""
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra=EXTRA_FORBID)
 
     winner: ABWinner
     success_rate_delta: float = Field(
@@ -272,7 +273,7 @@ class ABComparisonResult(BaseModel):
 class OptimizationRunRecord(BaseModel):
     """Single optimization run for history persistence."""
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra=EXTRA_FORBID)
 
     run_id: str
     generated_at: str = Field(description="ISO 8601 timestamp")
@@ -287,7 +288,7 @@ class OptimizationRunRecord(BaseModel):
 class ExecutionResultEntry(BaseModel):
     """Single execution result for execution_summary.results."""
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra=EXTRA_FORBID)
 
     task_id: str = Field(description="Evaluation task id")
     passed: bool = Field(description="Whether the execution check passed")
@@ -304,7 +305,7 @@ def _empty_execution_result_entries() -> list[ExecutionResultEntry]:
 class ExecutionSummary(BaseModel):
     """Pass/fail summary for execution-based evals."""
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra=EXTRA_FORBID)
 
     execution_passed: int = Field(ge=0, description="Count of passed executions")
     execution_failed: int = Field(ge=0, description="Count of failed executions")
@@ -319,7 +320,7 @@ class ExecutionSummary(BaseModel):
 class RunToolEvaluationPayload(BaseModel):
     """JSON-serializable payload for run_tool_evaluation response."""
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra=EXTRA_FORBID)
 
     status: OperationStatus = OperationStatus.SUCCESS
     project_root: str = Field(description="Project root path")

@@ -19,12 +19,13 @@ from cortex.core.mcp_stability import (
     mcp_tool_wrapper,
 )
 from cortex.core.models import OperationStatus, ResponseFormat
+from cortex.core.pydantic_extra import EXTRA_FORBID
 
 
 class QueryMemoryBankParams(BaseModel):
     """Parameters for query_memory_bank dispatch; all query types use a subset."""
 
-    model_config = ConfigDict(extra="forbid", frozen=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, frozen=True)
 
     file_name: str | None = None
     limit: int = 10

@@ -7,28 +7,36 @@ references remain valid.
 
 import logging
 import re
+from enum import Enum
 from pathlib import Path
 
 from pydantic import BaseModel, ConfigDict, Field
 
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
+from cortex.core.pydantic_extra import EXTRA_FORBID
+
+
+class TodoCategory(str, Enum):
+    """Category of roadmap sync TODO findings."""
+
+    TODO = "todo"
 
 
 class TodoItem(BaseModel):
     """Represents a TODO item found in the codebase."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
     file_path: str = Field(description="Path to file containing TODO")
     line: int = Field(ge=1, description="Line number of TODO")
     snippet: str = Field(description="Code snippet containing TODO")
-    category: str = Field(description="Category of TODO")
+    category: TodoCategory = Field(description="Category of TODO")
 
 
 class RoadmapReference(BaseModel):
     """Represents a file reference found in the roadmap."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
     file_path: str = Field(description="Path to referenced file")
     line: int | None = Field(default=None, ge=1, description="Line number if specified")
@@ -39,7 +47,7 @@ class RoadmapReference(BaseModel):
 class CompletedEntryInRoadmap(BaseModel):
     """A roadmap bullet that looks like completed work (violates future-only rule)."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
     line: int = Field(ge=1, description="1-based line number in roadmap.md")
     snippet: str = Field(description="Bullet line content (trimmed)")
@@ -53,7 +61,7 @@ def _default_completed_entries_in_roadmap() -> list[CompletedEntryInRoadmap]:
 class SyncValidationResult(BaseModel):
     """Result of roadmap synchronization validation."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
     valid: bool = Field(description="Whether validation passed")
     total_todos_found: int = Field(
@@ -158,7 +166,7 @@ def scan_codebase_todos(project_root: Path) -> list[TodoItem]:
                                 file_path=str(relative_path),
                                 line=line_num,
                                 snippet=snippet,
-                                category="todo",
+                                category=TodoCategory.TODO,
                             )
                         )
                         break

@@ -236,7 +236,7 @@ def _build_thinking_input(
     )
 
 
-@mcp.tool(annotations=safe_write_annotations("Thinking"))
+@mcp.tool(annotations=safe_write_annotations("Thinking"), output_schema=None)
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_MEDIUM)
 async def think(

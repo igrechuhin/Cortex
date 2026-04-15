@@ -11,6 +11,7 @@ from typing import Annotated
 
 from pydantic import BeforeValidator, ConfigDict, Field
 
+from cortex.core.pydantic_extra import EXTRA_FORBID
 from cortex.refactoring.models import RefactoringImpactMetrics
 from cortex.tools.models_base import (
     ErrorResultBase,
@@ -137,7 +138,7 @@ class FileMove(StrictBaseModel):
 
     model_config = ConfigDict(
         populate_by_name=True,
-        extra="forbid",
+        extra=EXTRA_FORBID,
         validate_assignment=True,
     )
 

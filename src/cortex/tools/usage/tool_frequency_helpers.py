@@ -11,6 +11,7 @@ from pathlib import Path
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from cortex.core.pydantic_extra import EXTRA_FORBID
 from cortex.managers.usage_models import ToolUsageEvent
 from cortex.managers.usage_tracker import UsageTracker
 from cortex.tools.structure.categories import (
@@ -130,7 +131,7 @@ def _build_token_impact_dict() -> dict[str, int | float | str]:
 class ToolFrequencyPayload(BaseModel):
     """Tool frequency and tier token impact for query_usage(tool_frequency)."""
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra=EXTRA_FORBID)
 
     status: str = Field(description="success or unavailable")
     project_root: str = Field(description="Project root path")

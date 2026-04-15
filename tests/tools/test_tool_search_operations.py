@@ -7,6 +7,7 @@ import json
 import pytest
 
 from cortex.tools.structure.categories import (
+    ToolCategory,
     build_category_config,
     get_always_loaded_tool_names,
     get_deferred_tool_names,
@@ -47,7 +48,9 @@ async def test_search_tools_empty_query() -> None:
 @pytest.mark.timeout(15)
 async def test_search_tools_category_filter() -> None:
     """search_tools with category returns only that category."""
-    result = await search_tools(query="tool", category="deferred_medium", limit=20)
+    result = await search_tools(
+        query="tool", category=ToolCategory.DEFERRED_MEDIUM, limit=20
+    )
     data = json.loads(result)
     assert data["status"] == "success"
     for t in data["tools"]:
@@ -133,7 +136,7 @@ async def test_list_available_tools_all_returns_by_category() -> None:
 @pytest.mark.timeout(15)
 async def test_list_available_tools_filter_returns_tools() -> None:
     """list_available_tools(category=always_loaded) returns list of tools."""
-    result = await list_available_tools(category="always_loaded")
+    result = await list_available_tools(category=ToolCategory.ALWAYS_LOADED)
     data = json.loads(result)
     assert data["status"] == "success"
     assert data["category"] == "always_loaded"
@@ -144,11 +147,9 @@ async def test_list_available_tools_filter_returns_tools() -> None:
 @pytest.mark.asyncio
 @pytest.mark.timeout(15)
 async def test_list_available_tools_invalid_category_returns_error() -> None:
-    """list_available_tools(invalid) returns error."""
-    result = await list_available_tools(category="invalid_tier")
-    data = json.loads(result)
-    assert data["status"] == "error"
-    assert "error" in data
+    """ToolCategory rejects invalid category values at enum boundary."""
+    with pytest.raises(ValueError, match="invalid_tier"):
+        _ = ToolCategory("invalid_tier")
 
 
 def test_list_available_tools_internalized_not_in_tool_categories() -> None:

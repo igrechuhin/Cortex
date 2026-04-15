@@ -16,6 +16,8 @@ from cortex.core.models import (
 from cortex.core.models import (
     FileOrganizationResult as CoreFileOrganizationResult,
 )
+from cortex.core.pydantic_extra import EXTRA_ALLOW, EXTRA_FORBID
+from cortex.structure.models import HealthGrade
 
 # ============================================================================
 # Base Model
@@ -26,7 +28,7 @@ class AnalysisBaseModel(DictLikeModel):
     """Base model for analysis types with strict validation."""
 
     model_config = ConfigDict(
-        extra="forbid",
+        extra=EXTRA_FORBID,
         validate_assignment=True,
         validate_default=True,
     )
@@ -68,6 +70,48 @@ class ComplexityAnalysisStatus(str, Enum):
     ERROR = "error"
 
 
+class AntiPatternKind(str, Enum):
+    """Structural anti-pattern discriminator (stable string values)."""
+
+    OVERSIZED_FILE = "oversized_file"
+    ORPHANED_FILE = "orphaned_file"
+    EXCESSIVE_DEPENDENCIES = "excessive_dependencies"
+    EXCESSIVE_DEPENDENTS = "excessive_dependents"
+    SIMILAR_FILENAMES = "similar_filenames"
+    NAMING_INCONSISTENCY = "naming_inconsistency"
+    DEEP_NESTING = "deep_nesting"
+    CIRCULAR_DEPENDENCY = "circular_dependency"
+
+
+class InsightCategory(str, Enum):
+    """Insight grouping for insight engine generators."""
+
+    USAGE = "usage"
+    ORGANIZATION = "organization"
+    REDUNDANCY = "redundancy"
+    DEPENDENCIES = "dependencies"
+    QUALITY = "quality"
+
+
+class InsightSummaryStatus(str, Enum):
+    """Overall status string for insight summary (insight_types.SummaryDict)."""
+
+    EXCELLENT = "excellent"
+    GOOD = "good"
+    COULD_IMPROVE = "could_improve"
+    NEEDS_ATTENTION = "needs_attention"
+
+
+class ComplexityAssessmentStatus(str, Enum):
+    """Verbal status from complexity score bands (structure_metrics)."""
+
+    EXCELLENT = "excellent"
+    GOOD = "good"
+    ACCEPTABLE = "acceptable"
+    NEEDS_IMPROVEMENT = "needs_improvement"
+    POOR = "poor"
+
+
 class AccessRecord(AnalysisBaseModel):
     """Single file access event record."""
 
@@ -84,7 +128,7 @@ class FileStatsEntry(AnalysisBaseModel):
     """Aggregated statistics for a single file."""
 
     model_config = ConfigDict(
-        extra="forbid",
+        extra=EXTRA_FORBID,
         validate_assignment=True,
     )
 
@@ -98,7 +142,7 @@ class TaskPatternEntry(AnalysisBaseModel):
     """Task-based access pattern entry."""
 
     model_config = ConfigDict(
-        extra="forbid",
+        extra=EXTRA_FORBID,
         validate_assignment=True,
     )
 
@@ -175,7 +219,7 @@ class FileAccessStats(AnalysisBaseModel):
     Used by pattern_analysis.py for tracking access counts during analysis.
     """
 
-    model_config = ConfigDict(extra="allow", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_ALLOW, validate_assignment=True)
 
     access_count: int = Field(default=0, ge=0, description="Number of accesses")
     last_access: str | None = Field(
@@ -209,7 +253,7 @@ class InsightStatistics(AnalysisBaseModel):
 class InsightEvidence(AnalysisBaseModel):
     """Evidence supporting an insight."""
 
-    model_config = ConfigDict(extra="allow", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_ALLOW, validate_assignment=True)
 
     files_analyzed: list[str] = Field(
         default_factory=list, description="Files analyzed"
@@ -227,12 +271,14 @@ class InsightModel(AnalysisBaseModel):
     """Pydantic model for insight data."""
 
     model_config = ConfigDict(
-        extra="forbid",
+        extra=EXTRA_FORBID,
         validate_assignment=True,
     )
 
     id: str | None = Field(default=None, description="Insight identifier")
-    category: str | None = Field(default=None, description="Insight category")
+    category: InsightCategory | None = Field(
+        default=None, description="Insight category"
+    )
     title: str | None = Field(default=None, description="Insight title")
     description: str | None = Field(default=None, description="Insight description")
     impact_score: float | None = Field(
@@ -268,7 +314,7 @@ class SummaryModel(AnalysisBaseModel):
     """Pydantic model for summary data."""
 
     model_config = ConfigDict(
-        extra="forbid",
+        extra=EXTRA_FORBID,
         validate_assignment=True,
     )
 
@@ -361,7 +407,7 @@ class CoAccessPattern(AnalysisBaseModel):
     correlation: float = Field(
         default=0.0, ge=0.0, le=1.0, description="Correlation strength (0-1)"
     )
-    correlation_strength: str | None = Field(
+    correlation_strength: SeverityLevel | None = Field(
         default=None, description="Correlation strength label (high/medium/low)"
     )
     occurrences: int = Field(
@@ -421,7 +467,7 @@ class OrganizationAnalysis(AnalysisBaseModel):
 class AntiPatternInfo(AnalysisBaseModel):
     """Information about a detected anti-pattern."""
 
-    type: str = Field(..., description="Anti-pattern type")
+    type: AntiPatternKind = Field(..., description="Anti-pattern type")
     file: str | None = Field(default=None, description="Affected file")
     files: list[str] = Field(default_factory=list, description="Affected files")
     severity: SeverityLevel = Field(..., description="Severity level")
@@ -461,8 +507,11 @@ class ComplexityAssessment(AnalysisBaseModel):
     """Assessment of structural complexity."""
 
     score: int = Field(default=100, ge=0, le=100, description="Complexity score 0-100")
-    grade: str = Field(default="A", description="Letter grade")
-    status: str = Field(default="healthy", description="Status description")
+    grade: HealthGrade = Field(default=HealthGrade.A, description="Letter grade")
+    status: ComplexityAssessmentStatus = Field(
+        default=ComplexityAssessmentStatus.EXCELLENT,
+        description="Status description",
+    )
     issues: list[str] = Field(default_factory=list, description="Identified issues")
     recommendations: list[str] = Field(
         default_factory=list, description="Recommendations"

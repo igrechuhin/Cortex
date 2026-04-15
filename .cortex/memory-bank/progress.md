@@ -1,5 +1,11 @@
 # Progress Log
 
+## 2026-04-15
+
+- **Improvement: Typed Memory Classification for Memory Bank Entries** - COMPLETE. Fixed memory_types circular import; classification stack verified with unit tests.
+- <!-- memory_type: status -->
+**Quality follow-up** - COMPLETE. Split `_generate_orphaned_files_insight` in `insight_dep_quality.py` to satisfy the 30-line function cap (structural gate); behavior unchanged.
+
 ## 2026-04-14
 
 - **Remove offline setup/bootstrap support** - COMPLETE. Removed `preflight-offline` and `bootstrap-offline` targets plus related onboarding/docs guidance; offline setup flows are now intentionally out of scope unless explicitly requested again.

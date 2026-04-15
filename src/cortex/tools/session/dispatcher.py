@@ -284,6 +284,7 @@ def _session_build_dispatch_args(values: dict[str, object]) -> _SessionDispatchA
     annotations=destructive_annotations(
         "Session (Start/Register/Deregister/Compact)",
     ),
+    output_schema=None,
 )
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_FAST)

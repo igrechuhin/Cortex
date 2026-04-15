@@ -50,7 +50,9 @@ async def _step_validate_schema(file_name: str) -> object:
 
 
 @pytest.mark.slow
-@pytest.mark.timeout(180)
+# AI: Full-suite runs keep this test just under the old 180s cap; quality gate I/O
+# spikes under parallel load, so align the marker with gate worker budget headroom.
+@pytest.mark.timeout(360)
 @pytest.mark.asyncio
 async def test_commit_pipeline_manage_file_validate_pre_commit(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch

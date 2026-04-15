@@ -66,10 +66,12 @@ class FileCategory(str, Enum):
     """Context file category in dependency graph."""
 
     META = "meta"
+    CORE = "core"
     FOUNDATION = "foundation"
     CONTEXT = "context"
     ACTIVE = "active"
     STATUS = "status"
+    TEST = "test"
 
 
 class RiskLevel(str, Enum):

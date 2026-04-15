@@ -6,11 +6,13 @@ This module contains Pydantic model definitions used across pattern analysis mod
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from cortex.core.pydantic_extra import EXTRA_FORBID
+
 
 class AccessRecord(BaseModel):
     """Single file access event record."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
     timestamp: str = Field(description="ISO format timestamp")
     file: str = Field(description="File path")
@@ -24,7 +26,7 @@ class AccessRecord(BaseModel):
 class FileStatsEntry(BaseModel):
     """Aggregated statistics for a single file."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
     total_accesses: int = Field(ge=0, description="Total number of accesses")
     first_access: str = Field(description="First access timestamp")
@@ -35,7 +37,7 @@ class FileStatsEntry(BaseModel):
 class TaskPatternEntry(BaseModel):
     """Task-based access pattern entry."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
     description: str | None = Field(default=None, description="Task description")
     files: list[str] = Field(default_factory=list, description="Files accessed in task")
@@ -45,7 +47,7 @@ class TaskPatternEntry(BaseModel):
 class UnusedFileEntry(BaseModel):
     """Unused file entry with access information."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
     file: str = Field(description="File path")
     last_access: str | None = Field(default=None, description="Last access timestamp")
@@ -59,7 +61,7 @@ class UnusedFileEntry(BaseModel):
 class TaskPatternResult(BaseModel):
     """Task pattern result entry."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
     task_id: str = Field(description="Task identifier")
     description: str = Field(description="Task description")
@@ -71,7 +73,7 @@ class TaskPatternResult(BaseModel):
 class TemporalPatternsResult(BaseModel):
     """Temporal patterns result."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
     time_range_days: int = Field(ge=1, description="Time range in days")
     total_accesses: int = Field(ge=0, description="Total number of accesses")
@@ -97,7 +99,7 @@ class TemporalPatternsResult(BaseModel):
 class AccessLog(BaseModel):
     """Structured access log stored on disk."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
     version: str = Field(description="Log format version")
     accesses: list[AccessRecord] = Field(

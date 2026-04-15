@@ -13,6 +13,7 @@ from cortex.managers.initialization import get_managers, get_project_root
 from cortex.managers.utils import get_manager
 from cortex.optimization.rules_manager import RulesManager
 from cortex.rules.synapse_manager import SynapseManager
+from cortex.tools.synapse.synapse_models import SynapseCategory
 
 RulePriorityLiteral = Literal["local_overrides_shared", "shared_overrides_local"]
 
@@ -74,7 +75,7 @@ async def sync_synapse_impl(pull: bool, push: bool, ctx: MCPContext | None) -> s
 
 
 async def update_synapse_rule_impl(
-    category: str,
+    category: SynapseCategory,
     file: str,
     content: str,
     commit_message: str,
@@ -93,7 +94,10 @@ async def update_synapse_rule_impl(
         return _synapse_not_initialized_json()
     synapse_manager = await get_manager(managers, "synapse", SynapseManager)
     result = await synapse_manager.update_synapse_rule(
-        category=category, file=file, content=content, commit_message=commit_message
+        category=category.value,
+        file=file,
+        content=content,
+        commit_message=commit_message,
     )
     out = json.dumps(result, indent=2)
     await log_client(
@@ -103,7 +107,7 @@ async def update_synapse_rule_impl(
 
 
 async def update_synapse_prompt_impl(
-    category: str,
+    category: SynapseCategory,
     file: str,
     content: str,
     commit_message: str,
@@ -122,7 +126,10 @@ async def update_synapse_prompt_impl(
         return _synapse_not_initialized_json()
     synapse_manager = await get_manager(managers, "synapse", SynapseManager)
     result = await synapse_manager.update_synapse_prompt(
-        category=category, file=file, content=content, commit_message=commit_message
+        category=category.value,
+        file=file,
+        content=content,
+        commit_message=commit_message,
     )
     out = json.dumps(result, indent=2)
     await log_client(
@@ -132,13 +139,13 @@ async def update_synapse_prompt_impl(
 
 
 def _build_category_prompts_response(
-    category: str, prompts: Sequence[ModelDict] | Sequence[_ModelDumpable]
+    category: SynapseCategory, prompts: Sequence[ModelDict] | Sequence[_ModelDumpable]
 ) -> str:
     """Build JSON response for category-specific prompts."""
     return json.dumps(
         {
             "status": OperationStatus.SUCCESS.value,
-            "category": category,
+            "category": category.value,
             "prompts": format_prompts_list(prompts),
             "total_count": len(prompts),
         },
@@ -238,7 +245,9 @@ async def get_synapse_handle_rules(
     )
 
 
-async def get_synapse_prompts_impl(category: str | None, ctx: MCPContext | None) -> str:
+async def get_synapse_prompts_impl(
+    category: SynapseCategory | None, ctx: MCPContext | None
+) -> str:
     """Run get_synapse_prompts logic and return JSON result."""
     project_root = get_project_root()
     managers = await get_managers(project_root)
@@ -253,7 +262,7 @@ async def get_synapse_prompts_impl(category: str | None, ctx: MCPContext | None)
     synapse_manager = await get_manager(managers, "synapse", SynapseManager)
     _ = await synapse_manager.load_prompts_manifest()
     if category:
-        prompts = await synapse_manager.load_prompts_category(category)
+        prompts = await synapse_manager.load_prompts_category(category.value)
         out = _build_category_prompts_response(category, prompts)
     else:
         prompts = await synapse_manager.get_all_prompts()
@@ -266,7 +275,7 @@ async def get_synapse_prompts_impl(category: str | None, ctx: MCPContext | None)
 
 
 async def get_synapse_handle_prompts(
-    category: str | None, ctx: MCPContext | None
+    category: SynapseCategory | None, ctx: MCPContext | None
 ) -> str:
     """Handle get_synapse(content_type='prompts') branch."""
     try:
