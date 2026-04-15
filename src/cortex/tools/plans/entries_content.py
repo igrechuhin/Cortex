@@ -12,22 +12,33 @@ from cortex.tools.plans.entries_parsing import (
 )
 
 
+def _normalize_plan_path(path: str) -> str:
+    """Normalize roadmap plan path to ``.cortex/plans/...`` form."""
+    normalized = path.strip().strip("`").rstrip(".,)")
+    normalized = normalized.lstrip("./")
+    if normalized.startswith("cortex/plans/"):
+        normalized = normalized[len("cortex/") :]
+    if normalized.startswith("plans/"):
+        return f".cortex/{normalized}"
+    if normalized.startswith(".cortex/plans/"):
+        return normalized
+    return normalized
+
+
 def _extract_plan_path_from_bullet(line: str) -> str | None:
-    """Extract a plan path from a roadmap bullet, if present.
+    """Extract and normalize plan path from roadmap bullet text.
 
-    Expected patterns (examples):
-    - "Plan: .cortex/plans/phase-58-...md."
-    - "Plan: plans/phase-58-...md"
-
-    Returns:
-        The raw plan path string (without surrounding punctuation) or None
-        if no plan reference is found.
+    Supports both canonical ``Plan: ...`` bullets and checklist-style bullets
+    that only include a backticked ``plans/...`` path.
     """
-    match = re.search(r"Plan:\s*([^\s]+)", line)
-    if not match:
-        return None
-    raw = match.group(1).strip()
-    return raw.rstrip(".,")
+    plan_label_match = re.search(r"Plan:\s*([^\s]+)", line)
+    if plan_label_match:
+        return _normalize_plan_path(plan_label_match.group(1))
+
+    plan_path_match = re.search(r"`?((?:\.cortex/)?plans/[^\s`]+?\.md)`?", line)
+    if plan_path_match:
+        return _normalize_plan_path(plan_path_match.group(1))
+    return None
 
 
 def insert_roadmap_entry(

@@ -73,13 +73,28 @@ def find_insertion_line_for_section(
     return section_start + 1
 
 
+def _normalize_extracted_plan_path(path: str) -> str:
+    normalized = path.strip().strip("`").rstrip(".,)")
+    normalized = normalized.lstrip("./")
+    if normalized.startswith("cortex/plans/"):
+        normalized = normalized[len("cortex/") :]
+    if normalized.startswith("plans/"):
+        return f".cortex/{normalized}"
+    if normalized.startswith(".cortex/plans/"):
+        return normalized
+    return normalized
+
+
 def extract_plan_path_from_bullet(line: str) -> str | None:
-    """Extract a plan path from a roadmap bullet, if present."""
-    match = re.search(r"Plan:\s*([^\s]+)", line)
-    if not match:
-        return None
-    raw = match.group(1).strip()
-    return raw.rstrip(".,")
+    """Extract and normalize a plan path from roadmap bullet text."""
+    plan_label_match = re.search(r"Plan:\s*([^\s]+)", line)
+    if plan_label_match:
+        return _normalize_extracted_plan_path(plan_label_match.group(1))
+
+    plan_path_match = re.search(r"`?((?:\.cortex/)?plans/[^\s`]+?\.md)`?", line)
+    if plan_path_match:
+        return _normalize_extracted_plan_path(plan_path_match.group(1))
+    return None
 
 
 def _normalize_plan_path(plan_ref: str) -> str:

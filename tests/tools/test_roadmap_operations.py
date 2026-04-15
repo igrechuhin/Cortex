@@ -712,6 +712,24 @@ class TestInsertRoadmapEntry:
         assert line_inserted is not None
         assert "phase-investigate-tool-b-failure" in updated_content
 
+    def test_insert_checklist_style_duplicate_plan_path_is_noop(self) -> None:
+        """Checklist-style bullets dedupe by normalized plan path."""
+        content = """## Pending plans (from .cortex/plans)
+
+- [ ] PENDING — Alpha Decay and Regime Detection - Implementation Plan v1 — `plans/alpha-decay-and-regime-detection.v1.plan.md`
+
+## Other Section
+"""
+        updated_content, line_inserted = insert_roadmap_entry(
+            content,
+            "pending",
+            "- [ ] PENDING - Alpha Decay and Regime Detection - Implementation Plan v1 - `.cortex/plans/alpha-decay-and-regime-detection.v1.plan.md`",
+            position="last",
+        )
+
+        assert updated_content == content
+        assert line_inserted is None
+
 
 class TestRoadmapSectionModel:
     """Tests for RoadmapSection model."""
