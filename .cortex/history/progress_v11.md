@@ -4,6 +4,7 @@
 
 - **Improvement: Typed Memory Classification for Memory Bank Entries** - COMPLETE. Fixed memory_types circular import; classification stack verified with unit tests.
 - <!-- memory_type: status -->
+- **Improvement: Hybrid BM25 + Keyword Retrieval for Memory Bank Search** - COMPLETE. Implemented BM25 retrieval modules, manage_file search integration, and full retrieval/tool test coverage; L3 deep-search wire-in explicitly deferred because target module is absent.
 **Quality follow-up** - COMPLETE. Split `_generate_orphaned_files_insight` in `insight_dep_quality.py` to satisfy the 30-line function cap (structural gate); behavior unchanged.
 
 ## 2026-04-14

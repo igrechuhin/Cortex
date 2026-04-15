@@ -34,7 +34,6 @@ Completed investigations are recorded in [activeContext.md](activeContext.md). P
 
 ### Improvements
 
-- [ ] **Improvement: Hybrid BM25 + Keyword Retrieval for Memory Bank Search** — Add Okapi BM25 scorer (pure Python stdlib, no external deps) to all memory bank retrieval paths. Adds manage_file(operation='search') MCP operation with ranked paragraph results. Plan: [../plans/improve-hybrid-bm25-retrieval.md](../plans/improve-hybrid-bm25-retrieval.md) (PENDING)
 - [ ] **Improvement: Memory Write-Ahead Log for Audit Trail and Rollback** — WAL that records every memory bank mutation to a dedicated write-log stream. Enables anomaly detection (shrink > 30%), snapshot, and restore. Adds memory_wal MCP tool. Plan: [../plans/improve-memory-write-ahead-log.md](../plans/improve-memory-write-ahead-log.md) (PENDING)
 
 #### Knowledge Base & Wiki (High Priority)

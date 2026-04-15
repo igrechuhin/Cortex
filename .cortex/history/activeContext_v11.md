@@ -6,6 +6,8 @@
 
 - ✅ **Improvement: Typed Memory Classification for Memory Bank Entries** - COMPLETE (2026-04-15) - Resolved cortex.tools import cycle in memory_types by using inline Pydantic strict config on MemoryEntry; typed classification, tagging, read_by_type, session memory_type_counts, and L1 type weights were already implemented and covered by tests.
 
+- ✅ **Improvement: Hybrid BM25 + Keyword Retrieval for Memory Bank Search** - COMPLETE (2026-04-15) - Implemented BM25 retrieval stack (scorer, markdown chunker, memory-bank searcher with deduplication), added manage_file search operation wiring, and delivered retrieval + tool integration tests with quality gate pass.
+
 ## Completed Work (2026-04-14)
 
 - **Summary (2026-04-14)** - 1 entries archived.

@@ -41,6 +41,7 @@ from cortex.tools.files.metadata_operations import handle_metadata_operation
 from cortex.tools.files.operation_helpers import (
     GOAL_FILE_OPERATIONS,
     SCHEMA_FILE_OPERATIONS,
+    SEARCH_FILE_OPERATIONS,
     FileOperation,
     build_invalid_operation_error,
     validate_manage_file_operation,
@@ -160,6 +161,8 @@ def _resolve_manage_file_name(parsed_op: FileOperation, file_name: str | None) -
         return file_name or "_session_goal"
     if parsed_op in SCHEMA_FILE_OPERATIONS:
         return "_workflow_schemas"
+    if parsed_op in SEARCH_FILE_OPERATIONS:
+        return "_search"
     assert file_name is not None
     return file_name
 
@@ -353,6 +356,8 @@ async def execute_file_operation(root: Path, file_name: str, operation: FileOper
         return await _dispatch_explore_log_operation(
             operation, root, file_name, content, change_description, managers, sections, version
         )
+    if operation in SEARCH_FILE_OPERATIONS:
+        return _search_memory_bank(root, content)
     return await _dispatch_standard_file_operation(
         root,
         file_name,
@@ -708,6 +713,32 @@ def _memory_timeline(root: Path, content: str | None) -> str:
     input_data = MemoryTimelineInput.model_validate(payload or {})
     result = memory_timeline_handle(input_data, root)
     return result.model_dump_json(indent=2)
+
+
+def _search_memory_bank(root: Path, content: str | None) -> str:
+    """Handle operation='search': BM25 ranked retrieval over .cortex/ markdown."""
+    if not content:
+        return json.dumps(error_response(error="content is required (JSON with 'query')"), indent=2)
+    from cortex.retrieval.memory_searcher import MemoryBankSearcher, SearchInput
+
+    try:
+        raw: object = json.loads(content)
+        params = SearchInput.model_validate(raw)
+    except Exception as exc:
+        return json.dumps(error_response(error=f"invalid search content: {exc}"), indent=2)
+    if not params.query.strip():
+        return json.dumps(error_response(error="'query' must be non-empty"), indent=2)
+    results = MemoryBankSearcher(root).search(
+        params.query, top_k=params.top_k, file_filter=params.file_filter
+    )
+    return json.dumps(
+        {
+            "status": OperationStatus.SUCCESS.value,
+            "results": [r.model_dump() for r in results],
+            "count": len(results),
+        },
+        indent=2,
+    )
 
 
 def _classify_write_content(content: str, skip_classification: bool) -> str:

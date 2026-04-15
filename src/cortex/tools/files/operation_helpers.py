@@ -24,6 +24,7 @@ __all__ = [
     "GOAL_FILE_OPERATIONS",
     "PLAN_DRAFT_FILE_OPERATIONS",
     "SCHEMA_FILE_OPERATIONS",
+    "SEARCH_FILE_OPERATIONS",
     "FileOperation",
     "build_invalid_operation_error",
     "build_missing_parameters_error",
@@ -61,6 +62,7 @@ class FileOperation(str, Enum):
     INVALIDATE_FACT = "invalidate_fact"
     MEMORY_TIMELINE = "memory_timeline"
     READ_BY_TYPE = "read_by_type"
+    SEARCH = "search"
 
 
 def parse_file_operation(value: str | None) -> FileOperation | None:
@@ -184,6 +186,8 @@ PLAN_DRAFT_FILE_OPERATIONS: frozenset[FileOperation] = frozenset(
     }
 )
 
+SEARCH_FILE_OPERATIONS: frozenset[FileOperation] = frozenset({FileOperation.SEARCH})
+
 
 def _rollback_version_required_error_json() -> str:
     return json.dumps(
@@ -215,7 +219,10 @@ def validate_manage_file_operation(
         return (None, build_invalid_operation_error(str(operation)))
     if (
         parsed_op
-        in GOAL_FILE_OPERATIONS | SCHEMA_FILE_OPERATIONS | PLAN_DRAFT_FILE_OPERATIONS
+        in GOAL_FILE_OPERATIONS
+        | SCHEMA_FILE_OPERATIONS
+        | PLAN_DRAFT_FILE_OPERATIONS
+        | SEARCH_FILE_OPERATIONS
     ):
         return (parsed_op, None)
     if parsed_op != FileOperation.FILE_ARTIFACT and not file_name:
