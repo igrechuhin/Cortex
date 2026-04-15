@@ -113,3 +113,4 @@ eval_results.json
 # Cortex agent sync outputs (generated at MCP startup — do not commit)
 .claude/
 .cursor/agents/
+/.cortex/wal/write_log.jsonl

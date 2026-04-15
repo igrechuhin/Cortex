@@ -13,8 +13,15 @@
 - ✅ **Commit pipeline run for hybrid retrieval changes** - COMPLETE (2026-04-15) - <!-- memory_type: status -->
 
 - ✅ **WAL commit pipeline stabilization** - COMPLETE (2026-04-15) - <!-- memory_type: milestone -->
+
+- ✅ **Enforce Swift Coverage Threshold Parity** - COMPLETE (2026-04-15) - Implemented Swift coverage collection with `swift test --enable-code-coverage`, coverage parsing via new helper module, threshold parity enforcement, and tests plus prompt updates.
 Completed /cortex/fix and /cortex/commit preflight remediation for memory WAL work: staged synapse gitlink, restored file-size fallback scans in synapse scripts, and re-verified quality parity checks with green gates.
 Ran /cortex/commit pipeline: preflight snapshot, Phase A quality+parity checks, wiki staged ingest, and Synapse submodule pre-stage commit before superproject commit.
+
+- ✅ **Commit pipeline run for Swift coverage threshold parity + Synapse cursor-agents** - COMPLETE (2026-04-15) - Committed `swift_adapter.py` enhancements, new `swift_coverage.py` numeric coverage extraction module, updated `test_swift_adapter.py` and new `test_swift_coverage.py`, archived `enforce-swift-coverage-threshold-parity.md` plan, and Synapse cursor-agents prompt files (`analyze-compact`, `analyze-context`, `analyze-session`, `analyze-tools`, commit/fix/implement/plan/review agent prompts, `prompts/commit.md`); Phase A quality+parity checks passed. <!-- memory_type: milestone -->
+
+- ✅ **Commit pipeline run for Swift coverage parity updates** - COMPLETE (2026-04-15) - <!-- memory_type: status -->
+Executed /cortex/commit pipeline with preflight snapshot, Phase A quality gate + parity scripts, wiki staged ingest, and submodule hygiene pre-stage for Synapse prompt updates.
 
 ## Completed Work (2026-04-14)
 

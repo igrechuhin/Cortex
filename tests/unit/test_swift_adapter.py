@@ -1,11 +1,146 @@
 """Tests for Swift framework adapter."""
 
+import json
 import subprocess
+import sys
 import tempfile
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
+import pytest
+
 from cortex.services.framework_adapters.swift_adapter import SwiftAdapter
+
+
+def _argv_contains(argv: list[str], needle: str) -> bool:
+    return any(needle in str(part) for part in argv)
+
+
+def _subprocess_swift_test_then_skip_coverage(
+    test_stdout: bytes,
+    test_returncode: int = 0,
+):
+    """``swift test`` succeeds; coverage collection aborts (no bin path)."""
+
+    def _failed_proc() -> MagicMock:
+        m = MagicMock()
+        m.returncode = 1
+        m.stdout = b""
+        m.stderr = b"skip"
+        return m
+
+    def side_effect(
+        cmd: list[str] | str | bytes,
+        *args: object,
+        **kwargs: object,
+    ) -> MagicMock:
+        if not isinstance(cmd, list) or not cmd:
+            return _failed_proc()
+        if cmd[0] == "swift" and "test" in cmd:
+            m = MagicMock()
+            m.returncode = test_returncode
+            m.stdout = test_stdout
+            m.stderr = b""
+            return m
+        return _failed_proc()
+
+    return side_effect
+
+
+def _seed_codecov_project(
+    root: Path,
+    *,
+    count: int,
+    covered: int,
+) -> Path:
+    _ = (root / "Package.swift").write_text("// swift-tools-version:5.9\n")
+    bin_path = root / ".build" / "debug"
+    codecov = bin_path / "codecov"
+    codecov.mkdir(parents=True)
+    _ = (codecov / "default.profdata").write_bytes(b"x")
+    payload = {
+        "data": [
+            {
+                "files": [
+                    {
+                        "filename": str(root / "Sources" / "App.swift"),
+                        "summary": {"lines": {"count": count, "covered": covered}},
+                    },
+                ],
+            },
+        ],
+    }
+    _ = (codecov / "export.json").write_text(json.dumps(payload), encoding="utf-8")
+    return bin_path
+
+
+def _swift_test_and_bin_path_side_effect(bin_path: Path):
+    def side_effect(
+        cmd: list[str] | str | bytes,
+        *args: object,
+        **kwargs: object,
+    ) -> MagicMock:
+        assert isinstance(cmd, list)
+        m = MagicMock()
+        if cmd[:2] == ["swift", "test"]:
+            m.returncode = 0
+            m.stdout = b"\t Executed 1 tests, with 0 failures (0 unexpected) in 0.1 (0.1) seconds\n"
+            m.stderr = b""
+            return m
+        if _argv_contains(cmd, "show-bin-path"):
+            m.returncode = 0
+            m.stdout = str(bin_path.resolve()).encode() + b"\n"
+            m.stderr = b""
+            return m
+        raise AssertionError(f"unexpected subprocess: {cmd!r}")
+
+    return side_effect
+
+
+def _seed_llvm_cov_project(root: Path) -> Path:
+    _ = (root / "Package.swift").write_text("// swift-tools-version:5.9\n")
+    bin_path = root / ".build" / "debug"
+    codecov = bin_path / "codecov"
+    codecov.mkdir(parents=True)
+    _ = (codecov / "default.profdata").write_bytes(b"x")
+    xctest = bin_path / "DemoPackageTests.xctest"
+    xctest.mkdir(parents=True)
+    if sys.platform == "darwin":
+        exe = xctest / "Contents" / "MacOS" / "DemoPackageTests"
+        exe.parent.mkdir(parents=True)
+    else:
+        exe = xctest / "DemoPackageTests"
+    _ = exe.write_bytes(b"")
+    _ = exe.chmod(0o755)
+    return bin_path
+
+
+def _swift_test_bin_and_llvm_cov_side_effect(bin_path: Path, report: bytes):
+    def side_effect(
+        cmd: list[str] | str | bytes,
+        *args: object,
+        **kwargs: object,
+    ) -> MagicMock:
+        assert isinstance(cmd, list)
+        m = MagicMock()
+        if cmd[:2] == ["swift", "test"]:
+            m.returncode = 0
+            m.stdout = b"\t Executed 1 tests, with 0 failures (0 unexpected) in 0.1 (0.1) seconds\n"
+            m.stderr = b""
+            return m
+        if _argv_contains(cmd, "show-bin-path"):
+            m.returncode = 0
+            m.stdout = str(bin_path.resolve()).encode() + b"\n"
+            m.stderr = b""
+            return m
+        if cmd and cmd[0] in ("llvm-cov", "xcrun"):
+            m.returncode = 0
+            m.stdout = report
+            m.stderr = b""
+            return m
+        raise AssertionError(f"unexpected subprocess: {cmd!r}")
+
+    return side_effect
 
 
 class TestSwiftAdapter:
@@ -58,19 +193,18 @@ class TestSwiftAdapter:
             _ = (Path(tmpdir) / "Package.swift").write_text(
                 "// swift-tools-version:5.9"
             )
-            mock_result = MagicMock()
-            mock_result.returncode = 0
-            mock_result.stdout = b"Test run: 3 passed"
-            mock_result.stderr = b""
-            mock_run.return_value = mock_result
+            mock_run.side_effect = _subprocess_swift_test_then_skip_coverage(
+                b"Test run: 3 passed", 0
+            )
 
             adapter = SwiftAdapter(str(tmpdir))
             result = adapter.run_tests()
 
             assert result.success is True
-            call_args = mock_run.call_args[0][0]
+            call_args = mock_run.call_args_list[0][0][0]
             assert "swift" in call_args
             assert "test" in call_args
+            assert "--enable-code-coverage" in call_args
 
     @patch("cortex.services.framework_adapters.swift_adapter.subprocess.run")
     def test_run_tests_tolerates_binary_output(self, mock_run: MagicMock) -> None:
@@ -79,12 +213,9 @@ class TestSwiftAdapter:
             _ = (Path(tmpdir) / "Package.swift").write_text(
                 "// swift-tools-version:5.9"
             )
-            mock_result = MagicMock()
-            mock_result.returncode = 0
-            # Simulate PNG header bytes mixed into test output
-            mock_result.stdout = b"Test run: 1 passed\n" + bytes([0x89]) + b"PNG\r\n"
-            mock_result.stderr = b""
-            mock_run.return_value = mock_result
+            mock_run.side_effect = _subprocess_swift_test_then_skip_coverage(
+                b"Test run: 1 passed\n" + bytes([0x89]) + b"PNG\r\n", 0
+            )
 
             adapter = SwiftAdapter(str(tmpdir))
             result = adapter.run_tests()  # must not raise UnicodeDecodeError
@@ -99,15 +230,13 @@ class TestSwiftAdapter:
             _ = (Path(tmpdir) / "Package.swift").write_text(
                 "// swift-tools-version:5.9"
             )
-            mock_result = MagicMock()
-            mock_result.returncode = 0
             xctest_output = (
                 b"Test Suite 'MyTests' passed at 2026-04-09.\n"
                 b"\t Executed 7819 tests, with 0 failures (0 unexpected) in 120.0 (122.0) seconds\n"
             )
-            mock_result.stdout = xctest_output
-            mock_result.stderr = b""
-            mock_run.return_value = mock_result
+            mock_run.side_effect = _subprocess_swift_test_then_skip_coverage(
+                xctest_output, 0
+            )
 
             adapter = SwiftAdapter(str(tmpdir))
             result = adapter.run_tests()
@@ -305,3 +434,66 @@ class TestSwiftAdapter:
             result = adapter.type_check()
             assert result.success is False
             assert result.check_type == "type_check"
+
+    @patch("cortex.services.framework_adapters.swift_adapter.subprocess.run")
+    def test_run_tests_collects_coverage_from_codecov_json(
+        self, mock_run: MagicMock
+    ) -> None:
+        """Numeric coverage from SwiftPM JSON under codecov/ (no llvm-cov subprocess)."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir).resolve()
+            bin_path = _seed_codecov_project(root, count=100, covered=95)
+            mock_run.side_effect = _swift_test_and_bin_path_side_effect(bin_path)
+            adapter = SwiftAdapter(str(root))
+            result = adapter.run_tests(coverage_threshold=0.90)
+            assert result.coverage == pytest.approx(0.95)  # type: ignore[unknown-member-type]
+            assert result.success is True
+            assert mock_run.call_count == 2
+
+    @patch("cortex.services.framework_adapters.swift_adapter.subprocess.run")
+    def test_run_tests_fails_when_codecov_json_below_accept_min(
+        self, mock_run: MagicMock
+    ) -> None:
+        """Coverage below 89.5% fails gate (parity with Python adapter semantics)."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir).resolve()
+            bin_path = _seed_codecov_project(root, count=100, covered=89)
+            mock_run.side_effect = _swift_test_and_bin_path_side_effect(bin_path)
+            adapter = SwiftAdapter(str(root))
+            result = adapter.run_tests(coverage_threshold=0.90)
+            assert result.coverage == pytest.approx(0.89)  # type: ignore[unknown-member-type]
+            assert result.success is False
+            assert any("below" in e.lower() for e in result.errors)
+
+    @patch("cortex.services.framework_adapters.swift_adapter.subprocess.run")
+    def test_run_tests_warns_when_coverage_between_accept_min_and_threshold(
+        self, mock_run: MagicMock
+    ) -> None:
+        """89.5%–90% yields success with warning (Python parity)."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir).resolve()
+            bin_path = _seed_codecov_project(root, count=1000, covered=896)
+            mock_run.side_effect = _swift_test_and_bin_path_side_effect(bin_path)
+            adapter = SwiftAdapter(str(root))
+            result = adapter.run_tests(coverage_threshold=0.90)
+            assert result.coverage == pytest.approx(0.896)  # type: ignore[unknown-member-type]
+            assert result.success is True
+            assert result.warnings
+
+    @patch("cortex.services.framework_adapters.swift_adapter.subprocess.run")
+    def test_run_tests_uses_llvm_cov_when_json_missing(
+        self, mock_run: MagicMock
+    ) -> None:
+        """llvm-cov report path supplies coverage when JSON is absent."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir).resolve()
+            bin_path = _seed_llvm_cov_project(root)
+            report = b"Lines Missed Cover\nTOTAL 10 1 90.00%\n"
+            mock_run.side_effect = _swift_test_bin_and_llvm_cov_side_effect(
+                bin_path, report
+            )
+            adapter = SwiftAdapter(str(root))
+            result = adapter.run_tests(coverage_threshold=0.90)
+            assert result.coverage == pytest.approx(0.90)  # type: ignore[unknown-member-type]
+            assert result.success is True
+            assert mock_run.call_count == 3

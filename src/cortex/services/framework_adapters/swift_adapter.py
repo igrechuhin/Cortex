@@ -6,12 +6,21 @@ swift build (type check / lint), swift test.
 
 import re
 import subprocess
+import sys
 from collections.abc import Sequence
 from pathlib import Path
 
 from cortex.services.language_detector import LanguageDetector, LanguageInfo
 
 from .base import CheckResult, FrameworkAdapter, ProgressCallback, TestResult
+from .python_adapter_parsing import build_test_errors, coverage_accept_and_warning
+from .swift_coverage import (
+    default_profdata_path,
+    find_package_tests_executable,
+    parse_llvm_cov_report_line_coverage_fraction,
+    pick_codecov_json_file,
+    read_swift_codecov_json_fraction,
+)
 
 # Matches XCTest summary: "Executed N tests, with M failures"
 _XCTEST_SUMMARY_RE = re.compile(
@@ -85,32 +94,147 @@ class SwiftAdapter(FrameworkAdapter):
                 "No Package.swift found; not a Swift Package Manager project"
             )
         try:
-            result = self._run_swift(["test"], timeout=timeout)
+            result = self._run_swift(
+                ["test", "--enable-code-coverage"],
+                timeout=timeout,
+            )
             output = result.stdout + result.stderr
-            return self._parse_test_output(output, result.returncode == 0)
+            return self._finalize_swift_test_result(
+                output,
+                result.returncode == 0,
+                timeout=timeout,
+                coverage_threshold=coverage_threshold,
+            )
         except subprocess.TimeoutExpired:
             return self._timeout_test_result()
         except Exception as e:
             return self._error_test_result(str(e))
 
-    def _parse_test_output(self, output: str, success: bool) -> TestResult:
-        """Parse swift test output."""
+    def _llvm_cov_report_argv(self, binary: Path, profdata: Path) -> list[str]:
+        """Build argv for ``llvm-cov report`` (macOS uses ``xcrun``)."""
+        ignore = r"\.build|Tests"
+        tail = [
+            "report",
+            str(binary),
+            f"-instr-profile={profdata}",
+            f"-ignore-filename-regex={ignore}",
+        ]
+        if sys.platform == "darwin":
+            return ["xcrun", "llvm-cov", *tail]
+        return ["llvm-cov", *tail]
+
+    def _collect_line_coverage_fraction(
+        self, timeout: int | None
+    ) -> tuple[float | None, bool]:
+        """Return ``(fraction, collected)`` after a successful ``swift test`` run.
+
+        ``collected`` is True only when SwiftPM artifacts exist and a numeric
+        line-coverage value was derived (JSON export or ``llvm-cov report``).
+        """
+        bin_path = self._resolve_swift_bin_path(timeout)
+        if bin_path is None:
+            return None, False
+        profdata = default_profdata_path(bin_path)
+        if not profdata.is_file():
+            return None, False
+        frac = self._coverage_from_json(profdata.parent)
+        if frac is not None:
+            return frac, True
+        frac = self._coverage_from_llvm_cov(bin_path, profdata, timeout)
+        if frac is None:
+            return None, False
+        return frac, True
+
+    def _resolve_swift_bin_path(self, timeout: int | None) -> Path | None:
+        """Resolve SwiftPM bin path via ``swift build --show-bin-path``."""
+        bin_path_res = self._run_swift(["build", "--show-bin-path"], timeout=timeout)
+        if bin_path_res.returncode != 0:
+            return None
+        bin_text = (bin_path_res.stdout + bin_path_res.stderr).strip()
+        if not bin_text:
+            return None
+        return Path(bin_text.splitlines()[-1].strip())
+
+    def _coverage_from_json(self, codecov_dir: Path) -> float | None:
+        """Read coverage fraction from JSON export if available."""
+        json_path = pick_codecov_json_file(codecov_dir)
+        if json_path is None:
+            return None
+        return read_swift_codecov_json_fraction(json_path)
+
+    def _coverage_from_llvm_cov(
+        self,
+        bin_path: Path,
+        profdata: Path,
+        timeout: int | None,
+    ) -> float | None:
+        """Read coverage fraction via ``llvm-cov report`` fallback path."""
+        exe = find_package_tests_executable(bin_path)
+        if exe is None:
+            return None
+        argv = self._llvm_cov_report_argv(exe, profdata)
+        raw = subprocess.run(
+            argv,
+            cwd=self.project_root,
+            capture_output=True,
+            text=False,
+            timeout=timeout,
+        )
+        report = ""
+        if raw.stdout:
+            report += raw.stdout.decode("utf-8", errors="replace")
+        if raw.stderr:
+            report += raw.stderr.decode("utf-8", errors="replace")
+        if raw.returncode != 0:
+            return None
+        return parse_llvm_cov_report_line_coverage_fraction(report)
+
+    def _finalize_swift_test_result(
+        self,
+        output: str,
+        tests_ok: bool,
+        timeout: int | None,
+        coverage_threshold: float,
+    ) -> TestResult:
+        """Parse ``swift test`` output and apply coverage threshold when data exists."""
         passed, failed = self._extract_test_counts(output)
         total = passed + failed
         pass_rate = (passed / total) if total > 0 else 0.0
-        errors: list[str] = []
-        if not success:
-            errors.append("Test execution failed")
+        actual_ok, coverage, warnings = self._coverage_gate_outcome(
+            tests_ok, timeout, coverage_threshold
+        )
+
+        errors = build_test_errors(
+            actual_ok,
+            coverage,
+            coverage_threshold,
+        )
         return TestResult(
-            success=success and len(errors) == 0,
+            success=actual_ok and len(errors) == 0,
             tests_run=total,
             tests_passed=passed,
             tests_failed=failed,
             pass_rate=pass_rate,
-            coverage=None,
+            coverage=coverage,
             output=output,
             errors=errors,
+            warnings=warnings,
         )
+
+    def _coverage_gate_outcome(
+        self,
+        tests_ok: bool,
+        timeout: int | None,
+        coverage_threshold: float,
+    ) -> tuple[bool, float | None, list[str]]:
+        """Evaluate test+coverage gate and return (ok, coverage, warnings)."""
+        if not tests_ok:
+            return False, None, []
+        frac, collected = self._collect_line_coverage_fraction(timeout)
+        if not collected or frac is None:
+            return True, None, []
+        cov_ok, cov_warn = coverage_accept_and_warning(frac, coverage_threshold)
+        return cov_ok, frac, cov_warn
 
     def _extract_test_counts(self, output: str) -> tuple[int, int]:
         """Extract passed/failed counts from swift test output.
