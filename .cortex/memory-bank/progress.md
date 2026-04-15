@@ -2,10 +2,13 @@
 
 ## 2026-04-15
 
+- **Improvement: Memory Write-Ahead Log for Audit Trail and Rollback** - COMPLETE. Added WAL logging/snapshot tooling, integrated WAL hooks into memory mutations, added update_memory_bank WAL integration tests, and refactored touched modules to satisfy structural limits.
 - **Improvement: Typed Memory Classification for Memory Bank Entries** - COMPLETE. Fixed memory_types circular import; classification stack verified with unit tests.
 - <!-- memory_type: status -->
 - **Improvement: Hybrid BM25 + Keyword Retrieval for Memory Bank Search** - COMPLETE. Implemented BM25 retrieval modules, manage_file search integration, and full retrieval/tool test coverage; L3 deep-search wire-in explicitly deferred because target module is absent.
 - <!-- memory_type: status -->
+- <!-- memory_type: milestone -->
+- **WAL and quality-gate fallback repair** - COMPLETE. Resolved submodule hygiene blocker by syncing/staging `.cortex/synapse`, fixed fallback behavior in synapse `check_file_sizes` scripts, reduced overlong WAL tests, and re-ran quality/docs gates successfully.
 ✅ Commit pipeline validation complete — Phase A quality+parity checks passed for retrieval and file-tool changes; docs/validation gates aligned before commit creation.
 **Quality follow-up** - COMPLETE. Split `_generate_orphaned_files_insight` in `insight_dep_quality.py` to satisfy the 30-line function cap (structural gate); behavior unchanged.
 

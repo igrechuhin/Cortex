@@ -20,7 +20,9 @@ from cortex.core.plan_utils import (
     parse_task_graph,
 )
 from cortex.core.project_root_resolver import resolve_project_root_async
+from cortex.memory.wal import WalOperation
 from cortex.tools.models_base import ToolResultStatus
+from cortex.tools.plans.entries_io import read_roadmap_file, write_roadmap_file
 from cortex.tools.plans.register_artifact_graph import (
     sync_plan_frontmatter_status_after_register,
     validate_register_artifact_graph_for_plan,
@@ -30,10 +32,8 @@ from cortex.tools.plans.register_helpers import (
     create_register_error_result,
     create_register_success_result,
     is_completed_status,
-    read_roadmap_file,
     register_plan_entry,
     validate_registration_section,
-    write_roadmap_file,
 )
 from cortex.tools.plans.register_models import RegisterPlanResult
 
@@ -182,7 +182,12 @@ async def _handle_roadmap_write(
     project_root: Path | None = None,
 ) -> str | None:
     """Write roadmap or return error JSON. Returns error JSON or None."""
-    write_error = await write_roadmap_file(roadmap_path, updated_content, project_root)
+    write_error = await write_roadmap_file(
+        roadmap_path,
+        updated_content,
+        project_root,
+        wal_operation=WalOperation.ROADMAP_ADD,
+    )
     if write_error:
         await log_client(
             ctx,

@@ -164,9 +164,9 @@ For local development, use these Make targets (after running `bash scripts/boots
 
 ## Key Tools
 
-<!-- cortex-published-inventory: tools=12 resources=6 prompts-max=4 -->
+<!-- cortex-published-inventory: tools=13 resources=6 prompts-max=4 -->
 
-Cortex exposes **12 MCP tools**, **6 static `cortex://` resources**, and **up to 4 setup prompts** (one always-on plus up to three configuration-dependent). Machine-readable inventory: [docs/_generated/tool-inventory.json](docs/_generated/tool-inventory.json) (must match `cortex.discovery.published_inventory`; CI enforces parity).
+Cortex exposes **13 MCP tools**, **6 static `cortex://` resources**, and **up to 4 setup prompts** (one always-on plus up to three configuration-dependent). Machine-readable inventory: [docs/_generated/tool-inventory.json](docs/_generated/tool-inventory.json) (must match `cortex.discovery.published_inventory`; CI enforces parity).
 
 Published tools (canonical `TOOL_CATEGORIES` order — see [docs/api/tools.md](docs/api/tools.md#current-published-mcp-surface-canonical)):
 
@@ -184,6 +184,7 @@ Published tools (canonical `TOOL_CATEGORIES` order — see [docs/api/tools.md](d
 | `pipeline_handoff()` | Inter-phase state exchange (init/write/read/clear) |
 | `write_artifact()` | Allowlisted skill JSON and Synapse rule artifact writes |
 | `compress_memory_bank()` | Compress project CLAUDE.md and memory-bank markdown to reduce session tokens |
+| `memory_wal()` | Memory-bank WAL read, anomaly hints, snapshot/restore |
 
 Read-only discovery uses **resources** (not in this table): `cortex://health/connection`, `cortex://structure`, `cortex://context`, `cortex://rules`, `cortex://validation`, `cortex://analysis`. Quick “do not” guidance: [AGENTS.md](AGENTS.md) quick reference.
 

@@ -34,8 +34,6 @@ Completed investigations are recorded in [activeContext.md](activeContext.md). P
 
 ### Improvements
 
-- [ ] **Improvement: Memory Write-Ahead Log for Audit Trail and Rollback** — WAL that records every memory bank mutation to a dedicated write-log stream. Enables anomaly detection (shrink > 30%), snapshot, and restore. Adds memory_wal MCP tool. Plan: [../plans/improve-memory-write-ahead-log.md](../plans/improve-memory-write-ahead-log.md) (PENDING)
-
 #### Knowledge Base & Wiki (High Priority)
 
 #### Token Efficiency (High Priority)

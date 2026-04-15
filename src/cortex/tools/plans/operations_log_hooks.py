@@ -44,6 +44,7 @@ async def append_log_entry_best_effort(
             operation_type=operation_type,
             title=title,
             summary=summary,
+            project_root=root,
         )
     except Exception as exc:  # pragma: no cover - best-effort logging path
         await log_client(

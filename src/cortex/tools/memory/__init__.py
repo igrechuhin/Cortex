@@ -10,6 +10,7 @@ from . import (
     foundation_stats,  # noqa: F401
     foundation_version,  # noqa: F401
     query_memory_bank_operations,  # noqa: F401
+    wal_tool,  # noqa: F401
 )
 
 __all__ = [
@@ -19,4 +20,5 @@ __all__ = [
     "foundation_stats",
     "foundation_version",
     "query_memory_bank_operations",
+    "wal_tool",
 ]

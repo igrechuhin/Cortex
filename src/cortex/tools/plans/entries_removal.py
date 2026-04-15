@@ -12,6 +12,7 @@ from pathlib import Path
 from cortex.core.constants import MemoryBankFile
 from cortex.core.models import OperationStatus
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
+from cortex.memory.wal import WalOperation
 from cortex.tools.plans.entries_content import (
     extract_plan_path_from_bullet,
     find_bullet_line_containing,
@@ -145,7 +146,9 @@ async def _perform_roadmap_removal(
 ) -> RemoveRoadmapEntryResult:
     """Perform the actual roadmap removal and write."""
     updated = remove_line_at(current_content, line_num)
-    write_error = await write_roadmap_file(roadmap_path, updated, project_root)
+    write_error = await write_roadmap_file(
+        roadmap_path, updated, project_root, wal_operation=WalOperation.DELETE
+    )
     if write_error:
         return _removal_error("Failed to write roadmap", write_error)
 
@@ -199,7 +202,9 @@ async def execute_roadmap_section_removal(
     start_i, end_i, heading = range_result
     lines_removed = end_i - start_i + 1
     updated = remove_section_range(current_content, start_i, end_i)
-    write_error = await write_roadmap_file(roadmap_path, updated, root_path)
+    write_error = await write_roadmap_file(
+        roadmap_path, updated, root_path, wal_operation=WalOperation.DELETE
+    )
     if write_error:
         return _section_removal_error("Failed to write roadmap", write_error)
 

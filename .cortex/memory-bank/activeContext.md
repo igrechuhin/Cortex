@@ -4,11 +4,16 @@
 
 ## Completed Work (2026-04-15)
 
+- ✅ **Improvement: Memory Write-Ahead Log for Audit Trail and Rollback** - COMPLETE (2026-04-15) - Added write-ahead log support for memory mutations (logging, anomaly checks, snapshots/restores), wired WAL recording into memory write flows, and added WAL integration tests for `update_memory_bank`.
+
 - ✅ **Improvement: Typed Memory Classification for Memory Bank Entries** - COMPLETE (2026-04-15) - Resolved cortex.tools import cycle in memory_types by using inline Pydantic strict config on MemoryEntry; typed classification, tagging, read_by_type, session memory_type_counts, and L1 type weights were already implemented and covered by tests.
 
 - ✅ **Improvement: Hybrid BM25 + Keyword Retrieval for Memory Bank Search** - COMPLETE (2026-04-15) - Implemented BM25 retrieval stack (scorer, markdown chunker, memory-bank searcher with deduplication), added manage_file search operation wiring, and delivered retrieval + tool integration tests with quality gate pass.
 
 - ✅ **Commit pipeline run for hybrid retrieval changes** - COMPLETE (2026-04-15) - <!-- memory_type: status -->
+
+- ✅ **WAL commit pipeline stabilization** - COMPLETE (2026-04-15) - <!-- memory_type: milestone -->
+Completed /cortex/fix and /cortex/commit preflight remediation for memory WAL work: staged synapse gitlink, restored file-size fallback scans in synapse scripts, and re-verified quality parity checks with green gates.
 Ran /cortex/commit pipeline: preflight snapshot, Phase A quality+parity checks, wiki staged ingest, and Synapse submodule pre-stage commit before superproject commit.
 
 ## Completed Work (2026-04-14)

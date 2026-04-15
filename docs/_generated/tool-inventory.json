@@ -25,6 +25,7 @@
     "compress_memory_bank",
     "ingest",
     "manage_file",
+    "memory_wal",
     "pipeline_handoff",
     "plan",
     "run_docs_gate",
@@ -34,5 +35,5 @@
     "update_memory_bank",
     "write_artifact"
   ],
-  "tools_count": 12
+  "tools_count": 13
 }

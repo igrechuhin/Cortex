@@ -6,6 +6,7 @@ file_manage_file_helpers (dispatch) and by compaction_operations.
 
 import json
 from dataclasses import dataclass
+from functools import partial
 from pathlib import Path
 from typing import cast
 
@@ -56,6 +57,21 @@ class _WriteFlowParams:
     metadata_index: MetadataIndex
     token_counter: TokenCounter
     version_manager: VersionManager
+
+
+@dataclass(frozen=True)
+class _ManageFileWriteCtx:
+    """Bundled disk write + WAL inputs (structural line budget)."""
+
+    file_path: Path
+    file_name: str
+    content: str
+    change_description: str | None
+    fs_manager: FileSystemManager
+    metadata_index: MetadataIndex
+    token_counter: TokenCounter
+    version_manager: VersionManager
+    project_root: Path | None = None
 
 
 async def _build_read_response(
@@ -198,7 +214,7 @@ async def _execute_write_flow(
     token_counter: TokenCounter,
     version_manager: VersionManager,
 ) -> str:
-    """Execute the main write flow."""
+    """Execute the main write flow (disk write + metadata; no WAL)."""
     await write_file_with_hash_check(file_path, content, fs_manager)
 
     file_metrics = compute_file_metrics(content, fs_manager, token_counter)
@@ -223,30 +239,135 @@ async def _execute_write_flow(
     return build_write_response(file_name, version_info, token_counter, content)
 
 
-async def _execute_write_with_error_handling(
+async def _read_file_if_exists(
+    fs_manager: FileSystemManager, file_path: Path, exists: bool
+) -> str:
+    if not exists:
+        return ""
+    text, _ = await fs_manager.read_file(file_path)
+    return text
+
+
+async def _wal_manage_file_after_success(
+    fs_manager: FileSystemManager,
+    file_path: Path,
+    project_root: Path | None,
+    before_exists: bool,
+    before_content: str,
+) -> None:
+    from cortex.memory.wal import WalOperation
+    from cortex.memory.wal_hooks import try_wal_record_text_mutation
+
+    after_content, _ = await fs_manager.read_file(file_path)
+    try_wal_record_text_mutation(
+        project_root,
+        file_path,
+        WalOperation.WRITE,
+        before_exists,
+        before_content,
+        after_content,
+        True,
+        None,
+    )
+
+
+async def _wal_manage_file_after_conflict(
+    fs_manager: FileSystemManager,
+    file_path: Path,
+    project_root: Path | None,
+    before_exists: bool,
+    before_content: str,
+    exc: FileConflictError | FileLockTimeoutError | GitConflictError,
+) -> None:
+    from cortex.memory.wal import WalOperation
+    from cortex.memory.wal_hooks import try_wal_record_text_mutation
+
+    after_content = ""
+    if file_path.exists():
+        try:
+            after_content, _ = await fs_manager.read_file(file_path)
+        except (OSError, ValueError):
+            after_content = ""
+    try_wal_record_text_mutation(
+        project_root,
+        file_path,
+        WalOperation.WRITE,
+        before_exists,
+        before_content,
+        after_content,
+        False,
+        str(exc),
+    )
+
+
+async def _execute_write_flow_then_wal(
+    ctx: _ManageFileWriteCtx,
+    before_exists: bool,
+    before_content: str,
+) -> str:
+    result = await _execute_write_flow(
+        ctx.file_path,
+        ctx.file_name,
+        ctx.content,
+        ctx.change_description,
+        ctx.fs_manager,
+        ctx.metadata_index,
+        ctx.token_counter,
+        ctx.version_manager,
+    )
+    await _wal_manage_file_after_success(
+        ctx.fs_manager,
+        ctx.file_path,
+        ctx.project_root,
+        before_exists,
+        before_content,
+    )
+    return result
+
+
+async def _execute_write_with_error_handling(ctx: _ManageFileWriteCtx) -> str:
+    """Execute write flow with error handling and optional WAL."""
+    before_exists = ctx.file_path.exists()
+    before_content = await _read_file_if_exists(
+        ctx.fs_manager, ctx.file_path, before_exists
+    )
+    try:
+        return await _execute_write_flow_then_wal(ctx, before_exists, before_content)
+    except (FileConflictError, FileLockTimeoutError, GitConflictError) as e:
+        await _wal_manage_file_after_conflict(
+            ctx.fs_manager,
+            ctx.file_path,
+            ctx.project_root,
+            before_exists,
+            before_content,
+            e,
+        )
+        return build_write_error_response(e)
+
+
+async def _execute_write_with_project_root(
+    project_root: Path | None,
     file_path: Path,
     file_name: str,
-    content: str,
+    fc: str,
     change_description: str | None,
     fs_manager: FileSystemManager,
     metadata_index: MetadataIndex,
     token_counter: TokenCounter,
     version_manager: VersionManager,
 ) -> str:
-    """Execute write flow with error handling."""
-    try:
-        return await _execute_write_flow(
-            file_path,
-            file_name,
-            content,
-            change_description,
-            fs_manager,
-            metadata_index,
-            token_counter,
-            version_manager,
-        )
-    except (FileConflictError, FileLockTimeoutError, GitConflictError) as e:
-        return build_write_error_response(e)
+    ctx = _ManageFileWriteCtx(
+        file_path=file_path,
+        file_name=file_name,
+        content=fc,
+        change_description=change_description,
+        fs_manager=fs_manager,
+        metadata_index=metadata_index,
+        token_counter=token_counter,
+        version_manager=version_manager,
+        project_root=project_root,
+    )
+    return await _execute_write_with_error_handling(ctx)
 
 
 async def _run_write_flow(p: _WriteFlowParams) -> str:
@@ -266,12 +387,16 @@ async def _run_write_flow(p: _WriteFlowParams) -> str:
     if err is not None:
         return err
     assert final_content is not None
+    write_fn = partial(
+        _execute_write_with_project_root,
+        p.project_root,
+    )
     return await execute_validated_write(
         p.file_path,
         p.file_name,
         final_content,
         p.change_description,
-        _execute_write_with_error_handling,
+        write_fn,
         p.fs_manager,
         p.metadata_index,
         p.token_counter,
@@ -353,13 +478,15 @@ async def execute_memory_bank_write(
     file_path, err = validate_file_path(fs_manager, memory_bank_dir, file_name)
     if file_path is None:
         return err
-    return await _execute_write_with_error_handling(
-        file_path,
-        file_name,
-        content,
-        change_description,
-        fs_manager,
-        metadata_index,
-        token_counter,
-        version_manager,
+    ctx = _ManageFileWriteCtx(
+        file_path=file_path,
+        file_name=file_name,
+        content=content,
+        change_description=change_description,
+        fs_manager=fs_manager,
+        metadata_index=metadata_index,
+        token_counter=token_counter,
+        version_manager=version_manager,
+        project_root=project_root,
     )
+    return await _execute_write_with_error_handling(ctx)

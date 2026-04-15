@@ -282,6 +282,7 @@ async def _append_log_entry(
     parsed_timestamp: datetime | None,
     ctx: MCPContext | None,
 ) -> int:
+    from cortex.core.usage_context import get_or_resolve_project_root
     from cortex.tools.plans.operations_log import (
         OperationsLogType,
         append_operations_log_entry,
@@ -289,12 +290,14 @@ async def _append_log_entry(
 
     log_path = await _resolve_log_path(ctx)
     op_kind = OperationsLogType(operation_value)
+    project_root = await get_or_resolve_project_root(ctx)
     return append_operations_log_entry(
         log_path=log_path,
         operation_type=op_kind,
         title=title,
         summary=summary,
         timestamp=parsed_timestamp,
+        project_root=project_root,
     )
 
 

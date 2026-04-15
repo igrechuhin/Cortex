@@ -11,6 +11,7 @@ from pathlib import Path
 from cortex.core.constants import MemoryBankFile
 from cortex.core.models import OperationStatus
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
+from cortex.memory.wal import WalOperation
 from cortex.tools.plans.entries_content import (
     ADD_ENTRY_COMPLETED_MESSAGE,
     entry_text_looks_completed,
@@ -104,6 +105,39 @@ def _handle_completed_entry_rejected() -> AddRoadmapEntryResult:
     )
 
 
+async def _roadmap_insert_after_validation(
+    root_path: Path,
+    section_id: str,
+    entry_text: str,
+    position: str,
+) -> AddRoadmapEntryResult:
+    memory_bank_root = get_cortex_path(root_path, CortexResourceType.MEMORY_BANK)
+    roadmap_path = memory_bank_root / MemoryBankFile.ROADMAP
+    current_content, read_error = read_roadmap_file(roadmap_path)
+    if read_error:
+        return _handle_read_error(section_id, read_error)
+
+    assert current_content is not None
+
+    updated_content, line_inserted = insert_roadmap_entry(
+        current_content, section_id, entry_text, position
+    )
+
+    if line_inserted is None:
+        return _handle_insert_failure(section_id)
+
+    write_error = await write_roadmap_file(
+        roadmap_path,
+        updated_content,
+        root_path,
+        wal_operation=WalOperation.ROADMAP_ADD,
+    )
+    if write_error:
+        return _handle_write_error(section_id, write_error)
+
+    return _make_insert_success_result(section_id, line_inserted)
+
+
 async def execute_roadmap_insertion(
     root_path: Path,
     section: str,
@@ -118,24 +152,7 @@ async def execute_roadmap_insertion(
     if section_error:
         return _handle_section_validation_error(section, section_error)
 
-    memory_bank_root = get_cortex_path(root_path, CortexResourceType.MEMORY_BANK)
-    roadmap_path = memory_bank_root / MemoryBankFile.ROADMAP
-    current_content, read_error = read_roadmap_file(roadmap_path)
-    if read_error:
-        return _handle_read_error(section_id, read_error)
-
-    assert current_content is not None
     assert section_id is not None
-
-    updated_content, line_inserted = insert_roadmap_entry(
-        current_content, section_id, entry_text, position
+    return await _roadmap_insert_after_validation(
+        root_path, section_id, entry_text, position
     )
-
-    if line_inserted is None:
-        return _handle_insert_failure(section_id)
-
-    write_error = await write_roadmap_file(roadmap_path, updated_content, root_path)
-    if write_error:
-        return _handle_write_error(section_id, write_error)
-
-    return _make_insert_success_result(section_id, line_inserted)

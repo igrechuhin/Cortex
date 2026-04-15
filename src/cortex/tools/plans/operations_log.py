@@ -87,16 +87,42 @@ def _compose_append_entry(
     )
 
 
+def _wal_append_operations_log(
+    project_root: Path,
+    log_path: Path,
+    before_exists: bool,
+    before_text: str,
+    content: str,
+) -> None:
+    from cortex.memory.wal import WalOperation
+    from cortex.memory.wal_hooks import try_wal_record_text_mutation
+
+    try_wal_record_text_mutation(
+        project_root,
+        log_path,
+        WalOperation.APPEND,
+        before_exists,
+        before_text,
+        content,
+        True,
+        None,
+    )
+
+
 def append_operations_log_entry(
     log_path: Path,
     operation_type: OperationsLogType,
     title: str,
     summary: str | None = None,
     timestamp: datetime | None = None,
+    *,
+    project_root: Path | None = None,
 ) -> int:
     """Append one operations-log entry and return the heading line number."""
     header = "# Cortex Operations Log\n\n"
-    existing = log_path.read_text(encoding="utf-8") if log_path.exists() else ""
+    before_exists = log_path.exists()
+    before_text = log_path.read_text(encoding="utf-8") if before_exists else ""
+    existing = before_text
     if not existing:
         existing = header
     elif not existing.startswith("# Cortex Operations Log"):
@@ -108,6 +134,10 @@ def append_operations_log_entry(
     log_path.parent.mkdir(parents=True, exist_ok=True)
     content = _trim_to_recent_operations(f"{existing}{entry}".rstrip("\n") + "\n")
     _ = log_path.write_text(content, encoding="utf-8")
+    if project_root is not None:
+        _wal_append_operations_log(
+            project_root, log_path, before_exists, before_text, content
+        )
     return line_inserted
 
 

@@ -46,6 +46,7 @@ from .memory import (
     foundation_stats,  # noqa: F401
     foundation_version,  # noqa: F401
     query_memory_bank_operations,  # noqa: F401
+    wal_tool,  # noqa: F401
 )
 from .plans import (
     completion,  # noqa: F401
@@ -90,8 +91,9 @@ _ = plan
 _ = update_memory_bank
 _ = memory_compress_tool
 _ = synapse_prompts
-# Ingest MCP tool registration (reference fn so pyright accepts the import).
-_: object = _ingest_handler_mod.ingest
+# Ingest / WAL MCP modules (reference so pyright accepts side-effect imports).
+_ingest_fn_ref: object = _ingest_handler_mod.ingest
+_memory_wal_mod_ref: object = wal_tool
 
 __all__ = [
     "analysis_operations",

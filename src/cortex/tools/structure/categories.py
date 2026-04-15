@@ -30,7 +30,7 @@ from pydantic import BaseModel, ConfigDict
 # existing one, then bump this constant in the same change as the registration.
 # compress_memory_bank: first-class memory compression MCP tool (see
 # .cortex/plans/compress-memory-bank-mcp-tool.md); not merged into manage_file.
-MAX_REGISTERED_TOOLS = 12
+MAX_REGISTERED_TOOLS = 13
 
 # Long-term target from consolidation plans (not enforced in tests).
 TARGET_REGISTERED_TOOLS = 10
@@ -136,6 +136,11 @@ TOOL_CATEGORIES: tuple[ToolCategoryEntry, ...] = (
         name="compress_memory_bank",
         category=ToolCategory.DEFERRED_MEDIUM,
         rationale="Compress project CLAUDE.md and memory-bank markdown to reduce session tokens",
+    ),
+    ToolCategoryEntry(
+        name="memory_wal",
+        category=ToolCategory.DEFERRED_MEDIUM,
+        rationale="Audit JSONL, anomaly hints, and snapshot/restore for memory-bank markdown",
     ),
 )
 
