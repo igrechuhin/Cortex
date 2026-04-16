@@ -5,6 +5,9 @@
 ## Completed Work (2026-04-16)
 
 - ✅ **Commit pipeline run for plan workflow updates** - COMPLETE (2026-04-16) - <!-- memory_type: status -->
+
+- ✅ **Harden /fix Workflow for Coverage-Only Failures (PARTIAL)** - COMPLETE (2026-04-16) - <!-- memory_type: problem -->
+Implemented coverage-only handling contract and regression checks so /fix cannot exit tests target without uplift evidence or explicit BLOCKED rationale; quality/docs gates pass.
 Executed /cortex/commit pipeline with preflight snapshot, Phase A quality gate + CI parity scripts, wiki staged ingest check, and validation/final-gate preparation for plan workflow artifacts.
 
 ## Completed Work (2026-04-15)

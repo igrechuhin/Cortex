@@ -172,6 +172,44 @@ class TestFixPromptIntegrityGuard:
         assert "no-go — synthetic roadmap backlog" in lower
         assert "never fabricate generic `pending` roadmap bullets" in lower
 
+    def test_fix_prompt_requires_coverage_only_evidence_contract(
+        self, fix_prompt_content: str
+    ) -> None:
+        """Fix prompt enforces explicit coverage-only handoff evidence."""
+        assert "coverage_only_failure" in fix_prompt_content
+        assert "coverage_attempt_evidence" in fix_prompt_content
+        assert "coverage_attempt_count" in fix_prompt_content
+        assert "coverage_delta" in fix_prompt_content
+        assert "blocker_reason" in fix_prompt_content
+        assert "status is explicitly `BLOCKED`" in fix_prompt_content
+
+
+class TestFixTestsAgentCoverageContract:
+    """Assert fix-tests agent documents the coverage-only evidence schema."""
+
+    @pytest.fixture
+    def fix_tests_agent_content(self) -> str:
+        """Read fix-tests cursor agent content."""
+        path = synapse_path() / "cursor-agents" / "fix-tests.md"
+        if not path.exists():
+            pytest.skip(
+                f"Fix-tests agent not found at {path} (ref: cleanup-skipped-legacy-tests)"
+            )
+        return path.read_text()
+
+    def test_fix_tests_agent_requires_coverage_contract_fields(
+        self, fix_tests_agent_content: str
+    ) -> None:
+        """Agent contract includes required coverage-only fields."""
+        assert "coverage_only_failure" in fix_tests_agent_content
+        assert "coverage_attempt_evidence" in fix_tests_agent_content
+        assert "coverage_attempt_count" in fix_tests_agent_content
+        assert "coverage_delta" in fix_tests_agent_content
+        assert "blocker_reason" in fix_tests_agent_content
+        assert (
+            'status":"passed or failed or skipped or BLOCKED' in fix_tests_agent_content
+        )
+
 
 class TestImplementPromptIntegrityGuard:
     """Assert implement prompt blocks metadata-only roadmap churn."""

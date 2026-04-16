@@ -81,3 +81,7 @@ Target: 95% coverage on newly introduced orchestration logic.
 | Handoff schema change breaks existing evals | Add backward-compatible optional fields; mark old fields deprecated, not removed |
 | Coverage uplift attempt loops indefinitely | Bound attempts to existing max-iteration cap; declare `BLOCKED` on cap hit |
 | Eval harness not available in all environments | Gate new evals behind the same harness feature flag used by existing eval tests |
+
+## Partial Progress Log
+
+- 2026-04-16: Implemented coverage-only tests-target evidence contract in `fix.md` and `fix-tests.md`; added regression checks in `tests/integration/test_commit_workflow_integrity_guards.py` — files: .cortex/synapse/prompts/fix.md, .cortex/synapse/cursor-agents/fix-tests.md, tests/integration/test_commit_workflow_integrity_guards.py
