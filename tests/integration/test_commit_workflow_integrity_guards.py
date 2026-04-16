@@ -281,6 +281,37 @@ class TestImplementPromptIntegrityGuard:
         assert "do not create/add/split roadmap pending items" in lower
         assert "note `no_op_run`" in lower
 
+    def test_implement_prompt_requires_post_implementation_review_gate(
+        self, implement_prompt_content: str
+    ) -> None:
+        """Implement prompt requires a mandatory review gate before completion."""
+        assert "## Review Gate" in implement_prompt_content
+        assert "code-reviewer" in implement_prompt_content
+        assert "review_outcome" in implement_prompt_content
+        assert "no_gaps" in implement_prompt_content
+        assert "gaps_found" in implement_prompt_content
+
+    def test_implement_prompt_reopens_plan_with_deduplicated_gaps(
+        self, implement_prompt_content: str
+    ) -> None:
+        """Review findings reopen the plan instead of allowing silent completion."""
+        lower = implement_prompt_content.lower()
+        assert "## review follow-up gaps" in lower
+        assert "de-duplicate" in lower
+        assert "status is `pending`" in lower
+        assert (
+            'do **not** call `plan(operation="complete")`' in implement_prompt_content
+        )
+
+    def test_implement_prompt_treats_review_runtime_failures_as_blocking(
+        self, implement_prompt_content: str
+    ) -> None:
+        """Review transport/runtime failure must stay blocked, not become synthetic gaps."""
+        lower = implement_prompt_content.lower()
+        assert "review_blocked" in implement_prompt_content
+        assert "not" in lower and "`gaps_found`" in implement_prompt_content
+        assert "keep the plan open" in lower
+
 
 class TestPythonCodingStandardsTypeNarrowing:
     """Assert Python coding standards document type narrowing."""

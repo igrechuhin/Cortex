@@ -66,3 +66,23 @@ async def test_allowed_pipeline_and_phase_still_work(
         )
     )
     assert wr["status"] == "ok"
+
+
+@pytest.mark.asyncio
+async def test_review_phase_allowed_for_implement_pipeline(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Implement pipeline must accept the Review Gate phase."""
+    _resolve_root(monkeypatch, tmp_path)
+    init = json.loads(await pipeline_handoff(operation="init", pipeline="implement"))
+    assert init["status"] == "ok"
+    wr = json.loads(
+        await pipeline_handoff(
+            operation="write_result",
+            pipeline="implement",
+            phase="review",
+            data='{"status":"complete","review_outcome":"no_gaps"}',
+        )
+    )
+    assert wr["status"] == "ok"
+    assert wr["phase"] == "review"

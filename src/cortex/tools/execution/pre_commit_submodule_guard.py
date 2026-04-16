@@ -361,9 +361,96 @@ def precommit_block_response(
     return _build_precommit_block_response(effective_mode, effective_violations)
 
 
+# ---------------------------------------------------------------------------
+# Gitignored-files-in-staging guard
+# ---------------------------------------------------------------------------
+
+GITIGNORED_STAGED_REMEDIATION = (
+    "Remove the gitignored file(s) from staging with "
+    "`git restore --staged <path>` before committing."
+)
+
+
+def _git_staged_paths(project_root: Path, timeout: float) -> list[str] | None:
+    """Return paths of all files currently in the staging area, or None on error."""
+    try:
+        proc = subprocess.run(
+            ["git", "-C", str(project_root), "diff", "--cached", "--name-only"],
+            capture_output=True,
+            text=True,
+            timeout=timeout,
+            check=False,
+        )
+    except subprocess.TimeoutExpired:
+        logger.warning(
+            "staged_gitignored_guard: git diff --cached timed out after %ss",
+            timeout,
+        )
+        return None
+    if proc.returncode != 0:
+        logger.warning(
+            "staged_gitignored_guard: git diff --cached failed (rc=%s): %s",
+            proc.returncode,
+            (proc.stderr or "")[:500],
+        )
+        return None
+    return [p for p in proc.stdout.splitlines() if p.strip()]
+
+
+def _git_check_ignore(
+    project_root: Path, paths: list[str], timeout: float
+) -> list[str]:
+    """Return the subset of ``paths`` that git considers ignored."""
+    if not paths:
+        return []
+    try:
+        proc = subprocess.run(
+            ["git", "-C", str(project_root), "check-ignore", "--stdin"],
+            input="\n".join(paths),
+            capture_output=True,
+            text=True,
+            timeout=timeout,
+            check=False,
+        )
+    except subprocess.TimeoutExpired:
+        logger.warning(
+            "staged_gitignored_guard: git check-ignore timed out after %ss",
+            timeout,
+        )
+        return []
+    # exit 0 = at least one path matched; exit 1 = none matched; exit 128 = error
+    if proc.returncode == 128:
+        logger.warning(
+            "staged_gitignored_guard: git check-ignore error: %s",
+            (proc.stderr or "")[:500],
+        )
+        return []
+    return [p for p in proc.stdout.splitlines() if p.strip()]
+
+
+def check_staged_gitignored(
+    project_root: Path,
+    *,
+    timeout: float = 60.0,
+) -> list[str]:
+    """Return any staged files that are gitignored.
+
+    Returns an empty list when the repo has no .git dir, git is unavailable,
+    nothing is staged, or no staged file is gitignored.
+    """
+    if not (project_root / ".git").exists():
+        return []
+    staged = _git_staged_paths(project_root, timeout)
+    if not staged:
+        return []
+    return _git_check_ignore(project_root, staged, timeout)
+
+
 __all__ = [
+    "GITIGNORED_STAGED_REMEDIATION",
     "REMEDIATION",
     "SUBMODULE_INIT_REMEDIATION",
+    "check_staged_gitignored",
     "submodule_path_has_local_changes",
     "SubmoduleHygieneMode",
     "SubmoduleHygieneCode",

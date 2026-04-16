@@ -25,7 +25,7 @@ _LOG_OPS = frozenset({"log_append"})
 _VALID_OPS = _ROADMAP_OPS | _APPEND_OPS | _LOG_OPS
 
 
-class _UpdateRequest(NamedTuple):
+class UpdateRequest(NamedTuple):
     operation: str
     section: str | None
     entry_text: str | None
@@ -87,7 +87,7 @@ async def update_memory_bank(
     - update_memory_bank(operation="log_append", operation_type="fix",
       title="Resolve docs gate mismatch", summary="Aligned roadmap and progress")
     """
-    request = _UpdateRequest(
+    request = UpdateRequest(
         operation,
         section,
         entry_text,
@@ -163,18 +163,56 @@ async def _handle_append_op(
     )
 
 
-async def _dispatch_update_memory_bank(
-    request: _UpdateRequest, ctx: MCPContext | None
+def _progress_append_validation_error() -> str:
+    from cortex.core.constants import MemoryBankFile
+    from cortex.core.models import OperationStatus
+    from cortex.tools.models import AppendProgressEntryResult
+
+    return AppendProgressEntryResult(
+        status=OperationStatus.ERROR,
+        file_name=MemoryBankFile.PROGRESS,
+        message=(
+            "progress_append requires 'date_str' and 'entry_text'. "
+            "Did you mean to pass 'title'/'summary'? "
+            "Those are for active_context_append, not progress_append."
+        ),
+        line_inserted=None,
+        error="Missing date_str or entry_text",
+    ).model_dump_json()
+
+
+def _active_context_append_validation_error() -> str:
+    from cortex.core.constants import MemoryBankFile
+    from cortex.core.models import OperationStatus
+    from cortex.tools.models import AppendActiveContextEntryResult
+
+    return AppendActiveContextEntryResult(
+        status=OperationStatus.ERROR,
+        file_name=MemoryBankFile.ACTIVE_CONTEXT,
+        message=(
+            "active_context_append requires 'date_str', 'title', and 'summary'. "
+            "Did you mean to pass 'entry_text'? "
+            "That is for progress_append, not active_context_append."
+        ),
+        line_inserted=None,
+        error="Missing date_str, title, or summary",
+    ).model_dump_json()
+
+
+def validate_append_op_params(request: UpdateRequest) -> str | None:
+    """Return an error JSON string if operation-specific required params are absent."""
+    if request.operation == "progress_append":
+        if not request.date_str or request.entry_text is None:
+            return _progress_append_validation_error()
+    if request.operation == "active_context_append":
+        if not request.date_str or not request.title or request.summary is None:
+            return _active_context_append_validation_error()
+    return None
+
+
+async def _dispatch_non_log_update(
+    request: UpdateRequest, ctx: MCPContext | None
 ) -> str:
-    """Route to roadmap_impl or append_entry_impl based on operation."""
-    if request.operation in _LOG_OPS:
-        return await _handle_log_append_op(
-            request.operation_type,
-            request.title,
-            request.summary,
-            request.date_str,
-            ctx,
-        )
     if request.operation in _ROADMAP_OPS:
         return await _handle_roadmap_op(
             request.operation,
@@ -195,6 +233,25 @@ async def _dispatch_update_memory_bank(
         request.skip_classification,
         ctx,
     )
+
+
+async def _dispatch_update_memory_bank(
+    request: UpdateRequest, ctx: MCPContext | None
+) -> str:
+    """Route to roadmap_impl or append_entry_impl based on operation."""
+    if request.operation in _APPEND_OPS:
+        early_error = validate_append_op_params(request)
+        if early_error is not None:
+            return early_error
+    if request.operation in _LOG_OPS:
+        return await _handle_log_append_op(
+            request.operation_type,
+            request.title,
+            request.summary,
+            request.date_str,
+            ctx,
+        )
+    return await _dispatch_non_log_update(request, ctx)
 
 
 def _log_append_response(

@@ -45,7 +45,11 @@ from cortex.tools.execution.pre_commit_rumdl_resolve import (
     markdown_rumdl_argv,
     uv_executable,
 )
-from cortex.tools.execution.pre_commit_submodule_guard import precommit_block_response
+from cortex.tools.execution.pre_commit_submodule_guard import (
+    GITIGNORED_STAGED_REMEDIATION,
+    check_staged_gitignored,
+    precommit_block_response,
+)
 from cortex.tools.execution.pre_commit_tools_run_helpers import (
     build_pre_commit_response,
 )
@@ -367,6 +371,66 @@ def _write_success_result(
     atomic_write(result_path, output)
 
 
+def _gitignored_staged_block_response(ignored: list[str]) -> dict[str, object]:
+    """Build a pre-commit-shaped error dict for gitignored files in staging."""
+    paths_str = ", ".join(ignored)
+    return {
+        "status": OperationStatus.ERROR.value,
+        "preflight_passed": False,
+        "checks_performed": ["staged_gitignored"],
+        "results": {
+            "staged_gitignored": {
+                "check_type": "staged_gitignored",
+                "success": False,
+                "output": f"Gitignored files are staged: {paths_str}",
+                "errors": [f"Cannot commit gitignored file: {p}" for p in ignored]
+                + [GITIGNORED_STAGED_REMEDIATION],
+            }
+        },
+        "total_errors": len(ignored),
+        "total_warnings": 0,
+        "success": False,
+        "staged_gitignored_files": ignored,
+    }
+
+
+def _write_early_exit_result(
+    result_path: Path,
+    started: float,
+    pid: int,
+    result: dict[str, object],
+    log_message: str,
+) -> None:
+    _write_success_result(result_path, started, pid, result, None)
+    logger.info("%s", log_message)
+
+
+def _maybe_write_early_exit(
+    args: argparse.Namespace, result_path: Path, started: float, pid: int
+) -> bool:
+    ignored = check_staged_gitignored(Path(args.project_root))
+    if ignored:
+        _write_early_exit_result(
+            result_path,
+            started,
+            pid,
+            _gitignored_staged_block_response(ignored),
+            f"Worker stopped early: gitignored files in staging: {', '.join(ignored)}",
+        )
+        return True
+    blocked = precommit_block_response(Path(args.project_root))
+    if blocked is not None:
+        _write_early_exit_result(
+            result_path,
+            started,
+            pid,
+            cast(dict[str, object], blocked),
+            "Worker stopped early: submodule hygiene check failed",
+        )
+        return True
+    return False
+
+
 def _run_worker_once(
     args: argparse.Namespace,
     result_path: Path,
@@ -374,12 +438,7 @@ def _run_worker_once(
     pid: int,
 ) -> None:
     """Run checks and write success result; raises on failure."""
-    blocked = precommit_block_response(Path(args.project_root))
-    if blocked is not None:
-        _write_success_result(
-            result_path, started, pid, cast(dict[str, object], blocked), None
-        )
-        logger.info("Worker stopped early: submodule hygiene check failed")
+    if _maybe_write_early_exit(args, result_path, started, pid):
         return
     checks_result = _run_checks(
         args.project_root,

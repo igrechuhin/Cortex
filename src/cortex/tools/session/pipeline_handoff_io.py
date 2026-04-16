@@ -217,6 +217,11 @@ def load_or_create_state(state_file: Path, pipeline: str) -> dict[str, object]:
 
 _ROUTING_KEYS: frozenset[str] = frozenset({"operation", "phase", "pipeline"})
 
+# Keys that carry pipeline config/hints rather than phase result data.
+# When present in a write_result payload these are lifted to a top-level
+# "config" block so they do not pollute the phase result record.
+_PHASE_CONFIG_KEYS: frozenset[str] = frozenset({"force_fresh", "test_timeout"})
+
 
 def extract_routing_keys(
     data: str | None,
@@ -268,27 +273,61 @@ def parse_result_data(data: str | None) -> dict[str, object]:
         return {"data": data}
 
 
+def _split_config_from_result(
+    incoming: dict[str, object],
+) -> tuple[dict[str, object], dict[str, object]]:
+    """Separate phase config hints from phase result fields.
+
+    Config keys (force_fresh, test_timeout, …) belong in the top-level
+    ``config`` block of pipeline state, not mixed into the phase result
+    record.  Returns (result_fields, config_fields).
+    """
+    result_fields = {k: v for k, v in incoming.items() if k not in _PHASE_CONFIG_KEYS}
+    config_fields = {k: v for k, v in incoming.items() if k in _PHASE_CONFIG_KEYS}
+    return result_fields, config_fields
+
+
+def _state_phases(state: dict[str, object]) -> dict[str, object]:
+    raw_phases = state.get("phases")
+    if not isinstance(raw_phases, dict):
+        return {}
+    return {str(k): v for k, v in cast(dict[str, object], raw_phases).items()}
+
+
+def _update_pipeline_config(
+    state: dict[str, object], config_fields: dict[str, object]
+) -> None:
+    if not config_fields:
+        return
+    raw_config = state.get("config")
+    config: dict[str, object] = (
+        {str(k): v for k, v in cast(dict[str, object], raw_config).items()}
+        if isinstance(raw_config, dict)
+        else {}
+    )
+    config.update(config_fields)
+    state["config"] = config
+
+
 def op_write_result(
     project_root: Path, pipeline: str, phase: str, data: str | None
 ) -> str:
     """Write phase result. Called by subagent when done. Also updates pipeline.json."""
     pdir = pipeline_dir(project_root, pipeline)
     pdir.mkdir(parents=True, exist_ok=True)
+    incoming = parse_result_data(data)
+    result_fields, config_fields = _split_config_from_result(incoming)
     payload: dict[str, object] = {"phase": phase, "completed_at": now_iso()}
-    payload.update(parse_result_data(data))
+    payload.update(result_fields)
     rfile = result_path(pdir, phase)
     _ = rfile.write_text(json.dumps(payload, indent=2), encoding="utf-8")
     sfile = state_path(pdir)
     state = load_or_create_state(sfile, pipeline)
-    raw_phases = state.get("phases")
-    phases = (
-        {str(k): v for k, v in cast(dict[str, object], raw_phases).items()}
-        if isinstance(raw_phases, dict)
-        else {}
-    )
+    phases = _state_phases(state)
     phases[phase] = payload
     state["phases"] = phases
     state["last_updated"] = now_iso()
+    _update_pipeline_config(state, config_fields)
     _ = sfile.write_text(json.dumps(state, indent=2), encoding="utf-8")
     return json.dumps(
         {

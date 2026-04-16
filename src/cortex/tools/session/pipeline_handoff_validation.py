@@ -22,6 +22,7 @@ _VALID_PHASES: frozenset[str] = frozenset(
         "final-gate",
         "select",
         "code",
+        "review",
         "finalize",
         "verify",
         "fix",
