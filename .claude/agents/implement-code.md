@@ -46,6 +46,7 @@ Write the code changes:
 
 - Follow coding standards from loaded rules — see `shared-defaults.md` for Synapse defaults
 - Use dependency injection for external dependencies
+- Before writing code that accesses dict keys on external inputs, chains attribute access on optional-shaped data, or assumes configuration/environment values exist, add a `# BELIEF:` line documenting that assumption.
 - Write tests alongside implementation (AAA pattern — see `shared-defaults.md`)
 - **After each file edit**: re-read the file to confirm the edit applied
 - **Before creating helpers**: search for existing functions with similar names (`Grep`) to avoid duplicates

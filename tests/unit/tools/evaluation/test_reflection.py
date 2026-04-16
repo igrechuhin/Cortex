@@ -141,6 +141,89 @@ def test_belief_updated_pair_no_stale_warning() -> None:
     assert not any("BELIEF" in i.description for i in rr.items)
 
 
+def test_risky_dict_access_warns_to_add_belief() -> None:
+    diff = """diff --git a/src/x.py b/src/x.py
+--- a/src/x.py
++++ b/src/x.py
+@@ -1,2 +1,3 @@
+ def f(payload):
++    return payload["user"]
+ """
+    rr = analyze_diff(diff, "{}", REFLECTION_CHECKLIST_MARKDOWN)
+    matches = [i for i in rr.items if "raw dict key access" in i.description]
+    assert len(matches) == 1
+    assert matches[0].severity == CritiqueSeverity.WARNING
+    assert "BELIEF" in matches[0].suggestion
+
+
+def test_risky_chained_attribute_access_warns_to_add_belief() -> None:
+    diff = """diff --git a/src/x.py b/src/x.py
+--- a/src/x.py
++++ b/src/x.py
+@@ -1,2 +1,3 @@
+ def f(response):
++    return response.data.user.name
+ """
+    rr = analyze_diff(diff, "{}", REFLECTION_CHECKLIST_MARKDOWN)
+    matches = [i for i in rr.items if "chained attribute access" in i.description]
+    assert len(matches) == 1
+    assert matches[0].severity == CritiqueSeverity.WARNING
+    assert "BELIEF" in matches[0].suggestion
+
+
+def test_risky_mid_function_access_skips_typed_dict_bindings() -> None:
+    diff = """diff --git a/src/x.py b/src/x.py
+--- a/src/x.py
++++ b/src/x.py
+@@ -1,4 +1,5 @@
++class UserPayload(TypedDict):
++    user: str
+ def f(payload: UserPayload):
++    return payload["user"]
+ """
+    rr = analyze_diff(diff, "{}", REFLECTION_CHECKLIST_MARKDOWN)
+    assert not any("raw dict key access" in i.description for i in rr.items)
+
+
+def test_single_attribute_access_does_not_trigger_belief_warning() -> None:
+    diff = """diff --git a/src/x.py b/src/x.py
+--- a/src/x.py
++++ b/src/x.py
+@@ -1,2 +1,3 @@
+ def f(obj):
++    return obj.value
+ """
+    rr = analyze_diff(diff, "{}", REFLECTION_CHECKLIST_MARKDOWN)
+    assert not any("attribute access" in i.description for i in rr.items)
+
+
+def test_non_python_diff_skips_risky_mid_function_warning() -> None:
+    diff = """diff --git a/src/x.ts b/src/x.ts
+--- a/src/x.ts
++++ b/src/x.ts
+@@ -1,2 +1,3 @@
+ function f(payload: object) {
++  return payload["user"];
+ }
+"""
+    rr = analyze_diff(diff, "{}", REFLECTION_CHECKLIST_MARKDOWN)
+    assert not any("raw dict key access" in i.description for i in rr.items)
+
+
+def test_risky_dict_access_deduplicates_per_file() -> None:
+    diff = """diff --git a/src/x.py b/src/x.py
+--- a/src/x.py
++++ b/src/x.py
+@@ -1,2 +1,4 @@
+ def f(payload):
++    user = payload["user"]
++    email = payload["email"]
+ """
+    rr = analyze_diff(diff, "{}", REFLECTION_CHECKLIST_MARKDOWN)
+    matches = [i for i in rr.items if "raw dict key access" in i.description]
+    assert len(matches) == 1
+
+
 def test_untested_public_under_src_warning() -> None:
     diff = """+++ b/src/mod.py
 @@

@@ -44,7 +44,6 @@ Completed investigations are recorded in [activeContext.md](activeContext.md). P
 
 #### Annotation Quality (Medium Priority)
 
-- **BELIEF Annotation Enforcement — Emit Guidance and Mid-Function Heuristics** - PENDING - Add When-to-write-BELIEF triggers to rule file, add BELIEF-emission instruction to implement-code cursor-agent, and extend reflection heuristic to detect risky mid-function patterns (dict key access, chained attribute access) in new diffs. Plan: .cortex/plans/belief-annotation-enforcement-guidance-mid-function-heuristics.md
 - **Fix-Loop Exhaustion — Root-Cause Reframe Output** - PENDING - Add a mandatory post-exhaustion analysis block to the `/cortex/fix` workflow prompt and the fix-quality/fix-tests agent prompts so that when the 3-iteration limit is reached, the agent produces a root-cause hypothesis, a reformulated brief, and an explicit directive to open a new session. Prompt-only change. Plan: .cortex/plans/fix-loop-exhaustion-root-cause-reframe-output.md
 
 #### Planning & Brainstorming (High Priority)

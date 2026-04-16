@@ -97,6 +97,15 @@ _TODO_MARKERS = ("TODO", "FIXME", "XXX", "HACK")
 _SECRET_LIKE = re.compile(
     r"(?i)(password|api[_-]?key|secret|token)\s*=\s*['\"][^'\"]{3,}['\"]"
 )
+_DICT_ACCESS_RE = re.compile(r"\b(?P<name>[A-Za-z_]\w*)\[(?:\"|')")
+_CHAINED_ATTR_RE = re.compile(r"\b[A-Za-z_]\w*\.\w+\.\w+\b")
+_TYPED_DICT_CLASS_RE = re.compile(
+    r"^\s*class\s+(?P<name>[A-Za-z_]\w*)\s*\(\s*TypedDict\s*\)\s*:"
+)
+_TYPED_DICT_FACTORY_RE = re.compile(r"^\s*(?P<name>[A-Za-z_]\w*)\s*=\s*TypedDict\s*\(")
+_ANNOTATED_NAME_RE = re.compile(
+    r"\b(?P<name>[A-Za-z_]\w*)\s*:\s*(?P<type>[A-Za-z_]\w*)\b"
+)
 
 
 def _collect_per_line_items(diff_text: str) -> list[CritiqueItem]:
@@ -215,6 +224,104 @@ def _maybe_untested_public(diff_text: str) -> list[CritiqueItem]:
     return items
 
 
+def _mid_function_belief_item(location: str, pattern_label: str) -> CritiqueItem:
+    return CritiqueItem(
+        category=CritiqueCategory.DOCS,
+        severity=CritiqueSeverity.WARNING,
+        location=location,
+        description=(
+            f"Added Python code uses {pattern_label} that assumes external data shape."
+        ),
+        suggestion=(
+            "Add a `# BELIEF:` annotation if this access depends on external or "
+            "optional-shaped data having the expected fields."
+        ),
+    )
+
+
+def _typed_dict_bindings(lines: list[str]) -> set[str]:
+    typed_dict_types: set[str] = set()
+    for line in lines:
+        body = line[1:] if line and line[0] in " +-" else line
+        if match := _TYPED_DICT_CLASS_RE.match(body):
+            typed_dict_types.add(match.group("name"))
+        elif match := _TYPED_DICT_FACTORY_RE.match(body):
+            typed_dict_types.add(match.group("name"))
+
+    bindings: set[str] = set()
+    for line in lines:
+        body = line[1:] if line and line[0] in " +-" else line
+        for match in _ANNOTATED_NAME_RE.finditer(body):
+            if match.group("type") in typed_dict_types:
+                bindings.add(match.group("name"))
+    return bindings
+
+
+def _python_diff_files(diff_text: str) -> list[tuple[str, list[str]]]:
+    files: list[tuple[str, list[str]]] = []
+    current_file = ""
+    file_lines: list[str] = []
+
+    def flush_file() -> None:
+        nonlocal file_lines
+        if current_file.endswith(".py") and file_lines:
+            files.append((current_file, file_lines))
+        file_lines = []
+
+    for line in diff_text.splitlines():
+        if line.startswith("diff --git "):
+            flush_file()
+            current_file = ""
+        elif line.startswith("+++ b/"):
+            flush_file()
+            current_file = line[6:].strip()
+        elif current_file.endswith(".py"):
+            if line.startswith("--- a/") or line.startswith("+++ b/"):
+                continue
+            if len(line) >= 2 and line[0] in " +-" and not line.startswith("\\"):
+                file_lines.append(line)
+    flush_file()
+    return files
+
+
+def _risky_access_items_for_file(
+    location: str, file_lines: list[str]
+) -> list[CritiqueItem]:
+    items: list[CritiqueItem] = []
+    typed_dict_bindings = _typed_dict_bindings(file_lines)
+    fired_patterns: set[str] = set()
+    for line in file_lines:
+        if not line.startswith("+") or line.startswith("+++"):
+            continue
+        body = line[1:]
+        if (
+            "dict_access" not in fired_patterns
+            and (match := _DICT_ACCESS_RE.search(body)) is not None
+            and match.group("name") not in typed_dict_bindings
+        ):
+            items.append(_mid_function_belief_item(location, "raw dict key access"))
+            fired_patterns.add("dict_access")
+        if (
+            "chained_attr" not in fired_patterns
+            and _CHAINED_ATTR_RE.search(body) is not None
+        ):
+            items.append(
+                _mid_function_belief_item(location, "chained attribute access")
+            )
+            fired_patterns.add("chained_attr")
+        if len(fired_patterns) == 2:
+            break
+    return items
+
+
+def _risky_mid_function_access(diff_text: str) -> list[CritiqueItem]:
+    """Warn on added Python access patterns that suggest an unstated BELIEF."""
+    items: list[CritiqueItem] = []
+    for location, file_lines in _python_diff_files(diff_text):
+        items.extend(_risky_access_items_for_file(location, file_lines))
+    return items
+
+
 def _score_items(items: list[CritiqueItem]) -> ReflectionResult:
     """Compute score, summary, and approval from a list of critique items."""
     error_n = sum(1 for i in items if i.severity == CritiqueSeverity.ERROR)
@@ -246,6 +353,7 @@ def _collect_diff_items(diff_text: str, langs: frozenset[str]) -> list[CritiqueI
     items.extend(_collect_per_line_items(diff_text))
     if "python" in langs:
         items.extend(_belief_stale_items_for_python(diff_text))
+        items.extend(_risky_mid_function_access(diff_text))
         items.extend(_maybe_untested_public(diff_text))
     return items
 

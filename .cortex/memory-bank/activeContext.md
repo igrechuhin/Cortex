@@ -15,6 +15,11 @@
 - ✅ **Commit pipeline parity fix for wiki-source markdown** - COMPLETE (2026-04-16) - <!-- memory_type: status -->
 
 - ✅ **Enforce Post-Implementation Review Loop in /do Pipeline** - COMPLETE (2026-04-16) - Added a mandatory internal Review Gate to /cortex/do, wired the implement pipeline to keep reopened plans pending when review finds gaps, and added prompt plus runtime allowlist regression coverage.
+
+- ✅ **BELIEF Annotation Enforcement — Emit Guidance and Mid-Function Heuristics** - COMPLETE (2026-04-16) - Added concrete BELIEF triggers to the shared annotation rule, taught the implement-code agent to emit BELIEF annotations before external-state-shape assumptions, and extended Python reflection heuristics plus tests to suggest BELIEF annotations for risky dict-key and chained-attribute access.
+
+- ✅ **Commit pipeline run for BELIEF annotation enforcement** - COMPLETE (2026-04-16) - <!-- memory_type: status -->
+Executed /cortex/commit preflight, Phase A quality gate with mandatory parity scripts, wiki staged ingest bridge, and docs/validation/final-gate preparation for BELIEF annotation enforcement changes.
 Aligned local `check-ci-parity` markdown scope with CI by excluding `.cortex/wiki/sources/` and passing the explicit `rumdl` config, then re-ran Phase A successfully with parity scripts green.
 Implemented coverage-only handling contract and regression checks so /fix cannot exit tests target without uplift evidence or explicit BLOCKED rationale; quality/docs gates pass.
 Executed /cortex/commit pipeline with preflight snapshot, Phase A quality gate + CI parity scripts, wiki staged ingest check, and validation/final-gate preparation for plan workflow artifacts.
