@@ -50,6 +50,8 @@ Table of pipeline phases with status and notes.
 
 Root cause analysis for fix workflows.
 
+For `/fix` coverage-only failures (`tests_failed == 0` but coverage below threshold), diagnose the missing coverage path rather than reporting a generic policy reminder. The final diagnostic report must surface either `coverage_attempt_evidence` or an explicit `BLOCKED` rationale with `blocker_reason`, plus bounded telemetry (`coverage_attempt_count`, `coverage_delta`) when that path is exercised.
+
 ```markdown
 ## Diagnosis
 
@@ -243,6 +245,8 @@ None
 
 None
 ```
+
+Coverage-only `/fix` runs may instead end with `Tests | BLOCKED | <n>` when coverage stayed below threshold after bounded uplift attempts. In that case, the diagnostic report must include `coverage_attempt_evidence` or a concrete `blocker_reason`, and should mention `coverage_attempt_count` plus `coverage_delta` in the diagnosis or next-step text so triage can distinguish "no attempt" from "attempted but blocked".
 
 ### Artifact: plan
 

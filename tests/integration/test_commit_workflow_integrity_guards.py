@@ -29,6 +29,11 @@ def _workflows_guide_path() -> Path:
     return repo_root() / "docs" / "guides" / "workflows.md"
 
 
+def _final_report_templates_path() -> Path:
+    """Return path to Synapse final report templates guide."""
+    return repo_root() / "docs" / "guides" / "synapse-final-report-templates.md"
+
+
 def _fix_prompt_path() -> Path:
     """Return path to fix helper prompt under .cortex/synapse/prompts/."""
     return synapse_path() / "prompts" / "fix.md"
@@ -64,6 +69,18 @@ class TestFixLoopIntegrityGuard:
         if not path.exists():
             pytest.skip(
                 f"autofix source not found at {path} (ref: cleanup-skipped-legacy-tests)"
+            )
+        return path.read_text()
+
+    @pytest.fixture
+    def final_report_templates_content(self) -> str:
+        """Read final report templates guide content."""
+        # AI: Keep the shared template guide under test so prompt-local fixes
+        # cannot silently drift from the canonical /fix reporting contract.
+        path = _final_report_templates_path()
+        if not path.exists():
+            pytest.skip(
+                f"Final report templates guide not found at {path} (ref: cleanup-skipped-legacy-tests)"
             )
         return path.read_text()
 
@@ -104,6 +121,23 @@ class TestFixLoopIntegrityGuard:
         assert "git submodule foreach" in workflows_guide_content
         assert "run its fix loop first" in lower
 
+    def test_workflows_guide_documents_coverage_only_fix_contract(
+        self, workflows_guide_content: str
+    ) -> None:
+        """Workflow docs require coverage-only uplift evidence or blocker telemetry."""
+        # AI: The workflow guide is the repo-level fallback for /fix behavior, so
+        # coverage-only guardrails must stay aligned here as well as in fix.md.
+        assert (
+            "coverage below threshold with zero failing tests"
+            in workflows_guide_content
+        )
+        assert "coverage_only_failure" in workflows_guide_content
+        assert "coverage_attempt_evidence" in workflows_guide_content
+        assert "coverage_attempt_count" in workflows_guide_content
+        assert "coverage_delta" in workflows_guide_content
+        assert "blocker_reason" in workflows_guide_content
+        assert "`BLOCKED`" in workflows_guide_content
+
     def test_fix_quality_tool_docs_warn_about_integrity_risks(
         self, fix_quality_tool_content: str
     ) -> None:
@@ -112,6 +146,19 @@ class TestFixLoopIntegrityGuard:
         assert "integrity safeguards" in lower
         assert "run_quality_gate()" in fix_quality_tool_content
         assert "roll back that" in lower
+
+    def test_final_report_templates_document_coverage_only_fix_reporting(
+        self, final_report_templates_content: str
+    ) -> None:
+        """Diagnostic template documents coverage-only evidence and blocker reporting."""
+        # AI: Lock the canonical report template to evidence-or-blocker wording so
+        # coverage-only exits cannot regress into policy-only summaries.
+        assert "coverage-only failures" in final_report_templates_content
+        assert "coverage_attempt_evidence" in final_report_templates_content
+        assert "coverage_attempt_count" in final_report_templates_content
+        assert "coverage_delta" in final_report_templates_content
+        assert "blocker_reason" in final_report_templates_content
+        assert "`Tests | BLOCKED | <n>`" in final_report_templates_content
 
 
 class TestFixPromptIntegrityGuard:

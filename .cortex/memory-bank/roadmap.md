@@ -30,8 +30,6 @@
 
 Completed investigations are recorded in [activeContext.md](activeContext.md). Plan files under `.cortex/plans/archive/` as needed.
 
-- Plan: [Fix: Add Missing Makefile Offline Targets](../plans/archive/Other/fix-makefile-offline-targets.md)
-- **Harden Fix Workflow for Coverage-Only Failures** - PENDING - Production-hardening plan to enforce coverage-only failure handling in /cortex/fix with regression evals, coverage-attempt evidence contracts, and bounded blocker classification. Plan: .cortex/plans/harden-fix-workflow-for-coverage-only-failures.md
 - **Enforce Post-Implementation Review Loop in /do Pipeline** - PENDING - Add mandatory post-completion review in /cortex/do; if review finds gaps, record them in the plan and return status to PENDING. Plan: .cortex/plans/enforce-post-implementation-review-loop-in-do-pipeline.md
 
 ### Improvements
@@ -45,6 +43,11 @@ Completed investigations are recorded in [activeContext.md](activeContext.md). P
 #### Token Efficiency (Medium Priority)
 
 #### Claude Code Harness Improvements (High Priority)
+
+#### Annotation Quality (Medium Priority)
+
+- **BELIEF Annotation Enforcement — Emit Guidance and Mid-Function Heuristics** - PENDING - Add When-to-write-BELIEF triggers to rule file, add BELIEF-emission instruction to implement-code cursor-agent, and extend reflection heuristic to detect risky mid-function patterns (dict key access, chained attribute access) in new diffs. Plan: .cortex/plans/belief-annotation-enforcement-guidance-mid-function-heuristics.md
+- **Fix-Loop Exhaustion — Root-Cause Reframe Output** - PENDING - Add a mandatory post-exhaustion analysis block to fix.md, fix-tests.md, and fix-quality.md so that when the 3-iteration limit is reached, the agent produces a root-cause hypothesis, a reformulated brief, and an explicit directive to open a new session. Prompt-only change. Plan: .cortex/plans/fix-loop-exhaustion-root-cause-reframe-output.md
 
 #### Planning & Brainstorming (High Priority)
 

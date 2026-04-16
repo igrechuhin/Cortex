@@ -5,6 +5,9 @@
 - <!-- memory_type: status -->
 - **Commit pipeline run for plan workflow updates** - COMPLETE. Ran /cortex/commit preflight, Phase A quality gate + mandatory parity scripts, wiki staged ingest bridge, and progressed docs/validation/final-gate execution for current staged changes.
 - <!-- memory_type: status -->
+- **Harden /fix Workflow for Coverage-Only Failures** - COMPLETE. Aligned shared workflow/report guidance with the coverage-only evidence-or-BLOCKED contract and added regression tests that keep the docs synchronized with prompt behavior.
+- <!-- memory_type: milestone -->
+- **Commit pipeline parity fix for wiki-source markdown** - COMPLETE. Fixed the local `check-ci-parity` markdown mismatch in `Makefile` so `.cortex/wiki/sources/` no longer produce false MD057 failures; Phase A quality gate and parity shell checks now pass.
 **Harden /fix Workflow for Coverage-Only Failures** - PARTIAL. Added explicit coverage-only failure evidence contract to /fix and fix-tests prompts (`coverage_only_failure`, `coverage_attempt_evidence`, `coverage_attempt_count`, `coverage_delta`, `blocker_reason`) and added regression integration tests to enforce contract presence.
 
 ## 2026-04-15

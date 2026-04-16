@@ -137,12 +137,14 @@ Keep both off for standard MCP clients to avoid unnecessary tool-list expansion.
 **Decision points:**
 
 - If `preflight_passed` is false, inspect `checks` and fix the failing check before re-running.
-- For coverage below threshold, add tests and re-run **`run_quality_gate()`** (Phase A includes tests).
+- For coverage below threshold with zero failing tests, keep the tests target active until a coverage uplift attempt is made or the run is explicitly classified as `BLOCKED`.
+- Coverage-only exits must carry bounded telemetry in the fix handoff/report: `coverage_only_failure`, `coverage_attempt_count`, `coverage_attempt_evidence`, `coverage_delta`, and `blocker_reason` when uplift is no longer feasible.
 
 **Error recovery:**
 
 - Formatter/linter errors: run the corresponding fix check, then verify with the same check again.
 - Test failures: fix code or tests, then re-run tests; do not skip.
+- Coverage-only failures: do not stop with a policy-only recommendation. Add focused tests, re-run **`run_quality_gate()`**, and report either uplift evidence or a concrete blocker rationale within the existing max-iteration cap.
 
 ---
 

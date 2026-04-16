@@ -7,6 +7,11 @@
 - ✅ **Commit pipeline run for plan workflow updates** - COMPLETE (2026-04-16) - <!-- memory_type: status -->
 
 - ✅ **Harden /fix Workflow for Coverage-Only Failures (PARTIAL)** - COMPLETE (2026-04-16) - <!-- memory_type: problem -->
+
+- ✅ **Harden Fix Workflow for Coverage-Only Failures** - COMPLETE (2026-04-16) - Completed the coverage-only /fix hardening plan by aligning shared workflow/report guidance with the evidence-or-BLOCKED contract and adding regression tests that keep those docs synchronized with prompt behavior.
+
+- ✅ **Commit pipeline parity fix for wiki-source markdown** - COMPLETE (2026-04-16) - <!-- memory_type: status -->
+Aligned local `check-ci-parity` markdown scope with CI by excluding `.cortex/wiki/sources/` and passing the explicit `rumdl` config, then re-ran Phase A successfully with parity scripts green.
 Implemented coverage-only handling contract and regression checks so /fix cannot exit tests target without uplift evidence or explicit BLOCKED rationale; quality/docs gates pass.
 Executed /cortex/commit pipeline with preflight snapshot, Phase A quality gate + CI parity scripts, wiki staged ingest check, and validation/final-gate preparation for plan workflow artifacts.
 
