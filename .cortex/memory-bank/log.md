@@ -1833,3 +1833,111 @@ status=success; changed_files=None
 ## [2026-04-16T14:51] plan | Created plan: Test Plan
 
 ## [2026-04-16T14:51] lint | Quality gate passed
+
+## [2026-04-16T14:57] fix | Autofix completed
+
+status=success; changed_files=None
+
+## [2026-04-16T14:57] plan | Created plan: Test Plan
+
+## [2026-04-16T14:57] plan | Created plan: Mini
+
+## [2026-04-16T14:57] plan | Created plan: Demo Plan
+
+## [2026-04-16T14:57] plan | Created plan: Mini ·2
+
+## [2026-04-16T14:57] plan | Created plan: Demo Plan ·2
+
+## [2026-04-16T14:57] plan | Created plan: Demo Plan ·3
+
+## [2026-04-16T14:57] plan | Created plan: Demo Plan ·4
+
+## [2026-04-16T14:57] plan | Created plan: Demo Plan ·5
+
+## [2026-04-16T14:57] plan | Created plan: Demo Plan ·6
+
+## [2026-04-16T14:57] plan | Created plan: Smoke Test Plan
+
+## [2026-04-16T14:58] lint | Quality gate passed
+
+## [2026-04-16T15:01] plan | Completed plan: Fix-Loop Exhaustion — Root-Cause Reframe Output
+
+Added a mandatory post-exhaustion analysis block to the fix workflow prompt plus the fix-quality and fix-tests agent prompts so exhausted fix loops now emit a root-cause hypothesis, a reformulated brief, and an explicit instruction to open a new session instead of retrying the same approach.
+
+## [2026-04-16T15:02] fix | Autofix completed
+
+status=success; changed_files=None
+
+## [2026-04-16T15:03] plan | Created plan: Test Plan
+
+## [2026-04-16T15:03] plan | Created plan: Smoke Test Plan
+
+## [2026-04-16T15:03] plan | Created plan: Demo Plan
+
+## [2026-04-16T15:03] plan | Created plan: Demo Plan ·2
+
+## [2026-04-16T15:03] plan | Created plan: Demo Plan ·3
+
+## [2026-04-16T15:03] plan | Created plan: Mini
+
+## [2026-04-16T15:03] plan | Created plan: Demo Plan ·4
+
+## [2026-04-16T15:03] plan | Created plan: Demo Plan ·5
+
+## [2026-04-16T15:03] plan | Created plan: Mini ·2
+
+## [2026-04-16T15:03] plan | Created plan: Demo Plan ·6
+
+## [2026-04-16T15:03] lint | Quality gate passed
+
+## [2026-04-16T15:21] plan | Created plan: Test Plan
+
+## [2026-04-16T15:21] plan | Created plan: Mini
+
+## [2026-04-16T15:21] plan | Created plan: Demo Plan
+
+## [2026-04-16T15:21] plan | Created plan: Demo Plan ·2
+
+## [2026-04-16T15:21] plan | Created plan: Mini ·2
+
+## [2026-04-16T15:21] plan | Created plan: Smoke Test Plan
+
+## [2026-04-16T15:21] plan | Created plan: Demo Plan ·3
+
+## [2026-04-16T15:21] plan | Created plan: Demo Plan ·4
+
+## [2026-04-16T15:21] plan | Created plan: Demo Plan ·5
+
+## [2026-04-16T15:21] plan | Created plan: Demo Plan ·6
+
+## [2026-04-16T15:22] lint | Quality gate passed
+
+## [2026-04-16T15:24] fix | Autofix completed
+
+status=success; changed_files=None
+
+## [2026-04-16T15:25] fix | Autofix completed
+
+status=success; changed_files=None
+
+## [2026-04-16T15:26] plan | Created plan: Test Plan
+
+## [2026-04-16T15:26] plan | Created plan: Demo Plan
+
+## [2026-04-16T15:26] plan | Created plan: Demo Plan ·2
+
+## [2026-04-16T15:26] plan | Created plan: Demo Plan ·3
+
+## [2026-04-16T15:26] plan | Created plan: Demo Plan ·4
+
+## [2026-04-16T15:26] plan | Created plan: Demo Plan ·5
+
+## [2026-04-16T15:26] plan | Created plan: Mini
+
+## [2026-04-16T15:26] plan | Created plan: Mini ·2
+
+## [2026-04-16T15:26] plan | Created plan: Demo Plan ·6
+
+## [2026-04-16T15:26] plan | Created plan: Smoke Test Plan
+
+## [2026-04-16T15:27] lint | Quality gate passed
