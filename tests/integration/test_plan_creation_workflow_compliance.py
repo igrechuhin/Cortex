@@ -189,12 +189,16 @@ class TestCreatePlanRoadmapUpdate:
         )
 
 
-def _memory_bank_updater_agent_path() -> Path:
-    """Return path to memory-bank-updater agent under .cortex/synapse/agents/."""
+def _commit_phase_b_agent_path() -> Path:
+    """Return path to commit-phase-b agent under .cortex/synapse/cursor-agents/.
+
+    This is the active agent that enforces memory-bank anti-truncation rules.
+    The legacy .cortex/synapse/agents/memory-bank-updater.md is deprecated.
+    """
     return (
         get_cortex_path(_repo_root(), CortexResourceType.SYNAPSE)
-        / "agents"
-        / "memory-bank-updater.md"
+        / "cursor-agents"
+        / "commit-phase-b.md"
     )
 
 
@@ -272,35 +276,35 @@ class TestCreatePlanVerificationChecklist:
         )
 
 
-class TestMemoryBankUpdaterAntiTruncation:
-    """Assert memory-bank-updater agent contains no-truncation rule and recovery instruction."""
+class TestCommitPhaseBAntiTruncation:
+    """Assert commit-phase-b (active memory-bank agent) contains no-truncation rule and recovery instruction."""
 
     @pytest.fixture
-    def memory_bank_updater_content(self) -> str:
-        """Read memory-bank-updater agent; skip if missing."""
-        path = _memory_bank_updater_agent_path()
+    def commit_phase_b_content(self) -> str:
+        """Read commit-phase-b agent; skip if missing."""
+        path = _commit_phase_b_agent_path()
         if not path.exists():
             pytest.skip(
-                f"Memory-bank-updater agent not found at {path} (e.g. synapse submodule not present) (ref: cleanup-skipped-legacy-tests)"
+                f"commit-phase-b agent not found at {path} (e.g. synapse submodule not present) (ref: cleanup-skipped-legacy-tests)"
             )
         return path.read_text()
 
     def test_agent_prohibits_truncated_roadmap_content(
-        self, memory_bank_updater_content: str
+        self, commit_phase_b_content: str
     ) -> None:
-        """Memory-bank-updater must state never pass truncated or summarized content."""
+        """commit-phase-b must state never truncate content."""
         assert (
-            "never pass truncated" in memory_bank_updater_content.lower()
-            or "never truncate" in memory_bank_updater_content.lower()
+            "never pass truncated" in commit_phase_b_content.lower()
+            or "never truncate" in commit_phase_b_content.lower()
         )
-        assert "full" in memory_bank_updater_content.lower()
+        assert "full" in commit_phase_b_content.lower()
 
     def test_agent_includes_recovery_instruction(
-        self, memory_bank_updater_content: str
+        self, commit_phase_b_content: str
     ) -> None:
-        """Memory-bank-updater must include recovery instruction for accidental truncated write."""
-        assert "restore" in memory_bank_updater_content.lower()
+        """commit-phase-b must include recovery instruction for accidental truncated write."""
+        assert "restore" in commit_phase_b_content.lower()
         assert (
-            "version control" in memory_bank_updater_content
-            or "git show" in memory_bank_updater_content
+            "version control" in commit_phase_b_content
+            or "git show" in commit_phase_b_content
         )

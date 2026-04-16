@@ -31,6 +31,8 @@
 Completed investigations are recorded in [activeContext.md](activeContext.md). Plan files under `.cortex/plans/archive/` as needed.
 
 - Plan: [Fix: Add Missing Makefile Offline Targets](../plans/archive/Other/fix-makefile-offline-targets.md)
+- **Harden Fix Workflow for Coverage-Only Failures** - PENDING - Production-hardening plan to enforce coverage-only failure handling in /cortex/fix with regression evals, coverage-attempt evidence contracts, and bounded blocker classification. Plan: .cortex/plans/harden-fix-workflow-for-coverage-only-failures.md
+- **Enforce Post-Implementation Review Loop in /do Pipeline** - PENDING - Add mandatory post-completion review in /cortex/do; if review finds gaps, record them in the plan and return status to PENDING. Plan: .cortex/plans/enforce-post-implementation-review-loop-in-do-pipeline.md
 
 ### Improvements
 
