@@ -13,6 +13,8 @@ from collections.abc import Sequence
 from pathlib import Path
 from typing import cast
 
+from .base import CoverageGap
+
 logger = logging.getLogger(__name__)
 
 # llvm-cov ``-ignore-filename-regex``: built-in skip for build dir + test bundles.
@@ -131,6 +133,50 @@ def _extract_line_counts(entry: dict[str, object]) -> tuple[int, int] | None:
     return count_obj, min(covered_obj, count_obj)
 
 
+class FileCoverageEntry:
+    """Per-file coverage data extracted from a codecov JSON export."""
+
+    __slots__ = ("filename", "lines_total", "lines_covered")
+
+    def __init__(self, filename: str, lines_total: int, lines_covered: int) -> None:
+        self.filename = filename
+        self.lines_total = lines_total
+        self.lines_covered = lines_covered
+
+    @property
+    def lines_uncovered(self) -> int:
+        return self.lines_total - self.lines_covered
+
+    @property
+    def fraction(self) -> float:
+        if self.lines_total <= 0:
+            return 1.0
+        return self.lines_covered / self.lines_total
+
+
+def extract_per_file_coverage(
+    payload: dict[str, object],
+    extra_filename_regexes: Sequence[re.Pattern[str]] | None = None,
+) -> list[FileCoverageEntry]:
+    """Extract per-file coverage entries from a SwiftPM / LLVM JSON codecov export.
+
+    Skips ``Tests`` and ``.build`` paths. Returns all remaining file entries.
+    """
+    entries: list[FileCoverageEntry] = []
+    for entry in _extract_json_files(payload):
+        name = entry.get("filename")
+        if not isinstance(name, str):
+            continue
+        if should_skip_swift_cov_path(name, extra_filename_regexes):
+            continue
+        counts = _extract_line_counts(entry)
+        if counts is None:
+            continue
+        count, covered = counts
+        entries.append(FileCoverageEntry(name, count, covered))
+    return entries
+
+
 def aggregate_spvm_codecov_json_line_fraction(
     payload: dict[str, object],
     extra_filename_regexes: Sequence[re.Pattern[str]] | None = None,
@@ -140,20 +186,9 @@ def aggregate_spvm_codecov_json_line_fraction(
     Sums ``lines.covered`` / ``lines.count`` across files, skipping ``Tests``
     and ``.build`` paths when possible.
     """
-    total_lines = 0
-    covered_lines = 0
-    for entry in _extract_json_files(payload):
-        name = entry.get("filename")
-        if isinstance(name, str) and should_skip_swift_cov_path(
-            name, extra_filename_regexes
-        ):
-            continue
-        counts = _extract_line_counts(entry)
-        if counts is None:
-            continue
-        count, covered = counts
-        total_lines += count
-        covered_lines += covered
+    entries = extract_per_file_coverage(payload, extra_filename_regexes)
+    total_lines = sum(e.lines_total for e in entries)
+    covered_lines = sum(e.lines_covered for e in entries)
 
     if total_lines <= 0:
         return None
@@ -179,6 +214,53 @@ def read_swift_codecov_json_fraction(
         cast(dict[str, object], parsed),
         extra_filename_regexes,
     )
+
+
+def read_swift_codecov_json_per_file(
+    path: Path,
+    extra_filename_regexes: Sequence[re.Pattern[str]] | None = None,
+) -> list[FileCoverageEntry]:
+    """Load a SwiftPM codecov JSON file and return per-file coverage entries."""
+    try:
+        raw_text = path.read_text(encoding="utf-8")
+    except OSError:
+        return []
+    try:
+        parsed: object = json.loads(raw_text)
+    except json.JSONDecodeError:
+        return []
+    if not isinstance(parsed, dict):
+        return []
+    return extract_per_file_coverage(
+        cast(dict[str, object], parsed),
+        extra_filename_regexes,
+    )
+
+
+def build_coverage_gaps(
+    per_file: list[FileCoverageEntry],
+    coverage: float | None,
+    threshold: float,
+    max_entries: int = 10,
+) -> list[CoverageGap]:
+    """Build top coverage gaps sorted by uncovered lines descending.
+
+    Only populated when coverage is below *threshold* and *per_file* data is
+    available.
+    """
+    if not per_file or coverage is None or coverage >= threshold:
+        return []
+    ranked = sorted(per_file, key=lambda e: e.lines_uncovered, reverse=True)
+    return [
+        CoverageGap(
+            file=e.filename,
+            coverage=round(e.fraction, 4),
+            lines_total=e.lines_total,
+            lines_uncovered=e.lines_uncovered,
+        )
+        for e in ranked[:max_entries]
+        if e.lines_uncovered > 0
+    ]
 
 
 def default_profdata_path(bin_path: Path) -> Path:

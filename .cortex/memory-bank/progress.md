@@ -7,6 +7,8 @@
 - **Add Local Environment Context Memory Artifact** - COMPLETE. Delivered canonical local-environment context artifact lifecycle with startup validation, rebind guidance, and dedicated tests; review gate confirmed no remaining gaps.
 - <!-- memory_type: status -->
 - **Commit pipeline run for Synapse fix prompt updates** - COMPLETE. Executed full /cortex/commit flow with green quality parity checks, docs/validation gates, and staged Synapse gitlink update for the superproject commit.
+- <!-- memory_type: status -->
+**Swift framework adapter coverage + Synapse fix path** - COMPLETE. Extended Swift coverage parsing and adapter wiring in `swift_adapter.py`/`swift_coverage.py` with shared base helpers, refreshed Cortex session telemetry (`index.json`, history slices, `log.md`), and bumped Synapse submodule for aligned `fix.md` / `fix-tests.md` guidance.
 **Add Local Environment Context Memory Artifact** - PARTIAL. Implemented canonical local environment artifact plus startup housekeeping/validation and prompt integration; review reopened plan for follow-up test-depth and remediation/API consistency gaps.
 
 ## 2026-04-16

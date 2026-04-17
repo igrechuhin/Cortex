@@ -12,6 +12,9 @@ Local machine-context artifact lifecycle is implemented and integrated into star
 - ✅ **Fix prompt integrity and commit pipeline validation** - COMPLETE (2026-04-17) - Restored coverage-only BLOCKED wording contract and markdown list-spacing in Synapse fix prompts, committed/pushed Synapse update, and passed quality/docs/validation/final-gate checks in the superproject commit pipeline.
 
 - ✅ **Commit pipeline run for Synapse fix prompt updates** - COMPLETE (2026-04-17) - <!-- memory_type: milestone -->
+
+- ✅ **Swift framework adapter coverage + Synapse fix path** - COMPLETE (2026-04-17) - <!-- memory_type: milestone -->
+Shipped Swift coverage extraction and adapter refinements with `FrameworkAdapterBase` support, updated session/index telemetry, and Synapse submodule commit aligning fix-path prompts and fix-tests agent instructions.
 Completed /cortex/commit with preflight snapshot, Phase A quality+parity checks, wiki staged-ingest bridge, docs/validation/final gate, and staged synapse gitlink for superproject commit.
 
 ## Completed Work (2026-04-16)

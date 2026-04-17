@@ -13,16 +13,24 @@ from pathlib import Path
 from cortex.config.swift_coverage_config import load_swift_coverage_config
 from cortex.services.language_detector import LanguageDetector, LanguageInfo
 
-from .base import CheckResult, FrameworkAdapter, ProgressCallback, TestResult
+from .base import (
+    CheckResult,
+    CoverageGap,
+    FrameworkAdapter,
+    ProgressCallback,
+    TestResult,
+)
 from .python_adapter_parsing import build_test_errors, coverage_accept_and_warning
 from .swift_coverage import (
+    FileCoverageEntry,
+    build_coverage_gaps,
     build_swift_llvm_cov_ignore_regex,
     compile_swift_coverage_exclude_regexes,
     default_profdata_path,
     find_package_tests_executable,
     parse_llvm_cov_report_line_coverage_fraction,
     pick_codecov_json_file,
-    read_swift_codecov_json_fraction,
+    read_swift_codecov_json_per_file,
 )
 
 # Matches XCTest summary: "Executed N tests, with M failures"
@@ -134,25 +142,26 @@ class SwiftAdapter(FrameworkAdapter):
 
     def _collect_line_coverage_fraction(
         self, timeout: int | None
-    ) -> tuple[float | None, bool]:
-        """Return ``(fraction, collected)`` after a successful ``swift test`` run.
+    ) -> tuple[float | None, bool, list[FileCoverageEntry]]:
+        """Return ``(fraction, collected, per_file)`` after ``swift test``.
 
         ``collected`` is True only when SwiftPM artifacts exist and a numeric
         line-coverage value was derived (JSON export or ``llvm-cov report``).
+        ``per_file`` is populated only when the JSON path succeeds.
         """
         bin_path = self._resolve_swift_bin_path(timeout)
         if bin_path is None:
-            return None, False
+            return None, False, []
         profdata = default_profdata_path(bin_path)
         if not profdata.is_file():
-            return None, False
-        frac = self._coverage_from_json(profdata.parent)
+            return None, False, []
+        frac, per_file = self._coverage_from_json(profdata.parent)
         if frac is not None:
-            return frac, True
+            return frac, True, per_file
         frac = self._coverage_from_llvm_cov(bin_path, profdata, timeout)
         if frac is None:
-            return None, False
-        return frac, True
+            return None, False, []
+        return frac, True, []
 
     def _resolve_swift_bin_path(self, timeout: int | None) -> Path | None:
         """Resolve SwiftPM bin path via ``swift build --show-bin-path``."""
@@ -164,14 +173,23 @@ class SwiftAdapter(FrameworkAdapter):
             return None
         return Path(bin_text.splitlines()[-1].strip())
 
-    def _coverage_from_json(self, codecov_dir: Path) -> float | None:
-        """Read coverage fraction from JSON export if available."""
+    def _coverage_from_json(
+        self, codecov_dir: Path
+    ) -> tuple[float | None, list[FileCoverageEntry]]:
+        """Read coverage fraction and per-file entries from JSON export."""
         json_path = pick_codecov_json_file(codecov_dir)
         if json_path is None:
-            return None
-        return read_swift_codecov_json_fraction(
+            return None, []
+        per_file = read_swift_codecov_json_per_file(
             json_path, self._swift_cov_extra_filename_re
         )
+        if not per_file:
+            return None, []
+        total = sum(e.lines_total for e in per_file)
+        if total <= 0:
+            return None, per_file
+        covered = sum(e.lines_covered for e in per_file)
+        return covered / total, per_file
 
     def _coverage_from_llvm_cov(
         self,
@@ -211,7 +229,7 @@ class SwiftAdapter(FrameworkAdapter):
         passed, failed = self._extract_test_counts(output)
         total = passed + failed
         pass_rate = (passed / total) if total > 0 else 0.0
-        actual_ok, coverage, warnings = self._coverage_gate_outcome(
+        actual_ok, coverage, warnings, per_file = self._coverage_gate_outcome(
             tests_ok, timeout, coverage_threshold
         )
 
@@ -220,6 +238,7 @@ class SwiftAdapter(FrameworkAdapter):
             coverage,
             coverage_threshold,
         )
+        gaps = self._build_coverage_gaps(per_file, coverage, coverage_threshold)
         return TestResult(
             success=actual_ok and len(errors) == 0,
             tests_run=total,
@@ -227,25 +246,35 @@ class SwiftAdapter(FrameworkAdapter):
             tests_failed=failed,
             pass_rate=pass_rate,
             coverage=coverage,
+            coverage_gaps=gaps,
             output=output,
             errors=errors,
             warnings=warnings,
         )
+
+    @staticmethod
+    def _build_coverage_gaps(
+        per_file: list[FileCoverageEntry],
+        coverage: float | None,
+        threshold: float,
+    ) -> list[CoverageGap]:
+        """Build top coverage gaps when below threshold."""
+        return build_coverage_gaps(per_file, coverage, threshold)
 
     def _coverage_gate_outcome(
         self,
         tests_ok: bool,
         timeout: int | None,
         coverage_threshold: float,
-    ) -> tuple[bool, float | None, list[str]]:
-        """Evaluate test+coverage gate and return (ok, coverage, warnings)."""
+    ) -> tuple[bool, float | None, list[str], list[FileCoverageEntry]]:
+        """Evaluate test+coverage gate; return (ok, coverage, warnings, per_file)."""
         if not tests_ok:
-            return False, None, []
-        frac, collected = self._collect_line_coverage_fraction(timeout)
+            return False, None, [], []
+        frac, collected, per_file = self._collect_line_coverage_fraction(timeout)
         if not collected or frac is None:
-            return True, None, []
+            return True, None, [], []
         cov_ok, cov_warn = coverage_accept_and_warning(frac, coverage_threshold)
-        return cov_ok, frac, cov_warn
+        return cov_ok, frac, cov_warn, per_file
 
     def _extract_test_counts(self, output: str) -> tuple[int, int]:
         """Extract passed/failed counts from swift test output.

@@ -35,6 +35,23 @@ class CheckResult(DictLikeModel):
 COVERAGE_ACCEPT_MIN = 0.895
 
 
+class CoverageGap(DictLikeModel):
+    """A single file's coverage gap, sorted by uncovered lines descending."""
+
+    model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
+
+    file: str = Field(description="Relative source file path")
+    coverage: float = Field(
+        ge=0.0, le=1.0, description="Line coverage fraction for this file"
+    )
+    lines_total: int = Field(ge=0, description="Total lines in file")
+    lines_uncovered: int = Field(ge=0, description="Uncovered lines in file")
+
+
+def _default_coverage_gaps() -> list[CoverageGap]:
+    return []
+
+
 class TestResult(DictLikeModel):
     """Test execution result."""
 
@@ -51,6 +68,10 @@ class TestResult(DictLikeModel):
     )
     pass_rate: float = Field(ge=0.0, le=1.0, description="Pass rate (0-1)")
     coverage: float | None
+    coverage_gaps: list[CoverageGap] = Field(
+        default_factory=_default_coverage_gaps,
+        description="Top uncovered files when coverage is below threshold, sorted by uncovered lines descending",
+    )
     output: str
     errors: list[str]
     warnings: list[str] = Field(
