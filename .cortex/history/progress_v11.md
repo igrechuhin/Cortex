@@ -3,6 +3,7 @@
 ## 2026-04-17
 
 - <!-- memory_type: status -->
+- **Fix prompt integrity and commit pipeline validation** - COMPLETE. Restored exact coverage-only BLOCKED wording and markdown list spacing in Synapse fix prompts, then ran commit pipeline gates to green with synced submodule pointer.
 - **Add Local Environment Context Memory Artifact** - COMPLETE. Delivered canonical local-environment context artifact lifecycle with startup validation, rebind guidance, and dedicated tests; review gate confirmed no remaining gaps.
 **Add Local Environment Context Memory Artifact** - PARTIAL. Implemented canonical local environment artifact plus startup housekeeping/validation and prompt integration; review reopened plan for follow-up test-depth and remediation/API consistency gaps.
 
