@@ -101,8 +101,12 @@ class TestFixLoopIntegrityGuard:
         """Workflow docs require import/syntax checks before success."""
         lower = workflows_guide_content.lower()
         assert "post-fix validation" in lower
-        assert "python3 -m py_compile" in lower
-        assert 'python3 -c "import <module_import_path>"' in workflows_guide_content
+        assert ".venv/bin/python -m py_compile" in workflows_guide_content
+        assert (
+            'PYTHONPATH=src .venv/bin/python -c "import <module_import_path>"'
+            in workflows_guide_content
+        )
+        assert "any other interpreter is a critical error" in lower
 
     def test_workflows_guide_contains_rollback_guidance_for_regressions(
         self, workflows_guide_content: str
@@ -191,8 +195,12 @@ class TestFixPromptIntegrityGuard:
         """Fix prompt requires import/syntax checks before success."""
         lower = fix_prompt_content.lower()
         assert "post-fix validation" in lower
-        assert "python3 -m py_compile" in lower
-        assert 'python3 -c "import <module_import_path>"' in fix_prompt_content
+        assert ".venv/bin/python -m py_compile" in fix_prompt_content
+        assert (
+            'PYTHONPATH=src .venv/bin/python -c "import <module_import_path>"'
+            in fix_prompt_content
+        )
+        assert "any other interpreter is a critical error" in lower
 
     def test_fix_prompt_contains_rollback_guidance_for_regressions(
         self, fix_prompt_content: str

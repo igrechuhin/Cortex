@@ -6,9 +6,17 @@ Used by :class:`SwiftAdapter` after ``swift test --enable-code-coverage``.
 from __future__ import annotations
 
 import json
+import logging
+import re
 import sys
+from collections.abc import Sequence
 from pathlib import Path
 from typing import cast
+
+logger = logging.getLogger(__name__)
+
+# llvm-cov ``-ignore-filename-regex``: built-in skip for build dir + test bundles.
+_DEFAULT_LLVM_COV_IGNORE_FRAGMENT = r"(?:\.build|Tests)"
 
 
 def parse_llvm_cov_report_line_coverage_fraction(report_text: str) -> float | None:
@@ -38,9 +46,51 @@ def parse_llvm_cov_report_line_coverage_fraction(report_text: str) -> float | No
     return last_frac
 
 
-def _should_skip_swift_cov_path(path_str: str) -> bool:
+def should_skip_swift_cov_path(
+    path_str: str,
+    extra_filename_regexes: Sequence[re.Pattern[str]] | None = None,
+) -> bool:
+    """Return True when a path should not contribute to line-coverage totals."""
     norm = path_str.replace("\\", "/").lower()
-    return ".build/" in norm or "/tests/" in norm or norm.endswith("/tests")
+    if ".build/" in norm or "/tests/" in norm or norm.endswith("/tests"):
+        return True
+    unified = path_str.replace("\\", "/")
+    if extra_filename_regexes:
+        for rx in extra_filename_regexes:
+            if rx.search(unified):
+                return True
+    return False
+
+
+def compile_swift_coverage_exclude_regexes(
+    patterns: list[str],
+) -> list[re.Pattern[str]]:
+    """Compile user patterns from config; drop invalid entries with a warning."""
+    out: list[re.Pattern[str]] = []
+    for raw in patterns:
+        s = raw.strip()
+        if not s:
+            continue
+        try:
+            out.append(re.compile(s, re.IGNORECASE))
+        except re.error as exc:
+            logger.warning(
+                "Invalid swift coverage exclude_filename_regex_patterns entry %r: %s",
+                raw,
+                exc,
+            )
+    return out
+
+
+def build_swift_llvm_cov_ignore_regex(extra_patterns: list[str]) -> str:
+    """Build a single alternation regex for ``llvm-cov -ignore-filename-regex``."""
+    parts: list[str] = [_DEFAULT_LLVM_COV_IGNORE_FRAGMENT]
+    for p in extra_patterns:
+        s = p.strip()
+        if not s:
+            continue
+        parts.append(f"(?:{s})")
+    return "|".join(parts)
 
 
 def _extract_json_files(payload: dict[str, object]) -> list[dict[str, object]]:
@@ -83,6 +133,7 @@ def _extract_line_counts(entry: dict[str, object]) -> tuple[int, int] | None:
 
 def aggregate_spvm_codecov_json_line_fraction(
     payload: dict[str, object],
+    extra_filename_regexes: Sequence[re.Pattern[str]] | None = None,
 ) -> float | None:
     """Aggregate line coverage from a SwiftPM / LLVM JSON codecov export.
 
@@ -93,7 +144,9 @@ def aggregate_spvm_codecov_json_line_fraction(
     covered_lines = 0
     for entry in _extract_json_files(payload):
         name = entry.get("filename")
-        if isinstance(name, str) and _should_skip_swift_cov_path(name):
+        if isinstance(name, str) and should_skip_swift_cov_path(
+            name, extra_filename_regexes
+        ):
             continue
         counts = _extract_line_counts(entry)
         if counts is None:
@@ -107,7 +160,10 @@ def aggregate_spvm_codecov_json_line_fraction(
     return covered_lines / total_lines
 
 
-def read_swift_codecov_json_fraction(path: Path) -> float | None:
+def read_swift_codecov_json_fraction(
+    path: Path,
+    extra_filename_regexes: Sequence[re.Pattern[str]] | None = None,
+) -> float | None:
     """Load a SwiftPM codecov JSON file and return aggregate line fraction."""
     try:
         raw_text = path.read_text(encoding="utf-8")
@@ -119,7 +175,10 @@ def read_swift_codecov_json_fraction(path: Path) -> float | None:
         return None
     if not isinstance(parsed, dict):
         return None
-    return aggregate_spvm_codecov_json_line_fraction(cast(dict[str, object], parsed))
+    return aggregate_spvm_codecov_json_line_fraction(
+        cast(dict[str, object], parsed),
+        extra_filename_regexes,
+    )
 
 
 def default_profdata_path(bin_path: Path) -> Path:

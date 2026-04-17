@@ -3,12 +3,19 @@
 ## 2026-04-16
 
 - <!-- memory_type: status -->
+- **Commit pipeline guard and handoff hardening** - COMPLETE. Tightened pre-commit submodule/staged-file guardrails, expanded pipeline handoff config/path validation, hardened memory-bank update validation, and added regression coverage for commit integrity and staged gitignored protection.
+- <!-- memory_type: status -->
 - **Commit pipeline run for plan workflow updates** - COMPLETE. Ran /cortex/commit preflight, Phase A quality gate + mandatory parity scripts, wiki staged ingest bridge, and progressed docs/validation/final-gate execution for current staged changes.
 - <!-- memory_type: status -->
 - **Harden /fix Workflow for Coverage-Only Failures** - COMPLETE. Aligned shared workflow/report guidance with the coverage-only evidence-or-BLOCKED contract and added regression tests that keep the docs synchronized with prompt behavior.
 - <!-- memory_type: milestone -->
 - **Commit pipeline parity fix for wiki-source markdown** - COMPLETE. Fixed the local `check-ci-parity` markdown mismatch in `Makefile` so `.cortex/wiki/sources/` no longer produce false MD057 failures; Phase A quality gate and parity shell checks now pass.
 - **Enforce Post-Implementation Review Loop in /do Pipeline** - COMPLETE. Added a mandatory internal Review Gate to /cortex/do, wired reopened-plan behavior, and covered the prompt/runtime contract with regression tests.
+- **BELIEF Annotation Enforcement — Emit Guidance and Mid-Function Heuristics** - COMPLETE. Added concrete BELIEF triggers to the shared annotation rule, taught the implement-code agent to emit BELIEF annotations before external-state-shape assumptions, and extended Python reflection heuristics plus tests to suggest BELIEF annotations for risky dict-key and chained-attribute access.
+- <!-- memory_type: status -->
+- **Commit pipeline run for BELIEF annotation enforcement** - COMPLETE. Ran /cortex/commit for the BELIEF annotation guidance and reflection-heuristic slice with preflight, green quality/parity checks, wiki staged ingest, and docs/validation follow-through.
+- **Fix-Loop Exhaustion — Root-Cause Reframe Output** - COMPLETE. Added the post-exhaustion analysis block to `fix.md`, `fix-tests.md`, and `fix-quality.md`, requiring a root-cause hypothesis, a reformulated brief, and the explicit `Do NOT retry in this session.` directive.
+- Swift coverage exclusions: optional swift_coverage.json drives SwiftAdapter and swift_coverage helpers.
 **Harden /fix Workflow for Coverage-Only Failures** - PARTIAL. Added explicit coverage-only failure evidence contract to /fix and fix-tests prompts (`coverage_only_failure`, `coverage_attempt_evidence`, `coverage_attempt_count`, `coverage_delta`, `blocker_reason`) and added regression integration tests to enforce contract presence.
 
 ## 2026-04-15

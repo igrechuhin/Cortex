@@ -74,6 +74,42 @@ def _seed_codecov_project(
     return bin_path
 
 
+def _seed_codecov_project_app_and_pb(root: Path) -> Path:
+    """Two source files: App.swift 90/100 lines, x.pb.swift 0/100 (dilutes global)."""
+    _ = (root / "Package.swift").write_text("// swift-tools-version:5.9\n")
+    bin_path = root / ".build" / "debug"
+    codecov = bin_path / "codecov"
+    codecov.mkdir(parents=True)
+    _ = (codecov / "default.profdata").write_bytes(b"x")
+    payload = {
+        "data": [
+            {
+                "files": [
+                    {
+                        "filename": str(root / "Sources" / "App.swift"),
+                        "summary": {"lines": {"count": 100, "covered": 90}},
+                    },
+                    {
+                        "filename": str(root / "Sources" / "Generated" / "x.pb.swift"),
+                        "summary": {"lines": {"count": 100, "covered": 0}},
+                    },
+                ],
+            },
+        ],
+    }
+    _ = (codecov / "export.json").write_text(json.dumps(payload), encoding="utf-8")
+    return bin_path
+
+
+def _write_swift_coverage_json(root: Path, patterns: list[str]) -> None:
+    cfg_dir = root / ".cortex" / "config"
+    cfg_dir.mkdir(parents=True)
+    _ = (cfg_dir / "swift_coverage.json").write_text(
+        json.dumps({"exclude_filename_regex_patterns": patterns}),
+        encoding="utf-8",
+    )
+
+
 def _swift_test_and_bin_path_side_effect(bin_path: Path):
     def side_effect(
         cmd: list[str] | str | bytes,
@@ -273,6 +309,96 @@ class TestSwiftAdapter:
             assert result.tests_run == 100
             assert result.tests_failed == 3
             assert result.tests_passed == 97
+
+    @patch("cortex.services.framework_adapters.swift_adapter.subprocess.run")
+    def test_run_tests_multi_target_uses_grand_total_summary_line(
+        self, mock_run: MagicMock
+    ) -> None:
+        """Multi-target output: last 'Executed N' line (grand total) is used, not the first."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            _ = (Path(tmpdir) / "Package.swift").write_text(
+                "// swift-tools-version:5.9"
+            )
+            # Simulates two test targets (86 + 50) + grand total "All tests" (136).
+            xctest_output = (
+                b"Test Suite 'All tests' started\n"
+                b"Test Suite 'TargetATests' passed\n"
+                b"\t Executed 86 tests, with 0 failures (0 unexpected) in 1.0 (1.0) seconds\n"
+                b"Test Suite 'TargetBTests' passed\n"
+                b"\t Executed 50 tests, with 0 failures (0 unexpected) in 0.5 (0.5) seconds\n"
+                b"Test Suite 'All tests' passed\n"
+                b"\t Executed 136 tests, with 0 failures (0 unexpected) in 2.0 (2.0) seconds\n"
+            )
+            mock_run.side_effect = _subprocess_swift_test_then_skip_coverage(
+                xctest_output, 0
+            )
+
+            adapter = SwiftAdapter(str(tmpdir))
+            result = adapter.run_tests()
+
+            assert result.tests_run == 136
+            assert result.tests_passed == 136
+            assert result.tests_failed == 0
+
+    @patch("cortex.services.framework_adapters.swift_adapter.subprocess.run")
+    def test_run_tests_multi_target_partial_run_uses_last_visible_line(
+        self, mock_run: MagicMock
+    ) -> None:
+        """Partial run (crash before grand total): last visible target summary is used."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            _ = (Path(tmpdir) / "Package.swift").write_text(
+                "// swift-tools-version:5.9"
+            )
+            # TargetA ran fine; TargetB crashed before its summary; grand total absent.
+            xctest_output = (
+                b"Test Suite 'TargetATests' passed\n"
+                b"\t Executed 86 tests, with 0 failures (0 unexpected) in 1.0 (1.0) seconds\n"
+                b"Segmentation fault: 11\n"
+            )
+            mock_result = MagicMock()
+            mock_result.returncode = 1
+            mock_result.stdout = xctest_output
+            mock_result.stderr = b""
+            mock_run.return_value = mock_result
+
+            adapter = SwiftAdapter(str(tmpdir))
+            result = adapter.run_tests()
+
+            assert result.success is False
+            assert result.tests_run == 86
+            assert result.tests_failed == 0
+
+    @patch("cortex.services.framework_adapters.swift_adapter.subprocess.run")
+    def test_run_tests_multi_target_tradewing_style_uses_final_aggregate(
+        self, mock_run: MagicMock
+    ) -> None:
+        """TradeWing-style multi-target output uses the final 'All tests' aggregate."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            _ = (Path(tmpdir) / "Package.swift").write_text(
+                "// swift-tools-version:5.9"
+            )
+            # Mirrors TradeWing-style nested XCTest output where each target emits
+            # its own summary before a final aggregate line for the full run.
+            xctest_output = (
+                b"Test Suite 'All tests' started at 2026-04-16 12:00:00.000\n"
+                b"Test Suite 'TradeWingCoreTests.xctest' passed at 2026-04-16 12:00:05.000\n"
+                b"\t Executed 86 tests, with 0 failures (0 unexpected) in 5.1 (5.2) seconds\n"
+                b"Test Suite 'TradeWingAppTests.xctest' passed at 2026-04-16 12:00:08.000\n"
+                b"\t Executed 50 tests, with 0 failures (0 unexpected) in 2.8 (2.9) seconds\n"
+                b"Test Suite 'All tests' passed at 2026-04-16 12:00:08.100\n"
+                b"\t Executed 136 tests, with 0 failures (0 unexpected) in 7.9 (8.1) seconds\n"
+            )
+            mock_run.side_effect = _subprocess_swift_test_then_skip_coverage(
+                xctest_output, 0
+            )
+
+            adapter = SwiftAdapter(str(tmpdir))
+            result = adapter.run_tests()
+
+            assert result.success is True
+            assert result.tests_run == 136
+            assert result.tests_passed == 136
+            assert result.tests_failed == 0
 
     @patch("cortex.services.framework_adapters.swift_adapter.subprocess.run")
     def test_run_tests_timeout(self, mock_run: MagicMock) -> None:
@@ -497,3 +623,60 @@ class TestSwiftAdapter:
             assert result.coverage == pytest.approx(0.90)  # type: ignore[unknown-member-type]
             assert result.success is True
             assert mock_run.call_count == 3
+
+    @patch("cortex.services.framework_adapters.swift_adapter.subprocess.run")
+    def test_run_tests_codecov_json_includes_pb_without_swift_coverage_config(
+        self, mock_run: MagicMock
+    ) -> None:
+        """Without config, generated *.pb.swift lines count toward the aggregate."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir).resolve()
+            bin_path = _seed_codecov_project_app_and_pb(root)
+            mock_run.side_effect = _swift_test_and_bin_path_side_effect(bin_path)
+            adapter = SwiftAdapter(str(root))
+            result = adapter.run_tests(coverage_threshold=0.90)
+            assert result.coverage == pytest.approx(0.45)  # type: ignore[unknown-member-type]
+            assert result.success is False
+
+    @patch("cortex.services.framework_adapters.swift_adapter.subprocess.run")
+    def test_run_tests_codecov_json_excludes_pb_with_swift_coverage_config(
+        self, mock_run: MagicMock
+    ) -> None:
+        """``.cortex/config/swift_coverage.json`` drops matching paths from JSON totals."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir).resolve()
+            _write_swift_coverage_json(root, [r"\.pb\.swift$"])
+            bin_path = _seed_codecov_project_app_and_pb(root)
+            mock_run.side_effect = _swift_test_and_bin_path_side_effect(bin_path)
+            adapter = SwiftAdapter(str(root))
+            result = adapter.run_tests(coverage_threshold=0.90)
+            assert result.coverage == pytest.approx(0.90)  # type: ignore[unknown-member-type]
+            assert result.success is True
+
+    @patch("cortex.services.framework_adapters.swift_adapter.subprocess.run")
+    def test_run_tests_llvm_cov_ignore_regex_includes_swift_coverage_config(
+        self, mock_run: MagicMock
+    ) -> None:
+        """llvm-cov fallback receives combined regex including config patterns."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir).resolve()
+            _write_swift_coverage_json(root, [r"\.pb\.swift$"])
+            bin_path = _seed_llvm_cov_project(root)
+            report = b"Lines Missed Cover\nTOTAL 10 1 90.00%\n"
+            mock_run.side_effect = _swift_test_bin_and_llvm_cov_side_effect(
+                bin_path, report
+            )
+            adapter = SwiftAdapter(str(root))
+            _ = adapter.run_tests(coverage_threshold=0.90)
+            llvm_calls = [
+                c
+                for c in mock_run.call_args_list
+                if c[0]
+                and isinstance(c[0][0], list)
+                and c[0][0]
+                and c[0][0][0] in ("llvm-cov", "xcrun")
+            ]
+            assert llvm_calls
+            argv = llvm_calls[0][0][0]
+            ignore_arg = next(str(a) for a in argv if "ignore-filename-regex" in str(a))
+            assert r".pb" in ignore_arg or "pb.swift" in ignore_arg

@@ -4,27 +4,7 @@
 
 ## Completed Work (2026-04-16)
 
-- ✅ **Commit pipeline guard and handoff hardening** - COMPLETE (2026-04-16) - Tightened pre-commit submodule/staged-file guardrails, expanded pipeline handoff config/path validation, hardened memory-bank update validation, and added regression coverage for commit integrity and staged gitignored protection.
-
-- ✅ **Commit pipeline run for plan workflow updates** - COMPLETE (2026-04-16) - <!-- memory_type: status -->
-
-- ✅ **Harden /fix Workflow for Coverage-Only Failures (PARTIAL)** - COMPLETE (2026-04-16) - <!-- memory_type: problem -->
-
-- ✅ **Harden Fix Workflow for Coverage-Only Failures** - COMPLETE (2026-04-16) - Completed the coverage-only /fix hardening plan by aligning shared workflow/report guidance with the evidence-or-BLOCKED contract and adding regression tests that keep those docs synchronized with prompt behavior.
-
-- ✅ **Commit pipeline parity fix for wiki-source markdown** - COMPLETE (2026-04-16) - <!-- memory_type: status -->
-
-- ✅ **Enforce Post-Implementation Review Loop in /do Pipeline** - COMPLETE (2026-04-16) - Added a mandatory internal Review Gate to /cortex/do, wired the implement pipeline to keep reopened plans pending when review finds gaps, and added prompt plus runtime allowlist regression coverage.
-
-- ✅ **BELIEF Annotation Enforcement — Emit Guidance and Mid-Function Heuristics** - COMPLETE (2026-04-16) - Added concrete BELIEF triggers to the shared annotation rule, taught the implement-code agent to emit BELIEF annotations before external-state-shape assumptions, and extended Python reflection heuristics plus tests to suggest BELIEF annotations for risky dict-key and chained-attribute access.
-
-- ✅ **Commit pipeline run for BELIEF annotation enforcement** - COMPLETE (2026-04-16) - <!-- memory_type: status -->
-
-- ✅ **Fix-Loop Exhaustion — Root-Cause Reframe Output** - COMPLETE (2026-04-16) - Added a mandatory post-exhaustion analysis block to the fix workflow prompt plus the fix-quality and fix-tests agent prompts so exhausted fix loops now emit a root-cause hypothesis, a reformulated brief, and an explicit instruction to open a new session instead of retrying the same approach.
-Executed /cortex/commit preflight, Phase A quality gate with mandatory parity scripts, wiki staged ingest bridge, and docs/validation/final-gate preparation for BELIEF annotation enforcement changes.
-Aligned local `check-ci-parity` markdown scope with CI by excluding `.cortex/wiki/sources/` and passing the explicit `rumdl` config, then re-ran Phase A successfully with parity scripts green.
-Implemented coverage-only handling contract and regression checks so /fix cannot exit tests target without uplift evidence or explicit BLOCKED rationale; quality/docs gates pass.
-Executed /cortex/commit pipeline with preflight snapshot, Phase A quality gate + CI parity scripts, wiki staged ingest check, and validation/final-gate preparation for plan workflow artifacts.
+- **Summary (2026-04-16)** - 1 entries archived.
 
 ## Completed Work (2026-04-15)
 

@@ -10,11 +10,14 @@ import sys
 from collections.abc import Sequence
 from pathlib import Path
 
+from cortex.config.swift_coverage_config import load_swift_coverage_config
 from cortex.services.language_detector import LanguageDetector, LanguageInfo
 
 from .base import CheckResult, FrameworkAdapter, ProgressCallback, TestResult
 from .python_adapter_parsing import build_test_errors, coverage_accept_and_warning
 from .swift_coverage import (
+    build_swift_llvm_cov_ignore_regex,
+    compile_swift_coverage_exclude_regexes,
     default_profdata_path,
     find_package_tests_executable,
     parse_llvm_cov_report_line_coverage_fraction,
@@ -49,6 +52,10 @@ class SwiftAdapter(FrameworkAdapter):
             project_root: Path to project root directory.
         """
         super().__init__(project_root)
+        self._swift_coverage_cfg = load_swift_coverage_config(self.project_root)
+        self._swift_cov_extra_filename_re = compile_swift_coverage_exclude_regexes(
+            list(self._swift_coverage_cfg.exclude_filename_regex_patterns)
+        )
 
     def has_package_swift(self) -> bool:
         """Return True if Package.swift exists in project root."""
@@ -112,7 +119,9 @@ class SwiftAdapter(FrameworkAdapter):
 
     def _llvm_cov_report_argv(self, binary: Path, profdata: Path) -> list[str]:
         """Build argv for ``llvm-cov report`` (macOS uses ``xcrun``)."""
-        ignore = r"\.build|Tests"
+        ignore = build_swift_llvm_cov_ignore_regex(
+            list(self._swift_coverage_cfg.exclude_filename_regex_patterns)
+        )
         tail = [
             "report",
             str(binary),
@@ -160,7 +169,9 @@ class SwiftAdapter(FrameworkAdapter):
         json_path = pick_codecov_json_file(codecov_dir)
         if json_path is None:
             return None
-        return read_swift_codecov_json_fraction(json_path)
+        return read_swift_codecov_json_fraction(
+            json_path, self._swift_cov_extra_filename_re
+        )
 
     def _coverage_from_llvm_cov(
         self,
@@ -241,20 +252,31 @@ class SwiftAdapter(FrameworkAdapter):
 
         Parses the XCTest summary line:
           ``Executed N tests, with M failures (0 unexpected) in ...``
-        and accumulates counts across multiple summary lines (parallel suites).
+
+        XCTest emits nested summary lines: one per test class, one per .xctest
+        bundle, and a final ``All tests`` aggregate.  The last summary line in
+        the output is the grand total and is used directly.  When the test run
+        crashes before the aggregate line is written (e.g. a target fails to
+        link), we fall back to the largest ``total`` seen so far — that is the
+        most recent .xctest-level aggregate, which gives the most accurate
+        partial count.
         Falls back to a heuristic scan if no summary line is found.
         """
-        total_from_summary = 0
-        failed_from_summary = 0
+        last_total: int = 0
+        last_failed: int = 0
         found_summary = False
         for m in _XCTEST_SUMMARY_RE.finditer(output):
-            total_from_summary = max(total_from_summary, int(m.group("total")))
-            failed_from_summary += int(m.group("failed"))
+            last_total, last_failed = int(m.group("total")), int(m.group("failed"))
             found_summary = True
 
         if found_summary:
-            passed = total_from_summary - failed_from_summary
-            return max(passed, 0), failed_from_summary
+            # Use the last summary line, which is the grand-total "All tests"
+            # aggregate when the run completed normally.  For a partial run
+            # (crash before the aggregate is written), the last visible line is
+            # the most-recently-completed .xctest bundle total — the best
+            # available partial count.
+            passed = last_total - last_failed
+            return max(passed, 0), last_failed
 
         # Fallback: output was truncated or format is unexpected.
         if "test" in output.lower():

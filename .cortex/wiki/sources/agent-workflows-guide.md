@@ -117,8 +117,9 @@ This guide documents common workflows as sequences of Cortex MCP tool calls, wit
      - never introduce circular imports; extract shared code instead
      - never leave syntax-invalid Python in the tree
    - Post-fix validation before success:
-     - run `python3 -m py_compile <module_path>` for each changed Python module
-     - run `python3 -c "import <module_import_path>"` for each changed module
+     - run `.venv/bin/python -m py_compile <module_path>` for each changed Python module
+     - run `PYTHONPATH=src .venv/bin/python -c "import <module_import_path>"` for each changed module
+     - `.venv/bin/python` is mandatory for these checks; using any other interpreter is a critical error
    - If a fix iteration introduces new failures, roll back that attempt and retry with a different approach (max 3 attempts).
 
 3. **validate** – Optional: `check_type="timestamps"` or `"roadmap_sync"` for memory bank consistency.

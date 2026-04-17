@@ -1,0 +1,4 @@
+{
+  "$schema": "cortex-swift-coverage-config-v1",
+  "exclude_filename_regex_patterns": []
+}

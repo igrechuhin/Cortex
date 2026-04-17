@@ -1,3 +1,4 @@
+<!-- memory_type: milestone -->
 # Roadmap: MCP Memory Bank
 
 **This file records future/upcoming work only.** Completed work is recorded in [activeContext.md](activeContext.md). Do not duplicate entries between the two files.

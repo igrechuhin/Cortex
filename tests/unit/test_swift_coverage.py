@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 from typing import cast
 
@@ -10,8 +11,11 @@ import pytest
 
 from cortex.services.framework_adapters.swift_coverage import (
     aggregate_spvm_codecov_json_line_fraction,
+    build_swift_llvm_cov_ignore_regex,
+    compile_swift_coverage_exclude_regexes,
     parse_llvm_cov_report_line_coverage_fraction,
     read_swift_codecov_json_fraction,
+    should_skip_swift_cov_path,
 )
 
 
@@ -67,6 +71,31 @@ class TestCodecovJson:
         )
         assert frac == pytest.approx(0.90)  # type: ignore[unknown-member-type]
 
+    def test_aggregate_skips_pb_swift_when_extra_regex_set(self) -> None:
+        """Config-driven regex excludes generated protobuf files from totals."""
+        extra = [re.compile(r"\.pb\.swift$", re.IGNORECASE)]
+        payload = {
+            "data": [
+                {
+                    "files": [
+                        {
+                            "filename": "/proj/Sources/App.swift",
+                            "summary": {"lines": {"count": 100, "covered": 90}},
+                        },
+                        {
+                            "filename": "/proj/Sources/Generated/x.pb.swift",
+                            "summary": {"lines": {"count": 100, "covered": 0}},
+                        },
+                    ],
+                },
+            ],
+        }
+        frac = aggregate_spvm_codecov_json_line_fraction(
+            cast(dict[str, object], payload),
+            extra,
+        )
+        assert frac == pytest.approx(0.90)  # type: ignore[unknown-member-type]
+
     def test_read_swift_codecov_json_fraction_roundtrip(self, tmp_path: Path) -> None:
         payload = {
             "data": [
@@ -88,3 +117,29 @@ class TestCodecovJson:
         p = tmp_path / "bad.json"
         _ = p.write_text("{not json", encoding="utf-8")
         assert read_swift_codecov_json_fraction(p) is None
+
+
+class TestLlvmCovIgnoreRegex:
+    """Tests for ``llvm-cov -ignore-filename-regex`` builder."""
+
+    def test_build_includes_default_and_extras(self) -> None:
+        built = build_swift_llvm_cov_ignore_regex([r"\.pb\.swift$"])
+        assert ".build" in built or r"\.build" in built
+        assert "pb" in built
+
+
+class TestCompileExcludePatterns:
+    """Tests for regex compilation from config strings."""
+
+    def test_invalid_pattern_is_dropped(self) -> None:
+        out = compile_swift_coverage_exclude_regexes([r"(unclosed", r"\.ok\.swift$"])
+        assert len(out) == 1
+
+
+class TestShouldSkipSwiftCovPath:
+    """Tests for path skip helper."""
+
+    def test_extra_regex_matches_pb_path(self) -> None:
+        extra = compile_swift_coverage_exclude_regexes([r"\.pb\.swift$"])
+        assert should_skip_swift_cov_path(r"C:\proj\Sources\Gen\a.pb.swift", extra)
+        assert not should_skip_swift_cov_path("/proj/Sources/App.swift", extra)
