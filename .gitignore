@@ -114,3 +114,16 @@ eval_results.json
 .claude/
 .cursor/agents/
 /.cortex/wal/write_log.jsonl
+
+# Cortex MCP (transient/generated files)
+.cortex/.session/
+.cortex/.cache/
+.cortex/history/
+.cortex-backup-*/
+
+# Cortex agent sync outputs (generated at MCP startup — do not commit)
+.claude/
+.cursor/agents/
+
+# Cortex local machine context (host-specific; do not commit)
+.cortex/memory-bank/local-environment-context.json

@@ -29,6 +29,10 @@ from pathlib import Path
 from pydantic import BaseModel, ConfigDict, Field
 
 from cortex.core.pydantic_extra import EXTRA_FORBID
+from cortex.structure.lifecycle.local_environment_context import (
+    LOCAL_ENV_CONTEXT_FILENAME,
+    ensure_local_environment_context,
+)
 from cortex.structure.lifecycle.setup import StructureSetup
 from cortex.structure.lifecycle.symlinks import CursorSymlinkManager
 from cortex.structure.structure_config import StructureConfig
@@ -41,6 +45,7 @@ logger = logging.getLogger(__name__)
 
 GITIGNORE_MARKER = ".cortex/.session/"
 AGENT_SYNC_MARKER = ".claude/"
+LOCAL_ENV_CONTEXT_MARKER = f".cortex/memory-bank/{LOCAL_ENV_CONTEXT_FILENAME}"
 RUMDL_TOML_MARKER = "disable = ["
 _RUMDL_TOML_CONTENT = (
     "[global]\n"
@@ -60,6 +65,8 @@ _GITIGNORE_BLOCK = (
     "\n# Cortex agent sync outputs (generated at MCP startup — do not commit)\n"
     ".claude/\n"
     ".cursor/agents/\n"
+    "\n# Cortex local machine context (host-specific; do not commit)\n"
+    f"{LOCAL_ENV_CONTEXT_MARKER}\n"
 )
 
 
@@ -79,6 +86,18 @@ class StartupRepairReport(BaseModel):
     )
     rumdl_config_updated: bool = Field(
         default=False, description=".rumdl.toml was created or updated."
+    )
+    local_env_context_created: bool = Field(
+        default=False,
+        description="Local environment context artifact created on startup.",
+    )
+    local_env_context_updated: bool = Field(
+        default=False,
+        description="Local environment context artifact refreshed on startup.",
+    )
+    local_env_context_warning: str | None = Field(
+        default=None,
+        description="Artifact mismatch/parse warning requiring operator action.",
     )
     errors: list[str] = Field(
         default_factory=list, description="Non-fatal errors encountered."
@@ -108,7 +127,11 @@ def _needs_gitignore(project_root: Path) -> bool:
     if not gitignore.is_file():
         return True
     text = gitignore.read_text(encoding="utf-8")
-    return GITIGNORE_MARKER not in text or AGENT_SYNC_MARKER not in text
+    return (
+        GITIGNORE_MARKER not in text
+        or AGENT_SYNC_MARKER not in text
+        or LOCAL_ENV_CONTEXT_MARKER not in text
+    )
 
 
 async def _repair_structure(project_root: Path, report: StartupRepairReport) -> None:
@@ -176,6 +199,70 @@ def _repair_rumdl_config(project_root: Path, report: StartupRepairReport) -> Non
         report.errors.append(f".rumdl.toml repair failed: {exc}")
 
 
+def _repair_local_environment_context(
+    project_root: Path, report: StartupRepairReport
+) -> None:
+    try:
+        context_result = ensure_local_environment_context(project_root)
+        report.local_env_context_created = context_result.created
+        report.local_env_context_updated = context_result.updated
+        report.local_env_context_warning = (
+            context_result.mismatch_warning or context_result.parse_warning
+        )
+    except Exception as exc:
+        report.errors.append(f"local environment context repair failed: {exc}")
+
+
+def _has_any_repairs_needed(
+    needs_structure: bool,
+    needs_symlinks: bool,
+    needs_gitignore: bool,
+    needs_rumdl_config: bool,
+    report: StartupRepairReport,
+) -> bool:
+    return any(
+        [
+            needs_structure,
+            needs_symlinks,
+            needs_gitignore,
+            needs_rumdl_config,
+            report.local_env_context_created,
+            report.local_env_context_updated,
+        ]
+    )
+
+
+async def _run_standard_repairs(
+    project_root: Path,
+    report: StartupRepairReport,
+    *,
+    needs_structure: bool,
+    needs_symlinks: bool,
+    needs_gitignore: bool,
+    needs_rumdl_config: bool,
+) -> None:
+    if needs_structure:
+        try:
+            await _repair_structure(project_root, report)
+        except Exception as exc:
+            report.errors.append(f"structure repair failed: {exc}")
+    if needs_symlinks:
+        try:
+            _repair_symlinks(project_root, report)
+        except Exception as exc:
+            report.errors.append(f"symlink repair failed: {exc}")
+    if needs_gitignore:
+        try:
+            _repair_gitignore(project_root, report)
+        except Exception as exc:
+            report.errors.append(f"gitignore repair failed: {exc}")
+    if needs_rumdl_config:
+        try:
+            _repair_rumdl_config(project_root, report)
+        except Exception as exc:
+            report.errors.append(f".rumdl.toml repair failed: {exc}")
+
+
 async def repair_project_setup(project_root: Path) -> StartupRepairReport:
     """Validate and repair Cortex project setup.
 
@@ -194,32 +281,22 @@ async def repair_project_setup(project_root: Path) -> StartupRepairReport:
     needs_gitignore = _needs_gitignore(project_root)
     needs_rumdl_config = _needs_rumdl_config(project_root)
 
-    if not any([needs_structure, needs_symlinks, needs_gitignore, needs_rumdl_config]):
+    await _run_standard_repairs(
+        project_root,
+        report,
+        needs_structure=needs_structure,
+        needs_symlinks=needs_symlinks,
+        needs_gitignore=needs_gitignore,
+        needs_rumdl_config=needs_rumdl_config,
+    )
+    _repair_local_environment_context(project_root, report)
+    if not _has_any_repairs_needed(
+        needs_structure=needs_structure,
+        needs_symlinks=needs_symlinks,
+        needs_gitignore=needs_gitignore,
+        needs_rumdl_config=needs_rumdl_config,
+        report=report,
+    ):
         report.skipped = True
-        return report
-
-    if needs_structure:
-        try:
-            await _repair_structure(project_root, report)
-        except Exception as exc:
-            report.errors.append(f"structure repair failed: {exc}")
-
-    if needs_symlinks:
-        try:
-            _repair_symlinks(project_root, report)
-        except Exception as exc:
-            report.errors.append(f"symlink repair failed: {exc}")
-
-    if needs_gitignore:
-        try:
-            _repair_gitignore(project_root, report)
-        except Exception as exc:
-            report.errors.append(f"gitignore repair failed: {exc}")
-
-    if needs_rumdl_config:
-        try:
-            _repair_rumdl_config(project_root, report)
-        except Exception as exc:
-            report.errors.append(f".rumdl.toml repair failed: {exc}")
 
     return report

@@ -22,6 +22,17 @@ Then read both resources:
 - `cortex://context` — Cortex server architecture, tools, resources
 - `cortex://rules` — coding standards that apply to any fix
 
+After context/rules, load the local machine-context artifact:
+
+- Canonical path: `.cortex/memory-bank/local-environment-context.json`
+- Treat this file as **local-only** and **git-untracked** machine state.
+- If the file is missing, stale, or invalid JSON, trigger regeneration by calling `session()` once, then re-read it.
+- If `machine_binding.host_fingerprint` does not match the current host, treat it as likely copied workspace state and rebind:
+  1. Verify the current workspace root from `roots/list`.
+  2. Delete `.cortex/memory-bank/local-environment-context.json`.
+  3. Call `session()` again to auto-regenerate for the current machine.
+  4. Re-run this prompt from Step 1.
+
 ---
 
 ## Step 2: Load Cortex Source Structure
@@ -104,6 +115,12 @@ This is the most common source of integration failures:
 - Cache is invalidated on `notifications/roots/list_changed` (workspace switch mid-session)
 
 Read `src/cortex/core/project_root_resolver.py` now to understand the current resolution logic and cache behavior.
+
+Before moving to Step 6, confirm architecture context for routing decisions:
+
+- Host architecture comes from `.cortex/memory-bank/local-environment-context.json` → `host_environment.architecture`.
+- Deployment architecture assumptions come from `deploy_target.architecture` (default expected: Intel `x86_64`).
+- If host is Apple Silicon and deploy target is Intel, keep this branch explicit in your fix reasoning and tests.
 
 ---
 

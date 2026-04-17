@@ -8,6 +8,7 @@ import pytest
 from cortex.structure.lifecycle.startup_repair import (
     AGENT_SYNC_MARKER,
     GITIGNORE_MARKER,
+    LOCAL_ENV_CONTEXT_MARKER,
     RUMDL_TOML_MARKER,
     repair_project_setup,
 )
@@ -42,6 +43,34 @@ def _make_full_structure(root: Path) -> None:
     (config.get_path("rules") / "local").mkdir(exist_ok=True)
 
 
+def _prepare_broken_symlink_config(root: Path) -> StructureConfig:
+    _make_full_structure(root)
+    config = StructureConfig(root)
+    config.structure_config["cursor_integration"] = {
+        "enabled": True,
+        "symlink_location": "_cursor",
+        "symlinks": {"memory_bank": True, "rules": False, "plans": False},
+    }
+    cursor_dir = root / "_cursor"
+    cursor_dir.mkdir()
+    (cursor_dir / "memory-bank").symlink_to("/nonexistent/path")
+    return config
+
+
+def _mismatched_artifact_payload() -> str:
+    return (
+        '{"schema_version":"1.0","artifact":{"name":"local-environment-context.json",'
+        '"purpose":"x","local_only":true,"git_untracked":true,'
+        '"canonical_path":".cortex/memory-bank/local-environment-context.json"},'
+        '"machine_binding":{"host_fingerprint":"foreign-host:Darwin:arm64",'
+        '"hostname":"foreign-host"},"host_environment":{"os":"Darwin","os_version":"x",'
+        '"architecture":"arm64","python_version":"3.13"},'
+        '"toolchain":{"python_implementation":"CPython","python_compiler":"Clang"},'
+        '"deploy_target":{"architecture":"x86_64","notes":"x",'
+        '"requires_user_confirmation":["architecture"]},"last_refreshed_utc":"2026-01-01"}\n'
+    )
+
+
 # ---------------------------------------------------------------------------
 # Tests
 # ---------------------------------------------------------------------------
@@ -66,6 +95,9 @@ async def test_repair_skips_healthy_project(tmp_path: Path) -> None:
         patch(
             "cortex.structure.lifecycle.startup_repair._needs_rumdl_config",
             return_value=False,
+        ),
+        patch(
+            "cortex.structure.lifecycle.startup_repair._repair_local_environment_context"
         ),
     ):
         # Act
@@ -107,19 +139,7 @@ async def test_repair_creates_missing_structure(tmp_path: Path) -> None:
 @pytest.mark.asyncio
 async def test_repair_fixes_broken_symlink(tmp_path: Path) -> None:
     # Arrange – valid structure but broken symlink
-    _make_full_structure(tmp_path)
-    config = StructureConfig(tmp_path)
-    # Point symlink_location to a test-safe dir (not .cursor which may be restricted)
-    config.structure_config["cursor_integration"] = {
-        "enabled": True,
-        "symlink_location": "_cursor",
-        "symlinks": {"memory_bank": True, "rules": False, "plans": False},
-    }
-    cursor_dir = tmp_path / "_cursor"
-    cursor_dir.mkdir()
-    # Create a broken symlink
-    broken = cursor_dir / "memory-bank"
-    broken.symlink_to("/nonexistent/path")
+    config = _prepare_broken_symlink_config(tmp_path)
 
     with (
         patch(
@@ -175,6 +195,7 @@ async def test_repair_appends_gitignore_entries(tmp_path: Path) -> None:
     assert ".cortex-backup-*/" in content
     assert AGENT_SYNC_MARKER in content
     assert ".cursor/agents/" in content
+    assert LOCAL_ENV_CONTEXT_MARKER in content
     assert report.skipped is False
 
 
@@ -207,6 +228,7 @@ async def test_repair_updates_gitignore_when_agent_marker_missing(
     content = gitignore.read_text(encoding="utf-8")
     assert AGENT_SYNC_MARKER in content
     assert ".cursor/agents/" in content
+    assert LOCAL_ENV_CONTEXT_MARKER in content
     assert report.skipped is False
 
 
@@ -216,7 +238,7 @@ async def test_repair_skips_gitignore_when_entries_present(tmp_path: Path) -> No
     _make_git_repo(tmp_path)
     gitignore = tmp_path / ".gitignore"
     _ = gitignore.write_text(
-        f"# existing\n{GITIGNORE_MARKER}\n{AGENT_SYNC_MARKER}\n",
+        f"# existing\n{GITIGNORE_MARKER}\n{AGENT_SYNC_MARKER}\n{LOCAL_ENV_CONTEXT_MARKER}\n",
         encoding="utf-8",
     )
 
@@ -232,6 +254,9 @@ async def test_repair_skips_gitignore_when_entries_present(tmp_path: Path) -> No
         patch(
             "cortex.structure.lifecycle.startup_repair._needs_rumdl_config",
             return_value=False,
+        ),
+        patch(
+            "cortex.structure.lifecycle.startup_repair._repair_local_environment_context"
         ),
     ):
         report = await repair_project_setup(tmp_path)
@@ -256,6 +281,9 @@ async def test_repair_skips_gitignore_when_no_git_dir(tmp_path: Path) -> None:
         patch(
             "cortex.structure.lifecycle.startup_repair._needs_rumdl_config",
             return_value=False,
+        ),
+        patch(
+            "cortex.structure.lifecycle.startup_repair._repair_local_environment_context"
         ),
     ):
         report = await repair_project_setup(tmp_path)
@@ -318,6 +346,74 @@ async def test_repair_creates_gitignore_when_missing(tmp_path: Path) -> None:
     assert report.gitignore_updated is True
     assert (tmp_path / ".gitignore").is_file()
     assert GITIGNORE_MARKER in (tmp_path / ".gitignore").read_text(encoding="utf-8")
+    assert LOCAL_ENV_CONTEXT_MARKER in (tmp_path / ".gitignore").read_text(
+        encoding="utf-8"
+    )
+
+
+@pytest.mark.asyncio
+async def test_repair_creates_local_environment_artifact(tmp_path: Path) -> None:
+    # Arrange
+    with (
+        patch(
+            "cortex.structure.lifecycle.startup_repair._needs_structure",
+            return_value=False,
+        ),
+        patch(
+            "cortex.structure.lifecycle.startup_repair._needs_symlinks",
+            return_value=False,
+        ),
+        patch(
+            "cortex.structure.lifecycle.startup_repair._needs_gitignore",
+            return_value=False,
+        ),
+        patch(
+            "cortex.structure.lifecycle.startup_repair._needs_rumdl_config",
+            return_value=False,
+        ),
+    ):
+        report = await repair_project_setup(tmp_path)
+
+    # Assert
+    artifact = tmp_path / ".cortex" / "memory-bank" / "local-environment-context.json"
+    assert artifact.is_file()
+    assert report.local_env_context_created is True
+    assert report.local_env_context_updated is False
+    assert report.skipped is False
+
+
+@pytest.mark.asyncio
+async def test_repair_warns_on_local_environment_binding_mismatch(
+    tmp_path: Path,
+) -> None:
+    # Arrange
+    artifact = tmp_path / ".cortex" / "memory-bank" / "local-environment-context.json"
+    artifact.parent.mkdir(parents=True, exist_ok=True)
+    _ = artifact.write_text(_mismatched_artifact_payload(), encoding="utf-8")
+    with (
+        patch(
+            "cortex.structure.lifecycle.startup_repair._needs_structure",
+            return_value=False,
+        ),
+        patch(
+            "cortex.structure.lifecycle.startup_repair._needs_symlinks",
+            return_value=False,
+        ),
+        patch(
+            "cortex.structure.lifecycle.startup_repair._needs_gitignore",
+            return_value=False,
+        ),
+        patch(
+            "cortex.structure.lifecycle.startup_repair._needs_rumdl_config",
+            return_value=False,
+        ),
+    ):
+        report = await repair_project_setup(tmp_path)
+
+    # Assert
+    assert report.local_env_context_warning is not None
+    assert "binding mismatch" in report.local_env_context_warning
+    assert report.local_env_context_updated is True
 
 
 @pytest.mark.asyncio
@@ -335,6 +431,9 @@ async def test_repair_creates_rumdl_toml_when_missing(tmp_path: Path) -> None:
         patch(
             "cortex.structure.lifecycle.startup_repair._needs_gitignore",
             return_value=False,
+        ),
+        patch(
+            "cortex.structure.lifecycle.startup_repair._repair_local_environment_context"
         ),
     ):
         report = await repair_project_setup(tmp_path)
@@ -369,6 +468,9 @@ async def test_repair_skips_rumdl_toml_when_already_configured(
         patch(
             "cortex.structure.lifecycle.startup_repair._needs_gitignore",
             return_value=False,
+        ),
+        patch(
+            "cortex.structure.lifecycle.startup_repair._repair_local_environment_context"
         ),
     ):
         report = await repair_project_setup(tmp_path)
