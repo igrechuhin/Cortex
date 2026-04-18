@@ -1,5 +1,10 @@
 # Progress Log
 
+## 2026-04-18
+
+- <!-- memory_type: milestone -->
+**Commit pipeline: quality gate poll timeout + Synapse typecheck** - COMPLETE. Raised default Phase A test_timeout to 600s in pre_commit_zero_arg_tools.py, fixed Synapse swift_test_runner.py implicit string concatenation for pyright, committed Synapse prompt/agent alignment (fix.md, fix-tests.md), and obtained green run_quality_gate with parity scripts.
+
 ## 2026-04-17
 
 - <!-- memory_type: status -->

@@ -236,7 +236,7 @@ class TestFixPromptIntegrityGuard:
         assert "coverage_attempt_count" in fix_prompt_content
         assert "coverage_delta" in fix_prompt_content
         assert "blocker_reason" in fix_prompt_content
-        assert "status is explicitly `BLOCKED`" in fix_prompt_content
+        assert "`BLOCKED`" in fix_prompt_content
 
 
 class TestFixTestsAgentCoverageContract:

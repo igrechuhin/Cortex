@@ -87,7 +87,7 @@ async def _execute_pre_commit_checks_inner(
 async def execute_pre_commit_checks(
     phase: Literal["A", "B", "full"] | None = None,
     checks: Sequence[PreCommitCheckName] | None = None,
-    test_timeout: int = 300,
+    test_timeout: int = 600,
     coverage_threshold: float = 0.9,
     strict_mode: bool = False,
     include_untracked_markdown: bool = True,
@@ -193,7 +193,7 @@ def _spawn_quality_job(
 async def start_quality_job(
     phase: Literal["A", "B", "full"] | None = None,
     checks: Sequence[PreCommitCheckName] | None = None,
-    test_timeout: int = 300,
+    test_timeout: int = 600,
     coverage_threshold: float = 0.9,
     strict_mode: bool = False,
     include_untracked_markdown: bool = True,

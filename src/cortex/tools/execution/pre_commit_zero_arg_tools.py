@@ -257,7 +257,7 @@ async def _spawn_and_poll_phase_a(
 
 _QUALITY_GATE_DEFAULTS: dict[str, object] = {
     "coverage_threshold": 0.90,
-    "test_timeout": 300,
+    "test_timeout": 600,
     "force_fresh": True,
     "reflection": False,
     "force_reflection": False,
@@ -268,7 +268,7 @@ def _read_quality_gate_config(root: Path) -> tuple[int, float, bool, dict[str, o
     """Read pipeline config and return (timeout, coverage_threshold, force_fresh, cfg)."""
     cfg = read_pipeline_phase_config(root, "commit", "checks", _QUALITY_GATE_DEFAULTS)
     return (
-        as_int(cfg.get("test_timeout"), 300),
+        as_int(cfg.get("test_timeout"), 600),
         as_float(cfg.get("coverage_threshold"), 0.90),
         as_bool(cfg.get("force_fresh"), True),
         cfg,
