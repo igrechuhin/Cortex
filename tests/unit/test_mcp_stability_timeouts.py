@@ -11,11 +11,13 @@ Tests verify that:
 
 # pyright: reportUnusedFunction=false
 import asyncio
+import contextlib
 from pathlib import Path
 from unittest.mock import AsyncMock, patch
 
 import pytest
 
+import cortex.core.mcp_stability_semaphores as semaphores_mod
 from cortex.core import mcp_stability_retry
 from cortex.core.constants import (
     MCP_MAX_CONCURRENT_RESOURCES,
@@ -30,11 +32,23 @@ from cortex.core.mcp_async_utils import cancel_and_drain_progress_task
 from cortex.core.mcp_stability import (
     ensure_usage_context,
     mcp_tool_wrapper,
+    run_and_finalize,
     with_mcp_stability,
+)
+from cortex.core.mcp_stability_config import (
+    LONG_RUNNING_SEMAPHORE_WAIT_SECONDS,
+    get_long_running_semaphore,
 )
 from cortex.core.models import HandlerKind
 from cortex.core.usage_context import set_current_managers
 from cortex.managers.initialization import get_project_root
+from tests.unit.mcp_stability_timeouts_helpers import (
+    expect_tool_fails_usage_init_lock,
+    long_running_cancel_first_then_second,
+    run_two_long_running_sequential,
+    second_long_running_retry_result,
+    start_hold_usage_init_lock_forever,
+)
 
 
 @pytest.fixture(autouse=True)
@@ -367,79 +381,22 @@ class TestLongRunningSemaphoreWait:
 
     def test_long_running_wait_at_least_default_test_timeout(self) -> None:
         """Wait must be >= execute_pre_commit_checks default test_timeout so sequential calls succeed."""
-        from cortex.core.mcp_stability_config import LONG_RUNNING_SEMAPHORE_WAIT_SECONDS
-
-        # execute_pre_commit_checks default test_timeout is 300s; second call must wait that long.
-        assert LONG_RUNNING_SEMAPHORE_WAIT_SECONDS >= 300.0, (
-            "LONG_RUNNING_SEMAPHORE_WAIT_SECONDS must be >= 300 so a second long-running tool "
+        # execute_pre_commit_checks default test_timeout is 600s; second call must wait that long.
+        assert LONG_RUNNING_SEMAPHORE_WAIT_SECONDS >= 600.0, (
+            "LONG_RUNNING_SEMAPHORE_WAIT_SECONDS must be >= 600 so a second long-running tool "
             "can wait for execute_pre_commit_checks (with default test_timeout) to finish."
         )
 
     @pytest.mark.asyncio
     async def test_second_long_running_waits_then_succeeds(self) -> None:
         """Second long-running call waits for first to finish then runs (reduces commit blocking)."""
-        import cortex.core.mcp_stability_semaphores as semaphores_mod
-        from cortex.core.mcp_stability import run_and_finalize
-        from cortex.core.mcp_stability_config import get_long_running_semaphore
-
-        semaphores_mod.reset_long_running_tools_semaphore_for_testing()
-        _ = get_long_running_semaphore()
-        first_done: asyncio.Event = asyncio.Event()
-        first_acquired: asyncio.Event = asyncio.Event()
-
-        async def first_execute() -> (
-            tuple[str, bool, str | None, bool, int | None, str | None]
-        ):
-            _ = first_acquired.set()
-            _ = await first_done.wait()
-            return "first", True, None, False, None, None
-
-        async def second_execute() -> (
-            tuple[str, bool, str | None, bool, int | None, str | None]
-        ):
-            return "second", True, None, False, None, None
-
-        with patch(
-            "cortex.core.mcp_stability_semaphores.LONG_RUNNING_SEMAPHORE_WAIT_SECONDS",
-            1.0,
-        ):
-            # Start first (holds semaphore), then second (waits then runs)
-            first_task: asyncio.Task[str] = asyncio.create_task(
-                run_and_finalize(
-                    first_execute,
-                    None,
-                    None,
-                    "first_tool",
-                    0,
-                    HandlerKind.TOOL,
-                    use_serial_semaphore=True,
-                )
-            )
-            _ = await first_acquired.wait()
-            second_task: asyncio.Task[str] = asyncio.create_task(
-                run_and_finalize(
-                    second_execute,
-                    None,
-                    None,
-                    "second_tool",
-                    0,
-                    HandlerKind.TOOL,
-                    use_serial_semaphore=True,
-                )
-            )
-            first_done.set()
-            first_result: str = await first_task
-            second_result: str = await second_task
+        first_result, second_result = await run_two_long_running_sequential(1.0)
         assert first_result == "first"
         assert second_result == "second"
 
     @pytest.mark.asyncio
     async def test_second_long_running_fails_after_wait_timeout(self) -> None:
         """Second long-running call raises RuntimeError if first runs longer than wait."""
-        import cortex.core.mcp_stability_semaphores as semaphores_mod
-        from cortex.core.mcp_stability import run_and_finalize
-        from cortex.core.mcp_stability_config import get_long_running_semaphore
-
         semaphores_mod.reset_long_running_tools_semaphore_for_testing()
         sem = get_long_running_semaphore()
         await sem.acquire()
@@ -472,101 +429,14 @@ class TestLongRunningSemaphoreWait:
         self,
     ) -> None:
         """Second call acquires semaphore on retry window when first releases at main timeout."""
-        import cortex.core.mcp_stability_semaphores as semaphores_mod
-        from cortex.core.mcp_stability import run_and_finalize
-        from cortex.core.mcp_stability_config import get_long_running_semaphore
-
-        semaphores_mod.reset_long_running_tools_semaphore_for_testing()
-        sem = get_long_running_semaphore()
-        await sem.acquire()
-        released_during_retry: asyncio.Event = asyncio.Event()
-
-        async def second_execute() -> (
-            tuple[str, bool, str | None, bool, int | None, str | None]
-        ):
-            return "second", True, None, False, None, None
-
-        async def release_after_main_timeout() -> None:
-            await asyncio.sleep(0.12)
-            sem.release()
-            released_during_retry.set()
-
-        with (
-            patch(
-                "cortex.core.mcp_stability_semaphores.LONG_RUNNING_SEMAPHORE_WAIT_SECONDS",
-                0.1,
-            ),
-            patch(
-                "cortex.core.mcp_stability_semaphores.LONG_RUNNING_SEMAPHORE_RETRY_AFTER_TIMEOUT_SECONDS",
-                0.5,
-            ),
-        ):
-            release_task = asyncio.create_task(release_after_main_timeout())
-            result: str = await run_and_finalize(
-                second_execute,
-                None,
-                None,
-                "second_tool",
-                0,
-                HandlerKind.TOOL,
-                use_serial_semaphore=True,
-            )
-            await release_task
+        result, released_during_retry = await second_long_running_retry_result()
         assert result == "second"
         assert released_during_retry.is_set()
 
     @pytest.mark.asyncio
     async def test_long_running_semaphore_released_on_cancellation(self) -> None:
         """When first long-running call is cancelled, semaphore is released so second can run."""
-        import cortex.core.mcp_stability_semaphores as semaphores_mod
-        from cortex.core.mcp_stability import run_and_finalize
-        from cortex.core.mcp_stability_config import get_long_running_semaphore
-
-        semaphores_mod.reset_long_running_tools_semaphore_for_testing()
-        _ = get_long_running_semaphore()
-        first_acquired: asyncio.Event = asyncio.Event()
-        never_set: asyncio.Event = asyncio.Event()
-
-        async def first_execute() -> (
-            tuple[str, bool, str | None, bool, int | None, str | None]
-        ):
-            _ = first_acquired.set()
-            _ = await never_set.wait()
-            return "first", True, None, False, None, None
-
-        async def second_execute() -> (
-            tuple[str, bool, str | None, bool, int | None, str | None]
-        ):
-            return "second", True, None, False, None, None
-
-        with patch(
-            "cortex.core.mcp_stability_semaphores.LONG_RUNNING_SEMAPHORE_WAIT_SECONDS",
-            2.0,
-        ):
-            first_task: asyncio.Task[str] = asyncio.create_task(
-                run_and_finalize(
-                    first_execute,
-                    None,
-                    None,
-                    "first_tool",
-                    0,
-                    HandlerKind.TOOL,
-                    use_serial_semaphore=True,
-                )
-            )
-            assert await first_acquired.wait()
-            _ = first_task.cancel()
-            with pytest.raises(asyncio.CancelledError):
-                _ = await first_task
-            second_result: str = await run_and_finalize(
-                second_execute,
-                None,
-                None,
-                "second_tool",
-                0,
-                HandlerKind.TOOL,
-                use_serial_semaphore=True,
-            )
+        second_result = await long_running_cancel_first_then_second(2.0)
         assert second_result == "second"
 
 
@@ -639,41 +509,45 @@ def _functions_with_both_tool_and_resource(content: str) -> list[tuple[int, int]
     return result
 
 
-def _file_has_mcp_resource_missing_required_wrappers(content: str) -> list[int]:
-    """Return line numbers where @mcp.resource(uri=...) lacks required stack.
+def _consume_mcp_resource_wrappers(
+    lines: list[str], i: int, bad: list[int]
+) -> int | None:
+    """Validate @mcp.resource at i; return next outer index, or None to stop scanning."""
+    j = i + 1
+    while j < len(lines) and not lines[j].strip():
+        j += 1
+    if j >= len(lines):
+        bad.append(i + 1)
+        return None
+    first = lines[j].strip()
+    if first != "@ensure_usage_context":
+        bad.append(i + 1)
+        return j + 1
+    j += 1
+    while j < len(lines) and not lines[j].strip():
+        j += 1
+    if j >= len(lines):
+        bad.append(i + 1)
+        return None
+    second = lines[j].strip()
+    if not second.startswith("@mcp_resource_wrapper("):
+        bad.append(i + 1)
+    return j + 1
 
-    Required stack (Phase 43): @mcp.resource(uri=...), @ensure_usage_context,
-    @mcp_resource_wrapper(timeout=...).
-    """
+
+def _file_has_mcp_resource_missing_required_wrappers(content: str) -> list[int]:
+    """Return 1-based lines where @mcp.resource(uri=...) lacks @ensure_usage_context/@mcp_resource_wrapper."""
     lines = content.splitlines()
     bad: list[int] = []
     i = 0
     while i < len(lines):
         stripped = lines[i].strip()
         if "@mcp.resource(" in stripped and "uri=" in stripped:
-            j = i + 1
-            while j < len(lines) and not lines[j].strip():
-                j += 1
-            if j >= len(lines):
-                bad.append(i + 1)
-                i = j
-                continue
-            first = lines[j].strip()
-            if first != "@ensure_usage_context":
-                bad.append(i + 1)
-                i = j
-                i += 1
-                continue
-            j += 1
-            while j < len(lines) and not lines[j].strip():
-                j += 1
-            if j >= len(lines):
-                bad.append(i + 1)
+            next_i = _consume_mcp_resource_wrappers(lines, i, bad)
+            if next_i is None:
                 break
-            second = lines[j].strip()
-            if not second.startswith("@mcp_resource_wrapper("):
-                bad.append(i + 1)
-            i = j
+            i = next_i
+            continue
         i += 1
     return bad
 
@@ -879,59 +753,19 @@ class TestUsageContextInitLockTimeout:
     @pytest.mark.timeout(30)  # Allow up to 30s for this test (timeout + overhead)
     async def test_usage_context_init_lock_timeout(self) -> None:
         """Test that usage context init lock times out after configured duration."""
-        from unittest.mock import AsyncMock, patch
-
-        # Clear current managers to force lock acquisition
         set_current_managers(None)
 
         @ensure_usage_context
         async def test_tool() -> str:
             return "success"
 
-        # Create a lock that will be held indefinitely by simulating a stuck initialization
-        from cortex.core.mcp_stability_config import get_usage_context_init_lock
-
-        lock = get_usage_context_init_lock()
-
-        # Hold the lock in a background task to simulate a stuck initialization
-        lock_acquired: asyncio.Event = asyncio.Event()
-
-        async def hold_lock_forever() -> None:
-            async with lock:
-                _ = lock_acquired.set()
-                _ = await asyncio.Event().wait()
-
-        # Start holding the lock
-        hold_task = asyncio.create_task(hold_lock_forever())
-        _ = await lock_acquired.wait()
-
+        hold_task = await start_hold_usage_init_lock_forever()
         try:
-            # Mock resolve_project_root_async and get_managers to avoid real file system operations
-            with (
-                patch(
-                    "cortex.core.project_root_resolver.resolve_project_root_async",
-                    new_callable=AsyncMock,
-                    return_value=Path("/test"),
-                ),
-                patch(
-                    "cortex.managers.initialization.get_managers",
-                    new_callable=AsyncMock,
-                    return_value={},
-                ),
-            ):
-                # Attempt to call tool - should timeout trying to acquire lock
-                with pytest.raises(
-                    RuntimeError, match="Failed to acquire usage context init lock"
-                ):
-                    _ = await test_tool()
+            await expect_tool_fails_usage_init_lock(test_tool)
         finally:
-            # Clean up: cancel the hold task and release lock
             _ = hold_task.cancel()
-            try:
-                _ = await hold_task
-            except asyncio.CancelledError:
-                pass
-            # Reset managers for other tests
+            with contextlib.suppress(asyncio.CancelledError):
+                await hold_task
             set_current_managers(None)
 
     @pytest.mark.asyncio
