@@ -5,6 +5,8 @@
 - <!-- memory_type: milestone -->
 - <!-- memory_type: status -->
 - MCP stability timeout tests: extracted helpers to tests/unit/mcp_stability_timeouts_helpers.py; refactored test_mcp_stability_timeouts for function-length and file-size gates; aligned semaphore wait test with 600s default.
+- <!-- memory_type: status -->
+**/cortex/commit — Synapse fix-coverage + commit integrity slice** - COMPLETE. Green Phase A quality gate and parity scripts; wiki staged ingest for docs/guides; memory bank compound updates; submodule f90ea86 with fix-coverage agent; integration test and workflow/report template doc edits staged with temporal.db.
 **Commit pipeline: quality gate poll timeout + Synapse typecheck** - COMPLETE. Raised default Phase A test_timeout to 600s in pre_commit_zero_arg_tools.py, fixed Synapse swift_test_runner.py implicit string concatenation for pyright, committed Synapse prompt/agent alignment (fix.md, fix-tests.md), and obtained green run_quality_gate with parity scripts.
 
 ## 2026-04-17

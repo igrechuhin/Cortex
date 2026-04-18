@@ -7,6 +7,9 @@
 - ✅ **Quality gate poll timeout and Synapse hygiene** - COMPLETE (2026-04-18) - <!-- memory_type: problem -->
 
 - ✅ **MCP stability timeout tests refactor** - COMPLETE (2026-04-18) - <!-- memory_type: status -->
+
+- ✅ **Synapse fix-coverage agent and commit workflow docs** - COMPLETE (2026-04-18) - <!-- memory_type: status -->
+Committed Synapse submodule with new cursor-agents/fix-coverage.md, manifest registration, and refreshed fix.md / fix-tests.md. Superproject: tightened tests/integration/test_commit_workflow_integrity_guards.py, updated docs/guides/workflows.md and synapse-final-report-templates.md, mirrored staged guides into .cortex/wiki, refreshed .cortex/index.json and memory-bank log, staged .cortex/temporal.db for temporal persistence.
 Added tests/unit/mcp_stability_timeouts_helpers.py with shared long-running semaphore and usage-context lock helpers. Refactored tests/unit/test_mcp_stability_timeouts.py for 30-line function limits and logical file size; split @mcp.resource wrapper scan via _consume_mcp_resource_wrappers. Aligned LONG_RUNNING_SEMAPHORE_WAIT assertion with 600s Phase A default.
 Raised default Phase A test_timeout to 600s in pre_commit_zero_arg_tools (poll uses timeout+60) so full pytest fits under the detached worker. Committed Synapse updates: fix/fix-tests coverage-only reporting contract, pyright fix for implicit string concatenation in scripts/swift/swift_test_runner.py regex, and integrity test assertion aligned to BLOCKED wording.
 

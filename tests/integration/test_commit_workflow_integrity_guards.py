@@ -125,22 +125,22 @@ class TestFixLoopIntegrityGuard:
         assert "git submodule foreach" in workflows_guide_content
         assert "run its fix loop first" in lower
 
-    def test_workflows_guide_documents_coverage_only_fix_contract(
+    def test_workflows_guide_documents_coverage_fix_contract(
         self, workflows_guide_content: str
     ) -> None:
-        """Workflow docs require coverage-only uplift evidence or blocker telemetry."""
-        # AI: The workflow guide is the repo-level fallback for /fix behavior, so
-        # coverage-only guardrails must stay aligned here as well as in fix.md.
+        """Workflow docs require the dedicated coverage target and telemetry schema."""
+        # AI: Coverage uplift is owned by the 📈 coverage target via @fix-coverage.
+        # Guards keep the guide aligned with fix.md's new 4-target structure.
         assert (
             "coverage below threshold with zero failing tests"
             in workflows_guide_content
         )
-        assert "coverage_only_failure" in workflows_guide_content
-        assert "coverage_attempt_evidence" in workflows_guide_content
-        assert "coverage_attempt_count" in workflows_guide_content
+        assert "@fix-coverage" in workflows_guide_content
+        assert "coverage_gaps" in workflows_guide_content
+        assert "final_coverage" in workflows_guide_content
         assert "coverage_delta" in workflows_guide_content
+        assert "tests_added" in workflows_guide_content
         assert "blocker_reason" in workflows_guide_content
-        assert "`BLOCKED`" in workflows_guide_content
 
     def test_fix_quality_tool_docs_warn_about_integrity_risks(
         self, fix_quality_tool_content: str
@@ -151,18 +151,18 @@ class TestFixLoopIntegrityGuard:
         assert "run_quality_gate()" in fix_quality_tool_content
         assert "roll back that" in lower
 
-    def test_final_report_templates_document_coverage_only_fix_reporting(
+    def test_final_report_templates_document_coverage_fix_reporting(
         self, final_report_templates_content: str
     ) -> None:
-        """Diagnostic template documents coverage-only evidence and blocker reporting."""
-        # AI: Lock the canonical report template to evidence-or-blocker wording so
-        # coverage-only exits cannot regress into policy-only summaries.
-        assert "coverage-only failures" in final_report_templates_content
-        assert "coverage_attempt_evidence" in final_report_templates_content
-        assert "coverage_attempt_count" in final_report_templates_content
+        """Diagnostic template documents the coverage target contract and blocker reporting."""
+        # AI: Lock the canonical report template to evidence-or-blocker wording for the
+        # dedicated 📈 coverage target so exits cannot regress into policy-only summaries.
+        assert "coverage target" in final_report_templates_content
+        assert "final_coverage" in final_report_templates_content
+        assert "tests_added" in final_report_templates_content
         assert "coverage_delta" in final_report_templates_content
         assert "blocker_reason" in final_report_templates_content
-        assert "`Tests | BLOCKED | <n>`" in final_report_templates_content
+        assert "`Coverage | BLOCKED | <n>`" in final_report_templates_content
 
 
 class TestFixPromptIntegrityGuard:
@@ -227,20 +227,24 @@ class TestFixPromptIntegrityGuard:
         assert "no-go — synthetic roadmap backlog" in lower
         assert "never fabricate generic `pending` roadmap bullets" in lower
 
-    def test_fix_prompt_requires_coverage_only_evidence_contract(
+    def test_fix_prompt_requires_coverage_target_contract(
         self, fix_prompt_content: str
     ) -> None:
-        """Fix prompt enforces explicit coverage-only handoff evidence."""
-        assert "coverage_only_failure" in fix_prompt_content
-        assert "coverage_attempt_evidence" in fix_prompt_content
-        assert "coverage_attempt_count" in fix_prompt_content
-        assert "coverage_delta" in fix_prompt_content
+        """Fix prompt delegates coverage uplift to the 📈 coverage target / @fix-coverage."""
+        # AI: Coverage uplift is a dedicated subagent. fix.md must document the target,
+        # the pre-flight handoff payload, and that coverage runs FIRST in target=all.
+        assert "@fix-coverage" in fix_prompt_content
+        assert "coverage Target" in fix_prompt_content
+        assert "coverage_gaps" in fix_prompt_content
+        assert "coverage_threshold" in fix_prompt_content
+        assert 'phase="coverage"' in fix_prompt_content
+        assert "coverage → quality → tests → docs" in fix_prompt_content
         assert "blocker_reason" in fix_prompt_content
-        assert "`BLOCKED`" in fix_prompt_content
+        assert "BLOCKED_NO_MCP" in fix_prompt_content
 
 
-class TestFixTestsAgentCoverageContract:
-    """Assert fix-tests agent documents the coverage-only evidence schema."""
+class TestFixTestsAgentScope:
+    """Assert fix-tests agent scopes out coverage uplift and routes to @fix-coverage."""
 
     @pytest.fixture
     def fix_tests_agent_content(self) -> str:
@@ -252,18 +256,44 @@ class TestFixTestsAgentCoverageContract:
             )
         return path.read_text()
 
-    def test_fix_tests_agent_requires_coverage_contract_fields(
+    def test_fix_tests_agent_delegates_coverage_to_fix_coverage(
         self, fix_tests_agent_content: str
     ) -> None:
-        """Agent contract includes required coverage-only fields."""
-        assert "coverage_only_failure" in fix_tests_agent_content
-        assert "coverage_attempt_evidence" in fix_tests_agent_content
-        assert "coverage_attempt_count" in fix_tests_agent_content
-        assert "coverage_delta" in fix_tests_agent_content
+        """Fix-tests agent must route coverage uplift to @fix-coverage, not do it inline."""
+        # AI: Coverage uplift is owned by @fix-coverage. fix-tests only handles
+        # assertion failures (Branch A) and subprocess crashes (Branch C).
+        assert "@fix-coverage" in fix_tests_agent_content
+        assert "OUT OF SCOPE" in fix_tests_agent_content
+        assert "redirect" in fix_tests_agent_content
         assert "blocker_reason" in fix_tests_agent_content
-        assert (
-            'status":"passed or failed or skipped or BLOCKED' in fix_tests_agent_content
-        )
+
+
+class TestFixCoverageAgentContract:
+    """Assert fix-coverage agent documents the uplift contract."""
+
+    @pytest.fixture
+    def fix_coverage_agent_content(self) -> str:
+        """Read fix-coverage cursor agent content."""
+        path = synapse_path() / "cursor-agents" / "fix-coverage.md"
+        if not path.exists():
+            pytest.skip(
+                f"Fix-coverage agent not found at {path} (ref: cleanup-skipped-legacy-tests)"
+            )
+        return path.read_text()
+
+    def test_fix_coverage_agent_declares_scope_and_contract(
+        self, fix_coverage_agent_content: str
+    ) -> None:
+        """Agent defines OUT OF SCOPE boundaries and the pipeline_handoff contract."""
+        assert "OUT OF SCOPE" in fix_coverage_agent_content
+        assert "coverage_gaps" in fix_coverage_agent_content
+        assert "coverage_threshold" in fix_coverage_agent_content
+        assert 'phase="coverage"' in fix_coverage_agent_content
+        assert "tests_added" in fix_coverage_agent_content
+        assert "final_coverage" in fix_coverage_agent_content
+        assert "coverage_delta" in fix_coverage_agent_content
+        assert "blocker_reason" in fix_coverage_agent_content
+        assert "BLOCKED" in fix_coverage_agent_content
 
 
 class TestImplementPromptIntegrityGuard:
