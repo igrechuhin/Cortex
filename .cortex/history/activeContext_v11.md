@@ -2,6 +2,11 @@
 
 **This file records completed work only.** For current status and upcoming work see [roadmap.md](roadmap.md).
 
+## Completed Work (2026-04-19)
+
+- ✅ **Fix pipeline handoff validation and Synapse fix MCP probe** - COMPLETE (2026-04-19) - <!-- memory_type: status -->
+Allowlisted the fix pipeline plus fix-path phases (coverage, quality, tests, gate_*) in pipeline_handoff_validation.py. Synapse prompts/fix.md now requires a direct session() zero-arg probe and documents false-negative cross-server health checks. Submodule bumped; session index/history/log refreshed for telemetry.
+
 ## Completed Work (2026-04-18)
 
 - **Summary (2026-04-18)** - 1 entries archived.

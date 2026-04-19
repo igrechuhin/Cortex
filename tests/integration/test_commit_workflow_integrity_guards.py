@@ -242,6 +242,19 @@ class TestFixPromptIntegrityGuard:
         assert "blocker_reason" in fix_prompt_content
         assert "BLOCKED_NO_MCP" in fix_prompt_content
 
+    def test_fix_prompt_short_circuits_pipeline_on_coverage_failure(
+        self, fix_prompt_content: str
+    ) -> None:
+        """Fix prompt must STOP the pipeline when coverage target fails — no quality/tests/docs after ❌ coverage."""
+        # AI: Quality/Tests gates use the same run_quality_gate() that just failed on
+        # coverage — running them after a coverage ❌ wastes iterations and produces
+        # confusing reports like `Quality | ❌ | 4`. Lock in the hard stop in step 5.
+        assert "HARD STOP — Coverage gate" in fix_prompt_content
+        assert (
+            "Do NOT run `fix quality`, `fix tests`, or `fix docs`" in fix_prompt_content
+        )
+        assert "Coverage failure short-circuits the pipeline" in fix_prompt_content
+
 
 class TestFixTestsAgentScope:
     """Assert fix-tests agent scopes out coverage uplift and routes to @fix-coverage."""
@@ -294,6 +307,20 @@ class TestFixCoverageAgentContract:
         assert "coverage_delta" in fix_coverage_agent_content
         assert "blocker_reason" in fix_coverage_agent_content
         assert "BLOCKED" in fix_coverage_agent_content
+
+    def test_fix_coverage_agent_enforces_three_iteration_discipline(
+        self, fix_coverage_agent_content: str
+    ) -> None:
+        """Agent must run all 3 iterations unless threshold met or hard stall."""
+        # AI: 1-iteration exits with positive delta were the failure mode in it40 —
+        # agent added one test file (+0.22%) and gave up. Lock in the iteration discipline.
+        assert "you MUST run all 3 iterations" in fix_coverage_agent_content
+        assert (
+            "do NOT exit after iteration 1 with a positive delta"
+            in fix_coverage_agent_content
+        )
+        assert "two consecutive" in fix_coverage_agent_content
+        assert "small positive delta" in fix_coverage_agent_content
 
 
 class TestImplementPromptIntegrityGuard:

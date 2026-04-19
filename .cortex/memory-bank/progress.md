@@ -3,6 +3,8 @@
 ## 2026-04-19
 
 - <!-- memory_type: status -->
+- <!-- memory_type: status -->
+**/cortex/commit — fix prompt integrity + fix-coverage agent contracts** - COMPLETE. Strengthened tests/integration/test_commit_workflow_integrity_guards.py for fix.md coverage short-circuit and fix-coverage three-iteration discipline; Synapse submodule carries aligned prompts/fix.md.
 **Fix pipeline validation + Synapse /fix MCP availability** - COMPLETE. Hardened pipeline/phase token allowlists for the fix workflow, aligned Synapse fix.md with session()-first MCP probing, and ran /cortex/commit compound updates with green quality and docs gates.
 
 ## 2026-04-18
