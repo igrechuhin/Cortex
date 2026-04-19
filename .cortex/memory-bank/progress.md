@@ -1,5 +1,10 @@
 # Progress Log
 
+## 2026-04-19
+
+- <!-- memory_type: status -->
+**Fix pipeline validation + Synapse /fix MCP availability** - COMPLETE. Hardened pipeline/phase token allowlists for the fix workflow, aligned Synapse fix.md with session()-first MCP probing, and ran /cortex/commit compound updates with green quality and docs gates.
+
 ## 2026-04-18
 
 - <!-- memory_type: milestone -->

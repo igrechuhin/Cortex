@@ -2,17 +2,13 @@
 
 **This file records completed work only.** For current status and upcoming work see [roadmap.md](roadmap.md).
 
+## Completed Work (2026-04-18)
+
+- **Summary (2026-04-18)** - 1 entries archived.
+
 ## Completed Work (2026-04-17)
 
-- ✅ **Add Local Environment Context Memory Artifact (PARTIAL)** - COMPLETE (2026-04-17) - <!-- memory_type: status -->
-
-- ✅ **Add Local Environment Context Memory Artifact** - COMPLETE (2026-04-17) - Delivered canonical local-environment context artifact lifecycle with startup binding validation, actionable rebind workflow, architecture-aware debug guidance, and dedicated edge-case tests; review gate confirmed no remaining gaps.
-Local machine-context artifact lifecycle is implemented and integrated into startup/prompt flow; plan remains open pending dedicated unit tests, actionable rebind remediation path, and lifecycle API export consistency.
-
-- ✅ **Fix prompt integrity and commit pipeline validation** - COMPLETE (2026-04-17) - Restored coverage-only BLOCKED wording contract and markdown list-spacing in Synapse fix prompts, committed/pushed Synapse update, and passed quality/docs/validation/final-gate checks in the superproject commit pipeline.
-
-- ✅ **Commit pipeline run for Synapse fix prompt updates** - COMPLETE (2026-04-17) - <!-- memory_type: milestone -->
-Completed /cortex/commit with preflight snapshot, Phase A quality+parity checks, wiki staged-ingest bridge, docs/validation/final gate, and staged synapse gitlink for superproject commit.
+- **Summary (2026-04-17)** - 1 entries archived.
 
 ## Completed Work (2026-04-16)
 

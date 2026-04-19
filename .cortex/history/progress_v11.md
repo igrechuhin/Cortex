@@ -1,5 +1,14 @@
 # Progress Log
 
+## 2026-04-18
+
+- <!-- memory_type: milestone -->
+- <!-- memory_type: status -->
+- MCP stability timeout tests: extracted helpers to tests/unit/mcp_stability_timeouts_helpers.py; refactored test_mcp_stability_timeouts for function-length and file-size gates; aligned semaphore wait test with 600s default.
+- <!-- memory_type: status -->
+**/cortex/commit — Synapse fix-coverage + commit integrity slice** - COMPLETE. Green Phase A quality gate and parity scripts; wiki staged ingest for docs/guides; memory bank compound updates; submodule f90ea86 with fix-coverage agent; integration test and workflow/report template doc edits staged with temporal.db.
+**Commit pipeline: quality gate poll timeout + Synapse typecheck** - COMPLETE. Raised default Phase A test_timeout to 600s in pre_commit_zero_arg_tools.py, fixed Synapse swift_test_runner.py implicit string concatenation for pyright, committed Synapse prompt/agent alignment (fix.md, fix-tests.md), and obtained green run_quality_gate with parity scripts.
+
 ## 2026-04-17
 
 - <!-- memory_type: status -->
@@ -7,6 +16,8 @@
 - **Add Local Environment Context Memory Artifact** - COMPLETE. Delivered canonical local-environment context artifact lifecycle with startup validation, rebind guidance, and dedicated tests; review gate confirmed no remaining gaps.
 - <!-- memory_type: status -->
 - **Commit pipeline run for Synapse fix prompt updates** - COMPLETE. Executed full /cortex/commit flow with green quality parity checks, docs/validation gates, and staged Synapse gitlink update for the superproject commit.
+- <!-- memory_type: status -->
+**Swift framework adapter coverage + Synapse fix path** - COMPLETE. Extended Swift coverage parsing and adapter wiring in `swift_adapter.py`/`swift_coverage.py` with shared base helpers, refreshed Cortex session telemetry (`index.json`, history slices, `log.md`), and bumped Synapse submodule for aligned `fix.md` / `fix-tests.md` guidance.
 **Add Local Environment Context Memory Artifact** - PARTIAL. Implemented canonical local environment artifact plus startup housekeeping/validation and prompt integration; review reopened plan for follow-up test-depth and remediation/API consistency gaps.
 
 ## 2026-04-16
