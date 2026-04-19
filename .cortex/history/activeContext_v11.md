@@ -5,6 +5,9 @@
 ## Completed Work (2026-04-19)
 
 - ✅ **Fix pipeline handoff validation and Synapse fix MCP probe** - COMPLETE (2026-04-19) - <!-- memory_type: status -->
+
+- ✅ **Commit workflow integrity tests and Synapse fix prompt discipline** - COMPLETE (2026-04-19) - <!-- memory_type: status -->
+Added integration assertions in test_commit_workflow_integrity_guards.py for fix.md coverage short-circuit (no quality/tests/docs after coverage failure) and fix-coverage agent three-iteration discipline. Synapse submodule updated with aligned prompts/fix.md edits.
 Allowlisted the fix pipeline plus fix-path phases (coverage, quality, tests, gate_*) in pipeline_handoff_validation.py. Synapse prompts/fix.md now requires a direct session() zero-arg probe and documents false-negative cross-server health checks. Submodule bumped; session index/history/log refreshed for telemetry.
 
 ## Completed Work (2026-04-18)

@@ -4,8 +4,8 @@ TIMEOUT := $(shell command -v gtimeout >/dev/null 2>&1 && echo "gtimeout -k 5" |
 
 help:
 	@echo "Common targets:"
-	@echo "  make test               - run fast test suite (timeout)"
-	@echo "  make test-full          - run full test suite (timeout)"
+	@echo "  make test               - run default suite: parallel, not slow, no coverage (timeout)"
+	@echo "  make test-full          - run all tests (incl. slow): parallel, no coverage (timeout)"
 	@echo "  make typecheck          - run pyright on src/ and tests/"
 	@echo "  make format-check       - verify Black formatting (no writes; src/ + tests/)"
 	@echo "  make format             - apply Black + Ruff import sort (mutates files)"
@@ -44,11 +44,13 @@ synapse-check:
 check-dep-parity:
 	uv run python scripts/check_dep_parity.py
 
+# Match CI / PythonAdapter: pytest-xdist parallelizes; -m "not slow" skips ~20 long tests.
+# Omit --cov here so local feedback stays minutes, not tens of minutes (coverage: make check-ci-parity).
 test: env-check synapse-check
-	$(TIMEOUT) 300 $(VENV_PY) -m pytest -q
+	$(TIMEOUT) 900 $(VENV_PY) -m pytest tests/ -m "not slow" -n auto -q
 
 test-full: env-check
-	$(TIMEOUT) 600 $(VENV_PY) -m pytest
+	$(TIMEOUT) 900 $(VENV_PY) -m pytest tests/ -n auto -q
 
 typecheck: env-check
 	./.venv/bin/pyright src/ tests/

@@ -11,10 +11,10 @@ Quick reference for testing and coverage in Cortex. For the full guide, see [Cor
 
 To identify files with the most uncovered lines (for prioritization):
 
-1. Generate a coverage JSON report:
+1. Generate a coverage JSON report (same parallelism and marker filter as CI; serial full-tree runs are very slow):
 
    ```bash
-   uv run python -m pytest tests/ --cov=src/cortex --cov-report=json:coverage.json
+   uv run python -m pytest tests/ -m "not slow" -n auto --cov=src/cortex --cov-report=json:coverage.json
    ```
 
 2. Run the gap analysis script (from project root):

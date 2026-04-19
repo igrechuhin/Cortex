@@ -7,6 +7,9 @@
 - ✅ **Fix pipeline handoff validation and Synapse fix MCP probe** - COMPLETE (2026-04-19) - <!-- memory_type: status -->
 
 - ✅ **Commit workflow integrity tests and Synapse fix prompt discipline** - COMPLETE (2026-04-19) - <!-- memory_type: status -->
+
+- ✅ **SwiftAdapter swift test MLX Metal workaround + testing docs** - COMPLETE (2026-04-19) - <!-- memory_type: milestone -->
+Merged optional extra_env into _run_swift; run_tests passes MLX_DISABLE_METAL=1 by default (opt out via SWIFT_TEST_ALLOW_METAL=1) to reduce Apple Silicon SIGBUS when capturing swift test output. Extended unit tests. Updated Makefile, README, docs/guides/testing.md, and AGENTS.md for Swift test env guidance. Session telemetry refreshed in .cortex/index.json, history slices, memory-bank/log.md.
 Added integration assertions in test_commit_workflow_integrity_guards.py for fix.md coverage short-circuit (no quality/tests/docs after coverage failure) and fix-coverage agent three-iteration discipline. Synapse submodule updated with aligned prompts/fix.md edits.
 Allowlisted the fix pipeline plus fix-path phases (coverage, quality, tests, gate_*) in pipeline_handoff_validation.py. Synapse prompts/fix.md now requires a direct session() zero-arg probe and documents false-negative cross-server health checks. Submodule bumped; session index/history/log refreshed for telemetry.
 

@@ -227,13 +227,13 @@ If dependency download fails (network, proxy, or SSL), use the preflight and tri
 | Format check | `.venv/bin/black --check src/ tests/` |
 | Apply format / fixes | `make fix` (Black + Ruff import sort + Ruff `--fix` on `src/` and `tests/`) |
 | Type check | `uv run pyright src/ tests/` |
-| Tests | `uv run pytest tests/ -q` |
+| Tests (local, fast) | `make test` or `uv run python -m pytest tests/ -m "not slow" -n auto -q` |
 | All checks (non-mutating) | `make check` (note: Makefile uses `gtimeout` which may not exist on Linux; use commands above directly) |
-| CI-heavy parity | `make check-ci-parity` (requires `uv` on `PATH`; see README / troubleshooting) |
+| CI parity (incl. pytest + coverage) | `make check-ci-parity` (requires `uv` on `PATH`; see README / troubleshooting) |
 
 ### Gotchas
 
 - `make check` is **non-mutating** (Black `--check`, Ruff lint, typecheck, fast tests). Use `make fix` to apply formatting and auto-fixable lint. `make check-ci-parity` runs more of the same steps as [.github/workflows/quality.yml](.github/workflows/quality.yml). Targets use `.venv/bin/` paths where noted and work cross-platform.
 - The git submodule `.cortex/synapse` must be initialized before running pre-commit hooks or scripts that reference `.cortex/synapse/scripts/python/`.
-- All tests pass. Run with `uv run pytest tests/ -q`.
+- All tests pass. Prefer `make test` (parallel, excludes `slow`) or `make check-ci-parity` before merge; avoid serial `pytest tests/` on the full tree (~6.6k tests).
 - `uv sync --extra dev` installs both the `[project.optional-dependencies] dev` extras (pytest, etc.) and the `[dependency-groups] dev` group (black, ruff, pyright, detect-secrets).

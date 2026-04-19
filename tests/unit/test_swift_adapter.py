@@ -243,6 +243,42 @@ class TestSwiftAdapter:
             assert "--enable-code-coverage" in call_args
 
     @patch("cortex.services.framework_adapters.swift_adapter.subprocess.run")
+    def test_run_tests_disables_mlx_metal_by_default(self, mock_run: MagicMock) -> None:
+        """swift test subprocess gets MLX_DISABLE_METAL=1 to avoid SIGBUS on Apple Silicon."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            _ = (Path(tmpdir) / "Package.swift").write_text(
+                "// swift-tools-version:5.9"
+            )
+            mock_run.side_effect = _subprocess_swift_test_then_skip_coverage(
+                b"Test run: 1 passed", 0
+            )
+            adapter = SwiftAdapter(str(tmpdir))
+            _ = adapter.run_tests()
+            swift_test_kwargs = mock_run.call_args_list[0][1]
+            env = swift_test_kwargs.get("env")
+            assert env is not None, "swift test must run with an explicit env override"
+            assert env.get("MLX_DISABLE_METAL") == "1"
+
+    @patch("cortex.services.framework_adapters.swift_adapter.subprocess.run")
+    def test_run_tests_honors_swift_test_allow_metal_opt_out(
+        self, mock_run: MagicMock, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """SWIFT_TEST_ALLOW_METAL=1 disables the MLX override for diagnostic runs."""
+        monkeypatch.setenv("SWIFT_TEST_ALLOW_METAL", "1")
+        with tempfile.TemporaryDirectory() as tmpdir:
+            _ = (Path(tmpdir) / "Package.swift").write_text(
+                "// swift-tools-version:5.9"
+            )
+            mock_run.side_effect = _subprocess_swift_test_then_skip_coverage(
+                b"Test run: 1 passed", 0
+            )
+            adapter = SwiftAdapter(str(tmpdir))
+            _ = adapter.run_tests()
+            swift_test_kwargs = mock_run.call_args_list[0][1]
+            env = swift_test_kwargs.get("env")
+            assert env is None or "MLX_DISABLE_METAL" not in env
+
+    @patch("cortex.services.framework_adapters.swift_adapter.subprocess.run")
     def test_run_tests_tolerates_binary_output(self, mock_run: MagicMock) -> None:
         """run_tests does not crash when output contains non-UTF-8 bytes (e.g. PNG 0x89)."""
         with tempfile.TemporaryDirectory() as tmpdir:

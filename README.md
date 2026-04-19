@@ -158,7 +158,7 @@ For local development, use these Make targets (after running `bash scripts/boots
 - **`make check`**: Non-mutating local gate: verify Black on `src/` and `tests/`, Ruff lint, Pyright, then the fast test suite. Does not rewrite files; use `make fix` when checks fail for formatting or auto-fixable lint.
 - **`make fix`**: Apply Black, Ruff import sorting (`I`), and Ruff `--fix` on `src/` and `tests/` (mutating).
 - **`make check-ci-parity`**: Run a broader subset of the GitHub Actions [Code Quality](.github/workflows/quality.yml) workflow via `uv run` (synapse format/lint scripts, type checks, file/function limits, rumdl, pytest with coverage). Requires `uv` on your `PATH`. Still **not** identical to CI: spell check (`cspell`), the eval suite, Codecov, and health-check upload steps run only in Actions—see [Troubleshooting — Local make check vs CI](docs/guides/troubleshooting.md#local-make-check-vs-ci-parity).
-- **`make test`**: Run the fast test suite (`pytest -q`) with timeouts.
+- **`make test`**: Run the default suite in parallel (`-n auto`), skip `@pytest.mark.slow`, no coverage (timeouts). Use `make check-ci-parity` for the full pytest+coverage command that matches CI.
 - **`make test-full`**: Run the full test suite (including slower tests) with a longer timeout.
 - **`make commit-check`**: Run the same checks as `make check` before using `/cortex/commit` in Cursor for the full commit pipeline. With Cortex MCP connected, Phase A / Step 12 use the zero-arg tools documented in [docs/api/tools.md](docs/api/tools.md#commit-and-quality-pipeline-zero-arg-mcp-tools).
 

@@ -4,6 +4,7 @@ Adapter for Swift projects using Swift Package Manager: swift format,
 swift build (type check / lint), swift test.
 """
 
+import os
 import re
 import subprocess
 import sys
@@ -70,21 +71,32 @@ class SwiftAdapter(FrameworkAdapter):
         return (self.project_root / "Package.swift").is_file()
 
     def _run_swift(
-        self, args: list[str], timeout: int | None = None
+        self,
+        args: list[str],
+        timeout: int | None = None,
+        extra_env: dict[str, str] | None = None,
     ) -> subprocess.CompletedProcess[str]:
         """Run swift command in project root.
 
         Captures raw bytes and decodes with ``errors="replace"`` so that binary
         content in test output (e.g. PNG snapshot bytes starting with 0x89) does
         not raise ``UnicodeDecodeError`` and crash the quality gate.
+
+        ``extra_env`` is merged over ``os.environ`` for the child process. Used
+        by ``run_tests`` to disable MLX Metal by default (SIGBUS workaround on
+        Apple Silicon when ``swift test`` output is captured).
         """
         cmd = ["swift", *args]
+        env: dict[str, str] | None = None
+        if extra_env:
+            env = {**os.environ, **extra_env}
         raw = subprocess.run(
             cmd,
             cwd=self.project_root,
             capture_output=True,
             text=False,
             timeout=timeout,
+            env=env,
         )
         stdout = raw.stdout.decode("utf-8", errors="replace") if raw.stdout else ""
         stderr = raw.stderr.decode("utf-8", errors="replace") if raw.stderr else ""
@@ -94,6 +106,18 @@ class SwiftAdapter(FrameworkAdapter):
             stdout=stdout,
             stderr=stderr,
         )
+
+    @staticmethod
+    def _swift_test_env() -> dict[str, str]:
+        """Return env overrides for ``swift test`` subprocess.
+
+        Disables MLX Metal by default (``MLX_DISABLE_METAL=1``) to avoid
+        intermittent SIGBUS when ``swift test`` output is captured on Apple
+        Silicon. Set ``SWIFT_TEST_ALLOW_METAL=1`` in the parent env to opt out.
+        """
+        if os.getenv("SWIFT_TEST_ALLOW_METAL", "").lower() in {"1", "true", "yes"}:
+            return {}
+        return {"MLX_DISABLE_METAL": "1"}
 
     def run_tests(
         self,
@@ -112,6 +136,7 @@ class SwiftAdapter(FrameworkAdapter):
             result = self._run_swift(
                 ["test", "--enable-code-coverage"],
                 timeout=timeout,
+                extra_env=self._swift_test_env(),
             )
             output = result.stdout + result.stderr
             return self._finalize_swift_test_result(
