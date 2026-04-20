@@ -661,6 +661,7 @@ class TestSwiftAdapter:
             assert mock_run.call_count == 3
 
     @patch("cortex.services.framework_adapters.swift_adapter.subprocess.run")
+    # AI: Fixture pairs covered App.swift with zero-covered *.pb.swift; JSON aggregate should fail the gate without excludes.
     def test_run_tests_codecov_json_includes_pb_without_swift_coverage_config(
         self, mock_run: MagicMock
     ) -> None:
@@ -675,6 +676,7 @@ class TestSwiftAdapter:
             assert result.success is False
 
     @patch("cortex.services.framework_adapters.swift_adapter.subprocess.run")
+    # AI: swift_coverage.json exclude patterns remove pb paths from codecov JSON so App-only coverage passes threshold.
     def test_run_tests_codecov_json_excludes_pb_with_swift_coverage_config(
         self, mock_run: MagicMock
     ) -> None:

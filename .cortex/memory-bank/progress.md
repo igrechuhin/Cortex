@@ -1,5 +1,10 @@
 # Progress Log
 
+## 2026-04-20
+
+- <!-- memory_type: preference -->
+**/cortex/commit Phase B — memory bank/docs synchronization** - COMPLETE. Added commit-session context for comments-only updates in `tests/unit/test_swift_adapter.py` alongside existing `.cortex` index/history/log edits, then executed plan archival, markdown autofix, and docs-gate validation with roadmap-sync policy handling.
+
 ## 2026-04-19
 
 - <!-- memory_type: status -->

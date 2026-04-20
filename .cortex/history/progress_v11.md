@@ -4,6 +4,8 @@
 
 - <!-- memory_type: status -->
 - <!-- memory_type: status -->
+- <!-- memory_type: status -->
+**SwiftAdapter MLX-disable-metal default for captured swift test** - COMPLETE. Child env merge in SwiftAdapter._run_swift, _swift_test_env helper, Makefile/README/AGENTS/testing.md alignment, swift_adapter unit tests, Cortex session index/history/log refresh.
 **/cortex/commit — fix prompt integrity + fix-coverage agent contracts** - COMPLETE. Strengthened tests/integration/test_commit_workflow_integrity_guards.py for fix.md coverage short-circuit and fix-coverage three-iteration discipline; Synapse submodule carries aligned prompts/fix.md.
 **Fix pipeline validation + Synapse /fix MCP availability** - COMPLETE. Hardened pipeline/phase token allowlists for the fix workflow, aligned Synapse fix.md with session()-first MCP probing, and ran /cortex/commit compound updates with green quality and docs gates.
 
