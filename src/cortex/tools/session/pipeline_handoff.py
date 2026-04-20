@@ -43,6 +43,7 @@ from .pipeline_handoff_io import (
     extract_routing_keys,
     op_clear,
     op_init,
+    op_read_log,
     op_read_state,
     op_read_task,
     op_rollback,
@@ -110,7 +111,7 @@ def _unknown_op_error(operation: str) -> str:
             "status": OperationStatus.ERROR.value,
             "error": (
                 f"Unknown operation '{operation}'. "
-                "Use: init, write, read, clear, snapshot, rollback "
+                "Use: init, write, read, read_log, clear, snapshot, rollback "
                 "(aliases: write_task, read_task, write_result, read_state)"
             ),
         },
@@ -228,6 +229,8 @@ def _dispatch_sync(
         return op_read_task(project_root, pipeline, phase or "")
     if operation == "read_state":
         return op_read_state(project_root, pipeline)
+    if operation == "read_log":
+        return op_read_log(project_root, pipeline)
     if operation == "read":
         return _dispatch_read(project_root, pipeline, phase)
     if operation == "clear":
@@ -329,7 +332,7 @@ async def pipeline_handoff(
     RETURNS: JSON with {status, ...} for write ops; JSON file content for reads.
 
     Args:
-        operation: init | write | read | clear | snapshot | rollback
+        operation: init | write | read | read_log | clear | snapshot | rollback
             (legacy: write_task, read_task,
             write_result, read_state)
         pipeline: Pipeline name (e.g. "commit", "implement"). Default: "default".

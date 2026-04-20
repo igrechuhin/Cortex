@@ -245,15 +245,16 @@ class TestFixPromptIntegrityGuard:
     def test_fix_prompt_short_circuits_pipeline_on_coverage_failure(
         self, fix_prompt_content: str
     ) -> None:
-        """Fix prompt must STOP the pipeline when coverage target fails — no quality/tests/docs after ❌ coverage."""
-        # AI: Quality/Tests gates use the same run_quality_gate() that just failed on
-        # coverage — running them after a coverage ❌ wastes iterations and produces
-        # confusing reports like `Quality | ❌ | 4`. Lock in the hard stop in step 5.
+        """Fix prompt routes coverage failures correctly: tests_failing → Tests; failed/BLOCKED → hard stop."""
+        # AI: Two distinct failure modes need different routes.
+        # tests_failing: tests failed before coverage measured → fix tests first.
+        # failed/BLOCKED: coverage measurable but below threshold → hard stop.
         assert "HARD STOP — Coverage gate" in fix_prompt_content
         assert (
             "Do NOT run `fix quality`, `fix tests`, or `fix docs`" in fix_prompt_content
         )
-        assert "Coverage failure short-circuits the pipeline" in fix_prompt_content
+        assert "tests_failing" in fix_prompt_content
+        assert "Coverage failure routing" in fix_prompt_content
 
 
 class TestFixTestsAgentScope:
@@ -307,6 +308,16 @@ class TestFixCoverageAgentContract:
         assert "coverage_delta" in fix_coverage_agent_content
         assert "blocker_reason" in fix_coverage_agent_content
         assert "BLOCKED" in fix_coverage_agent_content
+
+    def test_fix_coverage_agent_routes_test_failures_not_blocks(
+        self, fix_coverage_agent_content: str
+    ) -> None:
+        """Agent must emit tests_failing (not BLOCKED) when tests fail before coverage is measured."""
+        # AI: it42 deadlock — coverage BLOCKED because tests_failed > 0, hard-stop fired,
+        # Tests target skipped. tests_failing status lets orchestrator route to Tests instead.
+        assert "tests_failing" in fix_coverage_agent_content
+        assert "tests_failed > 0" in fix_coverage_agent_content
+        assert "coverage == null" in fix_coverage_agent_content
 
     def test_fix_coverage_agent_enforces_three_iteration_discipline(
         self, fix_coverage_agent_content: str

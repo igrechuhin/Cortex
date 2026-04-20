@@ -2,6 +2,16 @@
 
 **This file records completed work only.** For current status and upcoming work see [roadmap.md](roadmap.md).
 
+## Completed Work (2026-04-20)
+
+- ✅ **Commit Phase B docs sync for swift adapter comment-only test updates** - COMPLETE (2026-04-20) - <!-- memory_type: status -->
+Recorded Phase B compound state for comments-only adjustments in tests/unit/test_swift_adapter.py plus existing memory/index/log deltas; validated commit pipeline handoff context and prepared docs-gate validation.
+
+- ⚠️ **Add Append-Only Event Log to Pipeline Handoff for Crash Recovery (PARTIAL)** - PARTIAL (2026-04-20) - <!-- memory_type: status -->
+
+- ✅ **Add Append-Only Event Log to Pipeline Handoff for Crash Recovery** - COMPLETE (2026-04-20) - Validated implementation is complete and review-gate clean: append-only pipeline event logging, read_log introspection, and incomplete pipeline detection are in place with passing unit coverage.
+Implemented append-only event logging for `pipeline_handoff` write operations, added structured `read_log`, and surfaced incomplete pipeline detection in session start; unit tests added for event-log paths, but the implement workflow remains open because the global quality gate coverage threshold is still below target.
+
 ## Completed Work (2026-04-19)
 
 - **Summary (2026-04-19)** - 1 entries archived.

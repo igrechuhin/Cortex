@@ -11,6 +11,8 @@ from datetime import datetime
 from pathlib import Path
 from typing import cast
 
+from pydantic import BaseModel, Field
+
 from cortex.core.file_snapshot import FileStateCache
 from cortex.core.models import OperationStatus
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
@@ -66,6 +68,19 @@ def result_path(pipeline_dir: Path, phase: str) -> Path:
 
 def state_path(pipeline_dir: Path) -> Path:
     return pipeline_dir / "pipeline.json"
+
+
+def event_log_path(pipeline_dir: Path) -> Path:
+    return pipeline_dir / "pipeline.log"
+
+
+class EventLogEntry(BaseModel):
+    """Single append-only event log record."""
+
+    phase: str = Field(min_length=1)
+    timestamp: str = Field(min_length=1)
+    operation: str = Field(min_length=1)
+    data_keys: list[str] = Field(default_factory=list)
 
 
 # ---------------------------------------------------------------------------
@@ -273,6 +288,56 @@ def parse_result_data(data: str | None) -> dict[str, object]:
         return {"data": data}
 
 
+def _append_event_log(
+    pipeline_dir: Path,
+    phase: str,
+    operation: str,
+    data_keys: list[str],
+) -> None:
+    entry = EventLogEntry(
+        phase=phase,
+        timestamp=now_iso(),
+        operation=operation,
+        data_keys=data_keys,
+    )
+    elog = event_log_path(pipeline_dir)
+    with elog.open("a", encoding="utf-8") as stream:
+        _ = stream.write(entry.model_dump_json())
+        _ = stream.write("\n")
+
+
+def _read_event_log_entries(pipeline_dir: Path) -> list[EventLogEntry]:
+    elog = event_log_path(pipeline_dir)
+    if not elog.exists():
+        return []
+    entries: list[EventLogEntry] = []
+    for raw_line in elog.read_text(encoding="utf-8").splitlines():
+        line = raw_line.strip()
+        if not line:
+            continue
+        try:
+            parsed: object = json.loads(line)
+            entry = EventLogEntry.model_validate(parsed)
+        except (json.JSONDecodeError, ValueError):
+            continue
+        entries.append(entry)
+    return entries
+
+
+def detect_incomplete_state(pipeline_dir: Path) -> list[str]:
+    entries = _read_event_log_entries(pipeline_dir)
+    write_phases = {
+        entry.phase
+        for entry in entries
+        if entry.operation == "write" and entry.phase.strip()
+    }
+    incomplete_phases: list[str] = []
+    for phase in sorted(write_phases):
+        if not result_path(pipeline_dir, phase).exists():
+            incomplete_phases.append(phase)
+    return incomplete_phases
+
+
 def _split_config_from_result(
     incoming: dict[str, object],
 ) -> tuple[dict[str, object], dict[str, object]]:
@@ -309,19 +374,26 @@ def _update_pipeline_config(
     state["config"] = config
 
 
-def op_write_result(
-    project_root: Path, pipeline: str, phase: str, data: str | None
-) -> str:
-    """Write phase result. Called by subagent when done. Also updates pipeline.json."""
-    pdir = pipeline_dir(project_root, pipeline)
-    pdir.mkdir(parents=True, exist_ok=True)
-    incoming = parse_result_data(data)
-    result_fields, config_fields = _split_config_from_result(incoming)
+def _write_result_payload_file(
+    pipeline_dir: Path,
+    phase: str,
+    result_fields: dict[str, object],
+) -> tuple[dict[str, object], Path]:
     payload: dict[str, object] = {"phase": phase, "completed_at": now_iso()}
     payload.update(result_fields)
-    rfile = result_path(pdir, phase)
+    rfile = result_path(pipeline_dir, phase)
     _ = rfile.write_text(json.dumps(payload, indent=2), encoding="utf-8")
-    sfile = state_path(pdir)
+    return payload, rfile
+
+
+def _update_pipeline_state_file(
+    pipeline_dir: Path,
+    pipeline: str,
+    phase: str,
+    payload: dict[str, object],
+    config_fields: dict[str, object],
+) -> dict[str, object]:
+    sfile = state_path(pipeline_dir)
     state = load_or_create_state(sfile, pipeline)
     phases = _state_phases(state)
     phases[phase] = payload
@@ -329,6 +401,27 @@ def op_write_result(
     state["last_updated"] = now_iso()
     _update_pipeline_config(state, config_fields)
     _ = sfile.write_text(json.dumps(state, indent=2), encoding="utf-8")
+    return state
+
+
+def op_write_result(
+    project_root: Path, pipeline: str, phase: str, data: str | None
+) -> str:
+    """Write phase result. Called by subagent when done. Also updates pipeline.json."""
+    pdir = pipeline_dir(project_root, pipeline)
+    pdir.mkdir(parents=True, exist_ok=True)
+    incoming = parse_result_data(data)
+    try:
+        _append_event_log(
+            pdir, phase=phase, operation="write", data_keys=sorted(incoming.keys())
+        )
+    except OSError as exc:
+        return json.dumps(
+            {"status": OperationStatus.ERROR.value, "error": str(exc)}, indent=2
+        )
+    result_fields, config_fields = _split_config_from_result(incoming)
+    payload, rfile = _write_result_payload_file(pdir, phase, result_fields)
+    state = _update_pipeline_state_file(pdir, pipeline, phase, payload, config_fields)
     return json.dumps(
         {
             "status": "ok",
@@ -363,6 +456,20 @@ def op_read_state(project_root: Path, pipeline: str) -> str:
         return json.dumps(
             {"status": OperationStatus.ERROR.value, "error": str(e)}, indent=2
         )
+
+
+def op_read_log(project_root: Path, pipeline: str) -> str:
+    """Read append-only event log entries for a pipeline."""
+    pdir = pipeline_dir(project_root, pipeline)
+    entries = _read_event_log_entries(pdir)
+    return json.dumps(
+        {
+            "status": "ok",
+            "pipeline": pipeline,
+            "entries": [entry.model_dump(mode="python") for entry in entries],
+        },
+        indent=2,
+    )
 
 
 def op_clear(project_root: Path, pipeline: str) -> str:

@@ -241,6 +241,13 @@ class SessionBrief(StrictBaseModel):
         default_factory=dict,
         description="Count of typed memory entries detected in activeContext.md.",
     )
+    incomplete_pipelines: list[str] = Field(
+        default_factory=list,
+        description=(
+            "Pipeline identifiers with append-only write events that may indicate "
+            "incomplete prior execution."
+        ),
+    )
 
 
 class SessionStartResult(ToolResultBase):

@@ -30,6 +30,7 @@ from cortex.core.mcp_stability import (
     mcp_tool_wrapper,
 )
 from cortex.core.models import GitCommandResult
+from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.core.security import acquire_git_operation_slot
 from cortex.core.token_counter import TokenCounter
 from cortex.core.usage_context import (
@@ -303,6 +304,34 @@ def _apply_session_goal_and_cap(
     return cap_session_brief_payload(merged)
 
 
+def _scan_incomplete_pipelines(project_root: Path) -> list[str]:
+    from cortex.tools.session.pipeline_handoff_io import detect_incomplete_state
+
+    session_root = get_cortex_path(project_root, CortexResourceType.SESSION)
+    if not session_root.exists():
+        return []
+    pipeline_ids: set[str] = set()
+    for session_dir in session_root.iterdir():
+        if not session_dir.is_dir():
+            continue
+        for pipeline_dir in session_dir.iterdir():
+            if not pipeline_dir.is_dir():
+                continue
+            incomplete_phases = detect_incomplete_state(pipeline_dir)
+            if incomplete_phases:
+                pipeline_ids.add(f"{session_dir.name}/{pipeline_dir.name}")
+    return sorted(pipeline_ids)
+
+
+def _brief_with_incomplete_pipelines(
+    brief: SessionBrief,
+    project_root: Path,
+) -> SessionBrief:
+    return brief.model_copy(
+        update={"incomplete_pipelines": _scan_incomplete_pipelines(project_root)}
+    )
+
+
 async def _assemble_capped_brief_from_context(
     act: str,
     rdm: str,
@@ -350,7 +379,7 @@ async def _build_capped_brief_from_memory(
     git_status, next_work_item, next_work_plan_path = (
         await _get_session_optional_context(rdm, project_root)
     )
-    return await _assemble_capped_brief_from_context(
+    brief = await _assemble_capped_brief_from_context(
         act,
         rdm,
         fs_manager,
@@ -365,6 +394,7 @@ async def _build_capped_brief_from_memory(
         plan_slug,
         blocked_files,
     )
+    return _brief_with_incomplete_pipelines(brief, project_root)
 
 
 async def _load_and_build_brief(

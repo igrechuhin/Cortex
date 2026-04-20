@@ -4,6 +4,10 @@
 
 - <!-- memory_type: preference -->
 **/cortex/commit Phase B — memory bank/docs synchronization** - COMPLETE. Added commit-session context for comments-only updates in `tests/unit/test_swift_adapter.py` alongside existing `.cortex` index/history/log edits, then executed plan archival, markdown autofix, and docs-gate validation with roadmap-sync policy handling.
+- **Add Append-Only Event Log to Pipeline Handoff for Crash Recovery** - PARTIAL. Implemented append-only `pipeline.log` event writes, `read_log` support, incomplete-pipeline detection surfaced via `SessionBrief.incomplete_pipelines`, and dedicated unit coverage; /do remains open until global quality gate coverage target is satisfied.
+- **Add Append-Only Event Log to Pipeline Handoff for Crash Recovery** - COMPLETE. Event logging, read_log, and incomplete pipeline detection are implemented and validated in tests.
+- <!-- memory_type: milestone -->
+**/cortex/commit Phase B — docs gate run for pipeline event-log/resume commit slice** - COMPLETE. Re-read activeContext/progress/roadmap via manage_file, archived completed plans, ran markdown autofix, and validated docs gate with roadmap_sync warning semantics before publishing commit/docs handoff state.
 
 ## 2026-04-19
 
