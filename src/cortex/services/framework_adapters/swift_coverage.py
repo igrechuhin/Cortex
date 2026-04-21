@@ -8,6 +8,7 @@ from __future__ import annotations
 import json
 import logging
 import re
+import subprocess
 import sys
 from collections.abc import Sequence
 from pathlib import Path
@@ -304,3 +305,70 @@ def pick_codecov_json_file(codecov_dir: Path) -> Path | None:
             best_size = size
             best = p
     return best
+
+
+def _build_llvm_cov_export_command(
+    binary: Path,
+    profdata: Path,
+    extra_filename_regexes: Sequence[re.Pattern[str]] | None = None,
+) -> list[str]:
+    """Build llvm-cov export argv with optional ignore-regex extensions."""
+    base = ["xcrun", "llvm-cov"] if sys.platform == "darwin" else ["llvm-cov"]
+    ignore = _DEFAULT_LLVM_COV_IGNORE_FRAGMENT
+    if extra_filename_regexes:
+        parts = [ignore] + [p.pattern for p in extra_filename_regexes]
+        ignore = "|".join(f"(?:{p})" for p in parts)
+    return [
+        *base,
+        "export",
+        str(binary),
+        f"-instr-profile={profdata}",
+        f"--ignore-filename-regex={ignore}",
+        "--skip-expansions",
+        "--skip-branches",
+    ]
+
+
+def _run_llvm_cov_export_command(
+    cmd: list[str], timeout: int | None
+) -> dict[str, object] | None:
+    """Run llvm-cov export and parse JSON response into a mapping."""
+    try:
+        raw = subprocess.run(
+            cmd,
+            capture_output=True,
+            text=False,
+            timeout=timeout,
+        )
+    except Exception:
+        return None
+    if raw.returncode != 0:
+        return None
+    stdout = raw.stdout.decode("utf-8", errors="replace") if raw.stdout else ""
+    try:
+        parsed: object = json.loads(stdout)
+    except json.JSONDecodeError:
+        return None
+    if not isinstance(parsed, dict):
+        return None
+    return cast(dict[str, object], parsed)
+
+
+def llvm_cov_export_per_file(
+    binary: Path,
+    profdata: Path,
+    extra_filename_regexes: Sequence[re.Pattern[str]] | None = None,
+    timeout: int | None = None,
+) -> list[FileCoverageEntry]:
+    """Generate per-file coverage via ``llvm-cov export`` (JSON) when SwiftPM JSON is absent.
+
+    Falls back to this when ``pick_codecov_json_file`` returns ``None``.  The
+    ``llvm-cov export`` subcommand produces the same JSON schema as SwiftPM's
+    bundled export, so ``extract_per_file_coverage`` can parse it directly.
+    Returns an empty list on any subprocess or parse error.
+    """
+    cmd = _build_llvm_cov_export_command(binary, profdata, extra_filename_regexes)
+    parsed = _run_llvm_cov_export_command(cmd, timeout)
+    if parsed is None:
+        return []
+    return extract_per_file_coverage(parsed, extra_filename_regexes)

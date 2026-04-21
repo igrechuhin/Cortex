@@ -29,6 +29,7 @@ from .swift_coverage import (
     compile_swift_coverage_exclude_regexes,
     default_profdata_path,
     find_package_tests_executable,
+    llvm_cov_export_per_file,
     parse_llvm_cov_report_line_coverage_fraction,
     pick_codecov_json_file,
     read_swift_codecov_json_per_file,
@@ -183,6 +184,17 @@ class SwiftAdapter(FrameworkAdapter):
         frac, per_file = self._coverage_from_json(profdata.parent)
         if frac is not None:
             return frac, True, per_file
+        # JSON absent — try llvm-cov export first (gives both fraction + per-file).
+        exe = find_package_tests_executable(bin_path)
+        if exe is not None:
+            export_per_file = llvm_cov_export_per_file(
+                exe, profdata, self._swift_cov_extra_filename_re, timeout
+            )
+            if export_per_file:
+                total = sum(e.lines_total for e in export_per_file)
+                if total > 0:
+                    covered = sum(e.lines_covered for e in export_per_file)
+                    return covered / total, True, export_per_file
         frac = self._coverage_from_llvm_cov(bin_path, profdata, timeout)
         if frac is None:
             return None, False, []

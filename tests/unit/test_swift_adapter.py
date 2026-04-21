@@ -179,6 +179,60 @@ def _swift_test_bin_and_llvm_cov_side_effect(bin_path: Path, report: bytes):
     return side_effect
 
 
+def _mock_process(stdout: bytes) -> MagicMock:
+    process = MagicMock()
+    process.returncode = 0
+    process.stdout = stdout
+    process.stderr = b""
+    return process
+
+
+def _swift_test_bin_and_llvm_cov_export_side_effect(
+    bin_path: Path, export_json: bytes, export_call_seen: list[bool]
+):
+    def side_effect(
+        cmd: list[str] | str | bytes,
+        *args: object,
+        **kwargs: object,
+    ) -> MagicMock:
+        assert isinstance(cmd, list)
+        if cmd[:2] == ["swift", "test"]:
+            return _mock_process(
+                b"\t Executed 1 tests, with 0 failures (0 unexpected) in 0.1 (0.1) seconds\n"
+            )
+        if _argv_contains(cmd, "show-bin-path"):
+            return _mock_process(str(bin_path.resolve()).encode() + b"\n")
+        if cmd and cmd[0] in ("llvm-cov", "xcrun") and "export" in cmd:
+            export_call_seen[0] = True
+            return _mock_process(export_json)
+        if cmd and cmd[0] in ("llvm-cov", "xcrun"):
+            return _mock_process(b"Lines Missed Cover\nTOTAL 180 58 67.78%\n")
+        raise AssertionError(f"unexpected subprocess: {cmd!r}")
+
+    return side_effect
+
+
+def _llvm_cov_export_payload() -> bytes:
+    return json.dumps(
+        {
+            "data": [
+                {
+                    "files": [
+                        {
+                            "filename": "/src/App.swift",
+                            "summary": {"lines": {"count": 100, "covered": 50}},
+                        },
+                        {
+                            "filename": "/src/Helper.swift",
+                            "summary": {"lines": {"count": 80, "covered": 72}},
+                        },
+                    ]
+                }
+            ]
+        }
+    ).encode()
+
+
 class TestSwiftAdapter:
     """Test Swift framework adapter."""
 
@@ -658,7 +712,30 @@ class TestSwiftAdapter:
             result = adapter.run_tests(coverage_threshold=0.90)
             assert result.coverage == pytest.approx(0.90)  # type: ignore[unknown-member-type]
             assert result.success is True
-            assert mock_run.call_count == 3
+            # Calls: swift test, swift build --show-bin-path, llvm-cov export (new),
+            # llvm-cov report (fallback when export returns empty JSON).
+            assert mock_run.call_count == 4
+
+    @patch("cortex.services.framework_adapters.swift_adapter.subprocess.run")
+    def test_run_tests_populates_coverage_gaps_via_llvm_cov_export(
+        self, mock_run: MagicMock
+    ) -> None:
+        """When SwiftPM JSON absent, llvm-cov export supplies per-file coverage_gaps."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir).resolve()
+            bin_path = _seed_llvm_cov_project(root)
+            export_json = _llvm_cov_export_payload()
+            export_call_seen: list[bool] = [False]
+            mock_run.side_effect = _swift_test_bin_and_llvm_cov_export_side_effect(
+                bin_path, export_json, export_call_seen
+            )
+            adapter = SwiftAdapter(str(root))
+            result = adapter.run_tests(coverage_threshold=0.90)
+            assert export_call_seen[0], "llvm-cov export was not called"
+            assert len(result.coverage_gaps) == 2  # type: ignore[unknown-member-type]
+            # App.swift has 50 uncovered lines — should be first (sorted desc)
+            assert result.coverage_gaps[0].file == "/src/App.swift"  # type: ignore[unknown-member-type]
+            assert result.coverage_gaps[0].lines_uncovered == 50  # type: ignore[unknown-member-type]
 
     @patch("cortex.services.framework_adapters.swift_adapter.subprocess.run")
     # AI: Fixture pairs covered App.swift with zero-covered *.pb.swift; JSON aggregate should fail the gate without excludes.
