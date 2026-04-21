@@ -17,8 +17,6 @@
 
 ### Tools Infrastructure
 
-- **Introduce Tool Dispatch Layer for Environment-Agnostic Quality Gate Execution** - PENDING - Adds ExecutionEnvironment protocol to decouple quality gate tools from local subprocess assumptions. Plan: .cortex/plans/execution-environment-abstraction.md
-
 ### FastMCP v3 Migration
 
 ### Fixes

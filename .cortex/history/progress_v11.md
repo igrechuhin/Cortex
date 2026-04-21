@@ -16,6 +16,11 @@
 - **Add Phase Status Tracking and Resume Capability to Pipeline Agents** - COMPLETE. Closed the remaining /do review-gate loop for the status/resume rollout, confirmed quality/docs gate cleanliness, and finalized roadmap completion for the pipeline phase resume capability.
 - <!-- memory_type: milestone -->
 **/cortex/commit Phase B — docs/memory-bank synchronization** - COMPLETE. Re-read activeContext/progress/roadmap, applied docs-phase bookkeeping updates, archived completed plans, and prepared docs gate validation + pipeline handoff for commit/docs.
+- **Introduce Tool Dispatch Layer for Environment-Agnostic Quality Gate Execution** - PARTIAL. Added `ExecutionEnvironment` abstractions and threaded environment dispatch through quality/docs/autofix execution paths with targeted tests; implement step remains open because the branch still has unrelated quality-gate markdown issues.
+- **Phase: Investigate autofix MCP Tool Failure** - COMPLETE. Validated the `autofix` env-injection regression path, confirmed updated lock/autofix tests pass, and verified `run_quality_gate()` is green with no additional code changes required in this run.
+- **Introduce Tool Dispatch Layer for Environment-Agnostic Quality Gate Execution** - COMPLETE. Completed execution environment abstraction rollout and validated quality/docs/autofix execution paths with green quality gate.
+- <!-- memory_type: milestone -->
+**Introduce Tool Dispatch Layer for Environment-Agnostic Quality Gate Execution** - COMPLETE. Completed execution environment abstraction rollout and validated quality/docs/autofix execution paths with green quality gate.
 
 ## 2026-04-19
 

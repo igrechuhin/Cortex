@@ -6,7 +6,6 @@ Extracted from pre_commit_tools to keep it under 400 lines.
 import json
 import logging
 import re
-import subprocess
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import cast
@@ -14,6 +13,10 @@ from typing import cast
 from pydantic import BaseModel, ConfigDict, Field
 
 from cortex.core.context_logging import MCPContext, log_client, report_progress_safe
+from cortex.core.execution_env import (
+    ExecutionEnvironment,
+    LocalExecutionEnvironment,
+)
 from cortex.core.models import JsonValue, ModelDict, OperationStatus
 from cortex.core.pydantic_extra import EXTRA_FORBID
 from cortex.services.framework_adapters.detection import detect_language_at_path
@@ -258,16 +261,12 @@ def parse_fix_envelope(
 
 def _get_tracked_git_changes(root: Path) -> set[str] | None:
     """Return tracked modified file paths from git status, or None if unavailable."""
+    env = LocalExecutionEnvironment()
     try:
-        completed = subprocess.run(
-            ["git", "status", "--porcelain", "--untracked-files=no"],
-            capture_output=True,
-            text=True,
-            cwd=root,
-            timeout=5,
-            check=False,
+        completed = env.execute(
+            "git", ["status", "--porcelain", "--untracked-files=no"], cwd=root
         )
-    except (OSError, subprocess.SubprocessError):
+    except OSError:
         return None
 
     if completed.returncode != 0:
@@ -385,6 +384,7 @@ async def autofix_impl(
     root: Path,
     include_untracked_markdown: bool,
     ctx: MCPContext | None,
+    env: ExecutionEnvironment,
 ) -> str:
     """Spawn detached fix worker, poll with heartbeats, parse result.
 
@@ -394,7 +394,7 @@ async def autofix_impl(
     """
     tracked_before = _get_tracked_git_changes(root)
     await report_progress_safe(ctx, 5.0, 100.0)
-    _ = start_fix_job_impl(root, include_untracked_markdown)
+    _ = start_fix_job_impl(root, include_untracked_markdown, env=env)
     rp = fix_result_path(session_dir(root), fix_args_hash(include_untracked_markdown))
     envelope = await poll_for_result(rp, ctx=ctx, timeout=960.0)
     synapse_fix_issue = _run_synapse_formatter_autofix(root)

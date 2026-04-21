@@ -17,6 +17,7 @@ from pathlib import Path
 from typing import cast
 
 from cortex.core.context_logging import LogLevel, MCPContext, log_client
+from cortex.core.execution_env import ExecutionEnvironment
 from cortex.core.models import OperationStatus
 from cortex.tools.execution.session_paths import session_dir
 
@@ -108,27 +109,37 @@ def build_fix_worker_cmd(
     return cmd
 
 
-def spawn_detached_process(cmd: list[str], log_file: Path, project_root: Path) -> None:
+def _build_worker_env(project_root: Path) -> dict[str, str]:
+    """Build env for detached workers with project source precedence."""
+    env = os.environ.copy()
+    src_root = project_root / "src"
+    if src_root.is_dir():
+        env["PYTHONPATH"] = (
+            str(src_root.resolve()) + os.pathsep + env.get("PYTHONPATH", "")
+        )
+    return env
+
+
+def spawn_detached_process(
+    cmd: list[str],
+    log_file: Path,
+    project_root: Path,
+    env: ExecutionEnvironment,
+) -> None:
     """Start detached subprocess writing stdout/stderr to ``log_file``."""
+    _ = env  # Reserved for non-local dispatch adapters.
     with open(log_file, "w") as lf:
         # On Unix the child process inherits the fd after the parent's
         # `with` block closes its own handle; this is intentional so
         # stdout/stderr are captured in the detached log file.
-        env = os.environ.copy()
-        # Ensure detached workers import the current workspace code even when
-        # the Cortex package inside the server Python environment is stale.
-        src_root = project_root / "src"
-        if src_root.is_dir():
-            env["PYTHONPATH"] = (
-                str(src_root.resolve()) + os.pathsep + env.get("PYTHONPATH", "")
-            )
+        process_env = _build_worker_env(project_root)
         _ = subprocess.Popen(
             cmd,
             stdin=subprocess.DEVNULL,
             stdout=lf,
             stderr=lf,
             cwd=str(project_root),
-            env=env,
+            env=process_env,
             start_new_session=True,
         )
 
@@ -141,6 +152,7 @@ def spawn_detached_worker(
     strict_mode: bool,
     include_markdown_lint: bool,
     args_hash: str,
+    env: ExecutionEnvironment,
 ) -> Path:
     """Spawn a detached worker subprocess. Returns result file path."""
     sd = session_dir(project_root)
@@ -155,7 +167,7 @@ def spawn_detached_worker(
         strict_mode,
         include_markdown_lint,
     )
-    spawn_detached_process(cmd, log_file, project_root)
+    spawn_detached_process(cmd, log_file, project_root, env=env)
     logger.info("Spawned detached worker: hash=%s result=%s", args_hash, rp)
     return rp
 

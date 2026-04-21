@@ -9,6 +9,7 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
+from cortex.core.execution_env import LocalExecutionEnvironment
 from cortex.core.models import ModelDict
 from cortex.tools.execution.autofix_ai_suggestions import (
     collect_autofix_ai_comment_suggestions,
@@ -55,13 +56,8 @@ _MOD = "cortex.tools.execution.pre_commit_fix_quality"
 _STARTED = {"job_id": "x", "status": "started"}
 
 
-@pytest.mark.asyncio
-async def test_autofix_impl_merges_suggestions_from_diff(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    from cortex.tools.execution.pre_commit_fix_quality import autofix_impl
-
-    envelope = cast(
+def _autofix_envelope() -> ModelDict:
+    return cast(
         ModelDict,
         {
             "version": 1,
@@ -76,13 +72,26 @@ async def test_autofix_impl_merges_suggestions_from_diff(
             },
         },
     )
-    diff = """diff --git a/m.py b/m.py
+
+
+def _suggestion_diff() -> str:
+    return """diff --git a/m.py b/m.py
 --- a/m.py
 +++ b/m.py
 @@ -0,0 +1,2 @@
 +def visible():
 +    pass
 """
+
+
+@pytest.mark.asyncio
+async def test_autofix_impl_merges_suggestions_from_diff(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from cortex.tools.execution.pre_commit_fix_quality import autofix_impl
+
+    envelope = _autofix_envelope()
+    diff = _suggestion_diff()
 
     def _fake_collect(_root: Path) -> str:
         return diff
@@ -92,7 +101,12 @@ async def test_autofix_impl_merges_suggestions_from_diff(
         patch(f"{_MOD}.start_fix_job_impl", return_value=_STARTED),
         patch(f"{_MOD}.poll_for_result", new_callable=AsyncMock, return_value=envelope),
     ):
-        out = await autofix_impl(tmp_path, include_untracked_markdown=True, ctx=None)
+        out = await autofix_impl(
+            tmp_path,
+            include_untracked_markdown=True,
+            ctx=None,
+            env=LocalExecutionEnvironment(),
+        )
     data = json.loads(out)
     assert data["status"] == "success"
     assert data.get("suggestions")

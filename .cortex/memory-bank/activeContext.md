@@ -14,6 +14,11 @@
 Completed commit Phase B bookkeeping: validated checks handoff, synchronized memory-bank state, archived completed plans, and executed docs validation workflow for commit/docs handoff publication.
 Closed the `/cortex/do` review-gate/finalize loop for the phase status + resume rollout, confirmed no remaining implementation gaps, and marked the roadmap step complete with gates green.
 
+- ✅ **Phase: Investigate autofix MCP Tool Failure** - COMPLETE (2026-04-21) - <!-- memory_type: status -->
+
+- ✅ **Introduce Tool Dispatch Layer for Environment-Agnostic Quality Gate Execution** - COMPLETE (2026-04-21) - Completed execution environment abstraction rollout and validated quality/docs/autofix execution paths with green quality gate.
+Validated the `autofix` MCP `env` argument regression (`unexpected keyword argument 'env'`) against current code and tests, confirmed the fix is present, and verified quality gate cleanliness.
+
 ## Completed Work (2026-04-19)
 
 - **Summary (2026-04-19)** - 1 entries archived.

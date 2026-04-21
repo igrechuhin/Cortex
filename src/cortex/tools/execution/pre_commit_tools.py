@@ -20,6 +20,7 @@ from typing import Literal, Sequence, cast
 
 from cortex.core.constants import MCP_TOOL_TIMEOUT_VERY_COMPLEX
 from cortex.core.context_logging import MCPContext, log_client
+from cortex.core.execution_env import ExecutionEnvironment, LocalExecutionEnvironment
 from cortex.core.mcp_stability import (
     ensure_usage_context,
     mcp_tool_wrapper,
@@ -168,7 +169,8 @@ def _spawn_quality_job(
     coverage_threshold: float,
     strict_mode: bool,
     include_untracked_markdown: bool,
-    force_fresh: bool,
+    env: ExecutionEnvironment,
+    force_fresh: bool = False,
 ) -> ModelDict:
     """Lazy-import and call start_pre_commit_job_impl."""
     module = __import__(
@@ -183,6 +185,7 @@ def _spawn_quality_job(
         coverage_threshold,
         strict_mode,
         include_untracked_markdown,
+        env,
         force_fresh,
     )
     return cast(ModelDict, result)
@@ -217,6 +220,7 @@ async def start_quality_job(
         coverage_threshold,
         strict_mode,
         include_untracked_markdown,
+        LocalExecutionEnvironment(),
         force_fresh,
     )
 

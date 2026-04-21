@@ -13,6 +13,7 @@ from pathlib import Path
 from typing import cast
 
 from cortex.core.context_logging import MCPContext
+from cortex.core.execution_env import LocalExecutionEnvironment
 from cortex.core.models import JsonDict, JsonValue, ModelDict, OperationStatus
 from cortex.core.usage_context import (
     get_current_project_root,
@@ -182,6 +183,7 @@ async def _run_preflight_checks_phase_tools(
         strict_mode=strict_mode,
         force_fresh=False,
         ctx=ctx,
+        env=LocalExecutionEnvironment(),
     )
     execute_result = _ensure_result_dict(raw_result)
     language_value = execute_result.get("language")

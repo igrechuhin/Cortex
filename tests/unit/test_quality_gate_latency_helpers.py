@@ -13,6 +13,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
+from cortex.core.execution_env import LocalExecutionEnvironment
 from cortex.core.models import ModelDict
 from cortex.tools.execution.pre_commit_process import poll_interval_for_elapsed
 from cortex.tools.execution.pre_commit_zero_arg_tools import (
@@ -168,7 +169,7 @@ class TestRunQualityGateInnerCacheClear:
         root = Path("/tmp/cortex-qg-cache-test")
         with ExitStack() as stack:
             mock_clear = _enter_quality_gate_inner_mocks(stack, root, False)
-            _ = await run_quality_gate_inner(None)
+            _ = await run_quality_gate_inner(None, LocalExecutionEnvironment())
         mock_clear.assert_not_called()
 
     @pytest.mark.asyncio
@@ -176,7 +177,7 @@ class TestRunQualityGateInnerCacheClear:
         root = Path("/tmp/cortex-qg-cache-test-2")
         with ExitStack() as stack:
             mock_clear = _enter_quality_gate_inner_mocks(stack, root, True)
-            _ = await run_quality_gate_inner(None)
+            _ = await run_quality_gate_inner(None, LocalExecutionEnvironment())
         mock_clear.assert_called_once_with(root)
 
 
@@ -188,7 +189,7 @@ class TestRunQualityGateInnerTrimPass:
         root = Path("/tmp/cortex-qg-trim-skip-fail")
         with ExitStack() as stack:
             mock_append, mock_trim, mock_gi = _enter_trim_fail_mocks(stack, root)
-            out = await run_quality_gate_inner(None)
+            out = await run_quality_gate_inner(None, LocalExecutionEnvironment())
         mock_trim.assert_not_called()
         mock_append.assert_called_once()
         mock_gi.return_value.record_phase_a.assert_not_called()
@@ -209,7 +210,7 @@ class TestOperationsLogHooks:
                     new_callable=AsyncMock,
                 )
             )
-            _ = await run_quality_gate_inner(None)
+            _ = await run_quality_gate_inner(None, LocalExecutionEnvironment())
         mock_log.assert_awaited_once()
 
     @pytest.mark.asyncio

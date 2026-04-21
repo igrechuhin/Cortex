@@ -12,10 +12,14 @@ import json
 import logging
 import os
 import time
+from enum import Enum
 from pathlib import Path
 from typing import cast
 
+from pydantic import BaseModel, ValidationError
+
 from cortex.core.context_logging import MCPContext
+from cortex.core.execution_env import ExecutionEnvironment
 from cortex.core.models import OperationStatus
 from cortex.tools.execution.pre_commit_process import (
     build_fix_worker_cmd,
@@ -32,6 +36,44 @@ logger = logging.getLogger(__name__)
 _RESULT_FRESHNESS_SECONDS = 300  # 5 minutes
 
 DETACHED_ENABLED = os.environ.get("CORTEX_DETACHED_PIPELINE", "1") != "0"
+
+
+class DetachedResultStatus(str, Enum):
+    """Status values persisted by detached worker result files."""
+
+    RUNNING = "running"
+    COMPLETED = "completed"
+    ERROR = "error"
+
+
+class DetachedJobStatus(str, Enum):
+    """Status values returned when creating/reusing detached jobs."""
+
+    STARTED = "started"
+    COMPLETED = "completed"
+    ALREADY_RUNNING = "already_running"
+    ERROR = OperationStatus.ERROR.value
+
+
+class DetachedResultEnvelope(BaseModel):
+    """Parsed result envelope for detached worker output."""
+
+    status: DetachedResultStatus
+    completed_at: float | None = None
+    pid: int | None = None
+    result: dict[str, object] | None = None
+    error: str | None = None
+
+
+class DetachedJobInfo(BaseModel):
+    """Structured detached-job response used by tool call sites."""
+
+    job_id: str
+    status: DetachedJobStatus
+    error: str | None = None
+
+    def to_dict(self) -> dict[str, object]:
+        return self.model_dump(exclude_none=True)
 
 
 def compute_args_hash(
@@ -68,10 +110,16 @@ def find_existing_result(
     except (json.JSONDecodeError, OSError):
         return None
 
-    status = data.get("status")
-    completed_at = data.get("completed_at")
+    try:
+        parsed = DetachedResultEnvelope.model_validate(data)
+    except ValidationError:
+        return None
+    status = parsed.status
+    completed_at = parsed.completed_at
 
-    if status == "completed" and isinstance(completed_at, (int, float)):
+    if status == DetachedResultStatus.COMPLETED and isinstance(
+        completed_at, (int, float)
+    ):
         age = time.time() - completed_at
         if age < _RESULT_FRESHNESS_SECONDS:
             return data
@@ -79,9 +127,8 @@ def find_existing_result(
         rp.unlink(missing_ok=True)
         return None
 
-    if status == "running":
-        pid = data.get("pid")
-        if isinstance(pid, int) and is_process_alive(pid):
+    if status == DetachedResultStatus.RUNNING:
+        if _has_live_worker(parsed):
             return data  # Worker is still running, caller should poll
         # Orphaned running status, remove
         rp.unlink(missing_ok=True)
@@ -90,20 +137,22 @@ def find_existing_result(
     return data  # error status — return as-is
 
 
+def _has_live_worker(parsed: DetachedResultEnvelope) -> bool:
+    """Return True when a running envelope still points at a live pid."""
+    pid = parsed.pid
+    return isinstance(pid, int) and is_process_alive(pid)
+
+
 def _cached_detached_result(
-    existing: dict[str, object] | None, args_hash: str
+    existing: DetachedResultEnvelope | None, args_hash: str
 ) -> dict[str, object] | None:
     """Return cached result dict if existing is completed; else None."""
-    if existing is None:
+    if existing is None or existing.status != DetachedResultStatus.COMPLETED:
         return None
-    if existing.get("status") != "completed":
-        return None
-    raw = existing.get("result")
-    if not isinstance(raw, dict):
+    if existing.result is None:
         return None
     logger.info("Returning cached detached result: %s", args_hash)
-    out: dict[str, object] = cast(dict[str, object], raw)
-    return out
+    return existing.result
 
 
 def _build_job_id(
@@ -124,22 +173,22 @@ def _interpret_existing_job(
 ) -> dict[str, object] | None:
     existing = find_existing_result(project_root, args_hash)
     if existing is not None:
-        status = existing.get("status")
-        if status == "completed":
-            return {
-                "job_id": args_hash,
-                "status": "completed",
-            }
-        if status == "running":
-            return {
-                "job_id": args_hash,
-                "status": "already_running",
-            }
-        return {
-            "job_id": args_hash,
-            "status": OperationStatus.ERROR.value,
-            "error": str(existing.get("error") or "Detached worker reported error"),
-        }
+        status = DetachedResultEnvelope.model_validate(existing).status
+        if status == DetachedResultStatus.COMPLETED:
+            return DetachedJobInfo(
+                job_id=args_hash,
+                status=DetachedJobStatus.COMPLETED,
+            ).to_dict()
+        if status == DetachedResultStatus.RUNNING:
+            return DetachedJobInfo(
+                job_id=args_hash,
+                status=DetachedJobStatus.ALREADY_RUNNING,
+            ).to_dict()
+        return DetachedJobInfo(
+            job_id=args_hash,
+            status=DetachedJobStatus.ERROR,
+            error=str(existing.get("error") or "Detached worker reported error"),
+        ).to_dict()
 
     return None
 
@@ -152,6 +201,7 @@ def _spawn_new_job(
     strict_mode: bool,
     include_markdown_lint: bool,
     args_hash: str,
+    env: ExecutionEnvironment,
 ) -> dict[str, object]:
     _ = spawn_detached_worker(
         project_root,
@@ -161,11 +211,9 @@ def _spawn_new_job(
         strict_mode,
         include_markdown_lint,
         args_hash,
+        env=env,
     )
-    return {
-        "job_id": args_hash,
-        "status": "started",
-    }
+    return DetachedJobInfo(job_id=args_hash, status=DetachedJobStatus.STARTED).to_dict()
 
 
 def _clear_cached_result(project_root: Path, args_hash: str) -> None:
@@ -215,6 +263,18 @@ async def poll_job_to_completion(
     }
 
 
+def _compute_job_hash(
+    checks: list[str],
+    timeout: int,
+    coverage_threshold: float,
+    strict_mode: bool,
+    include_markdown_lint: bool,
+) -> str:
+    return _build_job_id(
+        checks, timeout, coverage_threshold, strict_mode, include_markdown_lint
+    )
+
+
 def start_pre_commit_job_impl(
     project_root: Path,
     checks: list[str],
@@ -222,15 +282,12 @@ def start_pre_commit_job_impl(
     coverage_threshold: float,
     strict_mode: bool,
     include_markdown_lint: bool,
+    env: ExecutionEnvironment,
     force_fresh: bool = False,
 ) -> dict[str, object]:
     """Start or reuse a detached pre-commit job; return lightweight status."""
-    args_hash = _build_job_id(
-        checks,
-        timeout,
-        coverage_threshold,
-        strict_mode,
-        include_markdown_lint,
+    args_hash = _compute_job_hash(
+        checks, timeout, coverage_threshold, strict_mode, include_markdown_lint
     )
     if force_fresh:
         _clear_cached_result(project_root, args_hash)
@@ -245,6 +302,7 @@ def start_pre_commit_job_impl(
         strict_mode,
         include_markdown_lint,
         args_hash,
+        env=env,
     )
 
 
@@ -274,6 +332,7 @@ async def run_checks_detached(
     timeout: int,
     coverage_threshold: float,
     ctx: MCPContext | None,  # noqa: ARG001 — retained for call-site compatibility
+    env: ExecutionEnvironment,
 ) -> dict[str, object]:
     """Spawn detached worker and return immediately with lightweight status.
 
@@ -286,20 +345,76 @@ async def run_checks_detached(
         checks, timeout, coverage_threshold, strict_mode, False
     )
     existing = find_existing_result(project_root, args_hash)
-    cached = _cached_detached_result(existing, args_hash)
+    existing_envelope = _validate_existing_envelope(existing)
+    cached = _cached_detached_result(existing_envelope, args_hash)
     if cached is not None:
         return cached
-    if existing is not None and existing.get("status") == "running":
-        logger.info(
-            "Worker already running for args_hash=%s; returning already_running",
-            args_hash,
-        )
-        return {"job_id": args_hash, "status": "already_running"}
-
-    _ = spawn_detached_worker(
-        project_root, checks, timeout, coverage_threshold, strict_mode, False, args_hash
+    maybe_running = _running_job_response(existing_envelope, args_hash)
+    if maybe_running is not None:
+        return maybe_running
+    _spawn_detached_checks_worker(
+        project_root=project_root,
+        checks=checks,
+        timeout=timeout,
+        coverage_threshold=coverage_threshold,
+        strict_mode=strict_mode,
+        args_hash=args_hash,
+        env=env,
     )
-    return {"job_id": args_hash, "status": "started"}
+    return DetachedJobInfo(job_id=args_hash, status=DetachedJobStatus.STARTED).to_dict()
+
+
+def _running_job_response(
+    existing_envelope: DetachedResultEnvelope | None,
+    args_hash: str,
+) -> dict[str, object] | None:
+    """Return already-running response when the cached envelope is in running state."""
+    if (
+        existing_envelope is None
+        or existing_envelope.status != DetachedResultStatus.RUNNING
+    ):
+        return None
+    logger.info(
+        "Worker already running for args_hash=%s; returning already_running",
+        args_hash,
+    )
+    return DetachedJobInfo(
+        job_id=args_hash,
+        status=DetachedJobStatus.ALREADY_RUNNING,
+    ).to_dict()
+
+
+def _spawn_detached_checks_worker(
+    project_root: Path,
+    checks: list[str],
+    timeout: int,
+    coverage_threshold: float,
+    strict_mode: bool,
+    args_hash: str,
+    env: ExecutionEnvironment,
+) -> None:
+    """Spawn a detached worker for the checks-only path."""
+    _ = spawn_detached_worker(
+        project_root,
+        checks,
+        timeout,
+        coverage_threshold,
+        strict_mode,
+        False,
+        args_hash,
+        env=env,
+    )
+
+
+def _validate_existing_envelope(
+    existing: dict[str, object] | None,
+) -> DetachedResultEnvelope | None:
+    """Validate cached detached result envelope when present."""
+    return (
+        DetachedResultEnvelope.model_validate(existing)
+        if existing is not None
+        else None
+    )
 
 
 _FIX_RESULT_PREFIX = "pre_commit_fix_result_"
@@ -320,13 +435,14 @@ def spawn_detached_fix_worker(
     project_root: Path,
     include_markdown_fix: bool,
     args_hash: str,
+    env: ExecutionEnvironment,
 ) -> Path:
     """Spawn a detached fix worker subprocess. Returns result file path."""
     sd = session_dir(project_root)
     rp = fix_result_path(sd, args_hash)
     log_file = sd / f"pre_commit_fix_worker_{args_hash}.log"
     cmd = build_fix_worker_cmd(project_root, rp, include_markdown_fix)
-    spawn_detached_process(cmd, log_file, project_root)
+    spawn_detached_process(cmd, log_file, project_root, env=env)
     logger.info("Spawned detached fix worker: hash=%s result=%s", args_hash, rp)
     return rp
 
@@ -334,13 +450,16 @@ def spawn_detached_fix_worker(
 def start_fix_job_impl(
     project_root: Path,
     include_markdown_fix: bool,
+    env: ExecutionEnvironment,
 ) -> dict[str, object]:
     """Clear any prior fix result, spawn fresh fix worker, return {job_id, status}."""
     args_hash = fix_args_hash(include_markdown_fix)
     rp = fix_result_path(session_dir(project_root), args_hash)
     rp.unlink(missing_ok=True)
-    _ = spawn_detached_fix_worker(project_root, include_markdown_fix, args_hash)
-    return {"job_id": args_hash, "status": "started"}
+    _ = spawn_detached_fix_worker(
+        project_root, include_markdown_fix, args_hash, env=env
+    )
+    return DetachedJobInfo(job_id=args_hash, status=DetachedJobStatus.STARTED).to_dict()
 
 
 __all__ = [

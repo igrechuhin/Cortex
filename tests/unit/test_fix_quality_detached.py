@@ -17,6 +17,7 @@ from unittest.mock import AsyncMock, patch
 import pytest
 
 from cortex.core.context_logging import MCPContext
+from cortex.core.execution_env import LocalExecutionEnvironment
 from cortex.core.models import ModelDict
 from cortex.tools.execution.pre_commit_fix_quality import (
     FixQualityResult,
@@ -96,6 +97,7 @@ async def _run_autofix_impl(
             tmp_path,
             include_untracked_markdown=include_untracked_markdown,
             ctx=ctx,
+            env=LocalExecutionEnvironment(),
         )
 
 
@@ -215,7 +217,10 @@ class TestFixQualityIssuesImpl:
             from cortex.tools.execution.pre_commit_fix_quality import autofix_impl
 
             _ = await autofix_impl(
-                tmp_path, include_untracked_markdown=True, ctx=mock_ctx
+                tmp_path,
+                include_untracked_markdown=True,
+                ctx=mock_ctx,
+                env=LocalExecutionEnvironment(),
             )
         _, kwargs = poll_mock.call_args
         assert kwargs.get("ctx") is mock_ctx or poll_mock.call_args[0][1] is mock_ctx
@@ -236,7 +241,10 @@ class TestFixQualityIssuesImpl:
             from cortex.tools.execution.pre_commit_fix_quality import autofix_impl
 
             out = await autofix_impl(
-                tmp_path, include_untracked_markdown=True, ctx=None
+                tmp_path,
+                include_untracked_markdown=True,
+                ctx=None,
+                env=LocalExecutionEnvironment(),
             )
         data = json.loads(out)
         assert data["status"] == "success"
@@ -260,7 +268,10 @@ class TestFixQualityIssuesImpl:
             from cortex.tools.execution.pre_commit_fix_quality import autofix_impl
 
             out = await autofix_impl(
-                tmp_path, include_untracked_markdown=True, ctx=None
+                tmp_path,
+                include_untracked_markdown=True,
+                ctx=None,
+                env=LocalExecutionEnvironment(),
             )
         data = json.loads(out)
         assert data["status"] == "success"
@@ -285,7 +296,10 @@ class TestSpawnDetachedFixWorker:
         ) as mock_spawn:
             mock_spawn.return_value = None
             rp = spawn_detached_fix_worker(
-                tmp_path, include_markdown_fix=False, args_hash="abc123"
+                tmp_path,
+                include_markdown_fix=False,
+                args_hash="abc123",
+                env=LocalExecutionEnvironment(),
             )
         assert "pre_commit_fix_result_" in rp.name
         assert "abc123" in rp.name
@@ -323,7 +337,11 @@ class TestStartFixJobImpl:
             "cortex.tools.execution.pre_commit_detached.spawn_detached_fix_worker"
         ) as mock_spawn:
             mock_spawn.return_value = rp
-            result = start_fix_job_impl(tmp_path, include_markdown_fix=False)
+            result = start_fix_job_impl(
+                tmp_path,
+                include_markdown_fix=False,
+                env=LocalExecutionEnvironment(),
+            )
         assert not rp.exists()
         assert result["status"] == "started"
 
@@ -334,7 +352,11 @@ class TestStartFixJobImpl:
             "cortex.tools.execution.pre_commit_detached.spawn_detached_fix_worker"
         ) as mock_spawn:
             mock_spawn.return_value = tmp_path / "result.json"
-            result = start_fix_job_impl(tmp_path, include_markdown_fix=True)
+            result = start_fix_job_impl(
+                tmp_path,
+                include_markdown_fix=True,
+                env=LocalExecutionEnvironment(),
+            )
         assert result["status"] == "started"
         assert "job_id" in result
 

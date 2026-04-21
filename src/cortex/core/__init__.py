@@ -11,6 +11,12 @@ from cortex.core.cache_warming import (
     CacheWarmingResult,
     warm_cache_on_startup,
 )
+from cortex.core.execution_env import (
+    ExecutionEnvironment,
+    ExecutionResult,
+    LocalExecutionEnvironment,
+    WorktreeExecutionEnvironment,
+)
 from cortex.core.progress_types import (
     AnyProgress,
     BaseProgress,
@@ -32,11 +38,15 @@ __all__ = [
     "CacheWarmingResult",
     "CommitProgress",
     "DocsGateProgress",
+    "ExecutionEnvironment",
+    "ExecutionResult",
     "LRUCache",
+    "LocalExecutionEnvironment",
     "PipelineProgress",
     "QualityGateProgress",
     "SessionProgress",
     "TTLCache",
+    "WorktreeExecutionEnvironment",
     "report_structured_progress",
     "warm_cache_on_startup",
 ]

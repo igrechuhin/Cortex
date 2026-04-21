@@ -21,6 +21,10 @@ from cortex.core.constants import (
     MCP_TOOL_TIMEOUT_VERY_COMPLEX,
 )
 from cortex.core.context_logging import MCPContext
+from cortex.core.execution_env import (
+    ExecutionEnvironment,
+    LocalExecutionEnvironment,
+)
 from cortex.core.mcp_annotations import external_annotations
 from cortex.core.mcp_stability import (
     ensure_usage_context,
@@ -109,6 +113,7 @@ def _start_phase_a_job(
     force_fresh: bool,
     *,
     strict_mode: bool = False,
+    env: ExecutionEnvironment,
 ) -> ModelDict:
     """Start detached Phase A pre-commit job and return {job_id,status}."""
     from cortex.tools.execution.pre_commit_detached import start_pre_commit_job_impl
@@ -122,6 +127,7 @@ def _start_phase_a_job(
         strict_mode=strict_mode,
         include_markdown_lint=True,
         force_fresh=force_fresh,
+        env=env,
     )
     return cast(ModelDict, job)
 
@@ -206,6 +212,7 @@ async def run_detached_phase_a_checks(
     strict_mode: bool,
     force_fresh: bool,
     ctx: MCPContext | None,
+    env: ExecutionEnvironment,
 ) -> ModelDict:
     """Run Phase A via the detached subprocess path (same engine as ``run_quality_gate``).
 
@@ -220,6 +227,7 @@ async def run_detached_phase_a_checks(
             coverage_threshold=coverage_threshold,
             force_fresh=force_fresh,
             strict_mode=strict_mode,
+            env=env,
         )
         job_id = str(job.get("job_id", ""))
         status = str(job.get("status", ""))
@@ -234,6 +242,7 @@ async def _spawn_and_poll_phase_a(
     coverage_threshold: float,
     force_fresh: bool,
     ctx: MCPContext | None,
+    env: ExecutionEnvironment,
 ) -> ModelDict:
     """Spawn Phase A as a detached subprocess and poll with heartbeats.
 
@@ -252,6 +261,7 @@ async def _spawn_and_poll_phase_a(
         strict_mode=False,
         force_fresh=force_fresh,
         ctx=ctx,
+        env=env,
     )
 
 
@@ -300,7 +310,9 @@ def trim_passing_quality_gate_result(result: ModelDict) -> ModelDict:
     return result
 
 
-async def run_quality_gate_inner(ctx: MCPContext | None) -> ModelDict:
+async def run_quality_gate_inner(
+    ctx: MCPContext | None, env: ExecutionEnvironment
+) -> ModelDict:
     """Resolve config and spawn Phase A quality gate."""
     root = get_current_project_root() or Path(await get_or_resolve_project_root(ctx))
     timeout, coverage_threshold, force_fresh, cfg = _read_quality_gate_config(root)
@@ -321,6 +333,7 @@ async def run_quality_gate_inner(ctx: MCPContext | None) -> ModelDict:
         coverage_threshold=coverage_threshold,
         force_fresh=force_fresh,
         ctx=ctx,
+        env=env,
     )
     gate_passed = await _finalize_quality_gate_result(root, result, cfg, ctx)
     logger.info("run_quality_gate: done scope=%s passed=%s", scope, gate_passed)
@@ -385,7 +398,15 @@ async def run_quality_gate(
     - pipeline_handoff(write, checks, {"force_fresh": true, "test_timeout": 600})
       then run_quality_gate() for Step 12 final gate.
     """
-    return await run_quality_gate_inner(ctx)
+    return await run_quality_gate_with_env(ctx, LocalExecutionEnvironment())
+
+
+async def run_quality_gate_with_env(
+    ctx: MCPContext | None,
+    env: ExecutionEnvironment,
+) -> ModelDict:
+    """Internal quality-gate entrypoint with injected execution environment."""
+    return await run_quality_gate_inner(ctx, env)
 
 
 @typed_mcp_tool(
@@ -417,6 +438,16 @@ async def run_docs_gate(
     - run_docs_gate() to re-check roadmap_sync and timestamps without
       re-running tests or other quality checks.
     """
+    result = await run_docs_gate_with_env(ctx, LocalExecutionEnvironment())
+    return result
+
+
+async def run_docs_gate_with_env(
+    ctx: MCPContext | None,
+    env: ExecutionEnvironment,
+) -> ModelDict:
+    """Internal docs-gate entrypoint with injected execution environment."""
+    _ = env
     result = await run_docs_and_memory_bank_sync_impl(ctx=ctx)
     await persist_gate_feedback(
         feedback_from_docs_result(cast(dict[str, object], result)),
@@ -456,10 +487,23 @@ async def autofix(
     - autofix() inside implement-code or commit-checks agents on
       the fix path before re-running the quality gate.
     """
+    return await autofix_with_env(ctx, LocalExecutionEnvironment())
+
+
+async def autofix_with_env(
+    ctx: MCPContext | None,
+    env: ExecutionEnvironment,
+) -> ModelDict:
+    """Internal autofix entrypoint with injected execution environment."""
     root = get_current_project_root() or Path(await get_or_resolve_project_root(ctx))
     lock_scope = str(root.resolve())
     async with get_phase_a_lock(lock_scope):
-        result_json = await autofix_impl(root, include_untracked_markdown=True, ctx=ctx)
+        result_json = await autofix_impl(
+            root,
+            include_untracked_markdown=True,
+            ctx=ctx,
+            env=env,
+        )
     _ = clear_all_cached_results(root)
     parsed = cast(ModelDict, json.loads(result_json))
     append_agent_log_to_autofix_result(parsed)

@@ -37,7 +37,10 @@ def _make_tracking_impl(order: list[str]):  # noqa: ANN202
     """Return a fake autofix_impl that records start/end into *order*."""
 
     async def fake_impl(
-        root: object, include_untracked_markdown: object, ctx: object
+        root: object,
+        include_untracked_markdown: object,
+        ctx: object,
+        env: object = None,
     ) -> str:
         order.append("impl_start")
         await asyncio.sleep(0.05)
@@ -83,6 +86,7 @@ class TestFixQualityIssuesAcquiresLock:
             root: object,
             include_untracked_markdown: object,
             ctx: object,
+            env: object = None,
         ) -> str:
             nonlocal lock_was_locked_during_call
             lock_was_locked_during_call = _module.get_phase_a_lock().locked()

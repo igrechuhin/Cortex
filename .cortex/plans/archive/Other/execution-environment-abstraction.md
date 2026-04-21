@@ -95,7 +95,7 @@ Target: 95% coverage on `src/cortex/core/execution_env.py` and the `_run_command
 - **Unit — WorktreeExecutionEnvironment**: Arrange: worktree path `/tmp/wt`. Act: `env.execute("ruff", ["check", "."], cwd=Path("/project"))`. Assert: subprocess called with `cwd=Path("/tmp/wt")` (worktree path wins).
 - **Unit — ExecutionResult**: Arrange: subprocess returns `returncode=0, stdout="ok"`. Act: build `ExecutionResult`. Assert: all fields populated including `duration_ms >= 0`.
 - **Unit — run_quality_gate with mock env**: Arrange: mock env that returns `ExecutionResult(returncode=0, ...)`. Act: `run_quality_gate(ctx, env=mock_env)`. Assert: no real subprocess calls; result parsed from mock output.
-- **Regression — existing quality gate**: Arrange: real project root. Act: `run_quality_gate()` with no `env` arg. Assert: result identical to pre-refactor baseline.
+- **Regression — existing quality gate**: Arrange: real project root, `LocalExecutionEnvironment()`. Act: `run_quality_gate(ctx, env=LocalExecutionEnvironment())`. Assert: result identical to pre-refactor baseline.
 
 ## Risks and Mitigation
 
@@ -105,3 +105,7 @@ Target: 95% coverage on `src/cortex/core/execution_env.py` and the `_run_command
 | Protocol not recognized at runtime (structural subtyping) | Low | Medium | Add explicit `isinstance` check in unit tests; use `runtime_checkable` decorator on Protocol |
 | WorktreeExecutionEnvironment cwd override breaks tools that need project root for config | Medium | Medium | Document that worktree must be a full project copy; out of scope to handle partial worktrees |
 | Refactor expands scope to other subprocess calls in the codebase | Low | Low | Strict scope: only the three gate tools; grep for other subprocess calls and exclude explicitly |
+
+## Partial Progress Log
+
+- 2026-04-21: Implemented execution environment abstraction and integrated it through quality/docs/autofix execution paths with unit tests — files: src/cortex/core/execution_env.py, src/cortex/core/**init**.py, src/cortex/tools/execution/pre_commit_zero_arg_tools.py, src/cortex/tools/execution/pre_commit_detached.py, src/cortex/tools/execution/pre_commit_process.py, src/cortex/tools/execution/pre_commit_fix_quality.py, src/cortex/tools/execution/pre_commit_preflight_helpers.py, tests/unit/core/test_execution_env.py, tests/unit/test_quality_gate_latency_helpers.py, tests/unit/test_phase_a_lock.py

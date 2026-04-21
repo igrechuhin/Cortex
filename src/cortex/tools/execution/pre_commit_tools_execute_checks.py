@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import cast
 
 from cortex.core.context_logging import MCPContext, log_client
+from cortex.core.execution_env import LocalExecutionEnvironment
 from cortex.core.models import ModelDict, OperationStatus
 from cortex.core.usage_context import (
     get_current_project_root,
@@ -52,6 +53,8 @@ async def execute_pre_commit_checks_impl(
         run_checks_detached,
     )
 
+    env = LocalExecutionEnvironment()
+
     if DETACHED_ENABLED:
         return cast(
             ModelDict,
@@ -62,6 +65,7 @@ async def execute_pre_commit_checks_impl(
                 timeout or 300,
                 coverage_threshold,
                 ctx,
+                env,
             ),
         )
     return await run_inline_pre_commit_checks(
@@ -82,10 +86,11 @@ async def _run_phase_detached(
 
     checks = phase_to_checks(phase)
     root = get_current_project_root() or await get_or_resolve_project_root(ctx)
+    env = LocalExecutionEnvironment()
     return cast(
         ModelDict,
         await run_checks_detached(
-            root, checks, strict_mode, test_timeout, coverage_threshold, ctx
+            root, checks, strict_mode, test_timeout, coverage_threshold, ctx, env
         ),
     )
 
@@ -124,7 +129,8 @@ async def _run_fix_quality_and_return_dict(
 ) -> ModelDict:
     """Run autofix_impl and return result as dict."""
     root = await get_or_resolve_project_root(ctx)
-    json_str = await autofix_impl(Path(root), include_untracked_markdown, ctx)
+    env = LocalExecutionEnvironment()
+    json_str = await autofix_impl(Path(root), include_untracked_markdown, ctx, env)
     result = json.loads(json_str)
     return cast(ModelDict, result)
 

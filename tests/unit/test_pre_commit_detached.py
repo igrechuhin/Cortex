@@ -15,6 +15,7 @@ from pathlib import Path
 
 import pytest
 
+from cortex.core.execution_env import LocalExecutionEnvironment
 from cortex.tools.execution.pre_commit_detached import (
     compute_args_hash,
     find_existing_result,
@@ -41,17 +42,33 @@ def _write_result_file(
     return result_path
 
 
-@pytest.mark.asyncio
-async def test_cached_completed_result_is_reused(tmp_path: Path) -> None:
-    """Completed result for same args_hash is returned without spawning worker."""
-    project_root = tmp_path
-    args_hash = compute_args_hash(
+def _default_hash() -> str:
+    return compute_args_hash(
         checks=["tests"],
         timeout=300,
         coverage_threshold=0.9,
         strict_mode=False,
         include_markdown=False,
     )
+
+
+async def _run_detached(project_root: Path) -> dict[str, object]:
+    return await run_checks_detached(
+        project_root=project_root,
+        checks=["tests"],
+        strict_mode=False,
+        timeout=300,
+        coverage_threshold=0.9,
+        ctx=None,
+        env=LocalExecutionEnvironment(),
+    )
+
+
+@pytest.mark.asyncio
+async def test_cached_completed_result_is_reused(tmp_path: Path) -> None:
+    """Completed result for same args_hash is returned without spawning worker."""
+    project_root = tmp_path
+    args_hash = _default_hash()
     payload: dict[str, object] = {
         "version": 1,
         "status": "completed",
@@ -68,14 +85,7 @@ async def test_cached_completed_result_is_reused(tmp_path: Path) -> None:
     assert existing is not None
     assert existing.get("status") == "completed"
 
-    result = await run_checks_detached(
-        project_root=project_root,
-        checks=["tests"],
-        strict_mode=False,
-        timeout=300,
-        coverage_threshold=0.9,
-        ctx=None,
-    )
+    result = await _run_detached(project_root)
     # Inner "result" dict should be returned directly
     assert result["status"] == "success"
     assert result["preflight_passed"] is True
@@ -88,13 +98,7 @@ async def test_running_status_returns_fast_error_for_second_call(
 ) -> None:
     """Second call while a worker is running returns clear non-retryable error."""
     project_root = tmp_path
-    args_hash = compute_args_hash(
-        checks=["tests"],
-        timeout=300,
-        coverage_threshold=0.9,
-        strict_mode=False,
-        include_markdown=False,
-    )
+    args_hash = _default_hash()
     running_payload: dict[str, object] = {
         "version": 1,
         "status": "running",
@@ -107,14 +111,7 @@ async def test_running_status_returns_fast_error_for_second_call(
     assert existing is not None
     assert existing.get("status") == "running"
 
-    result = await run_checks_detached(
-        project_root=project_root,
-        checks=["tests"],
-        strict_mode=False,
-        timeout=300,
-        coverage_threshold=0.9,
-        ctx=None,
-    )
+    result = await _run_detached(project_root)
     assert result["status"] == "already_running"
     assert "job_id" in result
 
@@ -122,13 +119,7 @@ async def test_running_status_returns_fast_error_for_second_call(
 def test_start_pre_commit_job_impl_reuses_completed_result(tmp_path: Path) -> None:
     """start_pre_commit_job_impl returns completed when fresh result exists."""
     project_root = tmp_path
-    args_hash = compute_args_hash(
-        checks=["tests"],
-        timeout=300,
-        coverage_threshold=0.9,
-        strict_mode=False,
-        include_markdown=False,
-    )
+    args_hash = _default_hash()
     payload: dict[str, object] = {
         "version": 1,
         "status": "completed",
@@ -144,6 +135,7 @@ def test_start_pre_commit_job_impl_reuses_completed_result(tmp_path: Path) -> No
         coverage_threshold=0.9,
         strict_mode=False,
         include_markdown_lint=False,
+        env=LocalExecutionEnvironment(),
     )
     assert result["job_id"] == args_hash
     assert result["status"] == "completed"
@@ -152,13 +144,7 @@ def test_start_pre_commit_job_impl_reuses_completed_result(tmp_path: Path) -> No
 def test_start_pre_commit_job_impl_reports_already_running(tmp_path: Path) -> None:
     """start_pre_commit_job_impl returns already_running when status is running."""
     project_root = tmp_path
-    args_hash = compute_args_hash(
-        checks=["tests"],
-        timeout=300,
-        coverage_threshold=0.9,
-        strict_mode=False,
-        include_markdown=False,
-    )
+    args_hash = _default_hash()
     running_payload: dict[str, object] = {
         "version": 1,
         "status": "running",
@@ -174,6 +160,7 @@ def test_start_pre_commit_job_impl_reports_already_running(tmp_path: Path) -> No
         coverage_threshold=0.9,
         strict_mode=False,
         include_markdown_lint=False,
+        env=LocalExecutionEnvironment(),
     )
     assert result["job_id"] == args_hash
     assert result["status"] == "already_running"
