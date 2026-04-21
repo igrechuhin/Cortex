@@ -26,7 +26,7 @@ This maps to the Managed Agents `execute(name, input) → string` pattern: the h
 - `ExecutionResult` Pydantic model: `{returncode: int, stdout: str, stderr: str, duration_ms: int}`
 - `LocalExecutionEnvironment` — wraps current subprocess logic
 - `WorktreeExecutionEnvironment(worktree_path: Path)` — runs commands with `cwd=worktree_path`
-- Refactor `run_quality_gate`, `autofix`, `run_docs_gate` to accept `env: ExecutionEnvironment | None = None` (default `LocalExecutionEnvironment`)
+- Refactor `run_quality_gate`, `autofix`, `run_docs_gate` to accept `env: ExecutionEnvironment` (required); pass `LocalExecutionEnvironment()` at MCP tool entry points where project root is resolved from context
 - Unit tests: mock environment, local environment, worktree path routing
 
 **out_of_scope**
@@ -53,8 +53,8 @@ No behavior changes — this is a pure refactor. Existing tests should pass with
    - `ExecutionEnvironment` Protocol with `execute(tool: str, args: list[str], cwd: Path) -> ExecutionResult`
    - `LocalExecutionEnvironment` class implementing the protocol via `subprocess.run`
    - `WorktreeExecutionEnvironment(worktree_path: Path)` class — same but forces `cwd=self.worktree_path`
-2. In `src/cortex/tools/quality_gate.py`, extract subprocess calls into `_run_command(env: ExecutionEnvironment, tool: str, args: list[str], cwd: Path) -> ExecutionResult`. Update `run_quality_gate` signature: `async def run_quality_gate(ctx, env: ExecutionEnvironment | None = None)`.
-3. Repeat for `src/cortex/tools/autofix.py` → `autofix` gains `env` param.
+2. In `src/cortex/tools/quality_gate.py`, extract subprocess calls into `_run_command(env: ExecutionEnvironment, tool: str, args: list[str], cwd: Path) -> ExecutionResult`. Update `run_quality_gate` signature: `async def run_quality_gate(ctx, env: ExecutionEnvironment)`. At the MCP tool entry point, construct `LocalExecutionEnvironment()` and pass it in.
+3. Repeat for `src/cortex/tools/autofix.py` → `autofix` gains required `env: ExecutionEnvironment`; `LocalExecutionEnvironment()` constructed at MCP entry point.
 4. Repeat for `src/cortex/tools/docs_gate.py` (or wherever `run_docs_gate` lives) → same pattern.
 5. Export `ExecutionEnvironment`, `ExecutionResult`, `LocalExecutionEnvironment`, `WorktreeExecutionEnvironment` from `src/cortex/core/__init__.py`.
 6. Unit tests in `tests/unit/core/test_execution_env.py`:
@@ -81,9 +81,9 @@ None — this plan is independent of Plans 1 and 2 and can run in parallel.
 ## Success Criteria
 
 - `ExecutionEnvironment` Protocol defined with `execute(tool, args, cwd) -> ExecutionResult`
-- `run_quality_gate`, `autofix`, `run_docs_gate` all accept optional `env` parameter
+- `run_quality_gate`, `autofix`, `run_docs_gate` all accept required `env: ExecutionEnvironment`; `LocalExecutionEnvironment()` constructed at each MCP entry point
 - `WorktreeExecutionEnvironment` routes all subprocess calls to the given worktree path
-- All existing quality gate tests pass without modification
+- All existing quality gate tests pass without modification (test call sites updated to pass `LocalExecutionEnvironment()` explicitly)
 - New unit tests achieve 95%+ coverage on `execution_env.py`
 
 ## Testing Strategy

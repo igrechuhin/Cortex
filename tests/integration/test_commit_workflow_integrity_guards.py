@@ -360,9 +360,11 @@ class TestImplementPromptIntegrityGuard:
     def test_implement_prompt_requires_post_implementation_review_gate(
         self, implement_prompt_content: str
     ) -> None:
-        """Implement prompt requires a mandatory review gate before completion."""
+        """Implement prompt requires an inline mandatory review gate before completion."""
         assert "## Review Gate" in implement_prompt_content
-        assert "code-reviewer" in implement_prompt_content
+        # Review must be performed inline — no system-provided subagent delegation.
+        assert "inline" in implement_prompt_content
+        assert "do NOT delegate to a subagent" in implement_prompt_content
         assert "review_outcome" in implement_prompt_content
         assert "no_gaps" in implement_prompt_content
         assert "gaps_found" in implement_prompt_content
@@ -378,15 +380,6 @@ class TestImplementPromptIntegrityGuard:
         assert (
             'do **not** call `plan(operation="complete")`' in implement_prompt_content
         )
-
-    def test_implement_prompt_treats_review_runtime_failures_as_blocking(
-        self, implement_prompt_content: str
-    ) -> None:
-        """Review transport/runtime failure must stay blocked, not become synthetic gaps."""
-        lower = implement_prompt_content.lower()
-        assert "review_blocked" in implement_prompt_content
-        assert "not" in lower and "`gaps_found`" in implement_prompt_content
-        assert "keep the plan open" in lower
 
 
 class TestPythonCodingStandardsTypeNarrowing:

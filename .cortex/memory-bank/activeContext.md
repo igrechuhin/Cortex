@@ -4,16 +4,15 @@
 
 ## Completed Work (2026-04-20)
 
-- ✅ **Commit Phase B docs sync for swift adapter comment-only test updates** - COMPLETE (2026-04-20) - <!-- memory_type: status -->
-Recorded Phase B compound state for comments-only adjustments in tests/unit/test_swift_adapter.py plus existing memory/index/log deltas; validated commit pipeline handoff context and prepared docs-gate validation.
+- **Summary (2026-04-20)** - 1 entries archived.
 
-- ⚠️ **Add Append-Only Event Log to Pipeline Handoff for Crash Recovery (PARTIAL)** - PARTIAL (2026-04-20) - <!-- memory_type: status -->
+## Completed Work (2026-04-21)
 
-- ✅ **Add Append-Only Event Log to Pipeline Handoff for Crash Recovery** - COMPLETE (2026-04-20) - Validated implementation is complete and review-gate clean: append-only pipeline event logging, read_log introspection, and incomplete pipeline detection are in place with passing unit coverage.
+- ✅ **Add Phase Status Tracking and Resume Capability to Pipeline Agents** - COMPLETE (2026-04-21) - <!-- memory_type: status -->
 
-- ✅ **Commit Phase B docs validation for pipeline handoff updates** - COMPLETE (2026-04-20) - <!-- memory_type: status -->
-Recorded Phase B compound update for current commit work: refreshed memory-bank status via update_memory_bank append operations, executed plan archival and autofix, then validated run_docs_gate with roadmap-sync warning handling prior to docs-phase handoff completion.
-Implemented append-only event logging for `pipeline_handoff` write operations, added structured `read_log`, and surfaced incomplete pipeline detection in session start; unit tests added for event-log paths, but the implement workflow remains open because the global quality gate coverage threshold is still below target.
+- ✅ **/cortex/commit Phase B (docs/memory-bank)** - COMPLETE (2026-04-21) - <!-- memory_type: milestone -->
+Completed commit Phase B bookkeeping: validated checks handoff, synchronized memory-bank state, archived completed plans, and executed docs validation workflow for commit/docs handoff publication.
+Closed the `/cortex/do` review-gate/finalize loop for the phase status + resume rollout, confirmed no remaining implementation gaps, and marked the roadmap step complete with gates green.
 
 ## Completed Work (2026-04-19)
 

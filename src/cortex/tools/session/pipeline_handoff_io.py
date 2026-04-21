@@ -8,6 +8,7 @@ import os
 import shutil
 import uuid
 from datetime import datetime
+from enum import StrEnum
 from pathlib import Path
 from typing import cast
 
@@ -20,6 +21,16 @@ from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 logger = logging.getLogger(__name__)
 
 PIPELINE_TTL_SECONDS = 4 * 3600  # 4 hours
+
+
+class PhaseStatus(StrEnum):
+    """Canonical lifecycle states for pipeline phases."""
+
+    PENDING = "pending"
+    RUNNING = "running"
+    COMPLETED = "completed"
+    FAILED = "failed"
+
 
 # ---------------------------------------------------------------------------
 # Session ID helpers (mirrors session_logger._get_session_id)
@@ -81,6 +92,7 @@ class EventLogEntry(BaseModel):
     timestamp: str = Field(min_length=1)
     operation: str = Field(min_length=1)
     data_keys: list[str] = Field(default_factory=list)
+    status: PhaseStatus | None = None
 
 
 # ---------------------------------------------------------------------------
@@ -288,17 +300,38 @@ def parse_result_data(data: str | None) -> dict[str, object]:
         return {"data": data}
 
 
+def _phase_status_from_payload(payload: dict[str, object]) -> PhaseStatus:
+    raw_status = payload.get("status")
+    if isinstance(raw_status, str):
+        lowered = raw_status.lower()
+        if lowered == PhaseStatus.RUNNING.value:
+            return PhaseStatus.RUNNING
+        if lowered == PhaseStatus.FAILED.value:
+            return PhaseStatus.FAILED
+        if lowered in {"completed", "complete", "passed", "pass", "ok", "success"}:
+            return PhaseStatus.COMPLETED
+    return PhaseStatus.COMPLETED
+
+
+def _atomic_write_json(target_file: Path, payload: dict[str, object]) -> None:
+    temp_file = target_file.with_suffix(f"{target_file.suffix}.tmp")
+    _ = temp_file.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+    _ = temp_file.replace(target_file)
+
+
 def _append_event_log(
     pipeline_dir: Path,
     phase: str,
     operation: str,
     data_keys: list[str],
+    status: PhaseStatus | None = None,
 ) -> None:
     entry = EventLogEntry(
         phase=phase,
         timestamp=now_iso(),
         operation=operation,
         data_keys=data_keys,
+        status=status,
     )
     elog = event_log_path(pipeline_dir)
     with elog.open("a", encoding="utf-8") as stream:
@@ -381,9 +414,20 @@ def _write_result_payload_file(
 ) -> tuple[dict[str, object], Path]:
     payload: dict[str, object] = {"phase": phase, "completed_at": now_iso()}
     payload.update(result_fields)
+    _ = payload.setdefault("status", PhaseStatus.COMPLETED.value)
+    payload["phase_status"] = _phase_status_from_payload(payload).value
     rfile = result_path(pipeline_dir, phase)
-    _ = rfile.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+    _atomic_write_json(rfile, payload)
     return payload, rfile
+
+
+def _running_payload(phase: str) -> dict[str, object]:
+    return {
+        "phase": phase,
+        "status": PhaseStatus.RUNNING.value,
+        "phase_status": PhaseStatus.RUNNING.value,
+        "started_at": now_iso(),
+    }
 
 
 def _update_pipeline_state_file(
@@ -411,9 +455,14 @@ def op_write_result(
     pdir = pipeline_dir(project_root, pipeline)
     pdir.mkdir(parents=True, exist_ok=True)
     incoming = parse_result_data(data)
+    event_status = _phase_status_from_payload(incoming)
     try:
         _append_event_log(
-            pdir, phase=phase, operation="write", data_keys=sorted(incoming.keys())
+            pdir,
+            phase=phase,
+            operation="write",
+            data_keys=sorted(incoming.keys()),
+            status=event_status,
         )
     except OSError as exc:
         return json.dumps(
@@ -429,6 +478,105 @@ def op_write_result(
             "phase": phase,
             "pipeline_state": state,
         },
+        indent=2,
+    )
+
+
+def op_mark_running(project_root: Path, pipeline: str, phase: str) -> str:
+    """Mark phase as running and persist atomically for crash-safe resume."""
+    pdir = pipeline_dir(project_root, pipeline)
+    pdir.mkdir(parents=True, exist_ok=True)
+    payload = _running_payload(phase)
+    rfile = result_path(pdir, phase)
+    try:
+        _atomic_write_json(rfile, payload)
+        _append_event_log(
+            pdir,
+            phase=phase,
+            operation="mark_running",
+            data_keys=sorted(payload.keys()),
+            status=PhaseStatus.RUNNING,
+        )
+    except OSError as exc:
+        return json.dumps(
+            {"status": OperationStatus.ERROR.value, "error": str(exc)}, indent=2
+        )
+    state = _update_pipeline_state_file(pdir, pipeline, phase, payload, {})
+    return json.dumps(
+        {
+            "status": "ok",
+            "phase": phase,
+            "result_file": str(rfile),
+            "pipeline_state": state,
+        },
+        indent=2,
+    )
+
+
+def _phase_status_from_result_file(rfile: Path) -> PhaseStatus:
+    try:
+        parsed: object = json.loads(rfile.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return PhaseStatus.FAILED
+    if not isinstance(parsed, dict):
+        return PhaseStatus.FAILED
+    payload = cast(dict[str, object], parsed)
+    phase_status = payload.get("phase_status")
+    if isinstance(phase_status, str) and phase_status:
+        lowered = phase_status.lower()
+        if lowered == PhaseStatus.RUNNING.value:
+            return PhaseStatus.RUNNING
+        if lowered == PhaseStatus.FAILED.value:
+            return PhaseStatus.FAILED
+        if lowered in {"completed", "complete", "passed", "pass", "ok", "success"}:
+            return PhaseStatus.COMPLETED
+    return _phase_status_from_payload(payload)
+
+
+def _collect_phase_names_for_status(pdir: Path) -> set[str]:
+    phase_names: set[str] = set()
+    for task_file in pdir.glob("*-task.json"):
+        phase_names.add(task_file.name.removesuffix("-task.json"))
+    for result_file in pdir.glob("*-result.json"):
+        phase_names.add(result_file.name.removesuffix("-result.json"))
+    sfile = state_path(pdir)
+    if not sfile.exists():
+        return phase_names
+    state_obj = _load_pipeline_state_fallback(sfile)
+    if not isinstance(state_obj, dict):
+        return phase_names
+    phases_obj = cast(dict[str, object], state_obj).get("phases")
+    if isinstance(phases_obj, dict):
+        phase_names.update(
+            str(name) for name in cast(dict[str, object], phases_obj).keys()
+        )
+    return phase_names
+
+
+def _build_phase_statuses(pdir: Path, phase_names: set[str]) -> dict[str, str]:
+    statuses: dict[str, str] = {}
+    for phase in sorted(phase_names):
+        rfile = result_path(pdir, phase)
+        statuses[phase] = (
+            _phase_status_from_result_file(rfile).value
+            if rfile.exists()
+            else PhaseStatus.PENDING.value
+        )
+    return statuses
+
+
+def op_status(project_root: Path, pipeline: str) -> str:
+    """Return current phase-status map for resume-aware agents."""
+    pdir = pipeline_dir(project_root, pipeline)
+    if not pdir.exists():
+        return json.dumps(
+            {"status": "ok", "pipeline": pipeline, "phases": {}}, indent=2
+        )
+    phase_names = _collect_phase_names_for_status(pdir)
+    statuses = _build_phase_statuses(pdir, phase_names)
+
+    return json.dumps(
+        {"status": "ok", "pipeline": pipeline, "phases": statuses},
         indent=2,
     )
 

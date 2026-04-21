@@ -15,8 +15,6 @@
 
 ### Pipeline Infrastructure
 
-- **Add Phase Status Tracking and Resume Capability to Pipeline Agents** - PENDING - Adds phase status field and resume capability to skip completed pipeline phases on restart. Plan: .cortex/plans/pipeline-phase-resume.md
-
 ### Tools Infrastructure
 
 - **Introduce Tool Dispatch Layer for Environment-Agnostic Quality Gate Execution** - PENDING - Adds ExecutionEnvironment protocol to decouple quality gate tools from local subprocess assumptions. Plan: .cortex/plans/execution-environment-abstraction.md

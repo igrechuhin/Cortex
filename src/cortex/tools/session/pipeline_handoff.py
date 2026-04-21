@@ -27,6 +27,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+from enum import StrEnum
 from pathlib import Path
 from typing import cast
 
@@ -43,11 +44,13 @@ from .pipeline_handoff_io import (
     extract_routing_keys,
     op_clear,
     op_init,
+    op_mark_running,
     op_read_log,
     op_read_state,
     op_read_task,
     op_rollback,
     op_snapshot,
+    op_status,
     op_write_result,
     op_write_task,
 )
@@ -57,7 +60,34 @@ from .pipeline_handoff_validation import validate_phase, validate_pipeline
 # Dispatch
 # ---------------------------------------------------------------------------
 
-_OPS_NEED_PHASE = frozenset({"write_task", "read_task", "write_result", "write"})
+
+class PipelineHandoffOperation(StrEnum):
+    """Supported pipeline_handoff operations (canonical + legacy aliases)."""
+
+    INIT = "init"
+    WRITE = "write"
+    READ = "read"
+    READ_LOG = "read_log"
+    STATUS = "status"
+    MARK_RUNNING = "mark_running"
+    CLEAR = "clear"
+    SNAPSHOT = "snapshot"
+    ROLLBACK = "rollback"
+    WRITE_TASK = "write_task"
+    READ_TASK = "read_task"
+    WRITE_RESULT = "write_result"
+    READ_STATE = "read_state"
+
+
+_OPS_NEED_PHASE = frozenset(
+    {
+        PipelineHandoffOperation.WRITE_TASK.value,
+        PipelineHandoffOperation.READ_TASK.value,
+        PipelineHandoffOperation.WRITE_RESULT.value,
+        PipelineHandoffOperation.WRITE.value,
+        PipelineHandoffOperation.MARK_RUNNING.value,
+    }
+)
 
 
 def _resolve_zero_arg_defaults(
@@ -76,7 +106,7 @@ def _resolve_zero_arg_defaults(
     If session config is absent or incomplete the original values are returned
     unchanged, so non-Cursor callers are unaffected.
     """
-    if operation != "read_state" or pipeline != "default":
+    if operation != PipelineHandoffOperation.READ_STATE.value or pipeline != "default":
         # At least one arg was explicitly set — not a zero-arg call.
         return operation, pipeline, phase
 
@@ -111,7 +141,7 @@ def _unknown_op_error(operation: str) -> str:
             "status": OperationStatus.ERROR.value,
             "error": (
                 f"Unknown operation '{operation}'. "
-                "Use: init, write, read, read_log, clear, snapshot, rollback "
+                "Use: init, write, read, read_log, status, mark_running, clear, snapshot, rollback "
                 "(aliases: write_task, read_task, write_result, read_state)"
             ),
         },
@@ -192,7 +222,7 @@ def _dispatch_read(project_root: Path, pipeline: str, phase: str | None) -> str:
 def _dispatch_snapshot_or_rollback(
     project_root: Path, operation: str, data_str: str | None
 ) -> str:
-    if operation == "snapshot":
+    if operation == PipelineHandoffOperation.SNAPSHOT.value:
         snapshot_paths = _extract_snapshot_paths(data_str)
         if not snapshot_paths:
             return _snapshot_paths_required_error()
@@ -201,6 +231,37 @@ def _dispatch_snapshot_or_rollback(
     if snapshot_id is None:
         return _rollback_snapshot_id_required_error()
     return op_rollback(project_root, snapshot_id)
+
+
+def _dispatch_simple_operation(
+    project_root: Path, pipeline: str, operation: str
+) -> str | None:
+    if operation == PipelineHandoffOperation.READ_STATE.value:
+        return op_read_state(project_root, pipeline)
+    if operation == PipelineHandoffOperation.READ_LOG.value:
+        return op_read_log(project_root, pipeline)
+    if operation == PipelineHandoffOperation.STATUS.value:
+        return op_status(project_root, pipeline)
+    if operation == PipelineHandoffOperation.CLEAR.value:
+        return op_clear(project_root, pipeline)
+    return None
+
+
+def _dispatch_phase_bound_operation(
+    project_root: Path, operation: str, pipeline: str, phase: str, data_str: str | None
+) -> str | None:
+    if operation == PipelineHandoffOperation.WRITE_TASK.value:
+        return op_write_task(project_root, pipeline, phase, data_str)
+    if operation in (
+        PipelineHandoffOperation.WRITE_RESULT.value,
+        PipelineHandoffOperation.WRITE.value,
+    ):
+        return op_write_result(project_root, pipeline, phase, data_str)
+    if operation == PipelineHandoffOperation.READ_TASK.value:
+        return op_read_task(project_root, pipeline, phase)
+    if operation == PipelineHandoffOperation.MARK_RUNNING.value:
+        return op_mark_running(project_root, pipeline, phase)
+    return None
 
 
 def _dispatch_sync(
@@ -219,23 +280,23 @@ def _dispatch_sync(
     """
     if operation in _OPS_NEED_PHASE and not phase:
         return _phase_required_error(operation)
-    if operation == "init":
+    if operation == PipelineHandoffOperation.INIT.value:
         return op_init(project_root, pipeline, data_str)
-    if operation == "write_task":
-        return op_write_task(project_root, pipeline, phase or "", data_str)
-    if operation in ("write_result", "write"):
-        return op_write_result(project_root, pipeline, phase or "", data_str)
-    if operation == "read_task":
-        return op_read_task(project_root, pipeline, phase or "")
-    if operation == "read_state":
-        return op_read_state(project_root, pipeline)
-    if operation == "read_log":
-        return op_read_log(project_root, pipeline)
-    if operation == "read":
+    resolved_phase = phase or ""
+    phase_result = _dispatch_phase_bound_operation(
+        project_root, operation, pipeline, resolved_phase, data_str
+    )
+    if phase_result is not None:
+        return phase_result
+    simple_result = _dispatch_simple_operation(project_root, pipeline, operation)
+    if simple_result is not None:
+        return simple_result
+    if operation == PipelineHandoffOperation.READ.value:
         return _dispatch_read(project_root, pipeline, phase)
-    if operation == "clear":
-        return op_clear(project_root, pipeline)
-    if operation in ("snapshot", "rollback"):
+    if operation in (
+        PipelineHandoffOperation.SNAPSHOT.value,
+        PipelineHandoffOperation.ROLLBACK.value,
+    ):
         return _dispatch_snapshot_or_rollback(project_root, operation, data_str)
     return _unknown_op_error(operation)
 
@@ -295,7 +356,7 @@ async def _dispatch(
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_FAST)
 async def pipeline_handoff(
-    operation: str = "read_state",
+    operation: str = PipelineHandoffOperation.READ_STATE.value,
     pipeline: str = "default",
     phase: str | None = None,
     data: object = None,
@@ -332,7 +393,8 @@ async def pipeline_handoff(
     RETURNS: JSON with {status, ...} for write ops; JSON file content for reads.
 
     Args:
-        operation: init | write | read | read_log | clear | snapshot | rollback
+        operation: init | write | read | read_log | status | mark_running
+            | clear | snapshot | rollback
             (legacy: write_task, read_task,
             write_result, read_state)
         pipeline: Pipeline name (e.g. "commit", "implement"). Default: "default".
@@ -356,9 +418,17 @@ async def pipeline_handoff(
         logger_name=__name__,
     )
     payload = data
-    if operation == "snapshot" and payload is None and paths is not None:
+    if (
+        operation == PipelineHandoffOperation.SNAPSHOT.value
+        and payload is None
+        and paths is not None
+    ):
         payload = {"paths": paths}
-    if operation == "rollback" and payload is None and snapshot_id is not None:
+    if (
+        operation == PipelineHandoffOperation.ROLLBACK.value
+        and payload is None
+        and snapshot_id is not None
+    ):
         payload = {"snapshot_id": snapshot_id}
     return await _dispatch(
         operation, pipeline, phase, payload, ctx

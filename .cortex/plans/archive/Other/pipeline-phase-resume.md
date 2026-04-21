@@ -2,9 +2,10 @@
 title: "Add Phase Status Tracking and Resume Capability to Pipeline Agents"
 component: "pipeline"
 work_type: "feature"
-status: BLOCKED
+status: COMPLETE
 priority: "High"
 created: "2026-04-20"
+completion_date: "2026-04-21"
 depends_on: ["pipeline-event-log.md"]
 ---
 
@@ -95,3 +96,8 @@ Target: 95% coverage on new code paths. AAA pattern throughout.
 | `mark_running` + crash leaves `running` state permanently | Medium | Low | Plan 1's incomplete detection flags `running` without `completed` in the log; operator can clear manually |
 | Atomic rename not available on some filesystems | Low | Medium | Fall back to direct write with a completion sentinel file if rename fails |
 | Resume logic skips a phase that needs re-running due to upstream change | Low | High | Agents should check `status` only for their own phase, not assume upstream phases are still valid |
+
+## Partial Progress Log
+
+- 2026-04-20: Complete status/resume rollout and tests — files: src/cortex/tools/session/pipeline_handoff.py, src/cortex/tools/session/pipeline_handoff_io.py, tests/tools/test_pipeline_handoff_event_log.py, tests/tools/test_pipeline_phase_resume.py, .cortex/synapse/cursor-agents/commit-preflight.md, .cortex/synapse/cursor-agents/commit-phase-a.md, .cortex/synapse/cursor-agents/commit-phase-b.md, .cortex/synapse/cursor-agents/commit-phase-c.md, .cortex/synapse/cursor-agents/commit-final-gate.md, .cortex/synapse/cursor-agents/fix-quality.md, .cortex/synapse/cursor-agents/fix-tests.md, .cortex/synapse/cursor-agents/fix-coverage.md, .cortex/synapse/cursor-agents/fix-docs.md
+- 2026-04-21: Finalize /do review gate and completion handoff — files: .cortex/memory-bank/roadmap.md, .cortex/memory-bank/progress.md, .cortex/memory-bank/activeContext.md

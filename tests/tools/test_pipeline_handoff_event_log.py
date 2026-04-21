@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from typing import cast
 from unittest.mock import patch
 
 import pytest
@@ -16,6 +17,36 @@ from tests.tools.pipeline_handoff_test_support import (
 
 def _pipeline_session_dir(tmp_path: Path) -> Path:
     return tmp_path / ".cortex" / ".session"
+
+
+async def _seed_commit_phase_statuses() -> dict[str, str]:
+    _ = await pipeline_handoff(
+        operation="mark_running",
+        pipeline="commit",
+        phase="checks",
+    )
+    _ = await pipeline_handoff(
+        operation="write",
+        pipeline="commit",
+        phase="docs",
+        data={"status": "passed"},
+    )
+    _ = await pipeline_handoff(
+        operation="write_task",
+        pipeline="commit",
+        phase="validate",
+        data={"started": True},
+    )
+    _ = await pipeline_handoff(
+        operation="write",
+        pipeline="commit",
+        phase="final-gate",
+        data={"status": "failed"},
+    )
+    status_result = json.loads(
+        await pipeline_handoff(operation="status", pipeline="commit")
+    )
+    return cast(dict[str, str], status_result["phases"])
 
 
 @pytest.mark.asyncio
@@ -45,6 +76,7 @@ async def test_write_appends_event_before_result_file(
     assert entry["phase"] == "code"
     assert entry["operation"] == "write"
     assert entry["data_keys"] == ["status", "tests_added"]
+    assert entry["status"] == "completed"
     assert "timestamp" in entry
     assert result_file.exists()
 
@@ -77,7 +109,48 @@ async def test_read_log_returns_structured_entries(
     assert len(entries) == 2
     assert entries[0]["phase"] == "select"
     assert entries[1]["phase"] == "code"
+    assert entries[0]["status"] == "completed"
+    assert entries[1]["status"] == "completed"
     assert all("timestamp" in entry for entry in entries)
+
+
+@pytest.mark.asyncio
+async def test_mark_running_writes_running_status_and_logs_event(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    patch_pipeline_handoff_project_root(monkeypatch, tmp_path)
+
+    result = json.loads(
+        await pipeline_handoff(
+            operation="mark_running",
+            pipeline="implement",
+            phase="code",
+        )
+    )
+
+    assert result["status"] == "ok"
+    payload = json.loads(Path(result["result_file"]).read_text(encoding="utf-8"))
+    assert payload["status"] == "running"
+    assert payload["phase_status"] == "running"
+    assert "started_at" in payload
+
+    log_result = json.loads(
+        await pipeline_handoff(operation="read_log", pipeline="implement")
+    )
+    assert log_result["entries"][0]["operation"] == "mark_running"
+    assert log_result["entries"][0]["status"] == "running"
+
+
+@pytest.mark.asyncio
+async def test_status_reports_running_completed_failed_and_pending(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    patch_pipeline_handoff_project_root(monkeypatch, tmp_path)
+    phases = await _seed_commit_phase_statuses()
+    assert phases["checks"] == "running"
+    assert phases["docs"] == "completed"
+    assert phases["final-gate"] == "failed"
+    assert phases["validate"] == "pending"
 
 
 @pytest.mark.asyncio
