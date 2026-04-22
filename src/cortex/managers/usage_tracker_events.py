@@ -8,7 +8,7 @@ from typing import cast
 from uuid import NAMESPACE_URL, uuid5
 
 from cortex.core.cache_json_access import read_cache_json, read_modify_write_cache_json
-from cortex.core.synapse_usage_config import get_usage_storage_root
+from cortex.core.synapse_usage_config import get_usage_storage_root, is_usage_writable
 from cortex.managers.usage_models import ToolUsageEvent
 
 logger = logging.getLogger(__name__)
@@ -71,10 +71,13 @@ def parse_events_from_content(
 async def persist_event(project_root: Path, event: ToolUsageEvent) -> None:
     """Append a single event to usage/events/{date}.json (concurrent-safe).
 
-    When usage_writable is true, writes to Synapse .cache (project_root/.cortex/
-    synapse/.cache/usage/events/). Uses read_modify_write_cache_json for
-    reliable multi-session tracking.
+    Short-circuits when usage persistence is disabled. When usage_writable is
+    true, writes to Synapse .cache (project_root/.cortex/synapse/.cache/usage/
+    events/). Uses read_modify_write_cache_json for reliable multi-session
+    tracking.
     """
+    if not is_usage_writable(project_root):
+        return
     date_str = event.timestamp[:10]
     relative_key = f"usage/events/{date_str}.json"
     cache_root = get_usage_storage_root(project_root)

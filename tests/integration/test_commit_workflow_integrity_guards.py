@@ -388,14 +388,14 @@ class TestFixCoverageAgentContract:
         self, fix_coverage_agent_content: str
     ) -> None:
         """Agent MUST widen private pure-logic functions before writing tests for them."""
-        # AI: it46 — agent ignored access widening and kept writing entry-point validation
-        # tests with near-zero delta. Rule is now mandatory: classify lines, widen pure
-        # private helpers first, only then write tests targeting those helpers directly.
-        assert "You MUST widen" in fix_coverage_agent_content
-        assert "Trapped in private" in fix_coverage_agent_content
+        # AI: it47 — Step 1 now mandates auditing private pure functions before any test
+        # is written for files that already have tests. Anti-pattern guard blocks entry-point
+        # test spam on already-tested files until private helpers are widened.
+        assert "widen them first" in fix_coverage_agent_content
+        assert "mandatory" in fix_coverage_agent_content
         lower = fix_coverage_agent_content.lower()
-        assert "pure logic" in lower
-        assert "side effects" in lower
+        assert "private pure" in lower or "pure logic" in lower
+        assert "anti-pattern" in lower
 
 
 class TestImplementPromptIntegrityGuard:

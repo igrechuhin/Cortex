@@ -10,11 +10,13 @@ from cortex.core.cache_json_access import read_cache_json
 from cortex.core.cache_utils import get_cache_dir
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.core.synapse_usage_config import get_usage_storage_root
+from cortex.managers.usage_models import ToolUsageEvent
 from cortex.managers.usage_tracker import (
     UsageTracker,
     generate_usage_event_id,
     get_tool_optimization_config,
 )
+from cortex.managers.usage_tracker_events import persist_event
 
 
 def _make_project_root(tmp_path: Path, usage_writable: bool = False) -> Path:
@@ -32,6 +34,18 @@ def _make_project_root(tmp_path: Path, usage_writable: bool = False) -> Path:
             '{"usage_writable": true}', encoding="utf-8"
         )
     return root
+
+
+def _find_event_by_tool(
+    raw_events: list[object], tool_name: str
+) -> dict[str, object] | None:
+    for entry in raw_events:
+        if not isinstance(entry, dict):
+            continue
+        row = cast(dict[str, object], entry)
+        if row.get("tool_name") == tool_name:
+            return row
+    return None
 
 
 class TestUsageTrackerInitialization:
@@ -126,25 +140,45 @@ class TestRecordToolUsage:
         assert result.get("total_events", 0) == 0
 
     @pytest.mark.asyncio
-    async def test_record_persists_when_synapse_exists_and_config_missing(
+    async def test_record_does_not_persist_when_synapse_exists_and_config_missing(
         self, tmp_path: Path
     ) -> None:
-        """When .cortex/synapse exists but config.json missing, events are persisted (Phase 93)."""
+        """When .cortex/synapse exists but config.json missing, writes stay disabled."""
         root = tmp_path / "project"
         get_cache_dir(root).mkdir(parents=True)
-        synapse_dir = get_cortex_path(root, CortexResourceType.SYNAPSE)
-        synapse_dir.mkdir(parents=True)
+        get_cortex_path(root, CortexResourceType.SYNAPSE).mkdir(parents=True)
         tracker = UsageTracker(root)
         await tracker.record_tool_usage("test_tool", 1.0, True)
         result = await tracker.get_usage_stats()
-        total_ev = result.get("total_events", 0)
-        assert isinstance(total_ev, (int, float)) and total_ev >= 1
+        assert result.get("total_events", 0) == 0
         today = datetime.now(UTC).strftime("%Y-%m-%d")
         relative_key = f"usage/events/{today}.json"
         storage_root = get_usage_storage_root(root)
         raw = await read_cache_json(root, relative_key, cache_root=storage_root)
-        assert isinstance(raw, list) and len(raw) >= 1
-        assert storage_root == synapse_dir / ".cache"
+        assert raw in (None, [])
+        assert storage_root == root / ".cortex" / ".cache"
+
+    @pytest.mark.asyncio
+    async def test_persist_event_short_circuits_when_usage_not_writable(
+        self, tmp_path: Path
+    ) -> None:
+        """Direct persist_event calls are no-ops without explicit usage_writable opt-in."""
+        root = _make_project_root(tmp_path)
+        event = ToolUsageEvent(
+            tool_name="test_tool",
+            timestamp=datetime.now(UTC).isoformat(),
+            duration_ms=1.0,
+            success=True,
+        )
+        await persist_event(root, event)
+        today = datetime.now(UTC).strftime("%Y-%m-%d")
+        storage_root = get_usage_storage_root(root)
+        raw = await read_cache_json(
+            root,
+            f"usage/events/{today}.json",
+            cache_root=storage_root,
+        )
+        assert raw in (None, [])
 
     @pytest.mark.asyncio
     async def test_record_creates_event_file(self, tmp_path: Path) -> None:
@@ -246,7 +280,7 @@ class TestRecordToolUsage:
     async def test_record_phase57_retry_and_validation_fields(
         self, tmp_path: Path
     ) -> None:
-        """Test Phase 57 retry_count and param_validation_failure are persisted."""
+        """Test Phase 57 retry_count is persisted."""
         root = _make_project_root(tmp_path, usage_writable=True)
         tracker = UsageTracker(root)
         await tracker.record_tool_usage(
@@ -261,10 +295,18 @@ class TestRecordToolUsage:
         storage_root = get_usage_storage_root(root)
         raw = await read_cache_json(root, relative_key, cache_root=storage_root)
         assert isinstance(raw, list) and raw
-        first = raw[0]
-        first_d = cast(dict[str, object], first) if isinstance(first, dict) else {}
-        assert first_d.get("retry_count") == 2
-        assert first_d.get("param_validation_failure") is None
+        first = _find_event_by_tool(raw, "test_tool")
+        assert first is not None
+        assert first.get("retry_count") == 2
+        assert first.get("param_validation_failure") is None
+
+    @pytest.mark.asyncio
+    async def test_record_phase57_validation_failure_field(
+        self, tmp_path: Path
+    ) -> None:
+        """Test Phase 57 param_validation_failure is persisted for failed events."""
+        root = _make_project_root(tmp_path, usage_writable=True)
+        tracker = UsageTracker(root)
         await tracker.record_tool_usage(
             tool_name="other_tool",
             duration_ms=1.0,
@@ -272,18 +314,15 @@ class TestRecordToolUsage:
             error_type="ValidationError",
             param_validation_failure="task_description: required",
         )
+        today = datetime.now(UTC).strftime("%Y-%m-%d")
+        relative_key = f"usage/events/{today}.json"
+        storage_root = get_usage_storage_root(root)
         raw2 = await read_cache_json(root, relative_key, cache_root=storage_root)
-        assert isinstance(raw2, list) and len(raw2) >= 2
-        candidates: list[dict[str, object]] = [
-            cast(dict[str, object], e)
-            for e in raw2
-            if isinstance(e, dict)
-            and cast(dict[str, object], e).get("tool_name") == "other_tool"
-        ]
-        assert candidates, "expected other_tool event"
+        assert isinstance(raw2, list) and raw2
+        other_event = _find_event_by_tool(raw2, "other_tool")
+        assert other_event is not None
         assert (
-            candidates[0].get("param_validation_failure")
-            == "task_description: required"
+            other_event.get("param_validation_failure") == "task_description: required"
         )
 
 

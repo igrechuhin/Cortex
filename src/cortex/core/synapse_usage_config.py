@@ -15,15 +15,15 @@ from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 def load_synapse_usage_config(project_root: Path) -> dict[str, object]:
     """Load Synapse usage config from .cortex/synapse/config.json.
 
-    Returns dict with usage_writable key (bool). When config file is missing:
-    if .cortex/synapse directory exists, defaults to {"usage_writable": True}
-    so usage event collection works without requiring a config file; otherwise
-    {"usage_writable": False}. On parse error or invalid content, returns False.
+    Returns dict with usage_writable key (bool). Usage persistence is opt-in:
+    when config file is missing, defaults to {"usage_writable": False}. On
+    parse error or invalid content, returns False.
     """
-    synapse_dir = get_cortex_path(project_root, CortexResourceType.SYNAPSE)
-    config_path = synapse_dir / "config.json"
+    config_path = (
+        get_cortex_path(project_root, CortexResourceType.SYNAPSE) / "config.json"
+    )
     if not config_path.is_file():
-        return {"usage_writable": synapse_dir.is_dir()}
+        return {"usage_writable": False}
     try:
         with open(config_path, encoding="utf-8") as f:
             data = json.load(f)
