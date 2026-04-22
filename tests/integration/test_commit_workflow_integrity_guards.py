@@ -333,6 +333,17 @@ class TestFixCoverageAgentContract:
         assert "two consecutive" in fix_coverage_agent_content
         assert "small positive delta" in fix_coverage_agent_content
 
+    def test_fix_coverage_agent_switches_strategy_on_repeated_files(
+        self, fix_coverage_agent_content: str
+    ) -> None:
+        """Agent must switch from entry-point tests to access-widening when same files recur."""
+        # AI: it46 — agent looped on EvaluateStocksExecutor 3 iterations adding validation
+        # tests (+0.01% each). Private pure methods were never widened. Lock in the rule.
+        lower = fix_coverage_agent_content.lower()
+        assert "strategy switch" in lower
+        assert "same top" in lower or "recur" in lower
+        assert "access" in lower
+
     def test_fix_coverage_agent_requires_import_pattern_check(
         self, fix_coverage_agent_content: str
     ) -> None:

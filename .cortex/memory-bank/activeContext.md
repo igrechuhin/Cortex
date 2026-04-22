@@ -2,6 +2,10 @@
 
 **This file records completed work only.** For current status and upcoming work see [roadmap.md](roadmap.md).
 
+## Completed Work (2026-04-22)
+
+- **/cortex/commit — execution environment abstraction commit slice** - COMPLETE. Completed preflight snapshot/hygiene, Phase A quality + parity checks, and progressed through docs/validation steps to finalize the commit pipeline run.
+
 ## Completed Work (2026-04-20)
 
 - **Summary (2026-04-20)** - 1 entries archived.
