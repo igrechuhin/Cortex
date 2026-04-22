@@ -364,6 +364,26 @@ class TestFixCoverageAgentContract:
         # AI: it46 — full gate takes 5-10 min; a fast build check catches missing imports in ~30s.
         assert "swift build --target" in fix_coverage_agent_content
 
+    def test_fix_coverage_agent_preserves_test_writing_scope(
+        self, fix_coverage_agent_content: str
+    ) -> None:
+        """Agent keeps coverage work focused on tests and bounded access widening."""
+        lower = fix_coverage_agent_content.lower()
+        assert "write tests" in lower
+        assert "the only action in scope" in lower
+        assert "out of scope" in lower
+
+    def test_fix_coverage_agent_allows_access_widening_for_pure_logic(
+        self, fix_coverage_agent_content: str
+    ) -> None:
+        """Agent may widen narrowest-access pure-logic functions to make them testable."""
+        # AI: it46 follow-up — private pure helpers (createTrendMaps, etc.) are unreachable
+        # from tests. Rule is language-agnostic: widen only pure functions, never I/O paths.
+        lower = fix_coverage_agent_content.lower()
+        assert "pure logic" in lower
+        assert "access" in lower
+        assert "side effects" in lower
+
 
 class TestImplementPromptIntegrityGuard:
     """Assert implement prompt blocks metadata-only roadmap churn."""
