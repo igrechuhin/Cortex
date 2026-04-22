@@ -384,15 +384,17 @@ class TestFixCoverageAgentContract:
         assert "the only action in scope" in lower
         assert "out of scope" in lower
 
-    def test_fix_coverage_agent_allows_access_widening_for_pure_logic(
+    def test_fix_coverage_agent_requires_access_widening_for_pure_logic(
         self, fix_coverage_agent_content: str
     ) -> None:
-        """Agent may widen narrowest-access pure-logic functions to make them testable."""
-        # AI: it46 follow-up — private pure helpers (createTrendMaps, etc.) are unreachable
-        # from tests. Rule is language-agnostic: widen only pure functions, never I/O paths.
+        """Agent MUST widen private pure-logic functions before writing tests for them."""
+        # AI: it46 — agent ignored access widening and kept writing entry-point validation
+        # tests with near-zero delta. Rule is now mandatory: classify lines, widen pure
+        # private helpers first, only then write tests targeting those helpers directly.
+        assert "You MUST widen" in fix_coverage_agent_content
+        assert "Trapped in private" in fix_coverage_agent_content
         lower = fix_coverage_agent_content.lower()
         assert "pure logic" in lower
-        assert "access" in lower
         assert "side effects" in lower
 
 
