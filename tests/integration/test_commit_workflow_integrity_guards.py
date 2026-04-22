@@ -333,6 +333,37 @@ class TestFixCoverageAgentContract:
         assert "two consecutive" in fix_coverage_agent_content
         assert "small positive delta" in fix_coverage_agent_content
 
+    def test_fix_coverage_agent_requires_import_pattern_check(
+        self, fix_coverage_agent_content: str
+    ) -> None:
+        """Agent must read an existing test file for imports before writing new ones."""
+        # AI: it46 failure — agent wrote EvaluateStocksExecutorAdditionalTests.swift
+        # without `import Shared`, causing a compile error in the whole test target and
+        # making coverage=null on the 3rd gate call. Mandate the import-copy step.
+        assert "import" in fix_coverage_agent_content.lower()
+        assert "existing test file" in fix_coverage_agent_content
+        assert "same test target" in fix_coverage_agent_content
+
+    def test_fix_coverage_agent_rolls_back_on_null_coverage(
+        self, fix_coverage_agent_content: str
+    ) -> None:
+        """Agent must roll back the batch and not continue when gate returns null coverage."""
+        # AI: it46 — 3rd iteration returned coverage=null (compile error), agent recorded
+        # zero delta and stopped. Should have rolled back the broken files instead.
+        assert "null coverage" in fix_coverage_agent_content or (
+            "new_coverage == null" in fix_coverage_agent_content
+        )
+        assert "Roll back" in fix_coverage_agent_content or (
+            "roll back" in fix_coverage_agent_content
+        )
+
+    def test_fix_coverage_agent_requires_swift_build_before_gate(
+        self, fix_coverage_agent_content: str
+    ) -> None:
+        """Agent must run swift build --target before run_quality_gate to catch compile errors fast."""
+        # AI: it46 — full gate takes 5-10 min; a fast build check catches missing imports in ~30s.
+        assert "swift build --target" in fix_coverage_agent_content
+
 
 class TestImplementPromptIntegrityGuard:
     """Assert implement prompt blocks metadata-only roadmap churn."""
