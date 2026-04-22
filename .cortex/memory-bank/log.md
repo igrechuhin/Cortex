@@ -1,23 +1,5 @@
 # Cortex Operations Log
 
-## [2026-04-21T10:36] plan | Created plan: Demo Plan ·5
-
-## [2026-04-21T10:36] plan | Created plan: Demo Plan ·6
-
-## [2026-04-21T10:36] plan | Created plan: Smoke Test Plan
-
-## [2026-04-21T10:37] lint | Quality gate passed
-
-## [2026-04-21T10:37] plan | Created plan: Demo Plan
-
-## [2026-04-21T10:37] plan | Created plan: Demo Plan ·2
-
-## [2026-04-21T10:37] plan | Created plan: Demo Plan ·3
-
-## [2026-04-21T10:37] plan | Created plan: Demo Plan ·4
-
-## [2026-04-21T10:37] plan | Created plan: Demo Plan ·5
-
 ## [2026-04-21T10:37] plan | Created plan: Mini
 
 ## [2026-04-21T10:37] plan | Created plan: Mini ·2
@@ -2031,3 +2013,21 @@ status=success; changed_files=None
 ## [2026-04-22T21:02] plan | Created plan: Smoke Test Plan
 
 ## [2026-04-22T21:02] lint | Quality gate passed
+
+## [2026-04-22T22:08] plan | Created plan: Smoke Test Plan
+
+## [2026-04-22T22:08] plan | Created plan: Demo Plan
+
+## [2026-04-22T22:08] plan | Created plan: Demo Plan ·2
+
+## [2026-04-22T22:08] plan | Created plan: Mini
+
+## [2026-04-22T22:08] plan | Created plan: Demo Plan ·3
+
+## [2026-04-22T22:08] plan | Created plan: Demo Plan ·4
+
+## [2026-04-22T22:08] plan | Created plan: Demo Plan ·5
+
+## [2026-04-22T22:08] plan | Created plan: Mini ·2
+
+## [2026-04-22T22:08] plan | Created plan: Demo Plan ·6
