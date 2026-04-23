@@ -35,6 +35,10 @@ from .swift_coverage import (
     pick_codecov_json_file,
     read_swift_codecov_json_per_file,
 )
+from .swift_test_diagnostics import (
+    build_swift_test_harness_errors,
+    stderr_tail,
+)
 
 # Matches XCTest summary: "Executed N tests, with M failures"
 _XCTEST_SUMMARY_RE = re.compile(
@@ -144,6 +148,8 @@ class SwiftAdapter(FrameworkAdapter):
             return self._finalize_swift_test_result(
                 output,
                 result.returncode == 0,
+                returncode=result.returncode,
+                stderr_tail_text=stderr_tail(result.stderr),
                 timeout=timeout,
                 coverage_threshold=coverage_threshold,
             )
@@ -259,27 +265,49 @@ class SwiftAdapter(FrameworkAdapter):
             return None
         return parse_llvm_cov_report_line_coverage_fraction(report)
 
-    def _finalize_swift_test_result(
+    def _finalize_swift_test_result(  # noqa: PLR0913 (coverage threshold + diagnostics passthrough)
         self,
         output: str,
         tests_ok: bool,
         timeout: int | None,
         coverage_threshold: float,
+        returncode: int = 0,
+        stderr_tail_text: str = "",
     ) -> TestResult:
         """Parse ``swift test`` output and apply coverage threshold when data exists."""
         passed, failed = self._extract_test_counts(output)
-        total = passed + failed
-        pass_rate = (passed / total) if total > 0 else 0.0
         actual_ok, coverage, warnings, per_file = self._coverage_gate_outcome(
             tests_ok, timeout, coverage_threshold
         )
-
-        errors = build_test_errors(
+        errors = self._build_swift_test_errors(
             actual_ok,
             coverage,
             coverage_threshold,
+            tests_ok,
+            failed,
+            output,
+            returncode,
+            stderr_tail_text,
         )
         gaps = self._build_coverage_gaps(per_file, coverage, coverage_threshold)
+        return self._make_test_result(
+            passed, failed, actual_ok, coverage, gaps, output, errors, warnings
+        )
+
+    @staticmethod
+    def _make_test_result(  # noqa: PLR0913
+        passed: int,
+        failed: int,
+        actual_ok: bool,
+        coverage: float | None,
+        gaps: list[CoverageGap],
+        output: str,
+        errors: list[str],
+        warnings: list[str],
+    ) -> TestResult:
+        """Assemble the final ``TestResult`` from parsed counts and gate outcome."""
+        total = passed + failed
+        pass_rate = (passed / total) if total > 0 else 0.0
         return TestResult(
             success=actual_ok and len(errors) == 0,
             tests_run=total,
@@ -292,6 +320,29 @@ class SwiftAdapter(FrameworkAdapter):
             errors=errors,
             warnings=warnings,
         )
+
+    @staticmethod
+    def _build_swift_test_errors(
+        actual_ok: bool,
+        coverage: float | None,
+        coverage_threshold: float,
+        tests_ok: bool,
+        failed: int,
+        output: str,
+        returncode: int,
+        stderr_tail_text: str,
+    ) -> list[str]:
+        """Build test-phase error list, promoting harness failures over generic text.
+
+        When ``swift test`` exits non-zero but XCTest reported 0 failures, the
+        default ``Test execution failed`` message hides the real cause. Surface
+        a classified summary (linker failure / compile error / signal) so the
+        fix-path subagents can route accurately.
+        """
+        errors = build_test_errors(actual_ok, coverage, coverage_threshold)
+        if not tests_ok and failed == 0:
+            return build_swift_test_harness_errors(output, returncode, stderr_tail_text)
+        return errors
 
     @staticmethod
     def _build_coverage_gaps(

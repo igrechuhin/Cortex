@@ -256,6 +256,29 @@ class TestFixPromptIntegrityGuard:
         assert "tests_failing" in fix_prompt_content
         assert "Coverage failure routing" in fix_prompt_content
 
+    def test_fix_prompt_clears_prior_pipeline_state_before_work(
+        self, fix_prompt_content: str
+    ) -> None:
+        """Fix prompt must clear residual phase state before starting a new run.
+
+        Without a clear at the top of Sequential Execution, subagents' Resume
+        Checks see a stale ``phases.coverage == "completed"`` from a prior
+        ``/fix`` invocation in the same Cortex MCP session and short-circuit
+        (the it49 blocker: "coverage subagent returned a stale 'already
+        completed' state without actually running uplift").
+        """
+        # AI: it49 — the phase-status cache has no freshness signal; only
+        # explicit `pipeline_handoff(operation="clear", ...)` guarantees that
+        # a new run starts from pending. Every Sequential Execution path must
+        # begin with a clear of the `fix` pipeline.
+        assert 'operation="clear"' in fix_prompt_content
+        assert 'pipeline="fix"' in fix_prompt_content
+        lower = fix_prompt_content.lower()
+        assert "residual phase result files" in lower or (
+            "prior pipeline state" in lower
+        )
+        assert "mandatory" in lower
+
 
 class TestFixTestsAgentScope:
     """Assert fix-tests agent scopes out coverage uplift and routes to @fix-coverage."""

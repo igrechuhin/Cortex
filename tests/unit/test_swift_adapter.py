@@ -522,6 +522,63 @@ class TestSwiftAdapter:
             assert result.success is False
             assert "swift not found" in result.output
 
+    @patch("cortex.services.framework_adapters.swift_adapter.subprocess.run")
+    def test_run_tests_surfaces_linker_failure_when_no_assertion_failures(
+        self, mock_run: MagicMock
+    ) -> None:
+        """When swift test exits !=0 with 0 XCTest failures, error message
+        must surface the real cause (linker/compile/signal) instead of the
+        generic 'Test execution failed' string that fix-tests cannot route on.
+
+        This is the core it48/it49 blocker: TradeWing saw
+        ``tests.success=false, tests_failed=0, coverage=null, errors=[
+        "Test execution failed"]`` and had no path to diagnose it.
+        """
+        with tempfile.TemporaryDirectory() as tmpdir:
+            _ = (Path(tmpdir) / "Package.swift").write_text(
+                "// swift-tools-version:5.9"
+            )
+            mock_proc = MagicMock()
+            mock_proc.returncode = 1
+            mock_proc.stdout = b""
+            mock_proc.stderr = (
+                b"ld: symbol(s) not found for architecture arm64\n"
+                b"linker command failed with exit code 1"
+            )
+            mock_run.return_value = mock_proc
+            adapter = SwiftAdapter(str(tmpdir))
+            result = adapter.run_tests()
+            assert result.success is False
+            assert result.tests_failed == 0
+            # The combined errors list must include a classified diagnostic
+            # — NOT the legacy generic "Test execution failed".
+            joined = " | ".join(result.errors)
+            assert "swift test exited 1" in joined
+            assert "linker failure" in joined
+            assert "symbol(s) not found" in joined
+            assert "Test execution failed" not in joined
+
+    @patch("cortex.services.framework_adapters.swift_adapter.subprocess.run")
+    def test_run_tests_surfaces_signal_when_target_crashes(
+        self, mock_run: MagicMock
+    ) -> None:
+        """Negative returncode (signal termination) must be classified and reported."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            _ = (Path(tmpdir) / "Package.swift").write_text(
+                "// swift-tools-version:5.9"
+            )
+            mock_proc = MagicMock()
+            mock_proc.returncode = -11  # SIGSEGV
+            mock_proc.stdout = b""
+            mock_proc.stderr = b"Segmentation fault in test target"
+            mock_run.return_value = mock_proc
+            adapter = SwiftAdapter(str(tmpdir))
+            result = adapter.run_tests()
+            assert result.success is False
+            joined = " | ".join(result.errors)
+            assert "signal 11" in joined
+            assert "Segmentation fault" in joined
+
     def test_format_code_returns_error_when_no_package_swift(self) -> None:
         """format_code returns error when no Package.swift."""
         with tempfile.TemporaryDirectory() as tmpdir:

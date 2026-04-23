@@ -5,6 +5,9 @@
 ## Completed Work (2026-04-23)
 
 - ✅ **Commit pipeline prep with synapse pre-stage** - COMPLETE (2026-04-23) - <!-- memory_type: milestone -->
+
+- ✅ **Commit pipeline run for swift adapter diagnostics slice** - COMPLETE (2026-04-23) - <!-- memory_type: milestone -->
+Completed /cortex/commit preflight and Phase A checks for swift adapter diagnostics changes; synapse submodule was pre-staged and committed to satisfy hygiene before continuing pipeline phases.
 Committed synapse coverage-uplift rule updates, fixed integrity-guard test skip strings for pyright, and validated Phase A parity checks before commit.
 
 ## Completed Work (2026-04-22)
