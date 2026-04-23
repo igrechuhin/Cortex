@@ -10,6 +10,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from cortex.services.framework_adapters.swift_adapter import SwiftAdapter
+from cortex.services.framework_adapters.swift_coverage import merge_profraw_to_profdata
 
 
 def _argv_contains(argv: list[str], needle: str) -> bool:
@@ -795,3 +796,91 @@ class TestSwiftAdapter:
             argv = llvm_calls[0][0][0]
             ignore_arg = next(str(a) for a in argv if "ignore-filename-regex" in str(a))
             assert r".pb" in ignore_arg or "pb.swift" in ignore_arg
+
+
+class TestMergeProfrawToProfdata:
+    """Unit tests for merge_profraw_to_profdata."""
+
+    def test_returns_true_when_profdata_already_exists(self) -> None:
+        """No subprocess call when default.profdata is already present."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            bin_path = Path(tmpdir) / "debug"
+            codecov = bin_path / "codecov"
+            codecov.mkdir(parents=True)
+            _ = (codecov / "default.profdata").write_bytes(b"existing")
+            result = merge_profraw_to_profdata(bin_path)
+            assert result is True
+
+    def test_returns_false_when_no_profraw_files_present(self) -> None:
+        """Returns False immediately when there are no .profraw files to merge."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            bin_path = Path(tmpdir) / "debug"
+            codecov = bin_path / "codecov"
+            codecov.mkdir(parents=True)
+            result = merge_profraw_to_profdata(bin_path)
+            assert result is False
+
+    @patch("cortex.services.framework_adapters.swift_coverage.subprocess.run")
+    def test_merges_profraw_files_into_profdata(self, mock_run: MagicMock) -> None:
+        """Calls llvm-profdata merge and returns True when merge succeeds."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            bin_path = Path(tmpdir) / "debug"
+            codecov = bin_path / "codecov"
+            codecov.mkdir(parents=True)
+            _ = (codecov / "XCTest_0.profraw").write_bytes(b"raw1")
+            _ = (codecov / "SwiftTesting_0.profraw").write_bytes(b"raw2")
+            profdata = codecov / "default.profdata"
+
+            def _fake_merge(cmd: list[str], **kwargs: object) -> MagicMock:
+                # Simulate a successful merge by writing the profdata file.
+                _ = profdata.write_bytes(b"merged")
+                m = MagicMock()
+                m.returncode = 0
+                m.stderr = b""
+                return m
+
+            mock_run.side_effect = _fake_merge
+            result = merge_profraw_to_profdata(bin_path)
+            assert result is True
+            assert profdata.is_file()
+            # Verify the merge command included both profraw files.
+            call_args: list[str] = mock_run.call_args[0][0]
+            assert any("profraw" in str(a) for a in call_args)
+            assert str(profdata) in call_args
+
+    @patch("cortex.services.framework_adapters.swift_coverage.subprocess.run")
+    def test_returns_false_when_merge_subprocess_fails(
+        self, mock_run: MagicMock
+    ) -> None:
+        """Returns False when llvm-profdata merge exits non-zero."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            bin_path = Path(tmpdir) / "debug"
+            codecov = bin_path / "codecov"
+            codecov.mkdir(parents=True)
+            _ = (codecov / "XCTest_0.profraw").write_bytes(b"raw")
+            m = MagicMock()
+            m.returncode = 1
+            m.stderr = b"error merging"
+            mock_run.return_value = m
+            result = merge_profraw_to_profdata(bin_path)
+            assert result is False
+
+    @patch("cortex.services.framework_adapters.swift_adapter.merge_profraw_to_profdata")
+    @patch("cortex.services.framework_adapters.swift_adapter.subprocess.run")
+    def test_run_tests_calls_merge_before_profdata_check(
+        self, mock_run: MagicMock, mock_merge: MagicMock
+    ) -> None:
+        """run_tests invokes merge_profraw_to_profdata before checking profdata existence."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir).resolve()
+            _ = (root / "Package.swift").write_text("// swift-tools-version:5.9\n")
+            bin_path = root / ".build" / "debug"
+            _ = (bin_path / "codecov").mkdir(parents=True)
+            mock_merge.return_value = False
+            mock_run.side_effect = _swift_test_and_bin_path_side_effect(bin_path)
+            adapter = SwiftAdapter(str(root))
+            result = adapter.run_tests()
+            mock_merge.assert_called_once_with(bin_path, None)
+            # No profdata → coverage not collected → coverage=None but tests pass.
+            assert result.coverage is None
+            assert result.success is True

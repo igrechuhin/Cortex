@@ -2,6 +2,11 @@
 
 **This file records completed work only.** For current status and upcoming work see [roadmap.md](roadmap.md).
 
+## Completed Work (2026-04-23)
+
+- ✅ **Commit pipeline prep with synapse pre-stage** - COMPLETE (2026-04-23) - <!-- memory_type: milestone -->
+Committed synapse coverage-uplift rule updates, fixed integrity-guard test skip strings for pyright, and validated Phase A parity checks before commit.
+
 ## Completed Work (2026-04-22)
 
 - **Summary (2026-04-22)** - 1 entries archived.

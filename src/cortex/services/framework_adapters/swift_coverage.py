@@ -269,6 +269,50 @@ def default_profdata_path(bin_path: Path) -> Path:
     return bin_path / "codecov" / "default.profdata"
 
 
+def _build_profdata_merge_cmd(
+    profraw_files: list[Path],
+    profdata: Path,
+) -> list[str]:
+    """Build argv for ``llvm-profdata merge`` (macOS uses ``xcrun``)."""
+    tool = (
+        ["xcrun", "llvm-profdata", "merge"]
+        if sys.platform == "darwin"
+        else ["llvm-profdata", "merge"]
+    )
+    return [*tool, *[str(p) for p in profraw_files], "-o", str(profdata)]
+
+
+def merge_profraw_to_profdata(
+    bin_path: Path,
+    timeout: int | None = None,
+) -> bool:
+    """Merge ``*.profraw`` files in ``codecov/`` into ``default.profdata``.
+
+    SwiftPM skips the auto-merge for projects mixing XCTest and Swift Testing.
+    Returns True when ``default.profdata`` exists after the call.
+    """
+    profdata = default_profdata_path(bin_path)
+    if profdata.is_file():
+        return True
+    profraw_files = sorted((bin_path / "codecov").glob("*.profraw"))
+    if not profraw_files:
+        return False
+    cmd = _build_profdata_merge_cmd(profraw_files, profdata)
+    try:
+        result = subprocess.run(cmd, capture_output=True, timeout=timeout)
+    except Exception:
+        logger.debug("llvm-profdata merge failed", exc_info=True)
+        return False
+    if result.returncode != 0:
+        logger.debug(
+            "llvm-profdata merge exited %d: %s",
+            result.returncode,
+            result.stderr.decode("utf-8", errors="replace") if result.stderr else "",
+        )
+        return False
+    return profdata.is_file()
+
+
 def find_package_tests_executable(bin_path: Path) -> Path | None:
     """Locate the PackageTests binary under ``swift build --show-bin-path``."""
     matches = sorted(bin_path.glob("*PackageTests.xctest"))

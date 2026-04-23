@@ -30,6 +30,7 @@ from .swift_coverage import (
     default_profdata_path,
     find_package_tests_executable,
     llvm_cov_export_per_file,
+    merge_profraw_to_profdata,
     parse_llvm_cov_report_line_coverage_fraction,
     pick_codecov_json_file,
     read_swift_codecov_json_per_file,
@@ -178,6 +179,9 @@ class SwiftAdapter(FrameworkAdapter):
         bin_path = self._resolve_swift_bin_path(timeout)
         if bin_path is None:
             return None, False, []
+        # Merge *.profraw → default.profdata when SwiftPM skipped the merge
+        # (happens with mixed XCTest + Swift Testing targets).
+        _ = merge_profraw_to_profdata(bin_path, timeout)
         profdata = default_profdata_path(bin_path)
         if not profdata.is_file():
             return None, False, []
