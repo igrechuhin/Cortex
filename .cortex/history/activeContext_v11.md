@@ -4,9 +4,7 @@
 
 ## Completed Work (2026-04-22)
 
-- **/cortex/commit — execution environment abstraction commit slice** - COMPLETE. Completed preflight snapshot/hygiene, Phase A quality + parity checks, and progressed through docs/validation steps to finalize the commit pipeline run.
-
-- ✅ **Stop Synapse usage cache collection by default** - COMPLETE (2026-04-22) - Made Synapse usage persistence opt-in by default, gated event writes on usage_writable, added regression coverage for disabled/enabled modes, and updated docs to describe opt-in semantics.
+- **Summary (2026-04-22)** - 1 entries archived.
 
 ## Completed Work (2026-04-20)
 

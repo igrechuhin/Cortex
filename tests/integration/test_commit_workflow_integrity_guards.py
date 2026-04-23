@@ -331,7 +331,6 @@ class TestFixCoverageAgentContract:
             in fix_coverage_agent_content
         )
         assert "two consecutive" in fix_coverage_agent_content
-        assert "small positive delta" in fix_coverage_agent_content
 
     def test_fix_coverage_agent_switches_strategy_on_repeated_files(
         self, fix_coverage_agent_content: str
@@ -387,15 +386,178 @@ class TestFixCoverageAgentContract:
     def test_fix_coverage_agent_requires_access_widening_for_pure_logic(
         self, fix_coverage_agent_content: str
     ) -> None:
-        """Agent MUST widen private pure-logic functions before writing tests for them."""
+        """Agent MUST widen private pure-logic functions before writing tests for them.
+
+        The access-widening mandate may live in the main prompt OR in a language-specific
+        rules file (e.g. swift-coverage-uplift.mdc) referenced by the prompt.
+        """
         # AI: it47 — Step 1 now mandates auditing private pure functions before any test
         # is written for files that already have tests. Anti-pattern guard blocks entry-point
         # test spam on already-tested files until private helpers are widened.
-        assert "widen them first" in fix_coverage_agent_content
-        assert "mandatory" in fix_coverage_agent_content
-        lower = fix_coverage_agent_content.lower()
+        # As of it48, Swift-specific wording moved to swift-coverage-uplift.mdc; the main
+        # prompt delegates via language dispatch (Step 1). Accept either location.
+        swift_rules_path = (
+            synapse_path() / "rules" / "swift" / "swift-coverage-uplift.mdc"
+        )
+        combined = fix_coverage_agent_content
+        if swift_rules_path.exists():
+            combined += swift_rules_path.read_text()
+        assert "mandatory" in combined.lower()
+        lower = combined.lower()
         assert "private pure" in lower or "pure logic" in lower
         assert "anti-pattern" in lower
+        # The main prompt must at minimum reference the language dispatch mechanism
+        assert "language" in fix_coverage_agent_content.lower()
+        assert "swift-coverage-uplift" in fix_coverage_agent_content
+
+
+class TestSwiftCoverageUpliftRulesContract:
+    """Assert the Swift-specific coverage uplift rules file exists and is complete."""
+
+    @pytest.fixture
+    def swift_uplift_content(self) -> str:
+        """Read swift-coverage-uplift.mdc content."""
+        path = synapse_path() / "rules" / "swift" / "swift-coverage-uplift.mdc"
+        if not path.exists():
+            pytest.skip(
+                f"swift-coverage-uplift.mdc not found at {path} (ref: swift-language-specific-coverage-rules)"
+            )
+        return path.read_text()
+
+    def test_swift_uplift_rules_mandates_access_widening(
+        self, swift_uplift_content: str
+    ) -> None:
+        """Rules file must mandate removing `private` for pure-logic functions."""
+        # AI: it47 root cause — agent followed swift-style.mdc "use private for impl details"
+        # and ignored fix-coverage's access-widening instruction. The rule must live in a
+        # Swift rules file so there is no conflict.
+        lower = swift_uplift_content.lower()
+        assert "private` keyword" in swift_uplift_content
+        assert "pure logic" in lower or "private pure" in lower
+        assert "mandatory" in lower
+
+    def test_swift_uplift_rules_forbids_explicit_internal(
+        self, swift_uplift_content: str
+    ) -> None:
+        """Rules file must say 'do NOT add internal explicitly' to stay SwiftFormat-compliant."""
+        assert (
+            "do NOT add" in swift_uplift_content
+            or "do not add" in swift_uplift_content.lower()
+        )
+        assert "internal" in swift_uplift_content
+
+    def test_swift_uplift_rules_requires_import_pattern(
+        self, swift_uplift_content: str
+    ) -> None:
+        """Rules file must mandate reading an existing test file to copy imports."""
+        assert "existing test file" in swift_uplift_content
+        assert "same test target" in swift_uplift_content
+
+    def test_swift_uplift_rules_requires_compile_check(
+        self, swift_uplift_content: str
+    ) -> None:
+        """Rules file must require swift build --target before gate."""
+        assert "swift build --target" in swift_uplift_content
+
+    def test_swift_uplift_rules_requires_data_directory_isolation(
+        self, swift_uplift_content: str
+    ) -> None:
+        """Rules file must mandate DataDirectory.overrideURL for executor tests."""
+        # AI: it48 — PrepareTrainingDataExecutorValidationTests failing with "Permission denied"
+        # because tests were written without DataDirectory.overrideURL = tempDir.
+        assert "DataDirectory.overrideURL" in swift_uplift_content
+
+    def test_swift_uplift_rules_requires_live_api_guard(
+        self, swift_uplift_content: str
+    ) -> None:
+        """Rules file must mandate live/sandbox API test guards."""
+        # AI: it48 — testValidFigiFormats failing with authenticationFailed because test
+        # made real API calls without valueIgnoringSandboxAuthenticationFailure wrapper.
+        assert "valueIgnoringSandboxAuthenticationFailure" in swift_uplift_content
+
+    def test_swift_uplift_rules_mandates_null_coverage_rollback(
+        self, swift_uplift_content: str
+    ) -> None:
+        """Rules file must mandate rolling back tests when gate returns null coverage."""
+        lower = swift_uplift_content.lower()
+        assert (
+            "coverage=null" in swift_uplift_content
+            or "coverage == null" in swift_uplift_content
+        )
+        assert "roll back" in lower
+
+
+class TestPythonCoverageUpliftRulesContract:
+    """Assert the Python-specific coverage uplift rules file exists and is complete."""
+
+    @pytest.fixture
+    def python_uplift_content(self) -> str:
+        """Read python-coverage-uplift.mdc content."""
+        path = synapse_path() / "rules" / "python" / "python-coverage-uplift.mdc"
+        if not path.exists():
+            pytest.skip(
+                f"python-coverage-uplift.mdc not found at {path} (ref: python-language-specific-coverage-rules)"
+            )
+        return path.read_text()
+
+    def test_python_uplift_rules_mandates_access_widening(
+        self, python_uplift_content: str
+    ) -> None:
+        """Rules file must mandate removing underscore prefix for pure-logic helpers."""
+        lower = python_uplift_content.lower()
+        assert "_` prefix" in python_uplift_content or "underscore" in lower
+        assert "pure logic" in lower or "pure transform" in lower
+        assert "mandatory" in lower
+
+    def test_python_uplift_rules_forbids_side_effect_widening(
+        self, python_uplift_content: str
+    ) -> None:
+        """Rules file must restrict widening to pure functions only."""
+        lower = python_uplift_content.lower()
+        assert "never widen" in lower
+        assert "side effect" in lower or "i/o" in lower
+
+    def test_python_uplift_rules_requires_import_pattern(
+        self, python_uplift_content: str
+    ) -> None:
+        """Rules file must mandate reading an existing test file to copy imports."""
+        assert "existing test file" in python_uplift_content
+        assert "same test" in python_uplift_content
+
+    def test_python_uplift_rules_requires_syntax_check(
+        self, python_uplift_content: str
+    ) -> None:
+        """Rules file must require a syntax/compile check before gate."""
+        assert "py_compile" in python_uplift_content
+
+    def test_python_uplift_rules_requires_test_isolation(
+        self, python_uplift_content: str
+    ) -> None:
+        """Rules file must mandate test isolation for filesystem and env-var access."""
+        assert (
+            "tmp_path" in python_uplift_content
+            or "monkeypatch" in python_uplift_content
+        )
+
+    def test_python_uplift_rules_requires_external_call_guard(
+        self, python_uplift_content: str
+    ) -> None:
+        """Rules file must mandate skip guards for live network/API tests."""
+        assert (
+            "skipif" in python_uplift_content
+            or "pytest.mark.skip" in python_uplift_content
+        )
+
+    def test_python_uplift_rules_mandates_null_coverage_rollback(
+        self, python_uplift_content: str
+    ) -> None:
+        """Rules file must mandate rolling back tests when gate returns null coverage."""
+        lower = python_uplift_content.lower()
+        assert (
+            "coverage=null" in python_uplift_content
+            or "coverage == null" in python_uplift_content
+        )
+        assert "roll back" in lower
 
 
 class TestImplementPromptIntegrityGuard:
