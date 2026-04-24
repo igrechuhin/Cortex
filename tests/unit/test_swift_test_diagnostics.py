@@ -1,52 +1,111 @@
 """Tests for :mod:`cortex.services.framework_adapters.swift_test_diagnostics`.
 
-Exercises the ``swift test`` harness-failure classification path added to
-surface the real failure reason (linker error, compile error, crash, signal)
-when the subprocess exits non-zero but XCTest reported zero assertion failures.
-The default ``Test execution failed`` message hides this information and causes
-the fix-path agents to loop without a route.
+The diagnostics module is the single authoritative interpreter of
+``swift test`` output. The gate's pass/fail decision must NOT follow the
+exit code — SwiftPM exits non-zero on post-run harness signals (SIGBUS from
+XCTest teardown on Apple Silicon under piped stdio) even when every test
+passed. These tests lock in the output-based classification so a regression
+would re-break TradeWing's coverage gate.
 """
 
 from __future__ import annotations
 
 from cortex.services.framework_adapters.swift_test_diagnostics import (
+    SwiftTestStatus,
     build_swift_test_harness_errors,
-    classify_swift_test_failure,
+    interpret_swift_test_output,
     stderr_tail,
 )
 
 
-class TestClassifySwiftTestFailure:
-    def test_signal_returncode_maps_to_signal_label(self) -> None:
-        # POSIX convention: returncode == -N means terminated by signal N.
-        assert classify_swift_test_failure("", -11) == "signal 11"
+class TestInterpretSwiftTestOutputPassed:
+    def test_swift_testing_success_line_overrides_nonzero_returncode(self) -> None:
+        """Swift Testing summary ``Test run with N tests ... passed`` trumps rc=1.
 
-    def test_linker_failure_detected_from_output(self) -> None:
-        output = "ld: symbol(s) not found for architecture arm64\nlinker command failed"
-        assert classify_swift_test_failure(output, 1) == "linker failure"
-
-    def test_undefined_symbol_counts_as_linker_failure(self) -> None:
-        output = "Undefined symbol: _OBJC_CLASS_$_FooBar"
-        assert classify_swift_test_failure(output, 1) == "linker failure"
-
-    def test_compile_error_detected_from_swift_error(self) -> None:
-        output = "/path/to/file.swift:42:10: error: cannot find 'foo' in scope"
-        assert classify_swift_test_failure(output, 1) == "compile error"
-
-    def test_fatal_error_detected(self) -> None:
-        output = "Swift runtime failure: fatal error: unexpectedly found nil"
-        assert classify_swift_test_failure(output, 134) == "fatal error / crash"
-
-    def test_unknown_failure_defaults_to_harness_failure(self) -> None:
-        assert classify_swift_test_failure("some unrelated output", 1) == (
-            "harness failure"
+        This is the exact TradeWing failure shape: rc=1 with SIGBUS on stderr
+        but 534 tests passed — must classify as PASSED so coverage runs.
+        """
+        stdout = "✔ Test run with 534 tests in 69 suites passed after 0.515 seconds.\n"
+        stderr = (
+            "Build complete! (0.55s)\nerror: Exited with unexpected signal code 10\n"
         )
+        outcome = interpret_swift_test_output(stdout, stderr, returncode=1)
+        assert outcome.status is SwiftTestStatus.PASSED
+        assert outcome.teardown_signal == 10
+        assert outcome.tests_reported == 534
+        assert "all tests passed" in outcome.diagnostic
+        assert "treating as success" in outcome.diagnostic
 
-    def test_returncode_zero_still_classifies_when_called(self) -> None:
-        # Not a normal call path (caller only invokes this for !=0), but the
-        # classifier must not crash or return an empty label.
-        label = classify_swift_test_failure("", 0)
-        assert isinstance(label, str) and label
+    def test_xctest_all_tests_passed_overrides_nonzero_returncode(self) -> None:
+        stdout = (
+            "Test Suite 'All tests' passed at 2026-04-23 21:12:30.080\n"
+            "Executed 300 tests, with 0 failures (0 unexpected) in 0.4 seconds\n"
+        )
+        outcome = interpret_swift_test_output(stdout, "", returncode=1)
+        assert outcome.status is SwiftTestStatus.PASSED
+
+    def test_per_target_suite_passed_is_NOT_treated_as_grand_total(self) -> None:
+        """Individual target summaries must NOT mark a non-zero run as passed.
+
+        Regression guard: when TargetB crashes mid-run before emitting its own
+        summary, TargetA's earlier ``Test Suite 'TargetATests' passed`` line
+        would become a false-positive grand total under a lax regex.
+        """
+        stdout = (
+            "Test Suite 'TargetATests' passed\n"
+            "\t Executed 86 tests, with 0 failures (0 unexpected) in 1.0 seconds\n"
+            "Segmentation fault: 11\n"
+        )
+        outcome = interpret_swift_test_output(stdout, "", returncode=1)
+        assert outcome.status is SwiftTestStatus.HARNESS_FAILURE
+
+    def test_clean_pass_with_zero_returncode_has_no_harness_caveat(self) -> None:
+        stdout = "✔ Test run with 100 tests in 10 suites passed after 2.0 seconds.\n"
+        outcome = interpret_swift_test_output(stdout, "", returncode=0)
+        assert outcome.status is SwiftTestStatus.PASSED
+        assert outcome.teardown_signal is None
+        assert outcome.diagnostic == "all tests passed"
+
+
+class TestInterpretSwiftTestOutputFailed:
+    def test_swift_testing_failure_line_classified_as_failed(self) -> None:
+        stdout = "✘ Test run with 534 tests failed after 0.5 seconds.\n"
+        outcome = interpret_swift_test_output(stdout, "", returncode=1)
+        assert outcome.status is SwiftTestStatus.FAILED
+        assert outcome.tests_reported == 534
+
+    def test_failed_line_takes_priority_over_passed_line_in_mixed_output(self) -> None:
+        # A failed test run should always win over a stale passed line
+        # from an earlier phase of the same output.
+        stdout = (
+            "Test run with 10 tests passed after 0.1 seconds.\n"
+            "Test run with 534 tests failed after 0.5 seconds.\n"
+        )
+        outcome = interpret_swift_test_output(stdout, "", returncode=1)
+        assert outcome.status is SwiftTestStatus.FAILED
+
+
+class TestInterpretSwiftTestOutputHarnessFailure:
+    def test_nonzero_with_no_success_marker_is_harness_failure(self) -> None:
+        stderr = "ld: symbol(s) not found\nlinker command failed"
+        outcome = interpret_swift_test_output("", stderr, returncode=1)
+        assert outcome.status is SwiftTestStatus.HARNESS_FAILURE
+        assert "swift test exited 1" in outcome.diagnostic
+
+    def test_negative_returncode_with_no_success_marker_is_harness_failure(
+        self,
+    ) -> None:
+        outcome = interpret_swift_test_output("", "", returncode=-11)
+        assert outcome.status is SwiftTestStatus.HARNESS_FAILURE
+
+
+class TestInterpretSwiftTestOutputBareZeroExit:
+    def test_zero_returncode_with_no_markers_trusts_exit_code_as_passed(self) -> None:
+        """rc=0 with no summary line (e.g. --list-tests, filtered run with no
+        matches) must not block the gate — trust the exit code."""
+        outcome = interpret_swift_test_output("", "", returncode=0)
+        assert outcome.status is SwiftTestStatus.PASSED
+        assert "no summary line parsed" in outcome.diagnostic
 
 
 class TestStderrTail:
@@ -58,47 +117,26 @@ class TestStderrTail:
 
     def test_stderr_longer_than_limit_is_tail_truncated(self) -> None:
         text = "x" * 3000
-        tail = stderr_tail(text, max_chars=1000)
-        assert len(tail) == 1000
-        assert tail == "x" * 1000
-
-    def test_custom_max_chars_respected(self) -> None:
-        assert stderr_tail("abcdef", max_chars=3) == "def"
+        assert stderr_tail(text, max_chars=1000) == "x" * 1000
 
 
 class TestBuildSwiftTestHarnessErrors:
-    def test_linker_error_includes_classification_and_tail(self) -> None:
-        output = "ld: symbol(s) not found\nlinker command failed"
+    def test_passed_outcome_yields_no_harness_error(self) -> None:
+        """When tests passed (exit nonzero due to teardown), no harness error."""
+        stdout = "✔ Test run with 534 tests passed after 0.5 seconds.\n"
+        stderr = "error: Exited with unexpected signal code 10\n"
+        errors = build_swift_test_harness_errors(stdout, 1, stderr)
+        # Call path: when outcome is PASSED, diagnostic text still surfaces
+        # but the caller (SwiftAdapter._build_swift_test_errors) gates on
+        # tests_ok — so what matters here is that the string references the
+        # success, not a linker/compile failure.
+        assert any("all tests passed" in e for e in errors)
+        assert not any("linker" in e.lower() for e in errors)
+
+    def test_harness_failure_includes_stderr_tail(self) -> None:
         errors = build_swift_test_harness_errors(
-            output, 1, "ld: symbol(s) not found for architecture arm64"
+            "", 1, "ld: symbol(s) not found for architecture arm64"
         )
         assert len(errors) == 1
         assert "swift test exited 1" in errors[0]
-        assert "linker failure" in errors[0]
         assert "symbol(s) not found" in errors[0]
-
-    def test_empty_stderr_still_produces_classified_message(self) -> None:
-        errors = build_swift_test_harness_errors("fatal error: crashed", 134, "")
-        assert len(errors) == 1
-        assert "swift test exited 134" in errors[0]
-        assert "fatal error / crash" in errors[0]
-
-    def test_signal_returncode_reported_with_signal_label(self) -> None:
-        errors = build_swift_test_harness_errors(
-            "", -11, "Process terminated due to SIGSEGV"
-        )
-        assert len(errors) == 1
-        assert "swift test exited -11" in errors[0]
-        assert "signal 11" in errors[0]
-        assert "SIGSEGV" in errors[0]
-
-    def test_multiline_stderr_tail_limited_to_last_five_lines(self) -> None:
-        # Eight lines — only the last five should appear in the joined summary.
-        stderr = "\n".join(f"line{i}" for i in range(8))
-        errors = build_swift_test_harness_errors("compile error: .swift:", 1, stderr)
-        assert len(errors) == 1
-        msg = errors[0]
-        # line3..line7 are the last five; line0/line1/line2 must be absent.
-        assert "line3" in msg
-        assert "line7" in msg
-        assert "line0" not in msg

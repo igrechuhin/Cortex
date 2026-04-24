@@ -2,13 +2,14 @@
 
 **This file records completed work only.** For current status and upcoming work see [roadmap.md](roadmap.md).
 
+## Completed Work (2026-04-24)
+
+- ✅ **Commit pipeline for Swift diagnostics updates** - COMPLETE (2026-04-24) - <!-- memory_type: status -->
+Ran /cortex/commit pipeline for Swift diagnostics/logging changes, including quality gate parity scripts and synapse submodule pre-stage commit before proceeding to docs/validation.
+
 ## Completed Work (2026-04-23)
 
-- ✅ **Commit pipeline prep with synapse pre-stage** - COMPLETE (2026-04-23) - <!-- memory_type: milestone -->
-
-- ✅ **Commit pipeline run for swift adapter diagnostics slice** - COMPLETE (2026-04-23) - <!-- memory_type: milestone -->
-Completed /cortex/commit preflight and Phase A checks for swift adapter diagnostics changes; synapse submodule was pre-staged and committed to satisfy hygiene before continuing pipeline phases.
-Committed synapse coverage-uplift rule updates, fixed integrity-guard test skip strings for pyright, and validated Phase A parity checks before commit.
+- **Summary (2026-04-23)** - 1 entries archived.
 
 ## Completed Work (2026-04-22)
 

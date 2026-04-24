@@ -8,6 +8,7 @@ import os
 import re
 import subprocess
 import sys
+import time
 from collections.abc import Sequence
 from pathlib import Path
 
@@ -36,9 +37,13 @@ from .swift_coverage import (
     read_swift_codecov_json_per_file,
 )
 from .swift_test_diagnostics import (
+    SwiftTestOutcome,
+    SwiftTestStatus,
     build_swift_test_harness_errors,
+    interpret_swift_test_output,
     stderr_tail,
 )
+from .swift_test_logging import SwiftTestLogRecord, write_swift_test_log
 
 # Matches XCTest summary: "Executed N tests, with M failures"
 _XCTEST_SUMMARY_RE = re.compile(
@@ -133,30 +138,179 @@ class SwiftAdapter(FrameworkAdapter):
         progress_callback: ProgressCallback | None = None,
         include_slow_tests: bool = False,
     ) -> TestResult:
-        """Run test suite via swift test."""
+        """Run test suite via swift test.
+
+        Uses :func:`interpret_swift_test_output` as the authoritative
+        pass/fail classifier — the exit code is NOT trusted because
+        SwiftPM exits non-zero on post-run harness signals (e.g. SIGBUS
+        from XCTest teardown on Apple Silicon when stdio is piped), even
+        when every test passed. A full :file:`.cortex/.session/logs/swift-test-<ts>.log`
+        transcript is written for every invocation so users can share the
+        exact failure shape with the maintainers.
+        """
         if not self.has_package_swift():
             return self._error_test_result(
                 "No Package.swift found; not a Swift Package Manager project"
             )
+        return self._run_tests_with_logging(timeout, coverage_threshold)
+
+    def _run_tests_with_logging(
+        self,
+        timeout: int | None,
+        coverage_threshold: float,
+    ) -> TestResult:
+        """Execute ``swift test`` and classify its outcome from the output."""
+        extra_env = self._swift_test_env()
+        argv = ["swift", "test", "--enable-code-coverage"]
+        start = time.monotonic()
         try:
             result = self._run_swift(
                 ["test", "--enable-code-coverage"],
                 timeout=timeout,
-                extra_env=self._swift_test_env(),
+                extra_env=extra_env,
             )
-            output = result.stdout + result.stderr
-            return self._finalize_swift_test_result(
-                output,
-                result.returncode == 0,
-                returncode=result.returncode,
-                stderr_tail_text=stderr_tail(result.stderr),
-                timeout=timeout,
-                coverage_threshold=coverage_threshold,
-            )
-        except subprocess.TimeoutExpired:
+        except subprocess.TimeoutExpired as exc:
+            self._handle_swift_test_timeout(exc, argv, extra_env, start)
             return self._timeout_test_result()
         except Exception as e:
             return self._error_test_result(str(e))
+        return self._classify_and_finalize(
+            result,
+            argv,
+            extra_env,
+            start,
+            timeout,
+            coverage_threshold,
+        )
+
+    def _classify_and_finalize(  # noqa: PLR0913
+        self,
+        result: subprocess.CompletedProcess[str],
+        argv: list[str],
+        extra_env: dict[str, str] | None,
+        start: float,
+        timeout: int | None,
+        coverage_threshold: float,
+    ) -> TestResult:
+        """Interpret ``swift test`` output, write the log, and finalize the gate result."""
+        outcome = interpret_swift_test_output(
+            result.stdout, result.stderr, result.returncode
+        )
+        self._log_swift_test_run(
+            argv=argv,
+            extra_env=extra_env,
+            returncode=result.returncode,
+            stdout=result.stdout,
+            stderr=result.stderr,
+            elapsed=time.monotonic() - start,
+            outcome=outcome,
+        )
+        return self._build_completed_process_test_result(
+            result, outcome, timeout, coverage_threshold
+        )
+
+    def _build_completed_process_test_result(
+        self,
+        result: subprocess.CompletedProcess[str],
+        outcome: SwiftTestOutcome,
+        timeout: int | None,
+        coverage_threshold: float,
+    ) -> TestResult:
+        """Build final gate TestResult from subprocess output + interpreted outcome."""
+        output = result.stdout + result.stderr
+        passed, failed = self._extract_test_counts(output)
+        actual_ok, coverage, errors, gaps, effective_warnings = (
+            self._build_swift_test_outcome_details(
+                outcome.status == SwiftTestStatus.PASSED,
+                timeout,
+                coverage_threshold,
+                failed,
+                output,
+                result.returncode,
+                stderr_tail(result.stderr),
+                outcome,
+            )
+        )
+        return self._make_test_result(
+            passed,
+            failed,
+            actual_ok,
+            coverage,
+            gaps,
+            output,
+            errors,
+            effective_warnings,
+        )
+
+    def _handle_swift_test_timeout(
+        self,
+        exc: subprocess.TimeoutExpired,
+        argv: list[str],
+        extra_env: dict[str, str] | None,
+        start: float,
+    ) -> None:
+        """Log a timed-out ``swift test`` before returning the timeout result."""
+        elapsed = time.monotonic() - start
+        stdout = (
+            (exc.stdout or b"").decode("utf-8", errors="replace")
+            if isinstance(exc.stdout, bytes)
+            else (exc.stdout or "")
+        )
+        stderr = (
+            (exc.stderr or b"").decode("utf-8", errors="replace")
+            if isinstance(exc.stderr, bytes)
+            else (exc.stderr or "")
+        )
+        outcome = SwiftTestOutcome(
+            status=SwiftTestStatus.HARNESS_FAILURE,
+            diagnostic=f"swift test exceeded timeout after {elapsed:.1f}s",
+        )
+        self._log_swift_test_run(
+            argv=argv,
+            extra_env=extra_env,
+            returncode=-1,
+            stdout=stdout,
+            stderr=stderr,
+            elapsed=elapsed,
+            outcome=outcome,
+        )
+
+    def _log_swift_test_run(  # noqa: PLR0913
+        self,
+        argv: list[str],
+        extra_env: dict[str, str] | None,
+        returncode: int,
+        stdout: str,
+        stderr: str,
+        elapsed: float,
+        outcome: SwiftTestOutcome,
+    ) -> None:
+        """Persist a comprehensive swift test transcript for user attachments.
+
+        Best-effort: any subprocess failure during codecov-dir resolution is
+        swallowed so logging never breaks the gate.
+        """
+        codecov_dir: Path | None = None
+        try:
+            bin_path = self._resolve_swift_bin_path(None)
+            if bin_path is not None:
+                codecov_dir = bin_path / "codecov"
+        except Exception:
+            codecov_dir = None
+        _ = write_swift_test_log(
+            project_root=self.project_root,
+            record=SwiftTestLogRecord(
+                argv=argv,
+                cwd=self.project_root,
+                extra_env=extra_env,
+                returncode=returncode,
+                stdout=stdout,
+                stderr=stderr,
+                outcome=outcome,
+                elapsed_seconds=elapsed,
+                codecov_dir=codecov_dir,
+            ),
+        )
 
     def _llvm_cov_report_argv(self, binary: Path, profdata: Path) -> list[str]:
         """Build argv for ``llvm-cov report`` (macOS uses ``xcrun``)."""
@@ -265,17 +419,18 @@ class SwiftAdapter(FrameworkAdapter):
             return None
         return parse_llvm_cov_report_line_coverage_fraction(report)
 
-    def _finalize_swift_test_result(  # noqa: PLR0913 (coverage threshold + diagnostics passthrough)
+    def _build_swift_test_outcome_details(  # noqa: PLR0913
         self,
-        output: str,
         tests_ok: bool,
         timeout: int | None,
         coverage_threshold: float,
-        returncode: int = 0,
-        stderr_tail_text: str = "",
-    ) -> TestResult:
-        """Parse ``swift test`` output and apply coverage threshold when data exists."""
-        passed, failed = self._extract_test_counts(output)
+        failed: int,
+        output: str,
+        returncode: int,
+        stderr_tail_text: str,
+        outcome: SwiftTestOutcome | None,
+    ) -> tuple[bool, float | None, list[str], list[CoverageGap], list[str]]:
+        """Compute verdict, errors, gaps, and warnings for swift test output."""
         actual_ok, coverage, warnings, per_file = self._coverage_gate_outcome(
             tests_ok, timeout, coverage_threshold
         )
@@ -288,11 +443,29 @@ class SwiftAdapter(FrameworkAdapter):
             output,
             returncode,
             stderr_tail_text,
+            outcome,
         )
         gaps = self._build_coverage_gaps(per_file, coverage, coverage_threshold)
-        return self._make_test_result(
-            passed, failed, actual_ok, coverage, gaps, output, errors, warnings
+        effective_warnings = self._append_teardown_warning(
+            warnings, outcome, tests_ok, returncode
         )
+        return actual_ok, coverage, errors, gaps, effective_warnings
+
+    @staticmethod
+    def _append_teardown_warning(
+        warnings: list[str],
+        outcome: SwiftTestOutcome | None,
+        tests_ok: bool,
+        returncode: int,
+    ) -> list[str]:
+        """Append a post-run-signal caveat when swift test passed under teardown crash."""
+        effective = list(warnings)
+        if outcome is not None and outcome.teardown_signal is not None and tests_ok:
+            effective.append(
+                f"swift test exited {returncode} after all tests passed "
+                + f"(post-run signal {outcome.teardown_signal}); treated as success"
+            )
+        return effective
 
     @staticmethod
     def _make_test_result(  # noqa: PLR0913
@@ -322,7 +495,7 @@ class SwiftAdapter(FrameworkAdapter):
         )
 
     @staticmethod
-    def _build_swift_test_errors(
+    def _build_swift_test_errors(  # noqa: PLR0913
         actual_ok: bool,
         coverage: float | None,
         coverage_threshold: float,
@@ -331,16 +504,29 @@ class SwiftAdapter(FrameworkAdapter):
         output: str,
         returncode: int,
         stderr_tail_text: str,
+        outcome: SwiftTestOutcome | None = None,
     ) -> list[str]:
         """Build test-phase error list, promoting harness failures over generic text.
 
-        When ``swift test`` exits non-zero but XCTest reported 0 failures, the
-        default ``Test execution failed`` message hides the real cause. Surface
-        a classified summary (linker failure / compile error / signal) so the
-        fix-path subagents can route accurately.
+        When ``swift test`` exits non-zero AND :func:`interpret_swift_test_output`
+        classifies the run as anything other than PASSED, surface the
+        classified diagnostic (linker failure, compile error, post-run signal,
+        unknown harness failure) so fix-path subagents can route accurately.
+        When outcome is PASSED, the gate should consider the tests green —
+        any non-zero returncode is a post-run harness quirk, not a test
+        failure.
         """
         errors = build_test_errors(actual_ok, coverage, coverage_threshold)
-        if not tests_ok and failed == 0:
+        if tests_ok:
+            return errors
+        if outcome is not None:
+            tail = stderr_tail_text.splitlines()[-5:] if stderr_tail_text else []
+            tail_text = " | ".join(line.strip() for line in tail if line.strip())
+            message = outcome.diagnostic
+            if tail_text:
+                message = f"{message} — {tail_text}"
+            return [message]
+        if failed == 0:
             return build_swift_test_harness_errors(output, returncode, stderr_tail_text)
         return errors
 

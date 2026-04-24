@@ -4,8 +4,7 @@
 
 ## Completed Work (2026-04-23)
 
-- ✅ **Commit pipeline prep with synapse pre-stage** - COMPLETE (2026-04-23) - <!-- memory_type: milestone -->
-Committed synapse coverage-uplift rule updates, fixed integrity-guard test skip strings for pyright, and validated Phase A parity checks before commit.
+- **Summary (2026-04-23)** - 1 entries archived.
 
 ## Completed Work (2026-04-22)
 
