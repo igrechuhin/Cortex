@@ -2,10 +2,14 @@
 
 **This file records completed work only.** For current status and upcoming work see [roadmap.md](roadmap.md).
 
+## Completed Work (2026-04-25)
+
+- ✅ **/cortex/commit Phase B — documentation/state update** - COMPLETE (2026-04-25) - <!-- memory_type: milestone -->
+Completed docs-phase bookkeeping: verified checks passed, marked docs running, refreshed memory bank entries, archived completed plans, ran markdown autofix, and validated docs gate with roadmap-sync warning semantics.
+
 ## Completed Work (2026-04-24)
 
-- ✅ **Commit pipeline for Swift diagnostics updates** - COMPLETE (2026-04-24) - <!-- memory_type: status -->
-Ran /cortex/commit pipeline for Swift diagnostics/logging changes, including quality gate parity scripts and synapse submodule pre-stage commit before proceeding to docs/validation.
+- **Summary (2026-04-24)** - 1 entries archived.
 
 ## Completed Work (2026-04-23)
 

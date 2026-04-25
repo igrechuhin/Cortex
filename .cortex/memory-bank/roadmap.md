@@ -13,6 +13,8 @@
 
 ## Pending plans (from .cortex/plans)
 
+- PENDING: Continue roadmap population for next implementation slice (Plan: .cortex/plans/fast-forward-vs-step-by-step-modes.md)
+
 ### Pipeline Infrastructure
 
 ### Tools Infrastructure

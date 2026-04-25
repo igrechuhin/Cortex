@@ -1,5 +1,10 @@
 # Progress Log
 
+## 2026-04-25
+
+- <!-- memory_type: milestone -->
+- **/cortex/commit Phase B — documentation/state update** - COMPLETE. Ran pipeline handoff checks/status/mark_running, refreshed memory-bank records, archived completed plans, executed markdown autofix, and validated docs gate semantics.
+
 ## 2026-04-24
 
 - <!-- memory_type: status -->
