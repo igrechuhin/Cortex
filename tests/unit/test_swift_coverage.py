@@ -10,7 +10,9 @@ from typing import cast
 import pytest
 
 from cortex.services.framework_adapters.swift_coverage import (
+    FileCoverageEntry,
     aggregate_spvm_codecov_json_line_fraction,
+    build_coverage_gaps,
     build_swift_llvm_cov_ignore_regex,
     compile_swift_coverage_exclude_regexes,
     parse_llvm_cov_report_line_coverage_fraction,
@@ -143,3 +145,66 @@ class TestShouldSkipSwiftCovPath:
         extra = compile_swift_coverage_exclude_regexes([r"\.pb\.swift$"])
         assert should_skip_swift_cov_path(r"C:\proj\Sources\Gen\a.pb.swift", extra)
         assert not should_skip_swift_cov_path("/proj/Sources/App.swift", extra)
+
+
+def _entry(filename: str, total: int, covered: int) -> FileCoverageEntry:
+    return FileCoverageEntry(
+        filename=filename, lines_total=total, lines_covered=covered
+    )
+
+
+class TestBuildCoverageGaps:
+    """Tests for ``build_coverage_gaps`` two-tier ranking."""
+
+    def test_returns_empty_when_coverage_meets_threshold(self) -> None:
+        entries = [_entry("A.swift", 100, 80)]
+        assert build_coverage_gaps(entries, 0.90, 0.90) == []
+
+    def test_returns_empty_when_coverage_is_none(self) -> None:
+        entries = [_entry("A.swift", 100, 80)]
+        assert build_coverage_gaps(entries, None, 0.90) == []
+
+    def test_zero_coverage_files_appear_before_partial(self) -> None:
+        partial = _entry("Big.swift", 500, 250)  # 50% covered, 250 uncovered
+        zero_small = _entry("Small.swift", 30, 0)  # 0% covered, 30 lines
+        zero_large = _entry("Medium.swift", 80, 0)  # 0% covered, 80 lines
+        gaps = build_coverage_gaps([partial, zero_small, zero_large], 0.50, 0.90)
+        files = [g.file for g in gaps]
+        # Both zero-coverage files must precede the partial file
+        assert files.index("Small.swift") < files.index("Big.swift")
+        assert files.index("Medium.swift") < files.index("Big.swift")
+
+    def test_zero_coverage_files_sorted_by_lines_total_ascending(self) -> None:
+        entries = [
+            _entry("Large.swift", 200, 0),
+            _entry("Tiny.swift", 10, 0),
+            _entry("Mid.swift", 50, 0),
+        ]
+        gaps = build_coverage_gaps(entries, 0.0, 0.90)
+        files = [g.file for g in gaps]
+        assert files == ["Tiny.swift", "Mid.swift", "Large.swift"]
+
+    def test_partial_files_sorted_by_uncovered_lines_descending(self) -> None:
+        entries = [
+            _entry("Few.swift", 100, 90),  # 10 uncovered
+            _entry("Many.swift", 100, 20),  # 80 uncovered
+            _entry("Some.swift", 100, 50),  # 50 uncovered
+        ]
+        gaps = build_coverage_gaps(entries, 0.50, 0.90)
+        files = [g.file for g in gaps]
+        assert files == ["Many.swift", "Some.swift", "Few.swift"]
+
+    def test_max_entries_respected(self) -> None:
+        entries = [_entry(f"F{i}.swift", 10, 0) for i in range(20)]
+        gaps = build_coverage_gaps(entries, 0.0, 0.90, max_entries=5)
+        assert len(gaps) == 5
+
+    def test_gap_fields_populated_correctly(self) -> None:
+        entry = _entry("Foo.swift", 100, 40)
+        gaps = build_coverage_gaps([entry], 0.40, 0.90)
+        assert len(gaps) == 1
+        g = gaps[0]
+        assert g.file == "Foo.swift"
+        assert g.coverage == 0.4
+        assert g.lines_total == 100
+        assert g.lines_uncovered == 60

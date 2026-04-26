@@ -244,24 +244,50 @@ def build_coverage_gaps(
     threshold: float,
     max_entries: int = 10,
 ) -> list[CoverageGap]:
-    """Build top coverage gaps sorted by uncovered lines descending.
+    """Build coverage gaps list for agent-driven uplift.
+
+    Returns two tiers, deduplicated, up to *max_entries* total:
+
+    Tier 1 — zero-coverage files (fraction == 0.0), sorted by lines_total
+    ascending (smallest first — these are the easiest wins: small files with
+    no tests at all that an agent can cover in one pass).
+
+    Tier 2 — partially-covered files with the most uncovered lines, sorted by
+    lines_uncovered descending (same as the original ranking).
+
+    Tier 1 entries always appear before Tier 2 entries so agents tackle quick
+    wins first. Files already in Tier 1 are excluded from Tier 2.
 
     Only populated when coverage is below *threshold* and *per_file* data is
     available.
     """
     if not per_file or coverage is None or coverage >= threshold:
         return []
-    ranked = sorted(per_file, key=lambda e: e.lines_uncovered, reverse=True)
-    return [
-        CoverageGap(
+
+    uncovered = [e for e in per_file if e.lines_uncovered > 0]
+
+    zero_cov = sorted(
+        (e for e in uncovered if e.fraction == 0.0),
+        key=lambda e: e.lines_total,
+    )
+    zero_cov_names = {e.filename for e in zero_cov}
+
+    partial_cov = sorted(
+        (e for e in uncovered if e.filename not in zero_cov_names),
+        key=lambda e: e.lines_uncovered,
+        reverse=True,
+    )
+
+    def _gap(e: FileCoverageEntry) -> CoverageGap:
+        return CoverageGap(
             file=e.filename,
             coverage=round(e.fraction, 4),
             lines_total=e.lines_total,
             lines_uncovered=e.lines_uncovered,
         )
-        for e in ranked[:max_entries]
-        if e.lines_uncovered > 0
-    ]
+
+    combined = [_gap(e) for e in zero_cov] + [_gap(e) for e in partial_cov]
+    return combined[:max_entries]
 
 
 def default_profdata_path(bin_path: Path) -> Path:
