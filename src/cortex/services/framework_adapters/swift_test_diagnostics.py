@@ -90,23 +90,6 @@ class SwiftTestOutcome:
     tests_reported: int | None = None
 
 
-@dataclass(frozen=True)
-class SwiftTestFinalizeInputs:
-    """Bundle of inputs used by the Swift adapter's result finalizer.
-
-    Packaging avoids a 9-parameter signature on the finalizer method and
-    keeps it under the project's 30-logical-line function limit.
-    """
-
-    output: str
-    tests_ok: bool
-    timeout: int | None
-    coverage_threshold: float
-    returncode: int = 0
-    stderr_tail_text: str = ""
-    outcome: SwiftTestOutcome | None = None
-
-
 def interpret_swift_test_output(
     stdout: str,
     stderr: str,

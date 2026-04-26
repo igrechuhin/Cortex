@@ -979,3 +979,59 @@ class TestMergeProfrawToProfdata:
             # No profdata → coverage not collected → coverage=None but tests pass.
             assert result.coverage is None
             assert result.success is True
+
+
+class TestExtractTestCounts:
+    """Unit tests for SwiftAdapter.extract_test_counts."""
+
+    def _adapter(self) -> SwiftAdapter:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            return SwiftAdapter(str(tmpdir))
+
+    def test_swift_testing_grand_total_preferred_over_xctest(self) -> None:
+        """Swift Testing summary overrides XCTest per-bundle counts."""
+        output = (
+            "Test Suite 'TargetATests' started\n"
+            "Executed 17 tests, with 0 failures\n"
+            "Test run with 534 tests passed after 12.345 seconds\n"
+        )
+        adapter = self._adapter()
+        passed, failed = adapter.extract_test_counts(output)
+        assert passed + failed == 534
+        assert failed == 0
+
+    def test_swift_testing_grand_total_with_xctest_failures(self) -> None:
+        """XCTest failure count is summed when Swift Testing grand total present."""
+        output = (
+            "Executed 17 tests, with 2 failures\n"
+            "Test run with 534 tests passed after 12.345 seconds\n"
+        )
+        adapter = self._adapter()
+        passed, failed = adapter.extract_test_counts(output)
+        assert failed == 2
+        assert passed == 532
+
+    def test_xctest_only_uses_last_summary_line(self) -> None:
+        """XCTest-only run uses last 'Executed N tests' line as grand total."""
+        output = (
+            "Executed 10 tests, with 0 failures (0 unexpected)\n"
+            "Executed 20 tests, with 1 failure (1 unexpected)\n"
+        )
+        adapter = self._adapter()
+        passed, failed = adapter.extract_test_counts(output)
+        assert failed == 1
+        assert passed == 19
+
+    def test_fallback_returns_one_pass_when_no_summary(self) -> None:
+        """Heuristic fallback: 'passed' keyword → (1, 0)."""
+        adapter = self._adapter()
+        passed, failed = adapter.extract_test_counts("all tests passed")
+        assert passed == 1
+        assert failed == 0
+
+    def test_fallback_returns_one_fail_when_failed_keyword(self) -> None:
+        """Heuristic fallback: 'failed' keyword → (0, 1)."""
+        adapter = self._adapter()
+        passed, failed = adapter.extract_test_counts("some test failed")
+        assert passed == 0
+        assert failed == 1

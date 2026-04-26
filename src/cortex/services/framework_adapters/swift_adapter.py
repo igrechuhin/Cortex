@@ -51,6 +51,14 @@ _XCTEST_SUMMARY_RE = re.compile(
     re.IGNORECASE,
 )
 
+# Matches Swift Testing grand-total: "Test run with N test(s) passed" (exit 0)
+# or "Test run with N test(s) ... passed" with optional middle text.
+# This line is the authoritative count for mixed XCTest + Swift Testing suites.
+_SWIFT_TESTING_SUMMARY_RE = re.compile(
+    r"Test run with\s+(?P<total>\d+)\s+tests?\b.*?passed",
+    re.IGNORECASE | re.DOTALL,
+)
+
 _SWIFT_ERROR_LINE_RE = re.compile(r"error:\s+.*|\.swift:\d+:\d+:\s+error:", re.I)
 
 
@@ -218,7 +226,7 @@ class SwiftAdapter(FrameworkAdapter):
     ) -> TestResult:
         """Build final gate TestResult from subprocess output + interpreted outcome."""
         output = result.stdout + result.stderr
-        passed, failed = self._extract_test_counts(output)
+        passed, failed = self.extract_test_counts(output)
         actual_ok, coverage, errors, gaps, effective_warnings = (
             self._build_swift_test_outcome_details(
                 outcome.status == SwiftTestStatus.PASSED,
@@ -554,21 +562,32 @@ class SwiftAdapter(FrameworkAdapter):
         cov_ok, cov_warn = coverage_accept_and_warning(frac, coverage_threshold)
         return cov_ok, frac, cov_warn, per_file
 
-    def _extract_test_counts(self, output: str) -> tuple[int, int]:
+    def extract_test_counts(self, output: str) -> tuple[int, int]:
         """Extract passed/failed counts from swift test output.
 
-        Parses the XCTest summary line:
-          ``Executed N tests, with M failures (0 unexpected) in ...``
+        For mixed XCTest + Swift Testing suites, Swift Testing emits the
+        authoritative grand total: ``Test run with N tests ... passed``.
+        When that line is present it is used directly and XCTest per-suite
+        failure counts are summed separately (they are not included in the
+        Swift Testing summary line).
 
-        XCTest emits nested summary lines: one per test class, one per .xctest
-        bundle, and a final ``All tests`` aggregate.  The last summary line in
-        the output is the grand total and is used directly.  When the test run
-        crashes before the aggregate line is written (e.g. a target fails to
-        link), we fall back to the largest ``total`` seen so far — that is the
-        most recent .xctest-level aggregate, which gives the most accurate
-        partial count.
-        Falls back to a heuristic scan if no summary line is found.
+        For XCTest-only suites the last ``Executed N tests, with M failures``
+        line is the grand-total aggregate.  When the run crashes before the
+        aggregate line is written we fall back to the last seen per-bundle
+        total, which is the best available partial count.
         """
+        # Prefer Swift Testing grand total when present (mixed suites).
+        swift_testing_match = _SWIFT_TESTING_SUMMARY_RE.search(output)
+        if swift_testing_match:
+            total = int(swift_testing_match.group("total"))
+            # XCTest failure lines still report individual bundle failures;
+            # sum them to get the overall failed count.
+            failed = sum(
+                int(m.group("failed")) for m in _XCTEST_SUMMARY_RE.finditer(output)
+            )
+            return max(total - failed, 0), failed
+
+        # XCTest-only: use the last summary line (grand-total aggregate).
         last_total: int = 0
         last_failed: int = 0
         found_summary = False
@@ -577,11 +596,6 @@ class SwiftAdapter(FrameworkAdapter):
             found_summary = True
 
         if found_summary:
-            # Use the last summary line, which is the grand-total "All tests"
-            # aggregate when the run completed normally.  For a partial run
-            # (crash before the aggregate is written), the last visible line is
-            # the most-recently-completed .xctest bundle total — the best
-            # available partial count.
             passed = last_total - last_failed
             return max(passed, 0), last_failed
 

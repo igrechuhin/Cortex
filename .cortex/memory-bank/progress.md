@@ -1,5 +1,10 @@
 # Progress Log
 
+## 2026-04-26
+
+- <!-- memory_type: status -->
+Promoted SwiftAdapter.extract_test_counts to public API and updated swift adapter tests to satisfy type-check private-usage rules; Phase A quality gate and parity scripts passed during /cortex/commit.
+
 ## 2026-04-25
 
 - <!-- memory_type: milestone -->

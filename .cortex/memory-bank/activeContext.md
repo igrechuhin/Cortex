@@ -2,10 +2,14 @@
 
 **This file records completed work only.** For current status and upcoming work see [roadmap.md](roadmap.md).
 
+## Completed Work (2026-04-26)
+
+- ✅ **Commit pipeline execution** - COMPLETE (2026-04-26) - <!-- memory_type: milestone -->
+Ran /cortex/commit pipeline: fixed SwiftAdapter test-count API visibility (extract_test_counts), cleared Phase A quality/type checks, and completed parity scripts.
+
 ## Completed Work (2026-04-25)
 
-- ✅ **/cortex/commit Phase B — documentation/state update** - COMPLETE (2026-04-25) - <!-- memory_type: milestone -->
-Completed docs-phase bookkeeping: verified checks passed, marked docs running, refreshed memory bank entries, archived completed plans, ran markdown autofix, and validated docs gate with roadmap-sync warning semantics.
+- **Summary (2026-04-25)** - 1 entries archived.
 
 ## Completed Work (2026-04-24)
 
