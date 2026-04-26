@@ -72,6 +72,14 @@ class TestResult(DictLikeModel):
         default_factory=_default_coverage_gaps,
         description="Top uncovered files when coverage is below threshold, sorted by uncovered lines descending",
     )
+    uncovered_files: list[CoverageGap] = Field(
+        default_factory=_default_coverage_gaps,
+        description=(
+            "All source files with zero line coverage, always populated when "
+            "per-file data is available (regardless of threshold). "
+            "Sorted by lines_total ascending (smallest first)."
+        ),
+    )
     output: str
     errors: list[str]
     warnings: list[str] = Field(

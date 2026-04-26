@@ -27,6 +27,7 @@ from .swift_coverage import (
     FileCoverageEntry,
     build_coverage_gaps,
     build_swift_llvm_cov_ignore_regex,
+    build_uncovered_files,
     compile_swift_coverage_exclude_regexes,
     default_profdata_path,
     find_package_tests_executable,
@@ -227,7 +228,7 @@ class SwiftAdapter(FrameworkAdapter):
         """Build final gate TestResult from subprocess output + interpreted outcome."""
         output = result.stdout + result.stderr
         passed, failed = self.extract_test_counts(output)
-        actual_ok, coverage, errors, gaps, effective_warnings = (
+        actual_ok, coverage, errors, gaps, effective_warnings, uncovered = (
             self._build_swift_test_outcome_details(
                 outcome.status == SwiftTestStatus.PASSED,
                 timeout,
@@ -245,6 +246,7 @@ class SwiftAdapter(FrameworkAdapter):
             actual_ok,
             coverage,
             gaps,
+            uncovered,
             output,
             errors,
             effective_warnings,
@@ -437,8 +439,10 @@ class SwiftAdapter(FrameworkAdapter):
         returncode: int,
         stderr_tail_text: str,
         outcome: SwiftTestOutcome | None,
-    ) -> tuple[bool, float | None, list[str], list[CoverageGap], list[str]]:
-        """Compute verdict, errors, gaps, and warnings for swift test output."""
+    ) -> tuple[
+        bool, float | None, list[str], list[CoverageGap], list[str], list[CoverageGap]
+    ]:
+        """Compute verdict, errors, gaps, warnings, and uncovered files for swift test output."""
         actual_ok, coverage, warnings, per_file = self._coverage_gate_outcome(
             tests_ok, timeout, coverage_threshold
         )
@@ -454,10 +458,11 @@ class SwiftAdapter(FrameworkAdapter):
             outcome,
         )
         gaps = self._build_coverage_gaps(per_file, coverage, coverage_threshold)
+        uncovered = build_uncovered_files(per_file)
         effective_warnings = self._append_teardown_warning(
             warnings, outcome, tests_ok, returncode
         )
-        return actual_ok, coverage, errors, gaps, effective_warnings
+        return actual_ok, coverage, errors, gaps, effective_warnings, uncovered
 
     @staticmethod
     def _append_teardown_warning(
@@ -482,6 +487,7 @@ class SwiftAdapter(FrameworkAdapter):
         actual_ok: bool,
         coverage: float | None,
         gaps: list[CoverageGap],
+        uncovered: list[CoverageGap],
         output: str,
         errors: list[str],
         warnings: list[str],
@@ -497,6 +503,7 @@ class SwiftAdapter(FrameworkAdapter):
             pass_rate=pass_rate,
             coverage=coverage,
             coverage_gaps=gaps,
+            uncovered_files=uncovered,
             output=output,
             errors=errors,
             warnings=warnings,

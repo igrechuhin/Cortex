@@ -290,6 +290,27 @@ def build_coverage_gaps(
     return combined[:max_entries]
 
 
+def build_uncovered_files(per_file: list[FileCoverageEntry]) -> list[CoverageGap]:
+    """Return all files with zero line coverage, sorted by lines_total ascending.
+
+    Unlike ``build_coverage_gaps``, this is always populated when per-file data
+    is available — regardless of whether coverage meets the threshold. The agent
+    uses this list to ensure every zero-coverage file is eventually covered.
+    """
+    return [
+        CoverageGap(
+            file=e.filename,
+            coverage=0.0,
+            lines_total=e.lines_total,
+            lines_uncovered=e.lines_uncovered,
+        )
+        for e in sorted(
+            (e for e in per_file if e.fraction == 0.0 and e.lines_total > 0),
+            key=lambda e: e.lines_total,
+        )
+    ]
+
+
 def default_profdata_path(bin_path: Path) -> Path:
     """Return canonical ``default.profdata`` path under a Swift bin directory."""
     return bin_path / "codecov" / "default.profdata"

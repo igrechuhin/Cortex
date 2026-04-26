@@ -14,6 +14,7 @@ from cortex.services.framework_adapters.swift_coverage import (
     aggregate_spvm_codecov_json_line_fraction,
     build_coverage_gaps,
     build_swift_llvm_cov_ignore_regex,
+    build_uncovered_files,
     compile_swift_coverage_exclude_regexes,
     parse_llvm_cov_report_line_coverage_fraction,
     read_swift_codecov_json_fraction,
@@ -208,3 +209,66 @@ class TestBuildCoverageGaps:
         assert g.coverage == 0.4
         assert g.lines_total == 100
         assert g.lines_uncovered == 60
+
+
+class TestBuildUncoveredFiles:
+    """Tests for ``build_uncovered_files`` — always-populated zero-coverage list."""
+
+    def test_returns_only_zero_coverage_files(self) -> None:
+        entries = [
+            _entry("Full.swift", 100, 100),
+            _entry("Partial.swift", 100, 50),
+            _entry("Zero.swift", 40, 0),
+        ]
+        result = build_uncovered_files(entries)
+        assert len(result) == 1
+        assert result[0].file == "Zero.swift"
+
+    def test_sorted_by_lines_total_ascending(self) -> None:
+        entries = [
+            _entry("Big.swift", 200, 0),
+            _entry("Tiny.swift", 10, 0),
+            _entry("Mid.swift", 50, 0),
+        ]
+        result = build_uncovered_files(entries)
+        assert [g.file for g in result] == ["Tiny.swift", "Mid.swift", "Big.swift"]
+
+    def test_populated_regardless_of_threshold(self) -> None:
+        # Even when coverage already meets threshold, uncovered_files is not empty
+        entries = [
+            _entry("Almost.swift", 100, 95),
+            _entry("Zero.swift", 10, 0),
+        ]
+        # Coverage = (95) / (110) ≈ 0.864 — below threshold, but we verify the
+        # function doesn't take threshold as an argument at all
+        result = build_uncovered_files(entries)
+        assert len(result) == 1
+        assert result[0].file == "Zero.swift"
+
+    def test_excludes_files_with_zero_total_lines(self) -> None:
+        entries = [
+            _entry("Empty.swift", 0, 0),
+            _entry("Real.swift", 30, 0),
+        ]
+        result = build_uncovered_files(entries)
+        assert len(result) == 1
+        assert result[0].file == "Real.swift"
+
+    def test_returns_empty_when_all_files_have_coverage(self) -> None:
+        entries = [_entry("A.swift", 100, 80), _entry("B.swift", 50, 50)]
+        assert build_uncovered_files(entries) == []
+
+    def test_gap_fields_populated_correctly(self) -> None:
+        entry = _entry("Zero.swift", 45, 0)
+        result = build_uncovered_files([entry])
+        assert len(result) == 1
+        g = result[0]
+        assert g.file == "Zero.swift"
+        assert g.coverage == 0.0
+        assert g.lines_total == 45
+        assert g.lines_uncovered == 45
+
+    def test_no_cap_returns_all_zero_coverage_files(self) -> None:
+        entries = [_entry(f"F{i}.swift", i + 1, 0) for i in range(50)]
+        result = build_uncovered_files(entries)
+        assert len(result) == 50
