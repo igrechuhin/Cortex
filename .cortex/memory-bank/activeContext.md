@@ -5,6 +5,9 @@
 ## Completed Work (2026-04-26)
 
 - ✅ **Commit pipeline execution** - COMPLETE (2026-04-26) - <!-- memory_type: milestone -->
+
+- ✅ **Commit pipeline Phase B (docs/state)** - COMPLETE (2026-04-26) - <!-- memory_type: milestone -->
+Executed docs-phase handoff/resume flow for session 90f2789d546e, updated memory-bank records, archived completed plans, ran markdown autofix, and validated docs-gate semantics (roadmap_sync is non-blocking only when timestamps are valid).
 Ran /cortex/commit pipeline: fixed SwiftAdapter test-count API visibility (extract_test_counts), cleared Phase A quality/type checks, and completed parity scripts.
 
 ## Completed Work (2026-04-25)

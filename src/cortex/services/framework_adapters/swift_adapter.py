@@ -62,6 +62,10 @@ _SWIFT_TESTING_SUMMARY_RE = re.compile(
 
 _SWIFT_ERROR_LINE_RE = re.compile(r"error:\s+.*|\.swift:\d+:\d+:\s+error:", re.I)
 
+_SwiftOutcomeDetails = tuple[
+    bool, float | None, list[str], list[CoverageGap], list[str], list[CoverageGap]
+]
+
 
 class SwiftAdapter(FrameworkAdapter):
     """Adapter for Swift projects (Swift Package Manager)."""
@@ -228,18 +232,17 @@ class SwiftAdapter(FrameworkAdapter):
         """Build final gate TestResult from subprocess output + interpreted outcome."""
         output = result.stdout + result.stderr
         passed, failed = self.extract_test_counts(output)
-        actual_ok, coverage, errors, gaps, effective_warnings, uncovered = (
-            self._build_swift_test_outcome_details(
-                outcome.status == SwiftTestStatus.PASSED,
-                timeout,
-                coverage_threshold,
-                failed,
-                output,
-                result.returncode,
-                stderr_tail(result.stderr),
-                outcome,
-            )
+        details = self._build_swift_test_outcome_details(
+            outcome.status == SwiftTestStatus.PASSED,
+            timeout,
+            coverage_threshold,
+            failed,
+            output,
+            result.returncode,
+            stderr_tail(result.stderr),
+            outcome,
         )
+        actual_ok, coverage, errors, gaps, effective_warnings, uncovered = details
         return self._make_test_result(
             passed,
             failed,
@@ -439,9 +442,7 @@ class SwiftAdapter(FrameworkAdapter):
         returncode: int,
         stderr_tail_text: str,
         outcome: SwiftTestOutcome | None,
-    ) -> tuple[
-        bool, float | None, list[str], list[CoverageGap], list[str], list[CoverageGap]
-    ]:
+    ) -> _SwiftOutcomeDetails:
         """Compute verdict, errors, gaps, warnings, and uncovered files for swift test output."""
         actual_ok, coverage, warnings, per_file = self._coverage_gate_outcome(
             tests_ok, timeout, coverage_threshold
