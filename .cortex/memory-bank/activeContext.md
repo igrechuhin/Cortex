@@ -2,13 +2,14 @@
 
 **This file records completed work only.** For current status and upcoming work see [roadmap.md](roadmap.md).
 
+## Completed Work (2026-04-27)
+
+- ✅ **Commit pipeline: swift adapter + fix-coverage prompt sync** - COMPLETE (2026-04-27) - <!-- memory_type: status -->
+Prepared commit pipeline state, synced synapse submodule prompt wording for fix-coverage integrity test, and carried swift adapter cache/test updates through Phase A quality checks.
+
 ## Completed Work (2026-04-26)
 
-- ✅ **Commit pipeline execution** - COMPLETE (2026-04-26) - <!-- memory_type: milestone -->
-
-- ✅ **Commit pipeline Phase B (docs/state)** - COMPLETE (2026-04-26) - <!-- memory_type: milestone -->
-Executed docs-phase handoff/resume flow for session 90f2789d546e, updated memory-bank records, archived completed plans, ran markdown autofix, and validated docs-gate semantics (roadmap_sync is non-blocking only when timestamps are valid).
-Ran /cortex/commit pipeline: fixed SwiftAdapter test-count API visibility (extract_test_counts), cleared Phase A quality/type checks, and completed parity scripts.
+- **Summary (2026-04-26)** - 1 entries archived.
 
 ## Completed Work (2026-04-25)
 

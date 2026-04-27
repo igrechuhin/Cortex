@@ -4,8 +4,7 @@
 
 ## Completed Work (2026-04-26)
 
-- ✅ **Commit pipeline execution** - COMPLETE (2026-04-26) - <!-- memory_type: milestone -->
-Ran /cortex/commit pipeline: fixed SwiftAdapter test-count API visibility (extract_test_counts), cleared Phase A quality/type checks, and completed parity scripts.
+- **Summary (2026-04-26)** - 1 entries archived.
 
 ## Completed Work (2026-04-25)
 

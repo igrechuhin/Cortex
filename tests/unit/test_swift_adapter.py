@@ -757,10 +757,8 @@ class TestSwiftAdapter:
             result = adapter.run_tests(coverage_threshold=0.90)
             assert result.coverage == pytest.approx(0.95)  # type: ignore[unknown-member-type]
             assert result.success is True
-            # Calls: swift test, bin-path for logging, bin-path for coverage.
-            # The second bin-path call could be cached in future — for now
-            # accept 3 to pin the observed behavior.
-            assert mock_run.call_count == 3
+            # Calls: swift test, bin-path (first call; cached for coverage reuse).
+            assert mock_run.call_count == 2
 
     @patch("cortex.services.framework_adapters.swift_adapter.subprocess.run")
     def test_run_tests_fails_when_codecov_json_below_accept_min(
@@ -808,9 +806,9 @@ class TestSwiftAdapter:
             result = adapter.run_tests(coverage_threshold=0.90)
             assert result.coverage == pytest.approx(0.90)  # type: ignore[unknown-member-type]
             assert result.success is True
-            # Calls: swift test, bin-path for logging, bin-path for coverage,
+            # Calls: swift test, bin-path (cached; no second bin-path call),
             # llvm-cov export, llvm-cov report fallback.
-            assert mock_run.call_count == 5
+            assert mock_run.call_count == 4
 
     @patch("cortex.services.framework_adapters.swift_adapter.subprocess.run")
     def test_run_tests_populates_coverage_gaps_via_llvm_cov_export(

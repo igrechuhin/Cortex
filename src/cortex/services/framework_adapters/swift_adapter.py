@@ -89,6 +89,7 @@ class SwiftAdapter(FrameworkAdapter):
         self._swift_cov_extra_filename_re = compile_swift_coverage_exclude_regexes(
             list(self._swift_coverage_cfg.exclude_filename_regex_patterns)
         )
+        self._cached_bin_path: Path | None = None
 
     def has_package_swift(self) -> bool:
         """Return True if Package.swift exists in project root."""
@@ -378,14 +379,23 @@ class SwiftAdapter(FrameworkAdapter):
         return frac, True, []
 
     def _resolve_swift_bin_path(self, timeout: int | None) -> Path | None:
-        """Resolve SwiftPM bin path via ``swift build --show-bin-path``."""
+        """Resolve SwiftPM bin path via ``swift build --show-bin-path``.
+
+        Result is cached for the adapter's lifetime — the bin path never
+        changes within a session and re-running ``swift build`` on every gate
+        call can fail under concurrent lock contention.
+        """
+        if self._cached_bin_path is not None and self._cached_bin_path.is_dir():
+            return self._cached_bin_path
         bin_path_res = self._run_swift(["build", "--show-bin-path"], timeout=timeout)
         if bin_path_res.returncode != 0:
             return None
         bin_text = (bin_path_res.stdout + bin_path_res.stderr).strip()
         if not bin_text:
             return None
-        return Path(bin_text.splitlines()[-1].strip())
+        resolved = Path(bin_text.splitlines()[-1].strip())
+        self._cached_bin_path = resolved
+        return resolved
 
     def _coverage_from_json(
         self, codecov_dir: Path
