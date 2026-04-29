@@ -2,10 +2,14 @@
 
 **This file records completed work only.** For current status and upcoming work see [roadmap.md](roadmap.md).
 
+## Completed Work (2026-04-29)
+
+- ✅ **Commit pipeline: submodule hygiene + prompt lint fix** - COMPLETE (2026-04-29) - <!-- memory_type: milestone -->
+Executed /fix and /commit flow, fixed markdown lint in do-loop prompt, committed synapse updates, and completed quality/docs gates.
+
 ## Completed Work (2026-04-27)
 
-- ✅ **Commit pipeline: swift adapter + fix-coverage prompt sync** - COMPLETE (2026-04-27) - <!-- memory_type: status -->
-Prepared commit pipeline state, synced synapse submodule prompt wording for fix-coverage integrity test, and carried swift adapter cache/test updates through Phase A quality checks.
+- **Summary (2026-04-27)** - 1 entries archived.
 
 ## Completed Work (2026-04-26)
 

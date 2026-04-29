@@ -1,5 +1,10 @@
 # Progress Log
 
+## 2026-04-29
+
+- <!-- memory_type: milestone -->
+Completed /fix + /commit pipeline prep: fixed do-loop markdown structure in synapse, re-established submodule hygiene, and passed Phase A parity + docs gate.
+
 ## 2026-04-27
 
 - <!-- memory_type: status -->
