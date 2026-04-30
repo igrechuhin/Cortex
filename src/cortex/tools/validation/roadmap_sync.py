@@ -18,6 +18,26 @@ from cortex.validation.roadmap_sync import (
 logger = logging.getLogger(__name__)
 
 
+def _resolve_existing_roadmap_path(root: Path) -> Path | None:
+    """Find a roadmap path under root or one of its ancestors.
+
+    This guards docs validation when a nested project path is passed as root.
+    """
+    memory_bank_dir = get_cortex_path(root, CortexResourceType.MEMORY_BANK)
+    roadmap_path = memory_bank_dir / MemoryBankFile.ROADMAP
+    if roadmap_path.exists():
+        return roadmap_path
+
+    for candidate_root in root.resolve().parents:
+        candidate = (
+            get_cortex_path(candidate_root, CortexResourceType.MEMORY_BANK)
+            / MemoryBankFile.ROADMAP
+        )
+        if candidate.exists():
+            return candidate
+    return None
+
+
 def _build_roadmap_sync_error_response() -> str:
     """Build error response for missing roadmap.md.
 
@@ -148,10 +168,8 @@ async def handle_roadmap_sync_validation(
     Returns:
         JSON string with roadmap sync validation results
     """
-    memory_bank_dir = get_cortex_path(root, CortexResourceType.MEMORY_BANK)
-    roadmap_path = memory_bank_dir / MemoryBankFile.ROADMAP
-
-    if not roadmap_path.exists():
+    roadmap_path = _resolve_existing_roadmap_path(root)
+    if roadmap_path is None:
         return _build_roadmap_sync_error_response()
 
     roadmap_content, _ = await fs_manager.read_file(roadmap_path)
