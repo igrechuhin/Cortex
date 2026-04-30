@@ -344,3 +344,59 @@ class TestGetProjectRoot:
         # Assert
         assert result == root_path.resolve()
         assert result.is_absolute()
+
+    def test_get_project_root_skips_partial_home_dir_cortex_init(
+        self, tmp_path: Path
+    ) -> None:
+        """Partial ~/.cortex/memory-bank (from a prior global-config run) must not
+        be selected as the project root; the real project root should win instead."""
+        # Arrange: simulate home dir with partial Cortex init (no 7 core files)
+        fake_home = tmp_path / "home"
+        get_cortex_path(fake_home, CortexResourceType.MEMORY_BANK).mkdir(parents=True)
+        # Real project at a different path with fully initialized memory bank
+        project_root = tmp_path / "Repo" / "TradeWing"
+        mb_dir = get_cortex_path(project_root, CortexResourceType.MEMORY_BANK)
+        mb_dir.mkdir(parents=True)
+        core_files = [
+            "projectBrief.md",
+            "productContext.md",
+            "activeContext.md",
+            "systemPatterns.md",
+            "techContext.md",
+            "progress.md",
+            "roadmap.md",
+        ]
+        for fname in core_files:
+            _ = (mb_dir / fname).write_text("# test")
+
+        with (
+            patch("cortex.managers.initialization.Path.cwd", return_value=fake_home),
+            patch("cortex.managers.initialization.Path.home", return_value=fake_home),
+            patch("sys.argv", [str(fake_home / "script.py")]),
+        ):
+            result = get_project_root(str(project_root))
+
+        assert result == project_root.resolve()
+
+    def test_get_project_root_cwd_at_home_with_partial_cortex_skips_home_dir(
+        self, tmp_path: Path
+    ) -> None:
+        """_find_root_from_cwd skips home dir if it has only a partial Cortex init."""
+        fake_home = tmp_path / "home"
+        get_cortex_path(fake_home, CortexResourceType.MEMORY_BANK).mkdir(parents=True)
+
+        with (
+            patch("cortex.managers.initialization.Path.cwd", return_value=fake_home),
+            patch("cortex.managers.initialization.Path.home", return_value=fake_home),
+            patch("sys.argv", [str(fake_home / "script.py")]),
+        ):
+            result = get_project_root(None)
+
+        # Home dir has no fully-initialized memory bank → _find_root_from_cwd
+        # skips it → candidates=[] → falls back to Path.cwd() but NOT a cortex root
+        assert result == fake_home.resolve()
+        # Crucially: the result must NOT be treated as having a memory bank by
+        # is_memory_bank_fully_initialized (it doesn't have the 7 core files).
+        from cortex.core.path_resolver import is_memory_bank_fully_initialized
+
+        assert not is_memory_bank_fully_initialized(result)

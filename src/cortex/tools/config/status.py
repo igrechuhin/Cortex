@@ -84,7 +84,7 @@ def _check_migration_needed(project_root: Path, memory_bank_initialized: bool) -
         project_root / ".memory-bank",
     ]
     return any(
-        legacy_path.exists() and legacy_path.is_dir()
+        legacy_path.exists() and legacy_path.is_dir() and not legacy_path.is_symlink()
         for legacy_path in legacy_locations
     )
 

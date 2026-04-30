@@ -83,6 +83,8 @@ uvx --from git+https://github.com/igrechuhin/Cortex.git cortex --help
 
 Details: [Getting started — Stable MCP setup](docs/getting-started.md#stable-mcp-setup-recommended), [Troubleshooting — uvx cold start](docs/guides/troubleshooting.md#issue-uvx-cold-start-mcp-timeout).
 
+**Project-level vs global config:** Place the snippet in your project's `.cursor/mcp.json` (or `.claude/mcp.json`) rather than in the global IDE config. Project-level config lets Cortex resolve the correct workspace root immediately. A global config makes your IDE launch Cortex with CWD set to the home directory; Cortex falls back to a heuristic root-finder that can pick up stale `.cortex/` state left in `~/` and show spurious setup prompts.
+
 ### With Smithery
 
 ```json

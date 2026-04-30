@@ -14,6 +14,20 @@ from cortex.core.path_resolver import (
 from cortex.tools.config import get_project_config_status
 
 
+def _write_core_memory_bank_files(memory_bank_dir: Path) -> None:
+    core_files = [
+        "projectBrief.md",
+        "productContext.md",
+        "activeContext.md",
+        "systemPatterns.md",
+        "techContext.md",
+        "progress.md",
+        "roadmap.md",
+    ]
+    for fname in core_files:
+        _ = (memory_bank_dir / fname).write_text("# Test")
+
+
 class TestGetProjectConfigStatus:
     """Test get_project_config_status function."""
 
@@ -22,17 +36,7 @@ class TestGetProjectConfigStatus:
         # Arrange
         memory_bank_dir = get_cortex_path(tmp_path, CortexResourceType.MEMORY_BANK)
         memory_bank_dir.mkdir(parents=True)
-        core_files = [
-            "projectBrief.md",
-            "productContext.md",
-            "activeContext.md",
-            "systemPatterns.md",
-            "techContext.md",
-            "progress.md",
-            "roadmap.md",
-        ]
-        for fname in core_files:
-            _ = (memory_bank_dir / fname).write_text("# Test")
+        _write_core_memory_bank_files(memory_bank_dir)
 
         with patch(
             "cortex.tools.config.status.get_project_root", return_value=tmp_path
@@ -180,6 +184,24 @@ class TestGetProjectConfigStatus:
             assert status["migration_needed"] is True
             assert status["memory_bank_initialized"] is False
 
+    def test_migration_not_needed_when_cursor_memory_bank_is_symlink(
+        self, tmp_path: Path
+    ):
+        """Symlink at .cursor/memory-bank (modern Cortex integration) must not trigger migration."""
+        # Arrange: create the real .cortex/memory-bank dir and symlink from .cursor/memory-bank
+        real_dir = get_cortex_path(tmp_path, CortexResourceType.MEMORY_BANK)
+        real_dir.mkdir(parents=True)
+        cursor_memory_bank = get_cursor_path(tmp_path, CursorResourceType.MEMORY_BANK)
+        cursor_memory_bank.parent.mkdir(parents=True, exist_ok=True)
+        cursor_memory_bank.symlink_to(real_dir)
+
+        with patch(
+            "cortex.tools.config.status.get_project_root", return_value=tmp_path
+        ):
+            status = get_project_config_status()
+
+        assert status["migration_needed"] is False
+
     def test_migration_needed_legacy_root_format(self, tmp_path: Path):
         """Test migration needed when legacy memory-bank/ exists."""
         # Arrange
@@ -215,17 +237,7 @@ class TestGetProjectConfigStatus:
         # Arrange
         memory_bank_dir = get_cortex_path(tmp_path, CortexResourceType.MEMORY_BANK)
         memory_bank_dir.mkdir(parents=True)
-        core_files = [
-            "projectBrief.md",
-            "productContext.md",
-            "activeContext.md",
-            "systemPatterns.md",
-            "techContext.md",
-            "progress.md",
-            "roadmap.md",
-        ]
-        for fname in core_files:
-            _ = (memory_bank_dir / fname).write_text("# Test")
+        _write_core_memory_bank_files(memory_bank_dir)
 
         # Also create legacy format (should not trigger migration)
         legacy_dir = tmp_path / "memory-bank"
@@ -274,17 +286,7 @@ class TestGetProjectConfigStatus:
             (cortex_dir / subdir).mkdir(parents=True, exist_ok=True)
 
         # Create core files
-        core_files = [
-            "projectBrief.md",
-            "productContext.md",
-            "activeContext.md",
-            "systemPatterns.md",
-            "techContext.md",
-            "progress.md",
-            "roadmap.md",
-        ]
-        for fname in core_files:
-            _ = (memory_bank_dir / fname).write_text("# Test")
+        _write_core_memory_bank_files(memory_bank_dir)
 
         # Create valid symlinks
         for symlink_name in ["memory-bank", "synapse", "plans"]:

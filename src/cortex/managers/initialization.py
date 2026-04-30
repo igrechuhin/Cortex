@@ -133,10 +133,16 @@ def _find_root_from_script() -> Path | None:
 
 def _find_root_from_cwd() -> Path | None:
     """Try to find Cortex root from current working directory."""
+    home = Path.home().resolve()
     current = Path.cwd().resolve()
     for path in [current, *current.parents]:
-        if has_memory_bank(path):
-            return _reject_package_subdir_as_root(path)
+        if not has_memory_bank(path):
+            continue
+        # Skip a partially-initialized home dir — a common leftover from when
+        # Cortex was configured globally (user-level) and ran with CWD = ~.
+        if path == home and not is_memory_bank_fully_initialized(path):
+            continue
+        return _reject_package_subdir_as_root(path)
     return None
 
 
