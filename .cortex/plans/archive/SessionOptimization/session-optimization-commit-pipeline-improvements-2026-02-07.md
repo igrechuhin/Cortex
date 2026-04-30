@@ -98,7 +98,7 @@ Implement improvements in three categories:
    - Document hook installation in `docs/getting-started.md`
 
 2. Add Cursor IDE integration (optional):
-   - Create `.cursor/rules/markdown-lint-on-save.md` rule
+   - Create `.cortex/synapse/rules/markdown-lint-on-save.md` rule
    - Document how to configure Cursor to run markdown lint on save
    - Reference markdown lint tool and configuration
 

@@ -14,7 +14,7 @@ Align Synapse prompt **filenames** and **manifest display names** with short, co
 
 ## Context
 
-- `prompts-manifest.json` (under `.cortex/synapse/prompts/`, also visible via `.cursor/synapse/` symlink) lists `do.md` / `plan.md`.
+- `prompts-manifest.json` (under `.cortex/synapse/prompts/`, also visible via `.cortex/synapse/` symlink) lists `do.md` / `plan.md`.
 - `.cursor/synapse` → `.cortex/synapse` (single source tree); renames happen once in the submodule.
 - Many tests and docs hardcode the old basenames; `docs/architecture/naming-*.md` documents slug/filename mapping.
 - User-facing slash commands (e.g. `/cortex/do`) are defined in prompt bodies and may remain stable unless product chooses to rename commands in a follow-up.

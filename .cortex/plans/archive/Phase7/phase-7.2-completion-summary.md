@@ -240,13 +240,13 @@ tests/
 1. [tests/conftest.py](../../tests/conftest.py) - 538 lines ✅
 2. [tests/unit/test_exceptions.py](../../tests/unit/test_exceptions.py) - 361 lines ✅
 3. [tests/unit/test_token_counter.py](../../tests/unit/test_token_counter.py) - ~400 lines 🚧
-4. [.plan/phase-7.2-test-progress.md](.cursor/plans/phase-7.2-test-progress.md) - Progress tracking ✅
+4. [.plan/phase-7.2-test-progress.md](.cortex/plans/phase-7.2-test-progress.md) - Progress tracking ✅
 
 ### Files Modified
 
 1. [pytest.ini](../../pytest.ini) - Added coverage configuration ✅
 2. [pyproject.toml](../../pyproject.toml) - Added pytest-cov, pytest-mock ✅
-3. [.plan/README.md](.cursor/plans/README.md) - Updated Phase 7.2 status ✅
+3. [.plan/README.md](.cortex/plans/README.md) - Updated Phase 7.2 status ✅
 4. Updated progress (roadmap / memory bank) ✅
 
 ---

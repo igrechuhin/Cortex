@@ -302,7 +302,7 @@ Documentation was extracted from authoritative sources:
 - **CLAUDE.md** - Project overview and standards
 - **pyproject.toml** - Dependencies and configuration
 - **README.md** - Features and deployment
-- **.cursor/rules/*.mdc** - Coding standards and testing rules
+- **.cortex/synapse/rules/*.mdc** - Coding standards and testing rules
 - **src/cortex/** - Source code for API reference
 - **tests/** - Test examples and patterns
 

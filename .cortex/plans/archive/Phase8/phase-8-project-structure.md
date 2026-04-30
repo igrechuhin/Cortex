@@ -401,7 +401,7 @@ if exists(".cursorrules") or exists(".cursor"):
 | Source | Destination | Action |
 |--------|-------------|--------|
 | `memorybankinstructions.md` | `.memory-bank/knowledge/memorybankinstructions.md` | Move + update links |
-| `.cursor/plans/*` | `.memory-bank/plans/active/` | Move + categorize |
+| `.cortex/plans/*` | `.memory-bank/plans/active/` | Move + categorize |
 | `.cursorrules` | `.memory-bank/rules/local/main.cursorrules` | Move + symlink |
 | `memory-bank/` | `.memory-bank/knowledge/` | Move + restructure |
 | Old files | `.memory-bank/archived/legacy-{date}/` | Archive |

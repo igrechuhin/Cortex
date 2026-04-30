@@ -48,7 +48,7 @@ During planning for Cortex integration with TradeWing (a Swift/macOS trading bot
 - Run `swift build` as a preflight check
 - Parse Swift compiler warnings and errors
 - Treat compiler warnings as errors (configurable)
-- Support custom build scripts (e.g., `.cursor/scripts/build.sh`)
+- Support custom build scripts (e.g., `build.sh`)
 
 **Impact**: Catches build failures before commit, matching the behavior already available for other ecosystems.
 

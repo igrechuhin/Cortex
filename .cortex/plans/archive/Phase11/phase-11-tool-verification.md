@@ -773,7 +773,7 @@ For each tool:
 **Test Cases:**
 
 1. **Index Rules** ❌ ERROR
-   - Attempted to index rules from `.cursor/rules/`
+   - Attempted to index rules from `.cortex/synapse/rules/`
    - **Expected:** JSON with indexed count, total_tokens, rules_by_category
    - **Actual Result:** ❌ Error - Tool execution failed:
      - status: "error"

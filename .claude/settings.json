@@ -27,7 +27,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 -m pytest tests/ --timeout=30 -x -q 2>&1 | tail -20"
+            "command": "python3 .cortex/synapse/scripts/python/post_edit_hook.py"
           }
         ]
       }

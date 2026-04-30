@@ -44,7 +44,7 @@ This plan depends on `fix-roadmap-memory-bank-consistency` being completed first
 ### Step 2 — Update project structure section in contributing guide
 
 1. Replace pre-migration Memory Bank path references with `.cortex/memory-bank`.
-2. Replace any `.cursor/rules/` references with `.cortex/synapse/rules/` (or MCP rules resource) as appropriate.
+2. Replace any `.cortex/synapse/rules/` references with `.cortex/synapse/rules/` (or MCP rules resource) as appropriate.
 3. Verify the updated structure section matches the actual directory layout on disk (`Glob` on `.cortex/**`).
 
 #### Verification Checklist — Step 2

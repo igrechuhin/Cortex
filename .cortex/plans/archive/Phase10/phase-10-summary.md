@@ -132,7 +132,7 @@ The Cortex codebase demonstrates **strong engineering fundamentals** with excell
 
 **Impact:** 7.5/10 → 8.5/10
 
-**See:** [phase-10.1-critical-fixes.md](.cursor/plans/phase-10.1-critical-fixes.md)
+**See:** [phase-10.1-critical-fixes.md](.cortex/plans/phase-10.1-critical-fixes.md)
 
 ---
 
@@ -156,7 +156,7 @@ The Cortex codebase demonstrates **strong engineering fundamentals** with excell
 
 **Impact:** Maintainability 5/10 → 9.5/10, overall 8.5/10 → 9.0/10
 
-**See:** [phase-10.2-file-size-compliance.md](.cursor/plans/phase-10.2-file-size-compliance.md)
+**See:** [phase-10.2-file-size-compliance.md](.cortex/plans/phase-10.2-file-size-compliance.md)
 
 ---
 
@@ -189,7 +189,7 @@ The Cortex codebase demonstrates **strong engineering fundamentals** with excell
 
 **Impact:** All metrics → 9.8/10 🎯
 
-**See:** [phase-10.3-final-excellence.md](.cursor/plans/phase-10.3-final-excellence.md)
+**See:** [phase-10.3-final-excellence.md](.cortex/plans/phase-10.3-final-excellence.md)
 
 ---
 
@@ -365,10 +365,10 @@ The clear path to 9.8/10 is well-defined with concrete, actionable plans. All cr
 **Related Documents:**
 
 - [Full Code Review Report](./code-review-2026-01-05.md) (generated)
-- [Phase 10.1: Critical Fixes](.cursor/plans/phase-10.1-critical-fixes.md)
-- [Phase 10.2: File Size Compliance](.cursor/plans/phase-10.2-file-size-compliance.md)
-- [Phase 10.3: Final Excellence](.cursor/plans/phase-10.3-final-excellence.md)
-- [Project Plans](.cursor/plans/README.md)
+- [Phase 10.1: Critical Fixes](.cortex/plans/phase-10.1-critical-fixes.md)
+- [Phase 10.2: File Size Compliance](.cortex/plans/phase-10.2-file-size-compliance.md)
+- [Phase 10.3: Final Excellence](.cortex/plans/phase-10.3-final-excellence.md)
+- [Project Plans](.cortex/plans/README.md)
 
 ---
 

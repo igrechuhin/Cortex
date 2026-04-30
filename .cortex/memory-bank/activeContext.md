@@ -4,8 +4,7 @@
 
 ## Completed Work (2026-04-29)
 
-- ✅ **Commit pipeline: submodule hygiene + prompt lint fix** - COMPLETE (2026-04-29) - <!-- memory_type: milestone -->
-Executed /fix and /commit flow, fixed markdown lint in do-loop prompt, committed synapse updates, and completed quality/docs gates.
+- **Summary (2026-04-29)** - 1 entries archived.
 
 ## Completed Work (2026-04-27)
 

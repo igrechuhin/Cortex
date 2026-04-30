@@ -7,7 +7,7 @@
 
 ## Overview
 
-This phase addresses **4 CRITICAL file size violations** that block production readiness. The 400-line limit is MANDATORY per `.cursor/rules/maintainability.mdc`.
+This phase addresses **4 CRITICAL file size violations** that block production readiness. The 400-line limit is MANDATORY per `.cortex/synapse/rules/maintainability.mdc`.
 
 **Current Violations:**
 

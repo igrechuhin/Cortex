@@ -48,13 +48,13 @@ Identified specific source files causing forward dependencies:
 
 Created comprehensive documentation:
 
-1. **[phase-9.2.3-module-coupling-analysis.md](.cursor/plans/phase-9.2.3-module-coupling-analysis.md)** (~400 lines)
+1. **[phase-9.2.3-module-coupling-analysis.md](.cortex/plans/phase-9.2.3-module-coupling-analysis.md)** (~400 lines)
    - Complete circular dependency listing
    - Layer violation analysis
    - Root cause analysis
    - Remediation strategy
 
-2. **[phase-9.2.3-fix-strategy.md](.cursor/plans/phase-9.2.3-fix-strategy.md)** (~350 lines)
+2. **[phase-9.2.3-fix-strategy.md](.cortex/plans/phase-9.2.3-fix-strategy.md)** (~350 lines)
    - Step-by-step implementation plan
    - Before/after code examples
    - Timeline and effort estimates
@@ -147,9 +147,9 @@ L11: main          → Entry point
 
 ### 📝 Documentation
 
-- [phase-9.2.3-module-coupling-analysis.md](.cursor/plans/phase-9.2.3-module-coupling-analysis.md) - Detailed analysis
-- [phase-9.2.3-fix-strategy.md](.cursor/plans/phase-9.2.3-fix-strategy.md) - Implementation guide
-- [phase-9.2.3-summary.md](.cursor/plans/phase-9.2.3-summary.md) - This file
+- [phase-9.2.3-module-coupling-analysis.md](.cortex/plans/phase-9.2.3-module-coupling-analysis.md) - Detailed analysis
+- [phase-9.2.3-fix-strategy.md](.cortex/plans/phase-9.2.3-fix-strategy.md) - Implementation guide
+- [phase-9.2.3-summary.md](.cortex/plans/phase-9.2.3-summary.md) - This file
 
 ### 🎯 Implementation Plan
 

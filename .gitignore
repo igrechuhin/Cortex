@@ -127,3 +127,6 @@ eval_results.json
 
 # Cortex local machine context (host-specific; do not commit)
 .cortex/memory-bank/local-environment-context.json
+.cursor/memory-bank
+.cursor/plans
+.cursor/synapse
