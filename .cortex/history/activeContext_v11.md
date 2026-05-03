@@ -2,6 +2,11 @@
 
 **This file records completed work only.** For current status and upcoming work see [roadmap.md](roadmap.md).
 
+## Completed Work (2026-05-03)
+
+- ✅ **Session index, log, debug prompt, Synapse Swift scripts** - COMPLETE (2026-05-03) - <!-- memory_type: status -->
+Updated .cortex/index.json; memory-bank log.md maintenance; small edit to debug-external-integration.md; Synapse submodule at formatted Swift public-docs check scripts (check_public_docs + tests).
+
 ## Completed Work (2026-04-29)
 
 - **Summary (2026-04-29)** - 1 entries archived.

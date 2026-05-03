@@ -5,6 +5,9 @@
 ## Completed Work (2026-05-03)
 
 - ✅ **Session index, log, debug prompt, Synapse Swift scripts** - COMPLETE (2026-05-03) - <!-- memory_type: status -->
+
+- ✅ **MCP semaphores bound to event loop; root cache lock reset** - COMPLETE (2026-05-03) - <!-- memory_type: preference -->
+Tracked asyncio semaphores for concurrent tools/resources and long-running tools are recreated when the running loop changes to avoid cross-loop use. clear_cached_root now clears the asyncio.Lock placeholder so the lock is recreated on the current loop after tests or overrides.
 Updated .cortex/index.json; memory-bank log.md maintenance; small edit to debug-external-integration.md; Synapse submodule at formatted Swift public-docs check scripts (check_public_docs + tests).
 
 ## Completed Work (2026-04-29)

@@ -86,8 +86,11 @@ class TrackedSemaphore:
 
 
 _concurrent_tools_semaphore: TrackedSemaphore | None = None
+_concurrent_tools_loop: asyncio.AbstractEventLoop | None = None
 _concurrent_resources_semaphore: TrackedSemaphore | None = None
+_concurrent_resources_loop: asyncio.AbstractEventLoop | None = None
 _long_running_tools_semaphore_map: dict[str, TrackedSemaphore] = {}
+_long_running_tools_loop: asyncio.AbstractEventLoop | None = None
 _long_running_semaphore_holder_map: dict[str, str] = {}
 _long_running_start_time_map: dict[str, float] = {}
 _long_running_released_by_timeout_map: dict[str, bool] = {}
@@ -99,24 +102,45 @@ def _normalize_lock_scope(lock_scope: str | None) -> str:
     return lock_scope or "__global__"
 
 
+def _current_loop_or_none() -> asyncio.AbstractEventLoop | None:
+    try:
+        return asyncio.get_running_loop()
+    except RuntimeError:
+        return None
+
+
 def get_semaphore() -> TrackedSemaphore:
     """Get or create the global semaphore for concurrent tool limits."""
-    global _concurrent_tools_semaphore
-    if _concurrent_tools_semaphore is None:
+    global _concurrent_tools_semaphore, _concurrent_tools_loop
+    loop = _current_loop_or_none()
+    if _concurrent_tools_semaphore is None or (
+        loop is not None and loop is not _concurrent_tools_loop
+    ):
         _concurrent_tools_semaphore = TrackedSemaphore(MCP_MAX_CONCURRENT_TOOLS)
+        _concurrent_tools_loop = loop
     return _concurrent_tools_semaphore
 
 
 def get_resource_semaphore() -> TrackedSemaphore:
     """Get or create the semaphore for concurrent resource read limits."""
-    global _concurrent_resources_semaphore
-    if _concurrent_resources_semaphore is None:
+    global _concurrent_resources_semaphore, _concurrent_resources_loop
+    loop = _current_loop_or_none()
+    if _concurrent_resources_semaphore is None or (
+        loop is not None and loop is not _concurrent_resources_loop
+    ):
         _concurrent_resources_semaphore = TrackedSemaphore(MCP_MAX_CONCURRENT_RESOURCES)
+        _concurrent_resources_loop = loop
     return _concurrent_resources_semaphore
 
 
 def get_long_running_semaphore(lock_scope: str | None = None) -> TrackedSemaphore:
     """Return per-scope semaphore for long-running tool serialization."""
+    global _long_running_tools_loop
+    loop = _current_loop_or_none()
+    if loop is not None and loop is not _long_running_tools_loop:
+        if _long_running_tools_semaphore_map:
+            reset_long_running_tools_semaphore_for_testing()
+        _long_running_tools_loop = loop
     scope = _normalize_lock_scope(lock_scope)
     sem = _long_running_tools_semaphore_map.get(scope)
     if sem is None:

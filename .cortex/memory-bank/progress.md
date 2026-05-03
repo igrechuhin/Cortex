@@ -4,6 +4,9 @@
 
 - <!-- memory_type: status -->
 - **Commit pipeline: Cortex metadata + Synapse submodule** — Session index and memory-bank log updated; debug-external-integration prompt tweaked; Synapse gitlink advanced for Swift public-docs script formatting.
+- <!-- memory_type: status -->
+- fix(core): bind MCP stability semaphores to the active event loop and reset long-running map on loop change; reset root cache lock in clear_cached_root for correct per-loop recreation
+- chore: refresh session index snapshot and operations log
 
 ## 2026-04-29
 

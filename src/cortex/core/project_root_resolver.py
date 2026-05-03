@@ -62,9 +62,10 @@ def _get_root_cache_lock() -> asyncio.Lock:
 
 def clear_cached_root() -> None:
     """Reset the root cache (used in tests and on explicit project-root override)."""
-    global cached_root, wiki_bootstrapped_roots
+    global cached_root, wiki_bootstrapped_roots, _root_cache_lock
     cached_root = None
     wiki_bootstrapped_roots.clear()
+    _root_cache_lock = None  # recreated for the current event loop on next use
 
 
 async def handle_roots_list_changed() -> None:
