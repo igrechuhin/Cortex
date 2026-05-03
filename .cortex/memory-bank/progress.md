@@ -1,5 +1,10 @@
 # Progress Log
 
+## 2026-05-03
+
+- <!-- memory_type: status -->
+- **Commit pipeline: Cortex metadata + Synapse submodule** — Session index and memory-bank log updated; debug-external-integration prompt tweaked; Synapse gitlink advanced for Swift public-docs script formatting.
+
 ## 2026-04-29
 
 - <!-- memory_type: milestone -->
