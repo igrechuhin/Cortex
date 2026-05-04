@@ -4,6 +4,7 @@ Adapter for Swift projects using Swift Package Manager: swift format,
 swift build (type check / lint), swift test.
 """
 
+import logging
 import os
 import re
 import subprocess
@@ -45,6 +46,8 @@ from .swift_test_diagnostics import (
     stderr_tail,
 )
 from .swift_test_logging import SwiftTestLogRecord, write_swift_test_log
+
+logger = logging.getLogger(__name__)
 
 # Matches XCTest summary: "Executed N tests, with M failures"
 _XCTEST_SUMMARY_RE = re.compile(
@@ -341,20 +344,31 @@ class SwiftAdapter(FrameworkAdapter):
             return ["xcrun", "llvm-cov", *tail]
         return ["llvm-cov", *tail]
 
-    def _collect_line_coverage_fraction(
-        self, timeout: int | None
-    ) -> tuple[float | None, bool, list[FileCoverageEntry]]:
-        """Return ``(fraction, collected, per_file)`` after ``swift test``.
+    @staticmethod
+    def _coverage_json_absent_teardown(outcome: SwiftTestOutcome | None) -> bool:
+        """Return True when coverage data is unreliable due to a post-run crash.
 
-        ``collected`` is True only when SwiftPM artifacts exist and a numeric
-        line-coverage value was derived (JSON export or ``llvm-cov report``).
-        ``per_file`` is populated only when the JSON path succeeds.
+        When ``swift test`` exits via a teardown signal (e.g. SIGSEGV on Apple
+        Silicon), the Swift Testing ``*.profraw`` file is never flushed to disk.
+        Merging only the XCTest profraw produces a misleadingly low fraction
+        (~50 % instead of 90 %+), so the caller should skip coverage rather
+        than report an inaccurate value.
         """
+        if outcome is None or outcome.teardown_signal is None:
+            return False
+        logger.info(
+            "swift_adapter: coverage JSON absent and test harness exited via signal %s — skipping coverage (incomplete profraw data)",  # noqa: E501
+            outcome.teardown_signal,
+        )
+        return True
+
+    def _collect_line_coverage_fraction(
+        self, timeout: int | None, outcome: SwiftTestOutcome | None = None
+    ) -> tuple[float | None, bool, list[FileCoverageEntry]]:
+        """Return ``(fraction, collected, per_file)`` after ``swift test``."""
         bin_path = self._resolve_swift_bin_path(timeout)
         if bin_path is None:
             return None, False, []
-        # Merge *.profraw → default.profdata when SwiftPM skipped the merge
-        # (happens with mixed XCTest + Swift Testing targets).
         _ = merge_profraw_to_profdata(bin_path, timeout)
         profdata = default_profdata_path(bin_path)
         if not profdata.is_file():
@@ -362,7 +376,8 @@ class SwiftAdapter(FrameworkAdapter):
         frac, per_file = self._coverage_from_json(profdata.parent)
         if frac is not None:
             return frac, True, per_file
-        # JSON absent — try llvm-cov export first (gives both fraction + per-file).
+        if self._coverage_json_absent_teardown(outcome):
+            return None, False, []
         exe = find_package_tests_executable(bin_path)
         if exe is not None:
             export_per_file = llvm_cov_export_per_file(
@@ -455,7 +470,7 @@ class SwiftAdapter(FrameworkAdapter):
     ) -> _SwiftOutcomeDetails:
         """Compute verdict, errors, gaps, warnings, and uncovered files for swift test output."""
         actual_ok, coverage, warnings, per_file = self._coverage_gate_outcome(
-            tests_ok, timeout, coverage_threshold
+            tests_ok, timeout, coverage_threshold, outcome
         )
         errors = self._build_swift_test_errors(
             actual_ok,
@@ -570,11 +585,14 @@ class SwiftAdapter(FrameworkAdapter):
         tests_ok: bool,
         timeout: int | None,
         coverage_threshold: float,
+        outcome: SwiftTestOutcome | None = None,
     ) -> tuple[bool, float | None, list[str], list[FileCoverageEntry]]:
         """Evaluate test+coverage gate; return (ok, coverage, warnings, per_file)."""
         if not tests_ok:
             return False, None, [], []
-        frac, collected, per_file = self._collect_line_coverage_fraction(timeout)
+        frac, collected, per_file = self._collect_line_coverage_fraction(
+            timeout, outcome
+        )
         if not collected or frac is None:
             return True, None, [], []
         cov_ok, cov_warn = coverage_accept_and_warning(frac, coverage_threshold)

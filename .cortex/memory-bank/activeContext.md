@@ -2,6 +2,11 @@
 
 **This file records completed work only.** For current status and upcoming work see [roadmap.md](roadmap.md).
 
+## Completed Work (2026-05-04)
+
+- ✅ **SwiftAdapter: skip line coverage when teardown signal drops Swift Testing profraw** - COMPLETE (2026-05-04) - <!-- memory_type: status -->
+Added _coverage_json_absent_teardown to detect SwiftTestOutcome.teardown_signal after swift test; when JSON export is missing and the harness exited via signal, skip merging misleading partial profraw into coverage fraction. Wired outcome through _coverage_gate_outcome and _collect_line_coverage_fraction; added logging. Memory-bank log.md refreshed for this session.
+
 ## Completed Work (2026-05-03)
 
 - ✅ **Session index, log, debug prompt, Synapse Swift scripts** - COMPLETE (2026-05-03) - <!-- memory_type: status -->

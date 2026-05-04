@@ -1,5 +1,10 @@
 # Progress Log
 
+## 2026-05-04
+
+- <!-- memory_type: status -->
+- **SwiftAdapter coverage guard (teardown signal)** - COMPLETE. Skip reporting line coverage when JSON is absent after a post-run signal so partial profraw does not produce a misleading low fraction; memory-bank log updated.
+
 ## 2026-05-03
 
 - <!-- memory_type: status -->
