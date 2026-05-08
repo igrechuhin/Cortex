@@ -84,16 +84,55 @@ def _resolve_existing_roadmap_path(
     return None
 
 
-def _build_roadmap_sync_error_response() -> str:
+def _build_roadmap_sync_error_response(
+    root: Path, fs_manager: FileSystemManager | None
+) -> str:
     """Build error response for missing roadmap.md.
 
     Returns:
         JSON string with error response
     """
+    candidate_roots = _collect_roadmap_candidate_roots(root, fs_manager)
+    candidate_paths = [
+        str(
+            get_cortex_path(candidate_root, CortexResourceType.MEMORY_BANK)
+            / MemoryBankFile.ROADMAP
+        )
+        for candidate_root in candidate_roots
+    ]
+    memory_bank_root = None
+    if fs_manager is not None:
+        manager_mb_raw = getattr(fs_manager, "memory_bank_dir", None)
+        if isinstance(manager_mb_raw, Path):
+            memory_bank_root = str(manager_mb_raw.resolve())
+
     return json.dumps(
-        error_response(error="roadmap.md does not exist in memory bank"),
+        error_response(
+            error="roadmap.md does not exist in memory bank",
+            docs_gate_memory_bank_root=memory_bank_root,
+            roadmap_lookup_path=str(
+                get_cortex_path(root, CortexResourceType.MEMORY_BANK)
+                / MemoryBankFile.ROADMAP
+            ),
+            resolved_core_files=cast(JsonValue, {"roadmap": candidate_paths}),
+        ),
         indent=2,
     )
+
+
+def _resolve_roadmap_from_fs_manager(
+    fs_manager: FileSystemManager | None,
+) -> Path | None:
+    """Resolve roadmap path directly from fs_manager memory_bank_dir when available."""
+    if fs_manager is None:
+        return None
+    manager_mb_raw = getattr(fs_manager, "memory_bank_dir", None)
+    if not isinstance(manager_mb_raw, Path):
+        return None
+    candidate = manager_mb_raw.resolve() / MemoryBankFile.ROADMAP
+    if candidate.exists():
+        return candidate
+    return None
 
 
 def _build_roadmap_sync_success_response(
@@ -216,7 +255,9 @@ async def handle_roadmap_sync_validation(
     """
     roadmap_path = _resolve_existing_roadmap_path(root, fs_manager)
     if roadmap_path is None:
-        return _build_roadmap_sync_error_response()
+        roadmap_path = _resolve_roadmap_from_fs_manager(fs_manager)
+    if roadmap_path is None:
+        return _build_roadmap_sync_error_response(root, fs_manager)
 
     roadmap_content, _ = await fs_manager.read_file(roadmap_path)
     _log_roadmap_ghost_sections(roadmap_content, roadmap_path)

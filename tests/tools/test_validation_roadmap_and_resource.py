@@ -145,6 +145,38 @@ class TestHandleRoadmapSyncValidation:
         assert result_data["status"] == "success"
         assert result_data["check_type"] == "roadmap_sync"
 
+    @pytest.mark.asyncio
+    async def test_handle_roadmap_sync_validation_uses_fs_manager_memory_bank_dir(
+        self, tmp_path: Path, mock_fs_manager: MagicMock
+    ) -> None:
+        """When root resolution misses, fallback to fs_manager.memory_bank_dir finds roadmap."""
+        wrong_root = tmp_path / "wrong-root"
+        wrong_root.mkdir(parents=True)
+        memory_bank_dir = get_cortex_path(tmp_path, CortexResourceType.MEMORY_BANK)
+        memory_bank_dir.mkdir(parents=True)
+        roadmap_path = memory_bank_dir / "roadmap.md"
+        roadmap_content = "# Roadmap\n\n## Phase 1\nSee `src/module.py` for details.\n"
+        _ = roadmap_path.write_text(roadmap_content)
+        src_dir = tmp_path / "src"
+        _ = src_dir.mkdir()
+        _ = (src_dir / "module.py").write_text("# Module\n")
+
+        mock_fs_manager.project_root = wrong_root
+        mock_fs_manager.memory_bank_dir = memory_bank_dir
+        mock_fs_manager.read_file = AsyncMock(return_value=(roadmap_content, None))
+
+        with patch(
+            "cortex.core.usage_context.get_current_project_root",
+            return_value=wrong_root,
+        ):
+            result = await handle_roadmap_sync_validation(
+                mock_fs_manager, wrong_root, None
+            )
+
+        result_data = json.loads(result)
+        assert result_data["status"] == "success"
+        assert result_data["check_type"] == "roadmap_sync"
+
 
 class TestValidateResource:
     """Test validate resource (Phase 43 Phase 3 Validation resource)."""

@@ -2,6 +2,11 @@
 
 **This file records completed work only.** For current status and upcoming work see [roadmap.md](roadmap.md).
 
+## Completed Work (2026-05-08)
+
+- ✅ **Roadmap sync resolver hardening** - COMPLETE (2026-05-08) - <!-- memory_type: problem -->
+Added fs_manager.memory_bank_dir fallback and diagnostic error fields in roadmap sync validation, with regression coverage for manager-root mismatch.
+
 ## Completed Work (2026-05-04)
 
 - ✅ **SwiftAdapter: skip line coverage when teardown signal drops Swift Testing profraw** - COMPLETE (2026-05-04) - <!-- memory_type: status -->

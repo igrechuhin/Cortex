@@ -1,5 +1,10 @@
 # Progress Log
 
+## 2026-05-08
+
+- <!-- memory_type: status -->
+- **Docs-gate roadmap lookup fix** - COMPLETE. Added roadmap_sync fallback to fs_manager memory-bank path, expanded diagnostics for missing-roadmap errors, and added regression coverage; quality gate green.
+
 ## 2026-05-04
 
 - <!-- memory_type: status -->
