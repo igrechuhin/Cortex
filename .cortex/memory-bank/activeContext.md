@@ -5,6 +5,9 @@
 ## Completed Work (2026-05-08)
 
 - ✅ **Roadmap sync resolver hardening** - COMPLETE (2026-05-08) - <!-- memory_type: problem -->
+
+- ✅ **Validation roadmap sync hardening committed** - COMPLETE (2026-05-08) - <!-- memory_type: status -->
+Committed roadmap sync resolver fallback and regression tests after passing quality/parity gates in commit pipeline.
 Added fs_manager.memory_bank_dir fallback and diagnostic error fields in roadmap sync validation, with regression coverage for manager-root mismatch.
 
 ## Completed Work (2026-05-04)

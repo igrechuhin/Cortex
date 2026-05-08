@@ -18,6 +18,15 @@ from cortex.validation.roadmap_sync import (
 logger = logging.getLogger(__name__)
 
 
+def _coerce_path(value: object) -> Path | None:
+    """Best-effort conversion of manager/root values to Path."""
+    if isinstance(value, Path):
+        return value
+    if isinstance(value, str) and value:
+        return Path(value)
+    return None
+
+
 def _append_candidate_root(candidate_roots: list[Path], candidate: Path) -> None:
     """Append resolved candidate root if not already present."""
     resolved = candidate.resolve()
@@ -49,12 +58,21 @@ def _collect_roadmap_candidate_roots(
     if usage_root is not None:
         _append_candidate_root(candidate_roots, usage_root)
     if fs_manager is not None:
-        manager_root_raw = getattr(fs_manager, "project_root", None)
-        if isinstance(manager_root_raw, Path):
-            _append_candidate_root(candidate_roots, manager_root_raw)
-        manager_mb_raw = getattr(fs_manager, "memory_bank_dir", None)
-        if isinstance(manager_mb_raw, Path):
-            _append_candidate_root(candidate_roots, manager_mb_raw.parent.parent)
+        manager_root = _coerce_path(getattr(fs_manager, "project_root", None))
+        if manager_root is not None:
+            _append_candidate_root(candidate_roots, manager_root)
+        manager_mb = _coerce_path(getattr(fs_manager, "memory_bank_dir", None))
+        if manager_mb is not None:
+            mb_resolved = manager_mb.resolve()
+            if (
+                mb_resolved.name == "memory-bank"
+                and mb_resolved.parent.name == ".cortex"
+            ):
+                _append_candidate_root(candidate_roots, mb_resolved.parent.parent)
+            elif mb_resolved.name == ".cortex":
+                _append_candidate_root(candidate_roots, mb_resolved.parent)
+            else:
+                _append_candidate_root(candidate_roots, mb_resolved.parent)
     cwd_root = Path.cwd().resolve()
     if _is_cwd_related_to_root(cwd_root, root):
         _append_candidate_root(candidate_roots, cwd_root)
@@ -126,10 +144,10 @@ def _resolve_roadmap_from_fs_manager(
     """Resolve roadmap path directly from fs_manager memory_bank_dir when available."""
     if fs_manager is None:
         return None
-    manager_mb_raw = getattr(fs_manager, "memory_bank_dir", None)
-    if not isinstance(manager_mb_raw, Path):
+    manager_mb = _coerce_path(getattr(fs_manager, "memory_bank_dir", None))
+    if manager_mb is None:
         return None
-    candidate = manager_mb_raw.resolve() / MemoryBankFile.ROADMAP
+    candidate = manager_mb.resolve() / MemoryBankFile.ROADMAP
     if candidate.exists():
         return candidate
     return None

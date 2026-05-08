@@ -4,6 +4,8 @@
 
 - <!-- memory_type: status -->
 - **Docs-gate roadmap lookup fix** - COMPLETE. Added roadmap_sync fallback to fs_manager memory-bank path, expanded diagnostics for missing-roadmap errors, and added regression coverage; quality gate green.
+- <!-- memory_type: status -->
+- **Commit pipeline for roadmap sync fix** - COMPLETE. Ran /commit preflight, Phase A quality+parity checks, and advanced docs/validate/final gate workflow for roadmap sync resolver fallback and regression tests.
 
 ## 2026-05-04
 
