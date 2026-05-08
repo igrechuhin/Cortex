@@ -18,20 +18,57 @@ from cortex.validation.roadmap_sync import (
 logger = logging.getLogger(__name__)
 
 
-def _resolve_existing_roadmap_path(root: Path) -> Path | None:
-    """Find a roadmap path under root or one of its ancestors.
+def _append_candidate_root(candidate_roots: list[Path], candidate: Path) -> None:
+    """Append resolved candidate root if not already present."""
+    resolved = candidate.resolve()
+    if resolved not in candidate_roots:
+        candidate_roots.append(resolved)
 
-    This guards docs validation when a nested project path is passed as root.
-    """
+
+def _is_cwd_related_to_root(cwd_root: Path, root: Path) -> bool:
+    """Return True when cwd and root are identical or nested."""
+    resolved_root = root.resolve()
+    try:
+        return (
+            cwd_root == resolved_root
+            or cwd_root.is_relative_to(resolved_root)
+            or resolved_root.is_relative_to(cwd_root)
+        )
+    except ValueError:
+        return False
+
+
+def _collect_roadmap_candidate_roots(
+    root: Path, fs_manager: FileSystemManager | None
+) -> list[Path]:
+    """Collect ordered candidate roots used for roadmap path resolution."""
     from cortex.core.usage_context import get_current_project_root
 
     candidate_roots: list[Path] = [root.resolve()]
     usage_root = get_current_project_root()
     if usage_root is not None:
-        usage_root_resolved = usage_root.resolve()
-        if usage_root_resolved not in candidate_roots:
-            candidate_roots.append(usage_root_resolved)
+        _append_candidate_root(candidate_roots, usage_root)
+    if fs_manager is not None:
+        manager_root_raw = getattr(fs_manager, "project_root", None)
+        if isinstance(manager_root_raw, Path):
+            _append_candidate_root(candidate_roots, manager_root_raw)
+        manager_mb_raw = getattr(fs_manager, "memory_bank_dir", None)
+        if isinstance(manager_mb_raw, Path):
+            _append_candidate_root(candidate_roots, manager_mb_raw.parent.parent)
+    cwd_root = Path.cwd().resolve()
+    if _is_cwd_related_to_root(cwd_root, root):
+        _append_candidate_root(candidate_roots, cwd_root)
+    return candidate_roots
 
+
+def _resolve_existing_roadmap_path(
+    root: Path, fs_manager: FileSystemManager | None = None
+) -> Path | None:
+    """Find a roadmap path under root or one of its ancestors.
+
+    This guards docs validation when a nested project path is passed as root.
+    """
+    candidate_roots = _collect_roadmap_candidate_roots(root, fs_manager)
     searched: set[Path] = set()
     for base_root in candidate_roots:
         for candidate_root in (base_root, *base_root.parents):
@@ -177,7 +214,7 @@ async def handle_roadmap_sync_validation(
     Returns:
         JSON string with roadmap sync validation results
     """
-    roadmap_path = _resolve_existing_roadmap_path(root)
+    roadmap_path = _resolve_existing_roadmap_path(root, fs_manager)
     if roadmap_path is None:
         return _build_roadmap_sync_error_response()
 

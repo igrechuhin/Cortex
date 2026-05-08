@@ -1,425 +1,5 @@
 # Cortex Operations Log
 
-## [2026-04-30T19:32] plan | Created plan: Demo Plan ·2
-
-## [2026-04-30T19:32] plan | Created plan: Demo Plan ·3
-
-## [2026-04-30T19:32] plan | Created plan: Demo Plan ·4
-
-## [2026-04-30T19:32] plan | Created plan: Mini
-
-## [2026-04-30T19:32] plan | Created plan: Mini ·2
-
-## [2026-04-30T19:32] plan | Created plan: Demo Plan ·5
-
-## [2026-04-30T19:32] plan | Created plan: Demo Plan ·6
-
-## [2026-04-30T19:32] plan | Created plan: Test Plan
-
-## [2026-04-30T19:32] plan | Created plan: Smoke Test Plan
-
-## [2026-04-30T19:32] plan | Created plan: Smoke Test Plan ·2
-
-## [2026-04-30T19:32] plan | Created plan: Demo Plan ·7
-
-## [2026-04-30T19:32] plan | Created plan: Demo Plan ·8
-
-## [2026-04-30T19:32] plan | Created plan: Demo Plan ·9
-
-## [2026-04-30T19:32] plan | Created plan: Demo Plan ·10
-
-## [2026-04-30T19:32] plan | Created plan: Demo Plan ·11
-
-## [2026-04-30T19:32] plan | Created plan: Mini ·3
-
-## [2026-04-30T19:32] plan | Created plan: Mini ·4
-
-## [2026-04-30T19:32] plan | Created plan: Demo Plan ·12
-
-## [2026-04-30T19:32] plan | Created plan: Test Plan ·2
-
-## [2026-04-30T19:32] lint | Quality gate failed
-
-## [2026-04-30T19:32] lint | Quality gate failed ·2
-
-## [2026-04-30T19:33] lint | Quality gate failed
-
-## [2026-04-30T19:33] plan | Created plan: Test Plan
-
-## [2026-04-30T19:33] plan | Created plan: Smoke Test Plan
-
-## [2026-04-30T19:33] plan | Created plan: Demo Plan
-
-## [2026-04-30T19:33] plan | Created plan: Demo Plan ·2
-
-## [2026-04-30T19:33] plan | Created plan: Demo Plan ·3
-
-## [2026-04-30T19:33] plan | Created plan: Demo Plan ·4
-
-## [2026-04-30T19:33] plan | Created plan: Demo Plan ·5
-
-## [2026-04-30T19:33] plan | Created plan: Demo Plan ·6
-
-## [2026-04-30T19:33] plan | Created plan: Mini
-
-## [2026-04-30T19:33] plan | Created plan: Mini ·2
-
-## [2026-04-30T19:33] plan | Created plan: Smoke Test Plan ·2
-
-## [2026-04-30T19:33] plan | Created plan: Demo Plan ·7
-
-## [2026-04-30T19:33] plan | Created plan: Mini ·3
-
-## [2026-04-30T19:33] plan | Created plan: Demo Plan ·8
-
-## [2026-04-30T19:33] plan | Created plan: Demo Plan ·9
-
-## [2026-04-30T19:33] plan | Created plan: Demo Plan ·10
-
-## [2026-04-30T19:33] plan | Created plan: Demo Plan ·11
-
-## [2026-04-30T19:33] plan | Created plan: Demo Plan ·12
-
-## [2026-04-30T19:33] plan | Created plan: Mini ·4
-
-## [2026-04-30T19:33] plan | Created plan: Test Plan ·2
-
-## [2026-04-30T19:33] plan | Created plan: Test Plan ·3
-
-## [2026-04-30T19:33] lint | Quality gate failed ·2
-
-## [2026-04-30T19:33] fix | Autofix completed
-
-status=success; changed_files=None
-
-## [2026-04-30T19:34] plan | Created plan: Demo Plan
-
-## [2026-04-30T19:34] plan | Created plan: Demo Plan ·2
-
-## [2026-04-30T19:34] plan | Created plan: Mini
-
-## [2026-04-30T19:34] plan | Created plan: Demo Plan ·3
-
-## [2026-04-30T19:34] plan | Created plan: Demo Plan ·4
-
-## [2026-04-30T19:34] plan | Created plan: Demo Plan ·5
-
-## [2026-04-30T19:34] plan | Created plan: Mini ·2
-
-## [2026-04-30T19:34] plan | Created plan: Demo Plan ·6
-
-## [2026-04-30T19:34] plan | Created plan: Smoke Test Plan
-
-## [2026-04-30T19:34] plan | Created plan: Test Plan
-
-## [2026-04-30T19:34] lint | Quality gate passed
-
-## [2026-04-30T19:35] plan | Created plan: Demo Plan
-
-## [2026-04-30T19:35] plan | Created plan: Mini
-
-## [2026-04-30T19:35] plan | Created plan: Demo Plan ·2
-
-## [2026-04-30T19:35] plan | Created plan: Demo Plan ·3
-
-## [2026-04-30T19:35] plan | Created plan: Demo Plan ·4
-
-## [2026-04-30T19:35] plan | Created plan: Mini ·2
-
-## [2026-04-30T19:35] plan | Created plan: Demo Plan ·5
-
-## [2026-04-30T19:35] plan | Created plan: Demo Plan ·6
-
-## [2026-04-30T19:36] plan | Created plan: Demo Plan
-
-## [2026-04-30T19:36] plan | Created plan: Mini
-
-## [2026-04-30T19:36] plan | Created plan: Demo Plan ·2
-
-## [2026-04-30T19:36] plan | Created plan: Demo Plan ·3
-
-## [2026-04-30T19:36] plan | Created plan: Demo Plan ·4
-
-## [2026-04-30T19:36] plan | Created plan: Mini ·2
-
-## [2026-04-30T19:36] plan | Created plan: Demo Plan ·5
-
-## [2026-04-30T19:36] plan | Created plan: Demo Plan ·6
-
-## [2026-04-30T19:36] plan | Created plan: Smoke Test Plan
-
-## [2026-04-30T19:38] plan | Created plan: Test Plan
-
-## [2026-04-30T19:38] plan | Created plan: Mini
-
-## [2026-04-30T19:38] plan | Created plan: Mini ·2
-
-## [2026-04-30T19:38] plan | Created plan: Demo Plan
-
-## [2026-04-30T19:38] plan | Created plan: Demo Plan ·2
-
-## [2026-04-30T19:38] plan | Created plan: Demo Plan ·3
-
-## [2026-04-30T19:38] plan | Created plan: Demo Plan ·4
-
-## [2026-04-30T19:38] plan | Created plan: Demo Plan ·5
-
-## [2026-04-30T19:38] plan | Created plan: Demo Plan ·6
-
-## [2026-04-30T19:38] plan | Created plan: Smoke Test Plan
-
-## [2026-04-30T19:39] plan | Created plan: Test Plan
-
-## [2026-04-30T19:39] plan | Created plan: Demo Plan
-
-## [2026-04-30T19:39] plan | Created plan: Demo Plan ·2
-
-## [2026-04-30T19:39] plan | Created plan: Demo Plan ·3
-
-## [2026-04-30T19:39] plan | Created plan: Mini
-
-## [2026-04-30T19:39] plan | Created plan: Demo Plan ·4
-
-## [2026-04-30T19:39] plan | Created plan: Demo Plan ·5
-
-## [2026-04-30T19:39] plan | Created plan: Mini ·2
-
-## [2026-04-30T19:39] plan | Created plan: Demo Plan ·6
-
-## [2026-04-30T19:39] plan | Created plan: Smoke Test Plan
-
-## [2026-04-30T19:39] lint | Quality gate failed
-
-## [2026-04-30T19:39] lint | Quality gate failed ·2
-
-## [2026-04-30T19:39] plan | Created plan: Smoke Test Plan ·2
-
-## [2026-04-30T19:39] plan | Created plan: Test Plan ·2
-
-## [2026-04-30T19:39] plan | Created plan: Test Plan ·3
-
-## [2026-04-30T19:40] plan | Created plan: Test Plan
-
-## [2026-04-30T19:40] plan | Created plan: Demo Plan
-
-## [2026-04-30T19:40] plan | Created plan: Demo Plan ·2
-
-## [2026-04-30T19:40] plan | Created plan: Demo Plan ·3
-
-## [2026-04-30T19:40] plan | Created plan: Demo Plan ·4
-
-## [2026-04-30T19:40] plan | Created plan: Mini
-
-## [2026-04-30T19:40] plan | Created plan: Demo Plan ·5
-
-## [2026-04-30T19:40] plan | Created plan: Demo Plan ·6
-
-## [2026-04-30T19:40] plan | Created plan: Mini ·2
-
-## [2026-04-30T19:40] plan | Created plan: Smoke Test Plan
-
-## [2026-04-30T19:41] plan | Created plan: Smoke Test Plan
-
-## [2026-04-30T19:41] plan | Created plan: Test Plan
-
-## [2026-04-30T19:41] plan | Created plan: Mini
-
-## [2026-04-30T19:41] plan | Created plan: Demo Plan
-
-## [2026-04-30T19:41] plan | Created plan: Demo Plan ·2
-
-## [2026-04-30T19:41] plan | Created plan: Demo Plan ·3
-
-## [2026-04-30T19:41] plan | Created plan: Demo Plan ·4
-
-## [2026-04-30T19:41] plan | Created plan: Mini ·2
-
-## [2026-04-30T19:41] plan | Created plan: Demo Plan ·5
-
-## [2026-04-30T19:41] plan | Created plan: Demo Plan ·6
-
-## [2026-05-02T23:58] plan | Created plan: Test Plan
-
-## [2026-05-02T23:59] lint | Quality gate failed
-
-## [2026-05-02T23:59] plan | Created plan: Demo Plan
-
-## [2026-05-02T23:59] plan | Created plan: Demo Plan ·2
-
-## [2026-05-02T23:59] plan | Created plan: Demo Plan ·3
-
-## [2026-05-02T23:59] plan | Created plan: Mini
-
-## [2026-05-02T23:59] plan | Created plan: Demo Plan ·4
-
-## [2026-05-02T23:59] plan | Created plan: Mini ·2
-
-## [2026-05-02T23:59] plan | Created plan: Demo Plan ·5
-
-## [2026-05-02T23:59] plan | Created plan: Demo Plan ·6
-
-## [2026-05-02T23:59] plan | Created plan: Smoke Test Plan
-
-## [2026-05-03T00:00] plan | Created plan: Demo Plan
-
-## [2026-05-03T00:00] plan | Created plan: Demo Plan ·2
-
-## [2026-05-03T00:00] plan | Created plan: Demo Plan ·3
-
-## [2026-05-03T00:00] plan | Created plan: Demo Plan ·4
-
-## [2026-05-03T00:00] plan | Created plan: Demo Plan ·5
-
-## [2026-05-03T00:00] plan | Created plan: Mini
-
-## [2026-05-03T00:00] plan | Created plan: Mini ·2
-
-## [2026-05-03T00:00] plan | Created plan: Demo Plan ·6
-
-## [2026-05-03T00:00] plan | Created plan: Smoke Test Plan
-
-## [2026-05-03T00:01] lint | Quality gate failed
-
-## [2026-05-03T00:01] plan | Created plan: Test Plan
-
-## [2026-05-03T00:02] lint | Quality gate failed
-
-## [2026-05-03T00:03] plan | Created plan: Demo Plan
-
-## [2026-05-03T00:03] plan | Created plan: Mini
-
-## [2026-05-03T00:03] plan | Created plan: Demo Plan ·2
-
-## [2026-05-03T00:03] plan | Created plan: Mini ·2
-
-## [2026-05-03T00:03] plan | Created plan: Demo Plan ·3
-
-## [2026-05-03T00:03] plan | Created plan: Demo Plan ·4
-
-## [2026-05-03T00:03] plan | Created plan: Demo Plan ·5
-
-## [2026-05-03T00:03] plan | Created plan: Demo Plan ·6
-
-## [2026-05-03T00:03] plan | Created plan: Smoke Test Plan
-
-## [2026-05-03T00:03] plan | Created plan: Test Plan
-
-## [2026-05-03T00:04] plan | Created plan: Test Plan
-
-## [2026-05-03T00:04] lint | Quality gate failed
-
-## [2026-05-03T00:04] plan | Created plan: Smoke Test Plan
-
-## [2026-05-03T00:05] plan | Created plan: Mini
-
-## [2026-05-03T00:05] plan | Created plan: Demo Plan
-
-## [2026-05-03T00:05] plan | Created plan: Demo Plan ·2
-
-## [2026-05-03T00:05] plan | Created plan: Demo Plan ·3
-
-## [2026-05-03T00:05] plan | Created plan: Demo Plan ·4
-
-## [2026-05-03T00:05] plan | Created plan: Demo Plan ·5
-
-## [2026-05-03T00:05] plan | Created plan: Mini ·2
-
-## [2026-05-03T00:05] plan | Created plan: Demo Plan ·6
-
-## [2026-05-03T07:38] plan | Created plan: Smoke Test Plan
-
-## [2026-05-03T07:38] plan | Created plan: Demo Plan
-
-## [2026-05-03T07:38] plan | Created plan: Demo Plan ·2
-
-## [2026-05-03T07:38] plan | Created plan: Mini
-
-## [2026-05-03T07:38] plan | Created plan: Demo Plan ·3
-
-## [2026-05-03T07:38] plan | Created plan: Mini ·2
-
-## [2026-05-03T07:38] plan | Created plan: Demo Plan ·4
-
-## [2026-05-03T07:38] plan | Created plan: Demo Plan ·5
-
-## [2026-05-03T07:38] plan | Created plan: Demo Plan ·6
-
-## [2026-05-03T07:38] plan | Created plan: Test Plan
-
-## [2026-05-03T07:39] lint | Quality gate failed
-
-## [2026-05-03T07:40] plan | Created plan: Smoke Test Plan
-
-## [2026-05-03T07:40] plan | Created plan: Demo Plan
-
-## [2026-05-03T07:40] plan | Created plan: Demo Plan ·2
-
-## [2026-05-03T07:40] plan | Created plan: Demo Plan ·3
-
-## [2026-05-03T07:40] plan | Created plan: Demo Plan ·4
-
-## [2026-05-03T07:40] plan | Created plan: Mini
-
-## [2026-05-03T07:40] plan | Created plan: Mini ·2
-
-## [2026-05-03T07:40] plan | Created plan: Demo Plan ·5
-
-## [2026-05-03T07:40] plan | Created plan: Demo Plan ·6
-
-## [2026-05-03T07:40] plan | Created plan: Test Plan
-
-## [2026-05-03T07:40] fix | Autofix completed
-
-status=success; changed_files=None
-
-## [2026-05-03T07:45] plan | Created plan: Test Plan
-
-## [2026-05-03T07:45] plan | Created plan: Demo Plan
-
-## [2026-05-03T07:45] plan | Created plan: Demo Plan ·2
-
-## [2026-05-03T07:45] plan | Created plan: Mini
-
-## [2026-05-03T07:45] plan | Created plan: Demo Plan ·3
-
-## [2026-05-03T07:45] plan | Created plan: Demo Plan ·4
-
-## [2026-05-03T07:45] plan | Created plan: Mini ·2
-
-## [2026-05-03T07:45] plan | Created plan: Demo Plan ·5
-
-## [2026-05-03T07:45] plan | Created plan: Demo Plan ·6
-
-## [2026-05-03T07:46] plan | Created plan: Smoke Test Plan
-
-## [2026-05-03T07:46] plan | Created plan: Test Plan
-
-## [2026-05-03T07:46] plan | Created plan: Smoke Test Plan ·2
-
-## [2026-05-03T07:46] plan | Created plan: Demo Plan
-
-## [2026-05-03T07:46] plan | Created plan: Demo Plan ·2
-
-## [2026-05-03T07:46] plan | Created plan: Demo Plan ·3
-
-## [2026-05-03T07:46] plan | Created plan: Mini
-
-## [2026-05-03T07:46] plan | Created plan: Demo Plan ·4
-
-## [2026-05-03T07:46] plan | Created plan: Demo Plan ·5
-
-## [2026-05-03T07:46] plan | Created plan: Mini ·2
-
-## [2026-05-03T07:46] plan | Created plan: Demo Plan ·6
-
-## [2026-05-03T07:46] lint | Quality gate failed
-
-## [2026-05-03T07:46] lint | Quality gate failed ·2
-
-## [2026-05-03T07:46] lint | Quality gate failed ·3
-
-## [2026-05-03T07:47] plan | Created plan: Test Plan
-
 ## [2026-05-03T07:47] plan | Created plan: Test Plan ·2
 
 ## [2026-05-03T07:47] plan | Created plan: Demo Plan
@@ -2025,3 +1605,423 @@ status=success; changed_files=None
 ## [2026-05-08T13:50] plan | Created plan: Test Plan
 
 ## [2026-05-08T13:50] lint | Quality gate passed
+
+## [2026-05-08T13:51] plan | Created plan: Demo Plan
+
+## [2026-05-08T13:51] plan | Created plan: Demo Plan ·2
+
+## [2026-05-08T13:51] plan | Created plan: Demo Plan ·3
+
+## [2026-05-08T13:51] plan | Created plan: Demo Plan ·4
+
+## [2026-05-08T13:51] plan | Created plan: Mini
+
+## [2026-05-08T13:51] plan | Created plan: Mini ·2
+
+## [2026-05-08T13:51] plan | Created plan: Demo Plan ·5
+
+## [2026-05-08T13:51] plan | Created plan: Demo Plan ·6
+
+## [2026-05-08T13:51] plan | Created plan: Test Plan
+
+## [2026-05-08T13:51] plan | Created plan: Demo Plan ·7
+
+## [2026-05-08T13:51] plan | Created plan: Mini ·3
+
+## [2026-05-08T13:51] plan | Created plan: Demo Plan ·8
+
+## [2026-05-08T13:51] plan | Created plan: Demo Plan ·9
+
+## [2026-05-08T13:51] plan | Created plan: Demo Plan ·10
+
+## [2026-05-08T13:51] plan | Created plan: Demo Plan ·11
+
+## [2026-05-08T13:51] plan | Created plan: Mini ·4
+
+## [2026-05-08T13:51] plan | Created plan: Demo Plan ·12
+
+## [2026-05-08T13:51] plan | Created plan: Smoke Test Plan
+
+## [2026-05-08T13:51] plan | Created plan: Test Plan ·2
+
+## [2026-05-08T13:51] plan | Created plan: Demo Plan ·13
+
+## [2026-05-08T13:51] plan | Created plan: Demo Plan ·14
+
+## [2026-05-08T13:51] plan | Created plan: Demo Plan ·15
+
+## [2026-05-08T13:51] plan | Created plan: Mini ·5
+
+## [2026-05-08T13:51] plan | Created plan: Mini ·6
+
+## [2026-05-08T13:51] plan | Created plan: Demo Plan ·16
+
+## [2026-05-08T13:51] plan | Created plan: Demo Plan ·17
+
+## [2026-05-08T13:51] plan | Created plan: Demo Plan ·18
+
+## [2026-05-08T13:51] plan | Created plan: Test Plan ·3
+
+## [2026-05-08T13:52] plan | Created plan: Smoke Test Plan
+
+## [2026-05-08T13:52] plan | Created plan: Mini
+
+## [2026-05-08T13:52] plan | Created plan: Mini ·2
+
+## [2026-05-08T13:52] plan | Created plan: Demo Plan
+
+## [2026-05-08T13:52] plan | Created plan: Demo Plan ·2
+
+## [2026-05-08T13:52] plan | Created plan: Demo Plan ·3
+
+## [2026-05-08T13:52] plan | Created plan: Demo Plan ·4
+
+## [2026-05-08T13:52] plan | Created plan: Demo Plan ·5
+
+## [2026-05-08T13:52] plan | Created plan: Demo Plan ·6
+
+## [2026-05-08T13:52] plan | Created plan: Smoke Test Plan ·2
+
+## [2026-05-08T13:52] plan | Created plan: Smoke Test Plan ·3
+
+## [2026-05-08T13:54] plan | Created plan: Test Plan
+
+## [2026-05-08T13:56] plan | Created plan: Smoke Test Plan
+
+## [2026-05-08T13:56] plan | Created plan: Test Plan
+
+## [2026-05-08T13:56] plan | Created plan: Mini
+
+## [2026-05-08T13:56] plan | Created plan: Mini ·2
+
+## [2026-05-08T13:56] plan | Created plan: Demo Plan
+
+## [2026-05-08T13:56] plan | Created plan: Demo Plan ·2
+
+## [2026-05-08T13:56] plan | Created plan: Demo Plan ·3
+
+## [2026-05-08T13:56] plan | Created plan: Demo Plan ·4
+
+## [2026-05-08T13:56] plan | Created plan: Demo Plan ·5
+
+## [2026-05-08T13:56] plan | Created plan: Demo Plan ·6
+
+## [2026-05-08T13:56] lint | Quality gate passed
+
+## [2026-05-08T13:57] fix | Autofix completed
+
+status=success; changed_files=None
+
+## [2026-05-08T13:58] plan | Created plan: Demo Plan
+
+## [2026-05-08T13:58] plan | Created plan: Demo Plan ·2
+
+## [2026-05-08T13:58] plan | Created plan: Demo Plan ·3
+
+## [2026-05-08T13:58] plan | Created plan: Demo Plan ·4
+
+## [2026-05-08T13:58] plan | Created plan: Mini
+
+## [2026-05-08T13:58] plan | Created plan: Demo Plan ·5
+
+## [2026-05-08T13:58] plan | Created plan: Mini ·2
+
+## [2026-05-08T13:58] plan | Created plan: Demo Plan ·6
+
+## [2026-05-08T13:58] plan | Created plan: Smoke Test Plan
+
+## [2026-05-08T13:58] plan | Created plan: Test Plan
+
+## [2026-05-08T13:59] lint | Quality gate passed
+
+## [2026-05-08T14:05] plan | Created plan: Smoke Test Plan
+
+## [2026-05-08T14:05] plan | Created plan: Demo Plan
+
+## [2026-05-08T14:05] plan | Created plan: Demo Plan ·2
+
+## [2026-05-08T14:05] plan | Created plan: Mini
+
+## [2026-05-08T14:05] plan | Created plan: Demo Plan ·3
+
+## [2026-05-08T14:05] plan | Created plan: Mini ·2
+
+## [2026-05-08T14:05] plan | Created plan: Demo Plan ·4
+
+## [2026-05-08T14:05] plan | Created plan: Demo Plan ·5
+
+## [2026-05-08T14:05] plan | Created plan: Demo Plan ·6
+
+## [2026-05-08T14:05] plan | Created plan: Test Plan
+
+## [2026-05-08T14:06] lint | Quality gate passed
+
+## [2026-05-08T14:09] plan | Created plan: Smoke Test Plan
+
+## [2026-05-08T14:10] plan | Created plan: Test Plan
+
+## [2026-05-08T14:11] plan | Created plan: Mini
+
+## [2026-05-08T14:11] plan | Created plan: Mini ·2
+
+## [2026-05-08T14:11] plan | Created plan: Demo Plan
+
+## [2026-05-08T14:11] plan | Created plan: Demo Plan ·2
+
+## [2026-05-08T14:11] plan | Created plan: Demo Plan ·3
+
+## [2026-05-08T14:11] plan | Created plan: Demo Plan ·4
+
+## [2026-05-08T14:11] plan | Created plan: Demo Plan ·5
+
+## [2026-05-08T14:11] plan | Created plan: Demo Plan ·6
+
+## [2026-05-08T14:11] plan | Created plan: Smoke Test Plan
+
+## [2026-05-08T14:11] plan | Created plan: Test Plan
+
+## [2026-05-08T14:11] plan | Created plan: Demo Plan ·7
+
+## [2026-05-08T14:11] plan | Created plan: Demo Plan ·8
+
+## [2026-05-08T14:11] plan | Created plan: Demo Plan ·9
+
+## [2026-05-08T14:11] plan | Created plan: Demo Plan ·10
+
+## [2026-05-08T14:11] plan | Created plan: Demo Plan ·11
+
+## [2026-05-08T14:11] plan | Created plan: Mini ·3
+
+## [2026-05-08T14:11] plan | Created plan: Mini ·4
+
+## [2026-05-08T14:11] plan | Created plan: Demo Plan ·12
+
+## [2026-05-08T14:38] plan | Created plan: Demo Plan
+
+## [2026-05-08T14:38] plan | Created plan: Demo Plan ·2
+
+## [2026-05-08T14:38] plan | Created plan: Smoke Test Plan
+
+## [2026-05-08T14:38] plan | Created plan: Test Plan
+
+## [2026-05-08T14:38] plan | Created plan: Demo Plan ·3
+
+## [2026-05-08T14:38] plan | Created plan: Mini
+
+## [2026-05-08T14:38] plan | Created plan: Mini ·2
+
+## [2026-05-08T14:38] plan | Created plan: Demo Plan ·4
+
+## [2026-05-08T14:38] plan | Created plan: Demo Plan ·5
+
+## [2026-05-08T14:38] plan | Created plan: Demo Plan ·6
+
+## [2026-05-08T14:38] lint | Quality gate failed
+
+## [2026-05-08T14:39] plan | Created plan: Test Plan
+
+## [2026-05-08T14:39] plan | Created plan: Test Plan ·2
+
+## [2026-05-08T14:40] plan | Created plan: Test Plan
+
+## [2026-05-08T14:40] plan | Created plan: Smoke Test Plan
+
+## [2026-05-08T14:41] plan | Created plan: Test Plan
+
+## [2026-05-08T14:41] plan | Created plan: Smoke Test Plan
+
+## [2026-05-08T14:41] plan | Created plan: Demo Plan
+
+## [2026-05-08T14:41] plan | Created plan: Demo Plan ·2
+
+## [2026-05-08T14:41] plan | Created plan: Demo Plan ·3
+
+## [2026-05-08T14:41] plan | Created plan: Demo Plan ·4
+
+## [2026-05-08T14:41] plan | Created plan: Demo Plan ·5
+
+## [2026-05-08T14:41] plan | Created plan: Mini
+
+## [2026-05-08T14:41] plan | Created plan: Mini ·2
+
+## [2026-05-08T14:41] plan | Created plan: Demo Plan ·6
+
+## [2026-05-08T14:42] lint | Quality gate passed
+
+## [2026-05-08T14:42] plan | Created plan: Smoke Test Plan
+
+## [2026-05-08T14:42] plan | Created plan: Demo Plan
+
+## [2026-05-08T14:42] plan | Created plan: Mini
+
+## [2026-05-08T14:42] plan | Created plan: Demo Plan ·2
+
+## [2026-05-08T14:42] plan | Created plan: Mini ·2
+
+## [2026-05-08T14:42] plan | Created plan: Demo Plan ·3
+
+## [2026-05-08T14:42] plan | Created plan: Demo Plan ·4
+
+## [2026-05-08T14:42] plan | Created plan: Demo Plan ·5
+
+## [2026-05-08T14:42] plan | Created plan: Demo Plan ·6
+
+## [2026-05-08T14:43] plan | Created plan: Demo Plan
+
+## [2026-05-08T14:43] plan | Created plan: Demo Plan ·2
+
+## [2026-05-08T14:43] plan | Created plan: Demo Plan ·3
+
+## [2026-05-08T14:43] plan | Created plan: Demo Plan ·4
+
+## [2026-05-08T14:43] plan | Created plan: Demo Plan ·5
+
+## [2026-05-08T14:43] plan | Created plan: Mini
+
+## [2026-05-08T14:43] plan | Created plan: Mini ·2
+
+## [2026-05-08T14:43] plan | Created plan: Demo Plan ·6
+
+## [2026-05-08T14:43] plan | Created plan: Demo Plan ·7
+
+## [2026-05-08T14:43] plan | Created plan: Demo Plan ·8
+
+## [2026-05-08T14:43] plan | Created plan: Demo Plan ·9
+
+## [2026-05-08T14:43] plan | Created plan: Mini ·3
+
+## [2026-05-08T14:43] plan | Created plan: Mini ·4
+
+## [2026-05-08T14:43] plan | Created plan: Demo Plan ·10
+
+## [2026-05-08T14:43] plan | Created plan: Demo Plan ·11
+
+## [2026-05-08T14:43] plan | Created plan: Demo Plan ·12
+
+## [2026-05-08T14:43] plan | Created plan: Smoke Test Plan
+
+## [2026-05-08T14:52] plan | Created plan: Smoke Test Plan
+
+## [2026-05-08T14:52] plan | Created plan: Demo Plan
+
+## [2026-05-08T14:52] plan | Created plan: Mini
+
+## [2026-05-08T14:52] plan | Created plan: Mini ·2
+
+## [2026-05-08T14:52] plan | Created plan: Demo Plan ·2
+
+## [2026-05-08T14:52] plan | Created plan: Demo Plan ·3
+
+## [2026-05-08T14:52] plan | Created plan: Demo Plan ·4
+
+## [2026-05-08T14:52] plan | Created plan: Demo Plan ·5
+
+## [2026-05-08T14:52] plan | Created plan: Demo Plan ·6
+
+## [2026-05-08T14:56] plan | Created plan: Smoke Test Plan
+
+## [2026-05-08T14:56] plan | Created plan: Demo Plan
+
+## [2026-05-08T14:56] plan | Created plan: Demo Plan ·2
+
+## [2026-05-08T14:56] plan | Created plan: Mini
+
+## [2026-05-08T14:56] plan | Created plan: Demo Plan ·3
+
+## [2026-05-08T14:56] plan | Created plan: Mini ·2
+
+## [2026-05-08T14:56] plan | Created plan: Demo Plan ·4
+
+## [2026-05-08T14:56] plan | Created plan: Test Plan
+
+## [2026-05-08T14:56] plan | Created plan: Demo Plan ·5
+
+## [2026-05-08T14:56] plan | Created plan: Demo Plan ·6
+
+## [2026-05-08T14:56] lint | Quality gate failed
+
+## [2026-05-08T14:58] plan | Created plan: Test Plan
+
+## [2026-05-08T14:58] plan | Created plan: Smoke Test Plan
+
+## [2026-05-08T14:58] plan | Created plan: Demo Plan
+
+## [2026-05-08T14:58] plan | Created plan: Demo Plan ·2
+
+## [2026-05-08T14:58] plan | Created plan: Demo Plan ·3
+
+## [2026-05-08T14:58] plan | Created plan: Mini
+
+## [2026-05-08T14:58] plan | Created plan: Mini ·2
+
+## [2026-05-08T14:58] plan | Created plan: Demo Plan ·4
+
+## [2026-05-08T14:58] plan | Created plan: Demo Plan ·5
+
+## [2026-05-08T14:58] plan | Created plan: Demo Plan ·6
+
+## [2026-05-08T14:59] lint | Quality gate passed
+
+## [2026-05-08T14:59] plan | Created plan: Test Plan
+
+## [2026-05-08T15:00] plan | Created plan: Smoke Test Plan
+
+## [2026-05-08T15:00] plan | Created plan: Test Plan
+
+## [2026-05-08T15:00] plan | Created plan: Demo Plan
+
+## [2026-05-08T15:00] plan | Created plan: Demo Plan ·2
+
+## [2026-05-08T15:00] plan | Created plan: Mini
+
+## [2026-05-08T15:00] plan | Created plan: Mini ·2
+
+## [2026-05-08T15:00] plan | Created plan: Demo Plan ·3
+
+## [2026-05-08T15:00] plan | Created plan: Demo Plan ·4
+
+## [2026-05-08T15:00] plan | Created plan: Demo Plan ·5
+
+## [2026-05-08T15:00] plan | Created plan: Demo Plan ·6
+
+## [2026-05-08T15:01] plan | Created plan: Smoke Test Plan
+
+## [2026-05-08T15:01] lint | Quality gate passed
+
+## [2026-05-08T15:01] plan | Created plan: Demo Plan
+
+## [2026-05-08T15:01] plan | Created plan: Mini
+
+## [2026-05-08T15:01] plan | Created plan: Demo Plan ·2
+
+## [2026-05-08T15:01] plan | Created plan: Mini ·2
+
+## [2026-05-08T15:01] plan | Created plan: Demo Plan ·3
+
+## [2026-05-08T15:01] plan | Created plan: Demo Plan ·4
+
+## [2026-05-08T15:01] plan | Created plan: Demo Plan ·5
+
+## [2026-05-08T15:01] plan | Created plan: Demo Plan ·6
+
+## [2026-05-08T15:04] plan | Created plan: Smoke Test Plan
+
+## [2026-05-08T15:04] plan | Created plan: Test Plan
+
+## [2026-05-08T15:04] plan | Created plan: Demo Plan
+
+## [2026-05-08T15:04] plan | Created plan: Demo Plan ·2
+
+## [2026-05-08T15:04] plan | Created plan: Mini
+
+## [2026-05-08T15:04] plan | Created plan: Demo Plan ·3
+
+## [2026-05-08T15:04] plan | Created plan: Demo Plan ·4
+
+## [2026-05-08T15:04] plan | Created plan: Mini ·2
+
+## [2026-05-08T15:04] lint | Quality gate passed
+
+## [2026-05-08T15:05] fix | Autofix completed
+
+status=success; changed_files=None
