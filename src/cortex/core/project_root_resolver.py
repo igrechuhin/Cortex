@@ -232,6 +232,14 @@ async def resolve_project_root_async(
     """
     if project_root:
         return await _return_root_with_wiki_bootstrap(get_project_root(project_root))
+    # AI: MCP bridges (e.g. Cursor) may not expose roots/list, so fallback CWD can
+    # point to the Cortex repo instead of the active workspace. Reuse usage-context
+    # root first when already set by ensure_usage_context in the tool pipeline.
+    from cortex.core.usage_context import get_current_project_root
+
+    usage_root = get_current_project_root()
+    if usage_root is not None:
+        return await _return_root_with_wiki_bootstrap(usage_root)
     use_fallback = os.environ.get("CORTEX_USE_FALLBACK_ROOT", "").strip().lower()
     if use_fallback in ("1", "true", "yes"):
         logger.info(

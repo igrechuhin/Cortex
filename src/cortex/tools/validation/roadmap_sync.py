@@ -23,18 +23,27 @@ def _resolve_existing_roadmap_path(root: Path) -> Path | None:
 
     This guards docs validation when a nested project path is passed as root.
     """
-    memory_bank_dir = get_cortex_path(root, CortexResourceType.MEMORY_BANK)
-    roadmap_path = memory_bank_dir / MemoryBankFile.ROADMAP
-    if roadmap_path.exists():
-        return roadmap_path
+    from cortex.core.usage_context import get_current_project_root
 
-    for candidate_root in root.resolve().parents:
-        candidate = (
-            get_cortex_path(candidate_root, CortexResourceType.MEMORY_BANK)
-            / MemoryBankFile.ROADMAP
-        )
-        if candidate.exists():
-            return candidate
+    candidate_roots: list[Path] = [root.resolve()]
+    usage_root = get_current_project_root()
+    if usage_root is not None:
+        usage_root_resolved = usage_root.resolve()
+        if usage_root_resolved not in candidate_roots:
+            candidate_roots.append(usage_root_resolved)
+
+    searched: set[Path] = set()
+    for base_root in candidate_roots:
+        for candidate_root in (base_root, *base_root.parents):
+            if candidate_root in searched:
+                continue
+            searched.add(candidate_root)
+            candidate = (
+                get_cortex_path(candidate_root, CortexResourceType.MEMORY_BANK)
+                / MemoryBankFile.ROADMAP
+            )
+            if candidate.exists():
+                return candidate
     return None
 
 

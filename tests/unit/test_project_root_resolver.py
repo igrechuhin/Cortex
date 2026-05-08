@@ -61,6 +61,23 @@ class TestResolveProjectRootAsync:
         assert result == tmp_path.resolve()
 
     @pytest.mark.asyncio
+    async def test_uses_usage_context_root_before_fallback(
+        self, tmp_path: Path
+    ) -> None:
+        """If usage context root is set, resolver must prefer it over fallback CWD."""
+        get_cortex_path(tmp_path, CortexResourceType.MEMORY_BANK).mkdir(parents=True)
+        with (
+            patch(
+                "cortex.core.usage_context.get_current_project_root",
+                return_value=tmp_path,
+            ),
+            patch("cortex.core.project_root_resolver.get_project_root") as mock_get,
+        ):
+            result = await resolve_project_root_async(None, None)
+            assert result == tmp_path.resolve()
+            mock_get.assert_not_called()
+
+    @pytest.mark.asyncio
     async def test_when_ctx_has_roots_uses_first_file_uri(self, tmp_path: Path) -> None:
         root_uri = f"file://{tmp_path}"
         mock_root = MagicMock()

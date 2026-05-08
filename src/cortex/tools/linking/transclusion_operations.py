@@ -9,6 +9,8 @@ import logging
 from pathlib import Path
 from typing import cast
 
+import cortex.core.project_root_resolver as project_root_resolver
+import cortex.managers.initialization as managers_initialization
 from cortex.core.constants import MCP_TOOL_TIMEOUT_MEDIUM
 from cortex.core.context_logging import MCPContext, log_client
 from cortex.core.file_system import FileSystemManager
@@ -20,14 +22,12 @@ from cortex.core.mcp_stability import (
 )
 from cortex.core.models import ModelDict
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
-from cortex.core.project_root_resolver import resolve_project_root_async
 from cortex.core.usage_context import (
     get_current_project_root,
     get_or_resolve_project_root,
 )
 from cortex.linking.parser import LinkParser
 from cortex.linking.transclusion_engine import TransclusionEngine
-from cortex.managers.initialization import get_managers
 from cortex.managers.types import ManagersDict
 from cortex.managers.utils import get_manager
 from cortex.tools.context.load_auxiliary_models import (
@@ -40,6 +40,19 @@ from cortex.tools.linking.transclusion_response_helpers import (
 )
 
 logger = logging.getLogger(__name__)
+
+
+async def resolve_project_root_async(
+    project_root: str | None,
+    ctx: MCPContext | None,
+) -> Path:
+    """Forwarder kept patchable for tests while delegating to core resolver."""
+    return await project_root_resolver.resolve_project_root_async(project_root, ctx)
+
+
+async def get_managers(root_path: Path) -> ManagersDict:
+    """Forwarder kept patchable for tests while delegating to managers initialization."""
+    return await managers_initialization.get_managers(root_path)
 
 
 def _memory_bank_dir_exists(root: Path) -> bool:
@@ -338,7 +351,7 @@ async def _validate_transclusion_file(
             error_type="PathError",
         )
 
-    if not file_path.exists():
+    if not file_path.exists() and file_path.is_relative_to(memory_bank_dir):
         return ResolveTransclusionsErrorResult(
             error=f"File not found: {file_name}",
             file=file_name,
