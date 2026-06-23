@@ -126,8 +126,10 @@ class LanguageDetector:
         ).exists()
 
     def _is_swift_project(self) -> bool:
-        """Check if project is Swift (Swift Package Manager)."""
-        return (self.project_root / "Package.swift").exists()
+        """Check if project is Swift (SPM or Xcode)."""
+        if (self.project_root / "Package.swift").exists():
+            return True
+        return any(self.project_root.glob("*.xcodeproj"))
 
     def _is_kotlin_project(self) -> bool:
         """Check if project is Kotlin (Gradle/Maven with Kotlin)."""
@@ -246,14 +248,17 @@ class LanguageDetector:
         )
 
     def _detect_swift_tooling(self) -> LanguageInfo:
-        """Detect Swift tooling (Swift Package Manager)."""
+        """Detect Swift tooling (SPM or Xcode)."""
+        is_xcode = not (self.project_root / "Package.swift").exists() and any(
+            self.project_root.glob("*.xcodeproj")
+        )
         return LanguageInfo(
             language="swift",
-            test_framework="swift test",
-            formatter="swift format",
+            test_framework="xcodebuild test" if is_xcode else "swift test",
+            formatter="swift format" if not is_xcode else None,
             linter=None,
-            type_checker="swift build",
-            build_tool="swift",
+            type_checker="xcodebuild" if is_xcode else "swift build",
+            build_tool="xcodebuild" if is_xcode else "swift",
             confidence=0.9,
         )
 
