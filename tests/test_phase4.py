@@ -94,9 +94,9 @@ class TestRelevanceScorer:
         }
 
         files_metadata: dict[str, FileMetadataForScoring] = {
-            "auth.md": FileMetadataForScoring(last_modified="2025-12-19T10:00:00Z"),
-            "database.md": FileMetadataForScoring(last_modified="2025-11-01T10:00:00Z"),
-            "ui.md": FileMetadataForScoring(last_modified="2025-10-01T10:00:00Z"),
+            "auth.md": FileMetadataForScoring(last_modified="2026-06-20T10:00:00Z"),
+            "database.md": FileMetadataForScoring(last_modified="2026-05-01T10:00:00Z"),
+            "ui.md": FileMetadataForScoring(last_modified="2026-04-01T10:00:00Z"),
         }
 
         scores = await scorer.score_files(

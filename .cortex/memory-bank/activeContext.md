@@ -2,24 +2,38 @@
 
 **This file records completed work only.** For current status and upcoming work see [roadmap.md](roadmap.md).
 
+## Completed Work (2026-06-23)
+
+- **Synapse scripts: resolve 99 pyright type errors** - COMPLETE (2026-06-23) - <!-- memory_type: status -->
+  Fixed untyped dict/CompletedProcess generics, unused call results, implicit string concatenations, private symbol imports, and missing async fixture type annotations across 8 scripts in `.cortex/synapse/scripts/python/` and `.cortex/synapse/scripts/swift/`.
+
+- **Docs gate test: replace Any with concrete types** - COMPLETE (2026-06-23) - <!-- memory_type: status -->
+  Replaced `from typing import Any` with `ValidateCheckTypeName`, `MCPContext | None`, and `ModelDict` concrete types in docs gate test.
+
+- **tests/test_phase3.py: stale date fix and function refactor** - COMPLETE (2026-06-23) - <!-- memory_type: status -->
+  Updated stale date "2025-12-19" to "2026-06-20" for freshness score test; refactored 3 overlong test functions (49, 37, 34 lines) into helpers <=30 lines with concrete return types `ValidationResult` and `QualityScoreResult`.
+
+- **tests/test_phase4.py: stale date range fix** - COMPLETE (2026-06-23) - <!-- memory_type: status -->
+  Updated stale dates (2025-10-01..2025-12-19 -> 2026-04-01..2026-06-20) that caused floating-point equality failures. CI quality gate green.
+
 ## Completed Work (2026-05-08)
 
-- ✅ **Roadmap sync resolver hardening** - COMPLETE (2026-05-08) - <!-- memory_type: problem -->
+- **Roadmap sync resolver hardening** - COMPLETE (2026-05-08) - <!-- memory_type: problem -->
 
-- ✅ **Validation roadmap sync hardening committed** - COMPLETE (2026-05-08) - <!-- memory_type: status -->
+- **Validation roadmap sync hardening committed** - COMPLETE (2026-05-08) - <!-- memory_type: status -->
 Committed roadmap sync resolver fallback and regression tests after passing quality/parity gates in commit pipeline.
 Added fs_manager.memory_bank_dir fallback and diagnostic error fields in roadmap sync validation, with regression coverage for manager-root mismatch.
 
 ## Completed Work (2026-05-04)
 
-- ✅ **SwiftAdapter: skip line coverage when teardown signal drops Swift Testing profraw** - COMPLETE (2026-05-04) - <!-- memory_type: status -->
+- **SwiftAdapter: skip line coverage when teardown signal drops Swift Testing profraw** - COMPLETE (2026-05-04) - <!-- memory_type: status -->
 Added _coverage_json_absent_teardown to detect SwiftTestOutcome.teardown_signal after swift test; when JSON export is missing and the harness exited via signal, skip merging misleading partial profraw into coverage fraction. Wired outcome through _coverage_gate_outcome and _collect_line_coverage_fraction; added logging. Memory-bank log.md refreshed for this session.
 
 ## Completed Work (2026-05-03)
 
-- ✅ **Session index, log, debug prompt, Synapse Swift scripts** - COMPLETE (2026-05-03) - <!-- memory_type: status -->
+- **Session index, log, debug prompt, Synapse Swift scripts** - COMPLETE (2026-05-03) - <!-- memory_type: status -->
 
-- ✅ **MCP semaphores bound to event loop; root cache lock reset** - COMPLETE (2026-05-03) - <!-- memory_type: preference -->
+- **MCP semaphores bound to event loop; root cache lock reset** - COMPLETE (2026-05-03) - <!-- memory_type: preference -->
 Tracked asyncio semaphores for concurrent tools/resources and long-running tools are recreated when the running loop changes to avoid cross-loop use. clear_cached_root now clears the asyncio.Lock placeholder so the lock is recreated on the current loop after tests or overrides.
 Updated .cortex/index.json; memory-bank log.md maintenance; small edit to debug-external-integration.md; Synapse submodule at formatted Swift public-docs check scripts (check_public_docs + tests).
 
@@ -324,6 +338,8 @@ Updated .cortex/index.json; memory-bank log.md maintenance; small edit to debug-
 Next roadmap item: **[Fast-Forward vs. Step-by-Step Planning Modes](../plans/archive/Other/fast-forward-vs-step-by-step-modes.md)** (see [roadmap.md](roadmap.md) pending plans).
 
 ## Recent Changes
+
+CI quality gate green (2026-06-23): synapse scripts fully typed (99 pyright errors resolved across 8 files); docs gate test uses concrete types instead of Any; test_phase3 and test_phase4 stale dates fixed.
 
 Refactor in progress (2026-04-14): split `session/brief.py` and `optimization/handlers.py` into `brief_cap.py`, `brief_loaders.py`, `context_appenders.py`, and `context_loaders.py`; compatibility symbols in `handlers.py` were retained for existing tests while finishing structural debt cleanup.
 

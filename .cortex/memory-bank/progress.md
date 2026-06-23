@@ -1,5 +1,13 @@
 # Progress Log
 
+## 2026-06-23
+
+- <!-- memory_type: milestone -->
+- **Synapse scripts: resolve 99 pyright type errors** - COMPLETE. Fixed untyped dict/CompletedProcess generics, unused call results, implicit string concatenations, private symbol imports, and missing async fixture type annotations across 8 scripts in `.cortex/synapse/scripts/python/` and `.cortex/synapse/scripts/swift/`.
+- **Docs gate test: replace Any with concrete types** - COMPLETE. Replaced `from typing import Any` with `ValidateCheckTypeName`, `MCPContext | None`, and `ModelDict` in docs gate test.
+- **tests/test_phase3.py: fix stale date and long functions** - COMPLETE. Updated stale date "2025-12-19" to "2026-06-20" for freshness score test; refactored 3 overlong test functions (49, 37, 34 lines) into helpers <=30 lines with concrete return types `ValidationResult` and `QualityScoreResult`.
+- **tests/test_phase4.py: fix stale date range** - COMPLETE. Updated stale dates (2025-10-01..2025-12-19 -> 2026-04-01..2026-06-20) that caused floating-point equality failures; CI quality gate green.
+
 ## 2026-05-08
 
 - <!-- memory_type: status -->

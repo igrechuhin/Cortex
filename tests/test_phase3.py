@@ -17,6 +17,7 @@ from pydantic import ValidationError
 from cortex.core.models import DetailedFileMetadata, ModelDict
 from cortex.validation.duplication_detector import DuplicationDetector
 from cortex.validation.models import FileMetadataForQuality
+from cortex.validation.quality_models import QualityScoreResult, ValidationResult
 from cortex.validation.quality_metrics import QualityMetrics
 from cortex.validation.schema_validator import SchemaValidator
 from cortex.validation.validation_config import ValidationConfig
@@ -261,6 +262,51 @@ The frontend is built with React and TypeScript.
 # Quality Metrics Tests
 # ============================================================================
 
+_FilesContent = dict[str, str]
+_FilesMetadata = dict[str, DetailedFileMetadata | FileMetadataForQuality | ModelDict]
+_DuplicationData = ModelDict
+
+
+def _high_quality_fixtures() -> tuple[_FilesContent, _FilesMetadata, _DuplicationData]:
+    files_content: _FilesContent = {
+        "projectBrief.md": (
+            "\n## Project Overview\nOverview content.\n\n"
+            "## Goals\nGoals content.\n\n"
+            "## Core Requirements\nRequirements content.\n\n"
+            "## Success Criteria\nCriteria content.\n"
+        )
+    }
+    files_metadata: _FilesMetadata = {
+        "projectBrief.md": cast(
+            ModelDict, {"token_count": 5000, "last_modified": "2026-06-20T10:00:00"}
+        )
+    }
+    duplication_data: _DuplicationData = cast(
+        ModelDict,
+        {"duplicates_found": 0, "exact_duplicates": [], "similar_content": []},
+    )
+    return files_content, files_metadata, duplication_data
+
+
+def _with_issues_fixtures() -> tuple[_FilesContent, _FilesMetadata, _DuplicationData]:
+    files_content: _FilesContent = {
+        "projectBrief.md": "\n## Project Overview\nJust an overview.\n"
+    }
+    files_metadata: _FilesMetadata = {
+        "projectBrief.md": cast(
+            ModelDict, {"token_count": 100, "last_modified": "2024-01-01T10:00:00"}
+        )
+    }
+    duplication_data: _DuplicationData = cast(
+        ModelDict,
+        {
+            "duplicates_found": 3,
+            "exact_duplicates": [{"file1": "a", "file2": "b"}],
+            "similar_content": [],
+        },
+    )
+    return files_content, files_metadata, duplication_data
+
 
 class TestQualityMetrics:
     """Tests for QualityMetrics."""
@@ -268,52 +314,13 @@ class TestQualityMetrics:
     @pytest.mark.asyncio
     async def test_calculate_overall_score_high_quality(self):
         """Test quality score calculation for high-quality content."""
-        validator = SchemaValidator()
-        metrics = QualityMetrics(validator)
-
-        files_content = {
-            "projectBrief.md": """
-## Project Overview
-Overview content.
-
-## Goals
-Goals content.
-
-## Core Requirements
-Requirements content.
-
-## Success Criteria
-Criteria content.
-"""
-        }
-
-        files_metadata: dict[
-            str, DetailedFileMetadata | FileMetadataForQuality | ModelDict
-        ] = {
-            "projectBrief.md": cast(
-                ModelDict,
-                {
-                    "token_count": 5000,
-                    "last_modified": "2025-12-19T10:00:00",
-                },
-            )
-        }
-
-        duplication_data = cast(
-            ModelDict,
-            {
-                "duplicates_found": 0,
-                "exact_duplicates": [],
-                "similar_content": [],
-            },
-        )
-
+        metrics = QualityMetrics(SchemaValidator())
+        files_content, files_metadata, duplication_data = _high_quality_fixtures()
         result = await metrics.calculate_overall_score(
             files_content,
             files_metadata,
-            duplication_data,  # type: ignore[arg-type] - ModelDict is compatible
+            duplication_data,  # type: ignore[arg-type]
         )
-
         assert result.overall_score >= 80
         assert result.grade in ["A", "B"]
         assert result.status in ["healthy", "warning"]
@@ -321,43 +328,13 @@ Criteria content.
     @pytest.mark.asyncio
     async def test_calculate_overall_score_with_issues(self):
         """Test quality score with various issues."""
-        validator = SchemaValidator()
-        metrics = QualityMetrics(validator)
-
-        files_content = {
-            "projectBrief.md": """
-## Project Overview
-Just an overview.
-"""  # Missing required sections
-        }
-
-        files_metadata: dict[
-            str, DetailedFileMetadata | FileMetadataForQuality | ModelDict
-        ] = {
-            "projectBrief.md": cast(
-                ModelDict,
-                {
-                    "token_count": 100,
-                    "last_modified": "2024-01-01T10:00:00",  # Old
-                },
-            )
-        }
-
-        duplication_data = cast(
-            ModelDict,
-            {
-                "duplicates_found": 3,
-                "exact_duplicates": [{"file1": "a", "file2": "b"}],
-                "similar_content": [],
-            },
-        )
-
+        metrics = QualityMetrics(SchemaValidator())
+        files_content, files_metadata, duplication_data = _with_issues_fixtures()
         result = await metrics.calculate_overall_score(
             files_content,
             files_metadata,
-            duplication_data,  # type: ignore[arg-type] - ModelDict is compatible
+            duplication_data,  # type: ignore[arg-type]
         )
-
         assert result.overall_score < 80
         assert len(result.issues) > 0
         assert len(result.recommendations) > 0
@@ -507,6 +484,55 @@ class TestValidationConfig:
 # ============================================================================
 
 
+def _integration_fixtures() -> tuple[_FilesContent, _FilesMetadata]:
+    files_content: _FilesContent = {
+        "projectBrief.md": (
+            "\n## Project Overview\nThis is a test project.\n\n"
+            "## Goals\nBuild a great system.\n\n"
+            "## Core Requirements\nMust be fast and reliable.\n\n"
+            "## Success Criteria\nAll tests pass.\n"
+        ),
+        "activeContext.md": (
+            "\n## Current Focus\nWorking on Phase 3.\n\n"
+            "## Recent Changes\nAdded validation features.\n\n"
+            "## Next Steps\nTest everything.\n"
+        ),
+    }
+    files_metadata: _FilesMetadata = {
+        "projectBrief.md": cast(
+            ModelDict, {"token_count": 3000, "last_modified": "2026-06-20T10:00:00"}
+        ),
+        "activeContext.md": cast(
+            ModelDict, {"token_count": 2000, "last_modified": "2026-06-20T09:00:00"}
+        ),
+    }
+    return files_content, files_metadata
+
+
+async def _validate_all(
+    validator: SchemaValidator, files_content: _FilesContent
+) -> dict[str, ValidationResult]:
+    results: dict[str, ValidationResult] = {}
+    for fname, content in files_content.items():
+        results[fname] = await validator.validate_file(fname, content)
+    return results
+
+
+async def _score_quality(
+    metrics: QualityMetrics,
+    detector: DuplicationDetector,
+    files_content: _FilesContent,
+    files_metadata: _FilesMetadata,
+) -> QualityScoreResult:
+    scan = await detector.scan_all_files(files_content)
+    duplication_data = cast(ModelDict, scan.model_dump())
+    return await metrics.calculate_overall_score(
+        files_content,
+        files_metadata,
+        duplication_data,  # type: ignore[arg-type]
+    )
+
+
 class TestPhase3Integration:
     """Integration tests for Phase 3 components."""
 
@@ -516,74 +542,11 @@ class TestPhase3Integration:
         validator = SchemaValidator()
         detector = DuplicationDetector()
         metrics = QualityMetrics(validator)
-
-        # Sample content
-        files_content = {
-            "projectBrief.md": """
-## Project Overview
-This is a test project.
-
-## Goals
-Build a great system.
-
-## Core Requirements
-Must be fast and reliable.
-
-## Success Criteria
-All tests pass.
-""",
-            "activeContext.md": """
-## Current Focus
-Working on Phase 3.
-
-## Recent Changes
-Added validation features.
-
-## Next Steps
-Test everything.
-""",
-        }
-
-        files_metadata: dict[
-            str, DetailedFileMetadata | FileMetadataForQuality | ModelDict
-        ] = {
-            "projectBrief.md": cast(
-                ModelDict,
-                {
-                    "token_count": 3000,
-                    "last_modified": "2025-12-19T10:00:00",
-                },
-            ),
-            "activeContext.md": cast(
-                ModelDict,
-                {
-                    "token_count": 2000,
-                    "last_modified": "2025-12-19T09:00:00",
-                },
-            ),
-        }
-
-        # Validate all files
-        from cortex.validation.models import ValidationResult
-
-        validation_results: dict[str, ValidationResult] = {}
-        for fname, content in files_content.items():
-            result = await validator.validate_file(fname, content)
-            validation_results[fname] = result
-
-        # Check duplications
-        duplication_scan_result = await detector.scan_all_files(files_content)
-        # Convert DuplicationScanResult to ModelDict for calculate_overall_score
-        duplication_data = cast(ModelDict, duplication_scan_result.model_dump())
-
-        # Calculate quality score
-        quality_data = await metrics.calculate_overall_score(
-            files_content,
-            files_metadata,
-            duplication_data,  # type: ignore[arg-type] - ModelDict is compatible
+        files_content, files_metadata = _integration_fixtures()
+        validation_results = await _validate_all(validator, files_content)
+        quality_data = await _score_quality(
+            metrics, detector, files_content, files_metadata
         )
-
-        # Assertions
         assert all(r.valid for r in validation_results.values())
         assert quality_data.overall_score >= 70
         assert quality_data.grade in ["A", "B", "C", "D", "F"]
