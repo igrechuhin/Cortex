@@ -34,6 +34,7 @@ _SKIP_DIRS: frozenset[str] = frozenset(
         "tests",
         "Tests",
         "build",
+        ".build",  # Swift Package Manager build output + checkouts (may contain .java, .kt, etc.)
         "dist",
         ".tox",
         ".mypy_cache",
