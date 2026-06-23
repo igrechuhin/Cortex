@@ -18,15 +18,24 @@
 
 ## Completed Work (2026-05-08)
 
-- **Summary (2026-05-08)** - 2 entries archived.
+- **Roadmap sync resolver hardening** - COMPLETE (2026-05-08) - <!-- memory_type: problem -->
+
+- **Validation roadmap sync hardening committed** - COMPLETE (2026-05-08) - <!-- memory_type: status -->
+Committed roadmap sync resolver fallback and regression tests after passing quality/parity gates in commit pipeline.
+Added fs_manager.memory_bank_dir fallback and diagnostic error fields in roadmap sync validation, with regression coverage for manager-root mismatch.
 
 ## Completed Work (2026-05-04)
 
-- **Summary (2026-05-04)** - 1 entries archived.
+- **SwiftAdapter: skip line coverage when teardown signal drops Swift Testing profraw** - COMPLETE (2026-05-04) - <!-- memory_type: status -->
+Added _coverage_json_absent_teardown to detect SwiftTestOutcome.teardown_signal after swift test; when JSON export is missing and the harness exited via signal, skip merging misleading partial profraw into coverage fraction. Wired outcome through _coverage_gate_outcome and _collect_line_coverage_fraction; added logging. Memory-bank log.md refreshed for this session.
 
 ## Completed Work (2026-05-03)
 
-- **Summary (2026-05-03)** - 2 entries archived.
+- **Session index, log, debug prompt, Synapse Swift scripts** - COMPLETE (2026-05-03) - <!-- memory_type: status -->
+
+- **MCP semaphores bound to event loop; root cache lock reset** - COMPLETE (2026-05-03) - <!-- memory_type: preference -->
+Tracked asyncio semaphores for concurrent tools/resources and long-running tools are recreated when the running loop changes to avoid cross-loop use. clear_cached_root now clears the asyncio.Lock placeholder so the lock is recreated on the current loop after tests or overrides.
+Updated .cortex/index.json; memory-bank log.md maintenance; small edit to debug-external-integration.md; Synapse submodule at formatted Swift public-docs check scripts (check_public_docs + tests).
 
 ## Completed Work (2026-04-29)
 

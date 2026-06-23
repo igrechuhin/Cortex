@@ -17,8 +17,8 @@ from pydantic import ValidationError
 from cortex.core.models import DetailedFileMetadata, ModelDict
 from cortex.validation.duplication_detector import DuplicationDetector
 from cortex.validation.models import FileMetadataForQuality
-from cortex.validation.quality_models import QualityScoreResult, ValidationResult
 from cortex.validation.quality_metrics import QualityMetrics
+from cortex.validation.quality_models import QualityScoreResult, ValidationResult
 from cortex.validation.schema_validator import SchemaValidator
 from cortex.validation.validation_config import ValidationConfig
 

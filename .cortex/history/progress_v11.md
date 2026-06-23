@@ -1,9 +1,32 @@
 # Progress Log
 
+## 2026-06-23
+
+- <!-- memory_type: milestone -->
+- **Synapse scripts: resolve 99 pyright type errors** - COMPLETE. Fixed untyped dict/CompletedProcess generics, unused call results, implicit string concatenations, private symbol imports, and missing async fixture type annotations across 8 scripts in `.cortex/synapse/scripts/python/` and `.cortex/synapse/scripts/swift/`.
+- **Docs gate test: replace Any with concrete types** - COMPLETE. Replaced `from typing import Any` with `ValidateCheckTypeName`, `MCPContext | None`, and `ModelDict` in docs gate test.
+- **tests/test_phase3.py: fix stale date and long functions** - COMPLETE. Updated stale date "2025-12-19" to "2026-06-20" for freshness score test; refactored 3 overlong test functions (49, 37, 34 lines) into helpers <=30 lines with concrete return types `ValidationResult` and `QualityScoreResult`.
+- **tests/test_phase4.py: fix stale date range** - COMPLETE. Updated stale dates (2025-10-01..2025-12-19 -> 2026-04-01..2026-06-20) that caused floating-point equality failures; CI quality gate green.
+
+## 2026-05-08
+
+- <!-- memory_type: status -->
+- **Docs-gate roadmap lookup fix** - COMPLETE. Added roadmap_sync fallback to fs_manager memory-bank path, expanded diagnostics for missing-roadmap errors, and added regression coverage; quality gate green.
+- <!-- memory_type: status -->
+- **Commit pipeline for roadmap sync fix** - COMPLETE. Ran /commit preflight, Phase A quality+parity checks, and advanced docs/validate/final gate workflow for roadmap sync resolver fallback and regression tests.
+
+## 2026-05-04
+
+- <!-- memory_type: status -->
+- **SwiftAdapter coverage guard (teardown signal)** - COMPLETE. Skip reporting line coverage when JSON is absent after a post-run signal so partial profraw does not produce a misleading low fraction; memory-bank log updated.
+
 ## 2026-05-03
 
 - <!-- memory_type: status -->
 - **Commit pipeline: Cortex metadata + Synapse submodule** — Session index and memory-bank log updated; debug-external-integration prompt tweaked; Synapse gitlink advanced for Swift public-docs script formatting.
+- <!-- memory_type: status -->
+- fix(core): bind MCP stability semaphores to the active event loop and reset long-running map on loop change; reset root cache lock in clear_cached_root for correct per-loop recreation
+- chore: refresh session index snapshot and operations log
 
 ## 2026-04-29
 
