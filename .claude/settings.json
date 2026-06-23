@@ -27,7 +27,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 .cortex/synapse/scripts/python/post_edit_hook.py"
+            "command": "bash -c 'python3 \"$(git -C /Users/i.grechukhin/Repo/Cortex rev-parse --show-toplevel)\"/.cortex/synapse/scripts/python/post_edit_hook.py'"
           }
         ]
       }
