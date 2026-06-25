@@ -157,13 +157,20 @@ async def ingest(
     the category directory; default ``concepts``). Otherwise uses
     ``.cortex/memory-bank/sources/`` (legacy memory-bank ingest path).
 
-    USE WHEN: Staging external markdown or text for the ``/cortex/ingest`` workflow.
+    USE WHEN: Preserving an external artifact (RFC, ADR, design doc, spec, decision record)
+    that informs or justifies a project decision — content that came from *outside* the
+    codebase and whose provenance matters long-term.
 
-    DO NOT: Replace ``manage_file`` for curated pages; only immutable ``sources/`` snapshots.
+    DO NOT use for:
+    - Intermediate working files, scratch notes, or temporary read buffers.
+    - Content you just read from the project's own source tree (code, configs, existing docs).
+    - Summaries of your own reasoning or in-progress analysis.
+    - Any file whose title would be "temp", "test", or a transient label.
+    Only call ``ingest`` when the content is an external artifact worth archiving permanently.
 
     EXAMPLES:
-    - ingest(source_type="text", content="# RFC\\n...", title="Draft RFC")
-    - ingest(source_type="markdown_file", content=file_body, title="ADR 12")
+    - ingest(source_type="text", content="# RFC\\n...", title="RFC 42: Auth token storage")
+    - ingest(source_type="markdown_file", content=file_body, title="ADR 12: Switch to Pydantic v2")
 
     RETURNS: JSON with ``status``, ``slug``, ``source_path``, ``title``, ``source_type``,
     ``ingest_target``, and when wiki mode: ``wiki_summary_path``, ``wiki_category``.

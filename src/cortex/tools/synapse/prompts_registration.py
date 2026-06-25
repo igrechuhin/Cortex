@@ -95,6 +95,15 @@ def _try_publish_prompt(
         return 0
 
 
+def _workflow_redirect_content(script_path: Path) -> str:
+    """Return prompt content that tells Claude Code to run a Workflow script."""
+    return (
+        f'Use the Workflow tool with `scriptPath: "{script_path}"`'
+        f" to run this pipeline as a deterministic workflow script.\n\n"
+        f"Do not interpret this as prose instructions — invoke the Workflow tool directly."
+    )
+
+
 def process_prompt_info(
     facade: ModuleType,
     prompt_info: ModelDict,
@@ -115,6 +124,16 @@ def process_prompt_info(
     if not isinstance(prompt_name, str):
         return 0
     description, icon_emoji = _description_and_icon(prompt_info)
+
+    superseded_by = prompt_info.get("superseded_by")
+    if isinstance(superseded_by, str) and superseded_by.endswith(".wf.js"):
+        script_path = prompts_path / superseded_by
+        if script_path.exists():
+            content = _workflow_redirect_content(script_path)
+            return _try_publish_prompt(
+                facade, _mcp_func_name(prompt_name), content, description, icon_emoji
+            )
+
     content = load_prompt_content(prompts_path, category_name, filename)
     if not content:
         return 0

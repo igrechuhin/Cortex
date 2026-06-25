@@ -1,5 +1,18 @@
 # Progress Log
 
+## 2026-06-25
+
+- **Convert do.md orchestration to Claude Code dynamic Workflow script** - COMPLETE. Authored do.wf.js with hard JS while-loop (max 5), pipeline() parallelism, deterministic review gate, structured schemas. 69 tests pass. prompts-manifest.json updated with superseded_by.
+- **Convert fix.md orchestration to Claude Code dynamic Workflow script** - COMPLETE. Authored fix.wf.js with deterministic JS switch/while replacing LLM-orchestrated prose routing; 84 tests all pass; quality gate green.
+
+## 2026-06-24
+
+- **Promote quality skill to dynamic workflow with retry loop** - COMPLETE. Added execute_sequential_workflow with retry loop to skill_pack; 10 unit tests; quality gate clean.
+- **Promote planning skill to dynamic workflow with data passing** - COMPLETE. Added workflow block to planning.json; wired inter-phase data passing (plan_file_name, plan_title) via resolve_workflow_inputs; added phase_inputs to skill_pack execute; 10 new tests all passing.
+- **Promote refactoring skill to dynamic workflow with analysis data passing** - COMPLETE. Added workflow block to refactoring.json; four phases (analyse→plan→apply→verify) with target_files threaded from analyse into apply; conditions use ctx-key syntax; think and manage_file added to registry; 8 tests pass, quality gate green.
+- **Promote evaluation skill to dynamic workflow with structured pipeline output** - COMPLETE. Added workflow block (run→analyse→store) to evaluation.json, EvaluationReport model to models.py, 6 unit tests. Store phase correctly gated on analyse.passed.
+- **Convert commit.md orchestration to Claude Code dynamic Workflow script** - COMPLETE. Created .cortex/workflows/commit.wf.js with deterministic JS control flow: Phase A while-loop (cap=3), Step 12 if/else scope routing, structured subagent schemas, non-blocking push/hook paths. prompts-manifest.json updated with superseded_by. 44 passing structural tests.
+
 ## 2026-06-23
 
 - <!-- memory_type: milestone -->

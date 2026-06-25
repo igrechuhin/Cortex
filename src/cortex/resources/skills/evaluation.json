@@ -1,17 +1,60 @@
 {
   "name": "evaluation",
-  "description": "Evaluation and optimization: run tool evals, analyze results.",
-  "tools": ["run_tool_evaluation"],
-  "when_to_use": "Running MCP tool evaluations, eval-guided model upgrades.",
+  "description": "Evaluation execution and analysis: run correctness/quality evaluations, interpret outputs, and store structured reports.",
+  "tools": [
+    "run_tool_evaluation",
+    "manage_file"
+  ],
+  "when_to_use": "Running MCP tool evaluations, eval-guided model upgrades, capturing structured EvaluationReport with score, gaps, and stored path.",
   "workflow_sequences": [
-    "run_tool_evaluation(...) → analyze results",
-    "run_tool_evaluation(...) + manual store/compare for model benchmarking"
+    "run_tool_evaluation(...) → manage_file(operation='read') to analyse → manage_file(operation='write') to store when gaps found",
+    "skill_pack(operation=\"execute\", pack_name=\"evaluation\") — runs run→analyse→store cycle automatically"
   ],
   "example_invocations": [
-    "run_tool_evaluation(...)"
+    "run_tool_evaluation(...)",
+    "skill_pack(operation=\"execute\", pack_name=\"evaluation\")"
   ],
   "troubleshooting_tips": [
-    "Eval results are stored under .cortex/evals or cache; use get_structure_info for paths."
+    "Eval results are stored under .cortex/evals or cache; use get_structure_info for paths.",
+    "store phase is skipped when analyse.passed is True (no gaps found).",
+    "If run_tool_evaluation is not in registry, the workflow will fail at the run phase."
   ],
-  "keywords": ["evaluation", "eval", "model", "run_tool_evaluation"]
+  "keywords": ["evaluation", "eval", "model", "run_tool_evaluation", "score", "gaps", "report"],
+  "workflow": {
+    "mode": "sequential",
+    "phases": [
+      {
+        "name": "run",
+        "tool": "run_tool_evaluation",
+        "required": true,
+        "max_iterations": 1,
+        "outputs": ["score", "raw_results"]
+      },
+      {
+        "name": "analyse",
+        "tool": "manage_file",
+        "operation": "read",
+        "required": true,
+        "max_iterations": 1,
+        "inputs": {
+          "run.raw_results": "content"
+        },
+        "outputs": ["passed", "gaps"]
+      },
+      {
+        "name": "store",
+        "tool": "manage_file",
+        "operation": "write",
+        "required": false,
+        "condition": "not analyse.get('passed', True)",
+        "max_iterations": 1,
+        "inputs": {
+          "run.score": "score",
+          "analyse.passed": "passed",
+          "analyse.gaps": "gaps"
+        },
+        "outputs": ["stored_path"]
+      }
+    ]
+  }
 }

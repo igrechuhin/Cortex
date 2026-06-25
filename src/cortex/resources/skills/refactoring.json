@@ -1,19 +1,61 @@
 {
   "name": "refactoring",
-  "description": "Code refactoring: suggest and apply consolidation, splits, and reorg.",
-  "tools": ["suggest_refactoring", "apply_refactoring"],
-  "when_to_use": "Consolidating tools, splitting large files, reorganizing code; use suggest first then apply.",
+  "description": "Code refactoring skill: analyse patterns, plan transformations, apply changes, and verify quality gates.",
+  "tools": ["think", "plan", "manage_file", "run_quality_gate"],
   "workflow_sequences": [
-    "suggest_refactoring(...) → review suggestions → apply_refactoring(...)",
-    "suggest_refactoring(scope=\"file_size\") for file size violations"
+    "Analyse code for refactoring candidates (oversized functions, god objects, DRY violations), then plan transformations, apply changes, and verify quality gates.",
+    "Thread target_files and patterns from analyse phase into plan and apply phases automatically.",
+    "Skip verify phase if apply failed to avoid misleading results."
   ],
-  "example_invocations": [
-    "suggest_refactoring(scope=\"consolidation\")",
-    "apply_refactoring(operation_id=\"...\")"
-  ],
-  "troubleshooting_tips": [
-    "Helper module extraction: use suggest_refactoring for file_size or function_length scope.",
-    "Apply only after reviewing suggested changes."
-  ],
-  "keywords": ["refactor", "suggest_refactoring", "apply_refactoring", "consolidation", "split", "file size", "helper"]
+  "workflow": {
+    "mode": "sequential",
+    "phases": [
+      {
+        "name": "analyse",
+        "tool": "think",
+        "operation": null,
+        "inputs": {},
+        "outputs": ["target_files", "patterns"],
+        "condition": null,
+        "retry_condition": null,
+        "max_iterations": 1
+      },
+      {
+        "name": "plan",
+        "tool": "plan",
+        "operation": "create",
+        "inputs": {
+          "analyse.target_files": "target_files",
+          "analyse.patterns": "patterns"
+        },
+        "outputs": ["plan_file_name"],
+        "condition": "analyse.get('status') == 'success'",
+        "retry_condition": null,
+        "max_iterations": 1
+      },
+      {
+        "name": "apply",
+        "tool": "manage_file",
+        "operation": "write",
+        "inputs": {
+          "analyse.target_files": "target_files",
+          "plan.plan_file_name": "plan_file_name"
+        },
+        "outputs": ["files_modified"],
+        "condition": "plan.get('status') == 'success'",
+        "retry_condition": null,
+        "max_iterations": 1
+      },
+      {
+        "name": "verify",
+        "tool": "run_quality_gate",
+        "operation": null,
+        "inputs": {},
+        "outputs": ["preflight_passed"],
+        "condition": "apply.get('status') == 'success'",
+        "retry_condition": null,
+        "max_iterations": 1
+      }
+    ]
+  }
 }

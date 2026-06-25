@@ -2,23 +2,23 @@
 
 **This file records completed work only.** For current status and upcoming work see [roadmap.md](roadmap.md).
 
+## Completed Work (2026-06-25)
+
+- ✅ **Convert do.md orchestration to Claude Code dynamic Workflow script** - COMPLETE (2026-06-25) - Authored do.wf.js in .cortex/workflows/ encoding all six /cortex/do phases (Selection, Implementation loop while(!step_fully_complete, max 5), Review Gate, Finalize, Verify, Fix, Cleanup, Post-Prompt Hook) as deterministic JS control flow. Parallel [P] steps execute via pipeline(). Structured schemas (SELECTION_SCHEMA, IMPL_SCHEMA, REVIEW_SCHEMA, FINALIZE_SCHEMA) eliminate pipeline_handoff string parsing. 69 structural tests in tests/workflows/test_do_wf.py all pass. prompts-manifest.json marks do.md superseded_by do.wf.js with do.md kept as fallback.
+
+- ✅ **Convert fix.md orchestration to Claude Code dynamic Workflow script** - COMPLETE (2026-06-25) - Authored fix.wf.js at .cortex/workflows/fix.wf.js encoding PHASE 0 diagnosis gate (first await agent() by construction), coverage switch() on all 5 status values (passed/skipped/tests_failing/failed/BLOCKED), per-target retry while loops capped at MAX_TARGET_ITERATIONS=3, quality scope routing (markdown_only vs source), docs bridge_mismatch non-blocking path, structured schemas for all 4 subagents. Updated prompts-manifest.json to mark fix.md superseded_by fix.wf.js. Added 84 tests in tests/workflows/test_fix_wf.py covering all routing branches. Quality gate passes (6967 tests, 91% coverage).
+
+## Completed Work (2026-06-24)
+
+- **Summary (2026-06-24)** - 5 entries archived.
+
 ## Completed Work (2026-06-23)
 
-- **Synapse scripts: resolve 99 pyright type errors** - COMPLETE (2026-06-23) - <!-- memory_type: status -->
-  Fixed untyped dict/CompletedProcess generics, unused call results, implicit string concatenations, private symbol imports, and missing async fixture type annotations across 8 scripts in `.cortex/synapse/scripts/python/` and `.cortex/synapse/scripts/swift/`.
-
-- **Docs gate test: replace Any with concrete types** - COMPLETE (2026-06-23) - <!-- memory_type: status -->
-  Replaced `from typing import Any` with `ValidateCheckTypeName`, `MCPContext | None`, and `ModelDict` concrete types in docs gate test.
-
-- **tests/test_phase3.py: stale date fix and function refactor** - COMPLETE (2026-06-23) - <!-- memory_type: status -->
-  Updated stale date "2025-12-19" to "2026-06-20" for freshness score test; refactored 3 overlong test functions (49, 37, 34 lines) into helpers <=30 lines with concrete return types `ValidationResult` and `QualityScoreResult`.
-
-- **tests/test_phase4.py: stale date range fix** - COMPLETE (2026-06-23) - <!-- memory_type: status -->
-  Updated stale dates (2025-10-01..2025-12-19 -> 2026-04-01..2026-06-20) that caused floating-point equality failures. CI quality gate green.
+- **Summary (2026-06-23)** - 4 entries archived.
 
 ## Completed Work (2026-05-08)
 
-- **Summary (2026-05-08)** - 2 entries archived.
+- **Summary (2026-05-08)** - 1 entries archived.
 
 ## Completed Work (2026-05-04)
 
@@ -26,7 +26,7 @@
 
 ## Completed Work (2026-05-03)
 
-- **Summary (2026-05-03)** - 2 entries archived.
+- **Summary (2026-05-03)** - 1 entries archived.
 
 ## Completed Work (2026-04-29)
 

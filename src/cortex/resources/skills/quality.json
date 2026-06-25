@@ -1,20 +1,53 @@
 {
   "name": "quality",
   "description": "Code quality operations: pre-commit checks, auto-fix, and validation.",
-  "tools": ["execute_pre_commit_checks", "validate"],
+  "tools": ["execute_pre_commit_checks", "validate", "run_quality_gate", "autofix"],
   "when_to_use": "Before commit, after code changes, to fix lint/format/type errors or run validation (schema, roadmap_sync).",
   "workflow_sequences": [
     "execute_pre_commit_checks(phase=\"A\") → execute_pre_commit_checks(checks=[\"fix_quality\"]) if needed",
-    "execute_pre_commit_checks(checks=[\"quality\"]) before memory bank updates"
+    "execute_pre_commit_checks(checks=[\"quality\"]) before memory bank updates",
+    "skill_pack(operation=\"execute\", pack_name=\"quality\") — runs gate → autofix → gate cycle automatically"
   ],
   "example_invocations": [
     "execute_pre_commit_checks(checks=[\"quality\"])",
     "execute_pre_commit_checks(checks=[\"fix_quality\"])",
-    "validate(check_type=\"roadmap_sync\")"
+    "validate(check_type=\"roadmap_sync\")",
+    "skill_pack(operation=\"execute\", pack_name=\"quality\")"
   ],
   "troubleshooting_tips": [
     "Run execute_pre_commit_checks(checks=[\"quality\"]) to get lint, format, type_check in one call.",
-    "If execute_pre_commit_checks(checks=[\"fix_quality\"]) fails with connection error, retry once; then rely on execute_pre_commit_checks for gates."
+    "If execute_pre_commit_checks(checks=[\"fix_quality\"]) fails with connection error, retry once; then rely on execute_pre_commit_checks for gates.",
+    "Use skill_pack(operation=\"execute\", pack_name=\"quality\") for the full gate→autofix→gate retry loop without manual orchestration."
   ],
-  "keywords": ["quality", "pre-commit", "lint", "format", "validate", "roadmap_sync", "fix", "commit"]
+  "keywords": ["quality", "pre-commit", "lint", "format", "validate", "roadmap_sync", "fix", "commit"],
+  "workflow": {
+    "mode": "sequential",
+    "phases": [
+      {
+        "name": "gate_1",
+        "tool": "run_quality_gate",
+        "required": true,
+        "max_iterations": 1,
+        "outputs": ["preflight_passed", "status"],
+        "success_condition": "preflight_passed == True"
+      },
+      {
+        "name": "autofix",
+        "tool": "autofix",
+        "required": false,
+        "condition": "not gate_1.get('preflight_passed', True)",
+        "retry_condition": "not gate_1.get('preflight_passed', True)",
+        "max_iterations": 3,
+        "outputs": ["status"]
+      },
+      {
+        "name": "gate_2",
+        "tool": "run_quality_gate",
+        "required": true,
+        "max_iterations": 1,
+        "outputs": ["preflight_passed", "status"],
+        "success_condition": "preflight_passed == True"
+      }
+    ]
+  }
 }

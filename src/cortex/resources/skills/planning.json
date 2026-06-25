@@ -16,5 +16,41 @@
     "Use update_memory_bank(operation=\"roadmap_remove\") with a unique substring to avoid removing the wrong bullet.",
     "When step references a plan file, prefer plan(operation=\"complete\") so the plan is archived automatically."
   ],
-  "keywords": ["plan", "roadmap", "create_plan", "register_plan", "complete_plan", "roadmap_entry", "archive"]
+  "keywords": ["plan", "roadmap", "create_plan", "register_plan", "complete_plan", "roadmap_entry", "archive"],
+  "workflow": {
+    "mode": "sequential",
+    "description": "Create plan, register in roadmap, and mark complete",
+    "phases": [
+      {
+        "name": "create",
+        "tool": "plan",
+        "operation": "create",
+        "required": true,
+        "inputs": {},
+        "outputs": ["plan_file_name", "plan_title", "status"]
+      },
+      {
+        "name": "register",
+        "tool": "plan",
+        "operation": "register",
+        "required": true,
+        "inputs": {
+          "create.plan_file_name": "plan_file_name",
+          "create.plan_title": "plan_title"
+        },
+        "outputs": ["status"]
+      },
+      {
+        "name": "complete",
+        "tool": "plan",
+        "operation": "complete",
+        "required": false,
+        "condition": "create.get('status') == 'success'",
+        "inputs": {
+          "create.plan_title": "plan_title"
+        },
+        "outputs": ["archived_path", "status"]
+      }
+    ]
+  }
 }

@@ -13,6 +13,10 @@
 
 ## Pending plans (from .cortex/plans)
 
+### Pipeline Infrastructure
+
+### Tools Infrastructure
+
 ### FastMCP v3 Migration
 
 ### Fixes
