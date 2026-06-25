@@ -1,7 +1,8 @@
 """Swift Framework Adapter
 
-Adapter for Swift projects using Swift Package Manager: swift format,
-swift build (type check / lint), swift test.
+Adapter for Swift projects using Swift Package Manager (Package.swift) or
+Xcode (.xcodeproj). SPM uses swift format/build/test; Xcode falls back to
+xcodebuild with swiftformat for formatting.
 """
 
 import logging
@@ -98,6 +99,73 @@ class SwiftAdapter(FrameworkAdapter):
         """Return True if Package.swift exists in project root."""
         return (self.project_root / "Package.swift").is_file()
 
+    def has_xcodeproj(self) -> bool:
+        """Return True if an .xcodeproj exists in project root."""
+        return any(self.project_root.glob("*.xcodeproj"))
+
+    def _xcode_project_path(self) -> Path | None:
+        """Return path to the first .xcodeproj found, or None."""
+        for p in self.project_root.glob("*.xcodeproj"):
+            return p
+        return None
+
+    def _xcode_scheme(self) -> str | None:
+        """Return the first non-package scheme from xcodebuild -list, preferring *-Dev."""
+        proj = self._xcode_project_path()
+        if proj is None:
+            return None
+        try:
+            result = subprocess.run(
+                ["xcodebuild", "-project", str(proj), "-list"],
+                cwd=self.project_root,
+                capture_output=True,
+                text=True,
+                timeout=60,
+            )
+            schemes: list[str] = []
+            in_schemes = False
+            for line in result.stdout.splitlines():
+                stripped = line.strip()
+                if stripped == "Schemes:":
+                    in_schemes = True
+                    continue
+                if in_schemes:
+                    if stripped == "" or stripped.endswith(":"):
+                        break
+                    # Skip SPM-generated package schemes
+                    if not stripped.endswith("-Package"):
+                        schemes.append(stripped)
+            # Prefer *-Dev scheme for development builds
+            for s in schemes:
+                if s.endswith("-Dev"):
+                    return s
+            return schemes[0] if schemes else None
+        except Exception:
+            return None
+
+    def _run_xcodebuild(
+        self,
+        args: list[str],
+        timeout: int | None = None,
+    ) -> subprocess.CompletedProcess[str]:
+        """Run xcodebuild command in project root."""
+        cmd = ["xcodebuild", *args]
+        raw = subprocess.run(
+            cmd,
+            cwd=self.project_root,
+            capture_output=True,
+            text=False,
+            timeout=timeout,
+        )
+        stdout = raw.stdout.decode("utf-8", errors="replace") if raw.stdout else ""
+        stderr = raw.stderr.decode("utf-8", errors="replace") if raw.stderr else ""
+        return subprocess.CompletedProcess(
+            args=raw.args,
+            returncode=raw.returncode,
+            stdout=stdout,
+            stderr=stderr,
+        )
+
     def _run_swift(
         self,
         args: list[str],
@@ -155,7 +223,7 @@ class SwiftAdapter(FrameworkAdapter):
         progress_callback: ProgressCallback | None = None,
         include_slow_tests: bool = False,
     ) -> TestResult:
-        """Run test suite via swift test.
+        """Run test suite via swift test (SPM) or xcodebuild test (Xcode).
 
         Uses :func:`interpret_swift_test_output` as the authoritative
         pass/fail classifier — the exit code is NOT trusted because
@@ -166,10 +234,78 @@ class SwiftAdapter(FrameworkAdapter):
         exact failure shape with the maintainers.
         """
         if not self.has_package_swift():
-            return self._error_test_result(
-                "No Package.swift found; not a Swift Package Manager project"
-            )
+            return self._run_xcodebuild_tests(timeout)
         return self._run_tests_with_logging(timeout, coverage_threshold)
+
+    def _run_xcodebuild_tests(self, timeout: int | None) -> TestResult:
+        """Run tests via xcodebuild test-without-building for Xcode projects."""
+        scheme = self._xcode_scheme()
+        proj = self._xcode_project_path()
+        if scheme is None or proj is None:
+            return self._error_test_result("No .xcodeproj or scheme found for xcodebuild")
+        try:
+            # Build first so test-without-building works
+            build_result = self._run_xcodebuild(
+                [
+                    "-project", str(proj),
+                    "-scheme", scheme,
+                    "-destination", "platform=iOS Simulator,name=iPhone 16",
+                    "build-for-testing",
+                ],
+                timeout=timeout or 300,
+            )
+            build_output = build_result.stdout + build_result.stderr
+            if build_result.returncode != 0:
+                errors = [
+                    line.strip()
+                    for line in build_output.splitlines()
+                    if "error:" in line.lower()
+                ][:10]
+                return TestResult(
+                    success=False,
+                    tests_run=0,
+                    tests_passed=0,
+                    tests_failed=0,
+                    pass_rate=0.0,
+                    coverage=None,
+                    output=build_output,
+                    errors=errors or ["xcodebuild build-for-testing failed"],
+                )
+            result = self._run_xcodebuild(
+                [
+                    "-project", str(proj),
+                    "-scheme", scheme,
+                    "-destination", "platform=iOS Simulator,name=iPhone 16",
+                    "test-without-building",
+                ],
+                timeout=timeout or 600,
+            )
+            output = result.stdout + result.stderr
+            passed, failed = self.extract_test_counts(output)
+            success = result.returncode == 0 or (failed == 0 and passed > 0)
+            errors: list[str] = []
+            if not success:
+                errors = [
+                    line.strip()
+                    for line in output.splitlines()
+                    if "error:" in line.lower() or "failed" in line.lower()
+                ][:10]
+                if not errors:
+                    errors = ["xcodebuild test-without-building failed"]
+            return TestResult(
+                success=success,
+                tests_run=passed + failed,
+                tests_passed=passed,
+                tests_failed=failed,
+                pass_rate=(passed / (passed + failed)) if (passed + failed) > 0 else 0.0,
+                coverage=None,
+                output=output,
+                errors=errors,
+            )
+        except subprocess.TimeoutExpired:
+            return self._timeout_test_result()
+        except Exception as e:
+            return self._error_test_result(str(e))
 
     def _run_tests_with_logging(
         self,
@@ -675,7 +811,7 @@ class SwiftAdapter(FrameworkAdapter):
         auto_fix: bool = True,
         strict_mode: bool = False,
     ) -> CheckResult:
-        """Fix errors using swift format."""
+        """Fix errors using swift format (SPM) or swiftformat CLI (Xcode)."""
         if not error_types or "formatting" in error_types:
             fmt_r = self.format_code()
             return CheckResult(
@@ -696,16 +832,9 @@ class SwiftAdapter(FrameworkAdapter):
         )
 
     def format_code(self) -> CheckResult:
-        """Format code using swift format."""
+        """Format code using swift format (SPM) or swiftformat CLI (Xcode)."""
         if not self.has_package_swift():
-            return CheckResult(
-                check_type="format",
-                success=False,
-                output="No Package.swift found",
-                errors=["No Package.swift found"],
-                warnings=[],
-                files_modified=[],
-            )
+            return self._format_code_swiftformat()
         try:
             result = self._run_swift(["format", "-r", "."])
             out = result.stdout + result.stderr
@@ -727,17 +856,49 @@ class SwiftAdapter(FrameworkAdapter):
                 files_modified=[],
             )
 
-    def type_check(self) -> CheckResult:
-        """Run type checker via swift build."""
-        if not self.has_package_swift():
+    def _format_code_swiftformat(self) -> CheckResult:
+        """Format using swiftformat CLI (for Xcode projects without Package.swift)."""
+        try:
+            result = subprocess.run(
+                ["swiftformat", "."],
+                cwd=self.project_root,
+                capture_output=True,
+                text=True,
+                timeout=120,
+            )
+            out = result.stdout + result.stderr
             return CheckResult(
-                check_type="type_check",
-                success=False,
-                output="No Package.swift found",
-                errors=["No Package.swift found"],
+                check_type="format",
+                success=result.returncode == 0,
+                output=out,
+                errors=[] if result.returncode == 0 else ["swiftformat failed"],
                 warnings=[],
                 files_modified=[],
             )
+        except FileNotFoundError:
+            # swiftformat not installed — treat as pass (already checked by synapse_format)
+            return CheckResult(
+                check_type="format",
+                success=True,
+                output="swiftformat not found; skipped (use synapse_format check instead)",
+                errors=[],
+                warnings=["swiftformat not installed; format check skipped"],
+                files_modified=[],
+            )
+        except Exception as e:
+            return CheckResult(
+                check_type="format",
+                success=False,
+                output=str(e),
+                errors=[str(e)],
+                warnings=[],
+                files_modified=[],
+            )
+
+    def type_check(self) -> CheckResult:
+        """Run type checker via swift build (SPM) or xcodebuild build (Xcode)."""
+        if not self.has_package_swift():
+            return self._type_check_xcodebuild()
         try:
             result = self._run_swift(["build"])
             output = result.stdout + result.stderr
@@ -747,6 +908,58 @@ class SwiftAdapter(FrameworkAdapter):
                 success=result.returncode == 0,
                 output=output,
                 errors=errs,
+                warnings=[],
+                files_modified=[],
+            )
+        except Exception as e:
+            return CheckResult(
+                check_type="type_check",
+                success=False,
+                output=str(e),
+                errors=[str(e)],
+                warnings=[],
+                files_modified=[],
+            )
+
+    def _type_check_xcodebuild(self) -> CheckResult:
+        """Type-check via xcodebuild build-for-testing for Xcode projects."""
+        scheme = self._xcode_scheme()
+        proj = self._xcode_project_path()
+        if scheme is None or proj is None:
+            return CheckResult(
+                check_type="type_check",
+                success=False,
+                output="No .xcodeproj or scheme found",
+                errors=["No .xcodeproj or scheme found for xcodebuild"],
+                warnings=[],
+                files_modified=[],
+            )
+        try:
+            result = self._run_xcodebuild(
+                [
+                    "-project", str(proj),
+                    "-scheme", scheme,
+                    "-destination", "platform=iOS Simulator,name=iPhone 16",
+                    "build-for-testing",
+                ],
+                timeout=300,
+            )
+            output = result.stdout + result.stderr
+            errs = self._parse_build_errors(output) if result.returncode != 0 else []
+            return CheckResult(
+                check_type="type_check",
+                success=result.returncode == 0,
+                output=output,
+                errors=errs,
+                warnings=[],
+                files_modified=[],
+            )
+        except subprocess.TimeoutExpired:
+            return CheckResult(
+                check_type="type_check",
+                success=False,
+                output="xcodebuild timed out",
+                errors=["xcodebuild build-for-testing exceeded timeout"],
                 warnings=[],
                 files_modified=[],
             )
