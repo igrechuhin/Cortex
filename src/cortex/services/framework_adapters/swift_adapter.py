@@ -82,6 +82,21 @@ class SwiftAdapter(FrameworkAdapter):
             return info
         return None
 
+    # Preferred simulator names in priority order — first available wins.
+    _PREFERRED_SIMULATORS = [
+        "iPhone 16 Pro",
+        "iPhone 16",
+        "iPhone 17 Pro",
+        "iPhone 17",
+        "iPhone 15 Pro",
+        "iPhone 15",
+        "iPhone 14 Pro",
+        "iPhone 14",
+        "iPhone 13",
+        "iPhone 12",
+        "iPhone 11",
+    ]
+
     def __init__(self, project_root: str | None = None) -> None:
         """Initialize Swift adapter.
 
@@ -94,6 +109,45 @@ class SwiftAdapter(FrameworkAdapter):
             list(self._swift_coverage_cfg.exclude_filename_regex_patterns)
         )
         self._cached_bin_path: Path | None = None
+        self._cached_simulator_destination: str | None = None
+
+    def _simulator_destination(self) -> str:
+        """Return the best available iOS simulator destination string.
+
+        Queries ``xcrun simctl list`` once and caches the result. Falls back to
+        a generic ``platform=iOS Simulator`` destination (lets xcodebuild pick)
+        if no known simulator name is available.
+        """
+        if self._cached_simulator_destination is not None:
+            return self._cached_simulator_destination
+        try:
+            result = subprocess.run(
+                ["xcrun", "simctl", "list", "devices", "available"],
+                capture_output=True,
+                text=True,
+                timeout=30,
+            )
+            available_names: set[str] = set()
+            for line in result.stdout.splitlines():
+                # Lines look like: "    iPhone 17 Pro (UUID) (Shutdown)"
+                stripped = line.strip()
+                if not stripped or stripped.startswith("--"):
+                    continue
+                # Extract device name (everything before the first " (")
+                paren_idx = stripped.find(" (")
+                if paren_idx > 0:
+                    available_names.add(stripped[:paren_idx])
+            for name in self._PREFERRED_SIMULATORS:
+                if name in available_names:
+                    dest = f"platform=iOS Simulator,name={name}"
+                    self._cached_simulator_destination = dest
+                    return dest
+        except Exception:
+            pass
+        # Fallback: let xcodebuild choose any available simulator
+        fallback = "generic/platform=iOS Simulator"
+        self._cached_simulator_destination = fallback
+        return fallback
 
     def has_package_swift(self) -> bool:
         """Return True if Package.swift exists in project root."""
@@ -249,7 +303,7 @@ class SwiftAdapter(FrameworkAdapter):
                 [
                     "-project", str(proj),
                     "-scheme", scheme,
-                    "-destination", "platform=iOS Simulator,name=iPhone 16",
+                    "-destination", self._simulator_destination(),
                     "build-for-testing",
                 ],
                 timeout=timeout or 300,
@@ -275,7 +329,7 @@ class SwiftAdapter(FrameworkAdapter):
                 [
                     "-project", str(proj),
                     "-scheme", scheme,
-                    "-destination", "platform=iOS Simulator,name=iPhone 16",
+                    "-destination", self._simulator_destination(),
                     "test-without-building",
                 ],
                 timeout=timeout or 600,
@@ -939,7 +993,7 @@ class SwiftAdapter(FrameworkAdapter):
                 [
                     "-project", str(proj),
                     "-scheme", scheme,
-                    "-destination", "platform=iOS Simulator,name=iPhone 16",
+                    "-destination", self._simulator_destination(),
                     "build-for-testing",
                 ],
                 timeout=300,
