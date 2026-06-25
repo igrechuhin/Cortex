@@ -10,6 +10,8 @@
 - **Pass Failure Context Inline to Workflow Subagents** - COMPLETE. Added priorErrors injection from coverage pre-flight into fix.wf.js quality/tests agents; added preflight context and Phase A summary into commit.wf.js Phase A/B prompts. Quality gate 0 errors.
 - <!-- memory_type: milestone -->
 - **Phase B docs sync (commit session)** - COMPLETE. Updated memory bank, archived completed plans, ran autofix and docs gate for trim workflow agent specs and pass failure context inline session.
+- <!-- memory_type: milestone -->
+- **Phase B docs sync (commit session — workflow-conversion skill)** - COMPLETE. Updated memory bank, archived completed plans, ran autofix and docs gate for workflow-conversion skill JSON addition (src/cortex/resources/skills/workflow-conversion.json). Phase A: scope=source, coverage=90.86%.
 
 ## 2026-06-24
 

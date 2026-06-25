@@ -1,0 +1,22 @@
+{
+  "name": "workflow-conversion",
+  "description": "Convert LLM-orchestrated pipeline prompts (e.g., do.md, fix.md) to deterministic Claude Code JS Workflow scripts (.wf.js). Eliminates non-deterministic LLM routing in favor of JS control flow with typed subagent schemas.",
+  "tools": ["Bash", "Read", "Edit", "Write", "mcp__cortex__run_quality_gate", "mcp__cortex__pipeline_handoff"],
+  "when_to_use": "When an existing prompt-based pipeline has complex branching, retries, or multi-phase state handoffs that would benefit from deterministic JS orchestration. Especially when token cost of LLM-orchestrated routing is a concern or when subagent schemas need strict validation.",
+  "workflow_sequences": [
+    "Read existing .md prompt → identify phases and decision branches → write .wf.js with runStep/runSubagent → define typed schema constants → write tests in tests/workflows/ → run_quality_gate()",
+    "For each subagent: read cursor-agents/*.md → trim to ≤30 lines → keep structured output schema → sync_cursor_agents() → run_quality_gate()"
+  ],
+  "example_invocations": [
+    "Convert fix.md (LLM routing) to fix.wf.js: extract Branch A/B/C logic into JS switch, define QUALITY_SCHEMA/TESTS_SCHEMA, write 84 structural tests",
+    "Convert do.md to do.wf.js: selection phase → implementation loop → finalize, 476 lines, 69 tests",
+    "Trim implement-code.md from 80 lines to ≤30 lines: remove MCP tool prose, keep numbered steps with expected output fields"
+  ],
+  "troubleshooting_tips": [
+    "Cross-check each rewrite against schema constants in .wf.js files — missing a required structured output field causes silent JS validation failures at runtime.",
+    "After trimming cursor-agent .md files, run sync_cursor_agents() to propagate changes to .claude/agents/ — stale copies break Claude Code CLI invocations.",
+    "Keep all decision branch labels (Branch A/B/C) even as one-liners — removing them causes silent misbehavior in edge cases.",
+    "To pass failure context inline: extract prior gate errors in the JS orchestrator and inject them into the agent prompt string; agents can skip their first gate call if prior_errors is populated."
+  ],
+  "keywords": ["workflow", "conversion", "js", "deterministic", "orchestration", "subagent", "agent-spec", "trim", "token-efficiency", "fix.wf.js", "do.wf.js", "commit.wf.js", "cursor-agents", "claude-code"]
+}

@@ -273,7 +273,10 @@ class TestSwiftAdapter:
             result = adapter.run_tests()
             assert result.success is False
             # No Package.swift AND no .xcodeproj → xcodebuild fallback reports missing xcodeproj
-            assert "xcodeproj" in result.output.lower() or "scheme" in result.output.lower()
+            assert (
+                "xcodeproj" in result.output.lower()
+                or "scheme" in result.output.lower()
+            )
 
     @patch("cortex.services.framework_adapters.swift_adapter.subprocess.run")
     def test_run_tests_success_when_swift_test_exits_0(
@@ -647,14 +650,19 @@ class TestSwiftAdapter:
             assert "swift" in call_args
             assert "format" in call_args
 
-    def test_type_check_returns_error_when_no_package_swift_and_no_xcodeproj(self) -> None:
+    def test_type_check_returns_error_when_no_package_swift_and_no_xcodeproj(
+        self,
+    ) -> None:
         """type_check falls back to xcodebuild; errors when no xcodeproj either."""
         with tempfile.TemporaryDirectory() as tmpdir:
             adapter = SwiftAdapter(str(tmpdir))
             result = adapter.type_check()
             assert result.success is False
             assert result.check_type == "type_check"
-            assert "xcodeproj" in result.output.lower() or "scheme" in result.output.lower()
+            assert (
+                "xcodeproj" in result.output.lower()
+                or "scheme" in result.output.lower()
+            )
 
     @patch("cortex.services.framework_adapters.swift_adapter.subprocess.run")
     def test_type_check_success_when_swift_build_exits_0(
@@ -708,14 +716,19 @@ class TestSwiftAdapter:
             assert result.success is True
             assert result.errors == []
 
-    def test_lint_code_returns_error_when_no_package_swift_and_no_xcodeproj(self) -> None:
+    def test_lint_code_returns_error_when_no_package_swift_and_no_xcodeproj(
+        self,
+    ) -> None:
         """lint_code delegates to type_check; falls back to xcodebuild, errors without xcodeproj."""
         with tempfile.TemporaryDirectory() as tmpdir:
             adapter = SwiftAdapter(str(tmpdir))
             result = adapter.lint_code()
             assert result.success is False
             assert result.check_type == "type_check"
-            assert "xcodeproj" in result.output.lower() or "scheme" in result.output.lower()
+            assert (
+                "xcodeproj" in result.output.lower()
+                or "scheme" in result.output.lower()
+            )
 
     @patch("cortex.services.framework_adapters.swift_adapter.subprocess.run")
     def test_format_code_returns_error_on_exception(self, mock_run: MagicMock) -> None:
