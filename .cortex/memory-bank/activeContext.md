@@ -10,6 +10,10 @@
 
 - ✅ **Test failure diagnosis attempt [queries/query-test-failure-diagnosis-attempt-2026-06-25.md]** - COMPLETE (2026-06-25) - [Test failure diagnosis attempt](queries/query-test-failure-diagnosis-attempt-2026-06-25.md) — Query result captured for Test failure diagnosis attempt (2026-06-25) for future reuse.
 
+- ✅ **Trim Workflow Agent Specs for Claude Code CLI** - COMPLETE (2026-06-25) - Rewrote all 10 cursor-agent .md files (commit-preflight, commit-phase-a/b/c, commit-final-gate, fix-quality/coverage/tests/docs, implement-code) from 63–197 lines to 28–40 lines each. Total token reduction: 13,557 → 5,977 tokens (55.9%). All required structured output fields, Resume Check blocks, and contract phrases preserved. Synced to .claude/agents/. Quality gate passes with 6967 tests at 91.02% coverage.
+
+- ✅ **Pass Failure Context Inline to Workflow Subagents** - COMPLETE (2026-06-25) - Injected coverage pre-flight gate errors into fix.wf.js quality and tests agent prompts (priorErrors), and passed preflight/Phase A context into commit.wf.js Phase A and Phase B prompts — eliminating the first redundant gate call per subagent per iteration.
+
 ## Completed Work (2026-06-24)
 
 - **Summary (2026-06-24)** - 5 entries archived.

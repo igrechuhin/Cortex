@@ -6,6 +6,10 @@
 - **Convert fix.md orchestration to Claude Code dynamic Workflow script** - COMPLETE. Authored fix.wf.js with deterministic JS switch/while replacing LLM-orchestrated prose routing; 84 tests all pass; quality gate green.
 - <!-- memory_type: milestone -->
 - **Phase B docs sync** - COMPLETE. Updated memory bank, archived completed plans, ran autofix and docs gate for skill pack workflow promotions and fix/do/commit workflow script conversion session.
+- **Trim Workflow Agent Specs for Claude Code CLI** - COMPLETE. Rewrote 10 cursor-agent files, 55.9% token reduction (13,557→5,977 tokens), all tests pass, .claude/agents/ synced.
+- **Pass Failure Context Inline to Workflow Subagents** - COMPLETE. Added priorErrors injection from coverage pre-flight into fix.wf.js quality/tests agents; added preflight context and Phase A summary into commit.wf.js Phase A/B prompts. Quality gate 0 errors.
+- <!-- memory_type: milestone -->
+- **Phase B docs sync (commit session)** - COMPLETE. Updated memory bank, archived completed plans, ran autofix and docs gate for trim workflow agent specs and pass failure context inline session.
 
 ## 2026-06-24
 
