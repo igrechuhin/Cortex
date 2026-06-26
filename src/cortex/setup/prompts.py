@@ -63,6 +63,10 @@ Generate all 7 core files from templates:
     "cortex": {{
       "command": "uvx",
       "args": ["--from", "git+https://github.com/igrechuhin/cortex.git", "cortex"]
+    }},
+    "serena": {{
+      "command": "uv",
+      "args": ["--from", "git+https://github.com/oraios/serena.git", "serena", "start-mcp-server", "--context", "ide-assistant", "--project", "<absolute_project_root>"]
     }}
   }}
 }}
