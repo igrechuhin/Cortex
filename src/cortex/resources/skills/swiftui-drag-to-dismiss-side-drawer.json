@@ -1,0 +1,25 @@
+{
+  "name": "swiftui-drag-to-dismiss-side-drawer",
+  "description": "Pattern for implementing a drag-to-dismiss side drawer in SwiftUI using DragGesture with callback lifting to parent, GeometryReader-based dismiss threshold, and simultaneous gesture handling to avoid ScrollView conflicts.",
+  "tools": ["Edit", "Read", "Bash"],
+  "when_to_use": "When building a SwiftUI side menu or drawer that should respond to a swipe-left drag gesture while also containing a ScrollView. The ScrollView blocks normal .gesture() modifiers, requiring .simultaneousGesture().",
+  "workflow_sequences": [
+    "1. Add onDragChanged and onDragEnded callbacks to the child drawer view (not @State inside child)",
+    "2. Attach .simultaneousGesture(DragGesture(minimumDistance:15)) to the ScrollView inside the drawer",
+    "3. In onChanged: filter for horizontal-dominant left drags (dx < 0 && abs(dx) > abs(dy))",
+    "4. In parent GeometryReader: compute baseOffset = showMenu ? 0 : -screenWidth",
+    "5. Apply .offset(x: baseOffset + dragDelta) to the drawer; suppress animation while dragging (menuDragOffset != 0)",
+    "6. On drag end: compare abs(dx) to dismissThreshold (e.g. screenWidth * 0.35); dismiss or snap back with .easeInOut"
+  ],
+  "example_invocations": [
+    "SideMenuView(isPresented: $showMenu, onDragChanged: { dx in menuDragOffset = dx }, onDragEnded: { dx in if dx < -dismissThreshold { showMenu = false } })",
+    ".simultaneousGesture(DragGesture(minimumDistance: 15, coordinateSpace: .global).onChanged { ... }.onEnded { ... })"
+  ],
+  "troubleshooting_tips": [
+    "If the drawer jumps on drag start, ensure dragDelta clamps at 0: min(0, menuDragOffset) for left-slide drawers",
+    "If scroll and drag conflict: verify .simultaneousGesture is on ScrollView, not an inner VStack",
+    "If dismiss fires immediately: increase minimumDistance (15px is minimum; 20-30px for less sensitive feel)",
+    "Suppress spring-back animation during drag: .animation(menuDragOffset == 0 ? .easeInOut : nil, value: menuDragOffset)"
+  ],
+  "keywords": ["swiftui", "drag", "dismiss", "side drawer", "side menu", "gesture", "simultaneousGesture", "DragGesture", "ScrollView", "offset animation"]
+}

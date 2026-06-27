@@ -115,12 +115,28 @@ async def write_artifact(
     """Write a validated skill JSON or rule .mdc file to allowlisted locations.
 
     USE WHEN: Analysis agents need to persist generated skill manifests under
-    ``src/cortex/resources/skills`` or generated Synapse rules under
+    ``src/cortex/resources/skills`` or generic, cross-project Synapse rules under
     ``.cortex/synapse/rules`` using an explicit allowlisted write tool.
+
+    RULES ARE GENERIC-ONLY — CRITICAL CONSTRAINT:
+    ``artifact_type="rule"`` writes to ``.cortex/synapse/rules/`` which is a SHARED
+    submodule visible across ALL projects. ONLY write a rule here when it applies
+    verbatim to any project in any codebase (e.g. general security, testing standards).
+
+    DO NOT USE for project-specific patterns — rules derived from THIS project's code,
+    architecture, UI components, or conventions. Those belong in ``.cortex/rules/``
+    and must be written with the plain Write tool, NOT write_artifact.
+
+    Decision checklist before calling write_artifact for a rule:
+    - Would this rule read identically in a different repo? → write_artifact (synapse)
+    - Does this rule reference a class/view/pattern from THIS project? → Write to .cortex/rules/
 
     EXAMPLES:
     - write_artifact(artifact_type="skill", name="commit-pipeline", content="{...}")
     - write_artifact(artifact_type="rule", name="general/no-secrets.mdc", content="---...")
+    - write_artifact(artifact_type="rule", name="python/python-async-patterns.mdc", content="---...")
+    - NOT: write_artifact for a SwiftUI pattern specific to SideMenuView in this project
+    - NOT: write_artifact for a rule referencing this project's Route enum or APIError type
     """
     try:
         project_root = await get_or_resolve_project_root(ctx)
