@@ -190,7 +190,7 @@ def _run_checks(
 
 
 _MD_EXCLUDE_DIRS = frozenset(
-    {"node_modules", ".venv", "venv", "__pycache__", ".git", ".build"}
+    {"node_modules", ".venv", "venv", "__pycache__", ".git", ".build", ".serena"}
 )
 _MD_EXCLUDE_PREFIXES = (
     ".cortex/plans/archive",
@@ -218,9 +218,10 @@ def collect_pre_commit_markdown_paths(root: Path, max_files: int = 500) -> list[
     """Collect markdown file paths under root, excluding common dirs and archive.
 
     Versioned memory-bank snapshots under ``.cortex/history/``, session cache
-    markdown under ``.cortex/.cache/``, and wiki raw snapshots under
-    ``.cortex/wiki/sources/`` are excluded: they are not hand-edited sources of
-    truth and contain sibling-relative links invalid from those paths.
+    markdown under ``.cortex/.cache/``, wiki raw snapshots under
+    ``.cortex/wiki/sources/``, and Serena agent memories under ``.serena/`` are
+    excluded: they are not hand-edited sources of truth and contain
+    sibling-relative links invalid from those paths.
     """
     md_files: list[str] = []
     for path in sorted(root.rglob("*")):

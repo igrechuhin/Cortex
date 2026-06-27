@@ -275,7 +275,8 @@ jobs:
             -not -path "./.cortex/plans/archive/*" \
             -not -path "./.cortex/history/*" \
             -not -path "./.cortex/.cache/*" \
-            -not -path "./.cortex/wiki/sources/*" | head -500)
+            -not -path "./.cortex/wiki/sources/*" \
+            -not -path "./.serena/*" | head -500)
           if [ -n "$MD_FILES" ]; then
             # rumdl exits non-zero when violations are present.
             # Pass --config explicitly: rumdl 0.1.x auto-discovery reports the

@@ -41,6 +41,7 @@ _ALL_MARKDOWN_EXCLUDE_DIRS = (
     "__pycache__",
     ".git",
     ".build",
+    ".serena",
 )
 _ALL_MARKDOWN_EXCLUDE_PREFIXES = (
     ".cortex/plans/archive",
@@ -297,9 +298,10 @@ def get_all_markdown_files_for_lint(
 ) -> list[Path]:
     """Get all markdown files for lint (CI parity with quality.yml markdown step).
 
-    Excludes: node_modules, .venv, venv, __pycache__, .git, and paths under
-    ``.cortex/plans/archive``, ``.cortex/history/``, ``.cortex/.cache/``, and
-    the wiki sources prefix from :data:`WIKI_SOURCES_DIR_PROJECT_RELATIVE_PREFIX`
+    Excludes: node_modules, .venv, venv, __pycache__, .git, .build, .serena,
+    and paths under ``.cortex/plans/archive``, ``.cortex/history/``,
+    ``.cortex/.cache/``, and the wiki sources prefix from
+    :data:`WIKI_SOURCES_DIR_PROJECT_RELATIVE_PREFIX`
     (mirrors detached worker markdown collection and CI/Makefile rumdl scope).
     Returns up to max_files paths, sorted.
     """
