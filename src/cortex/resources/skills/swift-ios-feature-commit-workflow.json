@@ -1,0 +1,43 @@
+{
+  "name": "swift-ios-feature-commit-workflow",
+  "description": "End-to-end workflow for implementing a new feature in a Swift iOS Clean Architecture project: domain model → repository protocol → repository impl → use case → ViewModel → View → tests → commit.",
+  "tools": [
+    "Read", "Edit", "Write", "Bash",
+    "mcp__cortex__manage_file",
+    "mcp__cortex__update_memory_bank",
+    "mcp__cortex__run_quality_gate",
+    "mcp__cortex__pipeline_handoff"
+  ],
+  "when_to_use": "When implementing any new feature screen or data flow in a Swift iOS project following Clean Architecture layers (Domain / Data / Presentation).",
+  "workflow_sequences": [
+    "1. Define Domain model (value-type struct, Sendable) in Domain/Models/",
+    "2. Add async throws protocol to Domain/Repositories/",
+    "3. Implement XxxRepositoryImpl in Data/Repositories/ with GRDB local + APIClient remote calls",
+    "4. Add Endpoint struct + DTO in Data/Remote/; add Domain mapper extension",
+    "5. Write UseCase struct with callAsFunction; register in AppContainer",
+    "6. Write @Observable ViewModel; inject UseCase + NavigationRouter",
+    "7. Write SwiftUI View; use .task modifier for async loads",
+    "8. Add Route case and RouteDestinationView switch arm",
+    "9. Add Russian localization strings to ru.lproj/Localizable.strings",
+    "10. Write unit tests: mock repository → UseCase test, ViewModel test",
+    "11. Run xcodebuild tests (EPD-Dev scheme) — must pass before commit",
+    "12. Update memory bank activeContext.md with completed work entry",
+    "13. Commit with atomic scope message"
+  ],
+  "example_invocations": [
+    "Implement CounterpartyDetails feature: fetch remote details and display in CounterpartyProfileView",
+    "Add DocumentScanner screen with VisionKit stub and upload integration",
+    "Wire PushNotifications: AppDelegate + FCM token POST to backend"
+  ],
+  "troubleshooting_tips": [
+    "Swift 6.2 strict concurrency: all repo protocols and use case structs must be Sendable; ViewModels use @ObservationIgnored nonisolated(unsafe) only for Task vars accessed in deinit",
+    "Token refresh 401 loops: APIClient actor handles concurrency; never call refresh manually from ViewModel",
+    "GRDB actor isolation: all DB writes must be on DatabaseQueue writer; reads can use reader",
+    "Localization: zero Cyrillic literals in Swift files — all strings via .localized extension",
+    "Route navigation: add case to Route enum and arm to RouteDestinationView; inject NavigationRouter into ViewModel",
+    "MainView child VMs: initialize outside body, reinitialize on activeCounterparty change to avoid stale state"
+  ],
+  "keywords": [
+    "swift", "ios", "clean-architecture", "swiftui", "feature", "domain", "usecase", "repository", "viewmodel", "grdb", "urlsession"
+  ]
+}
