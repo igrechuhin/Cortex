@@ -5,6 +5,7 @@ This module provides synchronous functions to check project configuration status
 at import time. Used for conditional prompt registration.
 """
 
+import json
 from pathlib import Path
 
 from pydantic import ConfigDict, Field
@@ -40,6 +41,9 @@ class ProjectConfigStatus(DictLikeModel):
     tiktoken_cache_available: bool = Field(
         description="Whether tiktoken cache is available"
     )
+    codegraph_configured: bool = Field(
+        description="Whether CodeGraph MCP server is present in .cursor/mcp.json or .mcp.json"
+    )
 
 
 def _check_memory_bank_initialized(project_root: Path) -> bool:
@@ -74,6 +78,23 @@ def check_cursor_integration(cursor_dir: Path, cortex_dir: Path) -> bool:
     return True
 
 
+def _has_codegraph_in_mcp_file(path: Path) -> bool:
+    if not path.is_file():
+        return False
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+        return bool(data.get("mcpServers", {}).get("codegraph"))
+    except Exception:
+        return False
+
+
+def _check_codegraph_configured(project_root: Path, cursor_dir: Path) -> bool:
+    """Check if CodeGraph MCP server is present in .cursor/mcp.json or .mcp.json."""
+    return _has_codegraph_in_mcp_file(
+        cursor_dir / "mcp.json"
+    ) or _has_codegraph_in_mcp_file(project_root / ".mcp.json")
+
+
 def _check_migration_needed(project_root: Path, memory_bank_initialized: bool) -> bool:
     """Check if migration is needed from legacy formats."""
     if memory_bank_initialized:
@@ -96,7 +117,8 @@ def _get_fail_safe_status() -> ProjectConfigStatus:
         structure_configured=True,
         cursor_integration_configured=True,
         migration_needed=False,
-        tiktoken_cache_available=True,  # Assume available in fail-safe mode
+        tiktoken_cache_available=True,
+        codegraph_configured=True,  # Assume configured in fail-safe mode
     )
 
 
@@ -123,12 +145,14 @@ def get_project_config_status(
         cursor_integration_configured = check_cursor_integration(cursor_dir, cortex_dir)
         migration_needed = _check_migration_needed(root, memory_bank_initialized)
         tiktoken_cache_available = ensure_bundled_cache_available()
+        codegraph_configured = _check_codegraph_configured(root, cursor_dir)
         return ProjectConfigStatus(
             memory_bank_initialized=memory_bank_initialized,
             structure_configured=structure_configured,
             cursor_integration_configured=cursor_integration_configured,
             migration_needed=migration_needed,
             tiktoken_cache_available=tiktoken_cache_available,
+            codegraph_configured=codegraph_configured,
         )
     except Exception as e:
         from cortex.core.logging_config import logger

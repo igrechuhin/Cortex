@@ -14,7 +14,8 @@
       "Bash(.venv/bin/pytest tests/unit/test_metadata_index.py -v)",
       "Bash(.venv/bin/pytest tests/unit/test_metadata_index.py::TestDependencyGraph::test_update_dependency_graph_stores_graph -v)",
       "Bash(.venv/bin/pytest tests/unit/test_metadata_index.py::TestDependencyGraph::test_get_dependency_graph_returns_graph -v)",
-      "Bash(.venv/bin/pytest tests/unit/ -q --tb=line)"
+      "Bash(.venv/bin/pytest tests/unit/ -q --tb=line)",
+      "mcp__codegraph__*"
     ],
     "additionalDirectories": [
       "s/sections[0][level]/sections[0].level"

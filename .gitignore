@@ -130,3 +130,6 @@ eval_results.json
 .cursor/memory-bank
 .cursor/plans
 .cursor/synapse
+
+# CodeGraph local index (generated; do not commit)
+.codegraph/

@@ -17,6 +17,7 @@ def test_should_mount_setup_returns_true_when_memory_bank_not_initialized() -> N
         cursor_integration_configured=True,
         migration_needed=False,
         tiktoken_cache_available=True,
+        codegraph_configured=True,
     )
     assert should_mount_setup(config) is True
 
@@ -29,6 +30,7 @@ def test_should_mount_setup_returns_true_when_structure_not_configured() -> None
         cursor_integration_configured=True,
         migration_needed=False,
         tiktoken_cache_available=True,
+        codegraph_configured=True,
     )
     assert should_mount_setup(config) is True
 
@@ -41,6 +43,7 @@ def test_should_mount_setup_returns_true_when_migration_needed() -> None:
         cursor_integration_configured=True,
         migration_needed=True,
         tiktoken_cache_available=True,
+        codegraph_configured=True,
     )
     assert should_mount_setup(config) is True
 
@@ -53,6 +56,7 @@ def test_should_mount_setup_returns_false_when_fully_configured() -> None:
         cursor_integration_configured=True,
         migration_needed=False,
         tiktoken_cache_available=True,
+        codegraph_configured=True,
     )
     assert should_mount_setup(config) is False
 
@@ -67,6 +71,7 @@ def test_should_mount_setup_calls_get_project_config_status_when_config_none() -
             cursor_integration_configured=True,
             migration_needed=False,
             tiktoken_cache_available=True,
+            codegraph_configured=True,
         ),
     ) as mock_get:
         result = should_mount_setup(None)

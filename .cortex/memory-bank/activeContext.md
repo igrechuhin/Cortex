@@ -1,6 +1,11 @@
+<!-- memory_type: preference -->
 # Active Context: Cortex
 
 **This file records completed work only.** For current status and upcoming work see [roadmap.md](roadmap.md).
+
+## Completed Work (2026-06-30)
+
+- **Add setup_codegraph prompt and CodeGraph MCP integration** - COMPLETE (2026-06-30) - Added `codegraph_configured` field to `ProjectConfigStatus` (checks `.cursor/mcp.json` and `.mcp.json` for `mcpServers.codegraph` key); added `SETUP_CODEGRAPH_PROMPT` to `prompts.py`; registered `setup_codegraph` setup prompt with visibility gated on `memory_bank_initialized and not codegraph_configured`; refactored `apply_setup_prompt_visibility` to `_build_prompt_visibility` helper; updated `INITIALIZE_PROMPT` with codegraph binary resolution and init steps; added `.codegraph/` to `.gitignore`. Test additions in `test_lazy_prompt_registration.py` and `test_setup_module.py`. Phase A: scope=markdown_only, coverage=90.85%.
 
 ## Completed Work (2026-06-25)
 
@@ -335,6 +340,8 @@
 Next roadmap item: **[Fast-Forward vs. Step-by-Step Planning Modes](../plans/archive/Other/fast-forward-vs-step-by-step-modes.md)** (see [roadmap.md](roadmap.md) pending plans).
 
 ## Recent Changes
+
+CodeGraph integration (2026-06-30): added `setup_codegraph` setup prompt with visibility gated on `memory_bank_initialized and not codegraph_configured`; `ProjectConfigStatus.codegraph_configured` checks `.cursor/mcp.json` and `.mcp.json`; `.codegraph/` added to `.gitignore`.
 
 CI quality gate green (2026-06-23): synapse scripts fully typed (99 pyright errors resolved across 8 files); docs gate test uses concrete types instead of Any; test_phase3 and test_phase4 stale dates fixed.
 

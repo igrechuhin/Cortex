@@ -83,6 +83,7 @@ _SETUP_PROMPT_ICONS: dict[str, str] = {
     "initialize": "🏗️",
     "migrate": "🔄",
     "populate_tiktoken_cache": "💾",
+    "setup_codegraph": "🔗",
 }
 
 # ---------------------------------------------------------------------------
@@ -112,6 +113,12 @@ def _get_tiktoken_prompt() -> str:
     from cortex.setup.prompts import POPULATE_TIKTOKEN_CACHE_PROMPT
 
     return POPULATE_TIKTOKEN_CACHE_PROMPT
+
+
+def _get_setup_codegraph_prompt() -> str:
+    from cortex.setup.prompts import SETUP_CODEGRAPH_PROMPT
+
+    return SETUP_CODEGRAPH_PROMPT
 
 
 # ---------------------------------------------------------------------------
@@ -246,6 +253,19 @@ def _register_tiktoken_prompt() -> None:
     _ = populate_tiktoken_cache  # pyright: ignore[reportUnusedFunction]
 
 
+def _register_setup_codegraph_prompt() -> None:
+    @mcp.prompt(icons=[create_emoji_icon(_SETUP_PROMPT_ICONS["setup_codegraph"])])
+    def setup_codegraph() -> str:
+        """Add CodeGraph semantic code intelligence to this project.
+
+        Adds CodeGraph MCP server to .cursor/mcp.json, runs codegraph init,
+        and wires permissions for Claude Code.
+        """
+        return _get_setup_codegraph_prompt()
+
+    _ = setup_codegraph  # pyright: ignore[reportUnusedFunction]
+
+
 def register_setup_prompts(status: object, project_root: Path) -> None:
     """Register setup prompts once; visibility is controlled separately."""
     _ = status
@@ -256,25 +276,29 @@ def register_setup_prompts(status: object, project_root: Path) -> None:
         _register_migrate_prompt(project_root)
     if "populate_tiktoken_cache" not in already:
         _register_tiktoken_prompt()
+    if "setup_codegraph" not in already:
+        _register_setup_codegraph_prompt()
+
+
+def _build_prompt_visibility(cfg: object) -> dict[str, bool]:
+    from cortex.tools.config import ProjectConfigStatus
+
+    c: ProjectConfigStatus = cfg  # type: ignore[assignment]
+    return {
+        "initialize": (
+            not c.memory_bank_initialized
+            and not c.structure_configured
+            and not c.migration_needed
+        ),
+        "migrate": c.migration_needed,
+        "populate_tiktoken_cache": not c.tiktoken_cache_available,
+        "setup_codegraph": c.memory_bank_initialized and not c.codegraph_configured,
+    }
 
 
 def apply_setup_prompt_visibility(status: object) -> bool:
     """Enable/disable setup prompts based on current project status."""
-    from cortex.tools.config import ProjectConfigStatus
-
-    cfg: ProjectConfigStatus = status  # type: ignore[assignment]
-    should_show_initialize = (
-        not cfg.memory_bank_initialized
-        and not cfg.structure_configured
-        and not cfg.migration_needed
-    )
-    should_show_migrate = cfg.migration_needed
-    should_show_tiktoken = not cfg.tiktoken_cache_available
-    visibility = {
-        "initialize": should_show_initialize,
-        "migrate": should_show_migrate,
-        "populate_tiktoken_cache": should_show_tiktoken,
-    }
+    visibility = _build_prompt_visibility(status)
     changed = False
     for prompt_name, should_enable in visibility.items():
         try:

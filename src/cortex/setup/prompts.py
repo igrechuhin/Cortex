@@ -57,7 +57,7 @@ Generate all 7 core files from templates:
   - .cursor/memory-bank -> ../.cortex/memory-bank
   - .cursor/synapse -> ../.cortex/synapse
   - .cursor/plans -> ../.cortex/plans
-- Create .cursor/mcp.json with MCP server configuration:
+- Create `.cursor/mcp.json` with MCP server configuration (for Cursor IDE users):
 {{
   "mcpServers": {{
     "cortex": {{
@@ -67,9 +67,35 @@ Generate all 7 core files from templates:
     "serena": {{
       "command": "uv",
       "args": ["--from", "git+https://github.com/oraios/serena.git", "serena", "start-mcp-server", "--context", "ide-assistant", "--project", "<absolute_project_root>"]
-    }}
+    }},
+    "codegraph": <see Step 3b for the correct entry>
   }}
 }}
+- Also create `.mcp.json` in the project root with the same `mcpServers` content (for Claude Code CLI users).
+  Use `"type": "stdio"` on the cortex entry if running from a local venv.
+
+**Step 3b: Initialize CodeGraph**
+Resolve the binary, write the mcp.json entry, and index the project:
+
+1. Run `which codegraph` (or `where codegraph` on Windows):
+   - If found on PATH → use `"command": "codegraph", "args": ["serve", "--mcp"]`
+   - If not found → check `~/Repo/codegraph/dist/bin/codegraph.js` (local dev checkout):
+     - If that file exists → use `"command": "node", "args": ["<absolute_path>", "serve", "--mcp"]`
+     - Otherwise → omit the `codegraph` key from mcp.json and skip steps 2–3 (note in output)
+
+1b. Check Node.js version (for local checkout only):
+   - Run `node --version`
+   - If Node 25+: add `"env": {{"CODEGRAPH_ALLOW_UNSAFE_NODE": "1"}}` to the mcp.json entry
+     (indexing on Node 25+ may be unstable; recommend Node 22 LTS for production)
+   - If Node 20–24: no env override needed
+
+2. Write the resolved entry into both `.cursor/mcp.json` and `.mcp.json` under `mcpServers.codegraph`
+   (merge, do not overwrite other keys).
+
+3. Run `CODEGRAPH_ALLOW_UNSAFE_NODE=1 node <path> init` (or `codegraph init`) in the project root:
+   - This creates `.codegraph/` and indexes all source files (takes 5–60s)
+   - Add `.codegraph/` to `.gitignore` if not already present
+   - If init fails or times out, skip silently — CodeGraph will index on first MCP start
 
 **Step 4: Optionally setup Synapse (recommended)**
 - Add Synapse repository as Git submodule to .cortex/synapse/
@@ -176,6 +202,73 @@ Expected output format:
 
 If an old format is detected during initialization, please migrate it to the current format."""
 
+SETUP_CODEGRAPH_PROMPT = """Please add CodeGraph to this Cortex-initialized project.
+
+CodeGraph provides semantic code intelligence (callers, callees, impact radius, symbol search)
+to AI agents via MCP. It's 100% local, auto-syncing, and requires no cloud access.
+
+**Step 1: Resolve the codegraph binary path**
+- Run `which codegraph` to check if it's on PATH.
+- If found: use the returned path as `<codegraph_binary>`.
+- If not found: check common local checkout locations:
+  - `~/Repo/codegraph/dist/bin/codegraph.js` (run with `node`)
+  - `/usr/local/bin/codegraph`
+  - Ask the user for the path if none found.
+- For a local Node.js checkout use: `"command": "node", "args": ["<absolute_path_to_codegraph.js>", "serve", "--mcp"]`
+- For a PATH-installed binary use: `"command": "codegraph", "args": ["serve", "--mcp"]`
+
+**Step 1b: Check Node.js version (for local checkout only)**
+- Run `node --version` to get the current Node.js version.
+- If Node version is 25.x or higher: the MCP server entry must include
+  `"env": {{"CODEGRAPH_ALLOW_UNSAFE_NODE": "1"}}` to bypass the startup version check.
+  Note: indexing on Node 25+ may be unstable due to a V8 WASM bug; recommend installing
+  Node 22 LTS (`brew install node@22`) for production use.
+- If Node version is 20–24: no env override needed.
+- If using a PATH-installed `codegraph` binary: skip this step (it manages its own runtime).
+
+**Step 2: Add codegraph to the MCP config**
+Determine the correct config file for the active agent:
+- Claude Code CLI: `.mcp.json` in the project root (create if missing with `{{"mcpServers": {{}}}}`)
+- Cursor IDE: `.cursor/mcp.json` (create if missing)
+- Both present: update both
+
+Merge the following entry under `mcpServers` — do NOT overwrite existing entries:
+  - If binary is on PATH, Node 20–24:
+    `"codegraph": {{"command": "codegraph", "args": ["serve", "--mcp"]}}`
+  - If binary is on PATH, Node 25+:
+    `"codegraph": {{"command": "codegraph", "args": ["serve", "--mcp"], "env": {{"CODEGRAPH_ALLOW_UNSAFE_NODE": "1"}}}}`
+  - If using a local Node.js checkout, Node 20–24:
+    `"codegraph": {{"command": "node", "args": ["<absolute_path_to_codegraph.js>", "serve", "--mcp"]}}`
+  - If using a local Node.js checkout, Node 25+:
+    `"codegraph": {{"command": "node", "args": ["<absolute_path_to_codegraph.js>", "serve", "--mcp"], "env": {{"CODEGRAPH_ALLOW_UNSAFE_NODE": "1"}}}}`
+
+**Step 3: Initialize CodeGraph index**
+- Run `CODEGRAPH_ALLOW_UNSAFE_NODE=1 node <path> init` (or `codegraph init`) in the project root.
+- This builds the semantic graph into `.codegraph/` (takes 5–60s depending on project size).
+- Add `.codegraph/` to `.gitignore` if not already present (it's a local-only index).
+- If init fails or times out, skip — CodeGraph will index on next `codegraph serve --mcp` start.
+
+**Step 4: Add permissions for Claude Code**
+- If `.claude/settings.json` exists, merge `"mcp__codegraph__*"` into `permissions.allow`:
+{{
+  "permissions": {{
+    "allow": ["mcp__codegraph__*"]
+  }}
+}}
+- Do NOT overwrite other permissions entries.
+
+Expected output format:
+{{
+  "status": "success",
+  "codegraph_binary": "<resolved path or 'codegraph' if on PATH>",
+  "node_version": "<e.g. v22.14.0 or N/A for PATH binary>",
+  "unsafe_node_env_added": <true/false>,
+  "mcp_json_updated": true,
+  "codegraph_init_run": <true/false>,
+  "gitignore_updated": <true/false>,
+  "permissions_updated": <true/false>
+}}"""
+
 POPULATE_TIKTOKEN_CACHE_PROMPT = """Please populate the bundled tiktoken cache
 with encoding files.
 
@@ -230,8 +323,9 @@ Check for legacy formats:
 First, create the new structure (same as initialize prompt):
 - Create .cortex/ directory structure (memory-bank, plans, config)
 - Initialize Memory Bank with 7 core files (if not already present)
-- Setup Cursor integration (symlinks + mcp.json)
+- Setup Cursor integration (symlinks + mcp.json) — include cortex, serena, and codegraph MCP server entries (same as initialize Step 3)
 - Update .gitignore (same as initialize Step 5)
+- Initialize CodeGraph index (same as initialize Step 3b)
 
 **Step 2b: Emit post-edit quality hook**
 Detect the project's primary language using common project manifests and conventions

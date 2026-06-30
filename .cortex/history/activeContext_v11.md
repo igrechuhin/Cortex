@@ -1,12 +1,23 @@
+<!-- memory_type: preference -->
 # Active Context: Cortex
 
 **This file records completed work only.** For current status and upcoming work see [roadmap.md](roadmap.md).
+
+## Completed Work (2026-06-30)
+
+- **Add setup_codegraph prompt and CodeGraph MCP integration** - COMPLETE (2026-06-30) - Added `codegraph_configured` field to `ProjectConfigStatus` (checks `.cursor/mcp.json` and `.mcp.json` for `mcpServers.codegraph` key); added `SETUP_CODEGRAPH_PROMPT` to `prompts.py`; registered `setup_codegraph` setup prompt with visibility gated on `memory_bank_initialized and not codegraph_configured`; refactored `apply_setup_prompt_visibility` to `_build_prompt_visibility` helper; updated `INITIALIZE_PROMPT` with codegraph binary resolution and init steps; added `.codegraph/` to `.gitignore`. Test additions in `test_lazy_prompt_registration.py` and `test_setup_module.py`. Phase A: scope=markdown_only, coverage=90.85%.
 
 ## Completed Work (2026-06-25)
 
 - ✅ **Convert do.md orchestration to Claude Code dynamic Workflow script** - COMPLETE (2026-06-25) - Authored do.wf.js in .cortex/workflows/ encoding all six /cortex/do phases (Selection, Implementation loop while(!step_fully_complete, max 5), Review Gate, Finalize, Verify, Fix, Cleanup, Post-Prompt Hook) as deterministic JS control flow. Parallel [P] steps execute via pipeline(). Structured schemas (SELECTION_SCHEMA, IMPL_SCHEMA, REVIEW_SCHEMA, FINALIZE_SCHEMA) eliminate pipeline_handoff string parsing. 69 structural tests in tests/workflows/test_do_wf.py all pass. prompts-manifest.json marks do.md superseded_by do.wf.js with do.md kept as fallback.
 
 - ✅ **Convert fix.md orchestration to Claude Code dynamic Workflow script** - COMPLETE (2026-06-25) - Authored fix.wf.js at .cortex/workflows/fix.wf.js encoding PHASE 0 diagnosis gate (first await agent() by construction), coverage switch() on all 5 status values (passed/skipped/tests_failing/failed/BLOCKED), per-target retry while loops capped at MAX_TARGET_ITERATIONS=3, quality scope routing (markdown_only vs source), docs bridge_mismatch non-blocking path, structured schemas for all 4 subagents. Updated prompts-manifest.json to mark fix.md superseded_by fix.wf.js. Added 84 tests in tests/workflows/test_fix_wf.py covering all routing branches. Quality gate passes (6967 tests, 91% coverage).
+
+- ✅ **Test failure diagnosis attempt [queries/query-test-failure-diagnosis-attempt-2026-06-25.md]** - COMPLETE (2026-06-25) - [Test failure diagnosis attempt](queries/query-test-failure-diagnosis-attempt-2026-06-25.md) — Query result captured for Test failure diagnosis attempt (2026-06-25) for future reuse.
+
+- ✅ **Trim Workflow Agent Specs for Claude Code CLI** - COMPLETE (2026-06-25) - Rewrote all 10 cursor-agent .md files (commit-preflight, commit-phase-a/b/c, commit-final-gate, fix-quality/coverage/tests/docs, implement-code) from 63–197 lines to 28–40 lines each. Total token reduction: 13,557 → 5,977 tokens (55.9%). All required structured output fields, Resume Check blocks, and contract phrases preserved. Synced to .claude/agents/. Quality gate passes with 6967 tests at 91.02% coverage.
+
+- ✅ **Pass Failure Context Inline to Workflow Subagents** - COMPLETE (2026-06-25) - Injected coverage pre-flight gate errors into fix.wf.js quality and tests agent prompts (priorErrors), and passed preflight/Phase A context into commit.wf.js Phase A and Phase B prompts — eliminating the first redundant gate call per subagent per iteration.
 
 ## Completed Work (2026-06-24)
 
@@ -329,6 +340,8 @@
 Next roadmap item: **[Fast-Forward vs. Step-by-Step Planning Modes](../plans/archive/Other/fast-forward-vs-step-by-step-modes.md)** (see [roadmap.md](roadmap.md) pending plans).
 
 ## Recent Changes
+
+CodeGraph integration (2026-06-30): added `setup_codegraph` setup prompt with visibility gated on `memory_bank_initialized and not codegraph_configured`; `ProjectConfigStatus.codegraph_configured` checks `.cursor/mcp.json` and `.mcp.json`; `.codegraph/` added to `.gitignore`.
 
 CI quality gate green (2026-06-23): synapse scripts fully typed (99 pyright errors resolved across 8 files); docs gate test uses concrete types instead of Any; test_phase3 and test_phase4 stale dates fixed.
 

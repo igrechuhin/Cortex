@@ -42,6 +42,7 @@ def _make_status(
     cursor_integration_configured: bool = True,
     migration_needed: bool = False,
     tiktoken_cache_available: bool = True,
+    codegraph_configured: bool = True,
 ) -> ProjectConfigStatus:
     return ProjectConfigStatus(
         memory_bank_initialized=memory_bank_initialized,
@@ -49,6 +50,7 @@ def _make_status(
         cursor_integration_configured=cursor_integration_configured,
         migration_needed=migration_needed,
         tiktoken_cache_available=tiktoken_cache_available,
+        codegraph_configured=codegraph_configured,
     )
 
 

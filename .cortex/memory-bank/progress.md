@@ -1,5 +1,10 @@
 # Progress Log
 
+## 2026-06-30
+
+- <!-- memory_type: status -->
+- **Add setup_codegraph prompt and CodeGraph MCP integration** - COMPLETE. Added `codegraph_configured` field to `ProjectConfigStatus` (checks `.cursor/mcp.json` and `.mcp.json`); added `SETUP_CODEGRAPH_PROMPT` to `prompts.py`; registered `setup_codegraph` setup prompt with visibility gated on `memory_bank_initialized and not codegraph_configured`; refactored `apply_setup_prompt_visibility` to `_build_prompt_visibility` helper; updated `INITIALIZE_PROMPT` with codegraph binary resolution and init steps; added `.codegraph/` to `.gitignore`. Phase A: scope=markdown_only, coverage=90.85%.
+
 ## 2026-06-25
 
 - **Convert do.md orchestration to Claude Code dynamic Workflow script** - COMPLETE. Authored do.wf.js with hard JS while-loop (max 5), pipeline() parallelism, deterministic review gate, structured schemas. 69 tests pass. prompts-manifest.json updated with superseded_by.
