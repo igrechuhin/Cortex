@@ -1,9 +1,22 @@
 # Progress Log
 
+## 2026-06-30
+
+- <!-- memory_type: status -->
+- **Add setup_codegraph prompt and CodeGraph MCP integration** - COMPLETE. Added `codegraph_configured` field to `ProjectConfigStatus` (checks `.cursor/mcp.json` and `.mcp.json`); added `SETUP_CODEGRAPH_PROMPT` to `prompts.py`; registered `setup_codegraph` setup prompt with visibility gated on `memory_bank_initialized and not codegraph_configured`; refactored `apply_setup_prompt_visibility` to `_build_prompt_visibility` helper; updated `INITIALIZE_PROMPT` with codegraph binary resolution and init steps; added `.codegraph/` to `.gitignore`. Phase A: scope=markdown_only, coverage=90.85%.
+
 ## 2026-06-25
 
 - **Convert do.md orchestration to Claude Code dynamic Workflow script** - COMPLETE. Authored do.wf.js with hard JS while-loop (max 5), pipeline() parallelism, deterministic review gate, structured schemas. 69 tests pass. prompts-manifest.json updated with superseded_by.
 - **Convert fix.md orchestration to Claude Code dynamic Workflow script** - COMPLETE. Authored fix.wf.js with deterministic JS switch/while replacing LLM-orchestrated prose routing; 84 tests all pass; quality gate green.
+- <!-- memory_type: milestone -->
+- **Phase B docs sync** - COMPLETE. Updated memory bank, archived completed plans, ran autofix and docs gate for skill pack workflow promotions and fix/do/commit workflow script conversion session.
+- **Trim Workflow Agent Specs for Claude Code CLI** - COMPLETE. Rewrote 10 cursor-agent files, 55.9% token reduction (13,557→5,977 tokens), all tests pass, .claude/agents/ synced.
+- **Pass Failure Context Inline to Workflow Subagents** - COMPLETE. Added priorErrors injection from coverage pre-flight into fix.wf.js quality/tests agents; added preflight context and Phase A summary into commit.wf.js Phase A/B prompts. Quality gate 0 errors.
+- <!-- memory_type: milestone -->
+- **Phase B docs sync (commit session)** - COMPLETE. Updated memory bank, archived completed plans, ran autofix and docs gate for trim workflow agent specs and pass failure context inline session.
+- <!-- memory_type: milestone -->
+- **Phase B docs sync (commit session — workflow-conversion skill)** - COMPLETE. Updated memory bank, archived completed plans, ran autofix and docs gate for workflow-conversion skill JSON addition (src/cortex/resources/skills/workflow-conversion.json). Phase A: scope=source, coverage=90.86%.
 
 ## 2026-06-24
 

@@ -1,0 +1,31 @@
+{
+  "name": "add-setup-prompt",
+  "description": "Add a new conditional setup prompt to the Cortex lazy prompt registry. Covers the full end-to-end workflow: detection field in ProjectConfigStatus, lazy getter, registration function, visibility gate, and test stubs.",
+  "tools": ["manage_file", "think", "run_quality_gate"],
+  "when_to_use": "When adding a new /cortex/setup/* prompt that should appear conditionally based on project configuration state (e.g. setup_codegraph shows only when codegraph_configured=False).",
+  "workflow_sequences": [
+    "1. Add detection field to ProjectConfigStatus in src/cortex/tools/config/status.py (bool Field with description)",
+    "2. Add _check_<name>() helper function in status.py — reads filesystem/config, returns bool",
+    "3. Call _check_<name>() inside get_project_config_status() and include in returned ProjectConfigStatus",
+    "4. Update _get_fail_safe_status() with a sensible default (usually True = assume configured)",
+    "5. Add prompt icon to _SETUP_PROMPT_ICONS dict in lazy_prompt_registration.py",
+    "6. Add lazy getter _get_<name>_prompt() with deferred import from cortex.setup.prompts",
+    "7. Add _register_<name>_prompt() that decorates with @mcp.prompt(icons=[...]) and returns _get_<name>_prompt()",
+    "8. Add visibility key '<name>': <condition_expr> to _build_prompt_visibility() return dict",
+    "9. Add guard in register_setup_prompts(): if '<name>' not in already: _register_<name>_prompt()",
+    "10. Add SETUP_<NAME>_PROMPT constant to src/cortex/setup/prompts.py",
+    "11. Update sync_cursor_agents() if the prompt needs to appear in .claude/agents/ or .cursor/agents/",
+    "12. Add test stubs in tests/unit/test_lazy_prompt_registration.py and test_setup_module.py"
+  ],
+  "example_invocations": [
+    "Adding setup_serena prompt: detect serena key in .cursor/mcp.json → serena_configured field → register prompt only when memory_bank_initialized and not serena_configured",
+    "Adding setup_codegraph prompt: detect codegraph key in .cursor/mcp.json or .mcp.json → codegraph_configured field → register prompt only when memory_bank_initialized and not codegraph_configured"
+  ],
+  "troubleshooting_tips": [
+    "Do NOT import cortex.setup.prompts at module level in lazy_prompt_registration.py — that module runs side-effects on import with wrong root; always use deferred import inside _get_*_prompt() helpers",
+    "The _build_prompt_visibility() helper was extracted from apply_setup_prompt_visibility() to make it unit-testable — keep them separate",
+    "Fail-safe status (returned on exception) should assume all setup is done (True) to avoid flooding users with spurious setup prompts",
+    "Use _has_<mcp_tool>_in_mcp_file() pattern to check both .cursor/mcp.json and .mcp.json for MCP server presence"
+  ],
+  "keywords": ["setup", "prompt", "lazy", "registry", "ProjectConfigStatus", "mcp.json", "visibility", "conditional"]
+}
