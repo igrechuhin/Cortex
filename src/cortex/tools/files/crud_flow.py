@@ -5,6 +5,7 @@ file_manage_file_helpers (dispatch) and by compaction_operations.
 """
 
 import json
+import logging
 from dataclasses import dataclass
 from functools import partial
 from pathlib import Path
@@ -20,6 +21,7 @@ from cortex.core.file_system import FileSystemManager
 from cortex.core.metadata_index import MetadataIndex
 from cortex.core.models import JsonValue, ModelDict, OperationStatus, VersionMetadata
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
+from cortex.core.session_logger import record_spend_tokens
 from cortex.core.token_counter import TokenCounter
 from cortex.core.version_manager import VersionManager
 from cortex.tools.files.metadata_operations import (
@@ -40,7 +42,19 @@ from cortex.tools.plans.corruption import fix_memory_bank_content_if_needed
 from cortex.tools.plans.roadmap_plan_graph_annotate import annotate_roadmap_for_project
 from cortex.validation.schema_validator import SchemaValidator
 
+logger = logging.getLogger(__name__)
+
 # Avoid circular import: file_lock_guard used only at runtime in _verify_write_lock
+
+
+def _safe_record_spend(project_root: Path | None, tokens: int) -> None:
+    """Record spend tokens; tolerate I/O errors so read/write never fails."""
+    if project_root is None:
+        return
+    try:
+        _ = record_spend_tokens(project_root, tokens)
+    except OSError as e:
+        logger.debug("record_spend_tokens failed for %s: %s", project_root, e)
 
 
 @dataclass(frozen=True)
@@ -80,6 +94,7 @@ async def _build_read_response(
     section_warning: str | None,
     include_metadata: bool,
     metadata_index: MetadataIndex,
+    project_root: Path,
 ) -> str:
     """Build read operation JSON response."""
     response: ModelDict = {
@@ -95,6 +110,8 @@ async def _build_read_response(
         metadata = await metadata_index.get_file_metadata(file_name)
         if metadata is not None:
             response["metadata"] = cast(JsonValue, metadata.model_dump(mode="json"))
+            # Already-computed token count via MetadataIndex; record once per read.
+            _safe_record_spend(project_root, metadata.token_count)
 
     return json.dumps(response, indent=2)
 
@@ -118,7 +135,12 @@ async def handle_read_operation(
     extracted_content, section_warning = extract_content_sections(content_str, sections)
 
     return await _build_read_response(
-        file_name, extracted_content, section_warning, include_metadata, metadata_index
+        file_name,
+        extracted_content,
+        section_warning,
+        include_metadata,
+        metadata_index,
+        root,
     )
 
 
@@ -213,6 +235,7 @@ async def _execute_write_flow(
     metadata_index: MetadataIndex,
     token_counter: TokenCounter,
     version_manager: VersionManager,
+    project_root: Path | None = None,
 ) -> str:
     """Execute the main write flow (disk write + metadata; no WAL)."""
     await write_file_with_hash_check(file_path, content, fs_manager)
@@ -235,6 +258,9 @@ async def _execute_write_flow(
         version_info,
         token_counter=token_counter,
     )
+
+    # Already-computed token count via compute_file_metrics/MetadataIndex.
+    _safe_record_spend(project_root, cast(int, file_metrics.get("token_count", 0)))
 
     return build_write_response(file_name, version_info, token_counter, content)
 
@@ -314,6 +340,7 @@ async def _execute_write_flow_then_wal(
         ctx.metadata_index,
         ctx.token_counter,
         ctx.version_manager,
+        ctx.project_root,
     )
     await _wal_manage_file_after_success(
         ctx.fs_manager,

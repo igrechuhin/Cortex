@@ -25,8 +25,11 @@ def validate_progress_entry_text(entry_text: str) -> str | None:
 
     Ensures COMPLETE is preceded by the proper delimiter (e.g. " - COMPLETE"
     or ")** - COMPLETE") to avoid malformed bullets like "20260209COMPLETE".
-    When the entry contains an open parenthesis before COMPLETE, requires
-    ")** - COMPLETE" so the title segment is properly closed.
+    The title segment (everything before " - COMPLETE") is rejected only when
+    it contains an unclosed '(' (more '(' than ')'), which catches a
+    truncated "(date" suffix. A balanced, fully-closed parenthesis anywhere
+    in the title — e.g. "plan(graph)" used as ordinary title text, or a
+    proper "(date)** - COMPLETE" suffix — is valid and is not rejected.
     Returns an error message if invalid, None if valid.
     """
     t = (entry_text or "").strip()
@@ -37,13 +40,9 @@ def validate_progress_entry_text(entry_text: str) -> str | None:
         )
     if " - COMPLETE" in t:
         title_part = t.split(" - COMPLETE", 1)[0]
-        if (
-            "(" in title_part
-            and ")** " not in title_part
-            and not title_part.endswith(")**")
-        ):
+        if title_part.count("(") > title_part.count(")"):
             return (
-                "Progress entry has '(' but is missing ')** - COMPLETE'. "
+                "Progress entry has an unclosed '(' before ' - COMPLETE'. "
                 "Use '**Title (date)** - COMPLETE. Summary...' so the title segment is closed."
             )
     return None

@@ -22,6 +22,48 @@ def test_load_project_session_config_missing(tmp_path: Path) -> None:
     assert cfg.workflow_schema == "default"
 
 
+def test_load_project_session_config_experience_recall_defaults(
+    tmp_path: Path,
+) -> None:
+    # Act
+    cfg = load_project_session_config(tmp_path)
+
+    # Assert
+    assert cfg.experience_recall_enabled is True
+    assert cfg.experience_recall_k == 3
+    assert cfg.experience_recall_similarity_threshold == 0.35
+    assert cfg.experience_recall_budget_chars == 600
+
+
+def test_load_project_session_config_experience_recall_overrides(
+    tmp_path: Path,
+) -> None:
+    # Arrange
+    cortex = get_cortex_path(tmp_path, CortexResourceType.CORTEX_DIR)
+    cortex.mkdir(parents=True)
+    path = project_session_config_path(tmp_path)
+    _ = path.write_text(
+        yaml.safe_dump(
+            {
+                "experience_recall_enabled": False,
+                "experience_recall_k": 5,
+                "experience_recall_similarity_threshold": 0.5,
+                "experience_recall_budget_chars": 100,
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    # Act
+    cfg = load_project_session_config(tmp_path)
+
+    # Assert
+    assert cfg.experience_recall_enabled is False
+    assert cfg.experience_recall_k == 5
+    assert cfg.experience_recall_similarity_threshold == 0.5
+    assert cfg.experience_recall_budget_chars == 100
+
+
 def test_load_project_session_config_from_yaml(tmp_path: Path) -> None:
     cortex = get_cortex_path(tmp_path, CortexResourceType.CORTEX_DIR)
     cortex.mkdir(parents=True)

@@ -153,6 +153,25 @@ def _resolve_roadmap_from_fs_manager(
     return None
 
 
+def _build_roadmap_sync_summary_dict(
+    result: SyncValidationResult,
+    missing_entries: list[dict[str, object]],
+    invalid_refs: list[dict[str, object]],
+    completed_entries: list[dict[str, object]],
+    existing_unlinked_plans: list[str],
+    warnings: list[str],
+) -> dict[str, int]:
+    """Build the aggregate `summary` counts block for a roadmap_sync response."""
+    return {
+        "total_todos_found": result.total_todos_found,
+        "missing_entries_count": len(missing_entries),
+        "invalid_references_count": len(invalid_refs),
+        "completed_entries_count": len(completed_entries),
+        "unlinked_plans_count": len(existing_unlinked_plans),
+        "warnings_count": len(warnings),
+    }
+
+
 def _build_roadmap_sync_success_response(
     result: SyncValidationResult,
     project_root: Path,
@@ -174,6 +193,14 @@ def _build_roadmap_sync_success_response(
     warnings = list(result.warnings)
 
     existing_unlinked_plans = _filter_existing_unlinked_plans(result, project_root)
+    summary = _build_roadmap_sync_summary_dict(
+        result,
+        missing_entries,
+        invalid_refs,
+        completed_entries,
+        existing_unlinked_plans,
+        warnings,
+    )
 
     return json.dumps(
         success_response(
@@ -189,16 +216,7 @@ def _build_roadmap_sync_success_response(
             unlinked_plans=cast(JsonValue, existing_unlinked_plans),
             completed_entries_in_roadmap=cast(JsonValue, completed_entries),
             warnings=cast(JsonValue, warnings),
-            summary=cast(
-                JsonValue,
-                {
-                    "total_todos_found": result.total_todos_found,
-                    "missing_entries_count": len(missing_entries),
-                    "invalid_references_count": len(invalid_refs),
-                    "completed_entries_count": len(completed_entries),
-                    "warnings_count": len(warnings),
-                },
-            ),
+            summary=cast(JsonValue, summary),
         ),
         indent=2,
     )

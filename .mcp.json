@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "cortex": {
+      "command": "uv",
+      "args": ["run", "cortex"]
+    }
+  }
+}

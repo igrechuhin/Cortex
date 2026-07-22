@@ -77,10 +77,28 @@ async def test_gate_failure_writes_gate_feedback_result_file(
 
 
 @pytest.mark.asyncio
-async def test_gate_success_clears_implement_pipeline_dir(
+async def test_gate_success_clears_only_gate_feedback_phase(
     isolated_project_root: Path,
 ) -> None:
+    """A passing gate must clear only its own scratch phase.
+
+    Regression: clearing "gate_feedback" previously wiped the *entire*
+    live pipeline directory (op_clear ignored the `phase` argument and
+    unconditionally rmtree'd the pipeline dir), silently discarding every
+    other phase (select, code, review, finalize, verify, ...) an
+    orchestrator had already accumulated in the same /cortex/do run the
+    instant a mid-run run_quality_gate()/run_docs_gate() call happened to
+    pass. See investigate-pipeline-handoff-phase-state-loss-during-long-
+    running-subagent-calls.md.
+    """
     _ = await pipeline_handoff(operation="init", pipeline="implement", ctx=None)
+    _ = await pipeline_handoff(
+        operation="write_result",
+        pipeline="implement",
+        phase="select",
+        data='{"status": "complete"}',
+        ctx=None,
+    )
     feedback = GateFeedback(
         gate=GateName.DOCS,
         errors=[GateError(file="<docs>", check="docs-gate", message="fail")],
@@ -94,4 +112,11 @@ async def test_gate_success_clears_implement_pipeline_dir(
     assert (pdir / "gate_feedback-result.json").is_file()
 
     await persist_gate_feedback(None, ctx=None)
-    assert not pdir.exists()
+    assert pdir.exists()
+    assert not (pdir / "gate_feedback-result.json").exists()
+
+    state = json.loads(
+        await pipeline_handoff(operation="read_state", pipeline="implement", ctx=None)
+    )
+    assert "select" in state["phases"]
+    assert "gate_feedback" not in state["phases"]

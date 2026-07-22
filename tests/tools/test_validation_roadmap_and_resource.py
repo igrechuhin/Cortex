@@ -67,6 +67,7 @@ class TestHandleRoadmapSyncValidation:
         assert "valid" in result_data
         assert "summary" in result_data
         assert result_data["summary"]["total_todos_found"] == 0
+        assert result_data["summary"]["unlinked_plans_count"] == 0
 
     @pytest.mark.asyncio
     async def test_handle_roadmap_sync_validation_uses_usage_root_fallback(

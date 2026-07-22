@@ -10,7 +10,7 @@ import uuid
 from datetime import datetime
 from pathlib import Path
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
 from cortex.core.models import DictLikeModel
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
@@ -61,6 +61,15 @@ class SessionLog(DictLikeModel):
         default_factory=lambda: list[LoadContextLogEntry](),
         description="List of load_context calls",
     )
+    cumulative_spend_tokens: int = Field(
+        default=0,
+        ge=0,
+        description=(
+            "Runtime tool-output tokens recorded this session via "
+            "record_spend_tokens(); defaults to 0 for log files that "
+            "predate this field (backward compatible)."
+        ),
+    )
 
 
 def _get_session_id() -> str:
@@ -108,8 +117,21 @@ def _ensure_session_dir(project_root: Path) -> Path:
     return session_dir
 
 
+def _fresh_session_log() -> SessionLog:
+    """Build a new, empty session log for the current session ID."""
+    return SessionLog(
+        session_id=_get_session_id(),
+        session_start=datetime.now().isoformat(timespec="minutes"),
+        load_context_calls=[],
+    )
+
+
 def _load_session_log(log_path: Path) -> SessionLog:
     """Load existing session log or create new one.
+
+    Tolerates a missing, corrupted, or invalid-schema log file by falling
+    back to a fresh log rather than raising, so callers (e.g.
+    record_spend_tokens) never crash a tool call over stale telemetry.
 
     Args:
         log_path: Path to the session log file
@@ -118,15 +140,14 @@ def _load_session_log(log_path: Path) -> SessionLog:
         Session log dictionary
     """
     if log_path.exists():
-        with open(log_path, encoding="utf-8") as f:
-            data = json.load(f)
+        try:
+            with open(log_path, encoding="utf-8") as f:
+                data = json.load(f)
             return SessionLog.model_validate(data)
+        except (json.JSONDecodeError, ValidationError, OSError, UnicodeDecodeError):
+            return _fresh_session_log()
 
-    return SessionLog(
-        session_id=_get_session_id(),
-        session_start=datetime.now().isoformat(timespec="minutes"),
-        load_context_calls=[],
-    )
+    return _fresh_session_log()
 
 
 def _save_session_log(log_path: Path, session_log: SessionLog) -> None:
@@ -191,6 +212,32 @@ def log_load_context_call(
     _save_session_log(log_path, session_log)
 
 
+def record_spend_tokens(project_root: Path, tokens: int) -> int:
+    """Record additional runtime tool-output tokens for the current session.
+
+    Loads the session log (tolerating a missing or corrupted file), adds
+    `tokens` to `cumulative_spend_tokens`, persists it, and returns the new
+    running total. Call once per instrumented call site with an
+    already-computed token count — never re-derive or double count.
+
+    Args:
+        project_root: Project root directory
+        tokens: Additional tokens to add to the running total (must be >= 0)
+
+    Returns:
+        New cumulative_spend_tokens total after recording
+    """
+    _ = _ensure_session_dir(project_root)
+    log_path = _get_session_log_path(project_root)
+
+    session_log = _load_session_log(log_path)
+    session_log.cumulative_spend_tokens = session_log.cumulative_spend_tokens + max(
+        tokens, 0
+    )
+    _save_session_log(log_path, session_log)
+    return session_log.cumulative_spend_tokens
+
+
 def get_session_id() -> str:
     """Get the current session ID.
 
@@ -231,15 +278,22 @@ def list_session_logs(project_root: Path) -> list[Path]:
 def read_session_log(log_path: Path) -> SessionLog | None:
     """Read a session log file.
 
+    Tolerates a corrupted or invalid-schema log file by returning None
+    (same as a missing file) rather than raising, since all current callers
+    already treat None as "no data available".
+
     Args:
         log_path: Path to the session log file
 
     Returns:
-        Session log dictionary or None if file doesn't exist
+        Session log dictionary, or None if the file doesn't exist or is corrupted
     """
     if not log_path.exists():
         return None
 
-    with open(log_path, encoding="utf-8") as f:
-        data = json.load(f)
+    try:
+        with open(log_path, encoding="utf-8") as f:
+            data = json.load(f)
         return SessionLog.model_validate(data)
+    except (json.JSONDecodeError, ValidationError, OSError, UnicodeDecodeError):
+        return None

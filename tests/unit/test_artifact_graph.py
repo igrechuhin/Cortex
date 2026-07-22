@@ -131,6 +131,20 @@ def test_compute_artifact_graph_archived_done_satisfies_dependency(
     assert with_arch.nodes["leaf"].blocked_by == []
 
 
+def test_compute_artifact_graph_archived_not_done_still_blocks(
+    tmp_path: Path,
+) -> None:
+    arch = tmp_path / "archive" / "sub"
+    arch.mkdir(parents=True)
+    _write_plan(arch, "base", "IN_PROGRESS", [])
+    _write_plan(tmp_path, "leaf", "PENDING", ["base"])
+
+    with_arch = compute_artifact_graph(tmp_path, include_archive=True)
+
+    assert "leaf" in with_arch.blocked
+    assert with_arch.nodes["leaf"].blocked_by == ["base"]
+
+
 def test_list_plan_slug_paths_excludes_archive_by_default(tmp_path: Path) -> None:
     arch = tmp_path / "archive"
     arch.mkdir(parents=True)

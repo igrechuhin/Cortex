@@ -13,6 +13,12 @@
 
 ## Pending plans (from .cortex/plans)
 
+- **Pipeline Resume as a Frontier Query** - PENDING - Resume interrupted /cortex/commit and /cortex/fix runs from the last committed experience-store node instead of restarting; maps node status onto pipeline_handoff snapshot/rollback state. Depends on unified-experience-store. Plan: .cortex/plans/pipeline-resume-frontier-query.md
+- **Vector-Seeded Experience Recall in Session Start** - PENDING - Task-description embeddings alongside BM25; session() surfaces similar prior tasks' highest-fitness fixes and dead ends within token budget. Depends on unified-experience-store. Plan: .cortex/plans/vector-seeded-experience-recall.md
+- **Rewire /cortex/analyze from Transcript Scraping to Experience Queries** - PENDING - Mistake-pattern detection via sibling-node preference-pair queries (pass/fail under same parent) with evidence links into the failure-based evals task registry; transcript scraping becomes fallback. Depends on unified-experience-store. Plan: .cortex/plans/analyze-experience-graph-queries.md
+- **Synapse Rule Provenance from Experience Pairs** - PENDING - Rule recommendations cite the failure→fix node pairs justifying them; rules whose failure class stops occurring are flagged as pruning candidates. Depends on unified-experience-store and analyze-experience-graph-queries. Plan: .cortex/plans/synapse-rule-provenance.md
+- **Content-Preserving WAL for AS-OF Reconstruction** - PENDING - WAL stores reverse content deltas keyed by experience-store step numbers, enabling AS-OF reconstruction of memory-bank state at any decision point. Deferred item — execute only after analyze-experience-graph-queries proves valuable. Plan: .cortex/plans/content-preserving-wal-as-of.md
+
 ### Pipeline Infrastructure
 
 ### Tools Infrastructure

@@ -193,3 +193,52 @@ class TestPlanGraphOperation:
         assert "leaf" in data["blocked"]
         assert data["blocked"]["leaf"] == ["base"]
         assert "leaf → base" in data["ascii_dag"]
+
+    @pytest.mark.asyncio
+    async def test_graph_archived_done_dependency_reads_ready_without_flag(
+        self, tmp_path: Path
+    ) -> None:
+        """An archived dependency with status: DONE satisfies a dependent plan
+        even when the caller passes no `include_archive` argument (regression
+        for graph-read archive-blindness)."""
+        plans_dir = tmp_path / ".cortex" / "plans"
+        archive_dir = plans_dir / "archive" / "Other"
+        archive_dir.mkdir(parents=True)
+        base = "---\ntitle: base\nstatus: DONE\ndepends_on: []\n---\n\n# B\n"
+        leaf = "---\ntitle: leaf\nstatus: PENDING\ndepends_on: [base]\n---\n\n# L\n"
+        _ = (archive_dir / "base.md").write_text(base, encoding="utf-8")
+        _ = (plans_dir / "leaf.md").write_text(leaf, encoding="utf-8")
+        with patch(
+            "cortex.tools.plans.plan_graph.get_or_resolve_project_root",
+            new_callable=AsyncMock,
+            return_value=str(tmp_path),
+        ):
+            raw = await plan(operation="graph", ctx=None)
+        data = json.loads(raw)
+        assert data["status"] == "success"
+        assert "leaf" in data["ready"]
+        assert "leaf" not in data["blocked"]
+
+    @pytest.mark.asyncio
+    async def test_graph_archived_not_done_dependency_still_blocks(
+        self, tmp_path: Path
+    ) -> None:
+        """An archived dependency that is NOT status: DONE still correctly
+        blocks its dependent (archive visibility must not mask real gaps)."""
+        plans_dir = tmp_path / ".cortex" / "plans"
+        archive_dir = plans_dir / "archive" / "Other"
+        archive_dir.mkdir(parents=True)
+        base = "---\ntitle: base\nstatus: IN_PROGRESS\ndepends_on: []\n---\n\n# B\n"
+        leaf = "---\ntitle: leaf\nstatus: PENDING\ndepends_on: [base]\n---\n\n# L\n"
+        _ = (archive_dir / "base.md").write_text(base, encoding="utf-8")
+        _ = (plans_dir / "leaf.md").write_text(leaf, encoding="utf-8")
+        with patch(
+            "cortex.tools.plans.plan_graph.get_or_resolve_project_root",
+            new_callable=AsyncMock,
+            return_value=str(tmp_path),
+        ):
+            raw = await plan(operation="graph", ctx=None)
+        data = json.loads(raw)
+        assert data["status"] == "success"
+        assert "leaf" in data["blocked"]
+        assert data["blocked"]["leaf"] == ["base"]

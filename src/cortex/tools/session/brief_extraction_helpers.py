@@ -13,6 +13,7 @@ from cortex.tools.session.models import (
     ConcurrentSession,
     GitStatusSummary,
     SessionHealthSummary,
+    SessionSpendStatus,
     WikiStatusSummary,
 )
 from cortex.tools.session.wiki_status import append_session_wiki_init_hint
@@ -123,6 +124,28 @@ def add_budget_and_missing_suggestions(
         )
 
 
+def add_spend_suggestions(suggestions: list[str], health: SessionHealthSummary) -> None:
+    """Append a warning when runtime tool-output spend crosses budget.
+
+    Mirrors add_budget_and_missing_suggestions() but for the runtime spend
+    tracker (health.spend) instead of the static file-size budget. Never
+    appends for the healthy state.
+    """
+    spend = health.spend
+    if spend.spend_status == SessionSpendStatus.OVER_BUDGET:
+        suggestions.append(
+            f"Session runtime spend over budget ({spend.cumulative_tokens} tokens "
+            + "recorded this session) — consider `session(operation='compact')`"
+        )
+    elif spend.spend_status == SessionSpendStatus.WARNING:
+        percent = spend.cumulative_tokens / spend.budget * 100 if spend.budget else 0
+        suggestions.append(
+            f"Session runtime spend at {percent:.0f}% of budget "
+            + f"({spend.cumulative_tokens} tokens) — consider "
+            + "`session(operation='compact')`"
+        )
+
+
 def add_stale_plan_draft_suggestions(
     suggestions: list[str], project_root: Path | None
 ) -> None:
@@ -166,6 +189,7 @@ def generate_session_suggestions(
     suggestions: list[str] = []
     add_mcp_and_git_suggestions(suggestions, mcp_healthy, git_status)
     add_budget_and_missing_suggestions(suggestions, health)
+    add_spend_suggestions(suggestions, health)
     add_concurrency_suggestions(suggestions, locked_tasks, concurrent_sessions)
     add_memory_bank_sync_suggestions(suggestions, progress_content, roadmap_content)
     append_session_wiki_init_hint(suggestions, wiki_status, project_root)

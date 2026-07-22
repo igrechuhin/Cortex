@@ -11,7 +11,30 @@ from cortex.core.session_logger import (
     list_session_logs,
     log_load_context_call,
     read_session_log,
+    record_spend_tokens,
 )
+
+
+def _log_context_call(
+    tmp_path: Path,
+    task_description: str,
+    selected_files: list[str],
+    total_tokens: int,
+    excluded_files: list[str],
+) -> None:
+    """Reduce call-site boilerplate for TestLogLoadContextCall.append test."""
+    log_load_context_call(
+        project_root=tmp_path,
+        task_description=task_description,
+        token_budget=5000,
+        strategy="priority",
+        selected_files=selected_files,
+        selected_sections={},
+        total_tokens=total_tokens,
+        utilization=0.1,
+        excluded_files=excluded_files,
+        relevance_scores={selected_files[0]: 0.9},
+    )
 
 
 class TestGetSessionId:
@@ -178,33 +201,9 @@ class TestLogLoadContextCall:
         os.environ[env_key] = "append_test_123"
 
         try:
-            # Act - first call
-            log_load_context_call(
-                project_root=tmp_path,
-                task_description="First task",
-                token_budget=5000,
-                strategy="priority",
-                selected_files=["file1.md"],
-                selected_sections={},
-                total_tokens=500,
-                utilization=0.1,
-                excluded_files=[],
-                relevance_scores={"file1.md": 0.9},
-            )
-
-            # Act - second call
-            log_load_context_call(
-                project_root=tmp_path,
-                task_description="Second task",
-                token_budget=10000,
-                strategy="hybrid",
-                selected_files=["file2.md"],
-                selected_sections={},
-                total_tokens=2000,
-                utilization=0.2,
-                excluded_files=["file1.md"],
-                relevance_scores={"file2.md": 0.7},
-            )
+            # Act
+            _log_context_call(tmp_path, "First task", ["file1.md"], 500, [])
+            _log_context_call(tmp_path, "Second task", ["file2.md"], 2000, ["file1.md"])
 
             # Assert - use public API to get path
             log_path = get_session_log_path(tmp_path)
@@ -282,3 +281,167 @@ class TestReadSessionLog:
         # Assert
         assert result is not None
         assert result["session_id"] == "read_test"
+
+    def test_backward_compatible_missing_spend_field(self, tmp_path: Path) -> None:
+        """A log file predating cumulative_spend_tokens defaults it to 0."""
+        # Arrange - old-shape log with no cumulative_spend_tokens key
+        log_path = tmp_path / "legacy-log.json"
+        log_data: dict[str, str | list[object]] = {
+            "session_id": "legacy_test",
+            "session_start": "2026-01-21T10:00",
+            "load_context_calls": [],
+        }
+        _ = log_path.write_text(json.dumps(log_data))
+
+        # Act
+        result = read_session_log(log_path)
+
+        # Assert
+        assert result is not None
+        assert result.cumulative_spend_tokens == 0
+
+    def test_returns_none_for_corrupted_json(self, tmp_path: Path) -> None:
+        """Corrupted JSON is tolerated: returns None instead of raising."""
+        # Arrange
+        log_path = tmp_path / "corrupted-log.json"
+        _ = log_path.write_text("{not valid json!!!")
+
+        # Act
+        result = read_session_log(log_path)
+
+        # Assert
+        assert result is None
+
+    def test_returns_none_for_schema_mismatch(self, tmp_path: Path) -> None:
+        """Valid JSON that fails schema validation is tolerated: returns None."""
+        # Arrange - missing required session_id/session_start fields
+        log_path = tmp_path / "invalid-schema-log.json"
+        _ = log_path.write_text(json.dumps({"unexpected": "shape"}))
+
+        # Act
+        result = read_session_log(log_path)
+
+        # Assert
+        assert result is None
+
+
+class TestRecordSpendTokens:
+    """Tests for record_spend_tokens accumulation and error tolerance."""
+
+    def test_creates_log_when_missing_and_records_tokens(self, tmp_path: Path) -> None:
+        """First call with no existing log creates one and records tokens."""
+        # Arrange
+        env_key = "CORTEX_SESSION_ID"
+        original = os.environ.get(env_key)
+        os.environ[env_key] = "spend_test_create"
+
+        try:
+            # Act
+            total = record_spend_tokens(tmp_path, 100)
+
+            # Assert
+            assert total == 100
+            log_path = get_session_log_path(tmp_path)
+            assert log_path.exists()
+            session_log = read_session_log(log_path)
+            assert session_log is not None
+            assert session_log.cumulative_spend_tokens == 100
+        finally:
+            if original:
+                os.environ[env_key] = original
+            else:
+                _ = os.environ.pop(env_key, None)
+
+    def test_accumulates_across_multiple_calls(self, tmp_path: Path) -> None:
+        """Multiple calls accumulate onto the same running total."""
+        # Arrange
+        env_key = "CORTEX_SESSION_ID"
+        original = os.environ.get(env_key)
+        os.environ[env_key] = "spend_test_accumulate"
+
+        try:
+            # Act
+            first_total = record_spend_tokens(tmp_path, 50)
+            second_total = record_spend_tokens(tmp_path, 75)
+
+            # Assert
+            assert first_total == 50
+            assert second_total == 125
+        finally:
+            if original:
+                os.environ[env_key] = original
+            else:
+                _ = os.environ.pop(env_key, None)
+
+    def test_single_increment_per_call(self, tmp_path: Path) -> None:
+        """A single call records exactly once (no double counting)."""
+        # Arrange
+        env_key = "CORTEX_SESSION_ID"
+        original = os.environ.get(env_key)
+        os.environ[env_key] = "spend_test_single"
+
+        try:
+            # Act
+            _ = record_spend_tokens(tmp_path, 10)
+
+            # Assert
+            log_path = get_session_log_path(tmp_path)
+            session_log = read_session_log(log_path)
+            assert session_log is not None
+            assert session_log.cumulative_spend_tokens == 10
+        finally:
+            if original:
+                os.environ[env_key] = original
+            else:
+                _ = os.environ.pop(env_key, None)
+
+    def test_accumulates_onto_legacy_log_missing_field(self, tmp_path: Path) -> None:
+        """Recording onto a pre-existing log file that predates the field."""
+        # Arrange - write a log file shaped like the old schema (no field)
+        env_key = "CORTEX_SESSION_ID"
+        original = os.environ.get(env_key)
+        os.environ[env_key] = "spend_test_legacy"
+
+        try:
+            log_path = get_session_log_path(tmp_path)
+            log_path.parent.mkdir(parents=True, exist_ok=True)
+            legacy_data: dict[str, str | list[str]] = {
+                "session_id": "spend_test_legacy",
+                "session_start": "2026-01-21T10:00",
+                "load_context_calls": [],
+            }
+            _ = log_path.write_text(json.dumps(legacy_data))
+
+            # Act
+            total = record_spend_tokens(tmp_path, 30)
+
+            # Assert - starts from the field's default of 0
+            assert total == 30
+        finally:
+            if original:
+                os.environ[env_key] = original
+            else:
+                _ = os.environ.pop(env_key, None)
+
+    def test_tolerates_corrupted_log_file(self, tmp_path: Path) -> None:
+        """A corrupted log file falls back to a fresh log rather than raising."""
+        # Arrange
+        env_key = "CORTEX_SESSION_ID"
+        original = os.environ.get(env_key)
+        os.environ[env_key] = "spend_test_corrupted"
+
+        try:
+            log_path = get_session_log_path(tmp_path)
+            log_path.parent.mkdir(parents=True, exist_ok=True)
+            _ = log_path.write_text("{corrupted!!")
+
+            # Act
+            total = record_spend_tokens(tmp_path, 15)
+
+            # Assert - fresh log created, starting from 0
+            assert total == 15
+        finally:
+            if original:
+                os.environ[env_key] = original
+            else:
+                _ = os.environ.pop(env_key, None)

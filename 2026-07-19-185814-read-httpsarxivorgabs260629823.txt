@@ -1,0 +1,275 @@
+ ▐▛███▜▌   Claude Code v2.1.215
+▝▜█████▛▘  Fable 5 · Claude Pro
+  ▘▘ ▝▝    ~/Repo/Cortex
+
+ ▎ Extended through July 19
+ ▎ We're extending Claude Fable 5 access on all paid plans, as well as keeping Claude Code’s weekly rate limits 50% higher, through July 19.
+ ▎
+ ▎ As before, you can use up to half of your weekly usage limit on Fable 5. After that, you can keep using Fable 5 with usage credits, or switch to another model to keep working within your remaining limits.
+ ▎
+ ▎ More details here: https://support.claude.com/en/articles/15424964-claude-fable-5-promotional-access
+
+❯ Read https://arxiv.org/abs/2606.29823                                         
+  And code: /Users/igrechuhin/Downloads/axiom-main                              
+                                                                                
+  How can we use it to improve Cortex/Synapse/their agents ?                    
+                                                                                
+  ```                                                                           
+  Базу для хранения жизненного опыта агентов подвезли. Ждём новый               
+  инфраструктурный стартап?                                                     
+                                                                                
+  Experience Graphs: The Data Foundation for Self-Improving Agents              
+  Gang Liao, Yujia He, Abdullah Ozturk, Zhouyang Li, Ying Wang, Zhitong Guo,    
+  Hongsen Qin, Yaobin Qin, Tao Yang, Zewei Jiang, Dianshi Li, Jort Gemmeke,     
+  Jiangyuan Li, Liyuan Li, Nathan Yan, Masha Basmanova, Uladzimir Pashkevich,   
+  Matt Steiner, Pedro Pedreira, Rob Fergus, Anirudh Goyal, Carole-Jean Wu,      
+  Gaoxiang Liu, Andrew Witten, Daniel J. Abadi                                  
+  Paper: https://arxiv.org/abs/2606.29823                                       
+  Review: https://arxiviq.substack.com/p/experience-graphs-the-data-foundation  
+  Code: https://github.com/facebookincubator/axiom                              
+  Model: N/A                                                                    
+                                                                                
+  # TL;DR                                                                       
+                                                                                
+  ЧТО сделали: Авторы разработали Trellis — нативную базу данных для            
+  самообучающихся ИИ-агентов. Вместо того чтобы сохранять результаты поиска в   
+  локальных JSON-файлах или временных логах, Trellis представляет всю историю   
+  поиска (граф опыта, или "experience graph") как полноценное, версионируемое   
+  состояние базы данных.                                                        
+                                                                                
+  ПОЧЕМУ это важно: Отделение вычислений от хранения делает агентов полностью   
+  stateless и бессерверными. Такая архитектура обеспечивает встроенное          
+  восстановление после сбоев, горизонтальное масштабирование и                  
+  переиспользование опыта между сессиями. Интеграция с фреймворком KernelEvolve 
+  (https://engineering.fb.com/2026/04/02/developer-tools/kernelevolve-how-meta  
+  s-ranking-engineer-agent-optimizes-ai-infrastructure/) показывает ускорение   
+  оптимизации в 10 раз по сравнению с «холодным стартом» и снижает расходы на   
+  токены на 52% за счёт предотвращения повторяющихся ошибок. Пост-тренинг RL    
+  (такой как SFT, DPO, GRPO) превращается из сложного офлайн-парсинга логов в   
+  простые запросы к БД в реальном времени.                                      
+                                                                                
+  Для практиков: Trellis позволяет создавать по-настоящему отказоустойчивые     
+  мультиагентные системы. Если вычислительный узел упадёт, состояние поиска не  
+  потеряется — любой другой узел сможет продолжить работу прямо с того же места 
+  в графе.                                                                      
+                                                                                
+  Хранить жизненный опыт тут: https://t.me/gonzo_ML_podcasts/4461               
+  ```                                                                           
+
+⏺ I'll research this in three parts: read the paper, examine the axiom code you
+  downloaded, and map both against Cortex/Synapse's current architecture.
+
+  Listed 1 directory (ctrl+o to expand)
+
+⏺ Fetch(https://arxiv.org/abs/2606.29823)
+  ⎿  Received 45.8KB (200 OK)
+
+  Read 1 file (ctrl+o to expand)
+
+⏺ Fetch(https://arxiv.org/html/2606.29823v1)
+  ⎿  Received 146.5KB (200 OK)
+
+  Read 1 file, listed 5 directories, ran 1 shell command (ctrl+o to expand)
+
+⏺ I've read the paper, the axiom code, and mapped both against Cortex's actual
+  state-management internals. Here's my assessment.
+
+  TL;DR
+
+  The paper's valuable export for Cortex is not the database engine — it's the
+  schema discipline: treat everything your agents do (attempts, gate results,
+  fixes, retries) as a persistent, queryable graph with lineage and fitness
+  scores, instead of scattered files and post-hoc transcript scraping. Cortex
+  already has ~70% of the raw ingredients (WAL, temporal.db, pipeline_handoff,
+  script-capture, the analyze pipeline) but they're disconnected silos. Unifying
+  them into one experience store would directly improve pipeline crash
+  recovery, cross-session reuse, and the quality of /cortex/analyze output.
+  Axiom itself (the code you downloaded) is not worth adopting — more on that
+  below.
+
+  What the paper actually says
+
+  Trellis stores the agent's entire search history as database state in a
+  four-level hierarchy: tasks (spec + success metric) → sessions (who is
+  searching, with what algorithm, how far) → nodes (parent link, artifacts,
+  execution output, fitness score, evidence) → prompt histories (exact messages
+  the LLM saw at each step). Three mechanisms make it powerful:
+
+  1. Recovery is a query, not a checkpoint. Agents hold no irreplaceable state;
+  a dead worker loses at most one step, and any worker resumes from the last
+  committed node.
+  2. Cross-session reuse via vector-seeded graph retrieval. New task → embed
+  description → find similar prior tasks → walk relational links to their
+  highest-fitness, non-buggy nodes. This is where the reported 10× speedup / 52%
+  token savings came from: not repeating past mistakes.
+  3. Training/learning data becomes queries. SFT trajectories are root-to-leaf
+  paths; preference pairs are sibling nodes under the same parent where one
+  scored higher — "a graph pattern match, not a post-hoc log scrape." A
+  step-numbered change log allows AS-OF reconstruction of what the agent knew at
+  any point, preventing future-information leaks.
+
+  About axiom-main: it contains no agent or experience-graph code at all. It's a
+  C++20 Velox-based SQL engine (Presto parser, cost-based optimizer,
+  distributed runner) — the query substrate Trellis runs on at Meta scale. For a
+  local-first Python MCP server, adopting it would be a massive dependency for
+  zero benefit. SQLite (which Cortex already ships as temporal.db) plus an
+  embedding index is the right scale. Take the schema, skip the engine.
+
+  Mapping to what Cortex already has
+
+  Trellis concept: Node change log (step-numbered)
+  Cortex today: .cortex/wal/write_log.jsonl
+  Gap: Records only hashes + byte deltas — can't reconstruct content, no AS-OF
+  ────────────────────────────────────────
+  Trellis concept: Temporal facts
+  Cortex today: temporal.db (SPO triples, valid_from/valid_to)
+  Gap: Not linked to sessions/attempts that produced the facts
+  ────────────────────────────────────────
+  Trellis concept: Session/phase state
+  Cortex today: pipeline_handoff (JSON files per phase)
+  Gap: Has snapshot/rollback, but no lineage, no fitness, cleared per-session —
+  experience is discarded
+  ────────────────────────────────────────
+  Trellis concept: Fitness signal
+  Cortex today: run_quality_gate() results
+  Gap: Consumed once, then thrown away
+  ────────────────────────────────────────
+  Trellis concept: Cross-session reuse
+  Cortex today: BM25 (retrieval/bm25.py), no embeddings
+  Gap: Keyword-only; can't find "a task like this one"
+  ────────────────────────────────────────
+  Trellis concept: Learning from experience
+  Cortex today: /cortex/analyze mining sessions for mistake patterns
+  Gap: Exactly the fragile post-hoc log scraping the paper argues against
+  ────────────────────────────────────────
+  Trellis concept: Skills
+  Cortex today: Synapse prompts/rules + quality gate as success metric
+  Gap: Already matches the paper's "skill" model well — this part is validated,
+  not missing
+
+  What I'd actually build (prioritized)
+
+  1. Unified experience store in SQLite (highest leverage, modest effort).
+  Extend temporal.db (or a sibling experience.db) with the paper's schema:
+  tasks, sessions, nodes(id, parent_id, session_id, artifact_ref, fitness, 
+  status, step_number). Every pipeline phase (commit-phase-a, fix-quality
+  iteration, implement-code subtask) writes a node; each run_quality_gate()
+  result becomes that node's fitness. Large artifacts (gate logs, diffs) stay on
+  disk, linked by reference — same pattern the paper uses with object storage.
+
+  2. Pipeline resume as a frontier query. Right now a crashed /cortex/commit or
+  /cortex/fix run restarts from scratch (or from a manually-read handoff file).
+  With nodes + status in the store, resume becomes "select the last committed
+  node for this session and continue" — the paper's headline reliability win,
+  and it maps cleanly onto your existing snapshot/rollback/mark_running
+  operations, which are already halfway there.
+
+  3. Vector-seeded recall in session() / load_context. Add task-description
+  embeddings alongside BM25. When a new fix/implement session starts, retrieve
+  similar prior tasks and surface their highest-fitness outcomes ("last time
+  this pyright error class appeared, the fix that passed the gate was X") and
+  their dead ends ("autofix loop on markdown lint failed 3× via approach Y").
+  This is the single mechanism behind the paper's 52% token reduction, and it
+  composes with your existing progressive_loader budget logic.
+
+  4. Rewire /cortex/analyze from scraping to querying. With attempts stored as
+  sibling nodes, the analyze pipeline's mistake-pattern detection becomes the
+  paper's DPO query: siblings under the same parent where one passed the gate 
+  and one failed are natural before/after pairs. Those pairs feed directly into
+  failure_based_evals.json and Synapse rule recommendations with evidence
+  attached, instead of being re-inferred from transcripts each time. This
+  strengthens the whole Compound step of your Plan→Work→Review→Compound loop.
+
+  5. (Optional) Content-preserving WAL for AS-OF reconstruction. Store deltas,
+  not just hashes, keyed by step number. Enables "what did the memory bank say
+  when the agent made this decision" — useful for honest post-mortems and for
+  debugging memory-bank drift. Cheapest to defer; only worth it if 4 proves
+  valuable.
+
+  One Synapse-specific idea beyond the paper: Synapse already distills
+  experience across projects as rules/prompts. An experience store gives that
+  distillation provenance — each rule recommendation could cite the node pairs
+  (failure → fix) that justify it, and rules that stop matching real failures
+  become candidates for pruning. That closes the self-improving loop the paper
+  describes, at dev-tool scale rather than RL-training scale.
+
+  If you want to move on this, the natural next step is a /cortex/plan session
+  for item 1+2 (they're one schema change plus pipeline_handoff
+  instrumentation); 3 and 4 layer on top independently.
+
+✻ Cogitated for 2m 40s
+
+❯ Why this project (Cortex) doesn't use Cortex mcp itself?                      
+  Fix it.                                                                       
+
+⏺ Good catch — per CLAUDE.md I should have called session() first, but I didn't
+  see any Cortex MCP tools. Let me verify whether the server is actually
+  registered in this session and why.
+
+  Searched for 2 patterns, ran 2 shell commands (ctrl+o to expand)
+
+⏺ Write(.mcp.json)
+  ⎿  Wrote 8 lines to .mcp.json
+      1 {
+      2   "mcpServers": {
+      3     "cortex": {
+      4       "command": "uv",
+      5       "args": ["run", "cortex"]
+      6     }
+      7   }
+      8 }
+
+  Ran 1 shell command (ctrl+o to expand)
+
+⏺ Initialize succeeded (server cortex v3.2.3). The tools/list reply got cut off
+  because stdin closed immediately — the server exits on disconnect by design.
+  Retrying with stdin held open:
+
+  Ran 2 shell commands (ctrl+o to expand)
+⏺ Fixed. Here's the full picture:
+
+  Root cause: Cortex's MCP server was only registered for Cursor
+  (.cursor/mcp.json), but Claude Code reads .mcp.json at the project root —
+  which didn't exist. Global and project-level Claude configs had no servers
+  either. So CLAUDE.md mandated session() → resources → work, while no Claude
+  Code session could ever see those tools (this session included — that's why my
+  previous analysis ran without them). The subagent definitions granting
+  mcp__cortex__* were likewise pointing at a server that was never loaded.
+
+  The fix: created /Users/igrechuhin/Repo/Cortex/.mcp.json:
+
+  {
+    "mcpServers": {
+      "cortex": {
+        "command": "uv",
+        "args": ["run", "cortex"]
+      }
+    }
+  }
+
+  Two deliberate choices:
+  - Named cortex (not memory-bank as in getting-started.md), because the agent
+  tool allowlists reference mcp__cortex__* — the name must match for those
+  grants to resolve.
+  - uv run cortex instead of the Cursor config's uvx --from 
+  git+https://github.com/igrechuhin/Cortex.git — the Cursor setup runs the
+  published GitHub version, which is arguably a second bug for the dev repo
+  itself: you'd be dogfooding stale code. uv run executes the local checkout, so
+  MCP tool changes are live immediately.
+
+  Verified: drove the server through a real stdio MCP handshake — initialize
+  returns cortex v3.2.3, and tools/list returns all 13 tools (session, plan,
+  run_quality_gate, run_docs_gate, autofix, pipeline_handoff, think,
+  manage_file, update_memory_bank, memory_wal, ingest, write_artifact,
+  compress_memory_bank).
+
+  What you need to do: MCP servers load at session start, so this session still
+  can't use them. Restart the session (or start a new one) in this repo — Claude
+  Code will prompt once to approve the project-scoped server; after that,
+  session() and the cortex:// resources work as CLAUDE.md intends.
+
+  The file is untracked and ready to stage; per the no-auto-commit rule I
+  haven't committed it. Consider also updating .cursor/mcp.json to use uv run
+  for the same stale-code reason — say the word and I'll align it.
+
+✻ Worked for 2m 5s

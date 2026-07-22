@@ -40,6 +40,12 @@ from cortex.core.usage_context import get_or_resolve_project_root
 from cortex.server import mcp
 from cortex.tools.logging.instrumentation import emit_pipeline_handoff_log
 
+from .pipeline_handoff_analytics import (
+    op_fitness_by_task_type,
+    op_preference_pairs,
+    op_repeated_failures,
+    op_write_failure_evals,
+)
 from .pipeline_handoff_io import (
     extract_routing_keys,
     op_clear,
@@ -54,6 +60,11 @@ from .pipeline_handoff_io import (
     op_write_result,
     op_write_task,
 )
+from .pipeline_handoff_resume import op_resume
+from .pipeline_handoff_rule_provenance import (
+    dispatch as dispatch_rule_provenance,
+)
+from .pipeline_handoff_session import get_session_id
 from .pipeline_handoff_validation import validate_phase, validate_pipeline
 
 # ---------------------------------------------------------------------------
@@ -73,6 +84,15 @@ class PipelineHandoffOperation(StrEnum):
     CLEAR = "clear"
     SNAPSHOT = "snapshot"
     ROLLBACK = "rollback"
+    RESUME = "resume"
+    PREFERENCE_PAIRS = "preference_pairs"
+    REPEATED_FAILURES = "repeated_failures"
+    FITNESS_BY_TASK_TYPE = "fitness_by_task_type"
+    WRITE_FAILURE_EVALS = "write_failure_evals"
+    RECORD_RULE_PROVENANCE = "record_rule_provenance"
+    REFRESH_RULE_MATCHES = "refresh_rule_matches"
+    RULE_EVIDENCE = "rule_evidence"
+    PRUNING_CANDIDATES = "pruning_candidates"
     WRITE_TASK = "write_task"
     READ_TASK = "read_task"
     WRITE_RESULT = "write_result"
@@ -141,7 +161,10 @@ def _unknown_op_error(operation: str) -> str:
             "status": OperationStatus.ERROR.value,
             "error": (
                 f"Unknown operation '{operation}'. "
-                "Use: init, write, read, read_log, status, mark_running, clear, snapshot, rollback "
+                "Use: init, write, read, read_log, status, mark_running, clear, "
+                "snapshot, rollback, resume, preference_pairs, repeated_failures, "
+                "fitness_by_task_type, write_failure_evals, record_rule_provenance, "
+                "refresh_rule_matches, rule_evidence, pruning_candidates "
                 "(aliases: write_task, read_task, write_result, read_state)"
             ),
         },
@@ -196,6 +219,20 @@ def _extract_snapshot_paths(data_str: str | None) -> list[str]:
     return [path for path in raw_paths if isinstance(path, str) and path]
 
 
+def _extract_session_id(data_str: str | None) -> str | None:
+    if not data_str:
+        return None
+    try:
+        parsed = json.loads(data_str)
+    except json.JSONDecodeError:
+        return None
+    if not isinstance(parsed, dict):
+        return None
+    parsed_dict = cast(dict[str, object], parsed)
+    session_id = parsed_dict.get("session_id")
+    return session_id if isinstance(session_id, str) and session_id else None
+
+
 def _extract_snapshot_id(data_str: str | None) -> str | None:
     if not data_str:
         return None
@@ -234,7 +271,7 @@ def _dispatch_snapshot_or_rollback(
 
 
 def _dispatch_simple_operation(
-    project_root: Path, pipeline: str, operation: str
+    project_root: Path, pipeline: str, operation: str, phase: str | None = None
 ) -> str | None:
     if operation == PipelineHandoffOperation.READ_STATE.value:
         return op_read_state(project_root, pipeline)
@@ -243,8 +280,52 @@ def _dispatch_simple_operation(
     if operation == PipelineHandoffOperation.STATUS.value:
         return op_status(project_root, pipeline)
     if operation == PipelineHandoffOperation.CLEAR.value:
-        return op_clear(project_root, pipeline)
+        # AI: a phase-scoped clear (e.g. gate_feedback) must only drop that
+        # one phase, never the whole live pipeline — see op_clear docstring.
+        return op_clear(project_root, pipeline, phase)
+    if operation == PipelineHandoffOperation.RESUME.value:
+        return op_resume(project_root, pipeline)
     return None
+
+
+def _dispatch_analytics_operation(
+    project_root: Path, operation: str, data_str: str | None
+) -> str | None:
+    """Route the 4 graph-analytics operations (Gap 1: coverage-checked queries)."""
+    if operation == PipelineHandoffOperation.FITNESS_BY_TASK_TYPE.value:
+        return op_fitness_by_task_type(project_root)
+    if operation not in (
+        PipelineHandoffOperation.PREFERENCE_PAIRS.value,
+        PipelineHandoffOperation.REPEATED_FAILURES.value,
+        PipelineHandoffOperation.WRITE_FAILURE_EVALS.value,
+    ):
+        return None
+    session_id = _extract_session_id(data_str) or get_session_id(project_root)
+    if operation == PipelineHandoffOperation.PREFERENCE_PAIRS.value:
+        return op_preference_pairs(project_root, session_id)
+    if operation == PipelineHandoffOperation.REPEATED_FAILURES.value:
+        return op_repeated_failures(project_root, session_id)
+    return op_write_failure_evals(project_root, session_id)
+
+
+_RULE_PROVENANCE_OPS = frozenset(
+    {
+        PipelineHandoffOperation.RECORD_RULE_PROVENANCE.value,
+        PipelineHandoffOperation.REFRESH_RULE_MATCHES.value,
+        PipelineHandoffOperation.RULE_EVIDENCE.value,
+        PipelineHandoffOperation.PRUNING_CANDIDATES.value,
+    }
+)
+
+
+def _dispatch_rule_provenance_operation(
+    project_root: Path, operation: str, data_str: str | None
+) -> str | None:
+    """Route the 4 rule-provenance operations (plan: synapse-rule-provenance)."""
+    if operation not in _RULE_PROVENANCE_OPS:
+        return None
+    session_id = _extract_session_id(data_str) or get_session_id(project_root)
+    return dispatch_rule_provenance(project_root, operation, session_id, data_str)
 
 
 def _dispatch_phase_bound_operation(
@@ -261,6 +342,24 @@ def _dispatch_phase_bound_operation(
         return op_read_task(project_root, pipeline, phase)
     if operation == PipelineHandoffOperation.MARK_RUNNING.value:
         return op_mark_running(project_root, pipeline, phase)
+    return None
+
+
+def _dispatch_query_operation(
+    project_root: Path,
+    operation: str,
+    pipeline: str,
+    data_str: str | None,
+    phase: str | None = None,
+) -> str | None:
+    """Try each non-phase-bound dispatcher in turn; None if none match."""
+    for query_result in (
+        _dispatch_analytics_operation(project_root, operation, data_str),
+        _dispatch_rule_provenance_operation(project_root, operation, data_str),
+        _dispatch_simple_operation(project_root, pipeline, operation, phase),
+    ):
+        if query_result is not None:
+            return query_result
     return None
 
 
@@ -288,9 +387,11 @@ def _dispatch_sync(
     )
     if phase_result is not None:
         return phase_result
-    simple_result = _dispatch_simple_operation(project_root, pipeline, operation)
-    if simple_result is not None:
-        return simple_result
+    query_result = _dispatch_query_operation(
+        project_root, operation, pipeline, data_str, phase
+    )
+    if query_result is not None:
+        return query_result
     if operation == PipelineHandoffOperation.READ.value:
         return _dispatch_read(project_root, pipeline, phase)
     if operation in (
@@ -394,9 +495,33 @@ async def pipeline_handoff(
 
     Args:
         operation: init | write | read | read_log | status | mark_running
-            | clear | snapshot | rollback
+            | clear | snapshot | rollback | resume | preference_pairs
+            | repeated_failures | fitness_by_task_type | write_failure_evals
+            | record_rule_provenance | refresh_rule_matches | rule_evidence
+            | pruning_candidates
             (legacy: write_task, read_task,
             write_result, read_state)
+            resume: returns a ResumePlan for an interrupted run of the
+            pipeline — completed phases to skip, frontier phase, and
+            whether continuation is allowed (failed frontier => fix path).
+            preference_pairs / repeated_failures: coverage-checked graph
+            queries for the analyze-session step — pass
+            data={"session_id": "..."} (falls back to the active pipeline
+            session id when omitted). Returns {"status":"no_coverage"} when
+            the experience store is absent, or {"coverage": false} when the
+            store has no nodes for that session — both mean the caller
+            should fall back to transcript scraping.
+            fitness_by_task_type: store-wide fitness aggregation (no
+            session_id). Same coverage-check contract.
+            write_failure_evals: computes preference_pairs for the session
+            and upserts evidence-linked entries into
+            .cortex/evals/tasks/failure_based_evals.json.
+            record_rule_provenance / refresh_rule_matches / rule_evidence /
+            pruning_candidates: rule-evidence-citation API (plan
+            synapse-rule-provenance) — pass data={"rule_id","failure_class",
+            "session_id","pair_ids"} to record, {"session_id"} to refresh,
+            {"rule_id"} to read evidence, {"window_days"} (default 90) to
+            list pruning candidates.
         pipeline: Pipeline name (e.g. "commit", "implement"). Default: "default".
         phase: Phase name (e.g. "preflight", "checks"). Required for write.
             For read: if given, reads that phase; if omitted, reads full state.

@@ -4,10 +4,7 @@ from __future__ import annotations
 
 import json
 import logging
-import os
 import shutil
-import uuid
-from datetime import datetime
 from enum import StrEnum
 from pathlib import Path
 from typing import cast
@@ -18,9 +15,11 @@ from cortex.core.file_snapshot import FileStateCache
 from cortex.core.models import OperationStatus
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 
-logger = logging.getLogger(__name__)
+from .pipeline_handoff_clock import PIPELINE_TTL_SECONDS, age_seconds, now_iso
+from .pipeline_handoff_lock import pipeline_state_lock
+from .pipeline_handoff_session import get_session_id
 
-PIPELINE_TTL_SECONDS = 4 * 3600  # 4 hours
+logger = logging.getLogger(__name__)
 
 
 class PhaseStatus(StrEnum):
@@ -33,32 +32,13 @@ class PhaseStatus(StrEnum):
 
 
 # ---------------------------------------------------------------------------
-# Session ID helpers (mirrors session_logger._get_session_id)
-# ---------------------------------------------------------------------------
-
-_SESSION_ENV_KEY = "CORTEX_SESSION_ID"
-
-
-def get_session_id() -> str:
-    session_id = os.environ.get(_SESSION_ENV_KEY)
-    if not session_id:
-        session_id = uuid.uuid4().hex[:12]
-        os.environ[_SESSION_ENV_KEY] = session_id
-    return session_id
-
-
-def now_iso() -> str:
-    return datetime.now().isoformat(timespec="seconds")
-
-
-# ---------------------------------------------------------------------------
 # Path helpers
 # ---------------------------------------------------------------------------
 
 
 def pipeline_dir(project_root: Path, pipeline: str) -> Path:
     """Return .cortex/.session/{session_id}/{pipeline}/."""
-    session_id = get_session_id()
+    session_id = get_session_id(project_root)
     base = get_cortex_path(project_root, CortexResourceType.SESSION)
     return base / session_id / pipeline
 
@@ -111,9 +91,7 @@ def _is_pipeline_stale(state_file: Path) -> bool:
         started_raw = cast(dict[str, object], data).get("started_at")
         if not isinstance(started_raw, str):
             return True
-        started = datetime.fromisoformat(started_raw)
-        age = (datetime.now() - started).total_seconds()
-        return age > PIPELINE_TTL_SECONDS
+        return age_seconds(started_raw) > PIPELINE_TTL_SECONDS
     except (OSError, json.JSONDecodeError, ValueError):
         return True
 
@@ -129,7 +107,19 @@ def _parse_init_data(data: str) -> dict[str, object]:
 
 
 def op_init(project_root: Path, pipeline: str, data: str | None) -> str:
-    """Create the pipeline directory and write initial manifest."""
+    """Create the pipeline directory and ensure the manifest exists.
+
+    # AI: init must be idempotent against a live pipeline. A second init
+    # call (whether an intentional restart, a retried tool call, or a
+    # zero-arg call that resolved stale routing from a leftover
+    # current-task.json "operation":"init") previously rebuilt the state
+    # dict from scratch every time, always resetting phases to {} and
+    # started_at to now — silently discarding every phase already written
+    # in the same run (the observed "only the latest phase survives, with
+    # started_at jumped forward" bug). Only a genuinely stale or missing
+    # pipeline.json gets a fresh phases={} state; an existing, non-stale
+    # manifest is loaded and preserved, with any init `data` merged on top.
+    """
     pdir = pipeline_dir(project_root, pipeline)
     state_file = state_path(pdir)
     if state_file.exists() and _is_pipeline_stale(state_file):
@@ -139,19 +129,26 @@ def op_init(project_root: Path, pipeline: str, data: str | None) -> str:
             pipeline,
             ttl_hours,
         )
+        # AI: close the stale run's window in the store so it is never
+        # offered for resume after its handoff files are wiped.
+        _record_run_end_best_effort(project_root, pipeline, "abandoned")
         shutil.rmtree(pdir, ignore_errors=True)
     pdir.mkdir(parents=True, exist_ok=True)
     extra = _parse_init_data(data) if data else {}
-    state: dict[str, object] = {
-        "session_id": get_session_id(),
-        "pipeline": pipeline,
-        "started_at": now_iso(),
-        "phases": {},
-        **extra,
-    }
-    _ = state_file.write_text(json.dumps(state, indent=2), encoding="utf-8")
+    # AI: lock + atomic replace close the same race this whole fix targets:
+    # a concurrent _update_pipeline_state_file read-modify-write on this
+    # same file must never interleave with this one (lock), and no reader
+    # may ever observe a partially-written manifest (atomic replace).
+    with pipeline_state_lock(state_file):
+        state = load_or_create_state(state_file, pipeline, project_root)
+        state.update(extra)
+        _atomic_write_json(state_file, state)
     return json.dumps(
-        {"status": "ok", "pipeline_dir": str(pdir), "session_id": get_session_id()},
+        {
+            "status": "ok",
+            "pipeline_dir": str(pdir),
+            "session_id": get_session_id(project_root),
+        },
         indent=2,
     )
 
@@ -222,7 +219,9 @@ def op_read_task(project_root: Path, pipeline: str, phase: str) -> str:
     )
 
 
-def load_or_create_state(state_file: Path, pipeline: str) -> dict[str, object]:
+def load_or_create_state(
+    state_file: Path, pipeline: str, project_root: Path
+) -> dict[str, object]:
     """Load pipeline state from file or return fresh state dict."""
     if state_file.exists():
         try:
@@ -235,7 +234,7 @@ def load_or_create_state(state_file: Path, pipeline: str) -> dict[str, object]:
         except (OSError, json.JSONDecodeError):
             pass
     return {
-        "session_id": get_session_id(),
+        "session_id": get_session_id(project_root),
         "pipeline": pipeline,
         "started_at": now_iso(),
         "phases": {},
@@ -436,16 +435,69 @@ def _update_pipeline_state_file(
     phase: str,
     payload: dict[str, object],
     config_fields: dict[str, object],
+    project_root: Path,
 ) -> dict[str, object]:
     sfile = state_path(pipeline_dir)
-    state = load_or_create_state(sfile, pipeline)
-    phases = _state_phases(state)
-    phases[phase] = payload
-    state["phases"] = phases
-    state["last_updated"] = now_iso()
-    _update_pipeline_config(state, config_fields)
-    _ = sfile.write_text(json.dumps(state, indent=2), encoding="utf-8")
+    # AI: the read-modify-write below must be atomic across threads. Before
+    # this fix, an unlocked, non-atomic write_text() left a window where a
+    # concurrent reader (another thread running this same function for a
+    # different phase, or a slow subagent racing the orchestrator) could
+    # read a stale phases dict and overwrite the other writer's phase.
+    # See tests/tools/test_pipeline_handoff_race.py for the reproduction.
+    with pipeline_state_lock(sfile):
+        state = load_or_create_state(sfile, pipeline, project_root)
+        phases = _state_phases(state)
+        phases[phase] = payload
+        state["phases"] = phases
+        state["last_updated"] = now_iso()
+        _update_pipeline_config(state, config_fields)
+        _atomic_write_json(sfile, state)
     return state
+
+
+def _record_phase_event_best_effort(
+    project_root: Path, pipeline: str, phase: str, status: str
+) -> None:
+    """Record a phase transition in the experience store (never raises).
+
+    Handoff-state call sites map onto node-status transitions as follows:
+    op_mark_running -> RUNNING, op_write_result -> COMPLETED | FAILED,
+    op_clear -> run-end "cleared", stale op_init -> run-end "abandoned".
+    op_snapshot/op_rollback manage file state only — no node transition.
+    """
+    # AI: imported lazily so handoff I/O stays importable if experience is absent.
+    from cortex.experience.recorder import record_phase_event
+
+    _ = record_phase_event(
+        project_root, get_session_id(project_root), pipeline, phase, status
+    )
+
+
+def _record_run_end_best_effort(project_root: Path, pipeline: str, reason: str) -> None:
+    """Close the run window in the experience store (never raises)."""
+    # AI: imported lazily so handoff I/O stays importable if experience is absent.
+    from cortex.experience.recorder import record_run_end
+
+    _ = record_run_end(project_root, get_session_id(project_root), pipeline, reason)
+
+
+def _append_write_event(
+    pdir: Path, phase: str, incoming: dict[str, object], status: PhaseStatus
+) -> str | None:
+    """Append the write event; return an error JSON string on failure."""
+    try:
+        _append_event_log(
+            pdir,
+            phase=phase,
+            operation="write",
+            data_keys=sorted(incoming.keys()),
+            status=status,
+        )
+    except OSError as exc:
+        return json.dumps(
+            {"status": OperationStatus.ERROR.value, "error": str(exc)}, indent=2
+        )
+    return None
 
 
 def op_write_result(
@@ -456,21 +508,15 @@ def op_write_result(
     pdir.mkdir(parents=True, exist_ok=True)
     incoming = parse_result_data(data)
     event_status = _phase_status_from_payload(incoming)
-    try:
-        _append_event_log(
-            pdir,
-            phase=phase,
-            operation="write",
-            data_keys=sorted(incoming.keys()),
-            status=event_status,
-        )
-    except OSError as exc:
-        return json.dumps(
-            {"status": OperationStatus.ERROR.value, "error": str(exc)}, indent=2
-        )
+    event_error = _append_write_event(pdir, phase, incoming, event_status)
+    if event_error is not None:
+        return event_error
     result_fields, config_fields = _split_config_from_result(incoming)
     payload, rfile = _write_result_payload_file(pdir, phase, result_fields)
-    state = _update_pipeline_state_file(pdir, pipeline, phase, payload, config_fields)
+    state = _update_pipeline_state_file(
+        pdir, pipeline, phase, payload, config_fields, project_root
+    )
+    _record_phase_event_best_effort(project_root, pipeline, phase, event_status.value)
     return json.dumps(
         {
             "status": "ok",
@@ -482,12 +528,13 @@ def op_write_result(
     )
 
 
-def op_mark_running(project_root: Path, pipeline: str, phase: str) -> str:
-    """Mark phase as running and persist atomically for crash-safe resume."""
-    pdir = pipeline_dir(project_root, pipeline)
-    pdir.mkdir(parents=True, exist_ok=True)
-    payload = _running_payload(phase)
-    rfile = result_path(pdir, phase)
+def _write_running_marker(
+    pdir: Path, rfile: Path, payload: dict[str, object], phase: str
+) -> str | None:
+    """Write the running-marker file and its event log entry.
+
+    Returns an error JSON string on failure, None on success.
+    """
     try:
         _atomic_write_json(rfile, payload)
         _append_event_log(
@@ -501,7 +548,24 @@ def op_mark_running(project_root: Path, pipeline: str, phase: str) -> str:
         return json.dumps(
             {"status": OperationStatus.ERROR.value, "error": str(exc)}, indent=2
         )
-    state = _update_pipeline_state_file(pdir, pipeline, phase, payload, {})
+    return None
+
+
+def op_mark_running(project_root: Path, pipeline: str, phase: str) -> str:
+    """Mark phase as running and persist atomically for crash-safe resume."""
+    pdir = pipeline_dir(project_root, pipeline)
+    pdir.mkdir(parents=True, exist_ok=True)
+    payload = _running_payload(phase)
+    rfile = result_path(pdir, phase)
+    write_error = _write_running_marker(pdir, rfile, payload, phase)
+    if write_error is not None:
+        return write_error
+    state = _update_pipeline_state_file(
+        pdir, pipeline, phase, payload, {}, project_root
+    )
+    _record_phase_event_best_effort(
+        project_root, pipeline, phase, PhaseStatus.RUNNING.value
+    )
     return json.dumps(
         {
             "status": "ok",
@@ -590,7 +654,7 @@ def op_read_state(project_root: Path, pipeline: str) -> str:
             {
                 "status": "not_found",
                 "pipeline": pipeline,
-                "session_id": get_session_id(),
+                "session_id": get_session_id(project_root),
                 "message": (
                     f"No pipeline state found for '{pipeline}'. "
                     "Call init or write_result first."
@@ -620,8 +684,50 @@ def op_read_log(project_root: Path, pipeline: str) -> str:
     )
 
 
-def op_clear(project_root: Path, pipeline: str) -> str:
-    """Remove the pipeline directory after a completed or abandoned run."""
+def _clear_single_phase(
+    project_root: Path, pdir: Path, pipeline: str, phase: str
+) -> str:
+    """Remove one phase's entry/files without touching the rest of the pipeline.
+
+    # AI: callers such as persist_gate_feedback() clear a single scratch
+    # phase (e.g. "gate_feedback") after a passing quality/docs gate. That
+    # phase is unrelated to the orchestrator's accumulated select/code/
+    # review/finalize/verify state for the *same* live pipeline, so this
+    # must never fall through to the whole-directory rmtree below — doing
+    # so previously destroyed every prior phase the instant a mid-run
+    # quality gate passed (see investigate-pipeline-handoff-phase-state-
+    # loss-during-long-running-subagent-calls.md Review Follow-Up Gaps).
+    """
+    sfile = state_path(pdir)
+    with pipeline_state_lock(sfile):
+        state = load_or_create_state(sfile, pipeline, project_root)
+        phases = _state_phases(state)
+        had_phase = phase in phases
+        _ = phases.pop(phase, None)
+        state["phases"] = phases
+        state["last_updated"] = now_iso()
+        _atomic_write_json(sfile, state)
+    for stale_file in (task_path(pdir, phase), result_path(pdir, phase)):
+        stale_file.unlink(missing_ok=True)
+    return json.dumps(
+        {
+            "status": "ok",
+            "cleared_phase": phase,
+            "pipeline": pipeline,
+            "had_phase": had_phase,
+        },
+        indent=2,
+    )
+
+
+def op_clear(project_root: Path, pipeline: str, phase: str | None = None) -> str:
+    """Remove the pipeline directory after a completed or abandoned run.
+
+    When ``phase`` is given, only that phase's entry and files are removed;
+    the rest of the pipeline's accumulated state is left untouched. Omit
+    ``phase`` (the Cleanup-phase / do.md contract) to remove the whole
+    pipeline directory.
+    """
     pdir = pipeline_dir(project_root, pipeline)
     if not pdir.exists():
         return json.dumps(
@@ -633,6 +739,11 @@ def op_clear(project_root: Path, pipeline: str) -> str:
             indent=2,
         )
     try:
+        if phase:
+            return _clear_single_phase(project_root, pdir, pipeline, phase)
+        # AI: run-end marker keeps the store's frontier consistent with the
+        # cleared handoff files (a cleared run is complete, not resumable).
+        _record_run_end_best_effort(project_root, pipeline, "cleared")
         shutil.rmtree(pdir)
         return json.dumps(
             {"status": "ok", "cleared": str(pdir), "pipeline": pipeline}, indent=2
@@ -645,7 +756,7 @@ def op_clear(project_root: Path, pipeline: str) -> str:
 
 def op_snapshot(project_root: Path, paths: list[str]) -> str:
     """Snapshot provided file paths for current session."""
-    session_id = get_session_id()
+    session_id = get_session_id(project_root)
     cache = get_file_state_cache(session_id, project_root)
     snapshot_id = cache.snapshot([Path(path) for path in paths])
     return json.dumps(
@@ -656,7 +767,7 @@ def op_snapshot(project_root: Path, paths: list[str]) -> str:
 
 def op_rollback(project_root: Path, snapshot_id: str) -> str:
     """Restore files from a session snapshot."""
-    cache = get_file_state_cache(get_session_id(), project_root)
+    cache = get_file_state_cache(get_session_id(project_root), project_root)
     restored = cache.restore(snapshot_id)
     return json.dumps(
         {

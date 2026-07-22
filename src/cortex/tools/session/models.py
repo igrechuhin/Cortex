@@ -10,6 +10,7 @@ from enum import Enum
 
 from pydantic import Field
 
+from cortex.core.constants import DEFAULT_SESSION_SPEND_BUDGET
 from cortex.core.models import OperationStatus
 from cortex.tools.models_base import (
     ErrorResultBase,
@@ -27,6 +28,42 @@ class TokenBudgetStatus(str, Enum):
     OVER_BUDGET = "over_budget"
 
 
+class SessionSpendStatus(str, Enum):
+    """Runtime tool-output token-spend status for the current session.
+
+    Distinct from `TokenBudgetStatus`: that status measures the static
+    on-disk size of memory-bank files, while this measures tokens actually
+    recorded via `record_spend_tokens()` from tool-call activity within the
+    running session (see `core.session_logger.SessionLog`).
+    """
+
+    HEALTHY = "healthy"
+    WARNING = "warning"
+    OVER_BUDGET = "over_budget"
+
+
+class SessionSpendSummary(StrictBaseModel):
+    """Runtime tool-output token spend summary for the current session."""
+
+    cumulative_tokens: int = Field(
+        ge=0,
+        description="Tokens recorded via record_spend_tokens() so far this session",
+    )
+    budget: int = Field(ge=0, description="Configured session runtime spend budget")
+    spend_status: SessionSpendStatus = Field(
+        description="Spend status vs the configured budget"
+    )
+
+
+def _default_session_spend_summary() -> SessionSpendSummary:
+    """Healthy-default spend summary for callers that pre-date this field."""
+    return SessionSpendSummary(
+        cumulative_tokens=0,
+        budget=DEFAULT_SESSION_SPEND_BUDGET,
+        spend_status=SessionSpendStatus.HEALTHY,
+    )
+
+
 class SessionHealthSummary(StrictBaseModel):
     """Quick health check results for session start."""
 
@@ -38,6 +75,16 @@ class SessionHealthSummary(StrictBaseModel):
     )
     has_errors: bool = Field(
         default=False, description="Whether critical validation errors exist"
+    )
+    # AI: Nested here rather than as a sibling SessionBrief.spend field so it
+    # flows unchanged through the existing brief-assembly tuple/dataclass
+    # plumbing (brief.py/brief_loaders.py), which already threads `health`
+    # end-to-end; a sibling field would require widening several fixed-arity
+    # tuples. Conceptually distinct from token_budget_status (static file
+    # size) but grouped under the same "session health" umbrella.
+    spend: SessionSpendSummary = Field(
+        default_factory=_default_session_spend_summary,
+        description="Runtime tool-output token spend for the current session",
     )
 
 
@@ -244,8 +291,17 @@ class SessionBrief(StrictBaseModel):
     incomplete_pipelines: list[str] = Field(
         default_factory=list,
         description=(
-            "Pipeline identifiers with append-only write events that may indicate "
-            "incomplete prior execution."
+            "Incomplete pipeline runs as 'session/pipeline[:frontier_phase]'; "
+            "frontier phase comes from the experience store when recorded. "
+            "Resume via pipeline_handoff(operation='resume')."
+        ),
+    )
+    experience_recall_summary: str | None = Field(
+        default=None,
+        description=(
+            "Vector-seeded prior-experience recall: similar-task outcomes and "
+            "known dead ends for the current session goal (budget-capped; None "
+            "when disabled, no goal set, or no similar task found)."
         ),
     )
 

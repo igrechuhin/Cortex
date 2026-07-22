@@ -186,8 +186,12 @@ def parse_roadmap_references(roadmap_content: str) -> list[RoadmapReference]:
     references: list[RoadmapReference] = []
 
     # Pattern for file references: `path/to/file.py` or `path/to/file.py:123`
+    # AI: extensions are ordered longest-first (json before js, tsx/jsx before
+    # ts/js) and guarded by a negative lookahead so an extension never matches
+    # a prefix of a longer token (e.g. `.json` parsed as a phantom `.js`).
     file_ref_pattern = re.compile(
-        r"`?([a-zA-Z0-9_./-]+\.(py|md|ts|js|tsx|jsx|go|rs|java|kt))(?::(\d+))?`?"
+        r"`?([a-zA-Z0-9_./-]+\.(json|jsx|tsx|java|py|md|ts|js|go|rs|kt))"
+        + r"(?![a-zA-Z0-9_])(?::(\d+))?`?"
     )
 
     lines = roadmap_content.splitlines()

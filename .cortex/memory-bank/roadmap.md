@@ -13,6 +13,9 @@
 
 ## Pending plans (from .cortex/plans)
 
+- **Content-Preserving WAL for AS-OF Reconstruction** - PENDING - WAL stores reverse content deltas keyed by experience-store step numbers, enabling AS-OF reconstruction of memory-bank state at any decision point. Deferred item — execute only after analyze-experience-graph-queries proves valuable. Plan: .cortex/plans/content-preserving-wal-as-of.md
+- **Fix analyze pipeline phase-allowlist and subagent tool-grant gaps** - PENDING - pipeline_handoff phase allowlist rejects context/session/tools phases used by the analyze-* prompts, and analyze-* subagents lack ReadMcpResourceTool/Bash/Write needed to complete their own documented steps. Discovered during a live /cortex/analyze run on 2026-07-22. Plan: .cortex/plans/fix-analyze-pipeline-phase-allowlist-and-subagent-tool-grant-gaps.md
+
 ### Pipeline Infrastructure
 
 ### Tools Infrastructure

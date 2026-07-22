@@ -509,6 +509,63 @@ class TestParseRoadmapReferences:
         assert len(references) == 3
         assert all(ref.file_path.endswith((".py", ".ts", ".go")) for ref in references)
 
+    def test_parse_references_json_not_truncated_to_js(self) -> None:
+        """A .json mention parses as a .json reference, not a phantom .js one."""
+        # Arrange
+        roadmap_content = "Uses `evals/failure_based_evals.json` for scoring."
+
+        # Act
+        references = parse_roadmap_references(roadmap_content)
+
+        # Assert
+        assert len(references) == 1
+        assert references[0].file_path == "evals/failure_based_evals.json"
+
+    def test_parse_references_json_with_line_number(self) -> None:
+        """A .json reference with a line number keeps extension and line."""
+        # Arrange
+        roadmap_content = "See `config/settings.json:12` for the flag."
+
+        # Act
+        references = parse_roadmap_references(roadmap_content)
+
+        # Assert
+        assert len(references) == 1
+        assert references[0].file_path == "config/settings.json"
+        assert references[0].line == 12
+
+    def test_parse_references_existing_extensions_still_parse(self) -> None:
+        """Existing extensions (.js, .ts, .tsx, .jsx, .py, .md) still parse."""
+        # Arrange
+        roadmap_content = (
+            "See `src/a.js`, `src/b.ts`, `src/c.tsx`, `src/d.jsx`, "
+            "`src/e.py`, and `docs/f.md`."
+        )
+
+        # Act
+        references = parse_roadmap_references(roadmap_content)
+
+        # Assert
+        assert [ref.file_path for ref in references] == [
+            "src/a.js",
+            "src/b.ts",
+            "src/c.tsx",
+            "src/d.jsx",
+            "src/e.py",
+            "docs/f.md",
+        ]
+
+    def test_parse_references_ignores_unknown_longer_extension(self) -> None:
+        """An unknown extension sharing a known prefix yields no phantom match."""
+        # Arrange
+        roadmap_content = "Generated `build/output.pyc` is ignored."
+
+        # Act
+        references = parse_roadmap_references(roadmap_content)
+
+        # Assert
+        assert references == []
+
 
 class TestValidateRoadmapSync:
     """Tests for roadmap synchronization validation."""
@@ -752,6 +809,28 @@ class TestValidateRoadmapSync:
             result = validate_roadmap_sync(project_root, roadmap_content)
             assert len(result.invalid_references) == 0
             assert result.valid is True or len(result.unlinked_plans) > 0
+
+    def test_validate_sync_passes_with_json_reference_to_existing_file(self) -> None:
+        """A .json reference to an existing file passes validation end to end."""
+        # Arrange
+        with TemporaryDirectory() as tmpdir:
+            project_root = Path(tmpdir)
+            evals_dir = project_root / "evals"
+            evals_dir.mkdir()
+            json_file = evals_dir / "failure_based_evals.json"
+            _ = json_file.write_text("{}\n")
+
+            roadmap_content = (
+                "## Phase 1\n"
+                "Track scoring via `evals/failure_based_evals.json` fixtures.\n"
+            )
+
+            # Act
+            result = validate_roadmap_sync(project_root, roadmap_content)
+
+            # Assert
+            assert result.valid is True
+            assert result.invalid_references == []
 
     def test_validate_sync_plan_reference_missing_and_not_in_archive_is_invalid(
         self,

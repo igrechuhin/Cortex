@@ -12,6 +12,10 @@ _MAX_SESSION_BRIEF_LINE_CHARS = 1000
 _MAX_SESSION_BRIEF_SUGGESTION_CHARS = 800
 _MAX_SESSION_BRIEF_PLAN_GRAPH_SUMMARY_CHARS = 500
 _MAX_SESSION_BRIEF_PLAN_GRAPH_ASCII_CHARS = 2500
+# AI: matches ProjectSessionConfig.experience_recall_budget_chars default (600);
+# this cap is a hard ceiling even when a project overrides that config higher,
+# so a misconfigured budget cannot blow out the session() payload.
+_MAX_SESSION_BRIEF_EXPERIENCE_RECALL_CHARS = 2000
 
 
 def _truncate_for_brief_text(value: str, max_chars: int) -> str:
@@ -42,6 +46,28 @@ def _cap_concurrent_session_tasks(
     ]
 
 
+def _session_brief_cap_extra_fields(
+    brief: SessionBrief, line: int
+) -> dict[str, object]:
+    return {
+        "constitution_notice": _truncate_optional(brief.constitution_notice, line),
+        "primary_session_goal": _truncate_optional(brief.primary_session_goal, line),
+        "session_goal_drift_hint": _truncate_optional(
+            brief.session_goal_drift_hint, line
+        ),
+        "plan_graph_summary": _truncate_optional(
+            brief.plan_graph_summary, _MAX_SESSION_BRIEF_PLAN_GRAPH_SUMMARY_CHARS
+        ),
+        "plan_graph_ascii_edges": _truncate_optional(
+            brief.plan_graph_ascii_edges, _MAX_SESSION_BRIEF_PLAN_GRAPH_ASCII_CHARS
+        ),
+        "experience_recall_summary": _truncate_optional(
+            brief.experience_recall_summary,
+            _MAX_SESSION_BRIEF_EXPERIENCE_RECALL_CHARS,
+        ),
+    }
+
+
 def _session_brief_cap_core_fields(brief: SessionBrief, line: int) -> dict[str, object]:
     return {
         "current_focus": _truncate_for_brief_text(
@@ -61,17 +87,7 @@ def _session_brief_cap_core_fields(brief: SessionBrief, line: int) -> dict[str, 
         "mcp_health_message": _truncate_optional(brief.mcp_health_message, line),
         "gate_feedback_summary": _truncate_optional(brief.gate_feedback_summary, line),
         "clarification_summary": _truncate_optional(brief.clarification_summary, line),
-        "constitution_notice": _truncate_optional(brief.constitution_notice, line),
-        "primary_session_goal": _truncate_optional(brief.primary_session_goal, line),
-        "session_goal_drift_hint": _truncate_optional(
-            brief.session_goal_drift_hint, line
-        ),
-        "plan_graph_summary": _truncate_optional(
-            brief.plan_graph_summary, _MAX_SESSION_BRIEF_PLAN_GRAPH_SUMMARY_CHARS
-        ),
-        "plan_graph_ascii_edges": _truncate_optional(
-            brief.plan_graph_ascii_edges, _MAX_SESSION_BRIEF_PLAN_GRAPH_ASCII_CHARS
-        ),
+        **_session_brief_cap_extra_fields(brief, line),
     }
 
 

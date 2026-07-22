@@ -3,13 +3,34 @@
 
 **This file records completed work only.** For current status and upcoming work see [roadmap.md](roadmap.md).
 
+## Completed Work (2026-07-22)
+
+- ✅ **Session Runtime Token-Spend Guard** - COMPLETE (2026-07-22) - Added a runtime token-spend guard to session() tracking actual tokens consumed by tool-call activity within the current session, distinct from the existing static token_budget_status. New SessionSpendStatus/SessionSpendSummary models mirror the TokenBudgetStatus pattern; SessionLog gained cumulative_spend_tokens + record_spend_tokens() (backward-compatible, corruption-tolerant); two call sites instrumented (manage_file read/write, session() brief token_count); calculate_health_summary() exposes the new spend field; add_spend_suggestions() warns via session_suggestions when spend crosses warning/over_budget thresholds. Warn-only, purely additive. 19 new tests (boundary values, accumulation, legacy/corrupted-log tolerance, suggestion text, single-increment-per-call, end-to-end integration); quality gate green at 91.09% coverage.
+
+- ✅ **Session Optimization 2026-07-22T16-42 [analyses/analysis-session-optimization-2026-07-22t16-42-2026-07-22.md]** - COMPLETE (2026-07-22) - [Session Optimization 2026-07-22T16-42](analyses/analysis-session-optimization-2026-07-22t16-42-2026-07-22.md) — Session analysis for Session Optimization 2026-07-22T16-42 (2026-07-22); decisions and follow-ups recorded.
+
+- ✅ **Pipeline Handoff op_init/op_clear Idempotency Fix** - COMPLETE (2026-07-22) - <!-- memory_type: milestone -->
+Closed the remaining pipeline_handoff phase-state-loss investigation: `op_clear` (`pipeline_handoff_io.py`/`pipeline_handoff.py`) was wiping ALL phases instead of respecting the `phase` argument passed to it, compounding the earlier `op_init` non-idempotency bug fixed on 2026-07-21. Both call paths fixed; multi-root-cause investigation now fully resolved and archived at `.cortex/plans/archive/Investigations/investigate-pipeline-handoff-phase-state-loss-during-long-running-subagent-calls.md`.
+
+## Completed Work (2026-07-21)
+
+- **Summary (2026-07-21)** - 4 entries archived.
+
+## Completed Work (2026-07-20)
+
+- **Summary (2026-07-20)** - 9 entries archived.
+
+## Completed Work (2026-07-19)
+
+- **Summary (2026-07-19)** - 1 entries archived.
+
 ## Completed Work (2026-06-30)
 
-- **Add setup_codegraph prompt and CodeGraph MCP integration** - COMPLETE (2026-06-30) - Added `codegraph_configured` field to `ProjectConfigStatus` (checks `.cursor/mcp.json` and `.mcp.json` for `mcpServers.codegraph` key); added `SETUP_CODEGRAPH_PROMPT` to `prompts.py`; registered `setup_codegraph` setup prompt with visibility gated on `memory_bank_initialized and not codegraph_configured`; refactored `apply_setup_prompt_visibility` to `_build_prompt_visibility` helper; updated `INITIALIZE_PROMPT` with codegraph binary resolution and init steps; added `.codegraph/` to `.gitignore`. Test additions in `test_lazy_prompt_registration.py` and `test_setup_module.py`. Phase A: scope=markdown_only, coverage=90.85%.
+- **Summary (2026-06-30)** - 1 entries archived.
 
 ## Completed Work (2026-06-25)
 
-- **Summary (2026-06-25)** - 5 entries archived.
+- **Summary (2026-06-25)** - 1 entries archived.
 
 ## Completed Work (2026-06-24)
 

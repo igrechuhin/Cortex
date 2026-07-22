@@ -40,9 +40,13 @@ def annotate_roadmap_markdown_with_graph(content: str, graph: ArtifactGraph) -> 
 
 
 def annotate_roadmap_for_project(content: str, project_root: Path) -> str:
-    """Load the artifact graph for active plans and annotate roadmap content."""
+    """Load the artifact graph for active plans and annotate roadmap content.
+
+    ``include_archive=True`` so archived dependencies with ``status: DONE``
+    are visible to the graph and do not cause false BLOCKED annotations.
+    """
     plans_dir = get_cortex_path(project_root, CortexResourceType.PLANS)
     if not plans_dir.is_dir():
         return content
-    graph = compute_artifact_graph(plans_dir, include_archive=False)
+    graph = compute_artifact_graph(plans_dir, include_archive=True)
     return annotate_roadmap_markdown_with_graph(content, graph)

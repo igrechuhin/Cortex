@@ -457,7 +457,11 @@ async def _handle_special_plan_operations(
     if op == PlanToolOperation.GRAPH:
         from cortex.tools.plans.plan_graph import plan_graph_json
 
-        return await plan_graph_json(ctx, include_archive=request.include_archive)
+        # Archived plans (status: DONE) satisfy dependencies of active plans.
+        # Always scan the archive for graph reads so completed-but-archived
+        # dependencies are not misreported as unsatisfied/BLOCKED. The
+        # `include_archive` wire field still governs `operation="list"`.
+        return await plan_graph_json(ctx, include_archive=True)
     if op == PlanToolOperation.ARCHIVE_COMPLETED:
         return await _plan_handle_archive_completed(ctx)
     if op == PlanToolOperation.COMPLETE:

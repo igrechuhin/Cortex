@@ -120,6 +120,57 @@ class TestDocsMemoryHelperFunctions:
         assert summary.errors == 3
         assert summary.warnings == 5
 
+    def test_build_roadmap_sync_summary_prefers_top_level_counts(self) -> None:
+        """Concise-mode responses carry real top-level error_count/warning_count."""
+        rm = cast(
+            JsonDict,
+            {
+                "valid": False,
+                "error_count": 4,
+                "warning_count": 1,
+            },
+        )
+        summary = _build_roadmap_sync_summary(rm)
+        assert summary is not None
+        assert summary.status == "error"
+        assert summary.errors == 4
+        assert summary.warnings == 1
+
+    def test_build_roadmap_sync_summary_top_level_zero_errors_is_none(self) -> None:
+        """A genuinely clean concise response reports errors as None, not 0."""
+        rm = cast(
+            JsonDict,
+            {
+                "valid": True,
+                "error_count": 0,
+                "warning_count": 0,
+            },
+        )
+        summary = _build_roadmap_sync_summary(rm)
+        assert summary is not None
+        assert summary.status == "success"
+        assert summary.errors is None
+        assert summary.warnings == 0
+
+    def test_build_roadmap_sync_summary_fallback_includes_unlinked_plans(self) -> None:
+        """Legacy summary-dict fallback aggregates unlinked_plans_count too."""
+        rm = cast(
+            JsonDict,
+            {
+                "valid": False,
+                "summary": {
+                    "missing_entries_count": 0,
+                    "invalid_references_count": 0,
+                    "completed_entries_count": 0,
+                    "unlinked_plans_count": 2,
+                    "warnings_count": 0,
+                },
+            },
+        )
+        summary = _build_roadmap_sync_summary(rm)
+        assert summary is not None
+        assert summary.errors == 2
+
     def test_build_roadmap_sync_summary_non_dict_summary(self) -> None:
         """Handles non-dict summary field gracefully."""
         rm = cast(JsonDict, {"valid": False, "summary": "not a dict"})

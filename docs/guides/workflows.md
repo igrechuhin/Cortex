@@ -146,6 +146,7 @@ Keep both off for standard MCP clients to avoid unnecessary tool-list expansion.
 - Formatter/linter errors: run the corresponding fix check, then verify with the same check again.
 - Test failures: fix code or tests, then re-run tests; do not skip.
 - Coverage below threshold: invoke `@fix-coverage` (or run `/cortex/fix coverage` / `/cortex/fix all`). The subagent picks top uncovered files from `coverage_gaps`, writes tests in batches, re-runs **`run_quality_gate()`**, and reports either `tests_added` with `final_coverage >= threshold` or a concrete `blocker_reason` within the max-iteration cap.
+- Crashed pipeline run: call `pipeline_handoff(operation="resume", pipeline="commit")` (or the relevant pipeline). The returned `ResumePlan` lists `completed_phases` to skip and the `frontier_phase`; resume at the next phase instead of restarting. `session()` surfaces interrupted runs in `incomplete_pipelines`. See [Error Recovery — Pipeline Crash Recovery](error-recovery.md#pipeline-crash-recovery-resume).
 
 ---
 

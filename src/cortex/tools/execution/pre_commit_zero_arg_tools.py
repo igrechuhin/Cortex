@@ -37,6 +37,7 @@ from cortex.core.usage_context import (
     get_current_project_root,
     get_or_resolve_project_root,
 )
+from cortex.experience.gate_hook import record_gate_result
 from cortex.tools.evaluation.reflection import apply_reflection_to_gate_result
 from cortex.tools.execution.pre_commit_config import (
     as_bool,
@@ -352,6 +353,8 @@ async def _finalize_quality_gate_result(
         feedback_from_quality_result(cast(dict[str, object], result)), ctx
     )
     gate_passed = result.get("preflight_passed") is True
+    # AI: record fitness before trim — the summary keys are dropped for passing gates.
+    _ = await record_gate_result(root, result)
     if gate_passed:
         _ = trim_passing_quality_gate_result(result)
         PipelineDirtyTracker.get_instance().record_phase_a(root, True)

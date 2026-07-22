@@ -30,6 +30,29 @@ class ProjectSessionConfig(BaseModel):
         default="default",
         description="Stem of workflow YAML under .cortex/schemas/ or bundled schemas.",
     )
+    experience_recall_enabled: bool = Field(
+        default=True,
+        description=(
+            "Enable vector-seeded similar-task recall in session() orientation."
+        ),
+    )
+    experience_recall_k: int = Field(
+        default=3,
+        ge=1,
+        le=20,
+        description="Max similar prior tasks to surface in the recall block.",
+    )
+    experience_recall_similarity_threshold: float = Field(
+        default=0.35,
+        ge=0.0,
+        le=1.0,
+        description="Minimum cosine similarity for a task to be recalled.",
+    )
+    experience_recall_budget_chars: int = Field(
+        default=600,
+        ge=0,
+        description="Max characters of the rendered recall block in SessionBrief.",
+    )
 
 
 def project_session_config_path(project_root: Path) -> Path:

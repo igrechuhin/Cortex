@@ -1,3 +1,4 @@
+<!-- memory_type: preference -->
 # Tech Context: Cortex
 
 **Schema Extension Note**: This file has schema validation with required sections (`## Technology Stack`, `## Dependencies`, `## Development Setup`). When adding new content, maintain proper heading hierarchy and avoid skipping heading levels. See `memory-bank-workflow.mdc` for detailed extension guidance.
@@ -82,6 +83,38 @@ pip install -e ".[dev]"
 - `pyright` – Primary type checker (used by `make typecheck`, CI quality gate, and local checks)
 - `mypy` – Optional/local-only cross-check; can be run via `uv run mypy` but is not required in CI
 
+## Experience Store (SQLite)
+
+Pipeline search history is persisted to a unified SQLite store (see the Experience Store Pattern in systemPatterns.md):
+
+- **Database**: `.cortex/experience/experience.db` — tables `tasks`, `sessions`, `nodes`, `schema_version`; WAL journal mode; idempotent migrations in `src/cortex/experience/schema.py`.
+- **Storage layer**: `ExperienceStoreCore` (sync `sqlite3`, mirrors `temporal.db` conventions with a 5s busy timeout) wrapped by the async `ExperienceStore` facade (`asyncio.to_thread`); Pydantic 2 models in `src/cortex/experience/models.py`.
+- **Artifacts**: large payloads (gate score summaries, diffs) live under `.cortex/experience/artifacts/` and are linked via project-root-relative `nodes.artifact_ref` (validated against traversal).
+- **Instrumentation**: `pipeline_handoff` phase transitions and `run_quality_gate()` results record nodes/fitness automatically; recording is best-effort and never breaks pipelines.
+- **Config**: `CORTEX_EXPERIENCE_RECORDING` env var (default enabled; `0`/`false`/`off`/`no` disable); failures are logged at WARNING and counted via `recording_failure_count()`.
+
+## Vector-Seeded Experience Recall
+
+Task-description embeddings and similar-task recall, layered on the experience store above:
+
+- **Encoder**: `src/cortex/experience/encoder.py` — `EncoderProtocol` (sync, dependency-injected); default `HashingEncoder` is a local feature-hashing (Weinberger et al.) bag-of-words embedding, 128-dim, no external API and no heavyweight ML dependency (checked against `pyproject.toml`). Deterministic (hashlib-based, not the randomized builtin `hash()`).
+- **Index**: `src/cortex/experience/embedding_index_core.py` / `embedding_index.py` — `task_embeddings` table (BLOB vectors, `dim`, `encoder_version`) in the same `experience.db`; sync core + async facade (`asyncio.to_thread`), mirroring the `ExperienceStoreCore`/`ExperienceStore` split. Top-k query is a brute-force cosine scan (`embedding_math.py`), acceptable at dev-tool scale.
+- **Indexing hook**: `recorder.py`'s `_ensure_lineage` embeds and upserts every recorded task's spec (idempotent; safe to re-run per phase event).
+- **Recall**: `recall.py`'s `recall_similar_tasks()` vector-searches a widened candidate pool, `hybrid_rank.py` re-scores with BM25 (`retrieval/bm25.py`) over the candidate specs, and results are attached with each match's highest-fitness node and any `>=2x`-repeated-FAILED-label "dead end" from `list_nodes()`.
+- **Rendering and budget**: `recall_render.py` renders a compact, whole-line-truncated block; `tools/session/experience_recall_brief.py` merges it into `SessionBrief.experience_recall_summary`, capped again in `brief_cap.py` (`_MAX_SESSION_BRIEF_EXPERIENCE_RECALL_CHARS`).
+- **Config** (`.cortex/session.yaml`, `ProjectSessionConfig`): `experience_recall_enabled` (default `true`), `experience_recall_k` (default `3`), `experience_recall_similarity_threshold` (default `0.35`), `experience_recall_budget_chars` (default `600`). Disabled, no goal, or no store → `experience_recall_summary` stays `None` and is omitted from `session()` JSON (`exclude_none=True`), so the disabled path is byte-identical to pre-feature output.
+
+## Synapse Rule Provenance
+
+Evidence citations linking Synapse rules to the experience-store node pairs that justify them (plan `synapse-rule-provenance`), layered on the experience store above:
+
+- **Schema**: `rule_provenance` table (schema version 2) in the same `experience.db` — `rule_id`, `pair_id` (= the cited pair's failed-node id, stable identity), `session_id`, `parent_id`, `failed_node_id`, `passed_node_id`, `failure_class`, `created_at`, `last_matched_at`; `PRIMARY KEY (rule_id, pair_id)` makes re-citing a pair idempotent (`ON CONFLICT DO UPDATE` bumps `last_matched_at`); indexed on `failure_class` for the refresh query. Migration in `src/cortex/experience/schema.py`.
+- **Pure logic**: `src/cortex/experience/rule_provenance.py` — `group_provenance()` aggregates `(rule_id, pair_id)` rows into one `RuleProvenance` per rule; `pruning_candidates()` flags rules whose `last_matched` is more than `window_days` old (strict `>`, so exactly-at-boundary stays fresh); `failure_classes_from_pairs()` extracts the set of failed-node labels from a batch of `PreferencePair`s for the refresh step.
+- **SQL layer**: `src/cortex/experience/rule_provenance_queries.py` — `record_rule_provenance()`, `refresh_matching_rules()`, `list_provenance_rows()`; kept separate from `store_core.py` to stay under the file-size budget.
+- **Store API**: `ExperienceStoreCore`/`ExperienceStore` gain `record_rule_provenance(rule_id, pairs, failure_class)`, `refresh_rule_matches(pairs)`, `list_rule_provenance(rule_id=None)`, `rule_evidence(rule_id)` (the "why does this rule exist" read API — dangling node ids resolve to `None` artifact refs rather than raising), and `pruning_candidates(window_days)`.
+- **MCP exposure**: 4 new `pipeline_handoff` operations (`record_rule_provenance`, `refresh_rule_matches`, `rule_evidence`, `pruning_candidates`) dispatched via `src/cortex/tools/session/pipeline_handoff_rule_provenance.py` (mirrors `pipeline_handoff_analytics.py`'s coverage-check pattern); default staleness window is 90 days.
+- **Pipeline integration**: `analyze-session.md` Step 1 calls `refresh_rule_matches` after computing `preference_pairs` (keeps `last_matched` current) and Step 3 records each graph-sourced recommendation's `failure_class`; `analyze-compact.md` Step 3 calls `record_rule_provenance` immediately after `write_artifact(artifact_type="rule", ...)` for graph-sourced rules, and a new "Rule Provenance & Pruning Candidates" report section lists stale rules (human-reviewed only — no automatic deletion or rule-file edits).
+
 ## Tool Usage Patterns
 
 **NOTE**: These are examples for THIS project (Python). For language-agnostic procedures, prefer Cortex MCP tool `execute_pre_commit_checks()` or use scripts from the Synapse scripts directory (path from project structure or `get_structure_info()`).
@@ -159,6 +192,7 @@ Cortex/
 │   ├── refactoring/     # Refactoring tools (Phase 5)
 │   ├── rules/           # Shared rules (Phase6)
 │   ├── structure/       # Project structure (Phase 8)
+│   ├── experience/      # Unified experience store (SQLite)
 │   ├── tools/           # MCP tool implementations
 │   └── managers/        # Manager initialization
 ├── tests/               # Test suite

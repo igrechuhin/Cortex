@@ -2,6 +2,7 @@
 
 import json
 from pathlib import Path
+from typing import cast
 from unittest.mock import AsyncMock, patch
 
 import pytest
@@ -80,6 +81,54 @@ class TestSessionStartTool:
 
             assert result["status"] == "error"
             assert "Managers not initialized" in result["error"]
+
+
+async def _run_session_start_json(
+    tmp_path: Path, managers: object
+) -> dict[str, object]:
+    with (
+        patch(
+            "cortex.tools.session.start_tools.get_or_resolve_project_root"
+        ) as mock_root,
+        patch("cortex.tools.session.start_tools.get_current_managers") as mock_managers,
+        patch(
+            "cortex.tools.session.health.get_mcp_health_status",
+            new_callable=AsyncMock,
+            return_value=(True, None),
+        ),
+    ):
+        mock_root.return_value = tmp_path
+        mock_managers.return_value = managers
+        tool_fn = get_tool_fn(session_start)
+        result_json = await tool_fn(task_description=None, ctx=None)
+        assert isinstance(result_json, str)
+        parsed: dict[str, object] = json.loads(result_json)
+        return parsed
+
+
+@pytest.mark.asyncio
+async def test_session_start_recall_disabled_omits_summary_key(tmp_path: Path) -> None:
+    """No experience store and recall disabled: brief has no recall key at all."""
+    from cortex.core.path_resolver import CortexResourceType, get_cortex_path
+    from cortex.core.project_session_config import project_session_config_path
+
+    _mb, managers = await managers_phase54_variant(
+        tmp_path,
+        active_context="# Active Context\n\n## Current Focus\n\nWorking on Phase 54.\n",
+        roadmap=ROADMAP_PHASE54_TOOL,
+        extra_content="",
+    )
+    cortex_dir = get_cortex_path(tmp_path, CortexResourceType.CORTEX_DIR)
+    cortex_dir.mkdir(parents=True, exist_ok=True)
+    _ = project_session_config_path(tmp_path).write_text(
+        "experience_recall_enabled: false\n", encoding="utf-8"
+    )
+
+    result = await _run_session_start_json(tmp_path, managers)
+
+    assert result["status"] == "success"
+    brief = cast(dict[str, object], result["brief"])
+    assert "experience_recall_summary" not in brief
 
 
 def test_cap_session_brief_payload_truncates_long_concurrent_task() -> None:

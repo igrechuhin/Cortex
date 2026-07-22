@@ -177,6 +177,27 @@ def test_annotate_roadmap_appends_blocked_hint(
     assert out.startswith("- Plan:")
 
 
+def test_annotate_roadmap_no_hint_when_dependency_archived_done(
+    tmp_path: Path,
+) -> None:
+    """Archived dependency with status: DONE must not produce a false BLOCKED hint."""
+    root = tmp_path
+    plans = get_cortex_path(root, CortexResourceType.PLANS)
+    _write_plan(
+        plans / "archive" / "Other" / "parent.md",
+        slug="parent",
+        depends=[],
+        status="DONE",
+    )
+    _write_plan(plans / "child.md", slug="child", depends=["parent"])
+
+    roadmap = "- Plan: [Child plan](../plans/child.md) — work. PENDING.\n"
+    out = annotate_roadmap_for_project(roadmap, root)
+
+    assert "_(BLOCKED by:" not in out
+    assert out == roadmap
+
+
 def test_build_plan_graph_surface_bundle_counts(
     project_with_blocked_child: Path,
 ) -> None:

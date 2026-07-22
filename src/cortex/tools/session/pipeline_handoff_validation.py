@@ -11,7 +11,7 @@ _SAFE_TOKEN_RE = re.compile(r"^[A-Za-z0-9_-]+$")
 
 # Allowlisted names only — derived from Synapse prompts and orchestrators.
 _VALID_PIPELINES: frozenset[str] = frozenset(
-    {"commit", "implement", "fix", "review", "default"}
+    {"commit", "implement", "fix", "review", "analyze", "default"}
 )
 _VALID_PHASES: frozenset[str] = frozenset(
     {

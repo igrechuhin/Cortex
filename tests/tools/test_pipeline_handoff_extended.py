@@ -316,11 +316,8 @@ class TestStalePipelineExpiry:
         import json as _json
         from datetime import datetime, timedelta
 
-        from cortex.tools.session.pipeline_handoff_io import (
-            PIPELINE_TTL_SECONDS,
-            pipeline_dir,
-            state_path,
-        )
+        from cortex.tools.session.pipeline_handoff_clock import PIPELINE_TTL_SECONDS
+        from cortex.tools.session.pipeline_handoff_io import pipeline_dir, state_path
 
         patch_pipeline_handoff_project_root(monkeypatch, tmp_path)
         _ = await pipeline_handoff(operation="init", pipeline="commit")
@@ -347,6 +344,92 @@ class TestStalePipelineExpiry:
         _ = (pdir / "sentinel.txt").write_text("new")
         _ = await pipeline_handoff(operation="init", pipeline="commit")
         assert (pdir / "sentinel.txt").exists()
+
+    @pytest.mark.asyncio
+    async def test_reinit_mid_run_preserves_prior_phases(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Regression: a second init call must not wipe already-written phases.
+
+        Reproduces the reported bug: orchestrator writes "select", a long
+        subagent gap intervenes and something re-triggers `operation="init"`
+        for the same live (non-stale) pipeline, orchestrator writes "code" —
+        the read afterwards must still show both phases, not just "code".
+        """
+        patch_pipeline_handoff_project_root(monkeypatch, tmp_path)
+        _ = await pipeline_handoff(operation="init", pipeline="implement")
+        _ = await pipeline_handoff(
+            operation="write",
+            pipeline="implement",
+            phase="select",
+            data='{"status": "complete"}',
+        )
+        # AI: simulates a redundant init call happening mid-run (e.g. a
+        # retried tool call or stale routing state) between two phase writes.
+        _ = await pipeline_handoff(operation="init", pipeline="implement")
+        _ = await pipeline_handoff(
+            operation="write",
+            pipeline="implement",
+            phase="code",
+            data='{"status": "passed"}',
+        )
+        result = json.loads(
+            await pipeline_handoff(operation="read", pipeline="implement")
+        )
+        assert "select" in result["phases"]
+        assert "code" in result["phases"]
+
+    @pytest.mark.asyncio
+    async def test_reinit_merges_data_without_dropping_phases(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """A second init with extra data merges it but keeps existing phases."""
+        patch_pipeline_handoff_project_root(monkeypatch, tmp_path)
+        _ = await pipeline_handoff(operation="init", pipeline="commit")
+        _ = await pipeline_handoff(
+            operation="write",
+            pipeline="commit",
+            phase="preflight",
+            data='{"status": "complete"}',
+        )
+        result = json.loads(
+            await pipeline_handoff(
+                operation="init", pipeline="commit", data='{"run_id": "r1"}'
+            )
+        )
+        pdir = Path(result["pipeline_dir"])
+        state = json.loads((pdir / "pipeline.json").read_text())
+        assert state["run_id"] == "r1"
+        assert "preflight" in state["phases"]
+
+    @pytest.mark.asyncio
+    async def test_stale_reinit_still_resets_phases(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """A genuinely stale pipeline still gets a fresh phases={} on re-init."""
+        import json as _json
+        from datetime import datetime, timedelta
+
+        from cortex.tools.session.pipeline_handoff_clock import PIPELINE_TTL_SECONDS
+        from cortex.tools.session.pipeline_handoff_io import pipeline_dir, state_path
+
+        patch_pipeline_handoff_project_root(monkeypatch, tmp_path)
+        _ = await pipeline_handoff(operation="init", pipeline="commit")
+        _ = await pipeline_handoff(
+            operation="write",
+            pipeline="commit",
+            phase="preflight",
+            data='{"status": "complete"}',
+        )
+        pdir = pipeline_dir(tmp_path, "commit")
+        sfile = state_path(pdir)
+        state = _json.loads(sfile.read_text())
+        stale_time = datetime.now() - timedelta(seconds=PIPELINE_TTL_SECONDS + 10)
+        state["started_at"] = stale_time.isoformat(timespec="seconds")
+        _ = sfile.write_text(_json.dumps(state))
+        _ = await pipeline_handoff(operation="init", pipeline="commit")
+        refreshed = _json.loads(sfile.read_text())
+        assert refreshed["phases"] == {}
 
 
 # ---------------------------------------------------------------------------

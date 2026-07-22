@@ -505,6 +505,40 @@ Retries use exponential backoff with jitter to avoid thundering herd problems.
 - **Fallback:** Default configuration values
 - **Trigger:** Config file missing, corrupted, or invalid
 
+## Pipeline Crash Recovery (Resume)
+
+Interrupted `/cortex/commit` and `/cortex/fix` pipeline runs are resumable.
+Every `pipeline_handoff` phase transition is recorded as a node in the
+experience store (`.cortex/experience/experience.db`), so recovery is a
+query, not a checkpoint: a crashed run loses at most one phase.
+
+### How Resume Works
+
+1. **Detection:** `session()` lists interrupted runs in
+   `incomplete_pipelines` as `session/pipeline[:frontier_phase]`, using the
+   store's frontier query (deepest committed node of the current run).
+2. **Planning:** `pipeline_handoff(operation="resume", pipeline="commit")`
+   returns a `ResumePlan`: `completed_phases` to skip, the `frontier_phase`,
+   the prior run's `handoff_dir`, and whether continuation is allowed.
+3. **Continuation:** the orchestrator skips every phase in
+   `completed_phases` and resumes at the next phase. Phases whose last
+   recorded status is `running` never committed and run again.
+
+### Rules
+
+- **Node lifecycle:** `pending → running → completed | failed`; only
+  `completed` (committed) phases are skipped on resume.
+- **Failed frontier:** a run whose last phase failed is *not* resumable —
+  the fix path must run first (`resumable: false` with the reason).
+- **Staleness (TTL):** runs idle longer than the resume TTL (default 4h,
+  override with `CORTEX_RESUME_TTL_SECONDS`) are closed as abandoned and
+  never offered for resume.
+- **Source of truth:** the experience store wins over
+  `.cortex/.session/*/pipeline.json`; disagreements are surfaced in the
+  plan's `handoff_mismatch` list.
+- **Run end:** `pipeline_handoff(operation="clear")` closes the run window;
+  cleared runs are complete and never resumable.
+
 ## Prevention Best Practices
 
 1. **Regular Backups:**

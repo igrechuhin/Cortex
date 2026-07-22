@@ -296,6 +296,47 @@ class TestClear:
         )
         assert result["status"] == "not_found"
 
+    async def _seed_phases(self, phases: tuple[str, ...]) -> None:
+        for phase in phases:
+            _ = await pipeline_handoff(
+                operation="write_result",
+                pipeline="implement",
+                phase=phase,
+                data='{"status": "complete"}',
+            )
+
+    async def test_phase_scoped_clear_does_not_wipe_other_phases(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Regression: a scratch-phase clear must not nuke the whole pipeline.
+
+        Reproduces the bug found while running /cortex/do: gate_feedback.py's
+        persist_gate_feedback() clears its own "gate_feedback" phase after a
+        passing run_quality_gate()/run_docs_gate() call by writing
+        pipeline_handoff(operation="clear", pipeline="implement",
+        phase="gate_feedback"). Before the fix, op_clear ignored the `phase`
+        argument entirely and unconditionally rmtree'd the whole pipeline
+        directory, silently discarding every previously-accumulated phase
+        the instant a mid-run quality/docs gate happened to pass.
+        """
+        patch_pipeline_handoff_project_root(monkeypatch, tmp_path)
+        await self._seed_phases(("select", "code", "review", "gate_feedback"))
+
+        result = json.loads(
+            await pipeline_handoff(
+                operation="clear", pipeline="implement", phase="gate_feedback"
+            )
+        )
+        assert result["status"] == "ok"
+
+        state = json.loads(
+            await pipeline_handoff(operation="read_state", pipeline="implement")
+        )
+        assert "gate_feedback" not in state["phases"]
+        assert "select" in state["phases"]
+        assert "code" in state["phases"]
+        assert "review" in state["phases"]
+
 
 # ---------------------------------------------------------------------------
 # Token validation & async-to-thread offload

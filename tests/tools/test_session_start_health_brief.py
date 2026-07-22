@@ -10,14 +10,21 @@ import pytest
 from cortex.core.file_system import FileSystemManager
 from cortex.core.metadata_index import MetadataIndex
 from cortex.core.path_resolver import CortexResourceType
+from cortex.core.session_logger import record_spend_tokens
 from cortex.tools.models import GitStatusSummary, SessionHealthSummary
 from cortex.tools.session.brief_extraction_helpers import generate_session_suggestions
 from cortex.tools.session.health import (
     calculate_health_summary,
+    determine_spend_status,
     determine_token_budget_status,
     parse_mcp_health,
 )
-from cortex.tools.session.models import TokenBudgetStatus, WikiStatusSummary
+from cortex.tools.session.models import (
+    SessionSpendStatus,
+    SessionSpendSummary,
+    TokenBudgetStatus,
+    WikiStatusSummary,
+)
 from tests.helpers.managers import make_test_managers
 from tests.helpers.path_helpers import (
     ensure_test_cortex_structure,
@@ -99,6 +106,44 @@ class TestCalculateHealthSummary:
             tmp_path,  # type: ignore[arg-type]
         )
         assert health.token_budget_status == "over_budget"
+
+    @pytest.mark.asyncio
+    async def test_calculate_health_summary_spend_defaults_healthy(
+        self, tmp_path: Path
+    ) -> None:
+        """spend defaults to healthy/0 when no session log has been written."""
+        managers = await managers_with_every_memory_bank_file(tmp_path)
+
+        health = await calculate_health_summary(
+            managers,
+            tmp_path,  # type: ignore[arg-type]
+        )
+        assert health.spend.cumulative_tokens == 0
+        assert health.spend.spend_status == SessionSpendStatus.HEALTHY
+
+    @pytest.mark.asyncio
+    async def test_calculate_health_summary_reflects_recorded_spend(
+        self, tmp_path: Path
+    ) -> None:
+        """spend reflects tokens already recorded via record_spend_tokens()."""
+        env_key = "CORTEX_SESSION_ID"
+        original = os.environ.get(env_key)
+        os.environ[env_key] = "health_spend_test"
+        try:
+            _ = record_spend_tokens(tmp_path, 250_000)
+            managers = await managers_with_every_memory_bank_file(tmp_path)
+
+            health = await calculate_health_summary(
+                managers,
+                tmp_path,  # type: ignore[arg-type]
+            )
+            assert health.spend.cumulative_tokens == 250_000
+            assert health.spend.spend_status == SessionSpendStatus.OVER_BUDGET
+        finally:
+            if original:
+                os.environ[env_key] = original
+            else:
+                _ = os.environ.pop(env_key, None)
 
 
 class TestGenerateSessionSuggestions:
@@ -241,6 +286,52 @@ class TestGenerateSessionSuggestions:
         )
         assert any("init-wiki" in s for s in suggestions)
 
+    def test_generate_suggestions_spend_over_budget(self) -> None:
+        """Suggestion appended when runtime spend is over budget."""
+        health = SessionHealthSummary(
+            file_count=7,
+            total_tokens=10000,
+            token_budget_status=TokenBudgetStatus.HEALTHY,
+            missing_files=[],
+            has_errors=False,
+            spend=SessionSpendSummary(
+                cumulative_tokens=250_000,
+                budget=200_000,
+                spend_status=SessionSpendStatus.OVER_BUDGET,
+            ),
+        )
+        suggestions = generate_session_suggestions(health, None, None)
+        assert any("runtime spend over budget" in s.lower() for s in suggestions)
+
+    def test_generate_suggestions_spend_warning(self) -> None:
+        """Suggestion appended when runtime spend crosses the warning band."""
+        health = SessionHealthSummary(
+            file_count=7,
+            total_tokens=10000,
+            token_budget_status=TokenBudgetStatus.HEALTHY,
+            missing_files=[],
+            has_errors=False,
+            spend=SessionSpendSummary(
+                cumulative_tokens=180_000,
+                budget=200_000,
+                spend_status=SessionSpendStatus.WARNING,
+            ),
+        )
+        suggestions = generate_session_suggestions(health, None, None)
+        assert any("runtime spend at" in s.lower() for s in suggestions)
+
+    def test_generate_suggestions_spend_healthy_no_suggestion(self) -> None:
+        """No spend suggestion is appended when spend is healthy."""
+        health = SessionHealthSummary(
+            file_count=7,
+            total_tokens=10000,
+            token_budget_status=TokenBudgetStatus.HEALTHY,
+            missing_files=[],
+            has_errors=False,
+        )
+        suggestions = generate_session_suggestions(health, None, None)
+        assert not any("runtime spend" in s.lower() for s in suggestions)
+
     def test_generate_suggestions_stale_plan_drafts(self, tmp_path: Path) -> None:
         """Stale draft-*.md files yield a session suggestion."""
         _ = ensure_test_cortex_structure(tmp_path)
@@ -322,3 +413,36 @@ class TestDetermineTokenBudgetStatus:
             determine_token_budget_status(100001, 100000)
             == TokenBudgetStatus.OVER_BUDGET
         )
+
+
+class TestDetermineSpendStatus:
+    """Tests for determine_spend_status boundary values."""
+
+    def test_healthy_when_under_85_percent(self) -> None:
+        """Returns HEALTHY when spend is below 85% of budget."""
+        assert determine_spend_status(0, 100_000) == SessionSpendStatus.HEALTHY
+        assert determine_spend_status(84_999, 100_000) == SessionSpendStatus.HEALTHY
+
+    def test_warning_at_lower_boundary(self) -> None:
+        """Returns WARNING exactly at the 85% boundary."""
+        assert determine_spend_status(85_000, 100_000) == SessionSpendStatus.WARNING
+
+    def test_warning_just_under_100_percent(self) -> None:
+        """Returns WARNING just under the 100% boundary."""
+        assert determine_spend_status(99_999, 100_000) == SessionSpendStatus.WARNING
+
+    def test_over_budget_at_exact_boundary(self) -> None:
+        """Returns OVER_BUDGET exactly at 100% of budget."""
+        assert (
+            determine_spend_status(100_000, 100_000) == SessionSpendStatus.OVER_BUDGET
+        )
+
+    def test_over_budget_above_boundary(self) -> None:
+        """Returns OVER_BUDGET above 100% of budget."""
+        assert (
+            determine_spend_status(150_000, 100_000) == SessionSpendStatus.OVER_BUDGET
+        )
+
+    def test_uses_default_budget_when_not_specified(self) -> None:
+        """Uses DEFAULT_SESSION_SPEND_BUDGET when budget arg omitted."""
+        assert determine_spend_status(0) == SessionSpendStatus.HEALTHY

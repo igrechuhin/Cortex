@@ -8,13 +8,18 @@ from __future__ import annotations
 import logging
 from pathlib import Path
 
-from cortex.core.constants import MemoryBankFile
+from cortex.core.constants import DEFAULT_SESSION_SPEND_BUDGET, MemoryBankFile
 from cortex.core.metadata_index import MetadataIndex
 from cortex.managers.types import ManagersDict
 from cortex.managers.utils import get_manager
 from cortex.tools.session.connection_health import health_check
 from cortex.tools.session.connection_models import MCPHealthCheckResponse
-from cortex.tools.session.models import SessionHealthSummary, TokenBudgetStatus
+from cortex.tools.session.models import (
+    SessionHealthSummary,
+    SessionSpendStatus,
+    SessionSpendSummary,
+    TokenBudgetStatus,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -41,6 +46,36 @@ def determine_token_budget_status(
     if token_usage_percent >= 85:
         return TokenBudgetStatus.WARNING
     return TokenBudgetStatus.HEALTHY
+
+
+def determine_spend_status(
+    cumulative_tokens: int, budget: int = DEFAULT_SESSION_SPEND_BUDGET
+) -> SessionSpendStatus:
+    """Determine runtime spend status from accumulated tool-output tokens.
+
+    Mirrors `determine_token_budget_status()` but for the runtime spend
+    tracker (`core.session_logger.record_spend_tokens`) instead of static
+    memory-bank file size.
+    """
+    spend_percent = (cumulative_tokens / budget * 100) if budget > 0 else 0
+    if spend_percent >= 100:
+        return SessionSpendStatus.OVER_BUDGET
+    if spend_percent >= 85:
+        return SessionSpendStatus.WARNING
+    return SessionSpendStatus.HEALTHY
+
+
+def _calculate_spend_summary(project_root: Path) -> SessionSpendSummary:
+    """Read the current session's cumulative runtime spend from its log."""
+    from cortex.core.session_logger import get_session_log_path, read_session_log
+
+    session_log = read_session_log(get_session_log_path(project_root))
+    cumulative = session_log.cumulative_spend_tokens if session_log else 0
+    return SessionSpendSummary(
+        cumulative_tokens=cumulative,
+        budget=DEFAULT_SESSION_SPEND_BUDGET,
+        spend_status=determine_spend_status(cumulative, DEFAULT_SESSION_SPEND_BUDGET),
+    )
 
 
 async def _count_file_tokens(metadata_index: MetadataIndex, file_name: str) -> int:
@@ -93,6 +128,7 @@ async def calculate_health_summary(
         token_budget_status=determine_token_budget_status(total_tokens),
         missing_files=missing_files,
         has_errors=len(missing_files) > 0,
+        spend=_calculate_spend_summary(project_root),
     )
 
 

@@ -88,6 +88,13 @@ MAX_TOKEN_BUDGET = 200_000  # Maximum allowed token budget
 TOKEN_RESERVE = 10_000  # Reserved tokens for system prompts
 TOKENS_PER_SECTION_ESTIMATE = 500  # Estimated tokens per markdown section
 
+# AI: Chosen generously (roughly 2x a typical single-session memory-bank
+# token budget) so the warn-only spend guard flags genuinely expensive
+# sessions rather than routine tool-call activity; false positives only cost
+# a suggestion line (see plan Risks: "Threshold too aggressive").
+DEFAULT_SESSION_SPEND_BUDGET = 200_000  # Default runtime tool-output spend budget
+MAX_SESSION_SPEND_BUDGET = 400_000  # Maximum allowed session spend budget
+
 # =============================================================================
 # Similarity Thresholds
 # =============================================================================

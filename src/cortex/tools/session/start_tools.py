@@ -45,6 +45,9 @@ from cortex.tools.session.brief import (
     cap_session_brief_payload,
     load_memory_bank_files,
 )
+from cortex.tools.session.experience_recall_brief import (
+    merge_experience_recall_into_brief,
+)
 from cortex.tools.session.models import (
     GitStatusSummary,
     SessionBrief,
@@ -82,6 +85,19 @@ def _session_has_context_telemetry(project_root: Path) -> bool:
 
     session_log = read_session_log(get_session_log_path(project_root))
     return session_log is not None and bool(session_log.load_context_calls)
+
+
+def _record_session_start_spend(project_root: Path, token_count: int) -> None:
+    """Record this session_start brief's already-computed token count once.
+
+    Tolerates I/O errors so a spend-tracking failure never fails session().
+    """
+    from cortex.core.session_logger import record_spend_tokens
+
+    try:
+        _ = record_spend_tokens(project_root, token_count)
+    except OSError as e:
+        logger.debug("record_spend_tokens failed for %s: %s", project_root, e)
 
 
 def _seed_session_start_context_telemetry(
@@ -291,7 +307,7 @@ async def _get_session_optional_context(
     return (git_status, next_work_item, next_work_plan_path)
 
 
-def _apply_session_goal_and_cap(
+async def _apply_session_goal_and_cap(
     brief: SessionBrief,
     project_root: Path,
     goal: str | None,
@@ -301,15 +317,16 @@ def _apply_session_goal_and_cap(
     merged = merge_session_goal_into_brief(
         brief, project_root, goal, plan_slug, blocked_files
     )
+    merged = await merge_experience_recall_into_brief(merged, project_root)
     return cap_session_brief_payload(merged)
 
 
-def _scan_incomplete_pipelines(project_root: Path) -> list[str]:
+def _scan_handoff_incomplete_ids(project_root: Path) -> set[str]:
     from cortex.tools.session.pipeline_handoff_io import detect_incomplete_state
 
     session_root = get_cortex_path(project_root, CortexResourceType.SESSION)
     if not session_root.exists():
-        return []
+        return set()
     pipeline_ids: set[str] = set()
     for session_dir in session_root.iterdir():
         if not session_dir.is_dir():
@@ -320,7 +337,30 @@ def _scan_incomplete_pipelines(project_root: Path) -> list[str]:
             incomplete_phases = detect_incomplete_state(pipeline_dir)
             if incomplete_phases:
                 pipeline_ids.add(f"{session_dir.name}/{pipeline_dir.name}")
-    return sorted(pipeline_ids)
+    return pipeline_ids
+
+
+def scan_incomplete_pipeline_entries(project_root: Path) -> list[str]:
+    """Merge handoff-file detection with experience-store frontier data.
+
+    Entries are "{session}/{pipeline}" with ":{frontier_phase}" appended when
+    the experience store knows where the interrupted run stopped.
+    """
+    from cortex.experience.resume import scan_incomplete_runs
+
+    pipeline_ids = _scan_handoff_incomplete_ids(project_root)
+    frontier_phases: dict[str, str] = {}
+    for run in scan_incomplete_runs(project_root):
+        if not run.owner:
+            continue
+        run_id = f"{run.owner}/{run.pipeline}"
+        pipeline_ids.add(run_id)
+        if run.frontier_phase:
+            frontier_phases[run_id] = run.frontier_phase
+    return [
+        f"{run_id}:{frontier_phases[run_id]}" if run_id in frontier_phases else run_id
+        for run_id in sorted(pipeline_ids)
+    ]
 
 
 def _brief_with_incomplete_pipelines(
@@ -328,7 +368,7 @@ def _brief_with_incomplete_pipelines(
     project_root: Path,
 ) -> SessionBrief:
     return brief.model_copy(
-        update={"incomplete_pipelines": _scan_incomplete_pipelines(project_root)}
+        update={"incomplete_pipelines": scan_incomplete_pipeline_entries(project_root)}
     )
 
 
@@ -359,7 +399,7 @@ async def _assemble_capped_brief_from_context(
         mcp_health_message=mcp_health_message,
         roadmap_content=rdm,
     )
-    return _apply_session_goal_and_cap(
+    return await _apply_session_goal_and_cap(
         brief, project_root, goal, plan_slug, blocked_files
     )
 
@@ -486,6 +526,7 @@ async def session_start_impl(
         and result.status == ToolResultStatus.SUCCESS
     ):
         _seed_session_start_context_telemetry(project_root, result.token_count)
+        _record_session_start_spend(project_root, result.token_count)
     return result
 
 

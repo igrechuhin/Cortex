@@ -7,6 +7,7 @@ Extracted for Phase 9.1.4 file size compliance.
 from __future__ import annotations
 
 from enum import Enum
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -86,6 +87,33 @@ class ExecutionSpec(BaseModel):
     )
 
 
+class EvidenceLink(BaseModel):
+    """Reference to the experience-graph node backing an eval task.
+
+    Links a ``failure_based_evals.json`` entry to the analytics query
+    (``cortex.experience.analytics``) that produced it, so evidence can be
+    traced back to its originating node and artifact.
+    """
+
+    model_config = ConfigDict(extra=EXTRA_FORBID)
+
+    node_id: str = Field(description="Experience-store node id backing this entry")
+    artifact_ref: str | None = Field(
+        default=None, description="Relative path to the node's stored artifact"
+    )
+    confidence_source: Literal["graph", "transcript"] = Field(
+        description=(
+            "Whether evidence came from a graph query (high) or transcript "
+            "scraping (fallback, lower confidence)"
+        )
+    )
+
+
+def _empty_evidence_links() -> list[EvidenceLink]:
+    """Typed default factory for EvalTask.evidence."""
+    return []
+
+
 class EvalTask(BaseModel):
     """Single evaluation task definition grounded in a real workflow."""
 
@@ -124,6 +152,13 @@ class EvalTask(BaseModel):
     execution: ExecutionSpec | None = Field(
         default=None,
         description="Optional execution spec for deterministic run (tool + expect check).",
+    )
+    evidence: list[EvidenceLink] = Field(
+        default_factory=_empty_evidence_links,
+        description=(
+            "Graph-pattern evidence (experience-store node ids/artifacts) backing "
+            "this task; empty for legacy entries with no store coverage."
+        ),
     )
 
 

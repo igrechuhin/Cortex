@@ -318,8 +318,21 @@ async def apply_progress_and_archive(
     """Apply optional progress append and plan file archive; mutate result."""
     if progress_entry:
         progress_result = await execute_append_progress(root, date_str, progress_entry)
-        if progress_result.status == "success" and progress_result.line_inserted:
+        if (
+            progress_result.status == OperationStatus.SUCCESS
+            and progress_result.line_inserted
+        ):
             result.progress_line_inserted = progress_result.line_inserted
+        else:
+            # AI: Mirror the archive-error handling below so a rejected/failed
+            # progress append is surfaced instead of silently discarded while
+            # the overall result still reports success.
+            result.status = OperationStatus.ERROR
+            result.error = progress_result.error
+            result.message = (
+                "Plan moved to activeContext but progress append failed: "
+                f"{progress_result.error}"
+            )
     if plan_file_name:
         archive_path, archive_err = archive_plan_file(root, plan_file_name)
         if archive_err:

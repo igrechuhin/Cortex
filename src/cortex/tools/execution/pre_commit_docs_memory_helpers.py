@@ -177,28 +177,61 @@ def build_timestamps_summary(
     )
 
 
+def _roadmap_sync_counts_from_summary_obj(
+    summary_obj: object,
+) -> tuple[int | None, int | None]:
+    """Legacy fallback: derive counts from a nested `summary` dict (detailed-mode)."""
+    if not isinstance(summary_obj, dict):
+        return None, None
+    summary_dict = cast(dict[str, object], summary_obj)
+    count_fields = (
+        "missing_entries_count",
+        "invalid_references_count",
+        "completed_entries_count",
+        "unlinked_plans_count",
+    )
+    total_errors = 0
+    for field in count_fields:
+        value = summary_dict.get(field)
+        if isinstance(value, int):
+            total_errors += value
+    warnings = summary_dict.get("warnings_count")
+    warnings_count = warnings if isinstance(warnings, int) else None
+    return total_errors or None, warnings_count
+
+
 def build_roadmap_sync_summary(
     roadmap_result: JsonDict | None,
 ) -> PreflightCheckSummary | None:
-    """Build summary entry for roadmap_sync validation."""
+    """Build summary entry for roadmap_sync validation.
+
+    Concise-mode responses (the normal path via `run_docs_gate`) carry real
+    top-level `error_count`/`warning_count` fields computed by
+    `format_validate_response`. Detailed-mode responses (or hand-built test
+    fixtures) instead carry a nested `summary` dict — that shape is still
+    supported as a fallback so this stays backward compatible.
+    """
     if roadmap_result is None:
         return None
     valid_flag = bool(roadmap_result.get("valid", False))
     status = OperationStatus.SUCCESS if valid_flag else OperationStatus.ERROR
-    summary_obj = roadmap_result.get("summary", {})
-    errors_count: int | None = None
-    warnings_count: int | None = None
-    if isinstance(summary_obj, dict):
-        missing = summary_obj.get("missing_entries_count")
-        invalid = summary_obj.get("invalid_references_count")
-        completed = summary_obj.get("completed_entries_count")
-        warnings = summary_obj.get("warnings_count")
-        total_errors = 0
-        for value in (missing, invalid, completed):
-            if isinstance(value, int):
-                total_errors += value
-        errors_count = total_errors or None
-        warnings_count = warnings if isinstance(warnings, int) else None
+
+    top_errors = roadmap_result.get("error_count")
+    top_warnings = roadmap_result.get("warning_count")
+    if isinstance(top_errors, int) or isinstance(top_warnings, int):
+        errors_count = top_errors if isinstance(top_errors, int) else None
+        warnings_count = top_warnings if isinstance(top_warnings, int) else None
+        return PreflightCheckSummary(
+            name="roadmap_sync",
+            status=status,
+            errors=(errors_count or None),
+            warnings=warnings_count,
+            message=None,
+        )
+
+    errors_count, warnings_count = _roadmap_sync_counts_from_summary_obj(
+        roadmap_result.get("summary", {})
+    )
     return PreflightCheckSummary(
         name="roadmap_sync",
         status=status,

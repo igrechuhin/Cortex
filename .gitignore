@@ -115,6 +115,9 @@ eval_results.json
 .cursor/agents/
 /.cortex/wal/write_log.jsonl
 
+# Cortex experience store (runtime pipeline history — do not commit)
+.cortex/experience/
+
 # Cortex MCP (transient/generated files)
 .cortex/.session/
 .cortex/.cache/
