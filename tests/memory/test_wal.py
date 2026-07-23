@@ -9,10 +9,14 @@ import pytest
 
 from cortex.memory.wal import (
     MemoryWAL,
+    ToolInvocationEntry,
+    ToolInvocationLog,
     WALEntry,
     WalOperation,
     WalStatus,
     wal_build_entry,
+    wal_build_tool_invocation_entry,
+    wal_redact_arg_keys,
     wal_short_hash,
 )
 
@@ -156,6 +160,145 @@ def test_read_since_filter(tmp_path: Path) -> None:
     wal.log(late)
     filtered = wal.read(since="2099-01-01")
     assert len(filtered) == 1
+
+
+def test_wal_build_tool_invocation_entry_redacts_and_caps_arg_keys() -> None:
+    # Arrange
+    raw_keys = [f"key_{i}" for i in range(30)]
+
+    # Act
+    entry = wal_build_tool_invocation_entry(
+        session_id="s1",
+        tool_name="run_quality_gate",
+        arg_keys=raw_keys,
+        status=WalStatus.OK,
+        error_type=None,
+    )
+
+    # Assert
+    assert len(entry.id) == 12
+    assert entry.tool_name == "run_quality_gate"
+    assert len(entry.arg_keys) == 20
+    assert entry.arg_keys == raw_keys[:20]
+    assert entry.error_type is None
+
+
+def test_wal_redact_arg_keys_caps_count_and_length() -> None:
+    # Arrange
+    raw_keys = [f"very_long_key_name_{i}" * 10 for i in range(25)]
+
+    # Act
+    redacted = wal_redact_arg_keys(raw_keys)
+
+    # Assert
+    assert len(redacted) == 20
+    assert all(len(k) <= 80 for k in redacted)
+
+
+def test_tool_invocation_entry_never_persists_arg_values() -> None:
+    # Arrange
+    entry = wal_build_tool_invocation_entry(
+        session_id="s1",
+        tool_name="write_artifact",
+        arg_keys=["content", "name"],
+        status=WalStatus.OK,
+        error_type=None,
+    )
+
+    # Act
+    raw = json.loads(entry.model_dump_json())
+
+    # Assert: only key names are present, never their would-be values.
+    assert raw["arg_keys"] == ["content", "name"]
+    assert "SECRET" not in json.dumps(raw)
+
+
+def test_tool_invocation_log_append_only_ordering(tmp_path: Path) -> None:
+    # Arrange
+    log = ToolInvocationLog(tmp_path / "wal")
+    first = wal_build_tool_invocation_entry(
+        session_id="s1",
+        tool_name="tool_a",
+        arg_keys=["x"],
+        status=WalStatus.OK,
+        error_type=None,
+    )
+    second = wal_build_tool_invocation_entry(
+        session_id="s1",
+        tool_name="tool_b",
+        arg_keys=[],
+        status=WalStatus.ERROR,
+        error_type="ValueError",
+    )
+
+    # Act
+    log.log(first)
+    log.log(second)
+    entries = log.read()
+
+    # Assert: append-only, order preserved, no in-place mutation of prior lines.
+    assert [e.tool_name for e in entries] == ["tool_a", "tool_b"]
+    assert entries[1].status == WalStatus.ERROR
+    assert entries[1].error_type == "ValueError"
+
+
+def test_tool_invocation_log_read_filters_by_session(tmp_path: Path) -> None:
+    # Arrange
+    log = ToolInvocationLog(tmp_path / "wal")
+    log.log(
+        wal_build_tool_invocation_entry(
+            session_id="s1",
+            tool_name="tool_a",
+            arg_keys=[],
+            status=WalStatus.OK,
+            error_type=None,
+        )
+    )
+    log.log(
+        wal_build_tool_invocation_entry(
+            session_id="s2",
+            tool_name="tool_b",
+            arg_keys=[],
+            status=WalStatus.OK,
+            error_type=None,
+        )
+    )
+
+    # Act
+    session_slice = log.read(session_id="s1")
+
+    # Assert
+    assert [e.tool_name for e in session_slice] == ["tool_a"]
+
+
+def test_tool_invocation_log_read_empty_session_returns_empty_list(
+    tmp_path: Path,
+) -> None:
+    # Arrange
+    log = ToolInvocationLog(tmp_path / "wal")
+
+    # Act
+    entries = log.read(session_id="unused-session")
+
+    # Assert
+    assert entries == []
+
+
+def test_tool_invocation_entry_model_validate_json_roundtrip() -> None:
+    # Arrange
+    entry = wal_build_tool_invocation_entry(
+        session_id="s1",
+        tool_name="memory_wal",
+        arg_keys=["operation"],
+        status=WalStatus.OK,
+        error_type=None,
+    )
+
+    # Act
+    parsed = ToolInvocationEntry.model_validate_json(entry.model_dump_json())
+
+    # Assert
+    assert parsed == entry
 
 
 def test_wal_json_includes_after_byte_len_roundtrip() -> None:

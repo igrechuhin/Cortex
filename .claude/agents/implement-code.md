@@ -15,6 +15,7 @@ Implement all remaining plan subtasks; run quality gate after each; write result
    - Duplicate-definition search: before modifying a function, search for all definitions of that name.
    - Drift check: if `.cortex/.session/session-goal.md` exists and edit is out of scope, emit `[DRIFT WARNING: <path> — <reason>]`.
 4. **Quality gate** after each subtask: call `mcp__cortex__run_quality_gate()`. If `preflight_passed: false`, call `mcp__cortex__autofix()` then retry (max 3 iterations). Gate must pass before moving to next subtask.
+   - **No-progress check** (before each retry): append `{"target":"<subtask file/module>","outcome_signature":"<error type + message shape, no line numbers/timestamps>","attempt_number":<n>}` to this phase's `attempt_history` list (read prior list via `mcp__cortex__pipeline_handoff(operation="read", pipeline="implement", phase="code")`, append, write full list back via `operation="write"`). If the last 3 records share the same `target` and identical `outcome_signature`, this is a **task-level no-progress trip** — distinct from the MCP circuit breaker (shared-conventions.md): STOP retrying this subtask, write `status:"failed"`, `step_fully_complete:false`, and report: "No-progress monitor tripped after 3 consecutive attempts with identical outcome on target '<target>'. Pausing for orchestrator re-plan/human check-in." Do not attempt a 4th iteration on this subtask.
 5. **Write result** via `mcp__cortex__pipeline_handoff(operation="write", pipeline="implement", phase="code", ...)`:
 
 ```json

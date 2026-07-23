@@ -8,16 +8,21 @@ from pathlib import Path
 
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.tools.context.layers import ContextConfig, ContextLayer, LayerResult
+from cortex.tools.context.relevance_ranking import reorder_by_relevance
 
 
 def _count_tokens(text: str) -> int:
     return int(len(text.split()) * 1.3)
 
 
-def _truncate_to_budget(text: str, budget: int) -> str:
-    words = text.split()
+def _truncate_to_budget(text: str, budget: int, query: str | None = None) -> str:
     if _count_tokens(text) <= budget:
         return text
+    # AI: reorder lines by relevance to the session goal before the word-cut
+    # so the most relevant identity lines survive the drop-from-end budget
+    # cut; no-op (returns lines unchanged) when ranking is disabled/unavailable.
+    lines = reorder_by_relevance(query, text.split("\n"))
+    words = "\n".join(lines).split()
     while words and int(len(words) * 1.3) > budget:
         _ = words.pop()
     return " ".join(words)
@@ -66,10 +71,9 @@ def _read_primary_goal(project_root: Path) -> str:
     return " ".join(lines[:2]).strip()
 
 
-def _build_identity_lines(project_root: Path) -> list[str]:
+def _build_identity_lines(project_root: Path, primary_goal: str) -> list[str]:
     project_name, stack = _load_project_identity(project_root / "pyproject.toml")
     commit = _read_last_commit_summary(project_root)
-    primary_goal = _read_primary_goal(project_root)
     return [
         "Project identity",
         f"Project: {project_name}",
@@ -80,8 +84,11 @@ def _build_identity_lines(project_root: Path) -> list[str]:
 
 
 async def build_l0(project_root: Path, config: ContextConfig) -> LayerResult:
-    raw_content = "\n".join(_build_identity_lines(project_root)).strip()
-    content = _truncate_to_budget(raw_content, config.max_l0_tokens)
+    primary_goal = _read_primary_goal(project_root)
+    raw_content = "\n".join(_build_identity_lines(project_root, primary_goal)).strip()
+    content = _truncate_to_budget(
+        raw_content, config.max_l0_tokens, query=primary_goal or None
+    )
     return LayerResult(
         layer=ContextLayer.IDENTITY,
         tokens_estimate=_count_tokens(content),

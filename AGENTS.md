@@ -6,7 +6,7 @@ Workspace-wide rules for all IDE/AI agents in this repository.
 
 This project has a **Cortex MCP server** that provides tools for everything agents need. **Always use Cortex MCP tools instead of reading files or running commands directly.**
 
-### Tools (13 — write/execute operations)
+### Tools (14 — write/execute operations)
 
 | Tool | Purpose |
 |------|---------|
@@ -23,6 +23,7 @@ This project has a **Cortex MCP server** that provides tools for everything agen
 | `write_artifact()` | Allowlisted skill JSON and Synapse rule artifact writes |
 | `compress_memory_bank()` | Compress project CLAUDE.md and memory-bank markdown to reduce session tokens |
 | `memory_wal()` | Memory-bank WAL read, anomaly hints, snapshot/restore |
+| `propose_framework_optimization()` | Draft/self-test a Synapse prompt/rule change in an isolated, always-removed worktree |
 
 ### Resources (6 — read-only, all static/zero-arg)
 

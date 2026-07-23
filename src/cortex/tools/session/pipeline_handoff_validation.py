@@ -31,6 +31,9 @@ _VALID_PHASES: frozenset[str] = frozenset(
         "tests",
         "gate_feedback",
         "gate_iterations",
+        "context",
+        "session",
+        "tools",
     }
 )
 

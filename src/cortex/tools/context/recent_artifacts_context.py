@@ -66,7 +66,12 @@ def build_recent_artifacts_markdown(memory_bank_dir: Path) -> str | None:
         pairs.extend(_iter_markdown_files(memory_bank_dir / subdir.value))
     if not pairs:
         return None
-    pairs.sort(key=lambda t: t[1], reverse=True)
+    # AI: Secondary sort key (path name) breaks ties deterministically when
+    # mtimes collide (common with fast-created fixtures/low-resolution
+    # filesystem clocks) — glob() order alone is not stable across processes,
+    # which would otherwise defeat cortex://context's Anthropic prompt-cache
+    # exact-prefix matching.
+    pairs.sort(key=lambda t: (-t[1], t[0].name))
     top = pairs[:_RECENT_ARTIFACT_LIMIT]
     lines: list[str] = ["## Recent Artifacts", ""]
     for path, _mtime in top:

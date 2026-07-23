@@ -30,7 +30,13 @@ from pydantic import BaseModel, ConfigDict
 # existing one, then bump this constant in the same change as the registration.
 # compress_memory_bank: first-class memory compression MCP tool (see
 # .cortex/plans/compress-memory-bank-mcp-tool.md); not merged into manage_file.
-MAX_REGISTERED_TOOLS = 13
+# propose_framework_optimization: dedicated self-modification proposal tool (see
+# .cortex/plans/git-backed-sandboxed-self-modification-proposal-tool.md); kept
+# standalone rather than folded into write_artifact/manage_file because its
+# safety boundary (isolated worktree, self-test, never live-tree writes, no
+# push/PR) must be independently auditable as its own module, not a branch of
+# an existing tool's dispatch logic.
+MAX_REGISTERED_TOOLS = 14
 
 # Long-term target from consolidation plans (not enforced in tests).
 TARGET_REGISTERED_TOOLS = 10
@@ -141,6 +147,14 @@ TOOL_CATEGORIES: tuple[ToolCategoryEntry, ...] = (
         name="memory_wal",
         category=ToolCategory.DEFERRED_MEDIUM,
         rationale="Audit JSONL, anomaly hints, and snapshot/restore for memory-bank markdown",
+    ),
+    ToolCategoryEntry(
+        name="propose_framework_optimization",
+        category=ToolCategory.DEFERRED_MEDIUM,
+        rationale=(
+            "Draft/self-test Synapse prompt or rule changes in an isolated, "
+            "always-torn-down git worktree; never writes the live tree or pushes"
+        ),
     ),
 )
 

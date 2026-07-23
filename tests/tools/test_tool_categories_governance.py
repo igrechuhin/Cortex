@@ -80,8 +80,14 @@ class TestToolCategoriesGovernance:
         assert total_tools == len(TOOL_CATEGORIES)
 
     def test_max_registered_tools_cap(self) -> None:
-        """Budget cap matches target (see docs/api/tools.md)."""
-        assert MAX_REGISTERED_TOOLS == 13
+        """Budget cap matches target (see docs/api/tools.md).
+
+        Bumped 13 -> 14 alongside registering ``propose_framework_optimization``
+        (see .cortex/plans/git-backed-sandboxed-self-modification-proposal-tool.md);
+        its safety boundary must stay independently auditable, not folded into
+        an existing tool's dispatch logic.
+        """
+        assert MAX_REGISTERED_TOOLS == 14
         assert TARGET_REGISTERED_TOOLS <= MAX_REGISTERED_TOOLS
 
 

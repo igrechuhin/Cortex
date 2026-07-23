@@ -15,7 +15,13 @@ from cortex.core.mcp_annotations import safe_write_annotations
 from cortex.core.mcp_stability import ensure_usage_context, mcp_tool_wrapper
 from cortex.core.pydantic_extra import EXTRA_FORBID
 from cortex.core.usage_context import get_or_resolve_project_root
-from cortex.memory.wal import MemoryWAL, WALEntry
+from cortex.memory.wal import (
+    MemoryWAL,
+    ToolInvocationEntry,
+    ToolInvocationLog,
+    WALEntry,
+)
+from cortex.memory.wal_hooks import wal_agent_hint
 from cortex.server import mcp
 
 
@@ -26,6 +32,7 @@ class MemoryWalToolOp(StrEnum):
     ANOMALIES = "anomalies"
     SNAPSHOT = "snapshot"
     RESTORE = "restore"
+    TOOL_INVOCATIONS = "tool_invocations"
 
 
 class MemoryWALInput(BaseModel):
@@ -34,7 +41,7 @@ class MemoryWALInput(BaseModel):
     model_config = ConfigDict(extra=EXTRA_FORBID)
 
     operation: MemoryWalToolOp = Field(
-        description="read | anomalies | snapshot | restore"
+        description="read | anomalies | snapshot | restore | tool_invocations"
     )
     since: str | None = Field(default=None, description="ISO lower bound for read")
     label: str | None = Field(
@@ -52,6 +59,7 @@ class MemoryWALResult(BaseModel):
     warnings: list[str] | None = None
     snapshot_path: str | None = None
     files_restored: int | None = None
+    tool_invocations: list[ToolInvocationEntry] | None = None
 
 
 def _default_snapshot_label() -> str:
@@ -73,6 +81,9 @@ def handle_memory_wal_sync(project_root: Path, data: MemoryWALInput) -> MemoryWA
         label = data.label or _default_snapshot_label()
         snap = wal.snapshot(label)
         return MemoryWALResult(operation=op.value, snapshot_path=str(snap))
+    if op == MemoryWalToolOp.TOOL_INVOCATIONS:
+        invocations = ToolInvocationLog(wal_dir).read(session_id=wal_agent_hint())
+        return MemoryWALResult(operation=op.value, tool_invocations=invocations)
     assert op == MemoryWalToolOp.RESTORE
     if not data.label or not str(data.label).strip():
         raise ValueError("restore requires non-empty label")
@@ -108,6 +119,10 @@ async def memory_wal(
     - memory_wal(operation="anomalies") — heuristic warnings
     - memory_wal(operation="snapshot", label="backup-2026-04-15")
     - memory_wal(operation="restore", label="backup-2026-04-15")
+    - memory_wal(operation="tool_invocations") — current session's redacted
+      MCP tool-call sequence (tool name, arg key names, outcome; no argument
+      values) for analyze-tools/analyze-session consolidation-candidate
+      detection, additive to pipeline_handoff graph queries.
 
     Pre-compact automation: there is no bundled Claude ``PreCompact`` hook in
     this repo; run ``memory_wal(operation="snapshot", label="pre-compact-…")``

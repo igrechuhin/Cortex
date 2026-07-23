@@ -4,7 +4,13 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from unittest.mock import patch
 
+from cortex.memory.wal import (
+    ToolInvocationLog,
+    WalStatus,
+    wal_build_tool_invocation_entry,
+)
 from cortex.tools.memory.wal_tool import (
     MemoryWALInput,
     MemoryWalToolOp,
@@ -83,6 +89,72 @@ def test_memory_wal_snapshot_restore_flow(tmp_path: Path) -> None:
     )
     assert rest.files_restored == 1
     assert (mb / "z.md").read_text(encoding="utf-8") == "orig"
+
+
+def _log_two_session_entries(wal_dir: Path) -> None:
+    """Seed one entry for ``current-session`` and one for ``other-session``."""
+    log = ToolInvocationLog(wal_dir)
+    log.log(
+        wal_build_tool_invocation_entry(
+            session_id="current-session",
+            tool_name="run_quality_gate",
+            arg_keys=[],
+            status=WalStatus.OK,
+            error_type=None,
+        )
+    )
+    log.log(
+        wal_build_tool_invocation_entry(
+            session_id="other-session",
+            tool_name="memory_wal",
+            arg_keys=["operation"],
+            status=WalStatus.OK,
+            error_type=None,
+        )
+    )
+
+
+def test_memory_wal_tool_invocations_returns_current_session_slice(
+    tmp_path: Path,
+) -> None:
+    # Arrange
+    root = tmp_path / "p"
+    _log_two_session_entries(root / ".cortex" / "wal")
+
+    # Act
+    with patch(
+        "cortex.tools.memory.wal_tool.wal_agent_hint",
+        return_value="current-session",
+    ):
+        res = handle_memory_wal_sync(
+            root,
+            MemoryWALInput(operation=MemoryWalToolOp.TOOL_INVOCATIONS),
+        )
+
+    # Assert: only the current session's tool-call sequence surfaces.
+    assert res.tool_invocations is not None
+    assert len(res.tool_invocations) == 1
+    assert res.tool_invocations[0].tool_name == "run_quality_gate"
+
+
+def test_memory_wal_tool_invocations_empty_session_returns_empty_list(
+    tmp_path: Path,
+) -> None:
+    # Arrange
+    root = tmp_path / "p"
+
+    # Act
+    with patch(
+        "cortex.tools.memory.wal_tool.wal_agent_hint",
+        return_value="unused-session",
+    ):
+        res = handle_memory_wal_sync(
+            root,
+            MemoryWALInput(operation=MemoryWalToolOp.TOOL_INVOCATIONS),
+        )
+
+    # Assert
+    assert res.tool_invocations == []
 
 
 def test_memory_wal_read_last_50_cap(tmp_path: Path) -> None:

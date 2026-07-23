@@ -28,6 +28,7 @@
     "memory_wal",
     "pipeline_handoff",
     "plan",
+    "propose_framework_optimization",
     "run_docs_gate",
     "run_quality_gate",
     "session",
@@ -35,5 +36,5 @@
     "update_memory_bank",
     "write_artifact"
   ],
-  "tools_count": 13
+  "tools_count": 14
 }

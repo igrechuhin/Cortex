@@ -114,6 +114,7 @@ eval_results.json
 .claude/
 .cursor/agents/
 /.cortex/wal/write_log.jsonl
+/.cortex/wal/tool_invocations.jsonl
 
 # Cortex experience store (runtime pipeline history — do not commit)
 .cortex/experience/

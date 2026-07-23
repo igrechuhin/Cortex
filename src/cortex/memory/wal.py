@@ -63,9 +63,63 @@ class WALEntry(BaseModel):
     error: str | None = None
 
 
+class ToolInvocationEntry(BaseModel):
+    """Single redacted MCP tool-invocation telemetry record (JSONL line).
+
+    Argument *values* are never persisted -- only key names -- so secrets,
+    file contents, or user text cannot leak into this session-scoped log.
+    See plan: tool-invocation-telemetry-log-to-strengthen-skill-crystallization-signal.
+    """
+
+    model_config = ConfigDict(extra=EXTRA_FORBID, frozen=True)
+
+    id: str = Field(min_length=12, max_length=12)
+    timestamp: str
+    session_id: str
+    tool_name: str
+    arg_keys: list[str] = Field(default_factory=list)
+    status: WalStatus
+    error_type: str | None = None
+
+
 def wal_short_hash(text: str) -> str:
     """Return first 16 hex chars of sha256 UTF-8 digest."""
     return hashlib.sha256(text.encode("utf-8")).hexdigest()[:16]
+
+
+_MAX_TOOL_INVOCATION_ARG_KEYS = 20
+_MAX_TOOL_INVOCATION_ARG_KEY_LEN = 80
+_MAX_TOOL_INVOCATION_NAME_LEN = 200
+
+
+def wal_redact_arg_keys(raw_keys: list[str]) -> list[str]:
+    """Cap arg-key count/length; never touches argument values.
+
+    Guards against oversized or malformed argument shapes flooding the log
+    (risk mitigation from the telemetry plan).
+    """
+    capped = raw_keys[:_MAX_TOOL_INVOCATION_ARG_KEYS]
+    return [key[:_MAX_TOOL_INVOCATION_ARG_KEY_LEN] for key in capped]
+
+
+def wal_build_tool_invocation_entry(
+    *,
+    session_id: str,
+    tool_name: str,
+    arg_keys: list[str],
+    status: WalStatus,
+    error_type: str | None,
+) -> ToolInvocationEntry:
+    """Construct a redacted tool-invocation entry with fresh id/timestamp."""
+    return ToolInvocationEntry(
+        id=uuid.uuid4().hex[:12],
+        timestamp=datetime.now(UTC).isoformat(),
+        session_id=session_id,
+        tool_name=tool_name[:_MAX_TOOL_INVOCATION_NAME_LEN],
+        arg_keys=wal_redact_arg_keys(arg_keys),
+        status=status,
+        error_type=error_type[:_MAX_TOOL_INVOCATION_NAME_LEN] if error_type else None,
+    )
 
 
 def wal_build_entry(
@@ -100,6 +154,57 @@ def wal_build_entry(
     )
 
 
+def wal_atomic_write_bytes(wal_dir: Path, dest: Path, payload: bytes) -> None:
+    """Atomically write ``payload`` to ``dest`` via tempfile + ``os.replace``.
+
+    Shared by :class:`MemoryWAL` and :class:`ToolInvocationLog` so both
+    append-only JSONL logs use one tested atomic-write primitive.
+    """
+    wal_dir.mkdir(parents=True, exist_ok=True)
+    with NamedTemporaryFile(dir=wal_dir, prefix=".wal_", delete=False) as tmp:
+        _ = tmp.write(payload)
+        tmp.flush()
+        os.fsync(tmp.fileno())
+        tmp_path = Path(tmp.name)
+    os.replace(tmp_path, dest)
+
+
+class ToolInvocationLog:
+    """Append-only per-session JSONL log of redacted MCP tool invocations.
+
+    Physically separate from :class:`MemoryWAL`'s ``write_log.jsonl`` (different
+    schema: tool telemetry, not memory-bank mutations) but reuses the same
+    atomic read-merge-write append pattern rather than inventing a new one.
+    """
+
+    def __init__(self, wal_dir: Path) -> None:
+        self._wal_dir = wal_dir
+        self._log_path = wal_dir / "tool_invocations.jsonl"
+        wal_dir.mkdir(parents=True, exist_ok=True)
+
+    def log(self, entry: ToolInvocationEntry) -> None:
+        """Atomically append one JSON line (read-merge-write + replace)."""
+        line = entry.model_dump_json() + "\n"
+        existing = self._log_path.read_bytes() if self._log_path.is_file() else b""
+        wal_atomic_write_bytes(
+            self._wal_dir, self._log_path, existing + line.encode("utf-8")
+        )
+
+    def read(self, session_id: str | None = None) -> list[ToolInvocationEntry]:
+        """Parse JSONL lines; optional ``session_id`` filter for the current session's slice."""
+        if not self._log_path.is_file():
+            return []
+        lines = self._log_path.read_text(encoding="utf-8").splitlines()
+        entries = [
+            ToolInvocationEntry.model_validate_json(line)
+            for line in lines
+            if line.strip()
+        ]
+        if session_id is None:
+            return entries
+        return [e for e in entries if e.session_id == session_id]
+
+
 class MemoryWAL:
     """Append-only JSONL WAL under ``wal_dir`` (typically ``.cortex/wal``)."""
 
@@ -126,13 +231,7 @@ class MemoryWAL:
         return self._log_path.read_bytes()
 
     def _atomic_write_bytes(self, dest: Path, payload: bytes) -> None:
-        self._wal_dir.mkdir(parents=True, exist_ok=True)
-        with NamedTemporaryFile(dir=self._wal_dir, prefix=".wal_", delete=False) as tmp:
-            _ = tmp.write(payload)
-            tmp.flush()
-            os.fsync(tmp.fileno())
-            tmp_path = Path(tmp.name)
-        os.replace(tmp_path, dest)
+        wal_atomic_write_bytes(self._wal_dir, dest, payload)
 
     def read(self, since: str | None = None) -> list[WALEntry]:
         """Parse WAL lines; optional ISO timestamp lower bound (inclusive)."""

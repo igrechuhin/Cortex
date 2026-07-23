@@ -37,6 +37,31 @@ def test_build_recent_ingested_sources_lists_newest_first_and_limits_five(
     assert "(sources/source-0.md)" not in out
 
 
+# AI: Regression guard for prompt-cache-payload-stability-for-cached-mcp-resources —
+# glob() order is not guaranteed stable across processes/filesystems.
+def test_build_recent_ingested_sources_breaks_equal_mtime_ties_alphabetically(
+    tmp_path: Path,
+) -> None:
+    """Cache-payload determinism: equal-mtime files must not depend on glob() order."""
+    mb = tmp_path / ".cortex" / "memory-bank"
+    sources = mb / "sources"
+    sources.mkdir(parents=True)
+    b_path = sources / "b-source.md"
+    a_path = sources / "a-source.md"
+    _ = b_path.write_text("# B Source", encoding="utf-8")
+    _ = a_path.write_text("# A Source", encoding="utf-8")
+    same_mtime = 1_700_000_000
+    os.utime(b_path, (same_mtime, same_mtime))
+    os.utime(a_path, (same_mtime, same_mtime))
+
+    out = build_recent_ingested_sources_markdown(mb)
+
+    assert out is not None
+    a_index = out.index("a-source.md")
+    b_index = out.index("b-source.md")
+    assert a_index < b_index
+
+
 def test_build_recent_ingested_sources_falls_back_to_slug_title(tmp_path: Path) -> None:
     mb = tmp_path / ".cortex" / "memory-bank"
     sources = mb / "sources"

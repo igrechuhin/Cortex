@@ -110,3 +110,74 @@ async def test_load_context_second_call_hits_in_process_cache() -> None:
         )
         first, second = await load_context(), await load_context()
     assert first == second and mock_impl.call_count == 1
+
+
+@pytest.mark.asyncio
+async def test_load_context_two_fresh_computations_are_byte_identical() -> None:
+    """Two independent (cache-invalidated) computations produce identical bytes.
+
+    Unlike the in-process cache test above, this forces ``load_context()`` to
+    fully recompute its payload twice against unchanged fixture state — the
+    property Anthropic's exact-prefix cache matching actually depends on.
+    """
+    with (
+        patch(
+            "cortex.core.session_config.read_session_config",
+            return_value={
+                "task_description": "determinism-test",
+                "token_budget": 10000,
+            },
+        ),
+        patch(
+            "cortex.tools.optimization.handlers.load_context_impl",
+            new_callable=AsyncMock,
+        ) as mock_impl,
+    ):
+        mock_impl.return_value = json.dumps(
+            {
+                "status": "success",
+                "task_description": "determinism-test",
+                "strategy": "dependency_aware",
+                "total_tokens": 1,
+                "utilization": 0.1,
+                "file_names": [],
+            }
+        )
+        invalidate_context_resource_cache()
+        first = await load_context()
+        invalidate_context_resource_cache()
+        second = await load_context()
+    assert first == second
+    assert mock_impl.call_count == 2
+
+
+@pytest.mark.asyncio
+async def test_get_relevant_rules_two_fresh_computations_are_byte_identical(
+    tmp_path: Path,
+) -> None:
+    """Two independent (cache-invalidated) computations produce identical bytes."""
+    (tmp_path / ".cortex" / "rules").mkdir(parents=True, exist_ok=True)
+    payload = json.dumps(
+        {
+            "status": "success",
+            "operation": "get_relevant",
+            "task_description": "determinism-test",
+        }
+    )
+    ro = "cortex.tools.synapse.rules_operations"
+    with (
+        patch(
+            "cortex.core.session_config.read_session_config",
+            return_value={"task_description": "determinism-test"},
+        ),
+        patch(f"{ro}.resolve_project_root_async", AsyncMock(return_value=tmp_path)),
+        patch(f"{ro}.get_managers", AsyncMock(return_value=make_test_managers())),
+        patch(f"{ro}.rules", new_callable=AsyncMock) as mock_rules,
+    ):
+        mock_rules.return_value = payload
+        invalidate_rules_resource_cache()
+        first = await get_relevant_rules()
+        invalidate_rules_resource_cache()
+        second = await get_relevant_rules()
+    assert first == second
+    assert mock_rules.call_count == 2

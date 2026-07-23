@@ -59,11 +59,15 @@ class ContextDetector:
             languages, frameworks, task_type
         )
 
+        # AI: Sort set-derived lists so payload byte content (feeding into the
+        # cortex://rules cache-hinted resource) is deterministic across process
+        # restarts — Python set iteration order depends on PYTHONHASHSEED, which
+        # is randomized per interpreter start unless explicitly pinned.
         return DetectedContext(
-            detected_languages=list(languages),
-            detected_frameworks=list(frameworks),
+            detected_languages=sorted(languages),
+            detected_frameworks=sorted(frameworks),
             task_type=task_type,
-            categories_to_load=list(categories_to_load),
+            categories_to_load=sorted(categories_to_load),
         )
 
     def _detect_from_description(
@@ -196,7 +200,9 @@ class ContextDetector:
             categories.update(context.detected_languages)
             if context.task_type:
                 categories.add(context.task_type)
-            return list(categories)
+            # AI: sorted() for deterministic payload bytes across process
+            # restarts (set iteration order is not stable across interpreters).
+            return sorted(categories)
 
         # Legacy dict support
         categories = set(
@@ -213,7 +219,7 @@ class ContextDetector:
         if context.get("task_type"):
             categories.add(cast(str, context["task_type"]))
 
-        return list(categories)
+        return sorted(categories)
 
 
 def _get_language_keywords() -> dict[str, list[str]]:

@@ -13,9 +13,12 @@ from cortex.core.constants import (
     MAX_FILE_LINES,
     MAX_FUNCTION_LINES,
 )
-from cortex.services.framework_adapters.base import FrameworkAdapter
+from cortex.services.framework_adapters.base import CheckResult, FrameworkAdapter
 from cortex.tools.execution.file_language_router import (
     run_quality_checks_for_all_languages,
+)
+from cortex.tools.execution.pre_commit_cache_payload_audit import (
+    check_cache_payload_stability,
 )
 from cortex.tools.execution.pre_commit_helpers_models import (
     FileSizeViolation,
@@ -251,22 +254,32 @@ def execute_quality(adapter: FrameworkAdapter, language: str) -> QualityCheckRes
     #                         also fall back to full scan so a clean tree is never
     #                         silently skipped (this was the root cause of the
     #                         false-green quality gate on TradeWing).
-    if delta_files:
-        checkable = _filter_checkable_files(delta_files)
-    else:
-        checkable = None  # router will call collect_project_files()
+    checkable = _filter_checkable_files(delta_files) if delta_files else None
     file_violations, func_violations = _collect_structural_violations(
-        project_root,
-        checkable,
-        delta_files,
+        project_root, checkable, delta_files
+    )
+    cache_violations = _cache_payload_violations_for_language(project_root, language)
+    return _build_quality_check_result(
+        lint_result, file_violations, func_violations, cache_violations
     )
 
+
+def _build_quality_check_result(
+    lint_result: CheckResult,
+    file_violations: list[FileSizeViolation],
+    func_violations: list[FunctionLengthViolation],
+    cache_violations: list[str],
+) -> QualityCheckResult:
+    """Assemble QualityCheckResult from lint, structural, and cache-payload findings."""
     errors = _build_quality_errors(lint_result.errors, file_violations, func_violations)
     output = _build_quality_output(lint_result.output, file_violations, func_violations)
+    errors, output = _apply_cache_payload_violations(errors, output, cache_violations)
     success = (
-        lint_result.success and len(file_violations) == 0 and len(func_violations) == 0
+        lint_result.success
+        and len(file_violations) == 0
+        and len(func_violations) == 0
+        and not cache_violations
     )
-
     return QualityCheckResult(
         check_type="quality",
         success=success,
@@ -277,6 +290,32 @@ def execute_quality(adapter: FrameworkAdapter, language: str) -> QualityCheckRes
         file_size_violations=file_violations,
         function_length_violations=func_violations,
     )
+
+
+def _cache_payload_violations_for_language(
+    project_root: Path, language: str
+) -> list[str]:
+    """Audit cache-payload stability once per language pass (Python-only target)."""
+    # AI: Scoping to "python" avoids redundant rescans of the same two Python
+    # source files when a project also runs Swift/JS/etc. framework adapters.
+    if language != "python":
+        return []
+    return check_cache_payload_stability(project_root)
+
+
+def _apply_cache_payload_violations(
+    errors: list[str], output: str, cache_violations: list[str]
+) -> tuple[list[str], str]:
+    """Fold cache-payload stability violations into quality errors/output."""
+    errors = [
+        *errors,
+        *(f"Cache-payload stability violation: {v}" for v in cache_violations),
+    ]
+    if cache_violations:
+        output = f"{output}\n\nCache-payload stability violations:\n" + "\n".join(
+            cache_violations
+        )
+    return errors, output
 
 
 def _collect_structural_violations(

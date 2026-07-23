@@ -4,7 +4,7 @@ Reference for Cortex MCP tools, resources, and related APIs.
 
 ## Overview
 
-The live MCP server exposes **13 tools** and **6 static resources** (see [Current published MCP surface](#current-published-mcp-surface-canonical)). The phase-grouped sections later in this file are a **historical catalog** retained for migration and archaeology; they are not the current `tools/list` surface.
+The live MCP server exposes **14 tools** and **6 static resources** (see [Current published MCP surface](#current-published-mcp-surface-canonical)). The phase-grouped sections later in this file are a **historical catalog** retained for migration and archaeology; they are not the current `tools/list` surface.
 
 Tools return JSON responses with consistent error handling.
 
@@ -85,7 +85,7 @@ Source of truth for behavior and timeouts: `src/cortex/tools/execution/pre_commi
 
 ### Adding new tools
 
-The long-term consolidation goal is **`TARGET_REGISTERED_TOOLS = 10`** in `src/cortex/tools/structure/categories.py`. **`MAX_REGISTERED_TOOLS`** is a hard cap (currently **13**) enforced by `tests/tools/test_tool_categories_governance.py`.
+The long-term consolidation goal is **`TARGET_REGISTERED_TOOLS = 10`** in `src/cortex/tools/structure/categories.py`. **`MAX_REGISTERED_TOOLS`** is a hard cap (currently **14**, bumped from 13 for `propose_framework_optimization` — see `.cortex/plans/git-backed-sandboxed-self-modification-proposal-tool.md`) enforced by `tests/tools/test_tool_categories_governance.py`.
 
 1. **Prefer consolidation** — extend an existing tool or workflow before adding a new `@mcp.tool()` registration.
 2. **If a separate tool is required** — add a plan under `.cortex/plans/` that justifies why the behavior cannot live in an existing tool, and get review approval.
@@ -108,6 +108,7 @@ The long-term consolidation goal is **`TARGET_REGISTERED_TOOLS = 10`** in `src/c
 | `write_artifact` | deferred_medium |
 | `compress_memory_bank` | deferred_medium |
 | `memory_wal` | deferred_medium |
+| `propose_framework_optimization` | deferred_medium |
 
 ### Published static resources
 

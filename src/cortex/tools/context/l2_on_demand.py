@@ -5,24 +5,43 @@ from __future__ import annotations
 from pathlib import Path
 
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
+from cortex.core.session_goal_store import read_session_goal
 from cortex.tools.context.layers import ContextConfig, ContextLayer, LayerResult
+from cortex.tools.context.relevance_ranking import reorder_by_relevance
 
 
 def _count_tokens(text: str) -> int:
     return int(len(text.split()) * 1.3)
 
 
-def _truncate_paragraphs(content: str, max_tokens: int) -> str:
+def _truncate_paragraphs(
+    content: str, max_tokens: int, query: str | None = None
+) -> str:
     paragraphs = [
         segment.strip() for segment in content.split("\n\n") if segment.strip()
     ]
+    if not paragraphs:
+        return ""
+    if _count_tokens("\n\n".join(paragraphs)) <= max_tokens:
+        return "\n\n".join(paragraphs)
+    # AI: rank paragraphs by relevance to the session goal before the
+    # greedy budget-fill so the semantically relevant section is kept over
+    # earlier-but-less-relevant boilerplate; only reached when a cut is
+    # actually needed. No-op when ranking is disabled, no query is
+    # available, or ranking fails (fail open, see reorder_by_relevance).
+    ordered = reorder_by_relevance(query, paragraphs)
     selected: list[str] = []
-    for paragraph in paragraphs:
+    for paragraph in ordered:
         candidate = "\n\n".join(selected + [paragraph]).strip()
         if _count_tokens(candidate) > max_tokens:
             break
         selected.append(paragraph)
     return "\n\n".join(selected).strip()
+
+
+def _resolve_ranking_query(project_root: Path) -> str | None:
+    goal = read_session_goal(project_root)
+    return goal.goal if goal is not None else None
 
 
 def _resolve_topic_path(project_root: Path, topic: str) -> Path | None:
@@ -65,7 +84,8 @@ async def build_l2(
         content = resolved.read_text(encoding="utf-8")
     except OSError:
         content = ""
-    truncated = _truncate_paragraphs(content, config.max_l2_tokens)
+    query = _resolve_ranking_query(project_root)
+    truncated = _truncate_paragraphs(content, config.max_l2_tokens, query=query)
     return LayerResult(
         layer=ContextLayer.ON_DEMAND,
         tokens_estimate=_count_tokens(truncated),

@@ -301,6 +301,45 @@ async def with_mcp_stability[T](
     )
 
 
+async def _run_tool_with_telemetry[T](
+    func: Callable[..., Awaitable[T]],
+    args: tuple[JsonValue, ...],
+    kwargs_no_progress: dict[str, JsonValue],
+    timeout: float,
+    progress_enabled: bool,
+) -> T:
+    """Run ``func`` via ``with_mcp_stability``; record outcome telemetry.
+
+    # AI: Additive skill-crystallization evidence source (arg key names +
+    # outcome only, no values) alongside UsageTracker anomalies.
+    """
+    from cortex.core.mcp_tool_telemetry import (
+        record_tool_invocation_failure,
+        record_tool_invocation_success,
+    )
+
+    result = await with_mcp_stability(
+        func,
+        *args,
+        stability_timeout=timeout,
+        kind=HandlerKind.TOOL,
+        enable_progress=progress_enabled,
+        **kwargs_no_progress,
+    )
+    # AI: with_mcp_stability swallows asyncio.CancelledError internally and
+    # returns CANCELLED_RESPONSE_JSON as a normal (non-exception) value, so a
+    # cancelled call would otherwise be recorded as a success here. Mirror the
+    # sibling record_usage_finish path, which already records
+    # success=False/error_type="CancelledError" for this same case.
+    if result == CANCELLED_RESPONSE_JSON:
+        record_tool_invocation_failure(
+            func.__name__, kwargs_no_progress, "CancelledError"
+        )
+    else:
+        record_tool_invocation_success(func.__name__, kwargs_no_progress)
+    return result
+
+
 def _make_tool_wrapper_func[T](
     func: Callable[..., Awaitable[T]],
     timeout: float,
@@ -315,21 +354,20 @@ def _make_tool_wrapper_func[T](
         **kwargs: JsonValue,
     ) -> T:
         from cortex.core.context_logging import MCPContext
+        from cortex.core.mcp_tool_telemetry import record_tool_invocation_failure
 
         kwargs_no_progress = {k: v for k, v in kwargs.items() if k != "enable_progress"}
         try:
-            return await with_mcp_stability(
-                func,
-                *args,
-                stability_timeout=timeout,
-                kind=HandlerKind.TOOL,
-                enable_progress=progress_enabled,
-                **kwargs_no_progress,
+            return await _run_tool_with_telemetry(
+                func, args, kwargs_no_progress, timeout, progress_enabled
             )
         # Broad catch: log structured failure context for any tool error, then re-raise.
         except Exception as e:
             ctx_raw = kwargs.get("ctx")
             mcp_ctx = cast(MCPContext | None, ctx_raw)
+            record_tool_invocation_failure(
+                func.__name__, kwargs_no_progress, type(e).__name__
+            )
             await handle_tool_exception_if_failure(e, func.__name__, mcp_ctx)
             raise
 

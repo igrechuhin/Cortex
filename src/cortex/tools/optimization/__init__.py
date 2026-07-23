@@ -32,6 +32,9 @@ from .handlers import (
     summarize_content,
     summarize_content_resource,
 )
+from .propose_framework_optimization import (
+    propose_framework_optimization,  # noqa: F401 - registers @mcp.tool()
+)
 
 __all__ = [
     "get_managers",
@@ -42,6 +45,7 @@ __all__ = [
     "is_non_trivial_task",
     "load_context",
     "load_context_impl",
+    "propose_framework_optimization",
     "summarize_content",
     "summarize_content_resource",
 ]

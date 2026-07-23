@@ -427,3 +427,58 @@ class TestEdgeCases:
         assert "python" in languages
         assert "go" in languages
         assert "java" in languages
+
+
+class TestDetectContextDeterminism:
+    """Prompt-cache payload stability: outputs must be sorted, not hash-order."""
+
+    # AI: Regression guard for prompt-cache-payload-stability-for-cached-mcp-resources —
+    # set iteration order depends on PYTHONHASHSEED, which is randomized per process.
+    def test_detect_context_lists_are_sorted(self):
+        """detected_languages/frameworks/categories_to_load are alphabetically sorted."""
+        # Arrange
+        detector = ContextDetector()
+        task = "Go to the store and get Python books about Java programming"
+
+        # Act
+        context = detector.detect_context(task)
+
+        # Assert
+        assert context.detected_languages == sorted(context.detected_languages)
+        assert context.detected_frameworks == sorted(context.detected_frameworks)
+        assert context.categories_to_load == sorted(context.categories_to_load)
+
+    # AI: Same determinism guard, model-object entry point (vs. legacy dict below).
+    def test_get_relevant_categories_returns_sorted_list_for_model_input(self):
+        """get_relevant_categories() output is sorted regardless of set hash order."""
+        # Arrange
+        detector = ContextDetector()
+        context = detector.detect_context(
+            "Create Django REST API endpoint for authentication testing"
+        )
+
+        # Act
+        categories = detector.get_relevant_categories(context)
+
+        # Assert
+        assert categories == sorted(categories)
+
+    # AI: Legacy dict-input branch must match the model-input branch's determinism.
+    def test_get_relevant_categories_returns_sorted_list_for_dict_input(self):
+        """Legacy dict-input path also returns a sorted list (determinism parity)."""
+        # Arrange
+        detector = ContextDetector()
+        context = cast(
+            ModelDict,
+            {
+                "categories_to_load": ["testing", "python", "database", "ui"],
+                "detected_languages": ["swift", "javascript"],
+                "task_type": "api",
+            },
+        )
+
+        # Act
+        categories = detector.get_relevant_categories(context)
+
+        # Assert
+        assert categories == sorted(categories)

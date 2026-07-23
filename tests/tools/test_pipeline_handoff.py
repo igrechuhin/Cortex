@@ -387,6 +387,42 @@ class TestTokenValidation:
         assert not outside_path.exists()
         assert list(tmp_path.iterdir()) == []
 
+    @pytest.mark.parametrize("phase", ["context", "session", "tools"])
+    async def test_write_result_accepts_analyze_phases(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, phase: str
+    ) -> None:
+        """analyze-context/session/tools subagents write these phase names."""
+        patch_pipeline_handoff_project_root(monkeypatch, tmp_path)
+
+        result = json.loads(
+            await pipeline_handoff(
+                operation="write_result",
+                pipeline="analyze",
+                phase=phase,
+                data='{"status": "complete"}',
+            )
+        )
+        assert result["status"] == "ok"
+        result_file = Path(result["result_file"])
+        assert result_file.exists()
+        assert result_file.name == f"{phase}-result.json"
+
+    async def test_write_result_rejects_unknown_phase(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        patch_pipeline_handoff_project_root(monkeypatch, tmp_path)
+
+        result = json.loads(
+            await pipeline_handoff(
+                operation="write_result",
+                pipeline="analyze",
+                phase="not-a-real-phase",
+                data='{"status": "complete"}',
+            )
+        )
+        assert result["status"] == "error"
+        assert "Unknown phase" in result["error"]
+
 
 @pytest.mark.asyncio
 class TestAsyncToThreadOffload:

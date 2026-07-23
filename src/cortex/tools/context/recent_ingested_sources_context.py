@@ -57,7 +57,9 @@ def build_recent_ingested_sources_markdown(memory_bank_dir: Path) -> str | None:
     if not pairs:
         return None
 
-    pairs.sort(key=lambda item: item[1], reverse=True)
+    # AI: Secondary sort key (path name) breaks ties deterministically when
+    # mtimes collide — see matching fix in recent_artifacts_context.py.
+    pairs.sort(key=lambda item: (-item[1], item[0].name))
     top = pairs[:_RECENT_SOURCE_LIMIT]
     lines: list[str] = ["## Recently Ingested Sources", ""]
     for path, _mtime in top:

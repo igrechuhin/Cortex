@@ -1,18 +1,18 @@
 {
   "schema_version": "1.0.0",
   "created_at": "2026-01-25T21:38:36.940164",
-  "last_updated": "2026-07-22T16:44:40.193563",
+  "last_updated": "2026-07-23T08:06:02.027704",
   "project_root": ".",
   "memory_bank_dir": ".cortex/memory-bank",
   "files": {
     "roadmap.md": {
       "path": ".cortex/memory-bank/roadmap.md",
       "exists": true,
-      "size_bytes": 3306,
-      "token_count": 706,
+      "size_bytes": 5082,
+      "token_count": 1102,
       "token_model": "cl100k_base",
-      "last_modified": "2026-07-20T00:00:35.987762",
-      "content_hash": "sha256:79de5ad22925d82b284b96a80f4e61d68d620b0002eed849e900525ea1ae4248",
+      "last_modified": "2026-07-23T08:06:02.026507",
+      "content_hash": "sha256:73a98549001ffa6483e7f2fd5b9c3a86cc2b2792e6aa99b30401ed46afe69902",
       "sections": [
         {
           "heading": "# Roadmap: MCP Memory Bank",
@@ -50,182 +50,182 @@
           "heading": "## Pending plans (from .cortex/plans)",
           "level": 2,
           "line_start": 14,
-          "line_end": 21,
-          "content_hash": "sha256:9c685e9f6a6d7191dc12a49e5de00c433755a937bd75242e88755c3d2a252d17",
-          "token_count": 374
+          "line_end": 22,
+          "content_hash": "sha256:31828bfe8e16e753a294995a5e94dbb3196c1625fa3efb998f0ff246bbad0343",
+          "token_count": 770
         },
         {
           "heading": "### Pipeline Infrastructure",
           "level": 3,
-          "line_start": 22,
-          "line_end": 23,
+          "line_start": 23,
+          "line_end": 24,
           "content_hash": "sha256:fe52198d59117f79f04b869c9a41df6835c6abe8320430e3b52a86ff2ef036e9",
           "token_count": 4
         },
         {
           "heading": "### Tools Infrastructure",
           "level": 3,
-          "line_start": 24,
-          "line_end": 25,
+          "line_start": 25,
+          "line_end": 26,
           "content_hash": "sha256:b66b36544a5dcbc0820fd9d0aecd84d03cd40b83673b8869f4e47a0b89b5c1a6",
           "token_count": 4
         },
         {
           "heading": "### FastMCP v3 Migration",
           "level": 3,
-          "line_start": 26,
-          "line_end": 27,
+          "line_start": 27,
+          "line_end": 28,
           "content_hash": "sha256:b85d3ba1531369ad6ffe3a3029481e12c0997dc0ae69dd1fc071ed9beddfdd76",
           "token_count": 8
         },
         {
           "heading": "### Fixes",
           "level": 3,
-          "line_start": 28,
-          "line_end": 29,
+          "line_start": 29,
+          "line_end": 30,
           "content_hash": "sha256:e95e398264bc220448791e96bbe1b9820683be0eacac135666c759f3b846bb1f",
           "token_count": 3
         },
         {
           "heading": "### Quality & Reliability Improvements",
           "level": 3,
-          "line_start": 30,
-          "line_end": 31,
+          "line_start": 31,
+          "line_end": 32,
           "content_hash": "sha256:f443706c61b231009cf59ae6ade3f28c073b0fca875ed5474846b23ff3c532eb",
           "token_count": 8
         },
         {
           "heading": "### Security",
           "level": 3,
-          "line_start": 32,
-          "line_end": 33,
+          "line_start": 33,
+          "line_end": 34,
           "content_hash": "sha256:4e54eaedd7fb54648d5f2b94310e1bc4882d61cfb9dbe0fd21ad5740f655e46f",
           "token_count": 3
         },
         {
           "heading": "### Documentation Cleanup (DRY)",
           "level": 3,
-          "line_start": 34,
-          "line_end": 35,
+          "line_start": 35,
+          "line_end": 36,
           "content_hash": "sha256:6f1edb5a57de8d32c4c71ac22f72c5162dcdcd57ffd2891200f1dd19a2334563",
           "token_count": 7
         },
         {
           "heading": "### Refactoring",
           "level": 3,
-          "line_start": 36,
-          "line_end": 37,
+          "line_start": 37,
+          "line_end": 38,
           "content_hash": "sha256:b9e7b888f7316c3961c7d4a578299bce810fc64b60c7c826d6a62ec04ec0bb5c",
           "token_count": 4
         },
         {
           "heading": "### Cleanup",
           "level": 3,
-          "line_start": 38,
-          "line_end": 39,
+          "line_start": 39,
+          "line_end": 40,
           "content_hash": "sha256:f492faf8dada7b264a2992e068f21b23c8196a67742c3d819f48995e3df0dc3a",
           "token_count": 3
         },
         {
           "heading": "### Investigation Plans (Archive / Reference)",
           "level": 3,
-          "line_start": 40,
-          "line_end": 43,
+          "line_start": 41,
+          "line_end": 44,
           "content_hash": "sha256:88cecd33202786f11280b0758ce7133af71b73a185f0700cca345c05ed80cde3",
           "token_count": 36
         },
         {
           "heading": "### Improvements",
           "level": 3,
-          "line_start": 44,
-          "line_end": 45,
+          "line_start": 45,
+          "line_end": 46,
           "content_hash": "sha256:18991a94ad5b90939e524781550e65c1f8382d2cdd3c8e4bfd63c94e954c2b8a",
           "token_count": 4
         },
         {
           "heading": "#### Knowledge Base & Wiki (High Priority)",
           "level": 4,
-          "line_start": 46,
-          "line_end": 47,
+          "line_start": 47,
+          "line_end": 48,
           "content_hash": "sha256:a23c5da61cad656c0467deecacc09fb0d02c17472a074ac117df9140cbff134c",
           "token_count": 9
         },
         {
           "heading": "#### Token Efficiency (High Priority)",
           "level": 4,
-          "line_start": 48,
-          "line_end": 49,
+          "line_start": 49,
+          "line_end": 50,
           "content_hash": "sha256:d7b11adbe74c4b398d9d5b32c328cb9b7e8cd669cdc0fe3cdd68f1fc7a71aad1",
           "token_count": 7
         },
         {
           "heading": "### Features & Enhancements",
           "level": 3,
-          "line_start": 50,
-          "line_end": 51,
+          "line_start": 51,
+          "line_end": 52,
           "content_hash": "sha256:e5fa97241fc63d9ccc6e2fb0b1bb179d5e4cb5f5245e3cda43ee4c682c7d2df2",
           "token_count": 6
         },
         {
           "heading": "#### Token Efficiency (Medium Priority)",
           "level": 4,
-          "line_start": 52,
-          "line_end": 53,
+          "line_start": 53,
+          "line_end": 54,
           "content_hash": "sha256:81a0eb7564ba4ce018339352b45333e170be6c1f1e1ff855c8710d811d11b6e3",
           "token_count": 7
         },
         {
           "heading": "#### Claude Code Harness Improvements (High Priority)",
           "level": 4,
-          "line_start": 54,
-          "line_end": 55,
+          "line_start": 55,
+          "line_end": 56,
           "content_hash": "sha256:9ed12cd4ae94ee2ac80e7fdbb0aa897f96ae7ec7158cf9142b710ef633e5bc96",
           "token_count": 10
         },
         {
           "heading": "#### Annotation Quality (Medium Priority)",
           "level": 4,
-          "line_start": 56,
-          "line_end": 57,
+          "line_start": 57,
+          "line_end": 58,
           "content_hash": "sha256:eb1d97a41cf3392cd682bbc73b618e8d8f0163a81d2833f540eaa4322903d0af",
           "token_count": 7
         },
         {
           "heading": "#### Planning & Brainstorming (High Priority)",
           "level": 4,
-          "line_start": 58,
-          "line_end": 59,
+          "line_start": 59,
+          "line_end": 60,
           "content_hash": "sha256:4a6880fee792008c1e9d5354372c11511eb2adc64a11b697824becc078691420",
           "token_count": 10
         },
         {
           "heading": "#### Planning & Brainstorming (Medium Priority)",
           "level": 4,
-          "line_start": 60,
-          "line_end": 61,
+          "line_start": 61,
+          "line_end": 62,
           "content_hash": "sha256:c37672d39156a802d58d9818fbc253a81efd370949f9f6846a2bc32bce54446f",
           "token_count": 10
         },
         {
           "heading": "#### Wiki for Attached Projects (High Priority)",
           "level": 4,
-          "line_start": 62,
-          "line_end": 63,
+          "line_start": 63,
+          "line_end": 64,
           "content_hash": "sha256:5232b5bc7694da62797db3f13a1abd5cc0f32501dd8e7265833128fe8eba10e1",
           "token_count": 9
         },
         {
           "heading": "#### Planning & Brainstorming (Low Priority)",
           "level": 4,
-          "line_start": 64,
-          "line_end": 65,
+          "line_start": 65,
+          "line_end": 66,
           "content_hash": "sha256:31fc5fe5ea27b6995e16e17c4b67d345cfea177e0c0b241b26f59b2ee21641b6",
           "token_count": 10
         }
       ],
       "read_count": 0,
-      "write_count": 29,
-      "last_read": "2026-07-20T00:00:35.987762",
+      "write_count": 31,
+      "last_read": "2026-07-23T08:06:02.026507",
       "current_version": 11
     },
     "progress.md": {
@@ -1888,8 +1888,8 @@
   },
   "totals": {
     "total_files": 7,
-    "total_size_bytes": 92692,
-    "total_tokens": 21633,
-    "last_full_scan": "2026-07-22T16:44:40.192533"
+    "total_size_bytes": 94468,
+    "total_tokens": 22029,
+    "last_full_scan": "2026-07-23T08:06:02.026560"
   }
 }

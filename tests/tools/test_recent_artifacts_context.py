@@ -65,6 +65,33 @@ def test_build_recent_artifacts_includes_analyses_and_reviews(tmp_path: Path) ->
     assert "Summary line one" in out
 
 
+# AI: Regression guard for prompt-cache-payload-stability-for-cached-mcp-resources —
+# glob() order is not guaranteed stable across processes/filesystems.
+def test_build_recent_artifacts_breaks_equal_mtime_ties_alphabetically(
+    tmp_path: Path,
+) -> None:
+    """Cache-payload determinism: equal-mtime files must not depend on glob() order."""
+    mb = tmp_path / ".cortex" / "memory-bank"
+    reviews = mb / MemoryBankArtifactStorageSubdir.REVIEWS.value
+    reviews.mkdir(parents=True)
+    # Create "b" before "a" so insertion/glob order alone would list b first;
+    # the sort must still place "a" first once mtimes are forced equal.
+    b_path = reviews / "b-review.md"
+    a_path = reviews / "a-review.md"
+    _ = b_path.write_text("# B\n\nBody B.", encoding="utf-8")
+    _ = a_path.write_text("# A\n\nBody A.", encoding="utf-8")
+    same_mtime = 1_700_000_000
+    os.utime(b_path, (same_mtime, same_mtime))
+    os.utime(a_path, (same_mtime, same_mtime))
+
+    out = build_recent_artifacts_markdown(mb)
+
+    assert out is not None
+    a_index = out.index("a-review.md")
+    b_index = out.index("b-review.md")
+    assert a_index < b_index
+
+
 def test_one_line_summary_truncates_long_first_line(tmp_path: Path) -> None:
     mb = tmp_path / ".cortex" / "memory-bank"
     (mb / "reviews").mkdir(parents=True)
