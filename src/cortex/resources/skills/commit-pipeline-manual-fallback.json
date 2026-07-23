@@ -1,0 +1,31 @@
+{
+  "name": "commit-pipeline-manual-fallback",
+  "description": "Manually orchestrate the commit.wf.js phase sequence via direct Agent (subagent) calls when the Workflow tool is unavailable in the current runtime, preserving phase order, handoff data, and gating semantics.",
+  "tools": [
+    "mcp__cortex__pipeline_handoff",
+    "mcp__cortex__run_quality_gate",
+    "mcp__cortex__run_docs_gate",
+    "mcp__cortex__manage_file",
+    "mcp__cortex__update_memory_bank",
+    "Bash"
+  ],
+  "when_to_use": "When /cortex/commit or another .wf.js-backed pipeline needs to run but the Workflow tool is not exposed by the host (e.g. Claude Code without the Workflow tool registered), so the deterministic JS orchestration in commit.wf.js cannot execute directly.",
+  "workflow_sequences": [
+    "Read commit.wf.js phase list and order → invoke each phase's subagent directly via Agent calls in the same order: commit-preflight → commit-phase-a → commit-phase-b → commit-phase-c → commit-final-gate",
+    "Before each phase call pipeline_handoff(operation=\"status\", pipeline=\"commit\") to check phases.<phase> for completed/failed/running/pending, mirroring the .wf.js resume logic, so a re-run skips already-completed phases",
+    "Immediately before invoking a phase's subagent, call pipeline_handoff(operation=\"mark_running\", pipeline=\"commit\", phase=\"<phase>\") so state matches what the .wf.js would have set",
+    "After each subagent finishes, verify it wrote its own pipeline_handoff(operation=\"write\", phase=\"<phase>\", status=\"complete\", ...) result before proceeding to the next phase — do not proceed on a subagent's prose claim alone",
+    "At the end, run the Step 12 final gate equivalent: pipeline_handoff(write, checks, {force_fresh:true}) then run_quality_gate() before treating the pipeline as complete"
+  ],
+  "example_invocations": [
+    "Workflow tool unavailable: main agent invoked commit-preflight, commit-phase-a, commit-phase-b, commit-phase-c, commit-final-gate subagents directly in commit.wf.js order to commit and push a large batch of prior uncommitted feature work plus a synapse submodule update.",
+    "Falling back to manual phase orchestration for /cortex/commit when the JS Workflow runtime is not registered as a tool in the current MCP client."
+  ],
+  "troubleshooting_tips": [
+    "Always check pipeline_handoff(operation=\"status\") before re-invoking a phase — re-running a completed phase wastes tokens and can double-run destructive steps like Synapse pre-stage commits.",
+    "Do not trust a subagent's final text report as proof of phase completion; the resume check for the next phase reads pipeline_handoff state, so a subagent that forgot to write its result will silently break the resume chain.",
+    "If a phase fails, do not skip ahead — stop and surface the failure, mirroring the .wf.js frontier-phase fix-path behavior instead of continuing past an unrecovered failure.",
+    "When mixing this manual fallback with a large batch of unrelated staged work (infra + features + submodule bumps), flag the session as a multi-goal scope risk even though the mechanical commit succeeds — the risk is in session scoping, not phase execution."
+  ],
+  "keywords": ["commit", "commit.wf.js", "workflow", "fallback", "manual-orchestration", "subagent", "pipeline_handoff", "resume", "phase-sequence", "workflow-tool-unavailable"]
+}
