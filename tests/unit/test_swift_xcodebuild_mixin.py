@@ -24,13 +24,17 @@ def _xcodebuild_side_effect(captured: dict[str, list[str]]):
     ) -> subprocess.CompletedProcess[object]:
         assert isinstance(cmd, list)
         if cmd[0] == "xcrun":
-            return subprocess.CompletedProcess(args=cmd, returncode=0, stdout="", stderr="")
+            return subprocess.CompletedProcess(
+                args=cmd, returncode=0, stdout="", stderr=""
+            )
         if cmd[0] == "xcodebuild" and "-list" in cmd:
             return subprocess.CompletedProcess(
                 args=cmd, returncode=0, stdout=_SCHEME_LIST_STDOUT, stderr=""
             )
         if cmd[0] == "xcodebuild" and "build-for-testing" in cmd:
-            return subprocess.CompletedProcess(args=cmd, returncode=0, stdout=b"", stderr=b"")
+            return subprocess.CompletedProcess(
+                args=cmd, returncode=0, stdout=b"", stderr=b""
+            )
         if cmd[0] == "xcodebuild" and "test-without-building" in cmd:
             captured["test_args"] = [str(part) for part in cmd]
             return subprocess.CompletedProcess(
@@ -45,24 +49,43 @@ def _make_xcodeproj(tmpdir: str) -> None:
     (Path(tmpdir) / "App.xcodeproj").mkdir()
 
 
+def _write_skip_testing_config(tmpdir: str) -> None:
+    """Write .cortex/config/swift_test.json with two skip_testing identifiers."""
+    cfg_dir = Path(tmpdir) / ".cortex" / "config"
+    cfg_dir.mkdir(parents=True)
+    _ = (cfg_dir / "swift_test.json").write_text(
+        json.dumps(
+            {
+                "skip_testing": [
+                    "SampleTests/LiveNetworkIntegrationTests",
+                    "SampleTests/AnotherSlowSuite/testFoo",
+                ]
+            }
+        ),
+        encoding="utf-8",
+    )
+
+
+def _assert_skip_testing_flags_precede_action(args: list[str]) -> None:
+    """Assert both -skip-testing: flags are present and precede the test action."""
+    assert "-skip-testing:SampleTests/LiveNetworkIntegrationTests" in args
+    assert "-skip-testing:SampleTests/AnotherSlowSuite/testFoo" in args
+    action_index = args.index("test-without-building")
+    assert (
+        args.index("-skip-testing:SampleTests/LiveNetworkIntegrationTests")
+        < action_index
+    )
+    assert (
+        args.index("-skip-testing:SampleTests/AnotherSlowSuite/testFoo") < action_index
+    )
+
+
 @patch("cortex.services.framework_adapters.swift_xcodebuild_mixin.subprocess.run")
 def test_run_tests_passes_configured_skip_testing_flags(mock_run: MagicMock) -> None:
     """Identifiers from .cortex/config/swift_test.json become -skip-testing: flags."""
     with tempfile.TemporaryDirectory() as tmpdir:
         _make_xcodeproj(tmpdir)
-        cfg_dir = Path(tmpdir) / ".cortex" / "config"
-        cfg_dir.mkdir(parents=True)
-        _ = (cfg_dir / "swift_test.json").write_text(
-            json.dumps(
-                {
-                    "skip_testing": [
-                        "SampleTests/LiveNetworkIntegrationTests",
-                        "SampleTests/AnotherSlowSuite/testFoo",
-                    ]
-                }
-            ),
-            encoding="utf-8",
-        )
+        _write_skip_testing_config(tmpdir)
         captured: dict[str, list[str]] = {}
         mock_run.side_effect = _xcodebuild_side_effect(captured)
 
@@ -70,18 +93,7 @@ def test_run_tests_passes_configured_skip_testing_flags(mock_run: MagicMock) -> 
         result = adapter.run_tests()
 
         assert result.success is True
-        args = captured["test_args"]
-        assert "-skip-testing:SampleTests/LiveNetworkIntegrationTests" in args
-        assert "-skip-testing:SampleTests/AnotherSlowSuite/testFoo" in args
-        action_index = args.index("test-without-building")
-        assert (
-            args.index("-skip-testing:SampleTests/LiveNetworkIntegrationTests")
-            < action_index
-        )
-        assert (
-            args.index("-skip-testing:SampleTests/AnotherSlowSuite/testFoo")
-            < action_index
-        )
+        _assert_skip_testing_flags_precede_action(captured["test_args"])
 
 
 @patch("cortex.services.framework_adapters.swift_xcodebuild_mixin.subprocess.run")
