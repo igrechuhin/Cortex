@@ -15,6 +15,7 @@ from collections.abc import Sequence
 from pathlib import Path
 
 from cortex.config.swift_coverage_config import load_swift_coverage_config
+from cortex.config.swift_test_config import load_swift_test_config
 from cortex.services.language_detector import LanguageDetector, LanguageInfo
 
 from .base import (
@@ -109,6 +110,9 @@ class SwiftAdapter(SwiftXcodebuildMixin, FrameworkAdapter):
         self._swift_cov_extra_filename_re = compile_swift_coverage_exclude_regexes(
             list(self._swift_coverage_cfg.exclude_filename_regex_patterns)
         )
+        self._xcodebuild_skip_testing = load_swift_test_config(
+            self.project_root
+        ).skip_testing
         self._cached_bin_path: Path | None = None
         self._cached_simulator_destination: str | None = None
 

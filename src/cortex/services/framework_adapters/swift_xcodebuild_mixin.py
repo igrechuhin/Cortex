@@ -20,6 +20,7 @@ class SwiftXcodebuildMixin:
     - ``project_root: Path``
     - ``_cached_simulator_destination: str | None``
     - ``_PREFERRED_SIMULATORS: list[str]``
+    - ``_xcodebuild_skip_testing: list[str]``
     And provide: ``extract_test_counts``, ``_error_test_result``,
     ``_timeout_test_result``, ``_parse_build_errors``.
     """
@@ -35,6 +36,11 @@ class SwiftXcodebuildMixin:
             self._cached_simulator_destination: str | None = None
         if not hasattr(self, "_PREFERRED_SIMULATORS"):
             self._PREFERRED_SIMULATORS: list[str] = []
+        if not hasattr(self, "_xcodebuild_skip_testing"):
+            # AI: Populated from .cortex/config/swift_test.json (see
+            # cortex.config.swift_test_config) — Xcode -skip-testing:
+            # identifiers excluded from `xcodebuild test`/`test-without-building`.
+            self._xcodebuild_skip_testing: list[str] = []
 
     @staticmethod
     def _error_check_result(check_type: str, message: str) -> CheckResult:
@@ -174,21 +180,37 @@ class SwiftXcodebuildMixin:
             errors=errors or ["xcodebuild build-for-testing failed"],
         )
 
+    def _xcodebuild_test_phase_args(self, scheme: str, proj: Path) -> list[str]:
+        """Build the ``xcodebuild ... test-without-building`` argv.
+
+        Honors ``self._xcodebuild_skip_testing`` (from
+        ``.cortex/config/swift_test.json``) by passing one ``-skip-testing:``
+        flag per configured identifier — e.g. a live-network integration test
+        class a project's CLAUDE.md documents as excluded from its standard
+        test command, so the quality gate doesn't fail on infra it was never
+        meant to exercise.
+        """
+        args = [
+            "-project",
+            str(proj),
+            "-scheme",
+            scheme,
+            "-destination",
+            self._simulator_destination(),
+        ]
+        args.extend(
+            f"-skip-testing:{identifier}"
+            for identifier in self._xcodebuild_skip_testing
+        )
+        args.append("test-without-building")
+        return args
+
     def _xcodebuild_test_phase(
         self, scheme: str, proj: Path, timeout: int
     ) -> TestResult:
         """Run test-without-building and parse results."""
         result = self._run_xcodebuild(
-            [
-                "-project",
-                str(proj),
-                "-scheme",
-                scheme,
-                "-destination",
-                self._simulator_destination(),
-                "test-without-building",
-            ],
-            timeout=timeout,
+            self._xcodebuild_test_phase_args(scheme, proj), timeout=timeout
         )
         output = result.stdout + result.stderr
         passed, failed = self.extract_test_counts(output)
