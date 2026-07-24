@@ -1,3 +1,13 @@
+---
+title: "Remove Cursor IDE support and duplications"
+component: "structure"
+work_type: "cleanup"
+status: DONE
+priority: "Medium"
+created: "2026-07-23"
+completed: "2026-07-23"
+---
+
 ## Scope decisions (confirmed with user)
 
 - Full removal of Cursor IDE workspace integration: `.cursor/` dir (agents/*.md, mcp.json, mcp_config.json, memory-bank/plans/synapse symlinks), `CursorResourceType`, `CursorIntegrationConfig*`, `CursorSymlinkManager`, `setup_cursor_integration()`, cursor-default/tradewing legacy-migration detection tied to `.cursor/plans`.
