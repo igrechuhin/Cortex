@@ -8,6 +8,8 @@ This test suite provides comprehensive coverage for:
 """
 
 import json
+from collections.abc import Callable
+from contextlib import AbstractContextManager
 from datetime import datetime, timedelta
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
@@ -27,8 +29,8 @@ from cortex.tools.structure import (
     move_stale_plans,
     perform_archive_stale,
     perform_cleanup_actions,
-    perform_fix_symlinks,
     perform_remove_empty,
+    perform_remove_legacy_cursor_artifacts,
     perform_update_index,
     record_archive_action,
 )
@@ -68,9 +70,6 @@ def mock_structure_manager(tmp_path: Path) -> MagicMock:
         "structure_type": "standard",
         "components": {"root": "/mock", "plans": "/mock/plans"},
         "health": {"score": 85},
-    }
-    manager.setup_cursor_integration.return_value = {
-        "symlinks_created": [".cursorrules", ".cursorrules-memory-bank"]
     }
     return manager
 
@@ -300,7 +299,7 @@ class TestCheckStructureHealthCleanup:
             # Act
             result_str = await check_structure_health(
                 perform_cleanup=True,
-                cleanup_actions=["fix_symlinks", "remove_empty"],
+                cleanup_actions=["remove_legacy_cursor_artifacts", "remove_empty"],
                 dry_run=True,
             )
             result = json.loads(result_str)
@@ -746,7 +745,7 @@ class TestHelperFunctions:
         # Act
         result = await perform_cleanup_actions(
             mock_structure_manager,
-            cleanup_actions=["fix_symlinks"],
+            cleanup_actions=["remove_legacy_cursor_artifacts"],
             stale_days=90,
             dry_run=True,
             project_root=tmp_path,
@@ -786,8 +785,8 @@ class TestHelperFunctions:
         # Should not fail even with no stale plans
         assert isinstance(report.actions_performed, list)
 
-    def test_perform_fix_symlinks(self, mock_structure_manager: MagicMock) -> None:
-        """Test perform_fix_symlinks."""
+    def test_perform_remove_legacy_cursor_artifacts(self, tmp_path: Path) -> None:
+        """Test perform_remove_legacy_cursor_artifacts."""
         # Arrange
         report = CleanupReport(
             dry_run=True,
@@ -798,11 +797,12 @@ class TestHelperFunctions:
         )
 
         # Act
-        perform_fix_symlinks(mock_structure_manager, report)
+        perform_remove_legacy_cursor_artifacts(tmp_path, report)
 
         # Assert
         assert len(report.actions_performed) == 1
-        assert report.actions_performed[0].action == "fix_symlinks"
+        assert report.actions_performed[0].action == "remove_legacy_cursor_artifacts"
+        assert report.actions_performed[0].legacy_cursor_artifacts_removed == 0
 
     def test_perform_remove_empty(
         self, tmp_path: Path, mock_structure_manager: MagicMock
@@ -834,6 +834,32 @@ class TestHelperFunctions:
 # ============================================================================
 # Integration Tests
 # ============================================================================
+
+
+def _patch_structure_manager_and_root(
+    project_root: Path, mock_structure_manager: MagicMock
+) -> AbstractContextManager[None]:
+    """Patch resolve_project_root_async + StructureManager for cleanup-action tests."""
+    return patch.multiple(
+        "cortex.tools.structure.main",
+        resolve_project_root_async=AsyncMock(return_value=project_root),
+        StructureManager=MagicMock(return_value=mock_structure_manager),
+    )
+
+
+def _build_health_check_path_side_effect(
+    healthy_structure: Path,
+) -> Callable[[str], Path]:
+    """Return a `get_path(x)` side-effect mapping used by cleanup-action tests."""
+
+    def get_path_side_effect(x: str) -> Path:
+        paths: dict[str, Path] = {
+            "root": healthy_structure / ".memory-bank",
+            "plans": healthy_structure / ".memory-bank" / "plans",
+        }
+        return paths[x]
+
+    return get_path_side_effect
 
 
 class TestIntegration:
@@ -885,27 +911,13 @@ class TestIntegration:
         self, healthy_structure: Path, mock_structure_manager: MagicMock
     ) -> None:
         """Test health check with all cleanup actions."""
-
         # Arrange
-        def get_path_side_effect(x: str) -> Path:
-            paths: dict[str, Path] = {
-                "root": healthy_structure / ".memory-bank",
-                "plans": healthy_structure / ".memory-bank" / "plans",
-            }
-            return paths[x]
+        mock_structure_manager.get_path.side_effect = (
+            _build_health_check_path_side_effect(healthy_structure)
+        )
 
-        mock_structure_manager.get_path.side_effect = get_path_side_effect
-
-        with (
-            patch(
-                "cortex.tools.structure.main.resolve_project_root_async",
-                new_callable=AsyncMock,
-                return_value=healthy_structure,
-            ),
-            patch(
-                "cortex.tools.structure.main.StructureManager",
-                return_value=mock_structure_manager,
-            ),
+        with _patch_structure_manager_and_root(
+            healthy_structure, mock_structure_manager
         ):
             # Act
             result_str = await check_structure_health(
@@ -913,7 +925,7 @@ class TestIntegration:
                 cleanup_actions=[
                     "archive_stale",
                     "organize_plans",
-                    "fix_symlinks",
+                    "remove_legacy_cursor_artifacts",
                     "remove_empty",
                 ],
                 stale_days=90,

@@ -60,7 +60,7 @@ class TestRulesManager:
             file_system=fs_manager,
             metadata_index=metadata_index,
             token_counter=token_counter,
-            rules_folder=".cursorrules",
+            rules_folder=".cortex/rules",
             reindex_interval_minutes=30,
         )
 
@@ -228,7 +228,7 @@ class TestOptimizationConfigRules:
     def test_rules_config_defaults(self, config: OptimizationConfig) -> None:
         """Test default rules configuration."""
         assert config.is_rules_enabled() is False
-        assert config.get_rules_folder() == ".cursorrules"
+        assert config.get_rules_folder() == ".cortex/rules"
         assert config.get_rules_reindex_interval() == 30
         assert config.get_rules_max_tokens() == 5000
         assert config.get_rules_min_relevance() == 0.3
@@ -272,7 +272,7 @@ class TestRulesIntegration:
             file_system=fs_manager,
             metadata_index=metadata_index,
             token_counter=token_counter,
-            rules_folder=".cursorrules",
+            rules_folder=".cortex/rules",
             reindex_interval_minutes=30,
         )
 

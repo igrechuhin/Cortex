@@ -20,8 +20,8 @@ def _synapse_path() -> Path:
 
 
 def _implement_select_path() -> Path:
-    """Return path to implement-select cursor-agent prompt."""
-    return _synapse_path() / "cursor-agents" / "implement-select.md"
+    """Return path to implement-select claude-agent prompt."""
+    return _synapse_path() / "claude-agents" / "implement-select.md"
 
 
 def _implement_prompt_path() -> Path:
@@ -31,7 +31,7 @@ def _implement_prompt_path() -> Path:
 
 @pytest.fixture
 def implement_select_content() -> str:
-    """Read implement-select cursor-agent content."""
+    """Read implement-select claude-agent content."""
     path = _implement_select_path()
     if not path.exists():
         pytest.skip(

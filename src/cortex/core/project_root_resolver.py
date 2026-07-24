@@ -138,7 +138,7 @@ _ROOTS_CAPABILITY = ClientCapabilities(roots=RootsCapability())
 def _client_supports_roots(ctx: MCPContext) -> bool:
     """Return True if the client advertised roots capability.
 
-    Clients that don't advertise it (e.g. Cursor's MCP bridge) close the
+    Clients that don't advertise it (e.g. some MCP client bridges) close the
     transport when they receive ListRootsRequest, crashing the server.
     """
     return bool(ctx.session.check_client_capability(_ROOTS_CAPABILITY))
@@ -232,7 +232,7 @@ async def resolve_project_root_async(
     """
     if project_root:
         return await _return_root_with_wiki_bootstrap(get_project_root(project_root))
-    # AI: MCP bridges (e.g. Cursor) may not expose roots/list, so fallback CWD can
+    # AI: Some MCP client bridges may not expose roots/list, so fallback CWD can
     # point to the Cortex repo instead of the active workspace. Reuse usage-context
     # root first when already set by ensure_usage_context in the tool pipeline.
     from cortex.core.usage_context import get_current_project_root

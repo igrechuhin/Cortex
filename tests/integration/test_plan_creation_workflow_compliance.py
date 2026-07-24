@@ -190,14 +190,14 @@ class TestCreatePlanRoadmapUpdate:
 
 
 def _commit_phase_b_agent_path() -> Path:
-    """Return path to commit-phase-b agent under .cortex/synapse/cursor-agents/.
+    """Return path to commit-phase-b agent under .cortex/synapse/claude-agents/.
 
     This is the active agent that enforces memory-bank anti-truncation rules.
     The legacy .cortex/synapse/agents/memory-bank-updater.md is deprecated.
     """
     return (
         get_cortex_path(_repo_root(), CortexResourceType.SYNAPSE)
-        / "cursor-agents"
+        / "claude-agents"
         / "commit-phase-b.md"
     )
 

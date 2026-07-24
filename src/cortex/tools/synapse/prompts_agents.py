@@ -1,16 +1,11 @@
-"""Sync Synapse cursor-agent definitions into .cursor/ and .claude/ trees."""
+"""Sync Synapse subagent definitions into the .claude/ tree."""
 
 from __future__ import annotations
 
 import re
 from pathlib import Path
 
-from cortex.core.path_resolver import (
-    CortexResourceType,
-    CursorResourceType,
-    get_cortex_path,
-    get_cursor_path,
-)
+from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.tools.synapse.prompts_content import (
     CLAUDE_CODE_TOOLS_FIELD,
     CORTEX_TOOL_NAMES,
@@ -18,8 +13,8 @@ from cortex.tools.synapse.prompts_content import (
 )
 
 
-def get_cursor_agents_source(project_root: Path | None = None) -> Path | None:
-    """Find .cortex/synapse/cursor-agents/.
+def get_agents_source(project_root: Path | None = None) -> Path | None:
+    """Find .cortex/synapse/claude-agents/.
 
     When *project_root* is provided the lookup is scoped to that directory.
     When ``None``, falls back to walking up from CWD then from the module file
@@ -29,7 +24,7 @@ def get_cursor_agents_source(project_root: Path | None = None) -> Path | None:
         candidate = (
             get_cortex_path(project_root, CortexResourceType.CORTEX_DIR)
             / "synapse"
-            / "cursor-agents"
+            / "claude-agents"
         )
         return candidate if (candidate.exists() and candidate.is_dir()) else None
 
@@ -38,7 +33,7 @@ def get_cursor_agents_source(project_root: Path | None = None) -> Path | None:
         candidate = (
             get_cortex_path(path, CortexResourceType.CORTEX_DIR)
             / "synapse"
-            / "cursor-agents"
+            / "claude-agents"
         )
         if candidate.exists() and candidate.is_dir():
             return candidate
@@ -51,7 +46,7 @@ def get_cursor_agents_source(project_root: Path | None = None) -> Path | None:
         candidate = (
             get_cortex_path(path, CortexResourceType.CORTEX_DIR)
             / "synapse"
-            / "cursor-agents"
+            / "claude-agents"
         )
         if candidate.exists() and candidate.is_dir():
             return candidate
@@ -59,16 +54,9 @@ def get_cursor_agents_source(project_root: Path | None = None) -> Path | None:
     return None
 
 
-def get_cursor_agents_target(source: Path) -> Path:
-    """Resolve .cursor/agents/ from project root inferred via source path."""
-    # source is <project_root>/.cortex/synapse/cursor-agents
-    project_root = source.parent.parent.parent
-    return get_cursor_path(project_root, CursorResourceType.CURSOR_DIR) / "agents"
-
-
 def get_claude_agents_target(source: Path) -> Path:
     """Resolve .claude/agents/ from project root inferred via source path."""
-    # source is <project_root>/.cortex/synapse/cursor-agents
+    # source is <project_root>/.cortex/synapse/claude-agents
     return source.parent.parent.parent / ".claude" / "agents"
 
 
@@ -98,8 +86,8 @@ def inject_tools_into_frontmatter(content: str) -> str:
        rewritten to `mcp__cortex__health_check(` so the LLM
        unambiguously invokes the right tool without any name-to-prefix mapping.
 
-    Cursor agents do not use these fields (frontmatter `tools:` is ignored,
-    plain names work natively), so the source files stay clean.
+    The Synapse source files stay clean of these fields; they are injected
+    only into the Claude Code copy.
 
     If no frontmatter is present, only the tool-ref rewrite is applied.
     """
@@ -136,7 +124,7 @@ def sync_agent_file(agent_file: Path, target: Path, transform: bool = False) -> 
         _ = dest.write_text(content, encoding="utf-8")
         return True
     except OSError as e:
-        logger.warning(f"sync_cursor_agents: could not write {dest}: {e}")
+        logger.warning(f"sync_claude_agents: could not write {dest}: {e}")
         return False
 
 
@@ -152,7 +140,7 @@ def sync_agents_to_target(
     try:
         target.mkdir(parents=True, exist_ok=True)
     except OSError as e:
-        logger.warning(f"sync_cursor_agents: could not create {target}: {e}")
+        logger.warning(f"sync_claude_agents: could not create {target}: {e}")
         return 0
 
     source_names = {f.name for f in source.glob("*.md")}
@@ -173,12 +161,12 @@ def sync_agents_to_target(
     return synced
 
 
-def sync_cursor_agents(project_root: Path | None = None) -> None:
-    """Sync cursor agents to .cursor/agents/ and .claude/agents/.
+def sync_claude_agents(project_root: Path | None = None) -> None:
+    """Sync Synapse subagents to .claude/agents/.
 
-    Copies all .md files from .cortex/synapse/cursor-agents/ to both IDE
-    agent directories so the commit and implement pipelines work in both
-    Cursor (primary) and Claude Code (secondary).
+    Copies all .md files from .cortex/synapse/claude-agents/ to the Claude Code
+    agent directory so the commit and implement pipelines have their
+    subagents available.
 
     When *project_root* is provided the lookup is scoped to that directory.
     When ``None``, falls back to the CWD/module-anchor heuristic.
@@ -186,11 +174,10 @@ def sync_cursor_agents(project_root: Path | None = None) -> None:
     Idempotent: files are only written when content changes. Creates target
     directories if absent.
     """
-    source = get_cursor_agents_source(project_root)
+    source = get_agents_source(project_root)
     if not source:
         return
 
-    _ = sync_agents_to_target(source, get_cursor_agents_target(source), "cursor")
     _ = sync_agents_to_target(
         source, get_claude_agents_target(source), "claude-code", transform=True
     )

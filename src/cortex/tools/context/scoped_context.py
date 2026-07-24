@@ -17,7 +17,7 @@ from cortex.core.task_classifier import infer_task_type
 _FILE_PATH_RE = re.compile(
     (
         r"(?:^|[\s,])("
-        + r"(?:src|tests?|docs?|\.cortex|\.claude|\.cursor)/[^\s,)>\"']+"
+        + r"(?:src|tests?|docs?|\.cortex|\.claude)/[^\s,)>\"']+"
         + r"\.(?:py|ts|tsx|js|jsx|go|rs|swift|kt|java|rb|cs|md|yml|yaml|toml|json)"
         + r")"
     ),

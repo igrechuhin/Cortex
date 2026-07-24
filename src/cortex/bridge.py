@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """Stdio to Streamable HTTP bridge for Cortex MCP.
 
-Runs Cortex with streamable-http transport and proxies between Cursor (stdio)
-and Cortex (HTTP) so the user keeps a single on/off switch in Cursor while
-Cortex handles requests concurrently over HTTP.
+Runs Cortex with streamable-http transport and proxies between an MCP
+client (stdio) and Cortex (HTTP) so the user keeps a single on/off switch
+in their client while Cortex handles requests concurrently over HTTP.
 
 Requires: uv sync --extra server (or pip install cortex[server]).
 """

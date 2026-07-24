@@ -121,7 +121,7 @@ def make_phase_progress_callback(
     """Build (completed_checks, total_checks) callback for per-check heartbeats.
 
     Keeps the MCP connection alive by sending progress after each non-test
-    check completes, preventing Cursor from recreating the client during
+    check completes, preventing some MCP clients from recreating the client during
     long-running pipelines.
     """
     if ctx is None:

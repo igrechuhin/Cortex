@@ -29,7 +29,7 @@ INITIALIZE_PROMPT = """Please initialize Cortex in my project with complete setu
 This prompt performs complete project initialization including:
 1. Creating the .cortex/ directory structure (memory-bank, plans, config)
 2. Initializing Memory Bank with all 7 core files
-3. Setting up Cursor IDE integration (symlinks + mcp.json)
+3. Setting up the MCP server configuration (.mcp.json)
 4. Optionally setting up Synapse with default URL
 
 I need you to:
@@ -52,12 +52,9 @@ Generate all 7 core files from templates:
 - Initialize the metadata index at .cortex/index.json
 - Create initial snapshots in .cortex/history/
 
-**Step 3: Setup Cursor IDE integration**
-- Create .cursor/ directory with symlinks to .cortex/ subdirectories:
-  - .cursor/memory-bank -> ../.cortex/memory-bank
-  - .cursor/synapse -> ../.cortex/synapse
-  - .cursor/plans -> ../.cortex/plans
-- Create `.cursor/mcp.json` with MCP server configuration (for Cursor IDE users):
+**Step 3: Setup MCP server configuration**
+- Create `.mcp.json` in the project root with the MCP server configuration
+  (for Claude Code CLI users):
 {{
   "mcpServers": {{
     "cortex": {{
@@ -71,7 +68,6 @@ Generate all 7 core files from templates:
     "codegraph": <see Step 3b for the correct entry>
   }}
 }}
-- Also create `.mcp.json` in the project root with the same `mcpServers` content (for Claude Code CLI users).
   Use `"type": "stdio"` on the cortex entry if running from a local venv.
 
 **Step 3b: Initialize CodeGraph**
@@ -89,7 +85,7 @@ Resolve the binary, write the mcp.json entry, and index the project:
      (indexing on Node 25+ may be unstable; recommend Node 22 LTS for production)
    - If Node 20–24: no env override needed
 
-2. Write the resolved entry into both `.cursor/mcp.json` and `.mcp.json` under `mcpServers.codegraph`
+2. Write the resolved entry into `.mcp.json` under `mcpServers.codegraph`
    (merge, do not overwrite other keys).
 
 3. Run `CODEGRAPH_ALLOW_UNSAFE_NODE=1 node <path> init` (or `codegraph init`) in the project root:
@@ -179,19 +175,13 @@ Expected directory structure after initialization:
 ├── config/          # Configuration files
 └── history/         # Version history
 
-.cursor/ (symlinks for IDE compatibility):
-├── memory-bank -> ../.cortex/memory-bank
-├── synapse -> ../.cortex/synapse
-└── plans -> ../.cortex/plans
-
 Expected output format:
 {{
   "status": "success",
   "message": "Cortex initialized successfully",
-  "directories_created": [".cortex", ".cortex/memory-bank", ".cortex/plans", ".cortex/config", ".cursor"],
+  "directories_created": [".cortex", ".cortex/memory-bank", ".cortex/plans", ".cortex/config"],
   "files_created": 7,
-  "symlinks_created": [".cursor/memory-bank", ".cursor/synapse", ".cursor/plans"],
-  "config_files": [".cursor/mcp.json"],
+  "config_files": [".mcp.json"],
   "synapse_setup": <true/false>,
   "gitignore_updated": <true/false>,
   "detected_language": "<lang or unknown>",
@@ -227,10 +217,7 @@ to AI agents via MCP. It's 100% local, auto-syncing, and requires no cloud acces
 - If using a PATH-installed `codegraph` binary: skip this step (it manages its own runtime).
 
 **Step 2: Add codegraph to the MCP config**
-Determine the correct config file for the active agent:
-- Claude Code CLI: `.mcp.json` in the project root (create if missing with `{{"mcpServers": {{}}}}`)
-- Cursor IDE: `.cursor/mcp.json` (create if missing)
-- Both present: update both
+Use `.mcp.json` in the project root (create if missing with `{{"mcpServers": {{}}}}`).
 
 Merge the following entry under `mcpServers` — do NOT overwrite existing entries:
   - If binary is on PATH, Node 20–24:
@@ -309,12 +296,15 @@ This prompt performs complete migration including:
 2. Initializing new .cortex/ structure
 3. Migrating core files; relocating non-standard files
 4. Updating internal path references
-5. Replacing legacy directories with symlinks
+5. Removing legacy directories
 6. Validating migration
 
 **Step 1: Detect legacy structure**
 Check for legacy formats:
-- .cursor/memory-bank/ (old Cursor-centric format)
+- .cursor/memory-bank/ (old Cursor-centric format — a real directory, not a
+  symlink; a plain ``.cursor/memory-bank`` symlink is a leftover from a
+  pre-removal Cortex version and is cleaned up automatically on server start,
+  not by this migration)
 - memory-bank/ (root-level format)
 - .memory-bank/ (old standardized format)
 - Any other legacy locations
@@ -323,7 +313,7 @@ Check for legacy formats:
 First, create the new structure (same as initialize prompt):
 - Create .cortex/ directory structure (memory-bank, plans, config)
 - Initialize Memory Bank with 7 core files (if not already present)
-- Setup Cursor integration (symlinks + mcp.json) — include cortex, serena, and codegraph MCP server entries (same as initialize Step 3)
+- Setup MCP server configuration (.mcp.json) — include cortex, serena, and codegraph MCP server entries (same as initialize Step 3)
 - Update .gitignore (same as initialize Step 5)
 - Initialize CodeGraph index (same as initialize Step 3b)
 
@@ -387,8 +377,8 @@ For any OTHER files found in legacy memory-bank directories
 - Report each relocated file in the migration output
 
 Other directory mappings:
-- .cursor/synapse/ -> .cortex/synapse/ (+ symlink .cursor/synapse)
-- .cursor/plans/ -> .cortex/plans/ (+ symlink .cursor/plans)
+- .cursor/synapse/ -> .cortex/synapse/ (only if a real directory, not a symlink)
+- .cursor/plans/ -> .cortex/plans/ (only if a real directory, not a symlink)
 - rules/ -> .cortex/synapse/ (if using Synapse)
 - .plan/ -> .cortex/plans/
 - docs/plans/ -> .cortex/plans/
@@ -409,26 +399,21 @@ references and rewrite them:
 - .cursor/scripts/ -> remove or replace with actual tool invocations
 - .cursor/rules/ -> remove (rules now live in .cortex/synapse/)
 - Any instruction in memorybankinstructions.md that says to sync
-  .cursor/memory-bank/ or .cursor/rules/ should be updated to reflect
-  the .cortex/ paths (or removed if the sync step no longer applies)
+  .cursor/memory-bank/ or .cursor/rules/ should be removed — Cortex no
+  longer maintains a .cursor/ workspace
 
-**Step 6: Replace legacy directories with symlinks**
-After migrating all content:
-- Remove .cursor/memory-bank/ directory (the real files are now in .cortex/)
-- Create symlink: .cursor/memory-bank -> ../.cortex/memory-bank
-- Remove .cursor/plans/ directory
-- Create symlink: .cursor/plans -> ../.cortex/plans
-- Remove .cursor/synapse/ directory (if present)
-- Create symlink: .cursor/synapse -> ../.cortex/synapse
-- Verify each symlink resolves correctly
+**Step 5: Remove legacy directories**
+After migrating all content, remove the now-empty legacy directories
+(.cursor/memory-bank/, .cursor/plans/, .cursor/synapse/, memory-bank/,
+.memory-bank/, etc.). Do not recreate them or any symlinks under .cursor/ —
+Cortex no longer maintains a .cursor/ workspace; any leftover .cursor/
+artifacts (symlinks, synced agents, generated mcp.json) from a prior Cortex
+version are removed automatically the next time the Cortex MCP server
+starts.
 
-This ensures that tools reading .cursor/ paths still work while the
-authoritative content lives in .cortex/.
-
-**Step 7: Validate migration**
+**Step 6: Validate migration**
 - Verify all 7 core files exist in .cortex/memory-bank/
 - Verify any non-standard files were relocated to .cortex/notes/ (not left in memory-bank/)
-- Verify .cursor/ symlinks resolve to .cortex/ directories
 - Verify no stale .cursor/ path references remain in .cortex/memory-bank/ or .cortex/plans/ files
 - Ensure version history is intact
 
@@ -450,8 +435,7 @@ Expected output format:
     "plans": {{"from": "<old_location>", "to": ".cortex/plans/", "files": <count>}}
   }},
   "non_standard_files_relocated": ["<file1>", "<file2>"],
-  "directories_created": [".cortex", ".cortex/memory-bank", ".cortex/plans", ".cursor"],
-  "symlinks_created": [".cursor/memory-bank", ".cursor/synapse", ".cursor/plans"],
+  "directories_created": [".cortex", ".cortex/memory-bank", ".cortex/plans"],
   "path_references_updated": <count>,
   "gitignore_updated": <true/false>,
   "detected_language": "<lang or unknown>",
@@ -478,7 +462,7 @@ if (
         Creates:
         - .cortex/ directory structure (memory-bank, plans, config)
         - Memory bank with 7 core files
-        - Cursor integration (symlinks + mcp.json)
+        - MCP server configuration (.mcp.json)
         - Optional Synapse setup with default URL
         """
         _ = apply_project_post_edit_hook(Path.cwd())

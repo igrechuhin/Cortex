@@ -6,19 +6,16 @@ Tests structure creation, migration, health checks, and Cursor integration.
 """
 
 import json
-import platform
 import shutil
 from pathlib import Path
 from typing import cast
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 
 from cortex.core.path_resolver import (
     CortexResourceType,
-    CursorResourceType,
     get_cortex_path,
-    get_cursor_path,
 )
 from cortex.structure.manager import StructureManager
 
@@ -100,7 +97,6 @@ class TestStructureManagerInitialization:
         required_keys = [
             "version",
             "layout",
-            "cursor_integration",
             "housekeeping",
             "rules",
         ]
@@ -350,29 +346,16 @@ class TestStructureCreation:
 class TestLegacyStructureDetection:
     """Test detect_legacy_structure method."""
 
-    def test_detect_tradewing_style(self, tmp_path: Path):
-        """Test detection of TradeWing-style structure."""
-        # Arrange: create standard file; .cursor/plans may not be creatable in sandbox
-        (tmp_path / "projectBrief.md").touch()
-        with patch(
-            "cortex.structure.structure_migration.get_cursor_path",
-            return_value=MagicMock(exists=MagicMock(return_value=True)),
-        ):
-            # Act
-            detected = StructureManager(tmp_path).detect_legacy_structure()
-        # Assert
-        assert detected == "tradewing-style"
-
     def test_detect_doc_mcp_style(self, tmp_path: Path):
         """Test detection of doc-mcp-style structure."""
-        # Arrange: docs/memory-bank; .cursor/plans existence mocked (sandbox-safe)
+        # Arrange
         (tmp_path / "docs" / "memory-bank").mkdir(parents=True)
         (tmp_path / "docs" / "memory-bank" / "projectBrief.md").touch()
-        with patch(
-            "cortex.structure.structure_migration.get_cursor_path",
-            return_value=MagicMock(exists=MagicMock(return_value=True)),
-        ):
-            detected = StructureManager(tmp_path).detect_legacy_structure()
+
+        # Act
+        detected = StructureManager(tmp_path).detect_legacy_structure()
+
+        # Assert
         assert detected == "doc-mcp-style"
 
     def test_detect_scattered_files(self, tmp_path: Path):
@@ -391,20 +374,6 @@ class TestLegacyStructureDetection:
         # Assert
         assert detected == "scattered-files"
 
-    def test_detect_cursor_default(self, tmp_path: Path):
-        """Test detection of cursor-default structure."""
-        # Arrange
-        manager = StructureManager(tmp_path)
-
-        # Create only .cursorrules file
-        (tmp_path / ".cursorrules").touch()
-
-        # Act
-        detected = manager.detect_legacy_structure()
-
-        # Assert
-        assert detected == "cursor-default"
-
     def test_detect_returns_none_for_standard_structure(self, tmp_path: Path):
         """Test detect_legacy_structure returns None when no legacy detected."""
         # Arrange
@@ -419,81 +388,6 @@ class TestLegacyStructureDetection:
 
         # Assert
         assert detected is None
-
-
-# ============================================================================
-# Test Cursor Integration
-# ============================================================================
-
-
-class TestCursorIntegration:
-    """Test setup_cursor_integration method."""
-
-    async def test_setup_cursor_integration_creates_symlinks(self, tmp_path: Path):
-        """Test setup creates symlinks for Cursor IDE."""
-        # Arrange
-        manager = StructureManager(tmp_path)
-        _ = await manager.create_structure()
-
-        # Act
-        _ = manager.setup_cursor_integration()
-
-        # Assert
-        cursor_dir = get_cursor_path(tmp_path, CursorResourceType.CURSOR_DIR)
-        assert cursor_dir.exists()
-        assert (cursor_dir / "memory-bank").exists()
-        assert (cursor_dir / "rules").exists()
-        assert (cursor_dir / "plans").exists()
-
-    @pytest.mark.skipif(platform.system() == "Windows", reason="Unix-only test")
-    async def test_setup_cursor_integration_creates_unix_symlinks(self, tmp_path: Path):
-        """Test symlinks are actual symlinks on Unix systems."""
-        # Arrange
-        manager = StructureManager(tmp_path)
-        _ = await manager.create_structure()
-
-        # Act
-        _ = manager.setup_cursor_integration()
-
-        # Assert
-        cursor_dir = get_cursor_path(tmp_path, CursorResourceType.CURSOR_DIR)
-        assert (cursor_dir / "memory-bank").is_symlink()
-        assert (cursor_dir / "rules").is_symlink()
-        assert (cursor_dir / "plans").is_symlink()
-
-    async def test_setup_cursor_integration_handles_existing_symlinks(
-        self, tmp_path: Path
-    ):
-        """Test setup handles existing symlinks gracefully."""
-        # Arrange
-        manager = StructureManager(tmp_path)
-        _ = await manager.create_structure()
-        _ = manager.setup_cursor_integration()  # Create first time
-
-        # Act - Run again
-        _ = manager.setup_cursor_integration()
-
-        # Assert - Should not error, might skip or recreate
-        # Second call should complete without errors
-
-    async def test_setup_cursor_integration_reports_errors(self, tmp_path: Path):
-        """Test setup reports errors when symlink creation fails."""
-        # Arrange
-        manager = StructureManager(tmp_path)
-        _ = await manager.create_structure()
-
-        # Make .cursor unwritable
-        cursor_dir = get_cursor_path(tmp_path, CursorResourceType.CURSOR_DIR)
-        cursor_dir.mkdir(exist_ok=True)
-
-        with patch("os.symlink", side_effect=OSError("Cannot create symlink")):
-            # Act
-            report = manager.setup_cursor_integration()
-
-            # Assert
-            assert isinstance(report, dict)
-            errors = report.get("errors", [])
-            assert isinstance(errors, list)
 
 
 # ============================================================================
@@ -545,14 +439,14 @@ class TestStructureHealthChecks:
         assert isinstance(issues, list)
         assert len(issues) > 0
 
-    async def test_check_structure_health_detects_broken_symlinks(self, tmp_path: Path):
-        """Test health check detects broken symlinks."""
+    async def test_check_structure_health_detects_missing_memory_bank(
+        self, tmp_path: Path
+    ):
+        """Test health check detects a removed memory bank directory."""
         # Arrange
         manager = StructureManager(tmp_path)
         _ = await manager.create_structure()
-        _ = manager.setup_cursor_integration()
 
-        # Break a symlink by removing target
         memory_bank_dir = manager.get_path("memory_bank")
         if memory_bank_dir.exists():
             shutil.rmtree(memory_bank_dir)
@@ -564,7 +458,7 @@ class TestStructureHealthChecks:
         score_val = health.get("score", 0)
         assert isinstance(score_val, (int, float))
         score = int(score_val)
-        # Score should be reduced due to broken symlink
+        # Score should be reduced due to the missing directory
         assert score < 100
 
     def test_check_structure_health_provides_recommendations(self, tmp_path: Path):
@@ -717,17 +611,17 @@ class TestStructureInfo:
 class TestMigrationWorkflows:
     """Test migrate_legacy_structure method."""
 
-    async def test_migrate_legacy_structure_migrates_tradewing(self, tmp_path: Path):
-        """Test migration of TradeWing-style structure."""
+    async def test_migrate_legacy_structure_migrates_doc_mcp_style(
+        self, tmp_path: Path
+    ):
+        """Test migration of doc-mcp-style structure."""
         # Arrange
         manager = StructureManager(tmp_path)
 
-        # Create TradeWing-style files
-        _ = (tmp_path / "projectBrief.md").write_text("# Project Brief")
-        get_cursor_path(tmp_path, CursorResourceType.CURSOR_DIR).mkdir()
-        plans_dir = get_cursor_path(tmp_path, CursorResourceType.PLANS)
-        plans_dir.mkdir(parents=True, exist_ok=True)
-        _ = (plans_dir / "plan1.md").write_text("# Plan 1")
+        # Create doc-mcp-style files
+        docs_mb = tmp_path / "docs" / "memory-bank"
+        docs_mb.mkdir(parents=True, exist_ok=True)
+        _ = (docs_mb / "projectBrief.md").write_text("# Project Brief")
 
         # Act
         report = await manager.migrate_legacy_structure()

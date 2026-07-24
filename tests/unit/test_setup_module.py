@@ -14,7 +14,6 @@ def test_should_mount_setup_returns_true_when_memory_bank_not_initialized() -> N
     config = ProjectConfigStatus(
         memory_bank_initialized=False,
         structure_configured=True,
-        cursor_integration_configured=True,
         migration_needed=False,
         tiktoken_cache_available=True,
         codegraph_configured=True,
@@ -27,7 +26,6 @@ def test_should_mount_setup_returns_true_when_structure_not_configured() -> None
     config = ProjectConfigStatus(
         memory_bank_initialized=True,
         structure_configured=False,
-        cursor_integration_configured=True,
         migration_needed=False,
         tiktoken_cache_available=True,
         codegraph_configured=True,
@@ -40,7 +38,6 @@ def test_should_mount_setup_returns_true_when_migration_needed() -> None:
     config = ProjectConfigStatus(
         memory_bank_initialized=True,
         structure_configured=True,
-        cursor_integration_configured=True,
         migration_needed=True,
         tiktoken_cache_available=True,
         codegraph_configured=True,
@@ -53,7 +50,6 @@ def test_should_mount_setup_returns_false_when_fully_configured() -> None:
     config = ProjectConfigStatus(
         memory_bank_initialized=True,
         structure_configured=True,
-        cursor_integration_configured=True,
         migration_needed=False,
         tiktoken_cache_available=True,
         codegraph_configured=True,
@@ -68,7 +64,6 @@ def test_should_mount_setup_calls_get_project_config_status_when_config_none() -
         return_value=ProjectConfigStatus(
             memory_bank_initialized=True,
             structure_configured=True,
-            cursor_integration_configured=True,
             migration_needed=False,
             tiktoken_cache_available=True,
             codegraph_configured=True,

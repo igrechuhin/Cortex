@@ -390,7 +390,7 @@ async def autofix_impl(
 
     Mirrors run_quality_gate's detached-subprocess + polling pattern so the
     asyncio event loop is never blocked: the MCP stdio transport stays alive
-    and Cursor does not drop the connection during long-running fix operations.
+    and some MCP clients do not drop the connection during long-running fix operations.
     """
     tracked_before = _get_tracked_git_changes(root)
     await report_progress_safe(ctx, 5.0, 100.0)

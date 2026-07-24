@@ -235,7 +235,6 @@ HEALTH_GRADE_C_MIN = 60  # C grade: 60-74
 HEALTH_GRADE_D_MIN = 50  # D grade: 50-59; below 50 is F
 HEALTH_INITIAL_SCORE = 100  # Starting score before deductions
 HEALTH_PENALTY_PER_MISSING_DIR = 15  # Deduction per missing required directory
-HEALTH_PENALTY_BROKEN_SYMLINK = 10  # Deduction per broken Cursor symlink
 HEALTH_PENALTY_NO_CONFIG = 10  # Deduction when config file missing
 HEALTH_PENALTY_NO_MEMORY_BANK_FILES = 5  # Deduction when no .md files in memory_bank
 

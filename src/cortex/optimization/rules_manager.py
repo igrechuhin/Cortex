@@ -2,7 +2,7 @@
 Rules management for custom project rules integration.
 
 This module provides functionality to manage custom rules from a specified
-folder (e.g., .cursorrules, .ai-rules) and make them available for
+folder (e.g., .cortex/rules, .ai-rules) and make them available for
 context optimization and relevance scoring. It delegates indexing operations
 to RulesIndexer, hybrid resolution to RulesHybridMixin, and scoring /
 budget selection to RulesScoringMixin.

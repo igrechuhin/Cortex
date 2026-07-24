@@ -51,7 +51,7 @@ class SynapseManager:
         self,
         project_root: Path,
         synapse_folder: str = ".cortex/synapse",
-        local_rules_folder: str = ".cursorrules",
+        local_rules_folder: str = ".cortex/rules",
         language_keywords: dict[str, list[str]] | None = None,
         synapse_repo: str | None = None,
         auto_sync: bool = True,

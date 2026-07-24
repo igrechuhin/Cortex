@@ -4,10 +4,7 @@ Structural checks for mandatory final-report guidance in primary Synapse prompts
 Ensures each primary workflow prompt references the canonical template doc and
 uses the correct report structure (Pipeline, Diagnostic, or Artifact).
 
-Repository policy: optional `.cursor/commands/*.md` is intentionally unsupported in
-git (`/.cursor/` is ignored). Do not add stub command files to satisfy these tests;
-when no command markdown exists, the Cursor-commands test skips. Canonical workflows
-live under `.cortex/synapse/prompts/`.
+Canonical workflows live under `.cortex/synapse/prompts/`.
 """
 
 from pathlib import Path
@@ -77,21 +74,21 @@ def _synapse_prompts_dir() -> Path:
     return get_cortex_path(_repo_root(), CortexResourceType.SYNAPSE) / "prompts"
 
 
-def _cursor_implement_code_agent_path() -> Path:
-    """Return Synapse source path for the Cursor implement-code subagent."""
+def _claude_implement_code_agent_path() -> Path:
+    """Return Synapse source path for the implement-code Claude Code subagent."""
     return (
         get_cortex_path(_repo_root(), CortexResourceType.SYNAPSE)
-        / "cursor-agents"
+        / "claude-agents"
         / "implement-code.md"
     )
 
 
-def _read_cursor_implement_code_agent() -> str:
-    """Read Synapse source for the Cursor implement-code subagent."""
-    path = _cursor_implement_code_agent_path()
+def _read_claude_implement_code_agent() -> str:
+    """Read Synapse source for the implement-code Claude Code subagent."""
+    path = _claude_implement_code_agent_path()
     if not path.exists():
         pytest.skip(
-            f"(ref: cleanup-skipped-legacy-tests) cursor agent source not found at {path}"
+            f"(ref: cleanup-skipped-legacy-tests) claude agent source not found at {path}"
         )
     return path.read_text()
 
@@ -102,27 +99,6 @@ def _read_prompt(name: str) -> str:
     if not path.exists():
         pytest.skip(f"(ref: cleanup-skipped-legacy-tests) prompt not found at {path}")
     return path.read_text()
-
-
-def _cursor_commands_md_paths() -> list[Path]:
-    """Return sorted paths to `.cursor/commands/*.md` when present (optional).
-
-    Cursor command markdown is not required in this repository: Synapse prompts
-    under `.cortex/synapse/prompts/` are canonical. If a developer adds local
-    `*.md` under `.cursor/commands/`, they must still reference the shared
-    final-report template (see `test_cursor_commands_align_with_final_report_template`).
-    """
-    root = _repo_root() / ".cursor" / "commands"
-    if not root.is_dir():
-        pytest.skip(
-            "(ref: cleanup-skipped-legacy-tests) .cursor/commands directory not found"
-        )
-    paths = sorted(p for p in root.glob("*.md") if p.is_file())
-    if not paths:
-        pytest.skip(
-            "(ref: optional-cursor-commands) no .cursor/commands/*.md — workflows live under .cortex/synapse/prompts/; skip alignment check"
-        )
-    return paths
 
 
 def _get_required_markers(filename: str) -> tuple[str, ...]:
@@ -160,20 +136,9 @@ def test_primary_prompt_has_final_report_section(filename: str) -> None:
     _assert_final_report_markers(path, content, filename)
 
 
-def test_cursor_commands_align_with_final_report_template() -> None:
-    """Cursor workflow commands mirror Synapse final-report expectations."""
-    for path in _cursor_commands_md_paths():
-        content = path.read_text()
-        # Cursor commands should have the heading and template ref
-        # but may use any report type based on the workflow they wrap
-        assert (
-            _FINAL_REPORT_HEADING in content or _TEMPLATE_REF in content
-        ), f"{path} missing final report heading or template reference"
-
-
-def test_cursor_implement_code_agent_documents_final_report_handoff_split() -> None:
-    """Cursor implement-code subagent defers user-facing final report to orchestrator."""
-    content = _read_cursor_implement_code_agent()
+def test_claude_implement_code_agent_documents_final_report_handoff_split() -> None:
+    """implement-code Claude Code subagent defers user-facing final report to orchestrator."""
+    content = _read_claude_implement_code_agent()
     assert _TEMPLATE_REF in content
     assert "orchestrator" in content
     assert "pipeline_handoff" in content

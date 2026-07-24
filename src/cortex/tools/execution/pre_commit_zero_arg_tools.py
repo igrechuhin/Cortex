@@ -250,7 +250,7 @@ async def _spawn_and_poll_phase_a(
     This keeps the MCP stdio connection alive by yielding to the event loop
     every 2 seconds (via asyncio.sleep in poll_for_result), allowing
     progress notifications to flow. Without this, long-running in-process
-    checks block the event loop and Cursor drops the connection.
+    checks block the event loop and some MCP clients drop the connection.
 
     Acquires ``get_phase_a_lock()`` before spawning to prevent concurrent
     Phase-A jobs, which race on shared session files and crash the MCP server.
@@ -430,7 +430,7 @@ async def run_docs_gate(
     USE WHEN: Validating that timestamps, roadmap_sync, and memory-bank files
     are consistent after documentation updates. Called by the commit-docs
     subagent as a zero-arg alternative to execute_pre_commit_checks(phase="B")
-    (which Cursor's MCP bridge zero-args to Phase A, running tests instead).
+    (which some MCP client bridges zero-arg to Phase A, running tests instead).
 
     RETURNS: JSON with docs_phase_passed (bool), timestamps_result, and
     roadmap_sync_result. Does NOT run tests or code quality checks.

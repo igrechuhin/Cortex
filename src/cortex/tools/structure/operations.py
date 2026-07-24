@@ -10,6 +10,9 @@ from cortex.core.file_system import FileSystemManager
 from cortex.core.metadata_index import MetadataIndex
 from cortex.core.models import JsonDict
 from cortex.core.token_counter import TokenCounter
+from cortex.structure.lifecycle.legacy_cursor_cleanup import (
+    cleanup_legacy_cursor_artifacts,
+)
 from cortex.structure.manager import StructureManager
 from cortex.tools.structure.structure_models import CleanupActionResult, CleanupReport
 
@@ -19,7 +22,7 @@ def _get_default_cleanup_actions() -> list[str]:
     return [
         "archive_stale",
         "organize_plans",
-        "fix_symlinks",
+        "remove_legacy_cursor_artifacts",
         "update_index",
         "remove_empty",
     ]
@@ -37,8 +40,8 @@ async def _execute_cleanup_actions(
     if "archive_stale" in cleanup_actions:
         perform_archive_stale(structure_mgr, stale_days, dry_run, cleanup_report)
 
-    if "fix_symlinks" in cleanup_actions:
-        perform_fix_symlinks(structure_mgr, cleanup_report)
+    if "remove_legacy_cursor_artifacts" in cleanup_actions:
+        perform_remove_legacy_cursor_artifacts(project_root, cleanup_report)
 
     if "update_index" in cleanup_actions:
         await perform_update_index(project_root, dry_run, cleanup_report)
@@ -96,7 +99,7 @@ def record_archive_action(report: CleanupReport, stale_plans: list[Path]) -> Non
             action="archive_stale",
             stale_plans_found=len(stale_plans),
             files=[p.name for p in stale_plans],
-            symlinks_fixed=None,
+            legacy_cursor_artifacts_removed=None,
         )
     )
 
@@ -136,23 +139,22 @@ def perform_archive_stale(
         move_stale_plans(plans_archived, stale_plans, report)
 
 
-def perform_fix_symlinks(
-    structure_mgr: StructureManager, report: CleanupReport
+def perform_remove_legacy_cursor_artifacts(
+    project_root: Path, report: CleanupReport
 ) -> None:
-    """Fix broken Cursor symlinks."""
-    cursor_report = structure_mgr.setup_cursor_integration()
-    symlinks_created_raw = cursor_report.get("symlinks_created", [])
-    symlinks_created: list[str] = (
-        [str(x) for x in symlinks_created_raw]
-        if isinstance(symlinks_created_raw, list)
-        else []
+    """Remove leftover .cursor/ artifacts from a pre-removal Cortex version."""
+    cleanup_result = cleanup_legacy_cursor_artifacts(project_root)
+    removed_count = (
+        len(cleanup_result.removed_symlinks)
+        + len(cleanup_result.removed_agent_files)
+        + len(cleanup_result.removed_mcp_configs)
     )
     report.actions_performed.append(
         CleanupActionResult(
-            action="fix_symlinks",
+            action="remove_legacy_cursor_artifacts",
             stale_plans_found=None,
             files=[],
-            symlinks_fixed=len(symlinks_created),
+            legacy_cursor_artifacts_removed=removed_count,
         )
     )
 
@@ -235,7 +237,7 @@ async def perform_update_index(
                 action="update_index",
                 stale_plans_found=None,
                 files=updated_files,
-                symlinks_fixed=None,
+                legacy_cursor_artifacts_removed=None,
             )
         )
         if not dry_run:
@@ -267,6 +269,6 @@ def perform_remove_empty(
                 action="remove_empty",
                 files=[str(d) for d in empty_dirs],
                 stale_plans_found=None,
-                symlinks_fixed=None,
+                legacy_cursor_artifacts_removed=None,
             )
         )

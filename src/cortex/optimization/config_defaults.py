@@ -53,7 +53,7 @@ DEFAULT_OPTIMIZATION_CONFIG: dict[str, object] = {
     },
     "rules": {
         "enabled": False,
-        "rules_folder": ".cursorrules",
+        "rules_folder": ".cortex/rules",
         "reindex_interval_minutes": 30,
         "auto_include_in_context": True,
         "max_rules_tokens": 5000,

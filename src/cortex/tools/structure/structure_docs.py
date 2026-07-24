@@ -26,16 +26,16 @@ CHECK_STRUCTURE_HEALTH_DOC = """Analyze project structure health and optionally 
     actions to maintain structure integrity and archive stale content.
 
     Health checks validate:
-    - Required directories (.cursor/, .cursor/memory-bank/, .cursor/plans/, etc.)
-    - Symlink validity and targets (memory-bank/ → .cursor/memory-bank/)
-    - Configuration files existence and validity (.cursor/structure.json)
+    - Required directories (.cortex/, .cortex/memory-bank/, .cortex/plans/, etc.)
+    - Configuration files existence and validity (.cortex/config/structure.json)
+    - No leftover .cursor/ artifacts from a pre-removal Cortex version
     - File organization (plans in correct subdirectories, no orphaned files)
     - Memory bank file presence (projectBrief.md, activeContext.md, etc.)
 
     Cleanup actions (when perform_cleanup=True):
     - archive_stale: Move inactive plans older than stale_days to archived/
     - organize_plans: Categorize plans by status (active/completed/archived)
-    - fix_symlinks: Repair broken Cursor symlinks (memory-bank/, rules/)
+    - remove_legacy_cursor_artifacts: Remove leftover .cursor/ artifacts (symlinks, synced agents, generated mcp.json) from a pre-removal Cortex version
     - update_index: Refresh metadata index (.cortex/index.json)
     - remove_empty: Remove empty plan directories (active/, completed/, archived/)
 

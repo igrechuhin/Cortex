@@ -24,7 +24,7 @@ Cortex follows MCP semantics: **Resources** are GET-like (read-only, load data i
 
 ## Commit and quality pipeline (zero-arg MCP tools)
 
-Contributor and agent workflows should use these **zero-argument** Cortex MCP tools for the quality pipeline. Cursor-class clients often strip JSON tool parameters, so these tools read optional overrides from pipeline task files written by `pipeline_handoff()` instead of requiring call-time arguments.
+Contributor and agent workflows should use these **zero-argument** Cortex MCP tools for the quality pipeline. Some MCP client bridges often strip JSON tool parameters, so these tools read optional overrides from pipeline task files written by `pipeline_handoff()` instead of requiring call-time arguments.
 
 | Use case | Tool |
 |----------|------|
@@ -138,7 +138,7 @@ Day-to-day agent workflows should follow [AGENTS.md](../../AGENTS.md) and the [C
 | Legacy | Zero-arg replacement | Notes |
 |--------|----------------------|-------|
 | `execute_pre_commit_checks(...)` with explicit checks or phase | `run_quality_gate()` for Phase A; `run_docs_gate()` for Phase B docs/memory validation | Write `pipeline_handoff` **commit** / **checks** task JSON first when you need non-default `test_timeout`, `coverage_threshold`, `force_fresh`, or reflection flags. |
-| `start_quality_job` + `get_quality_job_status` polling | `run_quality_gate()` (blocking end-to-end) or `autofix()` then `run_quality_gate()` | Cursor's MCP bridge often delivers `{}` to parameterized tools; zero-arg tools read session config instead. |
+| `start_quality_job` + `get_quality_job_status` polling | `run_quality_gate()` (blocking end-to-end) or `autofix()` then `run_quality_gate()` | Some MCP client bridges often deliver `{}` to parameterized tools; zero-arg tools read session config instead. |
 
 ### MCP Tool Annotations
 
@@ -1351,14 +1351,14 @@ Index custom rules from configured rules folder.
 - `force` (bool) - Force reindexing even if recently indexed (default: False)
 **Description:**
 
-Scans the rules folder (e.g., `.cursorrules`) and indexes all rule files for use in context optimization.
+Scans the rules folder (e.g., `.cortex/rules`) and indexes all rule files for use in context optimization.
 
 **Returns:**
 
 ```json
 {
   "status": "success",
-  "message": "Indexed 12 rules from .cursorrules",
+  "message": "Indexed 12 rules from .cortex/rules",
   "rules_indexed": 12,
   "total_tokens": 3500,
   "rules_by_category": {
@@ -2390,7 +2390,6 @@ Creates the standardized `.cortex/` directory structure including:
 - `synapse/rules/` (or `rules/`) for rules
 - `plans/` directory with templates
 - `config/` directory for configuration
-- Cursor IDE integration via symlinks
 
 **Returns:**
 
@@ -2409,16 +2408,11 @@ Creates the standardized `.cortex/` directory structure including:
       ".cortex/memory-bank/projectBrief.md",
       ".cortex/config/structure.json"
     ],
-    "symlinks_created": [
-      "memory-bank under .cursor/ -> ../.cortex/memory-bank",
-      ".cursor/plans -> ../.cortex/plans"
-    ],
     "shared_rules_setup": false
   },
   "next_steps": [
     "Edit .cortex/memory-bank/projectBrief.md to document your project",
-    "Customize rules in .cortex/synapse/rules/",
-    "Use setup_cursor_integration() if symlinks weren't created"
+    "Customize rules in .cortex/synapse/rules/"
   ]
 }
 ```
@@ -2432,10 +2426,8 @@ Migrate from legacy structure to standardized `.cortex/` structure.
 **Parameters:**
 
 - `legacy_type` (str | None) - Type of legacy structure (auto-detected if not provided)
-  - `"tradewing-style"` - Files in root + .cursor/plans
   - `"doc-mcp-style"` - docs/memory-bank structure
   - `"scattered-files"` - Memory bank files throughout project
-  - `"cursor-default"` - Just .cursorrules file
 - `backup` (bool) - Create backup of existing files before migration (default: True)
 - `archive` (bool) - Archive legacy files after migration (default: True)
 - `dry_run` (bool) - Preview migration without making changes (default: False)
@@ -2451,7 +2443,7 @@ Migrates from various legacy structures to the standardized format. Supports mul
   "success": true,
   "message": "Migration completed successfully",
   "report": {
-    "legacy_type": "tradewing-style",
+    "legacy_type": "doc-mcp-style",
     "backup_created": true,
     "backup_path": "/path/to/project/.cortex-backup-20251225",
     "files_migrated": {
@@ -2460,50 +2452,15 @@ Migrates from various legacy structures to the standardized format. Supports mul
       "plans": 5
     },
     "files_archived": {
-      "old_memory_bank": 7,
-      "old_cursorrules": 1
+      "old_memory_bank": 7
     },
-    "structure_created": true,
-    "symlinks_created": true
+    "structure_created": true
   },
   "next_steps": [
     "Review migrated files in .cortex/memory-bank/",
     "Update any broken links using validate_links()",
     "Archive old structure if everything looks correct"
   ]
-}
-```
-
----
-
-### setup_cursor_integration
-
-Setup Cursor IDE integration via symlinks.
-
-**Parameters:**
-
-- `force` (bool) - Force recreation of symlinks even if they exist (default: False)
-
-**Description:**
-
-Creates symlinks in `.cursor/` directory pointing to `.cortex/` structure. Works cross-platform (Unix/macOS with symlinks, Windows with junctions).
-
-**Returns:**
-
-```json
-{
-  "success": true,
-  "message": "Cursor integration setup successfully",
-  "report": {
-    "platform": "darwin",
-    "symlinks_created": [
-      "memory-bank under .cursor/ -> ../.cortex/memory-bank",
-      ".cursor/rules -> ../.cortex/synapse/rules",
-      ".cursor/plans -> ../.cortex/plans"
-    ],
-    "symlinks_recreated": 0,
-    "errors": []
-  }
 }
 ```
 
@@ -2689,14 +2646,6 @@ Get current project structure configuration, paths, and status. No parameters (p
       "active_plans": 3,
       "completed_plans": 12,
       "archived_plans": 45
-    },
-    "cursor_integration": {
-      "enabled": true,
-      "symlinks": [
-        "memory-bank under .cursor/ -> ../.cortex/memory-bank",
-        ".cursor/rules -> ../.cortex/synapse/rules",
-        ".cursor/plans -> ../.cortex/plans"
-      ]
     },
     "health": {
       "score": 85,

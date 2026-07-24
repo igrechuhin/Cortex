@@ -82,7 +82,7 @@ def typed_mcp_tool(
     tool_params = inspect.signature(_mcp.tool).parameters
     tool_factory = cast(Callable[..., object], _mcp.tool)
     tool_kwargs: dict[str, object] = {"annotations": annotations}
-    # AI: Suppress auto-generated outputSchema so Cursor doesn't require
+    # AI: Suppress auto-generated outputSchema so some MCP clients don't require
     # structuredContent in the response. fastmcp v3 uses output_schema=None;
     # older SDK versions used structured_output=False.
     if "output_schema" in tool_params:

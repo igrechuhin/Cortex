@@ -38,7 +38,6 @@ _RULE_FILE_PATTERNS: frozenset[str] = frozenset(
         "*.txt",
         "*.rules",
         "*rules*",
-        ".cursorrules",
         ".ai-rules",
         ".clinerules",
     ]

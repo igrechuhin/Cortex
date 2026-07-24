@@ -22,13 +22,13 @@ class TestSynapseManagerInitialization:
         manager = SynapseManager(
             project_root=temp_project_root,
             synapse_folder=".shared-rules",
-            local_rules_folder=".cursorrules",
+            local_rules_folder=".cortex/rules",
         )
 
         # Assert
         assert manager.project_root == temp_project_root
         assert manager.synapse_path == temp_project_root / ".shared-rules"
-        assert manager.local_rules_path == temp_project_root / ".cursorrules"
+        assert manager.local_rules_path == temp_project_root / ".cortex/rules"
         assert manager.manifest is None
         assert manager.last_sync is None
         assert isinstance(manager.context_detector, ContextDetector)

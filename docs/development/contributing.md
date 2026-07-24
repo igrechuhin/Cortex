@@ -121,7 +121,7 @@ uv sync --python 3.13 --dev
 Configure your IDE to use the correct Python interpreter:
 
 - **Path**: `.venv/bin/python` (or `.venv\Scripts\python.exe` on Windows)
-- **Cursor/VS Code**: Open `.venv/bin/python` in the Python interpreter selection dialog
+- **VS Code-based editors**: Open `.venv/bin/python` in the Python interpreter selection dialog
 - **Type checking**: Enable Pyright with strict mode
 
 ### Type checking strategy
@@ -170,8 +170,7 @@ cortex/
 │   ├── synapse/                  # Synapse rules and scripts (git submodule)
 │   ├── plans/                    # Implementation plans
 │   └── ...                       # config, history, session artifacts
-├── .cursor/                      # Cursor IDE configuration (MCP client config, optional local files)
-│   └── ...                       # Rules source of truth: `.cortex/synapse/rules` (see AGENTS.md)
+├── .mcp.json                     # MCP server configuration (Claude Code and other MCP clients)
 ├── pyproject.toml               # Project configuration
 ├── README.md                    # Project overview
 ├── CLAUDE.md                    # Claude Code instructions
@@ -203,7 +202,7 @@ See [CLAUDE.md](../../CLAUDE.md) for the complete services initialization order.
 
 ### Quality checks: human (local) vs agent (MCP)
 
-Use the path that matches your role. **Agents** (IDE automation, Cursor commands, MCP-connected assistants) **must** use the **Agent (MCP)** column — direct formatter, linter, or raw `pytest` invocation by agents is a governance violation per [AGENTS.md](../../AGENTS.md).
+Use the path that matches your role. **Agents** (IDE automation, Claude Code subagents, MCP-connected assistants) **must** use the **Agent (MCP)** column — direct formatter, linter, or raw `pytest` invocation by agents is a governance violation per [AGENTS.md](../../AGENTS.md).
 
 | Task | Human (local CLI) | Agent (MCP) |
 | --- | --- | --- |

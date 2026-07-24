@@ -15,7 +15,7 @@ help:
 	@echo "  make check              - non-mutating: format-check + lint + typecheck + test"
 	@echo "  make check-dep-parity   - verify pyproject.toml [project.dependencies] matches requirements.txt"
 	@echo "  make check-ci-parity    - broader CI-equivalent checks via uv run (see README)"
-	@echo "  make commit-check       - same as make check before /cortex/commit in Cursor"
+	@echo "  make commit-check       - same as make check before /cortex/commit"
 	@echo "  make dev                - run FastMCP inspector with hot reload"
 	@echo "  make preflight          - probe UV_INDEX_URL or PyPI (scripts/preflight.sh)"
 

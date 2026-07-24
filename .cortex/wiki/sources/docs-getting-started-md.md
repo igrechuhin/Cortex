@@ -84,7 +84,7 @@ To use Cortex with Claude Desktop or other MCP clients, add it to your MCP confi
 }
 ```
 
-**For Cursor IDE** (`.cursor/mcp_config.json`):
+**For Claude Code / other MCP-aware clients** (`.mcp.json` in the project root):
 
 ```json
 {
@@ -98,22 +98,22 @@ To use Cortex with Claude Desktop or other MCP clients, add it to your MCP confi
 }
 ```
 
-**Stable MCP by default** — Cortex **exits** when the connection drops (e.g. client disconnect). The client (e.g. Cursor) starts a new process when it next needs MCP, so the next session gets a **fresh Initialize handshake with no user action** (no reload needed). Run `uvx cortex` (or `uv run cortex`) as usual. Optional: set `CORTEX_AUTO_RESTART=1` to respawn the server in-process under the same pipe (then you may need to reload MCP after a disconnect to restore tools).
+**Stable MCP by default** — Cortex **exits** when the connection drops (e.g. client disconnect). The client starts a new process when it next needs MCP, so the next session gets a **fresh Initialize handshake with no user action** (no reload needed). Run `uvx cortex` (or `uv run cortex`) as usual. Optional: set `CORTEX_AUTO_RESTART=1` to respawn the server in-process under the same pipe (then you may need to reload MCP after a disconnect to restore tools).
 
-The same Cursor config as above (command `uvx`, args `["--from", "git+...", "cortex"]`) is enough.
+The same `.mcp.json` config as above (command `uvx`, args `["--from", "git+...", "cortex"]`) is enough.
 
 ### Stable MCP setup (recommended)
 
 For the most stable MCP experience:
 
 1. **Default: exit on disconnect** — The process exits when the connection drops. The client starts a new process when it next needs MCP, so you get a fresh session and no "0 tools" state without reloading. No user action required.
-2. **Optional: use the bridge** for concurrent request handling (fewer timeouts when the client does many things at once). In Cursor, set the MCP server command to the bridge instead of Cortex directly:
+2. **Optional: use the bridge** for concurrent request handling (fewer timeouts when the client does many things at once). Set the MCP server command to the bridge instead of Cortex directly:
    - **Command**: `uv run python -m cortex.bridge` (from a clone; requires `uv sync --extra server`).
-   - The bridge runs Cortex over HTTP and proxies stdio ↔ HTTP; one switch in Cursor, same tools.
+   - The bridge runs Cortex over HTTP and proxies stdio ↔ HTTP; one switch in your client config, same tools.
 3. **Faster markdown lint** (reduces chance of client timeout during long tools): from project root run `make bootstrap` so `fix_markdown_lint` uses the local `rumdl` binary from the Python virtualenv instead of relying on external tooling.
 4. **During long runs** (e.g. commit, pre-commit): avoid opening UI that triggers many MCP resource reads at once (e.g. MCP resources panel); prefer tool calls over `cortex://` resources.
-5. **Automatic recovery (no manual reload)** — Install the [Cursor MCP Refresh](https://github.com/tankmurdock/cursor-mcp-refresh) extension and set **Auto-refresh interval** (e.g. 60–300 seconds). It periodically refreshes MCP servers, so after a disconnect or "0 tools" state the next refresh restores tools without you toggling. Install from the [releases `.vsix`](https://github.com/tankmurdock/cursor-mcp-refresh/releases) via **Extensions: Install from VSIX**.
-6. **If you see "0 tools"** and don't use the extension: reload MCP manually or see [Troubleshooting: Found 0 tools](guides/troubleshooting.md#issue-mcp-0-tools).
+5. **Automatic recovery (no manual reload)** — If your MCP client supports an auto-refresh interval for its server list (e.g. 60–300 seconds), enable it so a disconnect or "0 tools" state clears itself on the next refresh without you toggling anything.
+6. **If you see "0 tools"** and your client has no auto-refresh: reload MCP manually or see [Troubleshooting: Found 0 tools](guides/troubleshooting.md#issue-mcp-0-tools).
 7. **Pre-warm `uvx` from Git (cold cache)** — The first run after a fresh install, a new machine, or `uv cache clean` can spend a long time on `Preparing packages…` while uv resolves `git+HEAD`, fetches PyPI wheels, and builds/installs Cortex into `~/.cache/uv` and `~/.local/share/uv/tools/`. Some clients abort MCP startup with **Request timed out** (`-32001`) if Initialize does not finish in time. Run the same entrypoint once in a terminal so the cache is hot before the IDE starts the server:
 
    ```bash
@@ -128,12 +128,12 @@ Details and troubleshooting: [MCP disconnections and connection closed](guides/t
 
 ### 1. Initialize a Memory Bank
 
-Use the **initialize** prompt to create a new Memory Bank and `.cortex/` structure. In Cursor (or any AI assistant with Cortex MCP), invoke the initialize prompt. It creates:
+Use the **initialize** prompt to create a new Memory Bank and `.cortex/` structure. In any AI assistant with Cortex MCP configured (e.g. Claude Code), invoke the initialize prompt. It creates:
 
 - `.cortex/memory-bank/` directory with core files
 - `.cortex/index.json` for metadata
 - All 7 core memory bank files (projectBrief.md, activeContext.md, progress.md, roadmap.md, and others)
-- Cursor IDE integration (symlinks, mcp config)
+- `.mcp.json` MCP server configuration at the project root
 
 Project root is resolved by the server; you do not need to pass it.
 
@@ -145,7 +145,6 @@ The **initialize** prompt also creates the full project structure:
 - `.cortex/synapse/` – Shared rules (or `.cortex/rules/local/` for project-specific rules)
 - `.cortex/plans/` – Planning system
 - `.cortex/config/` – Configuration
-- `.cursor/` – Cursor IDE symlinks
 
 Use `get_structure_info()` to inspect paths and layout.
 
@@ -254,7 +253,7 @@ Users authenticate via OAuth 2.0 using Google...
 
 ### Migrating from Legacy Structure
 
-If you have existing Memory Bank files in a legacy layout (under IDE `.cursor/` as `memory-bank/`, root `memory-bank/`, or `.memory-bank/`), use the **migrate** prompt. It:
+If you have existing Memory Bank files in a legacy layout (a leftover real `.cursor/memory-bank/` directory from a pre-removal Cortex version, root `memory-bank/`, or `.memory-bank/`), use the **migrate** prompt. It:
 
 - Detects legacy structure type
 - Creates backup

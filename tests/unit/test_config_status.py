@@ -2,14 +2,13 @@
 Unit tests for config_status module.
 """
 
+import json
 from pathlib import Path
 from unittest.mock import patch
 
 from cortex.core.path_resolver import (
     CortexResourceType,
-    CursorResourceType,
     get_cortex_path,
-    get_cursor_path,
 )
 from cortex.tools.config import get_project_config_status
 
@@ -109,20 +108,11 @@ class TestGetProjectConfigStatus:
             # Assert
             assert status["structure_configured"] is False
 
-    def test_cursor_integration_configured(self, tmp_path: Path):
-        """Test Cursor integration configured detection."""
+    def test_codegraph_configured_when_present_in_mcp_json(self, tmp_path: Path):
+        """Test codegraph configured detection reads project_root/.mcp.json."""
         # Arrange
-        cursor_dir = get_cursor_path(tmp_path, CursorResourceType.CURSOR_DIR)
-        cursor_dir.mkdir()
-
-        # Create symlinks
-        for symlink_name in ["memory-bank", "synapse", "plans"]:
-            target = (
-                get_cortex_path(tmp_path, CortexResourceType.CORTEX_DIR) / symlink_name
-            )
-            target.mkdir(parents=True, exist_ok=True)
-            symlink = cursor_dir / symlink_name
-            symlink.symlink_to(f"../.cortex/{symlink_name}")
+        mcp_config = {"mcpServers": {"codegraph": {"command": "codegraph"}}}
+        _ = (tmp_path / ".mcp.json").write_text(json.dumps(mcp_config))
 
         with patch(
             "cortex.tools.config.status.get_project_root", return_value=tmp_path
@@ -131,14 +121,11 @@ class TestGetProjectConfigStatus:
             status = get_project_config_status()
 
             # Assert
-            assert status["cursor_integration_configured"] is True
+            assert status["codegraph_configured"] is True
 
-    def test_cursor_integration_not_configured_missing_symlinks(self, tmp_path: Path):
-        """Test Cursor integration not configured when symlinks missing."""
-        # Arrange
-        cursor_dir = get_cursor_path(tmp_path, CursorResourceType.CURSOR_DIR)
-        cursor_dir.mkdir()
-        # Don't create symlinks
+    def test_codegraph_not_configured_when_mcp_json_missing(self, tmp_path: Path):
+        """Test codegraph not configured when .mcp.json is absent."""
+        # Arrange – no .mcp.json file
 
         with patch(
             "cortex.tools.config.status.get_project_root", return_value=tmp_path
@@ -147,17 +134,13 @@ class TestGetProjectConfigStatus:
             status = get_project_config_status()
 
             # Assert
-            assert status["cursor_integration_configured"] is False
+            assert status["codegraph_configured"] is False
 
-    def test_cursor_integration_not_configured_broken_symlinks(self, tmp_path: Path):
-        """Test Cursor integration not configured when symlinks broken."""
+    def test_codegraph_not_configured_when_server_absent(self, tmp_path: Path):
+        """Test codegraph not configured when .mcp.json lacks the codegraph server."""
         # Arrange
-        cursor_dir = get_cursor_path(tmp_path, CursorResourceType.CURSOR_DIR)
-        cursor_dir.mkdir()
-
-        # Create symlink pointing to wrong location
-        symlink = cursor_dir / "memory-bank"
-        symlink.symlink_to("../wrong/path")
+        mcp_config = {"mcpServers": {"cortex": {"command": "cortex"}}}
+        _ = (tmp_path / ".mcp.json").write_text(json.dumps(mcp_config))
 
         with patch(
             "cortex.tools.config.status.get_project_root", return_value=tmp_path
@@ -166,41 +149,7 @@ class TestGetProjectConfigStatus:
             status = get_project_config_status()
 
             # Assert
-            assert status["cursor_integration_configured"] is False
-
-    def test_migration_needed_legacy_cursor_format(self, tmp_path: Path):
-        """Test migration needed when legacy .cursor/memory-bank/ exists."""
-        # Arrange
-        legacy_dir = get_cursor_path(tmp_path, CursorResourceType.MEMORY_BANK)
-        legacy_dir.mkdir(parents=True)
-
-        with patch(
-            "cortex.tools.config.status.get_project_root", return_value=tmp_path
-        ):
-            # Act
-            status = get_project_config_status()
-
-            # Assert
-            assert status["migration_needed"] is True
-            assert status["memory_bank_initialized"] is False
-
-    def test_migration_not_needed_when_cursor_memory_bank_is_symlink(
-        self, tmp_path: Path
-    ):
-        """Symlink at .cursor/memory-bank (modern Cortex integration) must not trigger migration."""
-        # Arrange: create the real .cortex/memory-bank dir and symlink from .cursor/memory-bank
-        real_dir = get_cortex_path(tmp_path, CortexResourceType.MEMORY_BANK)
-        real_dir.mkdir(parents=True)
-        cursor_memory_bank = get_cursor_path(tmp_path, CursorResourceType.MEMORY_BANK)
-        cursor_memory_bank.parent.mkdir(parents=True, exist_ok=True)
-        cursor_memory_bank.symlink_to(real_dir)
-
-        with patch(
-            "cortex.tools.config.status.get_project_root", return_value=tmp_path
-        ):
-            status = get_project_config_status()
-
-        assert status["migration_needed"] is False
+            assert status["codegraph_configured"] is False
 
     def test_migration_needed_legacy_root_format(self, tmp_path: Path):
         """Test migration needed when legacy memory-bank/ exists."""
@@ -269,7 +218,7 @@ class TestGetProjectConfigStatus:
             # This is safer than showing all prompts when we can't determine status
             assert status["memory_bank_initialized"] is True
             assert status["structure_configured"] is True
-            assert status["cursor_integration_configured"] is True
+            assert status["codegraph_configured"] is True
             assert status["migration_needed"] is False
 
     def test_fully_configured_project(self, tmp_path: Path):
@@ -278,8 +227,6 @@ class TestGetProjectConfigStatus:
         cortex_dir = get_cortex_path(tmp_path, CortexResourceType.CORTEX_DIR)
         memory_bank_dir = get_cortex_path(tmp_path, CortexResourceType.MEMORY_BANK)
         memory_bank_dir.mkdir(parents=True)
-        cursor_dir = get_cursor_path(tmp_path, CursorResourceType.CURSOR_DIR)
-        cursor_dir.mkdir()
 
         # Create all required directories
         for subdir in ["memory-bank", "rules", "plans", "config"]:
@@ -288,12 +235,8 @@ class TestGetProjectConfigStatus:
         # Create core files
         _write_core_memory_bank_files(memory_bank_dir)
 
-        # Create valid symlinks
-        for symlink_name in ["memory-bank", "synapse", "plans"]:
-            target = cortex_dir / symlink_name
-            target.mkdir(parents=True, exist_ok=True)
-            symlink = cursor_dir / symlink_name
-            symlink.symlink_to(f"../.cortex/{symlink_name}")
+        mcp_config = {"mcpServers": {"codegraph": {"command": "codegraph"}}}
+        _ = (tmp_path / ".mcp.json").write_text(json.dumps(mcp_config))
 
         with patch(
             "cortex.tools.config.status.get_project_root", return_value=tmp_path
@@ -304,5 +247,5 @@ class TestGetProjectConfigStatus:
             # Assert
             assert status["memory_bank_initialized"] is True
             assert status["structure_configured"] is True
-            assert status["cursor_integration_configured"] is True
+            assert status["codegraph_configured"] is True
             assert status["migration_needed"] is False

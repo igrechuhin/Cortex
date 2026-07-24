@@ -36,7 +36,7 @@ class TestResolveProjectRootAsync:
     async def test_resolve_bootstraps_wiki_when_dot_cortex_present(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        """First successful resolve creates ``.cortex/wiki/`` (Cursor: no list_roots)."""
+        """First successful resolve creates ``.cortex/wiki/`` (client without list_roots)."""
         _ = (tmp_path / ".cortex").mkdir()
         clear_cached_root()
 
@@ -168,7 +168,7 @@ class TestResolveProjectRootAsync:
     async def test_when_client_lacks_roots_capability_falls_back(self) -> None:
         """Client that doesn't advertise roots capability must not trigger list_roots().
 
-        Clients like Cursor's MCP bridge close the transport when they receive a
+        Some MCP client bridges close the transport when they receive a
         ListRootsRequest, crashing the server.  The capability guard must skip
         list_roots() and go straight to the fallback.
         """

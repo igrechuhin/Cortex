@@ -49,7 +49,7 @@ def _read_implement_pipeline_content() -> str:
     prompt = _implement_prompt_path()
     if prompt.exists():
         parts.append(prompt.read_text())
-    code_agent = synapse_path() / "cursor-agents" / "implement-code.md"
+    code_agent = synapse_path() / "claude-agents" / "implement-code.md"
     if code_agent.exists():
         parts.append(code_agent.read_text())
     return "\n".join(parts)
@@ -289,7 +289,7 @@ class TestImplementPromptRefactoringGuidance:
 
     @pytest.fixture
     def implement_prompt_content(self) -> str:
-        """Read implement prompt + all implement cursor-agents content."""
+        """Read implement prompt + all implement claude-agents content."""
         content = _read_implement_pipeline_content()
         if not content.strip():
             pytest.skip(

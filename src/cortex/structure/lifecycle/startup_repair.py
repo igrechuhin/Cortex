@@ -10,7 +10,7 @@ never raises — failures are collected in the report and logged by the caller.
 What is repaired
 ----------------
 - Missing or partial ``.cortex/`` directory structure (dirs + config file).
-- Broken or missing ``.cursor/`` symlinks.
+- Leftover ``.cursor/`` artifacts from a pre-removal Cortex version.
 - Missing Cortex transient-file entries in ``.gitignore`` (git repos only).
 - Missing or incomplete ``.rumdl.toml`` (ensures MD013/MD060/MD041 disabled).
 
@@ -28,18 +28,18 @@ from pathlib import Path
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from cortex.core.path_resolver import get_legacy_cursor_dir_path
 from cortex.core.pydantic_extra import EXTRA_FORBID
+from cortex.structure.lifecycle.legacy_cursor_cleanup import (
+    cleanup_legacy_cursor_artifacts,
+)
 from cortex.structure.lifecycle.local_environment_context import (
     LOCAL_ENV_CONTEXT_FILENAME,
     ensure_local_environment_context,
 )
 from cortex.structure.lifecycle.setup import StructureSetup
-from cortex.structure.lifecycle.symlinks import CursorSymlinkManager
 from cortex.structure.structure_config import StructureConfig
-from cortex.tools.config.status import (
-    check_cursor_integration,
-    check_structure_configured,
-)
+from cortex.tools.config.status import check_structure_configured
 
 logger = logging.getLogger(__name__)
 
@@ -64,7 +64,6 @@ _GITIGNORE_BLOCK = (
     ".cortex-backup-*/\n"
     "\n# Cortex agent sync outputs (generated at MCP startup — do not commit)\n"
     ".claude/\n"
-    ".cursor/agents/\n"
     "\n# Cortex local machine context (host-specific; do not commit)\n"
     f"{LOCAL_ENV_CONTEXT_MARKER}\n"
 )
@@ -78,8 +77,9 @@ class StartupRepairReport(BaseModel):
     structure_repaired: bool = Field(
         default=False, description="Dirs/config were created or restored."
     )
-    symlinks_repaired: bool = Field(
-        default=False, description="Cursor symlinks were recreated."
+    legacy_cursor_cleaned: bool = Field(
+        default=False,
+        description="Leftover .cursor/ artifacts from a prior Cortex version were removed.",
     )
     gitignore_updated: bool = Field(
         default=False, description="Cortex entries appended to .gitignore."
@@ -113,10 +113,8 @@ def _needs_structure(project_root: Path) -> bool:
     return not check_structure_configured(cortex_dir)
 
 
-def _needs_symlinks(project_root: Path) -> bool:
-    cortex_dir = project_root / ".cortex"
-    cursor_dir = project_root / ".cursor"
-    return not check_cursor_integration(cursor_dir, cortex_dir)
+def _needs_legacy_cursor_cleanup(project_root: Path) -> bool:
+    return get_legacy_cursor_dir_path(project_root).is_dir()
 
 
 def _needs_gitignore(project_root: Path) -> bool:
@@ -151,20 +149,22 @@ async def _repair_structure(project_root: Path, report: StartupRepairReport) -> 
         report.errors.append(f"structure repair failed: {exc}")
 
 
-def _repair_symlinks(project_root: Path, report: StartupRepairReport) -> None:
+def _repair_legacy_cursor(project_root: Path, report: StartupRepairReport) -> None:
     try:
-        config = StructureConfig(project_root)
-        manager = CursorSymlinkManager(config)
-        result = manager.setup_cursor_integration()
-        if result.symlinks_created:
-            report.symlinks_repaired = True
+        result = cleanup_legacy_cursor_artifacts(project_root)
+        if result.changed:
+            report.legacy_cursor_cleaned = True
             logger.debug(
-                "startup_repair: symlinks recreated: %s",
-                [s.link for s in result.symlinks_created],
+                "startup_repair: removed legacy .cursor/ artifacts: "
+                + "symlinks=%s agents=%s mcp_configs=%s dir_removed=%s",
+                result.removed_symlinks,
+                result.removed_agent_files,
+                result.removed_mcp_configs,
+                result.removed_directory,
             )
         report.errors.extend(result.errors)
     except Exception as exc:
-        report.errors.append(f"symlink repair failed: {exc}")
+        report.errors.append(f"legacy .cursor/ cleanup failed: {exc}")
 
 
 def _repair_gitignore(project_root: Path, report: StartupRepairReport) -> None:
@@ -215,7 +215,7 @@ def _repair_local_environment_context(
 
 def _has_any_repairs_needed(
     needs_structure: bool,
-    needs_symlinks: bool,
+    needs_legacy_cursor_cleanup: bool,
     needs_gitignore: bool,
     needs_rumdl_config: bool,
     report: StartupRepairReport,
@@ -223,7 +223,7 @@ def _has_any_repairs_needed(
     return any(
         [
             needs_structure,
-            needs_symlinks,
+            needs_legacy_cursor_cleanup,
             needs_gitignore,
             needs_rumdl_config,
             report.local_env_context_created,
@@ -237,7 +237,7 @@ async def _run_standard_repairs(
     report: StartupRepairReport,
     *,
     needs_structure: bool,
-    needs_symlinks: bool,
+    needs_legacy_cursor_cleanup: bool,
     needs_gitignore: bool,
     needs_rumdl_config: bool,
 ) -> None:
@@ -246,11 +246,11 @@ async def _run_standard_repairs(
             await _repair_structure(project_root, report)
         except Exception as exc:
             report.errors.append(f"structure repair failed: {exc}")
-    if needs_symlinks:
+    if needs_legacy_cursor_cleanup:
         try:
-            _repair_symlinks(project_root, report)
+            _repair_legacy_cursor(project_root, report)
         except Exception as exc:
-            report.errors.append(f"symlink repair failed: {exc}")
+            report.errors.append(f"legacy .cursor/ cleanup failed: {exc}")
     if needs_gitignore:
         try:
             _repair_gitignore(project_root, report)
@@ -277,7 +277,7 @@ async def repair_project_setup(project_root: Path) -> StartupRepairReport:
     report = StartupRepairReport()
 
     needs_structure = _needs_structure(project_root)
-    needs_symlinks = _needs_symlinks(project_root)
+    needs_legacy_cursor_cleanup = _needs_legacy_cursor_cleanup(project_root)
     needs_gitignore = _needs_gitignore(project_root)
     needs_rumdl_config = _needs_rumdl_config(project_root)
 
@@ -285,14 +285,14 @@ async def repair_project_setup(project_root: Path) -> StartupRepairReport:
         project_root,
         report,
         needs_structure=needs_structure,
-        needs_symlinks=needs_symlinks,
+        needs_legacy_cursor_cleanup=needs_legacy_cursor_cleanup,
         needs_gitignore=needs_gitignore,
         needs_rumdl_config=needs_rumdl_config,
     )
     _repair_local_environment_context(project_root, report)
     if not _has_any_repairs_needed(
         needs_structure=needs_structure,
-        needs_symlinks=needs_symlinks,
+        needs_legacy_cursor_cleanup=needs_legacy_cursor_cleanup,
         needs_gitignore=needs_gitignore,
         needs_rumdl_config=needs_rumdl_config,
         report=report,

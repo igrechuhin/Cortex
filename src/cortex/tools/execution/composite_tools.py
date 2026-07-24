@@ -317,7 +317,7 @@ async def run_composite_workflow(
     operation="quick_start": session(operation=start) + load_context. Params: task_description, token_budget.
     operation="quality_check": pre_commit quality + fix. No extra params.
     operation="fix_all": Full fix sequence (quality→tests→docs) with zero args. USE THIS when
-        the MCP bridge cannot pass arguments to individual tools (e.g. Cursor tool bridge sends
+        the MCP bridge cannot pass arguments to individual tools (e.g. some tool bridges send
         empty {} — causes "Missing required parameters" errors on rules, load_context,
         execute_pre_commit_checks). fix_all runs fix_quality, type_check/quality/format/markdown
         verification, tests (600s, 90% coverage), phase B docs validation, and

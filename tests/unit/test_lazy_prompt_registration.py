@@ -39,7 +39,6 @@ def _make_status(
     *,
     memory_bank_initialized: bool = True,
     structure_configured: bool = True,
-    cursor_integration_configured: bool = True,
     migration_needed: bool = False,
     tiktoken_cache_available: bool = True,
     codegraph_configured: bool = True,
@@ -47,7 +46,6 @@ def _make_status(
     return ProjectConfigStatus(
         memory_bank_initialized=memory_bank_initialized,
         structure_configured=structure_configured,
-        cursor_integration_configured=cursor_integration_configured,
         migration_needed=migration_needed,
         tiktoken_cache_available=tiktoken_cache_available,
         codegraph_configured=codegraph_configured,
@@ -236,7 +234,7 @@ class TestLazyPromptRegistry:
                 stack, tmp_path, has_synapse=True, mount_setup=False
             )
             mock_reg = stack.enter_context(patch(f"{_M}.register_synapse_prompts"))
-            mock_sync = stack.enter_context(patch(f"{_M}.sync_cursor_agents"))
+            mock_sync = stack.enter_context(patch(f"{_M}.sync_claude_agents"))
             await registry.do_register(None)
         mock_reg.assert_not_called()
         mock_sync.assert_not_called()
@@ -260,7 +258,7 @@ class TestLazyPromptRegistry:
                 "cortex.setup.lazy_prompt_registration.register_synapse_prompts"
             ) as mock_reg,
             patch(
-                "cortex.setup.lazy_prompt_registration.sync_cursor_agents"
+                "cortex.setup.lazy_prompt_registration.sync_claude_agents"
             ) as mock_sync,
             patch(
                 "cortex.setup.lazy_prompt_registration.get_project_config_status",
@@ -292,7 +290,7 @@ class TestLazyPromptRegistry:
                 stack, tmp_path, has_synapse=True, mount_setup=True, status=st
             )
             _ = stack.enter_context(patch(f"{_M}.register_synapse_prompts"))
-            _ = stack.enter_context(patch(f"{_M}.sync_cursor_agents"))
+            _ = stack.enter_context(patch(f"{_M}.sync_claude_agents"))
             mock_setup = stack.enter_context(patch(f"{_M}.register_setup_prompts"))
             await registry.do_register(None)
         mock_setup.assert_called_once()
@@ -326,7 +324,7 @@ class TestLazyPromptRegistry:
                 return_value=tmp_path,
             ),
             patch("cortex.setup.lazy_prompt_registration.register_synapse_prompts"),
-            patch("cortex.setup.lazy_prompt_registration.sync_cursor_agents"),
+            patch("cortex.setup.lazy_prompt_registration.sync_claude_agents"),
             patch(
                 "cortex.setup.lazy_prompt_registration.get_project_config_status",
                 return_value=_make_status(),
@@ -356,7 +354,7 @@ class TestLazyPromptRegistry:
                 return_value=tmp_path,
             ),
             patch("cortex.setup.lazy_prompt_registration.register_synapse_prompts"),
-            patch("cortex.setup.lazy_prompt_registration.sync_cursor_agents"),
+            patch("cortex.setup.lazy_prompt_registration.sync_claude_agents"),
             patch(
                 "cortex.setup.lazy_prompt_registration.get_project_config_status",
                 return_value=_make_status(),
@@ -402,7 +400,7 @@ class TestLazyPromptRegistry:
                 "cortex.setup.lazy_prompt_registration.register_synapse_prompts",
                 side_effect=RuntimeError("disk error"),
             ),
-            patch("cortex.setup.lazy_prompt_registration.sync_cursor_agents"),
+            patch("cortex.setup.lazy_prompt_registration.sync_claude_agents"),
             patch(
                 "cortex.setup.lazy_prompt_registration.get_project_config_status",
                 return_value=_make_status(),
@@ -431,7 +429,7 @@ class TestLazyPromptRegistry:
                 stack, tmp_path, has_synapse=True, mount_setup=False
             )
             _ = stack.enter_context(patch(f"{_M}.register_synapse_prompts"))
-            _ = stack.enter_context(patch(f"{_M}.sync_cursor_agents"))
+            _ = stack.enter_context(patch(f"{_M}.sync_claude_agents"))
             _ = stack.enter_context(patch(f"{_M}.create_prompt_function", mock_create))
             await registry.do_register(None)
         mock_create.assert_called_once()
@@ -457,7 +455,7 @@ class TestLazyPromptRegistry:
                 stack, tmp_path, has_synapse=True, mount_setup=False
             )
             _ = stack.enter_context(patch(f"{_M}.register_synapse_prompts"))
-            _ = stack.enter_context(patch(f"{_M}.sync_cursor_agents"))
+            _ = stack.enter_context(patch(f"{_M}.sync_claude_agents"))
             _ = stack.enter_context(patch(f"{_M}.create_prompt_function", mock_create))
             await registry.do_register(None)
         mock_create.assert_not_called()

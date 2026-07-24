@@ -53,7 +53,7 @@ pyenv global 3.13.0
 
 For a **stable MCP connection**, see [Getting started: Stable MCP setup](../getting-started.md#stable-mcp-setup-recommended): Cortex exits on disconnect by default (client starts a new process when needed, so you get fresh Initialize with no user action), optional bridge, faster markdown lint, and usage tips. The sections below cover individual issues and causes.
 
-#### Network-restricted verification {#offline-and-network-restricted-verification}
+#### Dependency and network verification {#dependency-and-network-verification}
 
 Use this when proxies or corporate filters block PyPI (or to separate **”the environment never finished installing”** from **”pytest failed”**).
 
@@ -105,7 +105,7 @@ Use this when the agent **cannot** rely on Cortex MCP for a full session (e.g. s
 
 **Connectivity and diagnostics (run in order)**:
 
-1. **Client configuration** — Confirm MCP config points at the right command (e.g. `uv run cortex` from repo root or `uvx` from published package). Paths: Cursor project `.cursor/mcp*.json`; Claude Desktop `claude_desktop_config.json`. See [MCP server not found by client](#issue-mcp-server-not-found-by-client).
+1. **Client configuration** — Confirm MCP config points at the right command (e.g. `uv run cortex` from repo root or `uvx` from published package). Paths: project `.mcp.json` (Claude Code and other MCP-aware clients); Claude Desktop `claude_desktop_config.json`. See [MCP server not found by client](#issue-mcp-server-not-found-by-client).
 2. **Manual server smoke test** — From the repo: `uv sync --extra dev` then `uv run cortex`. stderr should show a successful MCP startup; Ctrl+C to stop. If this fails, fix Python/uv/environment first ([Installation and Setup](#installation-and-setup)).
 3. **Handshake and tool listing** — After the client starts the server, confirm tools/resources are listed (not [0 tools](#issue-mcp-0-tools)). If you see 0 tools after a disconnect, reload MCP or follow that section’s recovery steps.
 4. **Transient disconnects** — If tools work intermittently, use [MCP error -32000: Connection closed](#issue-mcp-error-32000-connection-closed) (retry once, avoid parallel subagents on one connection, timeouts).
@@ -197,13 +197,13 @@ Related: [Stable MCP setup (recommended)](../getting-started.md#stable-mcp-setup
 **Symptoms**:
 
 - Claude Desktop doesn't show Memory Bank tools
-- Cursor IDE doesn't connect to server
+- Another MCP client doesn't connect to the server
 
 **Solution**:
 
 1. Check MCP configuration file location:
    - **Claude Desktop**: `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS)
-   - **Cursor**: `.cursor/mcp_config.json` in project root
+   - **Claude Code / other MCP-aware clients**: `.mcp.json` in project root
 
 2. Verify configuration:
 
@@ -230,10 +230,10 @@ Related: [Stable MCP setup (recommended)](../getting-started.md#stable-mcp-setup
 
 **Cause**:
 
-The **client** (e.g. Cursor) closed the MCP connection before the tool finished. Two known triggers:
+The **client** (some MCP client bridges are more prone to this than others) closed the MCP connection before the tool finished. Two known triggers:
 
 1. **Client-side tool timeout** — a single long-running tool exceeds the client timeout (~10-20s).
-2. **Concurrent subagent tool calls** — when 3-4 tool calls are in-flight simultaneously from parallel subagents, Cursor's aggregate pending-call timeout kills the shared MCP stdio connection even if individual tools are fast. This is the most common cause when using orchestration prompts (e.g. `/cortex/fix`) that launch parallel agents.
+2. **Concurrent subagent tool calls** — when 3-4 tool calls are in-flight simultaneously from parallel subagents, some clients' aggregate pending-call timeout kills the shared MCP stdio connection even if individual tools are fast. This is the most common cause when using orchestration prompts (e.g. `/cortex/fix`) that launch parallel agents.
 
 **Why it matters**: After a disconnect the agent may keep running **without MCP**. It will not use Cortex tools (memory bank, rules, quality checks). Reconnect so the server restarts; for important work, re-run the task so the agent runs with MCP control. For disconnects **during the commit pipeline**, see the [MCP disconnect runbook (commit pipeline)](#mcp-disconnect-runbook-commit).
 
@@ -282,8 +282,8 @@ This happens when the client sends ListTools/ListPrompts/ListResources **before*
 **Fix (what to do)**:
 
 - **Default (no CORTEX_AUTO_RESTART)**: Cortex exits on disconnect; the client starts a new process when it next needs MCP, so you get a fresh Initialize with no user action. You should not see 0 tools.
-- **Automatic recovery**: Install the [Cursor MCP Refresh](https://github.com/tankmurdock/cursor-mcp-refresh) extension and set **Auto-refresh interval** (e.g. 60–300 seconds). It refreshes MCP servers on a timer, so "0 tools" is cleared on the next refresh without manual toggle. [Install from VSIX](https://github.com/tankmurdock/cursor-mcp-refresh/releases).
-- **If you set CORTEX_AUTO_RESTART=1** and don't use the extension: reload MCP manually (disable/enable Cortex in MCP Servers, or restart Cursor). Retry once first; optional: `CORTEX_USE_FALLBACK_ROOT=1`; see [mcp-tool-timeouts](../mcp-tool-timeouts.md).
+- **Automatic recovery**: Some MCP clients support an auto-refresh interval (e.g. 60–300 seconds) for their MCP server list; if yours does, enabling it clears "0 tools" on the next refresh without a manual toggle.
+- **If you set CORTEX_AUTO_RESTART=1** and your client has no auto-refresh: reload MCP manually (disable/enable the Cortex server entry, or restart the client). Retry once first; optional: `CORTEX_USE_FALLBACK_ROOT=1`; see [mcp-tool-timeouts](../mcp-tool-timeouts.md).
 
 #### Issue: Another long-running tool is in progress {#issue-another-long-running-tool-in-progress}
 
@@ -316,9 +316,9 @@ Use this runbook when the Cortex MCP connection is lost **during** `/cortex/comm
 | During Step 12.6 (file size / function length) | Quality checks | Client timeout | Retry once; if retry fails, use shell script fallbacks for file size and function length checks; record "MCP connection closed; fallback used". Do not skip Step 12.6. |
 | During Step 12.7 (tests with coverage) | `run_quality_gate()` (Step 12 final Phase A pass, includes tests) | Client timeout (tests can run 5–10+ minutes) | Retry once. **There is no fallback for Step 12.7.** If retry fails, **block commit** and tell the user: "Reconnect Cortex MCP and re-run the commit command." Do not proceed with Phase A results. |
 
-**Likely cause**: In most cases the **client** (e.g. Cursor) closed the connection—due to client-side tool-call timeout or IDE lifecycle—not a server crash. The tool may have completed on the server; the connection was already closed when the response was sent. To increase Cursor’s timeout, see [Cursor IDE: MCP tool timeout configuration](#cursor-ide-mcp-tool-timeout-configuration). See also [MCP error -32000: Connection closed](#issue-mcp-error-32000-connection-closed).
+**Likely cause**: In most cases the **client** (some MCP client bridges are more prone to this than others) closed the connection—due to client-side tool-call timeout or IDE lifecycle—not a server crash. The tool may have completed on the server; the connection was already closed when the response was sent. To increase the client's timeout, see [MCP tool timeout configuration](#mcp-tool-timeout-configuration). See also [MCP error -32000: Connection closed](#issue-mcp-error-32000-connection-closed).
 
-**How to confirm**: Check MCP server stderr (or Cursor Output / MCP logs) for lines like `MCP connection error in <tool_name> (attempt 1/2): ...` to see which tool and attempt failed. In one observed case (MCP log 1-18553), disconnect during `fix_markdown_lint` occurred **≈10 s** after the tool call started; compare that with client timeout settings. Session logs or repro: run `/cortex/commit`, let it reach the long step (e.g. 12.7), and note after how long the disconnect occurs.
+**How to confirm**: Check MCP server stderr (or the client's Output / MCP logs) for lines like `MCP connection error in <tool_name> (attempt 1/2): ...` to see which tool and attempt failed. In one observed case (MCP log 1-18553), disconnect during `fix_markdown_lint` occurred **≈10 s** after the tool call started; compare that with client timeout settings. Session logs or repro: run `/cortex/commit`, let it reach the long step (e.g. 12.7), and note after how long the disconnect occurs.
 
 **Recovery summary**:
 
@@ -329,7 +329,7 @@ Use this runbook when the Cortex MCP connection is lost **during** `/cortex/comm
 
 ### Development and Testing
 
-#### Issue: I don't see any option to run tests in Cursor
+#### Issue: I don't see any option to run tests in my editor
 
 **Symptoms**:
 
@@ -352,9 +352,9 @@ Use this runbook when the Cortex MCP connection is lost **during** `/cortex/comm
    - Without this, test discovery may not run or may use the wrong environment.
 
 4. **If the Test view is empty or discovery fails**  
-   Cursor’s bundled Python extension can have pytest discovery issues. Try:
-   - **Cursor Pytest** extension: Extensions → search **"Cursor Pytest"** (by Arun Dev) → Install. It adds inline Run/Debug buttons and test discovery.
-   - Or run tests from the terminal: `uv run pytest tests/ -k "test_name"` for a single test, or call Cortex MCP `run_quality_gate()` for the full Phase A suite (includes tests) when the client supports zero-arg tools.
+   The bundled Python extension can have pytest discovery issues in some VS Code-based
+   editors. Try:
+   - Run tests from the terminal: `uv run pytest tests/ -k "test_name"` for a single test, or call Cortex MCP `run_quality_gate()` for the full Phase A suite (includes tests) when the client supports zero-arg tools.
 
 5. **Ensure `.vscode/settings.json` exists** (see next subsection) so that when tests do run from the UI, the correct interpreter is used.
 
@@ -375,7 +375,7 @@ Coverage is **not** in the default `pytest.ini` addopts. CI and the Phase A qual
 
 If you see this error in another project, either add coverage options only when running tests (e.g. via CI or a script), or install dev deps so `pytest-cov` is present: `uv sync --group dev --extra dev`.
 
-#### Issue: Tests don't run or always fail from Cursor/VS Code UI
+#### Issue: Tests don't run or always fail from the VS Code UI
 
 **Symptoms**:
 
@@ -435,7 +435,7 @@ Sandboxed environments may block or limit subprocess execution, network, or long
 
 - **Typical duration**: 5–10 minutes for full test suite with coverage
 - **Maximum timeout**: 600 seconds (10 minutes) as configured in `test_timeout=600`
-- **Client-side timeout requirements**: The client (e.g. Cursor IDE) must have a tool-call timeout ≥ 600 seconds to avoid connection closure during Step 12.7
+- **Client-side timeout requirements**: The MCP client must have a tool-call timeout ≥ 600 seconds to avoid connection closure during Step 12.7
 
 **Connection health check before Step 12.7**:
 
@@ -465,31 +465,30 @@ Sandboxed environments may block or limit subprocess execution, network, or long
 
 **How to increase client timeout** (if needed):
 
-- **Cursor IDE**: See [Cursor IDE: MCP tool timeout configuration](#cursor-ide-mcp-tool-timeout-configuration) below for settings and recommended values. Default timeout should be ≥ 600 seconds for Step 12.7.
-- **Other clients**: Consult client documentation for tool-call timeout settings.
+- **MCP tool timeout configuration**: See [MCP tool timeout configuration](#mcp-tool-timeout-configuration) below for settings and recommended values. Default timeout should be ≥ 600 seconds for Step 12.7.
 - **If timeout cannot be increased**: Consider running tests manually before invoking commit, or use a CI environment with longer timeouts.
 
-#### Cursor IDE: MCP tool timeout configuration {#cursor-ide-mcp-tool-timeout-configuration}
+#### MCP tool timeout configuration {#mcp-tool-timeout-configuration}
 
-Cursor IDE may apply a **client-side tool-call timeout**; when that is shorter than a long-running MCP tool (e.g. `fix_markdown_lint`, `run_quality_gate`), the client can close the connection and you see `MCP error -32000: Connection closed`. Reported behavior varies by version: some users see ~60 s or 2 minutes (e.g. Cursor 1.5.1+), others see longer defaults; in one log (MCP log 1-18553), disconnect occurred **≈10 s** after `fix_markdown_lint` started, which may indicate a separate shorter limit in some builds or environments.
+Some MCP client bridges apply a **client-side tool-call timeout**; when that is shorter than a long-running MCP tool (e.g. `fix_markdown_lint`, `run_quality_gate`), the client can close the connection and you see `MCP error -32000: Connection closed`. Reported behavior varies by client and version: some see ~60 s or 2 minutes, others see longer defaults; in one log (MCP log 1-18553), disconnect occurred **≈10 s** after `fix_markdown_lint` started, which may indicate a separate shorter limit in some builds or environments.
 
-**Configurable timeout (community-documented)**:
+**Configurable timeout**:
 
-Cursor does not officially document a tool-call timeout setting. Community guides and forum posts suggest adding the following to Cursor’s **Settings (JSON)** (e.g. `Ctrl/Cmd + Shift + P` → “Open Settings (JSON)”):
+Many MCP client bridges do not officially document a tool-call timeout setting. If yours exposes one in a settings JSON, it typically looks like:
 
 ```json
 "mcp.server.timeout": 600000,
 "mcp.elicitation.timeout": 600000
 ```
 
-Values are in **milliseconds**. `600000` = 10 minutes. Use at least **600000** (10 min) if you run the full commit pipeline including Step 12.7 (tests). After changing, reload Cursor (e.g. `Ctrl/Cmd + R`).
+Values are in **milliseconds**. `600000` = 10 minutes. Use at least **600000** (10 min) if you run the full commit pipeline including Step 12.7 (tests). After changing, reload/restart the client.
 
 **Caveats**:
 
-- These keys are not guaranteed to be supported in all Cursor versions or builds; if disconnects persist, rely on server-side progress, retries, and the [MCP disconnect runbook](#mcp-disconnect-runbook-commit).
-- If you observe disconnects at ~10 s despite a long `mcp.server.timeout`, another limit (e.g. stdio or first-response timeout) may apply; report the timing and Cursor version for diagnostics.
+- These keys are not guaranteed to be supported by every client or version; if disconnects persist, rely on server-side progress, retries, and the [MCP disconnect runbook](#mcp-disconnect-runbook-commit).
+- If you observe disconnects at ~10 s despite a long `mcp.server.timeout`, another limit (e.g. stdio or first-response timeout) may apply; report the timing and client version for diagnostics.
 
-**References**: [MCP tool calling timeout (Cursor forum)](https://forum.cursor.com/t/mcp-tool-calling-timeout/49149), [Long Running MCP tool calls (Cursor forum)](https://forum.cursor.com/t/long-running-mcp-tool-calls/131279); [mcp-tool-timeouts.md](../mcp-tool-timeouts.md) (commit pipeline tools and client timeout).
+**References**: [mcp-tool-timeouts.md](../mcp-tool-timeouts.md) (commit pipeline tools and client timeout).
 
 **Troubleshooting connection closures during Step 12.7**:
 
@@ -1494,7 +1493,7 @@ Cortex uses **Context logging** so the MCP client can show operation progress an
 
 If you do not see tool progress in the client:
 
-1. Ensure the client supports MCP log messages (Cursor/Claude Desktop do).
+1. Ensure the client supports MCP log messages (Claude Desktop and other MCP-aware clients do).
 2. Check that tools receive `ctx` (injected by the server); when `ctx` is `None`, messages fall back to stderr.
 3. See [Logging Guidelines](../development/logging-guidelines.md) for patterns and levels.
 

@@ -100,9 +100,9 @@ class TestDataCoercion:
     async def test_write_result_accepts_dict_data(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        """Cursor sends data as a dict; tool must serialise it, not reject it."""
+        """Some MCP clients send data as a dict; tool must serialise it, not reject it."""
         patch_pipeline_handoff_project_root(monkeypatch, tmp_path)
-        # Pass a native Python dict (simulates what Cursor's LLM sends)
+        # Pass a native Python dict (simulates what some MCP client LLMs send)
         result = json.loads(
             await pipeline_handoff(
                 operation="write_result",
@@ -433,15 +433,15 @@ class TestStalePipelineExpiry:
 
 
 # ---------------------------------------------------------------------------
-# Zero-arg / Cursor arg-stripping fallback (_resolve_zero_arg_defaults)
+# Zero-arg / MCP-client arg-stripping fallback (_resolve_zero_arg_defaults)
 # ---------------------------------------------------------------------------
 
 
 @pytest.mark.asyncio
 class TestZeroArgFallback:
-    """Verify that pipeline_handoff recovers from Cursor's arg-stripping.
+    """Verify that pipeline_handoff recovers from an MCP client's arg-stripping.
 
-    Cursor sends {} for every MCP tool call, leaving operation="read_state"
+    Some MCP clients send {} for every MCP tool call, leaving operation="read_state"
     and pipeline="default".  The tool must read session config and use
     whatever the orchestrator wrote there.
     """
@@ -573,7 +573,7 @@ class TestExtractRoutingKeys:
 class TestRoutingKeysInData:
     """Verify pipeline_handoff extracts operation/phase/pipeline from data payload.
 
-    This is the Cursor protocol: agent writes one JSON blob to current-task.json
+    This is the zero-arg-friendly protocol: agent writes one JSON blob to current-task.json
     containing both routing and payload instead of a separate routing write.
     """
 

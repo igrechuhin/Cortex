@@ -6,7 +6,7 @@ This is the main entry point for the Memory Bank MCP server.
 All tool implementations are in the tools/ package.
 
 By default the process runs once and exits when the connection drops (e.g. client
-disconnect). The client (e.g. Cursor) starts a new process when it next needs
+disconnect). The client starts a new process when it next needs
 MCP, so the next session gets a fresh Initialize handshake with no user action.
 Set CORTEX_AUTO_RESTART=1 to run an in-process restart loop (server respawns
 under the same pipe; may require reloading MCP after disconnect to restore tools).

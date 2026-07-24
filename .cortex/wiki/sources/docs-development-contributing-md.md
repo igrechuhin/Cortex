@@ -92,6 +92,18 @@ Bootstrap installs Python dependencies via `uv`. Run **`make preflight`** before
 > **Node.js**: The only Node.js dependency is `cspell` for spelling checks, which CI installs
 > on-demand via `npm install -g cspell@8.6.1`. No `npm install` step is required locally.
 
+### FastMCP hot-reload dev mode
+
+Use the FastMCP inspector dev workflow when iterating on MCP behavior:
+
+```bash
+make dev
+```
+
+This sets `CORTEX_DEV=1` and runs `fastmcp dev inspector src/cortex/server.py:mcp`
+with auto-reload enabled by default, so server changes are picked up without manually
+restarting the process.
+
 ### Python Version Management
 
 If you have multiple Python versions installed:
@@ -109,7 +121,7 @@ uv sync --python 3.13 --dev
 Configure your IDE to use the correct Python interpreter:
 
 - **Path**: `.venv/bin/python` (or `.venv\Scripts\python.exe` on Windows)
-- **Cursor/VS Code**: Open `.venv/bin/python` in the Python interpreter selection dialog
+- **VS Code-based editors**: Open `.venv/bin/python` in the Python interpreter selection dialog
 - **Type checking**: Enable Pyright with strict mode
 
 ### Type checking strategy
@@ -158,8 +170,7 @@ cortex/
 │   ├── synapse/                  # Synapse rules and scripts (git submodule)
 │   ├── plans/                    # Implementation plans
 │   └── ...                       # config, history, session artifacts
-├── .cursor/                      # Cursor IDE configuration (MCP client config, optional local files)
-│   └── ...                       # Rules source of truth: `.cortex/synapse/rules` (see AGENTS.md)
+├── .mcp.json                     # MCP server configuration (Claude Code and other MCP clients)
 ├── pyproject.toml               # Project configuration
 ├── README.md                    # Project overview
 ├── CLAUDE.md                    # Claude Code instructions
@@ -191,7 +202,7 @@ See [CLAUDE.md](../../CLAUDE.md) for the complete services initialization order.
 
 ### Quality checks: human (local) vs agent (MCP)
 
-Use the path that matches your role. **Agents** (IDE automation, Cursor commands, MCP-connected assistants) **must** use the **Agent (MCP)** column — direct formatter, linter, or raw `pytest` invocation by agents is a governance violation per [AGENTS.md](../../AGENTS.md).
+Use the path that matches your role. **Agents** (IDE automation, Claude Code subagents, MCP-connected assistants) **must** use the **Agent (MCP)** column — direct formatter, linter, or raw `pytest` invocation by agents is a governance violation per [AGENTS.md](../../AGENTS.md).
 
 | Task | Human (local CLI) | Agent (MCP) |
 | --- | --- | --- |
@@ -826,6 +837,7 @@ def test_validate_with_mocked_schema_validator(mock_validator):
    - Fix all type errors
 
 6. **Telemetry and usage caches**
+   - Usage persistence under `.cortex/synapse/.cache/usage/events/` is opt-in via `{"usage_writable": true}` in `.cortex/synapse/config.json`; when the key is absent, Cortex should not create new usage event files there.
    - If the diff touches `.cortex/synapse/.cache/usage/events/`, `.cortex/.session/context-usage-statistics.json`, or other aggregate telemetry JSON, confirm the change is intentional (shared analytics rollup, not accidental local noise). See [Tool usage tracking](../architecture/tool-usage-tracking.md).
 
 ### Create a Pull Request

@@ -10,7 +10,7 @@ from enum import Enum
 from pydantic import BaseModel, ConfigDict, Field
 
 from cortex.core.models import JsonDict
-from cortex.core.path_resolver import CortexResourceType, CursorResourceType
+from cortex.core.path_resolver import CortexResourceType
 from cortex.core.pydantic_extra import EXTRA_ALLOW, EXTRA_FORBID
 
 # ============================================================================
@@ -60,27 +60,6 @@ class LayoutConfig(StructureBaseModel):
     )
 
 
-class SymlinksConfig(StructureBaseModel):
-    """Symlinks configuration for Cursor integration."""
-
-    memory_bank: bool = Field(default=True, description="Create memory bank symlink")
-    rules: bool = Field(default=True, description="Create rules symlink")
-    plans: bool = Field(default=True, description="Create plans symlink")
-
-
-class CursorIntegrationConfigModel(StructureBaseModel):
-    """Cursor IDE integration configuration."""
-
-    enabled: bool = Field(default=True, description="Whether integration is enabled")
-    symlink_location: str = Field(
-        default=CursorResourceType.CURSOR_DIR.value,
-        description="Symlink location directory",
-    )
-    symlinks: SymlinksConfig = Field(
-        default_factory=SymlinksConfig, description="Symlink settings"
-    )
-
-
 class HousekeepingConfig(StructureBaseModel):
     """Housekeeping configuration for automatic maintenance."""
 
@@ -126,10 +105,6 @@ class StructureConfigModel(StructureBaseModel):
     version: str = Field(default="2.0", description="Configuration version")
     layout: LayoutConfig = Field(
         default_factory=LayoutConfig, description="Directory layout"
-    )
-    cursor_integration: CursorIntegrationConfigModel = Field(
-        default_factory=CursorIntegrationConfigModel,
-        description="Cursor IDE integration",
     )
     housekeeping: HousekeepingConfig = Field(
         default_factory=HousekeepingConfig, description="Housekeeping settings"
@@ -193,90 +168,6 @@ class SetupReport(StructureBaseModel):
         default_factory=list, description="Items skipped (already exist)"
     )
     errors: list[str] = Field(default_factory=list, description="Errors encountered")
-
-
-# ============================================================================
-# Symlink Models
-# ============================================================================
-
-
-class SymlinkEntry(StructureBaseModel):
-    """Information about a created symlink."""
-
-    link: str = Field(..., description="Symlink path")
-    target: str = Field(..., description="Target path")
-    relative_path: str = Field(..., description="Relative path from link to target")
-
-
-class SymlinkReport(StructureBaseModel):
-    """Report of symlink creation operation."""
-
-    success: bool = Field(..., description="Whether operation succeeded")
-    symlinks_created: list[SymlinkEntry] = Field(
-        default_factory=lambda: list[SymlinkEntry](),
-        description="Symlinks created",
-    )
-    errors: list[str] = Field(default_factory=list, description="Errors encountered")
-    platform: str = Field(..., description="Operating system platform")
-
-
-class SymlinkSuccess(Enum):
-    """Success value for symlink error response (always False)."""
-
-    FAILURE = False
-
-
-class SymlinkErrorResponse(StructureBaseModel):
-    """Error response for symlink operations."""
-
-    success: SymlinkSuccess = Field(default=SymlinkSuccess.FAILURE)
-    error: str = Field(..., description="Error message")
-
-
-# ============================================================================
-# Validation Models
-# ============================================================================
-
-
-class CursorIntegrationConfig(StructureBaseModel):
-    """Cursor integration configuration."""
-
-    enabled: bool = Field(default=True, description="Whether integration is enabled")
-    memory_bank_path: str | None = Field(
-        default=None, description="Memory bank path in Cursor"
-    )
-    rules_path: str | None = Field(default=None, description="Rules path in Cursor")
-    auto_sync: bool = Field(default=True, description="Whether to auto-sync")
-
-
-class SymlinkConfig(StructureBaseModel):
-    """Symlink configuration."""
-
-    memory_bank: str | None = Field(
-        default=None, description="Memory bank symlink target"
-    )
-    rules: str | None = Field(default=None, description="Rules symlink target")
-    enabled: bool = Field(default=True, description="Whether symlinks are enabled")
-
-
-class CursorIntegrationValidation(StructureBaseModel):
-    """Result of cursor integration config validation."""
-
-    model_config = ConfigDict(
-        extra=EXTRA_ALLOW,  # Allow extra fields for schema evolution
-    )
-
-    valid: bool = Field(..., description="Whether config is valid")
-    cursor_integration: CursorIntegrationConfigModel | None = Field(
-        default=None, description="Cursor integration config"
-    )
-    symlink_location: str | None = Field(default=None, description="Symlink location")
-    symlink_config: SymlinksConfig | None = Field(
-        default=None, description="Symlinks config"
-    )
-    error_response: SymlinkErrorResponse | None = Field(
-        default=None, description="Error response if invalid"
-    )
 
 
 # ============================================================================

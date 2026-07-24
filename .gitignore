@@ -65,10 +65,6 @@ coverage.json
 coverage_consolidated.json
 *.cover
 
-# Cortex data directories (project-specific, not tracked in this repo)
-# These are tracked in user projects, not in the Cortex server itself
-/.cursor/
-
 # Legacy memory bank paths (for migration)
 /.memory-bank/
 /.memory-bank-*
@@ -101,39 +97,19 @@ eval_results.json
 .cortex/.session/
 .cortex/.cache/
 .cortex/history/
-.cortex-backup-*/
-
-# Cortex MCP (transient/generated files)
-.cortex/.session/
-.cortex/.cache/
-.cortex/history/
 .cortex/.session/session-goal.md
 .cortex-backup-*/
+/.cortex/wal/write_log.jsonl
+/.cortex/wal/tool_invocations.jsonl
 
 # Cortex agent sync outputs (generated at MCP startup — do not commit)
 .claude/
-.cursor/agents/
-/.cortex/wal/write_log.jsonl
-/.cortex/wal/tool_invocations.jsonl
 
 # Cortex experience store (runtime pipeline history — do not commit)
 .cortex/experience/
 
-# Cortex MCP (transient/generated files)
-.cortex/.session/
-.cortex/.cache/
-.cortex/history/
-.cortex-backup-*/
-
-# Cortex agent sync outputs (generated at MCP startup — do not commit)
-.claude/
-.cursor/agents/
-
 # Cortex local machine context (host-specific; do not commit)
 .cortex/memory-bank/local-environment-context.json
-.cursor/memory-bank
-.cursor/plans
-.cursor/synapse
 
 # CodeGraph local index (generated; do not commit)
 .codegraph/

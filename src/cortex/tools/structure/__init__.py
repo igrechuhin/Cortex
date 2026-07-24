@@ -20,8 +20,8 @@ from cortex.tools.structure.main import (
     move_stale_plans,
     perform_archive_stale,
     perform_cleanup_actions,
-    perform_fix_symlinks,
     perform_remove_empty,
+    perform_remove_legacy_cursor_artifacts,
     perform_update_index,
     record_archive_action,
 )
@@ -45,8 +45,8 @@ __all__ = [
     "move_stale_plans",
     "perform_archive_stale",
     "perform_cleanup_actions",
-    "perform_fix_symlinks",
     "perform_remove_empty",
+    "perform_remove_legacy_cursor_artifacts",
     "perform_update_index",
     "record_archive_action",
 ]

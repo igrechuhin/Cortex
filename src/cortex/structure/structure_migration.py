@@ -14,12 +14,7 @@ from pathlib import Path
 from typing import cast
 
 from cortex.core.models import JsonValue, ModelDict
-from cortex.core.path_resolver import (
-    CortexResourceType,
-    CursorResourceType,
-    get_cortex_path,
-    get_cursor_path,
-)
+from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.structure.language_rules_scaffolding import (
     scaffold_language_rules_from_templates,
 )
@@ -28,12 +23,8 @@ from cortex.structure.language_scripts_scaffolding import (
     scaffold_language_scripts,
 )
 from cortex.structure.migration_strategies import (
-    migrate_cursor_default,
-    migrate_cursorrules,
     migrate_doc_mcp_style,
-    migrate_plans,
     migrate_scattered_files,
-    migrate_tradewing_style,
 )
 from cortex.structure.models import MigrationReport
 from cortex.structure.structure_config import (
@@ -75,22 +66,11 @@ class StructureMigrationManager:
         Returns:
             Structure type or None if no legacy structure detected
         """
-        # Check for TradeWing-style
-        cursor_plans_dir = get_cursor_path(self.project_root, CursorResourceType.PLANS)
-        if cursor_plans_dir.exists() and any(
-            (self.project_root / f).exists() for f in STANDARD_MEMORY_BANK_FILES
-        ):
-            return "tradewing-style"
-
         # Check for doc-mcp-style
-        if (
-            cursor_plans_dir.exists()
-            and (self.project_root / "docs" / "memory-bank").exists()
-        ):
+        if (self.project_root / "docs" / "memory-bank").exists():
             return "doc-mcp-style"
 
-        # Check for scattered files (only when .cursor/plans not present,
-        # so tradewing-style and doc-mcp-style take precedence)
+        # Check for scattered files
         from cortex.core.constants import MemoryBankFile
 
         scattered_files = list(self.project_root.rglob(MemoryBankFile.PROJECT_BRIEF))
@@ -99,15 +79,8 @@ class StructureMigrationManager:
             and not get_cortex_path(
                 self.project_root, CortexResourceType.CORTEX_DIR
             ).exists()
-            and not cursor_plans_dir.exists()
         ):
             return "scattered-files"
-
-        # Check for default Cursor
-        if (self.project_root / ".cursorrules").exists() or get_cursor_path(
-            self.project_root, CursorResourceType.CURSOR_DIR
-        ).exists():
-            return "cursor-default"
 
         return None
 
@@ -259,10 +232,8 @@ class StructureMigrationManager:
         migration_handlers: dict[
             str, Callable[[Path, Callable[[str], Path], ModelDict], None]
         ] = {
-            "tradewing-style": migrate_tradewing_style,
             "doc-mcp-style": migrate_doc_mcp_style,
             "scattered-files": migrate_scattered_files,
-            "cursor-default": migrate_cursor_default,
         }
 
         handler = migration_handlers.get(legacy_type)
@@ -294,17 +265,9 @@ class StructureMigrationManager:
 
     # Backwards-compatible delegate methods for internal API
 
-    def _migrate_cursor_default(self, report: ModelDict) -> None:
-        """Migrate Cursor default structure (delegate)."""
-        migrate_cursor_default(self.project_root, self.get_path, report)
-
     def _migrate_doc_mcp_style(self, report: ModelDict) -> None:
         """Migrate doc-mcp-style structure (delegate)."""
         migrate_doc_mcp_style(self.project_root, self.get_path, report)
-
-    def _migrate_tradewing_style(self, report: ModelDict) -> None:
-        """Migrate TradeWing-style structure (delegate)."""
-        migrate_tradewing_style(self.project_root, self.get_path, report)
 
     def _migrate_scattered_files(self, report: ModelDict) -> None:
         """Migrate scattered files (delegate)."""
@@ -321,24 +284,6 @@ class StructureMigrationManager:
         migrate_memory_bank_files_from_source(
             self.project_root, memory_bank_dir, migration_data
         )
-
-    def migrate_plans(self, plans_dir: Path, migration_data: ModelDict) -> None:
-        """Migrate plans from .cursor/plans to plans directory.
-
-        Args:
-            plans_dir: Target plans directory
-            migration_data: Migration data dictionary
-        """
-        migrate_plans(self.project_root, plans_dir, migration_data)
-
-    def migrate_cursorrules(self, rules_dir: Path, migration_data: ModelDict) -> None:
-        """Migrate .cursorrules to rules directory.
-
-        Args:
-            rules_dir: Target rules directory
-            migration_data: Migration data dictionary
-        """
-        migrate_cursorrules(self.project_root, rules_dir, migration_data)
 
 
 # Export for public API

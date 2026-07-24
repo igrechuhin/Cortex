@@ -17,11 +17,10 @@ from types import ModuleType
 from cortex.core.models import ModelDict
 from cortex.server import mcp
 from cortex.tools.synapse.prompts_agents import (
+    get_agents_source,
     get_claude_agents_target,
-    get_cursor_agents_source,
-    get_cursor_agents_target,
     inject_tools_into_frontmatter,
-    sync_cursor_agents,
+    sync_claude_agents,
 )
 from cortex.tools.synapse.prompts_content import (
     CLAUDE_CODE_TOOLS_FIELD,
@@ -58,9 +57,8 @@ __all__ = [
     "DEFAULT_PROMPT_ICON",
     "SYNAPSE_PROMPT_ICONS",
     "create_prompt_function",
+    "get_agents_source",
     "get_claude_agents_target",
-    "get_cursor_agents_source",
-    "get_cursor_agents_target",
     "get_prompts_paths",
     "get_synapse_prompts_path",
     "inject_tools_into_frontmatter",
@@ -70,7 +68,7 @@ __all__ = [
     "process_prompt_info",
     "register_prompts_from_path",
     "register_synapse_prompts",
-    "sync_cursor_agents",
+    "sync_claude_agents",
 ]
 
 
@@ -117,11 +115,11 @@ def register_synapse_prompts(project_root: Path | None = None) -> None:
     register_synapse_prompts_for_facade(_facade(), project_root)
 
 
-# Register prompts and sync cursor agents at import time using heuristic root.
+# Register prompts and sync Claude agents at import time using heuristic root.
 # When CWD equals the project root (e.g. ``python -m cortex.main`` launched by
 # the IDE from the project directory), this succeeds immediately.  When the
 # heuristic fails (e.g. uvx launched from home dir), the LazyPromptRegistry
 # will re-run these calls with the correct root on the first list_prompts
 # request from the client.
 register_synapse_prompts()
-sync_cursor_agents()
+sync_claude_agents()

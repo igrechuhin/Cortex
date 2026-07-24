@@ -115,16 +115,16 @@ def _resolve_zero_arg_defaults(
     pipeline: str,
     phase: str | None,
 ) -> tuple[str, str, str | None]:
-    """Fall back to session config when Cursor strips all tool arguments.
+    """Fall back to session config when an MCP client strips all tool arguments.
 
-    Cursor's MCP bridge sends {} for every tool call, leaving all parameters
+    Some MCP client bridges send {} for every tool call, leaving all parameters
     at their declared defaults.  Detect this by checking whether both
     ``operation`` and ``pipeline`` are still at their default values, then read
     ``operation``, ``pipeline``, and ``phase`` from the session config file
     written by the orchestrator prompt before it called this tool.
 
     If session config is absent or incomplete the original values are returned
-    unchanged, so non-Cursor callers are unaffected.
+    unchanged, so unaffected callers see no behavior change.
     """
     if operation != PipelineHandoffOperation.READ_STATE.value or pipeline != "default":
         # At least one arg was explicitly set — not a zero-arg call.
@@ -144,7 +144,7 @@ def _resolve_zero_arg_defaults(
 def _coerce_data(data: object) -> str | None:
     """Normalize data to a JSON string regardless of what the LLM sent.
 
-    Cursor agents may send data as a native JSON object (dict) even though the
+    Some MCP client agents may send data as a native JSON object (dict) even though the
     MCP schema declares str | None.  Accept both: if already a string, use it
     as-is; if a dict/list/scalar, serialise it; if None/empty, return None.
     """
@@ -411,7 +411,7 @@ async def _dispatch(
 ) -> str:
     data_str = _coerce_data(data)
 
-    # Extract routing overrides embedded in the data payload (Cursor protocol).
+    # Extract routing overrides embedded in the data payload.
     # Agents write {"operation":"write","phase":"select","pipeline":"implement",...payload...}
     # to current-task.json so routing + payload travel in one write instead of two.
     routing, data_str = extract_routing_keys(data_str)
@@ -422,7 +422,7 @@ async def _dispatch(
     if routing.get("pipeline"):
         pipeline = routing["pipeline"]
 
-    # When Cursor strips all args and no routing keys were in data, recover
+    # When an MCP client strips all args and no routing keys were in data, recover
     # operation/pipeline/phase from the session config file.
     operation, pipeline, phase = _resolve_zero_arg_defaults(operation, pipeline, phase)
 

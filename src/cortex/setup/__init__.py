@@ -29,7 +29,6 @@ def should_mount_setup(config: ProjectConfigStatus | None = None) -> bool:
     return (
         not status.memory_bank_initialized
         or not status.structure_configured
-        or not status.cursor_integration_configured
         or status.migration_needed
         or not status.tiktoken_cache_available
     )

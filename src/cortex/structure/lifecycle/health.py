@@ -11,20 +11,17 @@ Health score starts at 100 and is reduced by fixed penalties for each issue.
 Grade mapping: A=90+, B=75-89, C=60-74, D=50-59, F=0-49.
 """
 
-from typing import cast
-
 from cortex.core.constants import (
     HEALTH_GRADE_B_MIN,
     HEALTH_GRADE_C_MIN,
     HEALTH_GRADE_D_MIN,
     HEALTH_INITIAL_SCORE,
-    HEALTH_PENALTY_BROKEN_SYMLINK,
     HEALTH_PENALTY_NO_CONFIG,
     HEALTH_PENALTY_NO_MEMORY_BANK_FILES,
     HEALTH_PENALTY_PER_MISSING_DIR,
     HEALTH_SCORE_EXCELLENT,
 )
-from cortex.core.models import ModelDict
+from cortex.core.path_resolver import get_legacy_cursor_dir_path
 from cortex.structure.models import HealthCheckResult, HealthGrade, HealthStatus
 from cortex.structure.structure_config import StructureConfig
 
@@ -84,7 +81,7 @@ class StructureHealthChecker:
         score = HEALTH_INITIAL_SCORE
 
         score = self._check_required_directories(checks, issues, recommendations, score)
-        score = self._check_symlinks_validity(checks, issues, recommendations, score)
+        self._check_legacy_cursor_artifacts(checks, issues, recommendations)
         score = self._check_config_file(checks, issues, recommendations, score)
         score = self._check_memory_bank_files(checks, issues, recommendations, score)
 
@@ -179,112 +176,31 @@ class StructureHealthChecker:
             "Run setup_project_structure() to create missing directories"
         )
 
-    def _check_symlinks_validity(
+    def _check_legacy_cursor_artifacts(
         self,
         checks_list: list[str],
         issues_list: list[str],
         recommendations_list: list[str],
-        score: int,
-    ) -> int:
-        """Check that Cursor symlinks are valid.
+    ) -> None:
+        """Flag a leftover .cursor/ dir from a pre-removal Cortex version.
+
+        Advisory only (no score penalty): startup repair removes these
+        automatically, so surviving artifacts usually mean repair hasn't run
+        yet, not an unhealthy structure.
 
         Args:
             checks_list: List of check messages to update
             issues_list: List of issue messages to update
             recommendations_list: List of recommendation messages to update
-            score: Current health score
-
-        Returns:
-            Updated score after symlink check
         """
-        symlink_location = self._get_symlink_location()
-        if symlink_location:
-            score = self._validate_symlinks(
-                symlink_location, score, checks_list, issues_list, recommendations_list
-            )
-
-        return score
-
-    def _get_symlink_location(self) -> str | None:
-        """Get symlink location from config if cursor integration is enabled.
-
-        Returns:
-            Symlink location string or None if not enabled
-        """
-        cursor_integration_val = self.config.structure_config.get("cursor_integration")
-        if not isinstance(cursor_integration_val, dict):
-            return None
-
-        cursor_integration = cast(ModelDict, cursor_integration_val)
-        enabled_val = cursor_integration.get("enabled")
-        if not isinstance(enabled_val, bool) or not enabled_val:
-            return None
-
-        symlink_location_val = cursor_integration.get("symlink_location")
-        if isinstance(symlink_location_val, str):
-            return symlink_location_val
-
-        return None
-
-    def _validate_symlinks(
-        self,
-        symlink_location: str,
-        score: int,
-        checks_list: list[str],
-        issues_list: list[str],
-        recommendations_list: list[str],
-    ) -> int:
-        """Validate symlinks and update health lists.
-
-        Args:
-            symlink_location: Location of cursor symlinks
-            score: Current health score
-            checks_list: List of check messages
-            issues_list: List of issue messages
-            recommendations_list: List of recommendation messages
-
-        Returns:
-            Updated score
-        """
-        broken_symlinks = self._find_broken_symlinks(symlink_location, score)
-        score = broken_symlinks[1]
-
-        if broken_symlinks[0]:
-            broken_symlinks_str_list: list[str] = [str(s) for s in broken_symlinks[0]]
-            issues_list.append(
-                f"Broken symlinks: {', '.join(broken_symlinks_str_list)}"
-            )
+        cursor_dir = get_legacy_cursor_dir_path(self.config.project_root)
+        if cursor_dir.is_dir():
+            issues_list.append(f"Leftover legacy .cursor/ directory: {cursor_dir}")
             recommendations_list.append(
-                "Run setup_cursor_integration() to fix symlinks"
+                "Restart the Cortex MCP server to clean up leftover .cursor/ artifacts"
             )
         else:
-            checks_list.append("✓ All Cursor symlinks are valid")
-
-        return score
-
-    def _find_broken_symlinks(
-        self, symlink_location: str, score: int
-    ) -> tuple[list[str], int]:
-        """Find broken symlinks in cursor directory.
-
-        Args:
-            symlink_location: Location of cursor symlinks
-            score: Current health score
-
-        Returns:
-            Tuple of (broken_symlinks_list, updated_score)
-        """
-        cursor_dir = self.config.project_root / symlink_location
-        broken_symlinks: list[str] = []
-
-        for symlink_name in ["memory-bank", "rules", "plans"]:
-            symlink_path = cursor_dir / symlink_name
-            if symlink_path.is_symlink():
-                if not symlink_path.exists():
-                    broken_symlinks.append(symlink_name)
-                    score -= HEALTH_PENALTY_BROKEN_SYMLINK
-
-        return broken_symlinks, score
+            checks_list.append("✓ No leftover .cursor/ artifacts")
 
     def _check_config_file(
         self,

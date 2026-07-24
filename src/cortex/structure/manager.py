@@ -52,11 +52,6 @@ class StructureManager:
         report = await self._lifecycle.create_structure(force)
         return report.model_dump(mode="json")
 
-    def setup_cursor_integration(self) -> ModelDict:
-        """Setup Cursor IDE integration via symlinks."""
-        report = self._lifecycle.setup_cursor_integration()
-        return report.model_dump(mode="json")
-
     def check_structure_health(self) -> ModelDict:
         """Check the health of the project structure."""
         health = self._lifecycle.check_structure_health()

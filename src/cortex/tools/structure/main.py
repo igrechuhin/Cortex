@@ -10,7 +10,7 @@ Total: 2 tools
 - check_structure_health (with optional perform_cleanup parameter)
 - get_structure_info
 
-Note: setup_project_structure, migrate_project_structure, and setup_cursor_integration
+Note: setup_project_structure and migrate_project_structure
 have been replaced by prompt templates in docs/prompts/
 
 Note: cleanup_project_structure has been consolidated into check_structure_health with
@@ -42,8 +42,8 @@ from cortex.tools.structure.operations import (
     move_stale_plans,
     perform_archive_stale,
     perform_cleanup_actions,
-    perform_fix_symlinks,
     perform_remove_empty,
+    perform_remove_legacy_cursor_artifacts,
     perform_update_index,
     record_archive_action,
 )
@@ -81,8 +81,8 @@ __all__ = [
     "move_stale_plans",
     "perform_archive_stale",
     "perform_cleanup_actions",
-    "perform_fix_symlinks",
     "perform_remove_empty",
+    "perform_remove_legacy_cursor_artifacts",
     "perform_update_index",
     "record_archive_action",
 ]

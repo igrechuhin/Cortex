@@ -115,7 +115,7 @@ class TestConvenienceMethods:
         """Test get_rules_folder returns folder path."""
         config = OptimizationConfig(temp_project_root)
         folder = config.get_rules_folder()
-        assert folder == ".cursorrules"
+        assert folder == ".cortex/rules"
 
     def test_is_self_evolution_enabled_returns_bool(
         self, temp_project_root: Path

@@ -11,7 +11,7 @@ _PLAN_TEXT_HINTS: tuple[tuple[TaskType, tuple[str, ...]], ...] = (
         TaskType.MCP_RESOURCE,
         ("mcp resource", "@mcp.resource", "resource uri", "cortex://"),
     ),
-    (TaskType.PROMPT, ("prompt", "cursor-agent", "synapse", "agent prompt")),
+    (TaskType.PROMPT, ("prompt", "claude-agent", "synapse", "agent prompt")),
     (TaskType.SCHEMA, ("pydantic", "schema", "basemodel", "model")),
     (TaskType.INFRA, ("ci", "workflow", "pipeline", "makefile", "build")),
     (TaskType.DOCUMENTATION, ("readme", "markdown", "docs", "docstring")),

@@ -85,7 +85,7 @@ async def rules(
     This consolidated tool provides two key operations for custom rules management:
 
     1. **index**: Discovers and indexes custom rules from configured rules folders
-       (e.g., .cursor/rules/, .idea/rules/). Parses rule files, extracts metadata,
+       (e.g., .cortex/rules/, .idea/rules/). Parses rule files, extracts metadata,
        calculates token counts, and builds a searchable index for fast retrieval.
        Supports incremental updates and caching to avoid redundant reindexing.
 
@@ -137,7 +137,7 @@ async def rules(
                 "total_tokens": 15234,            # Total tokens across all rules
                 "cache_hit": false,               # Whether cache was used
                 "index_time_seconds": 2.5,        # Time taken to index
-                "rules_folder": ".cursor/rules",  # Source folder path
+                "rules_folder": ".cortex/rules",  # Source folder path
                 "rules_by_category": {            # Breakdown by category
                     "generic": 15,
                     "language_specific": 20,

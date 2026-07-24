@@ -2,8 +2,6 @@
 
 Powered by [Enlighter](https://enlightby.ai) and [Hyperskill](https://hyperskill.org).
 
-Learn how to setup and use Memory Bank directly in Cursor: <http://enlightby.ai/projects/37>
-
 [![smithery badge](https://smithery.ai/badge/@igrechuhin/cortex)](https://smithery.ai/server/@igrechuhin/cortex)
 
 [![Cortex MCP server](https://glama.ai/mcp/servers/@igrechuhin/cortex/badge)](https://glama.ai/mcp/servers/@igrechuhin/cortex)
@@ -83,7 +81,7 @@ uvx --from git+https://github.com/igrechuhin/Cortex.git cortex --help
 
 Details: [Getting started — Stable MCP setup](docs/getting-started.md#stable-mcp-setup-recommended), [Troubleshooting — uvx cold start](docs/guides/troubleshooting.md#issue-uvx-cold-start-mcp-timeout).
 
-**Project-level vs global config:** Place the snippet in your project's `.cursor/mcp.json` (or `.claude/mcp.json`) rather than in the global IDE config. Project-level config lets Cortex resolve the correct workspace root immediately. A global config makes your IDE launch Cortex with CWD set to the home directory; Cortex falls back to a heuristic root-finder that can pick up stale `.cortex/` state left in `~/` and show spurious setup prompts.
+**Project-level vs global config:** Place the snippet in your project's `.mcp.json` rather than in the global client config. Project-level config lets Cortex resolve the correct workspace root immediately. A global config makes your client launch Cortex with CWD set to the home directory; Cortex falls back to a heuristic root-finder that can pick up stale `.cortex/` state left in `~/` and show spurious setup prompts.
 
 ### With Smithery
 
@@ -162,7 +160,7 @@ For local development, use these Make targets (after running `bash scripts/boots
 - **`make check-ci-parity`**: Run a broader subset of the GitHub Actions [Code Quality](.github/workflows/quality.yml) workflow via `uv run` (synapse format/lint scripts, type checks, file/function limits, rumdl, pytest with coverage). Requires `uv` on your `PATH`. Still **not** identical to CI: spell check (`cspell`), the eval suite, Codecov, and health-check upload steps run only in Actions—see [Troubleshooting — Local make check vs CI](docs/guides/troubleshooting.md#local-make-check-vs-ci-parity).
 - **`make test`**: Run the default suite in parallel (`-n auto`), skip `@pytest.mark.slow`, no coverage (timeouts). Use `make check-ci-parity` for the full pytest+coverage command that matches CI.
 - **`make test-full`**: Run the full test suite (including slower tests) with a longer timeout.
-- **`make commit-check`**: Run the same checks as `make check` before using `/cortex/commit` in Cursor for the full commit pipeline. With Cortex MCP connected, Phase A / Step 12 use the zero-arg tools documented in [docs/api/tools.md](docs/api/tools.md#commit-and-quality-pipeline-zero-arg-mcp-tools).
+- **`make commit-check`**: Run the same checks as `make check` before using `/cortex/commit` for the full commit pipeline. With Cortex MCP connected, Phase A / Step 12 use the zero-arg tools documented in [docs/api/tools.md](docs/api/tools.md#commit-and-quality-pipeline-zero-arg-mcp-tools).
 
 ## Key Tools
 
@@ -198,7 +196,7 @@ Prompts are for setup and migration; for daily work use **plan → do → commit
 | Situation | Prompt |
 |-----------|--------|
 | New project, no Memory Bank | `initialize` |
-| Legacy Memory Bank under IDE `.cursor/` (`memory-bank/`) | `migrate` |
+| Legacy Memory Bank under `memory-bank/` or `.memory-bank/` | `migrate` |
 | Share rules across projects | `setup_synapse` |
 | tiktoken cache missing (local encoding cache setup) | `populate_tiktoken_cache` |
 

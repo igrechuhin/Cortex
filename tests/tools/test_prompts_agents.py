@@ -1,28 +1,27 @@
-"""Tests for prompts_agents.py — cursor/claude agent sync."""
+"""Tests for prompts_agents.py — Claude Code agent sync."""
 
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 from cortex.tools.synapse.prompts_agents import (
+    get_agents_source,
     get_claude_agents_target,
-    get_cursor_agents_source,
-    get_cursor_agents_target,
     inject_tools_into_frontmatter,
     rewrite_tool_refs,
     sync_agent_file,
     sync_agents_to_target,
-    sync_cursor_agents,
+    sync_claude_agents,
 )
 from cortex.tools.synapse.prompts_content import CORTEX_TOOL_NAMES, MCP_TOOL_PREFIX
 
 # ---------------------------------------------------------------------------
-# get_cursor_agents_source
+# get_agents_source
 # ---------------------------------------------------------------------------
 
 
-class TestGetCursorAgentsSource:
-    def test_returns_none_when_no_cursor_agents_found(self) -> None:
-        """Returns None when no .cortex/synapse/cursor-agents/ directory exists."""
+class TestGetAgentsSource:
+    def test_returns_none_when_no_agents_found(self) -> None:
+        """Returns None when no .cortex/synapse/claude-agents/ directory exists."""
         with (
             patch(
                 "cortex.tools.synapse.prompts_agents.Path.cwd",
@@ -35,59 +34,48 @@ class TestGetCursorAgentsSource:
             ),
         ):
             # Act: use module fallback path that won't exist
-            result = get_cursor_agents_source()
+            result = get_agents_source()
             # Either returns a real path (from the actual repo) or None
             # In the real repo this succeeds; we just verify no exception
             assert result is None or isinstance(result, Path)
 
-    def test_finds_cursor_agents_via_cwd(self, tmp_path: Path) -> None:
-        """Finds cursor-agents dir when it exists under .cortex/synapse/."""
-        agents_dir = tmp_path / ".cortex" / "synapse" / "cursor-agents"
+    def test_finds_agents_via_cwd(self, tmp_path: Path) -> None:
+        """Finds claude-agents dir when it exists under .cortex/synapse/."""
+        agents_dir = tmp_path / ".cortex" / "synapse" / "claude-agents"
         agents_dir.mkdir(parents=True)
         with patch(
             "cortex.tools.synapse.prompts_agents.Path.cwd", return_value=tmp_path
         ):
-            result = get_cursor_agents_source()
+            result = get_agents_source()
         assert result == agents_dir
 
-    def test_finds_cursor_agents_via_explicit_project_root(
-        self, tmp_path: Path
-    ) -> None:
+    def test_finds_agents_via_explicit_project_root(self, tmp_path: Path) -> None:
         """Explicit project_root bypasses CWD walk."""
-        agents_dir = tmp_path / ".cortex" / "synapse" / "cursor-agents"
+        agents_dir = tmp_path / ".cortex" / "synapse" / "claude-agents"
         agents_dir.mkdir(parents=True)
         # CWD is deliberately wrong; explicit root should win
         with patch(
             "cortex.tools.synapse.prompts_agents.Path.cwd",
             return_value=Path("/nonexistent_xyz"),
         ):
-            result = get_cursor_agents_source(project_root=tmp_path)
+            result = get_agents_source(project_root=tmp_path)
         assert result == agents_dir
 
     def test_returns_none_via_explicit_root_when_missing(self, tmp_path: Path) -> None:
-        """Returns None when cursor-agents dir absent under explicit project_root."""
-        result = get_cursor_agents_source(project_root=tmp_path)
+        """Returns None when claude-agents dir absent under explicit project_root."""
+        result = get_agents_source(project_root=tmp_path)
         assert result is None
 
 
 # ---------------------------------------------------------------------------
-# get_cursor_agents_target / get_claude_agents_target
+# get_claude_agents_target
 # ---------------------------------------------------------------------------
 
 
 class TestGetAgentsTarget:
-    def test_cursor_target_inferred_from_source(self, tmp_path: Path) -> None:
-        """get_cursor_agents_target returns <root>/<cursor_dir>/agents/."""
-        from cortex.core.path_resolver import CursorResourceType, get_cursor_path
-
-        source = tmp_path / ".cortex" / "synapse" / "cursor-agents"
-        result = get_cursor_agents_target(source)
-        expected = get_cursor_path(tmp_path, CursorResourceType.CURSOR_DIR) / "agents"
-        assert result == expected
-
     def test_claude_target_inferred_from_source(self, tmp_path: Path) -> None:
         """get_claude_agents_target returns <root>/.claude/agents/."""
-        source = tmp_path / ".cortex" / "synapse" / "cursor-agents"
+        source = tmp_path / ".cortex" / "synapse" / "claude-agents"
         result = get_claude_agents_target(source)
         assert result == tmp_path / ".claude" / "agents"
 
@@ -271,23 +259,23 @@ class TestSyncAgentsToTarget:
 
 
 # ---------------------------------------------------------------------------
-# sync_cursor_agents
+# sync_claude_agents
 # ---------------------------------------------------------------------------
 
 
-class TestSyncCursorAgents:
+class TestSyncClaudeAgents:
     def test_does_nothing_when_source_not_found(self) -> None:
-        """sync_cursor_agents is a no-op when source directory is not found."""
+        """sync_claude_agents is a no-op when source directory is not found."""
         with patch(
-            "cortex.tools.synapse.prompts_agents.get_cursor_agents_source",
+            "cortex.tools.synapse.prompts_agents.get_agents_source",
             return_value=None,
         ):
             # Should not raise
-            sync_cursor_agents()
+            sync_claude_agents()
 
-    def test_syncs_to_both_targets_when_source_found(self, tmp_path: Path) -> None:
-        """sync_cursor_agents writes to both cursor and claude targets."""
-        source = tmp_path / ".cortex" / "synapse" / "cursor-agents"
+    def test_syncs_to_claude_target_when_source_found(self, tmp_path: Path) -> None:
+        """sync_claude_agents writes to the .claude/agents/ target."""
+        source = tmp_path / ".cortex" / "synapse" / "claude-agents"
         source.mkdir(parents=True)
         _ = (source / "agent.md").write_text(
             "---\nname: t\n---\nbody", encoding="utf-8"
@@ -296,7 +284,7 @@ class TestSyncCursorAgents:
         mock_sync = MagicMock(return_value=1)
         with (
             patch(
-                "cortex.tools.synapse.prompts_agents.get_cursor_agents_source",
+                "cortex.tools.synapse.prompts_agents.get_agents_source",
                 return_value=source,
             ),
             patch(
@@ -304,6 +292,6 @@ class TestSyncCursorAgents:
                 mock_sync,
             ),
         ):
-            sync_cursor_agents()
+            sync_claude_agents()
 
-        assert mock_sync.call_count == 2
+        assert mock_sync.call_count == 1

@@ -156,7 +156,7 @@ def _resolve_pre_commit_check_names(
         return phase_to_checks(phase_enum)
     if checks:
         return [c.value if hasattr(c, "value") else str(c) for c in checks]
-    # Cursor MCP wrapper cannot currently pass args to tools, so default
+    # Some MCP client bridges cannot currently pass args to tools, so default
     # to Phase A when neither phase nor checks are provided. This ensures
     # commit-checks and commit-final-gate agents can start the quality job.
     return phase_to_checks(PreCommitPhase("A"))

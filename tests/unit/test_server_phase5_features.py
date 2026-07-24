@@ -17,7 +17,7 @@ from cortex.server import (
 
 
 def test_cortex_agent_only_auth_allows_trusted_client() -> None:
-    ctx = SimpleNamespace(client_info=SimpleNamespace(name="cursor-agent"))
+    ctx = SimpleNamespace(client_info=SimpleNamespace(name="claude-agent"))
     assert cortex_agent_only_auth(ctx) is True
 
 

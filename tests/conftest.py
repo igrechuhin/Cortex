@@ -9,71 +9,31 @@ This module provides comprehensive fixtures for:
 - Test data for various scenarios
 """
 
-# Patch get_cursor_path before any other cortex import so structure_migration etc. see it.
-import tempfile  # noqa: I001
+import asyncio
+import json
+import tempfile
+from collections.abc import Callable, Generator, ItemsView, KeysView, ValuesView
+from datetime import datetime
 from pathlib import Path
 
-import cortex.core.path_resolver as _path_resolver_module  # noqa: E402, I001
-from cortex.core.path_resolver import (
-    CursorResourceType as _CursorResourceType,  # noqa: E402
-)
+import pytest
+from pydantic import BaseModel
 
-# Repo root (tests/conftest.py -> tests/ -> repo root). When project_root is this,
-# we use a session temp dir so the workspace is not polluted with _cursor.
-_REPO_ROOT = Path(__file__).resolve().parent.parent
-_SESSION_CURSOR_BASE = tempfile.mkdtemp(prefix="cortex_cursor_")
-
-
-def _get_cursor_path_test(
-    project_root: Path, resource_type: _CursorResourceType
-) -> Path:
-    """Return cursor path: session temp when project is repo root, else project_root/_cursor."""
-    try:
-        resolved = project_root.resolve()
-    except OSError:
-        resolved = project_root
-    if resolved == _REPO_ROOT:
-        base = Path(_SESSION_CURSOR_BASE)
-    else:
-        base = project_root / "_cursor"
-    if resource_type == _CursorResourceType.CURSOR_DIR:
-        return base
-    return base / resource_type.value
-
-
-_path_resolver_module.get_cursor_path = _get_cursor_path_test  # type: ignore[method-assign]
-
-import asyncio  # noqa: E402
-import json  # noqa: E402
-from collections.abc import Generator, ItemsView, KeysView, ValuesView  # noqa: E402
-from datetime import datetime  # noqa: E402
-from typing import cast  # noqa: E402
-
-import pytest  # noqa: E402
-
-# Use _cursor as default symlink_location in tests so structure managers can create the dir.
-import cortex.structure.structure_config as _structure_config  # noqa: E402
-from cortex.core.dependency_graph import DependencyGraph  # noqa: E402
-from cortex.core.mcp_stability_retry import (  # noqa: E402
+from cortex.core.dependency_graph import DependencyGraph
+from cortex.core.mcp_stability_retry import (
     ensure_clean_connection_state_for_testing,
     reset_connection_state_for_testing,
 )
-from cortex.core.metadata_index import MetadataIndex  # noqa: E402
-from cortex.core.models import JsonValue, ModelDict  # noqa: E402
-from cortex.core.project_root_resolver import clear_cached_root  # noqa: E402
-from cortex.core.token_counter import TokenCounter  # noqa: E402
-from cortex.managers.types import ManagersDict  # noqa: E402
-from cortex.optimization.relevance_scorer import RelevanceScorer  # noqa: E402
-from tests.helpers.path_helpers import (  # noqa: E402
+from cortex.core.metadata_index import MetadataIndex
+from cortex.core.models import JsonValue, ModelDict
+from cortex.core.project_root_resolver import clear_cached_root
+from cortex.core.token_counter import TokenCounter
+from cortex.managers.types import ManagersDict
+from cortex.optimization.relevance_scorer import RelevanceScorer
+from tests.helpers.path_helpers import (
     ensure_test_cortex_structure,
     get_test_memory_bank_dir,
 )
-
-_cursor_integration: ModelDict = dict(
-    cast(ModelDict, _structure_config.DEFAULT_STRUCTURE["cursor_integration"])
-)
-_cursor_integration["symlink_location"] = "_cursor"
-_structure_config.DEFAULT_STRUCTURE["cursor_integration"] = _cursor_integration
 
 
 @pytest.fixture(autouse=True)
@@ -96,6 +56,65 @@ def isolate_project_root_cache() -> Generator[None]:
     clear_cached_root()
 
 
+def _build_pydantic_dict_shim_methods() -> tuple[
+    Callable[[BaseModel, str], JsonValue],
+    Callable[[BaseModel, str, JsonValue | None], JsonValue | None],
+    Callable[[BaseModel, object], bool],
+    Callable[[BaseModel], KeysView[str]],
+    Callable[[BaseModel], ItemsView[str, JsonValue]],
+    Callable[[BaseModel], ValuesView[JsonValue]],
+]:
+    """Build the dict-like accessor functions attached to BaseModel by the shim."""
+
+    def __getitem__(self: BaseModel, key: str) -> JsonValue:
+        data: ModelDict = self.model_dump(mode="python", by_alias=True)
+        return data[key]
+
+    def get(
+        self: BaseModel, key: str, default: JsonValue | None = None
+    ) -> JsonValue | None:
+        data: ModelDict = self.model_dump(mode="python", by_alias=True)
+        return data.get(key, default)
+
+    def __contains__(self: BaseModel, key: object) -> bool:
+        if not isinstance(key, str):
+            return False
+        data: ModelDict = self.model_dump(mode="python", by_alias=True)
+        return key in data
+
+    def keys(self: BaseModel) -> KeysView[str]:
+        data: ModelDict = self.model_dump(mode="python", by_alias=True)
+        return data.keys()
+
+    def items(self: BaseModel) -> ItemsView[str, JsonValue]:
+        data: ModelDict = self.model_dump(mode="python", by_alias=True)
+        return data.items()
+
+    def values(self: BaseModel) -> ValuesView[JsonValue]:
+        data: ModelDict = self.model_dump(mode="python", by_alias=True)
+        return data.values()
+
+    return __getitem__, get, __contains__, keys, items, values
+
+
+def _install_pydantic_dict_shim() -> None:
+    """Attach dict-like methods (`[]`, `in`, `.get/.keys/.items/.values`) to BaseModel.
+
+    Extracted from `make_pydantic_models_dict_like` to keep that fixture short;
+    only installs once (guarded by `hasattr(BaseModel, "__getitem__")`).
+    """
+    if hasattr(BaseModel, "__getitem__"):
+        return
+
+    getitem, get, contains, keys, items, values = _build_pydantic_dict_shim_methods()
+    BaseModel.__getitem__ = getitem  # type: ignore[method-assign]
+    BaseModel.get = get  # type: ignore[method-assign]
+    BaseModel.__contains__ = contains  # type: ignore[method-assign]
+    BaseModel.keys = keys  # type: ignore[method-assign]
+    BaseModel.items = items  # type: ignore[method-assign]
+    BaseModel.values = values  # type: ignore[method-assign]
+
+
 @pytest.fixture(autouse=True, scope="session")
 def make_pydantic_models_dict_like():
     """Make Pydantic models behave dict-like in tests.
@@ -103,51 +122,9 @@ def make_pydantic_models_dict_like():
     A large portion of the historical test suite treats return values as plain dicts.
     During the Phase 53 type-safety cleanup, many APIs were migrated to Pydantic
     models. To keep tests focused on semantics (not container type), we provide
-    a thin dict-like shim for `pydantic.BaseModel` in the test runtime:
-    - `model["key"]`
-    - `"key" in model`
-    - `model.get("key", default)`
-    - `model.keys()/items()/values()`
+    a thin dict-like shim for `pydantic.BaseModel` in the test runtime.
     """
-    from pydantic import BaseModel
-
-    if not hasattr(BaseModel, "__getitem__"):
-
-        def __getitem__(self: BaseModel, key: str) -> JsonValue:
-            data: ModelDict = self.model_dump(mode="python", by_alias=True)
-            return data[key]
-
-        def get(
-            self: BaseModel, key: str, default: JsonValue | None = None
-        ) -> JsonValue | None:
-            data: ModelDict = self.model_dump(mode="python", by_alias=True)
-            return data.get(key, default)
-
-        def __contains__(self: BaseModel, key: object) -> bool:
-            if not isinstance(key, str):
-                return False
-            data: ModelDict = self.model_dump(mode="python", by_alias=True)
-            return key in data
-
-        def keys(self: BaseModel) -> KeysView[str]:
-            data: ModelDict = self.model_dump(mode="python", by_alias=True)
-            return data.keys()
-
-        def items(self: BaseModel) -> ItemsView[str, JsonValue]:
-            data: ModelDict = self.model_dump(mode="python", by_alias=True)
-            return data.items()
-
-        def values(self: BaseModel) -> ValuesView[JsonValue]:
-            data: ModelDict = self.model_dump(mode="python", by_alias=True)
-            return data.values()
-
-        BaseModel.__getitem__ = __getitem__  # type: ignore[method-assign]
-        BaseModel.get = get  # type: ignore[method-assign]
-        BaseModel.__contains__ = __contains__  # type: ignore[method-assign]
-        BaseModel.keys = keys  # type: ignore[method-assign]
-        BaseModel.items = items  # type: ignore[method-assign]
-        BaseModel.values = values  # type: ignore[method-assign]
-
+    _install_pydantic_dict_shim()
     yield
 
 
@@ -224,21 +201,8 @@ def memory_bank_dir(temp_project_root: Path) -> Path:
 # ============================================================================
 
 
-@pytest.fixture
-def sample_memory_bank_files(memory_bank_dir: Path) -> dict[str, Path]:
-    """
-    Create complete set of sample Memory Bank files.
-
-    Creates all 7 standard memory bank files with realistic content.
-
-    Args:
-        memory_bank_dir: Memory bank directory fixture
-
-    Returns:
-        dict[str, Path]: Mapping of file names to paths
-    """
-    files = {
-        "memorybankinstructions.md": """# Memory Bank Instructions
+_SAMPLE_MEMORY_BANK_FILE_CONTENTS: dict[str, str] = {
+    "memorybankinstructions.md": """# Memory Bank Instructions
 
 ## Purpose
 Instructions for using the Memory Bank system.
@@ -253,7 +217,7 @@ Instructions for using the Memory Bank system.
 2. Update regularly
 3. Link related information
 """,
-        "projectBrief.md": """# Project Brief
+    "projectBrief.md": """# Project Brief
 
 ## Overview
 MCP Memory Bank enhancement project.
@@ -268,7 +232,7 @@ MCP Memory Bank enhancement project.
 - Dependency tracking
 - Content validation
 """,
-        "activeContext.md": """# Active Context
+    "activeContext.md": """# Active Context
 
 ## Current Work
 Phase 7: Code Quality Excellence
@@ -282,7 +246,7 @@ Phase 7: Code Quality Excellence
 - Fix silent exception handlers
 - Extract long functions
 """,
-        "systemPatterns.md": """# System Patterns
+    "systemPatterns.md": """# System Patterns
 
 ## Architecture
 - Modular design with clear separation of concerns
@@ -294,7 +258,7 @@ Phase 7: Code Quality Excellence
 - Full snapshots for version history
 - Watchdog for file monitoring
 """,
-        "techContext.md": """# Technical Context
+    "techContext.md": """# Technical Context
 
 ## Stack
 - Python 3.10+
@@ -307,7 +271,7 @@ Phase 7: Code Quality Excellence
 - aiofiles: Async file I/O
 - tiktoken: Token counting
 """,
-        "productContext.md": """# Product Context
+    "productContext.md": """# Product Context
 
 ## Target Users
 - AI assistants (Claude, GPT-4)
@@ -318,7 +282,7 @@ Phase 7: Code Quality Excellence
 - Knowledge persistence
 - Conversation continuity
 """,
-        "progress.md": """# Progress Tracking
+    "progress.md": """# Progress Tracking
 
 ## Completed Phases
 - ✅ Phase 1: Foundation
@@ -332,10 +296,25 @@ Phase 7: Code Quality Excellence
 ## Current Sprint
 Phase 7.2: Test Coverage (target: 90%+)
 """,
-    }
+}
 
+
+@pytest.fixture
+def sample_memory_bank_files(memory_bank_dir: Path) -> dict[str, Path]:
+    """
+    Create complete set of sample Memory Bank files.
+
+    Creates all 7 standard memory bank files with realistic content (defined in
+    `_SAMPLE_MEMORY_BANK_FILE_CONTENTS` to keep this fixture body short).
+
+    Args:
+        memory_bank_dir: Memory bank directory fixture
+
+    Returns:
+        dict[str, Path]: Mapping of file names to paths
+    """
     file_paths: dict[str, Path] = {}
-    for filename, content in files.items():
+    for filename, content in _SAMPLE_MEMORY_BANK_FILE_CONTENTS.items():
         file_path = memory_bank_dir / filename
         _ = file_path.write_text(content)
         file_paths[filename] = file_path
@@ -379,23 +358,8 @@ Check [Active Context](activeContext.md#current-work) for status.
 # ============================================================================
 
 
-@pytest.fixture
-def sample_rules_folder(temp_project_root: Path) -> Path:
-    """
-    Create a sample rules folder with multiple rule files.
-
-    Args:
-        temp_project_root: Temporary project root fixture
-
-    Returns:
-        Path: Rules folder path
-    """
-    rules_dir = temp_project_root / ".cursorrules"
-    rules_dir.mkdir(exist_ok=True)
-
-    # General rules
-    _ = (rules_dir / "general.md").write_text(
-        """# General Coding Rules
+_SAMPLE_RULE_FILE_CONTENTS: dict[str, str] = {
+    "general.md": """# General Coding Rules
 
 ## Code Style
 - Follow PEP 8 for Python
@@ -407,12 +371,8 @@ def sample_rules_folder(temp_project_root: Path) -> Path:
 - Write tests for all new features
 - Maintain 90%+ coverage
 - Use AAA pattern (Arrange-Act-Assert)
-"""
-    )
-
-    # Python-specific rules
-    _ = (rules_dir / "python.md").write_text(
-        """# Python Best Practices
+""",
+    "python.md": """# Python Best Practices
 
 ## Async/Await
 - Use async/await for I/O operations
@@ -423,12 +383,8 @@ def sample_rules_folder(temp_project_root: Path) -> Path:
 - Use custom exception hierarchy
 - Provide meaningful error messages
 - Log errors with context
-"""
-    )
-
-    # Security rules
-    _ = (rules_dir / "security.md").write_text(
-        """# Security Guidelines
+""",
+    "security.md": """# Security Guidelines
 
 ## Authentication
 - Use JWT tokens for API auth
@@ -439,9 +395,28 @@ def sample_rules_folder(temp_project_root: Path) -> Path:
 - Validate all user input
 - Sanitize file paths
 - Check for path traversal attacks
-"""
-    )
+""",
+}
 
+
+@pytest.fixture
+def sample_rules_folder(temp_project_root: Path) -> Path:
+    """
+    Create a sample rules folder with multiple rule files.
+
+    File contents are defined in `_SAMPLE_RULE_FILE_CONTENTS` to keep this
+    fixture body short.
+
+    Args:
+        temp_project_root: Temporary project root fixture
+
+    Returns:
+        Path: Rules folder path
+    """
+    rules_dir = temp_project_root / ".cortex" / "rules"
+    rules_dir.mkdir(parents=True, exist_ok=True)
+    for filename, content in _SAMPLE_RULE_FILE_CONTENTS.items():
+        _ = (rules_dir / filename).write_text(content)
     return rules_dir
 
 
@@ -471,7 +446,7 @@ def optimization_config_dict() -> dict[str, object]:
         },
         "rules": {
             "enabled": True,
-            "rules_folder": ".cursorrules",
+            "rules_folder": ".cortex/rules",
             "reindex_interval_minutes": 30,
             "max_rules_tokens": 5000,
             "min_relevance_score": 0.3,

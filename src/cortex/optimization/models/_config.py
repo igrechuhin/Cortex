@@ -190,7 +190,7 @@ class RulesConfigModel(OptimizationBaseModel):
         default=False, description="Whether rules indexing is enabled"
     )
     rules_folder: str = Field(
-        default=".cursorrules", description="Path to rules folder"
+        default=".cortex/rules", description="Path to rules folder"
     )
     reindex_interval_minutes: int = Field(
         default=30, ge=1, description="Rules reindex interval in minutes"

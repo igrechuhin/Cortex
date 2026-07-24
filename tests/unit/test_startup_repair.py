@@ -43,20 +43,6 @@ def _make_full_structure(root: Path) -> None:
     (config.get_path("rules") / "local").mkdir(exist_ok=True)
 
 
-def _prepare_broken_symlink_config(root: Path) -> StructureConfig:
-    _make_full_structure(root)
-    config = StructureConfig(root)
-    config.structure_config["cursor_integration"] = {
-        "enabled": True,
-        "symlink_location": "_cursor",
-        "symlinks": {"memory_bank": True, "rules": False, "plans": False},
-    }
-    cursor_dir = root / "_cursor"
-    cursor_dir.mkdir()
-    (cursor_dir / "memory-bank").symlink_to("/nonexistent/path")
-    return config
-
-
 def _mismatched_artifact_payload() -> str:
     return (
         '{"schema_version":"1.0","artifact":{"name":"local-environment-context.json",'
@@ -85,7 +71,7 @@ async def test_repair_skips_healthy_project(tmp_path: Path) -> None:
             return_value=False,
         ),
         patch(
-            "cortex.structure.lifecycle.startup_repair._needs_symlinks",
+            "cortex.structure.lifecycle.startup_repair._needs_legacy_cursor_cleanup",
             return_value=False,
         ),
         patch(
@@ -106,7 +92,7 @@ async def test_repair_skips_healthy_project(tmp_path: Path) -> None:
     # Assert
     assert report.skipped is True
     assert report.structure_repaired is False
-    assert report.symlinks_repaired is False
+    assert report.legacy_cursor_cleaned is False
     assert report.gitignore_updated is False
     assert report.rumdl_config_updated is False
     assert report.errors == []
@@ -118,7 +104,7 @@ async def test_repair_creates_missing_structure(tmp_path: Path) -> None:
     # Patch cursor check so only structure triggers repair
     with (
         patch(
-            "cortex.structure.lifecycle.startup_repair._needs_symlinks",
+            "cortex.structure.lifecycle.startup_repair._needs_legacy_cursor_cleanup",
             return_value=False,
         ),
         patch(
@@ -137,9 +123,42 @@ async def test_repair_creates_missing_structure(tmp_path: Path) -> None:
 
 
 @pytest.mark.asyncio
-async def test_repair_fixes_broken_symlink(tmp_path: Path) -> None:
-    # Arrange – valid structure but broken symlink
-    config = _prepare_broken_symlink_config(tmp_path)
+async def test_repair_skips_legacy_cursor_cleanup_when_no_cursor_dir(
+    tmp_path: Path,
+) -> None:
+    # Arrange – no .cursor/ directory exists at all
+    with (
+        patch(
+            "cortex.structure.lifecycle.startup_repair._needs_structure",
+            return_value=False,
+        ),
+        patch(
+            "cortex.structure.lifecycle.startup_repair._needs_gitignore",
+            return_value=False,
+        ),
+        patch(
+            "cortex.structure.lifecycle.startup_repair._needs_rumdl_config",
+            return_value=False,
+        ),
+        patch(
+            "cortex.structure.lifecycle.startup_repair._repair_local_environment_context"
+        ),
+    ):
+        report = await repair_project_setup(tmp_path)
+
+    # Assert – nothing to clean up, no changes made
+    assert report.legacy_cursor_cleaned is False
+    assert report.skipped is True
+    assert not (tmp_path / ".cursor").exists()
+
+
+@pytest.mark.asyncio
+async def test_repair_removes_legacy_cursor_symlink(tmp_path: Path) -> None:
+    # Arrange – legacy .cursor/ dir with a real symlink pointing into .cortex/
+    _make_full_structure(tmp_path)
+    cursor_dir = tmp_path / ".cursor"
+    cursor_dir.mkdir()
+    (cursor_dir / "memory-bank").symlink_to(tmp_path / ".cortex" / "memory-bank")
 
     with (
         patch(
@@ -151,19 +170,20 @@ async def test_repair_fixes_broken_symlink(tmp_path: Path) -> None:
             return_value=False,
         ),
         patch(
-            "cortex.structure.lifecycle.startup_repair._needs_symlinks",
-            return_value=True,
+            "cortex.structure.lifecycle.startup_repair._needs_rumdl_config",
+            return_value=False,
         ),
         patch(
-            "cortex.structure.lifecycle.startup_repair.StructureConfig",
-            return_value=config,
+            "cortex.structure.lifecycle.startup_repair._repair_local_environment_context"
         ),
     ):
         report = await repair_project_setup(tmp_path)
 
-    # Assert
-    assert report.symlinks_repaired is True
+    # Assert – symlink and now-empty .cursor/ dir removed
+    assert report.legacy_cursor_cleaned is True
     assert report.skipped is False
+    assert not (cursor_dir / "memory-bank").exists()
+    assert not cursor_dir.exists()
 
 
 @pytest.mark.asyncio
@@ -179,7 +199,7 @@ async def test_repair_appends_gitignore_entries(tmp_path: Path) -> None:
             return_value=False,
         ),
         patch(
-            "cortex.structure.lifecycle.startup_repair._needs_symlinks",
+            "cortex.structure.lifecycle.startup_repair._needs_legacy_cursor_cleanup",
             return_value=False,
         ),
     ):
@@ -194,7 +214,7 @@ async def test_repair_appends_gitignore_entries(tmp_path: Path) -> None:
     assert ".cortex/history/" in content
     assert ".cortex-backup-*/" in content
     assert AGENT_SYNC_MARKER in content
-    assert ".cursor/agents/" in content
+    assert ".claude/" in content
     assert LOCAL_ENV_CONTEXT_MARKER in content
     assert report.skipped is False
 
@@ -217,7 +237,7 @@ async def test_repair_updates_gitignore_when_agent_marker_missing(
             return_value=False,
         ),
         patch(
-            "cortex.structure.lifecycle.startup_repair._needs_symlinks",
+            "cortex.structure.lifecycle.startup_repair._needs_legacy_cursor_cleanup",
             return_value=False,
         ),
     ):
@@ -227,7 +247,7 @@ async def test_repair_updates_gitignore_when_agent_marker_missing(
     assert report.gitignore_updated is True
     content = gitignore.read_text(encoding="utf-8")
     assert AGENT_SYNC_MARKER in content
-    assert ".cursor/agents/" in content
+    assert ".claude/" in content
     assert LOCAL_ENV_CONTEXT_MARKER in content
     assert report.skipped is False
 
@@ -248,7 +268,7 @@ async def test_repair_skips_gitignore_when_entries_present(tmp_path: Path) -> No
             return_value=False,
         ),
         patch(
-            "cortex.structure.lifecycle.startup_repair._needs_symlinks",
+            "cortex.structure.lifecycle.startup_repair._needs_legacy_cursor_cleanup",
             return_value=False,
         ),
         patch(
@@ -275,7 +295,7 @@ async def test_repair_skips_gitignore_when_no_git_dir(tmp_path: Path) -> None:
             return_value=False,
         ),
         patch(
-            "cortex.structure.lifecycle.startup_repair._needs_symlinks",
+            "cortex.structure.lifecycle.startup_repair._needs_legacy_cursor_cleanup",
             return_value=False,
         ),
         patch(
@@ -305,7 +325,7 @@ async def test_repair_is_fault_tolerant(tmp_path: Path) -> None:
             return_value=False,
         ),
         patch(
-            "cortex.structure.lifecycle.startup_repair._needs_symlinks",
+            "cortex.structure.lifecycle.startup_repair._needs_legacy_cursor_cleanup",
             return_value=False,
         ),
         patch(
@@ -336,7 +356,7 @@ async def test_repair_creates_gitignore_when_missing(tmp_path: Path) -> None:
             return_value=False,
         ),
         patch(
-            "cortex.structure.lifecycle.startup_repair._needs_symlinks",
+            "cortex.structure.lifecycle.startup_repair._needs_legacy_cursor_cleanup",
             return_value=False,
         ),
     ):
@@ -360,7 +380,7 @@ async def test_repair_creates_local_environment_artifact(tmp_path: Path) -> None
             return_value=False,
         ),
         patch(
-            "cortex.structure.lifecycle.startup_repair._needs_symlinks",
+            "cortex.structure.lifecycle.startup_repair._needs_legacy_cursor_cleanup",
             return_value=False,
         ),
         patch(
@@ -396,7 +416,7 @@ async def test_repair_warns_on_local_environment_binding_mismatch(
             return_value=False,
         ),
         patch(
-            "cortex.structure.lifecycle.startup_repair._needs_symlinks",
+            "cortex.structure.lifecycle.startup_repair._needs_legacy_cursor_cleanup",
             return_value=False,
         ),
         patch(
@@ -425,7 +445,7 @@ async def test_repair_creates_rumdl_toml_when_missing(tmp_path: Path) -> None:
             return_value=False,
         ),
         patch(
-            "cortex.structure.lifecycle.startup_repair._needs_symlinks",
+            "cortex.structure.lifecycle.startup_repair._needs_legacy_cursor_cleanup",
             return_value=False,
         ),
         patch(
@@ -462,7 +482,7 @@ async def test_repair_skips_rumdl_toml_when_already_configured(
             return_value=False,
         ),
         patch(
-            "cortex.structure.lifecycle.startup_repair._needs_symlinks",
+            "cortex.structure.lifecycle.startup_repair._needs_legacy_cursor_cleanup",
             return_value=False,
         ),
         patch(

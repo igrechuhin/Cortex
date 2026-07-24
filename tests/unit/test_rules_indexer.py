@@ -360,7 +360,7 @@ class TestFindRuleFiles:
         # Arrange
         rules_dir = tmp_path / ".cursorrules"
         _ = rules_dir.mkdir()
-        _ = (rules_dir / ".cursorrules").write_text("Cursor rules")
+        _ = (rules_dir / ".ai-rules").write_text("AI rules")
 
         indexer = RulesIndexer(
             project_root=tmp_path,
@@ -371,7 +371,8 @@ class TestFindRuleFiles:
         files = indexer.find_rule_files(rules_dir)
 
         # Assert
-        # File matches multiple patterns but should only appear once
+        # File matches multiple patterns (".ai-rules" exact and "*rules*") but
+        # should only appear once
         assert len(files) == len(set(files))
 
 

@@ -275,9 +275,6 @@ class ProjectConfigStatusModel(DictLikeModel):
     structure_configured: bool = Field(
         ..., description="Whether .cortex structure is configured"
     )
-    cursor_integration_configured: bool = Field(
-        ..., description="Whether Cursor integration is configured"
-    )
     migration_needed: bool = Field(
         ..., description="Whether migration is needed from legacy formats"
     )

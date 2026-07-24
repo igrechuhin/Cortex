@@ -18,7 +18,7 @@ from cortex.tools.compress.compress import CompressResult
 
 def _create_cortex_target_tree(tmp_path: Path) -> None:
     prompts = tmp_path / ".cortex" / "synapse" / "prompts"
-    agents = tmp_path / ".cortex" / "synapse" / "cursor-agents"
+    agents = tmp_path / ".cortex" / "synapse" / "claude-agents"
     _ = prompts.mkdir(parents=True)
     _ = agents.mkdir(parents=True)
     _ = (prompts / "plan.md").write_text("# Prompt\n", encoding="utf-8")
@@ -226,7 +226,7 @@ def test_compress_cortex_internal_files_skips_missing_paths(
     )
     assert {result.path for result in results} == {
         tmp_path / ".cortex" / "synapse" / "prompts",
-        tmp_path / ".cortex" / "synapse" / "cursor-agents",
+        tmp_path / ".cortex" / "synapse" / "claude-agents",
         tmp_path / ".cortex" / "memory-bank" / "activeContext.md",
         tmp_path / ".cortex" / "memory-bank" / "progress.md",
     }

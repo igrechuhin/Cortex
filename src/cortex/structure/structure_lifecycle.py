@@ -2,8 +2,8 @@
 """
 Lifecycle management for Memory Bank structure.
 
-This module provides a unified interface to structure setup, health checking,
-and Cursor IDE integration. Delegates to specialized components.
+This module provides a unified interface to structure setup and health
+checking. Delegates to specialized components.
 """
 
 from pathlib import Path
@@ -11,14 +11,11 @@ from pathlib import Path
 from cortex.core.models import ModelDict
 from cortex.structure.lifecycle.health import StructureHealthChecker
 from cortex.structure.lifecycle.setup import StructureSetup
-from cortex.structure.lifecycle.symlinks import CursorSymlinkManager
 from cortex.structure.models import (
     HealthCheckResult,
     SetupReport,
     StructureInfoResult,
     StructurePaths,
-    SymlinkEntry,
-    SymlinkReport,
 )
 from cortex.structure.structure_config import (
     PLAN_TEMPLATES,
@@ -32,7 +29,6 @@ class StructureLifecycleManager:
 
     This is the main orchestrator that delegates to specialized components:
     - StructureSetup: Directory and file creation
-    - CursorSymlinkManager: Symlink management
     - StructureHealthChecker: Health validation
     """
 
@@ -44,7 +40,6 @@ class StructureLifecycleManager:
         """
         self.config = StructureConfig(project_root)
         self.setup = StructureSetup(self.config)
-        self.symlinks = CursorSymlinkManager(self.config)
         self.health = StructureHealthChecker(self.config)
 
     @property
@@ -89,35 +84,6 @@ class StructureLifecycleManager:
             Report of created directories and files
         """
         return await self.setup.create_structure(force)
-
-    def setup_cursor_integration(self) -> SymlinkReport:
-        """Setup Cursor IDE integration via symlinks.
-
-        Delegates to CursorSymlinkManager component.
-
-        Returns:
-            Report of created symlinks
-        """
-        return self.symlinks.setup_cursor_integration()
-
-    def create_symlink(
-        self,
-        target: Path,
-        link: Path,
-        symlinks_created: list[SymlinkEntry],
-        errors: list[str],
-    ) -> None:
-        """Create a symlink with cross-platform compatibility.
-
-        Delegates to CursorSymlinkManager component.
-
-        Args:
-            target: Target path (what the symlink points to)
-            link: Symlink path (the symlink itself)
-            symlinks_created: List to append created symlinks to
-            errors: List to append errors to
-        """
-        self.symlinks.create_symlink(target, link, symlinks_created, errors)
 
     def check_structure_health(self) -> HealthCheckResult:
         """Check the health of the project structure.

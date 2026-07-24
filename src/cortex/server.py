@@ -42,7 +42,6 @@ def _extract_client_name(ctx: object) -> str:
 def _is_trusted_client_name(client_name: str) -> bool:
     trusted_prefixes = (
         "cortex",
-        "cursor",
         "codex",
         "claude",
     )

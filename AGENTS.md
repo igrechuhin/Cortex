@@ -50,7 +50,7 @@ This project has a **Cortex MCP server** that provides tools for everything agen
 | Memory bank, roadmap, plans | `manage_file()`, `plan()`, `update_memory_bank()` | Edit `.cortex/` files directly |
 | Project structure, paths | `cortex://structure` resource | Hardcode `.cortex/` paths |
 
-**Tools vs Resources:** Use resources (`cortex://` URIs) for read-only operations. Use tools for writes and actions. All tools and resources are zero-arg safe (Cursor's MCP bridge strips args). See [docs/api/tools.md](docs/api/tools.md) for details.
+**Tools vs Resources:** Use resources (`cortex://` URIs) for read-only operations. Use tools for writes and actions. All tools and resources are zero-arg safe (some MCP client bridges strip args). See [docs/api/tools.md](docs/api/tools.md) for details.
 
 ### MCP unavailable: read-only audit fallback
 
@@ -130,9 +130,9 @@ Agents must keep going until the task is done or genuinely blocked; do not pause
 
 ## Pipeline Architecture (simplified for reliability)
 
-All pipelines (commit, do) run **inline** in the orchestrator — no subagents for commit phases, and only `implement-code` uses a subagent (for context isolation during heavy coding). This eliminates concurrent MCP access issues with Cursor.
+All pipelines (commit, do) run **inline** in the orchestrator — no subagents for commit phases, and only `implement-code` uses a subagent (for context isolation during heavy coding). This eliminates concurrent MCP access issues with some clients.
 
-**Zero-arg tools**: All MCP tools work with empty `{}` arguments (Cursor's MCP bridge strips args). Tools read config from session files or use sensible defaults. Key zero-arg tools:
+**Zero-arg tools**: All MCP tools work with empty `{}` arguments (some MCP client bridges strip args). Tools read config from session files or use sensible defaults. Key zero-arg tools:
 
 - `run_quality_gate()` — Phase A quality gate and Step 12 final gate (write `{"force_fresh": true, "test_timeout": 600}` via `pipeline_handoff` first for Step 12)
 - `run_docs_gate()` — Phase B docs validation
@@ -142,7 +142,7 @@ All pipelines (commit, do) run **inline** in the orchestrator — no subagents f
 
 ## Commit pipeline
 
-All phases run inline. Use zero-arg tools — do NOT use legacy pre-commit tools that require explicit phase/check arguments or async job polling (Cursor strips their args). See [docs/api/tools.md](docs/api/tools.md#deprecated-agent-entrypoints-legacy-names) for names to avoid.
+All phases run inline. Use zero-arg tools — do NOT use legacy pre-commit tools that require explicit phase/check arguments or async job polling (some MCP client bridges strip their args). See [docs/api/tools.md](docs/api/tools.md#deprecated-agent-entrypoints-legacy-names) for names to avoid.
 
 - **Phase A**: `run_quality_gate()` — runs all quality checks end-to-end
 - **Phase B**: `run_docs_gate()` — validates timestamps and sync

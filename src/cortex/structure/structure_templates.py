@@ -84,7 +84,6 @@ This directory contains coding standards and rules.
 
 Project-specific coding standards, architecture decisions, and practices.
 
-- `main.cursorrules` - Main rules file (symlinked to .cursorrules)
 - `coding-standards.md` - Coding style guide
 - `architecture.md` - Architecture guidelines
 - `testing.md` - Testing standards

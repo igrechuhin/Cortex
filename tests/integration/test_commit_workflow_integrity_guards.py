@@ -285,8 +285,8 @@ class TestFixTestsAgentScope:
 
     @pytest.fixture
     def fix_tests_agent_content(self) -> str:
-        """Read fix-tests cursor agent content."""
-        path = synapse_path() / "cursor-agents" / "fix-tests.md"
+        """Read fix-tests claude agent content."""
+        path = synapse_path() / "claude-agents" / "fix-tests.md"
         if not path.exists():
             pytest.skip(
                 f"Fix-tests agent not found at {path} (ref: cleanup-skipped-legacy-tests)"
@@ -310,8 +310,8 @@ class TestFixCoverageAgentContract:
 
     @pytest.fixture
     def fix_coverage_agent_content(self) -> str:
-        """Read fix-coverage cursor agent content."""
-        path = synapse_path() / "cursor-agents" / "fix-coverage.md"
+        """Read fix-coverage claude agent content."""
+        path = synapse_path() / "claude-agents" / "fix-coverage.md"
         if not path.exists():
             pytest.skip(
                 f"Fix-coverage agent not found at {path} (ref: cleanup-skipped-legacy-tests)"

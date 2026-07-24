@@ -5,6 +5,7 @@ These tests verify end-to-end workflows across self-evolution (Phase 5),
 shared rules (Phase 6), and project structure (Phase 8) modules.
 """
 
+from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 
@@ -20,6 +21,8 @@ from cortex.core.metadata_index import MetadataIndex
 from cortex.core.models import ModelDict
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.refactoring.consolidation_detector import ConsolidationDetector
+from cortex.refactoring.consolidation_detector_models import ConsolidationOpportunity
+from cortex.refactoring.models import RefactoringSuggestionModel
 from cortex.refactoring.refactoring_engine import RefactoringEngine
 from cortex.refactoring.reorganization_planner import ReorganizationPlanner
 from cortex.refactoring.split_recommender import SplitRecommender
@@ -33,6 +36,125 @@ from cortex.structure.template_manager import TemplateManager
 # ============================================================================
 
 
+async def _arrange_pattern_analysis_workflow(
+    temp_project_root: Path,
+) -> tuple[PatternAnalyzer, InsightEngine, RefactoringEngine, str]:
+    """Build analyzers/engines and a large seed file for the pattern-analysis test."""
+    fs = FileSystemManager(temp_project_root)
+    metadata = MetadataIndex(temp_project_root)
+    dep_graph = DependencyGraph()
+
+    pattern_analyzer = PatternAnalyzer(temp_project_root)
+    memory_bank_path = get_cortex_path(
+        temp_project_root, CortexResourceType.MEMORY_BANK
+    )
+    memory_bank_path.mkdir(parents=True, exist_ok=True)
+    structure_analyzer = StructureAnalyzer(temp_project_root, dep_graph, fs, metadata)
+    insight_engine = InsightEngine(pattern_analyzer, structure_analyzer)
+    refactoring_engine = RefactoringEngine(memory_bank_path)
+
+    # Create large file (>50KB to trigger large file detection)
+    # Each section is ~500 bytes, need 100+ sections to exceed 50KB
+    section_content = (
+        "## Section\n\n" + ("This is content for the section. " * 20) + "\n\n"
+    )
+    large_content = "# Large File\n\n" + (section_content * 200)
+    file_path = memory_bank_path / "large_file.md"
+    _ = await fs.write_file(file_path, large_content)
+
+    # Record access patterns
+    await pattern_analyzer.record_access("large_file.md")
+    await pattern_analyzer.record_access("large_file.md")
+
+    return pattern_analyzer, insight_engine, refactoring_engine, large_content
+
+
+_SHARED_AUTH_CONTENT = (
+    """
+## Authentication
+
+This section describes authentication mechanisms in detail.
+OAuth2 is used for user authentication. The OAuth2 flow involves
+multiple steps including authorization request, token exchange,
+and resource access. This is a comprehensive authentication guide
+that covers all aspects of OAuth2 implementation including security
+considerations, token management, and refresh token handling.
+"""
+    * 5
+)  # Repeated to increase size and dominate the similarity calculation
+
+
+async def _write_similar_auth_docs(
+    fs: FileSystemManager, memory_bank_path: Path
+) -> None:
+    """Write two docs sharing >70% similar content, for consolidation detection."""
+    _ = await fs.write_file(
+        memory_bank_path / "api_docs.md",
+        (
+            f"# API Documentation\n{_SHARED_AUTH_CONTENT}\n## Endpoints\n"
+            "Brief endpoint description.\n"
+        ),
+    )
+    _ = await fs.write_file(
+        memory_bank_path / "auth_guide.md",
+        (
+            f"# Authentication Guide\n{_SHARED_AUTH_CONTENT}\n## Setup\n"
+            "Brief setup instructions.\n"
+        ),
+    )
+
+
+async def _arrange_consolidation_detection_workflow(
+    temp_project_root: Path,
+) -> ConsolidationDetector:
+    """Create two files sharing >70% similar content for consolidation detection."""
+    fs = FileSystemManager(temp_project_root)
+    memory_bank_path = temp_project_root / "memory-bank"
+    memory_bank_path.mkdir(parents=True, exist_ok=True)
+    consolidation_detector = ConsolidationDetector(memory_bank_path, min_similarity=0.7)
+    await _write_similar_auth_docs(fs, memory_bank_path)
+    return consolidation_detector
+
+
+def _build_multi_section_document() -> str:
+    """Build a document with >10 sections and >1000 tokens for split-recommender tests."""
+    sections: list[str] = []
+    for i in range(15):  # >10 sections
+        section_content = (
+            f"""## Section {i + 1}
+Large section about topic {i + 1} with detailed content.
+"""
+            + ("Detailed content line with substantial information. " * 30)
+            + "\n"
+        )
+        sections.append(section_content)
+    return "# Main Document\n\n" + "\n".join(sections)
+
+
+async def _arrange_reorganization_workflow_files(
+    fs: FileSystemManager, memory_bank_path: Path
+) -> None:
+    """Create category + >3 uncategorized files to trigger category_based reorg."""
+    _ = await fs.write_file(memory_bank_path / "api_endpoints.md", "# API Endpoints\n")
+    _ = await fs.write_file(memory_bank_path / "api_auth.md", "# API Authentication\n")
+    _ = await fs.write_file(memory_bank_path / "db_schema.md", "# Database Schema\n")
+    _ = await fs.write_file(
+        memory_bank_path / "db_migrations.md", "# Database Migrations\n"
+    )
+    _ = await fs.write_file(
+        memory_bank_path / "uncategorized1.md", "# Uncategorized File 1\n"
+    )
+    _ = await fs.write_file(
+        memory_bank_path / "uncategorized2.md", "# Uncategorized File 2\n"
+    )
+    _ = await fs.write_file(
+        memory_bank_path / "uncategorized3.md", "# Uncategorized File 3\n"
+    )
+    _ = await fs.write_file(
+        memory_bank_path / "uncategorized4.md", "# Uncategorized File 4\n"
+    )
+
+
 @pytest.mark.integration
 class TestPhase5Integration:
     """Test integration between Phase 5.1 (analysis) and 5.2 (refactoring)."""
@@ -42,33 +164,9 @@ class TestPhase5Integration:
     ):
         """Test that pattern analysis results drive refactoring suggestions."""
         # Arrange
-        fs = FileSystemManager(temp_project_root)
-        metadata = MetadataIndex(temp_project_root)
-        dep_graph = DependencyGraph()
-
-        pattern_analyzer = PatternAnalyzer(temp_project_root)
-        memory_bank_path = get_cortex_path(
-            temp_project_root, CortexResourceType.MEMORY_BANK
+        _pattern_analyzer, insight_engine, refactoring_engine, large_content = (
+            await _arrange_pattern_analysis_workflow(temp_project_root)
         )
-        memory_bank_path.mkdir(parents=True, exist_ok=True)
-        structure_analyzer = StructureAnalyzer(
-            temp_project_root, dep_graph, fs, metadata
-        )
-        insight_engine = InsightEngine(pattern_analyzer, structure_analyzer)
-        refactoring_engine = RefactoringEngine(memory_bank_path)
-
-        # Create large file (>50KB to trigger large file detection)
-        # Each section is ~500 bytes, need 100+ sections to exceed 50KB
-        section_content = (
-            "## Section\n\n" + ("This is content for the section. " * 20) + "\n\n"
-        )
-        large_content = "# Large File\n\n" + (section_content * 200)
-        file_path = memory_bank_path / "large_file.md"
-        _ = await fs.write_file(file_path, large_content)
-
-        # Record access patterns
-        await pattern_analyzer.record_access("large_file.md")
-        await pattern_analyzer.record_access("large_file.md")
 
         # Act: Analyze and generate insights
         insights_result = await insight_engine.generate_insights(min_impact_score=0.1)
@@ -95,44 +193,8 @@ class TestPhase5Integration:
     async def test_consolidation_detection_workflow(self, temp_project_root: Path):
         """Test end-to-end consolidation detection workflow."""
         # Arrange
-        fs = FileSystemManager(temp_project_root)
-        memory_bank_path = temp_project_root / "memory-bank"
-        memory_bank_path.mkdir(parents=True, exist_ok=True)
-        consolidation_detector = ConsolidationDetector(
-            memory_bank_path, min_similarity=0.7
-        )
-
-        # Create files with substantial duplicate content (>70% similarity)
-        # Make shared content large enough to dominate similarity calculation
-        shared_content = (
-            """
-## Authentication
-
-This section describes authentication mechanisms in detail.
-OAuth2 is used for user authentication. The OAuth2 flow involves
-multiple steps including authorization request, token exchange,
-and resource access. This is a comprehensive authentication guide
-that covers all aspects of OAuth2 implementation including security
-considerations, token management, and refresh token handling.
-"""
-            * 5
-        )  # Repeat to increase size and similarity
-
-        api_docs_path = memory_bank_path / "api_docs.md"
-        _ = await fs.write_file(
-            api_docs_path,
-            (
-                f"# API Documentation\n{shared_content}\n## Endpoints\n"
-                "Brief endpoint description.\n"
-            ),
-        )
-        auth_guide_path = memory_bank_path / "auth_guide.md"
-        _ = await fs.write_file(
-            auth_guide_path,
-            (
-                f"# Authentication Guide\n{shared_content}\n## Setup\n"
-                "Brief setup instructions.\n"
-            ),
+        consolidation_detector = await _arrange_consolidation_detection_workflow(
+            temp_project_root
         )
 
         # Act: Detect consolidation opportunities
@@ -155,23 +217,8 @@ considerations, token management, and refresh token handling.
             memory_bank_path, max_file_size=1000, max_sections=10
         )
 
-        # Create large file with multiple sections (>10 sections and >1000 tokens)
-        # Each section has substantial content to exceed token threshold
-        sections: list[str] = []
-        for i in range(15):  # >10 sections
-            section_content = (
-                f"""## Section {i + 1}
-Large section about topic {i + 1} with detailed content.
-"""
-                + ("Detailed content line with substantial information. " * 30)
-                + "\n"
-            )
-            sections.append(section_content)
-
-        large_content = "# Main Document\n\n" + "\n".join(sections)
-
         file_path = memory_bank_path / "design.md"
-        _ = await fs.write_file(file_path, large_content)
+        _ = await fs.write_file(file_path, _build_multi_section_document())
 
         # Act: Suggest splits
         recommendations = await split_recommender.suggest_file_splits(
@@ -198,32 +245,8 @@ Large section about topic {i + 1} with detailed content.
         memory_bank_path.mkdir(parents=True, exist_ok=True)
         reorganization_planner = ReorganizationPlanner(memory_bank_path)
 
-        # Create files in various categories
-        # Need >3 uncategorized files to trigger category_based reorganization
-        _ = await fs.write_file(
-            memory_bank_path / "api_endpoints.md", "# API Endpoints\n"
-        )
-        _ = await fs.write_file(
-            memory_bank_path / "api_auth.md", "# API Authentication\n"
-        )
-        _ = await fs.write_file(
-            memory_bank_path / "db_schema.md", "# Database Schema\n"
-        )
-        _ = await fs.write_file(
-            memory_bank_path / "db_migrations.md", "# Database Migrations\n"
-        )
-        _ = await fs.write_file(
-            memory_bank_path / "uncategorized1.md", "# Uncategorized File 1\n"
-        )
-        _ = await fs.write_file(
-            memory_bank_path / "uncategorized2.md", "# Uncategorized File 2\n"
-        )
-        _ = await fs.write_file(
-            memory_bank_path / "uncategorized3.md", "# Uncategorized File 3\n"
-        )
-        _ = await fs.write_file(
-            memory_bank_path / "uncategorized4.md", "# Uncategorized File 4\n"
-        )
+        # Create files in various categories (>3 uncategorized triggers reorg)
+        await _arrange_reorganization_workflow_files(fs, memory_bank_path)
 
         # Provide structure data and dependency graph (required for plan creation)
         structure_data: ModelDict = {
@@ -252,6 +275,49 @@ Large section about topic {i + 1} with detailed content.
 # ============================================================================
 # Phase 6 Integration: Shared Rules with Context Detection
 # ============================================================================
+
+
+def _write_shared_rules_manifest(rules_dir: Path) -> None:
+    import json
+
+    manifest = {
+        "version": "1.0.0",
+        "categories": {
+            "python": {
+                "rules": [
+                    {"file": "style-guide.md", "priority": 100, "keywords": ["python"]}
+                ]
+            },
+            "generic": {
+                "rules": [
+                    {
+                        "file": "security.md",
+                        "priority": 100,
+                        "keywords": ["security"],
+                    }
+                ]
+            },
+        },
+    }
+    _ = (rules_dir / "rules-manifest.json").write_text(json.dumps(manifest))
+
+
+def _arrange_shared_rules_structure(temp_project_root: Path) -> None:
+    """Create a mock `.shared-rules` manifest + rule files for the Phase 6 test."""
+    shared_rules_dir = temp_project_root / ".shared-rules"
+    shared_rules_dir.mkdir(exist_ok=True)
+    # SynapseManager expects a rules/ subdirectory
+    rules_dir = shared_rules_dir / "rules"
+    rules_dir.mkdir(exist_ok=True)
+    _write_shared_rules_manifest(rules_dir)
+
+    python_dir = rules_dir / "python"
+    python_dir.mkdir(exist_ok=True)
+    _ = (python_dir / "style-guide.md").write_text("# Python Style Guide\nUse PEP 8")
+
+    generic_dir = rules_dir / "generic"
+    generic_dir.mkdir(exist_ok=True)
+    _ = (generic_dir / "security.md").write_text("# Security\nValidate all inputs")
 
 
 @pytest.mark.integration
@@ -298,54 +364,7 @@ class TestPhase6Integration:
             temp_project_root, synapse_folder=".shared-rules"
         )
         context_detector = ContextDetector()
-
-        # Create mock shared rules structure
-        shared_rules_dir = temp_project_root / ".shared-rules"
-        shared_rules_dir.mkdir(exist_ok=True)
-
-        # Create rules subdirectory (SynapseManager expects rules/ subdirectory)
-        rules_dir = shared_rules_dir / "rules"
-        rules_dir.mkdir(exist_ok=True)
-
-        # Create manifest
-        manifest = {
-            "version": "1.0.0",
-            "categories": {
-                "python": {
-                    "rules": [
-                        {
-                            "file": "style-guide.md",
-                            "priority": 100,
-                            "keywords": ["python"],
-                        }
-                    ]
-                },
-                "generic": {
-                    "rules": [
-                        {
-                            "file": "security.md",
-                            "priority": 100,
-                            "keywords": ["security"],
-                        }
-                    ]
-                },
-            },
-        }
-
-        import json
-
-        _ = (rules_dir / "rules-manifest.json").write_text(json.dumps(manifest))
-
-        # Create rule files
-        python_dir = rules_dir / "python"
-        python_dir.mkdir(exist_ok=True)
-        _ = (python_dir / "style-guide.md").write_text(
-            "# Python Style Guide\nUse PEP 8"
-        )
-
-        generic_dir = rules_dir / "generic"
-        generic_dir.mkdir(exist_ok=True)
-        _ = (generic_dir / "security.md").write_text("# Security\nValidate all inputs")
+        _arrange_shared_rules_structure(temp_project_root)
 
         # Act: Load manifest
         loaded = await synapse_manager.load_rules_manifest()
@@ -432,7 +451,7 @@ class TestPhase8Integration:
             )
 
         # Assert
-        assert detected_type in ["scattered-files", "cursor-default"]
+        assert detected_type == "scattered-files"
 
         if result:
             assert result.get("success") is True
@@ -498,6 +517,186 @@ class TestPhase8Integration:
 # ============================================================================
 
 
+@dataclass
+class _FullAnalysisWorkflowComponents:
+    """Components + fixture data for the complete analysis-to-refactoring workflow."""
+
+    fs: FileSystemManager
+    metadata: MetadataIndex
+    memory_bank_path: Path
+    pattern_analyzer: PatternAnalyzer
+    structure_analyzer: StructureAnalyzer
+    insight_engine: InsightEngine
+    refactoring_engine: RefactoringEngine
+    consolidation_detector: ConsolidationDetector
+    large_content: str
+
+
+async def _seed_full_analysis_workflow_files(
+    fs: FileSystemManager, memory_bank_path: Path, pattern_analyzer: PatternAnalyzer
+) -> str:
+    """Write large + duplicate-content fixture files; return the large file content."""
+    # Large file (>50KB to trigger large file detection)
+    section_content = (
+        "## Section\n\n" + ("This is content for the section. " * 30) + "\n\n"
+    )
+    large_content = "# Large\n\n" + (section_content * 200)
+    _ = await fs.write_file(memory_bank_path / "large.md", large_content)
+
+    # Duplicate content (substantial to meet similarity threshold)
+    shared = (
+        """
+## Common Section
+
+This is shared content that appears in both documents.
+The content needs to be substantial enough to meet the similarity threshold.
+This section contains detailed information that is duplicated across files.
+"""
+        * 5
+    )  # Repeat to increase similarity
+    _ = await fs.write_file(
+        memory_bank_path / "doc1.md",
+        f"# Doc 1\n{shared}\n## Unique 1\nUnique content for doc 1.\n",
+    )
+    _ = await fs.write_file(
+        memory_bank_path / "doc2.md",
+        f"# Doc 2\n{shared}\n## Unique 2\nUnique content for doc 2.\n",
+    )
+
+    await pattern_analyzer.record_access("large.md")
+    await pattern_analyzer.record_access("doc1.md")
+    await pattern_analyzer.record_access("doc2.md")
+    return large_content
+
+
+def _build_full_analysis_engines(
+    temp_project_root: Path, fs: FileSystemManager, metadata: MetadataIndex
+) -> tuple[
+    Path,
+    PatternAnalyzer,
+    StructureAnalyzer,
+    InsightEngine,
+    RefactoringEngine,
+    ConsolidationDetector,
+]:
+    """Build analysis/refactoring engines sharing a common memory-bank path."""
+    dep_graph = DependencyGraph()
+    pattern_analyzer = PatternAnalyzer(temp_project_root)
+    memory_bank_path = get_cortex_path(
+        temp_project_root, CortexResourceType.MEMORY_BANK
+    )
+    memory_bank_path.mkdir(parents=True, exist_ok=True)
+    structure_analyzer = StructureAnalyzer(temp_project_root, dep_graph, fs, metadata)
+    insight_engine = InsightEngine(pattern_analyzer, structure_analyzer)
+    refactoring_engine = RefactoringEngine(memory_bank_path)
+    consolidation_detector = ConsolidationDetector(memory_bank_path, min_similarity=0.6)
+    return (
+        memory_bank_path,
+        pattern_analyzer,
+        structure_analyzer,
+        insight_engine,
+        refactoring_engine,
+        consolidation_detector,
+    )
+
+
+async def _arrange_full_analysis_workflow(
+    temp_project_root: Path,
+) -> _FullAnalysisWorkflowComponents:
+    """Build all components and seed files for the complete workflow test."""
+    fs = FileSystemManager(temp_project_root)
+    metadata = MetadataIndex(temp_project_root)
+    (
+        memory_bank_path,
+        pattern_analyzer,
+        structure_analyzer,
+        insight_engine,
+        refactoring_engine,
+        consolidation_detector,
+    ) = _build_full_analysis_engines(temp_project_root, fs, metadata)
+
+    _ = await metadata.load()
+    large_content = await _seed_full_analysis_workflow_files(
+        fs, memory_bank_path, pattern_analyzer
+    )
+
+    _ = await metadata.load()
+    _ = await structure_analyzer.analyze_file_organization()
+    await metadata.save()
+
+    return _FullAnalysisWorkflowComponents(
+        fs=fs,
+        metadata=metadata,
+        memory_bank_path=memory_bank_path,
+        pattern_analyzer=pattern_analyzer,
+        structure_analyzer=structure_analyzer,
+        insight_engine=insight_engine,
+        refactoring_engine=refactoring_engine,
+        consolidation_detector=consolidation_detector,
+        large_content=large_content,
+    )
+
+
+async def _run_full_analysis_workflow(
+    components: _FullAnalysisWorkflowComponents,
+) -> tuple[
+    list[ModelDict], list[ConsolidationOpportunity], list[RefactoringSuggestionModel]
+]:
+    """Run insights -> consolidation -> refactoring-suggestions for the workflow test."""
+    insights_result = await components.insight_engine.generate_insights(
+        min_impact_score=0.1
+    )
+    pydantic_insights: list[InsightDict] = insights_result.insights
+    insights_list: list[ModelDict] = [
+        insight.model_dump(mode="json") for insight in pydantic_insights
+    ]
+
+    consolidation_ops = await components.consolidation_detector.detect_opportunities(
+        files=["doc1.md", "doc2.md"]
+    )
+
+    structure_data: ModelDict = {
+        "large.md": {"size": len(components.large_content), "sections": 50}
+    }
+    suggestions = await components.refactoring_engine.generate_suggestions(
+        insights=insights_list,
+        structure_data=structure_data,
+    )
+    return insights_list, consolidation_ops, suggestions
+
+
+def _generate_structure_content(
+    temp_project_root: Path, template_manager: TemplateManager
+) -> tuple[ModelDict, str]:
+    """Generate initial knowledge files + a feature plan; write plan to structure."""
+    project_info: ModelDict = {
+        "name": "Test Project",
+        "type": "library",
+        "languages": ["Python"],
+        "frameworks": ["FastAPI"],
+    }
+    knowledge_dir = temp_project_root / ".memory-bank" / "knowledge"
+    knowledge_dir.mkdir(parents=True, exist_ok=True)
+    initial_files = template_manager.generate_initial_files(
+        knowledge_dir, project_info, template_manager.PLAN_TEMPLATES
+    )
+
+    feature_plan = template_manager.generate_plan(
+        "feature.md",
+        plan_name="API Endpoints",
+        variables={
+            "feature_name": "API Endpoints",
+            "description": "REST API endpoints",
+        },
+    )
+
+    plans_dir = temp_project_root / ".memory-bank" / "plans" / "active"
+    plans_dir.mkdir(parents=True, exist_ok=True)
+    _ = (plans_dir / "api-endpoints.md").write_text(feature_plan)
+
+    return initial_files, feature_plan
+
+
 @pytest.mark.integration
 class TestCompleteWorkflow:
     """Test complete end-to-end workflows across all phases."""
@@ -505,86 +704,11 @@ class TestCompleteWorkflow:
     async def test_full_analysis_to_refactoring_workflow(self, temp_project_root: Path):
         """Test complete workflow from analysis to refactoring suggestion."""
         # Arrange: Setup all required components
-        fs = FileSystemManager(temp_project_root)
-        metadata = MetadataIndex(temp_project_root)
-        dep_graph = DependencyGraph()
-
-        pattern_analyzer = PatternAnalyzer(temp_project_root)
-        memory_bank_path = get_cortex_path(
-            temp_project_root, CortexResourceType.MEMORY_BANK
-        )
-        memory_bank_path.mkdir(parents=True, exist_ok=True)
-        structure_analyzer = StructureAnalyzer(
-            temp_project_root, dep_graph, fs, metadata
-        )
-        insight_engine = InsightEngine(pattern_analyzer, structure_analyzer)
-        refactoring_engine = RefactoringEngine(memory_bank_path)
-        consolidation_detector = ConsolidationDetector(
-            memory_bank_path, min_similarity=0.6
-        )
-
-        # Load metadata to index files
-        _ = await metadata.load()
-
-        # Create test files with issues
-        # Large file (>50KB to trigger large file detection)
-        section_content = (
-            "## Section\n\n" + ("This is content for the section. " * 30) + "\n\n"
-        )
-        large_content = "# Large\n\n" + (section_content * 200)
-        large_path = memory_bank_path / "large.md"
-        _ = await fs.write_file(large_path, large_content)
-
-        # Duplicate content (substantial to meet similarity threshold)
-        shared = (
-            """
-## Common Section
-
-This is shared content that appears in both documents.
-The content needs to be substantial enough to meet the similarity threshold.
-This section contains detailed information that is duplicated across files.
-"""
-            * 5
-        )  # Repeat to increase similarity
-        doc1_path = memory_bank_path / "doc1.md"
-        _ = await fs.write_file(
-            doc1_path, f"# Doc 1\n{shared}\n## Unique 1\nUnique content for doc 1.\n"
-        )
-        doc2_path = memory_bank_path / "doc2.md"
-        _ = await fs.write_file(
-            doc2_path, f"# Doc 2\n{shared}\n## Unique 2\nUnique content for doc 2.\n"
-        )
-
-        # Record usage
-        await pattern_analyzer.record_access("large.md")
-        await pattern_analyzer.record_access("doc1.md")
-        await pattern_analyzer.record_access("doc2.md")
-
-        # Analyze structure first to populate metadata
-        _ = await metadata.load()
-        _ = await structure_analyzer.analyze_file_organization()
-        await metadata.save()
+        components = await _arrange_full_analysis_workflow(temp_project_root)
 
         # Act: Complete workflow
-        # 1. Generate insights
-        insights_result = await insight_engine.generate_insights(min_impact_score=0.1)
-        pydantic_insights: list[InsightDict] = insights_result.insights
-        insights_list: list[ModelDict] = [
-            insight.model_dump(mode="json") for insight in pydantic_insights
-        ]
-
-        # 2. Detect consolidation opportunities
-        consolidation_ops = await consolidation_detector.detect_opportunities(
-            files=["doc1.md", "doc2.md"]
-        )
-
-        # 3. Generate refactoring suggestions
-        structure_data: ModelDict = {
-            "large.md": {"size": len(large_content), "sections": 50}
-        }
-        suggestions = await refactoring_engine.generate_suggestions(
-            insights=insights_list,
-            structure_data=structure_data,
+        insights_list, consolidation_ops, suggestions = (
+            await _run_full_analysis_workflow(components)
         )
 
         # Assert: Complete workflow produces actionable results
@@ -614,37 +738,10 @@ This section contains detailed information that is duplicated across files.
         template_manager = TemplateManager(temp_project_root)
 
         # Act: Complete workflow
-        # 1. Setup structure
         setup_result = await structure_manager.create_structure(force=False)
-
-        # 2. Generate initial files
-        project_info: ModelDict = {
-            "name": "Test Project",
-            "type": "library",
-            "languages": ["Python"],
-            "frameworks": ["FastAPI"],
-        }
-        knowledge_dir = temp_project_root / ".memory-bank" / "knowledge"
-        knowledge_dir.mkdir(parents=True, exist_ok=True)
-        templates = template_manager.PLAN_TEMPLATES
-        initial_files = template_manager.generate_initial_files(
-            knowledge_dir, project_info, templates
+        initial_files, feature_plan = _generate_structure_content(
+            temp_project_root, template_manager
         )
-
-        # 3. Create a feature plan
-        feature_plan = template_manager.generate_plan(
-            "feature.md",
-            plan_name="API Endpoints",
-            variables={
-                "feature_name": "API Endpoints",
-                "description": "REST API endpoints",
-            },
-        )
-
-        # Write plan to structure
-        plans_dir = temp_project_root / ".memory-bank" / "plans" / "active"
-        plans_dir.mkdir(parents=True, exist_ok=True)
-        _ = (plans_dir / "api-endpoints.md").write_text(feature_plan)
 
         # Assert: Complete workflow creates organized structure with content
         assert "created_directories" in setup_result or "skipped" in setup_result

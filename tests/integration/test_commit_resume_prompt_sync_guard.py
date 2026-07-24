@@ -9,7 +9,7 @@ from tests.integration.conftest import synapse_path
 
 
 def _agent_file(name: str) -> Path:
-    return synapse_path() / "cursor-agents" / name
+    return synapse_path() / "claude-agents" / name
 
 
 def _resume_check_block(content: str) -> str:

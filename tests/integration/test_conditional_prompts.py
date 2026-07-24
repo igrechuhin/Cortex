@@ -9,12 +9,7 @@ import sys
 from pathlib import Path
 from unittest.mock import patch
 
-from cortex.core.path_resolver import (
-    CortexResourceType,
-    CursorResourceType,
-    get_cortex_path,
-    get_cursor_path,
-)
+from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 
 
 def _clear_setup_prompts_cache() -> None:
@@ -28,7 +23,7 @@ class TestConditionalPromptRegistration:
 
     def test_prompts_not_registered_when_configured(self, tmp_path: Path):
         """Test that setup prompts are not registered when project is configured."""
-        # Arrange - Create fully configured project (conftest patches get_cursor_path to use _cursor)
+        # Arrange - Create fully configured project
         cortex_dir = get_cortex_path(tmp_path, CortexResourceType.CORTEX_DIR)
         cortex_dir.mkdir()
         get_cortex_path(tmp_path, CortexResourceType.MEMORY_BANK).mkdir()
@@ -49,12 +44,7 @@ class TestConditionalPromptRegistration:
         for core_file in core_files:
             _ = (memory_bank_dir / core_file).write_text("# Test")
 
-        cursor_dir = get_cursor_path(tmp_path, CursorResourceType.CURSOR_DIR)
-        cursor_dir.mkdir()
         (cortex_dir / "synapse").mkdir()
-        (cursor_dir / "memory-bank").symlink_to(cortex_dir / "memory-bank")
-        (cursor_dir / "synapse").symlink_to(cortex_dir / "synapse")
-        (cursor_dir / "plans").symlink_to(cortex_dir / "plans")
 
         # Act - Import setup prompts with mocked project root
         with patch(
@@ -86,7 +76,7 @@ class TestConditionalPromptRegistration:
 
     def test_migration_prompts_registered_when_migration_needed(self, tmp_path: Path):
         """Test that migration prompts are registered when migration is needed."""
-        legacy_path = get_cursor_path(tmp_path, CursorResourceType.MEMORY_BANK)
+        legacy_path = tmp_path / "memory-bank"
         legacy_path.mkdir(parents=True)
         _ = (legacy_path / "old.md").write_text("# Test")
 

@@ -50,7 +50,6 @@ _KNOWN_TOOL_NAMES: list[str] = [
     "rollback_refactoring",
     "rules",
     "session",
-    "setup_cursor_integration",
     "setup_project_structure",
     "setup_shared_rules",
     "summarize_content",

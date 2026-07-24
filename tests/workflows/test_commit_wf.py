@@ -141,7 +141,7 @@ class TestPhaseARetryLoop:
     def test_early_exit_on_all_fail(self, wf_source: str) -> None:
         """After loop exits with passed=false, pipeline must return early."""
         assert (
-            re.search(r"if\s*\(!phaseA\.passed\)", wf_source) is not None
+            re.search(r"if\s*\([^)]*!phaseA\.passed\)", wf_source) is not None
         ), "Must check !phaseA.passed after the retry loop and return early"
 
     def test_phases_b_c_not_called_on_phase_a_failure(self, wf_source: str) -> None:

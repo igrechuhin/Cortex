@@ -1,0 +1,1561 @@
+# Troubleshooting Guide
+
+This guide helps you diagnose and fix common issues with Cortex.
+
+## Common Issues
+
+### Installation and Setup
+
+#### Issue: `uv` command not found
+
+**Symptoms**:
+
+```bash
+$ uvx cortex
+-bash: uvx: command not found
+```
+
+**Solution**:
+Install `uv` package manager:
+
+```bash
+# macOS/Linux
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Or using homebrew
+brew install uv
+
+# Windows
+powershell -c "irm https://astral.sh/uv/install.ps1 | iex"
+```
+
+#### Issue: Python version too old
+
+**Symptoms**:
+
+```text
+ERROR: Python 3.13 or later is required
+```
+
+**Solution**:
+Install Python 3.13+:
+
+```bash
+# Using uv
+uv python install 3.13
+
+# Or using pyenv
+pyenv install 3.13.0
+pyenv global 3.13.0
+```
+
+#### Stable MCP setup (one-place checklist)
+
+For a **stable MCP connection**, see [Getting started: Stable MCP setup](../getting-started.md#stable-mcp-setup-recommended): Cortex exits on disconnect by default (client starts a new process when needed, so you get fresh Initialize with no user action), optional bridge, faster markdown lint, and usage tips. The sections below cover individual issues and causes.
+
+#### Network-restricted verification {#offline-and-network-restricted-verification}
+
+Use this when proxies or corporate filters block PyPI (or to separate **”the environment never finished installing”** from **”pytest failed”**).
+
+**Requirements (check first)**:
+
+- **Python** 3.13 or later (see [Issue: Python version too old](#issue-python-version-too-old)).
+- **`uv`** on `PATH` (see [Issue: `uv` command not found](#issue-uv-command-not-found)).
+- **Synapse submodule**: from repo root run `git submodule update --init --recursive`. After that, the MCP server runs `git pull --ff-only origin main` inside `.cortex/synapse` once at startup (skipped when `CORTEX_SKIP_SYNAPSE_UPDATE=1`). Submodule failures are non-fatal—check logs and run the init/pull manually if needed.
+
+**Bootstrap (normal path)**:
+
+1. From the repository root: `uv sync --extra dev` (or `bash scripts/bootstrap.sh`). This creates/updates `.venv/` and installs dev tools including `rumdl`.
+2. Smoke-check imports: `uv run python -c “import cortex”` (optional but fast).
+3. Run tests when you care about correctness: `uv run pytest tests/ -q` (see [Development and Testing](#development-and-testing)).
+
+**Verification preflight** (before blaming tests):
+
+1. Run `uv sync --frozen` from repo root. If it fails, you are still in **dependency / network / trust store** territory.
+2. Classify the error:
+   - **SSL, certificate, `UnknownIssuer`, peer certificate** → [Git and SSL certificate issues](#git-and-ssl-certificate-issues) and **Fixing uv SSL / certificate errors** under [Quality gate unavailable in environment](#quality-gate-unavailable-in-environment).
+   - **Resolution errors, HTTP 4xx/5xx to an index, timeouts, DNS** → routing, proxy, or mirror issue — not a pytest assertion failure.
+   - **Git submodule / fetch** → credentials, firewall, or uninitialized submodule (see requirements above).
+3. After a successful sync, run the smallest check that matches your question:
+   - Syntax-only (does **not** replace tests): `uv run python -m compileall -q src/cortex`
+   - Tests: `uv run pytest tests/ -q`, `make check`, or `make check-ci-parity` depending on how close you need to be to CI (next subsection).
+
+**CI vs local parity**:
+
+- **`make check`** — quick, non-mutating gate (Black check, Ruff, Pyright, fast pytest). See [Local `make check` vs CI parity](#local-make-check-vs-ci-parity).
+- **`make check-ci-parity`** — broader alignment with [.github/workflows/quality.yml](../../.github/workflows/quality.yml); still skips some CI-only steps (npm `cspell`, eval jobs, Codecov, optional artifacts).
+
+**Triage matrix (symptom → cause → next step)**:
+
+| What you see | Likely cause | Next step |
+|--------------|--------------|-----------|
+| SSL / certificate / `UnknownIssuer` during `uv sync` | CA bundle or corporate MITM | `SSL_CERT_FILE`, `UV_NATIVE_TLS=true`, or IT-provided CA; see SSL sections above |
+| Connection timeout, DNS failure, proxy errors to PyPI or mirror | No path to package index | VPN, proxy settings, or internal mirror |
+| `uv sync` succeeds; pytest shows failed tests with tracebacks | Code, test, or local expectation issue | Debug failing tests; fix implementation or test data |
+| `pytest: command not found` or wrong Python version | Shell not using project venv | Use `uv run pytest …` or select `.venv` (see [Development and Testing](#development-and-testing)) |
+| Errors referencing `.cortex/synapse` paths during hooks | Submodule missing | `git submodule update --init --recursive`; when initialized, MCP also runs `git -C .cortex/synapse pull --ff-only origin main` at startup when not skipped |
+
+**Related**: [Quality gate unavailable in environment](#quality-gate-unavailable-in-environment), [Step 12.7 and sandboxed environments](#step-127-and-sandboxed-environments).
+
+#### MCP unavailable: read-only audits {#mcp-unavailable-read-only-audits}
+
+Use this when the agent **cannot** rely on Cortex MCP for a full session (e.g. server not configured, Initialize never completes, persistent "0 tools", or connection closed on every tool call after one retry). Goal: stay **auditable** and **safe** — review code and docs without pretending Memory Bank or quality gates ran.
+
+**Policy (authoritative summary)**: [AGENTS.md](../../AGENTS.md) — section **MCP unavailable: read-only audit fallback**.
+
+**Connectivity and diagnostics (run in order)**:
+
+1. **Client configuration** — Confirm MCP config points at the right command (e.g. `uv run cortex` from repo root or `uvx` from published package). Paths: Cursor project `.cursor/mcp*.json`; Claude Desktop `claude_desktop_config.json`. See [MCP server not found by client](#issue-mcp-server-not-found-by-client).
+2. **Manual server smoke test** — From the repo: `uv sync --extra dev` then `uv run cortex`. stderr should show a successful MCP startup; Ctrl+C to stop. If this fails, fix Python/uv/environment first ([Installation and Setup](#installation-and-setup)).
+3. **Handshake and tool listing** — After the client starts the server, confirm tools/resources are listed (not [0 tools](#issue-mcp-0-tools)). If you see 0 tools after a disconnect, reload MCP or follow that section’s recovery steps.
+4. **Transient disconnects** — If tools work intermittently, use [MCP error -32000: Connection closed](#issue-mcp-error-32000-connection-closed) (retry once, avoid parallel subagents on one connection, timeouts).
+
+**Read-only audit scope (allowed)**:
+
+- Inspect `src/`, `tests/`, `docs/`, and `.cortex/` **as plain files** for security, style, or architecture review.
+- Run **non-mutating** checks the environment supports (e.g. `make check`, `uv run pytest …`) when the user’s shell is trusted — document exact commands in the audit output. This is **not** a substitute for the commit pipeline’s MCP-driven gates unless the user explicitly accepts that parity.
+- Output a short **audit record**: date, environment, MCP status, files reviewed, commands run, and explicit note that Memory Bank / `run_quality_gate` / `run_docs_gate` were **not** executed via Cortex MCP.
+
+**Out of scope without MCP (do not do)**:
+
+- Updating `roadmap.md`, `activeContext.md`, `progress.md`, or plan status via direct file edits to "finish" compound-engineering steps.
+- Staging commits that assert Phase A/B/Step 12 passed when those steps did not run in that session.
+
+**Escalation — restoring MCP**:
+
+1. Fix config and environment per steps above.
+2. Restart the MCP client or toggle the Cortex server entry.
+3. Re-run `session()` and a zero-arg tool (e.g. `run_quality_gate()` or `run_docs_gate()`) to confirm health before resuming implement/commit prompts.
+
+Related: [Quality gate unavailable in environment](#quality-gate-unavailable-in-environment) (tooling missing vs MCP missing), [MCP disconnect runbook (commit pipeline)](#mcp-disconnect-runbook-commit) (disconnect **during** a gated run).
+
+#### Issue: MCP server crashes with BrokenResourceError
+
+**Symptoms**:
+
+```text
+ExceptionGroup: unhandled errors in a TaskGroup (1 sub-exception)
+  anyio.BrokenResourceError
+```
+
+**Causes**:
+
+- Client disconnected while server was processing
+- Request was cancelled by client
+- Client process terminated unexpectedly
+
+**Solution**:
+
+From a **server** perspective this is graceful behavior (the server exits cleanly with exit code 0 and does not crash). From a **workflow** perspective disconnections are a real problem:
+
+1. **You must reconnect**  
+   After a disconnection the agent can continue running **without MCP**—it may use only built-in tools and skip Cortex (memory bank, rules, quality checks). To keep the agent under Cortex control, reconnect the client so the MCP server restarts, and if the agent is already running, consider re-running the task so it uses Cortex MCP tools.
+
+2. **Check that MCP is available before relying on the agent**  
+   If you don’t verify the connection, the agent may work without MCP control. Use a lightweight check (e.g. ensure Cortex tools appear in the client, or call `check_mcp_connection_health` if available) before starting important agent work.
+
+3. **If disconnections are frequent**  
+   Check client configuration, timeouts, and network stability. See [MCP error -32000: Connection closed](#issue-mcp-error-32000-connection-closed) for mitigations.
+
+4. **Reconnect is automatic**  
+   By default Cortex **exits** when the connection drops; the client starts a new process when it next needs MCP. No user reload needed. If you set `CORTEX_AUTO_RESTART=1`, you may then see "0 tools" after a disconnect and need to reload MCP.
+
+The server distinguishes between:
+
+- **Graceful disconnection** (exit code 0): Client closed connection
+- **Actual errors** (exit code 1): Server-side failures
+
+If the **client** shows `MCP error -32000: Connection closed` during a tool call, see [MCP error -32000: Connection closed](#issue-mcp-error-32000-connection-closed).
+
+#### Issue: uvx cold start / MCP Initialize timeout {#issue-uvx-cold-start-mcp-timeout}
+
+**Symptoms**:
+
+- MCP logs: `Pending server creation failed`, `MCP error -32001: Request timed out`, or `initializing -> error: Client closed` shortly after start.
+- Terminal: `uvx --from git+https://github.com/igrechuhin/Cortex.git cortex …` sits on `Preparing packages…` for a long time.
+
+**Cause**:
+
+`uvx --from git+…` is not instant. On a **cold** uv cache it must resolve the repo (GitHub `HEAD`), download transitive wheels from PyPI, fetch/build the Cortex package, and install the tool environment. That work can exceed a client’s MCP **Initialize** deadline even though the process would succeed if given enough time. This is expected after `uv cache clean`, on a new machine, or the first time you use that tool entrypoint.
+
+**Mitigation**:
+
+1. **Pre-warm in a terminal** (same `command` / `args` as `mcp.json`):
+
+   ```bash
+   uvx --from git+https://github.com/igrechuhin/Cortex.git cortex --help
+   ```
+
+2. After it finishes, **start or reload** the MCP server in the IDE.
+
+3. **Suspect cache corruption** (rare): stop other `uv` processes, then `uv cache clean --force` and pre-warm again (the next run will be cold and slow by design).
+
+Related: [Stable MCP setup (recommended)](../getting-started.md#stable-mcp-setup-recommended), [README — With uvx (recommended)](../../README.md#with-uvx-recommended).
+
+#### Issue: MCP server not found by client
+
+**Symptoms**:
+
+- Claude Desktop doesn't show Memory Bank tools
+- Cursor IDE doesn't connect to server
+
+**Solution**:
+
+1. Check MCP configuration file location:
+   - **Claude Desktop**: `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS)
+   - **Cursor**: `.cursor/mcp_config.json` in project root
+
+2. Verify configuration:
+
+   ```json
+   {
+     "mcpServers": {
+       "memory-bank": {
+         "command": "uvx",
+         "args": ["--from", "git+https://github.com/igrechuhin/cortex.git", "cortex"]
+       }
+     }
+   }
+   ```
+
+3. Restart the MCP client
+
+#### Issue: MCP error -32000: Connection closed {#issue-mcp-error-32000-connection-closed}
+
+**Symptoms**:
+
+- Tool call returns: `{"error":"MCP error -32000: Connection closed"}`
+- Occurs during long-running tools (e.g. `fix_markdown_lint`, `run_quality_gate`, `autofix`)
+- Occurs when **multiple subagents call MCP tools concurrently** (e.g. parallel fix quality + fix tests + fix docs)
+
+**Cause**:
+
+The **client** (e.g. Cursor) closed the MCP connection before the tool finished. Two known triggers:
+
+1. **Client-side tool timeout** — a single long-running tool exceeds the client timeout (~10-20s).
+2. **Concurrent subagent tool calls** — when 3-4 tool calls are in-flight simultaneously from parallel subagents, Cursor's aggregate pending-call timeout kills the shared MCP stdio connection even if individual tools are fast. This is the most common cause when using orchestration prompts (e.g. `/cortex/fix`) that launch parallel agents.
+
+**Why it matters**: After a disconnect the agent may keep running **without MCP**. It will not use Cortex tools (memory bank, rules, quality checks). Reconnect so the server restarts; for important work, re-run the task so the agent runs with MCP control. For disconnects **during the commit pipeline**, see the [MCP disconnect runbook (commit pipeline)](#mcp-disconnect-runbook-commit).
+
+**Reconnect is automatic**: By default Cortex exits when the connection drops; the client starts a new process when it next needs MCP. If you set `CORTEX_AUTO_RESTART=1`, you may need to reload MCP after a disconnect to restore tools.
+
+**Fix (what to do)**:
+
+1. **Retry once**  
+   The client or agent should retry the same tool once. Many connection drops are transient; the second call often succeeds.
+
+2. **Use local rumdl**  
+   For `fix_markdown_lint`, ensure the fast Rust-based `rumdl` CLI is available in the Python environment so the tool runs faster and is less likely to hit the client timeout:
+   - From project root: run `bash scripts/bootstrap.sh` or `uv sync --extra dev` so `.venv/bin/rumdl` is installed.
+   - See [rumdl and the markdown lint tool](#rumdl-and-the-markdown-lint-tool).
+
+3. **Use documented fallbacks in the commit pipeline**  
+   If a retry still fails with "Connection closed", follow the commit prompt’s fallback for that step (e.g. run markdown lint via shell for Step 12.5, or the fallback scripts for Step 12.6) and record "MCP connection closed; fallback used". Do not block the pipeline on "tool not found" after a disconnect—use the fallback.
+
+4. **Never run parallel subagents that call MCP tools**
+   Concurrent subagents sharing one MCP stdio connection will cause disconnects. Orchestration prompts (e.g. `fix.md`) must run targets **sequentially**, not in parallel. If you write a new prompt that calls MCP tools from multiple agents, ensure they run one at a time. See the `fix.md` Sequential Execution section for the pattern.
+
+HTTP/SSE or a stdio–HTTP bridge is not a supported workaround for this issue (it has been tried and does not resolve connection closed during long tools).
+
+**Server-side mitigations (already in place)**:
+
+- **Client cancel no longer crashes the server**: The server patches `_handle_request` to catch `ClosedResourceError` on `message.respond()`. When the client disconnects mid-response, the exception is absorbed instead of propagating to the anyio TaskGroup (which previously cancelled all in-flight tasks and killed the server process). The response is lost (the client is gone) but the server stays alive for the next connection.
+- **Minimal MCP stream writes in fast tools**: Phase A quality tooling (invoked via `run_quality_gate` and related zero-arg tools) uses server-side `logger.info` instead of `log_client` and `get_current_project_root()` (cached, sync) instead of `list_roots` round-trips, minimizing stream contention with concurrent tool responses.
+- Progress and heartbeat for long tools (e.g. 2 s heartbeat and wrapper progress for `fix_markdown_lint`, frequent progress for `run_quality_gate`).
+- Automatic retry for connection errors in the tool wrapper. Most tools get one retry; `fix_markdown_lint` gets **four attempts** (1 initial + 3 retries) with exponential backoff (1 s, 2 s, 4 s) to reduce commit-pipeline disconnects.
+- Batched markdown lint to reduce total duration.
+- **Long-running serialization and detached workers**:
+  - `fix_markdown_lint` is the only tool serialized by the long-running semaphore. If you call `fix_markdown_lint` while another `fix_markdown_lint` run is active, the second call **waits up to 600 seconds (10 minutes)** for the first to finish; if the first is still running after that, the server does **one short retry (5 seconds)** to absorb the race when the first call or auto-release frees the semaphore at the same moment, then returns an error if still busy. This allows sequential commit-pipeline calls that involve markdown lint to succeed when the second request arrives before the first has returned. See [Another long-running tool is in progress](#issue-another-long-running-tool-in-progress).
+  - `run_quality_gate` (Phase A) no longer uses the global long-running semaphore for the underlying worker. It runs via a **detached worker model** keyed by `args_hash`. If a second call is made for the same configuration while a detached worker is already running, the server returns a **fast, non-retryable error** stating that checks are already running for that configuration; agents must treat this as “in progress” and **not** start a second run.
+
+#### Issue: Found 0 tools, 0 prompts, and 0 resources {#issue-mcp-0-tools}
+
+**Symptoms**:
+
+- MCP client log shows: `Found 0 tools, 0 prompts, and 0 resources` for the Cortex server.
+- Warnings like: `Failed to validate request: Received request before initialization was complete`.
+
+**Cause**:
+
+This happens when the client sends ListTools/ListPrompts/ListResources **before** completing an **Initialize** handshake with the server—usually after a disconnect when the server process was **replaced under the same connection** (e.g. you use `CORTEX_AUTO_RESTART=1`). The new process has no session yet; the client may send list requests using old session state, so the server rejects them and the client shows 0 tools.
+
+**Fix (what to do)**:
+
+- **Default (no CORTEX_AUTO_RESTART)**: Cortex exits on disconnect; the client starts a new process when it next needs MCP, so you get a fresh Initialize with no user action. You should not see 0 tools.
+- **Automatic recovery**: Install the [Cursor MCP Refresh](https://github.com/tankmurdock/cursor-mcp-refresh) extension and set **Auto-refresh interval** (e.g. 60–300 seconds). It refreshes MCP servers on a timer, so "0 tools" is cleared on the next refresh without manual toggle. [Install from VSIX](https://github.com/tankmurdock/cursor-mcp-refresh/releases).
+- **If you set CORTEX_AUTO_RESTART=1** and don't use the extension: reload MCP manually (disable/enable Cortex in MCP Servers, or restart Cursor). Retry once first; optional: `CORTEX_USE_FALLBACK_ROOT=1`; see [mcp-tool-timeouts](../mcp-tool-timeouts.md).
+
+#### Issue: Another long-running tool is in progress {#issue-another-long-running-tool-in-progress}
+
+**Symptoms**:
+
+- Tool call returns a `RuntimeError` (example paraphrase; exact wording varies): another long-running tool is already in progress (often `fix_markdown_lint` or the Phase A quality gate). Wait for it to finish (up to 10 minutes) and retry.
+
+**Cause**:
+
+- The long-running semaphore currently serializes **only** `fix_markdown_lint`. If the client (or agent) invokes a second `fix_markdown_lint` run while the first is still running, the second call **waits up to 600 seconds (10 minutes)** for the first to finish. If the first is still running after that, the server returns this error.
+- Phase A (`run_quality_gate`) concurrency is handled by its detached worker model, not by the long-running semaphore. A second call with the same configuration while a worker is running returns a fast, non-retryable error indicating that checks are already running; this should be treated as “in progress”, not as a signal to retry.
+
+**Fix (what to do)**:
+
+1. If you see this error while running `fix_markdown_lint`, the first run took longer than 600 seconds (10 minutes). Wait for it to finish, then retry the tool you wanted to run.
+2. Prefer running long-running tools one after another and wait for each to complete before starting the next (e.g. run `fix_markdown_lint` only after `run_quality_gate` has completed). Sequential calls that arrive while the first is still running will wait automatically for `fix_markdown_lint`, and return a fast "already running" error for a second Phase A gate call with the same configuration.
+3. If running the commit pipeline: ensure Phase A has fully completed before Step 12 runs; avoid starting another commit or long-running tool in another tab or agent session, and never start a second `run_quality_gate` run while a detached worker is active for the same configuration.
+
+#### MCP disconnect runbook (commit pipeline) {#mcp-disconnect-runbook-commit}
+
+Use this runbook when the Cortex MCP connection is lost **during** `/cortex/commit` (e.g. client shows `MCP error -32000: Connection closed` or "Connection closed", and the pipeline stops or cannot complete Step 12).
+
+**Typical disconnect points** (where disconnects are most often observed):
+
+| When | Step / phase | Likely cause | Recommended action |
+|------|----------------|---------------|---------------------|
+| After Phase A (Steps 0–4) | Before or at start of Step 5 | Client idle or tool-call timeout after Phase A gap | Reconnect Cortex MCP, then re-run `/cortex/commit`. Call `check_mcp_connection_health()` before Step 12 if the pipeline supports it. |
+| During Step 12.1 (format) | Format fix or check | Client timeout during formatting tool | Retry once; if retry fails, use fallback scripts (`fix_formatting.py` then `check_formatting.py`) per commit prompt; record "MCP connection closed; fallback used". Do not skip Step 12.1. |
+| During Step 12.5 (markdown lint) | `fix_markdown_lint` or check | Client timeout (markdown lint can be slow) | Retry once; if retry fails, run markdown lint via shell (see commit prompt) and record "MCP connection closed; fallback used". |
+| During Step 12.6 (file size / function length) | Quality checks | Client timeout | Retry once; if retry fails, use shell script fallbacks for file size and function length checks; record "MCP connection closed; fallback used". Do not skip Step 12.6. |
+| During Step 12.7 (tests with coverage) | `run_quality_gate()` (Step 12 final Phase A pass, includes tests) | Client timeout (tests can run 5–10+ minutes) | Retry once. **There is no fallback for Step 12.7.** If retry fails, **block commit** and tell the user: "Reconnect Cortex MCP and re-run the commit command." Do not proceed with Phase A results. |
+
+**Likely cause**: In most cases the **client** (e.g. Cursor) closed the connection—due to client-side tool-call timeout or IDE lifecycle—not a server crash. The tool may have completed on the server; the connection was already closed when the response was sent. To increase Cursor’s timeout, see [Cursor IDE: MCP tool timeout configuration](#cursor-ide-mcp-tool-timeout-configuration). See also [MCP error -32000: Connection closed](#issue-mcp-error-32000-connection-closed).
+
+**How to confirm**: Check MCP server stderr (or Cursor Output / MCP logs) for lines like `MCP connection error in <tool_name> (attempt 1/2): ...` to see which tool and attempt failed. In one observed case (MCP log 1-18553), disconnect during `fix_markdown_lint` occurred **≈10 s** after the tool call started; compare that with client timeout settings. Session logs or repro: run `/cortex/commit`, let it reach the long step (e.g. 12.7), and note after how long the disconnect occurs.
+
+**Recovery summary**:
+
+- **Steps with fallback (12.1, 12.5, 12.6)**: Retry once → if still failing, use documented shell/script fallback → record "MCP connection closed; fallback used" → continue pipeline. Never skip these steps based on Phase A.
+- **Step 12.7 (no fallback)**: Retry once → if still failing, **block commit**, report connection failure, and instruct user to **reconnect Cortex MCP and re-run the commit command**. Do not proceed with Phase A test results.
+
+**References**: Commit prompt "Connection closed" and "Step 12" sections; [MCP error -32000: Connection closed](#issue-mcp-error-32000-connection-closed); [Client connection closed during long tools](../mcp-tool-timeouts.md#client-connection-closed-during-long-tools) in mcp-tool-timeouts.
+
+### Development and Testing
+
+#### Issue: I don't see any option to run tests in Cursor
+
+**Symptoms**:
+
+- No "Run Test" / "Run All Tests" buttons
+- No Test view or testing icon in the sidebar
+
+**Solution**:
+
+1. **Open the Testing view**  
+   - Click the **flask/beaker icon** in the left sidebar (Testing), or  
+   - **View → Testing**, or  
+   - Command Palette (`Cmd+Shift+P` / `Ctrl+Shift+P`) → type **"Testing: Focus on Test View"**.
+
+2. **Install the Python extension**  
+   - Extensions panel (`Cmd+Shift+X` / `Ctrl+Shift+X`) → search **"Python"** (Microsoft) → Install if missing.  
+   - The built-in Test explorer depends on this extension.
+
+3. **Select the workspace interpreter**  
+   - Command Palette → **"Python: Select Interpreter"** → pick **`.venv (Python 3.13.x)`** under the project folder.  
+   - Without this, test discovery may not run or may use the wrong environment.
+
+4. **If the Test view is empty or discovery fails**  
+   Cursor’s bundled Python extension can have pytest discovery issues. Try:
+   - **Cursor Pytest** extension: Extensions → search **"Cursor Pytest"** (by Arun Dev) → Install. It adds inline Run/Debug buttons and test discovery.
+   - Or run tests from the terminal: `uv run pytest tests/ -k "test_name"` for a single test, or call Cortex MCP `run_quality_gate()` for the full Phase A suite (includes tests) when the client supports zero-arg tools.
+
+5. **Ensure `.vscode/settings.json` exists** (see next subsection) so that when tests do run from the UI, the correct interpreter is used.
+
+#### Issue: "pytest-cov is not installed" during test discovery
+
+**Symptoms**:
+
+- Python extension log shows: `VSCodePytestError: ERROR: pytest-cov is not installed, please install this before running pytest with coverage as pytest-cov is required.`
+- Test discovery fails and the Test view stays empty.
+
+**Cause**:
+
+The Microsoft Python extension runs pytest for discovery. If `pytest.ini` has `--cov` in `addopts`, the extension requires `pytest-cov` to be installed and aborts discovery otherwise (even when coverage is disabled for that run).
+
+**Solution** (applied in this repo):
+
+Coverage is **not** in the default `pytest.ini` addopts. CI and the Phase A quality gate (`run_quality_gate`) pass `--cov=src/cortex`, `--cov-report=...`, and `--cov-fail-under=90` explicitly, so full runs still enforce coverage. IDE discovery no longer sees coverage options and no longer requires `pytest-cov` for discovery.
+
+If you see this error in another project, either add coverage options only when running tests (e.g. via CI or a script), or install dev deps so `pytest-cov` is present: `uv sync --group dev --extra dev`.
+
+#### Issue: Tests don't run or always fail from Cursor/VS Code UI
+
+**Symptoms**:
+
+- Clicking "Run Test" / "Run All Tests" in the Test view does nothing or shows failures
+- Running a single test file exits with "FAILED" due to coverage (e.g. "Required test coverage of 90% not reached")
+
+**Cause**:
+
+When coverage options are passed explicitly (by CI or the Phase A gate), running a single test file from the IDE while those options are active causes coverage to be computed over the whole codebase, so the run fails even if the tests passed. In this repo, `pytest.ini` addopts do **not** include coverage flags — but if you run tests via a script or CI command that adds `--cov-fail-under=90`, the same problem occurs.
+
+> **Note**: See `pytest.ini` for current addopts. Coverage is configured in CI workflows and the Phase A MCP gate (`run_quality_gate`), not in `pytest.ini`.
+
+**Solution**:
+
+1. **Use the project venv**  
+   Select the workspace interpreter: `.venv/bin/python` (Command Palette → "Python: Select Interpreter" → choose the one under the project folder).
+
+2. **Disable coverage for IDE test runs**  
+   So the Test UI doesn't enforce 90% coverage on partial runs, add or merge this into `.vscode/settings.json` (this folder is gitignored; create it if needed):
+
+   ```json
+   {
+     "python.defaultInterpreterPath": "${workspaceFolder}/.venv/bin/python",
+     "python.testing.pytestEnabled": true,
+     "python.testing.unittestEnabled": false,
+     "python.testing.pytestArgs": ["-p", "no:cov"]
+   }
+   ```
+
+   `-p no:cov` disables the coverage plugin for that run. In Cortex, default `pytest.ini` addopts do not include coverage; CI and MCP pass `--cov` explicitly for full runs.
+
+3. **Reload the window**  
+   After changing settings: Command Palette → "Developer: Reload Window", then use the Test view again.
+
+#### Step 12.7 and sandboxed environments {#step-127-and-sandboxed-environments}
+
+**Symptoms**:
+
+- Step 12.7 (tests with coverage) in the commit pipeline fails or cannot execute when run in a sandboxed environment (e.g. restricted CI, agent runner, or environment where test execution is disabled or times out).
+
+**Cause**:
+
+Sandboxed environments may block or limit subprocess execution, network, or long-running processes. The commit pipeline requires Step 12.7 to pass before commit; there is no fallback for tests (unlike formatting or quality checks).
+
+**What to do**:
+
+1. **Commit remains blocked** until Step 12.7 executes successfully. Phase A (Step 4) test results are not acceptable in place of Step 12.7, because code or memory-bank changes in Steps 5–11 can affect test results.
+2. **Run tests outside the sandbox**: Run the full test suite locally or in a non-sandboxed CI job (e.g. `run_quality_gate()` or `uv run pytest tests/` with coverage). Ensure tests pass and coverage ≥ 90%.
+3. **Re-run the commit pipeline** after tests pass outside the sandbox, so Step 12.7 can complete (or run the pipeline in an environment where Step 12.7 is allowed).
+4. **Document the limitation**: If your environment routinely runs in a sandbox, document that commit must be run in an environment where test execution is allowed, or run tests manually before invoking commit.
+
+#### Step 12.7 Timeout and Connection Requirements {#step-127-timeout-and-connection-requirements}
+
+**Overview**: Step 12.7 (tests with coverage validation) is a long-running operation that can take up to 600 seconds (10 minutes) to complete. The commit pipeline includes connection stability enhancements to prevent commit blocks due to connection closure during test execution.
+
+**Expected test execution time**:
+
+- **Typical duration**: 5–10 minutes for full test suite with coverage
+- **Maximum timeout**: 600 seconds (10 minutes) as configured in `test_timeout=600`
+- **Client-side timeout requirements**: The client (e.g. Cursor IDE) must have a tool-call timeout ≥ 600 seconds to avoid connection closure during Step 12.7
+
+**Connection health check before Step 12.7**:
+
+- **MANDATORY**: The commit pipeline executes `check_mcp_connection_health()` immediately before Step 12.7.1
+- **If health check fails**: Wait 2–5 seconds, retry health check once
+- **If still unhealthy**: Block commit with message: "MCP connection unhealthy before Step 12.7. Please reconnect Cortex MCP server and re-run commit pipeline."
+- **Rationale**: Fails fast with a clear message instead of timing out during the long test run
+
+**Enhanced retry logic with exponential backoff**:
+
+- **First retry**: If `run_quality_gate()` fails with connection error during the test step (e.g., "Connection closed", MCP error -32000), wait 2 seconds and retry
+- **Second retry**: If first retry fails, wait 5 seconds and retry again
+- **If both retries fail**: Block commit immediately. Do not proceed to Step 13. Report error and instruct user to reconnect Cortex MCP and re-run the commit command
+- **No fallback**: Unlike Step 12.6, there is no shell script fallback for tests. Step 12.7 must execute successfully via MCP
+
+**Connection stability monitoring**:
+
+- Connection health metrics are logged before and after test execution for analysis:
+  - Health status (healthy/unhealthy)
+  - Concurrent operations count
+  - Resource utilization percentage
+  - Long-running semaphore holder (if any)
+- Metrics help identify patterns:
+  - Timeout thresholds (when do connections close relative to execution time?)
+  - Concurrent operation limits (does semaphore usage correlate with failures?)
+  - Client vs server-side timeouts
+
+**How to increase client timeout** (if needed):
+
+- **Cursor IDE**: See [Cursor IDE: MCP tool timeout configuration](#cursor-ide-mcp-tool-timeout-configuration) below for settings and recommended values. Default timeout should be ≥ 600 seconds for Step 12.7.
+- **Other clients**: Consult client documentation for tool-call timeout settings.
+- **If timeout cannot be increased**: Consider running tests manually before invoking commit, or use a CI environment with longer timeouts.
+
+#### Cursor IDE: MCP tool timeout configuration {#cursor-ide-mcp-tool-timeout-configuration}
+
+Cursor IDE may apply a **client-side tool-call timeout**; when that is shorter than a long-running MCP tool (e.g. `fix_markdown_lint`, `run_quality_gate`), the client can close the connection and you see `MCP error -32000: Connection closed`. Reported behavior varies by version: some users see ~60 s or 2 minutes (e.g. Cursor 1.5.1+), others see longer defaults; in one log (MCP log 1-18553), disconnect occurred **≈10 s** after `fix_markdown_lint` started, which may indicate a separate shorter limit in some builds or environments.
+
+**Configurable timeout (community-documented)**:
+
+Cursor does not officially document a tool-call timeout setting. Community guides and forum posts suggest adding the following to Cursor’s **Settings (JSON)** (e.g. `Ctrl/Cmd + Shift + P` → “Open Settings (JSON)”):
+
+```json
+"mcp.server.timeout": 600000,
+"mcp.elicitation.timeout": 600000
+```
+
+Values are in **milliseconds**. `600000` = 10 minutes. Use at least **600000** (10 min) if you run the full commit pipeline including Step 12.7 (tests). After changing, reload Cursor (e.g. `Ctrl/Cmd + R`).
+
+**Caveats**:
+
+- These keys are not guaranteed to be supported in all Cursor versions or builds; if disconnects persist, rely on server-side progress, retries, and the [MCP disconnect runbook](#mcp-disconnect-runbook-commit).
+- If you observe disconnects at ~10 s despite a long `mcp.server.timeout`, another limit (e.g. stdio or first-response timeout) may apply; report the timing and Cursor version for diagnostics.
+
+**References**: [MCP tool calling timeout (Cursor forum)](https://forum.cursor.com/t/mcp-tool-calling-timeout/49149), [Long Running MCP tool calls (Cursor forum)](https://forum.cursor.com/t/long-running-mcp-tool-calls/131279); [mcp-tool-timeouts.md](../mcp-tool-timeouts.md) (commit pipeline tools and client timeout).
+
+**Troubleshooting connection closures during Step 12.7**:
+
+1. **Check connection health before Step 12.7**: The pipeline automatically checks health; if it reports unhealthy, reconnect MCP before proceeding
+2. **Review connection stability logs**: Check server logs for connection health metrics recorded before/after test execution
+3. **Verify client timeout**: Ensure client tool-call timeout ≥ 600 seconds
+4. **Check for concurrent long-running operations**: If another long-running tool is executing, wait for it to complete before running commit pipeline
+5. **Reconnect and retry**: If Step 12.7 fails after retries, reconnect Cortex MCP server and re-run the commit command
+
+**References**: Commit prompt Step 12.7 section; [MCP disconnect runbook (commit pipeline)](#mcp-disconnect-runbook-commit); [MCP error -32000: Connection closed](#issue-mcp-error-32000-connection-closed)
+
+### File Operations
+
+#### Issue: File lock timeout
+
+**Symptoms**:
+
+```text
+FileLockTimeoutError: Could not acquire lock for activeContext.md within 10 seconds
+```
+
+**Causes**:
+
+- Another process is writing to the file
+- Stale lock from crashed process
+
+**Solution**:
+
+1. Check for running processes:
+
+   ```bash
+   ps aux | grep cortex
+   ```
+
+2. Clean up stale locks:
+
+   ```bash
+   # Remove lock files
+   rm .cortex/memory-bank/*.lock
+   ```
+
+3. Retry the operation
+
+#### Issue: File conflict error
+
+**Symptoms**:
+
+```text
+FileConflictError: File projectBrief.md was modified externally
+```
+
+**Causes**:
+
+- File was edited outside Cortex
+- Concurrent edits from multiple clients
+
+**Solution**:
+
+1. Read the current file content:
+
+   ```json
+   {
+     "tool": "read_memory_bank_file",
+     "args": {
+       "project_root": "/path/to/project",
+       "file_name": "projectBrief.md"
+     }
+   }
+   ```
+
+2. Merge your changes with the current content
+
+3. Write with updated hash:
+
+   ```json
+   {
+     "tool": "write_memory_bank_file",
+     "args": {
+       "project_root": "/path/to/project",
+       "file_name": "projectBrief.md",
+       "content": "merged content",
+       "expected_hash": "current_hash_from_read"
+     }
+   }
+   ```
+
+#### Issue: Git conflict markers detected
+
+**Symptoms**:
+
+```text
+GitConflictError: File systemPatterns.md contains Git conflict markers
+```
+
+**Solution**:
+
+1. Open the file and resolve conflicts:
+
+   ```markdown
+   <<<<<<< HEAD
+   Version A
+   =======
+   Version B
+   >>>>>>> branch-name
+   ```
+
+2. Remove conflict markers and keep desired content
+
+3. Retry the operation
+
+### Validation Issues
+
+#### Issue: Required sections missing
+
+**Symptoms**:
+
+```json
+{
+  "status": "error",
+  "errors": [
+    {
+      "type": "missing_section",
+      "file": "projectBrief.md",
+      "section": "Project Overview"
+    }
+  ]
+}
+```
+
+**Solution**:
+
+Add the required section to the file:
+
+```markdown
+# Project Brief
+
+## Project Overview
+
+Your project overview here...
+```
+
+#### Issue: Duplication detected
+
+**Symptoms**:
+
+```json
+{
+  "duplications": [
+    {
+      "file1": "systemPatterns.md",
+      "file2": "techContext.md",
+      "similarity": 0.92
+    }
+  ]
+}
+```
+
+**Solution**:
+
+Use transclusion to eliminate duplication:
+
+1. Extract shared content to a dedicated file:
+
+   ```markdown
+   <!-- shared.md -->
+   ## Authentication
+
+   Users authenticate via OAuth 2.0...
+   ```
+
+2. Use transclusion in both files:
+
+   ```markdown
+   <!-- systemPatterns.md -->
+   {{include:shared.md#Authentication}}
+
+   <!-- techContext.md -->
+   {{include:shared.md#Authentication}}
+   ```
+
+#### Issue: Token budget exceeded
+
+**Symptoms**:
+
+```text
+TokenLimitExceededError: 120000 tokens (limit: 100000)
+```
+
+**Solution**:
+
+1. **Option A**: Increase budget in configuration:
+
+   ```json
+   {
+     "token_budget": {
+       "max_total_tokens": 150000
+     }
+   }
+   ```
+
+2. **Option B**: Archive old content:
+
+   ```bash
+   mkdir -p memory-bank/archive
+   mv memory-bank/old-file.md memory-bank/archive/
+   ```
+
+3. **Option C**: Use summarization:
+
+   ```json
+   {
+     "tool": "summarize_content",
+     "args": {
+       "project_root": "/path/to/project",
+       "file_name": "large-file.md",
+       "strategy": "extract_key_sections",
+       "target_reduction": 0.5
+     }
+   }
+   ```
+
+### Link and Transclusion Issues
+
+#### Issue: Broken link detected
+
+**Symptoms**:
+
+```json
+{
+  "broken_links": [
+    {
+      "file": "systemPatterns.md",
+      "link": "missing-file.md",
+      "type": "file_not_found"
+    }
+  ]
+}
+```
+
+**Solution**:
+
+1. Check if file exists:
+
+   ```bash
+   ls memory-bank/missing-file.md
+   ```
+
+2. Fix the link or create the missing file
+
+#### Issue: Circular transclusion
+
+**Symptoms**:
+
+```text
+Error: Circular transclusion detected: fileA.md -> fileB.md -> fileA.md
+```
+
+**Solution**:
+
+1. Identify the cycle in your transclusions:
+
+   ```markdown
+   <!-- fileA.md -->
+   {{include:fileB.md}}
+
+   <!-- fileB.md -->
+   {{include:fileA.md}} <!-- Circular! -->
+   ```
+
+2. Restructure to eliminate the cycle:
+
+   ```markdown
+   <!-- Create fileC.md with shared content -->
+
+   <!-- fileA.md -->
+   {{include:fileC.md}}
+
+   <!-- fileB.md -->
+   {{include:fileC.md}}
+   ```
+
+#### Issue: Transclusion section not found
+
+**Symptoms**:
+
+```text
+Error: Section 'NonExistent' not found in shared.md
+```
+
+**Solution**:
+
+1. Check available sections:
+
+   ```json
+   {
+     "tool": "query_memory_bank",
+     "args": {
+       "query_type": "parse_links",
+       "file_name": "shared.md"
+     }
+   }
+   ```
+
+2. Update the transclusion with correct section name:
+
+   ```markdown
+   <!-- Before -->
+   {{include:shared.md#NonExistent}}
+
+   <!-- After -->
+   {{include:shared.md#Authentication}}
+   ```
+
+### Optimization Issues
+
+#### Issue: Context optimization takes too long
+
+**Symptoms**:
+
+- Optimization takes > 10 seconds
+- High CPU usage
+
+**Causes**:
+
+- Large number of files
+- Complex dependency graphs
+- Relevance scoring overhead
+
+**Solution**:
+
+1. Enable caching:
+
+   ```json
+   {
+     "performance": {
+       "cache_enabled": true,
+       "cache_ttl_seconds": 600
+     }
+   }
+   ```
+
+2. Reduce file count:
+
+   ```bash
+   # Archive unused files
+   mkdir -p memory-bank/archive
+   mv memory-bank/unused-*.md memory-bank/archive/
+   ```
+
+3. Use simpler optimization strategy:
+
+   ```json
+   {
+     "optimization": {
+       "strategy": "priority"  // Instead of "hybrid"
+     }
+   }
+   ```
+
+#### Issue: Irrelevant files selected
+
+**Symptoms**:
+
+- Context optimization selects wrong files
+- Low relevance scores for important files
+
+**Solution**:
+
+1. Adjust relevance scoring weights:
+
+   ```json
+   {
+     "relevance_scoring": {
+       "tfidf_weight": 0.6,        // Increase keyword weight
+       "dependency_weight": 0.3,
+       "recency_weight": 0.05,
+       "quality_weight": 0.05
+     }
+   }
+   ```
+
+2. Use mandatory files:
+
+   ```json
+   {
+     "optimization": {
+       "mandatory_files": [
+         "memorybankinstructions.md",
+         "projectBrief.md",
+         "important-context.md"
+       ]
+     }
+   }
+   ```
+
+#### Issue: Context effectiveness shows no_data in analysis-only sessions
+
+**Symptoms**:
+
+- End-of-session Analyze report shows "No session logs found" or "Calls Analyzed: 0"
+- `analyze(target="context")` returns `"status": "no_data"`
+
+**Cause**:
+
+When the only action in the session is running the Analyze (End of Session) prompt, no `load_context` calls were made, so there is no context-effectiveness data for the current session. This is **expected behavior**, not an error.
+
+**Solution**:
+
+- No action required. Report the manual summary (e.g. files used from Pre-Analysis Checklist) in the Context Effectiveness Analysis section.
+- **Optional**: To record one call for metrics, run `session_start()` or `load_context(task_description="end-of-session analysis", token_budget=5000)` before running the analysis steps.
+
+#### Issue: load_context zero-budget, omitted budget, or zero-files (configuration error)
+
+**Symptoms**:
+
+- `load_context` returns a validation error when `token_budget` is **omitted** or set to `0` for a non-trivial task
+- Context-effectiveness analysis reports `token_budget=0` or `files_selected=0` for refactor/fix/debug/implement tasks in `learned_patterns` or recommendations
+
+**Cause**:
+
+For non-trivial tasks (refactor, fix, debug, implement), an **explicit non-zero** `token_budget` is required. Omitting `token_budget` or passing `token_budget=0` returns a validation error. Zero files selected indicates the caller did not request adequate context.
+
+**Solution**:
+
+1. **Always pass an explicit** `token_budget` for non-trivial work: e.g. `load_context(task_description="...", token_budget=10000)` or `token_budget=15000` for fix/debug, `token_budget=20000` or higher for implement/add.
+2. Do not omit `token_budget` or pass `token_budget=0` for refactor/fix/debug/implement; the tool returns a validation error for non-trivial tasks.
+3. If context-effectiveness reporting flags zero-budget or zero-files in historical sessions, treat it as a configuration error and document the recommendation to use task-appropriate explicit budgets in future runs.
+
+#### Issue: Context usage statistics on disk never reflect new telemetry quality rules
+
+**Symptoms**:
+
+- After upgrading Cortex, `cortex://optimization/context-usage-statistics` or related tools show updated rollups during a run, but `.cortex/.session/context-usage-statistics.json` still has old `record_quality` values on disk
+- You expected reconciliation to rewrite the JSON file after a classification change
+
+**Cause**:
+
+Reconciliation (`reconcile_context_usage_statistics_entries`) runs when statistics are loaded. Persisting the reconciled file requires `usage_writable: true` in `.cortex/synapse/config.json`. When `usage_writable` is false, Cortex keeps a static snapshot on disk while in-process views may still reflect reconciled data until the process exits.
+
+**Solution**:
+
+1. See [Tool Usage Tracking: Context usage statistics file](../architecture/tool-usage-tracking.md#context-usage-statistics-file-context-usage-statisticsjson) for the full behavior and paths.
+2. To allow persistence, set `"usage_writable": true` in `.cortex/synapse/config.json` (and ensure the Synapse directory exists if you rely on the default-writable behavior documented in `synapse_usage_config.py`).
+
+#### Issue: Rules indexing returns no rules (get_relevant)
+
+**Symptoms**:
+
+- `rules(operation="get_relevant", task_description="...")` returns `rules_count: 0` and `indexed_files: 0`
+- Coding standards or project rules do not appear in context
+
+**Causes**:
+
+- Rules directory (e.g. `.cortex/rules`) is empty or not populated
+- Indexing has not run (e.g. `rules(operation="index")` not called)
+- Rules are only in Synapse or in AGENTS.md/CLAUDE.md, not in the indexed rules folder
+
+**Solution**:
+
+1. Ensure the rules directory exists and contains rule files (e.g. `.mdc`, `.md`).
+2. Run indexing: `rules(operation="index")` (or `rules(operation="index", force=True)` to reindex).
+3. **Fallback**: When the rules index is empty or returns no rules, use one or more of:
+   - `get_synapse_rules(task_description="...")` for shared Synapse rules
+   - Read key rules from the rules directory path (from `get_structure_info()` → `structure_info.paths.rules`) using the Read tool
+   - Use AGENTS.md and CLAUDE.md for coding standards and memory bank access
+
+Prompts (e.g. implement, commit, analyze) already instruct agents to use this fallback when `rules()` returns `status: "disabled"` or no rules; the same applies when `indexed_files` is 0.
+
+### Shared Rules Issues
+
+#### Issue: Git submodule initialization fails
+
+**Symptoms**:
+
+```text
+SharedRulesGitError: Git clone failed for shared rules
+```
+
+**Causes**:
+
+- Invalid repository URL
+- Authentication required
+- Network issues
+
+**Solution**:
+
+1. Verify repository URL:
+
+   ```bash
+   git ls-remote https://github.com/your-org/shared-rules.git
+   ```
+
+2. Set up authentication:
+
+   ```bash
+   # SSH (recommended)
+   git config --global url."git@github.com:".insteadOf "https://github.com/"
+
+   # Or use personal access token
+   git config --global credential.helper store
+   ```
+
+3. Retry initialization:
+
+   ```json
+   {
+     "tool": "setup_shared_rules",
+     "args": {
+       "project_root": "/path/to/project",
+       "repo_url": "git@github.com:your-org/shared-rules.git",
+       "force_reinit": true
+     }
+   }
+   ```
+
+#### Issue: Context detection not working
+
+**Symptoms**:
+
+- Wrong rules loaded for task
+- Generic rules only
+
+**Solution**:
+
+1. Add more language keywords:
+
+   ```json
+   {
+     "shared_rules": {
+       "context_detection": {
+         "language_keywords": {
+           "python": ["python", "py", "pytest", "django", "fastapi"],
+           "swift": ["swift", "swiftui", "uikit", "combine"]
+         }
+       }
+     }
+   }
+   ```
+
+2. Manually specify context:
+
+   ```json
+   {
+     "tool": "get_rules_with_context",
+     "args": {
+       "project_root": "/path/to/project",
+       "task_description": "Implement Python REST API using FastAPI"
+     }
+   }
+   ```
+
+### Git and SSL Certificate Issues
+
+#### Issue: SSL certificate verification failed (git push / clone / fetch)
+
+**Symptoms**:
+
+```text
+fatal: unable to access 'https://github.com/...': SSL certificate problem: unable to get local issuer certificate
+```
+
+or:
+
+```text
+fatal: unable to access '...': SSL certificate problem: self signed certificate in certificate chain
+```
+
+**Causes**:
+
+- Missing or outdated CA certificates on the system
+- Incorrect certificate path configured for Git
+- Corporate or self-signed certificates in the chain
+- Certificate expiration or revoked certificate
+
+**Solutions**:
+
+1. **Install or update CA certificates** (most common):
+
+   ```bash
+   # macOS (Homebrew)
+   brew install ca-certificates
+
+   # Ubuntu/Debian
+   sudo apt-get update && sudo apt-get install ca-certificates
+
+   # Windows (Git for Windows)
+   # Use the certificate manager or run: git config --global http.sslBackend schannel
+   ```
+
+2. **Point Git to the correct CA bundle** (if certificates are in a custom path):
+
+   ```bash
+   # macOS (system store)
+   git config --global http.sslCAInfo /etc/ssl/cert.pem
+
+   # Linux (common paths)
+   git config --global http.sslCAInfo /etc/ssl/certs/ca-certificates.crt
+
+   # Or use system store (OpenSSL)
+   git config --global http.sslCAInfo "$(openssl version -d | sed 's/OPENSSLDIR: "\(.*\)"/\1/')/certs/cert.pem"
+   ```
+
+3. **Self-signed or corporate certificates** (use only in controlled environments):
+
+   ```bash
+   # Option A: Add the specific CA certificate
+   git config --global http.sslCAInfo /path/to/your/ca-bundle.crt
+
+   # Option B: Temporarily disable verification (NOT recommended for production)
+   git config --global http.sslVerify false
+   ```
+
+   Prefer Option A; use Option B only for local or isolated networks and revert when done.
+
+4. **Certificate expiration**:
+
+   - Update system and CA packages (e.g. `apt-get upgrade`, `brew upgrade`)
+   - On corporate proxies, ask IT for an updated CA bundle
+
+**Commit pipeline note**: Push happens after the commit is created. If push fails due to SSL (or network) errors, the commit is still saved locally. See [Git operations](./git-operations.md#push-failures-and-ssl) and retry push manually after fixing SSL, or push from another environment.
+
+**Platform-specific**:
+
+- **macOS**: System keychain is used by default; if Git was installed via Homebrew, ensure `brew install openssl` and that Git uses the Homebrew CA path if needed.
+- **Linux**: Distribution package `ca-certificates` must be installed and up to date.
+- **Windows**: Git for Windows can use the Windows certificate store; set `git config --global http.sslBackend schannel` to use it.
+
+### Quality gate unavailable in environment
+
+When the implement step or commit pipeline runs the quality gate via `run_quality_gate()` (Phase A, includes quality checks), it may fail due to environment issues rather than code issues.
+
+**Symptoms**:
+
+- Tool output reports "ruff not found", "black not found", or similar at expected `.venv` paths
+- Type check fails with download or certificate errors (e.g. when downloading a Python build or packages)
+
+**Causes**:
+
+- Dev dependencies (ruff, black, pyright) not installed—e.g. `.venv` created without `uv sync --group dev` or equivalent
+- Venv not activated in the environment where the MCP server or checks run
+- Network or SSL/certificate problems (e.g. corporate proxy, invalid peer certificate) when the tool tries to download runtimes or packages
+
+**Recommendation**:
+
+- **Documentation-only changes**: If the change set only touches docs (no `src/` or `tests/` code changes), you may treat the quality gate as skipped for that session. Note: "Quality gate skipped - environment (doc-only session); run full pre-commit before commit." Run the full commit pipeline (or pre-commit) in a healthy environment before committing.
+- **Code changes**: Fix the environment first (install dev deps, fix SSL/certificate, or run from a shell where `uv sync --group dev` and `uv run black` / `uv run ruff` succeed), then re-run the quality gate and commit pipeline.
+
+**Fixing uv SSL / certificate errors** (e.g. `invalid peer certificate: UnknownIssuer` when running `uv sync` or type check):
+
+- uv uses bundled certificates by default. If you see SSL errors (e.g. when downloading Python builds or packages), use the system certificate store or a custom bundle:
+  1. **Point to the system CA bundle** (often fixes the issue on macOS/Linux): set `SSL_CERT_FILE` before running uv. Example (macOS):
+
+     ```bash
+     export SSL_CERT_FILE=/etc/ssl/cert.pem
+     uv sync
+     ```
+
+     On many Linux systems use `SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt` (or your distro’s CA bundle path).
+  2. **Use system TLS** (alternative, e.g. corporate CAs in system store): run uv with `UV_NATIVE_TLS=true` (or `uv --native-tls ...`). You can combine with `SSL_CERT_FILE` if needed:
+
+     ```bash
+     export UV_NATIVE_TLS=true
+     uv sync
+     ```
+
+  3. **CI or custom bundle**: set `SSL_CERT_FILE` to the path of your certificate bundle.
+- Ensure your system CA store is up to date (e.g. `brew install ca-certificates` on macOS, or your distro’s `ca-certificates` package). See [Git and SSL certificate issues](#git-and-ssl-certificate-issues).
+- To make the fix persistent, add the chosen `export` to your shell profile (e.g. `~/.zshrc`) or use a `.env` file in the project root if your tooling supports it.
+
+See also [Git and SSL certificate issues](#git-and-ssl-certificate-issues) for certificate configuration.
+
+#### Quality gate failed on push (tests or coverage)
+
+When the GitHub Actions "Code Quality" workflow fails on push (e.g. [run #244](https://github.com/igrechuhin/Cortex/actions)) with "Test suite failed" or "One or more quality checks failed", the commit passed local pre-commit but CI failed.
+
+**Symptoms**:
+
+- Push succeeds; GitHub Actions "Code Quality" job fails
+- Annotations mention tests step or coverage (e.g. "All tests must pass with at least 90% coverage")
+- Or: "Black formatting check failed" / "would reformat N files"
+
+**What to do**:
+
+1. **If the failure is formatting (e.g. "Black formatting check failed")**: The most likely cause is that Step 12.1 was run with a non-CI-equivalent fallback (e.g. `ruff format` instead of Black). CI uses **Black**. Run locally from repo root:
+
+   ```bash
+   uv run black src/ tests/
+   uv run black --check src/ tests/
+   ```
+
+   Fix any reformatting, then commit and push again. Prefer re-running the commit pipeline with Cortex MCP connected so Step 12 runs via `run_quality_gate()` with `force_fresh` config (which drives the same Black-backed checks as CI). See [commit-pipeline-phases.md](../design/commit-pipeline-phases.md) and the commit prompt Step 12.1 fallback rules.
+
+2. **Run the exact CI test command locally** (from repo root, with same Python/uv as CI):
+
+   ```bash
+   uv run python -m pytest tests/ -m "not slow" -n auto -v --cov=src/cortex --cov-report=xml --cov-report=term --cov-fail-under=90
+   ```
+
+   Fix any test failures or coverage shortfall before pushing again. The commit pipeline uses the same scope (`-m "not slow"`) and coverage threshold (90%); the Python adapter runs `python -m pytest` for CI parity.
+
+3. **Ensure Step 12 (Final Validation Gate) ran before commit.** If the agent skipped Step 12.7 (tests) due to a connection error or assumed Phase A was enough, that can cause "passed locally, failed in CI". Never commit without Step 12.7 having passed in that run. If Step 12.1 was run via fallback, it must have used Black (or `fix_formatting.py`/`check_formatting.py`), not ruff format.
+
+4. **Require status checks for merge.** In GitHub: **Settings → Branches → Branch protection** for `main` (and `develop` if used), add a rule that requires the "Code Quality" (or "quality") status check to pass before merging. That prevents merging pushes that failed the quality gate.
+
+**Reference**: The single source of truth for the CI test command is the "Run tests" step in [.github/workflows/quality.yml](../../.github/workflows/quality.yml); the workflow comment at the top of that file repeats the command for local parity.
+
+#### Local `make check` vs CI parity
+
+- **`make check`** verifies formatting with **Black `--check`** on `src/` and `tests/` (no writes), then Ruff, Pyright, and the **fast** pytest target from the Makefile (`pytest -q` with a timeout). It is a quick, safe pre-flight that will not mutate your tree.
+- **`make fix`** applies Black, Ruff import sorting (`I`), and Ruff `--fix` on `src/` and `tests/` when you need to remediate after a failed check.
+- **`make check-ci-parity`** runs a **broader** set of commands aligned with the "Code Quality" workflow (synapse `check_formatting` / `check_linting`, `pyright` on `src/`, `check_types.py`, file/function size scripts, `rumdl`, and pytest with **coverage** and `-m "not slow"`). It requires **`uv` on `PATH`** and uses `uv run …` like CI.
+
+**Still CI-only or environment-dependent** (not reproduced by `make check-ci-parity`): spell check via **cspell** (installed with npm in Actions), the **eval** suite and baseline compare steps, **Codecov** upload, and optional health-check artifact steps. If CI fails on one of those, use the workflow log and the corresponding script or job name as the source of truth.
+
+#### rumdl and the markdown lint tool
+
+The `fix_markdown_lint` MCP tool and the commit pipeline now use the Rust-based `rumdl` CLI, discovered as `rumdl` on `PATH`. In this repo, `rumdl` is installed into the Python virtual environment (for example via `bash scripts/bootstrap.sh` or `uv sync --extra dev`, which provide `.venv/bin/rumdl`).
+
+#### Issue: fix_markdown_lint returns failures without rule codes
+
+**Symptoms**:
+
+- `fix_markdown_lint` returns `success: false` and `files_with_errors: N` (N > 0)
+- Each failing file has `"error_message": "Markdown lint failed"` but `"errors": []` (empty list)
+- No rule codes (e.g. MD036, MD022) are present in the response
+- Agent cannot target fixes without rule codes
+
+**Causes**:
+
+- Batch markdownlint run failed (non-zero exit) and stderr parsing did not extract rule codes
+- markdownlint output format differs from expected `file:line:rule` pattern
+- Batch failure occurred but per-file error details were not captured
+
+**Solution**:
+
+1. **Retry once**: The tool now includes improved stderr parsing and per-file fallback. Retry `fix_markdown_lint` once—it may succeed on the second attempt.
+
+2. **If retry still returns no rule codes**: Run markdown lint locally with `rumdl` to obtain rule codes:
+
+   ```bash
+   # From project root (uses project virtualenv)
+   uv run rumdl check --fix .
+   ```
+
+3. **Review output**: The local run will show rule codes (e.g. `file.md:15:3 MD036/heading-style`) and file locations.
+
+4. **Fix violations**: Apply fixes based on rule codes, then re-run the commit pipeline.
+
+5. **For commit pipeline**: Record "fix_markdown_lint returned no rule codes; used local markdownlint fallback" in commit output.
+
+**Prevention**:
+
+- The tool now includes improved stderr parsing that handles format variations
+- When batch fails, the tool automatically falls back to per-file runs to obtain rule codes
+- This should reduce occurrences of "no rule codes" responses
+
+##### Recommended: local install (no global install needed)
+
+From the project root:
+
+```bash
+bash scripts/bootstrap.sh
+```
+
+This installs all Python dependencies (including `rumdl`) into `.venv/`. The MCP tool will use the `rumdl` binary from that environment when present, so no global install is needed when running lint.
+
+### Refactoring Issues
+
+#### Issue: Refactoring execution fails
+
+**Symptoms**:
+
+```text
+RefactoringExecutionError: Failed to execute refactoring consolidation_001
+```
+
+**Solution**:
+
+1. Check refactoring status:
+
+   ```json
+   {
+     "tool": "get_refactoring_history",
+     "args": {
+       "project_root": "/path/to/project",
+       "suggestion_id": "consolidation_001"
+     }
+   }
+   ```
+
+2. Validate suggestion:
+
+   ```json
+   {
+     "tool": "preview_refactoring",
+     "args": {
+       "project_root": "/path/to/project",
+       "suggestion_id": "consolidation_001"
+     }
+   }
+   ```
+
+3. If validation fails, reject and request new suggestion
+
+#### Issue: Rollback fails
+
+**Symptoms**:
+
+```text
+RollbackError: Failed to rollback refactoring split_002
+```
+
+**Solution**:
+
+1. Check rollback history:
+
+   ```bash
+   cat .cortex/rollbacks.json
+   ```
+
+2. Manual rollback:
+
+   ```bash
+   # Restore from version history
+   cp .cortex/history/<snapshot>.md .cortex/memory-bank/file.md
+   ```
+
+3. Update metadata:
+
+   ```json
+   {
+     "tool": "query_memory_bank",
+     "args": {
+       "query_type": "stats"
+     }
+   }
+   ```
+
+### Refactoring Workflow Best Practices
+
+When fixing quality violations (e.g. function length, file size) by refactoring, follow these practices to reduce fix iterations and avoid type/duplicate errors.
+
+#### Intermediate Validation
+
+Run type check and quality check **after each refactor step**, not only at the end. This catches new violations (e.g. redeclaration, new function length) immediately. See commit prompt Step 3.5 (Intermediate Validation During Refactoring) and do prompt "Code Quality" (incremental validation). Benefits: fewer pre-commit cycles and faster resolution.
+
+#### Type Narrowing
+
+When control flow guarantees a value is not `None` but the type checker still reports an error, use `assert value is not None` to narrow the type. See [Python coding standards: Type Narrowing with assert](../../.cortex/synapse/rules/python/python-coding-standards.mdc) (Synapse rules). Quick reference:
+
+```python
+def process_value(value: int | None) -> int:
+    if value is None:
+        return 0
+    assert value is not None  # Type narrowing for type checker
+    return value * 2
+```
+
+For type check errors involving `int | None` or similar, see the [Type Narrowing](#type-narrowing) subsection above.
+
+#### Duplicate Detection
+
+Before creating new helper functions during refactoring, search for existing functions with similar names to avoid duplicates (e.g. redeclaration or unused-symbol errors). See commit prompt Step 3.6 (Duplicate Detection Before Creating Helpers) and do prompt "Code Quality" (duplicate detection). Use the Grep tool or your language's search to find existing helpers; reuse or rename to avoid duplicate declarations.
+
+For quality check failures during refactoring, see [Intermediate Validation](#intermediate-validation) above.
+
+### Performance Issues
+
+#### Issue: Slow tiktoken initialization
+
+**Symptoms**:
+
+- First token count takes 10-30 seconds
+- "Downloading encoding..." message
+
+**Causes**:
+
+- tiktoken downloads encoding files on first use
+
+**Solution**:
+
+This is expected behavior. The encoding is cached after first use:
+
+```python
+# First call (slow)
+tokens = await token_counter.count_tokens(content)  # 10-30s
+
+# Subsequent calls (fast)
+tokens = await token_counter.count_tokens(content)  # <5ms
+```
+
+No action needed - performance is normal after initialization.
+
+#### Issue: High memory usage
+
+**Symptoms**:
+
+- Python process using > 1GB RAM
+- System slowdown
+
+**Causes**:
+
+- Large file caching
+- Multiple project caches
+
+**Solution**:
+
+1. Reduce cache size:
+
+   ```json
+   {
+     "performance": {
+       "max_cache_size_mb": 50
+     }
+   }
+   ```
+
+2. Clear caches:
+
+   ```bash
+   # Remove cache files (safe - will regenerate)
+   rm -rf ~/.cache/cortex/
+   ```
+
+3. Restart MCP server
+
+## Diagnostic Tools
+
+### Check Server Status
+
+```bash
+# Test server startup
+uv run cortex
+
+# Should see:
+# MCP server started successfully
+```
+
+### Check Memory Bank Structure
+
+```json
+{
+  "tool": "query_memory_bank",
+  "args": {
+    "query_type": "stats"
+  }
+}
+```
+
+Returns:
+
+- File count and sizes
+- Token usage
+- Version history size
+- Metadata status
+
+### Validate Everything
+
+```json
+{
+  "tool": "validate_memory_bank",
+  "args": {
+    "project_root": "/path/to/project",
+    "fix_issues": false
+  }
+}
+```
+
+Returns:
+
+- Schema validation results
+- Link validation results
+- Duplication detection results
+- Quality score
+
+### Check Structure Health
+
+```json
+{
+  "tool": "check_structure_health",
+  "args": {
+    "project_root": "/path/to/project"
+  }
+}
+```
+
+Returns:
+
+- Health score (0-100)
+- Required directories status
+- Symlink status
+- Recommendations
+
+## Logging and Debugging
+
+### Context Logging (Client-Visible Messages)
+
+Cortex uses **Context logging** so the MCP client can show operation progress and errors:
+
+- **Client-visible**: Messages sent via MCP (e.g. "Starting operation", "Completed", warnings, errors) use `log_client(ctx, level, message)` from `cortex.core.context_logging`. These appear in the client UI or logs.
+- **Server-only**: Detailed diagnostics use standard Python `logger.debug()` / `logger.info()` and go to stderr only.
+
+If you do not see tool progress in the client:
+
+1. Ensure the client supports MCP log messages (Cursor/Claude Desktop do).
+2. Check that tools receive `ctx` (injected by the server); when `ctx` is `None`, messages fall back to stderr.
+3. See [Logging Guidelines](../development/logging-guidelines.md) for patterns and levels.
+
+### Enable Debug Logging
+
+Set environment variable:
+
+```bash
+# Verbose logging
+export CORTEX_LOG_LEVEL=DEBUG
+
+# Run server
+uv run cortex
+```
+
+### Check Log Files
+
+Logs are written to stderr (captured by MCP client):
+
+```bash
+# For standalone testing
+uv run cortex 2> debug.log
+```
+
+### Inspect Metadata Files
+
+```bash
+# View metadata index
+cat .cortex/index.json | jq .
+
+# View usage analytics (in index)
+cat .cortex/index.json | jq '.usage_analytics'
+
+# View learning data
+cat .cortex/config/learning.json | jq .
+```
+
+## Getting Help
+
+### Check Documentation
+
+1. [Getting Started](../getting-started.md)
+2. [Configuration Guide](./configuration.md)
+3. [Architecture](../architecture.md)
+4. [API Reference](../api/tools.md)
+
+### Search Issues
+
+[GitHub Issues](https://github.com/igrechuhin/cortex/issues)
+
+### Create New Issue
+
+Include:
+
+1. **Symptoms**: What's happening?
+2. **Expected**: What should happen?
+3. **Steps**: How to reproduce?
+4. **Environment**: OS, Python version, uv version
+5. **Logs**: Relevant error messages
+
+### Community Support
+
+- GitHub Discussions
+- MCP Community Discord

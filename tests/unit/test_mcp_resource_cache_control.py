@@ -113,36 +113,37 @@ async def test_load_context_second_call_hits_in_process_cache() -> None:
 
 
 @pytest.mark.asyncio
-async def test_load_context_two_fresh_computations_are_byte_identical() -> None:
+async def test_load_context_two_fresh_computations_are_byte_identical(
+    tmp_path: Path,
+) -> None:
     """Two independent (cache-invalidated) computations produce identical bytes.
 
-    Unlike the in-process cache test above, this forces ``load_context()`` to
-    fully recompute its payload twice against unchanged fixture state — the
-    property Anthropic's exact-prefix cache matching actually depends on.
+    Forces ``load_context()`` to fully recompute twice against unchanged
+    fixture state (the property Anthropic's prefix cache depends on). Uses
+    an isolated ``tmp_path`` root so reads can't observe concurrent
+    ``log.md`` writes from other pytest-xdist workers.
     """
+    (tmp_path / ".cortex" / "memory-bank").mkdir(parents=True, exist_ok=True)
+    oh = "cortex.tools.optimization.handlers"
+    payload = json.dumps(
+        {
+            "status": "success",
+            "task_description": "determinism-test",
+            "strategy": "dependency_aware",
+            "total_tokens": 1,
+            "utilization": 0.1,
+            "file_names": [],
+        }
+    )
+    session_cfg = {"task_description": "determinism-test", "token_budget": 10000}
     with (
         patch(
-            "cortex.core.session_config.read_session_config",
-            return_value={
-                "task_description": "determinism-test",
-                "token_budget": 10000,
-            },
+            "cortex.core.session_config.read_session_config", return_value=session_cfg
         ),
-        patch(
-            "cortex.tools.optimization.handlers.load_context_impl",
-            new_callable=AsyncMock,
-        ) as mock_impl,
+        patch(f"{oh}.load_context_impl", new_callable=AsyncMock) as mock_impl,
+        patch(f"{oh}.resolve_project_root_async", AsyncMock(return_value=tmp_path)),
     ):
-        mock_impl.return_value = json.dumps(
-            {
-                "status": "success",
-                "task_description": "determinism-test",
-                "strategy": "dependency_aware",
-                "total_tokens": 1,
-                "utilization": 0.1,
-                "file_names": [],
-            }
-        )
+        mock_impl.return_value = payload
         invalidate_context_resource_cache()
         first = await load_context()
         invalidate_context_resource_cache()

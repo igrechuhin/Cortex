@@ -5,7 +5,7 @@
 
 Verifies that when prompts are registered (setup and/or Synapse), list_prompts
 includes at least one prompt with non-empty icons. Display of icons in the UI
-depends on the MCP client (e.g. Cursor may not render them yet).
+depends on the MCP client (some clients may not render them yet).
 """
 
 import pytest
@@ -25,7 +25,7 @@ async def test_list_prompts_includes_at_least_one_prompt_with_icons() -> None:
     Cortex registers setup and Synapse prompts with emoji icons. This test
     ensures the server sends them in the prompts list. If this passes but
     the user does not see icons in the client, the client is not rendering
-    prompt icons (e.g. Cursor IDE).
+    prompt icons.
     """
     # Prompts are registered at import time (main.py imports setup.prompts and tools)
     result = await mcp.list_prompts()

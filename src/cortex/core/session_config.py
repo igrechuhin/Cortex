@@ -1,6 +1,6 @@
 """Session config reader for zero-arg MCP tool fallbacks.
 
-When Cursor's MCP bridge strips all arguments (sends empty {}), tools need
+When an MCP client bridge strips all arguments (sends empty {}), tools need
 a way to discover their parameters. This module reads a simple JSON file
 written by orchestrator prompts at workflow start:
 
@@ -63,7 +63,7 @@ def read_session_config() -> SessionConfig:
     operation, token_budget, file_name, check_type, trace_id, requirement_id,
     selected_step. All values are strings or ints. ``operation`` is used by
     ``pipeline_handoff`` to recover the intended operation (e.g. "init") when
-    Cursor strips all tool arguments. ``trace_id`` is persisted for structured
+    an MCP client strips all tool arguments. ``trace_id`` is persisted for structured
     agent logging (see ``cortex.tools.logging``). Optional keys ``reflection`` and
     ``force_reflection`` (booleans) enable the quality gate reflection pass when
     the MCP bridge strips ``run_quality_gate`` arguments.

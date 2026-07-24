@@ -10,7 +10,7 @@ from pydantic import BaseModel
 from .compress import CompressResult, compress_file
 
 _SYNAPSE_PROMPTS_GLOB = "**/*.md"
-_CURSOR_AGENTS_GLOB = "**/*.md"
+_CLAUDE_AGENTS_GLOB = "**/*.md"
 _MEMORY_BANK_FILES: tuple[str, ...] = ("activeContext.md", "progress.md")
 _PROTECTED_PROMPT_REASON = "protected_target:prompt_integrity_policy"
 logger = logging.getLogger(__name__)
@@ -100,7 +100,7 @@ def compress_cortex_internal_files(
 
     results: list[CompressResult] = []
     prompts_root = repo_root / ".cortex" / "synapse" / "prompts"
-    agents_root = repo_root / ".cortex" / "synapse" / "cursor-agents"
+    agents_root = repo_root / ".cortex" / "synapse" / "claude-agents"
     memory_bank_root = repo_root / ".cortex" / "memory-bank"
 
     if prompts_root.exists():
@@ -112,11 +112,11 @@ def compress_cortex_internal_files(
     else:
         results.append(_missing_target_result(prompts_root, reason="prompts_root"))
     if agents_root.exists():
-        for path in sorted(agents_root.glob(_CURSOR_AGENTS_GLOB)):
+        for path in sorted(agents_root.glob(_CLAUDE_AGENTS_GLOB)):
             if path.is_file() and not _is_backup_file(path):
                 results.append(_protected_target_result(path))
     else:
-        results.append(_missing_target_result(agents_root, reason="cursor_agents_root"))
+        results.append(_missing_target_result(agents_root, reason="claude_agents_root"))
     for file_name in _MEMORY_BANK_FILES:
         target = memory_bank_root / file_name
         if not target.is_file():

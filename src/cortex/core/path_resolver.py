@@ -41,13 +41,10 @@ WIKI_SOURCES_DIR_PROJECT_RELATIVE_PREFIX: str = (
 )
 
 
-class CursorResourceType(Enum):
-    """Enumeration of Cursor integration resource types for path resolution."""
-
-    CURSOR_DIR = ".cursor"
-    MEMORY_BANK = "memory-bank"
-    RULES = "rules"
-    PLANS = "plans"
+# Legacy Cursor IDE workspace directory name. Cortex no longer generates or
+# maintains this directory, but older project checkouts may still have one
+# left over from a prior Cortex version; structure repair cleans it up.
+LEGACY_CURSOR_DIR_NAME: str = ".cursor"
 
 
 class ProjectResourceType(Enum):
@@ -204,30 +201,15 @@ def augmented_environ_with_project_venv_bins(project_root: Path) -> dict[str, st
     return env
 
 
-def get_cursor_path(project_root: Path, resource_type: CursorResourceType) -> Path:
-    """Get the absolute path for a Cursor integration resource type.
-
-    Args:
-        project_root: Root directory of the project
-        resource_type: Type of Cursor resource
-
-    Returns:
-        Absolute path to the resource
+def get_legacy_cursor_dir_path(project_root: Path) -> Path:
+    """Return the legacy Cursor workspace dir path (``project_root/.cursor``).
 
     Examples:
         >>> root = Path("/project")
-        >>> get_cursor_path(root, CursorResourceType.CURSOR_DIR)
+        >>> get_legacy_cursor_dir_path(root)
         Path("/project/.cursor")
-        >>> get_cursor_path(root, CursorResourceType.MEMORY_BANK)
-        Path("/project/.cursor/memory-bank")
-        >>> get_cursor_path(root, CursorResourceType.PLANS)
-        Path("/project/.cursor/plans")
     """
-    cursor_dir = project_root / CursorResourceType.CURSOR_DIR.value
-
-    if resource_type == CursorResourceType.CURSOR_DIR:
-        return cursor_dir
-    return cursor_dir / resource_type.value
+    return project_root / LEGACY_CURSOR_DIR_NAME
 
 
 def get_cache_path(project_root: Path, cache_type: str | None = None) -> Path:

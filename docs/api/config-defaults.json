@@ -82,7 +82,7 @@
     },
     "rules": {
       "enabled": false,
-      "rules_folder": ".cursorrules",
+      "rules_folder": ".cortex/rules",
       "reindex_interval_minutes": 30,
       "auto_include_in_context": true,
       "max_rules_tokens": 5000,
@@ -238,15 +238,6 @@
       "config": "config",
       "archived": "archived",
       "reviews": "reviews"
-    },
-    "cursor_integration": {
-      "enabled": true,
-      "symlink_location": ".cursor",
-      "symlinks": {
-        "memory_bank": true,
-        "rules": true,
-        "plans": true
-      }
     },
     "housekeeping": {
       "auto_cleanup": true,

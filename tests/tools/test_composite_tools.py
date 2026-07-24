@@ -282,7 +282,7 @@ class TestAgentWorkflowFixAll:
         assert "roadmap_sync" in out
 
     async def test_fix_all_no_args_runs_fix_all(self) -> None:
-        """run_composite_workflow() with no args defaults to fix_all (Cursor bridge sends {})."""
+        """run_composite_workflow() with no args defaults to fix_all (some MCP bridges send {})."""
         ok: dict[str, object] = {"status": "success", "preflight_passed": True}
         docs_ok: dict[str, object] = {"status": "success", "docs_phase_passed": True}
         validate_result = json.dumps({"status": "success"})

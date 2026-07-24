@@ -10,7 +10,7 @@ directory, orphaning every phase already written under the old session id.
 ``get_session_id`` now falls back to an on-disk marker
 (``.cortex/.session/.active-session.json``) so a fresh process recovers the
 same identity instead of diverging. An explicit ``CORTEX_SESSION_ID`` env var
-(test isolation, Cursor bridge) still takes precedence.
+(test isolation, MCP client bridges) still takes precedence.
 """
 
 from __future__ import annotations

@@ -44,7 +44,7 @@ def setup_logging(level: str | None = None) -> logging.Logger:
     """
     if level is None:
         # Default to WARNING for stderr to avoid duplicating messages that
-        # log_client() already sends via MCP ctx.log() to the Cursor client.
+        # log_client() already sends via MCP ctx.log() to the connected client.
         # Set CORTEX_LOG_LEVEL=INFO (or DEBUG) to re-enable verbose stderr output.
         level = os.getenv("CORTEX_LOG_LEVEL", "WARNING")
 
@@ -54,7 +54,7 @@ def setup_logging(level: str | None = None) -> logging.Logger:
     #
     # The root logger may be configured by third-party libraries (e.g. RichHandler)
     # that write to stdout. Stdout is reserved for the MCP protocol, so any extra
-    # output can break the connection and cause Cursor to mark the MCP server as
+    # output can break the connection and cause some MCP clients to mark the server as
     # errored (tool descriptors disappear, "tool not found", etc.).
     logger.propagate = False
 
@@ -86,7 +86,7 @@ def apply_cortex_format_to_third_party_loggers() -> None:
     by the root handler (same style as cortex logs).
 
     The low-level server logger emits an INFO for every request type, which
-    Cursor's MCP log panel renders as two lines (message + "undefined" for the
+    some MCP client log panels render as two lines (message + "undefined" for the
     missing stack-trace field). Raising it to WARNING suppresses the noise.
     """
     for name in ("mcp", "mcp.server"):
@@ -95,7 +95,7 @@ def apply_cortex_format_to_third_party_loggers() -> None:
         log.propagate = True
     # Suppress high-frequency INFO messages from the low-level request handler
     # (e.g. "Processing request of type ListToolsRequest") — they appear as
-    # "[error] [info] mcp.server.lowlevel.server - ... undefined" in Cursor.
+    # "[error] [info] mcp.server.lowlevel.server - ... undefined" in some clients.
     for name in ("mcp.server.lowlevel", "mcp.server.lowlevel.server"):
         logging.getLogger(name).setLevel(logging.WARNING)
 

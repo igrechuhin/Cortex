@@ -14,7 +14,7 @@ Guidance for Claude Code agents in this repository. See also `AGENTS.md`.
 
 **Pattern**: `session()` → read resources → work
 
-**Zero-arg tools**: All MCP tools accept empty `{}` (Cursor's MCP bridge strips args). Tools read defaults from session config or use fallbacks. See [AGENTS.md](AGENTS.md#use-cortex-mcp-mandatory) for full tool/resource reference.
+**Zero-arg tools**: All MCP tools accept empty `{}` (some MCP client bridges strip args). Tools read defaults from session config or use fallbacks. See [AGENTS.md](AGENTS.md#use-cortex-mcp-mandatory) for full tool/resource reference.
 
 **Fix path**: Before fixing errors, test failures, or quality/type issues, read `cortex://context` and `cortex://rules` first.
 

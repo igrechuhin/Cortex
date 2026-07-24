@@ -7,9 +7,8 @@ client via ``roots/list``) is used instead of the CWD at server-start time.
 
 Problem solved
 --------------
-When Cursor (or another IDE) launches the Cortex MCP server via ``uvx`` or an
-absolute binary path, the working directory at process start is the user's home
-directory — not the project the IDE has open.  Startup-time calls to
+When an IDE launches the Cortex MCP server via ``uvx`` or an absolute binary
+path, the working directory at process start is the user's home directory — not the project the IDE has open.  Startup-time calls to
 ``get_project_root()`` therefore return an incorrect path, which causes:
 
 1. ``get_prompts_paths()`` to find no ``.cortex/synapse/prompts/`` directory →
@@ -27,7 +26,7 @@ triggers :meth:`ensure_registered`, which:
    uses the MCP ``roots/list`` capability when the client supports it, giving
    us the IDE's actual workspace path.
 2. Re-runs ``register_synapse_prompts(project_root)`` and
-   ``sync_cursor_agents(project_root)`` with the correct root.
+   ``sync_claude_agents(project_root)`` with the correct root.
 3. Evaluates ``get_project_config_status(project_root)`` and registers
    ``initialize`` / ``migrate`` / ``populate_tiktoken_cache`` prompts only
    when the project actually needs them.
@@ -68,7 +67,7 @@ from cortex.tools.config import get_project_config_status
 from cortex.tools.synapse.prompts import (
     create_prompt_function,
     register_synapse_prompts,
-    sync_cursor_agents,
+    sync_claude_agents,
 )
 from cortex.tools.synapse.prompts_content import SYNAPSE_PROMPT_ICONS
 from cortex.tools.synapse.prompts_paths import (
@@ -217,7 +216,7 @@ def _register_initialize_prompt(project_root: Path) -> None:
         Creates:
         - .cortex/ directory structure (memory-bank, plans, config)
         - Memory bank with 7 core files
-        - Cursor integration (symlinks + mcp.json)
+        - MCP server configuration (.mcp.json)
         - Optional Synapse setup with default URL
         """
         _ = apply_project_post_edit_hook(project_root)
@@ -258,7 +257,7 @@ def _register_setup_codegraph_prompt() -> None:
     def setup_codegraph() -> str:
         """Add CodeGraph semantic code intelligence to this project.
 
-        Adds CodeGraph MCP server to .cursor/mcp.json, runs codegraph init,
+        Adds CodeGraph MCP server to .mcp.json, runs codegraph init,
         and wires permissions for Claude Code.
         """
         return _get_setup_codegraph_prompt()
@@ -344,7 +343,7 @@ def _try_sync_synapse_prompts(project_root: Path, already_has_synapse: bool) -> 
         return
     try:
         register_synapse_prompts(project_root)
-        sync_cursor_agents(project_root)
+        sync_claude_agents(project_root)
     except Exception as exc:
         logger.warning("lazy_prompt_registration: synapse registration failed: %s", exc)
 
