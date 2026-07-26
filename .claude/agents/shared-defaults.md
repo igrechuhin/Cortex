@@ -1,6 +1,7 @@
 ---
 name: shared-defaults
 description: Reference-only. Shared quality thresholds and conventions cited by Synapse cursor-agents. Projects using Cortex MCP can override these via their rules() configuration.
+model: haiku
 invocable: false
 tools: mcp__cortex__*
 ---
