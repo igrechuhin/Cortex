@@ -158,7 +158,11 @@ def _check_other_date_formats(
     invalid_format_count = 0
     violations: list[TimestampViolationModel] = []
     # Match formats like MM/DD/YYYY, DD-MM-YYYY, etc.
-    other_pattern = r"\b((?:\d{1,2}|\d{3})[/-]\d{1,2}[/-]\d{2,4})\b"
+    # The lookarounds reject date-like substrings of longer hyphen/slash-joined
+    # identifiers: \b alone treats "-" as a boundary, so run pointers and log
+    # filenames (26-07-09-17-42-55-sprint2, swift-test-2026-07-25-16-17-51.log)
+    # each reported several phantom "non-standard date" violations.
+    other_pattern = r"(?<![\w/-])((?:\d{1,2}|\d{3})[/-]\d{1,2}[/-]\d{2,4})(?![\w/-])"
     other_matches = re.finditer(other_pattern, line)
     for match in other_matches:
         date_str = match.group(1)

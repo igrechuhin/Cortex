@@ -9,6 +9,8 @@ import os
 from pathlib import Path
 from unittest.mock import patch
 
+import pytest
+
 from cortex.core.path_resolver import (
     CortexResourceType,
     get_cortex_path,
@@ -400,3 +402,40 @@ class TestGetProjectRoot:
         from cortex.core.path_resolver import is_memory_bank_fully_initialized
 
         assert not is_memory_bank_fully_initialized(result)
+
+    @pytest.mark.parametrize(
+        "marker",
+        ["Package.swift", "TradeWing.xcodeproj", "TradeWing.xcworkspace"],
+    )
+    def test_get_project_root_stops_at_swift_project_not_home_cortex(
+        self, tmp_path: Path, marker: str
+    ) -> None:
+        """A Swift repo nested under a home dir with .cortex must win over the home dir.
+
+        Regression: _has_language_markers only knew pyproject.toml/package.json/
+        Cargo.toml/go.mod/go.sum, so a Swift project failed the "looks like a real
+        project root" check. _reject_package_subdir_as_root then walked up past it
+        and returned the home dir, making every validator resolve project-relative
+        paths against ~/.cortex instead of the repo.
+        """
+        fake_home = tmp_path / "home"
+        get_cortex_path(fake_home, CortexResourceType.MEMORY_BANK).mkdir(parents=True)
+
+        project_root = fake_home / "Repo" / "TradeWing"
+        get_cortex_path(project_root, CortexResourceType.MEMORY_BANK).mkdir(
+            parents=True
+        )
+        # .xcodeproj/.xcworkspace are directories; Package.swift is a file.
+        if marker.endswith(".swift"):
+            _ = (project_root / marker).write_text("// swift-tools-version:6.1")
+        else:
+            (project_root / marker).mkdir()
+
+        with (
+            patch("cortex.managers.initialization.Path.cwd", return_value=project_root),
+            patch("cortex.managers.initialization.Path.home", return_value=fake_home),
+            patch("sys.argv", [str(project_root / "script.py")]),
+        ):
+            result = get_project_root(None)
+
+        assert result == project_root.resolve()

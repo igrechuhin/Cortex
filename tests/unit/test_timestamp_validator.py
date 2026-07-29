@@ -36,6 +36,21 @@ class TestScanTimestamps:
         result = scan_timestamps("Updated 31/12/2024")
         assert result.invalid_format_count >= 1 or len(result.violations) >= 1
 
+    def test_date_like_substring_of_identifier_is_not_a_violation(self) -> None:
+        """Run pointers and log filenames must not be read as malformed dates.
+
+        Regression: the pattern used \\b, and "-" satisfies \\b, so every
+        hyphen-joined identifier containing digits produced phantom violations.
+        """
+        for line in (
+            "Run pointer `26-07-09-17-42-55-sprint2`, running on M1 Max",
+            "See .cortex/.session/logs/swift-test-2026-07-25-16-17-51.log:19623",
+            "Committed over 2026-07-13/14",
+        ):
+            result = scan_timestamps(line)
+            assert result.invalid_format_count == 0, line
+            assert result.violations == [], line
+
     def test_year_outside_current_plus_minus_one_adds_violation(self) -> None:
         """A date with year outside current year ± 1 is invalid (catches typos)."""
         from datetime import date as date_type

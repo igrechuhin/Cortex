@@ -154,7 +154,23 @@ def _has_language_markers(path: Path) -> bool:
         or (path / "Cargo.toml").exists()
         or (path / "go.mod").exists()
         or (path / "go.sum").exists()
+        or (path / "Package.swift").exists()
+        or _has_xcode_project(path)
     )
+
+
+def _has_xcode_project(path: Path) -> bool:
+    """Return True if path contains an Xcode project/workspace bundle.
+
+    Xcode bundles are named after the project, so they need a glob rather than
+    a fixed filename lookup. Swift repos without a Package.swift (app targets)
+    would otherwise go unrecognized and the caller would walk up past the real
+    project root into a higher-level ~/.cortex.
+    """
+    try:
+        return any(path.glob("*.xcodeproj")) or any(path.glob("*.xcworkspace"))
+    except OSError:
+        return False
 
 
 def _is_subdir_of_cortex_root(resolved: Path) -> bool:
