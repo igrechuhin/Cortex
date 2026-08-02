@@ -24,6 +24,7 @@ class _PlanDispatchWire(StrictBaseModel):
     content: str | None = None
     slug: str | None = None
     explore_log_path: str | None = None
+    shape_log_path: str | None = None
     include_archive: bool = False
     response_format: str = "content"
     plan_title: str | None = None
@@ -53,6 +54,7 @@ class _PlanDispatchRequest(StrictBaseModel):
     content: str | None
     slug: str | None
     explore_log_path: str | None
+    shape_log_path: str | None
     include_archive: bool
     response_format: str
     summary: str | None
@@ -127,6 +129,7 @@ async def _plan_handle_crud(
     content: str | None,
     slug: str | None,
     explore_log_path: str | None,
+    shape_log_path: str | None,
     include_archive: bool,
     response_format: str,
     planning_mode: str | None,
@@ -140,6 +143,7 @@ async def _plan_handle_crud(
         content=content,
         slug=slug,
         explore_log_path=explore_log_path,
+        shape_log_path=shape_log_path,
         include_archive=include_archive,
         response_format=response_format,
         planning_mode=planning_mode,
@@ -532,6 +536,7 @@ async def _plan_dispatch_valid_operation(
         request.content,
         request.slug,
         request.explore_log_path,
+        request.shape_log_path,
         request.include_archive,
         request.response_format,
         request.planning_mode,
@@ -555,6 +560,7 @@ async def plan(
     content: str | None = None,
     slug: str | None = None,
     explore_log_path: str | None = None,
+    shape_log_path: str | None = None,
     include_archive: bool = False,
     response_format: str = "content",
     plan_title: str | None = None,

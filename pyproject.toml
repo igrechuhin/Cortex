@@ -71,10 +71,17 @@ select = [
     "B",   # flake8-bugbear
     "UP",  # pyupgrade
     "ANN401",  # disallow typing.Any in annotations (src/; tests per-file ignored)
+    "TID251",  # banned-api: see banned-api config in ruff.toml
 ]
 ignore = [
     "E501",  # Line too long (handled by Black)
 ]
+
+# NOTE: the repository root `ruff.toml` takes FULL precedence over this
+# `[tool.ruff]` block — ruff reads only the first config file it finds, so none
+# of the settings here are active while `ruff.toml` exists. The authoritative
+# lint configuration lives in `ruff.toml`; this block is retained only as a
+# fallback for checkouts without it.
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["ANN401"]

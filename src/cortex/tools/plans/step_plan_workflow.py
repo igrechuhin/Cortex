@@ -7,6 +7,7 @@ from pathlib import Path
 from cortex.core.context_logging import MCPContext
 from cortex.core.models import PlanningMode
 from cortex.core.project_root_resolver import resolve_project_root_async
+from cortex.tools.plans.crud import PlanCreateInputs
 from cortex.tools.plans.crud_helpers import get_plan_directory
 from cortex.tools.plans.step_draft_core import (
     draft_filename_for_slug,
@@ -98,18 +99,25 @@ async def _write_step_draft_file(
     return create_plan_file(root, title, draft_slug_stem, rendered)
 
 
+def _draft_review_prompt(plan_path: Path | None) -> str:
+    return (
+        "Review the Goal section in the draft plan file. Reply with approve_step "
+        "(step_section='goal') when satisfied, or pass corrections=... to revise. "
+        f"Then use continue_step to draft the next section. Draft path: {plan_path}"
+    )
+
+
 async def create_step_draft_plan(
-    title: str,
-    content: str,
-    slug: str | None,
-    explore_log_path: str | None,
+    inputs: PlanCreateInputs,
     ctx: MCPContext | None,
 ) -> tuple[Path | None, str | None, str]:
     """Build a draft plan containing only Goal; returns (path, error, review_prompt)."""
     from cortex.tools.plans.crud import build_staged_plan_markdown
 
     root = await resolve_project_root_async(None, ctx)
-    final_content, _n = build_staged_plan_markdown(root, content, explore_log_path)
+    final_content, _n = build_staged_plan_markdown(
+        root, inputs.content, inputs.explore_log_path, inputs.shape_log_path
+    )
     goal_body = extract_goal_markdown(final_content)
     if not goal_body:
         return (
@@ -117,15 +125,13 @@ async def create_step_draft_plan(
             "Step-by-step create requires a non-empty '## Goal' section in the markdown",
             "",
         )
+    title = inputs.title
     fm, _rest = split_frontmatter(final_content)
     if fm is None:
         fm = f'---\ntitle: "{title.replace(chr(34), chr(39))}"\nstatus: IN_PROGRESS\n---\n'
-    plan_path, err = await _write_step_draft_file(root, title, slug, fm, goal_body)
+    plan_path, err = await _write_step_draft_file(
+        root, title, inputs.slug, fm, goal_body
+    )
     if err:
         return (plan_path, err, "")
-    prompt = (
-        "Review the Goal section in the draft plan file. Reply with approve_step "
-        f"(step_section='goal') when satisfied, or pass corrections=... to revise. "
-        f"Then use continue_step to draft the next section. Draft path: {plan_path}"
-    )
-    return (plan_path, err, prompt)
+    return (plan_path, err, _draft_review_prompt(plan_path))

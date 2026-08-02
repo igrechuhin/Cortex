@@ -109,27 +109,26 @@ def append_completed_entry(
 def create_section_and_append(
     content: str, date_str: str, title: str, summary: str
 ) -> tuple[str, int | None]:
-    """If no section for date exists, add it after first '## Completed Work'; then append entry."""
+    """If no section for date exists, add it before the first '## Completed Work'
+    heading (dated or undated); if there is no such heading at all, append the
+    section at the end of the file. Never fails."""
     section = find_completed_work_section(content, date_str)
     if section:
         return append_completed_entry(content, date_str, title, summary)
     lines = content.split("\n")
     new_section_header = f"## Completed Work ({date_str})"
     entry = f"- ✅ **{title}** - COMPLETE ({date_str}) - {summary}"
+    block = [new_section_header, "", entry, ""]
+    # AI: match undated '## Completed Work' too — activeContext.md files commonly
+    # carry a single plain heading, which the old dated-only regex missed and
+    # which made plan(operation="complete") abort after removing the roadmap line.
     for i, line in enumerate(lines):
-        if re.match(r"^##\s+Completed Work\s+\(", line.strip()):
-            insert_at = i
-            new_lines = (
-                lines[:insert_at]
-                + [new_section_header]
-                + [""]
-                + [entry]
-                + [""]
-                + lines[insert_at:]
-            )
-            new_content = "\n".join(new_lines)
-            return (new_content, insert_at + 3)
-    return (content, None)
+        if re.match(r"^##\s+Completed Work\b", line.strip()):
+            new_lines = lines[:i] + block + lines[i:]
+            return ("\n".join(new_lines), i + 3)
+    insert_at = len(lines)
+    new_lines = lines + ["", *block]
+    return ("\n".join(new_lines), insert_at + 4)
 
 
 def find_progress_date_section(content: str, date_str: str) -> tuple[int, int] | None:

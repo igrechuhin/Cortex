@@ -100,8 +100,8 @@ Catalog current names for Cortex MCP tools, `cortex://` resources, and Synapse p
 | docs-sync.md | docs-sync | user-cortex/docs-sync | ✓ |
 | do.md | do | user-cortex/do | ✓ |
 | review.md | review | user-cortex/review | ✓ |
-| REFACTORING_GUIDE.md | — | Not a command | — |
-| REFACTORING_SUMMARY.md | — | Not a command | — |
+| synapse-prompt-refactoring-guide.md | — | Not a command; relocated to docs/guides/ | — |
+| synapse-prompt-refactoring-summary.md | — | Not a command; relocated to docs/guides/ | — |
 
 ### 3.1 Inconsistencies
 

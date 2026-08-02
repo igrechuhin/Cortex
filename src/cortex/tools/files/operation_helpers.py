@@ -52,6 +52,8 @@ class FileOperation(str, Enum):
     FILE_ARTIFACT = "file_artifact"
     LIST_EXPLORE_LOGS = "list_explore_logs"
     CLEAR_EXPLORE_LOGS = "clear_explore_logs"
+    LIST_SHAPE_LOGS = "list_shape_logs"
+    CLEAR_SHAPE_LOGS = "clear_shape_logs"
     SET_GOAL = "set_goal"
     CLEAR_GOAL = "clear_goal"
     GET_GOAL = "get_goal"

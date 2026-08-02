@@ -10,6 +10,7 @@ class WikiRootDocument(str, Enum):
 
     SCHEMA = "schema.md"
     INDEX = "index.md"
+    GLOSSARY = "glossary.md"
 
 
 # Relative paths (posix filenames) excluded from index-catalog / staleness checks.

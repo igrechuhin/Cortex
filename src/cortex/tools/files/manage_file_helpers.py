@@ -415,6 +415,8 @@ def _is_explore_log_operation(operation: FileOperation) -> bool:
     return operation in (
         FileOperation.LIST_EXPLORE_LOGS,
         FileOperation.CLEAR_EXPLORE_LOGS,
+        FileOperation.LIST_SHAPE_LOGS,
+        FileOperation.CLEAR_SHAPE_LOGS,
     )
 
 
@@ -571,10 +573,9 @@ async def _dispatch_secondary_operation(
             memory_bank_dir=get_cortex_path(root, CortexResourceType.MEMORY_BANK),
             payload=content,
         )
-    if operation == FileOperation.LIST_EXPLORE_LOGS:
-        return _list_explore_logs(root)
-    if operation == FileOperation.CLEAR_EXPLORE_LOGS:
-        return _clear_explore_logs(root)
+    pre_plan_result = _dispatch_pre_plan_log_operation(operation, root)
+    if pre_plan_result is not None:
+        return pre_plan_result
     if operation == FileOperation.INVALIDATE_FACT:
         return _invalidate_temporal_fact(root, content)
     if operation == FileOperation.MEMORY_TIMELINE:
@@ -582,12 +583,28 @@ async def _dispatch_secondary_operation(
     return None
 
 
-def _explore_logs_dir(root: Path) -> Path:
-    return get_cortex_path(root, CortexResourceType.PLANS) / "explore"
+def _dispatch_pre_plan_log_operation(
+    operation: FileOperation, root: Path
+) -> str | None:
+    """Handle list/clear for the ephemeral explore and shape log directories."""
+    if operation == FileOperation.LIST_EXPLORE_LOGS:
+        return _list_pre_plan_logs(root, "explore")
+    if operation == FileOperation.CLEAR_EXPLORE_LOGS:
+        return _clear_pre_plan_logs(root, "explore")
+    if operation == FileOperation.LIST_SHAPE_LOGS:
+        return _list_pre_plan_logs(root, "shape")
+    if operation == FileOperation.CLEAR_SHAPE_LOGS:
+        return _clear_pre_plan_logs(root, "shape")
+    return None
 
 
-def _list_explore_logs(root: Path) -> str:
-    explore_dir = _explore_logs_dir(root)
+def _pre_plan_logs_dir(root: Path, subdir: str) -> Path:
+    """Directory holding ephemeral pre-plan logs ('explore' or 'shape')."""
+    return get_cortex_path(root, CortexResourceType.PLANS) / subdir
+
+
+def _list_pre_plan_logs(root: Path, subdir: str) -> str:
+    explore_dir = _pre_plan_logs_dir(root, subdir)
     if not explore_dir.exists():
         return json.dumps({"status": OperationStatus.SUCCESS.value, "logs": [], "count": 0}, indent=2)
     logs = [
@@ -598,8 +615,8 @@ def _list_explore_logs(root: Path) -> str:
     return json.dumps({"status": OperationStatus.SUCCESS.value, "logs": logs, "count": len(logs)}, indent=2)
 
 
-def _clear_explore_logs(root: Path) -> str:
-    explore_dir = _explore_logs_dir(root)
+def _clear_pre_plan_logs(root: Path, subdir: str) -> str:
+    explore_dir = _pre_plan_logs_dir(root, subdir)
     if not explore_dir.exists():
         return json.dumps({"status": OperationStatus.SUCCESS.value, "deleted": [], "count": 0}, indent=2)
     cutoff = datetime.now(timezone.utc) - timedelta(days=7)

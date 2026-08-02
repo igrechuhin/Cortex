@@ -28,6 +28,9 @@ from cortex.tools.execution.pre_commit_helpers_models import (
 from cortex.tools.execution.pre_commit_helpers_quality import (
     check_function_lengths_in_source,
 )
+from cortex.tools.execution.pre_commit_type_checking_audit import (
+    check_type_checking_ban,
+)
 
 
 def _collect_git_delta_files(project_root: Path) -> list[Path] | None:
@@ -259,26 +262,37 @@ def execute_quality(adapter: FrameworkAdapter, language: str) -> QualityCheckRes
         project_root, checkable, delta_files
     )
     cache_violations = _cache_payload_violations_for_language(project_root, language)
-    return _build_quality_check_result(
-        lint_result, file_violations, func_violations, cache_violations
+    type_checking_violations = _type_checking_violations_for_language(
+        project_root, language
+    )
+    return build_quality_check_result(
+        lint_result,
+        file_violations,
+        func_violations,
+        cache_violations,
+        type_checking_violations,
     )
 
 
-def _build_quality_check_result(
+def build_quality_check_result(
     lint_result: CheckResult,
     file_violations: list[FileSizeViolation],
     func_violations: list[FunctionLengthViolation],
     cache_violations: list[str],
+    type_checking_violations: list[str],
 ) -> QualityCheckResult:
-    """Assemble QualityCheckResult from lint, structural, and cache-payload findings."""
+    """Assemble QualityCheckResult from lint, structural, and source-audit findings."""
     errors = _build_quality_errors(lint_result.errors, file_violations, func_violations)
     output = _build_quality_output(lint_result.output, file_violations, func_violations)
-    errors, output = _apply_cache_payload_violations(errors, output, cache_violations)
+    errors, output = _apply_all_source_audits(
+        errors, output, cache_violations, type_checking_violations
+    )
     success = (
         lint_result.success
         and len(file_violations) == 0
         and len(func_violations) == 0
         and not cache_violations
+        and not type_checking_violations
     )
     return QualityCheckResult(
         check_type="quality",
@@ -303,18 +317,39 @@ def _cache_payload_violations_for_language(
     return check_cache_payload_stability(project_root)
 
 
-def _apply_cache_payload_violations(
-    errors: list[str], output: str, cache_violations: list[str]
+def _type_checking_violations_for_language(
+    project_root: Path, language: str
+) -> list[str]:
+    """Audit the TYPE_CHECKING ban once per language pass (Python-only target)."""
+    # AI: Python-only for the same reason as the cache-payload audit — the rule
+    # and the scanned roots are Python-specific.
+    if language != "python":
+        return []
+    return check_type_checking_ban(project_root)
+
+
+def _apply_all_source_audits(
+    errors: list[str],
+    output: str,
+    cache_violations: list[str],
+    type_checking_violations: list[str],
 ) -> tuple[list[str], str]:
-    """Fold cache-payload stability violations into quality errors/output."""
-    errors = [
-        *errors,
-        *(f"Cache-payload stability violation: {v}" for v in cache_violations),
-    ]
-    if cache_violations:
-        output = f"{output}\n\nCache-payload stability violations:\n" + "\n".join(
-            cache_violations
-        )
+    """Fold every source-level audit's findings into quality errors/output."""
+    errors, output = _apply_source_audit_violations(
+        errors, output, cache_violations, "Cache-payload stability violation"
+    )
+    return _apply_source_audit_violations(
+        errors, output, type_checking_violations, "TYPE_CHECKING ban violation"
+    )
+
+
+def _apply_source_audit_violations(
+    errors: list[str], output: str, violations: list[str], label: str
+) -> tuple[list[str], str]:
+    """Fold source-audit violations into quality errors/output under ``label``."""
+    errors = [*errors, *(f"{label}: {v}" for v in violations)]
+    if violations:
+        output = f"{output}\n\n{label}s:\n" + "\n".join(violations)
     return errors, output
 
 

@@ -353,3 +353,47 @@ async def test_finalize_step_errors_when_sections_incomplete(
     err = json.loads(raw)
     assert err["status"] == "error"
     assert "approved or skipped" in (err.get("message") or "").lower()
+
+
+@pytest.mark.asyncio
+async def test_finalize_step_reports_terminology_advisory(
+    tmp_path: Path,
+) -> None:
+    """finalize_step runs the advisory glossary gate without blocking publication."""
+    plans = get_cortex_path(tmp_path, CortexResourceType.PLANS)
+    plans.mkdir(parents=True)
+    _write_minimal_roadmap(tmp_path)
+    glossary = get_cortex_path(tmp_path, CortexResourceType.WIKI) / "glossary.md"
+    glossary.parent.mkdir(parents=True, exist_ok=True)
+    entry = "### Plan\n\n- **Definition**: A doc.\n- **Aliases**: plan document\n"
+    _ = glossary.write_text(
+        f"## Terms\n\n{entry}- **Not to be confused with**: none\n",
+        encoding="utf-8",
+    )
+    slug = "mini-terminology"
+    await _fill_plan_for_finalize(tmp_path, slug)
+
+    fin, mock_reg = await _invoke_finalize_step(tmp_path, slug)
+
+    assert fin["status"] == "success"
+    assert (plans / f"{slug}.md").is_file()
+    mock_reg.assert_awaited()
+    assert fin["terminology_summary"] == "No collisions"
+
+
+@pytest.mark.asyncio
+async def test_finalize_step_without_glossary_is_unchecked(
+    tmp_path: Path,
+) -> None:
+    """No glossary means the gate stays silent and finalize still succeeds."""
+    plans = get_cortex_path(tmp_path, CortexResourceType.PLANS)
+    plans.mkdir(parents=True)
+    _write_minimal_roadmap(tmp_path)
+    slug = "mini-no-glossary"
+    await _fill_plan_for_finalize(tmp_path, slug)
+
+    fin, _mock_reg = await _invoke_finalize_step(tmp_path, slug)
+
+    assert fin["status"] == "success"
+    assert fin["terminology_summary"] == "Not checked (no glossary)"
+    assert fin["terminology_findings"] == []

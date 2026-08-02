@@ -1,3 +1,21 @@
+# Authoritative ruff configuration. Ruff reads only the first config file it
+# finds, so this file takes full precedence over `[tool.ruff]` in pyproject.toml.
+#
+# `extend-select` is used deliberately: `select` would replace ruff's default
+# rule set rather than add to it.
+
+[lint]
+extend-select = [
+    "TID251",  # banned-api (see flake8-tidy-imports.banned-api below)
+]
+
+[lint.flake8-tidy-imports.banned-api]
+# python-coding-standards.mdc marks TYPE_CHECKING STRICTLY FORBIDDEN. Ruff covers
+# the `from typing import TYPE_CHECKING` and `typing.TYPE_CHECKING` forms; the bare
+# `if TYPE_CHECKING:` block and the justification-comment allowlist are enforced by
+# src/cortex/tools/execution/pre_commit_type_checking_audit.py.
+"typing.TYPE_CHECKING" = { msg = "TYPE_CHECKING is banned by python-coding-standards.mdc. Use a normal top-level import instead; the import cycle these blocks claim to break is usually not real." }
+
 # F405 on star-import re-exports: static ``__all__`` lists names from split modules.
 [lint.per-file-ignores]
 "src/cortex/tools/models_reexports.py" = ["F405"]

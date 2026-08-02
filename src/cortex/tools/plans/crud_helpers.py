@@ -14,6 +14,7 @@ from cortex.tools.plans.crud_models import (
     ListPlansResult,
     PlanEntry,
 )
+from cortex.wiki.glossary_models import TerminologyReport
 
 logger = logging.getLogger(__name__)
 
@@ -122,8 +123,13 @@ def create_success_result(
     *,
     planning_mode: str | None = None,
     review_prompt: str | None = None,
+    terminology: TerminologyReport | None = None,
 ) -> CreatePlanResult:
-    """Create a success result for plan creation."""
+    """Create a success result for plan creation.
+
+    ``terminology`` is advisory only — it is echoed into the result and never
+    downgrades ``status``.
+    """
     if plan_path is None:
         return CreatePlanResult(
             status="error",
@@ -138,6 +144,8 @@ def create_success_result(
         error=None,
         planning_mode=planning_mode,
         review_prompt=review_prompt,
+        terminology_findings=list(terminology.findings) if terminology else [],
+        terminology_summary=terminology.summary() if terminology else None,
     )
 
 

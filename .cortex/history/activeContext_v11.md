@@ -3,41 +3,31 @@
 
 **This file records completed work only.** For current status and upcoming work see [roadmap.md](roadmap.md).
 
+## Completed Work (2026-08-02)
+
+- ✅ **Shaping Interview Prompt (shape.md) Before Plan** - COMPLETE (2026-08-02) - Added a shape.md Synapse prompt and shape-interviewer subagent that resolve unknown requirements by interviewing the user one question at a time (codebase-first, with recommended answers) until the decision tree is settled. The shaping record feeds plan(operation="create") via a new shape_log_path parameter, injecting resolved decisions, assumptions, and out-of-scope declarations as a "## Shaping Constraints" section. plan.md Step 4 became a four-route gate (shape / explore / both / neither). A shared resolve_plan_log_path validator now guards both shape_log_path and explore_log_path against absolute paths and project-root escapes, closing a pre-existing unvalidated-path hole. 17 new tests.
+
+- ✅ **Shared Prompt Reference Layer for Synapse Prompts** - COMPLETE (2026-08-02) - Closed as a recorded negative result per the plan's own abort condition. Measurement (scripts/measure_prompt_duplication.py) shows only 76 of 39,894 prompt tokens (0.19%) are extractable at the plan's >=3-lines/>=3-files threshold, far below the 15% floor; even the threshold-violating >=2-files variant caps at 5.96%. Extraction steps 4-9 were not executed. Evidence: docs/design/synapse-prompt-duplication-report.md.
+
+- ✅ **Domain Glossary Consistency Gate in Plan Creation** - COMPLETE (2026-08-02) - Added canonical .cortex/wiki/glossary.md (30 curated project-specific terms with definition, aliases, and not-to-be-confused-with) plus an advisory terminology gate wired into plan(create) and finalize_step. Detection is restricted to exactly three conservative cases (declared alias, near-match undeclared synonym at a pinned 0.86 threshold, and confusable pair sharing one sentence). The gate never blocks: plans are written before the check runs and status stays success regardless of findings. 47 tests added.
+
+- ✅ **Mechanically Enforce the TYPE_CHECKING Import Ban** - COMPLETE (2026-08-02) - Two-layer mechanical enforcement of the TYPE_CHECKING ban. Ruff TID251 banned-api (configured in ruff.toml, which takes full precedence over pyproject.toml) rejects the `from typing import TYPE_CHECKING` and `typing.TYPE_CHECKING` forms with an editor-visible message citing python-coding-standards.mdc. A new token-based audit (pre_commit_type_checking_audit.py) wired into execute_quality covers what ruff cannot: bare `if TYPE_CHECKING:` blocks with no import, and an allowlist requiring an inline `# type-checking-allowed: <reason>` justification so a bare noqa cannot bypass. Both mechanisms demonstrated firing on a real scratch violation and passing after removal. 16 tests, 100% coverage on new code; full suite 7478 passed.
+
 ## Completed Work (2026-07-23)
 
-- ✅ **Support xcodebuild -skip-testing: via .cortex/config/swift_test.json** - COMPLETE (2026-07-23) - Added `SwiftTestConfig` (`src/cortex/config/swift_test_config.py`), mirroring the existing `swift_coverage.json` pattern, letting a Swift/xcodebuild project declare test identifiers to exclude from `run_quality_gate()`'s test-without-building run via `.cortex/config/swift_test.json` (`skip_testing` list). Wired into `SwiftXcodebuildMixin._xcodebuild_test_phase` so each configured identifier becomes an Xcode `-skip-testing:` flag ahead of the test-without-building action, fixing quality-gate failures on infra a project's own CLAUDE.md documents as intentionally excluded (e.g. a live-network integration suite). New tests: `tests/unit/test_swift_test_config.py`, `tests/unit/test_swift_xcodebuild_mixin.py`.
-
-- ✅ **Fix analyze pipeline phase-allowlist and subagent tool-grant gaps** - COMPLETE (2026-07-23) - Extended the pipeline_handoff phase allowlist (src/cortex/tools/session/pipeline_handoff_validation.py) with context/session/tools so analyze-* phases no longer hit Unknown phase; granted ReadMcpResourceTool, Bash, and Write to the analyze-context/session/tools/compact subagents via the canonical Synapse source (propagated to generated .claude/agents and .cursor/agents copies); added accept/reject tests. run_quality_gate() passed: 7273 tests, 91.09% coverage.
-
-- ✅ **Prompt-Cache Payload Stability for Cached MCP Resources** - COMPLETE (2026-07-23) - Audited load_context()/get_relevant_rules() call chains end-to-end and fixed genuine payload non-determinism: PYTHONHASHSEED-dependent set iteration order in ContextDetector (detected_languages/frameworks/categories_to_load) and equal-mtime glob-order ties in recent_artifacts_context.py/recent_ingested_sources_context.py, both now explicitly sorted. Added audit_cache_payload_stability()/check_cache_payload_stability() (new pre_commit_cache_payload_audit.py), wired into run_quality_gate()'s quality check so future volatile-content regressions (datetime.now, time.time, uuid1/4, getpid, raw ISO timestamps) in the two cache-hinted resource handler files fail the gate automatically. 13 new tests; 91.11% coverage; quality gate green twice consecutively (stable).
-
-- ✅ **Tool-Invocation Telemetry Log (PARTIAL, reopened)** - COMPLETE (2026-07-23) - <!-- memory_type: status -->
-
-- ✅ **Tool-Invocation Telemetry Log to Strengthen Skill-Crystallization Signal** - COMPLETE (2026-07-23) - Added a redacted, session-scoped, append-only tool-invocation telemetry log (ToolInvocationEntry model + WAL append path reusing wal_atomic_write_bytes) exposed via memory_wal(operation=\"tool_invocations\"), wired into the existing mcp_tool_wrapper dispatch interception point, and cited as an additional evidence source in analyze-tools.md (all three mirrors). Reopened after review found _run_tool_with_telemetry() mislabeled cancelled tool calls as successful; fixed by detecting the CANCELLED_RESPONSE_JSON sentinel and recording error/CancelledError instead, matching the sibling record_usage_finish path. Follow-up review found no further gaps.
-
-- ✅ **Embedding-Based Relevance Scoring for Context Load/Compaction Gating** - COMPLETE (2026-07-23) - Added src/cortex/tools/context/relevance_ranking.py (rank_candidates_by_relevance/reorder_by_relevance, Pydantic RankedCandidate, cosine+BM25 blend mirroring hybrid_rank, fail-open) and wired it into l0_identity._truncate_to_budget and l2_on_demand._truncate_paragraphs behind CORTEX_RELEVANCE_RANKING_ENABLED (default disabled). 25 new tests (17 unit + 8 integration), 91.15% coverage, quality gate green.
-
-- ✅ **Git-Backed Sandboxed Self-Modification Proposal Tool** - COMPLETE (2026-07-23) - Added propose_framework_optimization MCP tool: creates an isolated detached git worktree (git worktree add --detach), applies proposed .cortex/synapse/ or .cortex/rules/ changes with a lexical + resolved-path allowlist check (rejects traversal/absolute paths before any write), self-tests changed files (JSON structural validation, YAML-frontmatter validation, file-size limit), and on pass returns a difflib-generated unified diff + rationale to the caller. Guaranteed try/finally worktree teardown tested under a forced mid-run exception. No code path calls git push or gh pr create (grepped + dedicated test) — human approval remains a separate, explicit step. 44 new tests, 91.18% project coverage, quality gate green. Tool budget bumped 13->14 (categories.py, docs/api/tools.md, tool-inventory.json, README.md, AGENTS.md, governance test) per this repo's documented process for standalone-tool additions.
-
-- ✅ **Task-Level Stuck-Loop Constraints Monitor Beyond MCP Circuit Breaker** - COMPLETE (2026-07-23) - Added a task-level no-progress detector (src/cortex/core/no_progress_monitor.py: AttemptRecord, detect_no_progress, build_report_message) distinct from the MCP-transport circuit breaker. Subagent prompts (fix-tests, fix-quality, implement-code across .claude/agents, .cursor/agents, .cortex/synapse/cursor-agents) now write attempt_history via pipeline_handoff and check the detector before retrying, pausing per the existing circuit-breaker report format when tripped. shared-conventions.md documents the distinction. 23 new tests, 100% coverage on new module, repo-wide 91.19%, no regressions.
-Added a session-scoped, append-only tool-invocation telemetry log (src/cortex/memory/wal.py ToolInvocationLog, src/cortex/core/mcp_tool_telemetry.py) hooked into the existing mcp_tool_wrapper dispatch site, exposed via memory_wal(operation="tool_invocations"), and cited by analyze-tools.md as a new consolidation-candidate evidence source. Review gate reopened the plan: cancelled tool calls are currently mislabeled as success in the new log (src/cortex/core/mcp_stability.py:_run_tool_with_telemetry) -- fix tracked in the plan's Review Follow-Up Gaps section.
+- **Summary (2026-07-23)** - 9 entries archived.
 
 ## Completed Work (2026-07-22)
 
-- ✅ **Session Runtime Token-Spend Guard** - COMPLETE (2026-07-22) - Added a runtime token-spend guard to session() tracking actual tokens consumed by tool-call activity within the current session, distinct from the existing static token_budget_status. New SessionSpendStatus/SessionSpendSummary models mirror the TokenBudgetStatus pattern; SessionLog gained cumulative_spend_tokens + record_spend_tokens() (backward-compatible, corruption-tolerant); two call sites instrumented (manage_file read/write, session() brief token_count); calculate_health_summary() exposes the new spend field; add_spend_suggestions() warns via session_suggestions when spend crosses warning/over_budget thresholds. Warn-only, purely additive. 19 new tests (boundary values, accumulation, legacy/corrupted-log tolerance, suggestion text, single-increment-per-call, end-to-end integration); quality gate green at 91.09% coverage.
-
-- ✅ **Session Optimization 2026-07-22T16-42 [analyses/analysis-session-optimization-2026-07-22t16-42-2026-07-22.md]** - COMPLETE (2026-07-22) - [Session Optimization 2026-07-22T16-42](analyses/analysis-session-optimization-2026-07-22t16-42-2026-07-22.md) — Session analysis for Session Optimization 2026-07-22T16-42 (2026-07-22); decisions and follow-ups recorded.
-
-- ✅ **Pipeline Handoff op_init/op_clear Idempotency Fix** - COMPLETE (2026-07-22) - <!-- memory_type: milestone -->
-Closed the remaining pipeline_handoff phase-state-loss investigation: `op_clear` (`pipeline_handoff_io.py`/`pipeline_handoff.py`) was wiping ALL phases instead of respecting the `phase` argument passed to it, compounding the earlier `op_init` non-idempotency bug fixed on 2026-07-21. Both call paths fixed; multi-root-cause investigation now fully resolved and archived at `.cortex/plans/archive/Investigations/investigate-pipeline-handoff-phase-state-loss-during-long-running-subagent-calls.md`.
+- **Summary (2026-07-22)** - 3 entries archived.
 
 ## Completed Work (2026-07-21)
 
-- **Summary (2026-07-21)** - 4 entries archived.
+- **Summary (2026-07-21)** - 1 entries archived.
 
 ## Completed Work (2026-07-20)
 
-- **Summary (2026-07-20)** - 9 entries archived.
+- **Summary (2026-07-20)** - 1 entries archived.
 
 ## Completed Work (2026-07-19)
 

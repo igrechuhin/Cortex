@@ -17,6 +17,7 @@ from cortex.core.plan_utils import (
     apply_independence_parallel_markers,
 )
 from cortex.core.project_root_resolver import resolve_project_root_async
+from cortex.tools.models_base import StrictBaseModel
 from cortex.tools.plans.constitutional_scan import apply_constitutional_compliance
 from cortex.tools.plans.crud_helpers import (
     create_error_result,
@@ -31,6 +32,13 @@ from cortex.tools.plans.crud_models import (
     ListPlansResult,
     PlanEntry,
 )
+from cortex.tools.plans.plan_log_paths import (
+    PlanLogPathError,
+    inject_decision_basis_from_explore_log,
+    inject_shaping_constraints_from_shape_log,
+)
+from cortex.tools.plans.terminology_gate import check_plan_terminology
+from cortex.wiki.glossary_models import TerminologyReport
 
 __all__ = [
     "build_staged_plan_markdown",
@@ -48,6 +56,7 @@ async def _handle_plan_result(
     plan_path: Path | None,
     error: str | None,
     ctx: MCPContext | None,
+    terminology: TerminologyReport | None = None,
 ) -> str:
     """Handle plan creation result."""
     if error:
@@ -65,7 +74,24 @@ async def _handle_plan_result(
         f"create_plan: success - {plan_path}",
         logger_name=__name__,
     )
-    return create_success_result(plan_path).model_dump_json()
+    return create_success_result(plan_path, terminology=terminology).model_dump_json()
+
+
+async def _log_terminology_findings(
+    ctx: MCPContext | None, terminology: TerminologyReport
+) -> None:
+    """Report glossary collisions as info — advisory, never an error."""
+    if not terminology.checked or not terminology.findings:
+        return
+    await log_client(
+        ctx,
+        "info",
+        (
+            f"create_plan: {len(terminology.findings)} advisory terminology "
+            f"finding(s) — {terminology.summary()}"
+        ),
+        logger_name=__name__,
+    )
 
 
 def _prepare_plan_markdown_for_create(
@@ -92,36 +118,53 @@ async def _log_clarification_marker_count(
     )
 
 
+class PlanCreateInputs(StrictBaseModel):
+    """Caller-supplied inputs for plan creation, shared by both planning modes."""
+
+    title: str
+    content: str
+    slug: str | None = None
+    explore_log_path: str | None = None
+    shape_log_path: str | None = None
+
+
 def build_staged_plan_markdown(
     root: Path,
     content: str,
     explore_log_path: str | None,
+    shape_log_path: str | None = None,
 ) -> tuple[str, int]:
-    """Run the standard plan(create) markdown pipeline before writing a file."""
+    """Run the standard plan(create) markdown pipeline before writing a file.
+
+    Raises:
+        PlanLogPathError: If either log path escapes the project root.
+    """
     # AI: Single entrypoint so step-mode and fast-forward create share identical prep.
     final_content, n_clarifications = _prepare_plan_markdown_for_create(root, content)
     final_content = ensure_change_history_section(final_content)
-    final_content = _inject_decision_basis_from_explore_log(
+    final_content = inject_decision_basis_from_explore_log(
         project_root=root,
         plan_content=final_content,
         explore_log_path=explore_log_path,
+    )
+    # AI: Shaping constraints are prepended last so they sit above Decision Basis —
+    # resolved requirements outrank the approach chosen while exploring.
+    final_content = inject_shaping_constraints_from_shape_log(
+        project_root=root,
+        plan_content=final_content,
+        shape_log_path=shape_log_path,
     )
     final_content = apply_independence_parallel_markers(final_content)
     return final_content, n_clarifications
 
 
 async def _create_step_mode_branch(
-    title: str,
-    content: str,
-    slug: str | None,
-    explore_log_path: str | None,
+    inputs: PlanCreateInputs,
     ctx: MCPContext | None,
 ) -> str:
     from cortex.tools.plans.step_plan_workflow import create_step_draft_plan
 
-    plan_path, error, review_prompt = await create_step_draft_plan(
-        title, content, slug, explore_log_path, ctx
-    )
+    plan_path, error, review_prompt = await create_step_draft_plan(inputs, ctx)
     if error:
         return await _handle_plan_result(plan_path, error, ctx)
     await log_client(
@@ -138,26 +181,24 @@ async def _create_step_mode_branch(
 
 
 async def _create_fast_forward_branch(
-    title: str,
-    content: str,
-    slug: str | None,
-    explore_log_path: str | None,
+    inputs: PlanCreateInputs,
     ctx: MCPContext | None,
 ) -> str:
     root = await resolve_project_root_async(None, ctx)
     final_content, n_clarifications = build_staged_plan_markdown(
-        root, content, explore_log_path
+        root, inputs.content, inputs.explore_log_path, inputs.shape_log_path
     )
     await _log_clarification_marker_count(ctx, n_clarifications)
-    plan_path, error = create_plan_file(root, title, slug, final_content)
-    return await _handle_plan_result(plan_path, error, ctx)
+    plan_path, error = create_plan_file(root, inputs.title, inputs.slug, final_content)
+    # AI: Terminology check runs after the file is written so a collision can never
+    # prevent the plan from existing — the gate is advisory by design.
+    terminology = check_plan_terminology(root, final_content)
+    await _log_terminology_findings(ctx, terminology)
+    return await _handle_plan_result(plan_path, error, ctx, terminology)
 
 
 async def _create_plan_impl(
-    title: str,
-    content: str,
-    slug: str | None,
-    explore_log_path: str | None,
+    inputs: PlanCreateInputs,
     ctx: MCPContext | None,
     planning_mode: PlanningMode = PlanningMode.FAST_FORWARD,
 ) -> str:
@@ -166,12 +207,16 @@ async def _create_plan_impl(
 
     try:
         if planning_mode == PlanningMode.STEP_BY_STEP:
-            return await _create_step_mode_branch(
-                title, content, slug, explore_log_path, ctx
-            )
-        return await _create_fast_forward_branch(
-            title, content, slug, explore_log_path, ctx
-        )
+            return await _create_step_mode_branch(inputs, ctx)
+        return await _create_fast_forward_branch(inputs, ctx)
+    except PlanLogPathError as e:
+        await log_client(ctx, "error", f"create_plan: {e}", logger_name=__name__)
+        return CreatePlanResult(
+            status="error",
+            file_path=None,
+            message=str(e),
+            error="Invalid plan log path",
+        ).model_dump_json()
     except Exception as e:
         await log_client(ctx, "error", f"create_plan: {e}", logger_name=__name__)
         return CreatePlanResult(
@@ -190,6 +235,7 @@ async def create_plan(
     content: str | None = None,
     slug: str | None = None,
     explore_log_path: str | None = None,
+    shape_log_path: str | None = None,
     include_archive: bool = False,
     response_format: str = "content",
     planning_mode: str | None = None,
@@ -212,6 +258,8 @@ async def create_plan(
     - title: Plan title (required when operation=create)
     - content: Full markdown content (required when operation=create)
     - slug: Filename without .md (optional for create; required when operation=get)
+    - explore_log_path: Project-relative explore decision log (adds `## Decision Basis`)
+    - shape_log_path: Project-relative shaping record (adds `## Shaping Constraints`)
     - include_archive: Include archive plans when operation=list (default False)
     - response_format: 'content' or 'metadata' when operation=get (default 'content')
     """
@@ -219,6 +267,21 @@ async def create_plan(
         return await _list_plans_tool_impl(include_archive, ctx)
     if operation == "get":
         return await _handle_get_plan(slug, response_format, ctx)
+    return await _handle_create_plan(
+        title, content, slug, explore_log_path, shape_log_path, planning_mode, ctx
+    )
+
+
+async def _handle_create_plan(
+    title: str | None,
+    content: str | None,
+    slug: str | None,
+    explore_log_path: str | None,
+    shape_log_path: str | None,
+    planning_mode: str | None,
+    ctx: MCPContext | None,
+) -> str:
+    """Validate create-specific arguments, then run the create pipeline."""
     if not title or not content:
         return CreatePlanResult(
             status="error",
@@ -229,9 +292,14 @@ async def create_plan(
     from cortex.tools.plans.step_plan_workflow import planning_mode_from_param
 
     mode_enum = planning_mode_from_param(planning_mode)
-    return await _create_plan_impl(
-        title, content, slug, explore_log_path, ctx, mode_enum
+    inputs = PlanCreateInputs(
+        title=title,
+        content=content,
+        slug=slug,
+        explore_log_path=explore_log_path,
+        shape_log_path=shape_log_path,
     )
+    return await _create_plan_impl(inputs, ctx, mode_enum)
 
 
 async def _handle_get_plan(
@@ -248,60 +316,6 @@ async def _handle_get_plan(
             error="Missing slug",
         ).model_dump_json()
     return await _get_plan_tool_impl(slug, response_format, ctx)
-
-
-def _inject_decision_basis_from_explore_log(
-    project_root: Path,
-    plan_content: str,
-    explore_log_path: str | None,
-) -> str:
-    if not explore_log_path:
-        return plan_content
-    # AI: Resolve explore logs relative to repo root for deterministic plan lineage.
-    log_path = (project_root / explore_log_path).resolve()
-    try:
-        if not log_path.is_file():
-            return plan_content
-        log_text = log_path.read_text(encoding="utf-8")
-    except OSError:
-        return plan_content
-    decision_basis = _build_decision_basis(log_text, explore_log_path)
-    if not decision_basis:
-        return plan_content
-    return f"{decision_basis}\n\n{plan_content}"
-
-
-def _build_decision_basis(log_text: str, explore_log_path: str) -> str:
-    selected = _extract_section(log_text, "## Selected Option")
-    recommendation = _extract_section(log_text, "## Recommendation")
-    if not selected and not recommendation:
-        return ""
-    parts: list[str] = [
-        "## Decision Basis",
-        f"- Explore log: `{explore_log_path}`",
-    ]
-    if selected:
-        parts.append(f"- Selected option: {selected.splitlines()[0].strip()}")
-    if recommendation:
-        parts.append(f"- Recommendation: {recommendation.splitlines()[0].strip()}")
-    return "\n".join(parts)
-
-
-def _extract_section(markdown: str, heading: str) -> str | None:
-    lines = markdown.splitlines()
-    in_section = False
-    section_lines: list[str] = []
-    for line in lines:
-        stripped = line.strip()
-        if stripped == heading:
-            in_section = True
-            continue
-        if in_section and stripped.startswith("## "):
-            break
-        if in_section:
-            section_lines.append(line)
-    content = "\n".join(section_lines).strip()
-    return content or None
 
 
 async def _list_plans_tool_impl(include_archive: bool, ctx: MCPContext | None) -> str:

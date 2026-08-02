@@ -1,6 +1,6 @@
 # Refactoring guide
 
-Repo-level refactoring notes. Prompt-orchestration and Synapse-specific refactoring detail lives under `.cortex/synapse/prompts/` (see `REFACTORING_GUIDE.md` and `REFACTORING_SUMMARY.md` there).
+Repo-level refactoring notes. Prompt-orchestration and Synapse-specific refactoring detail lives in [synapse-prompt-refactoring-guide.md](synapse-prompt-refactoring-guide.md) and [synapse-prompt-refactoring-summary.md](synapse-prompt-refactoring-summary.md).
 
 ## Appendix: Synapse prompt inventory
 
@@ -22,8 +22,8 @@ Step 1 inventory for [synapse-prompt-final-report-standardization](../../.cortex
 | `.cortex/synapse/prompts/archive/docs-sync.md` | single-shot | Archived; not manifest-registered |
 | `.cortex/synapse/prompts/archive/fix-quality.md` | pipeline | Archived; fix workflow; superseded by `fix.md` |
 | `.cortex/synapse/prompts/archive/fix-tests.md` | pipeline | Archived; fix workflow; superseded by `fix.md` |
-| `.cortex/synapse/prompts/REFACTORING_GUIDE.md` | meta | Maintainer reference; not MCP-registered |
-| `.cortex/synapse/prompts/REFACTORING_SUMMARY.md` | meta | Maintainer reference; not MCP-registered |
+| `docs/guides/synapse-prompt-refactoring-guide.md` | meta | Maintainer reference; not MCP-registered (relocated from `prompts/`) |
+| `docs/guides/synapse-prompt-refactoring-summary.md` | meta | Maintainer reference; not MCP-registered (relocated from `prompts/`) |
 | `CLAUDE.md` | meta | Workspace agent rules; not an MCP prompt |
 | `.claude/agents/implement-code.md` | pipeline | Claude Code subagent; implement pipeline step 2 (code + quality gate) |
 | `.claude/agents/shared-defaults.md` | meta | Shared agent conventions; reference for subagents |

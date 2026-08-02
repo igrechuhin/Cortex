@@ -5,6 +5,7 @@ Pydantic models for plan CRUD tool (create_plan, list_plans, get_plan).
 from pydantic import BaseModel, ConfigDict, Field
 
 from cortex.core.pydantic_extra import EXTRA_FORBID
+from cortex.wiki.glossary_models import TerminologyFinding
 
 
 def _empty_task_graph() -> list[dict[str, object]]:
@@ -29,6 +30,14 @@ class CreatePlanResult(BaseModel):
     review_prompt: str | None = Field(
         default=None,
         description="Human-facing next step hint for step-by-step drafts",
+    )
+    terminology_findings: list[TerminologyFinding] = Field(
+        default_factory=lambda: [],
+        description="Advisory glossary collisions; never affects status",
+    )
+    terminology_summary: str | None = Field(
+        default=None,
+        description="One-line Terminology row for the /cortex/plan final report",
     )
 
 

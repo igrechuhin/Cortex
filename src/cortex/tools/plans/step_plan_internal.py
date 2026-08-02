@@ -29,6 +29,8 @@ from cortex.tools.plans.step_plan_models import (
     StepContinueResult,
     StepFinalizeResult,
 )
+from cortex.tools.plans.terminology_gate import check_plan_terminology
+from cortex.wiki.glossary_models import TerminologyReport
 
 
 def slug_base(slug: str) -> str:
@@ -371,6 +373,7 @@ def finalize_success_payload(
     final_path: Path,
     draft_path: Path,
     reg: str,
+    terminology: TerminologyReport | None = None,
 ) -> StepFinalizeResult:
     return StepFinalizeResult(
         status="success",
@@ -379,6 +382,18 @@ def finalize_success_payload(
         final_path=str(final_path),
         draft_removed=str(draft_path),
         register_json=reg,
+        terminology_findings=list(terminology.findings) if terminology else [],
+        terminology_summary=terminology.summary() if terminology else None,
+    )
+
+
+async def _log_finalize_published(ctx: MCPContext | None, final_path: Path) -> None:
+    """Log successful publication of a step-mode plan."""
+    await log_client(
+        ctx,
+        "info",
+        f"finalize_step: published {final_path} and registered roadmap",
+        logger_name=__name__,
     )
 
 
@@ -393,6 +408,7 @@ async def finalize_register_result(
     plan_file_name: str | None,
     plan_relative_path: str | None,
     ctx: MCPContext | None,
+    terminology: TerminologyReport | None = None,
 ) -> str:
     reg = await finalize_call_register(
         slug,
@@ -404,13 +420,10 @@ async def finalize_register_result(
         plan_relative_path,
         ctx,
     )
-    await log_client(
-        ctx,
-        "info",
-        f"finalize_step: published {final_path} and registered roadmap",
-        logger_name=__name__,
-    )
-    return finalize_success_payload(final_path, draft_path, reg).model_dump_json()
+    await _log_finalize_published(ctx, final_path)
+    return finalize_success_payload(
+        final_path, draft_path, reg, terminology
+    ).model_dump_json()
 
 
 async def finalize_run(
@@ -427,6 +440,9 @@ async def finalize_run(
     ctx: MCPContext | None,
 ) -> str:
     final_path = await finalize_write_disk(root, draft_path, parsed, slug)
+    # AI: Step mode registers the plan here, so the advisory gate runs at finalize —
+    # after the file is published, so a collision can never block publication.
+    terminology = check_plan_terminology(root, final_path.read_text(encoding="utf-8"))
     return await finalize_register_result(
         final_path,
         draft_path,
@@ -438,6 +454,7 @@ async def finalize_run(
         plan_file_name,
         plan_relative_path,
         ctx,
+        terminology,
     )
 
 

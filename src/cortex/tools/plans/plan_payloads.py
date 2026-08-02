@@ -40,6 +40,14 @@ class PlanCreatePayload(StrictBaseModel):
             "`## Decision Basis` in created plans"
         ),
     )
+    shape_log_path: str | None = Field(
+        None,
+        description=(
+            "Optional shaping record path (for example "
+            "`.cortex/plans/shape/shape-foo.md`) whose resolved decisions become "
+            "`## Shaping Constraints` in created plans"
+        ),
+    )
     include_archive: bool = Field(False, description="Include archive when listing")
     response_format: str = Field("content", description="Response format")
 
@@ -140,6 +148,7 @@ def build_plan_create_arguments(
     *,
     slug: str | None = None,
     explore_log_path: str | None = None,
+    shape_log_path: str | None = None,
     include_archive: bool = False,
     response_format: str = "content",
 ) -> dict[str, object]:
@@ -150,6 +159,7 @@ def build_plan_create_arguments(
             content=content,
             slug=slug,
             explore_log_path=explore_log_path,
+            shape_log_path=shape_log_path,
             include_archive=include_archive,
             response_format=response_format,
         )

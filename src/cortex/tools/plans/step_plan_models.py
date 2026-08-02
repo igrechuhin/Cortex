@@ -5,6 +5,7 @@ from __future__ import annotations
 from pydantic import BaseModel, ConfigDict, Field
 
 from cortex.core.pydantic_extra import EXTRA_FORBID
+from cortex.wiki.glossary_models import TerminologyFinding
 
 
 class StepContinueResult(BaseModel):
@@ -45,4 +46,12 @@ class StepFinalizeResult(BaseModel):
     register_json: str | None = Field(
         None,
         description="JSON string returned by register_plan_in_roadmap",
+    )
+    terminology_findings: list[TerminologyFinding] = Field(
+        default_factory=lambda: [],
+        description="Advisory glossary collisions; never affects status",
+    )
+    terminology_summary: str | None = Field(
+        default=None,
+        description="One-line Terminology row for the /cortex/plan final report",
     )
