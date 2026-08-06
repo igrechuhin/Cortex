@@ -286,7 +286,7 @@ async def test_skill_pack_execute_planning_happy_path() -> None:
     registry = {"plan": _fake_plan_router}
     with (
         patch(
-            "cortex.tools.skill_pack.operations._load_all_manifests",
+            "cortex.tools.skill_pack.operations.load_shipped_manifests",
             return_value=[manifest],
         ),
         patch(
@@ -340,7 +340,7 @@ async def test_skill_pack_execute_planning_register_receives_plan_file_name() ->
     registry = {"plan": fake_plan}
     with (
         patch(
-            "cortex.tools.skill_pack.operations._load_all_manifests",
+            "cortex.tools.skill_pack.operations.load_shipped_manifests",
             return_value=[manifest],
         ),
         patch(

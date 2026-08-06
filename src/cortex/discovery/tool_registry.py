@@ -73,12 +73,19 @@ _KNOWN_TOOL_NAMES: list[str] = [
 
 
 def get_known_tool_names() -> list[str]:
-    """Return list of known MCP tool names for discovery and gap analysis."""
-    return list(_KNOWN_TOOL_NAMES)
+    """Return sorted known MCP tool names for discovery and gap analysis.
+
+    Sorted at the accessor so callers never depend on the literal's hand-written
+    order; ordering drift here would change agent-visible bytes downstream.
+    """
+    return sorted(_KNOWN_TOOL_NAMES)
 
 
 def get_known_script_names(project_root: Path) -> list[str]:
-    """List Synapse script names (file stems) from .cortex/synapse/scripts/python."""
+    """List sorted Synapse script names from .cortex/synapse/scripts/python.
+
+    ``glob`` yields filesystem order, so results are sorted before return.
+    """
     synapse_root = get_cortex_path(project_root, CortexResourceType.SYNAPSE)
     scripts_dir = synapse_root / "scripts" / "python"
     if not scripts_dir.exists():

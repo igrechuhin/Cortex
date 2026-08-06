@@ -17,6 +17,7 @@ that reintroduces one of these patterns fails the quality gate automatically.
 
 from __future__ import annotations
 
+import ast
 import re
 from pathlib import Path
 
@@ -24,7 +25,9 @@ from pathlib import Path
 # scope boundary — a codebase-wide scan would false-positive on legitimate
 # datetime/uuid usage elsewhere (e.g. audit logs, session-goal timestamps).
 CACHE_PAYLOAD_AUDIT_TARGET_FILES: tuple[str, ...] = (
+    "src/cortex/tools/optimization/context_appenders.py",
     "src/cortex/tools/optimization/handlers.py",
+    "src/cortex/tools/synapse/rules_operation_helpers.py",
     "src/cortex/tools/synapse/rules_operations.py",
 )
 
@@ -58,6 +61,45 @@ def audit_cache_payload_stability(text: str) -> list[str]:
     return violations
 
 
+_SORT_KEYS_MESSAGE = (
+    "json.dumps without sort_keys=True on a byte-stable agent-visible surface"
+)
+
+
+def _is_json_dumps(node: ast.Call) -> bool:
+    """True when ``node`` is a ``json.dumps(...)`` / ``dumps(...)`` call."""
+    func = node.func
+    if isinstance(func, ast.Attribute):
+        return func.attr == "dumps"
+    return isinstance(func, ast.Name) and func.id == "dumps"
+
+
+# AI: AST-based rather than regex because json.dumps calls in these files span
+# multiple lines, so a line-oriented scan would miss the keyword argument.
+def audit_sort_keys(text: str) -> list[str]:
+    """Return violations for ``json.dumps`` calls missing ``sort_keys=True``.
+
+    Without ``sort_keys`` the emitted key order follows dict construction, which
+    can differ between processes and breaks the host's prompt-cache prefix for
+    payloads that are otherwise semantically identical.
+    """
+    try:
+        tree = ast.parse(text)
+    except (SyntaxError, TypeError, ValueError):
+        # AI: TypeError/ValueError cover non-source input (e.g. a stubbed
+        # read_text in tests); an unparsable file is a lint concern, not this
+        # audit's, so it degrades to "no violations" rather than failing.
+        return []
+    violations: list[str] = []
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call) or not _is_json_dumps(node):
+            continue
+        if any(keyword.arg == "sort_keys" for keyword in node.keywords):
+            continue
+        violations.append(f"line {node.lineno}: {_SORT_KEYS_MESSAGE}")
+    return violations
+
+
 def check_cache_payload_stability(project_root: Path) -> list[str]:
     """Audit the cache-hinted resource handler files under ``project_root``.
 
@@ -74,7 +116,6 @@ def check_cache_payload_stability(project_root: Path) -> list[str]:
             text = path.read_text(encoding="utf-8")
         except OSError:
             continue
-        violations.extend(
-            f"{rel_path}:{message}" for message in audit_cache_payload_stability(text)
-        )
+        messages = audit_cache_payload_stability(text) + audit_sort_keys(text)
+        violations.extend(f"{rel_path}:{message}" for message in messages)
     return violations

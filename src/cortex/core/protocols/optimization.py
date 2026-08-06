@@ -10,125 +10,9 @@ from typing import Protocol
 from cortex.core.models import ModelDict
 from cortex.optimization.models import (
     FileMetadataForScoring,
-    FileRelevanceScoreModel,
     OptimizationResultModel,
-    SectionScoreModel,
 )
 from cortex.optimization.optimization_types import OptimizationResult
-
-
-class RelevanceScorerProtocol(Protocol):
-    """Protocol for relevance scoring operations using structural subtyping (PEP 544).
-
-    This protocol defines the interface for scoring files and sections by their
-    relevance to a given task description. Relevance scoring enables intelligent
-    context selection and prioritization. A class implementing these methods
-    automatically satisfies this protocol.
-
-    Used by:
-        - RelevanceScorer: TF-IDF and keyword-based relevance scoring
-        - ContextOptimizer: For selecting most relevant files within budget
-        - ProgressiveLoader: For loading files in relevance order
-        - MCP Tools: For context optimization queries
-
-    Example implementation:
-        ```python
-        from sklearn.feature_extraction.text import TfidfVectorizer
-
-        class SimpleRelevanceScorer:
-            async def score_files(
-                self,
-                task_description: str,
-                files_content: dict[str, str],
-                files_metadata: dict[str, FileMetadataForScoring],
-                quality_scores: dict[str, float] | None = None,
-            ) -> dict[str, FileRelevanceScoreModel]:
-                from cortex.optimization.models import FileRelevanceScoreModel
-                vectorizer = TfidfVectorizer()
-                corpus = [task_description] + list(files_content.values())
-                tfidf_matrix = vectorizer.fit_transform(corpus)
-
-                # Calculate cosine similarity
-                scores = {}
-                for idx, (file_name, _) in enumerate(files_content.items(), 1):
-                    similarity = cosine_similarity(
-                        tfidf_matrix[0], tfidf_matrix[idx]
-                    )[0][0]
-                    quality = (
-                        quality_scores.get(file_name, 1.0)
-                        if quality_scores else 1.0
-                    )
-                    scores[file_name] = FileRelevanceScoreModel(
-                        file_name=file_name,
-                        relevance_score=similarity * quality,
-                        total_score=similarity * quality,
-                        keyword_score=similarity,
-                        quality_boost=quality,
-                    )
-                return scores
-
-            async def score_sections(
-                self, task_description: str, file_name: str, content: str
-            ) -> list[SectionScoreModel]:
-                # Parse and score sections
-                sections = self._parse_sections(content)
-                return sorted(
-                    [
-                        SectionScoreModel(
-                            title=s["title"],
-                            score=self._score_section(task_description, s),
-                            start_line=s["start_line"],
-                            end_line=s.get("end_line", s["start_line"]),
-                        )
-                        for s in sections
-                    ],
-                    key=lambda x: x.score,
-                    reverse=True,
-                )
-
-        # SimpleRelevanceScorer automatically satisfies RelevanceScorerProtocol
-        ```
-
-    Note:
-        - TF-IDF provides keyword-based relevance
-        - Quality scores can boost high-quality files
-        - Section-level scoring enables fine-grained context selection
-    """
-
-    async def score_files(
-        self,
-        task_description: str,
-        files_content: dict[str, str],
-        files_metadata: dict[str, FileMetadataForScoring],
-        quality_scores: dict[str, float] | None = None,
-    ) -> dict[str, FileRelevanceScoreModel]:
-        """Score files by relevance to task.
-
-        Args:
-            task_description: Description of the task
-            files_content: Dict mapping file names to content
-            files_metadata: Dict mapping file names to metadata
-            quality_scores: Optional dict mapping file names to quality scores
-
-        Returns:
-            Dict mapping file names to relevance score models
-        """
-        ...
-
-    async def score_sections(
-        self, task_description: str, file_name: str, content: str
-    ) -> list[SectionScoreModel]:
-        """Score sections within a file.
-
-        Args:
-            task_description: Description of the task
-            file_name: Name of file
-            content: File content
-
-        Returns:
-            List of section score models
-        """
-        ...
 
 
 class ContextOptimizerProtocol(Protocol):
@@ -257,6 +141,5 @@ class ContextOptimizerProtocol(Protocol):
 
 
 __all__ = [
-    "RelevanceScorerProtocol",
     "ContextOptimizerProtocol",
 ]

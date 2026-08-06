@@ -21,8 +21,13 @@ from cortex.tools.skill_pack.models import (
     SkillWorkflowPhase,
     SkillWorkflowResult,
 )
+from cortex.tools.skill_pack.scoring import PackScore, describe_match, rank_packs
 
 logger = logging.getLogger(__name__)
+
+NO_MATCH_REASON = (
+    "No skill pack matched the task description; proceed with ordinary tool use"
+)
 
 _skills_dir: Path | None = None
 
@@ -38,7 +43,7 @@ def _get_skills_dir() -> Path:
     return _skills_dir
 
 
-def _load_all_manifests() -> list[SkillPackManifest]:
+def load_shipped_manifests() -> list[SkillPackManifest]:
     """Load all skill pack manifests from the skills directory."""
     skills_dir = _get_skills_dir()
     if not skills_dir.is_dir():
@@ -50,27 +55,20 @@ def _load_all_manifests() -> list[SkillPackManifest]:
             manifest = SkillPackManifest.model_validate_json(raw)
             manifests.append(manifest)
         except (OSError, ValueError) as e:
-            logger.debug("_load_all_manifests: skip %s: %s", path.name, e)
+            logger.debug("load_shipped_manifests: skip %s: %s", path.name, e)
             continue
     return manifests
 
 
-def _score_pack_for_task(manifest: SkillPackManifest, task_description: str) -> int:
-    """Score a pack's relevance to task_description (higher = more relevant)."""
-    if not task_description or not task_description.strip():
-        return 0
-    task_lower = task_description.lower().strip()
-    score = 0
-    if manifest.description and manifest.description.lower() in task_lower:
-        score += 2
-    for kw in manifest.keywords:
-        if kw.lower() in task_lower:
-            score += 1
-    if manifest.when_to_use and any(
-        w in task_lower for w in manifest.when_to_use.lower().split()
-    ):
-        score += 1
-    return score
+# AI: Public so the trigger-accuracy benchmark can measure discovery without
+# parsing the JSON tool response.
+def discover_packs(task_description: str, limit: int = 5) -> list[PackScore]:
+    """Return scored pack recommendations for a task, best first.
+
+    # AI: Only packs meeting MIN_RECOMMEND_SCORE are returned. A task matching no
+    # pack yields an empty list rather than an arbitrary fallback pack.
+    """
+    return rank_packs(load_shipped_manifests(), task_description, limit)
 
 
 def _skill_pack_discover_result(task_description: str | None, limit: int) -> str:
@@ -101,32 +99,24 @@ def _skill_pack_load_result(pack_name: str | None) -> str:
 
 def _do_discover(task_description: str, limit: int = 5) -> str:
     """Recommend skill packs relevant to a task description. Internal helper."""
-    if limit < 1:
-        limit = 1
-    if limit > 10:
-        limit = 10
-    manifests = _load_all_manifests()
-    scored: list[tuple[int, SkillPackManifest]] = [
-        (_score_pack_for_task(m, task_description), m) for m in manifests
-    ]
-    scored.sort(key=lambda x: (-x[0], x[1].name))
-    recommended = [s[1] for s in scored if s[0] > 0][:limit]
-    if not recommended and manifests:
-        recommended = [scored[0][1]] if scored else []
+    limit = max(1, min(limit, 10))
+    recommended = discover_packs(task_description, limit)
     result = success_response(
         task_description=task_description,
         count=len(recommended),
+        reason=(
+            NO_MATCH_REASON
+            if not recommended
+            else f"{len(recommended)} pack(s) matched the task description"
+        ),
         packs=[
             {
-                "name": m.name,
-                "description": m.description,
-                "reason": (
-                    "Keywords or description match"
-                    if _score_pack_for_task(m, task_description) > 0
-                    else "Default recommendation"
-                ),
+                "name": s.name,
+                "description": s.description,
+                "score": s.score,
+                "reason": describe_match(s),
             }
-            for m in recommended
+            for s in recommended
         ],
     )
     return json.dumps(result, indent=2)
@@ -365,7 +355,7 @@ def execute_sequential_workflow(
 
 def _find_manifest(name: str) -> tuple[SkillPackManifest | None, list[str]]:
     """Return (manifest, available_names) for the given pack name."""
-    manifests = _load_all_manifests()
+    manifests = load_shipped_manifests()
     match = next((m for m in manifests if m.name.lower() == name.lower()), None)
     return match, [m.name for m in manifests]
 
@@ -404,7 +394,7 @@ def _skill_pack_execute_result(
 
 def _do_load(pack_name: str) -> str:
     """Load a skill pack by name. Internal helper."""
-    manifests = _load_all_manifests()
+    manifests = load_shipped_manifests()
     name_lower = pack_name.strip().lower()
     for m in manifests:
         if m.name.lower() == name_lower:

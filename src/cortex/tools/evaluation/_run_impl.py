@@ -18,6 +18,8 @@ from cortex.core.path_resolver import CortexResourceType, get_cache_path
 from cortex.managers.usage_tracker import UsageTracker
 from cortex.tools.usage import usage_analytics
 
+from ._agentic_models import AgenticSkipReason, AgenticSummary
+from ._agentic_suite import AgenticSuiteOutcome
 from ._harness import ToolEvaluationHarness, load_eval_tasks
 from ._models import (
     EvalAnalysis,
@@ -25,8 +27,8 @@ from ._models import (
     EvalSuiteResult,
     EvalTask,
     EvalTaskCategory,
-    RunToolEvaluationPayload,
 )
+from ._payload_models import RunToolEvaluationPayload
 
 logger = logging.getLogger(__name__)
 
@@ -58,6 +60,7 @@ async def _write_evaluation_dashboard(
     analysis: EvalAnalysis,
     suite: EvalSuiteResult,
     tracker: UsageTracker | None,
+    agentic: AgenticSummary | None = None,
 ) -> Path:
     """Write evaluation dashboard Markdown next to last_suite.json."""
     from cortex.tools.evaluation.evaluation_dashboard_helpers import (
@@ -77,7 +80,7 @@ async def _write_evaluation_dashboard(
                 "_write_evaluation_dashboard: get_redundancy_payload failed: %s", e
             )
     dashboard_content = generate_evaluation_dashboard(
-        analysis, suite, redundancy=redundancy
+        analysis, suite, redundancy=redundancy, agentic=agentic
     )
     cache_dir = get_cache_path(root, CortexResourceType.CACHE.value)
     dashboard_path = cache_dir / "evals" / "dashboard.md"
@@ -147,6 +150,40 @@ async def analyze_error_patterns_impl(root: Path, task_ids: list[str] | None) ->
     return json.dumps(payload, indent=2)
 
 
+async def _run_agentic_mode(tasks: list[EvalTask]) -> AgenticSuiteOutcome:
+    """Resolve the optional model client and run the agentic selection eval."""
+    from ._agentic_suite import build_skipped_outcome, run_agentic_suite
+    from ._anthropic_client import resolve_model_client
+    from ._local_session import build_local_session
+
+    resolved = resolve_model_client()
+    if isinstance(resolved, AgenticSkipReason):
+        return build_skipped_outcome(tasks, resolved)
+    session = await build_local_session()
+    return await run_agentic_suite(tasks, session, resolved)
+
+
+async def _run_agentic_evaluation_impl(
+    root: Path, tasks: list[EvalTask], harness: ToolEvaluationHarness
+) -> str:
+    """Run agentic mode and emit the shared payload shape."""
+    outcome = await _run_agentic_mode(tasks)
+    suite = outcome.suite
+    analysis = harness.analyze_results(suite)
+    await _persist_latest_suite(root, suite, analysis)
+    dashboard_path = await _write_evaluation_dashboard(
+        root, analysis, suite, None, agentic=outcome.summary
+    )
+    payload = _build_evaluation_payload(root, tasks, suite, analysis)
+    payload = payload.model_copy(
+        update={
+            "dashboard_path": str(dashboard_path.relative_to(root)),
+            "agentic_summary": outcome.summary,
+        }
+    )
+    return json.dumps(payload.model_dump(mode="json"), indent=2)
+
+
 async def run_tool_evaluation_impl(
     root: Path,
     task_ids: list[str] | None,
@@ -162,6 +199,8 @@ async def run_tool_evaluation_impl(
     tracker = await get_usage_tracker(root)
     tasks = await load_eval_tasks(root, task_ids)
     harness = ToolEvaluationHarness(project_root=root, tracker=tracker)
+    if mode is EvalRunMode.AGENTIC:
+        return await _run_agentic_evaluation_impl(root, tasks, harness)
     suite = await harness.run_suite(tasks)
     analysis = harness.analyze_results(suite)
     exec_results = await run_execution_suite(

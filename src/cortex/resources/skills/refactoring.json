@@ -57,5 +57,7 @@
         "max_iterations": 1
       }
     ]
-  }
+  },
+  "when_to_use": "When restructuring existing code without changing behaviour: oversized functions, god objects, duplicated patterns, DRY violations, extracting helpers, or splitting a module that exceeds the file length limit.",
+  "keywords": ["refactor", "refactoring", "extract", "duplication", "dry violation", "oversized", "god object", "restructure", "split module"]
 }

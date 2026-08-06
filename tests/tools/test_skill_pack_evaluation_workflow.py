@@ -243,7 +243,7 @@ async def test_skill_pack_execute_evaluation_happy_path() -> None:
 
     with (
         patch(
-            "cortex.tools.skill_pack.operations._load_all_manifests",
+            "cortex.tools.skill_pack.operations.load_shipped_manifests",
             return_value=[manifest],
         ),
         patch(

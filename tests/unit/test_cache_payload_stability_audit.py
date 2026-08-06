@@ -14,6 +14,7 @@ import pytest
 
 from cortex.tools.execution.pre_commit_cache_payload_audit import (
     audit_cache_payload_stability,
+    audit_sort_keys,
     check_cache_payload_stability,
 )
 
@@ -98,3 +99,38 @@ def test_check_cache_payload_stability_current_repo_is_clean() -> None:
 
     # Assert
     assert violations == []
+
+
+class TestAuditSortKeys:
+    """The sort_keys check for byte-stable payload construction."""
+
+    def test_flags_json_dumps_without_sort_keys(self) -> None:
+        # Arrange
+        text = "import json\ndef f():\n    return json.dumps({'a': 1}, indent=2)\n"
+
+        # Act
+        violations = audit_sort_keys(text)
+
+        # Assert
+        assert len(violations) == 1
+        assert "sort_keys" in violations[0]
+
+    def test_accepts_json_dumps_with_sort_keys(self) -> None:
+        # Arrange
+        text = (
+            "import json\ndef f():\n    return json.dumps({'a': 1}, sort_keys=True)\n"
+        )
+
+        # Act / Assert
+        assert audit_sort_keys(text) == []
+
+    def test_ignores_unrelated_calls(self) -> None:
+        # Arrange
+        text = "import json\ndef f():\n    return json.loads('{}')\n"
+
+        # Act / Assert
+        assert audit_sort_keys(text) == []
+
+    def test_returns_empty_for_unparsable_source(self) -> None:
+        # Arrange / Act / Assert
+        assert audit_sort_keys("def (:::") == []

@@ -547,8 +547,6 @@ Manages version history with snapshot storage and rollback capabilities.
 
 **Module:** `cortex.core.version_manager`
 
-**Implements:** `VersionManagerProtocol`
-
 **Constructor:**
 
 ```python
@@ -846,8 +844,6 @@ Parses markdown links and transclusion syntax from content.
 
 **Module:** `cortex.linking.parser`
 
-**Implements:** `LinkParserProtocol`
-
 **Constructor:**
 
 ```python
@@ -899,15 +895,13 @@ Resolves transclusion syntax by recursively including content.
 
 **Module:** `cortex.linking.transclusion_engine`
 
-**Implements:** `TransclusionEngineProtocol`
-
 **Constructor:**
 
 ```python
 def __init__(
     self,
     file_system: FileSystemProtocol,
-    link_parser: LinkParserProtocol,
+    link_parser: LinkParser,
     memory_bank_dir: Path,
     max_depth: int = 10,
 )
@@ -916,14 +910,14 @@ def __init__(
 **Parameters:**
 
 - `file_system` (FileSystemProtocol) - File system manager
-- `link_parser` (LinkParserProtocol) - Link parser
+- `link_parser` (LinkParser) - Link parser
 - `memory_bank_dir` (Path) - Memory bank directory
 - `max_depth` (int) - Maximum recursion depth (default: 10)
 
 **Attributes:**
 
 - `file_system` (FileSystemProtocol) - File system
-- `link_parser` (LinkParserProtocol) - Link parser
+- `link_parser` (LinkParser) - Link parser
 - `memory_bank_dir` (Path) - Memory bank directory
 - `max_depth` (int) - Max recursion depth
 - `_cache` (dict) - Resolution cache
@@ -977,22 +971,20 @@ Validates markdown links and transclusions.
 
 **Module:** `cortex.linking.validator`
 
-**Implements:** `LinkValidatorProtocol`
-
 **Constructor:**
 
 ```python
 def __init__(
     self,
     file_system: FileSystemProtocol,
-    link_parser: LinkParserProtocol,
+    link_parser: LinkParser,
 )
 ```
 
 **Parameters:**
 
 - `file_system` (FileSystemProtocol) - File system manager
-- `link_parser` (LinkParserProtocol) - Link parser
+- `link_parser` (LinkParser) - Link parser
 
 **Key Methods:**
 
@@ -1153,8 +1145,6 @@ Scores files and sections by relevance to task descriptions.
 
 **Module:** `cortex.optimization.relevance_scorer`
 
-**Implements:** `RelevanceScorerProtocol`
-
 **Constructor:**
 
 ```python
@@ -1218,7 +1208,7 @@ Optimizes context selection within token budgets.
 ```python
 def __init__(
     self,
-    relevance_scorer: RelevanceScorerProtocol,
+    relevance_scorer: RelevanceScorer,
     dependency_graph: DependencyGraphProtocol,
     token_counter: TokenCounterProtocol,
 )
@@ -1262,8 +1252,6 @@ Loads Memory Bank context progressively.
 
 **Module:** `cortex.optimization.progressive_loader`
 
-**Implements:** `ProgressiveLoaderProtocol`
-
 **Constructor:**
 
 ```python
@@ -1272,7 +1260,7 @@ def __init__(
     file_system: FileSystemProtocol,
     dependency_graph: DependencyGraphProtocol,
     token_counter: TokenCounterProtocol,
-    relevance_scorer: RelevanceScorerProtocol,
+    relevance_scorer: RelevanceScorer,
 )
 ```
 
@@ -1326,8 +1314,6 @@ Load files by relevance to task.
 Summarizes file content when full content exceeds budgets.
 
 **Module:** `cortex.optimization.summarization_engine`
-
-**Implements:** `SummarizationEngineProtocol`
 
 **Constructor:**
 
@@ -1507,8 +1493,6 @@ Generates refactoring suggestions.
 
 **Module:** `cortex.refactoring.refactoring_engine`
 
-**Implements:** `RefactoringEngineProtocol`
-
 **Constructor:**
 
 ```python
@@ -1563,8 +1547,6 @@ Detects content consolidation opportunities.
 
 **Module:** `cortex.refactoring.consolidation_detector`
 
-**Implements:** `ConsolidationDetectorProtocol`
-
 ---
 
 ### SplitRecommender
@@ -1583,8 +1565,6 @@ Creates reorganization plans.
 
 **Module:** `cortex.refactoring.reorganization_planner`
 
-**Implements:** `ReorganizationPlannerProtocol`
-
 ---
 
 ### RefactoringExecutor
@@ -1599,8 +1579,8 @@ Executes approved refactorings safely.
 def __init__(
     self,
     file_system: FileSystemProtocol,
-    version_manager: VersionManagerProtocol,
-    approval_manager: ApprovalManagerProtocol,
+    version_manager: VersionManager,
+    approval_manager: ApprovalManager,
 )
 ```
 
@@ -1634,8 +1614,6 @@ Manages refactoring approvals.
 
 **Module:** `cortex.refactoring.approval_manager`
 
-**Implements:** `ApprovalManagerProtocol`
-
 **See Protocol documentation for full API.**
 
 ---
@@ -1646,8 +1624,6 @@ Manages refactoring rollbacks.
 
 **Module:** `cortex.refactoring.rollback_manager`
 
-**Implements:** `RollbackManagerProtocol`
-
 **See Protocol documentation for full API.**
 
 ---
@@ -1657,8 +1633,6 @@ Manages refactoring rollbacks.
 Learns from user feedback.
 
 **Module:** `cortex.refactoring.learning_engine`
-
-**Implements:** `LearningEngineProtocol`
 
 **See Protocol documentation for full API.**
 

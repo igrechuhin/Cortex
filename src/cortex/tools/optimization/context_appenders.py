@@ -36,7 +36,7 @@ def append_session_goal_to_context_payload(payload: str, project_root: Path) -> 
         return payload
     merged: dict[str, object] = {"session_goal": json.loads(sg.model_dump_json())}
     merged.update(data)
-    return json.dumps(merged, indent=2)
+    return json.dumps(merged, indent=2, sort_keys=True)
 
 
 def append_session_scope_to_context_payload(payload: str) -> str:
@@ -51,7 +51,7 @@ def append_session_scope_to_context_payload(payload: str) -> str:
     if payload_data.get("status") != "success":
         return payload
     payload_data["session_scope"] = SESSION_SCOPE_PROMPT
-    return json.dumps(payload_data, indent=2)
+    return json.dumps(payload_data, indent=2, sort_keys=True)
 
 
 def _read_recent_operations_lines(project_root: Path) -> str | None:
@@ -83,7 +83,7 @@ def _append_recent_operations_to_context_payload(
     payload_data["recent_operations"] = (
         f"## Recent Operations\n\n{recent_operations_lines}"
     )
-    return json.dumps(payload_data, indent=2)
+    return json.dumps(payload_data, indent=2, sort_keys=True)
 
 
 def _read_recent_artifacts_markdown(project_root: Path) -> str | None:
@@ -108,7 +108,7 @@ def _append_recent_artifacts_to_context_payload(
     if payload_data.get("status") != "success":
         return payload
     payload_data["recent_artifacts"] = recent_artifacts_markdown
-    return json.dumps(payload_data, indent=2)
+    return json.dumps(payload_data, indent=2, sort_keys=True)
 
 
 def read_recent_ingested_sources_markdown(project_root: Path) -> str | None:
@@ -142,7 +142,7 @@ def _append_recent_ingested_sources_to_context_payload(
     if payload_data.get("status") != "success":
         return payload
     payload_data["recent_ingested_sources"] = recent_ingested_sources_markdown
-    return json.dumps(payload_data, indent=2)
+    return json.dumps(payload_data, indent=2, sort_keys=True)
 
 
 def _read_explore_summary_markdown(project_root: Path) -> str | None:
@@ -203,7 +203,7 @@ def _append_explore_summary_to_context_payload(
     if payload_data.get("status") != "success":
         return payload
     payload_data["explore_summary"] = explore_summary_markdown
-    return json.dumps(payload_data, indent=2)
+    return json.dumps(payload_data, indent=2, sort_keys=True)
 
 
 def _extract_rules_markdown(rules_payload: str) -> str:
@@ -281,7 +281,7 @@ async def append_context_scoped_payload(payload: str, project_root: Path) -> str
         session_config=_session_config_mapping(session_cfg),
         rules_payload=rules_markdown,
     )
-    return json.dumps(merged, indent=2)
+    return json.dumps(merged, indent=2, sort_keys=True)
 
 
 async def apply_context_payload_appenders(base_payload: str, project_root: Path) -> str:

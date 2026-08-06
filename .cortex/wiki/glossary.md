@@ -77,6 +77,12 @@ Each term is an `###` heading followed by exactly three bullets:
 - **Aliases**: none
 - **Not to be confused with**: prompt, agent
 
+### Skill pack
+
+- **Definition**: A Cortex-owned JSON manifest under `src/cortex/resources/skills/` that groups MCP tools with when-to-use guidance and an optional sequential workflow, surfaced by `skill_pack(operation="discover")`.
+- **Aliases**: pack, agent skill pack
+- **Not to be confused with**: skill, prompt
+
 ### Agent
 
 - **Definition**: The model-driven executor running a prompt, holding the conversation and the tool budget.

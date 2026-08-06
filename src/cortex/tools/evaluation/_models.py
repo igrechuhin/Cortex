@@ -9,10 +9,14 @@ from __future__ import annotations
 from enum import Enum
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-from cortex.core.models import OperationStatus
 from cortex.core.pydantic_extra import EXTRA_ALLOW, EXTRA_FORBID
+
+from ._agentic_models import (
+    EvalTaskKind,
+    enforce_kind_invariants,
+)
 
 
 class EvalTaskCategory(str, Enum):
@@ -48,6 +52,7 @@ class EvalRunMode(str, Enum):
     FULL = "full"
     FAST = "fast"
     FOCUSED = "focused"
+    AGENTIC = "agentic"
 
 
 class ExecutionExpectSpec(BaseModel):
@@ -160,6 +165,20 @@ class EvalTask(BaseModel):
             "this task; empty for legacy entries with no store coverage."
         ),
     )
+    kind: EvalTaskKind = Field(
+        default=EvalTaskKind.POSITIVE,
+        description="Selection-eval case kind: positive, control, or near-miss.",
+    )
+    covered_by: str | None = Field(
+        default=None,
+        description="Tool that already covers a near-miss task; near-miss only.",
+    )
+
+    @model_validator(mode="after")
+    def _check_kind_invariants(self) -> EvalTask:
+        """Enforce the covered_by / expected_tools contract for this kind."""
+        enforce_kind_invariants(self.kind, self.covered_by, self.expected_tools)
+        return self
 
 
 class ToolTaskMetrics(BaseModel):
@@ -349,29 +368,4 @@ class ExecutionSummary(BaseModel):
     results: list[ExecutionResultEntry] = Field(
         default_factory=_empty_execution_result_entries,
         description="Per-task execution results",
-    )
-
-
-class RunToolEvaluationPayload(BaseModel):
-    """JSON-serializable payload for run_tool_evaluation response."""
-
-    model_config = ConfigDict(extra=EXTRA_FORBID)
-
-    status: OperationStatus = OperationStatus.SUCCESS
-    project_root: str = Field(description="Project root path")
-    tasks_loaded: int = Field(ge=0, description="Number of tasks loaded")
-    generated_at: str = Field(description="Suite generation timestamp")
-    cache_file: str = Field(description="Path to last_suite.json")
-    suite: dict[str, object] = Field(
-        description="Suite result as JSON-serializable dict"
-    )
-    analysis: dict[str, object] = Field(
-        description="Analysis result as JSON-serializable dict"
-    )
-    dashboard_path: str | None = Field(
-        default=None, description="Relative path to dashboard.md"
-    )
-    execution_summary: ExecutionSummary | None = Field(
-        default=None,
-        description="Pass/fail summary for execution-based evals (when mode runs executions).",
     )

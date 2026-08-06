@@ -19,7 +19,7 @@
     "If execute_pre_commit_checks(checks=[\"fix_quality\"]) fails with connection error, retry once; then rely on execute_pre_commit_checks for gates.",
     "Use skill_pack(operation=\"execute\", pack_name=\"quality\") for the full gate→autofix→gate retry loop without manual orchestration."
   ],
-  "keywords": ["quality", "pre-commit", "lint", "format", "validate", "roadmap_sync", "fix", "commit"],
+  "keywords": ["quality", "pre-commit", "quality gate", "lint", "format", "type check", "autofix", "validate", "roadmap_sync"],
   "workflow": {
     "mode": "sequential",
     "phases": [

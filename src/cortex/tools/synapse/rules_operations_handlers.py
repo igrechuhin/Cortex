@@ -12,6 +12,7 @@ from cortex.optimization.models import RulesManagerStatusModel
 from cortex.optimization.rules_manager import RulesManager
 from cortex.tools.synapse.rules_operation_helpers import (
     RulesOperation,
+    build_diagnostics_response,
     build_get_relevant_response,
     build_invalid_operation_error,
     calculate_total_tokens,
@@ -226,6 +227,16 @@ async def handle_get_relevant_operation(
     )
 
 
+async def handle_diagnostics_operation(
+    rules_manager: RulesManager,
+    optimization_config: OptimizationConfig,
+) -> str:
+    """Handle the explicit diagnostics operation (volatile fields included)."""
+    rules_folder, _config_error = validate_rules_folder_config(optimization_config)
+    status = _build_status_from_config(rules_manager, optimization_config, rules_folder)
+    return build_diagnostics_response(status)
+
+
 async def dispatch_operation(
     operation: RulesOperation,
     rules_manager: RulesManager,
@@ -238,6 +249,8 @@ async def dispatch_operation(
     """Dispatch to appropriate operation handler."""
     if operation == RulesOperation.INDEX:
         return await handle_index_operation(rules_manager, optimization_config, force)
+    if operation == RulesOperation.DIAGNOSTICS:
+        return await handle_diagnostics_operation(rules_manager, optimization_config)
     if operation == RulesOperation.GET_RELEVANT:
         if error_msg := await validate_get_relevant_params(task_description):
             return error_msg

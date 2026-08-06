@@ -29,6 +29,11 @@ dev = [
     "pytest-timeout>=2.1.0",
     "pytest-xdist>=3.5.0",
 ]
+agentic-evals = [
+    # Optional: only needed for run_tool_evaluation(mode="agentic"). Never
+    # imported on the default server path; requirements.txt stays unchanged.
+    "anthropic>=0.40.0",
+]
 server = [
     "httpx",
     "uvicorn",
@@ -38,6 +43,7 @@ all = [
     "httpx",
     "uvicorn",
     "starlette",
+    "anthropic>=0.40.0",
 ]
 
 [project.scripts]

@@ -338,7 +338,7 @@ async def test_skill_pack_execute_refactoring_happy_path() -> None:
     registry = _make_happy_registry()
     with (
         patch(
-            "cortex.tools.skill_pack.operations._load_all_manifests",
+            "cortex.tools.skill_pack.operations.load_shipped_manifests",
             return_value=[manifest],
         ),
         patch(
@@ -382,7 +382,7 @@ async def test_skill_pack_execute_refactoring_apply_receives_target_files() -> N
     registry = _make_happy_registry(capture_list=captured_apply_kwargs)
     with (
         patch(
-            "cortex.tools.skill_pack.operations._load_all_manifests",
+            "cortex.tools.skill_pack.operations.load_shipped_manifests",
             return_value=[manifest],
         ),
         patch(

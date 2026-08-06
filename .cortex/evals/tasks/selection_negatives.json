@@ -1,0 +1,176 @@
+[
+  {
+    "id": "control-choose-between-two-names",
+    "name": "Pick the clearer of two function names",
+    "description": "The user offers two candidate function names and asks which reads better. This is a one-line judgment.",
+    "category": "other",
+    "kind": "control",
+    "expected_tools": [],
+    "expected_outcome": "One name is chosen with a one-sentence rationale, using no tool.",
+    "common_failure_modes": [
+      "Calling think for a judgment that needs no deliberation scaffold"
+    ]
+  },
+  {
+    "id": "control-convert-json-snippet-to-yaml",
+    "name": "Convert a pasted JSON snippet to YAML",
+    "description": "The user pastes a 10-line JSON object and asks for the YAML equivalent. No project files are involved.",
+    "category": "other",
+    "kind": "control",
+    "expected_tools": [],
+    "expected_outcome": "The equivalent YAML is produced directly.",
+    "common_failure_modes": [
+      "Calling a project tool for a pure format conversion"
+    ]
+  },
+  {
+    "id": "control-explain-python-decorator",
+    "name": "Explain what a Python decorator does",
+    "description": "The user pastes a short Python decorator and asks what it does. Answer from the code alone.",
+    "category": "other",
+    "kind": "control",
+    "expected_tools": [],
+    "expected_outcome": "A plain-language explanation, produced by reasoning over the pasted code.",
+    "common_failure_modes": [
+      "Reaching for project context tools for a self-contained question"
+    ]
+  },
+  {
+    "id": "control-fix-typo-in-comment",
+    "name": "Fix a typo in a code comment",
+    "description": "Correct the spelling of `recieve` to `receive` in a comment. The file path and line are already known.",
+    "category": "other",
+    "kind": "control",
+    "expected_tools": [],
+    "expected_outcome": "The typo is corrected by an ordinary file edit.",
+    "common_failure_modes": [
+      "Invoking a memory-bank or validation tool for a one-character fix"
+    ]
+  },
+  {
+    "id": "control-read-project-conventions",
+    "name": "Read the project's architecture and coding conventions",
+    "description": "Before editing, load the project's architectural context and coding conventions. These are served by the cortex://context and cortex://rules resources.",
+    "category": "context",
+    "kind": "control",
+    "expected_tools": [],
+    "expected_outcome": "Context is read from the cortex://context resource; no Cortex MCP tool covers this, so no tool should be called.",
+    "common_failure_modes": [
+      "session called to fetch project context that a read-only resource already serves"
+    ]
+  },
+  {
+    "id": "control-rename-local-variable",
+    "name": "Rename a local variable in one function",
+    "description": "Rename the local variable `tmp` to `buffer` inside a single Python function in a file already open in the editor. Nothing else changes.",
+    "category": "other",
+    "kind": "control",
+    "expected_tools": [],
+    "expected_outcome": "The variable is renamed with an ordinary edit; no Cortex MCP tool is needed.",
+    "common_failure_modes": [
+      "Calling a Cortex tool for a plain text edit"
+    ]
+  },
+  {
+    "id": "control-summarize-pasted-error-text",
+    "name": "Summarize a pasted stack trace",
+    "description": "The user pastes a stack trace from an unrelated program and asks which line raised. Answer from the pasted text.",
+    "category": "other",
+    "kind": "control",
+    "expected_tools": [],
+    "expected_outcome": "The raising line is identified from the pasted trace alone.",
+    "common_failure_modes": [
+      "Calling usage or anomaly analytics for text already in context"
+    ]
+  },
+  {
+    "id": "near-miss-append-progress-entry",
+    "name": "Append a dated entry to the progress log",
+    "description": "Record that a feature was completed today by appending one entry to the project's progress log.",
+    "category": "memory_bank",
+    "kind": "near-miss",
+    "expected_tools": [
+      "manage_file"
+    ],
+    "covered_by": "update_memory_bank",
+    "expected_outcome": "The append-style memory-bank mutation tool is used, preserving validation and sync rules.",
+    "common_failure_modes": [
+      "Full-file rewrite via manage_file where a targeted append exists"
+    ]
+  },
+  {
+    "id": "near-miss-deliberate-on-obvious-choice",
+    "name": "Decide whether to add a trailing comma",
+    "description": "Decide whether a trailing comma belongs in a one-element list literal. The formatter's rule already settles it.",
+    "category": "other",
+    "kind": "near-miss",
+    "expected_tools": [
+      "think"
+    ],
+    "covered_by": "autofix",
+    "expected_outcome": "The formatter decides; no deliberation scaffold is warranted.",
+    "common_failure_modes": [
+      "think invoked for a decision the formatter already makes deterministically"
+    ]
+  },
+  {
+    "id": "near-miss-docs-sync-check-via-quality-gate",
+    "name": "Verify docs and memory-bank sync after a documentation update",
+    "description": "Memory-bank files were just updated. Check that timestamps and roadmap sync are consistent, without re-running the test suite.",
+    "category": "pre_commit",
+    "kind": "near-miss",
+    "expected_tools": [
+      "run_quality_gate"
+    ],
+    "covered_by": "run_docs_gate",
+    "expected_outcome": "The docs gate is used; the full quality gate runs tests and is the wrong instrument here.",
+    "common_failure_modes": [
+      "run_quality_gate invoked for a docs-only sync check, running the whole test suite"
+    ]
+  },
+  {
+    "id": "near-miss-formatting-complaint-quality-gate",
+    "name": "Fix reported formatting and lint errors",
+    "description": "The previous check run reported formatting and lint violations across several files. Make them go away.",
+    "category": "pre_commit",
+    "kind": "near-miss",
+    "expected_tools": [
+      "run_quality_gate"
+    ],
+    "covered_by": "autofix",
+    "expected_outcome": "Automated fixes are applied with autofix; re-running the gate is verification, not the fix.",
+    "common_failure_modes": [
+      "Re-running the quality gate repeatedly instead of applying automated fixes"
+    ]
+  },
+  {
+    "id": "near-miss-mark-roadmap-entry-complete",
+    "name": "Mark a roadmap entry as complete",
+    "description": "A plan has finished. Move its roadmap entry from pending to completed.",
+    "category": "plan",
+    "kind": "near-miss",
+    "expected_tools": [
+      "update_memory_bank"
+    ],
+    "covered_by": "plan",
+    "expected_outcome": "Plan completion goes through the plan lifecycle tool, which handles roadmap sync itself.",
+    "common_failure_modes": [
+      "Hand-editing roadmap sections instead of completing the plan"
+    ]
+  },
+  {
+    "id": "near-miss-write-plan-file-directly",
+    "name": "Write a plan file for a new feature",
+    "description": "Create a new implementation plan document for an upcoming feature and store it under the project's plans directory.",
+    "category": "plan",
+    "kind": "near-miss",
+    "expected_tools": [
+      "manage_file"
+    ],
+    "covered_by": "plan",
+    "expected_outcome": "The plan is created through the plan lifecycle tool, not through generic memory-bank file writes.",
+    "common_failure_modes": [
+      "manage_file used to hand-write a plan file, bypassing plan lifecycle validation"
+    ]
+  }
+]

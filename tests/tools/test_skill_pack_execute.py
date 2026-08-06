@@ -278,7 +278,7 @@ async def test_skill_pack_execute_pack_without_workflow_returns_error() -> None:
         workflow=None,
     )
     with patch(
-        "cortex.tools.skill_pack.operations._load_all_manifests",
+        "cortex.tools.skill_pack.operations.load_shipped_manifests",
         return_value=[no_wf_manifest],
     ):
         result = await skill_pack(operation="execute", pack_name="core")
@@ -307,7 +307,7 @@ async def test_skill_pack_execute_quality_happy_path() -> None:
 
     with (
         patch(
-            "cortex.tools.skill_pack.operations._load_all_manifests",
+            "cortex.tools.skill_pack.operations.load_shipped_manifests",
             return_value=[manifest],
         ),
         patch(

@@ -18,6 +18,51 @@ class RulesOperation(str, Enum):
 
     INDEX = "index"
     GET_RELEVANT = "get_relevant"
+    DIAGNOSTICS = "diagnostics"
+
+
+# AI: ``last_indexed`` changes on every reindex, so embedding it in the
+# ``cortex://rules`` body made two reads of identical rule content differ byte
+# for byte and cost the host its prompt-cache prefix. It is relocated to the
+# explicit ``diagnostics`` operation rather than deleted — the value is useful,
+# it just must not sit inside a block contracted to be byte-stable.
+VOLATILE_STATUS_FIELDS: frozenset[str] = frozenset({"last_indexed"})
+
+
+def stable_status_payload(status: RulesManagerStatusModel) -> ModelDict:
+    """Status payload with volatile diagnostic fields stripped.
+
+    Used for every agent-visible rules surface. The stripped values remain
+    reachable through :func:`build_diagnostics_response`.
+    """
+    payload = cast(ModelDict, status.model_dump(mode="json"))
+    return {
+        key: value
+        for key, value in payload.items()
+        if key not in VOLATILE_STATUS_FIELDS
+    }
+
+
+# AI: the relocation target for volatile status fields — it carries the full,
+# unfiltered status and self-declares byte_stable=False so a caller cannot
+# mistake it for a cacheable surface.
+def build_diagnostics_response(status: RulesManagerStatusModel) -> str:
+    """Build the explicit diagnostics response carrying volatile status fields.
+
+    This response is deliberately *not* byte-stable and is never embedded in
+    ``cortex://rules``; callers request it explicitly.
+    """
+    payload = cast(ModelDict, status.model_dump(mode="json"))
+    return json.dumps(
+        {
+            "status": OperationStatus.SUCCESS.value,
+            "operation": RulesOperation.DIAGNOSTICS.value,
+            "rules_manager_status": payload,
+            "byte_stable": False,
+        },
+        indent=2,
+        sort_keys=True,
+    )
 
 
 def parse_rules_operation(value: str | None) -> RulesOperation | None:
@@ -117,8 +162,12 @@ def build_get_relevant_response(
     status: RulesManagerStatusModel,
     relevant_rules: ModelDict,
 ) -> str:
-    """Build response for get_relevant operation."""
-    status_payload = cast(ModelDict, status.model_dump(mode="json"))
+    """Build response for get_relevant operation.
+
+    Serialized with ``sort_keys`` and without volatile status fields so two
+    reads of unchanged rule state produce byte-identical output.
+    """
+    status_payload = stable_status_payload(status)
     return json.dumps(
         {
             "status": OperationStatus.SUCCESS.value,
@@ -134,6 +183,7 @@ def build_get_relevant_response(
             "rules_source": relevant_rules.get("source"),
         },
         indent=2,
+        sort_keys=True,
     )
 
 

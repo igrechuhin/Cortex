@@ -168,7 +168,7 @@ def _inject_layered_payload(
         return f"{layered_payload}\n\n{base_payload}".strip()
     payload_obj["context_layers_loaded"] = loaded_layers
     payload_obj["layered_context"] = layered_payload
-    return json.dumps(payload_obj, indent=2)
+    return json.dumps(payload_obj, indent=2, sort_keys=True)
 
 
 def _resolve_load_context_inputs(
@@ -277,6 +277,7 @@ async def summarize_content(
                 "error_type": type(e).__name__,
             },
             indent=2,
+            sort_keys=True,
         )
 
 
@@ -321,6 +322,7 @@ async def get_relevance_scores(
                 "error_type": type(e).__name__,
             },
             indent=2,
+            sort_keys=True,
         )
 
 

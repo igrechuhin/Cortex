@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from cortex.tools.evaluation._agentic_models import AgenticScorecard, AgenticSummary
 from cortex.tools.evaluation._models import (
     EvalAnalysis,
     EvalSuiteResult,
@@ -258,10 +259,70 @@ def format_task_details(suite: EvalSuiteResult) -> list[str]:
     return lines
 
 
+def _format_scorecard(scorecard: AgenticScorecard) -> list[str]:
+    """Format the paired selection scorecard.
+
+    No accuracy line is emitted for an unpaired run; the reason is printed
+    instead, so an accuracy figure can never appear without its negative set.
+    """
+    lines: list[str] = []
+    if scorecard.paired and scorecard.selection_accuracy is not None:
+        rate = f"{scorecard.selection_accuracy:.1%}"
+        counts = f"{scorecard.positive_passed}/{scorecard.positive_total}"
+        lines.append(f"- **Selection Accuracy:** {rate} ({counts})")
+    else:
+        reason = scorecard.unpaired_reason
+        why = reason.value if reason else "unknown"
+        lines.append(f"- **Selection Accuracy:** not reported — unpaired run ({why})")
+    control = scorecard.control_false_positive_rate
+    near_miss = scorecard.near_miss_false_positive_rate
+    control_rate = f"{control:.1%}" if control is not None else "n/a"
+    near_miss_rate = f"{near_miss:.1%}" if near_miss is not None else "n/a"
+    control_counts = f"{scorecard.control_false_positives}/{scorecard.control_total}"
+    near_miss_counts = (
+        f"{scorecard.near_miss_false_positives}/{scorecard.near_miss_total}"
+    )
+    lines.append(f"- **Control False Positives:** {control_rate} ({control_counts})")
+    lines.append(
+        f"- **Near-Miss False Positives:** {near_miss_rate} ({near_miss_counts})"
+    )
+    lines.append("")
+    return lines
+
+
+def _format_agentic_feedback(agentic: AgenticSummary) -> list[str]:
+    """Format the captured model feedback on tool names and parameter docs."""
+    lines: list[str] = []
+    if not agentic.feedback:
+        return lines
+    lines.append("### Model Feedback on Tool Descriptions")
+    lines.append("")
+    for record in agentic.feedback[:20]:
+        lines.append(f"- **{record.tool_name}** ({record.task_id}): {record.feedback}")
+    lines.append("")
+    return lines
+
+
+def format_agentic_section(agentic: AgenticSummary | None) -> list[str]:
+    """Format the agentic tool-selection section of the dashboard."""
+    if agentic is None:
+        return []
+    lines = ["## Agentic Tool Selection", ""]
+    if agentic.skipped:
+        reason = agentic.skip_reason.value if agentic.skip_reason else "unknown"
+        lines.append(f"Skipped: {reason}.")
+        lines.append("")
+        return lines
+    lines.extend(_format_scorecard(agentic.scorecard))
+    lines.extend(_format_agentic_feedback(agentic))
+    return lines
+
+
 def generate_evaluation_dashboard(
     analysis: EvalAnalysis,
     suite: EvalSuiteResult,
     redundancy: RedundancyPayload | None = None,
+    agentic: AgenticSummary | None = None,
 ) -> str:
     """Generate Markdown dashboard from evaluation analysis."""
     lines: list[str] = []
@@ -271,5 +332,6 @@ def generate_evaluation_dashboard(
     lines.extend(format_error_patterns(analysis))
     lines.extend(format_token_efficiency(analysis))
     lines.extend(format_redundancy(redundancy))
+    lines.extend(format_agentic_section(agentic))
     lines.extend(format_task_details(suite))
     return "\n".join(lines)

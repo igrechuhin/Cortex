@@ -70,9 +70,9 @@ async def rules(
 ) -> str:
     """Manage custom rules for Memory Bank with indexing and intelligent retrieval.
 
-    Valid values for operation: "index", "get_relevant" (get_relevant requires
-    task_description). Invalid or missing operation returns structured error
-    with details.missing or valid_operations.
+    Valid values for operation: "index", "get_relevant", "diagnostics"
+    (get_relevant requires task_description). Invalid or missing operation
+    returns structured error with details.missing or valid_operations.
 
     USE WHEN: User wants to index rules, user needs relevant rules,
     user requests rule retrieval, user wants rule indexing.
@@ -172,6 +172,18 @@ async def rules(
             "rules_manager_status": {...},
             "rules_context": {...},
             "rules_source": "indexed"
+        }
+
+        The get_relevant payload is contractually byte-stable for unchanged
+        rule state, so volatile diagnostics (last_indexed) are NOT included.
+        Request them explicitly:
+
+        For "diagnostics" operation:
+        {
+            "status": OperationStatus.SUCCESS.value,
+            "operation": "diagnostics",
+            "byte_stable": false,
+            "rules_manager_status": {"last_indexed": "...", ...}
         }
 
         For disabled rules:
@@ -374,7 +386,10 @@ async def _merge_rules_payload(payload: str) -> str:
     merged["agent_internal_communication_rule"] = (
         await _read_agent_internal_communication_rule(root)
     )
-    return json.dumps(merged, indent=2)
+    # AI: sort_keys pins key order for the cortex://rules body, which is a
+    # contractually byte-stable prompt-prefix surface (see
+    # docs/guides/prompt-prefix-byte-stability.md).
+    return json.dumps(merged, indent=2, sort_keys=True)
 
 
 @mcp.resource(uri="cortex://rules", meta=CORTEX_RULES_RESOURCE_READ_META)

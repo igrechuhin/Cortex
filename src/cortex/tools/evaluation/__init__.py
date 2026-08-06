@@ -21,6 +21,16 @@ from cortex.core.context_logging import MCPContext, log_client
 from cortex.core.mcp_stability import ensure_usage_context, mcp_tool_wrapper
 from cortex.core.project_root_resolver import resolve_project_root_async
 
+from ._agentic_models import (
+    AgenticScorecard,
+    AgenticSkipReason,
+    AgenticSummary,
+    AgenticTaskResult,
+    EvalTaskKind,
+    ToolFeedbackRecord,
+    UnpairedReason,
+)
+from ._agentic_suite import AgenticSuiteOutcome, run_agentic_suite
 from ._harness import ToolEvaluationHarness, load_eval_tasks
 from ._models import (
     ABComparisonResult,
@@ -40,7 +50,6 @@ from ._models import (
     ExecutionSummary,
     OptimizationRunRecord,
     OptimizationRunWinner,
-    RunToolEvaluationPayload,
     ToolCombination,
     ToolTaskMetrics,
 )
@@ -52,6 +61,7 @@ from ._optimization import (
     load_optimization_history,
     parse_optimized_analysis,
 )
+from ._payload_models import RunToolEvaluationPayload
 from ._run_impl import analyze_error_patterns_impl, run_tool_evaluation_impl
 
 
@@ -83,7 +93,10 @@ async def run_tool_evaluation(
         task_ids: Optional list of task IDs to run; if None, all tasks
             for the selected mode are run.
         mode: "fast" (10 execution tasks, <30s), "full" (all tasks),
-            "focused" (filter by category). Default: "full".
+            "focused" (filter by category), "agentic" (agent-in-the-loop
+            tool-selection eval; requires the optional `anthropic` extra and
+            ANTHROPIC_API_KEY, and reports a typed skip otherwise).
+            Default: "full".
         category: When mode is "focused", only tasks with this category
             are run. Ignored for "fast" and "full".
     """
@@ -198,6 +211,15 @@ async def run_tool_optimization_workflow(
 
 __all__ = [
     "ABComparisonResult",
+    "AgenticScorecard",
+    "AgenticSkipReason",
+    "AgenticSummary",
+    "AgenticSuiteOutcome",
+    "AgenticTaskResult",
+    "EvalTaskKind",
+    "ToolFeedbackRecord",
+    "UnpairedReason",
+    "run_agentic_suite",
     "ABWinner",
     "EvalAnalysis",
     "EvalRunMode",

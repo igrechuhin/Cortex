@@ -11,9 +11,6 @@ from typing import Protocol
 
 from cortex.core.models import DependencyGraphDict
 
-from .file_system import FileSystemProtocol
-from .linking import LinkParserProtocol
-
 
 class TokenCounterProtocol(Protocol):
     """Protocol for token counting operations using structural subtyping (PEP 544).
@@ -156,15 +153,6 @@ class DependencyGraphProtocol(Protocol):
                     cycles=[]
                 )
 
-            async def build_from_links(
-                self,
-                file_system: FileSystemProtocol,
-                link_parser: LinkParserProtocol,
-                memory_bank_path: Path,
-            ):
-                # Build graph from file links
-                pass
-
         # SimpleDependencyGraph automatically satisfies DependencyGraphProtocol
         ```
 
@@ -237,21 +225,6 @@ class DependencyGraphProtocol(Protocol):
 
         Returns:
             Dependency graph dictionary model
-        """
-        ...
-
-    async def build_from_links(
-        self,
-        file_system: FileSystemProtocol,
-        link_parser: LinkParserProtocol,
-        memory_bank_path: Path,
-    ) -> None:
-        """Build dynamic dependencies from actual file links.
-
-        Args:
-            file_system: File system manager
-            link_parser: Link parser instance
-            memory_bank_path: Path to memory bank directory
         """
         ...
 

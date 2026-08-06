@@ -1,0 +1,150 @@
+{
+  "fixtures": [
+    {
+      "id": "pos-core-session-start",
+      "kind": "positive",
+      "task": "Start the session, get orientation, and read the project brief from the memory bank",
+      "expected_pack": "core"
+    },
+    {
+      "id": "pos-context-compaction",
+      "kind": "positive",
+      "task": "The conversation is getting long; compact the session and produce a handoff summary within the token budget",
+      "expected_pack": "context"
+    },
+    {
+      "id": "pos-quality-lint-fix",
+      "kind": "positive",
+      "task": "Run the pre-commit quality gate and auto-fix the remaining lint and format errors",
+      "expected_pack": "quality"
+    },
+    {
+      "id": "pos-planning-roadmap-entry",
+      "kind": "positive",
+      "task": "Create a plan for the new retrieval work and register it as a roadmap entry",
+      "expected_pack": "planning"
+    },
+    {
+      "id": "pos-rules-standards-lookup",
+      "kind": "positive",
+      "task": "Load the coding standards and get the relevant Synapse rules before writing this module",
+      "expected_pack": "rules"
+    },
+    {
+      "id": "pos-evaluation-tool-eval",
+      "kind": "positive",
+      "task": "Run an MCP tool evaluation and capture the score and gaps in a stored evaluation report",
+      "expected_pack": "evaluation"
+    },
+    {
+      "id": "pos-refactoring-extract-helpers",
+      "kind": "positive",
+      "task": "Refactoring this oversized module: analyse the duplicated patterns, extract helpers, and verify the quality gate afterwards",
+      "expected_pack": "refactoring"
+    },
+    {
+      "id": "pos-add-setup-prompt-conditional",
+      "kind": "positive",
+      "task": "Add a new conditional /cortex/setup prompt to the lazy prompt registry with a ProjectConfigStatus detection field and a visibility gate",
+      "expected_pack": "add-setup-prompt"
+    },
+    {
+      "id": "pos-workflow-conversion-wfjs",
+      "kind": "positive",
+      "task": "Convert the prompt-based fix pipeline into a deterministic fix.wf.js Workflow script with typed subagent schemas",
+      "expected_pack": "workflow-conversion"
+    },
+    {
+      "id": "pos-commit-manual-fallback",
+      "kind": "positive",
+      "task": "The Workflow tool is not registered by the host, so orchestrate the commit.wf.js phase sequence manually via direct subagent calls preserving pipeline_handoff data",
+      "expected_pack": "commit-pipeline-manual-fallback"
+    },
+    {
+      "id": "pos-swift-ios-feature",
+      "kind": "positive",
+      "task": "Implement a new EPD-iOS feature end to end: route, DTO, use case, GRDB repository, URLSession actor, view model, SwiftUI view, unit tests, then commit",
+      "expected_pack": "swift-ios-feature-commit-workflow"
+    },
+    {
+      "id": "pos-swiftui-drawer-drag",
+      "kind": "positive",
+      "task": "Build a SwiftUI side drawer that dismisses on a swipe-left DragGesture while its ScrollView keeps scrolling",
+      "expected_pack": "swiftui-drag-to-dismiss-side-drawer"
+    },
+    {
+      "id": "ctl-rename-local-variable",
+      "kind": "control",
+      "task": "Rename the variable tmp2 to buffer_length inside this one function"
+    },
+    {
+      "id": "ctl-explain-regex",
+      "kind": "control",
+      "task": "Explain what this regular expression does and whether it is anchored"
+    },
+    {
+      "id": "ctl-timezone-bug",
+      "kind": "control",
+      "task": "This timestamp is off by two hours; work out whether the offset is applied twice"
+    },
+    {
+      "id": "ctl-changelog-typo",
+      "kind": "control",
+      "task": "Fix the spelling mistake in the second paragraph of the README introduction"
+    },
+    {
+      "id": "ctl-dependency-version",
+      "kind": "control",
+      "task": "Which version of httpx is pinned in pyproject.toml and why was it capped"
+    },
+    {
+      "id": "nm-swiftui-drawer-vs-feature",
+      "kind": "near-miss",
+      "task": "Implement the whole EPD-iOS notifications feature: route, DTO, GRDB repository, URLSession actor, view model, SwiftUI view and unit tests, one screen of which is a side menu",
+      "expected_pack": "swiftui-drag-to-dismiss-side-drawer",
+      "covered_by": "swift-ios-feature-commit-workflow"
+    },
+    {
+      "id": "nm-quality-vs-commit-fallback",
+      "kind": "near-miss",
+      "task": "The Workflow tool is unavailable so the commit pipeline phases must be driven manually by subagent calls in the right phase order",
+      "expected_pack": "quality",
+      "covered_by": "commit-pipeline-manual-fallback"
+    },
+    {
+      "id": "nm-workflow-conversion-vs-fallback",
+      "kind": "near-miss",
+      "task": "commit.wf.js exists and is fine, but this host has no Workflow tool, so reproduce its phase sequence and handoff semantics by hand",
+      "expected_pack": "workflow-conversion",
+      "covered_by": "commit-pipeline-manual-fallback"
+    },
+    {
+      "id": "nm-core-vs-context-budget",
+      "kind": "near-miss",
+      "task": "Prioritise which files to load for this task and score their relevance against the remaining token budget",
+      "expected_pack": "core",
+      "covered_by": "context"
+    },
+    {
+      "id": "nm-planning-vs-nopack",
+      "kind": "near-miss",
+      "task": "Read the third bullet of the plan file and tell me what it says about the roadmap entry wording",
+      "expected_pack": "planning",
+      "covered_by": "no-pack-needed"
+    },
+    {
+      "id": "nm-quality-vs-nopack-single-lint",
+      "kind": "near-miss",
+      "task": "One lint error is reported on line 40; delete the unused import that causes it",
+      "expected_pack": "quality",
+      "covered_by": "no-pack-needed"
+    },
+    {
+      "id": "nm-rules-vs-evaluation",
+      "kind": "near-miss",
+      "task": "Score how well the current tool descriptions comply with our standards and store the resulting report with its gaps",
+      "expected_pack": "rules",
+      "covered_by": "evaluation"
+    }
+  ]
+}
