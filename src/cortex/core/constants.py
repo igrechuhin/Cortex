@@ -42,6 +42,7 @@ EXTENSION_SCRIPT_MAP: dict[str, str] = {
     ".kts": "kotlin",
     ".cs": "csharp",
     ".go": "go",
+    ".php": "php",
     ".rs": "rust",
     ".ts": "typescript",
     ".tsx": "typescript",
@@ -51,16 +52,22 @@ EXTENSION_SCRIPT_MAP: dict[str, str] = {
 
 # Maps detected language -> default post-edit hook command.
 # Used by LanguageQualityRouter so hook template resolution is data-driven.
+#
+# These run after EVERY Edit, so the budget is ~2 seconds. Full test suites
+# belong in run_quality_gate() at commit time, not here: a suite run per edit
+# stalls the agent loop for minutes and fails edits on unrelated red tests.
+# Languages whose only fast check is still a whole-project build are None.
 LANGUAGE_POST_EDIT_HOOK_COMMANDS: dict[str, str | None] = {
-    "python": "python3 -m pytest tests/ --timeout=30 -x -q 2>&1 | tail -20",
-    "typescript": "npm test --if-present 2>&1 | tail -20",
-    "javascript": "npm test --if-present 2>&1 | tail -20",
-    "rust": "cargo test 2>&1 | tail -20",
-    "go": "go test ./... 2>&1 | tail -20",
-    "java": "./mvnw test -q 2>&1 | tail -20",
-    "swift": "swift build 2>&1 | tail -20",
+    "python": "ruff check --quiet . 2>&1 | tail -20",
+    "typescript": "npx --no-install tsc --noEmit 2>&1 | tail -20",
+    "javascript": "npx --no-install eslint --quiet . 2>&1 | tail -20",
+    "rust": "cargo check --quiet 2>&1 | tail -20",
+    "go": "go vet ./... 2>&1 | tail -20",
+    "php": "vendor/bin/phpstan analyse --no-progress --quiet 2>&1 | tail -20",
+    "java": None,
+    "swift": None,
     "kotlin": None,
-    "csharp": "dotnet test 2>&1 | tail -20",
+    "csharp": None,
 }
 
 # Default Claude model for prompt/agent hook entries.

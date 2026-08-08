@@ -14,6 +14,7 @@ from .go_adapter import GoAdapter
 from .java_adapter import JavaAdapter
 from .javascript_adapter import JavaScriptAdapter
 from .kotlin_adapter import KotlinAdapter
+from .php_adapter import PhpAdapter
 from .python_adapter import PythonAdapter
 from .rust_adapter import RustAdapter
 from .swift_adapter import SwiftAdapter
@@ -22,6 +23,8 @@ from .typescript_adapter import TypeScriptAdapter
 # Adapters that support detect(); order can affect which language wins when multiple match.
 _DETECTOR_ADAPTERS: tuple[type[FrameworkAdapter], ...] = (
     PythonAdapter,
+    # PHP before TS/JS: PHP projects often ship a package.json for front-end assets.
+    PhpAdapter,
     TypeScriptAdapter,
     JavaScriptAdapter,
     RustAdapter,

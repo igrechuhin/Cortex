@@ -82,9 +82,10 @@ class TestAdapterRegistry:
             "swift",
             "kotlin",
             "csharp",
+            "php",
         ):
             assert lang in SUPPORTED_LANGUAGES
-        assert len(SUPPORTED_LANGUAGES) == 9
+        assert len(SUPPORTED_LANGUAGES) == 10
 
 
 class TestFixQualityCheck:

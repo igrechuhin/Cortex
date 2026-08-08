@@ -10,6 +10,7 @@ from cortex.services.framework_adapters.go_adapter import GoAdapter
 from cortex.services.framework_adapters.java_adapter import JavaAdapter
 from cortex.services.framework_adapters.javascript_adapter import JavaScriptAdapter
 from cortex.services.framework_adapters.kotlin_adapter import KotlinAdapter
+from cortex.services.framework_adapters.php_adapter import PhpAdapter
 from cortex.services.framework_adapters.python_adapter import PythonAdapter
 from cortex.services.framework_adapters.rust_adapter import RustAdapter
 from cortex.services.framework_adapters.swift_adapter import SwiftAdapter
@@ -63,6 +64,10 @@ class LanguageQualityRouter:
         "kotlin": LanguageQualityRoute(
             adapter_factory=lambda root: KotlinAdapter(root),
             post_edit_hook_command=LANGUAGE_POST_EDIT_HOOK_COMMANDS.get("kotlin"),
+        ),
+        "php": LanguageQualityRoute(
+            adapter_factory=lambda root: PhpAdapter(root),
+            post_edit_hook_command=LANGUAGE_POST_EDIT_HOOK_COMMANDS.get("php"),
         ),
         "csharp": LanguageQualityRoute(
             adapter_factory=lambda root: CSharpAdapter(root),

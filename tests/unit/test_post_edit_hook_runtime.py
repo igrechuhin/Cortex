@@ -7,6 +7,7 @@ from typing import cast
 
 import pytest
 
+from cortex.core.constants import LANGUAGE_POST_EDIT_HOOK_COMMANDS
 from cortex.setup.post_edit_hook_runtime import apply_project_post_edit_hook
 
 
@@ -100,28 +101,40 @@ def test_apply_project_post_edit_hook_writes_python_hook(tmp_path: Path) -> None
 
     assert detected_language == "python"
     assert changed is True
-    assert (
-        _read_hook_command(tmp_path)
-        == "python3 -m pytest tests/ --timeout=30 -x -q 2>&1 | tail -20"
-    )
+    assert _read_hook_command(tmp_path) == LANGUAGE_POST_EDIT_HOOK_COMMANDS["python"]
     assert _read_matcher(tmp_path) == "Edit(**/*.py)"
     assert _read_conditions(tmp_path) == [{"tool": "Edit", "pattern": "**/*.py"}]
 
 
-def test_apply_project_post_edit_hook_writes_swift_hook_without_conditions(
+def test_apply_project_post_edit_hook_skips_swift_build_only_project(
     tmp_path: Path,
 ) -> None:
+    """Swift has no sub-second per-edit check, so no hook is written."""
     _ = (tmp_path / "Package.swift").write_text(
         "// swift-tools-version:5.9\nimport PackageDescription\n", encoding="utf-8"
     )
 
     detected_language, changed = apply_project_post_edit_hook(tmp_path)
 
-    assert detected_language == "swift"
+    assert detected_language == "unknown"
+    assert changed is False
+    assert not (tmp_path / ".claude" / "settings.json").exists()
+
+
+def test_apply_project_post_edit_hook_writes_php_hook_with_conditions(
+    tmp_path: Path,
+) -> None:
+    """composer.json wins over package.json, and PHP gets a .php-scoped hook."""
+    _ = (tmp_path / "composer.json").write_text('{"name":"acme/app"}', encoding="utf-8")
+    _ = (tmp_path / "package.json").write_text('{"name":"assets"}', encoding="utf-8")
+
+    detected_language, changed = apply_project_post_edit_hook(tmp_path)
+
+    assert detected_language == "php"
     assert changed is True
-    assert _read_hook_command(tmp_path) == "swift build 2>&1 | tail -20"
-    assert _read_matcher(tmp_path) == "Edit"
-    assert _read_conditions(tmp_path) is None
+    assert _read_hook_command(tmp_path) == LANGUAGE_POST_EDIT_HOOK_COMMANDS["php"]
+    assert _read_matcher(tmp_path) == "Edit(**/*.php)"
+    assert _read_conditions(tmp_path) == [{"tool": "Edit", "pattern": "**/*.php"}]
 
 
 def test_apply_project_post_edit_hook_writes_typescript_hook_with_conditions(
@@ -136,7 +149,9 @@ def test_apply_project_post_edit_hook_writes_typescript_hook_with_conditions(
 
     assert detected_language == "typescript"
     assert changed is True
-    assert _read_hook_command(tmp_path) == "npm test --if-present 2>&1 | tail -20"
+    assert (
+        _read_hook_command(tmp_path) == LANGUAGE_POST_EDIT_HOOK_COMMANDS["typescript"]
+    )
     assert _read_matcher(tmp_path) == "Edit(**/*.ts)"
     assert _read_conditions(tmp_path) == [{"tool": "Edit", "pattern": "**/*.ts"}]
 
@@ -152,7 +167,9 @@ def test_apply_project_post_edit_hook_writes_javascript_hook_without_conditions(
 
     assert detected_language == "javascript"
     assert changed is True
-    assert _read_hook_command(tmp_path) == "npm test --if-present 2>&1 | tail -20"
+    assert (
+        _read_hook_command(tmp_path) == LANGUAGE_POST_EDIT_HOOK_COMMANDS["javascript"]
+    )
     assert _read_matcher(tmp_path) == "Edit"
     assert _read_conditions(tmp_path) is None
 

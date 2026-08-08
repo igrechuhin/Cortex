@@ -19,4 +19,6 @@ class HookTemplates:
             return HookCondition(tool="Edit", pattern="**/*.py")
         if normalized_language == "typescript":
             return HookCondition(tool="Edit", pattern="**/*.ts")
+        if normalized_language == "php":
+            return HookCondition(tool="Edit", pattern="**/*.php")
         return HookCondition(tool="Edit")

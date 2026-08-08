@@ -12,6 +12,7 @@ from cortex.services.framework_adapters.detection import detect_language_at_path
 # detected by LanguageDetector; Kotlin is detected when (Maven/Gradle) and .kt exist.
 _DETECTION_MARKERS: list[tuple[str, str, str]] = [
     ("python", "pyproject.toml", "[project]\nname = 'pkg'"),
+    ("php", "composer.json", '{"name": "acme/app"}'),
     ("typescript", "tsconfig.json", "{}"),
     ("javascript", "package.json", "{}"),
     ("rust", "Cargo.toml", "[package]\nname = 'foo'"),

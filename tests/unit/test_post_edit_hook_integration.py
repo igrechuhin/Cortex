@@ -106,10 +106,7 @@ class TestPythonProjectHookEmission:
 
         assert changed is True
         settings = _read_settings(tmp_path)
-        assert (
-            _hook_command(settings)
-            == "python3 -m pytest tests/ --timeout=30 -x -q 2>&1 | tail -20"
-        )
+        assert _hook_command(settings) == command
         assert _matcher(settings) == "Edit(**/*.py)"
         assert _conditions(settings) == [{"tool": "Edit", "pattern": "**/*.py"}]
 
@@ -149,13 +146,13 @@ class TestPythonProjectHookEmission:
         assert _hook_command(settings) == command
 
 
-class TestSwiftProjectHookEmission:
-    def test_swift_project_gets_build_hook(self, tmp_path: Path) -> None:
-        _ = (tmp_path / "Package.swift").write_text(
-            "// swift-tools-version:5.9\nimport PackageDescription\n", encoding="utf-8"
+class TestPhpProjectHookEmission:
+    def test_php_project_gets_phpstan_hook(self, tmp_path: Path) -> None:
+        _ = (tmp_path / "composer.json").write_text(
+            '{"name":"acme/app"}', encoding="utf-8"
         )
 
-        hook_spec = HookTemplates.get_post_edit_hook("swift")
+        hook_spec = HookTemplates.get_post_edit_hook("php")
         assert hook_spec is not None
         command, condition = hook_spec
         changed = ensure_post_edit_hook_in_project_claude_settings(
@@ -164,10 +161,11 @@ class TestSwiftProjectHookEmission:
 
         assert changed is True
         settings = _read_settings(tmp_path)
-        assert _hook_command(settings) == "swift build 2>&1 | tail -20"
+        assert _hook_command(settings) == command
+        assert _matcher(settings) == "Edit(**/*.php)"
 
-    def test_swift_hook_idempotent_on_second_call(self, tmp_path: Path) -> None:
-        hook_spec = HookTemplates.get_post_edit_hook("swift")
+    def test_php_hook_idempotent_on_second_call(self, tmp_path: Path) -> None:
+        hook_spec = HookTemplates.get_post_edit_hook("php")
         assert hook_spec is not None
         command, condition = hook_spec
         _ = ensure_post_edit_hook_in_project_claude_settings(
@@ -187,6 +185,11 @@ class TestUnknownLanguageFallback:
         assert HookTemplates.get_post_edit_hook("elixir") is None
         assert HookTemplates.get_post_edit_hook("") is None
 
+    def test_build_only_languages_get_no_per_edit_hook(self) -> None:
+        """Swift/Java/C# have no sub-second check, so no hook is emitted."""
+        for language in ("swift", "java", "csharp"):
+            assert HookTemplates.get_post_edit_hook(language) is None
+
     def test_no_settings_file_written_when_no_command(self, tmp_path: Path) -> None:
         command = HookTemplates.get_post_edit_hook("kotlin")
         assert command is None
@@ -197,12 +200,11 @@ class TestUnknownLanguageFallback:
 @pytest.mark.parametrize(
     ("language", "expected_fragment"),
     [
-        ("typescript", "npm test"),
-        ("javascript", "npm test"),
-        ("rust", "cargo test"),
-        ("go", "go test"),
-        ("java", "mvnw test"),
-        ("csharp", "dotnet test"),
+        ("typescript", "tsc"),
+        ("javascript", "eslint"),
+        ("rust", "cargo check"),
+        ("go", "go vet"),
+        ("php", "phpstan"),
     ],
 )
 def test_all_supported_languages_produce_valid_hook_in_project(

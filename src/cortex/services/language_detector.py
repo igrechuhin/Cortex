@@ -58,6 +58,11 @@ class LanguageDetector:
         if self._is_python_project():
             return self._detect_python_tooling()
 
+        # Check for PHP before TS/JS: PHP projects commonly ship a package.json
+        # for front-end assets, which would otherwise misdetect them as JS.
+        if self._is_php_project():
+            return self._detect_php_tooling()
+
         # Check for TypeScript
         if self._is_typescript_project():
             return self._detect_typescript_tooling()
@@ -100,6 +105,12 @@ class LanguageDetector:
                 for f in ["setup.cfg", "tox.ini", "pytest.ini"]
             )
         )
+
+    def _is_php_project(self) -> bool:
+        """Check if project is PHP."""
+        return (self.project_root / "composer.json").exists() or (
+            self.project_root / "artisan"
+        ).exists()
 
     def _is_typescript_project(self) -> bool:
         """Check if project is TypeScript."""
@@ -189,6 +200,40 @@ class LanguageDetector:
             build_tool=None,
             confidence=0.9,
         )
+
+    def _detect_php_tooling(self) -> LanguageInfo:
+        """Detect PHP tooling from vendor/bin.
+
+        Probe order follows current Laravel defaults (Pest for tests, Pint for
+        formatting, PHPStan/Larastan for analysis), falling back to the plain
+        PHP equivalents for non-Laravel projects.
+        """
+        test_framework = self._first_php_tool(["pest", "phpunit"])
+        formatter = self._first_php_tool(["pint", "php-cs-fixer", "phpcbf"])
+        linter = self._first_php_tool(["phpcs"])
+        type_checker = self._first_php_tool(["phpstan", "psalm"])
+
+        return LanguageInfo(
+            language="php",
+            test_framework=test_framework,
+            formatter=formatter,
+            linter=linter,
+            type_checker=type_checker,
+            build_tool="composer",
+            confidence=0.9,
+        )
+
+    def _first_php_tool(self, tools: list[str]) -> str | None:
+        """Return the first PHP tool present in vendor/bin or on PATH."""
+        return next((t for t in tools if self._has_php_tool(t)), None)
+
+    def _has_php_tool(self, tool: str) -> bool:
+        """Check if a PHP tool is available in vendor/bin or on PATH."""
+        import shutil
+
+        if (self.project_root / "vendor" / "bin" / tool).exists():
+            return True
+        return shutil.which(tool) is not None
 
     def _detect_typescript_tooling(self) -> LanguageInfo:
         """Detect TypeScript tooling."""
