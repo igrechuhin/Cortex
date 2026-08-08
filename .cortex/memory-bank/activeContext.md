@@ -3,6 +3,10 @@
 
 **This file records completed work only.** For current status and upcoming work see [roadmap.md](roadmap.md).
 
+## Completed Work (2026-08-08)
+
+- ✅ **PHP Framework/Language Adapter Support** - COMPLETE (2026-08-08) - Added a PHP framework adapter (`php_adapter.py`, `php_parsing.py`) plus PHP entries in `language_detector.py`, `language_quality_router.py`, `framework_adapters/detection.py`, `hook_templates.py`, and `core/constants.py`, giving Cortex's language/framework detection and post-edit-hook quality routing coverage for PHP projects. Quality gate green at 91.26% coverage.
+
 ## Completed Work (2026-08-06)
 
 - ✅ **Agentic Tool-Selection Evaluation Harness** - COMPLETE (2026-08-06) - Added an agent-in-the-loop tool-selection eval mode to run_tool_evaluation. New EvalRunMode.AGENTIC dispatches to run_agentic_suite, reusing the existing EvalSuiteResult shape, persistence, and dashboard writer. EvalTask gained a permanent id, a kind taxonomy (positive/control/near-miss) and covered_by, enforced by a Pydantic validator. Paired reporting is enforced structurally: AgenticScorecard cannot carry a selection-accuracy figure unless the run contains both a control and a near-miss task, returning a typed unpaired reason instead. Negative fixture set adds 7 control and 6 near-miss cases over real Cortex tool overlaps. The anthropic SDK is an optional agentic-evals extra, lazily imported with typed skips for a missing dependency or API key; requirements.txt is unchanged. 61 new tests, fully mocked, no network.
@@ -376,6 +380,8 @@
 Next roadmap item: **[Fast-Forward vs. Step-by-Step Planning Modes](../plans/archive/Other/fast-forward-vs-step-by-step-modes.md)** (see [roadmap.md](roadmap.md) pending plans).
 
 ## Recent Changes
+
+PHP language/framework adapter support (2026-08-08): `php_adapter.py` and `php_parsing.py` added under `services/framework_adapters/`; PHP wired into `language_detector.py`, `language_quality_router.py`, `framework_adapters/detection.py`, `hook_templates.py`, and `core/constants.py`.
 
 CodeGraph integration (2026-06-30): added `setup_codegraph` setup prompt with visibility gated on `memory_bank_initialized and not codegraph_configured`; `ProjectConfigStatus.codegraph_configured` checks `.cursor/mcp.json` and `.mcp.json`; `.codegraph/` added to `.gitignore`.
 

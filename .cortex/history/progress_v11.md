@@ -1,4 +1,18 @@
+<!-- memory_type: milestone -->
 # Progress Log
+
+## 2026-08-08
+
+- **PHP Framework/Language Adapter Support** - COMPLETE. Added a PHP framework adapter (`php_adapter.py`, `php_parsing.py`) under `services/framework_adapters/`, and wired PHP detection/routing into `language_detector.py`, `language_quality_router.py`, `framework_adapters/detection.py`, `hook_templates.py`, and `core/constants.py`. New tests in `test_php_adapter.py`; existing detection/router/hook-template/pre-commit-registry tests updated. Quality gate green, coverage 91.26%.
+
+## 2026-08-06
+
+- **Agentic Tool-Selection Evaluation Harness** - COMPLETE. Agent-in-the-loop tool-selection eval mode with structurally enforced paired reporting (no accuracy figure without both negative kinds), kind/covered_by fixture taxonomy, 13 negative fixtures, optional lazily-imported anthropic extra, and live FastMCP schema exposure with explicit visibility gating. 61 new tests; quality gate clean, coverage 91.34%.
+- **Prompt-Prefix Byte Stability Audit for Tool Schemas and Resources** - COMPLETE. Tool-schema payload and cortex:// resource bodies are now byte-stable across renders; last_indexed relocated from the cortex://rules body to an explicit rules diagnostics operation; determinism enforced by sorted name accessors, sort_keys on agent-visible json.dumps, and an AST sort_keys pre-commit audit; locked by cross-process PYTHONHASHSEED tool-schema tests and per-resource byte-equality tests with mutation guards. 30 tests added; quality and docs gates green.
+- **Skill Pack Trigger Accuracy Benchmark and Description Tuning** - COMPLETE. Labeled 24-fixture trigger benchmark with pairing enforced in the runner (no accuracy figure without both a control and a near-miss); zero-signal fallback removed from _do_discover so a no-match query yields an empty recommendation with an explicit reason; token-level scorer with capped keyword contribution, non-stopword bigram when_to_use matching, and a recommendation floor; refactoring and quality manifests tuned. Top-1 0.9167 to 1.0, control FP 1.0 to 0.0, near-miss FP 0.2857 to 0.1429. Glossary gained "Skill pack". 28 tests added; quality and docs gates green.
+- **Agent Skills Specification Interoperability Assessment** - COMPLETE. Field-by-field comparison of SkillPackManifest against the Agent Skills SKILL.md spec in both export and import directions; explicit NO-GO recorded with revisit conditions in the wiki. Documentation only, no code or schema changes.
+- **Ponytail Simplification Cuts for Agentic Eval and Skill Pack Trigger Harnesses** - COMPLETE. All 14 reviewed over-engineering findings removed across the agentic eval, prompt-prefix, and skill pack trigger modules; net -180 lines with zero behavior change and identical trigger benchmark figures.
+- **Delete Unreferenced Protocol Definitions in core protocols Package** - COMPLETE. Removed 14 dead Protocol classes and 5 wholly-dead protocol modules (-1739 lines in src/), pruned **init** re-exports to the 8 live protocols, dropped the drifted DependencyGraphProtocol.build_from_links, added an **all**/namespace agreement test, and synced docs/api and wiki source mirrors. Quality gate clean, 7579 tests pass at 91.38%.
 
 ## 2026-08-02
 
