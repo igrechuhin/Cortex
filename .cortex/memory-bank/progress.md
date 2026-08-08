@@ -4,6 +4,8 @@
 ## 2026-08-08
 
 - **PHP Framework/Language Adapter Support** - COMPLETE. Added a PHP framework adapter (`php_adapter.py`, `php_parsing.py`) under `services/framework_adapters/`, and wired PHP detection/routing into `language_detector.py`, `language_quality_router.py`, `framework_adapters/detection.py`, `hook_templates.py`, and `core/constants.py`. New tests in `test_php_adapter.py`; existing detection/router/hook-template/pre-commit-registry tests updated. Quality gate green, coverage 91.26%.
+- <!-- memory_type: status -->
+- **Persistent Content-Hash Phase A Fingerprinting** - COMPLETE. Added `pre_commit_fingerprint_store.py` for cross-process, git-HEAD-keyed fingerprint persistence, and switched `compute_git_file_hash` to hash changed-file contents (not just names) via `_hash_source_contents`, closing a gap where an autofix pass rewriting content without changing the file set was silently skipped. `PipelineDirtyTracker.reset()` now takes `project_root` to also clear the persisted fingerprint. Wired through `pre_commit_tools_execute_checks.py`, `pre_commit_worker.py`, `pre_commit_zero_arg_tools.py`, and `session_goal_store.py`. New `test_pre_commit_fingerprint_store.py`; `test_commit_wf.py` updated.
 
 ## 2026-08-06
 

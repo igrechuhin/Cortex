@@ -44,8 +44,10 @@ def write_session_goal(project_root: Path, goal: SessionGoal) -> None:
     """Persist session goal JSON to disk."""
     path = session_goal_path(project_root)
     path.parent.mkdir(parents=True, exist_ok=True)
+    # AI: trailing newline keeps the .md-suffixed file MD047-clean, so a session
+    # start does not fail the markdown lint leg of the quality gate.
     _ = path.write_text(
-        goal.model_dump_json(indent=2),
+        goal.model_dump_json(indent=2) + "\n",
         encoding="utf-8",
     )
 

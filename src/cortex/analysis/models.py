@@ -213,23 +213,6 @@ class AccessLog(AnalysisBaseModel):
     )
 
 
-class FileAccessStats(AnalysisBaseModel):
-    """Statistics for file access frequency analysis.
-
-    Used by pattern_analysis.py for tracking access counts during analysis.
-    """
-
-    model_config = ConfigDict(extra=EXTRA_ALLOW, validate_assignment=True)
-
-    access_count: int = Field(default=0, ge=0, description="Number of accesses")
-    last_access: str | None = Field(
-        default=None, description="ISO timestamp of last access"
-    )
-    count: int | None = Field(default=None, ge=0, description="Access count (alias)")
-    task_count: int | None = Field(default=None, ge=0, description="Task count")
-    tasks: set[str] | None = Field(default=None, description="Set of task IDs")
-
-
 class InsightStatistics(AnalysisBaseModel):
     """Statistics for insights summary."""
 
@@ -447,23 +430,6 @@ class UnusedFileInfo(AnalysisBaseModel):
 # ============================================================================
 
 
-class OrganizationAnalysis(AnalysisBaseModel):
-    """Analysis of Memory Bank organization."""
-
-    total_files: int = Field(..., ge=0, description="Total number of files")
-    total_directories: int = Field(
-        default=0, ge=0, description="Total number of directories"
-    )
-    max_depth: int = Field(..., ge=0, description="Maximum directory depth")
-    avg_depth: float = Field(default=0.0, ge=0.0, description="Average directory depth")
-    has_circular_deps: bool = Field(
-        default=False, description="Whether circular dependencies exist"
-    )
-    orphaned_files: list[str] = Field(
-        default_factory=list, description="Files with no dependencies"
-    )
-
-
 class AntiPatternInfo(AnalysisBaseModel):
     """Information about a detected anti-pattern."""
 
@@ -542,15 +508,6 @@ class ComplexityAnalysisResult(AnalysisBaseModel):
     assessment: ComplexityAssessment = Field(
         default_factory=ComplexityAssessment, description="Complexity assessment"
     )
-
-
-class DependencyChain(AnalysisBaseModel):
-    """A dependency chain in the structure."""
-
-    chain: list[str] = Field(default_factory=list, description="Files in chain")
-    length: int = Field(default=0, ge=0, description="Chain length")
-    start_file: str = Field(default="", description="Starting file")
-    end_file: str = Field(default="", description="Ending file")
 
 
 # ============================================================================

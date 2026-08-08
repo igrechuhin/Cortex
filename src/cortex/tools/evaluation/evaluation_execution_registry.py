@@ -32,11 +32,3 @@ def get_tool_invoker(
     if not _TOOL_INVOKERS:
         _register_get_structure_info()
     return _TOOL_INVOKERS.get(tool_name)
-
-
-def register_tool_invoker(
-    tool_name: str,
-    invoker: Callable[[dict[str, object]], Awaitable[str]],
-) -> None:
-    """Register an invoker for a tool (tests can add mocks)."""
-    _TOOL_INVOKERS[tool_name] = invoker

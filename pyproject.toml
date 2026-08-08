@@ -140,7 +140,6 @@ omit = [
     "*/analysis/models.py",
     "*/health_check/models.py",
     "*/linking/models.py",
-    "*/managers/models.py",
     "*/rules/models.py",
     "*/script_analysis/models.py",
     "*/script_promotion/models.py",
@@ -160,8 +159,6 @@ omit = [
     "*/core/types.py",
     # Optimization types contain only type aliases
     "*/optimization_types.py",
-    # Strategy metrics contain Pydantic models (tested via integration)
-    "*/strategy_metrics.py",
     # Strategy selection is tested via integration with context optimizer
     "*/strategy_selection.py",
     # Section processing is tested via integration

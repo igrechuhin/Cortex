@@ -284,29 +284,6 @@ async def append_context_scoped_payload(payload: str, project_root: Path) -> str
     return json.dumps(merged, indent=2, sort_keys=True)
 
 
-async def apply_context_payload_appenders(base_payload: str, project_root: Path) -> str:
-    """Apply all context appenders to successful base payload."""
-    recent_ops = _read_recent_operations_lines(project_root)
-    recent_artifacts = _read_recent_artifacts_markdown(project_root)
-    recent_ingested_sources = read_recent_ingested_sources_markdown(project_root)
-    explore_summary = _read_explore_summary_markdown(project_root)
-    with_goal = append_session_goal_to_context_payload(base_payload, project_root)
-    scoped = append_session_scope_to_context_payload(with_goal)
-    scoped = await append_context_scoped_payload(scoped, project_root)
-    return _append_recent_artifacts_to_context_payload(
-        _append_recent_operations_to_context_payload(
-            _append_explore_summary_to_context_payload(
-                _append_recent_ingested_sources_to_context_payload(
-                    scoped, recent_ingested_sources
-                ),
-                explore_summary,
-            ),
-            recent_ops,
-        ),
-        recent_artifacts,
-    )
-
-
 def append_recent_operations_to_context_payload(
     payload: str, recent_operations_lines: str | None
 ) -> str:

@@ -61,18 +61,6 @@ def create_error_result_dict(error: str, error_type: str = "ValueError") -> Mode
     return result
 
 
-def unsupported_language_result(
-    language: str, supported_languages: tuple[str, ...]
-) -> str:
-    """Return error JSON for unsupported language."""
-    supported = ", ".join(supported_languages)
-    msg = (
-        f"Language '{language}' is not yet supported. "
-        + f"Supported languages: {supported}"
-    )
-    return create_error_result(msg)
-
-
 def unsupported_language_result_dict(
     language: str, supported_languages: tuple[str, ...]
 ) -> ModelDict:

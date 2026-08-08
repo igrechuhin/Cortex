@@ -5,6 +5,7 @@
 
 ## Completed Work (2026-08-08)
 
+- ✅ **Persistent Content-Hash Phase A Fingerprinting** - COMPLETE (2026-08-08) - Added `pre_commit_fingerprint_store.py` (cross-process JSON-backed fingerprint persistence keyed by git HEAD) and switched `compute_git_file_hash` in `pre_commit_dirty_state.py` to hash actual file bytes of changed source entries (`_hash_source_contents`), not just file names, so an autofix pass that rewrites content without changing the changed-file set is no longer skipped. `PipelineDirtyTracker.reset()` now accepts a `project_root` to also drop the persisted fingerprint. Wired `save_phase_a_fingerprint`/`load_phase_a_fingerprint` through `pre_commit_tools_execute_checks.py`, `pre_commit_worker.py`, and `pre_commit_zero_arg_tools.py`; `session_goal_store.py` updated in support. New `test_pre_commit_fingerprint_store.py`; `test_commit_wf.py` updated for the new persistence path.
 - ✅ **PHP Framework/Language Adapter Support** - COMPLETE (2026-08-08) - Added a PHP framework adapter (`php_adapter.py`, `php_parsing.py`) plus PHP entries in `language_detector.py`, `language_quality_router.py`, `framework_adapters/detection.py`, `hook_templates.py`, and `core/constants.py`, giving Cortex's language/framework detection and post-edit-hook quality routing coverage for PHP projects. Quality gate green at 91.26% coverage.
 
 ## Completed Work (2026-08-06)
@@ -380,6 +381,8 @@
 Next roadmap item: **[Fast-Forward vs. Step-by-Step Planning Modes](../plans/archive/Other/fast-forward-vs-step-by-step-modes.md)** (see [roadmap.md](roadmap.md) pending plans).
 
 ## Recent Changes
+
+Persistent Phase A fingerprinting (2026-08-08): `pre_commit_fingerprint_store.py` added for cross-process fingerprint persistence keyed by git HEAD; `compute_git_file_hash` now hashes file contents, not just names, so autofix-only content rewrites are no longer skipped.
 
 PHP language/framework adapter support (2026-08-08): `php_adapter.py` and `php_parsing.py` added under `services/framework_adapters/`; PHP wired into `language_detector.py`, `language_quality_router.py`, `framework_adapters/detection.py`, `hook_templates.py`, and `core/constants.py`.
 

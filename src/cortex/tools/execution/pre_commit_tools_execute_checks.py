@@ -13,7 +13,7 @@ from typing import cast
 
 from cortex.core.context_logging import MCPContext, log_client
 from cortex.core.execution_env import LocalExecutionEnvironment
-from cortex.core.models import ModelDict, OperationStatus
+from cortex.core.models import JsonValue, ModelDict, OperationStatus
 from cortex.core.usage_context import (
     get_current_project_root,
     get_or_resolve_project_root,
@@ -226,38 +226,52 @@ def _emit_checks_skipped_structured(
     )
 
 
+async def partition_clean_checks(
+    checks: Sequence[PreCommitCheckName],
+    ctx: MCPContext | None,
+) -> tuple[list[PreCommitCheckName], list[str], list[str]]:
+    """Split checks into (to_run, skipped_names, skip_reasons).
+
+    Per-check rather than all-or-nothing: an always-run check no longer forces
+    the expensive source-dependent checks to re-run with it.
+    """
+    from cortex.tools.execution.pre_commit_dirty_state import PipelineDirtyTracker
+
+    tracker = PipelineDirtyTracker.get_instance()
+    root = get_current_project_root() or await get_or_resolve_project_root(ctx)
+    tracker.ensure_loaded(Path(root))
+    if not tracker.is_active:
+        _emit_checks_executed_tracker_inactive()
+        return list(checks), [], []
+
+    _, skipped = tracker.partition_skippable([c.value for c in checks])
+    if not skipped:
+        _emit_checks_executed_blocked(
+            checks[0].value if checks else "", "no skippable checks"
+        )
+        return list(checks), [], []
+    to_run = [c for c in checks if c.value not in skipped]
+    skipped_names = sorted(skipped)
+    skip_reasons = [f"{name}: {skipped[name]}" for name in skipped_names]
+    _emit_checks_skipped_structured(skipped_names, skip_reasons[0])
+    await log_client(
+        ctx,
+        "info",
+        f"execute_pre_commit_checks: skipping {skipped_names} (no source changes since Phase A)",
+        logger_name=__name__,
+    )
+    return to_run, skipped_names, skip_reasons
+
+
 async def try_skip_clean_checks(
     checks: Sequence[PreCommitCheckName],
     ctx: MCPContext | None,
 ) -> ModelDict | None:
-    """Return a skip result if all checks can be skipped (no source changes)."""
-    from cortex.tools.execution.pre_commit_dirty_state import PipelineDirtyTracker
-
-    tracker = PipelineDirtyTracker.get_instance()
-    if not tracker.is_active:
-        _emit_checks_executed_tracker_inactive()
+    """Return a skip result only when every requested check can be skipped."""
+    to_run, skipped_names, skip_reasons = await partition_clean_checks(checks, ctx)
+    if to_run or not skipped_names:
         return None
-
-    skip_reasons: list[str] = []
-    for check in checks:
-        check_name = check.value
-        decision = tracker.can_skip_check(check_name)
-        if not decision.can_skip:
-            _emit_checks_executed_blocked(check_name, decision.reason)
-            return None
-        skip_reasons.append(f"{check_name}: {decision.reason}")
-
-    check_names = [c.value for c in checks]
-    _emit_checks_skipped_structured(
-        check_names, skip_reasons[0] if skip_reasons else ""
-    )
-    await log_client(
-        ctx,
-        "info",
-        f"execute_pre_commit_checks: skipping {check_names} (no source changes since Phase A)",
-        logger_name=__name__,
-    )
-    return _build_skip_clean_result(check_names, skip_reasons)
+    return _build_skip_clean_result(skipped_names, skip_reasons)
 
 
 async def _run_standard_checks_mode(
@@ -301,13 +315,21 @@ async def _run_execute_pre_commit_checks(
     is_fix_quality_only = len(checks) == 1 and checks[0] == PreCommitCheck.FIX_QUALITY
     if is_fix_quality_only:
         return await _run_fix_quality_mode(include_untracked_markdown, ctx)
+    skipped_names: list[str] = []
+    skip_reasons: list[str] = []
     if skip_if_clean:
-        skip_result = await try_skip_clean_checks(checks, ctx)
-        if skip_result is not None:
-            return skip_result
-    return await _run_standard_checks_mode(
+        checks, skipped_names, skip_reasons = await partition_clean_checks(checks, ctx)
+        # AI: Only an entirely-skippable set short-circuits; otherwise the
+        # remaining checks still run and the skipped ones are reported.
+        if skipped_names and not checks:
+            return _build_skip_clean_result(skipped_names, skip_reasons)
+    result = await _run_standard_checks_mode(
         checks, test_timeout, coverage_threshold, strict_mode, ctx
     )
+    if skipped_names:
+        result["skipped_checks"] = cast(JsonValue, list(skipped_names))
+        result["skip_details"] = cast(JsonValue, list(skip_reasons))
+    return result
 
 
 async def _execute_checks_for_explicit_list(

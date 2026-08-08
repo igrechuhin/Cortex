@@ -3,7 +3,7 @@ Tests for commit.wf.js Workflow script.
 
 These tests verify the structural contract of the commit workflow:
 - Phase A retry loop presence and correct 3-iteration cap
-- Step 12 scope routing branches (source / markdown_only / none)
+- Step 12 final gate is a single unconditional agent call
 - Phase sequencing matches commit.md pipeline order
 - Schema objects are defined for all 5 subagent types
 - Early-exit returns are structured objects (not throws)
@@ -103,9 +103,14 @@ class TestSchemaDefinitions:
     def test_preflight_schema_has_passed(self, wf_source: str) -> None:
         assert re.search(r"PREFLIGHT_SCHEMA.*?passed", wf_source, re.DOTALL)
 
-    def test_phase_a_schema_has_scope(self, wf_source: str) -> None:
-        # scope field is critical for Step 12 routing
-        assert re.search(r"PHASE_A_SCHEMA.*?scope", wf_source, re.DOTALL)
+    def test_phase_a_schema_has_coverage_and_no_scope(self, wf_source: str) -> None:
+        # Arrange: isolate the PHASE_A_SCHEMA block.
+        start = wf_source.index("const PHASE_A_SCHEMA")
+        block = wf_source[start : wf_source.index("const PHASE_B_SCHEMA", start)]
+
+        # Act / Assert: scope was dropped; Step 12 no longer routes on it.
+        assert "coverage" in block
+        assert "scope" not in block
 
 
 # ── Phase A retry loop ─────────────────────────────────────────────────────────
@@ -165,53 +170,46 @@ class TestPhaseARetryLoop:
         ), "Must return early after Phase A failure before reaching Phase B"
 
 
-# ── Step 12 scope routing ──────────────────────────────────────────────────────
+# ── Step 12 final gate ────────────────────────────────────────────────────────
 
 
-class TestStep12ScopeRouting:
-    def test_scope_derived_from_phase_a(self, wf_source: str) -> None:
-        """scope must be derived from phaseA result, not hardcoded."""
-        assert "phaseA.scope" in wf_source
+class TestStep12FinalGate:
+    """Step 12 is a single unconditional gate call.
 
-    def test_markdown_only_branch(self, wf_source: str) -> None:
-        """Branch for scope=markdown_only must exist."""
-        assert "markdown_only" in wf_source
+    The old three-branch routing keyed on phaseA.scope was mis-derived: the
+    Phase A subagent computed scope from a whole-working-tree git diff, which
+    answers "what is changed" rather than "what changed since Phase A".
+    run_quality_gate() now decides per check from the persisted fingerprint.
+    """
 
-    def test_source_branch(self, wf_source: str) -> None:
-        """Branch for source-changed scope must exist."""
-        assert '"source"' in wf_source or "'source'" in wf_source
+    def test_no_scope_routing(self, wf_source: str) -> None:
+        # Arrange / Act / Assert
+        assert "phaseA.scope" not in wf_source
+        assert "markdown_only" not in wf_source
 
-    def test_none_branch(self, wf_source: str) -> None:
-        """Branch for scope=none (nothing changed) must exist."""
-        assert '"none"' in wf_source or "'none'" in wf_source
+    def test_single_final_gate_agent_call(self, wf_source: str) -> None:
+        # Arrange / Act
+        calls = re.findall(r'agentType:\s*"commit-final-gate"', wf_source)
 
-    def test_none_skips_gate(self, wf_source: str) -> None:
-        """When scope=none, final gate must be skipped (finalGate set directly, no agent call)."""
-        none_skip = re.search(
-            r"""scope\s*===\s*["']none["'].*?skipped_checks""",
-            wf_source,
-            re.DOTALL,
-        )
+        # Assert
         assert (
-            none_skip is not None
-        ), "scope=none must skip the final gate agent call by setting finalGate directly"
+            len(calls) == 1
+        ), f"Expected exactly one final-gate call, got {len(calls)}"
 
-    def test_if_else_structure(self, wf_source: str) -> None:
-        """Step 12 routing must use if/else branches, not separate if blocks."""
-        if_else_count = len(re.findall(r"\belse\s+if\b|\belse\b", wf_source))
-        assert (
-            if_else_count >= 2
-        ), f"Expected >=2 else/else-if branches for scope routing, got {if_else_count}"
+    def test_final_gate_is_unconditional(self, wf_source: str) -> None:
+        # Arrange: isolate Step 12 from its phase() marker to the result check.
+        start = wf_source.index('phase("Final Gate")')
+        end = wf_source.index("if (!finalGate", start)
+        section = wf_source[start:end]
 
-    def test_scope_fallback_for_unknown(self, wf_source: str) -> None:
-        """Unknown scope should fall through to the source (full gate) path."""
-        # The else branch (no condition) handles source/unknown
-        assert (
-            re.search(r"}\s*else\s*\{", wf_source) is not None
-        ), "Must have an unconditional else branch for source/unknown scope"
+        # Act / Assert: no branching guards the gate call itself.
+        assert "if (" not in section
+        assert "else" not in section
+        assert "commit-final-gate" in section
 
-
-# ── Subagent types ─────────────────────────────────────────────────────────────
+    def test_skipped_checks_reported(self, wf_source: str) -> None:
+        # Arrange / Act / Assert
+        assert "skipped_checks" in wf_source
 
 
 class TestSubagentTypes:

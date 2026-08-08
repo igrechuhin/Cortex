@@ -172,6 +172,23 @@ def _run_checks_core(
     )
 
 
+def _all_checks_skipped_response(skipped: dict[str, str]) -> dict[str, object]:
+    """Build a passing response for the case where every check was skipped."""
+    return {
+        "status": OperationStatus.SUCCESS.value,
+        "success": True,
+        "checks_performed": [],
+        "results": {},
+        "total_errors": 0,
+        "total_warnings": 0,
+        "files_modified": [],
+        "skipped_checks": sorted(skipped),
+        "skip_details": [
+            f"{name}: {reason}" for name, reason in sorted(skipped.items())
+        ],
+    }
+
+
 def _run_checks(
     project_root: str,
     checks: list[str],
@@ -179,14 +196,35 @@ def _run_checks(
     coverage_threshold: float,
     strict_mode: bool,
 ) -> dict[str, object]:
-    """Run pre-commit checks synchronously, return result dict."""
+    """Run pre-commit checks synchronously, return result dict.
+
+    Checks whose inputs are unchanged since the persisted Phase A fingerprint
+    are skipped individually; the rest still run.
+    """
+    from cortex.tools.execution.pre_commit_dirty_state import (
+        partition_skippable_checks,
+    )
+
+    to_run, skipped = partition_skippable_checks(Path(project_root), checks)
+    if skipped:
+        logger.info("Skipping unchanged checks: %s", sorted(skipped))
+    # AI: determine_checks_to_perform() expands an empty list to DEFAULT_CHECKS,
+    # so an all-skipped run must short-circuit instead of falling through.
+    if checks and not to_run:
+        return _all_checks_skipped_response(skipped)
     resolved = resolve_adapter_worker(project_root)
     if isinstance(resolved, dict):
         return resolved
     adapter, language_info = resolved
-    return _run_checks_core(
-        adapter, language_info, checks, strict_mode, timeout, coverage_threshold
+    result = _run_checks_core(
+        adapter, language_info, to_run, strict_mode, timeout, coverage_threshold
     )
+    if skipped:
+        result["skipped_checks"] = sorted(skipped)
+        result["skip_details"] = [
+            f"{name}: {reason}" for name, reason in sorted(skipped.items())
+        ]
+    return result
 
 
 _MD_EXCLUDE_DIRS = frozenset(

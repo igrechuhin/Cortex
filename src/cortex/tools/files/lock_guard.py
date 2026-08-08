@@ -21,7 +21,6 @@ from cortex.core.constants import MemoryBankFile
 from cortex.core.session_logger import get_session_id
 from cortex.tools.session.task_locking import (
     check_task_available,
-    claim_task,
     list_active_locks,
 )
 from cortex.tools.session.task_locking_helpers import generate_task_id
@@ -139,36 +138,3 @@ async def verify_lock_for_file_operation(
         file_name,
     )
     return (True, None)
-
-
-async def auto_claim_lock_for_roadmap_entry(
-    project_root: Path,
-    entry_text: str,
-    agent_role: str | None = None,
-) -> bool:
-    """Automatically claim lock for a roadmap entry.
-
-    Extracts task title from roadmap entry text and claims lock.
-
-    Args:
-        project_root: Project root directory
-        entry_text: Roadmap entry text (e.g., "- **Title** - PENDING - Description")
-        agent_role: Optional agent role
-
-    Returns:
-        True if lock was claimed, False if already locked by another session
-    """
-    # Extract task title from entry text
-    match = re.match(r"^-\s*\*\*(.+?)\*\*", entry_text)
-    if not match:
-        return False
-
-    task_title = match.group(1).strip()
-
-    # Try to claim lock
-    from cortex.optimization.agent_roles import normalize_role_name
-
-    role = normalize_role_name(agent_role) if agent_role else None
-    lock = await claim_task(project_root, task_title, agent_role=role)
-
-    return lock is not None

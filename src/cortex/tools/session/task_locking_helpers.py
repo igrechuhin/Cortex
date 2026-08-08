@@ -152,13 +152,6 @@ def _check_existing_lock_core(
     return False
 
 
-async def check_existing_lock(
-    locks: dict[str, TaskLock], task_id: str, task_title: str, now: datetime
-) -> bool:
-    """Async wrapper for existing call sites."""
-    return _check_existing_lock_core(locks, task_id, task_title, now)
-
-
 def create_task_lock(
     task_id: str,
     task_title: str,

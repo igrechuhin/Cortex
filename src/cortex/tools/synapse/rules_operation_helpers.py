@@ -7,10 +7,7 @@ from typing import cast
 from cortex.core.models import ModelDict, OperationStatus
 from cortex.optimization.config import OptimizationConfig
 from cortex.optimization.models import RulesManagerStatusModel
-from cortex.tools.execution.error_formatters import (
-    format_invalid_parameter_error,
-    format_missing_parameter_error,
-)
+from cortex.tools.execution.error_formatters import format_invalid_parameter_error
 
 
 class RulesOperation(str, Enum):
@@ -195,13 +192,4 @@ def build_invalid_operation_error(operation: str) -> str:
         invalid_value=operation,
         valid_options=valid_operations,
         tool_name="rules",
-    )
-
-
-def build_missing_rules_parameters_error() -> str:
-    """Build error response for missing operation parameter."""
-    return format_missing_parameter_error(
-        missing_parameters=["operation"],
-        tool_name="rules",
-        example={"operation": "index"},
     )

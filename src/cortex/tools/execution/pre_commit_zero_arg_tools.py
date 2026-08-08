@@ -299,6 +299,8 @@ _PASS_TRIM_KEYS: frozenset[str] = frozenset(
         "total_warnings",
         "reflection_languages",
         "reflection_result",
+        "skipped_checks",
+        "skip_details",
     }
 )
 

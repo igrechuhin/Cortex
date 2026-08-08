@@ -306,25 +306,6 @@ def start_pre_commit_job_impl(
     )
 
 
-def _interpret_poll_data(  # pyright: ignore[reportUnusedFunction]
-    data: dict[str, object],
-) -> dict[str, object]:
-    """Map poll result to final result dict (reserved for poll-response mapping)."""
-    status = data.get("status")
-    if status == "completed":
-        result = data.get("result")
-        if isinstance(result, dict):
-            return cast(dict[str, object], result)
-        return {
-            "status": OperationStatus.ERROR.value,
-            "error": "Worker result missing 'result' key",
-        }
-    return {
-        "status": OperationStatus.ERROR.value,
-        "error": str(data.get("error", "Unknown worker error")),
-    }
-
-
 async def run_checks_detached(
     project_root: Path,
     checks: list[str],

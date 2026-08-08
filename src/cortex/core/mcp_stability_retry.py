@@ -218,33 +218,6 @@ async def reconnect(reason: str | None = None) -> ConnectionHealth:
     await _handle_reconnect_failure(state, last_error, reason)
 
 
-async def _health_monitor_loop(interval_seconds: float) -> None:
-    """Periodically check connection health and trigger reconnection."""
-    while True:
-        try:
-            health = await check_connection_health()
-            if not health.healthy and not get_connection_state().circuit_open:
-                try:
-                    _ = await reconnect("health_monitor")
-                except ConnectionError:
-                    logger.warning(
-                        "MCP health monitor: circuit breaker open; leaving connection in degraded mode",
-                    )
-        except Exception as exc:  # pragma: no cover
-            logger.debug("MCP health monitor iteration failed: %s", exc)
-        await asyncio.sleep(interval_seconds)
-
-
-def start_connection_health_monitor() -> None:
-    """Start background connection health monitor loop if not already running."""
-    global _health_monitor_task
-    if _health_monitor_task is not None and not _health_monitor_task.done():
-        return
-    _health_monitor_task = asyncio.create_task(
-        _health_monitor_loop(_HEALTH_CHECK_INTERVAL_SECONDS)
-    )
-
-
 async def _handle_timeout_error(
     func_name: str, timeout: float, attempt: int, e: asyncio.TimeoutError
 ) -> tuple[TimeoutError | None, Exception | None]:

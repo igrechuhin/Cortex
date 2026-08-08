@@ -40,14 +40,6 @@ class PromptSource(str, Enum):
     SYNAPSE = "synapse"
 
 
-class SynapseInitStatus(str, Enum):
-    """Status of Synapse initialization."""
-
-    SUCCESS = "success"
-    ERROR = "error"
-    ALREADY_INITIALIZED = "already_initialized"
-
-
 # ============================================================================
 # Git Command Models
 # ============================================================================
@@ -156,20 +148,6 @@ class UpdateResult(RulesBaseModel):
 # ============================================================================
 
 
-class RuleFileInfo(RulesBaseModel):
-    """Information about a rule file."""
-
-    file: str = Field(description="File path/name")
-    content: str = Field(description="File content")
-    tokens: int = Field(default=0, ge=0, description="Token count")
-    category: str | None = Field(default=None, description="Rule category")
-    source: RuleSource = Field(default=RuleSource.LOCAL, description="Rule source")
-    priority: int = Field(default=50, ge=0, description="Rule priority")
-    relevance_score: float = Field(
-        default=0.0, ge=0.0, le=1.0, description="Relevance score"
-    )
-
-
 class RuleMetadataEntry(RulesBaseModel):
     """Metadata entry for a rule in the manifest."""
 
@@ -276,22 +254,6 @@ class LoadedPrompt(RulesBaseModel):
 # ============================================================================
 # Synapse Manager Models
 # ============================================================================
-
-
-class SynapseInitResult(RulesBaseModel):
-    """Result of Synapse initialization."""
-
-    status: SynapseInitStatus = Field(description="Operation status")
-    action: str | None = Field(default=None, description="Action performed")
-    repo_url: str | None = Field(default=None, description="Repository URL")
-    local_path: str | None = Field(default=None, description="Local path")
-    submodule_added: bool = Field(
-        default=False, description="Whether submodule was added"
-    )
-    manifest_loaded: bool = Field(
-        default=False, description="Whether manifest was loaded"
-    )
-    error: str | None = Field(default=None, description="Error message if failed")
 
 
 class SynapseSyncResult(RulesBaseModel):
