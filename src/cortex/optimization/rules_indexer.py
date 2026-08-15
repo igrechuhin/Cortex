@@ -35,6 +35,7 @@ from cortex.optimization.models import (
 _RULE_FILE_PATTERNS: frozenset[str] = frozenset(
     [
         "*.md",
+        "*.mdc",
         "*.txt",
         "*.rules",
         "*rules*",
@@ -343,8 +344,8 @@ class RulesIndexer:
         """
         Find all rule files in the rules folder.
 
-        Searches for common rule file patterns including markdown,
-        text files, and specific rule file names.
+        Searches recursively for common rule file patterns including
+        markdown (.md/.mdc), text files, and specific rule file names.
 
         Performance: O(directories + patterns) - optimized from
         O(directories × patterns²)
@@ -361,15 +362,11 @@ class RulesIndexer:
         # Use set for O(1) duplicate detection
         rule_files_set: set[Path] = set()
 
-        # Search root directory with all patterns
+        # Recursive search: Synapse rules live at rules/<lang>/<name>.mdc
         for pattern in _RULE_FILE_PATTERNS:
-            rule_files_set.update(rules_path.glob(pattern))
-
-        # Search subdirectories (one level) - single pass
-        for subdir in rules_path.iterdir():
-            if subdir.is_dir():
-                for pattern in _RULE_FILE_PATTERNS:
-                    rule_files_set.update(subdir.glob(pattern))
+            rule_files_set.update(
+                path for path in rules_path.rglob(pattern) if path.is_file()
+            )
 
         # Sort once at the end
         return sorted(rule_files_set)

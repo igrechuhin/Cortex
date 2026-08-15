@@ -1,6 +1,11 @@
 <!-- memory_type: milestone -->
 # Progress Log
 
+## 2026-08-15
+
+- <!-- memory_type: status -->
+- **RulesIndexer Recursive .mdc Discovery and Rules Reindex Synapse Wiring** - COMPLETE. `find_rule_files` now uses `rglob` instead of a one-level `iterdir`+`glob` scan, and the rule-file pattern set gained `*.mdc`, so nested Synapse rules under `rules/<lang>/<name>.mdc` are discovered. Extracted a sync `build_synapse_manager(project_root, optimization_config)` helper in `factory_optimization.py` (the async `_create_synapse_manager` now delegates to it) and wired a `synapse_manager` into the rules manager construction in both `factory_optimization.py` and `container_optimization.py`. New `test_find_rule_files_nested_mdc` regression test. Coverage 91.36%.
+
 ## 2026-08-08
 
 - **PHP Framework/Language Adapter Support** - COMPLETE. Added a PHP framework adapter (`php_adapter.py`, `php_parsing.py`) under `services/framework_adapters/`, and wired PHP detection/routing into `language_detector.py`, `language_quality_router.py`, `framework_adapters/detection.py`, `hook_templates.py`, and `core/constants.py`. New tests in `test_php_adapter.py`; existing detection/router/hook-template/pre-commit-registry tests updated. Quality gate green, coverage 91.26%.

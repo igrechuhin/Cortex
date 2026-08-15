@@ -6,6 +6,7 @@ from cortex.core.dependency_graph import DependencyGraph
 from cortex.core.file_system import FileSystemManager
 from cortex.core.metadata_index import MetadataIndex
 from cortex.core.token_counter import TokenCounter
+from cortex.managers.factory_optimization import build_synapse_manager
 from cortex.optimization.config import OptimizationConfig
 from cortex.optimization.context_optimizer import ContextOptimizer
 from cortex.optimization.progressive_loader import ProgressiveLoader
@@ -124,4 +125,5 @@ def _create_rules_manager(
             else None
         ),
         reindex_interval_minutes=optimization_config.get_rules_reindex_interval(),
+        synapse_manager=build_synapse_manager(project_root, optimization_config),
     )

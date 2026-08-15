@@ -127,19 +127,14 @@ async def _create_rules_manager(
             else None
         ),
         reindex_interval_minutes=optimization_config.get_rules_reindex_interval(),
+        synapse_manager=await get_manager(managers, "synapse", SynapseManager),
     )
 
 
-async def _create_synapse_manager(
-    project_root: Path, managers: ManagersBuilder
+def build_synapse_manager(
+    project_root: Path, optimization_config: OptimizationConfig
 ) -> SynapseManager:
-    """Create SynapseManager instance."""
-    from cortex.managers.utils import get_manager
-
-    optimization_config = await get_manager(
-        managers, "optimization_config", OptimizationConfig
-    )
-
+    """Create SynapseManager from an already-resolved optimization config."""
     synapse_folder = optimization_config.get_synapse_folder()
     language_keywords = optimization_config.get_language_keywords()
     synapse_repo = optimization_config.get_synapse_repo()
@@ -153,6 +148,18 @@ async def _create_synapse_manager(
         synapse_repo=synapse_repo if synapse_repo else None,
         auto_sync=auto_sync,
         sync_interval_minutes=sync_interval,
+    )
+
+
+async def _create_synapse_manager(
+    project_root: Path, managers: ManagersBuilder
+) -> SynapseManager:
+    """Create SynapseManager instance."""
+    from cortex.managers.utils import get_manager
+
+    return build_synapse_manager(
+        project_root,
+        await get_manager(managers, "optimization_config", OptimizationConfig),
     )
 
 

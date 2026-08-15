@@ -287,6 +287,28 @@ class TestFindRuleFiles:
         # Assert
         assert files == []
 
+    def test_find_rule_files_nested_mdc(
+        self, tmp_path: Path, mock_token_counter: TokenCounter
+    ):
+        """Synapse rules (.mdc, nested two levels) must be discovered."""
+        # Arrange
+        rules_dir = tmp_path / "rules"
+        nested = rules_dir / "php" / "extra"
+        nested.mkdir(parents=True)
+        _ = (rules_dir / "php" / "php-standards.mdc").write_text("# PHP")
+        _ = (nested / "deep.mdc").write_text("# Deep")
+
+        indexer = RulesIndexer(
+            project_root=tmp_path,
+            token_counter=mock_token_counter,
+        )
+
+        # Act
+        files = indexer.find_rule_files(rules_dir)
+
+        # Assert
+        assert {f.name for f in files} == {"php-standards.mdc", "deep.mdc"}
+
     def test_find_rule_files_with_markdown_files(
         self, tmp_path: Path, mock_token_counter: TokenCounter
     ):
