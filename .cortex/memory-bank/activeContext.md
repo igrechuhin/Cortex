@@ -3,6 +3,10 @@
 
 **This file records completed work only.** For current status and upcoming work see [roadmap.md](roadmap.md).
 
+## Completed Work (2026-08-18)
+
+- ✅ **PHP Language Keyword Detection and generic/general Rules Category Alias** - COMPLETE (2026-08-18) - Added a `php` language-keyword bucket (`php`, `laravel`, `symfony`, `composer`, `artisan`) to context detection, mirrored across `src/cortex/rules/context_detector.py`, `src/cortex/optimization/config_defaults.py`, `src/cortex/optimization/models/_config.py` (`LanguageKeywordsModel.php`), and the generated `.cortex/config/optimization.json` / `docs/api/config-defaults.json` snapshots, so PHP/Laravel task descriptions resolve to the `php` category. `RulesLoader` gained a `_resolve_category_alias` step with a `_CATEGORY_ALIASES` map (`generic` <-> `general`) so a category name mismatch between Synapse manifests (which name the cross-language bucket `general`) and Cortex's context detector (`generic`) no longer silently loads zero rules. New `test_detects_php_from_task_description` regression test. Coverage 91.36%.
+
 ## Completed Work (2026-08-15)
 
 - ✅ **RulesIndexer Recursive .mdc Discovery and Rules Reindex Synapse Wiring** - COMPLETE (2026-08-15) - `RulesIndexer.find_rule_files` now searches recursively (`rglob`) instead of one level deep, and the rule-file pattern set gained `*.mdc`, so nested Synapse rules under `rules/<lang>/<name>.mdc` are discovered. `factory_optimization.py` split `_create_synapse_manager` into a sync `build_synapse_manager(project_root, optimization_config)` helper plus the existing async wrapper, and threaded a `synapse_manager` into the rules manager construction in both `factory_optimization.py` and `container_optimization.py` (which now imports `build_synapse_manager` directly). New `test_find_rule_files_nested_mdc` regression test in `test_rules_indexer.py`. Coverage 91.36%.
@@ -385,6 +389,8 @@
 Next roadmap item: **[Fast-Forward vs. Step-by-Step Planning Modes](../plans/archive/Other/fast-forward-vs-step-by-step-modes.md)** (see [roadmap.md](roadmap.md) pending plans).
 
 ## Recent Changes
+
+PHP language keywords and rules category alias (2026-08-18): added a `php` bucket to language-keyword context detection (mirrored in `context_detector.py`, `config_defaults.py`, `_config.py`, and the generated JSON snapshots); `RulesLoader._resolve_category_alias` maps `generic` <-> `general` so Synapse's `general` category and Cortex's `generic` category both resolve.
 
 RulesIndexer recursive .mdc discovery (2026-08-15): `find_rule_files` uses `rglob` (was one-level `iterdir` + `glob`) and the pattern set gained `*.mdc`, so nested Synapse rules are indexed; `build_synapse_manager` extracted as a sync helper in `factory_optimization.py` and wired into the rules manager in both `factory_optimization.py` and `container_optimization.py`.
 

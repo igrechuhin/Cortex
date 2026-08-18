@@ -132,6 +132,18 @@ class TestDetectContext:
         assert "python" in languages
         assert "javascript" in languages
 
+    def test_detects_php_from_task_description(self):
+        """Test that PHP/Laravel tasks resolve to the php category."""
+        # Arrange
+        detector = ContextDetector()
+
+        # Act
+        context = detector.detect_context("fix the Laravel controller in this app")
+
+        # Assert
+        assert "php" in context.detected_languages
+        assert "php" in context.categories_to_load
+
     def test_always_includes_generic_category(self):
         """Test that generic category is always included."""
         # Arrange

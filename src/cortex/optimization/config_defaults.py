@@ -82,6 +82,7 @@ DEFAULT_OPTIMIZATION_CONFIG: dict[str, object] = {
                 "java": ["java", "spring", "maven", "gradle"],
                 "csharp": ["c#", "csharp", "dotnet", ".net"],
                 "cpp": ["c++", "cpp", "cmake"],
+                "php": ["php", "laravel", "symfony", "composer", "artisan"],
             },
         },
     },

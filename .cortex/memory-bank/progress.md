@@ -1,6 +1,11 @@
 <!-- memory_type: milestone -->
 # Progress Log
 
+## 2026-08-18
+
+- <!-- memory_type: status -->
+- **PHP Language Keyword Detection and generic/general Rules Category Alias** - COMPLETE. Added a `php` language-keyword bucket (`php`, `laravel`, `symfony`, `composer`, `artisan`) to context detection, mirrored across `context_detector.py`, `config_defaults.py`, `_config.py` (`LanguageKeywordsModel.php`), and the generated `.cortex/config/optimization.json` / `docs/api/config-defaults.json` snapshots. `RulesLoader` gained `_resolve_category_alias` with a `_CATEGORY_ALIASES` map (`generic` <-> `general`) so a category-name mismatch between Synapse manifests (`general`) and Cortex's context detector (`generic`) no longer silently loads zero rules. New `test_detects_php_from_task_description` regression test. Coverage 91.36%.
+
 ## 2026-08-15
 
 - <!-- memory_type: status -->

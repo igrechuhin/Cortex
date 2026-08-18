@@ -245,6 +245,7 @@ def _get_language_keywords() -> dict[str, list[str]]:
         "java": ["java", "spring", "maven", "gradle"],
         "csharp": ["c#", "csharp", "dotnet", ".net"],
         "cpp": ["c++", "cpp", "cmake"],
+        "php": ["php", "laravel", "symfony", "composer", "artisan"],
     }
 
 

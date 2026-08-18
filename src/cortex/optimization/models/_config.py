@@ -163,6 +163,9 @@ class LanguageKeywordsModel(OptimizationBaseModel):
         default_factory=lambda: ["c#", "csharp", "dotnet", ".net"]
     )
     cpp: list[str] = Field(default_factory=lambda: ["c++", "cpp", "cmake"])
+    php: list[str] = Field(
+        default_factory=lambda: ["php", "laravel", "symfony", "composer", "artisan"]
+    )
 
 
 class ContextDetectionConfigModel(OptimizationBaseModel):

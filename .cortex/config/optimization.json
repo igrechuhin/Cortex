@@ -111,6 +111,13 @@
           "c++",
           "cpp",
           "cmake"
+        ],
+        "php": [
+          "php",
+          "laravel",
+          "symfony",
+          "composer",
+          "artisan"
         ]
       }
     }

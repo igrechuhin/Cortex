@@ -20,6 +20,10 @@ from .models import (
     RuleSource,
 )
 
+# AI: Synapse manifests name the cross-language bucket "general"; Cortex context
+# detection asks for "generic". Alias both ways so neither side loads nothing.
+_CATEGORY_ALIASES = {"generic": "general", "general": "generic"}
+
 
 class RulesLoader:
     """
@@ -103,6 +107,7 @@ class RulesLoader:
         if not self.manifest:
             return []
 
+        category = self._resolve_category_alias(category)
         category_info = self._get_category_info(category)
         if not category_info:
             return []
@@ -113,6 +118,15 @@ class RulesLoader:
 
         rules_list = category_info.rules
         return await self._load_rules_from_files(category, category_path, rules_list)
+
+    def _resolve_category_alias(self, category: str) -> str:
+        """Map a category name onto the equivalent one present in the manifest."""
+        if not self.manifest or category in self.manifest.categories:
+            return category
+        alias = _CATEGORY_ALIASES.get(category)
+        if alias and alias in self.manifest.categories:
+            return alias
+        return category
 
     def _get_category_info(self, category: str) -> CategoryInfo | None:
         """Get category info from manifest.
