@@ -210,8 +210,12 @@ def parse_roadmap_references(roadmap_content: str) -> list[RoadmapReference]:
             line_ref = match.group(3)
             line_number = int(line_ref) if line_ref else None
 
-            # Normalize paths (remove leading dots/slashes)
-            normalized_path = file_path.lstrip("./")
+            # Normalize paths: drop a leading `./` or `/`, never leading dots.
+            # AI: `lstrip("./")` strips a character SET, so it ate the dot of every
+            # dotfile path -- `.github/scripts/select-xcode.py` became
+            # `github/scripts/select-xcode.py`, which resolves nowhere and was
+            # reported invalid even though the file exists and the roadmap was right.
+            normalized_path = re.sub(r"^(?:\.{1,2}/|/)+", "", file_path)
 
             references.append(
                 RoadmapReference(

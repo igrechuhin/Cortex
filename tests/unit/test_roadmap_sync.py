@@ -73,6 +73,56 @@ class TestValidateRoadmapSyncEnhancements:
             assert len(result.invalid_references) == 0
             assert result.unlinked_plans == []
 
+    def test_validate_sync_preserves_leading_dot_in_dotfile_paths(self) -> None:
+        """`.github/...` must not be normalised to `github/...`.
+
+        Normalisation used `lstrip("./")`, which strips a character SET rather
+        than a prefix, so it ate the leading dot of every dotfile path. A real
+        roadmap referencing `.github/scripts/select-xcode.py` was reported
+        invalid even though the file existed and the reference was correct.
+        """
+        # Arrange
+        with TemporaryDirectory() as tmpdir:
+            project_root = Path(tmpdir)
+            scripts_dir = project_root / ".github" / "scripts"
+            scripts_dir.mkdir(parents=True)
+            _ = (scripts_dir / "select-xcode.py").write_text("# script\n")
+
+            roadmap_content = (
+                "## Toolchain\n"
+                "Floor enforced by `.github/scripts/select-xcode.py`.\n"
+            )
+
+            # Act
+            result = validate_roadmap_sync(project_root, roadmap_content)
+
+            # Assert
+            assert result.invalid_references == [], (
+                ".github/scripts/select-xcode.py exists and must resolve; "
+                "the leading dot is part of the directory name, not a prefix"
+            )
+
+    def test_validate_sync_still_strips_parent_traversal_prefixes(self) -> None:
+        """`../plans/x.md` must still resolve, alongside the dotfile fix.
+
+        The old `lstrip("./")` also stripped `../`, which is how memory-bank
+        relative plan links resolved. Preserving dotfile dots must not lose that.
+        """
+        # Arrange
+        with TemporaryDirectory() as tmpdir:
+            project_root = Path(tmpdir)
+            plans_dir = get_cortex_path(project_root, CortexResourceType.PLANS)
+            plans_dir.mkdir(parents=True)
+            _ = (plans_dir / "some-plan.md").write_text("# Plan\n")
+
+            roadmap_content = "## Phase\nSee `../plans/some-plan.md`.\n"
+
+            # Act
+            result = validate_roadmap_sync(project_root, roadmap_content)
+
+            # Assert
+            assert result.invalid_references == []
+
     def test_validate_sync_detects_unlinked_plans(self) -> None:
         """Validation fails when non-archived plans are not referenced in roadmap.md."""
         # Arrange
