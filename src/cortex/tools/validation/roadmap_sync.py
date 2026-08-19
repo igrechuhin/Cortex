@@ -274,6 +274,30 @@ def _log_roadmap_ghost_sections(roadmap_content: str, roadmap_path: Path) -> Non
         )
 
 
+def _project_root_for_roadmap(roadmap_path: Path, fallback: Path) -> Path:
+    """Return the project root that owns ``roadmap_path``.
+
+    `_resolve_existing_roadmap_path` searches several candidate roots and their
+    ancestors, so the roadmap it finds is often NOT under the `root` the caller
+    passed in. Validating that content against the caller's root resolves every
+    relative reference in the wrong tree: a TradeWing roadmap checked against
+    `$HOME` reported 172 invalid references where the true count is 8.
+
+    Content and root must come from the same project, so derive the root from
+    the file actually read rather than trusting the caller's. Walk the parents
+    and pick the first that reconstructs this exact path, which keeps the layout
+    knowledge in `get_cortex_path` instead of hardcoding a parent count.
+    """
+    for candidate_root in roadmap_path.parents:
+        reconstructed = (
+            get_cortex_path(candidate_root, CortexResourceType.MEMORY_BANK)
+            / MemoryBankFile.ROADMAP
+        )
+        if reconstructed == roadmap_path:
+            return candidate_root
+    return fallback
+
+
 async def handle_roadmap_sync_validation(
     fs_manager: FileSystemManager,
     root: Path,
@@ -297,5 +321,13 @@ async def handle_roadmap_sync_validation(
 
     roadmap_content, _ = await fs_manager.read_file(roadmap_path)
     _log_roadmap_ghost_sections(roadmap_content, roadmap_path)
-    result = validate_roadmap_sync(root, roadmap_content)
-    return _build_roadmap_sync_success_response(result, root)
+    validation_root = _project_root_for_roadmap(roadmap_path, root)
+    if validation_root != root:
+        logger.info(
+            "Roadmap sync: validating against %s (owner of %s), not the passed root %s",
+            validation_root,
+            roadmap_path,
+            root,
+        )
+    result = validate_roadmap_sync(validation_root, roadmap_content)
+    return _build_roadmap_sync_success_response(result, validation_root)

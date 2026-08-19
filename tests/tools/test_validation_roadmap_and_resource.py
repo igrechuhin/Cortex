@@ -70,6 +70,49 @@ class TestHandleRoadmapSyncValidation:
         assert result_data["summary"]["unlinked_plans_count"] == 0
 
     @pytest.mark.asyncio
+    async def test_handle_roadmap_sync_validation_resolves_refs_against_roadmap_owner(
+        self, tmp_path: Path, mock_fs_manager: MagicMock
+    ) -> None:
+        """References resolve against the roadmap's own project, not the passed root.
+
+        `_resolve_existing_roadmap_path` searches candidate roots and their
+        ancestors, so the roadmap found is often not under the caller's `root`.
+        Validating that content against the caller's root resolved every relative
+        reference in the wrong tree and reported valid files as invalid: a real
+        Swift project checked against `$HOME` reported 172 invalid references
+        where the true count was 8.
+        """
+        project = tmp_path / "project"
+        memory_bank_dir = get_cortex_path(project, CortexResourceType.MEMORY_BANK)
+        memory_bank_dir.mkdir(parents=True)
+        roadmap_content = "# Roadmap\n\n## Phase 1\nSee `src/module.py` for details.\n"
+        _ = (memory_bank_dir / "roadmap.md").write_text(roadmap_content)
+
+        # The referenced file exists under the roadmap's project, not under the
+        # unrelated root the caller passes in.
+        src_dir = project / "src"
+        _ = src_dir.mkdir()
+        _ = (src_dir / "module.py").write_text("# Module\n")
+
+        unrelated_root = tmp_path / "unrelated"
+        unrelated_root.mkdir(parents=True)
+
+        mock_fs_manager.read_file = AsyncMock(return_value=(roadmap_content, None))
+        mock_fs_manager.memory_bank_dir = memory_bank_dir
+
+        result = await handle_roadmap_sync_validation(
+            mock_fs_manager, unrelated_root, None
+        )
+
+        result_data = json.loads(result)
+        assert result_data["status"] == "success"
+        assert result_data["invalid_references"] == [], (
+            "src/module.py exists under the roadmap's project and must not be "
+            "reported invalid because the caller passed an unrelated root"
+        )
+        assert result_data["valid"] is True
+
+    @pytest.mark.asyncio
     async def test_handle_roadmap_sync_validation_uses_usage_root_fallback(
         self, tmp_path: Path, mock_fs_manager: MagicMock
     ) -> None:
