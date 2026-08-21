@@ -1,7 +1,7 @@
 ---
 name: implement-code
 description: Use when the /cortex/do orchestrator has completed Selection and is ready to implement the selected roadmap step. Implements as many consecutive subtasks as context allows, writes code and tests, runs the quality gate after each. Invoke after pipeline_handoff phase "select" is complete and before Finalize.
-tools: mcp__cortex__*, Bash, Read, Edit, Grep
+tools: mcp__cortex__*, Bash, Read, Edit, Grep, ReadMcpResourceTool
 model: opus
 ---
 

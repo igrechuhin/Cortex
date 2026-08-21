@@ -1,6 +1,11 @@
 <!-- memory_type: milestone -->
 # Progress Log
 
+## 2026-08-21
+
+- <!-- memory_type: preference -->
+- **Agent Spec Honesty Guard Regression Test and implement-code Tool Grant** - COMPLETE. Added `tests/integration/test_agent_spec_honesty_guards.py` guarding Synapse `claude-agents/*.md` specs against pre-filled `"status":"passed"` handoff templates and requiring the "Never write a value you did not observe" no-fabrication rule wherever an agent writes a gate result (regression: commit Phase C previously shipped a template an agent could copy without running the check). Granted `implement-code.md` the `ReadMcpResourceTool` tool so it can read `cortex://` resources directly. Synapse submodule bumped ce89e716 -> a77cf2c4. Coverage 91.36%.
+
 ## 2026-08-18
 
 - <!-- memory_type: status -->

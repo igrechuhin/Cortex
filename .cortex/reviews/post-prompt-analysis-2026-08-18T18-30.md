@@ -31,6 +31,7 @@ Recent WAL entries (50 operations spanning 2026-08-15 to 2026-08-18) show consis
 **Status**: Observation only
 
 Tool usage reflected in memory bank and pipeline handoff operations:
+
 - Core tools: `manage_file()`, `pipeline_handoff()`, `run_quality_gate()`, session()
 - Tool budget: Unknown (cortex://analysis unavailable), but active tool set appears stable and purpose-driven
 

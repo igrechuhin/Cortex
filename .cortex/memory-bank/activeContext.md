@@ -3,6 +3,10 @@
 
 **This file records completed work only.** For current status and upcoming work see [roadmap.md](roadmap.md).
 
+## Completed Work (2026-08-21)
+
+- ✅ **Agent Spec Honesty Guard Regression Test and implement-code Tool Grant** - COMPLETE (2026-08-21) - Added `tests/integration/test_agent_spec_honesty_guards.py` guarding Synapse `claude-agents/*.md` specs against pre-filled `"status":"passed"` handoff templates and requiring the "Never write a value you did not observe" no-fabrication rule wherever an agent writes a gate result (regression: commit Phase C previously shipped a template an agent could copy without running the check). Granted `implement-code.md` the `ReadMcpResourceTool` tool so it can read `cortex://` resources directly. Synapse submodule bumped ce89e716 -> a77cf2c4. Coverage 91.36%.
+
 ## Completed Work (2026-08-18)
 
 - ✅ **PHP Language Keyword Detection and generic/general Rules Category Alias** - COMPLETE (2026-08-18) - Added a `php` language-keyword bucket (`php`, `laravel`, `symfony`, `composer`, `artisan`) to context detection, mirrored across `src/cortex/rules/context_detector.py`, `src/cortex/optimization/config_defaults.py`, `src/cortex/optimization/models/_config.py` (`LanguageKeywordsModel.php`), and the generated `.cortex/config/optimization.json` / `docs/api/config-defaults.json` snapshots, so PHP/Laravel task descriptions resolve to the `php` category. `RulesLoader` gained a `_resolve_category_alias` step with a `_CATEGORY_ALIASES` map (`generic` <-> `general`) so a category name mismatch between Synapse manifests (which name the cross-language bucket `general`) and Cortex's context detector (`generic`) no longer silently loads zero rules. New `test_detects_php_from_task_description` regression test. Coverage 91.36%.
@@ -389,6 +393,8 @@
 Next roadmap item: **[Fast-Forward vs. Step-by-Step Planning Modes](../plans/archive/Other/fast-forward-vs-step-by-step-modes.md)** (see [roadmap.md](roadmap.md) pending plans).
 
 ## Recent Changes
+
+Agent spec honesty guard (2026-08-21): new regression test `test_agent_spec_honesty_guards.py` blocks Synapse `claude-agents/*.md` specs from shipping pre-filled `"status":"passed"` handoff templates and requires the no-fabrication rule wherever an agent writes a gate result; `implement-code.md` granted `ReadMcpResourceTool`; Synapse submodule bumped to a77cf2c4.
 
 PHP language keywords and rules category alias (2026-08-18): added a `php` bucket to language-keyword context detection (mirrored in `context_detector.py`, `config_defaults.py`, `_config.py`, and the generated JSON snapshots); `RulesLoader._resolve_category_alias` maps `generic` <-> `general` so Synapse's `general` category and Cortex's `generic` category both resolve.
 
