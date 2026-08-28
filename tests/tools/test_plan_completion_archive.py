@@ -573,8 +573,45 @@ class TestApplyProgressAndArchivePropagatesFailure:
         assert result.get("error")
         assert " - COMPLETE" in (result.get("error") or "")
         assert result.get("progress_line_inserted") is None
-        # Roadmap/activeContext steps already completed before the failing
-        # progress step are not rolled back.
-        assert result["roadmap_line_removed"] is not None
-        assert result["active_context_line_inserted"] is not None
-        assert "Progress fail case" not in roadmap.read_text()
+        # AI: a MALFORMED entry is now rejected up front, before do_complete_plan writes
+        # anything, so no step is left half-applied. This assertion was inverted until
+        # 2026-08-28: it previously pinned "roadmap/activeContext are not rolled back",
+        # which documented the partial-write bug rather than a wanted guarantee. The
+        # suite's actual subject — that a failed append is surfaced and never silent —
+        # is unchanged and still asserted above.
+        assert result["roadmap_line_removed"] is None
+        assert result["active_context_line_inserted"] is None
+        assert "Progress fail case" in roadmap.read_text()
+
+    @pytest.mark.asyncio
+    async def test_non_format_progress_failure_is_still_surfaced(
+        self, tmp_path: Path
+    ) -> None:
+        """A progress failure that is NOT a format rejection still propagates.
+
+        Hoisting the format check up front must not disable apply_progress_and_archive's
+        propagation logic, which remains the only thing reporting an append that fails
+        for an I/O reason (here: progress.md does not exist). This path still writes
+        roadmap/activeContext first, because the failure is only discoverable at write time.
+        """
+        mem = get_cortex_path(tmp_path, CortexResourceType.MEMORY_BANK)
+        mem.mkdir(parents=True)
+        roadmap = mem / "roadmap.md"
+        _ = roadmap.write_text(
+            "# Roadmap\n\n## Pending\n\n- **IO fail case** - PENDING\n"
+        )
+        _ = (mem / "activeContext.md").write_text(
+            "# Active\n\n## Completed Work (2026-02-09)\n\n"
+        )
+        # AI: progress.md deliberately absent — a well-formed entry that cannot be written.
+        with _patch_root(tmp_path):
+            result_str = await complete_plan(
+                plan_title="IO fail case",
+                summary="Done.",
+                completion_date="2026-02-09",
+                progress_entry="**IO fail case** - COMPLETE. Done.",
+            )
+        result = json.loads(result_str)
+        assert result["status"] == "error"
+        assert result.get("progress_line_inserted") is None
+        assert "progress append failed" in result["message"].lower()

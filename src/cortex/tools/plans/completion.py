@@ -24,14 +24,40 @@ from cortex.tools.plans.completion_models import CompletePlanResult
 from cortex.tools.plans.completion_ops import (
     apply_progress_and_archive,
     complete_plan_invalid_date_json,
+    complete_plan_invalid_progress_entry_json,
     do_complete_plan,
     execute_append_active_context,
     execute_append_progress,
 )
-from cortex.tools.plans.completion_validation import validate_date_str
+from cortex.tools.plans.completion_validation import (
+    validate_date_str,
+    validate_progress_entry_text,
+)
 from cortex.tools.plans.register_artifact_graph import (
     sync_plan_dependency_statuses_after_completion,
 )
+
+
+def _reject_bad_inputs(date_str: str, progress_entry: str | None) -> str | None:
+    """Validate every pure-string input BEFORE any file is written.
+
+    Both checks must happen here rather than at their point of use. ``do_complete_plan``
+    removes the roadmap bullet and inserts the activeContext entry, and
+    ``apply_progress_and_archive`` then archives the plan file — so a ``progress_entry``
+    format rejection raised during the append (where the guard used to live) left the
+    caller with the plan archived, roadmap mutated, activeContext mutated and no progress
+    row: a partial completion to repair by hand. These are pure string checks, so hoisting
+    them costs nothing and makes completion all-or-nothing with respect to malformed input.
+    ``execute_append_progress`` keeps its own copy of the entry guard for the standalone
+    append path.
+
+    Returns the JSON error payload to return to the caller, or None when inputs are valid.
+    """
+    if date_err := validate_date_str(date_str):
+        return complete_plan_invalid_date_json(date_err)
+    if progress_entry and (entry_err := validate_progress_entry_text(progress_entry)):
+        return complete_plan_invalid_progress_entry_json(entry_err)
+    return None
 
 
 async def _complete_plan_impl(
@@ -45,8 +71,8 @@ async def _complete_plan_impl(
     """Implementation of complete_plan: roadmap + activeContext, optional progress, optional archive."""
     await log_client(ctx, "info", "complete_plan: starting", logger_name=__name__)
     date_str = (completion_date or today_iso()).strip()
-    if date_err := validate_date_str(date_str):
-        return complete_plan_invalid_date_json(date_err)
+    if rejection := _reject_bad_inputs(date_str, progress_entry):
+        return rejection
     root = await resolve_project_root_async(None, ctx)
     result = await do_complete_plan(root, plan_title, summary, date_str)
     if result.status != OperationStatus.SUCCESS:

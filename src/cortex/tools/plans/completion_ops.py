@@ -65,6 +65,20 @@ def complete_plan_invalid_date_json(date_err: str) -> str:
     ).model_dump_json()
 
 
+def complete_plan_invalid_progress_entry_json(entry_err: str) -> str:
+    """Return JSON error result for a malformed progress_entry, before anything is written."""
+    return CompletePlanResult(
+        status=OperationStatus.ERROR,
+        message="Invalid progress_entry",
+        roadmap_line_removed=None,
+        active_context_line_inserted=None,
+        progress_line_inserted=None,
+        archive_path=None,
+        error=entry_err,
+        plans_unblocked=None,
+    ).model_dump_json()
+
+
 def complete_plan_success(roadmap_line: int, active_line: int) -> CompletePlanResult:
     """Build success result for plan completion."""
     return CompletePlanResult(

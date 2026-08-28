@@ -412,3 +412,74 @@ class TestCompletePlanResult:
         data = json.loads(result.model_dump_json())
         assert data["status"] == "error"
         assert "No bullet" in data.get("error", "")
+
+
+class TestCompletePlanRejectsMalformedProgressEntryBeforeWriting:
+    """A malformed progress_entry must abort before roadmap/activeContext are touched.
+
+    Regression: the format guard used to live inside the progress append, which runs
+    *after* the roadmap bullet is removed and the activeContext entry inserted (and after
+    the plan file is archived). A rejected entry therefore left a partially completed
+    plan the caller had to repair by hand.
+    """
+
+    @staticmethod
+    def _seed(tmp_path: Path) -> tuple[Path, Path, Path]:
+        mem = get_cortex_path(tmp_path, CortexResourceType.MEMORY_BANK)
+        mem.mkdir(parents=True)
+        roadmap = mem / "roadmap.md"
+        _ = roadmap.write_text(
+            "# Roadmap\n\n## Pending\n\n- **Wire optimization** - PENDING - Connect config.\n"
+        )
+        active = mem / "activeContext.md"
+        _ = active.write_text("# Active\n\n## Completed Work (2026-02-05)\n\n")
+        progress = mem / "progress.md"
+        _ = progress.write_text("# Progress\n\n")
+        return roadmap, active, progress
+
+    @pytest.mark.asyncio
+    async def test_malformed_entry_leaves_every_file_untouched(
+        self, tmp_path: Path
+    ) -> None:
+        roadmap, active, progress = self._seed(tmp_path)
+        before = (roadmap.read_text(), active.read_text(), progress.read_text())
+
+        with _patch_root(tmp_path):
+            result_str = await complete_plan(
+                plan_title="Wire optimization",
+                summary="Done.",
+                completion_date="2026-02-05",
+                # AI: 'COMPLETE' without the ' - COMPLETE' delimiter is exactly the shape
+                # validate_progress_entry_text rejects.
+                progress_entry="**Wire optimization** COMPLETE. Connected config.",
+            )
+
+        result = json.loads(result_str)
+        assert result["status"] == OperationStatus.ERROR
+        assert "progress_entry" in result["message"].lower()
+        assert " - COMPLETE" in (result["error"] or "")
+        # The point of the regression: nothing was written.
+        assert result["roadmap_line_removed"] is None
+        assert result["active_context_line_inserted"] is None
+        assert result["progress_line_inserted"] is None
+        assert (roadmap.read_text(), active.read_text(), progress.read_text()) == before
+        assert "Wire optimization" in roadmap.read_text()
+
+    @pytest.mark.asyncio
+    async def test_well_formed_entry_still_completes(self, tmp_path: Path) -> None:
+        roadmap, _active, progress = self._seed(tmp_path)
+
+        with _patch_root(tmp_path):
+            result_str = await complete_plan(
+                plan_title="Wire optimization",
+                summary="Done.",
+                completion_date="2026-02-05",
+                progress_entry="**Wire optimization** - COMPLETE. Connected config.",
+            )
+
+        result = json.loads(result_str)
+        assert result["status"] == OperationStatus.SUCCESS
+        assert result["roadmap_line_removed"] is not None
+        assert result["progress_line_inserted"] is not None
+        assert "Wire optimization" not in roadmap.read_text()
+        assert "Connected config." in progress.read_text()
