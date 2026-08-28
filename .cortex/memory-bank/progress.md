@@ -1,6 +1,11 @@
 <!-- memory_type: milestone -->
 # Progress Log
 
+## 2026-08-28
+
+- <!-- memory_type: problem -->
+Hoisted `progress_entry` format validation in `complete_plan` to run before any file mutation, alongside the existing `date_str` check, via a new `_reject_bad_inputs` helper in `completion.py` and `complete_plan_invalid_progress_entry_json` in `completion_ops.py` — closes a partial-completion hole where a late-raised entry-format error left the roadmap bullet removed and activeContext mutated but no progress row written and the plan not archived. Coverage 91.36%.
+
 ## 2026-08-21
 
 - <!-- memory_type: preference -->

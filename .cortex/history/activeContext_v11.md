@@ -3,6 +3,10 @@
 
 **This file records completed work only.** For current status and upcoming work see [roadmap.md](roadmap.md).
 
+## Completed Work (2026-08-28)
+
+- ✅ **All-or-Nothing complete_plan Input Validation** - COMPLETE (2026-08-28) - Hoisted the `progress_entry` format check to run before any write in `complete_plan`, alongside the existing `date_str` validation, via a new `_reject_bad_inputs(date_str, progress_entry)` helper in `completion.py` and `complete_plan_invalid_progress_entry_json` in `completion_ops.py`. Previously the entry-format guard ran during `apply_progress_and_archive`, after the roadmap bullet was removed and the activeContext entry inserted — a late rejection left completion partially applied (roadmap and activeContext mutated, no progress row, plan not archived) requiring manual repair. `execute_append_progress` keeps its own copy of the guard for the standalone append path. Coverage 91.36%.
+
 ## Completed Work (2026-08-21)
 
 - ✅ **Agent Spec Honesty Guard Regression Test and implement-code Tool Grant** - COMPLETE (2026-08-21) - Added `tests/integration/test_agent_spec_honesty_guards.py` guarding Synapse `claude-agents/*.md` specs against pre-filled `"status":"passed"` handoff templates and requiring the "Never write a value you did not observe" no-fabrication rule wherever an agent writes a gate result (regression: commit Phase C previously shipped a template an agent could copy without running the check). Granted `implement-code.md` the `ReadMcpResourceTool` tool so it can read `cortex://` resources directly. Synapse submodule bumped ce89e716 -> a77cf2c4. Coverage 91.36%.
@@ -393,6 +397,8 @@
 Next roadmap item: **[Fast-Forward vs. Step-by-Step Planning Modes](../plans/archive/Other/fast-forward-vs-step-by-step-modes.md)** (see [roadmap.md](roadmap.md) pending plans).
 
 ## Recent Changes
+
+All-or-nothing complete_plan validation (2026-08-28): `progress_entry` format check now runs before any write, alongside `date_str`, via `_reject_bad_inputs` in `completion.py`; previously a late rejection during archive left the roadmap and activeContext already mutated with no progress row.
 
 Agent spec honesty guard (2026-08-21): new regression test `test_agent_spec_honesty_guards.py` blocks Synapse `claude-agents/*.md` specs from shipping pre-filled `"status":"passed"` handoff templates and requires the no-fabrication rule wherever an agent writes a gate result; `implement-code.md` granted `ReadMcpResourceTool`; Synapse submodule bumped to a77cf2c4.
 

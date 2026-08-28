@@ -1,109 +1,5 @@
 # Cortex Operations Log
 
-## [2026-08-08T16:57] plan | Created plan: Mini ·3
-
-## [2026-08-08T16:57] plan | Created plan: Mini ·4
-
-## [2026-08-08T16:57] plan | Created plan: Smoke Test Plan
-
-## [2026-08-08T17:00] plan | Created plan: Test Plan
-
-## [2026-08-08T17:00] plan | Created plan: Demo Plan
-
-## [2026-08-08T17:00] plan | Created plan: Demo Plan ·2
-
-## [2026-08-08T17:00] plan | Created plan: Mini
-
-## [2026-08-08T17:00] plan | Created plan: Demo Plan ·3
-
-## [2026-08-08T17:00] plan | Created plan: Mini ·2
-
-## [2026-08-08T17:00] plan | Created plan: Mini ·3
-
-## [2026-08-08T17:00] plan | Created plan: Mini ·4
-
-## [2026-08-08T17:00] plan | Created plan: Demo Plan ·4
-
-## [2026-08-08T17:00] plan | Created plan: Demo Plan ·5
-
-## [2026-08-08T17:00] plan | Created plan: Demo Plan ·6
-
-## [2026-08-08T17:00] plan | Created plan: Smoke Test Plan
-
-## [2026-08-08T17:03] plan | Created plan: Mini
-
-## [2026-08-08T17:03] plan | Created plan: Mini ·2
-
-## [2026-08-08T17:03] plan | Created plan: Demo Plan
-
-## [2026-08-08T17:03] plan | Created plan: Demo Plan ·2
-
-## [2026-08-08T17:03] plan | Created plan: Demo Plan ·3
-
-## [2026-08-08T17:03] plan | Created plan: Mini ·3
-
-## [2026-08-08T17:03] plan | Created plan: Mini ·4
-
-## [2026-08-08T17:03] plan | Created plan: Demo Plan ·4
-
-## [2026-08-08T17:03] plan | Created plan: Demo Plan ·5
-
-## [2026-08-08T17:03] plan | Created plan: Demo Plan ·6
-
-## [2026-08-08T17:03] plan | Created plan: Smoke Test Plan
-
-## [2026-08-08T17:04] plan | Created plan: Test Plan
-
-## [2026-08-08T17:06] plan | Created plan: Test Plan
-
-## [2026-08-08T17:07] plan | Created plan: Smoke Test Plan
-
-## [2026-08-08T17:08] plan | Created plan: Demo Plan
-
-## [2026-08-08T17:08] plan | Created plan: Mini
-
-## [2026-08-08T17:08] plan | Created plan: Demo Plan ·2
-
-## [2026-08-08T17:08] plan | Created plan: Demo Plan ·3
-
-## [2026-08-08T17:08] plan | Created plan: Mini ·2
-
-## [2026-08-08T17:08] plan | Created plan: Demo Plan ·4
-
-## [2026-08-08T17:08] plan | Created plan: Mini ·3
-
-## [2026-08-08T17:08] plan | Created plan: Demo Plan ·5
-
-## [2026-08-08T17:08] plan | Created plan: Mini ·4
-
-## [2026-08-08T17:08] plan | Created plan: Demo Plan ·6
-
-## [2026-08-08T17:09] plan | Created plan: Test Plan
-
-## [2026-08-08T17:09] plan | Created plan: Smoke Test Plan
-
-## [2026-08-08T17:09] plan | Created plan: Demo Plan
-
-## [2026-08-08T17:09] plan | Created plan: Demo Plan ·2
-
-## [2026-08-08T17:09] plan | Created plan: Demo Plan ·3
-
-## [2026-08-08T17:09] plan | Created plan: Mini
-
-## [2026-08-08T17:09] plan | Created plan: Demo Plan ·4
-
-## [2026-08-08T17:09] plan | Created plan: Mini ·2
-
-## [2026-08-08T17:09] plan | Created plan: Mini ·3
-
-## [2026-08-08T17:09] plan | Created plan: Demo Plan ·5
-
-## [2026-08-08T17:09] plan | Created plan: Demo Plan ·6
-
-## [2026-08-08T17:09] plan | Created plan: Mini ·4
-
-## [2026-08-08T17:12] plan | Created plan: Mini
-
 ## [2026-08-08T17:12] plan | Created plan: Mini ·2
 
 ## [2026-08-08T17:12] plan | Created plan: Mini ·3
@@ -2019,3 +1915,109 @@ status=success; changed_files=None
 status=success; changed_files=None
 
 ## [2026-08-21T15:41] lint | Quality gate passed
+
+## [2026-08-28T22:47] plan | Created plan: Smoke Test Plan
+
+## [2026-08-28T22:47] plan | Created plan: Test Plan
+
+## [2026-08-28T22:47] plan | Created plan: Demo Plan
+
+## [2026-08-28T22:47] plan | Created plan: Mini
+
+## [2026-08-28T22:47] plan | Created plan: Mini ·2
+
+## [2026-08-28T22:47] plan | Created plan: Demo Plan ·2
+
+## [2026-08-28T22:47] plan | Created plan: Demo Plan ·3
+
+## [2026-08-28T22:47] plan | Created plan: Mini ·3
+
+## [2026-08-28T22:47] plan | Created plan: Demo Plan ·4
+
+## [2026-08-28T22:47] plan | Created plan: Demo Plan ·5
+
+## [2026-08-28T22:47] plan | Created plan: Mini ·4
+
+## [2026-08-28T22:47] plan | Created plan: Demo Plan ·6
+
+## [2026-08-28T22:50] plan | Created plan: Test Plan
+
+## [2026-08-28T22:50] plan | Created plan: Smoke Test Plan
+
+## [2026-08-28T22:50] plan | Created plan: Demo Plan
+
+## [2026-08-28T22:50] plan | Created plan: Demo Plan ·2
+
+## [2026-08-28T22:50] plan | Created plan: Demo Plan ·3
+
+## [2026-08-28T22:50] plan | Created plan: Mini
+
+## [2026-08-28T22:50] plan | Created plan: Demo Plan ·4
+
+## [2026-08-28T22:50] plan | Created plan: Mini ·2
+
+## [2026-08-28T22:50] plan | Created plan: Demo Plan ·5
+
+## [2026-08-28T22:50] plan | Created plan: Mini ·3
+
+## [2026-08-28T22:50] plan | Created plan: Demo Plan ·6
+
+## [2026-08-28T22:50] plan | Created plan: Mini ·4
+
+## [2026-08-28T22:56] plan | Created plan: Mini
+
+## [2026-08-28T22:56] plan | Created plan: Mini ·2
+
+## [2026-08-28T22:56] plan | Created plan: Demo Plan
+
+## [2026-08-28T22:56] plan | Created plan: Demo Plan ·2
+
+## [2026-08-28T22:56] plan | Created plan: Mini ·3
+
+## [2026-08-28T22:56] plan | Created plan: Mini ·4
+
+## [2026-08-28T22:56] plan | Created plan: Demo Plan ·3
+
+## [2026-08-28T22:56] plan | Created plan: Demo Plan ·4
+
+## [2026-08-28T22:56] plan | Created plan: Demo Plan ·5
+
+## [2026-08-28T22:56] plan | Created plan: Demo Plan ·6
+
+## [2026-08-28T22:56] plan | Created plan: Smoke Test Plan
+
+## [2026-08-28T22:57] plan | Created plan: Test Plan
+
+## [2026-08-28T22:57] lint | Quality gate failed
+
+## [2026-08-28T22:58] plan | Created plan: Demo Plan
+
+## [2026-08-28T22:58] plan | Created plan: Demo Plan ·2
+
+## [2026-08-28T22:58] plan | Created plan: Mini
+
+## [2026-08-28T22:58] plan | Created plan: Demo Plan ·3
+
+## [2026-08-28T22:58] plan | Created plan: Demo Plan ·4
+
+## [2026-08-28T22:58] plan | Created plan: Demo Plan ·5
+
+## [2026-08-28T22:58] plan | Created plan: Mini ·2
+
+## [2026-08-28T22:58] plan | Created plan: Mini ·3
+
+## [2026-08-28T22:58] plan | Created plan: Mini ·4
+
+## [2026-08-28T22:58] plan | Created plan: Demo Plan ·6
+
+## [2026-08-28T22:58] plan | Created plan: Smoke Test Plan
+
+## [2026-08-28T22:58] plan | Created plan: Test Plan
+
+## [2026-08-28T22:59] lint | Quality gate passed
+
+## [2026-08-28T23:02] fix | Autofix completed
+
+status=success; changed_files=None
+
+## [2026-08-28T23:04] lint | Quality gate passed
