@@ -4,6 +4,8 @@
 ## 2026-08-30
 
 - <!-- memory_type: status -->
+- **Content-Preserving WAL for AS-OF Reconstruction** - COMPLETE. WAL entries now store zlib+base64 reverse deltas, delta_codec, and experience-store step numbers; new wal_content.py provides hash-verified as_of reconstruction plus size-bounded compaction; memory_wal gained an as_of operation for analyze-pipeline evidence. 20 new tests, quality gate green.
+- **Fix archive-blind plan-graph summaries in session brief and optimization handlers** - COMPLETE. compute_artifact_graph defaults to include_archive=True; build_plan_graph_surface_bundle dropped the per-caller flag. 2 regression tests added.
 **Plan Frontmatter Normalization and Roadmap-Page-Refresh Redirect Extraction** - COMPLETE. Added `PlanExecutionMode` enum and `normalize_plan_slug`/`resolve_plan_status_token` helpers in `artifact_graph.py` tolerating quoted/legacy status spellings and `depends_on` entries with a `.md` extension or directory prefix. New `plan_frontmatter_normalize.py` rewrites plan frontmatter to the canonical schema, wired into `pre_commit_fix_quality.py`'s memory-bank lint autofix. `prompts_registration.py` workflow-redirect branch extracted to `_try_workflow_redirect`.
 
 ## 2026-08-28
