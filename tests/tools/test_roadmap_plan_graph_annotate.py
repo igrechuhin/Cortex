@@ -16,8 +16,10 @@ from cortex.tools.optimization.handlers import build_context_resource_payload_as
 from cortex.tools.optimization.handlers_format import (
     inject_plan_graph_into_context_result,
 )
+from cortex.tools.plans import register_artifact_graph
 from cortex.tools.plans.plan_graph import build_plan_graph_surface_bundle
 from cortex.tools.plans.roadmap_plan_graph_annotate import annotate_roadmap_for_project
+from cortex.tools.session.brief_loaders import plan_graph_brief_fields
 
 _CONTEXT_BASE_JSON = json.dumps(
     {
@@ -202,9 +204,7 @@ def test_build_plan_graph_surface_bundle_counts(
     project_with_blocked_child: Path,
 ) -> None:
     plans = get_cortex_path(project_with_blocked_child, CortexResourceType.PLANS)
-    bundle = build_plan_graph_surface_bundle(
-        plans, include_archive=False, max_ascii_edges=10
-    )
+    bundle = build_plan_graph_surface_bundle(plans, max_ascii_edges=10)
     assert bundle is not None
     assert "READY" in str(bundle["plan_graph_summary"])
     assert "BLOCKED" in str(bundle["plan_graph_summary"])
@@ -247,3 +247,28 @@ async def test_build_context_resource_payload_includes_plan_graph(
     assert "plan_graph_blocked" in data
     assert data["plan_graph_ready"] == ["parent"]
     assert data["plan_graph_blocked"] == {"child": ["parent"]}
+
+
+def test_session_brief_summary_ready_when_dependency_archived_done(
+    tmp_path: Path,
+) -> None:
+    """Session brief must count a plan with an archived DONE dep as READY."""
+    plans = get_cortex_path(tmp_path, CortexResourceType.PLANS)
+    _write_plan(
+        plans / "archive" / "Other" / "parent.md",
+        slug="parent",
+        depends=[],
+        status="DONE",
+    )
+    _write_plan(plans / "child.md", slug="child", depends=["parent"])
+
+    summary, _edges = plan_graph_brief_fields(tmp_path)
+
+    assert summary is not None
+    assert summary.startswith("1 plans READY, 0 plans BLOCKED by 0 ")
+
+
+def test_dependency_status_resync_still_enumerates_active_plans_only() -> None:
+    """The deliberate active-only enumeration must not widen to the archive."""
+    source = Path(register_artifact_graph.__file__).read_text(encoding="utf-8")
+    assert "list_plan_slug_paths(plans_dir, include_archive=False)" in source

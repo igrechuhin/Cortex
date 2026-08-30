@@ -90,8 +90,8 @@ class OptimizationConfig:
         return cast(ModelDict, build_category_config().model_dump())
 
     def get_token_budget(self) -> int:
-        value = self.get("token_budget.default_budget", 80000)
-        return int(value) if isinstance(value, int) else 80000
+        value = self.get("token_budget.default_budget", 25000)
+        return int(value) if isinstance(value, int) else 25000
 
     def get_max_token_budget(self) -> int:
         value = self.get("token_budget.max_budget", 100000)

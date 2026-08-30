@@ -381,7 +381,7 @@ class TestOptimizationConfig:
 
     def test_default_config(self, config: OptimizationConfig) -> None:
         """Test default configuration values."""
-        assert config.get_token_budget() == 80000
+        assert config.get_token_budget() == 25000
         assert config.get_loading_strategy() == "dependency_aware"
         assert config.is_summarization_enabled() is True
 
@@ -434,4 +434,4 @@ class TestOptimizationConfig:
         await config.reset()
 
         # Should be back to default
-        assert config.get_token_budget() == 80000
+        assert config.get_token_budget() == 25000

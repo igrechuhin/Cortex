@@ -109,7 +109,7 @@ _ROADMAP_PAGE_REFRESH = (
 )
 
 
-def _workflow_redirect_content(
+def workflow_redirect_content(
     script_path: Path, *, refresh_roadmap_page: bool = False
 ) -> str:
     """Return prompt content that tells Claude Code to run a Workflow script."""
@@ -138,7 +138,7 @@ def _try_workflow_redirect(
     script_path = prompts_path / superseded_by
     if not script_path.exists():
         return None
-    content = _workflow_redirect_content(
+    content = workflow_redirect_content(
         script_path,
         refresh_roadmap_page=prompt_info.get("refresh_roadmap_page") is True,
     )

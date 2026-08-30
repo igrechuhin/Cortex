@@ -194,7 +194,7 @@ class TestDotNotationAccess:
         """Test get returns value using dot notation."""
         config = OptimizationConfig(temp_project_root)
         value = config.get("token_budget.default_budget")
-        assert value == 80000
+        assert value == 25000
 
     def test_get_returns_default_when_key_not_found(
         self, temp_project_root: Path

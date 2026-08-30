@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-from cortex.tools.synapse.prompts_registration import _workflow_redirect_content
+from cortex.tools.synapse.prompts_registration import workflow_redirect_content
 
 
 class TestWorkflowRedirectRoadmapPage:
@@ -16,7 +16,7 @@ class TestWorkflowRedirectRoadmapPage:
     def test_redirect_omits_refresh_by_default(self) -> None:
         """Prompts that do not opt in keep the original, unchanged redirect."""
         # Arrange / Act
-        content = _workflow_redirect_content(Path("/p/do.wf.js"))
+        content = workflow_redirect_content(Path("/p/do.wf.js"))
 
         # Assert
         assert "Workflow tool" in content
@@ -25,7 +25,7 @@ class TestWorkflowRedirectRoadmapPage:
     def test_redirect_appends_refresh_when_opted_in(self) -> None:
         """commit/fix opt in via the manifest and must carry the refresh instruction."""
         # Arrange / Act
-        content = _workflow_redirect_content(
+        content = workflow_redirect_content(
             Path("/p/commit.wf.js"), refresh_roadmap_page=True
         )
 
@@ -38,7 +38,7 @@ class TestWorkflowRedirectRoadmapPage:
     def test_refresh_instruction_permits_skipping_a_noop_run(self) -> None:
         """A run that changed no memory-bank file should not force a republish."""
         # Arrange / Act
-        content = _workflow_redirect_content(
+        content = workflow_redirect_content(
             Path("/p/fix.wf.js"), refresh_roadmap_page=True
         )
 

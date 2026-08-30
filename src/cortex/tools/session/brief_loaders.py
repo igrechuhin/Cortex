@@ -158,9 +158,7 @@ async def load_concurrency_info(
 
 def plan_graph_brief_fields(project_root: Path) -> tuple[str | None, str | None]:
     plans_dir = get_cortex_path(project_root, CortexResourceType.PLANS)
-    bundle = build_plan_graph_surface_bundle(
-        plans_dir, include_archive=False, max_ascii_edges=10
-    )
+    bundle = build_plan_graph_surface_bundle(plans_dir, max_ascii_edges=10)
     if bundle is None:
         return None, None
     summary = str(bundle["plan_graph_summary"])

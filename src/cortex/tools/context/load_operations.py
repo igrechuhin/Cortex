@@ -18,15 +18,19 @@ from cortex.tools.context.load_operations_content import handle_full_or_summary_
 from cortex.tools.context.load_operations_metadata import load_context_metadata_only
 
 
-def _calculate_effective_budget(
+def calculate_effective_budget(
     token_budget: int | None, optimization_config: OptimizationConfig
 ) -> int:
     """Calculate effective token budget with max and reserve applied."""
     if token_budget is None or token_budget == 0:
         token_budget = optimization_config.get_token_budget()
     max_budget = optimization_config.get_max_token_budget()
-    reserve = optimization_config.get_reserve_for_response()
     token_budget = min(token_budget, max_budget)
+    # AI: the response reserve must never consume the whole budget. A request at
+    # or below the reserve used to resolve to 0, which excluded every file and
+    # returned an empty context with no error (telemetry: token_budget=0,
+    # files_selected=0, files_excluded=7). Cap the reserve at half the budget.
+    reserve = min(optimization_config.get_reserve_for_response(), token_budget // 2)
     return max(token_budget - reserve, 0)
 
 
@@ -40,7 +44,7 @@ async def _prepare_context_loading(
         metadata_index,
         fs_manager,
     ) = await _setup_optimization_managers(mgrs)
-    effective_budget = _calculate_effective_budget(token_budget, optimization_config)
+    effective_budget = calculate_effective_budget(token_budget, optimization_config)
     return (
         effective_budget,
         optimization_config,

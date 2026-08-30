@@ -16,7 +16,7 @@ from ._base import OptimizationBaseModel
 class TokenBudgetOptConfigModel(OptimizationBaseModel):
     """Token budget configuration for optimization."""
 
-    default_budget: int = Field(default=80000, ge=1, description="Default token budget")
+    default_budget: int = Field(default=25000, ge=1, description="Default token budget")
     max_budget: int = Field(default=100000, ge=1, description="Maximum token budget")
     reserve_for_response: int = Field(
         default=10000, ge=0, description="Tokens reserved for response"

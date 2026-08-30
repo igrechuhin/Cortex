@@ -367,9 +367,13 @@ def register_plan_file_status_from_graph(
 def compute_artifact_graph(
     plans_dir: Path,
     *,
-    include_archive: bool = False,
+    include_archive: bool = True,
 ) -> ArtifactGraph:
     """Build dependency metadata, readiness, and cycle information for plan files."""
+    # AI: Archive inclusion defaults to True because _apply_blocked_by treats an
+    # unknown dependency as unsatisfied, so skipping the archive makes completed
+    # (status: DONE) dependencies look outstanding. Only surfaces that deliberately
+    # enumerate *active* plans pass include_archive=False.
     rows = _iter_plan_files(plans_dir, include_archive=include_archive)
     nodes, edges = _load_raw_nodes_and_edges(rows)
     nodes = _apply_blocked_by(nodes)

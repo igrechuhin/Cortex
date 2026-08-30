@@ -63,12 +63,16 @@ def render_plan_dependency_edges_ascii(graph: ArtifactGraph, *, max_edges: int) 
 
 
 def build_plan_graph_surface_bundle(
-    plans_dir: Path, *, include_archive: bool, max_ascii_edges: int
+    plans_dir: Path, *, max_ascii_edges: int
 ) -> dict[str, object] | None:
-    """Single graph read for session brief, context resource, and roadmap hints."""
+    """Single graph read for session brief, context resource, and roadmap hints.
+
+    Always resolves dependencies against the archive so a plan whose deps are
+    archived ``status: DONE`` reports READY, matching ``plan(operation="graph")``.
+    """
     if not plans_dir.is_dir():
         return None
-    graph = compute_artifact_graph(plans_dir, include_archive=include_archive)
+    graph = compute_artifact_graph(plans_dir)
     blocked_detail: dict[str, list[str]] = {}
     for slug in graph.blocked:
         node = graph.nodes.get(slug)

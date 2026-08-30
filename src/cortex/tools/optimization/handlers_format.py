@@ -215,9 +215,7 @@ def inject_plan_graph_into_context_result(
     from cortex.tools.plans.plan_graph import build_plan_graph_surface_bundle
 
     plans_dir = get_cortex_path(project_root, CortexResourceType.PLANS)
-    bundle = build_plan_graph_surface_bundle(
-        plans_dir, include_archive=False, max_ascii_edges=10
-    )
+    bundle = build_plan_graph_surface_bundle(plans_dir, max_ascii_edges=10)
     if bundle is None:
         return result_str
     try:

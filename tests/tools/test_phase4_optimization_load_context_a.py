@@ -133,7 +133,7 @@ class TestLoadContext:
                 side_effect=_get_manager_helper,
             ),
         ):
-            # Act - pass explicit budget so validation passes; mock yields effective 0
+            # Act - pass an explicit budget equal to the response reserve
             result_str = await _load_context_impl(
                 task_description="Test task",
                 token_budget=10000,
@@ -141,10 +141,10 @@ class TestLoadContext:
             )
             result = json.loads(result_str)
 
-            # Assert
+            # Assert: the reserve is capped at half the budget, so a request equal
+            # to the reserve still leaves room for context instead of collapsing to 0.
             assert result["status"] == "success"
-            # Effective budget = min(10000, 100000) - 10000 = 0
-            assert result["token_budget"] == 0
+            assert result["token_budget"] == 5000
 
     async def test_load_context_zero_budget_non_trivial_returns_validation_error(
         self, mock_project_root: Path, mock_managers: dict[str, object]
@@ -195,7 +195,8 @@ class TestLoadContext:
 
             # Assert: normalized to default budget path, success
             assert result["status"] == "success"
-            assert result["token_budget"] == 0  # mock: default 10000 - reserve 10000
+            # mock default 10000, reserve capped at half -> 5000 usable, never 0
+            assert result["token_budget"] == 5000
 
     async def test_load_context_dependency_aware_strategy(
         self, mock_project_root: Path, mock_managers: dict[str, object]

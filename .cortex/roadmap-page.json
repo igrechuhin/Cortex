@@ -1,0 +1,6 @@
+{
+  "url": "https://claude.ai/code/artifact/3976d844-0a8e-4f70-96ab-dceda53c146d",
+  "updated": "2026-08-30",
+  "source": ".cortex/memory-bank/roadmap.md",
+  "note": "First publish. Pass this url as `url` on every redeploy so the operator's link stays stable."
+}
