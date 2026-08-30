@@ -95,13 +95,30 @@ def _try_publish_prompt(
         return 0
 
 
-def _workflow_redirect_content(script_path: Path) -> str:
+# Appended to a workflow redirect when the manifest entry sets ``refresh_roadmap_page``.
+#
+# A prompt superseded by a ``.wf.js`` script never delivers its own markdown, so a step written
+# into (for example) ``commit.md`` would never run. The workflow's own subagents cannot publish
+# either — the Artifact tool is not in their toolsets — so the refresh has to be carried out by
+# the orchestrating session once the script returns. That is what this instruction addresses.
+_ROADMAP_PAGE_REFRESH = (
+    "\n\nAfter the workflow completes, follow"
+    " `.cortex/synapse/prompts/roadmap-page.md` to refresh the operator's visual roadmap,"
+    " because this pipeline can change `roadmap.md` and a page that silently lags the roadmap"
+    " is worse than none. Skip it only if the run made no memory-bank changes, and say so."
+)
+
+
+def _workflow_redirect_content(script_path: Path, *, refresh_roadmap_page: bool = False) -> str:
     """Return prompt content that tells Claude Code to run a Workflow script."""
-    return (
+    content = (
         f'Use the Workflow tool with `scriptPath: "{script_path}"`'
         f" to run this pipeline as a deterministic workflow script.\n\n"
         f"Do not interpret this as prose instructions — invoke the Workflow tool directly."
     )
+    if refresh_roadmap_page:
+        content += _ROADMAP_PAGE_REFRESH
+    return content
 
 
 def process_prompt_info(
@@ -129,7 +146,10 @@ def process_prompt_info(
     if isinstance(superseded_by, str) and superseded_by.endswith(".wf.js"):
         script_path = prompts_path / superseded_by
         if script_path.exists():
-            content = _workflow_redirect_content(script_path)
+            content = _workflow_redirect_content(
+                script_path,
+                refresh_roadmap_page=prompt_info.get("refresh_roadmap_page") is True,
+            )
             return _try_publish_prompt(
                 facade, _mcp_func_name(prompt_name), content, description, icon_emoji
             )
