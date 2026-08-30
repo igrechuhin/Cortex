@@ -445,8 +445,26 @@ def _filter_references_from_ghost_phases(
     return valid
 
 
+# Markdown files that live in the plans directory but are not plans, so a roadmap must not be
+# required to link them: the directory's own README, the plan TEMPLATE, and generated artifacts
+# such as a dependency graph.
+#
+# Requiring roadmap.md to cite these forces every project to list non-work in its backlog. Worse,
+# when a roadmap is restructured they surface as unlinked-plan *errors*, which look like real
+# omissions and hide the genuine ones. Matched case-insensitively on the file name only —
+# deliberately not on frontmatter, since plans predating the frontmatter convention are still
+# plans and must keep failing when they go unlinked.
+_NON_PLAN_FILENAMES = frozenset({"readme.md", "dependency-graph.md", "index.md"})
+
+
+def _is_plan_document(plan_path: Path) -> bool:
+    """Whether a markdown file under the plans directory is an actual plan."""
+    name = plan_path.name.lower()
+    return name not in _NON_PLAN_FILENAMES and not name.startswith("template")
+
+
 def _list_non_archived_plan_paths(plans_root: Path) -> list[Path]:
-    """Return list of non-archived .md plan paths under plans_root."""
+    """Return list of non-archived plan documents under plans_root."""
     out: list[Path] = []
     for plan_path in plans_root.rglob("*.md"):
         try:
@@ -454,6 +472,8 @@ def _list_non_archived_plan_paths(plans_root: Path) -> list[Path]:
         except ValueError:
             continue
         if Path(CortexResourceType.PLANS_ARCHIVE.value).name in relative_to_plans.parts:
+            continue
+        if not _is_plan_document(plan_path):
             continue
         out.append(plan_path)
     return out

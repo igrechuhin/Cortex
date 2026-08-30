@@ -146,6 +146,58 @@ class TestValidateRoadmapSyncEnhancements:
             # Path is reported relative to project root
             assert str(plan_file.relative_to(project_root)) in result.unlinked_plans
 
+    def test_validate_sync_excludes_plans_dir_scaffolding_from_unlinked(self) -> None:
+        """README, TEMPLATE and generated artifacts in the plans dir are not plans.
+
+        They live under .cortex/plans but describe no work, so requiring roadmap.md to link them
+        forces non-work into the backlog. Worse, on a roadmap restructure they surface as
+        unlinked-plan errors that look like real omissions and mask the genuine ones — observed on
+        TradeWing 2026-08-30, where a rewritten roadmap linking all 50 real plans still failed with
+        exactly these three files.
+        """
+        # Arrange
+        with TemporaryDirectory() as tmpdir:
+            project_root = Path(tmpdir)
+            plans_dir = get_cortex_path(project_root, CortexResourceType.PLANS)
+            plans_dir.mkdir(parents=True)
+            for scaffold in ("README.md", "TEMPLATE.plan.md", "dependency-graph.md"):
+                _ = (plans_dir / scaffold).write_text("# Scaffolding\n")
+            real_plan = plans_dir / "ship-the-thing.md"
+            _ = real_plan.write_text("# Real plan\n")
+
+            roadmap_content = (
+                "## Blockers (ASAP Priority)\n\n"
+                "- PENDING - Ship it. Plan: .cortex/plans/ship-the-thing.md\n"
+            )
+
+            # Act
+            result = validate_roadmap_sync(project_root, roadmap_content)
+
+            # Assert: the linked real plan satisfies the check; scaffolding is not demanded.
+            assert result.unlinked_plans == []
+            assert result.valid is True
+
+    def test_validate_sync_still_flags_an_unlinked_plan_beside_scaffolding(self) -> None:
+        """Excluding scaffolding must not weaken detection of genuinely unlinked plans."""
+        # Arrange
+        with TemporaryDirectory() as tmpdir:
+            project_root = Path(tmpdir)
+            plans_dir = get_cortex_path(project_root, CortexResourceType.PLANS)
+            plans_dir.mkdir(parents=True)
+            _ = (plans_dir / "README.md").write_text("# Plans dir\n")
+            forgotten = plans_dir / "forgotten-work.md"
+            _ = forgotten.write_text("# Forgotten\n")
+
+            roadmap_content = "## Blockers (ASAP Priority)\n\nNo entries yet.\n"
+
+            # Act
+            result = validate_roadmap_sync(project_root, roadmap_content)
+
+            # Assert
+            assert result.valid is False
+            assert str(forgotten.relative_to(project_root)) in result.unlinked_plans
+            assert "README.md" not in " ".join(result.unlinked_plans)
+
     def test_validate_sync_excludes_archive_plans_from_unlinked(self) -> None:
         """Plans under .cortex/plans/archive/ are excluded from unlinked_plans."""
         # Arrange: plan only in archive, no reference in roadmap
