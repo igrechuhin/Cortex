@@ -21,6 +21,7 @@ from cortex.memory.wal import (
     ToolInvocationLog,
     WALEntry,
 )
+from cortex.memory.wal_content import WalAsOfResult, wal_as_of
 from cortex.memory.wal_hooks import wal_agent_hint
 from cortex.server import mcp
 
@@ -33,6 +34,7 @@ class MemoryWalToolOp(StrEnum):
     SNAPSHOT = "snapshot"
     RESTORE = "restore"
     TOOL_INVOCATIONS = "tool_invocations"
+    AS_OF = "as_of"
 
 
 class MemoryWALInput(BaseModel):
@@ -41,11 +43,18 @@ class MemoryWALInput(BaseModel):
     model_config = ConfigDict(extra=EXTRA_FORBID)
 
     operation: MemoryWalToolOp = Field(
-        description="read | anomalies | snapshot | restore | tool_invocations"
+        description="read | anomalies | snapshot | restore | tool_invocations | as_of"
     )
     since: str | None = Field(default=None, description="ISO lower bound for read")
     label: str | None = Field(
         default=None, description="Snapshot label (restore required)"
+    )
+    file: str | None = Field(
+        default=None,
+        description="Project-relative memory-bank path for as_of",
+    )
+    step_number: int | None = Field(
+        default=None, ge=0, description="Experience-store step number for as_of"
     )
 
 
@@ -60,10 +69,20 @@ class MemoryWALResult(BaseModel):
     snapshot_path: str | None = None
     files_restored: int | None = None
     tool_invocations: list[ToolInvocationEntry] | None = None
+    as_of: WalAsOfResult | None = None
 
 
 def _default_snapshot_label() -> str:
     return datetime.now(UTC).strftime("pre-compact-%Y%m%dT%H%M%SZ")
+
+
+def _as_of_result(project_root: Path, data: MemoryWALInput) -> WalAsOfResult:
+    """Validate as_of inputs and reconstruct the requested historical view."""
+    if not data.file or not data.file.strip():
+        raise ValueError("as_of requires a non-empty file")
+    if data.step_number is None:
+        raise ValueError("as_of requires step_number")
+    return wal_as_of(project_root, data.file.strip(), data.step_number)
 
 
 def handle_memory_wal_sync(project_root: Path, data: MemoryWALInput) -> MemoryWALResult:
@@ -81,6 +100,9 @@ def handle_memory_wal_sync(project_root: Path, data: MemoryWALInput) -> MemoryWA
         label = data.label or _default_snapshot_label()
         snap = wal.snapshot(label)
         return MemoryWALResult(operation=op.value, snapshot_path=str(snap))
+    if op == MemoryWalToolOp.AS_OF:
+        as_of = _as_of_result(project_root, data)
+        return MemoryWALResult(operation=op.value, as_of=as_of)
     if op == MemoryWalToolOp.TOOL_INVOCATIONS:
         invocations = ToolInvocationLog(wal_dir).read(session_id=wal_agent_hint())
         return MemoryWALResult(operation=op.value, tool_invocations=invocations)
@@ -103,6 +125,8 @@ async def memory_wal(
     operation: str = "read",
     since: str | None = None,
     label: str | None = None,
+    file: str | None = None,
+    step_number: int | None = None,
     ctx: MCPContext | None = None,
 ) -> str:
     """Inspect or manage the memory-bank WAL (JSONL audit log and snapshots).
@@ -119,6 +143,9 @@ async def memory_wal(
     - memory_wal(operation="anomalies") — heuristic warnings
     - memory_wal(operation="snapshot", label="backup-2026-04-15")
     - memory_wal(operation="restore", label="backup-2026-04-15")
+    - memory_wal(operation="as_of", file=".cortex/memory-bank/activeContext.md",
+      step_number=7) - what that file said at experience step 7 (analyze
+      pipeline evidence; hash-verified, raises when history was pruned).
     - memory_wal(operation="tool_invocations") — current session's redacted
       MCP tool-call sequence (tool name, arg key names, outcome; no argument
       values) for analyze-tools/analyze-session consolidation-candidate
@@ -131,7 +158,13 @@ async def memory_wal(
     root = await get_or_resolve_project_root(ctx)
     try:
         payload = MemoryWALInput.model_validate(
-            {"operation": operation, "since": since, "label": label}
+            {
+                "operation": operation,
+                "since": since,
+                "label": label,
+                "file": file,
+                "step_number": step_number,
+            }
         )
         result = handle_memory_wal_sync(root, payload)
         return result.model_dump_json(indent=2)

@@ -11,11 +11,13 @@ from cortex.core.session_logger import get_session_id
 from cortex.memory.wal import (
     MemoryWAL,
     ToolInvocationLog,
+    WALEntry,
     WalOperation,
     WalStatus,
     wal_build_entry,
     wal_build_tool_invocation_entry,
 )
+from cortex.memory.wal_content import wal_content_fields
 
 logger = logging.getLogger(__name__)
 
@@ -43,6 +45,37 @@ def wal_relative_file(project_root: Path, file_path: Path) -> str:
     return file_path.resolve().relative_to(project_root.resolve()).as_posix()
 
 
+def _build_text_mutation_entry(
+    project_root: Path,
+    relative_file: str,
+    operation: WalOperation,
+    before_exists: bool,
+    before_text: str,
+    after_text: str,
+    status: WalStatus,
+    error_detail: str | None,
+) -> WALEntry:
+    """Assemble the WAL entry (audit fields plus AS-OF content fields)."""
+    hint = wal_agent_hint()
+    return wal_build_entry(
+        operation=operation,
+        relative_file=relative_file,
+        agent_hint=hint,
+        before_exists=before_exists,
+        before_text=before_text,
+        after_text=after_text,
+        status=status,
+        error=error_detail,
+        content_fields=wal_content_fields(
+            project_root=project_root,
+            relative_file=relative_file,
+            agent_hint=hint,
+            before_exists=before_exists,
+            before_text=before_text,
+        ),
+    )
+
+
 def try_wal_record_text_mutation(
     project_root: Path | None,
     file_path: Path,
@@ -58,17 +91,17 @@ def try_wal_record_text_mutation(
         return
     try:
         rel = wal_relative_file(project_root, file_path)
-        wal_dir = project_root / ".cortex" / "wal"
-        entry = wal_build_entry(
-            operation=operation,
-            relative_file=rel,
-            agent_hint=wal_agent_hint(),
-            before_exists=before_exists,
-            before_text=before_text,
-            after_text=after_text,
-            status=WalStatus.OK if status_ok else WalStatus.ERROR,
-            error=error_detail,
+        entry = _build_text_mutation_entry(
+            project_root,
+            rel,
+            operation,
+            before_exists,
+            before_text,
+            after_text,
+            WalStatus.OK if status_ok else WalStatus.ERROR,
+            error_detail,
         )
+        wal_dir = project_root / ".cortex" / "wal"
         MemoryWAL(wal_dir, project_root=project_root).log(entry)
     except OSError as exc:
         logger.warning("WAL log skipped for %s: %s", file_path, exc)

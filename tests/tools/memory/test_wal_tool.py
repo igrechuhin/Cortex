@@ -6,8 +6,11 @@ import json
 from pathlib import Path
 from unittest.mock import patch
 
+import pytest
+
 from cortex.memory.wal import (
     ToolInvocationLog,
+    WalOperation,
     WalStatus,
     wal_build_tool_invocation_entry,
 )
@@ -172,3 +175,48 @@ def test_memory_wal_read_last_50_cap(tmp_path: Path) -> None:
     )
     assert res.entries is not None
     assert len(res.entries) == 50
+
+
+class TestMemoryWalAsOf:
+    """``as_of`` exposes hash-verified historical views to the analyze pipeline."""
+
+    def test_as_of_returns_reconstructed_content(self, tmp_path: Path) -> None:
+        # Arrange
+        from cortex.memory.wal import MemoryWAL, WalContentFields, wal_build_entry
+        from cortex.memory.wal_content import wal_encode_reverse_delta
+
+        rel = ".cortex/memory-bank/a.md"
+        payload, codec = wal_encode_reverse_delta(True, "before")
+        entry = wal_build_entry(
+            operation=WalOperation.WRITE,
+            relative_file=rel,
+            agent_hint="t",
+            before_exists=True,
+            before_text="before",
+            after_text="after",
+            status=WalStatus.OK,
+            error=None,
+            content_fields=WalContentFields(
+                reverse_delta=payload, delta_codec=codec, step_number=4
+            ),
+        )
+        MemoryWAL(tmp_path / ".cortex" / "wal", project_root=tmp_path).log(entry)
+        # Act
+        result = handle_memory_wal_sync(
+            tmp_path,
+            MemoryWALInput(operation=MemoryWalToolOp.AS_OF, file=rel, step_number=1),
+        )
+        # Assert
+        assert result.as_of is not None
+        assert result.as_of.content == "before"
+        assert result.as_of.verified is True
+
+    def test_as_of_requires_file_and_step_number(self, tmp_path: Path) -> None:
+        # Arrange
+        missing_file = MemoryWALInput(operation=MemoryWalToolOp.AS_OF, step_number=1)
+        missing_step = MemoryWALInput(operation=MemoryWalToolOp.AS_OF, file="a.md")
+        # Act / Assert
+        with pytest.raises(ValueError, match="non-empty file"):
+            _ = handle_memory_wal_sync(tmp_path, missing_file)
+        with pytest.raises(ValueError, match="step_number"):
+            _ = handle_memory_wal_sync(tmp_path, missing_step)

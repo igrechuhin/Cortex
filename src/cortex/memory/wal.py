@@ -61,6 +61,28 @@ class WALEntry(BaseModel):
     )
     status: WalStatus
     error: str | None = None
+    reverse_delta: str | None = Field(
+        default=None,
+        description="Encoded prior content enabling AS-OF reconstruction (None for legacy/pruned lines)",
+    )
+    delta_codec: str = Field(
+        default="none", description="Codec for reverse_delta: none | pruned | zlib-b64"
+    )
+    step_number: int | None = Field(
+        default=None,
+        ge=1,
+        description="Experience-store step number of the recording session at write time",
+    )
+
+
+class WalContentFields(BaseModel):
+    """Content-preservation fields attached to a WAL entry at build time."""
+
+    model_config = ConfigDict(extra=EXTRA_FORBID, frozen=True)
+
+    reverse_delta: str | None = None
+    delta_codec: str = "none"
+    step_number: int | None = Field(default=None, ge=1)
 
 
 class ToolInvocationEntry(BaseModel):
@@ -122,6 +144,15 @@ def wal_build_tool_invocation_entry(
     )
 
 
+_NO_CONTENT_FIELDS = WalContentFields()
+
+
+def _wal_byte_delta(before_exists: bool, before_text: str, after_text: str) -> int:
+    """Signed UTF-8 byte-length change for one mutation."""
+    before_len = len(before_text.encode("utf-8")) if before_exists else 0
+    return len(after_text.encode("utf-8")) - before_len
+
+
 def wal_build_entry(
     *,
     operation: WalOperation,
@@ -132,25 +163,24 @@ def wal_build_entry(
     after_text: str,
     status: WalStatus,
     error: str | None,
+    content_fields: WalContentFields = _NO_CONTENT_FIELDS,
 ) -> WALEntry:
     """Construct a WAL entry with hashes, byte delta, and fresh id/timestamp."""
-    before_hash = "none" if not before_exists else wal_short_hash(before_text)
-    after_hash = wal_short_hash(after_text)
-    before_b = b"" if not before_exists else before_text.encode("utf-8")
-    after_b = after_text.encode("utf-8")
-    byte_delta = len(after_b) - len(before_b)
     return WALEntry(
         id=uuid.uuid4().hex[:12],
         timestamp=datetime.now(UTC).isoformat(),
         operation=operation,
         file=relative_file,
         agent_hint=agent_hint,
-        content_hash_before=before_hash,
-        content_hash_after=after_hash,
-        byte_delta=byte_delta,
-        after_byte_len=len(after_b),
+        content_hash_before=wal_short_hash(before_text) if before_exists else "none",
+        content_hash_after=wal_short_hash(after_text),
+        byte_delta=_wal_byte_delta(before_exists, before_text, after_text),
+        after_byte_len=len(after_text.encode("utf-8")),
         status=status,
         error=error,
+        reverse_delta=content_fields.reverse_delta,
+        delta_codec=content_fields.delta_codec,
+        step_number=content_fields.step_number,
     )
 
 
@@ -223,7 +253,11 @@ class MemoryWAL:
         """Atomically append one JSON line (read-merge-write + replace)."""
         line = entry.model_dump_json() + "\n"
         new_bytes = self._existing_log_bytes() + line.encode("utf-8")
-        self._atomic_write_bytes(self._log_path, new_bytes)
+        # AI: deferred import breaks the wal <-> wal_content cycle (wal_content
+        # needs WALEntry); compaction only runs on the rare over-budget write.
+        from cortex.memory.wal_content import wal_compact_log_bytes
+
+        self._atomic_write_bytes(self._log_path, wal_compact_log_bytes(new_bytes))
 
     def _existing_log_bytes(self) -> bytes:
         if not self._log_path.is_file():
