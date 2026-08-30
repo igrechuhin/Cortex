@@ -1,10 +1,10 @@
 ---
 title: "Reduce Oversized Source Modules (>400 lines)"
 component: "src/cortex (multiple)"
-work_type: "refactor"
-status: "COMPLETE"
-priority: "Medium"
-created: "2026-03-07"
+work_type: refactor
+status: DONE
+priority: Medium
+created: 2026-03-07
 execution_order: 21
 depends_on: []
 ---

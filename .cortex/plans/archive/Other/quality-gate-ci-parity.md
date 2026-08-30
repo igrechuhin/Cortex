@@ -3,7 +3,7 @@ title: "Ensure quality gate CI parity: close remaining gaps between local and CI
 component: quality
 work_type: fix
 status: IN_PROGRESS
-priority: high
+priority: High
 created: 2026-03-21
 depends_on: []
 ---

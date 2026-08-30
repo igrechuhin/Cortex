@@ -1,10 +1,10 @@
 ---
 title: "Blocker: Make Pre-Commit Job Status Observable and Bounded"
 component: "Commit/implement pipelines - pre-commit job orchestration"
-work_type: "infra"
-status: "COMPLETE"
-priority: "Blocker"
-created: "2026-03-12"
+work_type: infrastructure
+status: DONE
+priority: Blocker
+created: 2026-03-12
 execution_order: 2
 depends_on: []
 ---

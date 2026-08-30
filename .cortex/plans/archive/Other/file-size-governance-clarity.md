@@ -3,7 +3,7 @@ title: "Clarify file/function size governance: document logical-line counting"
 component: documentation
 work_type: fix
 status: PENDING
-priority: high
+priority: High
 created: 2026-03-21
 depends_on: []
 ---

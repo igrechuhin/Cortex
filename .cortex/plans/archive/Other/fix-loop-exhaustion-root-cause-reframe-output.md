@@ -1,10 +1,10 @@
 ---
 title: "Fix-Loop Exhaustion — Root-Cause Reframe Output"
 component: "synapse-fix-workflow"
-work_type: "docs"
-status: "PENDING"
-priority: "Medium"
-created: "2026-04-16"
+work_type: docs
+status: PENDING
+priority: Medium
+created: 2026-04-16
 depends_on: []
 ---
 

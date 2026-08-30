@@ -1,10 +1,10 @@
 ---
 title: "Prompt-Prefix Byte Stability Audit for Tool Schemas and Resources"
 component: "core"
-work_type: "optimize"
-status: COMPLETE
-priority: "High"
-created: "2026-08-06"
+work_type: optimize
+status: DONE
+priority: High
+created: 2026-08-06
 depends_on: []
 ---
 

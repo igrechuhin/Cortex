@@ -1,10 +1,10 @@
 ---
 title: "Skill Pack Trigger Accuracy Benchmark and Description Tuning"
 component: "tools"
-work_type: "optimize"
+work_type: optimize
 status: PENDING
-priority: "Medium"
-created: "2026-08-06"
+priority: Medium
+created: 2026-08-06
 depends_on: []
 ---
 

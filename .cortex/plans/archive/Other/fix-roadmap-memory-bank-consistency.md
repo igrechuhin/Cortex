@@ -3,7 +3,7 @@ title: "Reconstruct roadmap backlog and enforce docs-gate consistency invariant"
 component: memory-bank
 work_type: fix
 status: IN_PROGRESS
-priority: high
+priority: High
 created: 2026-03-22
 depends_on: []
 sources:

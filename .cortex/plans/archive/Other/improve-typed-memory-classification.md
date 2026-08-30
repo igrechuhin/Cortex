@@ -1,9 +1,9 @@
 ---
 title: "Improvement: Typed Memory Classification for Memory Bank Entries"
 component: memory-bank
-work_type: improvement
+work_type: feature
 status: PENDING
-priority: medium
+priority: Medium
 created: 2026-04-14
 depends_on: []
 ---

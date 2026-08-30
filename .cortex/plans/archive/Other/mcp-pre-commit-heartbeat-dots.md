@@ -1,9 +1,9 @@
 ---
 title: Pre-commit MCP heartbeat — dot message instead of fake N/K progress
 component: execution
-work_type: improvement
-status: COMPLETE
-priority: medium
+work_type: feature
+status: DONE
+priority: Medium
 created: 2026-04-04
 depends_on: []
 ---

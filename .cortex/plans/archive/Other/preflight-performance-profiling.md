@@ -1,9 +1,9 @@
 ---
 title: "Profile and verify performance of context loading and preflight hot paths"
 component: tools/context
-work_type: quality
+work_type: fix
 status: IN_PROGRESS
-priority: medium
+priority: Medium
 created: 2026-03-22
 depends_on: []
 ---

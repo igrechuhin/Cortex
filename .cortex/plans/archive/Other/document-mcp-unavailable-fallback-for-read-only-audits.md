@@ -1,10 +1,10 @@
 ---
 title: "Document MCP-unavailable fallback for read-only audits"
 component: "AGENTS + troubleshooting guidance"
-work_type: "docs"
-status: "PENDING"
-priority: "MEDIUM"
-created: "2026-03-20"
+work_type: docs
+status: PENDING
+priority: Medium
+created: 2026-03-20
 depends_on: []
 ---
 

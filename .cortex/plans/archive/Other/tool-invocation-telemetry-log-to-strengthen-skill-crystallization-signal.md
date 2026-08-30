@@ -1,10 +1,10 @@
 ---
 title: "Tool-Invocation Telemetry Log to Strengthen Skill-Crystallization Signal"
 component: "self-improvement"
-work_type: "feature"
+work_type: feature
 status: PENDING
-priority: "Medium"
-created: "2026-07-23"
+priority: Medium
+created: 2026-07-23
 depends_on: []
 ---
 

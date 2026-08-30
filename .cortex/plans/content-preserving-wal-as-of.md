@@ -1,10 +1,10 @@
 ---
 title: "Content-Preserving WAL for AS-OF Reconstruction"
 component: "memory"
-work_type: "feature"
+work_type: feature
 status: READY
-priority: "Low"
-created: "2026-07-19"
+priority: Low
+created: 2026-07-19
 depends_on: ["unified-experience-store", "analyze-experience-graph-queries"]
 ---
 

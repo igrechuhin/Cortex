@@ -3,7 +3,7 @@ title: "Type Policy Hardening: Remove Any from Production Code"
 component: quality
 work_type: refactor
 status: PENDING
-priority: high
+priority: High
 created: 2026-04-12
 depends_on: []
 ---

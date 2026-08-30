@@ -3,7 +3,7 @@ title: "Narrow exceptions in python_adapter_checks.py"
 component: framework_adapters
 work_type: fix
 status: PENDING
-priority: high
+priority: High
 created: 2026-03-22
 depends_on: []
 ---

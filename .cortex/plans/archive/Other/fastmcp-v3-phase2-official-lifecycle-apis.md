@@ -1,9 +1,9 @@
 ---
 title: "FastMCP v3 — Phase 2: Replace Internal Handler Patches with Official APIs"
 component: "server"
-work_type: "migration"
-status: COMPLETE
-priority: high
+work_type: migration
+status: DONE
+priority: High
 created: 2026-04-13
 depends_on:
   - fastmcp-v3-phase1-dependency-and-imports

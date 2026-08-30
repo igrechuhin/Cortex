@@ -2,8 +2,8 @@
 title: "Analyze Feedback Loop: Post-Prompt Self-Improvement"
 component: synapse
 work_type: feature
-status: COMPLETE
-priority: high
+status: DONE
+priority: High
 created: 2026-03-31
 depends_on: []
 ---

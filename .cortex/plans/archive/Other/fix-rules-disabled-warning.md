@@ -3,7 +3,7 @@ title: "fix.md: Surface cortex://rules status:disabled as ⚠️ warning instead
 component: synapse/prompts
 work_type: fix
 status: PENDING
-priority: medium
+priority: Medium
 created: 2026-03-29
 depends_on: []
 ---

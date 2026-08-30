@@ -1,10 +1,10 @@
 ---
 title: "Convert do.md orchestration to Claude Code dynamic Workflow script"
 component: "skill_pack"
-work_type: "feature"
+work_type: feature
 status: PENDING
-priority: "High"
-created: "2026-06-24"
+priority: High
+created: 2026-06-24
 depends_on: []
 ---
 

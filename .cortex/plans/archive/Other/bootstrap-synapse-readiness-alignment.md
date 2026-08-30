@@ -3,7 +3,7 @@ title: "Align bootstrap.sh Synapse readiness check with check_synapse.sh"
 component: scripts
 work_type: fix
 status: PENDING
-priority: high
+priority: High
 created: 2026-03-21
 depends_on: []
 ---

@@ -1,10 +1,10 @@
 ---
 title: "Make Synapse Prompts Agent-Agnostic"
 component: "synapse/prompts"
-work_type: "fix"
-status: "IN_PROGRESS"
-priority: "Medium"
-created: "2026-03-07"
+work_type: fix
+status: IN_PROGRESS
+priority: Medium
+created: 2026-03-07
 execution_order: 22
 depends_on: []
 ---

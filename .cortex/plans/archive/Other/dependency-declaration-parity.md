@@ -3,7 +3,7 @@ title: "Automate dependency parity between pyproject.toml and requirements.txt"
 component: build
 work_type: fix
 status: PENDING
-priority: medium
+priority: Medium
 created: 2026-03-21
 depends_on: []
 ---

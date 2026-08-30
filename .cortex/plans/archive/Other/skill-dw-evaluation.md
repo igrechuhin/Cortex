@@ -1,10 +1,10 @@
 ---
 title: "Promote evaluation skill to dynamic workflow with structured pipeline output"
 component: "skill_pack"
-work_type: "feature"
+work_type: feature
 status: BLOCKED
-priority: "Low"
-created: "2026-06-24"
+priority: Low
+created: 2026-06-24
 depends_on: ["skill-dw-quality", "skill-dw-planning"]
 ---
 

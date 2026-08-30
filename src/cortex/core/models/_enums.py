@@ -98,6 +98,13 @@ class PlanStatus(str, Enum):
     READY = "READY"
 
 
+class PlanExecutionMode(str, Enum):
+    """Who executes a plan (plan frontmatter ``execution``)."""
+
+    AGENT = "agent"
+    OPERATOR = "operator"
+
+
 class PlanningMode(str, Enum):
     """How `/cortex/plan` materializes sections (fast-forward vs human-in-the-loop)."""
 

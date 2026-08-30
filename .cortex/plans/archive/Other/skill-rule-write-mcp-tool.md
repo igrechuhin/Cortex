@@ -3,7 +3,7 @@ title: "MCP Tool for Writing Skills and Rules from Analysis Agents"
 component: skill_pack
 work_type: feature
 status: PENDING
-priority: high
+priority: High
 created: 2026-04-07
 depends_on: []
 ---

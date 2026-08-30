@@ -109,7 +109,9 @@ _ROADMAP_PAGE_REFRESH = (
 )
 
 
-def _workflow_redirect_content(script_path: Path, *, refresh_roadmap_page: bool = False) -> str:
+def _workflow_redirect_content(
+    script_path: Path, *, refresh_roadmap_page: bool = False
+) -> str:
     """Return prompt content that tells Claude Code to run a Workflow script."""
     content = (
         f'Use the Workflow tool with `scriptPath: "{script_path}"`'
@@ -119,6 +121,30 @@ def _workflow_redirect_content(script_path: Path, *, refresh_roadmap_page: bool 
     if refresh_roadmap_page:
         content += _ROADMAP_PAGE_REFRESH
     return content
+
+
+def _try_workflow_redirect(
+    facade: ModuleType,
+    prompt_info: ModelDict,
+    prompts_path: Path,
+    prompt_name: str,
+    description: str,
+    icon_emoji: str | None,
+) -> int | None:
+    """Publish a Workflow-script redirect prompt, or None when not applicable."""
+    superseded_by = prompt_info.get("superseded_by")
+    if not (isinstance(superseded_by, str) and superseded_by.endswith(".wf.js")):
+        return None
+    script_path = prompts_path / superseded_by
+    if not script_path.exists():
+        return None
+    content = _workflow_redirect_content(
+        script_path,
+        refresh_roadmap_page=prompt_info.get("refresh_roadmap_page") is True,
+    )
+    return _try_publish_prompt(
+        facade, _mcp_func_name(prompt_name), content, description, icon_emoji
+    )
 
 
 def process_prompt_info(
@@ -142,17 +168,11 @@ def process_prompt_info(
         return 0
     description, icon_emoji = _description_and_icon(prompt_info)
 
-    superseded_by = prompt_info.get("superseded_by")
-    if isinstance(superseded_by, str) and superseded_by.endswith(".wf.js"):
-        script_path = prompts_path / superseded_by
-        if script_path.exists():
-            content = _workflow_redirect_content(
-                script_path,
-                refresh_roadmap_page=prompt_info.get("refresh_roadmap_page") is True,
-            )
-            return _try_publish_prompt(
-                facade, _mcp_func_name(prompt_name), content, description, icon_emoji
-            )
+    redirected = _try_workflow_redirect(
+        facade, prompt_info, prompts_path, prompt_name, description, icon_emoji
+    )
+    if redirected is not None:
+        return redirected
 
     content = load_prompt_content(prompts_path, category_name, filename)
     if not content:

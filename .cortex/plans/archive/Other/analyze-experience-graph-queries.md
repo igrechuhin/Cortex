@@ -1,10 +1,10 @@
 ---
 title: "Rewire /cortex/analyze from Transcript Scraping to Experience Queries"
 component: "analyze"
-work_type: "refactor"
+work_type: refactor
 status: DONE
-priority: "Medium"
-created: "2026-07-19"
+priority: Medium
+created: 2026-07-19
 depends_on: ["unified-experience-store"]
 ---
 

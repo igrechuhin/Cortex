@@ -1,9 +1,9 @@
 ---
 title: "MCP docs, README, and CI — single source of truth for published tool surface"
 component: documentation
-work_type: governance
+work_type: infrastructure
 status: PENDING
-priority: P0
+priority: Critical
 created: 2026-03-21
 depends_on: []
 sources:

@@ -1,9 +1,9 @@
 ---
 title: "Decompose oversized tool modules by responsibility boundaries"
 component: tools
-work_type: refactoring
+work_type: refactor
 status: DONE
-priority: medium
+priority: Medium
 created: 2026-03-21
 depends_on: []
 ---

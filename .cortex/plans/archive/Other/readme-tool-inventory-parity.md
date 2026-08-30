@@ -3,7 +3,7 @@ title: "README Tool Inventory Parity Fix"
 component: documentation
 work_type: fix
 status: PENDING
-priority: high
+priority: High
 created: 2026-04-12
 depends_on: []
 ---

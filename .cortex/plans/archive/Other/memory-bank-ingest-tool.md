@@ -3,7 +3,7 @@ title: "Ingest Tool for Cortex Memory Bank (/cortex/ingest)"
 component: memory-bank
 work_type: feature
 status: PENDING
-priority: medium
+priority: Medium
 created: 2026-04-07
 depends_on:
   - memory-bank-operations-log.md

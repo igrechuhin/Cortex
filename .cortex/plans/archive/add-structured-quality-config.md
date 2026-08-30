@@ -1,10 +1,10 @@
 ---
 title: "Add Structured Quality Configuration"
 component: "cortex/config"
-work_type: "feature"
-status: "COMPLETE"
-priority: "High"
-created: "2026-03-07"
+work_type: feature
+status: DONE
+priority: High
+created: 2026-03-07
 execution_order: 7
 depends_on: []
 ---

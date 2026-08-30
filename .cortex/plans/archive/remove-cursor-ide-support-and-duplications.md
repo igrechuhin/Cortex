@@ -1,10 +1,10 @@
 ---
 title: "Remove Cursor IDE support and duplications"
 component: "structure"
-work_type: "cleanup"
+work_type: refactor
 status: DONE
-priority: "Medium"
-created: "2026-07-23"
+priority: Medium
+created: 2026-07-23
 completed: "2026-07-23"
 ---
 

@@ -1,10 +1,10 @@
 ---
 title: "Promote quality skill to dynamic workflow with retry loop"
 component: "skill_pack"
-work_type: "feature"
+work_type: feature
 status: PENDING
-priority: "High"
-created: "2026-06-24"
+priority: High
+created: 2026-06-24
 depends_on: []
 ---
 

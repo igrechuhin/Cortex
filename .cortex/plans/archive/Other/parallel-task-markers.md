@@ -2,8 +2,8 @@
 title: "Parallel Task Markers [P]"
 component: planning
 work_type: feature
-status: COMPLETE
-priority: medium
+status: DONE
+priority: Medium
 created: 2026-04-06
 depends_on: []
 ---

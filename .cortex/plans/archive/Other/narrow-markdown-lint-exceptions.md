@@ -3,7 +3,7 @@ title: "Narrow broad exception handlers in markdown_lint_core.py"
 component: tools/files
 work_type: fix
 status: PENDING
-priority: medium
+priority: Medium
 created: 2026-03-21
 depends_on: []
 ---

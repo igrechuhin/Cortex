@@ -1,10 +1,10 @@
 ---
 title: "Persist Pipeline State Decisions via Checkpoints"
 component: "synapse/prompts, synapse/agents"
-work_type: "fix"
-status: "COMPLETED"
-priority: "High"
-created: "2026-03-07"
+work_type: fix
+status: DONE
+priority: High
+created: 2026-03-07
 execution_order: 8
 depends_on:
   - "add-mcp-circuit-breaker-pattern"

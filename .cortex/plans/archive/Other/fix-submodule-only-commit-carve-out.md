@@ -3,7 +3,7 @@ title: "fix.md: Explicit submodule-only commit carve-out when submodule_hygiene 
 component: synapse/prompts
 work_type: fix
 status: PENDING
-priority: high
+priority: High
 created: 2026-03-29
 depends_on: []
 ---

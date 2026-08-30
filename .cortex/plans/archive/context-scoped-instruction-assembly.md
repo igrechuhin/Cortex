@@ -2,8 +2,8 @@
 title: "Context-Scoped Instruction Assembly"
 component: context
 work_type: feature
-status: COMPLETE
-priority: high
+status: DONE
+priority: High
 created: 2026-04-06
 depends_on: []
 ---

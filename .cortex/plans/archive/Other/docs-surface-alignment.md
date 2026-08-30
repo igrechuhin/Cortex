@@ -3,7 +3,7 @@ title: "Align docs/index.md with canonical 10-tool inventory"
 component: documentation
 work_type: fix
 status: PENDING
-priority: high
+priority: High
 created: 2026-03-21
 depends_on: []
 ---

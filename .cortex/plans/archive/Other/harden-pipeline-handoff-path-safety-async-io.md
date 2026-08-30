@@ -1,10 +1,10 @@
 ---
 title: "Harden pipeline_handoff path safety & async IO"
 component: "cortex/session/pipeline-handoff"
-work_type: "fix"
-status: "PENDING"
-priority: "High"
-created: "2026-03-20"
+work_type: fix
+status: PENDING
+priority: High
+created: 2026-03-20
 execution_order: 1
 depends_on: []
 ---

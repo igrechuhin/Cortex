@@ -1,10 +1,10 @@
 ---
 title: "Fix Sensitive Data Leakage in Roadmap Logging"
 component: "validation/roadmap_sync"
-work_type: "fix"
-status: "COMPLETED"
-priority: "High"
-created: "2026-03-07"
+work_type: fix
+status: DONE
+priority: High
+created: 2026-03-07
 execution_order: 10
 depends_on: []
 ---

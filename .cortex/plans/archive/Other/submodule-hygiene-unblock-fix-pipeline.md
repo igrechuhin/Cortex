@@ -1,9 +1,9 @@
 ---
 title: Submodule Hygiene Unblock for Fix Pipeline
 component: tooling
-work_type: blocker
+work_type: fix
 status: PENDING
-priority: high
+priority: High
 created: 2026-03-27
 depends_on:
   - session-scope-lock-pattern.md

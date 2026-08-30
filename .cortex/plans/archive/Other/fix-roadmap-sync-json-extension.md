@@ -1,10 +1,10 @@
 ---
 title: "Fix roadmap_sync reference regex for .json paths"
 component: "validation"
-work_type: "fix"
+work_type: fix
 status: PENDING
-priority: "Medium"
-created: "2026-07-20"
+priority: Medium
+created: 2026-07-20
 depends_on: []
 ---
 

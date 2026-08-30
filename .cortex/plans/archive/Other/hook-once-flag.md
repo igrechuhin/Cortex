@@ -3,9 +3,9 @@ title: "Once Flag on Hooks"
 component: hooks
 work_type: feature
 status: PENDING
-priority: high
+priority: High
 created: 2026-04-06
-depends_on: ["hook-conditional-dsl.md"]
+depends_on: ["hook-conditional-dsl"]
 ---
 
 ## Once Flag on Hooks

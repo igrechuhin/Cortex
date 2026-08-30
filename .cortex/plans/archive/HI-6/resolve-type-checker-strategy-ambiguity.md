@@ -1,10 +1,10 @@
 ---
 title: "Resolve Type-Checker Strategy Ambiguity (superseded)"
 component: "project-config"
-work_type: "fix"
+work_type: fix
 status: "CANCELLED"
-priority: "High"
-created: "2026-03-07"
+priority: High
+created: 2026-03-07
 execution_order: 11
 depends_on: []
 ---

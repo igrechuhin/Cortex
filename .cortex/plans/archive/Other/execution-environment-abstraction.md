@@ -1,10 +1,10 @@
 ---
 title: "Introduce Tool Dispatch Layer for Environment-Agnostic Quality Gate Execution"
 component: "tools"
-work_type: "refactor"
+work_type: refactor
 status: PENDING
-priority: "Medium"
-created: "2026-04-20"
+priority: Medium
+created: 2026-04-20
 depends_on: []
 ---
 

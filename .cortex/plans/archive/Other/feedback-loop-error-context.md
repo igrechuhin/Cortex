@@ -3,7 +3,7 @@ title: "Feedback Loop: Pipe Quality Gate Errors Back into Agent Context"
 component: tools/session
 work_type: feature
 status: PENDING
-priority: high
+priority: High
 created: 2026-04-02
 depends_on: []
 ---

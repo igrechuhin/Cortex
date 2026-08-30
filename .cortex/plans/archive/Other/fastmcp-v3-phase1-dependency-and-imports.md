@@ -1,9 +1,9 @@
 ---
 title: "FastMCP v3 — Phase 1: Dependency Swap and Import Migration"
 component: "server"
-work_type: "migration"
+work_type: migration
 status: DONE
-priority: high
+priority: High
 created: 2026-04-13
 depends_on: []
 ---

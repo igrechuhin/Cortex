@@ -3,7 +3,7 @@ title: "Handle subprocess.TimeoutExpired in pre_commit_submodule_guard"
 component: tools/execution
 work_type: fix
 status: PENDING
-priority: medium
+priority: Medium
 created: 2026-03-21
 depends_on: []
 ---

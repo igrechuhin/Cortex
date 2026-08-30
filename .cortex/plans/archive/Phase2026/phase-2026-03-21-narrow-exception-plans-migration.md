@@ -1,9 +1,9 @@
 ---
 title: "Narrow broad exception handlers — plans completion I/O and core migration"
 component: python-quality
-work_type: refactoring
+work_type: refactor
 status: PENDING
-priority: P2
+priority: Medium
 created: 2026-03-21
 depends_on: []
 sources:

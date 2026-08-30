@@ -2,7 +2,7 @@
 id: prune-dead-tools-reduce-token-bloat
 title: "Prune Dead/Near-Dead Tools and Reduce Token-Heavy Responses"
 status: PENDING
-priority: MEDIUM
+priority: Medium
 created: 2026-04-03
 area: Cleanup
 tags: [cleanup, dead-tools, tokens, analyze, list_plans, get_plan, pruning]

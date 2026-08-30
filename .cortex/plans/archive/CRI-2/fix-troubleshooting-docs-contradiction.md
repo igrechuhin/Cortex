@@ -1,10 +1,10 @@
 ---
 title: "Fix Contradictory Coverage Documentation in Troubleshooting Guide"
 component: "docs/guides"
-work_type: "fix"
-status: "COMPLETED"
-priority: "Critical"
-created: "2026-03-07"
+work_type: fix
+status: DONE
+priority: Critical
+created: 2026-03-07
 execution_order: 2
 depends_on: []
 ---

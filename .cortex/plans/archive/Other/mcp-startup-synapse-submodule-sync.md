@@ -2,8 +2,8 @@
 title: "MCP startup: Synapse submodule sync"
 component: mcp
 work_type: feature
-status: COMPLETE
-priority: medium
+status: DONE
+priority: Medium
 created: 2026-03-28
 depends_on: []
 ---

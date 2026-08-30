@@ -1,10 +1,10 @@
 ---
 title: "Add Atomic Memory Bank Writes"
 component: "tools/files"
-work_type: "fix"
-status: "COMPLETED"
-priority: "Medium"
-created: "2026-03-07"
+work_type: fix
+status: DONE
+priority: Medium
+created: 2026-03-07
 execution_order: 17
 depends_on: []
 ---

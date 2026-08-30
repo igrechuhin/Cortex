@@ -3,7 +3,7 @@ title: "Targeted exception narrowing in validation and config paths"
 component: core
 work_type: fix
 status: PENDING
-priority: medium
+priority: Medium
 created: 2026-03-21
 depends_on: []
 ---

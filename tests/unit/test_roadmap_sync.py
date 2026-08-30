@@ -177,7 +177,9 @@ class TestValidateRoadmapSyncEnhancements:
             assert result.unlinked_plans == []
             assert result.valid is True
 
-    def test_validate_sync_still_flags_an_unlinked_plan_beside_scaffolding(self) -> None:
+    def test_validate_sync_still_flags_an_unlinked_plan_beside_scaffolding(
+        self,
+    ) -> None:
         """Excluding scaffolding must not weaken detection of genuinely unlinked plans."""
         # Arrange
         with TemporaryDirectory() as tmpdir:

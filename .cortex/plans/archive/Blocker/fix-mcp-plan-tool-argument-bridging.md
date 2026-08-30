@@ -1,10 +1,10 @@
 ---
 title: "Fix MCP Plan Tool Argument Wiring/Bridging and Audit Similar Gaps"
 component: "Cortex MCP integration and tool orchestration (implement/commit/docs pipelines)"
-work_type: "internal_tooling"
-status: "COMPLETE"
-priority: "High"
-created: "2026-03-12"
+work_type: infrastructure
+status: DONE
+priority: High
+created: 2026-03-12
 execution_order: 0
 depends_on: []
 ---

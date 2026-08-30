@@ -1,10 +1,10 @@
 ---
 title: "Enforce Post-Implementation Review Loop in /do Pipeline"
 component: "do-review-pipeline"
-work_type: "feature"
+work_type: feature
 status: PENDING
-priority: "High"
-created: "2026-04-16"
+priority: High
+created: 2026-04-16
 depends_on: []
 ---
 

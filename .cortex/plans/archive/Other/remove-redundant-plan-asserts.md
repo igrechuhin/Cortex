@@ -3,7 +3,7 @@ title: "Remove redundant asserts in plan.py"
 component: tools/plans
 work_type: fix
 status: PENDING
-priority: low
+priority: Low
 created: 2026-03-21
 depends_on: []
 ---

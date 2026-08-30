@@ -3,7 +3,7 @@ title: compress_memory_bank MCP Tool and Token Budget Tracking
 component: cortex/tools
 work_type: feature
 status: PENDING
-priority: medium
+priority: Medium
 created: 2026-04-07
 depends_on:
   - .cortex/plans/compress-synapse-memory-files.md

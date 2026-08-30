@@ -1,9 +1,9 @@
 ---
 title: "Telemetry — Synapse usage cache policy and context-usage-statistics semantics"
 component: telemetry
-work_type: governance
+work_type: infrastructure
 status: PENDING
-priority: P2
+priority: Medium
 created: 2026-03-21
 depends_on: []
 sources:

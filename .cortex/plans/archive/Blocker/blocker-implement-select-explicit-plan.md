@@ -1,10 +1,10 @@
 ---
 title: "Blocker: Implement-Select Must Respect Explicit Plan Targets"
 component: "Cortex MCP implement pipeline (selection phase)"
-work_type: "bugfix"
-status: "COMPLETE"
-priority: "Blocker"
-created: "2026-03-12"
+work_type: fix
+status: DONE
+priority: Blocker
+created: 2026-03-12
 execution_order: 1
 depends_on: []
 ---

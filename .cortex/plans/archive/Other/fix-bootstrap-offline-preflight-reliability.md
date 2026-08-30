@@ -3,7 +3,7 @@ title: "Add offline mode and preflight network/test failure differentiation for 
 component: build
 work_type: fix
 status: IN_PROGRESS
-priority: high
+priority: High
 created: 2026-03-22
 depends_on: []
 sources:

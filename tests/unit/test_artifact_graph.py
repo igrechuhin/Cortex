@@ -10,7 +10,8 @@ from cortex.core.artifact_graph import (
     register_plan_file_status_from_graph,
     resolve_upstream_plans,
 )
-from cortex.core.models import PlanStatus
+from cortex.core.models import PlanExecutionMode, PlanStatus
+from cortex.core.plan_frontmatter_normalize import normalize_plan_files
 from cortex.tools.plans.register_artifact_graph import replace_plan_frontmatter_status
 
 
@@ -194,3 +195,161 @@ def test_replace_plan_frontmatter_status_updates_and_inserts() -> None:
     no_status = "---\ntitle: t\ndepends_on: []\n---\n\nbody"
     out2 = replace_plan_frontmatter_status(no_status, PlanStatus.BLOCKED)
     assert "status: BLOCKED" in out2
+
+
+def test_depends_on_tolerates_md_extension_and_path_prefix(tmp_path: Path) -> None:
+    # Arrange
+    _write_plan(tmp_path, "base", "DONE", [])
+    content = '---\nstatus: PENDING\ndepends_on: [".cortex/plans/base.md"]\n---\n'
+    _ = (tmp_path / "leaf.md").write_text(content, encoding="utf-8")
+
+    # Act
+    graph = compute_artifact_graph(tmp_path)
+
+    # Assert
+    assert graph.nodes["leaf"].depends_on == ["base"]
+    assert graph.nodes["leaf"].blocked_by == []
+
+
+def test_quoted_and_legacy_status_values_resolve() -> None:
+    # Arrange / Act / Assert
+    assert read_plan_status_from_content('status: "DONE"') == PlanStatus.DONE
+    assert read_plan_status_from_content('status: "COMPLETED"') == PlanStatus.DONE
+    assert read_plan_status_from_content("status: COMPLETE") == PlanStatus.DONE
+    assert (
+        read_plan_status_from_content('status: "Completed (26-05-04-22-26)"')
+        == PlanStatus.DONE
+    )
+    assert read_plan_status_from_content("status: NOT_VIABLE") == PlanStatus.PENDING
+
+
+def test_execution_frontmatter_parsed(tmp_path: Path) -> None:
+    # Arrange
+    for slug, line in (("a", "execution: operator"), ("b", 'execution: "agent"')):
+        _ = (tmp_path / f"{slug}.md").write_text(
+            f"---\nstatus: PENDING\n{line}\ndepends_on: []\n---\n", encoding="utf-8"
+        )
+    _ = (tmp_path / "c.md").write_text(
+        "---\nstatus: PENDING\ndepends_on: []\n---\n", encoding="utf-8"
+    )
+
+    # Act
+    graph = compute_artifact_graph(tmp_path)
+
+    # Assert
+    assert graph.nodes["a"].execution == PlanExecutionMode.OPERATOR
+    assert graph.nodes["b"].execution == PlanExecutionMode.AGENT
+    assert graph.nodes["c"].execution == PlanExecutionMode.AGENT
+
+
+def test_normalize_plan_files_canonicalizes_frontmatter(tmp_path: Path) -> None:
+    # Arrange
+    path = tmp_path / "leaf.md"
+    messy = (
+        '---\ntitle: "Leaf"\nwork_type: "Fix"\nstatus: "COMPLETED"\n'
+        'priority: "medium"\ncreated: "26-08-30"\nexecution: "Operator"\n'
+        'depends_on: ["base.md", ".cortex/plans/other.md"]\n---\n\nBody\n'
+    )
+    _ = path.write_text(messy, encoding="utf-8")
+    keep = tmp_path / "keep.md"
+    _ = keep.write_text(
+        "---\nstatus: NOT_VIABLE\ndepends_on: []\n---\n", encoding="utf-8"
+    )
+
+    # Act
+    changed = normalize_plan_files(tmp_path)
+
+    # Assert
+    assert changed == [path]
+    expected = (
+        '---\ntitle: "Leaf"\nwork_type: fix\nstatus: DONE\n'
+        "priority: Medium\ncreated: 2026-08-30\nexecution: operator\n"
+        'depends_on: ["base", "other"]\n---\n\nBody\n'
+    )
+    assert path.read_text(encoding="utf-8") == expected
+    assert "NOT_VIABLE" in keep.read_text(encoding="utf-8")
+
+
+def test_normalize_plan_files_canonicalizes_extended_enum_values(
+    tmp_path: Path,
+) -> None:
+    # Arrange
+    path = tmp_path / "leaf.md"
+    messy = (
+        '---\nwork_type: "MIGRATION"\nstatus: PENDING\npriority: "blocker"\n'
+        "depends_on: []\n---\n"
+    )
+    _ = path.write_text(messy, encoding="utf-8")
+
+    # Act
+    _ = normalize_plan_files(tmp_path)
+
+    # Assert
+    text = path.read_text(encoding="utf-8")
+    assert "work_type: migration" in text
+    assert "priority: Blocker" in text
+
+
+def test_normalize_plan_files_aliases_legacy_work_types(tmp_path: Path) -> None:
+    # Arrange
+    aliased = {"bugfix": "fix", "Refactoring": "refactor", "infra": "infrastructure"}
+    for raw in (*aliased, "ops"):
+        _ = (tmp_path / f"{raw}.md").write_text(
+            f"---\nwork_type: {raw}\nstatus: PENDING\ndepends_on: []\n---\n",
+            encoding="utf-8",
+        )
+
+    # Act
+    _ = normalize_plan_files(tmp_path)
+
+    # Assert
+    for raw, canonical in aliased.items():
+        text = (tmp_path / f"{raw}.md").read_text(encoding="utf-8")
+        assert f"work_type: {canonical}" in text
+    assert "work_type: infrastructure" in (tmp_path / "ops.md").read_text(
+        encoding="utf-8"
+    )
+
+
+def test_normalize_plan_files_migrates_created_dates(tmp_path: Path) -> None:
+    # Arrange
+    cases = {
+        "iso": ('created: "2026-03-07"', "created: 2026-03-07"),
+        "short_year": ('created: "26-02-15"', "created: 2026-02-15"),
+        "unpadded": ("created: 2026-3-7", "created: 2026-03-07"),
+        "placeholder": ('created: "<YYYY-MM-DD>"', 'created: "<YYYY-MM-DD>"'),
+        "impossible": ('created: "2026-13-45"', 'created: "2026-13-45"'),
+    }
+    for slug, (raw, _) in cases.items():
+        _ = (tmp_path / f"{slug}.md").write_text(
+            f"---\nstatus: PENDING\n{raw}\ndepends_on: []\n---\n", encoding="utf-8"
+        )
+
+    # Act
+    _ = normalize_plan_files(tmp_path)
+
+    # Assert
+    for slug, (_, expected) in cases.items():
+        assert expected in (tmp_path / f"{slug}.md").read_text(encoding="utf-8")
+
+
+def test_normalize_plan_files_strips_template_comments(tmp_path: Path) -> None:
+    # Arrange
+    path = tmp_path / "leaf.md"
+    messy = (
+        '---\nwork_type: "fix"   # fix | refactor | feature\n'
+        "status: PENDING   # PENDING | DONE\n"
+        "priority: Critical   # Blocker | Critical\n"
+        "execution: agent   # agent | operator\n"
+        "depends_on: []   # plan slugs\n---\n"
+    )
+    _ = path.write_text(messy, encoding="utf-8")
+
+    # Act
+    _ = normalize_plan_files(tmp_path)
+
+    # Assert
+    assert path.read_text(encoding="utf-8") == (
+        "---\nwork_type: fix\nstatus: PENDING\npriority: Critical\n"
+        "execution: agent\ndepends_on: []\n---\n"
+    )

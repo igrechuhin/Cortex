@@ -1,10 +1,10 @@
 ---
 title: "Split make quality flows into non-mutating check and fix modes"
 component: "Makefile + CI parity quality workflow"
-work_type: "refactor"
-status: "PENDING"
-priority: "HIGH"
-created: "2026-03-20"
+work_type: refactor
+status: PENDING
+priority: High
+created: 2026-03-20
 depends_on: ["Align docs to zero-arg quality pipeline and deprecate stale entrypoints"]
 ---
 

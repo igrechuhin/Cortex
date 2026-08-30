@@ -1,10 +1,10 @@
 ---
 title: "Session Runtime Token-Spend Guard"
 component: "session-tools"
-work_type: "feature"
+work_type: feature
 status: PENDING
-priority: "High"
-created: "2026-07-20"
+priority: High
+created: 2026-07-20
 depends_on: []
 ---
 

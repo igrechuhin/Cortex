@@ -1,9 +1,9 @@
 ---
 title: Compress Cortex Synapse Prompts and Memory Bank Files
 component: cortex/setup
-work_type: improvement
+work_type: feature
 status: PENDING
-priority: high
+priority: High
 created: 2026-04-07
 depends_on: []
 ---

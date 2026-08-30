@@ -1,10 +1,10 @@
 ---
 title: "Shaping Interview Prompt (shape.md) Before Plan"
 component: "synapse-prompts"
-work_type: "feature"
+work_type: feature
 status: PENDING
-priority: "High"
-created: "2026-08-02"
+priority: High
+created: 2026-08-02
 depends_on: []
 ---
 

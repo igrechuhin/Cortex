@@ -1,9 +1,9 @@
 ---
 title: "Deduplicate _session_dir helper across pre-commit modules"
 component: tools/execution
-work_type: refactoring
+work_type: refactor
 status: PENDING
-priority: low
+priority: Low
 created: 2026-03-21
 depends_on: []
 ---

@@ -1,9 +1,9 @@
 ---
 title: "Improvement: Layered Context Budget (L0–L3 Tiering) for cortex://context"
 component: context-loading
-work_type: improvement
+work_type: feature
 status: PENDING
-priority: high
+priority: High
 created: 2026-04-14
 depends_on: []
 ---

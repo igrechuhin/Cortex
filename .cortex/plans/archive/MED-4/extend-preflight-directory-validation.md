@@ -1,10 +1,10 @@
 ---
 title: "Extend Pre-Flight Directory Validation"
 component: "synapse/agents/common-checklist"
-work_type: "fix"
-status: "COMPLETED"
-priority: "Medium"
-created: "2026-03-07"
+work_type: fix
+status: DONE
+priority: Medium
+created: 2026-03-07
 execution_order: 16
 depends_on: []
 ---

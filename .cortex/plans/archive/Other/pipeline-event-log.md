@@ -1,10 +1,10 @@
 ---
 title: "Add Append-Only Event Log to Pipeline Handoff for Crash Recovery"
 component: "pipeline"
-work_type: "feature"
+work_type: feature
 status: PENDING
-priority: "High"
-created: "2026-04-20"
+priority: High
+created: 2026-04-20
 depends_on: []
 ---
 

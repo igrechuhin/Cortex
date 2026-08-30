@@ -1,9 +1,9 @@
 ---
 title: "Offline / network-restricted verification — bootstrap, docs, and triage matrix"
 component: developer-experience
-work_type: documentation
+work_type: docs
 status: PENDING
-priority: P2
+priority: Medium
 created: 2026-03-21
 depends_on: []
 sources:

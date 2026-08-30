@@ -1,9 +1,9 @@
 ---
 title: "Improve submodule preflight resilience and error messaging"
 component: ci
-work_type: enhancement
+work_type: feature
 status: PENDING
-priority: medium
+priority: Medium
 created: 2026-03-21
 depends_on: []
 ---

@@ -1,6 +1,11 @@
 <!-- memory_type: milestone -->
 # Progress Log
 
+## 2026-08-30
+
+- <!-- memory_type: status -->
+**Plan Frontmatter Normalization and Roadmap-Page-Refresh Redirect Extraction** - COMPLETE. Added `PlanExecutionMode` enum and `normalize_plan_slug`/`resolve_plan_status_token` helpers in `artifact_graph.py` tolerating quoted/legacy status spellings and `depends_on` entries with a `.md` extension or directory prefix. New `plan_frontmatter_normalize.py` rewrites plan frontmatter to the canonical schema, wired into `pre_commit_fix_quality.py`'s memory-bank lint autofix. `prompts_registration.py` workflow-redirect branch extracted to `_try_workflow_redirect`.
+
 ## 2026-08-28
 
 - <!-- memory_type: problem -->

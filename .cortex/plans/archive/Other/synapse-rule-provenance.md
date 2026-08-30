@@ -1,10 +1,10 @@
 ---
 title: "Synapse Rule Provenance from Experience Pairs"
 component: "synapse"
-work_type: "feature"
+work_type: feature
 status: PENDING
-priority: "Medium"
-created: "2026-07-19"
+priority: Medium
+created: 2026-07-19
 depends_on: ["unified-experience-store", "analyze-experience-graph-queries"]
 ---
 

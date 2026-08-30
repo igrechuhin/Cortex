@@ -3,7 +3,7 @@ title: "NEEDS CLARIFICATION Markers in Plans"
 component: planning
 work_type: feature
 status: IN_PROGRESS
-priority: high
+priority: High
 created: 2026-04-06
 depends_on: []
 ---

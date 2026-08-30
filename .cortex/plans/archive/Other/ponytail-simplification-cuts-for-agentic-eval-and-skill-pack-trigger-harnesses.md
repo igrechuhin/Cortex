@@ -1,10 +1,10 @@
 ---
 title: "Ponytail Simplification Cuts for Agentic Eval and Skill Pack Trigger Harnesses"
 component: "tools/evaluation"
-work_type: "refactor"
+work_type: refactor
 status: PENDING
-priority: "Medium"
-created: "2026-08-06"
+priority: Medium
+created: 2026-08-06
 depends_on: []
 ---
 

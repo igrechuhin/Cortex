@@ -1,9 +1,9 @@
 ---
 title: "Clean up legacy package.json and clarify Node dependency"
 component: build
-work_type: cleanup
-status: COMPLETE
-priority: low
+work_type: refactor
+status: DONE
+priority: Low
 created: 2026-03-21
 depends_on: []
 ---

@@ -1,9 +1,9 @@
 ---
 title: "Refactor: Split Oversized session/brief.py and optimization/handlers.py"
 component: "tools"
-work_type: "refactoring"
+work_type: refactor
 status: PENDING
-priority: medium
+priority: Medium
 created: 2026-04-13
 depends_on: []
 ---

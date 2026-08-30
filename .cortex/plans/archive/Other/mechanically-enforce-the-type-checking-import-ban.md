@@ -1,10 +1,10 @@
 ---
 title: "Mechanically Enforce the TYPE_CHECKING Import Ban"
 component: "quality-gate"
-work_type: "infrastructure"
+work_type: infrastructure
 status: PENDING
-priority: "Medium"
-created: "2026-08-02"
+priority: Medium
+created: 2026-08-02
 depends_on: []
 ---
 

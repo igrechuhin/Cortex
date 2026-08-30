@@ -1,10 +1,10 @@
 ---
 title: "Unified Experience Store in SQLite"
 component: "memory"
-work_type: "feature"
+work_type: feature
 status: DONE
-priority: "High"
-created: "2026-07-19"
+priority: High
+created: 2026-07-19
 depends_on: []
 ---
 

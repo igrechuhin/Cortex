@@ -1,10 +1,10 @@
 ---
 title: "Promote refactoring skill to dynamic workflow with analysis data passing"
 component: "skill_pack"
-work_type: "feature"
+work_type: feature
 status: BLOCKED
-priority: "Medium"
-created: "2026-06-24"
+priority: Medium
+created: 2026-06-24
 depends_on: ["skill-dw-quality"]
 ---
 

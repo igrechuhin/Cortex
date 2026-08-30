@@ -8,13 +8,26 @@ from pathlib import Path
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from cortex.core.models._enums import PlanStatus
+from cortex.core.models._enums import PlanExecutionMode, PlanStatus
 from cortex.core.pydantic_extra import EXTRA_FORBID
 
 _DEPENDS_RE = re.compile(
     r"^depends_on\s*:\s*\[(.*?)\]\s*$", re.IGNORECASE | re.MULTILINE
 )
-_STATUS_RE = re.compile(r"^status\s*:\s*([A-Za-z_]+)\s*$", re.IGNORECASE | re.MULTILINE)
+# AI: quotes optional and no end anchor so `status: "DONE"` and legacy
+# `status: "Completed (26-05-04)"` still resolve instead of silently
+# defaulting to PENDING.
+_STATUS_RE = re.compile(
+    r"^status\s*:\s*[\"']?([A-Za-z_]+)", re.IGNORECASE | re.MULTILINE
+)
+_EXECUTION_RE = re.compile(
+    r"^execution\s*:\s*[\"']?([A-Za-z_]+)", re.IGNORECASE | re.MULTILINE
+)
+# AI: legacy spellings that predate the PlanStatus enum.
+_STATUS_ALIASES: dict[str, PlanStatus] = {
+    "COMPLETE": PlanStatus.DONE,
+    "COMPLETED": PlanStatus.DONE,
+}
 
 
 class PlanNode(BaseModel):
@@ -28,6 +41,10 @@ class PlanNode(BaseModel):
         description="Declared dependency slugs from frontmatter",
     )
     status: PlanStatus = Field(description="Declared status from frontmatter")
+    execution: PlanExecutionMode = Field(
+        default=PlanExecutionMode.AGENT,
+        description="Who executes the plan, from frontmatter ``execution``",
+    )
     blocked_by: list[str] = Field(
         default_factory=list,
         description="Dependencies that are not DONE (computed)",
@@ -73,6 +90,20 @@ class ArtifactGraph(BaseModel):
 PlanMetadata = PlanNode
 
 
+def normalize_plan_slug(token: str) -> str:
+    """Return a bare plan slug from a raw ``depends_on`` entry.
+
+    Tolerates the two forms that used to silently resolve to nothing: a
+    trailing ``.md`` extension and a directory prefix such as
+    ``.cortex/plans/``. Both would otherwise be looked up as
+    ``<plans_dir>/<token>.md`` and never match a file.
+    """
+    slug = token.strip().strip("\"'").replace("\\", "/").rsplit("/", 1)[-1]
+    if slug.endswith(".md"):
+        slug = slug[: -len(".md")]
+    return slug
+
+
 def _parse_depends_on(plan_content: str) -> list[str]:
     match = _DEPENDS_RE.search(plan_content)
     if match is None:
@@ -82,21 +113,42 @@ def _parse_depends_on(plan_content: str) -> list[str]:
         return []
     deps: list[str] = []
     for item in raw.split(","):
-        token = item.strip().strip("\"'")
+        token = normalize_plan_slug(item)
         if token:
             deps.append(token)
     return deps
+
+
+def resolve_plan_status_token(raw: str) -> PlanStatus | None:
+    """Return the canonical status for a raw frontmatter token, or None."""
+    token = raw.strip().strip("\"'").upper()
+    for candidate in PlanStatus:
+        if candidate.value == token:
+            return candidate
+    return _STATUS_ALIASES.get(token)
 
 
 def _parse_plan_status(plan_content: str) -> PlanStatus:
     match = _STATUS_RE.search(plan_content)
     if match is None:
         return PlanStatus.PENDING
-    raw = match.group(1).strip().upper()
-    for candidate in PlanStatus:
+    return resolve_plan_status_token(match.group(1)) or PlanStatus.PENDING
+
+
+def _parse_plan_execution(plan_content: str) -> PlanExecutionMode:
+    match = _EXECUTION_RE.search(plan_content)
+    if match is None:
+        return PlanExecutionMode.AGENT
+    raw = match.group(1).strip().lower()
+    for candidate in PlanExecutionMode:
         if candidate.value == raw:
             return candidate
-    return PlanStatus.PENDING
+    return PlanExecutionMode.AGENT
+
+
+def read_plan_execution_from_content(plan_content: str) -> PlanExecutionMode:
+    """Return declared ``execution`` from YAML frontmatter (default ``agent``)."""
+    return _parse_plan_execution(plan_content)
 
 
 def read_plan_status_from_content(plan_content: str) -> PlanStatus:
@@ -238,7 +290,12 @@ def _load_raw_nodes_and_edges(
         text = path.read_text(encoding="utf-8")
         deps = _parse_depends_on(text)
         status = _parse_plan_status(text)
-        nodes[slug] = PlanNode(slug=slug, depends_on=list(deps), status=status)
+        nodes[slug] = PlanNode(
+            slug=slug,
+            depends_on=list(deps),
+            status=status,
+            execution=_parse_plan_execution(text),
+        )
         for dep in deps:
             edges.append((slug, dep))
     return nodes, edges

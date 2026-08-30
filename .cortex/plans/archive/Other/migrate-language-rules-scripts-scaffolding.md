@@ -1,9 +1,9 @@
 ---
 title: "Migration Prompt: Language-Agnostic Rules and Scripts Scaffolding"
 component: migration
-work_type: enhancement
+work_type: feature
 status: IN_PROGRESS
-priority: high
+priority: High
 created: 2026-03-26
 depends_on: []
 ---

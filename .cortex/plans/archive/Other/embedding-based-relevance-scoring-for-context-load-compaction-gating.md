@@ -1,10 +1,10 @@
 ---
 title: "Embedding-Based Relevance Scoring for Context Load/Compaction Gating"
 component: "context-management"
-work_type: "feature"
+work_type: feature
 status: PENDING
-priority: "Medium"
-created: "2026-07-23"
+priority: Medium
+created: 2026-07-23
 depends_on: []
 ---
 

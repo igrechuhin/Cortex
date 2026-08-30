@@ -3,7 +3,7 @@ title: "Add URL scheme validation to preflight registry probe"
 component: cli
 work_type: security
 status: PENDING
-priority: low
+priority: Low
 created: 2026-03-22
 depends_on: []
 covers:

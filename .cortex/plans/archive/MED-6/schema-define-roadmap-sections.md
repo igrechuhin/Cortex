@@ -1,10 +1,10 @@
 ---
 title: "Schema-Define Roadmap Section Names"
 component: "tools/plans"
-work_type: "fix"
-status: "COMPLETED"
-priority: "Medium"
-created: "2026-03-07"
+work_type: fix
+status: DONE
+priority: Medium
+created: 2026-03-07
 execution_order: 18
 depends_on: []
 ---

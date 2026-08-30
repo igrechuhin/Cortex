@@ -1,9 +1,9 @@
 ---
 title: "Fix: Stale Test-Count Metric in progress.md What Works Section"
 component: "memory-bank"
-work_type: "fix"
+work_type: fix
 status: PENDING
-priority: medium
+priority: Medium
 created: 2026-04-13
 depends_on: []
 ---

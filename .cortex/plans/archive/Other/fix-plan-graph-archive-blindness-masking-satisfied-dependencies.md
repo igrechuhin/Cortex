@@ -1,10 +1,10 @@
 ---
 title: "Fix plan(graph) archive-blindness masking satisfied dependencies"
 component: "plans"
-work_type: "fix"
+work_type: fix
 status: PENDING
-priority: "Medium"
-created: "2026-07-20"
+priority: Medium
+created: 2026-07-20
 depends_on: []
 status: PENDING
 ---

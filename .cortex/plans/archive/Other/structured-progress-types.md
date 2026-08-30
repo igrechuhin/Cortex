@@ -1,9 +1,9 @@
 ---
 title: "Per-Tool Structured Progress Types"
 component: core
-work_type: refactoring
-status: COMPLETE
-priority: medium
+work_type: refactor
+status: DONE
+priority: Medium
 created: 2026-04-06
 completed: 2026-04-09
 depends_on: []

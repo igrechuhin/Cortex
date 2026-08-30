@@ -1,10 +1,10 @@
 ---
 title: "Stop Synapse usage cache collection by default"
 component: "usage-tracking"
-work_type: "fix"
-status: "PENDING"
-priority: "High"
-created: "2026-04-22"
+work_type: fix
+status: PENDING
+priority: High
+created: 2026-04-22
 depends_on: []
 ---
 

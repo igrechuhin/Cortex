@@ -1,10 +1,10 @@
 ---
 title: "Consolidate Duplicate Roadmap Sync Models"
 component: "validation"
-work_type: "refactor"
-status: "COMPLETE"
-priority: "High"
-created: "2026-03-07"
+work_type: refactor
+status: DONE
+priority: High
+created: 2026-03-07
 execution_order: 9
 depends_on: []
 ---

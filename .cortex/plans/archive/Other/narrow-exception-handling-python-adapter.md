@@ -1,9 +1,9 @@
 ---
 title: "Narrow broad exception handling in PythonAdapter test execution"
 component: framework_adapters
-work_type: bug-fix
+work_type: fix
 status: PENDING
-priority: medium
+priority: Medium
 created: 2026-03-22
 depends_on: []
 covers:

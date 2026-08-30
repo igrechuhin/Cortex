@@ -4,7 +4,7 @@ component: synapse
 work_type: optimize
 status: PENDING
 priority: Medium
-created: "2026-06-25"
+created: 2026-06-25
 depends_on: []
 status: PENDING
 ---

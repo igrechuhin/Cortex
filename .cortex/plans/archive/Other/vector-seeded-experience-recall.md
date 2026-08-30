@@ -1,10 +1,10 @@
 ---
 title: "Vector-Seeded Experience Recall in Session Start"
 component: "retrieval"
-work_type: "feature"
+work_type: feature
 status: BLOCKED
-priority: "Medium"
-created: "2026-07-19"
+priority: Medium
+created: 2026-07-19
 depends_on: ["unified-experience-store"]
 ---
 

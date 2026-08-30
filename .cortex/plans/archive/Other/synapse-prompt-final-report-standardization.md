@@ -1,9 +1,9 @@
 ---
 title: Structured Final Reports for Cortex Synapse Prompts
 component: prompts
-work_type: improvement
-status: COMPLETED
-priority: medium
+work_type: feature
+status: DONE
+priority: Medium
 created: 2026-03-27
 depends_on: []
 ---

@@ -1,9 +1,9 @@
 ---
 title: "Improvement: Memory Write-Ahead Log for Audit Trail and Rollback"
 component: memory-bank
-work_type: improvement
-status: COMPLETE
-priority: medium
+work_type: feature
+status: DONE
+priority: Medium
 created: 2026-04-14
 completed: 2026-04-15
 depends_on: []

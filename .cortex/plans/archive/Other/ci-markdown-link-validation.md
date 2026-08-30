@@ -3,7 +3,7 @@ title: "Add CI markdown link validation for non-archive docs"
 component: ci
 work_type: feature
 status: PENDING
-priority: medium
+priority: Medium
 created: 2026-03-21
 depends_on: []
 ---

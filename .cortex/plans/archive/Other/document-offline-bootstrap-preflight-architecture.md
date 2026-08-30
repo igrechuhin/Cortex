@@ -1,9 +1,9 @@
 ---
 title: "Document offline bootstrap and preflight CLI architecture"
 component: docs
-work_type: documentation
+work_type: docs
 status: PENDING
-priority: low
+priority: Low
 created: 2026-03-22
 depends_on:
   - url-scheme-validation-preflight

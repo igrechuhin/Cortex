@@ -1,10 +1,10 @@
 ---
 title: "Calibrate Review Metric Scores with Examples"
 component: "synapse/prompts/review"
-work_type: "fix"
-status: "COMPLETE"
-priority: "Medium"
-created: "2026-03-07"
+work_type: fix
+status: DONE
+priority: Medium
+created: 2026-03-07
 execution_order: 15
 depends_on: []
 ---

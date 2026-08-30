@@ -1,9 +1,9 @@
 ---
 title: "Synapse prompt filenames: do.md and plan.md"
 component: synapse
-work_type: cleanup
+work_type: refactor
 status: PENDING
-priority: normal
+priority: Medium
 created: 2026-04-01
 depends_on: []
 ---

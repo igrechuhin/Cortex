@@ -1,10 +1,10 @@
 ---
 title: "Add Fix Loop Non-Convergence Detection"
 component: "synapse/prompts/commit"
-work_type: "fix"
-status: "COMPLETED"
-priority: "Medium"
-created: "2026-03-07"
+work_type: fix
+status: DONE
+priority: Medium
+created: 2026-03-07
 execution_order: 14
 depends_on: []
 ---

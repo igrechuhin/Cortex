@@ -1,9 +1,9 @@
 ---
 title: Make pre-commit checks job-based for Cursor MCP
 component: pre-commit-pipeline
-work_type: blocker
-status: COMPLETE
-priority: HIGH
+work_type: fix
+status: DONE
+priority: High
 created: 2026-03-10
 depends_on: []
 ---

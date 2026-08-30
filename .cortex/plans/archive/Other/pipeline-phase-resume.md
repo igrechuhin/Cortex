@@ -1,12 +1,12 @@
 ---
 title: "Add Phase Status Tracking and Resume Capability to Pipeline Agents"
 component: "pipeline"
-work_type: "feature"
-status: COMPLETE
-priority: "High"
-created: "2026-04-20"
+work_type: feature
+status: DONE
+priority: High
+created: 2026-04-20
 completion_date: "2026-04-21"
-depends_on: ["pipeline-event-log.md"]
+depends_on: ["pipeline-event-log"]
 ---
 
 ## Goal

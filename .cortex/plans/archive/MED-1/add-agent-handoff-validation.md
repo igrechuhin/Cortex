@@ -1,10 +1,10 @@
 ---
 title: "Add Schema Validation for Agent Handoff Outputs"
 component: "synapse/agents"
-work_type: "fix"
-status: "COMPLETED"
-priority: "Medium"
-created: "2026-03-07"
+work_type: fix
+status: DONE
+priority: Medium
+created: 2026-03-07
 execution_order: 13
 depends_on: []
 ---

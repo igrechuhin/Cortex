@@ -1,9 +1,9 @@
 ---
 title: "FastMCP v3 — Phase 5: Adopt New v3 Features (Lifespan, Visibility, Auth, Transforms)"
 component: "server"
-work_type: "enhancement"
-status: COMPLETE
-priority: medium
+work_type: feature
+status: DONE
+priority: Medium
 created: 2026-04-13
 depends_on:
   - fastmcp-v3-phase3-middleware

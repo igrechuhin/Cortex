@@ -1,9 +1,9 @@
 ---
 title: "FastMCP v3 — Phase 3: Middleware for Disconnect Handling and Request Logging"
 component: "server"
-work_type: "migration"
+work_type: migration
 status: PENDING
-priority: medium
+priority: Medium
 created: 2026-04-13
 depends_on:
   - fastmcp-v3-phase2-official-lifecycle-apis

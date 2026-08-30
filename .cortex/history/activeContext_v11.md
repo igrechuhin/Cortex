@@ -3,6 +3,11 @@
 
 **This file records completed work only.** For current status and upcoming work see [roadmap.md](roadmap.md).
 
+
+## Completed Work (2026-08-30)
+
+- ✅ **Plan Frontmatter Normalization and Roadmap-Page-Refresh Redirect Extraction** - COMPLETE (2026-08-30) - Added `PlanExecutionMode` enum (`agent`/`operator`) plus `normalize_plan_slug` and `resolve_plan_status_token` helpers in `artifact_graph.py`, tolerating quoted/legacy status spellings (`COMPLETE`/`COMPLETED` -> `DONE`) and `depends_on` entries carrying a `.md` extension or directory prefix that previously silently failed to resolve. New `plan_frontmatter_normalize.py` rewrites plan frontmatter in place to the canonical schema (bare enum values, quoted free text, ISO `created` dates); wired into `pre_commit_fix_quality.py`'s `_apply_memory_bank_lint_autofix` via `_apply_plan_frontmatter_autofix`, and the generated plan-stub template now emits `execution: agent` and quoted `component`. `prompts_registration.py`'s workflow-redirect branch extracted to `_try_workflow_redirect` for the `ROADMAP_PAGE_REFRESH` prompt path. Coverage N/A (Phase A reported no coverage figure).
+
 ## Completed Work (2026-08-28)
 
 - ✅ **All-or-Nothing complete_plan Input Validation** - COMPLETE (2026-08-28) - Hoisted the `progress_entry` format check to run before any write in `complete_plan`, alongside the existing `date_str` validation, via a new `_reject_bad_inputs(date_str, progress_entry)` helper in `completion.py` and `complete_plan_invalid_progress_entry_json` in `completion_ops.py`. Previously the entry-format guard ran during `apply_progress_and_archive`, after the roadmap bullet was removed and the activeContext entry inserted — a late rejection left completion partially applied (roadmap and activeContext mutated, no progress row, plan not archived) requiring manual repair. `execute_append_progress` keeps its own copy of the guard for the standalone append path. Coverage 91.36%.
@@ -397,6 +402,8 @@
 Next roadmap item: **[Fast-Forward vs. Step-by-Step Planning Modes](../plans/archive/Other/fast-forward-vs-step-by-step-modes.md)** (see [roadmap.md](roadmap.md) pending plans).
 
 ## Recent Changes
+
+Plan frontmatter normalization (2026-08-30): `PlanExecutionMode` enum and `normalize_plan_slug`/`resolve_plan_status_token` helpers added to `artifact_graph.py`; new `plan_frontmatter_normalize.py` rewrites plan frontmatter to canonical schema and is wired into `pre_commit_fix_quality.py`'s memory-bank lint autofix; `prompts_registration.py` workflow-redirect branch extracted to `_try_workflow_redirect`.
 
 All-or-nothing complete_plan validation (2026-08-28): `progress_entry` format check now runs before any write, alongside `date_str`, via `_reject_bad_inputs` in `completion.py`; previously a late rejection during archive left the roadmap and activeContext already mutated with no progress row.
 

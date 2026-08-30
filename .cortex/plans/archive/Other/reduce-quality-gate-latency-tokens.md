@@ -2,7 +2,7 @@
 id: reduce-quality-gate-latency-tokens
 title: "Reduce Quality Gate Latency and Pre-commit Token Bloat"
 status: IN_PROGRESS
-priority: HIGH
+priority: High
 created: 2026-04-03
 area: Quality & Reliability Improvements
 tags: [quality-gate, pre-commit, latency, tokens, caching, performance]

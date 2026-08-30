@@ -3,7 +3,7 @@ title: Cleanup Function-Length Exclusions in Constants
 component: quality-gate
 work_type: refactor
 status: PENDING
-priority: high
+priority: High
 created: 2026-04-07
 depends_on: []
 ---

@@ -18,6 +18,8 @@ from cortex.core.execution_env import (
     LocalExecutionEnvironment,
 )
 from cortex.core.models import JsonValue, ModelDict, OperationStatus
+from cortex.core.path_resolver import CortexResourceType, get_cortex_path
+from cortex.core.plan_frontmatter_normalize import normalize_plan_files
 from cortex.core.pydantic_extra import EXTRA_FORBID
 from cortex.services.framework_adapters.detection import detect_language_at_path
 from cortex.tools.evaluation.reflection import collect_git_diff_text
@@ -306,12 +308,13 @@ def _build_plan_stub_content(plan_title: str) -> str:
     return (
         "---\n"
         f'title: "{plan_title}"\n'
-        "component: memory-bank\n"
-        "work_type: task\n"
+        'component: "memory-bank"\n'
+        "work_type: fix\n"
         "status: PENDING\n"
-        "priority: medium\n"
+        "priority: Medium\n"
         f"created: {created_date}\n"
         "depends_on: []\n"
+        "execution: agent\n"
         "---\n\n"
         f"## {plan_title}\n\n"
         "## Goal\n\n"
@@ -336,9 +339,18 @@ def _extract_missing_plan_paths_from_findings(root: Path) -> list[Path]:
     return missing_paths
 
 
+def _apply_plan_frontmatter_autofix(root: Path) -> list[str]:
+    """Canonicalize plan frontmatter and return changed files."""
+    plans_dir = get_cortex_path(root, CortexResourceType.PLANS)
+    return [
+        str(path.relative_to(root)) if path.is_relative_to(root) else str(path)
+        for path in normalize_plan_files(plans_dir)
+    ]
+
+
 def _apply_memory_bank_lint_autofix(root: Path) -> list[str]:
     """Apply safe memory-bank housekeeping fixes and return changed files."""
-    changed_files: list[str] = []
+    changed_files: list[str] = _apply_plan_frontmatter_autofix(root)
     for path in _extract_missing_plan_paths_from_findings(root):
         if path.exists():
             continue

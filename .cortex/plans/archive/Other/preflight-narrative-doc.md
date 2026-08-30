@@ -1,9 +1,9 @@
 ---
 title: "Add narrative doc for preflight HEAD→GET fallback and http:// allowance"
 component: cli
-work_type: documentation
+work_type: docs
 status: PENDING
-priority: medium
+priority: Medium
 created: 2026-03-22
 depends_on: []
 ---

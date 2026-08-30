@@ -2,7 +2,7 @@
 id: fix-transclusion-resolution-reliability
 title: "Fix _execute_transclusion_resolution Reliability (16.6% Error Rate)"
 status: PENDING
-priority: HIGH
+priority: High
 created: 2026-04-03
 area: Quality & Reliability Improvements
 tags: [transclusion, reliability, error-rate, linking]

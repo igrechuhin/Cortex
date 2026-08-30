@@ -1,9 +1,9 @@
 ---
 title: "Roadmap entries: link to plan files"
 component: cortex-mcp
-work_type: tooling
+work_type: infrastructure
 status: PENDING
-priority: normal
+priority: Medium
 created: 2026-04-01
 depends_on: []
 ---

@@ -1,10 +1,10 @@
 ---
 title: "Add Local Environment Context Memory Artifact"
 component: "memory-bank"
-work_type: "feature"
+work_type: feature
 status: PENDING
-priority: "Medium"
-created: "2026-04-17"
+priority: Medium
+created: 2026-04-17
 depends_on: []
 ---
 

@@ -1,10 +1,10 @@
 ---
 title: "Investigate pipeline_handoff phase-state loss during long-running subagent calls"
 component: "session-tools"
-work_type: "investigation"
-status: COMPLETE
-priority: "High"
-created: "2026-07-21"
+work_type: investigation
+status: DONE
+priority: High
+created: 2026-07-21
 completed: "2026-07-21"
 depends_on: []
 ---

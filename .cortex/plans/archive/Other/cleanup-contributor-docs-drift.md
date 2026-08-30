@@ -1,9 +1,9 @@
 ---
 title: "Resolve contributor documentation drift and conflicting quality workflow instructions"
 component: docs
-work_type: cleanup
+work_type: refactor
 status: PENDING
-priority: medium
+priority: Medium
 created: 2026-03-22
 depends_on:
   - fix-roadmap-memory-bank-consistency

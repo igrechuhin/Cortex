@@ -1,9 +1,9 @@
 ---
 title: "Convert tests/test_phase5_3_4.py to pytest and guard against script-only test files"
 component: testing
-work_type: remediation
+work_type: fix
 status: PENDING
-priority: P1
+priority: High
 created: 2026-03-21
 depends_on: []
 sources:

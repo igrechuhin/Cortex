@@ -3,7 +3,7 @@ title: "Sanitize pipeline/phase path parameters in pipeline_handoff"
 component: security
 work_type: fix
 status: PENDING
-priority: high
+priority: High
 created: 2026-03-21
 depends_on: []
 ---

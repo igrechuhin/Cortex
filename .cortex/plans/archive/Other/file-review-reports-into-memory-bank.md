@@ -3,7 +3,7 @@ title: "File Review Reports into Memory Bank"
 component: memory-bank
 work_type: feature
 status: PENDING
-priority: high
+priority: High
 created: 2026-04-07
 depends_on: []
 ---

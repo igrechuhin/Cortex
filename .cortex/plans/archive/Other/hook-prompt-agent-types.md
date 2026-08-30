@@ -3,9 +3,9 @@ title: "Prompt and Agent Hook Types"
 component: hooks
 work_type: feature
 status: PENDING
-priority: medium
+priority: Medium
 created: 2026-04-06
-depends_on: ["hook-conditional-dsl.md"]
+depends_on: ["hook-conditional-dsl"]
 ---
 
 ## Prompt and Agent Hook Types

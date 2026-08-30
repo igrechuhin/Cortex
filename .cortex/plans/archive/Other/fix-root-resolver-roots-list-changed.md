@@ -3,7 +3,7 @@ title: "project_root_resolver.py: Handle roots/list_changed notification to inva
 component: cortex/core
 work_type: fix
 status: PENDING
-priority: low
+priority: Low
 created: 2026-03-29
 depends_on: []
 ---

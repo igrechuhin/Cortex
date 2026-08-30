@@ -1,10 +1,10 @@
 ---
 title: "Reduce Redundant Pipeline Checks in Commit Pipeline"
 component: "synapse/prompts/commit"
-work_type: "optimize"
-status: "COMPLETE"
-priority: "High"
-created: "2026-03-07"
+work_type: optimize
+status: DONE
+priority: High
+created: 2026-03-07
 execution_order: 12
 depends_on:
   - "add-mcp-circuit-breaker-pattern"

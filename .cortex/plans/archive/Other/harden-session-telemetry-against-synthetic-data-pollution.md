@@ -1,10 +1,10 @@
 ---
 title: "Harden session telemetry against synthetic data pollution"
 component: "session analytics / context-usage statistics"
-work_type: "fix"
-status: "IN_PROGRESS"
-priority: "MEDIUM"
-created: "2026-03-20"
+work_type: fix
+status: IN_PROGRESS
+priority: Medium
+created: 2026-03-20
 depends_on: []
 ---
 

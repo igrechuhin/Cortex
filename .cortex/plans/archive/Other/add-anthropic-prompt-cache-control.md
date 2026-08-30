@@ -2,7 +2,7 @@
 id: add-anthropic-prompt-cache-control
 title: "Add Anthropic Prompt Cache-Control to MCP Resource Responses"
 status: PENDING
-priority: MEDIUM
+priority: Medium
 created: 2026-04-03
 area: Features & Enhancements
 tags: [caching, prompt-caching, anthropic, tokens, mcp-resources, cost, latency]

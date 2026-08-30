@@ -1,10 +1,10 @@
 ---
 title: "Harden /fix Workflow for Coverage-Only Failures"
 component: "fix-workflow"
-work_type: "fix"
-status: "PENDING"
-priority: "High"
-created: "2026-04-16"
+work_type: fix
+status: PENDING
+priority: High
+created: 2026-04-16
 depends_on: []
 ---
 

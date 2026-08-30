@@ -3,7 +3,7 @@ title: "Constitutional Layer for Projects"
 component: planning
 work_type: feature
 status: PENDING
-priority: high
+priority: High
 created: 2026-04-06
 depends_on: []
 ---

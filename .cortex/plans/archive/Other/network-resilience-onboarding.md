@@ -2,8 +2,8 @@
 title: "Network-Resilience Onboarding: Offline Preflight and Quickstart Fallback"
 component: documentation
 work_type: infrastructure
-status: COMPLETE
-priority: high
+status: DONE
+priority: High
 created: 2026-04-12
 depends_on: []
 ---

@@ -3,7 +3,7 @@ title: "Reflection Quality Pass — Self-Evaluation Step in Cortex Pipelines"
 component: tools/evaluation
 work_type: feature
 status: PENDING
-priority: medium
+priority: Medium
 created: 2026-04-02
 depends_on: []
 ---

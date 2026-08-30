@@ -1,10 +1,10 @@
 ---
 title: "BELIEF Annotation Enforcement — Emit Guidance and Mid-Function Heuristics"
 component: "synapse-annotations"
-work_type: "feature"
-status: "PENDING"
-priority: "Medium"
-created: "2026-04-16"
+work_type: feature
+status: PENDING
+priority: Medium
+created: 2026-04-16
 depends_on: []
 ---
 

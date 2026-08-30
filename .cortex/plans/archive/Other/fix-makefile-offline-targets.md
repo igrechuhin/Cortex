@@ -1,9 +1,9 @@
 ---
 title: "Fix: Add Missing Makefile Offline Targets"
 component: "build"
-work_type: "fix"
-status: COMPLETE
-priority: high
+work_type: fix
+status: DONE
+priority: High
 created: 2026-04-13
 depends_on: []
 ---

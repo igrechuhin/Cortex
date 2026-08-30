@@ -1,10 +1,10 @@
 ---
 title: "Pipeline Resume as a Frontier Query"
 component: "pipeline"
-work_type: "feature"
+work_type: feature
 status: PENDING
-priority: "High"
-created: "2026-07-19"
+priority: High
+created: 2026-07-19
 depends_on: []
 ---
 

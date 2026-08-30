@@ -1,9 +1,9 @@
 ---
 title: "Improvement: Temporal Memory with Validity Windows"
 component: memory-bank
-work_type: improvement
+work_type: feature
 status: PENDING
-priority: high
+priority: High
 created: 2026-04-14
 depends_on: []
 ---

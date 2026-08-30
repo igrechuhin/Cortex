@@ -3,7 +3,7 @@ title: "Fix broad exception handling and subprocess log fd comment"
 component: tools
 work_type: fix
 status: PENDING
-priority: high
+priority: High
 created: 2026-03-22
 depends_on: []
 sources:

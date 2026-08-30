@@ -3,7 +3,7 @@ title: "debug-external-integration.md: Replace static index.corrupted assertion 
 component: cortex/prompts
 work_type: fix
 status: PENDING
-priority: medium
+priority: Medium
 created: 2026-03-29
 depends_on: []
 ---

@@ -1,10 +1,10 @@
 ---
 title: "Prompt-Cache Payload Stability for Cached MCP Resources"
 component: "context-optimization"
-work_type: "optimize"
+work_type: optimize
 status: PENDING
-priority: "Medium"
-created: "2026-07-23"
+priority: Medium
+created: 2026-07-23
 depends_on: []
 ---
 

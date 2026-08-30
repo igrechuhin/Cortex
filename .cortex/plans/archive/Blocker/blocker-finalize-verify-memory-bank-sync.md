@@ -1,10 +1,10 @@
 ---
 title: "Blocker: Keep Finalize and Verify Memory-Bank State in Sync"
 component: "Cortex MCP implement pipeline - finalize/verify phases"
-work_type: "bugfix"
-status: "COMPLETE"
-priority: "Blocker"
-created: "2026-03-12"
+work_type: fix
+status: DONE
+priority: Blocker
+created: 2026-03-12
 execution_order: 3
 depends_on: []
 ---

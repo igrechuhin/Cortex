@@ -1,9 +1,9 @@
 ---
 title: "BLOCKER: Fix mcp>=1.26.0 Structured-Output Crash on Startup"
 component: "server"
-work_type: "fix"
+work_type: fix
 status: PENDING
-priority: blocker
+priority: Blocker
 created: 2026-04-13
 depends_on: []
 ---

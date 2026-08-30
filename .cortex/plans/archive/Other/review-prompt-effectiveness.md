@@ -3,7 +3,7 @@ title: "Fix review prompt to track issues across reviews and stop score plateau"
 component: synapse
 work_type: fix
 status: PENDING
-priority: high
+priority: High
 created: 2026-03-21
 depends_on: []
 ---

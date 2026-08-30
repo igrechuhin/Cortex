@@ -3,7 +3,7 @@ title: "Replace synchronous file I/O with async in pipeline_handoff"
 component: core
 work_type: fix
 status: PENDING
-priority: medium
+priority: Medium
 created: 2026-03-21
 depends_on: []
 ---

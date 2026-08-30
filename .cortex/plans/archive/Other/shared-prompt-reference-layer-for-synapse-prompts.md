@@ -1,10 +1,10 @@
 ---
 title: "Shared Prompt Reference Layer for Synapse Prompts"
 component: "synapse-prompts"
-work_type: "refactor"
+work_type: refactor
 status: PENDING
-priority: "Medium"
-created: "2026-08-02"
+priority: Medium
+created: 2026-08-02
 depends_on: []
 ---
 

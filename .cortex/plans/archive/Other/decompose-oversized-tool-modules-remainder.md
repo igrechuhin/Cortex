@@ -1,9 +1,9 @@
 ---
 title: "Decompose oversized tool modules — remainder"
 component: tools
-work_type: refactoring
+work_type: refactor
 status: IN_PROGRESS
-priority: high
+priority: High
 created: 2026-03-22
 depends_on: []
 ---

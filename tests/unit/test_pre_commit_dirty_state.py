@@ -25,6 +25,9 @@ from cortex.tools.execution.pre_commit_dirty_state import (
 
 _HASH_TARGET = "cortex.tools.execution.pre_commit_dirty_state.compute_git_file_hash"
 _SUBPROC = "cortex.tools.execution.pre_commit_dirty_state.subprocess.run"
+_LOAD_FP_TARGET = (
+    "cortex.tools.execution.pre_commit_dirty_state.load_phase_a_fingerprint"
+)
 
 _FP_BASE = PipelineFingerprint("abc123", "def456", 5, 10)
 _FP_SRC_CHANGED = PipelineFingerprint("xyz789", "changed", 6, 12)
@@ -219,7 +222,11 @@ class TestTrySkipCleanChecks:
             try_skip_clean_checks,
         )
 
-        assert await try_skip_clean_checks([PreCommitCheck.FORMAT], None) is None
+        # try_skip_clean_checks rehydrates from the real project root, so the
+        # developer's own persisted Phase A fingerprint would make the tracker
+        # active and break isolation. Force "no persisted state".
+        with patch(_LOAD_FP_TARGET, return_value=None):
+            assert await try_skip_clean_checks([PreCommitCheck.FORMAT], None) is None
 
     @pytest.mark.asyncio()
     async def test_no_skip_mixed_checks(self, tmp_path: Path) -> None:

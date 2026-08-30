@@ -1,10 +1,10 @@
 ---
 title: "Add YAML Frontmatter Schema for Plan Files"
 component: "synapse/prompts/create-plan, synapse/agents/plan-creator"
-work_type: "fix"
-status: "COMPLETED"
-priority: "Critical"
-created: "2026-03-07"
+work_type: fix
+status: DONE
+priority: Critical
+created: 2026-03-07
 execution_order: 5
 depends_on: []
 ---

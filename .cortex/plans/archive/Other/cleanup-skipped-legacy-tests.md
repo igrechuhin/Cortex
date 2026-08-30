@@ -1,9 +1,9 @@
 ---
 title: "Remove permanently skipped legacy tests and establish skip expiration policy"
 component: tests
-work_type: cleanup
-status: COMPLETE
-priority: medium
+work_type: refactor
+status: DONE
+priority: Medium
 created: 2026-03-22
 depends_on:
   - fix-exception-handling-and-subprocess-comment

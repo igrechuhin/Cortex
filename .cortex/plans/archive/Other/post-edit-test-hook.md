@@ -1,11 +1,11 @@
 ---
 title: "Per-Project Post-Edit Quality Hook — Language-Agnostic Pattern"
 component: ci
-work_type: improvement
+work_type: feature
 status: IN_PROGRESS
-priority: high
+priority: High
 created: 2026-03-26
-depends_on: [migrate-language-rules-scripts-scaffolding]
+depends_on: ["migrate-language-rules-scripts-scaffolding"]
 ---
 
 ## Per-Project Post-Edit Quality Hook — Language-Agnostic Pattern

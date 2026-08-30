@@ -3,7 +3,7 @@ title: "Fast-Forward vs. Step-by-Step Planning Modes"
 component: planning
 work_type: feature
 status: PENDING
-priority: low
+priority: Low
 created: 2026-04-06
 depends_on: []
 ---

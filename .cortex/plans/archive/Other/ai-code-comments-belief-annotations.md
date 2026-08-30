@@ -3,7 +3,7 @@ title: "AI Code Comments and BELIEF Annotations Support in Cortex Rules"
 component: rules
 work_type: feature
 status: PENDING
-priority: low
+priority: Low
 created: 2026-04-02
 depends_on: []
 ---

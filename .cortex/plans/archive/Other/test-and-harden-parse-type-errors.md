@@ -1,9 +1,9 @@
 ---
 title: "Test and harden parse_type_errors in python_adapter_parsing"
 component: framework_adapters
-work_type: quality
+work_type: fix
 status: PENDING
-priority: medium
+priority: Medium
 created: 2026-03-22
 depends_on: []
 covers:
