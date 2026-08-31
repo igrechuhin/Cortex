@@ -55,6 +55,7 @@ from cortex.tools.session.models import (
     SessionStartResult,
     SessionStartResultUnion,
 )
+from cortex.tools.session.predictions_brief import merge_predictions_into_brief
 from cortex.tools.session.session_goal_brief import merge_session_goal_into_brief
 
 logger = logging.getLogger(__name__)
@@ -318,6 +319,7 @@ async def _apply_session_goal_and_cap(
         brief, project_root, goal, plan_slug, blocked_files
     )
     merged = await merge_experience_recall_into_brief(merged, project_root)
+    merged = merge_predictions_into_brief(merged, project_root)
     return cap_session_brief_payload(merged)
 
 

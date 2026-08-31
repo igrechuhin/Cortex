@@ -33,7 +33,9 @@ from cortex.tools.execution.pre_commit_type_checking_audit import (
 )
 
 
-def _collect_git_delta_files(project_root: Path) -> list[Path] | None:
+# AI: public because the prediction grader needs the same changed-file set the
+# incremental quality checks use — one definition, so the two never disagree.
+def collect_git_delta_files(project_root: Path) -> list[Path] | None:
     """Return changed/untracked files for incremental quality checks.
 
     Returns None if git commands fail (caller decides fallback).
@@ -251,7 +253,7 @@ def execute_quality(adapter: FrameworkAdapter, language: str) -> QualityCheckRes
     """Execute quality check: linting; file/function sizes via language router."""
     lint_result = adapter.lint_code()
     project_root = adapter.project_root
-    delta_files = _collect_git_delta_files(project_root)
+    delta_files = collect_git_delta_files(project_root)
     # delta_files is None  → git unavailable; fall back to full scan.
     # delta_files is []    → clean working tree (nothing staged/changed/untracked);
     #                         also fall back to full scan so a clean tree is never

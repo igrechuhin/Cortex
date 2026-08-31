@@ -32,6 +32,7 @@ class _SessionDispatchArgs(StrictBaseModel):
     goal: str | None
     plan_slug: str | None
     blocked_files: list[str] | None
+    prediction: str | None
 
 
 def _session_error_invalid_operation(operation: str) -> str:
@@ -41,7 +42,7 @@ def _session_error_invalid_operation(operation: str) -> str:
             "status": OperationStatus.ERROR.value,
             "error": (
                 f"Invalid operation '{operation}'. "
-                "Use start, register, deregister, or compact."
+                "Use start, register, deregister, compact, or predict."
             ),
         },
         indent=2,
@@ -80,6 +81,18 @@ async def _session_handle_register(
 
     await _emit_session_dispatch_progress(ctx, "register", "Registering session task")
     return await _session_register(task_title=task_title, role=role, ctx=ctx)
+
+
+async def _session_handle_predict(
+    prediction: str | None,
+    because: str | None,
+    ctx: MCPContext | None,
+) -> str:
+    """Handle session(operation='predict')."""
+    from cortex.tools.session.predict_tools import session_predict as _session_predict
+
+    await _emit_session_dispatch_progress(ctx, "predict", "Recording prediction")
+    return await _session_predict(prediction=prediction, because=because, ctx=ctx)
 
 
 async def _session_handle_deregister(ctx: MCPContext | None) -> str:
@@ -145,7 +158,7 @@ async def _session_handle_compact(
 def _session_validate(operation: str, task_title: str | None) -> tuple[str | None, str]:
     """Return (error_json or None, op) after validating operation."""
     op = (operation or "start").strip().lower()
-    if op not in ("start", "register", "deregister", "compact"):
+    if op not in ("start", "register", "deregister", "compact", "predict"):
         return _session_error_invalid_operation(operation or ""), op
     if op == "register" and (not task_title or not str(task_title).strip()):
         return _session_error_register_missing_title(), op
@@ -219,6 +232,10 @@ async def _session_dispatch_impl(
         return await _session_dispatch_register(args.task_title, args.role, ctx)
     if op == "deregister":
         return await _session_handle_deregister(ctx)
+    if op == "predict":
+        return await _session_handle_predict(
+            args.prediction, args.task_description, ctx
+        )
     return await _session_dispatch_compact_from_args(args, ctx)
 
 
@@ -253,6 +270,7 @@ async def _session_run(
     blockers: list[str] | None,
     decisions_made: list[str] | None,
     create_checkpoint: bool,
+    prediction: str | None,
     ctx: MCPContext | None,
 ) -> str:
     err, op = _session_validate(operation, task_title)
@@ -282,7 +300,7 @@ def _session_build_dispatch_args(values: dict[str, object]) -> _SessionDispatchA
 
 @mcp.tool(
     annotations=destructive_annotations(
-        "Session (Start/Register/Deregister/Compact)",
+        "Session (Start/Register/Deregister/Compact/Predict)",
     ),
     output_schema=None,
 )
@@ -297,13 +315,15 @@ async def session(
     completed_tasks: list[str] | None = None, in_progress_task: str | None = None,
     in_progress_notes: str | None = None, blockers: list[str] | None = None,
     decisions_made: list[str] | None = None, create_checkpoint: bool = False,
-    ctx: MCPContext | None = None,
+    prediction: str | None = None, ctx: MCPContext | None = None,
 ) -> str:
     # fmt: on
     """USE WHEN: Session lifecycle (orientation, registry, compaction).
 
     EXAMPLES: session(operation="start", goal="Fix auth bug");
-    session(operation="compact", summary="Session handoff").
+    session(operation="compact", summary="Session handoff");
+    session(operation="predict", prediction="gate clean; touches src/x.py",
+    task_description="why").
     """
     return await _session_run(
         operation,
@@ -320,5 +340,6 @@ async def session(
         blockers,
         decisions_made,
         create_checkpoint,
+        prediction,
         ctx,
     )

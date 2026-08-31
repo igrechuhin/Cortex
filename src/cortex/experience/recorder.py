@@ -103,7 +103,7 @@ def _index_task_embedding_best_effort(
 ) -> None:
     """Embed and upsert the task's spec text; never raises past the caller.
 
-    Idempotent (upsert on task_id), so re-invoking on every ``_ensure_lineage``
+    Idempotent (upsert on task_id), so re-invoking on every ``ensure_lineage``
     call for an already-indexed task is cheap and safe.
     """
     try:
@@ -118,10 +118,12 @@ def _index_task_embedding_best_effort(
             )
         )
     except Exception as exc:  # noqa: BLE001
-        _warn_recording_failure(task.id, "index_task_embedding", exc)
+        warn_recording_failure(task.id, "index_task_embedding", exc)
 
 
-def _ensure_lineage(
+# AI: public so predictions.py can reuse the same task/session rows rather
+# than opening a second, divergent lineage for the same pipeline run.
+def ensure_lineage(
     core: ExperienceStoreCore, session_id: str, pipeline: str
 ) -> ExperienceSession:
     """Create-or-reuse the task and session rows for a pipeline run."""
@@ -141,7 +143,9 @@ def _ensure_lineage(
     return core.create_session(session)
 
 
-def _append_child_node(
+# AI: public for predictions.py — every recorder appends through one place so
+# step_number and parent links stay consistent across recording kinds.
+def append_child_node(
     core: ExperienceStoreCore,
     experience_session_id: str,
     status: ExperienceNodeStatus,
@@ -175,14 +179,14 @@ def record_phase_event(
         return None
     try:
         core = ExperienceStoreCore(experience_db_path(project_root))
-        session = _ensure_lineage(core, session_id, pipeline)
+        session = ensure_lineage(core, session_id, pipeline)
         new_status = _node_status(status)
         allowed = _event_transition_allowed(
             core, session_id, session.id, phase, new_status
         )
         if not allowed:
             return None
-        node = _append_child_node(
+        node = append_child_node(
             core,
             experience_session_id=session.id,
             status=new_status,
@@ -190,7 +194,7 @@ def record_phase_event(
         )
         return node.id
     except Exception as exc:  # noqa: BLE001
-        _warn_recording_failure(session_id, "record_phase_event", exc)
+        warn_recording_failure(session_id, "record_phase_event", exc)
         return None
 
 
@@ -234,11 +238,11 @@ def record_run_end(
         return None
     try:
         core = ExperienceStoreCore(experience_db_path(project_root))
-        session = _ensure_lineage(core, session_id, pipeline)
+        session = ensure_lineage(core, session_id, pipeline)
         node = _append_run_end_node(core, session.id, reason)
         return node.id if node is not None else None
     except Exception as exc:  # noqa: BLE001
-        _warn_recording_failure(session_id, "record_run_end", exc)
+        warn_recording_failure(session_id, "record_run_end", exc)
         return None
 
 
@@ -249,7 +253,7 @@ def _append_run_end_node(
     if not run_window(core.list_nodes(experience_session_id)):
         return None
     cleared = reason.strip().lower() == "cleared"
-    return _append_child_node(
+    return append_child_node(
         core,
         experience_session_id=experience_session_id,
         status=(
@@ -278,12 +282,12 @@ def record_gate_fitness(
         return None
     try:
         core = ExperienceStoreCore(experience_db_path(project_root))
-        session = _ensure_lineage(core, session_id, pipeline)
+        session = ensure_lineage(core, session_id, pipeline)
         fitness = 1.0 if passed else 0.0
         artifact_ref = store_artifact(project_root, "quality-gate", summary)
         return _attach_fitness(core, session.id, passed, fitness, artifact_ref)
     except Exception as exc:  # noqa: BLE001
-        _warn_recording_failure(session_id, "record_gate_fitness", exc)
+        warn_recording_failure(session_id, "record_gate_fitness", exc)
         return None
 
 
@@ -300,7 +304,7 @@ def _attach_fitness(
         _ = core.set_fitness(latest.id, fitness)
         _ = core.link_artifact(latest.id, artifact_ref)
         return latest.id
-    node = _append_child_node(
+    node = append_child_node(
         core,
         experience_session_id=experience_session_id,
         status=status,
@@ -311,7 +315,9 @@ def _attach_fitness(
     return node.id
 
 
-def _warn_recording_failure(session_id: str, operation: str, exc: Exception) -> None:
+# AI: public so every best-effort recorder increments the same failure counter
+# that health checks read; a silent swallow elsewhere would hide breakage.
+def warn_recording_failure(session_id: str, operation: str, exc: Exception) -> None:
     global _failure_count
     _failure_count += 1
     logger.warning(

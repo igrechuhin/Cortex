@@ -9,6 +9,7 @@ Implement all remaining plan subtasks; run quality gate after each; write result
 
 1. **Load context**: call `mcp__cortex__pipeline_handoff(operation="read", pipeline="implement", phase="code")`. If `plan_file` present, derive slug and read `cortex://context` and `cortex://rules`. Skip subtasks listed in `partial_progress`.
 2. **Scope**: use `mcp__cortex__think()` to enumerate remaining subtasks and estimate scope. Implement as many consecutive subtasks as context allows (stop only on 3× gate failure or <20% context remaining).
+   - **Predict before you edit**: open a falsifiable claim with `mcp__cortex__session(operation="predict", prediction="gate clean; touches <path>", task_description="<why>")` before each edit batch — the next quality gate grades it. See the `predict-before-you-edit` rule for the seven claim forms; a MISS is the valuable outcome.
 3. **Implement** each subtask:
    - Follow rules from `cortex://rules`. Use dependency injection. Add `# BELIEF:` before dict-key/attribute-chain access on external data.
    - Write tests alongside code (AAA pattern). Re-read each file after editing to confirm change applied. Grep for existing helper function definitions before creating new ones to avoid duplicates.

@@ -301,6 +301,8 @@ _PASS_TRIM_KEYS: frozenset[str] = frozenset(
         "reflection_result",
         "skipped_checks",
         "skip_details",
+        # AI: prediction grading notice is advisory but must survive the pass trim.
+        "predictions",
     }
 )
 

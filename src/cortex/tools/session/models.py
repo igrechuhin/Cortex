@@ -296,6 +296,13 @@ class SessionBrief(StrictBaseModel):
             "Resume via pipeline_handoff(operation='resume')."
         ),
     )
+    predictions: str | None = Field(
+        default=None,
+        description=(
+            "Open falsifiable claims for this session plus the most recent "
+            "misses (None when nothing was predicted or the store is absent)."
+        ),
+    )
     experience_recall_summary: str | None = Field(
         default=None,
         description=(

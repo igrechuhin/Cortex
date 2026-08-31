@@ -16,6 +16,7 @@ _MAX_SESSION_BRIEF_PLAN_GRAPH_ASCII_CHARS = 2500
 # this cap is a hard ceiling even when a project overrides that config higher,
 # so a misconfigured budget cannot blow out the session() payload.
 _MAX_SESSION_BRIEF_EXPERIENCE_RECALL_CHARS = 2000
+_MAX_SESSION_BRIEF_PREDICTIONS_CHARS = 400
 
 
 def _truncate_for_brief_text(value: str, max_chars: int) -> str:
@@ -60,6 +61,9 @@ def _session_brief_cap_extra_fields(
         ),
         "plan_graph_ascii_edges": _truncate_optional(
             brief.plan_graph_ascii_edges, _MAX_SESSION_BRIEF_PLAN_GRAPH_ASCII_CHARS
+        ),
+        "predictions": _truncate_optional(
+            brief.predictions, _MAX_SESSION_BRIEF_PREDICTIONS_CHARS
         ),
         "experience_recall_summary": _truncate_optional(
             brief.experience_recall_summary,
