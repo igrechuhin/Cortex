@@ -7,6 +7,7 @@ from pathlib import Path
 
 from cortex.core.context_logging import MCPContext, log_client
 from cortex.core.models import PlanSectionStatus
+from cortex.core.plan_frontmatter_normalize import normalize_plan_frontmatter
 from cortex.core.project_root_resolver import resolve_project_root_async
 from cortex.tools.plans.crud_helpers import get_plan_directory
 from cortex.tools.plans.step_draft_core import (
@@ -340,7 +341,7 @@ async def finalize_write_disk(
 ) -> Path:
     final_path = final_plan_path(root, slug)
     text = render_published_plan(parsed.frontmatter, parsed.bodies)
-    _ = final_path.write_text(text, encoding="utf-8")
+    _ = final_path.write_text(normalize_plan_frontmatter(text), encoding="utf-8")
     draft_path.unlink(missing_ok=False)
     return final_path
 

@@ -1,6 +1,6 @@
 {
   "url": "https://claude.ai/code/artifact/3976d844-0a8e-4f70-96ab-dceda53c146d",
-  "updated": "2026-08-30",
+  "updated": "2026-08-31",
   "source": ".cortex/memory-bank/roadmap.md",
-  "note": "Redeploy in place: always pass this url as `url`. Last render: roadmap empty in all four sections."
+  "note": "Redeploy in place: always pass this url as `url`. Last render: roadmap empty in all four sections; commit 4ab225dc."
 }

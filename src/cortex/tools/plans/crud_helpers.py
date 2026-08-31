@@ -7,6 +7,7 @@ import re
 from pathlib import Path
 
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
+from cortex.core.plan_frontmatter_normalize import normalize_plan_frontmatter
 from cortex.tools.plans.archive import is_path_under_archive
 from cortex.tools.plans.crud_models import (
     CreatePlanResult,
@@ -112,7 +113,7 @@ def create_plan_file(
     plan_file = plans_dir / f"{final_slug}.md"
 
     try:
-        _ = plan_file.write_text(content, encoding="utf-8")
+        _ = plan_file.write_text(normalize_plan_frontmatter(content), encoding="utf-8")
         return (plan_file, None)
     except Exception as e:
         return (None, f"Failed to write plan file: {str(e)}")
