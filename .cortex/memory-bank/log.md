@@ -1,97 +1,5 @@
 # Cortex Operations Log
 
-## [2026-08-08T18:22] plan | Created plan: Demo Plan ·6
-
-## [2026-08-08T18:22] plan | Created plan: Mini ·4
-
-## [2026-08-08T18:22] plan | Created plan: Test Plan
-
-## [2026-08-08T18:22] plan | Created plan: Smoke Test Plan
-
-## [2026-08-08T18:26] plan | Created plan: Demo Plan
-
-## [2026-08-08T18:26] plan | Created plan: Demo Plan ·2
-
-## [2026-08-08T18:26] plan | Created plan: Mini
-
-## [2026-08-08T18:26] plan | Created plan: Mini ·2
-
-## [2026-08-08T18:26] plan | Created plan: Demo Plan ·3
-
-## [2026-08-08T18:26] plan | Created plan: Mini ·3
-
-## [2026-08-08T18:26] plan | Created plan: Mini ·4
-
-## [2026-08-08T18:26] plan | Created plan: Demo Plan ·4
-
-## [2026-08-08T18:26] plan | Created plan: Demo Plan ·5
-
-## [2026-08-08T18:26] plan | Created plan: Demo Plan ·6
-
-## [2026-08-08T18:26] plan | Created plan: Smoke Test Plan
-
-## [2026-08-08T18:26] plan | Created plan: Test Plan
-
-## [2026-08-08T18:28] plan | Created plan: Smoke Test Plan
-
-## [2026-08-08T18:28] plan | Created plan: Demo Plan
-
-## [2026-08-08T18:28] plan | Created plan: Mini
-
-## [2026-08-08T18:28] plan | Created plan: Demo Plan ·2
-
-## [2026-08-08T18:28] plan | Created plan: Mini ·2
-
-## [2026-08-08T18:28] plan | Created plan: Mini ·3
-
-## [2026-08-08T18:28] plan | Created plan: Mini ·4
-
-## [2026-08-08T18:28] plan | Created plan: Demo Plan ·3
-
-## [2026-08-08T18:28] plan | Created plan: Demo Plan ·4
-
-## [2026-08-08T18:28] plan | Created plan: Demo Plan ·5
-
-## [2026-08-08T18:28] plan | Created plan: Demo Plan ·6
-
-## [2026-08-08T18:28] plan | Created plan: Test Plan
-
-## [2026-08-08T18:30] plan | Created plan: Test Plan
-
-## [2026-08-08T18:32] plan | Created plan: Smoke Test Plan
-
-## [2026-08-08T18:33] plan | Created plan: Demo Plan
-
-## [2026-08-08T18:33] plan | Created plan: Demo Plan ·2
-
-## [2026-08-08T18:33] plan | Created plan: Demo Plan ·3
-
-## [2026-08-08T18:33] plan | Created plan: Demo Plan ·4
-
-## [2026-08-08T18:33] plan | Created plan: Mini
-
-## [2026-08-08T18:33] plan | Created plan: Mini ·2
-
-## [2026-08-08T18:33] plan | Created plan: Demo Plan ·5
-
-## [2026-08-08T18:33] plan | Created plan: Mini ·3
-
-## [2026-08-08T18:33] plan | Created plan: Mini ·4
-
-## [2026-08-08T18:33] plan | Created plan: Demo Plan ·6
-
-## [2026-08-08T18:34] plan | Created plan: Test Plan
-
-## [2026-08-08T18:35] plan | Created plan: Demo Plan
-
-## [2026-08-08T18:35] plan | Created plan: Demo Plan ·2
-
-## [2026-08-08T18:35] plan | Created plan: Mini
-
-## [2026-08-08T18:35] plan | Created plan: Demo Plan ·3
-
-## [2026-08-08T18:35] plan | Created plan: Demo Plan ·4
-
 ## [2026-08-08T18:35] plan | Created plan: Mini ·2
 
 ## [2026-08-08T18:35] plan | Created plan: Mini ·3
@@ -2047,3 +1955,101 @@ status=success; changed_files=None
 status=success; changed_files=None
 
 ## [2026-08-31T09:56] lint | Quality gate passed
+
+## [2026-09-05T13:00] plan | Created plan: Wire Usage-Pattern Analytics to Session Logs and Package-Relative Tool Analysis
+
+## [2026-09-05T13:28] fix | Autofix completed
+
+status=success; changed_files=None
+
+## [2026-09-05T13:30] plan | Created plan: Demo Plan
+
+## [2026-09-05T13:30] plan | Created plan: Mini
+
+## [2026-09-05T13:30] plan | Created plan: Mini ·2
+
+## [2026-09-05T13:30] plan | Created plan: Mini ·3
+
+## [2026-09-05T13:30] plan | Created plan: Demo Plan ·2
+
+## [2026-09-05T13:30] plan | Created plan: Mini ·4
+
+## [2026-09-05T13:30] plan | Created plan: Demo Plan ·3
+
+## [2026-09-05T13:30] plan | Created plan: Smoke Test Plan
+
+## [2026-09-05T13:30] plan | Created plan: Demo Plan ·4
+
+## [2026-09-05T13:30] plan | Created plan: Demo Plan ·5
+
+## [2026-09-05T13:30] plan | Created plan: Demo Plan ·6
+
+## [2026-09-05T13:30] plan | Created plan: Test Plan
+
+## [2026-09-05T13:31] lint | Quality gate failed
+
+## [2026-09-05T13:33] plan | Created plan: Test Plan
+
+## [2026-09-05T13:33] plan | Created plan: Smoke Test Plan
+
+## [2026-09-05T13:34] plan | Created plan: Demo Plan
+
+## [2026-09-05T13:34] plan | Created plan: Demo Plan ·2
+
+## [2026-09-05T13:34] plan | Created plan: Mini
+
+## [2026-09-05T13:34] plan | Created plan: Mini ·2
+
+## [2026-09-05T13:34] plan | Created plan: Mini ·3
+
+## [2026-09-05T13:34] plan | Created plan: Demo Plan ·3
+
+## [2026-09-05T13:34] plan | Created plan: Demo Plan ·4
+
+## [2026-09-05T13:34] plan | Created plan: Demo Plan ·5
+
+## [2026-09-05T13:34] plan | Created plan: Demo Plan ·6
+
+## [2026-09-05T13:34] plan | Created plan: Mini ·4
+
+## [2026-09-05T13:34] lint | Quality gate passed
+
+## [2026-09-05T13:37] plan | Created plan: Smoke Test Plan
+
+## [2026-09-05T13:37] plan | Created plan: Demo Plan
+
+## [2026-09-05T13:37] plan | Created plan: Demo Plan ·2
+
+## [2026-09-05T13:37] plan | Created plan: Demo Plan ·3
+
+## [2026-09-05T13:37] plan | Created plan: Demo Plan ·4
+
+## [2026-09-05T13:37] plan | Created plan: Demo Plan ·5
+
+## [2026-09-05T13:37] plan | Created plan: Mini
+
+## [2026-09-05T13:37] plan | Created plan: Mini ·2
+
+## [2026-09-05T13:37] plan | Created plan: Mini ·3
+
+## [2026-09-05T13:37] plan | Created plan: Demo Plan ·6
+
+## [2026-09-05T13:37] plan | Created plan: Mini ·4
+
+## [2026-09-05T13:37] plan | Created plan: Test Plan
+
+## [2026-09-05T13:38] lint | Quality gate passed
+
+## [2026-09-05T13:39] plan | Completed plan: Wire Usage-Pattern Analytics to Session Logs and Package-Relative Tool Analysis
+
+Replaced the never-written .cortex/access-log.json write path with a projection over the load_context session logs Cortex already writes. New src/cortex/analysis/session_access_source.py builds AccessRecords from .cortex/.session/context-session-*.json (one record per selected file, siblings as context_files, synthesised session_id:index task ids), bounded by pattern_window_days with an mtime pre-filter and tolerant of corrupt or schema-invalid logs. PatternAnalyzer now replays those records through its existing _update_* helpers at construction and honours the previously dead track_usage_patterns flag. Removed record_access, _save_access_log, _load_access_log, access_log_path, cleanup_old_data, and the whole 170-line pattern_normalization module (create_default_access_log moved to pattern_types). Health-check tool analysis resolves its directory from the imported cortex.tools package via the new get_tools_dir() instead of a hardcoded src/cortex/tools repo path, so consuming projects no longer report zero tools. Benchmarks and tests seed session logs instead of calling the deleted writer. Verified end to end in this repo: 7 access_frequency entries, 21 co-access patterns, 3604 task patterns, 14 tools; track_usage_patterns=false yields an empty payload. Note for out-of-tree consumers: PatternAnalyzer.record_access and cleanup_old_data are gone.
+
+## [2026-09-05T13:44] lint | Quality gate failed
+
+## [2026-09-05T13:44] lint | Quality gate passed
+
+## [2026-09-05T13:46] fix | Autofix completed
+
+status=success; changed_files=None
+
+## [2026-09-05T13:46] lint | Quality gate passed

@@ -1,6 +1,10 @@
 <!-- memory_type: milestone -->
 # Progress Log
 
+## 2026-09-05
+
+- **Wire Usage-Pattern Analytics to Session Logs and Package-Relative Tool Analysis** - COMPLETE. cortex://analysis now returns real usage_patterns (projected from .cortex/.session/ load_context logs) and a non-zero tools count (package-relative tools_dir). Dead access-log.json writer and pattern_normalization module deleted; track_usage_patterns flag now has an effect. 7736 tests pass, coverage 91.4%.
+
 ## 2026-08-31
 
 - **Falsifiable Prediction Gate and Graded Miss Ledger** - COMPLETE. Seven-form claim vocabulary, automatic grading against the next quality gate inside the existing record_gate_result hook, HIT/MISS/UNGRADED verdicts persisted as experience nodes, session(operation="predict") plus a brief predictions line, and the predict-before-you-edit doctrine rule. 66 tests added; 7727 pass at 91.42% coverage; quality and docs gates green. Review caught and fixed two grader defects: a false HIT in error-gone when the gate reports failures per check rather than per file, and a node id containing "error" reading as a test failure.
