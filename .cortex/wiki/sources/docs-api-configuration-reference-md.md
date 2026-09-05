@@ -194,7 +194,7 @@ Loaded by `OptimizationConfig`; merged with `DEFAULT_OPTIMIZATION_CONFIG`; valid
 
 | Name | Type | Default | Valid range | Description |
 |------|------|---------|-------------|-------------|
-| `track_usage_patterns` | boolean | `true` | — | Track file usage patterns |
+| `track_usage_patterns` | boolean | `true` | — | Project file usage patterns from the `load_context` session logs in `.cortex/.session/`; `false` yields an empty usage-pattern payload |
 | `pattern_window_days` | int | `30` | ≥ 1 | Days to analyze for patterns |
 | `min_access_count` | int | `5` | ≥ 1 | Minimum accesses for pattern detection |
 | `track_task_patterns` | boolean | `true` | — | Track task-related patterns |
