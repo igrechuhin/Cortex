@@ -30,6 +30,7 @@ from cortex.rules.context_detector import ContextDetector
 from cortex.rules.synapse_manager import SynapseManager
 from cortex.structure.manager import StructureManager
 from cortex.structure.template_manager import TemplateManager
+from tests.helpers.session_log_fixtures import seed_accesses
 
 # ============================================================================
 # Phase 5.1-5.2 Integration: Pattern Analysis + Refactoring
@@ -44,6 +45,8 @@ async def _arrange_pattern_analysis_workflow(
     metadata = MetadataIndex(temp_project_root)
     dep_graph = DependencyGraph()
 
+    # Seed usage before construction: the analyzer projects session logs once.
+    _ = seed_accesses(temp_project_root, "p51", [["large_file.md"], ["large_file.md"]])
     pattern_analyzer = PatternAnalyzer(temp_project_root)
     memory_bank_path = get_cortex_path(
         temp_project_root, CortexResourceType.MEMORY_BANK
@@ -61,10 +64,6 @@ async def _arrange_pattern_analysis_workflow(
     large_content = "# Large File\n\n" + (section_content * 200)
     file_path = memory_bank_path / "large_file.md"
     _ = await fs.write_file(file_path, large_content)
-
-    # Record access patterns
-    await pattern_analyzer.record_access("large_file.md")
-    await pattern_analyzer.record_access("large_file.md")
 
     return pattern_analyzer, insight_engine, refactoring_engine, large_content
 
@@ -533,7 +532,7 @@ class _FullAnalysisWorkflowComponents:
 
 
 async def _seed_full_analysis_workflow_files(
-    fs: FileSystemManager, memory_bank_path: Path, pattern_analyzer: PatternAnalyzer
+    fs: FileSystemManager, memory_bank_path: Path
 ) -> str:
     """Write large + duplicate-content fixture files; return the large file content."""
     # Large file (>50KB to trigger large file detection)
@@ -563,9 +562,6 @@ This section contains detailed information that is duplicated across files.
         f"# Doc 2\n{shared}\n## Unique 2\nUnique content for doc 2.\n",
     )
 
-    await pattern_analyzer.record_access("large.md")
-    await pattern_analyzer.record_access("doc1.md")
-    await pattern_analyzer.record_access("doc2.md")
     return large_content
 
 
@@ -581,6 +577,10 @@ def _build_full_analysis_engines(
 ]:
     """Build analysis/refactoring engines sharing a common memory-bank path."""
     dep_graph = DependencyGraph()
+    # Seed usage before construction: the analyzer projects session logs once.
+    _ = seed_accesses(
+        temp_project_root, "p58", [["large.md"], ["doc1.md"], ["doc2.md"]]
+    )
     pattern_analyzer = PatternAnalyzer(temp_project_root)
     memory_bank_path = get_cortex_path(
         temp_project_root, CortexResourceType.MEMORY_BANK
@@ -616,9 +616,7 @@ async def _arrange_full_analysis_workflow(
     ) = _build_full_analysis_engines(temp_project_root, fs, metadata)
 
     _ = await metadata.load()
-    large_content = await _seed_full_analysis_workflow_files(
-        fs, memory_bank_path, pattern_analyzer
-    )
+    large_content = await _seed_full_analysis_workflow_files(fs, memory_bank_path)
 
     _ = await metadata.load()
     _ = await structure_analyzer.analyze_file_organization()

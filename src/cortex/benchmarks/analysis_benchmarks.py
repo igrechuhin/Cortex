@@ -12,7 +12,24 @@ from ..analysis.structure_analyzer import StructureAnalyzer
 from ..core.dependency_graph import DependencyGraph
 from ..core.file_system import FileSystemManager
 from ..core.path_resolver import CortexResourceType, get_cortex_path
+from ..core.session_logger import log_load_context_call
 from .framework import Benchmark, BenchmarkSuite
+
+
+def _seed_load_context_call(project_root: Path, selected_files: list[str]) -> None:
+    """Seed one load_context session-log entry for pattern-analysis benchmarks."""
+    log_load_context_call(
+        project_root=project_root,
+        task_description="benchmark",
+        token_budget=1000,
+        strategy="balanced",
+        selected_files=selected_files,
+        selected_sections={},
+        total_tokens=500,
+        utilization=0.5,
+        excluded_files=[],
+        relevance_scores={},
+    )
 
 
 class PatternAnalysisBenchmark(Benchmark):
@@ -38,13 +55,13 @@ class PatternAnalysisBenchmark(Benchmark):
         """Set up pattern analyzer."""
         self.temp_dir = tempfile.TemporaryDirectory[str]()
         base_path = Path(self.temp_dir.name)
-        self.analyzer = PatternAnalyzer(base_path)
 
-        # Record some access patterns
+        # Seed session logs; PatternAnalyzer projects its access log from them
+        # at construction time, so seeding must happen first.
         for i in range(self.num_files):
-            filename = f"file_{i}.md"
             for _ in range(10):
-                await self.analyzer.record_access(filename, "read")
+                _seed_load_context_call(base_path, [f"file_{i}.md"])
+        self.analyzer = PatternAnalyzer(base_path)
 
     async def teardown(self) -> None:
         """Clean up temp directory."""
@@ -188,13 +205,12 @@ class CoAccessPatternBenchmark(Benchmark):
         """Set up pattern analyzer with co-access data."""
         self.temp_dir = tempfile.TemporaryDirectory[str]()
         base_path = Path(self.temp_dir.name)
-        self.analyzer = PatternAnalyzer(base_path)
 
-        # Record co-access patterns
+        # Seed co-access data: each call selects a pair of files together.
         for i in range(self.num_files):
             for j in range(i + 1, min(i + 5, self.num_files)):
-                await self.analyzer.record_access(f"file_{i}.md", "read")
-                await self.analyzer.record_access(f"file_{j}.md", "read")
+                _seed_load_context_call(base_path, [f"file_{i}.md", f"file_{j}.md"])
+        self.analyzer = PatternAnalyzer(base_path)
 
     async def teardown(self) -> None:
         """Clean up temp directory."""

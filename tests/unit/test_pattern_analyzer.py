@@ -2,271 +2,220 @@
 Tests for pattern_analyzer.py - Pattern analysis functionality.
 
 This test module covers:
-- PatternAnalyzer initialization and access log management
-- File access recording and tracking
+- PatternAnalyzer initialization and session-log projection
 - Access frequency analysis
 - Co-access pattern detection
 - Unused file identification
 - Task pattern analysis
 - Temporal pattern analysis
-- Data cleanup and maintenance
 """
 
 import json
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
-from typing import cast
 
 import pytest
 
-from cortex.analysis.pattern_analyzer import (
-    PatternAnalyzer,
-    create_default_access_log,
-    normalize_access_log,
-)
+from cortex.analysis.pattern_analyzer import PatternAnalyzer
 from cortex.analysis.pattern_types import (
-    AccessLog,
     AccessRecord,
     FileStatsEntry,
     TaskPatternEntry,
+    create_default_access_log,
 )
-from cortex.core.models import JsonValue
-from cortex.core.path_resolver import CortexResourceType, get_cortex_path
+from tests.helpers.session_log_fixtures import recent_stamp, write_session_log
 
 
 class TestPatternAnalyzerInitialization:
-    """Tests for PatternAnalyzer initialization."""
+    """Tests for PatternAnalyzer initialization and session-log projection."""
 
-    def test_initializes_with_empty_log_when_no_file(self, temp_project_root: Path):
-        """Test initialization creates empty log when file doesn't exist."""
-        # Arrange
-        project_root = temp_project_root
-
-        # Act
-        analyzer = PatternAnalyzer(project_root)
+    def test_initializes_with_empty_log_when_no_session_data(
+        self, temp_project_root: Path
+    ):
+        """Test initialization yields an empty log when no session logs exist."""
+        # Arrange / Act
+        analyzer = PatternAnalyzer(temp_project_root)
 
         # Assert
-        assert analyzer.project_root == Path(project_root)
-        assert (
-            analyzer.access_log_path
-            == get_cortex_path(Path(project_root), CortexResourceType.CORTEX_DIR)
-            / "access-log.json"
-        )
+        assert analyzer.project_root == Path(temp_project_root)
         assert analyzer.access_data.version == "1.0"
         assert analyzer.access_data.accesses == []
         assert analyzer.access_data.file_stats == {}
         assert analyzer.access_data.co_access_patterns == {}
         assert analyzer.access_data.task_patterns == {}
 
-    def test_loads_existing_access_log(self, temp_project_root: Path):
-        """Test loads existing access log from disk."""
+    def test_projects_session_log_into_access_records(self, temp_project_root: Path):
+        """Test each selected file of each call becomes one access record."""
         # Arrange
-        project_root = temp_project_root
-        log_path = (
-            get_cortex_path(Path(project_root), CortexResourceType.CORTEX_DIR)
-            / "access-log.json"
+        _ = write_session_log(
+            temp_project_root,
+            "aaa",
+            [
+                (recent_stamp(20), "fix auth", ["a.md", "b.md"]),
+                (recent_stamp(10), "write docs", ["b.md"]),
+            ],
         )
 
-        # Create sample log
-        sample_log = {
-            "version": "1.0",
-            "accesses": [
-                {
-                    "timestamp": "2025-01-01T12:00:00Z",
-                    "file": "test.md",
-                    "task_id": "task1",
-                    "task_description": "Test task",
-                    "context_files": ["other.md"],
-                }
+        # Act
+        analyzer = PatternAnalyzer(temp_project_root)
+
+        # Assert
+        assert len(analyzer.access_data.accesses) == 3
+        assert analyzer.access_data.file_stats["b.md"].total_accesses == 2
+        assert analyzer.access_data.file_stats["a.md"].total_accesses == 1
+
+    def test_projection_records_sibling_files_as_context(self, temp_project_root: Path):
+        """Test co-selected files of one call become each other's context."""
+        # Arrange
+        _ = write_session_log(
+            temp_project_root, "bbb", [(recent_stamp(5), "task", ["a.md", "b.md"])]
+        )
+
+        # Act
+        analyzer = PatternAnalyzer(temp_project_root)
+
+        # Assert
+        record_a = next(r for r in analyzer.access_data.accesses if r.file == "a.md")
+        assert record_a.context_files == ["b.md"]
+        assert analyzer.access_data.co_access_patterns == {"a.md|b.md": 1}
+
+    def test_projection_matches_incremental_aggregation(self, temp_project_root: Path):
+        """Test replayed aggregates match record-by-record aggregation."""
+        # Arrange
+        _ = write_session_log(
+            temp_project_root,
+            "ccc",
+            [
+                (recent_stamp(30), "one", ["a.md", "b.md"]),
+                (recent_stamp(15), "two", ["b.md", "c.md"]),
             ],
-            "file_stats": {
-                "test.md": {
-                    "total_accesses": 1,
-                    "first_access": "2025-01-01T12:00:00Z",
-                    "last_access": "2025-01-01T12:00:00Z",
-                    "tasks": ["task1"],
-                }
-            },
-            "co_access_patterns": {"other.md|test.md": 1},
-            "task_patterns": {
-                "task1": {
-                    "description": "Test task",
-                    "files": ["test.md"],
-                    "timestamp": "2025-01-01T12:00:00Z",
-                }
-            },
+        )
+        analyzer = PatternAnalyzer(temp_project_root)
+        expected_stats = {
+            "a.md": 1,
+            "b.md": 2,
+            "c.md": 1,
         }
 
-        with open(log_path, "w") as f:
-            json.dump(sample_log, f)
-
         # Act
-        analyzer = PatternAnalyzer(project_root)
+        actual_stats = {
+            path: stats.total_accesses
+            for path, stats in analyzer.access_data.file_stats.items()
+        }
 
         # Assert
-        assert len(analyzer.access_data.accesses) == 1
-        assert "test.md" in analyzer.access_data.file_stats
-        assert analyzer.access_data.co_access_patterns["other.md|test.md"] == 1
+        assert actual_stats == expected_stats
+        assert analyzer.access_data.co_access_patterns == {
+            "a.md|b.md": 1,
+            "b.md|c.md": 1,
+        }
 
-    def test_handles_corrupted_log_file(self, temp_project_root: Path):
-        """Test handles corrupted access log gracefully."""
+    def test_projects_task_patterns_per_call(self, temp_project_root: Path):
+        """Test each load_context call becomes one task pattern entry."""
         # Arrange
-        project_root = temp_project_root
-        log_path = (
-            get_cortex_path(Path(project_root), CortexResourceType.CORTEX_DIR)
-            / "access-log.json"
+        _ = write_session_log(
+            temp_project_root,
+            "ddd",
+            [
+                (recent_stamp(20), "fix auth", ["a.md", "b.md"]),
+                (recent_stamp(10), "write docs", ["c.md"]),
+            ],
         )
 
-        # Create corrupted log
-        with open(log_path, "w") as f:
-            _ = f.write("{ invalid json")
-
         # Act
-        analyzer = PatternAnalyzer(project_root)
+        analyzer = PatternAnalyzer(temp_project_root)
 
         # Assert
-        assert analyzer.access_data.version == "1.0"
+        patterns = analyzer.access_data.task_patterns
+        assert set(patterns) == {"ddd:0", "ddd:1"}
+        assert patterns["ddd:0"].description == "fix auth"
+        assert patterns["ddd:0"].files == ["a.md", "b.md"]
+
+    def test_tracking_disabled_yields_empty_log(self, temp_project_root: Path):
+        """Test track_usage_patterns=False skips the projection entirely."""
+        # Arrange
+        _ = write_session_log(
+            temp_project_root, "eee", [(recent_stamp(1), "task", ["a.md"])]
+        )
+
+        # Act
+        analyzer = PatternAnalyzer(temp_project_root, track_usage_patterns=False)
+
+        # Assert
         assert analyzer.access_data.accesses == []
-        # Backup should exist
-        backup_path = (
-            get_cortex_path(Path(project_root), CortexResourceType.CORTEX_DIR)
-            / "access-log.json.backup"
-        )
-        assert backup_path.exists()
+        assert analyzer.access_data.file_stats == {}
 
-
-class TestAccessRecording:
-    """Tests for recording file access events."""
-
-    @pytest.mark.asyncio
-    async def test_records_basic_access(self, temp_project_root: Path):
-        """Test records basic file access without task info."""
+    def test_task_tracking_disabled_keeps_file_stats(self, temp_project_root: Path):
+        """Test track_task_patterns=False suppresses only task patterns."""
         # Arrange
-        analyzer = PatternAnalyzer(temp_project_root)
-        file_path = "test.md"
-
-        # Act
-        await analyzer.record_access(file_path)
-
-        # Assert
-        assert len(analyzer.access_data.accesses) == 1
-        access = analyzer.access_data.accesses[0]
-        assert access.file == file_path
-        assert access.task_id is None
-        assert access.task_description is None
-        assert access.context_files == []
-        assert access.timestamp
-
-    @pytest.mark.asyncio
-    async def test_records_access_with_task_info(self, temp_project_root: Path):
-        """Test records access with task information."""
-        # Arrange
-        analyzer = PatternAnalyzer(temp_project_root)
-        file_path = "test.md"
-        task_id = "task123"
-        task_description = "Fix bug in parser"
-
-        # Act
-        await analyzer.record_access(
-            file_path, task_id=task_id, task_description=task_description
+        _ = write_session_log(
+            temp_project_root, "fff", [(recent_stamp(1), "task", ["a.md"])]
         )
 
-        # Assert
-        access = analyzer.access_data.accesses[0]
-        assert access.file == file_path
-        assert access.task_id == task_id
-        assert access.task_description == task_description
-
-    @pytest.mark.asyncio
-    async def test_records_access_with_context_files(self, temp_project_root: Path):
-        """Test records access with context files."""
-        # Arrange
-        analyzer = PatternAnalyzer(temp_project_root)
-        file_path = "test.md"
-        context_files = ["other1.md", "other2.md"]
-
         # Act
-        await analyzer.record_access(file_path, context_files=context_files)
+        analyzer = PatternAnalyzer(temp_project_root, track_task_patterns=False)
 
         # Assert
-        access = analyzer.access_data.accesses[0]
-        assert access.context_files == context_files
+        assert analyzer.access_data.task_patterns == {}
+        assert analyzer.access_data.file_stats["a.md"].total_accesses == 1
 
-    @pytest.mark.asyncio
-    async def test_updates_file_stats(self, temp_project_root: Path):
-        """Test updates file statistics on access."""
+    def test_ignores_corrupted_session_log(self, temp_project_root: Path):
+        """Test a corrupted session log is skipped instead of raising."""
         # Arrange
-        analyzer = PatternAnalyzer(temp_project_root)
-        file_path = "test.md"
-
-        # Act
-        await analyzer.record_access(file_path)
-        await analyzer.record_access(file_path)
-
-        # Assert
-        stats = analyzer.access_data.file_stats[file_path]
-        assert stats.total_accesses == 2
-        assert stats.first_access
-        assert stats.last_access
-
-    @pytest.mark.asyncio
-    async def test_updates_co_access_patterns(self, temp_project_root: Path):
-        """Test updates co-access patterns."""
-        # Arrange
-        analyzer = PatternAnalyzer(temp_project_root)
-        file_path = "test.md"
-        context_files = ["other.md"]
-
-        # Act
-        await analyzer.record_access(file_path, context_files=context_files)
-        await analyzer.record_access(file_path, context_files=context_files)
-
-        # Assert
-        key = "other.md|test.md"  # Sorted alphabetically
-        assert analyzer.access_data.co_access_patterns[key] == 2
-
-    @pytest.mark.asyncio
-    async def test_updates_task_patterns(self, temp_project_root: Path):
-        """Test updates task patterns."""
-        # Arrange
-        analyzer = PatternAnalyzer(temp_project_root)
-        file_path = "test.md"
-        task_id = "task1"
-        task_description = "Test task"
-
-        # Act
-        await analyzer.record_access(
-            file_path, task_id=task_id, task_description=task_description
+        log_path = write_session_log(
+            temp_project_root, "ggg", [(recent_stamp(1), "task", ["a.md"])]
         )
-        await analyzer.record_access("other.md", task_id=task_id)
-
-        # Assert
-        pattern = analyzer.access_data.task_patterns[task_id]
-        assert pattern.description == task_description
-        assert len(pattern.files) == 2
-        assert file_path in pattern.files
-        assert "other.md" in pattern.files
-
-    @pytest.mark.asyncio
-    async def test_persists_access_log(self, temp_project_root: Path):
-        """Test persists access log to disk."""
-        # Arrange
-        analyzer = PatternAnalyzer(temp_project_root)
-        file_path = "test.md"
+        _ = log_path.write_text("{not json", encoding="utf-8")
 
         # Act
-        await analyzer.record_access(file_path)
+        analyzer = PatternAnalyzer(temp_project_root)
 
         # Assert
-        log_path = (
-            get_cortex_path(Path(temp_project_root), CortexResourceType.CORTEX_DIR)
-            / "access-log.json"
-        )
-        assert log_path.exists()
+        assert analyzer.access_data.accesses == []
 
-        with open(log_path) as f:
-            data = json.load(f)
-        assert len(data["accesses"]) == 1
+    def test_ignores_schema_invalid_session_log(self, temp_project_root: Path):
+        """Test a schema-invalid session log is skipped instead of raising."""
+        # Arrange
+        log_path = write_session_log(
+            temp_project_root, "hhh", [(recent_stamp(1), "task", ["a.md"])]
+        )
+        _ = log_path.write_text(json.dumps({"unexpected": True}), encoding="utf-8")
+
+        # Act
+        analyzer = PatternAnalyzer(temp_project_root)
+
+        # Assert
+        assert analyzer.access_data.accesses == []
+
+    def test_excludes_calls_outside_window(self, temp_project_root: Path):
+        """Test calls older than the pattern window are not projected."""
+        # Arrange
+        old_stamp = (datetime.now() - timedelta(days=90)).isoformat(timespec="minutes")
+        _ = write_session_log(
+            temp_project_root,
+            "iii",
+            [(old_stamp, "ancient", ["old.md"]), (recent_stamp(1), "now", ["new.md"])],
+        )
+
+        # Act
+        analyzer = PatternAnalyzer(temp_project_root, pattern_window_days=30)
+
+        # Assert
+        assert set(analyzer.access_data.file_stats) == {"new.md"}
+
+    def test_empty_selected_files_contributes_nothing(self, temp_project_root: Path):
+        """Test a call that selected no files yields no records or co-access edges."""
+        # Arrange
+        _ = write_session_log(
+            temp_project_root, "jjj", [(recent_stamp(1), "empty", [])]
+        )
+
+        # Act
+        analyzer = PatternAnalyzer(temp_project_root)
+
+        # Assert
+        assert analyzer.access_data.accesses == []
+        assert analyzer.access_data.co_access_patterns == {}
 
 
 class TestAccessFrequency:
@@ -784,163 +733,17 @@ class TestTemporalPatterns:
         assert result.avg_accesses_per_day > 0
 
 
-class TestDataCleanup:
-    """Tests for old data cleanup."""
-
-    @pytest.mark.asyncio
-    async def test_removes_old_accesses(self, temp_project_root: Path):
-        """Test removes old access records."""
-        # Arrange
-        analyzer = PatternAnalyzer(temp_project_root)
-        now = datetime.now(UTC)
-
-        # Create old and recent accesses
-        analyzer.access_data.accesses = [
-            AccessRecord(
-                timestamp=(now - timedelta(days=200)).isoformat(),
-                file="old.md",
-                task_id=None,
-                task_description=None,
-                context_files=[],
-            ),
-            AccessRecord(
-                timestamp=(now - timedelta(days=10)).isoformat(),
-                file="recent.md",
-                task_id=None,
-                task_description=None,
-                context_files=[],
-            ),
-        ]
-
-        # Act
-        result = await analyzer.cleanup_old_data(keep_days=180)
-
-        # Assert
-        assert result["removed_accesses"] == 1
-        assert result["remaining_accesses"] == 1
-        assert len(analyzer.access_data.accesses) == 1
-
-    @pytest.mark.asyncio
-    async def test_removes_old_task_patterns(self, temp_project_root: Path):
-        """Test removes old task patterns."""
-        # Arrange
-        analyzer = PatternAnalyzer(temp_project_root)
-        now = datetime.now(UTC)
-
-        analyzer.access_data.task_patterns = {
-            "old_task": TaskPatternEntry(
-                description="Old",
-                files=["file.md"],
-                timestamp=(now - timedelta(days=200)).isoformat(),
-            ),
-            "recent_task": TaskPatternEntry(
-                description="Recent",
-                files=["file.md"],
-                timestamp=(now - timedelta(days=10)).isoformat(),
-            ),
-        }
-
-        # Act
-        result = await analyzer.cleanup_old_data(keep_days=180)
-
-        # Assert
-        assert result["remaining_tasks"] == 1
-        assert "recent_task" in analyzer.access_data.task_patterns
-        assert "old_task" not in analyzer.access_data.task_patterns
-
-    @pytest.mark.asyncio
-    async def test_persists_cleaned_data(self, temp_project_root: Path):
-        """Test persists cleaned data to disk."""
-        # Arrange
-        analyzer = PatternAnalyzer(temp_project_root)
-        now = datetime.now(UTC)
-
-        analyzer.access_data.accesses = [
-            AccessRecord(
-                timestamp=(now - timedelta(days=200)).isoformat(),
-                file="old.md",
-                task_id=None,
-                task_description=None,
-                context_files=[],
-            )
-        ]
-
-        # Act
-        _ = await analyzer.cleanup_old_data(keep_days=180)
-
-        # Assert
-        log_path = Path(temp_project_root) / ".cortex/access-log.json"
-        with open(log_path) as f:
-            data = json.load(f)
-        assert len(data["accesses"]) == 0
-
-
 class TestHelperFunctions:
-    """Tests for helper functions."""
+    """Tests for module-level helper functions."""
 
     def test_create_default_access_log(self):
-        """Test creates default access log structure."""
-        # Act
+        """Test creates an empty access log with default values."""
+        # Arrange / Act
         log = create_default_access_log()
 
         # Assert
-        assert isinstance(log, AccessLog)
         assert log.version == "1.0"
         assert log.accesses == []
         assert log.file_stats == {}
         assert log.co_access_patterns == {}
         assert log.task_patterns == {}
-
-    def test_normalize_access_log_with_valid_data(self):
-        """Test normalizes valid access log data."""
-        # Arrange
-        raw_data = {
-            "version": "1.0",
-            "accesses": [
-                {
-                    "timestamp": "2025-01-01T12:00:00Z",
-                    "file": "test.md",
-                    "task_id": "task1",
-                    "task_description": "Test",
-                    "context_files": ["other.md"],
-                }
-            ],
-            "file_stats": {
-                "test.md": {
-                    "total_accesses": 1,
-                    "first_access": "2025-01-01T12:00:00Z",
-                    "last_access": "2025-01-01T12:00:00Z",
-                    "tasks": ["task1"],
-                }
-            },
-            "co_access_patterns": {"other.md|test.md": 1},
-            "task_patterns": {
-                "task1": {
-                    "description": "Test",
-                    "files": ["test.md"],
-                    "timestamp": "2025-01-01T12:00:00Z",
-                }
-            },
-        }
-
-        # Act
-        log = normalize_access_log(cast(JsonValue, raw_data))
-
-        # Assert
-        assert isinstance(log, AccessLog)
-        assert log.version == "1.0"
-        assert len(log.accesses) == 1
-        assert "test.md" in log.file_stats
-
-    def test_normalize_access_log_with_invalid_data(self):
-        """Test handles invalid data gracefully."""
-        # Arrange
-        raw_data = "not a dict"
-
-        # Act
-        log = normalize_access_log(raw_data)
-
-        # Assert
-        assert isinstance(log, AccessLog)
-        assert log.version == "1.0"
-        assert log.accesses == []

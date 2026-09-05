@@ -11,7 +11,7 @@ This test suite covers:
 import json
 import shutil
 import tempfile
-from collections.abc import Generator
+from collections.abc import Callable, Generator
 from pathlib import Path
 
 import pytest
@@ -26,6 +26,9 @@ from cortex.core.file_system import FileSystemManager
 from cortex.core.metadata_index import MetadataIndex
 from cortex.optimization.config import OptimizationConfig
 from tests.helpers.phase5_export_insights import export_test_insights_result
+from tests.helpers.session_log_fixtures import seed_accesses
+
+AnalyzerFactory = Callable[[list[list[str]]], PatternAnalyzer]
 
 
 @pytest.fixture
@@ -63,8 +66,23 @@ def temp_project() -> Generator[Path]:
 
 @pytest.fixture
 def pattern_analyzer(temp_project: Path) -> PatternAnalyzer:
-    """Create PatternAnalyzer instance."""
+    """Create PatternAnalyzer instance over an empty session history."""
     return PatternAnalyzer(temp_project)
+
+
+@pytest.fixture
+def seeded_analyzer(temp_project: Path) -> AnalyzerFactory:
+    """Build a PatternAnalyzer over seeded load_context session logs.
+
+    Session logs must be written before construction because the analyzer
+    projects its access log once, at __init__ time.
+    """
+
+    def _build(file_groups: list[list[str]]) -> PatternAnalyzer:
+        _ = seed_accesses(temp_project, "phase51", file_groups)
+        return PatternAnalyzer(temp_project)
+
+    return _build
 
 
 @pytest.fixture
@@ -111,39 +129,29 @@ async def test_pattern_analyzer_initialization(
 
 
 @pytest.mark.asyncio
-async def test_record_access(pattern_analyzer: PatternAnalyzer) -> None:
-    """Test recording file access."""
-    await pattern_analyzer.record_access(
-        file_path="memorybankinstructions.md",
-        task_id="task-001",
-        task_description="Test task",
-        context_files=["projectBrief.md", "activeContext.md"],
+async def test_projects_access_from_session_logs(
+    seeded_analyzer: AnalyzerFactory,
+) -> None:
+    """Test session-log calls are projected into access records."""
+    analyzer = seeded_analyzer(
+        [["memorybankinstructions.md", "projectBrief.md", "activeContext.md"]]
     )
 
-    # Verify access was recorded
-    assert len(pattern_analyzer.access_data.accesses) == 1
-    assert "memorybankinstructions.md" in pattern_analyzer.access_data.file_stats
-    file_stat = pattern_analyzer.access_data.file_stats["memorybankinstructions.md"]
+    assert len(analyzer.access_data.accesses) == 3
+    assert "memorybankinstructions.md" in analyzer.access_data.file_stats
+    file_stat = analyzer.access_data.file_stats["memorybankinstructions.md"]
     assert file_stat.total_accesses == 1
 
 
 @pytest.mark.asyncio
-async def test_get_access_frequency(pattern_analyzer: PatternAnalyzer) -> None:
+async def test_get_access_frequency(seeded_analyzer: AnalyzerFactory) -> None:
     """Test getting access frequency."""
-    # Record multiple accesses
-    for i in range(5):
-        await pattern_analyzer.record_access(
-            file_path="projectBrief.md", task_id=f"task-{i}"
-        )
-
-    await pattern_analyzer.record_access(
-        file_path="activeContext.md", task_id="task-other"
+    analyzer = seeded_analyzer(
+        [["projectBrief.md"] for _ in range(5)] + [["activeContext.md"]]
     )
 
     # Get frequency
-    freq = await pattern_analyzer.get_access_frequency(
-        time_range_days=30, min_access_count=1
-    )
+    freq = await analyzer.get_access_frequency(time_range_days=30, min_access_count=1)
 
     assert "projectBrief.md" in freq
     assert freq["projectBrief.md"]["access_count"] == 5
@@ -152,31 +160,29 @@ async def test_get_access_frequency(pattern_analyzer: PatternAnalyzer) -> None:
 
 
 @pytest.mark.asyncio
-async def test_get_co_access_patterns(pattern_analyzer: PatternAnalyzer) -> None:
+async def test_get_co_access_patterns(seeded_analyzer: AnalyzerFactory) -> None:
     """Test identifying co-accessed files."""
-    # Record files accessed together
-    for i in range(5):
-        await pattern_analyzer.record_access(
-            file_path="memorybankinstructions.md",
-            task_id=f"task-{i}",
-            context_files=["projectBrief.md", "activeContext.md"],
-        )
+    analyzer = seeded_analyzer(
+        [
+            ["memorybankinstructions.md", "projectBrief.md", "activeContext.md"]
+            for _ in range(5)
+        ]
+    )
 
     # Get co-access patterns
-    patterns = await pattern_analyzer.get_co_access_patterns(min_co_access_count=3)
+    patterns = await analyzer.get_co_access_patterns(min_co_access_count=3)
 
     assert len(patterns) > 0
     # Should find patterns between the files accessed together
 
 
 @pytest.mark.asyncio
-async def test_get_unused_files(pattern_analyzer: PatternAnalyzer) -> None:
+async def test_get_unused_files(seeded_analyzer: AnalyzerFactory) -> None:
     """Test identifying unused files."""
-    # Record access only for some files
-    await pattern_analyzer.record_access(file_path="projectBrief.md")
+    analyzer = seeded_analyzer([["projectBrief.md"]])
 
     # Get unused files (files not accessed recently)
-    unused = await pattern_analyzer.get_unused_files(time_range_days=1)
+    unused = await analyzer.get_unused_files(time_range_days=1)
 
     # Since we just accessed projectBrief.md, it shouldn't be in unused list
     # But other files should be (they were never accessed)
@@ -185,35 +191,25 @@ async def test_get_unused_files(pattern_analyzer: PatternAnalyzer) -> None:
 
 
 @pytest.mark.asyncio
-async def test_get_task_patterns(pattern_analyzer: PatternAnalyzer) -> None:
+async def test_get_task_patterns(seeded_analyzer: AnalyzerFactory) -> None:
     """Test analyzing task-based access patterns."""
-    # Record accesses for different tasks
-    await pattern_analyzer.record_access(
-        file_path="memorybankinstructions.md",
-        task_id="task-001",
-        task_description="Setup task",
-    )
-    await pattern_analyzer.record_access(
-        file_path="projectBrief.md", task_id="task-001"
-    )
+    analyzer = seeded_analyzer([["memorybankinstructions.md", "projectBrief.md"]])
 
     # Get task patterns
-    patterns = await pattern_analyzer.get_task_patterns(time_range_days=30)
+    patterns = await analyzer.get_task_patterns(time_range_days=30)
 
     assert len(patterns) > 0
-    assert patterns[0].task_id == "task-001"
+    assert patterns[0].task_id == "phase51:0"
     assert patterns[0].file_count == 2
 
 
 @pytest.mark.asyncio
-async def test_get_temporal_patterns(pattern_analyzer: PatternAnalyzer) -> None:
+async def test_get_temporal_patterns(seeded_analyzer: AnalyzerFactory) -> None:
     """Test temporal pattern analysis."""
-    # Record some accesses
-    for i in range(10):
-        await pattern_analyzer.record_access(file_path=f"file-{i % 3}.md")
+    analyzer = seeded_analyzer([[f"file-{i % 3}.md"] for i in range(10)])
 
     # Get temporal patterns
-    temporal = await pattern_analyzer.get_temporal_patterns(time_range_days=30)
+    temporal = await analyzer.get_temporal_patterns(time_range_days=30)
 
     assert temporal.time_range_days is not None
     assert temporal.total_accesses == 10
@@ -296,13 +292,8 @@ async def test_insight_engine_initialization(insight_engine: InsightEngine) -> N
 
 
 @pytest.mark.asyncio
-async def test_generate_insights(
-    insight_engine: InsightEngine, pattern_analyzer: PatternAnalyzer
-) -> None:
+async def test_generate_insights(insight_engine: InsightEngine) -> None:
     """Test insight generation."""
-    # Record some access patterns first
-    await pattern_analyzer.record_access(file_path="projectBrief.md")
-
     # Generate insights
     insights = await insight_engine.generate_insights(
         min_impact_score=0.3,
@@ -404,6 +395,10 @@ def test_optimization_config_set_self_evolution(temp_project: Path) -> None:
 @pytest.mark.asyncio
 async def test_full_analysis_workflow(temp_project: Path) -> None:
     """Test complete analysis workflow from pattern tracking to insights."""
+    # Seed usage before construction: the analyzer projects session logs once.
+    files = ["projectBrief.md", "memorybankinstructions.md", "activeContext.md"]
+    _ = seed_accesses(temp_project, "workflow", [files for _ in range(10)])
+
     # Initialize all components
     pattern_analyzer = PatternAnalyzer(temp_project)
     fs_manager = FileSystemManager(temp_project)
@@ -420,14 +415,6 @@ async def test_full_analysis_workflow(temp_project: Path) -> None:
     insight_engine = InsightEngine(
         pattern_analyzer=pattern_analyzer, structure_analyzer=structure_analyzer
     )
-
-    # Simulate usage patterns
-    for i in range(10):
-        await pattern_analyzer.record_access(
-            file_path="projectBrief.md",
-            task_id=f"task-{i % 3}",
-            context_files=["memorybankinstructions.md", "activeContext.md"],
-        )
 
     # Run full analysis
     usage_patterns = await pattern_analyzer.get_access_frequency(time_range_days=30)

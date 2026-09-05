@@ -123,8 +123,10 @@ async def analyze_impl(
         (patterns, analysis, insights). Error: status "error", error, error_type.
 
     Note:
-        - Usage patterns analysis requires file access history. If no history exists,
-          access_frequency and co_access_patterns will be empty.
+        - Usage patterns are projected from the load_context session logs in
+          .cortex/.session/. With no logged calls in the window, or with
+          track_usage_patterns disabled, access_frequency and
+          co_access_patterns will be empty.
         - Structure analysis always runs on the current state of the Memory Bank.
         - Insights generation may take longer as it performs comprehensive analysis
           and uses pattern matching algorithms.

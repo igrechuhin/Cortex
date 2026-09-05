@@ -1,12 +1,11 @@
 """
 Pattern Analyzer - Analyze usage patterns and access frequency.
 
-This module tracks file access patterns, identifies frequently co-accessed files,
-detects unused content, and analyzes task-based access patterns.
+This module derives file access patterns from the `load_context` session logs
+Cortex already writes, identifies frequently co-accessed files, detects unused
+content, and analyzes task-based access patterns.
 """
 
-import json
-from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 from cortex.analysis.models import CoAccessPattern
@@ -30,10 +29,6 @@ from cortex.analysis.pattern_detection import (
     update_co_access_patterns,
     update_task_patterns,
 )
-from cortex.analysis.pattern_normalization import (
-    create_default_access_log,
-    normalize_access_log,
-)
 from cortex.analysis.pattern_types import (
     AccessLog,
     AccessRecord,
@@ -42,11 +37,9 @@ from cortex.analysis.pattern_types import (
     TaskPatternResult,
     TemporalPatternsResult,
     UnusedFileEntry,
+    create_default_access_log,
 )
-from cortex.core.async_file_utils import open_async_text_file
-from cortex.core.exceptions import MemoryBankError
-from cortex.core.models import JsonValue
-from cortex.core.path_resolver import CortexResourceType, get_cortex_path
+from cortex.analysis.session_access_source import build_access_records
 
 # Re-export types for convenience
 __all__ = [
@@ -59,7 +52,6 @@ __all__ = [
     "TemporalPatternsResult",
     "AccessLog",
     "create_default_access_log",
-    "normalize_access_log",
 ]
 
 
@@ -94,9 +86,6 @@ class PatternAnalyzer:
             track_task_patterns: Enable task pattern tracking (from config)
         """
         self.project_root: Path = Path(project_root)
-        cortex_root = get_cortex_path(self.project_root, CortexResourceType.CORTEX_DIR)
-        self.access_log_path: Path = cortex_root / "access-log.json"
-        self.access_data: AccessLog = self._load_access_log()
 
         # Store config values for use in analysis methods
         self.pattern_window_days: int = pattern_window_days
@@ -104,42 +93,35 @@ class PatternAnalyzer:
         self.track_usage_patterns: bool = track_usage_patterns
         self.track_task_patterns: bool = track_task_patterns
 
-    def _load_access_log(self) -> AccessLog:
-        """
-        Load access log from disk.
+        # AI: usage patterns are projected from session logs on construction;
+        # the flag being false must yield an empty log, not stale data.
+        records = (
+            build_access_records(self.project_root, pattern_window_days)
+            if track_usage_patterns
+            else []
+        )
+        self.access_data: AccessLog = self._build_access_log(records)
 
-        Note:
-            This method uses synchronous I/O during initialization for simplicity.
-            For performance-critical paths, consider using async alternatives.
-        """
-        if not self.access_log_path.exists():
-            return create_default_access_log()
-
-        try:
-            with open(self.access_log_path, encoding="utf-8") as f:
-                data_raw: JsonValue = json.load(f)
-                return normalize_access_log(data_raw)
-        except (OSError, json.JSONDecodeError):
-            # If corrupted, start fresh but keep backup
-            if self.access_log_path.exists():
-                backup_path = self.access_log_path.with_suffix(".json.backup")
-                _ = self.access_log_path.rename(backup_path)
-
-            return create_default_access_log()
-
-    async def _save_access_log(self):
-        """Save access log to disk."""
-        try:
-            # Ensure parent directory exists
-            self.access_log_path.parent.mkdir(parents=True, exist_ok=True)
-            async with open_async_text_file(
-                self.access_log_path, "w", "utf-8"
-            ) as file_handle:
-                _ = await file_handle.write(
-                    json.dumps(self.access_data.model_dump(mode="json"), indent=2)
+    def _build_access_log(self, records: list[AccessRecord]) -> AccessLog:
+        """Replay projected access records into an aggregated access log."""
+        self.access_data = create_default_access_log()
+        for record in records:
+            self.access_data.accesses.append(record)
+            self._update_file_stats(record.file, record.timestamp, record.task_id)
+            # AI: every file of a call carries all its siblings as context, so
+            # counting only siblings that sort after it increments each
+            # unordered pair exactly once per call instead of twice.
+            later_siblings = [f for f in record.context_files if f > record.file]
+            if later_siblings:
+                self._update_co_access_patterns(record.file, later_siblings)
+            if record.task_id and self.track_task_patterns:
+                self._update_task_patterns(
+                    record.file,
+                    record.task_id,
+                    record.task_description,
+                    record.timestamp,
                 )
-        except OSError as e:
-            raise MemoryBankError(f"Failed to save access log: {e}") from e
+        return self.access_data
 
     def _update_file_stats(self, file_path: str, timestamp: str, task_id: str | None):
         """Update file statistics for an access event."""
@@ -179,52 +161,6 @@ class PatternAnalyzer:
             task_description,
             timestamp,
         )
-
-    def _create_access_record(
-        self,
-        file_path: str,
-        timestamp: str,
-        task_id: str | None,
-        task_description: str | None,
-        context_files: list[str] | None,
-    ) -> AccessRecord:
-        """Create an access record from parameters."""
-        return AccessRecord(
-            timestamp=timestamp,
-            file=file_path,
-            task_id=task_id,
-            task_description=task_description,
-            context_files=context_files or [],
-        )
-
-    async def record_access(
-        self,
-        file_path: str,
-        task_id: str | None = None,
-        task_description: str | None = None,
-        context_files: list[str] | None = None,
-    ):
-        """
-        Record a file access event.
-
-        Args:
-            file_path: Path to the accessed file
-            task_id: Optional task identifier
-            task_description: Optional task description
-            context_files: Optional list of files accessed in same context
-        """
-        timestamp = datetime.now(UTC).isoformat()
-        access_record = self._create_access_record(
-            file_path, timestamp, task_id, task_description, context_files
-        )
-        self.access_data.accesses.append(access_record)
-        self._update_file_stats(file_path, timestamp, task_id)
-        if context_files:
-            self._update_co_access_patterns(file_path, context_files)
-        if task_id:
-            self._update_task_patterns(file_path, task_id, task_description, timestamp)
-
-        await self._save_access_log()
 
     async def get_access_frequency(
         self, time_range_days: int = 30, min_access_count: int = 1
@@ -315,49 +251,3 @@ class PatternAnalyzer:
             Dictionary with temporal pattern statistics
         """
         return analyze_temporal_patterns(self.access_data.accesses, time_range_days)
-
-    def _filter_accesses_by_cutoff(
-        self, accesses_list: list[AccessRecord], cutoff_str: str
-    ) -> list[AccessRecord]:
-        """Filter accesses by cutoff timestamp."""
-        return [access for access in accesses_list if access.timestamp >= cutoff_str]
-
-    def _filter_task_patterns_by_cutoff(
-        self, task_patterns: dict[str, TaskPatternEntry], cutoff_str: str
-    ) -> dict[str, TaskPatternEntry]:
-        """Filter task patterns by cutoff timestamp."""
-        filtered: dict[str, TaskPatternEntry] = {}
-        for task_id, pattern in task_patterns.items():
-            if pattern.timestamp >= cutoff_str:
-                filtered[task_id] = pattern
-        return filtered
-
-    async def cleanup_old_data(self, keep_days: int = 180):
-        """
-        Clean up old access logs to prevent unbounded growth.
-
-        Args:
-            keep_days: Number of days of data to keep
-        """
-        cutoff_date = datetime.now(UTC) - timedelta(days=keep_days)
-        cutoff_str = cutoff_date.isoformat()
-
-        original_count = len(self.access_data.accesses)
-        filtered_accesses = self._filter_accesses_by_cutoff(
-            self.access_data.accesses, cutoff_str
-        )
-        self.access_data.accesses = filtered_accesses
-        removed_count = original_count - len(filtered_accesses)
-
-        filtered_task_patterns = self._filter_task_patterns_by_cutoff(
-            self.access_data.task_patterns, cutoff_str
-        )
-        self.access_data.task_patterns = filtered_task_patterns
-
-        await self._save_access_log()
-
-        return {
-            "removed_accesses": removed_count,
-            "remaining_accesses": len(filtered_accesses),
-            "remaining_tasks": len(filtered_task_patterns),
-        }

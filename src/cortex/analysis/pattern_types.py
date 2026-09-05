@@ -97,7 +97,7 @@ class TemporalPatternsResult(BaseModel):
 
 
 class AccessLog(BaseModel):
-    """Structured access log stored on disk."""
+    """Aggregated access log projected from session logs."""
 
     model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
@@ -118,3 +118,12 @@ class AccessLog(BaseModel):
         default_factory=lambda: dict[str, TaskPatternEntry](),
         description="Task-based patterns",
     )
+
+
+def create_default_access_log() -> AccessLog:
+    """Create a default empty access log structure.
+
+    Returns:
+        Empty AccessLog with default values
+    """
+    return AccessLog(version="1.0")

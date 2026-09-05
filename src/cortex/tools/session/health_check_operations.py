@@ -10,6 +10,7 @@ Total: 1 tool
 from enum import Enum
 from pathlib import Path
 
+import cortex.tools
 from cortex.core.constants import MCP_TOOL_TIMEOUT_COMPLEX
 from cortex.core.context_logging import MCPContext, log_client
 from cortex.core.mcp_stability import (
@@ -120,14 +121,24 @@ async def _run_rules_analysis(
     return rule_result, recommendations, rule_deps
 
 
+def get_tools_dir() -> Path:
+    """Resolve the directory holding Cortex's MCP tool modules.
+
+    Returns:
+        Path to the installed `cortex.tools` package
+    """
+    # AI: resolve from the imported package, not project_root — the repo-relative
+    # src/cortex/tools layout only exists in the Cortex repo itself, so consuming
+    # projects reported zero tools.
+    return Path(cortex.tools.__file__).parent
+
+
 async def _run_tools_analysis(
-    project_root: Path,
     similarity_engine: SimilarityEngine,
     validate_quality: bool,
 ) -> tuple[ToolAnalysisResult, list[str]]:
     """Run tool analysis and collect quality issues."""
-    tools_dir = project_root / "src" / "cortex" / "tools"
-    tool_analyzer = ToolAnalyzer(tools_dir, similarity_engine)
+    tool_analyzer = ToolAnalyzer(get_tools_dir(), similarity_engine)
     tool_result = await tool_analyzer.analyze()
     recommendations: list[str] = []
     if validate_quality:
@@ -191,7 +202,7 @@ async def _run_analyses_impl(
         )
         recs = recs + r
     if at in ("tools", "all"):
-        tr, r = await _run_tools_analysis(project_root, se, validate_quality)
+        tr, r = await _run_tools_analysis(se, validate_quality)
         recs = recs + r
     return pr, rr, tr, recs, pdeps, rdeps
 
