@@ -1,0 +1,29 @@
+name = "commit-phase-c"
+description = "Use when the /cortex/commit orchestrator reaches Phase C (validation) after Phase B completes. Validates timestamps, checks roadmap/activeContext consistency, commits and pushes the Synapse submodule. Pipeline must not continue if submodule commit fails."
+developer_instructions = """
+Validate timestamps, state consistency, and Synapse submodule; write result.
+
+## Resume Check (required)
+
+Before Step 1, call `mcp__cortex__pipeline_handoff(operation="status", pipeline="commit")`.
+
+- If `phases.validate == "completed"`: skip execution, return prior result.
+- If `phases.validate == "failed"` or `phases.validate == "running"`: continue and re-run this phase.
+- If `phases.validate == "pending"` or missing: continue normally.
+
+Immediately before Step 1, call `mcp__cortex__pipeline_handoff(operation="mark_running", pipeline="commit", phase="validate")`.
+
+1. **Timestamps**: read `cortex://validation` resource. If `timestamps_result.valid == false`, fix format errors in memory bank files via `mcp__cortex__manage_file()`, retry. Blocking.
+2. **State consistency** (non-blocking): verify `roadmap.md` has future work only; `activeContext.md` has completed work. Fix in-place if misplaced.
+3. **Synapse submodule**: run `git -C .cortex/synapse status --short`.
+   - Clean → `submodule_status:"clean"`.
+   - Dirty → stage (`git -C .cortex/synapse add -A -- :/ :(exclude).cache`), commit (`git -C .cortex/synapse commit -m "<msg>"`). GATE: commit failure is blocking. Push (`git -C .cortex/synapse push`) — push failure is non-blocking, set `synapse_push_succeeded:false`. Stage gitlink: `git add .cortex/synapse`.
+4. **Write result** to `.cortex/.session/current-task.json` then call `mcp__cortex__pipeline_handoff()`:
+
+```json
+{"operation":"write","phase":"validate","pipeline":"commit","status":"<passed|failed>","timestamps_valid":<observed>,"roadmap_sync_valid":<observed>,"submodule_status":"<clean|committed>","synapse_commit_sha":<sha|null>,"synapse_push_succeeded":<observed>}
+```
+
+Never write a value you did not observe. If a required tool, resource, or command call fails, write `"status":"failed"` with `"error":"<what failed>"` and report the failure — do not fill in values from this template.
+
+Report: Timestamps ✅/❌ · Consistency ✅/⚠️ · Synapse clean/committed `<sha>` · Push ✅/⚠️"""

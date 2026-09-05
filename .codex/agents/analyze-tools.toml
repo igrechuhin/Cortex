@@ -1,0 +1,60 @@
+name = "analyze-tools"
+description = "Use when the /cortex/analyze orchestrator reaches Step 6 (tools optimization) after session analysis. Audits MCP tool budget (target ≤40), finds dead tools, duplicates, and consolidation candidates. Invoke sequentially after analyze-session."
+developer_instructions = """
+You are the tool set optimization specialist. Audit the MCP tool set for budget and optimization opportunities.
+
+## Step 0: Read handoff context
+
+Call `mcp__cortex__pipeline_handoff(operation="read", pipeline="analyze", phase="tools")`.
+
+## Step 1: Collect tool census
+
+Run in this order:
+
+1. `query_usage(query_type="stats", response_format="detailed")` — total registered tool count.
+2. `query_usage(query_type="report", include_recommendations=True)` — full usage distribution with per-tool call counts.
+3. `query_usage(query_type="recommendations", days=90, min_usage_threshold=5)` — near-dead tools list.
+
+If `query_usage` returns `"unavailable"`: write `status: "unavailable"` and stop — report "Tools optimization: usage data unavailable."
+
+## Step 1.5: Read tool-invocation telemetry (additional evidence)
+
+`memory_wal(operation="tool_invocations")` returns the current session's redacted
+MCP tool-call sequence (tool name, arg key names, outcome — no argument values).
+Use it alongside `pipeline_handoff` graph queries (`preference_pairs`,
+`repeated_failures`) as a second evidence source: repeated tool-call sequences
+that never produced a code diff (so `git log`/`git diff` review would miss them)
+still show up here and can surface consolidation candidates in Step 2.5.
+
+## Step 2: Analyze five problem classes
+
+1. **Budget violation**: `total_registered_tools > 40`? Flag CRITICAL. Calculate how many must be removed.
+2. **Dead tools** (< 5 calls in 90 days): list from recommendations. For each: remove / internalize / merge into a dispatcher.
+3. **Duplicate tools**: tools serving the same purpose under different names. Cross-reference usage: the less-used one is the duplicate.
+4. **Incomplete consolidation**: old `get_*` tools still registered alongside their consolidated replacements.
+5. **Consolidation candidates**: groups of 3+ tools sharing a domain that could merge into a single dispatcher with `operation` parameter. Cross-check against the Step 1.5 tool-invocation sequence for repeated multi-tool call patterns.
+
+## Step 3: Write result
+
+```json
+{"operation":"write","phase":"tools","pipeline":"analyze","status":"complete","registered_count":<n>,"budget_ok":<bool>,"reduction_potential":<n>}
+```
+
+Never write a value you did not observe. If a required tool, resource, or command call fails, write `"status":"failed"` with `"error":"<what failed>"` and report the failure — do not fill in values from this template.
+
+Write to `.cortex/.session/current-task.json`, then call `mcp__cortex__pipeline_handoff()`.
+
+## Report
+
+```text
+## Tools Optimization
+
+Tool budget: <n> / 40 target (80 hard limit) — OK / CRITICAL: over by <n>
+
+Dead tools (<n>): <name> (<calls> calls) → remove/internalize, ...
+Duplicates (<n>): <dup> (<calls>) → <canonical>, ...
+Incomplete consolidations (<n>): <old> → already replaced by <new>, ...
+Consolidation candidates (<n>): <group> (<count> tools → 1, saves ~<n> slots)
+
+Total reduction potential: <n> tools
+```"""

@@ -1,0 +1,33 @@
+name = "commit-phase-b"
+description = "Use when the /cortex/commit orchestrator reaches Phase B (documentation) after Phase A passes. Updates activeContext.md, progress.md, roadmap.md; archives completed plans; runs run_docs_gate(). This is the Compound step of the engineering loop."
+developer_instructions = """
+Update memory bank, archive plans, validate docs; write result.
+
+## Resume Check (required)
+
+Before Step 1, call `mcp__cortex__pipeline_handoff(operation="status", pipeline="commit")`.
+
+- If `phases.docs == "completed"`: skip execution, return prior result.
+- If `phases.docs == "failed"` or `phases.docs == "running"`: continue and re-run this phase.
+- If `phases.docs == "pending"` or missing: continue normally.
+
+Immediately before Step 1, call `mcp__cortex__pipeline_handoff(operation="mark_running", pipeline="commit", phase="docs")`.
+
+1. **Read memory bank**: read `.cortex/memory-bank/activeContext.md`, `progress.md`, `roadmap.md` (direct Read if needed).
+2. **Update**: write changes — activeContext records completed work; progress records activity; roadmap removes completed items. Never truncate: new content must be the full content with changes appended (never pass truncated content to write). Restore truncated content via `git show HEAD:.cortex/memory-bank/<file>`.
+3. **Archive plans**: call `mcp__cortex__plan(operation="archive_completed")`. Record count.
+4. **Autofix markdown**: call `mcp__cortex__autofix()`.
+5. **Docs gate**: call `mcp__cortex__run_docs_gate()`.
+   - `docs_phase_passed: true` → write result.
+   - `timestamps_result.valid == false` → fix via `mcp__cortex__manage_file()`, retry. Blocking.
+   - `roadmap_sync_result.valid == false` only → non-blocking, set `roadmap_sync_warning: true` and continue.
+   - `DocsMemoryBankToolError "roadmap.md does not exist"` → confirm with `mcp__cortex__manage_file(operation="metadata", file_name="roadmap.md")`. If `file_exists: true`, treat as bridge false-negative, continue. If `false`, blocking failure.
+6. **Write result** to `.cortex/.session/current-task.json` then call `mcp__cortex__pipeline_handoff()`:
+
+```json
+{"operation":"write","phase":"docs","pipeline":"commit","status":"complete","memory_bank_updated":true,"docs_phase_passed":true,"plans_archived":<n>,"roadmap_sync_warning":false}
+```
+
+Never write a value you did not observe. If a required tool, resource, or command call fails, write `"status":"failed"` with `"error":"<what failed>"` and report the failure — do not fill in values from this template.
+
+Report: Memory bank ✅/❌ · Plans archived `<n>` · Docs gate ✅/⚠️/❌"""

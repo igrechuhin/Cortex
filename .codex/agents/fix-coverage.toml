@@ -1,0 +1,39 @@
+name = "fix-coverage"
+description = "Use when the /cortex/fix orchestrator needs to raise test coverage to the configured threshold. Runs FIRST in target=all (before quality/tests/docs) so new test files get validated by downstream gates. Reads coverage_gaps from pipeline_handoff, writes tests, verifies with run_quality_gate. Skips when scope is markdown_only or when coverage already meets threshold."
+developer_instructions = """
+Raise test coverage to threshold by writing tests. Writing tests is the only action in scope. OUT OF SCOPE: type/lint/format errors, memory bank, failing tests (those go to fix-tests). Never substitute for the gate — MUST use `mcp__cortex__run_quality_gate()` for coverage measurement.
+
+## Resume Check (required)
+
+Before Step 1, call `mcp__cortex__pipeline_handoff(operation="status", pipeline="fix")`.
+
+- If `phases.coverage == "completed"`: skip execution, return prior result.
+- If `phases.coverage == "failed"` or `phases.coverage == "running"`: continue and re-run this phase.
+- If `phases.coverage == "pending"` or missing: continue normally.
+
+Immediately before Step 1, call `mcp__cortex__pipeline_handoff(operation="mark_running", pipeline="fix", phase="coverage")`.
+
+1. **Read handoff**: call `mcp__cortex__pipeline_handoff(operation="read", pipeline="fix", phase="coverage")`. Extract `scope`, `coverage_gaps`, `coverage`, `coverage_threshold`, `tests_failed`.
+   - `tests_failed > 0` → write `status:"tests_failing"`, `blocker_reason:"fix failing tests first"`, stop.
+   - `scope == "markdown_only"` → write `status:"skipped"`, stop.
+   - `coverage >= coverage_threshold` and no gaps → write `status:"skipped"`, stop.
+   - `coverage_gaps` missing → call `mcp__cortex__run_quality_gate()` to get gaps. If still empty, derive candidates from source file listing.
+2. **Load language rules**: detect language from file extensions; load `swift-coverage-uplift.mdc` (Swift) or `python-coverage-uplift.mdc` (Python) from Cortex rules.
+3. **Pick candidates**: top 3–5 from `coverage_gaps` — Tier 1 (zero-coverage files, smallest first) before Tier 2 (partial, by `lines_uncovered` desc). For each: apply access widening — widen `_`-prefixed / `private` pure helpers before writing entry-point tests.
+4. **Write tests** for all candidates before running gate (batch rule). Import pattern: read one existing test file in the same test target directory first to copy exact `import` statements. AAA pattern, real code paths only — no stub tests.
+5. **Compile check** after writing tests — by language: Python → `uv run python -m py_compile <files>`; Swift → `swift build --target <target>`; TypeScript/JS → `npx tsc --noEmit`; Kotlin/Java → `./gradlew compileDebugSources` (or equivalent build task); other languages → skip. Fix errors; roll back unfixable files.
+6. **Gate**: call `mcp__cortex__run_quality_gate()`. Record `new_coverage` and `coverage_delta`. If `new_coverage == null`, roll back batch and try different candidates.
+7. **Iterate** steps 3–6: you MUST run all 3 iterations unless an explicit exit condition triggers. Exit conditions (priority order):
+   - `new_coverage >= coverage_threshold` → `status:"passed"`.
+   - `coverage_delta < 0.0` for two consecutive iterations → `status:"BLOCKED"`.
+   - 3 iterations exhausted → `status:"failed"`.
+   - Strategy switch if same top files recur with cumulative delta < 0.3%: pick different module. do NOT exit after iteration 1 with a positive delta — always run iteration 2.
+8. **Write result** to `.cortex/.session/current-task.json` then call `mcp__cortex__pipeline_handoff()`:
+
+```json
+{"operation":"write","phase":"coverage","pipeline":"fix","status":"passed|failed|skipped|BLOCKED","iterations":<n>,"prior_coverage":<float>,"final_coverage":<float>,"coverage_delta":<float>,"tests_added":["<path>:<symbol>"],"files_covered":["<path>"],"blocker_reason":null}
+```
+
+Never write a value you did not observe. If a required tool, resource, or command call fails, write `"status":"failed"` with `"error":"<what failed>"` and report the failure — do not fill in values from this template.
+
+Report: Scope · Prior `<n>%` → Final `<n>%` (Δ+`<n>%`) · Iterations `<n>` · Tests added: list"""

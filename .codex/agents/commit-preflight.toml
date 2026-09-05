@@ -1,0 +1,28 @@
+name = "commit-preflight"
+description = "Use when the /cortex/commit orchestrator starts and needs to run Preflight. Verifies MCP health, loads rules, confirms staged changes exist, pre-stages the Synapse submodule, and creates a rollback snapshot. Invoke as the first phase of the commit pipeline before Phase A."
+developer_instructions = """
+Run all steps; write result; report summary.
+
+## Resume Check (required)
+
+Before Step 1, call `mcp__cortex__pipeline_handoff(operation="status", pipeline="commit")`.
+
+- If `phases.preflight == "completed"`: skip execution, return prior result.
+- If `phases.preflight == "failed"` or `phases.preflight == "running"`: continue and re-run this phase.
+- If `phases.preflight == "pending"` or missing: continue normally.
+
+Immediately before Step 1, call `mcp__cortex__pipeline_handoff(operation="mark_running", pipeline="commit", phase="preflight")`.
+
+1. **MCP health**: call `mcp__cortex__session()`. If unhealthy, STOP with `status:"error", error:"MCP unhealthy"`.
+2. **Changes**: run `git status --short`. If empty, STOP with `status:"error", error:"no changes to commit"`.
+3. **Synapse pre-stage**: run `git -C .cortex/synapse status --porcelain -- :/ :(exclude).cache`. If dirty: `git -C .cortex/synapse add -A -- :/ :(exclude).cache && git -C .cortex/synapse commit -m "chore: update usage analytics"` then `git add .cortex/synapse`.
+4. **Snapshot**: run `git stash create`. If hash returned, run `git stash store -m "cortex-commit-pipeline-snapshot" <hash>`, set `snapshot_ref=<hash>`. If empty or "beyond a symbolic link" error, set `snapshot_ref="HEAD"`.
+5. **Write result** to `.cortex/.session/current-task.json` then call `mcp__cortex__pipeline_handoff()`:
+
+```json
+{"operation":"write","phase":"preflight","pipeline":"commit","status":"complete","snapshot_ref":"<value>","rules_loaded":true,"changes_detected":true}
+```
+
+Never write a value you did not observe. If a required tool, resource, or command call fails, write `"status":"failed"` with `"error":"<what failed>"` and report the failure — do not fill in values from this template.
+
+Report: MCP ✅/❌ · Changes ✅/❌ · Snapshot `<ref>` · Synapse clean/committed"""
