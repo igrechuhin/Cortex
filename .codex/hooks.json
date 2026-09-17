@@ -1,0 +1,15 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash -c 'python3 \"$(git rev-parse --show-toplevel)\"/.cortex/synapse/scripts/python/post_edit_hook.py'"
+          }
+        ]
+      }
+    ]
+  }
+}
