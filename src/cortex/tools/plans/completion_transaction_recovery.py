@@ -13,6 +13,7 @@ from cortex.core.exceptions import (
 from cortex.core.file_system import FileSystemManager
 from cortex.core.models import PlanStatus
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
+from cortex.tools.plans.completion_content import find_roadmap_bullet_line
 from cortex.tools.plans.completion_transaction_io import (
     hash_text,
     read_payload,
@@ -106,7 +107,9 @@ def completed_state_present(
         f"- ✅ **{request.plan_title}** - COMPLETE "
         f"({request.completion_date}) - {request.summary}"
     )
-    if request.plan_title in roadmap or active_line not in active.splitlines():
+    if find_roadmap_bullet_line(roadmap, request.plan_title) is not None or (
+        active_line not in active.splitlines()
+    ):
         return False
     if request.progress_entry:
         progress = read_required_text(mem / MemoryBankFile.PROGRESS, mem)

@@ -126,6 +126,24 @@ def test_frontmatter_status_is_canonical_and_idempotent() -> None:
     assert "status: DONE" in first
 
 
+@pytest.mark.asyncio
+async def test_retry_allows_unrelated_roadmap_title_prose(tmp_path: Path) -> None:
+    fixture = seed_completion(tmp_path)
+
+    first = await run_completion_transaction(fixture.root, completion_request())
+    assert first.status == OperationStatus.SUCCESS
+    _ = fixture.roadmap.write_text(
+        fixture.roadmap.read_text(encoding="utf-8")
+        + "\nNote: Sample is referenced in unrelated release prose.\n",
+        encoding="utf-8",
+    )
+
+    retry = await run_completion_transaction(fixture.root, completion_request())
+
+    assert retry.status == OperationStatus.SUCCESS
+    assert retry.recovery_required is False
+
+
 def test_legacy_plan_receives_done_frontmatter() -> None:
     result = replace_plan_frontmatter_status("# Legacy\n", PlanStatus.DONE)
 
