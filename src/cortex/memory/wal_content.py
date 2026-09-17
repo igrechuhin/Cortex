@@ -20,8 +20,11 @@ from pathlib import Path
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
+from cortex.core.input_validation import InputValidator
+from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.core.pydantic_extra import EXTRA_FORBID
 from cortex.memory.wal import (
+    WRITE_LOG_FILE_NAME,
     MemoryWAL,
     WalContentFields,
     WALEntry,
@@ -34,7 +37,9 @@ CODEC_NONE = "none"
 CODEC_PRUNED = "pruned"
 CODEC_ZLIB_B64 = "zlib-b64"
 
-MEMORY_BANK_PREFIX = ".cortex/memory-bank/"
+MEMORY_BANK_PREFIX = (
+    f"{CortexResourceType.CORTEX_DIR.value}/{CortexResourceType.MEMORY_BANK.value}/"
+)
 
 # AI: per-entry cap keeps one oversized write from bloating a single JSONL line;
 # such an entry degrades to "pruned" (same reconstruction semantics as compaction).
@@ -231,18 +236,68 @@ def _current_matches_log(entries: list[WALEntry], current_text: str | None) -> b
     return wal_short_hash(current_text) == entries[-1].content_hash_after
 
 
+def _validated_history_relative_path(file: str) -> Path:
+    """Retain canonical WAL identities and the existing memory filename rules."""
+    _ = InputValidator.validate_string_input(file, allow_newlines=False)
+    if not file.startswith(MEMORY_BANK_PREFIX) or "\\" in file:
+        raise ValueError("AS-OF requires a project-relative memory-bank Markdown path")
+    relative = file.removeprefix(MEMORY_BANK_PREFIX)
+    components = relative.split("/")
+    if any(not part or part in {".", ".."} for part in components):
+        raise ValueError("AS-OF path cannot contain empty, dot, or parent segments")
+    for part in components:
+        if InputValidator.validate_file_name(part) != part:
+            raise ValueError("AS-OF path components must use canonical file names")
+    if Path(relative).suffix != ".md":
+        raise ValueError("AS-OF requires a memory-bank Markdown (.md) file")
+    return Path(relative)
+
+
+def resolve_memory_history_file(project_root: Path, file: str) -> Path:
+    """Validate a memory-bank target before reading either content or history."""
+    relative = _validated_history_relative_path(file)
+    root = project_root.resolve()
+    memory_bank = get_cortex_path(root, CortexResourceType.MEMORY_BANK)
+    target = memory_bank / relative
+    _validate_history_target(target, root)
+    _ = InputValidator.validate_path(target, memory_bank)
+    return target
+
+
+def _validate_history_target(target: Path, root: Path) -> None:
+    """Reject linked paths and unsupported types for content and its fixed WAL."""
+    if not target.is_relative_to(root):
+        raise ValueError(f"AS-OF path is outside project root: {target}")
+    current = target
+    while current != root:
+        if current.is_symlink():
+            raise ValueError(f"AS-OF paths cannot contain symlinks: {current}")
+        if current != target and current.exists() and not current.is_dir():
+            raise ValueError(f"AS-OF ancestor must be a directory: {current}")
+        current = current.parent
+    _ = InputValidator.validate_path(target, root)
+    if target.exists() and not target.is_file():
+        raise ValueError(f"AS-OF target must be a regular file: {target}")
+
+
 def wal_as_of(project_root: Path, file: str, step_number: int) -> WalAsOfResult:
     """AS-OF view of a memory-bank file at an experience-store step number.
 
     Typed entry point for the analyze pipeline: callers get reconstructed
     content plus provenance instead of reading WAL files directly.
     """
-    wal = MemoryWAL(project_root / ".cortex" / "wal", project_root=project_root)
-    entries = [entry for entry in wal.read() if entry.file == file]
-    target = project_root / file
+    root = project_root.resolve()
+    target = resolve_memory_history_file(root, file)
+    identity = target.relative_to(root).as_posix()
+    wal_dir = get_cortex_path(root, CortexResourceType.CORTEX_DIR) / "wal"
+    _validate_history_target(wal_dir / WRITE_LOG_FILE_NAME, root)
+    wal = MemoryWAL(wal_dir, project_root=root)
+    entries = [entry for entry in wal.read() if entry.file == identity]
+    # AI: A history read can yield to filesystem changes; recheck before current content.
+    target = resolve_memory_history_file(root, identity)
     current = target.read_text(encoding="utf-8") if target.is_file() else None
     return wal_as_of_from_entries(
-        file=file,
+        file=identity,
         step_number=step_number,
         entries=entries,
         current_text=current,

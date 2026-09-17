@@ -23,7 +23,7 @@ Requires `CORTEX_SESSION_ID` and the session layout expected by `read_pipeline_p
 
 Paths in the diff (`+++ b/...` / `diff --git`) are mapped to languages (for example `.py` → Python, `.swift` → Swift). The checklist text passed into analysis includes the **shared** category list plus **only the sections for languages present in the diff**. The static `cortex://rules` resource still exposes the **full** multi-language catalog via `reflection_checklist`.
 
-Python-only heuristics (incomplete `try`/`except`, `src/` defs without tests) run only when a `.py` path is present. Language-agnostic signals (TODO markers, secret-like literals) run on any diff.
+Python-only heuristics (incomplete `try`/`except`, `src/` defs without tests) run only when a `.py` path is present. Handler matching accepts indentation and unchanged context lines in the same Python file; removed handlers and handlers in other files do not satisfy the check. Language-agnostic signals (TODO markers, secret-like literals) run on any diff.
 
 When reflection runs, the gate result also includes `reflection_languages`: an ordered list of detected language ids (for example `["python"]`, `["swift", "go"]`).
 

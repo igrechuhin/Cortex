@@ -8,6 +8,7 @@ compatibility so callers do not need to change imports when tooling is upgraded.
 
 import asyncio
 import hashlib
+import subprocess
 from pathlib import Path
 
 import aiofiles
@@ -19,6 +20,11 @@ from cortex.core.path_resolver import (
     WIKI_SOURCES_DIR_PROJECT_RELATIVE_PREFIX,
     get_node_modules_bin_path,
     iter_venv_executable_candidates,
+)
+from cortex.core.quality_scope import (
+    filter_owned_files,
+    installed_skill_roots,
+    is_owned_file,
 )
 from cortex.tools.files.markdown_lint_cache import MarkdownLintIndex
 from cortex.tools.files.markdown_lint_cache_updates import (
@@ -203,7 +209,7 @@ async def get_modified_markdown_files(
         if result_success(status_result):
             parse_untracked_files(result_stdout(status_result), project_root, files)
 
-    return sorted(set(files))
+    return sorted(set(filter_owned_files(project_root, files)))
 
 
 async def _probe_rumdl_binary(exe: str) -> list[str] | None:
@@ -292,42 +298,61 @@ async def validate_markdown_prerequisites(
     return None, markdownlint_cmd, config_path
 
 
+def _is_markdown_source(path: Path, project_root: Path) -> bool:
+    """Keep authored Markdown, excluding existing generated/dependency trees."""
+    if not path.is_file() or path.suffix not in (".md", ".mdc"):
+        return False
+    try:
+        rel = path.relative_to(project_root)
+    except ValueError:
+        return False
+    if any(part in _ALL_MARKDOWN_EXCLUDE_DIRS for part in rel.parts):
+        return False
+    return not any(
+        rel.as_posix().startswith(prefix) for prefix in _ALL_MARKDOWN_EXCLUDE_PREFIXES
+    )
+
+
 def get_all_markdown_files_for_lint(
     project_root: Path,
-    max_files: int = _CI_PARITY_MAX_MARKDOWN_FILES,
+    max_files: int | None = _CI_PARITY_MAX_MARKDOWN_FILES,
 ) -> list[Path]:
-    """Get all markdown files for lint (CI parity with quality.yml markdown step).
+    """Collect owned Markdown in stable order; full gates pass max_files=None.
 
-    Excludes: node_modules, .venv, venv, __pycache__, .git, .build, .serena,
-    and paths under ``.cortex/plans/archive``, ``.cortex/history/``,
-    ``.cortex/.cache/``, and the wiki sources prefix from
-    :data:`WIKI_SOURCES_DIR_PROJECT_RELATIVE_PREFIX`
-    (mirrors detached worker markdown collection and CI/Makefile rumdl scope).
-    Returns up to max_files paths, sorted.
+    Excludes generated snapshots, dependency trees and validated installed skills.
+    The optional cap is retained for interactive callers; CI and full gates scan all.
     """
-    out: list[Path] = []
-    try:
-        for path in project_root.rglob("*"):
-            if len(out) >= max_files:
-                break
-            if not path.is_file():
-                continue
-            if path.suffix not in (".md", ".mdc"):
-                continue
-            try:
-                rel = path.relative_to(project_root)
-            except ValueError:
-                continue
-            parts = rel.parts
-            if any(d in parts for d in _ALL_MARKDOWN_EXCLUDE_DIRS):
-                continue
-            rel_posix = str(rel).replace("\\", "/")
-            if any(rel_posix.startswith(p) for p in _ALL_MARKDOWN_EXCLUDE_PREFIXES):
-                continue
-            out.append(path)
-    except OSError:
-        pass
-    return sorted(out)[:max_files]
+    vendor_roots = installed_skill_roots(project_root)
+    paths = sorted(project_root.rglob("*"))
+    out = [
+        path
+        for path in paths
+        if _is_markdown_source(path, project_root) and is_owned_file(path, vendor_roots)
+    ]
+    return out if max_files is None else out[:max_files]
+
+
+def run_markdown_lint_cli() -> int:
+    """Run CI/local Markdown checks with the same complete ownership scope."""
+    root = Path.cwd()
+    files = get_all_markdown_files_for_lint(root, max_files=None)
+    if not files:
+        print("No owned Markdown files found to check")
+        return 0
+    command = ["rumdl", "check"]
+    config = _find_markdownlint_config(root)
+    if config is not None:
+        command.extend(["--config", str(config)])
+    # AI: Batching bounds command size without dropping files beyond an arbitrary cap.
+    return max(
+        int(
+            subprocess.run(
+                command + [str(p) for p in files[start : start + 100]]
+            ).returncode
+            != 0
+        )
+        for start in range(0, len(files), 100)
+    )
 
 
 async def get_markdown_files_to_process(
@@ -409,3 +434,7 @@ async def filter_files_for_linting(
         files_to_lint.append(file_path)
 
     return files_to_lint, initial_results, hashes_for_cache
+
+
+if __name__ == "__main__":
+    raise SystemExit(run_markdown_lint_cli())

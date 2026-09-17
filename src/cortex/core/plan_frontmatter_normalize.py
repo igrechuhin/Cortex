@@ -12,14 +12,12 @@ import re
 from datetime import date
 from pathlib import Path
 
-from cortex.core.artifact_graph import (
-    normalize_plan_slug,
-    resolve_plan_status_token,
-)
+from cortex.core.artifact_graph import normalize_plan_slug
 from cortex.core.models._enums import PlanExecutionMode
+from cortex.core.plan_metadata import read_frontmatter_field, resolve_plan_status_token
 
 _STATUS_LINE_RE = re.compile(
-    r"^status\s*:\s*[\"']?(?P<value>[A-Za-z_]+).*$", re.IGNORECASE | re.MULTILINE
+    r"^status[ \t]*:[ \t]*(?P<value>.*)$", re.IGNORECASE | re.MULTILINE
 )
 _DEPENDS_LINE_RE = re.compile(
     r"^depends_on\s*:\s*\[(?P<items>.*?)\][ \t]*(?:#.*)?$", re.IGNORECASE | re.MULTILINE
@@ -110,7 +108,9 @@ def _normalized_created_line(match: re.Match[str]) -> str:
 def _normalized_status_line(match: re.Match[str]) -> str:
     # AI: leave unknown statuses (e.g. NOT_VIABLE) untouched rather than
     # rewriting them to the PENDING fallback and losing the author's intent.
-    status = resolve_plan_status_token(match.group("value"))
+    synthetic = f"---\nstatus: {match.group('value')}\n---\n"
+    raw = read_frontmatter_field(synthetic, "status")
+    status = resolve_plan_status_token(raw) if raw is not None else None
     if status is None:
         return match.group(0)
     return f"status: {status.value}"
@@ -158,7 +158,8 @@ def normalize_plan_frontmatter(content: str) -> str:
         return content
     start, end = span
     head, body, tail = content[:start], content[start:end], content[end:]
-    body = _STATUS_LINE_RE.sub(_normalized_status_line, body, count=1)
+    if len(_STATUS_LINE_RE.findall(body)) == 1:
+        body = _STATUS_LINE_RE.sub(_normalized_status_line, body, count=1)
     body = _DEPENDS_LINE_RE.sub(_normalized_depends_line, body, count=1)
     body = _EXECUTION_LINE_RE.sub(_normalized_execution_line, body, count=1)
     body = _ENUM_LINE_RE.sub(_normalized_enum_line, body)

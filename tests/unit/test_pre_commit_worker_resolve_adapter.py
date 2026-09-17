@@ -1,9 +1,15 @@
-"""Tests for detached worker language resolution (run_quality_gate path)."""
+"""Tests for detached worker language resolution and quality-gate envelopes."""
 
+import json
+import sys
 from pathlib import Path
+from unittest.mock import patch
+
+import pytest
 
 from cortex.services.framework_adapters.python_adapter import PythonAdapter
 from cortex.services.framework_adapters.swift_adapter import SwiftAdapter
+from cortex.tools.execution import pre_commit_worker as worker
 from cortex.tools.execution.pre_commit_worker import resolve_adapter_worker
 
 
@@ -33,3 +39,77 @@ class TestResolveAdapterWorker:
         adapter, info = resolved
         assert isinstance(adapter, PythonAdapter)
         assert info.language == "python"
+
+
+def test_delivered_marker_is_not_restamped_from_argv(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # Arrange
+    result_path = tmp_path / "result.json"
+    delivered: dict[str, object] = {
+        "status": "completed",
+        "quality_gate_pending": False,
+    }
+    monkeypatch.setattr(sys, "argv", ["worker", "--quality-gate"])
+
+    # Act
+    worker.atomic_write(result_path, delivered)
+
+    # Assert
+    assert json.loads(result_path.read_text())["quality_gate_pending"] is False
+    assert delivered["quality_gate_pending"] is False
+
+
+def _set_worker_argv(monkeypatch: pytest.MonkeyPatch, result_path: Path) -> None:
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "worker",
+            "--quality-gate",
+            "--result-file",
+            str(result_path),
+            "--project-root",
+            str(result_path.parent),
+        ],
+    )
+
+
+@pytest.mark.parametrize("outcome", ["success", "ignored", "blocked", "error"])
+def test_quality_gate_marker_survives_terminal_worker_writes(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, outcome: str
+) -> None:
+    # Arrange
+    result_path = tmp_path / "result.json"
+    _set_worker_argv(monkeypatch, result_path)
+
+    def check_staging(_root: Path) -> list[str]:
+        assert json.loads(result_path.read_text())["quality_gate_pending"] is True
+        monkeypatch.setattr(sys, "argv", ["worker"])
+        return ["ignored.py"] if outcome == "ignored" else []
+
+    with (
+        patch.object(worker, "check_staged_gitignored", side_effect=check_staging),
+        patch.object(
+            worker,
+            "precommit_block_response",
+            return_value={"status": "error"} if outcome == "blocked" else None,
+        ),
+        patch.object(
+            worker,
+            "_run_checks",
+            return_value={"status": "success"},
+            side_effect=RuntimeError("worker failed") if outcome == "error" else None,
+        ),
+    ):
+        # Act
+        if outcome == "error":
+            with pytest.raises(SystemExit, match="1"):
+                worker.main()
+        else:
+            worker.main()
+
+    # Assert
+    envelope = json.loads(result_path.read_text())
+    assert envelope["quality_gate_pending"] is True
+    assert envelope["status"] == ("error" if outcome == "error" else "completed")

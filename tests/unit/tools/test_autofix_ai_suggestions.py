@@ -2,14 +2,12 @@
 
 from __future__ import annotations
 
-import json
 from pathlib import Path
 from typing import cast
-from unittest.mock import AsyncMock, patch
+from unittest.mock import patch
 
 import pytest
 
-from cortex.core.execution_env import LocalExecutionEnvironment
 from cortex.core.models import ModelDict
 from cortex.tools.execution.autofix_ai_suggestions import (
     collect_autofix_ai_comment_suggestions,
@@ -53,7 +51,6 @@ def test_no_suggestion_when_ai_comment_above() -> None:
 
 
 _MOD = "cortex.tools.execution.pre_commit_fix_quality"
-_STARTED = {"job_id": "x", "status": "started"}
 
 
 def _autofix_envelope() -> ModelDict:
@@ -84,11 +81,10 @@ def _suggestion_diff() -> str:
 """
 
 
-@pytest.mark.asyncio
-async def test_autofix_impl_merges_suggestions_from_diff(
+def test_worker_finalization_merges_suggestions_from_diff(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    from cortex.tools.execution.pre_commit_fix_quality import autofix_impl
+    from cortex.tools.execution.pre_commit_fix_quality import finalize_autofix_result
 
     envelope = _autofix_envelope()
     diff = _suggestion_diff()
@@ -98,16 +94,11 @@ async def test_autofix_impl_merges_suggestions_from_diff(
 
     monkeypatch.setattr(f"{_MOD}.collect_git_diff_text", _fake_collect)
     with (
-        patch(f"{_MOD}.start_fix_job_impl", return_value=_STARTED),
-        patch(f"{_MOD}.poll_for_result", new_callable=AsyncMock, return_value=envelope),
+        patch(f"{_MOD}.get_tracked_git_changes", return_value=set()),
+        patch(f"{_MOD}._run_synapse_formatter_autofix", return_value=None),
+        patch(f"{_MOD}._apply_memory_bank_lint_autofix", return_value=[]),
     ):
-        out = await autofix_impl(
-            tmp_path,
-            include_untracked_markdown=True,
-            ctx=None,
-            env=LocalExecutionEnvironment(),
-        )
-    data = json.loads(out)
+        data = finalize_autofix_result(tmp_path, envelope, set())
     assert data["status"] == "success"
-    assert data.get("suggestions")
-    assert any("visible" in str(s.get("message", "")) for s in data["suggestions"])
+    suggestions = cast(list[dict[str, str]], data["suggestions"])
+    assert any("visible" in suggestion["message"] for suggestion in suggestions)

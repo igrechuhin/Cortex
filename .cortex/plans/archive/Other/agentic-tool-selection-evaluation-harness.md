@@ -2,7 +2,7 @@
 title: "Agentic Tool-Selection Evaluation Harness"
 component: "evaluation"
 work_type: feature
-status: PENDING
+status: DONE
 priority: High
 created: 2026-08-06
 depends_on: []

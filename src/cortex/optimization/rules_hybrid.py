@@ -37,6 +37,18 @@ def _coerce_rule_category(raw_category: object) -> OptimizationRuleCategory:
     return OptimizationRuleCategory.UNKNOWN
 
 
+def _expanded_rule_categories(categories: list[str]) -> list[str]:
+    """Load both common categories while preserving one-category manifest aliases."""
+    selected = set(categories)
+    common = {
+        OptimizationRuleCategory.GENERIC.value,
+        OptimizationRuleCategory.GENERAL.value,
+    }
+    if selected & common:
+        selected.update(common)
+    return sorted(selected)
+
+
 class RulesHybridMixin:
     """Mixin providing hybrid (shared + local) rules resolution."""
 
@@ -69,8 +81,10 @@ class RulesHybridMixin:
             task_description, max_tokens, min_relevance_score, rule_priority, context
         )
 
-        self._categorize_rules(result, selected_rules, context)
-        result.total_tokens = self._calculate_total_tokens(selected_rules)
+        self.categorize_rules(result, selected_rules, context)
+        result.total_tokens = self._calculate_total_tokens(
+            result.generic_rules + result.language_rules + result.local_rules
+        )
         return result
 
     # ---- context detection --------------------------------------------------
@@ -145,7 +159,8 @@ class RulesHybridMixin:
         )
 
         shared_rules: list[ScoredRuleModel] = []
-        for category in categories:
+        seen: set[tuple[str, str]] = set()
+        for category in _expanded_rule_categories(categories):
             category_rules = await sm.load_category(category)
             for loaded_rule in category_rules:
                 try:
@@ -154,7 +169,14 @@ class RulesHybridMixin:
                     logger.debug("_load_shared_rules: skip invalid rule: %s", exc)
                     continue
                 if shared_rule is not None:
-                    shared_rules.append(shared_rule)
+                    # AI: Alias loads share original category/file identity; distinct paths stay distinct.
+                    identity = (
+                        str(getattr(loaded_rule, "category", "")),
+                        shared_rule.file,
+                    )
+                    if identity not in seen:
+                        seen.add(identity)
+                        shared_rules.append(shared_rule)
 
         return shared_rules
 
@@ -194,13 +216,19 @@ class RulesHybridMixin:
         local_rules = self._get_local_rules_models(
             task_description, min_relevance_score
         )
+        rules_folder = getattr(self, "rules_folder", None)
         for rule in local_rules:
             rule.source = "local"
+            if isinstance(rules_folder, str) and Path(rule.file).is_relative_to(
+                rules_folder
+            ):
+                # AI: Shared merge keys are relative rule paths, not project index keys.
+                rule.file = Path(rule.file).relative_to(rules_folder).as_posix()
         return local_rules
 
     # ---- categorisation -----------------------------------------------------
 
-    def _categorize_rules(
+    def categorize_rules(
         self,
         result: RulesResultModel,
         selected_rules: list[ScoredRuleModel],
@@ -212,29 +240,23 @@ class RulesHybridMixin:
         local_rules: list[ScoredRuleModel] = []
 
         for rule in selected_rules:
-            if rule.category == OptimizationRuleCategory.UNKNOWN:
+            if rule.category in {
+                OptimizationRuleCategory.UNKNOWN,
+                OptimizationRuleCategory.GENERIC,
+                OptimizationRuleCategory.GENERAL,
+            }:
                 generic_rules.append(rule)
-                continue
-            self._categorize_non_generic_rule(
-                rule, context, language_rules, local_rules
-            )
+            elif rule.category in context.detected_languages:
+                language_rules.append(rule)
+            elif rule.source == "local":
+                local_rules.append(rule)
+            else:
+                # AI: Selection already chose this shared rule; categorization must not discard it.
+                generic_rules.append(rule)
 
         result.generic_rules = generic_rules
         result.language_rules = language_rules
         result.local_rules = local_rules
-
-    def _categorize_non_generic_rule(
-        self,
-        rule: ScoredRuleModel,
-        context: DetectedContextModel,
-        language_rules: list[ScoredRuleModel],
-        local_rules: list[ScoredRuleModel],
-    ) -> None:
-        """Categorize a non-generic rule into language or local."""
-        if rule.category in context.detected_languages:
-            language_rules.append(rule)
-        elif rule.source == "local":
-            local_rules.append(rule)
 
     def _calculate_total_tokens(self, rules: list[ScoredRuleModel]) -> int:
         """Calculate total tokens from rules."""

@@ -266,7 +266,7 @@ HTTP/SSE or a stdio–HTTP bridge is not a supported workaround for this issue (
 - Batched markdown lint to reduce total duration.
 - **Long-running serialization and detached workers**:
   - `fix_markdown_lint` is the only tool serialized by the long-running semaphore. If you call `fix_markdown_lint` while another `fix_markdown_lint` run is active, the second call **waits up to 600 seconds (10 minutes)** for the first to finish; if the first is still running after that, the server does **one short retry (5 seconds)** to absorb the race when the first call or auto-release frees the semaphore at the same moment, then returns an error if still busy. This allows sequential commit-pipeline calls that involve markdown lint to succeed when the second request arrives before the first has returned. See [Another long-running tool is in progress](#issue-another-long-running-tool-in-progress).
-  - `run_quality_gate` (Phase A) no longer uses the global long-running semaphore for the underlying worker. It runs via a **detached worker model** keyed by `args_hash`. If a second call is made for the same configuration while a detached worker is already running, the server returns a **fast, non-retryable error** stating that checks are already running for that configuration; agents must treat this as “in progress” and **not** start a second run.
+  - `run_quality_gate` (Phase A) uses a **detached worker model** keyed by `args_hash`. Each public call waits at most 20 seconds for checks, including root-lock contention, then returns `status: "running"` with the existing `job_id` and `result_file` when a job exists. If the lock is busy and no result file exists, it returns a retryable `status: "error"` (`Phase A lock is busy; retry the gate.`), not failed checks. Repeat the same zero-argument call with unchanged configuration to resume rather than launch a duplicate; the default `force_fresh: true` does not replace a pending job. Running and timeout responses are infrastructure states, not completed gate results.
 
 #### Issue: Found 0 tools, 0 prompts, and 0 resources {#issue-mcp-0-tools}
 
@@ -289,18 +289,18 @@ This happens when the client sends ListTools/ListPrompts/ListResources **before*
 
 **Symptoms**:
 
-- Tool call returns a `RuntimeError` (example paraphrase; exact wording varies): another long-running tool is already in progress (often `fix_markdown_lint` or the Phase A quality gate). Wait for it to finish (up to 10 minutes) and retry.
+- Tool call returns a `RuntimeError` (example paraphrase; exact wording varies): another long-running tool is already in progress (`fix_markdown_lint`). Wait for it to finish (up to 10 minutes) and retry.
 
 **Cause**:
 
 - The long-running semaphore currently serializes **only** `fix_markdown_lint`. If the client (or agent) invokes a second `fix_markdown_lint` run while the first is still running, the second call **waits up to 600 seconds (10 minutes)** for the first to finish. If the first is still running after that, the server returns this error.
-- Phase A (`run_quality_gate`) concurrency is handled by its detached worker model, not by the long-running semaphore. A second call with the same configuration while a worker is running returns a fast, non-retryable error indicating that checks are already running; this should be treated as “in progress”, not as a signal to retry.
+- Phase A (`run_quality_gate`) concurrency is handled by its detached worker model, not by the long-running semaphore. Same-configuration calls resume the existing job and return its running handle or terminal outcome. Lock contention without an existing result file instead returns a retryable `status: "error"` (`Phase A lock is busy; retry the gate.`). This is not a completed check failure. Do not edit files or run auto-fixes while checks are active.
 
 **Fix (what to do)**:
 
 1. If you see this error while running `fix_markdown_lint`, the first run took longer than 600 seconds (10 minutes). Wait for it to finish, then retry the tool you wanted to run.
-2. Prefer running long-running tools one after another and wait for each to complete before starting the next (e.g. run `fix_markdown_lint` only after `run_quality_gate` has completed). Sequential calls that arrive while the first is still running will wait automatically for `fix_markdown_lint`, and return a fast "already running" error for a second Phase A gate call with the same configuration.
-3. If running the commit pipeline: ensure Phase A has fully completed before Step 12 runs; avoid starting another commit or long-running tool in another tab or agent session, and never start a second `run_quality_gate` run while a detached worker is active for the same configuration.
+2. Run mutating long-running tools sequentially: start `fix_markdown_lint` or `autofix` only after the quality gate has completed. A running handle means checks are still active, not that Phase A passed.
+3. In the commit pipeline, repeat `run_quality_gate()` with the same configuration until it returns a terminal outcome. Preserve the returned job ID and result path; do not start a separate worker or another commit against the workspace while that job remains active.
 
 #### MCP disconnect runbook (commit pipeline) {#mcp-disconnect-runbook-commit}
 
@@ -314,7 +314,7 @@ Use this runbook when the Cortex MCP connection is lost **during** `/cortex/comm
 | During Step 12.1 (format) | Format fix or check | Client timeout during formatting tool | Retry once; if retry fails, use fallback scripts (`fix_formatting.py` then `check_formatting.py`) per commit prompt; record "MCP connection closed; fallback used". Do not skip Step 12.1. |
 | During Step 12.5 (markdown lint) | `fix_markdown_lint` or check | Client timeout (markdown lint can be slow) | Retry once; if retry fails, run markdown lint via shell (see commit prompt) and record "MCP connection closed; fallback used". |
 | During Step 12.6 (file size / function length) | Quality checks | Client timeout | Retry once; if retry fails, use shell script fallbacks for file size and function length checks; record "MCP connection closed; fallback used". Do not skip Step 12.6. |
-| During Step 12.7 (tests with coverage) | `run_quality_gate()` (Step 12 final Phase A pass, includes tests) | Client timeout (tests can run 5–10+ minutes) | Retry once. **There is no fallback for Step 12.7.** If retry fails, **block commit** and tell the user: "Reconnect Cortex MCP and re-run the commit command." Do not proceed with Phase A results. |
+| During Step 12.7 (tests with coverage) | `run_quality_gate()` (Step 12 final Phase A pass, includes tests) | Client disconnect or stale server version; current gate returns a running handle after a bounded wait | Reconnect and resume the same configuration. Repeat `status: "running"` responses until terminal; never launch a separate worker. If MCP remains unavailable, **block commit**. Pending checks are not a passing gate. |
 
 **Likely cause**: In most cases the **client** (some MCP client bridges are more prone to this than others) closed the connection—due to client-side tool-call timeout or IDE lifecycle—not a server crash. The tool may have completed on the server; the connection was already closed when the response was sent. To increase the client's timeout, see [MCP tool timeout configuration](#mcp-tool-timeout-configuration). See also [MCP error -32000: Connection closed](#issue-mcp-error-32000-connection-closed).
 
@@ -323,7 +323,7 @@ Use this runbook when the Cortex MCP connection is lost **during** `/cortex/comm
 **Recovery summary**:
 
 - **Steps with fallback (12.1, 12.5, 12.6)**: Retry once → if still failing, use documented shell/script fallback → record "MCP connection closed; fallback used" → continue pipeline. Never skip these steps based on Phase A.
-- **Step 12.7 (no fallback)**: Retry once → if still failing, **block commit**, report connection failure, and instruct user to **reconnect Cortex MCP and re-run the commit command**. Do not proceed with Phase A test results.
+- **Step 12.7 (no fallback)**: Reconnect and repeat `run_quality_gate()` with unchanged configuration to resume the existing job. Preserve its `job_id` and `result_file`; keep polling running responses and retry lock-busy or timeout infrastructure states without treating them as failed checks. Do not mutate files while pending. If MCP remains unavailable, **block commit** and report the connection failure; earlier Phase A test results do not replace the final gate.
 
 **References**: Commit prompt "Connection closed" and "Step 12" sections; [MCP error -32000: Connection closed](#issue-mcp-error-32000-connection-closed); [Client connection closed during long tools](../mcp-tool-timeouts.md#client-connection-closed-during-long-tools) in mcp-tool-timeouts.
 
@@ -429,13 +429,13 @@ Sandboxed environments may block or limit subprocess execution, network, or long
 
 #### Step 12.7 Timeout and Connection Requirements {#step-127-timeout-and-connection-requirements}
 
-**Overview**: Step 12.7 (tests with coverage validation) is a long-running operation that can take up to 600 seconds (10 minutes) to complete. The commit pipeline includes connection stability enhancements to prevent commit blocks due to connection closure during test execution.
+**Overview**: Step 12.7 runs the final Phase A gate through zero-argument `run_quality_gate()`. The detached worker may take several minutes, but each public call waits at most 20 seconds for checks, including root-lock contention, before returning a pending handle or a retryable lock-busy error.
 
 **Expected test execution time**:
 
 - **Typical duration**: 5–10 minutes for full test suite with coverage
 - **Maximum timeout**: 600 seconds (10 minutes) as configured in `test_timeout=600`
-- **Client-side timeout requirements**: The MCP client must have a tool-call timeout ≥ 600 seconds to avoid connection closure during Step 12.7
+- **Client-side timeout requirements**: A 30-second tool-call deadline accommodates the gate's 20-second bounded wait; the client need not hold one request open for the entire test run.
 
 **Connection health check before Step 12.7**:
 
@@ -444,12 +444,13 @@ Sandboxed environments may block or limit subprocess execution, network, or long
 - **If still unhealthy**: Block commit with message: "MCP connection unhealthy before Step 12.7. Please reconnect Cortex MCP server and re-run commit pipeline."
 - **Rationale**: Fails fast with a clear message instead of timing out during the long test run
 
-**Enhanced retry logic with exponential backoff**:
+**Resume pending work before interpreting checks**:
 
-- **First retry**: If `run_quality_gate()` fails with connection error during the test step (e.g., "Connection closed", MCP error -32000), wait 2 seconds and retry
-- **Second retry**: If first retry fails, wait 5 seconds and retry again
-- **If both retries fail**: Block commit immediately. Do not proceed to Step 13. Report error and instruct user to reconnect Cortex MCP and re-run the commit command
-- **No fallback**: Unlike Step 12.6, there is no shell script fallback for tests. Step 12.7 must execute successfully via MCP
+- **Running response**: Preserve `job_id` and `result_file`, and repeat `run_quality_gate()` with unchanged pipeline configuration until terminal. Do not edit files, run auto-fixes, or launch another worker while pending.
+- **Lock-busy error or timeout response**: Retry the same call. These are infrastructure states, not completed check failures; lock contention without an existing result file returns `status: "error"` with `Phase A lock is busy; retry the gate.`.
+- **Connection error**: Reconnect MCP, then repeat the same call to resume the job rather than starting a separate worker. If MCP remains unavailable, block commit and report the infrastructure error.
+- **Terminal outcome**: Preserve worker errors as errors. Only completed checks determine pass/fail; failed checks or insufficient coverage still block commit.
+- **No fallback**: Unlike Step 12.6, there is no shell script fallback for tests. Step 12.7 must execute successfully via MCP.
 
 **Connection stability monitoring**:
 
@@ -465,8 +466,8 @@ Sandboxed environments may block or limit subprocess execution, network, or long
 
 **How to increase client timeout** (if needed):
 
-- **MCP tool timeout configuration**: See [MCP tool timeout configuration](#mcp-tool-timeout-configuration) below for settings and recommended values. Default timeout should be ≥ 600 seconds for Step 12.7.
-- **If timeout cannot be increased**: Consider running tests manually before invoking commit, or use a CI environment with longer timeouts.
+- **MCP tool timeout configuration**: See [MCP tool timeout configuration](#mcp-tool-timeout-configuration) below. A 30-second deadline accommodates each bounded `run_quality_gate()` call; other tools need deadlines covering their own durations.
+- **If the client disconnects sooner**: Reconnect and resume with the same configuration. Manual tests do not replace Step 12.7; block commit if MCP cannot provide a completed passing gate.
 
 #### MCP tool timeout configuration {#mcp-tool-timeout-configuration}
 
@@ -481,7 +482,7 @@ Many MCP client bridges do not officially document a tool-call timeout setting. 
 "mcp.elicitation.timeout": 600000
 ```
 
-Values are in **milliseconds**. `600000` = 10 minutes. Use at least **600000** (10 min) if you run the full commit pipeline including Step 12.7 (tests). After changing, reload/restart the client.
+Values are in **milliseconds**. `600000` = 10 minutes; this is an example for tools that need longer requests, not a Step 12.7 requirement. A 30-second deadline accommodates each bounded `run_quality_gate()` call; allow 30–120 seconds for `fix_markdown_lint` according to repository size. After changing settings, reload/restart the client.
 
 **Caveats**:
 
@@ -494,9 +495,9 @@ Values are in **milliseconds**. `600000` = 10 minutes. Use at least **600000** (
 
 1. **Check connection health before Step 12.7**: The pipeline automatically checks health; if it reports unhealthy, reconnect MCP before proceeding
 2. **Review connection stability logs**: Check server logs for connection health metrics recorded before/after test execution
-3. **Verify client timeout**: Ensure client tool-call timeout ≥ 600 seconds
-4. **Check for concurrent long-running operations**: If another long-running tool is executing, wait for it to complete before running commit pipeline
-5. **Reconnect and retry**: If Step 12.7 fails after retries, reconnect Cortex MCP server and re-run the commit command
+3. **Verify client timeout**: Allow at least 30 seconds for each bounded `run_quality_gate()` call, not 600 seconds for one request
+4. **Check pending work**: Preserve the returned handle and keep the pipeline configuration unchanged; do not run mutating tools while checks are active
+5. **Reconnect and resume**: Repeat `run_quality_gate()` to resume the same job. Retry lock-busy or timeout infrastructure states; if MCP remains unavailable, block commit
 
 **References**: Commit prompt Step 12.7 section; [MCP disconnect runbook (commit pipeline)](#mcp-disconnect-runbook-commit); [MCP error -32000: Connection closed](#issue-mcp-error-32000-connection-closed)
 

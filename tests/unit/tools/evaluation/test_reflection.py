@@ -353,3 +353,56 @@ def test_non_python_diff_skips_python_try_heuristic() -> None:
         i.category.value == "logic" and i.severity == CritiqueSeverity.ERROR
         for i in rr.items
     )
+
+
+@pytest.mark.parametrize(
+    ("handler", "approved"),
+    [
+        ("+    except ValueError:", True),
+        ("+    except* ValueError:", True),
+        ("+    finally:", True),
+        ("     except ValueError:", True),
+        ("     finally:", True),
+        ("-    except ValueError:", False),
+    ],
+)
+def test_try_handler_matching_includes_indentation_and_context(
+    handler: str, approved: bool
+) -> None:
+    # Arrange
+    diff = (
+        "+++ b/x.py\n@@\n+def f():\n+    try:\n+        work()\n"
+        + handler
+        + "\n         recover()\n"
+    )
+    # Act
+    result = analyze_diff(diff, "{}", REFLECTION_CHECKLIST_MARKDOWN)
+    # Assert
+    assert result.approved is approved
+    assert (
+        any(item.severity == CritiqueSeverity.ERROR for item in result.items)
+        is not approved
+    )
+
+
+def test_other_file_handler_cannot_hide_incomplete_try() -> None:
+    # Arrange
+    diff = (
+        "+++ b/broken.py\n@@\n+try:\n+    work()\n"
+        "+++ b/handled.py\n@@\n+try:\n+    work()\n+except Exception:\n+    recover()\n"
+    )
+    # Act
+    result = analyze_diff(diff, "{}", REFLECTION_CHECKLIST_MARKDOWN)
+    # Assert
+    assert not result.approved
+    assert any(item.severity == CritiqueSeverity.ERROR for item in result.items)
+
+
+def test_non_python_try_cannot_trigger_python_logic_error() -> None:
+    # Arrange
+    diff = "+++ b/example.md\n@@\n+try:\n+++ b/x.py\n@@\n+answer = 42\n"
+    # Act
+    result = analyze_diff(diff, "{}", REFLECTION_CHECKLIST_MARKDOWN)
+    # Assert
+    assert result.approved
+    assert result.items == []

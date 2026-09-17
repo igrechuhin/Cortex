@@ -114,7 +114,7 @@ Keep both off for standard MCP clients to avoid unnecessary tool-list expansion.
 
 1. **`run_quality_gate()`** – Zero-arg Phase A gate (fix_errors, format, type_check, quality, tests, markdown lint). Optional `test_timeout` / `coverage_threshold` come from the `pipeline_handoff` task file for `commit` / `checks`, not from JSON the client must forward.
 
-   **Example output:** `preflight_passed`, `checks` with per-check success/failure.
+   **Output:** Terminal results include `preflight_passed` and per-check outcomes. If checks remain active after the bounded 20-second wait, the response has `status: "running"`, `job_id`, and `result_file`. Call `run_quality_gate()` again with the same configuration to resume that job, including with the default `force_fresh: true`; do not start another worker or treat a pending response as a pass.
 
 2. If a check fails:
    - **`autofix()`** for the bundled auto-fix pass, then re-run **`run_quality_gate()`**.
@@ -137,7 +137,7 @@ Keep both off for standard MCP clients to avoid unnecessary tool-list expansion.
 
 **Decision points:**
 
-- If `preflight_passed` is false, inspect `checks` and fix the failing check before re-running.
+- If `status` is `running`, resume the existing job before interpreting `preflight_passed`. For a terminal result with `preflight_passed: false`, inspect `checks` and fix the failing check before re-running.
 - For coverage below threshold with zero failing tests, the dedicated 📈 coverage target owns uplift. The `@fix-coverage` subagent runs FIRST in `target=all` (before quality/tests/docs), reads `coverage_gaps` from `pipeline_handoff`, writes tests for the top uncovered files, and verifies with `run_quality_gate()`. The tests target handles only assertion failures and subprocess crashes.
 - Coverage-target exits must carry bounded telemetry in the fix handoff/report: `status`, `iterations`, `prior_coverage`, `final_coverage`, `coverage_delta`, `tests_added`, and `blocker_reason` when uplift is no longer feasible.
 

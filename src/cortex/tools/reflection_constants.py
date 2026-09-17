@@ -63,7 +63,7 @@ Reflection supplements the quality gate; it does not replace tests or typechecki
 _LANGUAGE_SECTIONS: dict[str, str] = {
     "python": """### Python
 
-- **logic**: `try:` in added lines without `except`/`finally` in the same diff.
+- **logic**: `try:` in added lines without `except`/`finally` in added or context lines of the same Python file.
 - **docs / coverage**: TODO/FIXME/HACK in added lines; new top-level `def` under `src/` without test path changes in the diff.
 - **docs / annotations**: `# BELIEF:` left as context while other lines in the hunk change (possible stale assumption).
 - **docs / annotations**: dict key access on untyped variables or chained attribute access in added lines triggers a suggestion to add a BELIEF annotation.

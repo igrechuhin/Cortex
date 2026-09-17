@@ -10,6 +10,11 @@ Tools return JSON responses with consistent error handling.
 
 **Project root:** Most tools do **not** accept a `project_root` parameter; each resolves the project root internally (via MCP roots when available, or current working directory). The optional exception is `compress_memory_bank(project_root=None)`, which accepts an explicit path when needed; omit it when using MCP roots.
 
+**Client visibility:** Write-sensitive tools such as `manage_file` use the negotiated
+MCP client name from the active request session. The existing trusted prefixes are
+`cortex`, `codex`, and `claude`; callers without an accepted identity do not see
+those tools. This client-name filter is not credential-based authentication.
+
 ### Tools vs Resources (naming and when to use which)
 
 Cortex follows MCP semantics: **Resources** are GET-like (read-only, load data into context); **Tools** are POST-like (side effects, e.g. write, update, run).
@@ -35,6 +40,12 @@ Contributor and agent workflows should use these **zero-argument** Cortex MCP to
 
 Source of truth for behavior and timeouts: `src/cortex/tools/execution/pre_commit_zero_arg_tools.py`.
 
+`force_fresh: true` clears both detached result caches and the persisted Phase A
+fingerprint, so unchanged-input shortcuts cannot skip checks in an explicitly
+fresh run. The client request deadline is separate from `test_timeout`; clients
+must allow the worker timeout plus polling overhead. If a client request expires,
+inspect the existing detached result before starting another worker.
+
 ### CI parity guarantee (`run_quality_gate` vs `quality.yml`)
 
 **Goal:** If the GitHub Actions **Code Quality** workflow would fail on a change, `run_quality_gate()` should fail locally first for the same categories of issues, so dirty commits are less likely to reach the remote.
@@ -51,10 +62,10 @@ Source of truth for behavior and timeouts: `src/cortex/tools/execution/pre_commi
 | Synapse Black (`check_formatting.py`) | `synapse_format` | Same script as CI. |
 | Synapse Ruff (`check_linting.py`) | `synapse_lint` | Same script as CI. |
 | Pyright tests/scripts (`check_types.py`) | `type_check` | Same script as CI; single local check covers the CI “tests and scripts” step (and includes `src/` as above). |
-| File sizes (`check_file_sizes.py`) | `quality` (Python) | **Not** invoked as a subprocess in the adapter. Local path: `pre_commit_helpers_quality.check_file_sizes` + `pre_commit_pipeline_quality.execute_quality`. Same limits and exclusions as CI: `MAX_FILE_LINES` and `FILE_SIZE_EXCLUDED_FILENAMES` from `cortex/core/constants.py` (synapse script imports these when run from this repo). Same glob rules: `src/**/*.py`, skip `__pycache__`, `test_*.py`, excluded filenames. CI prints **warnings** between 350–400 logical lines; local gate only fails above max—failure threshold matches. |
-| Function lengths (`check_function_lengths.py`) | `quality` (Python) | Same as file sizes: in-process `check_function_lengths` in `pre_commit_pipeline_quality.py` + `pre_commit_helpers_quality.check_function_lengths_in_file`, aligned with synapse script logic and `MAX_FUNCTION_LINES` / `FUNCTION_LENGTH_EXCLUDED_PATHS` from `cortex/core/constants.py`. |
+| File sizes (`check_file_sizes.py`) | `quality` (Python) | The language router passes owned candidates to Synapse scripts. CI and local parity checks use the same collector, including owned local skills and validated vendor exclusions. Existing source/test selection and `MAX_FILE_LINES` / `FILE_SIZE_EXCLUDED_FILENAMES` remain unchanged. CI reports warnings between 350–400 logical lines; failure threshold remains 400. |
+| Function lengths (`check_function_lengths.py`) | `quality` (Python) | The same owned-file router dispatches function checks to Synapse scripts. `MAX_FUNCTION_LINES` / `FUNCTION_LENGTH_EXCLUDED_PATHS` retain their existing values; explicit changed test files remain checked. |
 | cSpell (`check_spelling.py`) | `spelling` | Same script as CI (Phase A default checks). |
-| rumdl markdown | `markdown_lint` | Worker runs `rumdl check` on a capped file list (`pre_commit_worker.collect_pre_commit_markdown_paths`, max 500). Excludes match CI `find` in `quality.yml`: `node_modules`, `.venv`, `venv`, `__pycache__`, `.git`, `.cortex/plans/archive`, `.cortex/history/`, `.cortex/.cache/`, `.cortex/wiki/sources/` (immutable wiki snapshots with repo-relative links). |
+| rumdl markdown | `markdown_lint` | Worker runs `rumdl check` on the complete owned-file list (`pre_commit_worker.collect_pre_commit_markdown_paths`). CI and autofix share the collector and validated installed-skill exclusions; see [owned-file quality scope](../guides/markdown-formatting.md#owned-file-quality-scope). Generated/dependency exclusions: `node_modules`, `.venv`, `venv`, `__pycache__`, `.git`, `.cortex/plans/archive`, `.cortex/history/`, `.cortex/.cache/`, `.cortex/wiki/sources/` (immutable wiki snapshots with repo-relative links). |
 | pytest `-m "not slow"`, `-n auto`, coverage | `tests` | `python_adapter._build_test_command` mirrors the workflow command documented in `quality.yml` (`tests/`, markers, xdist when available, `--cov=src/cortex`, `--cov-fail-under` from gate threshold default 0.9). |
 
 #### CI-only or non-local gate steps
@@ -110,6 +121,41 @@ The long-term consolidation goal is **`TARGET_REGISTERED_TOOLS = 10`** in `src/c
 | `memory_wal` | deferred_medium |
 | `propose_framework_optimization` | deferred_medium |
 
+### Memory WAL snapshots and restore
+
+`memory_wal(operation="snapshot", label="before-edit")` saves the top-level
+memory-bank Markdown files beneath the WAL snapshot store. Omitting the snapshot
+label generates a timestamp label; restore requires an explicit label.
+
+Labels identify a single directory component. Empty or whitespace-only labels,
+`.` and `..`, absolute paths, either path separator, and control characters are
+rejected before snapshot or memory-bank files are modified. Symlinked store or
+memory-bank paths and symlinked snapshot entries are rejected rather than followed.
+
+Snapshot replacement prepares the new contents before replacing a valid existing
+snapshot, preserving the previous snapshot if preparation or installation fails.
+If rollback also fails, the error identifies a retained recovery directory; further
+replacement of that label stays blocked until recovery. Restore copies the
+snapshot's Markdown files into the memory bank and retains files absent from the
+snapshot. Invalid input, missing snapshots, and filesystem
+failures return structured errors through the MCP tool.
+
+### Memory WAL historical reads
+
+`memory_wal(operation="as_of", file=".cortex/memory-bank/activeContext.md", step_number=10)`
+returns a memory-bank Markdown file at the requested step, with its source and hash
+verification status. Canonical project-relative paths are required; nested
+Markdown artifacts such as `.cortex/memory-bank/analyses/report.md` are supported.
+
+Absolute paths, arbitrary project files, traversal or dot segments, invalid path
+components, non-Markdown files, directories, and symlinked paths are rejected
+before content is read. Historical reads follow the memory bank's scope; they do
+not provide arbitrary project-file access.
+
+A missing allowed file with no retained history returns `exists: false`,
+`source: "current"`, and `verified: false`. Corrupted or pruned reverse deltas
+remain explicit errors instead of being presented as verified history.
+
 ### Published static resources
 
 | URI | Role |
@@ -120,6 +166,46 @@ The long-term consolidation goal is **`TARGET_REGISTERED_TOOLS = 10`** in `src/c
 | `cortex://rules` | Coding standards (task from session config) |
 | `cortex://validation` | Timestamps / roadmap sync |
 | `cortex://analysis` | End-of-session analysis (target from session config) |
+
+### Delivered rules and token accounting
+
+`cortex://rules` returns each selected rule once. Shared `generic` and `general`
+categories both contribute to the generic rules bucket; language rules and local
+overrides remain available through the same response. When a shared manifest uses
+only one generic category name, its existing alias behavior is preserved.
+
+`rules_count` equals the number of returned rules, and `total_tokens` sums their
+reported token counts. `max_tokens` budgets that rule selection. Separately
+injected governance fields, including the agent communication rule, code-comment
+rule, and reflection checklist, are outside those selection counts. The complete
+resource therefore includes more text than the selected-rule token total.
+
+Repeated reads of unchanged rules and configuration produce the same serialized
+content, including the delivered identities and token accounting.
+
+### Complete context response budget
+
+`cortex://context` reads a positive integer `token_budget` from session configuration
+(default: 10,000). Explicit zero, negative, boolean, noninteger, and null budgets
+return `invalid_token_budget` rather than silently using the default.
+
+For successful responses, `total_tokens` counts the complete serialized JSON with
+the existing tokenizer, including metadata. `token_accounting` attributes tokens to
+field values and `serialization_and_metadata`; its entries sum to `total_tokens`.
+`utilization` is the complete-response ratio `total_tokens / token_budget`, rounded
+to four decimal places and serialized as a JSON number with fixed decimal width.
+
+Immutable governance, scoped rules, and essential L0/L1 content are retained.
+Optional layers, graph previews, and recent history are included only when they fit;
+`omitted_components` names omitted groups. If required content cannot fit, the
+resource returns `insufficient_token_budget` with `required_tokens` and
+`required_components`. Error responses explain the failure and are not constrained
+to an unusably small requested budget.
+
+Graph previews contain at most ten READY, BLOCKED, and ambiguous identities, with
+at most ten dependencies or paths per identity. Summary counts describe the full
+graph. `plan_graph_details` reports omitted counts and points to
+`plan(operation="graph", include_archive=true)` for full details.
 
 ### Prompts
 
@@ -684,9 +770,9 @@ await create_plan(operation="get", slug="phase-60-feature", response_format="met
 
 Register a plan entry in the roadmap. Use **`plan(operation="register", plan_title=..., description=..., plan_relative_path=..., section=...)`** (consolidated from `register_plan_in_roadmap`).
 
-**USE WHEN:** Registering a newly created plan in roadmap.md during the plan workflow. Prefer this over building full roadmap content and calling `manage_file(write)` for a single new entry to avoid truncation.
+**USE WHEN:** Registering a newly created plan or updating an existing registration in roadmap.md. Re-registering the same canonical plan path in the selected section updates its title, status, and description in place; an unchanged registration succeeds without duplicating the entry. Prefer this over remove/re-add or rewriting the full roadmap. Roadmap writes use atomic replacement, so a failed write preserves the previous registration.
 
-**RETURNS:** JSON with `status`, `file_name`, `message`, `line_inserted`, `section`, and `error` (if any).
+**RETURNS:** JSON with `status`, `file_name`, `message`, `line_inserted` (the inserted or updated entry's one-based line), `section`, and `error` (if any).
 
 **Parameters:**
 
@@ -713,15 +799,79 @@ await plan(
 
 ---
 
+### plan(operation="complete")
+
+Complete a roadmap plan as one recoverable operation. Cortex validates the
+date, progress text, plan filename, roadmap identity, required memory-bank
+files, plan content, and archive destination before changing product files.
+When `plan_file_name` is supplied, it persists exactly one `status: DONE` and
+archives that plan file. With or without a plan file, it removes the roadmap
+entry and appends active-context and optional progress entries under one
+cross-process lock.
+
+Writes use atomic replacement with expected-content conflict checks. A failed
+operation restores only content written by that operation; concurrent edits
+produce an explicit recoverable error and retained operation record. An
+identical retry after success is a no-op and does not duplicate entries, while
+changed retry parameters or an existing archive destination are rejected. The
+public `archive_path` remains absolute; persisted operation records store only
+validated project-relative paths. Terminal recovery records are bounded, and
+records requiring manual recovery are retained.
+
+---
+
+### plan(operation="graph")
+
+Return the dependency graph for uniquely identified real plan documents. Archived
+plans remain vertices so a unique archived `status: DONE` dependency can satisfy
+an active plan. Only active plans with recognized `PENDING` or `READY` status are
+actionable; explicit `BLOCKED` plans remain blocked, and archived, in-progress,
+declined, custom-status, draft, and scaffolding documents are excluded from the
+ready queue.
+
+Duplicate slugs are not selected by traversal order. They appear in the
+`ambiguous` mapping with plans-root-relative candidate paths and cannot satisfy
+dependencies until the identity conflict is resolved. The session brief and
+`cortex://context` graph summary report the same ambiguity count; detailed context
+also includes `plan_graph_ambiguous`.
+
+---
+
+### plan(operation="repair_status")
+
+Repair one archived legacy plan status after the caller has established exact
+completion evidence and created a snapshot. Supply an exact `slug`,
+`include_archive=true`, and `status="DONE"`. The operation resolves exactly one
+real archived document under the canonical archive root, rejects ambiguous,
+active, draft, scaffold, symlinked, missing, malformed, and conflicting-status
+targets, and uses the same completion lock with an expected-content atomic write.
+
+Only recognized `PENDING`, `READY`, and already-`DONE` source statuses are
+eligible. `BLOCKED`, `IN_PROGRESS`, declined, and custom statuses are preserved.
+The operation never infers completion from archive location. It returns the
+project-relative resolved path, previous and current status, and `changed`; an
+already-`DONE` retry is an idempotent success.
+
+---
+
 ### list_plans (use plan(operation="list"))
 
-List plan files: use `plan(operation="list", include_archive=False)` (zero-arg defaults to listing). Returns `ListPlansResult` JSON with `status`, `plans` (list of `{slug, title}`), `message`, and `error` (if any). The `list_plans` Python helper is not a separate MCP tool.
+List real plan files: use `plan(operation="list", include_archive=False)`
+(zero-arg defaults to listing). Each entry contains `slug`, the frontmatter
+`title` with a legacy first-heading fallback, project-relative `relative_path`,
+and `archived`. Scaffolding and unfinished step-plan drafts are excluded. The
+`list_plans` Python helper is not a separate MCP tool.
 
 ---
 
 ### get_plan (use plan(operation="get"))
 
-Read a plan by slug: use `plan(operation="get", slug="phase-60-feature", response_format="content"|"metadata")`. Returns `GetPlanResult` JSON with `status`, `slug`, and either full `content` or `title`/`plan_status`. The `get_plan` Python helper is not a separate MCP tool.
+Read a uniquely identified plan by slug: use
+`plan(operation="get", slug="phase-60-feature", response_format="content"|"metadata")`.
+The result includes its project-relative `relative_path` and either full `content`
+or frontmatter-first `title`/`plan_status`. Duplicate active/archive slugs return
+an explicit ambiguity error instead of silently choosing one. The `get_plan`
+Python helper is not a separate MCP tool.
 
 ---
 

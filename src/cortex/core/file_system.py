@@ -214,7 +214,7 @@ class FileSystemManager:
         async def write_operation() -> str:
             try:
                 await self.acquire_lock(lock_path)
-                await self._check_file_conflict(file_path, expected_hash)
+                await self.check_file_conflict(file_path, expected_hash)
                 await self._write_file_content(file_path, content)
                 return self.compute_hash(content)
             finally:
@@ -222,18 +222,25 @@ class FileSystemManager:
 
         return write_operation
 
-    async def _check_file_conflict(
+    async def check_file_conflict(
         self, file_path: Path, expected_hash: str | None
     ) -> None:
         """Check for file conflicts."""
-        if expected_hash and file_path.exists():
-            _, current_hash = await self.read_file(file_path)
-            if current_hash != expected_hash:
-                raise FileConflictError(
-                    file_name=file_path.name,
-                    expected_hash=expected_hash,
-                    actual_hash=current_hash,
-                )
+        if expected_hash is None:
+            return
+        if not file_path.exists():
+            raise FileConflictError(
+                file_name=file_path.name,
+                expected_hash=expected_hash,
+                actual_hash="missing",
+            )
+        _, current_hash = await self.read_file(file_path)
+        if current_hash != expected_hash:
+            raise FileConflictError(
+                file_name=file_path.name,
+                expected_hash=expected_hash,
+                actual_hash=current_hash,
+            )
 
     async def _write_file_content(self, file_path: Path, content: str) -> None:
         """Write file content atomically via temp file + rename + fsync."""

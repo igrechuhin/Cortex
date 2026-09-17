@@ -39,9 +39,9 @@ async def analyze_usage_patterns(
 
     patterns = {
         "access_frequency": access_frequency,
-        "co_access_patterns": co_access,
-        "task_patterns": task_patterns,
-        "unused_files": unused_files,
+        "co_access_patterns": [p.model_dump(mode="json") for p in co_access],
+        "task_patterns": [p.model_dump(mode="json") for p in task_patterns],
+        "unused_files": [f.model_dump(mode="json") for f in unused_files],
     }
 
     return json.dumps(

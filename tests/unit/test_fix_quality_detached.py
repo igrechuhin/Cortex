@@ -1,7 +1,7 @@
 """Tests for the detached fix-quality pipeline.
 
 Covers:
-- autofix_impl: success/error/timeout envelopes -> correct JSON
+- worker finalization: durable errors and preserved consumer outcomes
 - spawn_detached_fix_worker: result path uses fix prefix
 - start_fix_job_impl: always clears prior result and spawns fresh
 - build_fix_worker_cmd: correct argv
@@ -9,16 +9,17 @@ Covers:
 
 from __future__ import annotations
 
+import argparse
 import json
 from pathlib import Path
 from typing import cast
-from unittest.mock import AsyncMock, patch
+from unittest.mock import patch
 
 import pytest
 
-from cortex.core.context_logging import MCPContext
 from cortex.core.execution_env import LocalExecutionEnvironment
 from cortex.core.models import ModelDict
+from cortex.tools.execution import pre_commit_fix_worker as worker
 from cortex.tools.execution.pre_commit_fix_quality import (
     FixQualityResult,
     parse_fix_envelope,
@@ -73,32 +74,6 @@ def _full_results_dict(
         "format": {"files_formatted": files_formatted},
         "type_check": {"errors": [], "warnings": []},
     }
-
-
-_MOD = "cortex.tools.execution.pre_commit_fix_quality"
-_STARTED = {"job_id": "abc123", "status": "started"}
-
-
-async def _run_autofix_impl(
-    tmp_path: Path,
-    envelope: ModelDict,
-    *,
-    include_untracked_markdown: bool = True,
-    ctx: MCPContext | None = None,
-) -> str:
-    """Patch start + poll, then call autofix_impl."""
-    with (
-        patch(f"{_MOD}.start_fix_job_impl", return_value=_STARTED),
-        patch(f"{_MOD}.poll_for_result", new_callable=AsyncMock, return_value=envelope),
-    ):
-        from cortex.tools.execution.pre_commit_fix_quality import autofix_impl
-
-        return await autofix_impl(
-            tmp_path,
-            include_untracked_markdown=include_untracked_markdown,
-            ctx=ctx,
-            env=LocalExecutionEnvironment(),
-        )
 
 
 # ---------------------------------------------------------------------------
@@ -172,112 +147,99 @@ class TestParseFixEnvelope:
         assert data["files_modified"] == ["actual.py", "actual_test.py"]
 
 
-# ---------------------------------------------------------------------------
-# autofix_impl -- detached spawn + poll
-# ---------------------------------------------------------------------------
+# Worker finalization preserves the consumer result before publishing completion.
 
 
-class TestFixQualityIssuesImpl:
-    """Tests for autofix_impl using mocked detached worker."""
+def test_finalization_preserves_stats_issues_and_tracked_delta(tmp_path: Path) -> None:
+    from cortex.tools.execution.pre_commit_fix_quality import finalize_autofix_result
 
-    @pytest.mark.asyncio
-    async def test_success_envelope_returned_from_poll(self, tmp_path: Path) -> None:
-        envelope = _completed_envelope(
-            results=_full_results_dict(),
-            files_modified=[],
-        )
-        out = await _run_autofix_impl(tmp_path, envelope)
-        assert json.loads(out)["status"] == "success"
+    envelope = _completed_envelope(
+        results=_full_results_dict(errors=["E1"], warnings=["W1"], files_formatted=2),
+        files_modified=["noise.md"],
+        markdown_result={"success": True, "files_fixed": 1, "results": []},
+    )
+    module = "cortex.tools.execution.pre_commit_fix_quality"
+    with (
+        patch(f"{module}.get_tracked_git_changes", return_value={"dirty.py", "fix.py"}),
+        patch(
+            f"{module}._run_synapse_formatter_autofix", return_value="formatter failed"
+        ),
+        patch(f"{module}._apply_memory_bank_lint_autofix", return_value=["roadmap.md"]),
+        patch(f"{module}.collect_git_diff_text", return_value=""),
+    ):
+        result = finalize_autofix_result(tmp_path, envelope, {"dirty.py"})
 
-    @pytest.mark.asyncio
-    async def test_error_envelope_surfaced(self, tmp_path: Path) -> None:
-        envelope = _error_envelope("ruff not found")
-        out = await _run_autofix_impl(
-            tmp_path, envelope, include_untracked_markdown=False
-        )
-        assert json.loads(out)["status"] == "error"
+    assert result["files_modified"] == ["fix.py", "roadmap.md"]
+    assert result["errors_fixed"] == 1
+    assert result["warnings_fixed"] == 2
+    assert result["formatting_issues_fixed"] == 2
+    assert result["markdown_issues_fixed"] == 1
+    remaining = cast(list[str], result["remaining_issues"])
+    assert "formatter failed" in remaining
+    assert any("errors remain" in issue for issue in remaining)
 
-    @pytest.mark.asyncio
-    async def test_timeout_envelope_surfaced(self, tmp_path: Path) -> None:
-        envelope = _error_envelope("Timeout after 960s", status="timeout")
-        out = await _run_autofix_impl(
-            tmp_path, envelope, include_untracked_markdown=False
-        )
-        assert json.loads(out)["status"] == "error"
 
-    @pytest.mark.asyncio
-    async def test_poll_called_with_ctx(self, tmp_path: Path) -> None:
-        mock_ctx = AsyncMock()
-        envelope = _completed_envelope()
-        poll_mock = AsyncMock(return_value=envelope)
-        with (
-            patch(f"{_MOD}.start_fix_job_impl", return_value=_STARTED),
-            patch(f"{_MOD}.poll_for_result", poll_mock),
-        ):
-            from cortex.tools.execution.pre_commit_fix_quality import autofix_impl
+def test_worker_retains_raw_results_when_finalization_fails(tmp_path: Path) -> None:
+    result_path = tmp_path / "result.json"
+    checks = {"results": _full_results_dict(errors=["E1"])}
+    markdown: dict[str, object] = {"success": True, "files_fixed": 1, "results": []}
+    args = argparse.Namespace(
+        project_root=str(tmp_path),
+        result_file=str(result_path),
+        include_markdown_fix=True,
+    )
+    with (
+        patch.object(worker, "_parse_fix_worker_args", return_value=args),
+        patch.object(worker, "get_tracked_git_changes", return_value=set()),
+        patch.object(worker, "_run_fix_checks", return_value=checks),
+        patch.object(worker, "_run_markdown_fix", return_value=markdown),
+        patch.object(
+            worker, "finalize_autofix_result", side_effect=RuntimeError("disk")
+        ),
+        pytest.raises(SystemExit) as exited,
+    ):
+        worker.main()
 
-            _ = await autofix_impl(
-                tmp_path,
-                include_untracked_markdown=True,
-                ctx=mock_ctx,
-                env=LocalExecutionEnvironment(),
-            )
-        _, kwargs = poll_mock.call_args
-        assert kwargs.get("ctx") is mock_ctx or poll_mock.call_args[0][1] is mock_ctx
+    retained = json.loads(result_path.read_text())
+    assert exited.value.code == 1
+    assert retained["status"] == "error"
+    assert retained["autofix_pending"] is True
+    assert retained["error"] == "disk"
+    assert retained["result"] == checks
+    assert retained["markdown_result"] == markdown
 
-    @pytest.mark.asyncio
-    async def test_uses_git_delta_for_files_modified(self, tmp_path: Path) -> None:
-        envelope = _completed_envelope(
-            results=_full_results_dict(), files_modified=["noise.md"]
-        )
-        git_side = [{"already_dirty.py"}, {"already_dirty.py", "new_fix.py"}]
-        with (
-            patch(f"{_MOD}.start_fix_job_impl", return_value=_STARTED),
-            patch(
-                f"{_MOD}.poll_for_result", new_callable=AsyncMock, return_value=envelope
-            ),
-            patch(f"{_MOD}._get_tracked_git_changes", side_effect=git_side),
-        ):
-            from cortex.tools.execution.pre_commit_fix_quality import autofix_impl
 
-            out = await autofix_impl(
-                tmp_path,
-                include_untracked_markdown=True,
-                ctx=None,
-                env=LocalExecutionEnvironment(),
-            )
-        data = json.loads(out)
-        assert data["status"] == "success"
-        assert data["files_modified"] == ["new_fix.py"]
+def test_worker_publishes_completion_only_after_all_mutations(tmp_path: Path) -> None:
+    result_path = tmp_path / "result.json"
+    source = tmp_path / "fixed.py"
+    args = argparse.Namespace(
+        project_root=str(tmp_path),
+        result_file=str(result_path),
+        include_markdown_fix=False,
+    )
 
-    @pytest.mark.asyncio
-    async def test_records_synapse_formatter_issue_when_fix_fails(
-        self, tmp_path: Path
-    ) -> None:
-        envelope = _completed_envelope(results=_full_results_dict(), files_modified=[])
-        with (
-            patch(f"{_MOD}.start_fix_job_impl", return_value=_STARTED),
-            patch(
-                f"{_MOD}.poll_for_result", new_callable=AsyncMock, return_value=envelope
-            ),
-            patch(
-                f"{_MOD}._run_synapse_formatter_autofix",
-                return_value="synapse formatter autofix failed for language 'swift': boom",
-            ),
-        ):
-            from cortex.tools.execution.pre_commit_fix_quality import autofix_impl
+    def mutate(root: Path) -> list[str]:
+        assert json.loads(result_path.read_text())["status"] == "running"
+        _ = source.write_text("fixed")
+        return ["fixed.py"]
 
-            out = await autofix_impl(
-                tmp_path,
-                include_untracked_markdown=True,
-                ctx=None,
-                env=LocalExecutionEnvironment(),
-            )
-        data = json.loads(out)
-        assert data["status"] == "success"
-        assert data["remaining_issues"] == [
-            "synapse formatter autofix failed for language 'swift': boom"
-        ]
+    module = "cortex.tools.execution.pre_commit_fix_quality"
+    with (
+        patch.object(worker, "_parse_fix_worker_args", return_value=args),
+        patch.object(worker, "get_tracked_git_changes", return_value=set()),
+        patch.object(worker, "_run_fix_checks", return_value={"results": {}}),
+        patch(f"{module}._run_synapse_formatter_autofix", return_value=None),
+        patch(f"{module}.get_tracked_git_changes", return_value=set()),
+        patch(f"{module}._apply_memory_bank_lint_autofix", side_effect=mutate),
+        patch(f"{module}.collect_git_diff_text", return_value=""),
+    ):
+        worker.main()
+
+    retained = json.loads(result_path.read_text())
+    assert retained["status"] == "completed"
+    assert retained["autofix_pending"] is True
+    assert retained["autofix_result"]["files_modified"] == ["fixed.py"]
+    assert source.read_text() == "fixed"
 
 
 # ---------------------------------------------------------------------------
@@ -294,7 +256,7 @@ class TestSpawnDetachedFixWorker:
         with patch(
             "cortex.tools.execution.pre_commit_detached.spawn_detached_process"
         ) as mock_spawn:
-            mock_spawn.return_value = None
+            mock_spawn.return_value = 12345
             rp = spawn_detached_fix_worker(
                 tmp_path,
                 include_markdown_fix=False,

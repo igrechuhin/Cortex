@@ -276,7 +276,7 @@ async def test_phase_a_prompt_execution_is_serialized_by_lock(tmp_path: Path) ->
             return_value={"coverage_threshold": 0.90, "test_timeout": 1},
         ),
         patch(
-            "cortex.tools.execution.pre_commit_zero_arg_tools._start_phase_a_job",
+            "cortex.tools.execution.pre_commit_zero_arg_tools.start_phase_a_job",
             return_value={"job_id": "job-1", "status": "ok"},
         ),
         patch(

@@ -316,6 +316,7 @@ async def session(
     in_progress_notes: str | None = None, blockers: list[str] | None = None,
     decisions_made: list[str] | None = None, create_checkpoint: bool = False,
     prediction: str | None = None, ctx: MCPContext | None = None,
+    hook_event: dict[str, object] | None = None,
 ) -> str:
     # fmt: on
     """USE WHEN: Session lifecycle (orientation, registry, compaction).
@@ -325,6 +326,10 @@ async def session(
     session(operation="predict", prediction="gate clean; touches src/x.py",
     task_description="why").
     """
+    if operation == "hook":
+        from cortex.tools.session.plugin_lifecycle import run_plugin_hook
+
+        return await run_plugin_hook(hook_event, ctx)
     return await _session_run(
         operation,
         task_description,

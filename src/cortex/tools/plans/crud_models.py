@@ -48,8 +48,10 @@ class PlanEntry(BaseModel):
 
     slug: str = Field(description="Filename without .md (e.g. phase-60-feature)")
     title: str | None = Field(
-        None, description="First # heading from plan content, if available"
+        None, description="Frontmatter title, falling back to first heading"
     )
+    relative_path: str = Field(description="Project-relative plan document path")
+    archived: bool = Field(description="Whether the plan is under the archive")
 
 
 class ListPlansResult(BaseModel):
@@ -80,6 +82,9 @@ class GetPlanResult(BaseModel):
     plan_status: str | None = Field(
         None,
         description="Value of **Status**: line (metadata); alias to avoid 'status' clash",
+    )
+    relative_path: str | None = Field(
+        None, description="Project-relative resolved plan document path"
     )
     message: str = Field(description="Success or error message")
     error: str | None = Field(None, description="Error message if status is error")

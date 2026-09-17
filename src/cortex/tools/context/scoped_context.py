@@ -10,6 +10,7 @@ from cortex.core.artifact_graph import resolve_upstream_plans
 from cortex.core.models import JsonValue, ModelDict
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.core.plan_change_history import last_change_context_line
+from cortex.core.plan_identity import build_plan_identity_index
 from cortex.core.rules_filter import filter_rules
 from cortex.core.task_classifier import infer_task_type
 
@@ -26,10 +27,10 @@ _FILE_PATH_RE = re.compile(
 
 
 def _load_plan_text(plans_dir: Path, slug: str) -> str | None:
-    path = plans_dir / f"{slug}.md"
-    if not path.is_file():
+    row = build_plan_identity_index(plans_dir, include_archive=True).unique.get(slug)
+    if row is None:
         return None
-    return path.read_text(encoding="utf-8")
+    return row.path.read_text(encoding="utf-8")
 
 
 def _estimate_tokens(text: str) -> int:

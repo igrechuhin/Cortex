@@ -12,6 +12,7 @@ from cortex.core.artifact_graph import (
 )
 from cortex.core.models import PlanExecutionMode, PlanStatus
 from cortex.core.plan_frontmatter_normalize import normalize_plan_files
+from cortex.core.plan_metadata import read_plan_status_metadata
 from cortex.tools.plans.register_artifact_graph import replace_plan_frontmatter_status
 
 
@@ -122,7 +123,7 @@ def test_compute_artifact_graph_archived_done_satisfies_dependency(
     arch = tmp_path / "archive" / "sub"
     arch.mkdir(parents=True)
     _write_plan(arch, "base", "DONE", [])
-    _write_plan(tmp_path, "leaf", "BLOCKED", ["base"])
+    _write_plan(tmp_path, "leaf", "PENDING", ["base"])
 
     without = compute_artifact_graph(tmp_path, include_archive=False)
     assert "leaf" in without.blocked
@@ -213,14 +214,165 @@ def test_depends_on_tolerates_md_extension_and_path_prefix(tmp_path: Path) -> No
 
 def test_quoted_and_legacy_status_values_resolve() -> None:
     # Arrange / Act / Assert
-    assert read_plan_status_from_content('status: "DONE"') == PlanStatus.DONE
-    assert read_plan_status_from_content('status: "COMPLETED"') == PlanStatus.DONE
-    assert read_plan_status_from_content("status: COMPLETE") == PlanStatus.DONE
+    assert read_plan_status_from_content('---\nstatus: "DONE"\n---') == PlanStatus.DONE
     assert (
-        read_plan_status_from_content('status: "Completed (26-05-04-22-26)"')
+        read_plan_status_from_content('---\nstatus: "COMPLETED"\n---')
         == PlanStatus.DONE
     )
-    assert read_plan_status_from_content("status: NOT_VIABLE") == PlanStatus.PENDING
+    assert (
+        read_plan_status_from_content("---\nstatus: COMPLETE\n---") == PlanStatus.DONE
+    )
+    assert (
+        read_plan_status_from_content('---\nstatus: "Completed (26-05-04-22-26)"\n---')
+        == PlanStatus.DONE
+    )
+    assert (
+        read_plan_status_from_content("---\nstatus: NOT_VIABLE\n---")
+        == PlanStatus.PENDING
+    )
+
+
+def test_graph_preserves_non_actionable_status_intent(tmp_path: Path) -> None:
+    # Arrange
+    for slug, status in (
+        ("manual", "BLOCKED"),
+        ("working", "IN_PROGRESS"),
+        ("declined", "DECLINED"),
+    ):
+        _write_plan(tmp_path, slug, status, [])
+
+    # Act
+    graph = compute_artifact_graph(tmp_path)
+
+    # Assert
+    assert graph.ready == []
+    assert graph.blocked == ["manual"]
+    assert graph.nodes["working"].status == PlanStatus.IN_PROGRESS
+    assert graph.nodes["declined"].raw_status == "DECLINED"
+    assert graph.nodes["declined"].status_recognized is False
+
+
+def test_archived_non_done_vertex_is_resolvable_but_not_actionable(
+    tmp_path: Path,
+) -> None:
+    # Arrange
+    archive = tmp_path / "archive"
+    archive.mkdir()
+    _write_plan(archive, "old", "PENDING", [])
+    _write_plan(tmp_path, "leaf", "PENDING", ["old"])
+
+    # Act
+    graph = compute_artifact_graph(tmp_path)
+
+    # Assert
+    assert "old" in graph.nodes
+    assert "old" not in graph.ready
+    assert graph.blocked == ["leaf"]
+
+
+def test_duplicate_slug_is_reported_and_not_dependency_resolvable(
+    tmp_path: Path,
+) -> None:
+    # Arrange
+    archive = tmp_path / "archive"
+    archive.mkdir()
+    _write_plan(tmp_path, "base", "DONE", [])
+    _write_plan(archive, "base", "DONE", [])
+    _write_plan(tmp_path, "leaf", "PENDING", ["base"])
+
+    # Act
+    graph = compute_artifact_graph(tmp_path)
+
+    # Assert
+    assert "base" not in graph.nodes
+    assert graph.ambiguous_slugs == {"base": ["archive/base.md", "base.md"]}
+    assert graph.nodes["leaf"].blocked_by == ["base"]
+
+
+def test_status_and_dependencies_are_scoped_to_frontmatter(tmp_path: Path) -> None:
+    # Arrange
+    _ = (tmp_path / "example.md").write_text(
+        "".join(
+            (
+                "---\ntitle: Example\nstatus: PENDING\ndepends_on: []\n---\n",
+                "\nExample:\nstatus: DONE\ndepends_on: [missing]\n",
+            )
+        ),
+        encoding="utf-8",
+    )
+
+    # Act
+    graph = compute_artifact_graph(tmp_path)
+
+    # Assert
+    assert graph.ready == ["example"]
+    assert graph.nodes["example"].depends_on == []
+
+
+def test_status_duplicates_and_legacy_lines_preserve_intent() -> None:
+    # Arrange / Act
+    same = read_plan_status_metadata("---\nstatus: PENDING\nstatus: READY\n---\n")
+    custom = read_plan_status_metadata("---\nstatus: COMPLETE pending review\n---\n")
+    dated = read_plan_status_metadata("---\nstatus: COMPLETED (26-05-04-22-26)\n---\n")
+    legacy = read_plan_status_metadata("# Plan\n\n**Status**: IN PROGRESS.\n")
+    empty = read_plan_status_metadata("---\nstatus:\nDONE\n---\n")
+    malformed_quote = read_plan_status_metadata('---\nstatus: "DONE\n---\n')
+    quoted_comment = read_plan_status_metadata(
+        '---\nstatus: "DONE" # "reviewed"\n---\n'
+    )
+    four_digit_date = read_plan_status_metadata(
+        "---\nstatus: COMPLETED (2026-05-04)\n---\n"
+    )
+    fenced = read_plan_status_metadata("# Plan\n\n```markdown\n**Status**: DONE\n```\n")
+
+    # Assert
+    assert same.conflicting is True
+    assert same.recognized is False
+    assert custom.recognized is False
+    assert dated.status == PlanStatus.DONE
+    assert dated.recognized is True
+    assert legacy.status == PlanStatus.IN_PROGRESS
+    assert legacy.recognized is True
+    assert empty.recognized is False
+    assert malformed_quote.recognized is False
+    assert quoted_comment.status == PlanStatus.DONE
+    assert quoted_comment.recognized is True
+    assert four_digit_date.status == PlanStatus.DONE
+    assert four_digit_date.recognized is True
+    assert fenced.recognized is False
+
+
+def test_legacy_status_ignores_tilde_fence() -> None:
+    # Act
+    metadata = read_plan_status_metadata(
+        "# Plan\n\n~~~markdown\n**Status**: DONE\n~~~\n"
+    )
+
+    # Assert
+    assert metadata.recognized is False
+
+
+def test_nested_yaml_fields_are_not_root_plan_metadata(tmp_path: Path) -> None:
+    # Arrange
+    _ = (tmp_path / "nested.md").write_text(
+        "".join(
+            (
+                "---\ntitle: Nested\nmetadata:\n  status: DONE\n",
+                "  depends_on: [missing]\n  execution: operator\n---\n",
+            )
+        ),
+        encoding="utf-8",
+    )
+
+    # Act
+    graph = compute_artifact_graph(tmp_path)
+
+    # Assert
+    node = graph.nodes["nested"]
+    assert node.status_recognized is False
+    assert node.depends_on == []
+    assert node.execution == PlanExecutionMode.AGENT
+    assert graph.ready == []
 
 
 def test_execution_frontmatter_parsed(tmp_path: Path) -> None:

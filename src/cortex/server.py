@@ -12,6 +12,8 @@ from typing import cast
 import mcp.types as mt
 from fastmcp import FastMCP
 from fastmcp.prompts.base import Prompt
+from fastmcp.server.auth.authorization import AuthContext
+from fastmcp.server.dependencies import get_context
 from fastmcp.server.middleware import CallNext, Middleware, MiddlewareContext
 from fastmcp.server.transforms import Transform
 from fastmcp.server.transforms.prompts_as_tools import PromptsAsTools
@@ -22,6 +24,13 @@ from cortex.server_middleware import create_server_middleware
 
 def _extract_client_name(ctx: object) -> str:
     """Extract client name from FastMCP auth context when available."""
+    if isinstance(ctx, AuthContext):
+        # AI: AuthContext carries token/component, not the negotiated client identity.
+        try:
+            params = get_context().session.client_params
+        except RuntimeError:
+            return ""
+        return params.clientInfo.name.lower() if params is not None else ""
     direct_client = getattr(ctx, "client_info", None)
     if direct_client is not None:
         direct_name = getattr(direct_client, "name", None)

@@ -179,6 +179,10 @@ async def compact_do_handoff(
 ) -> SessionHandoff:
     """Build and write session handoff JSON and progress.txt."""
     handoff = build_handoff(summary, params)
+    previous = await read_handoff(project_root, fs_manager)
+    if previous is not None:
+        handoff.hook_event_ids = previous.hook_event_ids
+        handoff.hook_snapshot = previous.hook_snapshot
     try:
         await write_handoff(project_root, handoff, fs_manager)
         await write_progress_txt(project_root, handoff, fs_manager)

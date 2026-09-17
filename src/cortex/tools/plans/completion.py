@@ -14,6 +14,8 @@ __all__ = [
     "complete_plan",
 ]
 
+from pathlib import Path
+
 from cortex.core.constants import MCP_TOOL_TIMEOUT_MEDIUM
 from cortex.core.context_logging import MCPContext, log_client
 from cortex.core.mcp_stability import ensure_usage_context, mcp_tool_wrapper
@@ -22,12 +24,15 @@ from cortex.core.project_root_resolver import resolve_project_root_async
 from cortex.tools.plans.completion_content import today_iso
 from cortex.tools.plans.completion_models import CompletePlanResult
 from cortex.tools.plans.completion_ops import (
-    apply_progress_and_archive,
     complete_plan_invalid_date_json,
     complete_plan_invalid_progress_entry_json,
-    do_complete_plan,
     execute_append_active_context,
     execute_append_progress,
+)
+from cortex.tools.plans.completion_transaction import run_completion_transaction
+from cortex.tools.plans.completion_transaction_prepare import (
+    normalized_request,
+    validate_plan_file_name,
 )
 from cortex.tools.plans.completion_validation import (
     validate_date_str,
@@ -38,26 +43,48 @@ from cortex.tools.plans.register_artifact_graph import (
 )
 
 
-def _reject_bad_inputs(date_str: str, progress_entry: str | None) -> str | None:
-    """Validate every pure-string input BEFORE any file is written.
-
-    Both checks must happen here rather than at their point of use. ``do_complete_plan``
-    removes the roadmap bullet and inserts the activeContext entry, and
-    ``apply_progress_and_archive`` then archives the plan file — so a ``progress_entry``
-    format rejection raised during the append (where the guard used to live) left the
-    caller with the plan archived, roadmap mutated, activeContext mutated and no progress
-    row: a partial completion to repair by hand. These are pure string checks, so hoisting
-    them costs nothing and makes completion all-or-nothing with respect to malformed input.
-    ``execute_append_progress`` keeps its own copy of the entry guard for the standalone
-    append path.
-
-    Returns the JSON error payload to return to the caller, or None when inputs are valid.
-    """
+def _reject_bad_inputs(
+    date_str: str, progress_entry: str | None, plan_file_name: str | None
+) -> str | None:
+    """Return an error payload when a pure request input is invalid."""
     if date_err := validate_date_str(date_str):
         return complete_plan_invalid_date_json(date_err)
     if progress_entry and (entry_err := validate_progress_entry_text(progress_entry)):
         return complete_plan_invalid_progress_entry_json(entry_err)
+    try:
+        _ = validate_plan_file_name(plan_file_name)
+    except ValueError as exc:
+        return CompletePlanResult(
+            status=OperationStatus.ERROR,
+            message="Invalid plan_file_name",
+            error=str(exc),
+        ).model_dump_json()
     return None
+
+
+async def _sync_unblocked_plans(
+    root: Path, result: CompletePlanResult, ctx: MCPContext | None
+) -> None:
+    """Update dependent plan statuses after the completion commits."""
+    n = await sync_plan_dependency_statuses_after_completion(root, ctx)
+    result.plans_unblocked = n
+    if n:
+        result.message = f"{result.message} Unblocked {n} dependent plan(s)."
+
+
+async def _transaction_result_json(
+    root: Path, result: CompletePlanResult, ctx: MCPContext | None
+) -> str:
+    if result.status != OperationStatus.SUCCESS:
+        await log_client(
+            ctx, "warning", f"complete_plan: {result.status}", logger_name=__name__
+        )
+        return result.model_dump_json()
+    await _sync_unblocked_plans(root, result, ctx)
+    await log_client(
+        ctx, "info", f"complete_plan: {result.status}", logger_name=__name__
+    )
+    return result.model_dump_json()
 
 
 async def _complete_plan_impl(
@@ -71,27 +98,21 @@ async def _complete_plan_impl(
     """Implementation of complete_plan: roadmap + activeContext, optional progress, optional archive."""
     await log_client(ctx, "info", "complete_plan: starting", logger_name=__name__)
     date_str = (completion_date or today_iso()).strip()
-    if rejection := _reject_bad_inputs(date_str, progress_entry):
+    if rejection := _reject_bad_inputs(date_str, progress_entry, plan_file_name):
         return rejection
     root = await resolve_project_root_async(None, ctx)
-    result = await do_complete_plan(root, plan_title, summary, date_str)
-    if result.status != OperationStatus.SUCCESS:
-        await log_client(
-            ctx, "warning", f"complete_plan: {result.status}", logger_name=__name__
+    try:
+        request = normalized_request(
+            plan_title, summary, date_str, progress_entry, plan_file_name
         )
-        return result.model_dump_json()
-    await apply_progress_and_archive(
-        root, date_str, progress_entry, plan_file_name, result
-    )
-    if result.status == OperationStatus.SUCCESS:
-        n = await sync_plan_dependency_statuses_after_completion(root, ctx)
-        result.plans_unblocked = n
-        if n:
-            result.message = f"{result.message} Unblocked {n} dependent plan(s)."
-    await log_client(
-        ctx, "info", f"complete_plan: {result.status}", logger_name=__name__
-    )
-    return result.model_dump_json()
+    except ValueError as exc:
+        return CompletePlanResult(
+            status=OperationStatus.ERROR,
+            message="Invalid completion request",
+            error=str(exc),
+        ).model_dump_json()
+    result = await run_completion_transaction(root, request)
+    return await _transaction_result_json(root, result, ctx)
 
 
 @ensure_usage_context

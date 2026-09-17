@@ -22,8 +22,12 @@ import time
 from pathlib import Path
 from typing import cast
 
-from cortex.core.models import OperationStatus
+from cortex.core.models import ModelDict, OperationStatus
 from cortex.core.path_resolver import augmented_environ_with_project_venv_bins
+from cortex.tools.execution.pre_commit_fix_quality import (
+    finalize_autofix_result,
+    get_tracked_git_changes,
+)
 from cortex.tools.execution.pre_commit_helpers_models import PreCommitCheck
 from cortex.tools.execution.pre_commit_rumdl_resolve import (
     coerce_rumdl_argv0,
@@ -33,7 +37,6 @@ from cortex.tools.execution.pre_commit_worker import (
     atomic_write,
     collect_pre_commit_markdown_paths,
     resolve_adapter_worker,
-    write_status,
 )
 
 logging.basicConfig(
@@ -107,25 +110,17 @@ def _run_markdown_fix(project_root: str) -> dict[str, object]:
         return {"success": False, "files_fixed": 0, "results": [], "error": str(e)}
 
 
-def _write_success_result(
-    result_path: Path,
-    started: float,
-    pid: int,
-    checks_result: dict[str, object],
-    markdown_result: dict[str, object] | None,
-) -> None:
-    """Write completed result atomically."""
-    output: dict[str, object] = {
-        "version": 1,
-        "status": "completed",
-        "started_at": started,
-        "completed_at": time.time(),
-        "pid": pid,
-        "result": checks_result,
-    }
-    if markdown_result is not None:
-        output["markdown_result"] = markdown_result
-    atomic_write(result_path, output)
+def _complete_fix_result(args: argparse.Namespace, output: dict[str, object]) -> None:
+    """Collect raw evidence and finalize every fix before publishing success."""
+    root = Path(args.project_root).resolve()
+    tracked_before = get_tracked_git_changes(root)
+    output["result"] = _run_fix_checks(args.project_root)
+    if args.include_markdown_fix:
+        output["markdown_result"] = _run_markdown_fix(args.project_root)
+    output["autofix_result"] = finalize_autofix_result(
+        root, cast(ModelDict, output), tracked_before
+    )
+    output["status"] = "completed"
 
 
 def _run_worker_once(
@@ -134,12 +129,24 @@ def _run_worker_once(
     started: float,
     pid: int,
 ) -> None:
-    """Run fix checks and write result; raises on failure."""
-    checks_result = _run_fix_checks(args.project_root)
-    markdown_result: dict[str, object] | None = None
-    if args.include_markdown_fix:
-        markdown_result = _run_markdown_fix(args.project_root)
-    _write_success_result(result_path, started, pid, checks_result, markdown_result)
+    """Run all fixes, preserving raw evidence on completion or failure."""
+    output: dict[str, object] = {
+        "version": 1,
+        "status": "running",
+        "started_at": started,
+        "pid": pid,
+        "autofix_pending": True,
+    }
+    atomic_write(result_path, output)
+    try:
+        _complete_fix_result(args, output)
+    except Exception as e:
+        output["status"] = OperationStatus.ERROR.value
+        output["error"] = str(e)
+        raise
+    finally:
+        output["completed_at"] = time.time()
+        atomic_write(result_path, output)
     logger.info("Fix worker completed in %.1fs", time.time() - started)
 
 
@@ -157,23 +164,11 @@ def main() -> None:
     args = _parse_fix_worker_args()
     result_path = Path(args.result_file)
     pid = os.getpid()
-    write_status(result_path, "running", pid)
     started = time.time()
     try:
         _run_worker_once(args, result_path, started, pid)
     except Exception as e:
         logger.exception("Fix worker failed: %s", e)
-        atomic_write(
-            result_path,
-            {
-                "version": 1,
-                "status": OperationStatus.ERROR.value,
-                "started_at": started,
-                "completed_at": time.time(),
-                "pid": pid,
-                "error": str(e),
-            },
-        )
         sys.exit(1)
 
 

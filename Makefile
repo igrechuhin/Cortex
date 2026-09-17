@@ -84,19 +84,11 @@ check-ci-parity: env-check synapse-check
 	uv run python .cortex/synapse/scripts/python/check_linting.py
 	uv run pyright src/
 	uv run python .cortex/synapse/scripts/python/check_types.py
-	uv run python .cortex/synapse/scripts/python/check_file_sizes.py
-	uv run python .cortex/synapse/scripts/python/check_function_lengths.py
-	@MD_FILES=$$(find . \( -name "*.md" -o -name "*.mdc" \) \
-		-not -path "*/node_modules/*" \
-		-not -path "*/.venv/*" \
-		-not -path "*/venv/*" \
-		-not -path "*/__pycache__/*" \
-		-not -path "*/.git/*" \
-		-not -path "./.cortex/plans/archive/*" \
-		-not -path "./.cortex/history/*" \
-		-not -path "./.cortex/.cache/*" \
-		-not -path "./.cortex/wiki/sources/*" 2>/dev/null | head -500); \
-		if [ -n "$$MD_FILES" ]; then echo "$$MD_FILES" | xargs uv run rumdl check --config .rumdl.toml; else echo "No markdown files matched rumdl scope; skipping rumdl."; fi
+	FILES="$$(uv run python -c 'from pathlib import Path; from cortex.tools.execution.file_language_router import collect_project_files; print("\n".join(map(str, collect_project_files(Path.cwd()))))')" && \
+		export FILES && uv run python .cortex/synapse/scripts/python/check_file_sizes.py
+	FILES="$$(uv run python -c 'from pathlib import Path; from cortex.tools.execution.file_language_router import collect_project_files; print("\n".join(map(str, collect_project_files(Path.cwd()))))')" && \
+		export FILES && uv run python .cortex/synapse/scripts/python/check_function_lengths.py
+	uv run python -m cortex.tools.files.markdown_lint_core
 	uv run python -m pytest tests/ -m "not slow" -n auto -v --cov=src/cortex --cov-report=xml --cov-report=term --cov-fail-under=90
 
 commit-check: check

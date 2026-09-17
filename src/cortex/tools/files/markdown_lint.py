@@ -139,7 +139,7 @@ async def _lint_all_files_and_merge(
     ctx: MCPContext | None,
 ) -> str:
     """Run lint on all markdown files, merge link errors, and build response."""
-    files = get_all_markdown_files_for_lint(root_path)
+    files = get_all_markdown_files_for_lint(root_path, max_files=None)
     if not files:
         return create_empty_success_response()
     results = await run_markdownlint_for_files(

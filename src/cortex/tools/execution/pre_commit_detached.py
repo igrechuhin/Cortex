@@ -26,6 +26,7 @@ from cortex.tools.execution.pre_commit_process import (
     is_process_alive,
     poll_for_result,
     pre_commit_result_path,
+    publish_started_worker,
     spawn_detached_process,
     spawn_detached_worker,
 )
@@ -202,6 +203,7 @@ def _spawn_new_job(
     include_markdown_lint: bool,
     args_hash: str,
     env: ExecutionEnvironment,
+    quality_gate: bool = False,
 ) -> dict[str, object]:
     _ = spawn_detached_worker(
         project_root,
@@ -212,6 +214,7 @@ def _spawn_new_job(
         include_markdown_lint,
         args_hash,
         env=env,
+        quality_gate=quality_gate,
     )
     return DetachedJobInfo(job_id=args_hash, status=DetachedJobStatus.STARTED).to_dict()
 
@@ -232,11 +235,38 @@ def clear_all_cached_results(project_root: Path) -> int:
     sd = session_dir(project_root)
     removed = 0
     for p in sd.glob("pre_commit_result_*.json"):
+        job_id = p.stem.removeprefix("pre_commit_result_")
+        existing = find_existing_result(project_root, job_id)
+        if existing is not None and existing.get("status") == "running":
+            continue
         p.unlink(missing_ok=True)
         removed += 1
     if removed:
         logger.info("clear_all_cached_results: removed %d result file(s)", removed)
     return removed
+
+
+def find_running_job(project_root: Path) -> dict[str, object] | None:
+    """Find a live check or fix worker before another workspace operation."""
+    for result_path in session_dir(project_root).glob("pre_commit_*result_*.json"):
+        job_id = result_path.stem.rsplit("_", 1)[-1]
+        try:
+            existing = DetachedResultEnvelope.model_validate_json(
+                result_path.read_text()
+            )
+        except (OSError, ValidationError):
+            continue
+        if existing.status == DetachedResultStatus.RUNNING and _has_live_worker(
+            existing
+        ):
+            return {
+                "status": "running",
+                "job_id": job_id,
+                "result_file": str(result_path),
+                "preflight_passed": False,
+                "message": "Workspace checks or fixes are running; retry after they finish.",
+            }
+    return None
 
 
 async def poll_job_to_completion(
@@ -284,16 +314,17 @@ def start_pre_commit_job_impl(
     include_markdown_lint: bool,
     env: ExecutionEnvironment,
     force_fresh: bool = False,
+    quality_gate: bool = False,
 ) -> dict[str, object]:
     """Start or reuse a detached pre-commit job; return lightweight status."""
     args_hash = _compute_job_hash(
         checks, timeout, coverage_threshold, strict_mode, include_markdown_lint
     )
-    if force_fresh:
-        _clear_cached_result(project_root, args_hash)
-    existing_result = _interpret_existing_job(project_root, args_hash)
+    existing_result = _existing_or_busy_job(project_root, args_hash, force_fresh)
     if existing_result is not None:
         return existing_result
+    if force_fresh:
+        _clear_cached_result(project_root, args_hash)
     return _spawn_new_job(
         project_root,
         checks,
@@ -303,7 +334,26 @@ def start_pre_commit_job_impl(
         include_markdown_lint,
         args_hash,
         env=env,
+        quality_gate=quality_gate,
     )
+
+
+def _existing_or_busy_job(
+    project_root: Path, args_hash: str, force_fresh: bool
+) -> dict[str, object] | None:
+    existing = _interpret_existing_job(project_root, args_hash)
+    if existing is not None and (
+        not force_fresh or existing.get("status") == "already_running"
+    ):
+        return existing
+    active = find_running_job(project_root)
+    if active is not None:
+        return {
+            **active,
+            "status": "error",
+            "error": "Another Phase A configuration is still running.",
+        }
+    return None
 
 
 async def run_checks_detached(
@@ -423,7 +473,8 @@ def spawn_detached_fix_worker(
     rp = fix_result_path(sd, args_hash)
     log_file = sd / f"pre_commit_fix_worker_{args_hash}.log"
     cmd = build_fix_worker_cmd(project_root, rp, include_markdown_fix)
-    spawn_detached_process(cmd, log_file, project_root, env=env)
+    pid = spawn_detached_process(cmd, log_file, project_root, env=env)
+    publish_started_worker(rp, pid, quality_gate=False)
     logger.info("Spawned detached fix worker: hash=%s result=%s", args_hash, rp)
     return rp
 
@@ -433,7 +484,10 @@ def start_fix_job_impl(
     include_markdown_fix: bool,
     env: ExecutionEnvironment,
 ) -> dict[str, object]:
-    """Clear any prior fix result, spawn fresh fix worker, return {job_id, status}."""
+    """Start a fresh fix worker only when no workspace worker is running."""
+    active = find_running_job(project_root)
+    if active is not None:
+        return active
     args_hash = fix_args_hash(include_markdown_fix)
     rp = fix_result_path(session_dir(project_root), args_hash)
     rp.unlink(missing_ok=True)

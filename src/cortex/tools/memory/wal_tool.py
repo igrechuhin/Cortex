@@ -13,6 +13,7 @@ from cortex.core.constants import MCP_TOOL_TIMEOUT_MEDIUM
 from cortex.core.context_logging import MCPContext
 from cortex.core.mcp_annotations import safe_write_annotations
 from cortex.core.mcp_stability import ensure_usage_context, mcp_tool_wrapper
+from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.core.pydantic_extra import EXTRA_FORBID
 from cortex.core.usage_context import get_or_resolve_project_root
 from cortex.memory.wal import (
@@ -23,6 +24,7 @@ from cortex.memory.wal import (
 )
 from cortex.memory.wal_content import WalAsOfResult, wal_as_of
 from cortex.memory.wal_hooks import wal_agent_hint
+from cortex.memory.wal_snapshots import validate_snapshot_label
 from cortex.server import mcp
 
 
@@ -51,7 +53,7 @@ class MemoryWALInput(BaseModel):
     )
     file: str | None = Field(
         default=None,
-        description="Project-relative memory-bank path for as_of",
+        description="Canonical project-relative memory-bank Markdown path for as_of",
     )
     step_number: int | None = Field(
         default=None, ge=0, description="Experience-store step number for as_of"
@@ -82,11 +84,11 @@ def _as_of_result(project_root: Path, data: MemoryWALInput) -> WalAsOfResult:
         raise ValueError("as_of requires a non-empty file")
     if data.step_number is None:
         raise ValueError("as_of requires step_number")
-    return wal_as_of(project_root, data.file.strip(), data.step_number)
+    return wal_as_of(project_root, data.file, data.step_number)
 
 
 def handle_memory_wal_sync(project_root: Path, data: MemoryWALInput) -> MemoryWALResult:
-    wal_dir = project_root / ".cortex" / "wal"
+    wal_dir = get_cortex_path(project_root, CortexResourceType.CORTEX_DIR) / "wal"
     wal = MemoryWAL(wal_dir, project_root=project_root)
     op = data.operation
     if op == MemoryWalToolOp.READ:
@@ -97,7 +99,9 @@ def handle_memory_wal_sync(project_root: Path, data: MemoryWALInput) -> MemoryWA
     if op == MemoryWalToolOp.ANOMALIES:
         return MemoryWALResult(operation=op.value, warnings=wal.detect_anomalies())
     if op == MemoryWalToolOp.SNAPSHOT:
-        label = data.label or _default_snapshot_label()
+        label = validate_snapshot_label(
+            _default_snapshot_label() if data.label is None else data.label
+        )
         snap = wal.snapshot(label)
         return MemoryWALResult(operation=op.value, snapshot_path=str(snap))
     if op == MemoryWalToolOp.AS_OF:
@@ -107,9 +111,9 @@ def handle_memory_wal_sync(project_root: Path, data: MemoryWALInput) -> MemoryWA
         invocations = ToolInvocationLog(wal_dir).read(session_id=wal_agent_hint())
         return MemoryWALResult(operation=op.value, tool_invocations=invocations)
     assert op == MemoryWalToolOp.RESTORE
-    if not data.label or not str(data.label).strip():
+    if data.label is None:
         raise ValueError("restore requires non-empty label")
-    n = wal.restore(str(data.label).strip())
+    n = wal.restore(validate_snapshot_label(data.label))
     return MemoryWALResult(operation=op.value, files_restored=n)
 
 
@@ -168,5 +172,5 @@ async def memory_wal(
         )
         result = handle_memory_wal_sync(root, payload)
         return result.model_dump_json(indent=2)
-    except (ValueError, ValidationError) as e:
+    except (ValueError, ValidationError, OSError) as e:
         return json.dumps({"status": "error", "error": str(e)}, indent=2)

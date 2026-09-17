@@ -13,6 +13,7 @@ from pathlib import Path
 from pydantic import BaseModel, ConfigDict, Field
 
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
+from cortex.core.plan_identity import is_plan_document
 from cortex.core.pydantic_extra import EXTRA_FORBID
 
 
@@ -454,15 +455,6 @@ def _filter_references_from_ghost_phases(
 # omissions and hide the genuine ones. Matched case-insensitively on the file name only —
 # deliberately not on frontmatter, since plans predating the frontmatter convention are still
 # plans and must keep failing when they go unlinked.
-_NON_PLAN_FILENAMES = frozenset({"readme.md", "dependency-graph.md", "index.md"})
-
-
-def _is_plan_document(plan_path: Path) -> bool:
-    """Whether a markdown file under the plans directory is an actual plan."""
-    name = plan_path.name.lower()
-    return name not in _NON_PLAN_FILENAMES and not name.startswith("template")
-
-
 def _list_non_archived_plan_paths(plans_root: Path) -> list[Path]:
     """Return list of non-archived plan documents under plans_root."""
     out: list[Path] = []
@@ -471,9 +463,10 @@ def _list_non_archived_plan_paths(plans_root: Path) -> list[Path]:
             relative_to_plans = plan_path.relative_to(plans_root)
         except ValueError:
             continue
-        if Path(CortexResourceType.PLANS_ARCHIVE.value).name in relative_to_plans.parts:
+        archive_name = Path(CortexResourceType.PLANS_ARCHIVE.value).name
+        if relative_to_plans.parts[:1] == (archive_name,):
             continue
-        if not _is_plan_document(plan_path):
+        if not is_plan_document(plan_path):
             continue
         out.append(plan_path)
     return out

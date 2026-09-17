@@ -3,63 +3,72 @@
 
 **This file records completed work only.** For current status and upcoming work see [roadmap.md](roadmap.md).
 
+## Completed Work (2026-09-08)
+
+- ✅ **Cortex Project Review and Improvement Recommendations 2026-09-08 [reviews/review-cortex-project-review-and-improvement-recommendations-2026-09-08-2026-09-08.md]** - COMPLETE (2026-09-08) - [Cortex Project Review and Improvement Recommendations 2026-09-08](reviews/review-cortex-project-review-and-improvement-recommendations-2026-09-08-2026-09-08.md) — Review report for Cortex Project Review and Improvement Recommendations 2026-09-08 (2026-09-08); key findings summarized.
+
+- ✅ **Project Review Remediation: Owned-File Quality Scope (PARTIAL)** - COMPLETE (2026-09-08) - <!-- memory_type: preference -->
+
+- ✅ **Owned-File Quality Scope Session Analysis 2026-09-08 [analyses/analysis-owned-file-quality-scope-session-analysis-2026-09-08-2026-09-08.md]** - COMPLETE (2026-09-08) - [Owned-File Quality Scope Session Analysis 2026-09-08](analyses/analysis-owned-file-quality-scope-session-analysis-2026-09-08-2026-09-08.md) — Session analysis for Owned-File Quality Scope Session Analysis 2026-09-08 (2026-09-08); decisions and follow-ups recorded.
+
+- ✅ **Project review remediation Step 2 — snapshot safety** - COMPLETE (2026-09-08) - Snapshot/restore path containment and recovery now have 84 synthetic regression cases; reflection handler matching has eight added cases. Fresh full quality/reflection gates passed with 7,863 tests, four skipped, and 91.48% coverage. Next: Step 3 historical-read containment; plan remains PARTIAL.
+
+- ✅ **Project review remediation Step 3 — historical-read scope** - COMPLETE (2026-09-08) - Canonical memory-bank Markdown paths and fixed WAL log paths are validated before reads, with late content-path revalidation. Missing-file and reverse-delta semantics remain intact. Fresh quality/reflection gates passed with 7,909 tests, four skipped, and 91.49% coverage. Next: Step 4 shared-rule delivery; plan remains PARTIAL.
+
+- ✅ **Project review remediation Step 4 complete; Step 5 next** - COMPLETE (2026-09-08) - PARTIAL plan: Steps 1–4 complete and Steps 5–9 PENDING. Shared generic/general rules now survive exclusive categorization and serialization; merge identity preserves local override precedence and distinct relative paths. Public counts and tokens match delivered rules, with separate governance accounting. Twenty-one integration cases exercise real loading, budgets, overrides, all category/source combinations, and actual resource text. Fresh gate: 7,930 passed, four skipped, 91.49% coverage; reflection approved with reviewed advisories. Live rules proof: one shared rule, 702 delivered tokens, byte-identical consecutive responses. All 49 fingerprinted vendor/lock files unchanged. Next work is Step 5 recoverable/idempotent multi-file plan completion. No commit or push.
+
+- ✅ **Project review remediation Step 5 complete** - COMPLETE (2026-09-08) - Completion is now consistent, idempotent, and recoverable through prevalidation, a bounded typed operation record, one cross-process lock, expected-hash atomic writes, WAL preservation, canonical DONE metadata, exact retry semantics, and conflict-aware rollback/recovery. The fresh Cortex gate passed all checks; 38 focused cases cover success and failure boundaries. The plan remains PARTIAL with Steps 6–9 pending. Next: Step 6, correct actionable plan graphs and repair historical metadata.
+
+- ✅ **Project review remediation Step 6 complete** - COMPLETE (2026-09-08) - Actionable graphs now share archive-aware unique discovery and preserve manual/custom metadata intent. Thirteen backed-up historical status repairs were evidence-based, status-only, and idempotent. Fresh quality gate passed with zero errors/warnings; graph/context/session agree on one READY plan. Steps 7–9 remain PENDING; next is Step 7. Repair evidence and snapshot reference are retained in the remediation plan.
+Step 1 is complete: structural and Markdown checks share a narrow validated installed-skill boundary, preserve source ownership through symlinks, and check all owned Markdown files in full gates. CI/local parity and link validation follow the same policy. Added 34 regression cases; a newly started Cortex MCP server passed the forced-fresh full quality gate. All 49 fingerprinted package/lock files remained unchanged. Plan project-review-remediation-2026-09-08 remains PENDING for Steps 2–9.
+
+## Completed Work (2026-09-05)
+
+- **Summary (2026-09-05)** - 1 entries archived.
+
+## Completed Work (2026-08-31)
+
+- **Summary (2026-08-31)** - 1 entries archived.
 
 ## Completed Work (2026-08-30)
 
-- ✅ **Plan Frontmatter Normalization and Roadmap-Page-Refresh Redirect Extraction** - COMPLETE (2026-08-30) - Added `PlanExecutionMode` enum (`agent`/`operator`) plus `normalize_plan_slug` and `resolve_plan_status_token` helpers in `artifact_graph.py`, tolerating quoted/legacy status spellings (`COMPLETE`/`COMPLETED` -> `DONE`) and `depends_on` entries carrying a `.md` extension or directory prefix that previously silently failed to resolve. New `plan_frontmatter_normalize.py` rewrites plan frontmatter in place to the canonical schema (bare enum values, quoted free text, ISO `created` dates); wired into `pre_commit_fix_quality.py`'s `_apply_memory_bank_lint_autofix` via `_apply_plan_frontmatter_autofix`, and the generated plan-stub template now emits `execution: agent` and quoted `component`. `prompts_registration.py`'s workflow-redirect branch extracted to `_try_workflow_redirect` for the `ROADMAP_PAGE_REFRESH` prompt path. Coverage N/A (Phase A reported no coverage figure).
+- **Summary (2026-08-30)** - 1 entries archived.
 
 ## Completed Work (2026-08-28)
 
-- ✅ **All-or-Nothing complete_plan Input Validation** - COMPLETE (2026-08-28) - Hoisted the `progress_entry` format check to run before any write in `complete_plan`, alongside the existing `date_str` validation, via a new `_reject_bad_inputs(date_str, progress_entry)` helper in `completion.py` and `complete_plan_invalid_progress_entry_json` in `completion_ops.py`. Previously the entry-format guard ran during `apply_progress_and_archive`, after the roadmap bullet was removed and the activeContext entry inserted — a late rejection left completion partially applied (roadmap and activeContext mutated, no progress row, plan not archived) requiring manual repair. `execute_append_progress` keeps its own copy of the guard for the standalone append path. Coverage 91.36%.
+- **Summary (2026-08-28)** - 1 entries archived.
 
 ## Completed Work (2026-08-21)
 
-- ✅ **Agent Spec Honesty Guard Regression Test and implement-code Tool Grant** - COMPLETE (2026-08-21) - Added `tests/integration/test_agent_spec_honesty_guards.py` guarding Synapse `claude-agents/*.md` specs against pre-filled `"status":"passed"` handoff templates and requiring the "Never write a value you did not observe" no-fabrication rule wherever an agent writes a gate result (regression: commit Phase C previously shipped a template an agent could copy without running the check). Granted `implement-code.md` the `ReadMcpResourceTool` tool so it can read `cortex://` resources directly. Synapse submodule bumped ce89e716 -> a77cf2c4. Coverage 91.36%.
+- **Summary (2026-08-21)** - 1 entries archived.
 
 ## Completed Work (2026-08-18)
 
-- ✅ **PHP Language Keyword Detection and generic/general Rules Category Alias** - COMPLETE (2026-08-18) - Added a `php` language-keyword bucket (`php`, `laravel`, `symfony`, `composer`, `artisan`) to context detection, mirrored across `src/cortex/rules/context_detector.py`, `src/cortex/optimization/config_defaults.py`, `src/cortex/optimization/models/_config.py` (`LanguageKeywordsModel.php`), and the generated `.cortex/config/optimization.json` / `docs/api/config-defaults.json` snapshots, so PHP/Laravel task descriptions resolve to the `php` category. `RulesLoader` gained a `_resolve_category_alias` step with a `_CATEGORY_ALIASES` map (`generic` <-> `general`) so a category name mismatch between Synapse manifests (which name the cross-language bucket `general`) and Cortex's context detector (`generic`) no longer silently loads zero rules. New `test_detects_php_from_task_description` regression test. Coverage 91.36%.
+- **Summary (2026-08-18)** - 1 entries archived.
 
 ## Completed Work (2026-08-15)
 
-- ✅ **RulesIndexer Recursive .mdc Discovery and Rules Reindex Synapse Wiring** - COMPLETE (2026-08-15) - `RulesIndexer.find_rule_files` now searches recursively (`rglob`) instead of one level deep, and the rule-file pattern set gained `*.mdc`, so nested Synapse rules under `rules/<lang>/<name>.mdc` are discovered. `factory_optimization.py` split `_create_synapse_manager` into a sync `build_synapse_manager(project_root, optimization_config)` helper plus the existing async wrapper, and threaded a `synapse_manager` into the rules manager construction in both `factory_optimization.py` and `container_optimization.py` (which now imports `build_synapse_manager` directly). New `test_find_rule_files_nested_mdc` regression test in `test_rules_indexer.py`. Coverage 91.36%.
+- **Summary (2026-08-15)** - 1 entries archived.
 
 ## Completed Work (2026-08-08)
 
-- ✅ **Persistent Content-Hash Phase A Fingerprinting** - COMPLETE (2026-08-08) - Added `pre_commit_fingerprint_store.py` (cross-process JSON-backed fingerprint persistence keyed by git HEAD) and switched `compute_git_file_hash` in `pre_commit_dirty_state.py` to hash actual file bytes of changed source entries (`_hash_source_contents`), not just file names, so an autofix pass that rewrites content without changing the changed-file set is no longer skipped. `PipelineDirtyTracker.reset()` now accepts a `project_root` to also drop the persisted fingerprint. Wired `save_phase_a_fingerprint`/`load_phase_a_fingerprint` through `pre_commit_tools_execute_checks.py`, `pre_commit_worker.py`, and `pre_commit_zero_arg_tools.py`; `session_goal_store.py` updated in support. New `test_pre_commit_fingerprint_store.py`; `test_commit_wf.py` updated for the new persistence path.
-- ✅ **PHP Framework/Language Adapter Support** - COMPLETE (2026-08-08) - Added a PHP framework adapter (`php_adapter.py`, `php_parsing.py`) plus PHP entries in `language_detector.py`, `language_quality_router.py`, `framework_adapters/detection.py`, `hook_templates.py`, and `core/constants.py`, giving Cortex's language/framework detection and post-edit-hook quality routing coverage for PHP projects. Quality gate green at 91.26% coverage.
+- **Summary (2026-08-08)** - 1 entries archived.
 
 ## Completed Work (2026-08-06)
 
-- ✅ **Agentic Tool-Selection Evaluation Harness** - COMPLETE (2026-08-06) - Added an agent-in-the-loop tool-selection eval mode to run_tool_evaluation. New EvalRunMode.AGENTIC dispatches to run_agentic_suite, reusing the existing EvalSuiteResult shape, persistence, and dashboard writer. EvalTask gained a permanent id, a kind taxonomy (positive/control/near-miss) and covered_by, enforced by a Pydantic validator. Paired reporting is enforced structurally: AgenticScorecard cannot carry a selection-accuracy figure unless the run contains both a control and a near-miss task, returning a typed unpaired reason instead. Negative fixture set adds 7 control and 6 near-miss cases over real Cortex tool overlaps. The anthropic SDK is an optional agentic-evals extra, lazily imported with typed skips for a missing dependency or API key; requirements.txt is unchanged. 61 new tests, fully mocked, no network.
-
-- ✅ **Prompt-Prefix Byte Stability Audit for Tool Schemas and Resources** - COMPLETE (2026-08-06) - Removed last_indexed from the cortex://rules byte-stable body and relocated it to an explicit rules diagnostics operation; added canonical prompt-prefix rendering, sorted tool/script name accessors, sort_keys on all agent-visible json.dumps, an AST sort_keys pre-commit audit, and two byte-stability regression suites (cross-process PYTHONHASHSEED tool schemas; every cortex:// resource read twice) with mutation guards. Added docs/guides/prompt-prefix-byte-stability.md.
-
-- ✅ **Skill Pack Trigger Accuracy Benchmark and Description Tuning** - COMPLETE (2026-08-06) - Built a 24-fixture labeled trigger benchmark (12 positive, 5 control, 7 near-miss) for skill_pack(operation="discover") with a deterministic runner that structurally refuses to emit any accuracy figure unless both negative kinds are present. Removed the zero-signal fallback in _do_discover that returned an arbitrary pack on no match; discovery now returns an empty list with an explicit reason, and every recommendation carries its numeric score and a signal-specific reason string. Scorer extracted to scoring.py with token-level matching: name +3, description +2, keywords +1 each capped at 3 (removing verbosity wins), when_to_use contributing only on a non-stopword bigram, and a MIN_RECOMMEND_SCORE floor of 2. Tuned the refactoring manifest (which had no when_to_use or keywords) and the quality manifest. Top-1 accuracy 0.9167 to 1.0, control false-positive rate 1.0 to 0.0, near-miss false-positive rate 0.2857 to 0.1429. Added "Skill pack" to the glossary. 28 new tests.
-
-- ✅ **Agent Skills Specification Interoperability Assessment** - COMPLETE (2026-08-06) - Assessed Cortex SkillPackManifest against the Agent Skills SKILL.md specification (agentskills.io/specification, retrieved 2026-08-06). Field-by-field mapping of all 21 manifest/workflow/phase fields in both directions; recommendation is NO-GO, recorded with revisit conditions in .cortex/wiki/decisions/agent-skills-spec-interoperability-assessment.md. Documentation only; no code or schema changes.
-
-- ✅ **Ponytail Simplification Cuts for Agentic Eval and Skill Pack Trigger Harnesses** - COMPLETE (2026-08-06) - All 14 over-engineering findings applied, none rejected: removed five empty-list factories, collapsed three Anthropic Protocols to one with a union return from resolve_model_client, deleted RegisteredToolProtocol and single-caller wrappers (render_registered_tool_schema_payload, load_fixture_set, load_shipped_manifests alias), narrowed the agentic scorers to tuple[bool, str], deduplicated skill pack benchmark metrics, reverted quality.json/refactoring.json formatting noise while keeping the new keywords and when_to_use metadata, and removed the hand-rolled stopword/bigram phrase path from skill_pack scoring after confirming all five trigger benchmark figures are unchanged (top1 1.0, recall 1.0, precision 0.6667, control FPR 0.0, near-miss FPR 0.1429). Net -180 lines, no behavior change; when_to_use is now documentation-only metadata. 9 test files updated to the surviving symbols; touched-module coverage 96.8-100%.
-
-- ✅ **Delete Unreferenced Protocol Definitions in core protocols Package** - COMPLETE (2026-08-06) - Deleted all 14 unreferenced Protocol classes from src/cortex/core/protocols/, removing linking.py, loading.py, refactoring_execution.py, rules.py, and versioning.py in full and pruning RefactoringEngine/ConsolidationDetector/ReorganizationPlanner from refactoring.py and RelevanceScorer from optimization.py. Net -1739 lines in src/ with no behavior change. Also removed the drifted DependencyGraphProtocol.build_from_links method, whose LinkParserProtocol annotation no longer resolved and whose signature never matched the concrete DependencyGraph; its only consumer uses to_dict(). Added a namespace-agreement test guarding **init** **all**, and updated docs/api/protocols.md, docs/api/managers.md, and the two wiki source mirrors. Quality gate clean (zero lint/type/format/markdown, no new suppressions); 7579 tests pass at 91.38% coverage.
+- **Summary (2026-08-06)** - 1 entries archived.
 
 ## Completed Work (2026-08-02)
 
-- ✅ **Shaping Interview Prompt (shape.md) Before Plan** - COMPLETE (2026-08-02) - Added a shape.md Synapse prompt and shape-interviewer subagent that resolve unknown requirements by interviewing the user one question at a time (codebase-first, with recommended answers) until the decision tree is settled. The shaping record feeds plan(operation="create") via a new shape_log_path parameter, injecting resolved decisions, assumptions, and out-of-scope declarations as a "## Shaping Constraints" section. plan.md Step 4 became a four-route gate (shape / explore / both / neither). A shared resolve_plan_log_path validator now guards both shape_log_path and explore_log_path against absolute paths and project-root escapes, closing a pre-existing unvalidated-path hole. 17 new tests.
-
-- ✅ **Shared Prompt Reference Layer for Synapse Prompts** - COMPLETE (2026-08-02) - Closed as a recorded negative result per the plan's own abort condition. Measurement (scripts/measure_prompt_duplication.py) shows only 76 of 39,894 prompt tokens (0.19%) are extractable at the plan's >=3-lines/>=3-files threshold, far below the 15% floor; even the threshold-violating >=2-files variant caps at 5.96%. Extraction steps 4-9 were not executed. Evidence: docs/design/synapse-prompt-duplication-report.md.
-
-- ✅ **Domain Glossary Consistency Gate in Plan Creation** - COMPLETE (2026-08-02) - Added canonical .cortex/wiki/glossary.md (30 curated project-specific terms with definition, aliases, and not-to-be-confused-with) plus an advisory terminology gate wired into plan(create) and finalize_step. Detection is restricted to exactly three conservative cases (declared alias, near-match undeclared synonym at a pinned 0.86 threshold, and confusable pair sharing one sentence). The gate never blocks: plans are written before the check runs and status stays success regardless of findings. 47 tests added.
-
-- ✅ **Mechanically Enforce the TYPE_CHECKING Import Ban** - COMPLETE (2026-08-02) - Two-layer mechanical enforcement of the TYPE_CHECKING ban. Ruff TID251 banned-api (configured in ruff.toml, which takes full precedence over pyproject.toml) rejects the `from typing import TYPE_CHECKING` and `typing.TYPE_CHECKING` forms with an editor-visible message citing python-coding-standards.mdc. A new token-based audit (pre_commit_type_checking_audit.py) wired into execute_quality covers what ruff cannot: bare `if TYPE_CHECKING:` blocks with no import, and an allowlist requiring an inline `# type-checking-allowed: <reason>` justification so a bare noqa cannot bypass. Both mechanisms demonstrated firing on a real scratch violation and passing after removal. 16 tests, 100% coverage on new code; full suite 7478 passed.
+- **Summary (2026-08-02)** - 1 entries archived.
 
 ## Completed Work (2026-07-23)
 
-- **Summary (2026-07-23)** - 9 entries archived.
+- **Summary (2026-07-23)** - 1 entries archived.
 
 ## Completed Work (2026-07-22)
 
-- **Summary (2026-07-22)** - 3 entries archived.
+- **Summary (2026-07-22)** - 1 entries archived.
 
 ## Completed Work (2026-07-21)
 
@@ -399,7 +408,7 @@
 
 ## Current Focus
 
-Next roadmap item: **[Fast-Forward vs. Step-by-Step Planning Modes](../plans/archive/Other/fast-forward-vs-step-by-step-modes.md)** (see [roadmap.md](roadmap.md) pending plans).
+Current work is tracked in [roadmap.md](roadmap.md): project review remediation, Steps 1–6 complete; Step 7 is next.
 
 ## Recent Changes
 

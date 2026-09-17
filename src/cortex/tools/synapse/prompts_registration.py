@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 import sys
 from pathlib import Path
 from types import ModuleType
@@ -158,6 +159,9 @@ def process_prompt_info(
         return 0
     filename = prompt_info.get("file")
     if not isinstance(filename, str):
+        return 0
+    native_files = ("plan.md", "do-loop.md", "review.md", "commit.md")
+    if os.environ.get("CORTEX_NATIVE_WORKFLOWS") == "1" and filename in native_files:
         return 0
     # AI: init-wiki is registered lazily when the wiki scaffold exists but has no
     # pages — see cortex.setup.lazy_prompt_registration._register_init_wiki_prompt_if_needed.

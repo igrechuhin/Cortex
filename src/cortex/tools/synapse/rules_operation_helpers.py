@@ -124,22 +124,8 @@ def extract_all_rules(
     return all_rules
 
 
-def calculate_total_tokens(
-    relevant_rules: ModelDict, all_rules: list[ModelDict]
-) -> int:
-    """Calculate total tokens from rules.
-
-    Args:
-        relevant_rules: Rules result model containing total_tokens
-        all_rules: List of all rules
-
-    Returns:
-        Total tokens count
-    """
-    total_tokens = relevant_rules.get("total_tokens")
-    if isinstance(total_tokens, int) and total_tokens > 0:
-        return total_tokens
-
+def calculate_total_tokens(all_rules: list[ModelDict]) -> int:
+    """Sum delivered rule tokens; aggregate metadata cannot override the selection."""
     computed = 0
     for rule in all_rules:
         tokens = rule.get("tokens")

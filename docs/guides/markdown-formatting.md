@@ -69,3 +69,22 @@ Full rules, examples, and validation steps are in the Synapse rule file. Run `re
 - Synapse rule: `.cortex/synapse/rules/markdown/markdown-formatting.mdc`
 - Commit prompt: Step 1.5 (Markdown linting) and Step 12.5
 - Pre-commit: Markdown lint runs on staged `.md`/`.mdc` files (see `docs/getting-started.md`)
+
+## Owned-file quality scope
+
+Cortex structural and Markdown style checks preserve externally installed skill
+payloads identified by a valid version-one `skills-lock.json`. Only exact
+`.agents/skills/<name>/` directories with validated external provenance and an
+installed `SKILL.md` qualify. Upstream `skillPath` metadata never supplies a local
+exclusion path. Invalid entries and symlinked installation roots remain checked.
+
+Local authored skills absent from the lock remain checked, as do project source
+and tests. Cortex documentation links into installed packages still require valid
+targets; upstream package-relative links are checked by their publisher. Local skill
+documentation participates in the internal link check.
+
+Changed-file checks, full structural scans, Markdown autofix, the detached quality
+worker, CI, and `make check-ci-parity` use the same ownership policy. Full Markdown
+gates scan every matching owned file; the collector's optional interactive limit
+does not truncate gate coverage. Use Cortex `autofix()` for repository Markdown
+fixes so installed package contents remain intact.

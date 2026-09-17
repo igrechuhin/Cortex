@@ -16,22 +16,38 @@ class CompletePlanResult(BaseModel):
     )
     message: str = Field(description="Success or error message")
     roadmap_line_removed: int | None = Field(
-        None, ge=1, description="Line number removed from roadmap (on success)"
+        default=None,
+        ge=1,
+        description="Line number removed from roadmap (on success)",
     )
     active_context_line_inserted: int | None = Field(
-        None, ge=1, description="Line number inserted in activeContext (on success)"
+        default=None,
+        ge=1,
+        description="Line number inserted in activeContext (on success)",
     )
     progress_line_inserted: int | None = Field(
-        None,
+        default=None,
         ge=1,
         description="Line number inserted in progress.md (if progress_entry provided)",
     )
     archive_path: str | None = Field(
-        None,
+        default=None,
         description="Path where plan file was archived (if plan_file_name provided)",
     )
-    error: str | None = Field(None, description="Error message if status is error")
+    error: str | None = Field(
+        default=None, description="Error message if status is error"
+    )
     plans_unblocked: int | None = Field(
         default=None,
         description="Plans moved from BLOCKED to READY after dependency graph resync",
+    )
+    operation_id: str | None = Field(
+        default=None, description="Persisted completion operation identifier"
+    )
+    idempotent_replay: bool = Field(
+        default=False,
+        description="True when an identical completed request was a no-op",
+    )
+    recovery_required: bool = Field(
+        default=False, description="True when persisted recovery work remains"
     )

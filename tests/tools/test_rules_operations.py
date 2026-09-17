@@ -530,25 +530,21 @@ def test_extract_all_rules_non_list_values() -> None:
 # ============================================================================
 
 
-def test_calculate_total_tokens_from_dict() -> None:
-    """Test calculate_total_tokens using total_tokens from dict."""
+def test_calculate_total_tokens_empty_selection() -> None:
+    """Empty delivery has zero tokens."""
     # Arrange
-    rules_dict: ModelDict = {"total_tokens": 1500}
     all_rules: list[ModelDict] = []
 
     # Act
-    result = calculate_total_tokens(rules_dict, all_rules)
+    result = calculate_total_tokens(all_rules)
 
     # Assert
-    assert result == 1500
+    assert result == 0
 
 
 def test_calculate_total_tokens_from_rules() -> None:
     """Test calculate_total_tokens by summing rules."""
     # Arrange
-    rules_dict: ModelDict = {
-        "total_tokens": None
-    }  # Non-int/float value triggers rule summing
     all_rules: list[ModelDict] = [
         {"tokens": 500},
         {"tokens": 700},
@@ -556,7 +552,7 @@ def test_calculate_total_tokens_from_rules() -> None:
     ]
 
     # Act
-    result = calculate_total_tokens(rules_dict, all_rules)
+    result = calculate_total_tokens(all_rules)
 
     # Assert
     assert result == 1500
@@ -565,9 +561,6 @@ def test_calculate_total_tokens_from_rules() -> None:
 def test_calculate_total_tokens_mixed_types() -> None:
     """Test calculate_total_tokens with mixed token types."""
     # Arrange
-    rules_dict: ModelDict = {
-        "total_tokens": "invalid"
-    }  # Non-int/float value triggers rule summing
     all_rules: list[ModelDict] = [
         {"tokens": 500},
         {"tokens": 700.5},  # Float
@@ -576,20 +569,19 @@ def test_calculate_total_tokens_mixed_types() -> None:
     ]
 
     # Act
-    result = calculate_total_tokens(rules_dict, all_rules)
+    result = calculate_total_tokens(all_rules)
 
     # Assert
     assert result == 1200  # 500 + 700 (rounded from 700.5)
 
 
 def test_calculate_total_tokens_zero() -> None:
-    """Test calculate_total_tokens with no tokens."""
+    """Delivered zero-token rules retain a zero total."""
     # Arrange
-    rules_dict: ModelDict = {}
-    all_rules: list[ModelDict] = []
+    all_rules: list[ModelDict] = [{"tokens": 0}]
 
     # Act
-    result = calculate_total_tokens(rules_dict, all_rules)
+    result = calculate_total_tokens(all_rules)
 
     # Assert
     assert result == 0

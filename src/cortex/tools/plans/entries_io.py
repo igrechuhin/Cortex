@@ -5,6 +5,7 @@ Extracted from roadmap_operations for maintainability.
 """
 
 from pathlib import Path
+from tempfile import TemporaryDirectory
 
 from cortex.core.constants import MemoryBankFile
 from cortex.memory.wal import WalOperation
@@ -70,7 +71,12 @@ def _roadmap_disk_write_attempt(
 ) -> str | None:
     try:
         fixed_content = fix_roadmap_content_if_needed(content)
-        _ = roadmap_path.write_text(fixed_content, encoding="utf-8")
+        with TemporaryDirectory(dir=roadmap_path.parent) as staging:
+            staged = Path(staging) / roadmap_path.name
+            _ = staged.write_text(fixed_content, encoding="utf-8")
+            if before_exists:
+                staged.chmod(roadmap_path.stat().st_mode)
+            _ = staged.replace(roadmap_path)
         _wal_roadmap_maybe(
             project_root,
             roadmap_path,

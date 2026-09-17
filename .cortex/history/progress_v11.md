@@ -1,9 +1,58 @@
 <!-- memory_type: milestone -->
 # Progress Log
 
+## 2026-09-08
+
+- <!-- memory_type: milestone -->
+- PARTIAL: Project review remediation Step 2 complete — validated WAL snapshot/restore boundaries, bounded replacement recovery, atomic file restore, and structured errors; fixed reflection's indented-handler false positive. Fresh quality/reflection gates passed: 7,863 tests, four skipped, 91.48% coverage. Steps 3–9 remain pending.
+- PARTIAL: Project review remediation Step 3 complete — historical reads now enforce memory-bank Markdown scope and validated WAL paths while preserving nested history/provenance. Added 46 cases; fresh quality/reflection gates passed: 7,909 tests, four skipped, 91.49% coverage. Steps 4–9 remain pending.
+- PARTIAL — Project review remediation Steps 1–4 complete; Steps 5–9 remain PENDING. Step 4 restores selected shared generic/general rule delivery, preserves local overrides and nested identities, and accounts for delivered rule tokens separately from governance. Added 21 integration cases and fixed public resource text decoding. Fresh quality/reflection gates passed: 7,930 tests passed, four skipped, 91.49% coverage; live rules returned one rule totaling 702 tokens and identical consecutive reads. This invocation added 159 regression cases across Steps 2–4 and the reflection fix. Next: Step 5, recoverable and idempotent plan completion.
+- PARTIAL: Completed Step 5 of project-review-remediation-2026-09-08. Plan completion now prevalidates inputs and reads, persists bounded typed recovery state, uses one cross-process lock with expected-hash atomic writes and WAL preservation, canonicalizes DONE frontmatter, and safely handles retries, interruptions, archive collisions, tampered recovery metadata, and concurrent conflicts. Added 38 focused cases; fresh Cortex quality gate passed all checks, with the final integrity batch bringing the suite to 7,967 passing cases and four skipped; last explicit coverage was 91.39%, and reflection reported 17 advisories with no errors. Steps 6–9 remain PENDING; Step 6 is next.
+- PARTIAL: Project review remediation Step 6 complete. Archive-aware unique plan discovery, active-only readiness, preserved manual/custom statuses, consistent metadata and scoped context, and guarded status repair are implemented. Fresh final quality gate passed with zero errors/warnings; last detailed suite: 8,020 passed, four skipped, 91.41% coverage, followed by one test split and another green full gate. Thirteen archived statuses repaired from exact completion evidence with a retained snapshot; all repeat calls were no-ops and other content was preserved. Graph/context/session agree: one READY plan instead of 552. Steps 7–9 remain PENDING; Step 7 is next.
+**Project Review Remediation: Owned-File Quality Scope** - PARTIAL. Completed Step 1 of the review remediation plan: shared validated installed-skill scope for structural checks, Markdown lint/autofix, links, CI, and local parity; source symlinks remain checked. Added 34 regression cases; forced-fresh full Cortex quality gate passed with zero errors/warnings. Installed package contents and lock metadata preserved. Steps 2–9 remain PENDING.
+
+## 2026-09-05
+
+- **Wire Usage-Pattern Analytics to Session Logs and Package-Relative Tool Analysis** - COMPLETE. cortex://analysis now returns real usage_patterns (projected from .cortex/.session/ load_context logs) and a non-zero tools count (package-relative tools_dir). Dead access-log.json writer and pattern_normalization module deleted; track_usage_patterns flag now has an effect. 7736 tests pass, coverage 91.4%.
+
+## 2026-08-31
+
+- **Falsifiable Prediction Gate and Graded Miss Ledger** - COMPLETE. Seven-form claim vocabulary, automatic grading against the next quality gate inside the existing record_gate_result hook, HIT/MISS/UNGRADED verdicts persisted as experience nodes, session(operation="predict") plus a brief predictions line, and the predict-before-you-edit doctrine rule. 66 tests added; 7727 pass at 91.42% coverage; quality and docs gates green. Review caught and fixed two grader defects: a false HIT in error-gone when the gate reports failures per check rather than per file, and a node id containing "error" reading as a test failure.
+
+## 2026-08-30
+
+- <!-- memory_type: status -->
+- **Content-Preserving WAL for AS-OF Reconstruction** - COMPLETE. WAL entries now store zlib+base64 reverse deltas, delta_codec, and experience-store step numbers; new wal_content.py provides hash-verified as_of reconstruction plus size-bounded compaction; memory_wal gained an as_of operation for analyze-pipeline evidence. 20 new tests, quality gate green.
+- **Fix archive-blind plan-graph summaries in session brief and optimization handlers** - COMPLETE. compute_artifact_graph defaults to include_archive=True; build_plan_graph_surface_bundle dropped the per-caller flag. 2 regression tests added.
+- <!-- memory_type: problem -->
+**Zero-Effective-Budget Fix in load_context** - COMPLETE. `calculate_effective_budget` subtracted the full 10,000-token response reserve, so any request at or below the reserve resolved to 0 and excluded every file while still returning `status: success` (source of the `token_budget=0, files_selected=0, files_excluded=7` telemetry records). Reserve is now capped at half the budget. `default_budget` lowered 80,000 -> 25,000 (15,000 effective) across `config_defaults.py`, `models/_config.py`, `config.py`, and `.cortex/config/optimization.json`, sized to the observed 12,447-token memory bank. New `tests/unit/test_effective_token_budget.py` (4 cases); two tests that had ratified the bug in their comments and three pinning the old default were corrected. Quality gate green.
+**Plan Frontmatter Normalization and Roadmap-Page-Refresh Redirect Extraction** - COMPLETE. Added `PlanExecutionMode` enum and `normalize_plan_slug`/`resolve_plan_status_token` helpers in `artifact_graph.py` tolerating quoted/legacy status spellings and `depends_on` entries with a `.md` extension or directory prefix. New `plan_frontmatter_normalize.py` rewrites plan frontmatter to the canonical schema, wired into `pre_commit_fix_quality.py`'s memory-bank lint autofix. `prompts_registration.py` workflow-redirect branch extracted to `_try_workflow_redirect`.
+
+## 2026-08-28
+
+- <!-- memory_type: problem -->
+Hoisted `progress_entry` format validation in `complete_plan` to run before any file mutation, alongside the existing `date_str` check, via a new `_reject_bad_inputs` helper in `completion.py` and `complete_plan_invalid_progress_entry_json` in `completion_ops.py` — closes a partial-completion hole where a late-raised entry-format error left the roadmap bullet removed and activeContext mutated but no progress row written and the plan not archived. Coverage 91.36%.
+
+## 2026-08-21
+
+- <!-- memory_type: preference -->
+- **Agent Spec Honesty Guard Regression Test and implement-code Tool Grant** - COMPLETE. Added `tests/integration/test_agent_spec_honesty_guards.py` guarding Synapse `claude-agents/*.md` specs against pre-filled `"status":"passed"` handoff templates and requiring the "Never write a value you did not observe" no-fabrication rule wherever an agent writes a gate result (regression: commit Phase C previously shipped a template an agent could copy without running the check). Granted `implement-code.md` the `ReadMcpResourceTool` tool so it can read `cortex://` resources directly. Synapse submodule bumped ce89e716 -> a77cf2c4. Coverage 91.36%.
+
+## 2026-08-18
+
+- <!-- memory_type: status -->
+- **PHP Language Keyword Detection and generic/general Rules Category Alias** - COMPLETE. Added a `php` language-keyword bucket (`php`, `laravel`, `symfony`, `composer`, `artisan`) to context detection, mirrored across `context_detector.py`, `config_defaults.py`, `_config.py` (`LanguageKeywordsModel.php`), and the generated `.cortex/config/optimization.json` / `docs/api/config-defaults.json` snapshots. `RulesLoader` gained `_resolve_category_alias` with a `_CATEGORY_ALIASES` map (`generic` <-> `general`) so a category-name mismatch between Synapse manifests (`general`) and Cortex's context detector (`generic`) no longer silently loads zero rules. New `test_detects_php_from_task_description` regression test. Coverage 91.36%.
+
+## 2026-08-15
+
+- <!-- memory_type: status -->
+- **RulesIndexer Recursive .mdc Discovery and Rules Reindex Synapse Wiring** - COMPLETE. `find_rule_files` now uses `rglob` instead of a one-level `iterdir`+`glob` scan, and the rule-file pattern set gained `*.mdc`, so nested Synapse rules under `rules/<lang>/<name>.mdc` are discovered. Extracted a sync `build_synapse_manager(project_root, optimization_config)` helper in `factory_optimization.py` (the async `_create_synapse_manager` now delegates to it) and wired a `synapse_manager` into the rules manager construction in both `factory_optimization.py` and `container_optimization.py`. New `test_find_rule_files_nested_mdc` regression test. Coverage 91.36%.
+
 ## 2026-08-08
 
 - **PHP Framework/Language Adapter Support** - COMPLETE. Added a PHP framework adapter (`php_adapter.py`, `php_parsing.py`) under `services/framework_adapters/`, and wired PHP detection/routing into `language_detector.py`, `language_quality_router.py`, `framework_adapters/detection.py`, `hook_templates.py`, and `core/constants.py`. New tests in `test_php_adapter.py`; existing detection/router/hook-template/pre-commit-registry tests updated. Quality gate green, coverage 91.26%.
+- <!-- memory_type: status -->
+- **Persistent Content-Hash Phase A Fingerprinting** - COMPLETE. Added `pre_commit_fingerprint_store.py` for cross-process, git-HEAD-keyed fingerprint persistence, and switched `compute_git_file_hash` to hash changed-file contents (not just names) via `_hash_source_contents`, closing a gap where an autofix pass rewriting content without changing the file set was silently skipped. `PipelineDirtyTracker.reset()` now takes `project_root` to also clear the persisted fingerprint. Wired through `pre_commit_tools_execute_checks.py`, `pre_commit_worker.py`, `pre_commit_zero_arg_tools.py`, and `session_goal_store.py`. New `test_pre_commit_fingerprint_store.py`; `test_commit_wf.py` updated.
 
 ## 2026-08-06
 

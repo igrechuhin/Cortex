@@ -26,7 +26,6 @@ from typing import cast
 
 from cortex.core.models import OperationStatus
 from cortex.core.path_resolver import (
-    WIKI_SOURCES_DIR_PROJECT_RELATIVE_PREFIX,
     augmented_environ_with_project_venv_bins,
 )
 from cortex.services.framework_adapters.base import (
@@ -53,6 +52,7 @@ from cortex.tools.execution.pre_commit_submodule_guard import (
 from cortex.tools.execution.pre_commit_tools_run_helpers import (
     build_pre_commit_response,
 )
+from cortex.tools.files.markdown_lint_core import get_all_markdown_files_for_lint
 
 logging.basicConfig(
     level=logging.INFO,
@@ -61,7 +61,9 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-def write_status(result_path: Path, status: str, pid: int) -> None:
+def write_status(
+    result_path: Path, status: str, pid: int, quality_gate: bool = False
+) -> None:
     """Write a running/error status marker atomically."""
     data: dict[str, object] = {
         "version": 1,
@@ -69,6 +71,8 @@ def write_status(result_path: Path, status: str, pid: int) -> None:
         "started_at": time.time(),
         "pid": pid,
     }
+    if quality_gate:
+        data["quality_gate_pending"] = True
     atomic_write(result_path, data)
 
 
@@ -227,47 +231,11 @@ def _run_checks(
     return result
 
 
-_MD_EXCLUDE_DIRS = frozenset(
-    {"node_modules", ".venv", "venv", "__pycache__", ".git", ".build", ".serena"}
-)
-_MD_EXCLUDE_PREFIXES = (
-    ".cortex/plans/archive",
-    ".cortex/history/",
-    ".cortex/.cache/",
-    WIKI_SOURCES_DIR_PROJECT_RELATIVE_PREFIX,
-)
-
-
-def _is_collectable_markdown(path: Path, root: Path) -> bool:
-    """Return True when path is a markdown file that should be linted."""
-    if not path.is_file() or path.suffix not in (".md", ".mdc"):
-        return False
-    try:
-        rel = path.relative_to(root)
-    except ValueError:
-        return False
-    if any(d in rel.parts for d in _MD_EXCLUDE_DIRS):
-        return False
-    rel_str = str(rel).replace("\\", "/")
-    return not any(rel_str.startswith(p) for p in _MD_EXCLUDE_PREFIXES)
-
-
-def collect_pre_commit_markdown_paths(root: Path, max_files: int = 500) -> list[str]:
-    """Collect markdown file paths under root, excluding common dirs and archive.
-
-    Versioned memory-bank snapshots under ``.cortex/history/``, session cache
-    markdown under ``.cortex/.cache/``, wiki raw snapshots under
-    ``.cortex/wiki/sources/``, and Serena agent memories under ``.serena/`` are
-    excluded: they are not hand-edited sources of truth and contain
-    sibling-relative links invalid from those paths.
-    """
-    md_files: list[str] = []
-    for path in sorted(root.rglob("*")):
-        if len(md_files) >= max_files:
-            break
-        if _is_collectable_markdown(path, root):
-            md_files.append(str(path))
-    return md_files
+def collect_pre_commit_markdown_paths(
+    root: Path, max_files: int | None = None
+) -> list[str]:
+    """Use the complete shared owned-Markdown scope for the detached worker."""
+    return [str(path) for path in get_all_markdown_files_for_lint(root, max_files)]
 
 
 def _rumdl_result_from_completed_process(
@@ -384,6 +352,7 @@ def _parse_worker_args() -> argparse.Namespace:
     _ = parser.add_argument("--coverage-threshold", type=float, default=0.9)
     _ = parser.add_argument("--strict", action="store_true")
     _ = parser.add_argument("--include-markdown-lint", action="store_true")
+    _ = parser.add_argument("--quality-gate", action="store_true")
     _ = parser.add_argument("--result-file", required=True)
     _ = parser.add_argument("--project-root", required=True)
     return parser.parse_args()
@@ -395,6 +364,7 @@ def _write_success_result(
     pid: int,
     checks_result: dict[str, object],
     markdown_result: dict[str, object] | None,
+    quality_gate: bool = False,
 ) -> None:
     """Write completed result atomically."""
     output: dict[str, object] = {
@@ -405,6 +375,8 @@ def _write_success_result(
         "pid": pid,
         "result": checks_result,
     }
+    if quality_gate:
+        output["quality_gate_pending"] = True
     if markdown_result is not None:
         output["markdown_result"] = markdown_result
     atomic_write(result_path, output)
@@ -439,13 +411,18 @@ def _write_early_exit_result(
     pid: int,
     result: dict[str, object],
     log_message: str,
+    quality_gate: bool = False,
 ) -> None:
-    _write_success_result(result_path, started, pid, result, None)
+    _write_success_result(result_path, started, pid, result, None, quality_gate)
     logger.info("%s", log_message)
 
 
 def _maybe_write_early_exit(
-    args: argparse.Namespace, result_path: Path, started: float, pid: int
+    args: argparse.Namespace,
+    result_path: Path,
+    started: float,
+    pid: int,
+    quality_gate: bool = False,
 ) -> bool:
     ignored = check_staged_gitignored(Path(args.project_root))
     if ignored:
@@ -455,6 +432,7 @@ def _maybe_write_early_exit(
             pid,
             _gitignored_staged_block_response(ignored),
             f"Worker stopped early: gitignored files in staging: {', '.join(ignored)}",
+            quality_gate,
         )
         return True
     blocked = precommit_block_response(Path(args.project_root))
@@ -465,6 +443,7 @@ def _maybe_write_early_exit(
             pid,
             cast(dict[str, object], blocked),
             "Worker stopped early: submodule hygiene check failed",
+            quality_gate,
         )
         return True
     return False
@@ -475,9 +454,10 @@ def _run_worker_once(
     result_path: Path,
     started: float,
     pid: int,
+    quality_gate: bool = False,
 ) -> None:
     """Run checks and write success result; raises on failure."""
-    if _maybe_write_early_exit(args, result_path, started, pid):
+    if _maybe_write_early_exit(args, result_path, started, pid, quality_gate):
         return
     checks_result = _run_checks(
         args.project_root,
@@ -489,7 +469,9 @@ def _run_worker_once(
     markdown_result = (
         _run_markdown_lint(args.project_root) if args.include_markdown_lint else None
     )
-    _write_success_result(result_path, started, pid, checks_result, markdown_result)
+    _write_success_result(
+        result_path, started, pid, checks_result, markdown_result, quality_gate
+    )
     logger.info("Worker completed in %.1fs", time.time() - started)
 
 
@@ -498,10 +480,11 @@ def main() -> None:
     args = _parse_worker_args()
     result_path = Path(args.result_file)
     pid = os.getpid()
-    write_status(result_path, "running", pid)
+    quality_gate = args.quality_gate
+    write_status(result_path, "running", pid, quality_gate)
     started = time.time()
     try:
-        _run_worker_once(args, result_path, started, pid)
+        _run_worker_once(args, result_path, started, pid, quality_gate)
     except Exception as e:
         logger.exception("Worker failed: %s", e)
         atomic_write(
@@ -513,6 +496,7 @@ def main() -> None:
                 "completed_at": time.time(),
                 "pid": pid,
                 "error": str(e),
+                **({"quality_gate_pending": True} if quality_gate else {}),
             },
         )
         sys.exit(1)

@@ -4,7 +4,7 @@ name: Code Quality
 # - Configure branch protection to require this job (e.g. "Code Quality" or "quality")
 #   so merges only happen when the gate passes. Do not allow bypassing.
 # - All critical steps must run (no conditional skips); the summary step fails
-#   if any critical step outcome is "skipped" or "failure".
+#   unless every critical step outcome is "success".
 #
 # Option A (quality-issues-missed-investigation): (1) Ruff uses pyproject.toml
 # rule set only—do NOT add --select F,E,W. (2) Quality includes type_check—
@@ -18,6 +18,8 @@ on:
   push: {}  # Run on pushes to all branches to enforce quality gate on feature branches as well as main/develop
   pull_request: {}  # Run on all PRs; branch protection should require this job
   workflow_dispatch: {}  # Run manually: Actions → Code Quality → Run workflow (if push didn't trigger)
+  schedule:
+    - cron: "23 4 * * 1"  # Weekly slow-suite execution (UTC)
 
 # Allow every push to complete its run (do not cancel when a newer push happens)
 concurrency:
@@ -219,6 +221,9 @@ jobs:
         id: file_sizes
         run: |
           echo "::group::Running file size check"
+          # The router applies the same validated ownership scope as the MCP gate.
+          FILES=$(uv run python -c 'from pathlib import Path; from cortex.tools.execution.file_language_router import collect_project_files; print("\n".join(map(str, collect_project_files(Path.cwd()))))')
+          export FILES
           if ! uv run python .cortex/synapse/scripts/python/check_file_sizes.py; then
             echo "::error::File size check failed. Files exceeding 400 logical lines must be split."
             exit 1
@@ -230,6 +235,9 @@ jobs:
         id: function_lengths
         run: |
           echo "::group::Running function length check"
+          # The router applies the same validated ownership scope as the MCP gate.
+          FILES=$(uv run python -c 'from pathlib import Path; from cortex.tools.execution.file_language_router import collect_project_files; print("\n".join(map(str, collect_project_files(Path.cwd()))))')
+          export FILES
           if ! uv run python .cortex/synapse/scripts/python/check_function_lengths.py; then
             echo "::error::Function length check failed. Functions exceeding 30 logical lines must be refactored."
             exit 1
@@ -258,38 +266,12 @@ jobs:
         id: markdown_lint
         run: |
           echo "::group::Running markdown lint check (rumdl)"
-          # Use rumdl (Rust-based Markdown linter) via the Python environment.
-          # Scope and excludes mirror get_all_markdown_files_for_lint and the commit pipeline.
-          if ! uv run rumdl --version >/dev/null 2>&1; then
-            echo "::error::rumdl not found. Ensure 'uv sync --extra dev' has been run so rumdl is available in the virtualenv."
+          # Shared complete scope preserves installed payloads and checks local skills.
+          if ! uv run python -m cortex.tools.files.markdown_lint_core; then
+            echo "::error::Markdown lint issues detected. Run Cortex autofix() to fix owned files."
             exit 1
           fi
-          # Limit to 500 files for parity with internal tooling.
-          # Wiki sources path must match WIKI_SOURCES_DIR_PROJECT_RELATIVE_PREFIX in src/cortex/core/path_resolver.py.
-          MD_FILES=$(find . \( -name "*.md" -o -name "*.mdc" \) \
-            -not -path "*/node_modules/*" \
-            -not -path "*/.venv/*" \
-            -not -path "*/venv/*" \
-            -not -path "*/__pycache__/*" \
-            -not -path "*/.git/*" \
-            -not -path "./.cortex/plans/archive/*" \
-            -not -path "./.cortex/history/*" \
-            -not -path "./.cortex/.cache/*" \
-            -not -path "./.cortex/wiki/sources/*" \
-            -not -path "./.serena/*" | head -500)
-          if [ -n "$MD_FILES" ]; then
-            # rumdl exits non-zero when violations are present.
-            # Pass --config explicitly: rumdl 0.1.x auto-discovery reports the
-            # correct config file but does not apply it during check execution.
-            if ! echo "$MD_FILES" | xargs uv run rumdl check --config .rumdl.toml 2>&1; then
-              echo "::error::Markdown lint issues detected. Run 'uv run rumdl check --fix .' to fix auto-fixable issues."
-              exit 1
-            else
-              echo "✅ Markdown lint check passed"
-            fi
-          else
-            echo "No markdown files found to check"
-          fi
+          echo "✅ Markdown lint check passed"
           echo "::endgroup::"
         continue-on-error: false
 
@@ -304,6 +286,26 @@ jobs:
           echo "✅ Markdown link check passed"
           echo "::endgroup::"
         continue-on-error: false
+
+      # Keep the complete not-slow parity command below unchanged, including smoke.
+      - name: Run critical public workflow smoke
+        id: public_smoke
+        timeout-minutes: 5
+        run: uv run python -m pytest tests/e2e/test_public_workflow_smoke.py -m "not slow" -n 0 -v --no-cov --junitxml=test-results/public-workflow-smoke.xml
+
+      - name: Require executed successful public workflow smoke
+        id: public_smoke_results
+        if: always()
+        run: python scripts/check_junit.py test-results/public-workflow-smoke.xml
+
+      - name: Publish public workflow smoke results
+        id: public_smoke_artifact
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: public-workflow-smoke-results
+          path: test-results/public-workflow-smoke.xml
+          if-no-files-found: error
 
       - name: Run tests
         id: tests
@@ -381,44 +383,97 @@ jobs:
           echo "Markdown Lint: ${{ steps.markdown_lint.outcome }}"
           echo "Markdown Links: ${{ steps.markdown_links.outcome }}"
           echo "Tests: ${{ steps.tests.outcome }}"
+          echo "Public workflow smoke: ${{ steps.public_smoke.outcome }}"
+          echo "Public workflow smoke results: ${{ steps.public_smoke_results.outcome }}"
+          echo "Public workflow smoke artifact: ${{ steps.public_smoke_artifact.outcome }}"
           echo "Eval (full): ${{ steps.eval_full.outcome }}"
           echo "Eval (A/B compare): ${{ steps.eval_compare.outcome }}"
           echo "============================="
           
-          # Fail if any critical check failed
-          if [ "${{ steps.formatting.outcome }}" = "failure" ] || \
-             [ "${{ steps.formatting_synapse.outcome }}" = "failure" ] || \
-             [ "${{ steps.linting.outcome }}" = "failure" ] || \
-             [ "${{ steps.linting_synapse.outcome }}" = "failure" ] || \
-             [ "${{ steps.type_check_src.outcome }}" = "failure" ] || \
-             [ "${{ steps.type_check_tests.outcome }}" = "failure" ] || \
-             [ "${{ steps.file_sizes.outcome }}" = "failure" ] || \
-             [ "${{ steps.function_lengths.outcome }}" = "failure" ] || \
-             [ "${{ steps.spelling.outcome }}" = "failure" ] || \
-             [ "${{ steps.markdown_lint.outcome }}" = "failure" ] || \
-             [ "${{ steps.markdown_links.outcome }}" = "failure" ] || \
-             [ "${{ steps.tests.outcome }}" = "failure" ] || \
-             [ "${{ steps.eval_full.outcome }}" = "failure" ] || \
-             [ "${{ steps.eval_compare.outcome }}" = "failure" ]; then
-            echo "::error::One or more quality checks failed. See above for details."
-            exit 1
-          fi
+          # Missing, skipped, cancelled, and failed checks must all fail closed.
+          for outcome in \
+            "${{ steps.formatting.outcome }}" \
+            "${{ steps.formatting_synapse.outcome }}" \
+            "${{ steps.linting.outcome }}" \
+            "${{ steps.linting_synapse.outcome }}" \
+            "${{ steps.type_check_src.outcome }}" \
+            "${{ steps.type_check_tests.outcome }}" \
+            "${{ steps.file_sizes.outcome }}" \
+            "${{ steps.function_lengths.outcome }}" \
+            "${{ steps.spelling.outcome }}" \
+            "${{ steps.markdown_lint.outcome }}" \
+            "${{ steps.markdown_links.outcome }}" \
+            "${{ steps.tests.outcome }}" \
+            "${{ steps.public_smoke.outcome }}" \
+            "${{ steps.public_smoke_results.outcome }}" \
+            "${{ steps.public_smoke_artifact.outcome }}" \
+            "${{ steps.eval_full.outcome }}" \
+            "${{ steps.eval_compare.outcome }}"; do
+            if [ "$outcome" != "success" ]; then
+              echo "::error::Every critical quality check must execute successfully."
+              exit 1
+            fi
+          done
 
-          # Fail if any critical check was skipped (hardening: no silent skips)
-          if [ "${{ steps.formatting.outcome }}" = "skipped" ] || \
-             [ "${{ steps.formatting_synapse.outcome }}" = "skipped" ] || \
-             [ "${{ steps.linting.outcome }}" = "skipped" ] || \
-             [ "${{ steps.linting_synapse.outcome }}" = "skipped" ] || \
-             [ "${{ steps.type_check_src.outcome }}" = "skipped" ] || \
-             [ "${{ steps.type_check_tests.outcome }}" = "skipped" ] || \
-             [ "${{ steps.file_sizes.outcome }}" = "skipped" ] || \
-             [ "${{ steps.function_lengths.outcome }}" = "skipped" ] || \
-             [ "${{ steps.spelling.outcome }}" = "skipped" ] || \
-             [ "${{ steps.markdown_lint.outcome }}" = "skipped" ] || \
-             [ "${{ steps.markdown_links.outcome }}" = "skipped" ] || \
-             [ "${{ steps.tests.outcome }}" = "skipped" ] || \
-             [ "${{ steps.eval_full.outcome }}" = "skipped" ] || \
-             [ "${{ steps.eval_compare.outcome }}" = "skipped" ]; then
-            echo "::error::One or more critical quality checks were skipped. All checks must run."
-            exit 1
-          fi
+  slow:
+    name: Scheduled and manual slow suite
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          submodules: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          version: "latest"
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: "20"
+
+      - name: Install dependencies
+        run: |
+          bash scripts/bootstrap.sh
+          npm install -g cspell@8.6.1
+
+      - name: Run remaining slow tests
+        id: slow_tests
+        timeout-minutes: 20
+        run: uv run python -m pytest tests/ -m slow -n 0 -v --no-cov --junitxml=test-results/slow.xml
+
+      - name: Require executed successful slow tests
+        id: slow_results
+        if: always()
+        run: python scripts/check_junit.py test-results/slow.xml
+
+      - name: Publish slow test results
+        id: slow_artifact
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: slow-test-results
+          path: test-results/slow.xml
+          if-no-files-found: error
+
+      - name: Require successful slow suite
+        if: always()
+        run: |
+          for outcome in \
+            "${{ steps.slow_tests.outcome }}" \
+            "${{ steps.slow_results.outcome }}" \
+            "${{ steps.slow_artifact.outcome }}"; do
+            if [ "$outcome" != "success" ]; then
+              echo "::error::The slow suite must execute successfully and publish results."
+              exit 1
+            fi
+          done

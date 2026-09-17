@@ -45,7 +45,6 @@ from cortex.tools.execution.pre_commit_config import (
     as_int,
     read_pipeline_phase_config,
 )
-from cortex.tools.execution.pre_commit_detached import clear_all_cached_results
 from cortex.tools.execution.pre_commit_dirty_state import PipelineDirtyTracker
 from cortex.tools.execution.pre_commit_docs_memory_helpers import (
     run_docs_and_memory_bank_sync_impl,
@@ -69,6 +68,8 @@ from cortex.tools.session.gate_feedback import (
 )
 
 logger = logging.getLogger(__name__)
+
+QUALITY_GATE_WAIT_SECONDS = 20.0
 
 # Serializes Phase-A spawns (run_quality_gate, autofix) per project root.
 # Concurrent Phase-A subprocess jobs for the same project crash the MCP server
@@ -107,7 +108,7 @@ def get_phase_a_lock(lock_scope: str | None = None) -> asyncio.Lock:
 phase_a_lock = get_phase_a_lock
 
 
-def _start_phase_a_job(
+def start_phase_a_job(
     root: Path,
     timeout: int,
     coverage_threshold: float,
@@ -115,6 +116,7 @@ def _start_phase_a_job(
     *,
     strict_mode: bool = False,
     env: ExecutionEnvironment,
+    quality_gate: bool = False,
 ) -> ModelDict:
     """Start detached Phase A pre-commit job and return {job_id,status}."""
     from cortex.tools.execution.pre_commit_detached import start_pre_commit_job_impl
@@ -129,6 +131,7 @@ def _start_phase_a_job(
         include_markdown_lint=True,
         force_fresh=force_fresh,
         env=env,
+        quality_gate=quality_gate,
     )
     return cast(ModelDict, job)
 
@@ -222,7 +225,7 @@ async def run_detached_phase_a_checks(
     """
     lock_scope = str(root.resolve())
     async with get_phase_a_lock(lock_scope):
-        job = _start_phase_a_job(
+        job = start_phase_a_job(
             root,
             timeout=test_timeout,
             coverage_threshold=coverage_threshold,
@@ -245,24 +248,17 @@ async def _spawn_and_poll_phase_a(
     ctx: MCPContext | None,
     env: ExecutionEnvironment,
 ) -> ModelDict:
-    """Spawn Phase A as a detached subprocess and poll with heartbeats.
+    """Wait at most the MCP budget, preserving detached work for later calls."""
+    from cortex.tools.execution.pre_commit_quality_gate_job import run_bounded_phase_a
 
-    This keeps the MCP stdio connection alive by yielding to the event loop
-    every 2 seconds (via asyncio.sleep in poll_for_result), allowing
-    progress notifications to flow. Without this, long-running in-process
-    checks block the event loop and some MCP clients drop the connection.
-
-    Acquires ``get_phase_a_lock()`` before spawning to prevent concurrent
-    Phase-A jobs, which race on shared session files and crash the MCP server.
-    """
-    return await run_detached_phase_a_checks(
+    return await run_bounded_phase_a(
         root,
-        test_timeout=timeout,
-        coverage_threshold=coverage_threshold,
-        strict_mode=False,
-        force_fresh=force_fresh,
-        ctx=ctx,
-        env=env,
+        timeout,
+        coverage_threshold,
+        force_fresh,
+        ctx,
+        env,
+        QUALITY_GATE_WAIT_SECONDS,
     )
 
 
@@ -329,9 +325,6 @@ async def run_quality_gate_inner(
         coverage_threshold,
         force_fresh,
     )
-    # AI: Cache clears only when Step 12 / explicit force_fresh; default True preserves behavior.
-    if force_fresh:
-        _ = clear_all_cached_results(root)
     result = await _spawn_and_poll_phase_a(
         root,
         timeout=timeout,
@@ -340,6 +333,11 @@ async def run_quality_gate_inner(
         ctx=ctx,
         env=env,
     )
+    if (
+        result.get("status") in {"running", "timeout"}
+        or "preflight_passed" not in result
+    ):
+        return result
     gate_passed = await _finalize_quality_gate_result(root, result, cfg, ctx)
     logger.info("run_quality_gate: done scope=%s passed=%s", scope, gate_passed)
     return result
@@ -387,11 +385,14 @@ async def _finalize_quality_gate_result(
 async def run_quality_gate(
     ctx: MCPContext | None = None,
 ) -> ModelDict:
-    """Run Phase A quality gate end-to-end and return full result. Zero args required.
+    """Run or resume Phase A with a bounded MCP wait. Zero args required.
 
-    USE WHEN: Running the commit pipeline Phase A quality gate or the Step 12
-    final gate. Spawns checks as a detached subprocess and polls with heartbeat
-    progress notifications, keeping the MCP stdio connection alive.
+    USE WHEN: Running the commit pipeline Phase A quality gate or Step 12.
+    Waits up to 20 seconds for the root lock and detached checks. Pending work
+    returns status="running", job_id, result_file, and preflight_passed=false;
+    call this tool again to resume the same job, including with force_fresh=true.
+    Only terminal results publish gate feedback. Lock contention without an
+    existing job returns an error; retry rather than assuming the gate passed.
 
     Config is read from the pipeline session file written by
     pipeline_handoff(operation="write", pipeline="commit", phase="checks").
@@ -482,6 +483,10 @@ async def autofix(
     Called by commit-checks, commit-final-gate, and implement-code agents after
     preflight_passed=false. Runs fix_errors, format, type_check, and markdown auto-fix.
 
+    Waits at most 20 seconds for the root lock and detached fixes. A running
+    response includes job_id and result_file; call autofix again to resume.
+    Terminal outcomes remain on disk; the next call after delivery starts fresh.
+
     INTEGRITY SAFEGUARDS:
     - Do not use this tool output as a "done" signal by itself; always re-run
       run_quality_gate() and validate changed modules still import cleanly.
@@ -503,16 +508,15 @@ async def autofix_with_env(
 ) -> ModelDict:
     """Internal autofix entrypoint with injected execution environment."""
     root = get_current_project_root() or Path(await get_or_resolve_project_root(ctx))
-    lock_scope = str(root.resolve())
-    async with get_phase_a_lock(lock_scope):
-        result_json = await autofix_impl(
-            root,
-            include_untracked_markdown=True,
-            ctx=ctx,
-            env=env,
-        )
-    _ = clear_all_cached_results(root)
+    result_json = await autofix_impl(
+        root,
+        include_untracked_markdown=True,
+        ctx=ctx,
+        env=env,
+    )
     parsed = cast(ModelDict, json.loads(result_json))
+    if parsed.get("status") in {"running", "timeout"}:
+        return parsed
     append_agent_log_to_autofix_result(parsed)
     await append_log_entry_best_effort(
         operation_type=OperationsLogType.FIX,

@@ -44,6 +44,11 @@ from cortex.tools.optimization.context_appenders import (
     read_recent_operations_lines,
     resolve_context_cache_scope,
 )
+from cortex.tools.optimization.context_budget import (
+    context_token_counter,
+    enforce_context_budget,
+    invalid_context_budget,
+)
 from cortex.tools.optimization.relevance_operations import get_relevance_scores_impl
 from cortex.tools.optimization.summarization_operations import summarize_content_impl
 from cortex.tools.synapse.rules_operations import get_relevant_rules
@@ -136,16 +141,22 @@ def _render_layer(layer: LayerResult) -> str:
 
 async def _build_layered_context_payload(
     project_root: Path, layers: list[ContextLayer], topic: str | None, query: str | None
-) -> tuple[str, list[str]]:
+) -> tuple[str, list[str], str, list[str]]:
     config = ContextConfig()
     results: list[LayerResult] = [
         await build_l0(project_root, config),
         await build_l1(project_root, config),
     ]
+    essential_payload, essential_names = _render_layers(results)
     if ContextLayer.ON_DEMAND in layers and topic:
         results.append(await build_l2(project_root, config, topic))
     if ContextLayer.DEEP_SEARCH in layers and query:
         results.append(await build_l3(project_root, query))
+    layered_payload, loaded_layers = _render_layers(results)
+    return layered_payload, loaded_layers, essential_payload, essential_names
+
+
+def _render_layers(results: list[LayerResult]) -> tuple[str, list[str]]:
     loaded_layers = [
         result.layer.value.upper() for result in results if result.content.strip()
     ]
@@ -351,6 +362,28 @@ async def build_context_resource_payload_async(
     return inject_plan_graph_into_context_result(payload, project_root)
 
 
+async def _assemble_budgeted_context(
+    task: str,
+    budget: int,
+    layers: list[ContextLayer],
+    topic: str | None,
+    query: str | None,
+) -> str:
+    result = await load_context_impl(task_description=task, token_budget=budget)
+    root = await resolve_project_root_async(None, None)
+    base_payload = await build_context_resource_payload_async(result, root)
+    layered, loaded, essential, essential_names = await _build_layered_context_payload(
+        root, layers, topic, query
+    )
+    return enforce_context_budget(
+        _inject_layered_payload(base_payload, layered, loaded),
+        budget,
+        essential,
+        essential_names,
+        context_token_counter(),
+    )
+
+
 @mcp.resource(uri="cortex://context", meta=CORTEX_CONTEXT_RESOURCE_READ_META)
 @ensure_usage_context
 @mcp_resource_wrapper(timeout=MCP_TOOL_TIMEOUT_COMPLEX)
@@ -363,7 +396,10 @@ async def load_context() -> str:
     selected_topic = str(cfg.get("context_topic", "")).strip() or None
     selected_query = str(cfg.get("context_query", "")).strip() or None
     raw_budget = cfg.get("token_budget", _LOAD_CONTEXT_DEFAULT_BUDGET)
-    budget = raw_budget if isinstance(raw_budget, int) else _LOAD_CONTEXT_DEFAULT_BUDGET
+    budget_error = invalid_context_budget(raw_budget)
+    if budget_error is not None:
+        return budget_error
+    budget = cast(int, raw_budget)
     scope_key = _resolve_context_cache_scope()
     cache_key = (
         f"context:{task}:{budget}:{scope_key}:"
@@ -372,13 +408,9 @@ async def load_context() -> str:
     cached = _context_resource_cache.get(cache_key)
     if cached is not None:
         return cached
-    result = await load_context_impl(task_description=task, token_budget=budget)
-    root = await resolve_project_root_async(None, None)
-    base_payload = await build_context_resource_payload_async(result, root)
-    layered_payload, loaded_layers = await _build_layered_context_payload(
-        root, selected_layers, selected_topic, selected_query
+    out = await _assemble_budgeted_context(
+        task, budget, selected_layers, selected_topic, selected_query
     )
-    out = _inject_layered_payload(base_payload, layered_payload, loaded_layers)
     _context_resource_cache.set(cache_key, out)
     return out
 

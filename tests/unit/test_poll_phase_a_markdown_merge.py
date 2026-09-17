@@ -260,7 +260,7 @@ async def _run_quality_gate_with_envelope(
             },
         ),
         patch(
-            f"{z}._start_phase_a_job",
+            f"{z}.start_phase_a_job",
             return_value={"job_id": "test-job", "status": "started"},
         ),
         patch(f"{z}.get_cortex_path", return_value=session_dir),

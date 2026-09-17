@@ -29,7 +29,6 @@ from cortex.refactoring.split_recommender import SplitRecommendation
 from cortex.tools.context.analysis_run_helpers import (
     analyze_insights,
     analyze_structure,
-    analyze_usage_patterns,
     dispatch_analysis_target,
     get_analysis_managers,
 )
@@ -68,34 +67,6 @@ def _make_mock_insights(
         insights=[],
         summary=SummaryModel(status=status),
     )
-
-
-class TestAnalyzeUsagePatterns:
-    """Test _analyze_usage_patterns helper."""
-
-    @pytest.mark.asyncio
-    async def test_analyze_usage_patterns_success(self) -> None:
-        """Test successful usage patterns analysis."""
-        mock_analyzer = MagicMock()
-        mock_analyzer.get_access_frequency = AsyncMock(
-            return_value={"file1.md": 10, "file2.md": 5}
-        )
-        mock_analyzer.get_co_access_patterns = AsyncMock(
-            return_value=[{"files": ["file1.md", "file2.md"], "count": 3}]
-        )
-        mock_analyzer.get_task_patterns = AsyncMock(
-            return_value={"task1": ["file1.md"]}
-        )
-        mock_analyzer.get_unused_files = AsyncMock(return_value=["old.md"])
-
-        result = await analyze_usage_patterns(mock_analyzer, 30)
-
-        result_data = json.loads(result)
-        assert result_data["status"] == "success"
-        assert result_data["target"] == "usage_patterns"
-        assert result_data["time_window_days"] == 30
-        assert "patterns" in result_data
-        assert result_data["patterns"]["unused_files"] == ["old.md"]
 
 
 class TestAnalyzeStructure:

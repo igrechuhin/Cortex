@@ -1,6 +1,29 @@
 <!-- memory_type: milestone -->
 # Progress Log
 
+## 2026-09-17
+
+- Completed analysis serialization investigation: real nested models serialize through cortex://analysis, rule inventory counts actual rules, isolated workspaces remain separate, quality/docs gates passed, and original routing was preserved.
+- **Resolve quality-gate MCP transport timeout** - COMPLETE. Public gate returns resumable handles after 20 seconds; same-worker resumption, stale-cache rejection, terminal failure preservation and auto-fix exclusion verified through focused tests and real MCP calls. 8,089 tests passed; 91.60% overall coverage.
+- Completed Cortex Claude/Codex plugin packaging and lifecycle hooks with user-approved best-effort deduplication; 48 focused regressions passed, actual-host evidence retained, no runtime changes for acceptance relaxation.
+- Completed existing plan registration updates: in-place changes, idempotent replay, atomic failed-write preservation; 123 focused and 8,104 full-suite tests passed.
+- Completed investigate-autofix-mcp-transport-timeout: bounded resumable autofix, durable finalization and error recovery, fix/quality mutual exclusion; 42 focused tests and real delayed MCP smoke passed. Evidence: .cortex/.session/autofix-transport-evidence.json.
+
+## 2026-09-16
+
+- **Investigate Cortex quality gate MCP transport timeout** - COMPLETE. Recovered detached outcome and verified a 900-second client timeout returns an authoritative gate result beyond 30 seconds. No transport code change or duplicate worker; remediation gate failures remain explicit.
+- **Remediate Project Review Findings: Safety, Rules, Planning, Context, and Verification** - COMPLETE. All seven findings have regression evidence. Complete context accounting and bounded graph previews preserve required content; real public MCP workflows and CI smoke/slow gates verify outcomes. Fresh quality gate: 8,042 passed, four skipped, 91.56% coverage; nine public workflows and 21 slow tests passed; docs gate and inline no-gaps review passed. No commit or push.
+
+## 2026-09-08
+
+- <!-- memory_type: milestone -->
+- PARTIAL: Project review remediation Step 2 complete — validated WAL snapshot/restore boundaries, bounded replacement recovery, atomic file restore, and structured errors; fixed reflection's indented-handler false positive. Fresh quality/reflection gates passed: 7,863 tests, four skipped, 91.48% coverage. Steps 3–9 remain pending.
+- PARTIAL: Project review remediation Step 3 complete — historical reads now enforce memory-bank Markdown scope and validated WAL paths while preserving nested history/provenance. Added 46 cases; fresh quality/reflection gates passed: 7,909 tests, four skipped, 91.49% coverage. Steps 4–9 remain pending.
+- PARTIAL — Project review remediation Steps 1–4 complete; Steps 5–9 remain PENDING. Step 4 restores selected shared generic/general rule delivery, preserves local overrides and nested identities, and accounts for delivered rule tokens separately from governance. Added 21 integration cases and fixed public resource text decoding. Fresh quality/reflection gates passed: 7,930 tests passed, four skipped, 91.49% coverage; live rules returned one rule totaling 702 tokens and identical consecutive reads. This invocation added 159 regression cases across Steps 2–4 and the reflection fix. Next: Step 5, recoverable and idempotent plan completion.
+- PARTIAL: Completed Step 5 of project-review-remediation-2026-09-08. Plan completion now prevalidates inputs and reads, persists bounded typed recovery state, uses one cross-process lock with expected-hash atomic writes and WAL preservation, canonicalizes DONE frontmatter, and safely handles retries, interruptions, archive collisions, tampered recovery metadata, and concurrent conflicts. Added 38 focused cases; fresh Cortex quality gate passed all checks, with the final integrity batch bringing the suite to 7,967 passing cases and four skipped; last explicit coverage was 91.39%, and reflection reported 17 advisories with no errors. Steps 6–9 remain PENDING; Step 6 is next.
+- PARTIAL: Project review remediation Step 6 complete. Archive-aware unique plan discovery, active-only readiness, preserved manual/custom statuses, consistent metadata and scoped context, and guarded status repair are implemented. Fresh final quality gate passed with zero errors/warnings; last detailed suite: 8,020 passed, four skipped, 91.41% coverage, followed by one test split and another green full gate. Thirteen archived statuses repaired from exact completion evidence with a retained snapshot; all repeat calls were no-ops and other content was preserved. Graph/context/session agree: one READY plan instead of 552. Steps 7–9 remain PENDING; Step 7 is next.
+**Project Review Remediation: Owned-File Quality Scope** - PARTIAL. Completed Step 1 of the review remediation plan: shared validated installed-skill scope for structural checks, Markdown lint/autofix, links, CI, and local parity; source symlinks remain checked. Added 34 regression cases; forced-fresh full Cortex quality gate passed with zero errors/warnings. Installed package contents and lock metadata preserved. Steps 2–9 remain PENDING.
+
 ## 2026-09-05
 
 - **Wire Usage-Pattern Analytics to Session Logs and Package-Relative Tool Analysis** - COMPLETE. cortex://analysis now returns real usage_patterns (projected from .cortex/.session/ load_context logs) and a non-zero tools count (package-relative tools_dir). Dead access-log.json writer and pattern_normalization module deleted; track_usage_patterns flag now has an effect. 7736 tests pass, coverage 91.4%.

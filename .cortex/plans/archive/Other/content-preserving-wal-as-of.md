@@ -2,7 +2,7 @@
 title: "Content-Preserving WAL for AS-OF Reconstruction"
 component: "memory"
 work_type: feature
-status: READY
+status: DONE
 priority: Low
 created: 2026-07-19
 depends_on: ["unified-experience-store", "analyze-experience-graph-queries"]

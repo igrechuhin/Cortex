@@ -187,7 +187,7 @@ async def _execute_get_relevant(
         resolved_min_score,
     )
     all_rules = extract_all_rules(relevant_rules_dict)
-    total_tokens = calculate_total_tokens(relevant_rules_dict, all_rules)
+    total_tokens = calculate_total_tokens(all_rules)
     status = _build_status_from_config(rules_manager, optimization_config, rules_folder)
     return build_get_relevant_response(
         task_description,

@@ -81,7 +81,8 @@ def _plan_error_invalid_operation(operation: str) -> str:
         message=(
             "Invalid operation "
             f"'{operation}'. Use create, list, get, complete, register, enrich, "
-            "graph, archive_completed, continue_step, approve_step, or finalize_step."
+            "graph, archive_completed, repair_status, continue_step, approve_step, "
+            "or finalize_step."
         ),
         error="Invalid operation",
     ).model_dump_json()
@@ -468,6 +469,15 @@ async def _handle_special_plan_operations(
         return await plan_graph_json(ctx, include_archive=True)
     if op == PlanToolOperation.ARCHIVE_COMPLETED:
         return await _plan_handle_archive_completed(ctx)
+    if op == PlanToolOperation.REPAIR_STATUS:
+        from cortex.tools.plans.status_repair import repair_archived_plan_status
+
+        return await repair_archived_plan_status(
+            slug=request.slug,
+            requested_status=request.status,
+            include_archive=request.include_archive,
+            ctx=ctx,
+        )
     if op == PlanToolOperation.COMPLETE:
         return await _dispatch_complete_with_log(
             request.plan_title,
@@ -580,11 +590,14 @@ async def plan(
     ctx: MCPContext | None = None,
 ) -> str:
     # fmt: on
-    """Plan lifecycle: create, list, get, complete, register, graph, or archive_completed.
+    """Plan lifecycle including graph reads and evidence-gated status repair.
 
     USE WHEN: managing plan files, marking plans complete, registering roadmap entries,
-    or reading the plan dependency graph (operation=\"graph\").
-    EXAMPLES: plan(operation=\"create\", ...), plan(operation=\"graph\"), plan(operation=\"register\", ...).
+    or reading the dependency graph. ``repair_status`` requires caller-established
+    completion evidence, a prior snapshot, an exact archived slug,
+    ``include_archive=true``, and ``status=\"DONE\"``.
+    EXAMPLES: plan(operation=\"graph\"); plan(operation=\"repair_status\",
+    slug=\"legacy\", include_archive=True, status=\"DONE\").
     """
     wire_payload = {name: locals()[name] for name in _PLAN_WIRE_KEYS}
     return await _plan_dispatch(

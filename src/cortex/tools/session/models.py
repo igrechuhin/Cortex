@@ -146,6 +146,15 @@ class SessionHandoff(StrictBaseModel):
         default=1, ge=1, description="Handoff schema version for compatibility"
     )
 
+    hook_event_ids: list[str] = Field(
+        default_factory=list, description="Persisted native lifecycle replay identities"
+    )
+    hook_snapshot: str | None = Field(
+        default=None,
+        max_length=2400,
+        description="Bounded native-hook workspace context",
+    )
+
 
 class ConcurrentSession(StrictBaseModel):
     """Information about a concurrent agent session."""

@@ -10,21 +10,21 @@ from cortex.core.artifact_graph import (
     compute_artifact_graph,
     list_plan_slug_paths,
     plan_slug_in_dependency_cycle,
-    read_plan_status_from_content,
     register_plan_file_status_from_graph,
 )
 from cortex.core.context_logging import MCPContext, log_client
 from cortex.core.models import PlanStatus
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
+from cortex.core.plan_metadata import read_plan_status_metadata
 from cortex.tools.plans.register_helpers import create_register_error_result
 
 _FM_STATUS_RE = re.compile(r"^status\s*:\s*.*$", re.MULTILINE | re.IGNORECASE)
 
 
 def replace_plan_frontmatter_status(content: str, new_status: PlanStatus) -> str:
-    """Set or insert ``status`` in the first YAML frontmatter block."""
+    """Set exactly one canonical ``status`` in the first YAML frontmatter block."""
     if not content.startswith("---"):
-        return content
+        return f"---\nstatus: {new_status.value}\n---\n\n{content}"
     lines = content.splitlines(keepends=True)
     end: int | None = None
     for i in range(1, len(lines)):
@@ -33,14 +33,21 @@ def replace_plan_frontmatter_status(content: str, new_status: PlanStatus) -> str
             break
     if end is None:
         return content
-    head = "".join(lines[: end + 1])
+    frontmatter = lines[1:end]
     tail = "".join(lines[end + 1 :])
-    replacement = f"status: {new_status.value}"
-    updated_head = _FM_STATUS_RE.sub(replacement, head, count=1)
-    if updated_head == head:
-        insert = "".join(lines[:end]) + f"{replacement}\n" + lines[end]
-        return insert + tail
-    return updated_head + tail
+    replacement = f"status: {new_status.value}\n"
+    updated: list[str] = []
+    inserted = False
+    for line in frontmatter:
+        if _FM_STATUS_RE.match(line):
+            if not inserted:
+                updated.append(replacement)
+                inserted = True
+            continue
+        updated.append(line)
+    if not inserted:
+        updated.append(replacement)
+    return "---\n" + "".join(updated) + lines[end] + tail
 
 
 def _format_cycle_detail(slug: str, graph: ArtifactGraph) -> str:
@@ -114,18 +121,18 @@ def _target_plan_status_after_completion_resync(
     slug: str, graph: ArtifactGraph, current: PlanStatus
 ) -> PlanStatus:
     # AI: Match register defaults for never-blocked plans; promote BLOCKED→READY when deps clear.
-    if current == PlanStatus.DONE:
-        return PlanStatus.DONE
-    if plan_slug_in_dependency_cycle(slug, graph):
-        return PlanStatus.BLOCKED
+    if current in {PlanStatus.DONE, PlanStatus.IN_PROGRESS}:
+        return current
     node = graph.nodes.get(slug)
     if node is None:
         return current
+    if current == PlanStatus.BLOCKED and not node.depends_on:
+        return current
+    if plan_slug_in_dependency_cycle(slug, graph):
+        return PlanStatus.BLOCKED
     if node.blocked_by:
         return PlanStatus.BLOCKED
-    if current == PlanStatus.IN_PROGRESS:
-        return PlanStatus.IN_PROGRESS
-    if current == PlanStatus.BLOCKED:
+    if current == PlanStatus.BLOCKED and node.depends_on:
         return PlanStatus.READY
     if current == PlanStatus.READY:
         return PlanStatus.READY
@@ -174,7 +181,10 @@ async def _apply_one_plan_resync_after_completion(
             logger_name=logger_name,
         )
         return False
-    current = read_plan_status_from_content(raw)
+    metadata = read_plan_status_metadata(raw)
+    if not metadata.recognized:
+        return False
+    current = metadata.status
     target = _target_plan_status_after_completion_resync(slug, graph, current)
     promoted = current == PlanStatus.BLOCKED and target == PlanStatus.READY
     if target == current:
@@ -220,9 +230,17 @@ async def sync_plan_frontmatter_status_after_register(
         graph=graph,
         slug=slug,
     )
+    await _persist_registered_status(plan_path, new_status, ctx)
+
+
+async def _persist_registered_status(
+    plan_path: Path, proposed: PlanStatus, ctx: MCPContext | None
+) -> None:
     try:
         raw = plan_path.read_text(encoding="utf-8")
-        updated = replace_plan_frontmatter_status(raw, new_status)
+        if _preserve_registered_status(raw, proposed):
+            return
+        updated = replace_plan_frontmatter_status(raw, proposed)
         if updated != raw:
             _ = plan_path.write_text(updated, encoding="utf-8")
     except OSError as exc:
@@ -232,3 +250,17 @@ async def sync_plan_frontmatter_status_after_register(
             f"register_plan_in_roadmap: could not update plan status in {plan_path}: {exc}",
             logger_name="cortex.tools.plans.register",
         )
+
+
+def _preserve_registered_status(raw: str, proposed: PlanStatus) -> bool:
+    """Keep established lifecycle and author-defined status intent."""
+    metadata = read_plan_status_metadata(raw)
+    if not metadata.recognized:
+        return True
+    if metadata.status in {
+        PlanStatus.DONE,
+        PlanStatus.IN_PROGRESS,
+        PlanStatus.READY,
+    }:
+        return True
+    return metadata.status == PlanStatus.BLOCKED and proposed == PlanStatus.PENDING

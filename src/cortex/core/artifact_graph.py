@@ -9,25 +9,19 @@ from pathlib import Path
 from pydantic import BaseModel, ConfigDict, Field
 
 from cortex.core.models._enums import PlanExecutionMode, PlanStatus
+from cortex.core.plan_identity import (
+    PlanFileRow,
+    build_plan_identity_index,
+    iter_plan_file_rows,
+)
+from cortex.core.plan_metadata import (
+    read_frontmatter_field,
+    read_plan_execution,
+    read_plan_status_metadata,
+)
 from cortex.core.pydantic_extra import EXTRA_FORBID
 
-_DEPENDS_RE = re.compile(
-    r"^depends_on\s*:\s*\[(.*?)\]\s*$", re.IGNORECASE | re.MULTILINE
-)
-# AI: quotes optional and no end anchor so `status: "DONE"` and legacy
-# `status: "Completed (26-05-04)"` still resolve instead of silently
-# defaulting to PENDING.
-_STATUS_RE = re.compile(
-    r"^status\s*:\s*[\"']?([A-Za-z_]+)", re.IGNORECASE | re.MULTILINE
-)
-_EXECUTION_RE = re.compile(
-    r"^execution\s*:\s*[\"']?([A-Za-z_]+)", re.IGNORECASE | re.MULTILINE
-)
-# AI: legacy spellings that predate the PlanStatus enum.
-_STATUS_ALIASES: dict[str, PlanStatus] = {
-    "COMPLETE": PlanStatus.DONE,
-    "COMPLETED": PlanStatus.DONE,
-}
+_DEPENDS_RE = re.compile(r"^depends_on\s*:\s*\[(.*?)\]\s*$", re.I | re.M)
 
 
 class PlanNode(BaseModel):
@@ -41,6 +35,14 @@ class PlanNode(BaseModel):
         description="Declared dependency slugs from frontmatter",
     )
     status: PlanStatus = Field(description="Declared status from frontmatter")
+    raw_status: str | None = Field(
+        default=None, description="Exact declared status token when present"
+    )
+    status_recognized: bool = Field(
+        default=False, description="Whether the declared status is canonical or legacy"
+    )
+    archived: bool = Field(default=False, description="Whether the plan is archived")
+    relative_path: str = Field(default="", description="Path relative to plans root")
     execution: PlanExecutionMode = Field(
         default=PlanExecutionMode.AGENT,
         description="Who executes the plan, from frontmatter ``execution``",
@@ -75,15 +77,19 @@ class ArtifactGraph(BaseModel):
     )
     ready: list[str] = Field(
         default_factory=_empty_str_list,
-        description="Non-DONE plans with no outstanding dependency work",
+        description="Eligible active PENDING/READY plans with satisfied dependencies",
     )
     blocked: list[str] = Field(
         default_factory=_empty_str_list,
-        description="Non-DONE plans blocked by at least one dependency",
+        description="Eligible active plans explicitly or dependency blocked",
     )
     cycles: list[list[str]] = Field(
         default_factory=_empty_cycle_list,
         description="Strongly connected components with cyclic dependency",
+    )
+    ambiguous_slugs: dict[str, list[str]] = Field(
+        default_factory=dict,
+        description="Duplicate slug → plans-root-relative candidate paths",
     )
 
 
@@ -105,7 +111,8 @@ def normalize_plan_slug(token: str) -> str:
 
 
 def _parse_depends_on(plan_content: str) -> list[str]:
-    match = _DEPENDS_RE.search(plan_content)
+    field = read_frontmatter_field(plan_content, "depends_on")
+    match = _DEPENDS_RE.search(f"depends_on: {field}") if field is not None else None
     if match is None:
         return []
     raw = match.group(1).strip()
@@ -119,31 +126,12 @@ def _parse_depends_on(plan_content: str) -> list[str]:
     return deps
 
 
-def resolve_plan_status_token(raw: str) -> PlanStatus | None:
-    """Return the canonical status for a raw frontmatter token, or None."""
-    token = raw.strip().strip("\"'").upper()
-    for candidate in PlanStatus:
-        if candidate.value == token:
-            return candidate
-    return _STATUS_ALIASES.get(token)
-
-
 def _parse_plan_status(plan_content: str) -> PlanStatus:
-    match = _STATUS_RE.search(plan_content)
-    if match is None:
-        return PlanStatus.PENDING
-    return resolve_plan_status_token(match.group(1)) or PlanStatus.PENDING
+    return read_plan_status_metadata(plan_content).status
 
 
 def _parse_plan_execution(plan_content: str) -> PlanExecutionMode:
-    match = _EXECUTION_RE.search(plan_content)
-    if match is None:
-        return PlanExecutionMode.AGENT
-    raw = match.group(1).strip().lower()
-    for candidate in PlanExecutionMode:
-        if candidate.value == raw:
-            return candidate
-    return PlanExecutionMode.AGENT
+    return read_plan_execution(plan_content)
 
 
 def read_plan_execution_from_content(plan_content: str) -> PlanExecutionMode:
@@ -157,11 +145,13 @@ def read_plan_status_from_content(plan_content: str) -> PlanStatus:
 
 
 def _is_done_plan(plan_content: str) -> bool:
-    return _parse_plan_status(plan_content) == PlanStatus.DONE
+    metadata = read_plan_status_metadata(plan_content)
+    return metadata.recognized and metadata.status == PlanStatus.DONE
 
 
 def resolve_upstream_plans(plan_slug: str, plans_dir: Path) -> list[str]:
     """Resolve transitive DONE dependencies in topological order."""
+    index = build_plan_identity_index(plans_dir, include_archive=True)
     resolved: list[str] = []
     visited: set[str] = set()
 
@@ -169,10 +159,10 @@ def resolve_upstream_plans(plan_slug: str, plans_dir: Path) -> list[str]:
         if slug in visited:
             return
         visited.add(slug)
-        plan_path = plans_dir / f"{slug}.md"
-        if not plan_path.is_file():
+        row = index.unique.get(slug)
+        if row is None:
             return
-        content = plan_path.read_text(encoding="utf-8")
+        content = row.path.read_text(encoding="utf-8")
         for dep in _parse_depends_on(content):
             visit(dep)
         if slug != plan_slug and _is_done_plan(content):
@@ -182,28 +172,14 @@ def resolve_upstream_plans(plan_slug: str, plans_dir: Path) -> list[str]:
     return resolved
 
 
-def _iter_plan_files(
-    plans_dir: Path, *, include_archive: bool
-) -> list[tuple[str, Path]]:
-    if not plans_dir.is_dir():
-        return []
-    rows: list[tuple[str, Path]] = []
-    for path in plans_dir.rglob("*.md"):
-        if not path.is_file():
-            continue
-        rel = path.relative_to(plans_dir)
-        if not include_archive and "archive" in rel.parts:
-            continue
-        rows.append((path.stem, path))
-    rows.sort(key=lambda item: (str(item[1]), item[0]))
-    return rows
-
-
 def list_plan_slug_paths(
     plans_dir: Path, *, include_archive: bool = False
 ) -> list[tuple[str, Path]]:
     """Return sorted ``(slug, path)`` pairs for plan markdown under ``plans_dir``."""
-    return _iter_plan_files(plans_dir, include_archive=include_archive)
+    return [
+        (row.slug, row.path)
+        for row in iter_plan_file_rows(plans_dir, include_archive=include_archive)
+    ]
 
 
 class _TarjanContext:
@@ -282,27 +258,35 @@ def _nodes_in_cycles(cycles: list[list[str]]) -> set[str]:
 
 
 def _load_raw_nodes_and_edges(
-    rows: list[tuple[str, Path]],
+    rows: list[PlanFileRow],
 ) -> tuple[dict[str, PlanNode], list[tuple[str, str]]]:
     nodes: dict[str, PlanNode] = {}
     edges: list[tuple[str, str]] = []
-    for slug, path in rows:
-        text = path.read_text(encoding="utf-8")
+    for row in rows:
+        text = row.path.read_text(encoding="utf-8")
         deps = _parse_depends_on(text)
-        status = _parse_plan_status(text)
-        nodes[slug] = PlanNode(
-            slug=slug,
+        metadata = read_plan_status_metadata(text)
+        nodes[row.slug] = PlanNode(
+            slug=row.slug,
             depends_on=list(deps),
-            status=status,
+            status=metadata.status,
+            raw_status=metadata.raw_token,
+            status_recognized=metadata.recognized,
+            archived=row.archived,
+            relative_path=row.relative_path,
             execution=_parse_plan_execution(text),
         )
         for dep in deps:
-            edges.append((slug, dep))
+            edges.append((row.slug, dep))
     return nodes, edges
 
 
 def _apply_blocked_by(nodes: dict[str, PlanNode]) -> dict[str, PlanNode]:
-    done_slugs = {s for s, n in nodes.items() if n.status == PlanStatus.DONE}
+    done_slugs = {
+        slug
+        for slug, node in nodes.items()
+        if node.status_recognized and node.status == PlanStatus.DONE
+    }
     blocked_by_map: dict[str, list[str]] = {}
     for slug, node in nodes.items():
         blockers: list[str] = []
@@ -332,12 +316,14 @@ def _partition_ready_blocked(
     blocked: list[str] = []
     for slug in sorted(nodes):
         node = nodes[slug]
-        if node.status == PlanStatus.DONE:
+        if node.archived or not node.status_recognized:
+            continue
+        if node.status in {PlanStatus.DONE, PlanStatus.IN_PROGRESS}:
             continue
         if slug in cyclic_slugs:
             blocked.append(slug)
             continue
-        if node.blocked_by:
+        if node.status == PlanStatus.BLOCKED or node.blocked_by:
             blocked.append(slug)
         else:
             ready.append(slug)
@@ -374,8 +360,8 @@ def compute_artifact_graph(
     # unknown dependency as unsatisfied, so skipping the archive makes completed
     # (status: DONE) dependencies look outstanding. Only surfaces that deliberately
     # enumerate *active* plans pass include_archive=False.
-    rows = _iter_plan_files(plans_dir, include_archive=include_archive)
-    nodes, edges = _load_raw_nodes_and_edges(rows)
+    index = build_plan_identity_index(plans_dir, include_archive=include_archive)
+    nodes, edges = _load_raw_nodes_and_edges(list(index.unique.values()))
     nodes = _apply_blocked_by(nodes)
     adj = _internal_dep_adjacency(nodes)
     cycles = _tarjan_cyclic_sccs(set(nodes), adj)
@@ -386,4 +372,8 @@ def compute_artifact_graph(
         ready=ready,
         blocked=blocked,
         cycles=cycles,
+        ambiguous_slugs={
+            slug: [row.relative_path for row in rows]
+            for slug, rows in index.ambiguous.items()
+        },
     )

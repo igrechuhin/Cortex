@@ -2,7 +2,7 @@
 title: "Fix archive-blind plan-graph summaries in session brief and optimization handlers"
 component: "plans"
 work_type: fix
-status: PENDING
+status: DONE
 priority: Medium
 execution: agent
 created: 2026-08-30

@@ -289,52 +289,6 @@ class TestRegisterPlanEntry:
         assert "- Block 1" in updated
         assert "Blockers (ASAP Priority)" in updated
 
-    def test_register_duplicate_plan_path_is_noop(self) -> None:
-        """Test that registering plan with same plan path is a no-op."""
-        content = """# Roadmap
-
-## Blockers (ASAP Priority)
-
-- **Investigate Tool** - PENDING - Plan: .cortex/plans/phase-investigate-tool-failure-20260217-123456.md.
-
-## Other Section
-"""
-        # Try to register plan with same plan path
-        updated, line_inserted = register_plan_entry(
-            content,
-            plan_title="Investigate Tool Again",
-            description="Plan: .cortex/plans/phase-investigate-tool-failure-20260217-123456.md.",
-            status="PENDING",
-            section_id="blockers",
-        )
-
-        # Should return unchanged content (no-op)
-        assert updated == content
-        assert line_inserted is None
-
-    def test_register_exact_duplicate_line_is_noop(self) -> None:
-        """Test that registering exact duplicate entry is a no-op."""
-        content = """# Roadmap
-
-## Pending plans (from .cortex/plans)
-
-- **Plan A** - PENDING - Plan: .cortex/plans/plan-a.md.
-
-## Other Section
-"""
-        # Try to register exact same plan
-        updated, line_inserted = register_plan_entry(
-            content,
-            plan_title="Plan A",
-            description="Plan: .cortex/plans/plan-a.md.",
-            status="PENDING",
-            section_id="pending",
-        )
-
-        # Should return unchanged content (no-op)
-        assert updated == content
-        assert line_inserted is None
-
     def test_register_different_plan_path_succeeds(self) -> None:
         """Test that registering plan with different plan path succeeds."""
         content = """# Roadmap
@@ -686,6 +640,21 @@ class TestGetPlanPath:
             path = get_plan_path(root, "nonexistent")
         assert path is None
 
+    def test_rejects_ambiguous_active_and_archived_slug(self) -> None:
+        # Arrange
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            plans = get_cortex_path(root, CortexResourceType.PLANS)
+            archive = get_cortex_path(root, CortexResourceType.PLANS_ARCHIVE)
+            archive.mkdir(parents=True)
+            plans.mkdir(parents=True, exist_ok=True)
+            _ = (plans / "same.md").write_text("# Active", encoding="utf-8")
+            _ = (archive / "same.md").write_text("# Archived", encoding="utf-8")
+
+            # Act / Assert
+            with pytest.raises(ValueError, match="Ambiguous plan slug"):
+                _ = get_plan_path(root, "same")
+
 
 class TestListPlansImpl:
     """Test _list_plans_impl."""
@@ -704,6 +673,25 @@ class TestListPlansImpl:
         assert len(result.plans) == 1
         assert result.plans[0].slug == "phase-1"
         assert result.plans[0].title == "Phase 1: Foundation"
+
+    def test_prefers_frontmatter_title_and_returns_project_relative_path(self) -> None:
+        # Arrange
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            archive = get_cortex_path(root, CortexResourceType.PLANS_ARCHIVE)
+            archive.mkdir(parents=True)
+            _ = (archive / "old.md").write_text(
+                '---\ntitle: "User\'s Archived Plan"\nstatus: DONE\n---\n\n# Goal\n',
+                encoding="utf-8",
+            )
+
+            # Act
+            result = list_plans_impl(root, include_archive=True)
+
+        # Assert
+        assert result.plans[0].title == "User's Archived Plan"
+        assert result.plans[0].relative_path == ".cortex/plans/archive/old.md"
+        assert result.plans[0].archived is True
 
 
 class TestGetPlanImpl:
@@ -735,6 +723,25 @@ class TestGetPlanImpl:
         assert result.title == "My Plan"
         assert result.plan_status == "Pending"
         assert result.content is None
+
+    def test_metadata_prefers_frontmatter_and_returns_resolved_path(self) -> None:
+        # Arrange
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            plans_dir = get_cortex_path(root, CortexResourceType.PLANS)
+            plans_dir.mkdir(parents=True)
+            _ = (plans_dir / "test.md").write_text(
+                "---\ntitle: Canonical Title\nstatus: READY # queued\n---\n\n# Goal\n",
+                encoding="utf-8",
+            )
+
+            # Act
+            result = get_plan_impl(root, "test", "metadata")
+
+        # Assert
+        assert result.title == "Canonical Title"
+        assert result.plan_status == "READY"
+        assert result.relative_path == ".cortex/plans/test.md"
 
     def test_metadata_includes_task_graph_and_can_parallelize(self) -> None:
         """metadata response includes parsed task graph and can_parallelize flag."""

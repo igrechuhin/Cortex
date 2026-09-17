@@ -2,7 +2,7 @@
 title: "Shaping Interview Prompt (shape.md) Before Plan"
 component: "synapse-prompts"
 work_type: feature
-status: PENDING
+status: DONE
 priority: High
 created: 2026-08-02
 depends_on: []

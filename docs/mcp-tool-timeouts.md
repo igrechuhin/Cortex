@@ -147,7 +147,7 @@ MCP_TOOL_TIMEOUT_QUALITY_FIXES = 60  # Quality auto-fix tools (e.g. autofix)
 - `validate`
 - `summarize_content`
 - `get_relevance_scores`
-- `run_quality_gate()` (Phase A preflight)
+- `run_quality_gate()` uses a separate bounded 20-second wait over detached Phase A work; see [commit pipeline tools](#commit-pipeline-long-running-tools-and-client-timeout).
 - `run_docs_gate()` (Phase B docs/memory sync)
 
 ### Very Complex Operations (960 seconds / 16 minutes)
@@ -186,7 +186,6 @@ MCP_TOOL_TIMEOUT_QUALITY_FIXES = 60  # Quality auto-fix tools (e.g. autofix)
 - `synapse` (sync, update_rule, update_prompt)
 - `get_synapse_rules`
 - `get_synapse_prompts`
-- `run_quality_gate`
 - `autofix`
 
 ## How to Add Timeout to a New Tool
@@ -274,12 +273,14 @@ The commit pipeline (e.g. `/cortex/commit`) uses these MCP tools that can run fo
 
 | Tool | Typical duration | Server behavior | Client timeout recommendation |
 |------|------------------|-----------------|-------------------------------|
-| `run_quality_gate` (Step 12.7: tests inside Phase A) | 300–600 s (driven by `test_timeout` from the pipeline task file, often 300–600) | Very-complex timeout (960 s); frequent progress reports to reduce idle timeout | If the client exposes a tool-call timeout, set it to **≥ test_timeout + buffer** (e.g. 600 + 60 s). Otherwise rely on retry and runbook. |
-| `fix_markdown_lint` (Step 12.5) | 30–120 s (depends on repo size; scoped to git-modified when possible) | Batched runs, 5 s heartbeat, progress after each file | Same as above; use local markdownlint for faster runs (see [troubleshooting](guides/troubleshooting.md#issue-mcp-error-32000-connection-closed)). |
-| `autofix` (pre-flight / Step 12.1) | 30–120 s | Progress and timeout; serialized with other long tools | Retry once; then use fallback scripts per commit prompt. |
+| `run_quality_gate` (Step 12.7: tests inside Phase A) | Worker may take 300–600 s; each call waits at most 20 s for checks | Returns `status: "running"` with actual `job_id` / `result_file`; same-configuration calls resume the worker. Lock contention without an existing result file returns a retryable error, not failed checks | A 30 s client deadline accommodates the bounded wait; repeat pending calls with unchanged configuration, without mutating files, launching another worker, or treating them as passed gates. |
+| `fix_markdown_lint` (Step 12.5) | 30–120 s (depends on repo size; scoped to git-modified when possible) | Batched runs, 5 s heartbeat, progress after each file | Allow 30–120 s according to repository size; use local rumdl for faster runs (see [troubleshooting](guides/troubleshooting.md#issue-mcp-error-32000-connection-closed)). |
+| `autofix` (pre-flight / Step 12.1) | Worker may take 30–120 s; each call waits at most 20 s for the root lock and worker | Returns `status: "running"` with `job_id` / `result_file`; retries resume the same worker, including final formatting and housekeeping | Keep a 30 s client deadline; repeat the call to retrieve the terminal result. Do not launch fallback mutations while its worker is alive. |
 
 - **Keepalive / progress**: The server sends progress or heartbeat for all of these (see "Tools that need more frequent progress" in `mcp_stability_config` and "Client connection closed during long tools" below). This reduces the chance of client idle timeout (-32000).
-- **If the MCP client exposes a configurable tool-call timeout**: Set it to at least the longest expected run (e.g. `test_timeout` + 60 s for Step 12.7). If the client does not expose a configurable timeout, the only mitigations are server-side progress and the pipeline retry/fallback behavior; see [MCP disconnect runbook (commit pipeline)](guides/troubleshooting.md#mcp-disconnect-runbook-commit).
+- **Client deadlines**: Progress reduces idle disconnects but does not extend a hard request deadline. `run_quality_gate` and `autofix` therefore return pending job handles after their bounded waits. Other long-running tools may still need a client timeout covering their expected duration; see [MCP disconnect runbook (commit pipeline)](guides/troubleshooting.md#mcp-disconnect-runbook-commit).
+- **Infrastructure states**: `running` and `timeout` responses are not completed checks or fixes. A busy root lock without an existing job returns a retryable error. Retry the same call without changing configuration or mutating the workspace while work may remain active. Autofix and quality checks report an existing live worker rather than launching conflicting work. Preserve worker errors as errors; only terminal results determine the outcome.
+- **Autofix outcome retention**: A completed or failed worker result remains on disk and is delivered on the next autofix call, including after server restart. Delivery marks it consumed without deleting its evidence; the next independent call starts fresh work. Legacy completed fix envelopes are recovered without rerunning mutations. Suggestions, remaining issues, and raw worker failure evidence are retained.
 
 ## Client connection closed during long tools
 
@@ -287,8 +288,9 @@ Long-running MCP tools may complete on the server after the client has already c
 
 - **Meaning**: "Connection closed" in this context usually indicates the client disconnected or timed out, not that the tool failed. The tool may have completed successfully on the server.
 - **Server-side mitigations**: To reduce the chance of client idle timeout, the server (1) sends progress more frequently (every 5s instead of 10s) for tools with timeout ≥ 300s, and (2) for `fix_markdown_lint`, reports progress after every file (and after every batch), runs a 5s heartbeat, and processes files in batches of 25 to reduce total duration.
-- **Recommendation**: In the commit workflow, when an MCP tool reports "Connection closed" or "ClosedResourceError": (1) Retry the tool once. (2) If it fails again with the same class of error, perform the documented fallback for that step (see commit prompt "Connection Closed During Long Tool") and record "MCP connection closed; fallback used" so the pipeline can proceed.
-- **Tool unavailability after disconnect**: After a connection closed error, a retry may fail with "tool not found" or similar (e.g. client/MCP reconnection or tool registration). In that case proceed with the documented fallback for that step (e.g. markdown lint via shell) and do not block the pipeline.
+- **Recommendation**: For `run_quality_gate()` and `autofix()`, reconnect and repeat the same zero-argument call with unchanged configuration to resume the job; preserve its handle and do not mutate files while pending. If MCP remains unavailable, block commit—Step 12.7 has no fallback. For other tools, retry once, then use only the step's documented fallback and record "MCP connection closed; fallback used".
+- **Tool unavailability after disconnect**: After a connection closed error, a retry may fail with "tool not found" or similar (e.g. client/MCP reconnection or tool registration). Use a documented fallback only for steps that allow one (e.g. markdown lint via shell). An unavailable final quality gate blocks commit.
+- **Source changes require reload**: A mounted Python MCP server keeps its imported code until restarted. Inspect existing job evidence before restarting; reconnect to a fresh server to load the bounded implementation, then resume the recorded job instead of launching replacement mutations.
 
 ## Resource read timeouts and "unknown message ID"
 

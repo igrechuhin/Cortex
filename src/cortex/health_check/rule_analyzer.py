@@ -54,7 +54,7 @@ class RuleAnalyzer:
         optimization_opportunities = await self._find_optimization_opportunities(rules)
 
         return RuleAnalysisResult(
-            total=len(rules),
+            total=sum(len(category_rules) for category_rules in rules.values()),
             categories=categories,
             merge_opportunities=merge_opportunities,
             optimization_opportunities=optimization_opportunities,

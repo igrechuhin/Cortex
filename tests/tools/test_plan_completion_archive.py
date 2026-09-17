@@ -15,9 +15,12 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
+from cortex.core.artifact_graph import compute_artifact_graph
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
+from cortex.tools.context.scoped_context import build_scoped_context_packet
 from cortex.tools.plans.completion import complete_plan
 from cortex.tools.plans.plan import plan as plan_tool
+from cortex.tools.plans.plan_graph import build_plan_graph_surface_bundle
 from cortex.tools.plans.register_artifact_graph import (
     sync_plan_dependency_statuses_after_completion,
 )
@@ -91,7 +94,7 @@ def _seed_sweep_roadmap_and_blocked_follower(tmp_path: Path) -> Path:
     plans.mkdir(parents=True)
     _write_plan_frontmatter(
         plans / "foundation.md",
-        title="foundation",
+        title="Sweep",
         status="DONE",
         depends_on=[],
     )
@@ -133,6 +136,42 @@ class TestCompletePlanDependencyResync:
         assert "status: READY" in (plans / "leaf.md").read_text(encoding="utf-8")
 
     @pytest.mark.asyncio
+    async def test_completing_unrelated_plan_preserves_manual_status_intent(
+        self, tmp_path: Path
+    ) -> None:
+        # Arrange
+        _ = _setup_complete_smoke_files(tmp_path)
+        plans = get_cortex_path(tmp_path, CortexResourceType.PLANS)
+        plans.mkdir(parents=True)
+        _write_plan_frontmatter(
+            plans / "manual.md", title="manual", status="BLOCKED", depends_on=[]
+        )
+        _write_plan_frontmatter(
+            plans / "working.md",
+            title="working",
+            status="IN_PROGRESS",
+            depends_on=["missing"],
+        )
+
+        # Act
+        with _patch_root(tmp_path):
+            result = json.loads(
+                await complete_plan(
+                    plan_title="Wire optimization",
+                    summary="Unrelated work completed.",
+                    completion_date="2026-04-11",
+                )
+            )
+
+        # Assert
+        assert result["status"] == "success"
+        assert result["plans_unblocked"] == 0
+        assert "status: BLOCKED" in (plans / "manual.md").read_text(encoding="utf-8")
+        assert "status: IN_PROGRESS" in (plans / "working.md").read_text(
+            encoding="utf-8"
+        )
+
+    @pytest.mark.asyncio
     async def test_complete_plan_reports_plans_unblocked(self, tmp_path: Path) -> None:
         plans = _seed_sweep_roadmap_and_blocked_follower(tmp_path)
         with _patch_root(tmp_path):
@@ -147,6 +186,39 @@ class TestCompletePlanDependencyResync:
         assert result.get("plans_unblocked") == 1
         assert "Unblocked 1 dependent" in (result.get("message") or "")
         assert "status: READY" in (plans / "follow.md").read_text(encoding="utf-8")
+
+    @pytest.mark.asyncio
+    async def test_complete_archive_unblocks_public_graph_and_scoped_context(
+        self, tmp_path: Path
+    ) -> None:
+        # Arrange
+        plans = _seed_sweep_roadmap_and_blocked_follower(tmp_path)
+
+        # Act
+        with _patch_root(tmp_path):
+            result = json.loads(
+                await complete_plan(
+                    plan_title="Sweep",
+                    summary="Done.",
+                    completion_date="2026-04-11",
+                    plan_file_name="foundation.md",
+                )
+            )
+        graph = compute_artifact_graph(plans)
+        bundle = build_plan_graph_surface_bundle(plans, max_ascii_edges=10)
+        packet = build_scoped_context_packet(
+            project_root=tmp_path, scope="plan:follow", rules_payload=""
+        )
+
+        # Assert
+        assert result["status"] == "success"
+        assert not (plans / "foundation.md").exists()
+        assert next(plans.rglob("foundation.md")).is_file()
+        assert graph.ready == ["follow"]
+        assert bundle is not None and bundle["plan_graph_ready"] == ["follow"]
+        assert packet is not None
+        upstream = cast(list[dict[str, str]], packet["upstream_plans"])
+        assert [row["slug"] for row in upstream] == ["foundation"]
 
 
 class TestCompletePlanArchive:
@@ -587,13 +659,7 @@ class TestApplyProgressAndArchivePropagatesFailure:
     async def test_non_format_progress_failure_is_still_surfaced(
         self, tmp_path: Path
     ) -> None:
-        """A progress failure that is NOT a format rejection still propagates.
-
-        Hoisting the format check up front must not disable apply_progress_and_archive's
-        propagation logic, which remains the only thing reporting an append that fails
-        for an I/O reason (here: progress.md does not exist). This path still writes
-        roadmap/activeContext first, because the failure is only discoverable at write time.
-        """
+        """A missing progress file is rejected before any completion write."""
         mem = get_cortex_path(tmp_path, CortexResourceType.MEMORY_BANK)
         mem.mkdir(parents=True)
         roadmap = mem / "roadmap.md"
@@ -614,4 +680,5 @@ class TestApplyProgressAndArchivePropagatesFailure:
         result = json.loads(result_str)
         assert result["status"] == "error"
         assert result.get("progress_line_inserted") is None
-        assert "progress append failed" in result["message"].lower()
+        assert "precondition failed" in result["message"].lower()
+        assert "IO fail case" in roadmap.read_text(encoding="utf-8")

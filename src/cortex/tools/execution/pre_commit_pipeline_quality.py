@@ -61,7 +61,8 @@ def collect_git_delta_files(project_root: Path) -> list[Path] | None:
         for line in result.stdout.splitlines():
             rel = line.strip()
             if rel:
-                candidates.add((project_root / rel).resolve())
+                # AI: Keep the owned path when a source symlink points into a vendor tree.
+                candidates.add(project_root.resolve() / rel)
     return sorted(candidates, key=lambda p: str(p))
 
 

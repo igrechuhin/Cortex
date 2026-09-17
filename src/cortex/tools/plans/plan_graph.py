@@ -31,6 +31,7 @@ class PlanGraphResult(StrictBaseModel):
     in_progress: list[str] = Field(default_factory=_empty_str_list)
     done: list[str] = Field(default_factory=_empty_str_list)
     cycles: list[list[str]] = Field(default_factory=_empty_cycle_rows)
+    ambiguous: dict[str, list[str]] = Field(default_factory=dict)
     ascii_dag: str = ""
     message: str | None = None
     error: str | None = None
@@ -44,8 +45,16 @@ def _blocked_by_map(graph: ArtifactGraph) -> dict[str, list[str]]:
     return detail
 
 
-def _slugs_with_status(graph: ArtifactGraph, wanted: PlanStatus) -> list[str]:
-    return sorted(s for s, n in graph.nodes.items() if n.status == wanted)
+def _slugs_with_status(
+    graph: ArtifactGraph, wanted: PlanStatus, *, active_only: bool
+) -> list[str]:
+    return sorted(
+        slug
+        for slug, node in graph.nodes.items()
+        if node.status_recognized
+        and node.status == wanted
+        and (not active_only or not node.archived)
+    )
 
 
 def render_plan_dependency_edges_ascii(graph: ArtifactGraph, *, max_edges: int) -> str:
@@ -84,11 +93,14 @@ def build_plan_graph_surface_bundle(
     )
     if graph.cycles:
         summary += f" ({len(graph.cycles)} cycle group(s) in scanned plans.)"
+    if graph.ambiguous_slugs:
+        summary += f" {len(graph.ambiguous_slugs)} ambiguous plan identity slug(s)."
     ascii_edges = render_plan_dependency_edges_ascii(graph, max_edges=max_ascii_edges)
     return {
         "plan_graph_summary": summary,
         "plan_graph_ready": list(graph.ready),
         "plan_graph_blocked": blocked_detail,
+        "plan_graph_ambiguous": dict(graph.ambiguous_slugs),
         "plan_graph_ascii_edges": ascii_edges,
     }
 
@@ -108,8 +120,9 @@ async def plan_graph_json(ctx: MCPContext | None, *, include_archive: bool) -> s
     return PlanGraphResult(
         ready=list(graph.ready),
         blocked=_blocked_by_map(graph),
-        in_progress=_slugs_with_status(graph, PlanStatus.IN_PROGRESS),
-        done=_slugs_with_status(graph, PlanStatus.DONE),
+        in_progress=_slugs_with_status(graph, PlanStatus.IN_PROGRESS, active_only=True),
+        done=_slugs_with_status(graph, PlanStatus.DONE, active_only=False),
         cycles=[list(c) for c in graph.cycles],
+        ambiguous=dict(graph.ambiguous_slugs),
         ascii_dag=ascii_dag,
     ).model_dump_json()

@@ -5,7 +5,6 @@ from __future__ import annotations
 import hashlib
 import logging
 import os
-import shutil
 import uuid
 from datetime import UTC, datetime
 from enum import StrEnum
@@ -14,9 +13,13 @@ from tempfile import NamedTemporaryFile
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.core.pydantic_extra import EXTRA_FORBID
+from cortex.memory.wal_snapshots import restore_memory_bank, snapshot_memory_bank
 
 logger = logging.getLogger(__name__)
+
+WRITE_LOG_FILE_NAME = "write_log.jsonl"
 
 
 class WalOperation(StrEnum):
@@ -241,13 +244,12 @@ class MemoryWAL:
     def __init__(self, wal_dir: Path, project_root: Path | None = None) -> None:
         self._wal_dir = wal_dir
         self._project_root = project_root
-        self._log_path = wal_dir / "write_log.jsonl"
-        wal_dir.mkdir(parents=True, exist_ok=True)
+        self._log_path = wal_dir / WRITE_LOG_FILE_NAME
 
     def _memory_bank_dir(self) -> Path:
         if self._project_root is not None:
-            return self._project_root / ".cortex" / "memory-bank"
-        return self._wal_dir.parent / "memory-bank"
+            return get_cortex_path(self._project_root, CortexResourceType.MEMORY_BANK)
+        return self._wal_dir.parent / CortexResourceType.MEMORY_BANK.value
 
     def log(self, entry: WALEntry) -> None:
         """Atomically append one JSON line (read-merge-write + replace)."""
@@ -285,30 +287,15 @@ class MemoryWAL:
 
     def snapshot(self, label: str) -> Path:
         """Copy memory-bank ``*.md`` into ``wal_dir/snapshots/{label}/``."""
-        mem_bank = self._memory_bank_dir()
-        dest = self._wal_dir / "snapshots" / label
-        if dest.exists():
-            shutil.rmtree(dest)
-        dest.mkdir(parents=True, exist_ok=True)
-        if mem_bank.is_dir():
-            for src in sorted(mem_bank.glob("*.md")):
-                if src.is_file():
-                    _ = shutil.copy2(src, dest / src.name)
-        return dest
+        return snapshot_memory_bank(
+            self._wal_dir, self._memory_bank_dir(), self._project_root, label
+        )
 
     def restore(self, label: str) -> int:
         """Restore snapshot ``label`` into memory-bank; return files copied."""
-        snap = self._wal_dir / "snapshots" / label
-        if not snap.is_dir():
-            raise FileNotFoundError(f"No WAL snapshot at {snap}")
-        mem_bank = self._memory_bank_dir()
-        mem_bank.mkdir(parents=True, exist_ok=True)
-        n = 0
-        for src in sorted(snap.glob("*.md")):
-            if src.is_file():
-                _ = shutil.copy2(src, mem_bank / src.name)
-                n += 1
-        return n
+        return restore_memory_bank(
+            self._wal_dir, self._memory_bank_dir(), self._project_root, label
+        )
 
 
 def _wal_anomaly_messages(entries: list[WALEntry]) -> list[str]:

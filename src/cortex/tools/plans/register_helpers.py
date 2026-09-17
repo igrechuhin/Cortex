@@ -144,9 +144,9 @@ def _find_existing_plan_line(
                 if existing_plan_path and plan_path == existing_plan_path:
                     return i
 
-    section_content = "\n".join(lines[section_start : section_end + 1])
-    if entry_text.strip() in section_content:
-        return section_start
+    for i in range(section_start + 1, section_end + 1):
+        if lines[i].strip() == entry_text.strip():
+            return i
 
     return None
 
@@ -185,7 +185,8 @@ def _insert_entry_in_section(
         entry_text=entry_text,
     )
     if existing_line is not None:
-        return ("\n".join(lines), None)
+        lines[existing_line] = entry_text
+        return ("\n".join(lines), existing_line + 1)
     insert_line = find_insertion_line_for_section(
         lines=lines,
         section_start=section_start,

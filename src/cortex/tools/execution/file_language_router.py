@@ -15,6 +15,7 @@ from cortex.core.path_resolver import (
     get_cortex_path,
     get_venv_bin_path,
 )
+from cortex.core.quality_scope import filter_owned_files
 from cortex.services.framework_adapters.base import CheckResult
 from cortex.tools.execution.pre_commit_helpers_models import (
     FileSizeViolation,
@@ -96,8 +97,8 @@ def collect_project_files(project_root: Path) -> list[Path]:
             continue
         if path.suffix not in known_ext:
             continue
-        found.append(path.resolve())
-    return sorted(found, key=lambda p: str(p))
+        found.append(path)
+    return sorted(filter_owned_files(root, found), key=lambda p: str(p))
 
 
 def run_quality_checks_for_all_languages(
@@ -112,7 +113,7 @@ def run_quality_checks_for_all_languages(
     """
     resolved_root = project_root.resolve()
     file_list = files if files is not None else collect_project_files(project_root)
-    grouped = route_files(file_list)
+    grouped = route_files(filter_owned_files(resolved_root, file_list))
     file_size_violations: list[FileSizeViolation] = []
     function_violations: list[FunctionLengthViolation] = []
     for language, lang_files in sorted(grouped.items()):
@@ -136,8 +137,8 @@ def run_quality_checks_for_all_languages(
 
 
 def _files_env_value(files: list[Path]) -> str:
-    """Return newline-separated absolute paths string for FILES env var."""
-    return "\n".join(str(p.resolve()) for p in files)
+    """Return absolute FILES paths without losing lexical ownership at symlinks."""
+    return "\n".join(str(p.absolute()) for p in files)
 
 
 def _resolve_synapse_python_bin(project_root: Path) -> Path:
@@ -268,7 +269,7 @@ def _rel_file_str(rel: str, project_root: Path) -> str:
     try:
         p = Path(rel)
         if p.is_absolute():
-            return str(p.resolve().relative_to(project_root))
+            return str(p.relative_to(project_root))
         return rel.replace("\\", "/")
     except ValueError:
         return rel.replace("\\", "/")

@@ -2,7 +2,7 @@
 title: "Skill Pack Trigger Accuracy Benchmark and Description Tuning"
 component: "tools"
 work_type: optimize
-status: PENDING
+status: DONE
 priority: Medium
 created: 2026-08-06
 depends_on: []

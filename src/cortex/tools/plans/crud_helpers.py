@@ -8,7 +8,8 @@ from pathlib import Path
 
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.core.plan_frontmatter_normalize import normalize_plan_frontmatter
-from cortex.tools.plans.archive import is_path_under_archive
+from cortex.core.plan_identity import find_plan_slug_paths, iter_plan_file_rows
+from cortex.core.plan_metadata import read_frontmatter_field, read_plan_status_metadata
 from cortex.tools.plans.crud_models import (
     CreatePlanResult,
     GetPlanResult,
@@ -42,6 +43,11 @@ def extract_first_heading(content: str) -> str | None:
     return None
 
 
+def extract_plan_title(content: str) -> str | None:
+    """Prefer the plan identity declared in frontmatter over body headings."""
+    return read_frontmatter_field(content, "title") or extract_first_heading(content)
+
+
 def extract_status_line(content: str) -> str | None:
     """Extract **Status**: value from plan content."""
     for line in content.split("\n"):
@@ -58,37 +64,23 @@ def list_plan_files(
     plans_dir = get_plan_directory(root)
     if not plans_dir.exists():
         return ([], None)
-    result: list[tuple[str, Path]] = []
     try:
-        for path in plans_dir.rglob("*.md"):
-            if not path.is_file():
-                continue
-            if not include_archive:
-                try:
-                    rel = path.relative_to(plans_dir)
-                    if is_path_under_archive(rel):
-                        continue
-                except ValueError:
-                    continue
-            result.append((path.stem, path))
-        result.sort(key=lambda x: (x[1].name, str(x[1])))
-        return (result, None)
-    except Exception as e:
-        return ([], str(e))
+        rows = iter_plan_file_rows(plans_dir, include_archive=include_archive)
+        return ([(row.slug, row.path) for row in rows], None)
+    except OSError as exc:
+        return ([], str(exc))
 
 
 def get_plan_path(root: Path, slug: str) -> Path | None:
-    """Resolve plan file path by slug (filename without .md). Returns None if not found."""
+    """Resolve one real plan path, rejecting duplicate identities."""
     plans_dir = get_plan_directory(root)
-    if not plans_dir.exists():
+    if not plans_dir.is_dir():
         return None
-    candidate = plans_dir / f"{slug}.md"
-    if candidate.is_file():
-        return candidate
-    for path in plans_dir.rglob("*.md"):
-        if path.stem == slug and path.is_file():
-            return path
-    return None
+    matches = find_plan_slug_paths(plans_dir, slug, include_archive=True)
+    if len(matches) > 1:
+        relative = sorted(path.relative_to(root).as_posix() for path in matches)
+        raise ValueError(f"Ambiguous plan slug '{slug}': {', '.join(relative)}")
+    return matches[0] if matches else None
 
 
 def create_plan_file(
@@ -160,6 +152,21 @@ def create_error_result(error: str) -> CreatePlanResult:
     )
 
 
+def _plan_entry(root: Path, slug: str, path: Path) -> PlanEntry:
+    title: str | None = None
+    try:
+        title = extract_plan_title(path.read_text(encoding="utf-8"))
+    except OSError as exc:
+        logger.warning("Failed to read plan %s: %s", path, exc)
+    plans_dir = get_plan_directory(root)
+    return PlanEntry(
+        slug=slug,
+        title=title,
+        relative_path=path.relative_to(root).as_posix(),
+        archived=path.relative_to(plans_dir).parts[:1] == ("archive",),
+    )
+
+
 def list_plans_impl(root: Path, include_archive: bool) -> ListPlansResult:
     """List plans; optionally include archive. Returns ListPlansResult."""
     pairs, err = list_plan_files(root, include_archive)
@@ -170,17 +177,7 @@ def list_plans_impl(root: Path, include_archive: bool) -> ListPlansResult:
             message="Failed to list plans",
             error=err,
         )
-    entries: list[PlanEntry] = []
-    for slug, path in pairs:
-        title: str | None = None
-        try:
-            content = path.read_text(encoding="utf-8")
-            title = extract_first_heading(content)
-        except OSError as e:
-            logger.warning("Failed to read plan %s: %s", path, e)
-        except Exception as e:  # pragma: no cover
-            logger.debug("Skipping plan %s due to unexpected error: %s", path, e)
-        entries.append(PlanEntry(slug=slug, title=title))
+    entries = [_plan_entry(root, slug, path) for slug, path in pairs]
     return ListPlansResult(
         status="success",
         plans=entries,
@@ -205,6 +202,7 @@ def get_plan_result_error(slug: str, message: str, error: str) -> GetPlanResult:
         content=None,
         title=None,
         plan_status=None,
+        relative_path=None,
         message=message,
         error=error,
         task_graph=[],
@@ -214,7 +212,10 @@ def get_plan_result_error(slug: str, message: str, error: str) -> GetPlanResult:
 
 def _load_plan_raw_or_error(root: Path, slug: str) -> GetPlanResult | tuple[Path, str]:
     """Resolve plan path and read raw markdown, or return an error result."""
-    path = get_plan_path(root, slug)
+    try:
+        path = get_plan_path(root, slug)
+    except ValueError as exc:
+        return get_plan_result_error(slug, "Ambiguous plan identity", str(exc))
     if path is None:
         return get_plan_result_error(
             slug, "Plan not found", f"No plan file with slug '{slug}'"
@@ -250,6 +251,7 @@ def get_plan_result_success(
     plan_status: str | None,
     message: str,
     *,
+    relative_path: str | None = None,
     change_count: int = 0,
     latest_delta: str | None = None,
     task_graph: list[dict[str, object]] | None = None,
@@ -262,6 +264,7 @@ def get_plan_result_success(
         content=content,
         title=title,
         plan_status=plan_status,
+        relative_path=relative_path,
         message=message,
         error=None,
         change_count=change_count,
@@ -278,7 +281,7 @@ def get_plan_impl(root: Path, slug: str, response_format: str) -> GetPlanResult:
     loaded = _load_plan_raw_or_error(root, slug)
     if isinstance(loaded, GetPlanResult):
         return loaded
-    _path, raw = loaded
+    path, raw = loaded
     chg_count, latest_d = change_history_stats(raw)
     parsed = _plan_task_graph_or_parse_error(slug, raw)
     if isinstance(parsed, GetPlanResult):
@@ -288,13 +291,14 @@ def get_plan_impl(root: Path, slug: str, response_format: str) -> GetPlanResult:
     return get_plan_result_success(
         slug,
         raw if want_content else None,
-        None if want_content else extract_first_heading(raw),
-        None if want_content else extract_status_line(raw),
+        None if want_content else extract_plan_title(raw),
+        None if want_content else read_plan_status_metadata(raw).raw_token,
         (
             f"Plan '{slug}' read successfully"
             if want_content
             else f"Plan '{slug}' metadata"
         ),
+        relative_path=path.relative_to(root).as_posix(),
         change_count=chg_count,
         latest_delta=latest_d,
         task_graph=task_graph,

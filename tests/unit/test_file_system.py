@@ -336,6 +336,22 @@ class TestWriteFile:
         assert content_hash == manager.compute_hash(new_content)
 
     @pytest.mark.asyncio
+    async def test_write_file_expected_hash_rejects_deleted_file(
+        self, temp_project_root: Path
+    ) -> None:
+        # Arrange
+        manager = FileSystemManager(temp_project_root)
+        file_path = temp_project_root / "deleted.md"
+        _ = file_path.write_text("Original", encoding="utf-8")
+        _, expected_hash = await manager.read_file(file_path)
+        file_path.unlink()
+
+        # Act / Assert
+        with pytest.raises(FileConflictError):
+            _ = await manager.write_file(file_path, "Replacement", expected_hash)
+        assert not file_path.exists()
+
+    @pytest.mark.asyncio
     async def test_write_file_with_git_conflicts(self, temp_project_root: Path) -> None:
         """Test write file rejects content with git conflict markers."""
         # Arrange

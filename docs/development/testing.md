@@ -222,6 +222,20 @@ skip_covered = false
 
 **Reminder for implement/commit workflows**: When running full test suites (not just IDE discovery), remember to pass `--cov` explicitly if coverage reporting is needed. The commit pipeline handles this automatically via `run_quality_gate()`.
 
+#### Public workflow and slow-suite CI gates
+
+Every pull request runs `tests/e2e/test_public_workflow_smoke.py` explicitly and
+publishes its JUnit report. `scripts/check_junit.py` rejects missing or malformed
+reports, zero or inconsistent test counts, failures, errors, and skipped cases.
+Critical CI steps must have outcome `success`; missing, canceled, or skipped steps
+cannot satisfy the quality summary. The unchanged full `not slow` suite also
+includes these smoke cases and retains its coverage threshold.
+
+The `slow` job runs the remaining `pytest -m slow` suite on manual workflow
+dispatch and weekly on Monday at 04:23 UTC. It has a 20-minute test-step limit
+inside a 30-minute job, validates the JUnit result, and publishes `slow-test-results`.
+Local execution of the same selection is `uv run python -m pytest tests/ -m slow -n 0 -v --no-cov`.
+
 ### Running with Different Options
 
 ```bash

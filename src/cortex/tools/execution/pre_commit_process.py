@@ -125,15 +125,15 @@ def spawn_detached_process(
     log_file: Path,
     project_root: Path,
     env: ExecutionEnvironment,
-) -> None:
-    """Start detached subprocess writing stdout/stderr to ``log_file``."""
+) -> int:
+    """Start detached subprocess writing stdout/stderr and return its pid."""
     _ = env  # Reserved for non-local dispatch adapters.
     with open(log_file, "w") as lf:
         # On Unix the child process inherits the fd after the parent's
         # `with` block closes its own handle; this is intentional so
         # stdout/stderr are captured in the detached log file.
         process_env = _build_worker_env(project_root)
-        _ = subprocess.Popen(
+        process = subprocess.Popen(
             cmd,
             stdin=subprocess.DEVNULL,
             stdout=lf,
@@ -142,6 +142,7 @@ def spawn_detached_process(
             env=process_env,
             start_new_session=True,
         )
+    return process.pid
 
 
 def spawn_detached_worker(
@@ -153,6 +154,7 @@ def spawn_detached_worker(
     include_markdown_lint: bool,
     args_hash: str,
     env: ExecutionEnvironment,
+    quality_gate: bool = False,
 ) -> Path:
     """Spawn a detached worker subprocess. Returns result file path."""
     sd = session_dir(project_root)
@@ -167,9 +169,29 @@ def spawn_detached_worker(
         strict_mode,
         include_markdown_lint,
     )
-    spawn_detached_process(cmd, log_file, project_root, env=env)
+    if quality_gate:
+        cmd.append("--quality-gate")
+    pid = spawn_detached_process(cmd, log_file, project_root, env=env)
+    publish_started_worker(rp, pid, quality_gate)
     logger.info("Spawned detached worker: hash=%s result=%s", args_hash, rp)
     return rp
+
+
+def publish_started_worker(result_path: Path, pid: int, quality_gate: bool) -> None:
+    """Expose the PID immediately without overwriting a worker-owned envelope."""
+    try:
+        with result_path.open("x") as result_file:
+            json.dump(
+                {
+                    "version": 1,
+                    "status": "running",
+                    "pid": pid,
+                    "quality_gate_pending": quality_gate,
+                },
+                result_file,
+            )
+    except FileExistsError:
+        pass  # The worker has already published its own status.
 
 
 def _malformed_result_envelope(message: str) -> dict[str, object]:

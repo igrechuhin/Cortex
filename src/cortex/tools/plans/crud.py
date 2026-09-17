@@ -312,6 +312,7 @@ async def _handle_get_plan(
             content=None,
             title=None,
             plan_status=None,
+            relative_path=None,
             message="slug is required when operation is 'get'",
             error="Missing slug",
         ).model_dump_json()
@@ -379,6 +380,7 @@ async def _get_plan_tool_impl(
             content=None,
             title=None,
             plan_status=None,
+            relative_path=None,
             message="Unexpected error",
             error=str(e),
         ).model_dump_json()

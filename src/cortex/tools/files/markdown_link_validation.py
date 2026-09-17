@@ -13,6 +13,8 @@ import urllib.parse
 from dataclasses import dataclass
 from pathlib import Path
 
+from cortex.core.quality_scope import SKILL_INSTALL_ROOT, filter_owned_files
+
 _LINK_RE = re.compile(r"\[([^\]]+)\]\(([^)]+)\)")
 
 # Doc examples like "[text](target.md)" — not real navigation targets.
@@ -118,7 +120,10 @@ def collect_markdown_files_for_link_check(project_root: Path) -> list[Path]:
         path = project_root / name
         if path.is_file():
             files.append(path)
-    return sorted(set(files))
+    skills = project_root / SKILL_INSTALL_ROOT
+    if skills.is_dir():
+        files.extend(path for path in skills.rglob("*.md") if path.is_file())
+    return sorted(set(filter_owned_files(project_root, files)))
 
 
 def find_broken_links(project_root: Path) -> list[BrokenLink]:

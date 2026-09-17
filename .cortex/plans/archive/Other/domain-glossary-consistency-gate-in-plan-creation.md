@@ -2,7 +2,7 @@
 title: "Domain Glossary Consistency Gate in Plan Creation"
 component: "synapse-prompts"
 work_type: feature
-status: PENDING
+status: DONE
 priority: Medium
 created: 2026-08-02
 depends_on: []

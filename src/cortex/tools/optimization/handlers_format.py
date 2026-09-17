@@ -204,11 +204,36 @@ def inject_constitution_into_context_result(
     return json.dumps(typed, indent=2)
 
 
+def _bound_plan_graph_details(bundle: dict[str, object]) -> None:
+    """Bound context previews without changing full-graph operations or totals."""
+    limit = 10
+    ready = cast(list[str], bundle["plan_graph_ready"])
+    bundle["plan_graph_ready"] = sorted(ready)[:limit]
+    details: dict[str, object] = {
+        "limit": limit,
+        "ready_omitted": max(0, len(ready) - limit),
+        "full_details": {
+            "tool": "plan",
+            "operation": "graph",
+            "include_archive": True,
+        },
+    }
+    for kind, members in (("blocked", "dependencies"), ("ambiguous", "paths")):
+        key = f"plan_graph_{kind}"
+        full = cast(dict[str, list[str]], bundle[key])
+        preview = {slug: sorted(full[slug])[:limit] for slug in sorted(full)[:limit]}
+        bundle[key] = preview
+        details[f"{kind}_omitted"] = len(full) - len(preview)
+        details[f"{kind}_{members}_omitted"] = sum(
+            len(values) for values in full.values()
+        ) - sum(len(values) for values in preview.values())
+    bundle["plan_graph_details"] = details
+
+
 def inject_plan_graph_into_context_result(
     result_str: str, project_root: Path | None
 ) -> str:
-    """Merge active-plan dependency snapshot into successful load_context JSON."""
-    # AI: Mirrors session brief dependency snapshot so agents see READY/BLOCKED without a separate plan(graph) call.
+    """Merge a bounded dependency preview with full totals into context JSON."""
     if project_root is None:
         return result_str
     from cortex.core.path_resolver import CortexResourceType, get_cortex_path
@@ -227,10 +252,8 @@ def inject_plan_graph_into_context_result(
     typed = cast(dict[str, object], data)
     if typed.get("status") != "success":
         return result_str
-    typed["plan_graph_summary"] = bundle["plan_graph_summary"]
-    typed["plan_graph_ready"] = bundle["plan_graph_ready"]
-    typed["plan_graph_blocked"] = bundle["plan_graph_blocked"]
-    typed["plan_graph_ascii_edges"] = bundle["plan_graph_ascii_edges"]
+    _bound_plan_graph_details(bundle)
+    typed.update(bundle)
     return json.dumps(typed, indent=2)
 
 

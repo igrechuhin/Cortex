@@ -4,7 +4,6 @@ Extracted from pre_commit_tools to keep it under 400 lines.
 """
 
 import json
-import logging
 import re
 from datetime import UTC, datetime
 from pathlib import Path
@@ -12,7 +11,7 @@ from typing import cast
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from cortex.core.context_logging import MCPContext, log_client, report_progress_safe
+from cortex.core.context_logging import MCPContext
 from cortex.core.execution_env import (
     ExecutionEnvironment,
     LocalExecutionEnvironment,
@@ -26,11 +25,6 @@ from cortex.tools.evaluation.reflection import collect_git_diff_text
 from cortex.tools.execution.autofix_ai_suggestions import (
     collect_autofix_ai_comment_suggestions,
 )
-from cortex.tools.execution.pre_commit_detached import (  # noqa: E402
-    fix_args_hash,
-    fix_result_path,
-    start_fix_job_impl,
-)
 from cortex.tools.execution.pre_commit_helpers_remaining import (
     collect_remaining_issues,
     extract_check_results,
@@ -39,12 +33,9 @@ from cortex.tools.execution.pre_commit_helpers_remaining import (
     extract_list_from_object,
     truncate_large_logs_in_data,
 )
-from cortex.tools.execution.pre_commit_process import poll_for_result
 from cortex.tools.execution.pre_commit_synapse import run_synapse_script
-from cortex.tools.execution.session_paths import session_dir
 from cortex.tools.lint.lint_memory_bank import build_memory_bank_lint_checks
 
-logger = logging.getLogger(__name__)
 _MISSING_PLAN_PATH_RE = re.compile(r"missing plan file:\s*(?P<path>\S+)")
 
 
@@ -261,7 +252,7 @@ def parse_fix_envelope(
     )
 
 
-def _get_tracked_git_changes(root: Path) -> set[str] | None:
+def get_tracked_git_changes(root: Path) -> set[str] | None:
     """Return tracked modified file paths from git status, or None if unavailable."""
     env = LocalExecutionEnvironment()
     try:
@@ -388,8 +379,25 @@ def _merge_memory_bank_autofix_output(root: Path, out: str) -> str:
     warnings_fixed = warnings_fixed_raw if isinstance(warnings_fixed_raw, int) else 0
     parsed["files_modified"] = cast(JsonValue, files_modified)
     parsed["warnings_fixed"] = warnings_fixed + len(lint_autofix_files)
-    parsed["remaining_issues"] = cast(JsonValue, list[str]())
     return json.dumps(parsed, separators=(",", ":"))
+
+
+def finalize_autofix_result(
+    root: Path, envelope: ModelDict, tracked_before: set[str] | None
+) -> ModelDict:
+    """Finish all mutations and reporting before publishing worker completion."""
+    synapse_fix_issue = _run_synapse_formatter_autofix(root)
+    tracked_after = get_tracked_git_changes(root)
+    files_modified_override = (
+        sorted(tracked_after - tracked_before)
+        if tracked_before is not None and tracked_after is not None
+        else None
+    )
+    out = _parse_fix_envelope(envelope, files_modified_override=files_modified_override)
+    out = _merge_memory_bank_autofix_output(root, out)
+    out = _annotate_autofix_output(root, out)
+    out = _merge_autofix_issue(out, synapse_fix_issue)
+    return cast(ModelDict, json.loads(out))
 
 
 async def autofix_impl(
@@ -398,34 +406,11 @@ async def autofix_impl(
     ctx: MCPContext | None,
     env: ExecutionEnvironment,
 ) -> str:
-    """Spawn detached fix worker, poll with heartbeats, parse result.
+    """Await a bounded worker result without running mutations in the server."""
+    from cortex.tools.execution.pre_commit_autofix_job import run_bounded_autofix
 
-    Mirrors run_quality_gate's detached-subprocess + polling pattern so the
-    asyncio event loop is never blocked: the MCP stdio transport stays alive
-    and some MCP clients do not drop the connection during long-running fix operations.
-    """
-    tracked_before = _get_tracked_git_changes(root)
-    await report_progress_safe(ctx, 5.0, 100.0)
-    _ = start_fix_job_impl(root, include_untracked_markdown, env=env)
-    rp = fix_result_path(session_dir(root), fix_args_hash(include_untracked_markdown))
-    envelope = await poll_for_result(rp, ctx=ctx, timeout=960.0)
-    synapse_fix_issue = _run_synapse_formatter_autofix(root)
-    tracked_after = _get_tracked_git_changes(root)
-    files_modified_override = (
-        sorted(tracked_after - tracked_before)
-        if tracked_before is not None and tracked_after is not None
-        else None
-    )
-    out = _annotate_autofix_output(
-        root,
-        _parse_fix_envelope(
-            cast(ModelDict, envelope), files_modified_override=files_modified_override
-        ),
-    )
-    out = _merge_autofix_issue(out, synapse_fix_issue)
-    out = _merge_memory_bank_autofix_output(root, out)
-    await log_client(ctx, "info", "autofix: completed", logger_name=__name__)
-    return out
+    result = await run_bounded_autofix(root, include_untracked_markdown, ctx, env)
+    return json.dumps(result, separators=(",", ":"))
 
 
 def _run_synapse_formatter_autofix(root: Path) -> str | None:

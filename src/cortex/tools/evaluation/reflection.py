@@ -79,16 +79,19 @@ def collect_git_diff_text(project_root: Path, max_bytes: int = 512_000) -> str:
     return raw
 
 
+_ADDED_TRY_RE = re.compile(r"^\+[ \t]*try:[ \t]*(?:#.*)?$")
+_HANDLER_RE = re.compile(r"^[+ ][ \t]*(?:except\b|finally[ \t]*:)")
+
+
 def _diff_has_try_without_except_or_finally(diff_text: str) -> bool:
-    """Heuristic: added `try:` with no added `except` or `finally` in the diff."""
-    if "try:" not in diff_text:
-        return False
-    if "+except" in diff_text or "+finally" in diff_text:
-        return False
-    return (
-        "+try:" in diff_text
-        or re.search(r"^\+\s*try:\s*$", diff_text, re.MULTILINE) is not None
-    )
+    """Find added tries without a visible handler in the same Python file."""
+    for _, lines in _python_diff_files(diff_text):
+        if not any(_ADDED_TRY_RE.match(line) for line in lines):
+            continue
+        # AI: Handlers can be indented or unchanged context; removed code cannot satisfy them.
+        if not any(_HANDLER_RE.match(line) for line in lines):
+            return True
+    return False
 
 
 _TODO_MARKERS = ("TODO", "FIXME", "XXX", "HACK")
@@ -346,7 +349,7 @@ def _collect_diff_items(diff_text: str, langs: frozenset[str]) -> list[CritiqueI
                 category=CritiqueCategory.LOGIC,
                 severity=CritiqueSeverity.ERROR,
                 location="diff",
-                description="Diff adds `try:` without `except` or `finally` in changed lines.",
+                description="Python diff adds `try:` without a visible `except` or `finally` in that file.",
                 suggestion="Add exception handling or use `finally` as appropriate.",
             )
         )

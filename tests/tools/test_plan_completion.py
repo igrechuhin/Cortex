@@ -116,7 +116,7 @@ class TestCompletePlanFindRoadmapBullet:
         )
 
     @pytest.mark.asyncio
-    async def test_first_match_wins(self, tmp_path: Path) -> None:
+    async def test_ambiguous_partial_title_is_rejected(self, tmp_path: Path) -> None:
         mem = get_cortex_path(tmp_path, CortexResourceType.MEMORY_BANK)
         mem.mkdir(parents=True)
         roadmap = mem / "roadmap.md"
@@ -135,9 +135,10 @@ class TestCompletePlanFindRoadmapBullet:
                 completion_date="2026-02-05",
             )
         result = json.loads(result_str)
-        assert result["status"] == "success"
+        assert result["status"] == "error"
         text = roadmap.read_text()
-        assert "Phase A" not in text
+        assert "ambiguous" in (result.get("error") or "").lower()
+        assert "Phase A" in text
         assert "Phase B" in text
 
 

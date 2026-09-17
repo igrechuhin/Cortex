@@ -17,7 +17,10 @@ from cortex.tools.optimization.handlers_format import (
     inject_plan_graph_into_context_result,
 )
 from cortex.tools.plans import register_artifact_graph
-from cortex.tools.plans.plan_graph import build_plan_graph_surface_bundle
+from cortex.tools.plans.plan_graph import (
+    build_plan_graph_surface_bundle,
+    plan_graph_json,
+)
 from cortex.tools.plans.roadmap_plan_graph_annotate import annotate_roadmap_for_project
 from cortex.tools.session.brief_loaders import plan_graph_brief_fields
 
@@ -231,6 +234,55 @@ def test_inject_plan_graph_into_context_result_merges_keys(
     assert data["plan_graph_ready"] == ["parent"]
     assert data["plan_graph_blocked"] == {"child": ["parent"]}
     assert "child → parent" in data["plan_graph_ascii_edges"]
+
+
+def test_public_graph_surfaces_ambiguous_identity_consistently(tmp_path: Path) -> None:
+    # Arrange
+    plans = get_cortex_path(tmp_path, CortexResourceType.PLANS)
+    _write_plan(plans / "same.md", slug="same", depends=[], status="PENDING")
+    _write_plan(
+        plans / "archive" / "Other" / "same.md",
+        slug="same",
+        depends=[],
+        status="DONE",
+    )
+    base = json.dumps({"status": "success"})
+
+    # Act
+    bundle = build_plan_graph_surface_bundle(plans, max_ascii_edges=10)
+    merged = json.loads(inject_plan_graph_into_context_result(base, tmp_path))
+    summary, _edges = plan_graph_brief_fields(tmp_path)
+
+    # Assert
+    assert bundle is not None
+    expected = {"same": ["archive/Other/same.md", "same.md"]}
+    assert bundle["plan_graph_ambiguous"] == expected
+    assert merged["plan_graph_ambiguous"] == expected
+    assert summary is not None and "1 ambiguous plan identity" in summary
+
+
+@pytest.mark.asyncio
+async def test_public_graph_in_progress_is_active_only(tmp_path: Path) -> None:
+    # Arrange
+    plans = get_cortex_path(tmp_path, CortexResourceType.PLANS)
+    _write_plan(plans / "working.md", slug="working", depends=[], status="IN_PROGRESS")
+    _write_plan(
+        plans / "archive" / "Other" / "old.md",
+        slug="old",
+        depends=[],
+        status="IN_PROGRESS",
+    )
+
+    # Act
+    with patch(
+        "cortex.tools.plans.plan_graph.get_or_resolve_project_root",
+        new_callable=AsyncMock,
+        return_value=str(tmp_path),
+    ):
+        data = json.loads(await plan_graph_json(None, include_archive=True))
+
+    # Assert
+    assert data["in_progress"] == ["working"]
 
 
 @pytest.mark.asyncio
