@@ -7,11 +7,11 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from cortex.tools.models import SessionHealthSummary
 from cortex.tools.session.brief import cap_session_brief_payload
 from cortex.tools.session.models import (
     ConcurrentSession,
     SessionBrief,
+    SessionHealthSummary,
     TokenBudgetStatus,
 )
 from cortex.tools.session.start_tools import session_start

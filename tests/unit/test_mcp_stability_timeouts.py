@@ -333,8 +333,8 @@ class TestProgressHelpers:
     async def test_progress_task_cancelled_on_tool_error(self) -> None:
         """Progress task must be cancelled when tool raises, preventing orphaned notifications.
 
-        Reproduces the bug where execute_pre_commit_checks returned early with an
-        error but the progress loop kept sending notifications for a resolved
+        Reproduces the bug where a long-running quality tool returned early with
+        an error but the progress loop kept sending notifications for a resolved
         progressToken, causing "unknown token" errors that killed the connection.
         """
         progress_loop_running = asyncio.Event()
@@ -380,11 +380,11 @@ class TestLongRunningSemaphoreWait:
     """Tests for long-running tool serialization with configurable wait."""
 
     def test_long_running_wait_at_least_default_test_timeout(self) -> None:
-        """Wait must be >= execute_pre_commit_checks default test_timeout so sequential calls succeed."""
-        # execute_pre_commit_checks default test_timeout is 600s; second call must wait that long.
+        """Wait must be >= run_quality_gate's default test_timeout so sequential calls succeed."""
+        # run_quality_gate's default test_timeout is 600s; second call must wait that long.
         assert LONG_RUNNING_SEMAPHORE_WAIT_SECONDS >= 600.0, (
             "LONG_RUNNING_SEMAPHORE_WAIT_SECONDS must be >= 600 so a second long-running tool "
-            "can wait for execute_pre_commit_checks (with default test_timeout) to finish."
+            "can wait for run_quality_gate (with default test_timeout) to finish."
         )
 
     @pytest.mark.asyncio

@@ -7,7 +7,6 @@
     "reserve_for_response": 10000
   },
   "loading_strategy": {
-    "default": "dependency_aware",
     "mandatory_files": [
       "projectBrief.md"
     ],
@@ -29,11 +28,8 @@
   },
   "summarization": {
     "enabled": true,
-    "auto_summarize_old_files": true,
-    "age_threshold_days": 90,
     "target_reduction": 0.5,
-    "strategy": "extract_key_sections",
-    "cache_summaries": true
+    "strategy": "extract_key_sections"
   },
   "relevance": {
     "keyword_weight": 0.4,
@@ -42,24 +38,17 @@
     "quality_weight": 0.1
   },
   "performance": {
-    "cache_enabled": true,
-    "cache_ttl_seconds": 3600,
-    "max_cache_size_mb": 50
+    "cache_enabled": true
   },
   "rules": {
     "enabled": true,
     "rules_folder": ".cortex/synapse/rules",
     "reindex_interval_minutes": 30,
-    "auto_include_in_context": true,
     "max_rules_tokens": 5000,
     "min_relevance_score": 0.3,
     "rule_priority": "local_overrides_shared",
     "context_aware_loading": true,
-    "always_include_generic": true,
     "context_detection": {
-      "enabled": true,
-      "detect_from_task": true,
-      "detect_from_files": true,
       "language_keywords": {
         "python": [
           "python",

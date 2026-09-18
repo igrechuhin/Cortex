@@ -33,14 +33,6 @@ class TestConvenienceMethods:
         max_budget = config.get_max_token_budget()
         assert max_budget == 100000
 
-    def test_get_loading_strategy_returns_strategy(
-        self, temp_project_root: Path
-    ) -> None:
-        """Test get_loading_strategy returns default strategy."""
-        config = OptimizationConfig(temp_project_root)
-        strategy = config.get_loading_strategy()
-        assert strategy == "dependency_aware"
-
     def test_get_mandatory_files_returns_list(self, temp_project_root: Path) -> None:
         """Test get_mandatory_files returns mandatory file list."""
         config = OptimizationConfig(temp_project_root)
@@ -99,12 +91,6 @@ class TestConvenienceMethods:
         enabled = config.is_cache_enabled()
         assert enabled is True
 
-    def test_get_cache_ttl_returns_seconds(self, temp_project_root: Path) -> None:
-        """Test get_cache_ttl returns TTL in seconds."""
-        config = OptimizationConfig(temp_project_root)
-        ttl = config.get_cache_ttl()
-        assert ttl == 3600
-
     def test_is_rules_enabled_returns_bool(self, temp_project_root: Path) -> None:
         """Test is_rules_enabled returns boolean."""
         config = OptimizationConfig(temp_project_root)
@@ -138,40 +124,6 @@ class TestNewConfigGetters:
         assert reserve == 10000
         assert isinstance(reserve, int)
 
-    def test_is_summarization_cache_enabled_returns_bool(
-        self, temp_project_root: Path
-    ) -> None:
-        """Test is_summarization_cache_enabled returns boolean."""
-        config = OptimizationConfig(temp_project_root)
-        enabled = config.is_summarization_cache_enabled()
-        assert enabled is True
-        assert isinstance(enabled, bool)
-
-    def test_get_summarization_age_threshold_days_returns_int(
-        self, temp_project_root: Path
-    ) -> None:
-        """Test get_summarization_age_threshold_days returns integer."""
-        config = OptimizationConfig(temp_project_root)
-        threshold = config.get_summarization_age_threshold_days()
-        assert threshold == 90
-        assert isinstance(threshold, int)
-
-    def test_is_auto_summarize_old_files_returns_bool(
-        self, temp_project_root: Path
-    ) -> None:
-        """Test is_summarization_auto_summarize_old_files returns boolean."""
-        config = OptimizationConfig(temp_project_root)
-        auto_summarize = config.is_summarization_auto_summarize_old_files()
-        assert auto_summarize is False
-        assert isinstance(auto_summarize, bool)
-
-    def test_get_max_cache_size_mb_returns_int(self, temp_project_root: Path) -> None:
-        """Test get_max_cache_size_mb returns integer."""
-        config = OptimizationConfig(temp_project_root)
-        max_size = config.get_max_cache_size_mb()
-        assert max_size == 50
-        assert isinstance(max_size, int)
-
     def test_get_rule_priority_returns_str(self, temp_project_root: Path) -> None:
         """Test get_rule_priority returns string."""
         config = OptimizationConfig(temp_project_root)
@@ -188,15 +140,6 @@ class TestNewConfigGetters:
         assert context_aware is True
         assert isinstance(context_aware, bool)
 
-    def test_is_always_include_generic_returns_bool(
-        self, temp_project_root: Path
-    ) -> None:
-        """Test is_always_include_generic returns boolean."""
-        config = OptimizationConfig(temp_project_root)
-        always_include = config.is_always_include_generic()
-        assert always_include is True
-        assert isinstance(always_include, bool)
-
     def test_is_optimization_enabled_returns_bool(
         self, temp_project_root: Path
     ) -> None:
@@ -210,11 +153,9 @@ class TestNewConfigGetters:
         """Test new getters use values from configuration."""
         config = OptimizationConfig(temp_project_root)
         _ = config.set("token_budget.reserve_for_response", 15000)
-        _ = config.set("summarization.cache_summaries", False)
         _ = config.set("rules.rule_priority", "shared_overrides_local")
         _ = config.set("enabled", False)
         assert config.get_reserve_for_response() == 15000
-        assert config.is_summarization_cache_enabled() is False
         assert config.get_rule_priority() == "shared_overrides_local"
         assert config.is_optimization_enabled() is False
 
@@ -233,12 +174,8 @@ class TestNewConfigGetters:
             },
         )
         assert config.get_reserve_for_response() == 10000
-        assert config.is_summarization_cache_enabled() is True
-        assert config.get_summarization_age_threshold_days() == 90
-        assert config.get_max_cache_size_mb() == 50
         assert config.get_rule_priority() == "local_overrides_shared"
         assert config.is_context_aware_loading() is True
-        assert config.is_always_include_generic() is True
         assert config.is_optimization_enabled() is True
 
     def test_get_language_keywords_returns_dict(self, temp_project_root: Path) -> None:

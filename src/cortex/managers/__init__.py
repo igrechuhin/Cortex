@@ -9,7 +9,7 @@ from .container_factory import (
     RefactoringManagers,
     create_all_managers,
 )
-from .initialization import get_managers, get_project_root, handle_file_change
+from .initialization import get_managers, get_project_root
 
 __all__ = [
     # Container factory
@@ -23,5 +23,4 @@ __all__ = [
     # Initialization
     "get_managers",
     "get_project_root",
-    "handle_file_change",
 ]

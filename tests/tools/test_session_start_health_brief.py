@@ -11,7 +11,6 @@ from cortex.core.file_system import FileSystemManager
 from cortex.core.metadata_index import MetadataIndex
 from cortex.core.path_resolver import CortexResourceType
 from cortex.core.session_logger import record_spend_tokens
-from cortex.tools.models import GitStatusSummary, SessionHealthSummary
 from cortex.tools.session.brief_extraction_helpers import generate_session_suggestions
 from cortex.tools.session.health import (
     calculate_health_summary,
@@ -20,6 +19,8 @@ from cortex.tools.session.health import (
     parse_mcp_health,
 )
 from cortex.tools.session.models import (
+    GitStatusSummary,
+    SessionHealthSummary,
     SessionSpendStatus,
     SessionSpendSummary,
     TokenBudgetStatus,

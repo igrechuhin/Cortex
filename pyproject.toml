@@ -7,7 +7,6 @@ dependencies = [
     "fastmcp>=3.0,<4",
     "mcp>=1.26.0",
     "pydantic>=2.0.0",
-    "watchdog>=4.0.0",
     "tiktoken>=0.5.0",
     "aiofiles>=23.0.0",
     "pyyaml>=6.0.0",
@@ -31,7 +30,7 @@ dev = [
 ]
 agentic-evals = [
     # Optional: only needed for run_tool_evaluation(mode="agentic"). Never
-    # imported on the default server path; requirements.txt stays unchanged.
+    # imported on the default server path.
     "anthropic>=0.40.0",
 ]
 server = [
@@ -54,7 +53,7 @@ cortex-bridge = "cortex.bridge:main"
 dev = [
     "black>=25.12.0",
     "ruff>=0.1.0",
-    "pyright>=1.1.400",  # Primary type checker (CI + local); mypy config kept for optional local runs
+    "pyright>=1.1.400",  # Primary type checker (CI + local)
     "detect-secrets>=1.5.0",
     "rumdl>=0.1.29",
     # PEP 517 build backend for this package; offline preflight checks it is importable in .venv.
@@ -64,60 +63,6 @@ dev = [
 [tool.black]
 line-length = 88
 target-version = ["py313"]
-
-[tool.ruff]
-line-length = 88
-target-version = "py313"
-
-[tool.ruff.lint]
-select = [
-    "E",   # pycodestyle errors
-    "F",   # pyflakes
-    "I",   # import sorting (isort replacement)
-    "B",   # flake8-bugbear
-    "UP",  # pyupgrade
-    "ANN401",  # disallow typing.Any in annotations (src/; tests per-file ignored)
-    "TID251",  # banned-api: see banned-api config in ruff.toml
-]
-ignore = [
-    "E501",  # Line too long (handled by Black)
-]
-
-# NOTE: the repository root `ruff.toml` takes FULL precedence over this
-# `[tool.ruff]` block — ruff reads only the first config file it finds, so none
-# of the settings here are active while `ruff.toml` exists. The authoritative
-# lint configuration lives in `ruff.toml`; this block is retained only as a
-# fallback for checkouts without it.
-
-[tool.ruff.lint.per-file-ignores]
-"tests/**" = ["ANN401"]
-
-[tool.ruff.lint.isort]
-# Configure ruff's isort (compatible with isort's black profile by default)
-known-first-party = ["cortex"]
-
-# Optional local mypy configuration; Pyright remains the primary CI and local type checker.
-[tool.mypy]
-python_version = "3.13"
-warn_return_any = true
-warn_unused_configs = true
-disallow_untyped_defs = true
-disallow_incomplete_defs = true
-check_untyped_defs = true
-disallow_untyped_decorators = true
-no_implicit_optional = true
-warn_redundant_casts = true
-warn_unused_ignores = true
-warn_no_return = true
-strict_equality = true
-show_error_codes = true
-
-[[tool.mypy.overrides]]
-module = [
-    "tests.*",
-    "*.tests.*",
-]
-disallow_untyped_defs = true
 
 [tool.coverage.run]
 # Coverage configuration (pytest config in pytest.ini)

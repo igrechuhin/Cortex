@@ -12,10 +12,6 @@ from cortex.script_analysis.models import (
     UseCaseExtraction,
 )
 from cortex.script_analysis.script_analyzer import analyze_script
-from cortex.script_analysis.similarity_detector import (
-    compute_similarity,
-    find_similar_pairs,
-)
 from cortex.script_analysis.use_case_extractor import extract_use_case
 
 __all__ = [
@@ -25,7 +21,5 @@ __all__ = [
     "UseCaseExtraction",
     "analyze_gap",
     "analyze_script",
-    "compute_similarity",
     "extract_use_case",
-    "find_similar_pairs",
 ]

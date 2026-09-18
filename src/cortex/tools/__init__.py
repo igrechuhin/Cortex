@@ -52,7 +52,6 @@ from .plans import (
     completion,  # noqa: F401
     corruption,  # noqa: F401
     entries,  # noqa: F401
-    operations,  # noqa: F401
     plan,  # noqa: F401
     register,  # noqa: F401
     update_memory_bank,  # noqa: F401
@@ -130,7 +129,6 @@ __all__ = [
     "registry",
     "session_start_tools",
     "tool_search_operations",  # alias for structure.tool_search
-    "operations",
     "plan",
     "register",
     "update_memory_bank",

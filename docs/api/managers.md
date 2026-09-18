@@ -754,88 +754,6 @@ Automatically migrate to current version.
 
 ---
 
-### FileWatcher
-
-Watches Memory Bank directory for external file changes.
-
-**Module:** `cortex.core.file_watcher`
-
-**Constructor:**
-
-```python
-def __init__(
-    self,
-    memory_bank_dir: Path,
-    metadata_index: MetadataIndexProtocol,
-    poll_interval: float = 2.0,
-)
-```
-
-**Parameters:**
-
-- `memory_bank_dir` (Path) - Memory bank directory to watch
-- `metadata_index` (MetadataIndexProtocol) - Metadata index
-- `poll_interval` (float) - Seconds between checks (default: 2.0)
-
-**Attributes:**
-
-- `memory_bank_dir` (Path) - Directory being watched
-- `metadata_index` (MetadataIndexProtocol) - Metadata index
-- `poll_interval` (float) - Polling interval
-- `running` (bool) - Whether watcher is running
-- `_watch_task` (Task | None) - Background watch task
-
-**Key Methods:**
-
-#### start
-
-```python
-async def start(self)
-```
-
-Start watching for changes (spawns background task).
-
-#### stop
-
-```python
-async def stop(self)
-```
-
-Stop watching (cancels background task).
-
-#### detect_external_changes
-
-```python
-async def detect_external_changes(self) -> list[dict[str, object]]
-```
-
-Detect files modified externally (hash mismatch with index).
-
-**Returns:** List of changed files:
-
-```python
-[
-    {
-        "file_name": "projectBrief.md",
-        "current_hash": "abc123...",
-        "stored_hash": "def456...",
-        "action": "refresh_recommended"
-    }
-]
-```
-
-**Additional Methods:**
-
-- `_watch_loop()` - Background polling loop
-
-**Design Decisions:**
-
-- **Polling-Based:** Simple cross-platform approach
-- **Hash Comparison:** Detects changes by comparing file hashes
-- **Non-Intrusive:** Only detects changes, doesn't auto-reload
-
----
-
 ## Linking Managers
 
 ### LinkParser
@@ -1201,8 +1119,6 @@ Optimizes context selection within token budgets.
 
 **Module:** `cortex.optimization.context_optimizer`
 
-**Implements:** `ContextOptimizerProtocol`
-
 **Constructor:**
 
 ```python
@@ -1364,8 +1280,6 @@ Analyzes file access patterns and correlations.
 
 **Module:** `cortex.analysis.pattern_analyzer`
 
-**Implements:** `PatternAnalyzerProtocol`
-
 **Constructor:**
 
 ```python
@@ -1412,8 +1326,6 @@ Analyzes Memory Bank file organization and structure.
 
 **Module:** `cortex.analysis.structure_analyzer`
 
-**Implements:** `StructureAnalyzerProtocol`
-
 **Constructor:**
 
 ```python
@@ -1453,8 +1365,8 @@ Generates actionable insights from analysis data.
 ```python
 def __init__(
     self,
-    pattern_analyzer: PatternAnalyzerProtocol,
-    structure_analyzer: StructureAnalyzerProtocol,
+    pattern_analyzer: PatternAnalyzer,
+    structure_analyzer: StructureAnalyzer,
     duplication_detector: object,
 )
 ```

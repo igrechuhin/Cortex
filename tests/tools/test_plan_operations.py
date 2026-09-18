@@ -13,6 +13,12 @@ import pytest
 
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.tools.models_base import ToolResultStatus
+from cortex.tools.plans.crud import (
+    CreatePlanResult,
+    GetPlanResult,
+    ListPlansResult,
+    create_plan,
+)
 from cortex.tools.plans.crud_helpers import (
     create_plan_file,
     extract_first_heading,
@@ -23,15 +29,9 @@ from cortex.tools.plans.crud_helpers import (
     list_plans_impl,
     sanitize_plan_slug,
 )
-from cortex.tools.plans.operations import (
-    CreatePlanResult,
-    GetPlanResult,
-    ListPlansResult,
-    RegisterPlanResult,
-    create_plan,
-    register_plan_in_roadmap,
-)
 from cortex.tools.plans.plan import plan
+from cortex.tools.plans.register import register_plan_in_roadmap
+from cortex.tools.plans.register_models import RegisterPlanResult
 from cortex.tools.plans.register_helpers import (
     find_insertion_line_for_section as find_insertion_line,
 )

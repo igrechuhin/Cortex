@@ -7,7 +7,6 @@ from pathlib import Path
 
 from cortex.core.dependency_graph import DependencyGraph
 from cortex.core.file_system import FileSystemManager
-from cortex.core.file_watcher import FileWatcherManager
 from cortex.core.metadata_index import MetadataIndex
 from cortex.core.migration import MigrationManager
 from cortex.core.token_counter import TokenCounter
@@ -44,11 +43,7 @@ async def test_each_manager():
         _ = MigrationManager(project_root)
         print("   ✓ Initialized")
 
-        print("7. FileWatcherManager...")
-        _ = FileWatcherManager()
-        print("   ✓ Initialized")
-
-        print("\n8. Testing cleanup_locks()...")
+        print("\n7. Testing cleanup_locks()...")
         await fs_manager.cleanup_locks()
         print("   ✓ cleanup_locks() completed")
 

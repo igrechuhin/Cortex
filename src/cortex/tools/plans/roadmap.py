@@ -13,7 +13,7 @@ from cortex.core.context_logging import MCPContext
 def _roadmap_error_invalid_operation(operation: str) -> str:
     from cortex.core.constants import MemoryBankFile
     from cortex.core.models import OperationStatus
-    from cortex.tools.models import AddRoadmapEntryResult
+    from cortex.tools.plans.roadmap_operations_models import AddRoadmapEntryResult
 
     return AddRoadmapEntryResult(
         status=OperationStatus.ERROR,
@@ -28,7 +28,7 @@ def _roadmap_error_invalid_operation(operation: str) -> str:
 def _roadmap_error_add_entry_missing() -> str:
     from cortex.core.constants import MemoryBankFile
     from cortex.core.models import OperationStatus
-    from cortex.tools.models import AddRoadmapEntryResult
+    from cortex.tools.plans.roadmap_operations_models import AddRoadmapEntryResult
 
     return AddRoadmapEntryResult(
         status=OperationStatus.ERROR,
@@ -43,7 +43,7 @@ def _roadmap_error_add_entry_missing() -> str:
 def _roadmap_error_remove_entry_missing() -> str:
     from cortex.core.constants import MemoryBankFile
     from cortex.core.models import OperationStatus
-    from cortex.tools.models import RemoveRoadmapEntryResult
+    from cortex.tools.plans.roadmap_operations_models import RemoveRoadmapEntryResult
 
     return RemoveRoadmapEntryResult(
         status=OperationStatus.ERROR,
@@ -57,7 +57,7 @@ def _roadmap_error_remove_entry_missing() -> str:
 def _roadmap_error_remove_section_missing() -> str:
     from cortex.core.constants import MemoryBankFile
     from cortex.core.models import OperationStatus
-    from cortex.tools.models import RemoveRoadmapSectionResult
+    from cortex.tools.plans.roadmap_operations_models import RemoveRoadmapSectionResult
 
     return RemoveRoadmapSectionResult(
         status=OperationStatus.ERROR,

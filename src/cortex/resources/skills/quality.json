@@ -1,22 +1,22 @@
 {
   "name": "quality",
   "description": "Code quality operations: pre-commit checks, auto-fix, and validation.",
-  "tools": ["execute_pre_commit_checks", "validate", "run_quality_gate", "autofix"],
+  "tools": ["run_quality_gate", "validate", "autofix"],
   "when_to_use": "Before commit, after code changes, to fix lint/format/type errors or run validation (schema, roadmap_sync).",
   "workflow_sequences": [
-    "execute_pre_commit_checks(phase=\"A\") → execute_pre_commit_checks(checks=[\"fix_quality\"]) if needed",
-    "execute_pre_commit_checks(checks=[\"quality\"]) before memory bank updates",
+    "run_quality_gate() → autofix() if needed",
+    "run_quality_gate() before memory bank updates",
     "skill_pack(operation=\"execute\", pack_name=\"quality\") — runs gate → autofix → gate cycle automatically"
   ],
   "example_invocations": [
-    "execute_pre_commit_checks(checks=[\"quality\"])",
-    "execute_pre_commit_checks(checks=[\"fix_quality\"])",
+    "run_quality_gate()",
+    "autofix()",
     "validate(check_type=\"roadmap_sync\")",
     "skill_pack(operation=\"execute\", pack_name=\"quality\")"
   ],
   "troubleshooting_tips": [
-    "Run execute_pre_commit_checks(checks=[\"quality\"]) to get lint, format, type_check in one call.",
-    "If execute_pre_commit_checks(checks=[\"fix_quality\"]) fails with connection error, retry once; then rely on execute_pre_commit_checks for gates.",
+    "Run run_quality_gate() to get lint, format, type_check in one call.",
+    "If autofix() fails with connection error, retry once; then rely on run_quality_gate() for gates.",
     "Use skill_pack(operation=\"execute\", pack_name=\"quality\") for the full gate→autofix→gate retry loop without manual orchestration."
   ],
   "keywords": ["quality", "pre-commit", "quality gate", "lint", "format", "type check", "autofix", "validate", "roadmap_sync"],

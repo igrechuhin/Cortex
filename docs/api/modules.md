@@ -443,19 +443,6 @@ Handles auto-migration between versions, schema upgrades, and data transformatio
 
 ---
 
-### FileWatcher
-
-**Location:** `src/cortex/file_watcher.py`
-
-**Description:**
-Detects external changes to memory bank files for conflict detection and external modification tracking.
-
-**Key Classes:**
-
-- `FileWatcher` - File system change detection
-
----
-
 ### Exceptions
 
 **Location:** `src/cortex/exceptions.py`
@@ -1801,18 +1788,6 @@ async def register_custom_template(
 ) -> dict[str, object]
 ```
 
-**Template Modules (Phase 8):**
-
-- `templates/memory_bank_instructions.py` - System instructions
-- `templates/projectBrief.py` - Project foundation
-- `templates/product_context.py` - Product context
-- `templates/active_context.py` - Active context
-- `templates/system_patterns.py` - Architecture patterns
-- `templates/tech_context.py` - Technical context
-- `templates/progress.py` - Progress template
-
----
-
 ## Supporting Modules
 
 ### Server
@@ -1858,28 +1833,6 @@ def main():
 
 ---
 
-### Resources
-
-**Location:** `src/cortex/resources.py`
-
-**Description:**
-Resource definitions for MCP server including memory bank files and metadata.
-
----
-
-### Guides
-
-**Location:** `src/cortex/guides/`
-
-Documentation guides for using the Memory Bank system:
-
-- `guides/setup.py` - Setup instructions
-- `guides/usage.py` - Usage guide
-- `guides/benefits.py` - Benefits and value proposition
-- `guides/structure.py` - Structure overview
-
----
-
 ### Managers Initialization
 
 **Location:** `src/cortex/managers/initialization.py`
@@ -1901,10 +1854,9 @@ async def get_managers() -> ManagersCollection:
     4. DependencyGraph
     5. VersionManager
     6. MigrationManager
-    7. FileWatcher
-    8. LinkParser
-    9. TransclusionEngine
-    10. LinkValidator
+    7. LinkParser
+    8. TransclusionEngine
+    9. LinkValidator
     ... and more in dependency order
     """
 ```
@@ -1923,7 +1875,6 @@ async def get_managers() -> ManagersCollection:
 - DependencyGraph → GraphAlgorithms
 - VersionManager → FileSystemManager
 - Migration → FileSystemManager, MetadataIndex
-- FileWatcher → FileSystemManager
 
 **DRY Linking (Phase 2):**
 

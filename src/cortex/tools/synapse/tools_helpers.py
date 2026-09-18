@@ -8,7 +8,7 @@ from cortex.managers.initialization import get_managers, get_project_root
 from cortex.managers.types import ManagersDict
 from cortex.managers.utils import get_manager
 from cortex.optimization.rules_manager import RulesManager
-from cortex.tools.models import RulesExecutionResult
+from cortex.tools.context.effectiveness_models import RulesExecutionResult
 
 
 def format_rules_list(rules: list[ModelDict]) -> list[ModelDict]:

@@ -8,7 +8,7 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from cortex.tools.models import SessionStartResult
+from cortex.tools.session.models import SessionStartResult
 from cortex.tools.session.pipeline_handoff import pipeline_handoff
 from cortex.tools.session.pipeline_handoff_io import detect_incomplete_state
 from cortex.tools.session.start_tools import session_start_impl

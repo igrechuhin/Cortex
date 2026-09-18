@@ -17,12 +17,6 @@ from cortex.core.mcp_failure_handler import (
     MCPToolFailure,
     MCPToolFailureHandler,
 )
-from cortex.core.mcp_tool_validator import (
-    check_mcp_tool_failure,
-    handle_mcp_tool_failure,
-    validate_mcp_tool_response,
-)
-from cortex.core.models import JsonValue
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from tests.helpers.types import RawJSONDict
 
@@ -234,94 +228,6 @@ class TestProtocolEnforcement:
         # Check that roadmap was updated
         content = roadmap.read_text(encoding="utf-8")
         assert "test_tool" in content
-
-
-class TestResponseValidation:
-    """Test that response validation works correctly."""
-
-    async def test_validate_none_response(self, tmp_path: Path) -> None:
-        """Test that None response is detected as failure."""
-        with pytest.raises(MCPToolFailure):
-            await validate_mcp_tool_response(
-                None, "test_tool", "test_step", str(tmp_path)
-            )
-
-    async def test_validate_error_status_is_valid_response(
-        self, tmp_path: Path
-    ) -> None:
-        """Test that error status in response is NOT a tool failure.
-
-        A response with status="error" means the tool worked correctly and found
-        errors in the code (e.g., type errors, lint errors). This is different from
-        a tool failure (JSON parsing, connection error, etc.).
-        """
-        response: JsonValue = {
-            "status": "error",
-            "error": "Type checking found 5 errors",
-            "total_errors": 5,
-        }
-        # Should NOT raise - error status is a valid response
-        await validate_mcp_tool_response(
-            response, "test_tool", "test_step", str(tmp_path)
-        )
-
-    async def test_validate_json_string_response(self, tmp_path: Path) -> None:
-        """Test that JSON string response is detected as failure."""
-        response = json.dumps({"status": "success"})
-        with pytest.raises(MCPToolFailure):
-            await validate_mcp_tool_response(
-                response, "test_tool", "test_step", str(tmp_path)
-            )
-
-    async def test_validate_valid_response(self, tmp_path: Path) -> None:
-        """Test that valid response passes validation."""
-        response: JsonValue = {"status": "success", "data": "test"}
-        # Should not raise
-        await validate_mcp_tool_response(
-            response, "test_tool", "test_step", str(tmp_path)
-        )
-
-    async def test_validate_response_without_status(self, tmp_path: Path) -> None:
-        """Test that response without status field logs warning but doesn't fail."""
-        response: JsonValue = {"data": "test"}  # Missing status field
-        # Should not raise (just logs warning)
-        await validate_mcp_tool_response(
-            response, "test_tool", "test_step", str(tmp_path)
-        )
-
-
-class TestValidatorHelpers:
-    """Test validator helper functions."""
-
-    async def test_check_mcp_tool_failure(self, tmp_path: Path) -> None:
-        """Test that check_mcp_tool_failure correctly identifies failures."""
-        error = json.JSONDecodeError("Expecting value", "", 0)
-        assert (
-            await check_mcp_tool_failure(error, "test_tool", "test_step", str(tmp_path))
-            is True
-        )
-
-        error = ValueError("Validation failed")
-        assert (
-            await check_mcp_tool_failure(error, "test_tool", "test_step", str(tmp_path))
-            is False
-        )
-
-    async def test_handle_mcp_tool_failure_raises(self, tmp_path: Path) -> None:
-        """Test that handle_mcp_tool_failure always raises."""
-        # Create memory bank directory and roadmap
-        memory_bank = get_cortex_path(tmp_path, CortexResourceType.MEMORY_BANK)
-        memory_bank.mkdir(parents=True)
-        roadmap = memory_bank / "roadmap.md"
-        _ = roadmap.write_text(
-            "# Roadmap\n\n## Blockers (ASAP Priority)\n\n", encoding="utf-8"
-        )
-
-        error = json.JSONDecodeError("Expecting value", "", 0)
-        with pytest.raises(MCPToolFailure):
-            await handle_mcp_tool_failure(
-                error, "test_tool", "test_step", str(tmp_path)
-            )
 
 
 class TestMCPToolWrapperIntegration:

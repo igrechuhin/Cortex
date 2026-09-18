@@ -9,7 +9,7 @@ Uses lazy imports to avoid circular import with task_locking.
 from cortex.core.context_logging import MCPContext, log_client
 from cortex.core.models import OperationStatus
 from cortex.core.project_root_resolver import resolve_project_root_async
-from cortex.tools.models import (
+from cortex.tools.session.models import (
     CheckTaskAvailableResult,
     ClaimTaskErrorResult,
     ClaimTaskResult,

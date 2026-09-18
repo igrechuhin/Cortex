@@ -322,7 +322,6 @@ async def _init_core_managers(project_root: Path) -> CoreManagersDict:
     """
     from cortex.core.dependency_graph import DependencyGraph
     from cortex.core.file_system import FileSystemManager
-    from cortex.core.file_watcher import FileWatcherManager
     from cortex.core.metadata_index import MetadataIndex
     from cortex.core.migration import MigrationManager
     from cortex.core.token_counter import TokenCounter
@@ -334,7 +333,6 @@ async def _init_core_managers(project_root: Path) -> CoreManagersDict:
     graph = DependencyGraph()
     versions = VersionManager(project_root)
     migration = MigrationManager(project_root)
-    watcher = FileWatcherManager()
 
     return CoreManagersDict(
         fs=fs,
@@ -343,7 +341,6 @@ async def _init_core_managers(project_root: Path) -> CoreManagersDict:
         graph=graph,
         versions=versions,
         migration=migration,
-        watcher=watcher,
     )
 
 
@@ -378,18 +375,3 @@ async def _post_init_setup(project_root: Path, managers: ManagersBuilder) -> Non
 
     # Rules manager init is deferred to first use (rules tool) so the first
     # tool call (e.g. manage_file) is not blocked by ~30s rules indexing.
-
-
-async def handle_file_change(file_path: Path, event_type: str) -> None:
-    """Callback for file watcher to handle external file changes.
-
-    This function is called when files are modified externally (outside MCP).
-    It updates metadata and creates version snapshots if needed.
-
-    Args:
-        file_path: Path to changed file
-        event_type: Type of change ('created', 'modified', 'deleted')
-    """
-    from cortex.managers.initialization_health import handle_file_change as _do_handle
-
-    await _do_handle(file_path, event_type)

@@ -17,7 +17,6 @@ DEFAULT_OPTIMIZATION_CONFIG: dict[str, object] = {
         "reserve_for_response": 10000,
     },
     "loading_strategy": {
-        "default": "dependency_aware",
         "mandatory_files": [MemoryBankFile.PROJECT_BRIEF],
         "priority_order": [
             MemoryBankFile.PROJECT_BRIEF,
@@ -34,11 +33,8 @@ DEFAULT_OPTIMIZATION_CONFIG: dict[str, object] = {
     },
     "summarization": {
         "enabled": True,
-        "auto_summarize_old_files": False,
-        "age_threshold_days": 90,
         "target_reduction": 0.5,
         "strategy": "extract_key_sections",
-        "cache_summaries": True,
     },
     "relevance": {
         "keyword_weight": 0.4,
@@ -48,23 +44,16 @@ DEFAULT_OPTIMIZATION_CONFIG: dict[str, object] = {
     },
     "performance": {
         "cache_enabled": True,
-        "cache_ttl_seconds": 3600,
-        "max_cache_size_mb": 50,
     },
     "rules": {
         "enabled": False,
         "rules_folder": ".cortex/rules",
         "reindex_interval_minutes": 30,
-        "auto_include_in_context": True,
         "max_rules_tokens": 5000,
         "min_relevance_score": 0.3,
         "rule_priority": "local_overrides_shared",
         "context_aware_loading": True,
-        "always_include_generic": True,
         "context_detection": {
-            "enabled": True,
-            "detect_from_task": True,
-            "detect_from_files": True,
             "language_keywords": {
                 "python": ["python", "django", "flask", "fastapi", "pytest", "py"],
                 "swift": ["swift", "swiftui", "ios", "uikit", "combine", "cocoa"],

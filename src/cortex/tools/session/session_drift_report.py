@@ -37,13 +37,7 @@ async def _git_changed_paths(project_root: Path) -> list[str]:
         paths.extend(
             line.strip() for line in untracked.stdout.splitlines() if line.strip()
         )
-    seen: set[str] = set()
-    out: list[str] = []
-    for p in paths:
-        if p not in seen:
-            seen.add(p)
-            out.append(p)
-    return out
+    return list(dict.fromkeys(paths))
 
 
 def _count_drift(paths: list[str], goal: SessionGoal) -> tuple[int, int]:

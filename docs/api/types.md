@@ -58,104 +58,6 @@ dep_info: FileDependencyInfo = {
 
 ---
 
-### CacheStats
-
-Statistics about cache performance.
-
-**Module:** `cortex.core.advanced_cache`
-
-**Definition:**
-
-```python
-class CacheStats(TypedDict):
-    hits: int
-    misses: int
-    size: int
-    evictions: int
-    hit_rate: float
-```
-
-**Fields:**
-
-- `hits` (int) - Number of cache hits
-- `misses` (int) - Number of cache misses
-- `size` (int) - Current cache size
-- `evictions` (int) - Number of items evicted
-- `hit_rate` (float) - Cache hit rate (0-1)
-
----
-
-### AccessPattern
-
-Pattern of file access behavior.
-
-**Module:** `cortex.core.advanced_cache`
-
-**Definition:**
-
-```python
-class AccessPattern(TypedDict):
-    frequency: float
-    recency: float
-    priority: int
-```
-
-**Fields:**
-
-- `frequency` (float) - Access frequency (accesses per day)
-- `recency` (float) - Time since last access (days)
-- `priority` (int) - Computed priority score
-
----
-
-### WarmingStrategy
-
-Cache warming strategy configuration.
-
-**Module:** `cortex.core.cache_warming`
-
-**Definition:**
-
-```python
-class WarmingStrategy(TypedDict):
-    name: str
-    files: list[str]
-    preload_transclusions: bool
-```
-
-**Fields:**
-
-- `name` (str) - Strategy name
-- `files` (list[str]) - Files to warm
-- `preload_transclusions` (bool) - Whether to preload transclusions
-
----
-
-### CacheWarmingResult
-
-Result of cache warming operation.
-
-**Module:** `cortex.core.cache_warming`
-
-**Definition:**
-
-```python
-class CacheWarmingResult(TypedDict):
-    files_warmed: int
-    total_tokens: int
-    time_ms: float
-    strategy: str
-```
-
-**Fields:**
-
-- `files_warmed` (int) - Number of files warmed
-- `total_tokens` (int) - Total tokens loaded
-- `time_ms` (float) - Time taken in milliseconds
-- `strategy` (str) - Strategy used
-
----
-
 ## Insight Types
 
 ### InsightDict
@@ -972,7 +874,6 @@ Fixed sets of string values used at MCP tool boundaries (operation, action, type
 | `ValidationCheckType` | cortex.tools.validation_helpers | SCHEMA, DUPLICATIONS, QUALITY, INFRASTRUCTURE, TIMESTAMPS, ROADMAP_SYNC |
 | `ConfigAction` | cortex.tools.config | VIEW, UPDATE, RESET |
 | `AnalysisTarget` | cortex.tools.context.analysis_helpers | USAGE_PATTERNS, STRUCTURE, INSIGHTS |
-| `StubAdapterLanguage` | cortex.services.framework_adapters.stub_adapter | TYPESCRIPT, JAVASCRIPT, RUST, GO, JAVA |
 | `FileOperation` | cortex.tools.files.operation_helpers | READ, WRITE, METADATA |
 | `RulesOperation` | cortex.tools.rules_operation_helpers | INDEX, GET_RELEVANT |
 | `RefactoringAction` | cortex.refactoring.models | APPROVE, APPLY, ROLLBACK |
@@ -987,7 +888,6 @@ Fixed sets of string values used at MCP tool boundaries (operation, action, type
 | `ValidationCheckType` | validation_helpers | SCHEMA, DUPLICATIONS, QUALITY, INFRASTRUCTURE, TIMESTAMPS, ROADMAP_SYNC |
 | `ConfigAction` | configuration_helpers | VIEW, UPDATE, RESET |
 | `AnalysisTarget` | analysis_helpers | USAGE_PATTERNS, STRUCTURE, INSIGHTS |
-| `StubAdapterLanguage` | stub_adapter | TYPESCRIPT, JAVASCRIPT, RUST, GO, JAVA |
 | `FileOperation` | file_operation_helpers | READ, WRITE, METADATA |
 | `RulesOperation` | rules_operation_helpers | INDEX, GET_RELEVANT |
 | `RefactoringAction` | refactoring.models | APPROVE, APPLY, ROLLBACK |

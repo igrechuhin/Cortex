@@ -142,7 +142,7 @@ def test_analyze_results_aggregates_basic_metrics() -> None:
         avg_duration_ms=10.0,
         total_duration_ms=50.0,
         error_types={"TypeError": 1},
-        evaluated_tools=["execute_pre_commit_checks"],
+        evaluated_tools=["run_quality_gate"],
     )
     suite = EvalSuiteResult(
         generated_at="2026-02-17T00:00:00Z",
@@ -214,7 +214,7 @@ async def test_run_suite_reproducibility_same_tracker_data() -> None:
     ]
     events_pre_commit = [
         ToolUsageEvent(
-            tool_name="execute_pre_commit_checks",
+            tool_name="run_quality_gate",
             timestamp="2026-02-17T12:02:00Z",
             duration_ms=200.0,
             success=True,
@@ -232,7 +232,7 @@ async def test_run_suite_reproducibility_same_tracker_data() -> None:
     ) -> list[ToolUsageEvent]:
         if tool_name == "load_context":
             return list(events_load_context)
-        if tool_name == "execute_pre_commit_checks":
+        if tool_name == "run_quality_gate":
             return list(events_pre_commit)
         return []
 
@@ -252,7 +252,7 @@ async def test_run_suite_reproducibility_same_tracker_data() -> None:
             name="Pre-commit task",
             description="Run checks",
             category=EvalTaskCategory.PRE_COMMIT,
-            expected_tools=["execute_pre_commit_checks"],
+            expected_tools=["run_quality_gate"],
             expected_outcome="ok",
         ),
     ]
@@ -292,7 +292,7 @@ async def test_run_tool_evaluation_uses_harness_and_writes_cache() -> None:
             name="Task 2",
             description="Test task 2",
             category=EvalTaskCategory.PRE_COMMIT,
-            expected_tools=["execute_pre_commit_checks"],
+            expected_tools=["run_quality_gate"],
             expected_outcome="ok",
         ),
     ]

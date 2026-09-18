@@ -46,8 +46,6 @@ _logger = logging.getLogger(__name__)
 # Tools that manage their own progress reporting (test counts, etc.).
 # Wrapper time-based progress is disabled for these tools to avoid
 # conflicting or backwards progress updates on the client.
-# Note: execute_pre_commit_checks was removed after switching to detached mode
-# (run_checks_detached returns immediately; no in-process progress needed).
 tools_with_own_progress: frozenset[str] = frozenset(
     {
         # run_quality_gate calls poll_for_result which sends tick/500 heartbeats.
@@ -60,9 +58,9 @@ tools_with_own_progress: frozenset[str] = frozenset(
 # Tools that need more frequent progress to prevent client idle timeout (-32000).
 tools_needing_frequent_progress = frozenset({"fix_markdown_lint"})
 # Long-running tools serialized (one at a time) so the connection does not break.
-# Detached pipelines like execute_pre_commit_checks manage their own concurrency
-# and progress; serializing them at the MCP wrapper layer can cause redundant
-# waits when a detached worker is already running.
+# Detached pipelines like run_quality_gate manage their own concurrency and
+# progress; serializing them at the MCP wrapper layer can cause redundant waits
+# when a detached worker is already running.
 long_running_tools_serialized = frozenset({"fix_markdown_lint"})
 # Default fallback when tool has no specific recovery steps.
 _CONNECTION_ERROR_FALLBACK_DEFAULT = (
@@ -71,7 +69,7 @@ _CONNECTION_ERROR_FALLBACK_DEFAULT = (
 )
 # Tool-specific fallback steps in connection-error messages.
 connection_error_fallback: dict[str, str] = {
-    "execute_pre_commit_checks": (
+    "run_quality_gate": (
         " Retry once. If still failing: run pre-commit locally (e.g. uv run pytest, ruff check, black .). "
         "See commit prompt Step 12 and docs/guides/troubleshooting.md."
     ),
@@ -100,8 +98,6 @@ def get_usage_context_init_lock() -> asyncio.Lock:
 # Connection retry overrides per tool (Blocker: MCP disconnects). Defaults use
 # MCP_CONNECTION_RETRY_ATTEMPTS and MCP_CONNECTION_RETRY_DELAY_SECONDS from constants.
 # - fix_markdown_lint: 4 attempts (1 initial + 3 retries), exponential backoff 1s, 2s, 4s.
-# Note: execute_pre_commit_checks was removed — it now returns immediately (detached mode)
-# so retrying would spawn duplicate workers and is no longer needed.
 _CONNECTION_RETRY_OVERRIDES: dict[str, tuple[int, tuple[float, ...]]] = {
     "fix_markdown_lint": (4, (1.0, 2.0, 4.0)),
 }

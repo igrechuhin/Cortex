@@ -1,6 +1,6 @@
 VENV_PY := ./.venv/bin/python
 TIMEOUT := $(shell command -v gtimeout >/dev/null 2>&1 && echo "gtimeout -k 5" || echo "timeout -k 5")
-.PHONY: help test test-full typecheck format format-check lint compile check check-ci-parity check-dep-parity fix bootstrap preflight env-check synapse-check commit-check dev
+.PHONY: help test test-full typecheck format format-check lint compile check check-ci-parity fix bootstrap preflight env-check synapse-check commit-check dev
 
 help:
 	@echo "Common targets:"
@@ -13,7 +13,6 @@ help:
 	@echo "  make lint               - run ruff"
 	@echo "  make compile            - run compileall for src/"
 	@echo "  make check              - non-mutating: format-check + lint + typecheck + test"
-	@echo "  make check-dep-parity   - verify pyproject.toml [project.dependencies] matches requirements.txt"
 	@echo "  make check-ci-parity    - broader CI-equivalent checks via uv run (see README)"
 	@echo "  make commit-check       - same as make check before /cortex/commit"
 	@echo "  make dev                - run FastMCP inspector with hot reload"
@@ -40,9 +39,6 @@ env-check:
 
 synapse-check:
 	bash scripts/check_synapse.sh
-
-check-dep-parity:
-	uv run python scripts/check_dep_parity.py
 
 # Match CI / PythonAdapter: pytest-xdist parallelizes; -m "not slow" skips ~20 long tests.
 # Omit --cov here so local feedback stays minutes, not tens of minutes (coverage: make check-ci-parity).
@@ -77,7 +73,6 @@ check: env-check synapse-check format-check lint typecheck test
 # Subset of .github/workflows/quality.yml feasible locally (uv on PATH). Skips: cspell (npm in CI),
 # eval suite, Codecov, health-check artifacts — see README and docs/guides/troubleshooting.md.
 check-ci-parity: env-check synapse-check
-	uv run python scripts/check_dep_parity.py
 	uv run black --check src/ tests/
 	uv run ruff check src/ tests/
 	uv run python .cortex/synapse/scripts/python/check_formatting.py

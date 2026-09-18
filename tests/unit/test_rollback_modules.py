@@ -74,12 +74,14 @@ class TestRollbackInitialization:
         assert record.preserve_manual_edits is False
 
 
-class TestRollbackHistory:
-    """Tests for rollback_history module."""
+class TestRollbackHistoryOperations:
+    """Tests for rollback_history_operations module."""
 
     def test_filter_rollbacks_by_date(self) -> None:
         """Test filtering rollbacks by date."""
-        from cortex.refactoring.rollback_history import filter_rollbacks_by_date
+        from cortex.refactoring.rollback_history_operations import (
+            filter_rollbacks_by_date,
+        )
 
         # Arrange
         now = datetime.now()
@@ -109,7 +111,9 @@ class TestRollbackHistory:
 
     def test_calculate_rollback_statistics(self) -> None:
         """Test calculating rollback statistics."""
-        from cortex.refactoring.rollback_history import calculate_rollback_statistics
+        from cortex.refactoring.rollback_history_operations import (
+            calculate_rollback_statistics,
+        )
 
         # Arrange
         rollbacks = [
@@ -137,27 +141,28 @@ class TestRollbackHistory:
         stats = calculate_rollback_statistics(rollbacks)
 
         # Assert
-        assert stats.total == 3
-        assert stats.successful == 2
-        assert stats.failed == 1
+        assert stats["total"] == 3
+        assert stats["successful"] == 2
+        assert stats["failed"] == 1
         expected_rate = 2 / 3
-        assert abs(stats.success_rate - expected_rate) <= expected_rate * 1e-6
+        assert abs(stats["success_rate"] - expected_rate) <= expected_rate * 1e-6
 
     def test_calculate_rollback_statistics_empty(self) -> None:
         """Test statistics with empty list."""
-        from cortex.refactoring.rollback_history import calculate_rollback_statistics
+        from cortex.refactoring.rollback_history_operations import (
+            calculate_rollback_statistics,
+        )
 
         # Act
         stats = calculate_rollback_statistics([])
 
         # Assert
-        assert stats.total == 0
-        assert stats.success_rate == 0.0
+        assert stats["total"] == 0
+        assert stats["success_rate"] == 0
 
     def test_build_rollback_history_result(self) -> None:
         """Test building rollback history result."""
-        from cortex.refactoring.rollback_history import (
-            RollbackStatistics,
+        from cortex.refactoring.rollback_history_operations import (
             build_rollback_history_result,
         )
 
@@ -169,7 +174,12 @@ class TestRollbackHistory:
                 created_at="2026-01-20T12:00:00",
             ),
         ]
-        stats = RollbackStatistics(total=1, successful=1, failed=0, success_rate=1.0)
+        stats: dict[str, int | float] = {
+            "total": 1,
+            "successful": 1,
+            "failed": 0,
+            "success_rate": 1.0,
+        }
 
         # Act
         result = build_rollback_history_result(30, rollbacks, stats)

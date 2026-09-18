@@ -40,6 +40,39 @@ class TestResolveAdapterWorker:
         assert isinstance(adapter, PythonAdapter)
         assert info.language == "python"
 
+    def test_error_when_no_language_detected(self, tmp_path: Path) -> None:
+        """No markers anywhere up the tree yields an error dict, not an adapter."""
+        with patch(
+            "cortex.tools.execution.pre_commit_helpers_language.detect_language_at_path",
+            return_value=None,
+        ):
+            resolved = resolve_adapter_worker(str(tmp_path))
+        assert isinstance(resolved, dict)
+        assert resolved["status"] == "error"
+        assert "Could not detect project language" in str(resolved["error"])
+
+    def test_error_for_unsupported_language(self, tmp_path: Path) -> None:
+        """A detected language with no registered adapter yields an error dict."""
+        from cortex.services.language_detector import LanguageInfo
+
+        haskell_info = LanguageInfo(
+            language="haskell",
+            test_framework=None,
+            formatter=None,
+            linter=None,
+            type_checker=None,
+            build_tool=None,
+            confidence=0.5,
+        )
+        with patch(
+            "cortex.tools.execution.pre_commit_helpers_language.detect_or_use_language",
+            return_value=(haskell_info, str(tmp_path)),
+        ):
+            resolved = resolve_adapter_worker(str(tmp_path))
+        assert isinstance(resolved, dict)
+        assert resolved["status"] == "error"
+        assert resolved["error"] == "Unsupported language: haskell"
+
 
 def test_delivered_marker_is_not_restamped_from_argv(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch

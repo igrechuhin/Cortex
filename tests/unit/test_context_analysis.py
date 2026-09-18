@@ -6,12 +6,12 @@ from pathlib import Path
 from typing import cast
 
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
+from cortex.tools.context.effectiveness_models import ContextUsageEntry
 from cortex.tools.context.effectiveness_operations import (
     analyze_current_session,
     analyze_session_logs,
     get_context_statistics,
 )
-from cortex.tools.models import ContextUsageEntry
 
 
 def _enable_usage_writable(project_root: Path) -> None:

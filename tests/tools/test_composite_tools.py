@@ -10,7 +10,7 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from cortex.tools.composite_tools import run_composite_workflow
+from cortex.tools.execution.composite_tools import run_composite_workflow
 
 
 # Patches autofix, run_quality_gate, run_docs_gate, and validate_impl for fix_all tests.

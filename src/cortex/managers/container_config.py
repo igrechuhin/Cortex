@@ -5,7 +5,6 @@ from cortex.analysis.pattern_analyzer import PatternAnalyzer
 from cortex.analysis.structure_analyzer import StructureAnalyzer
 from cortex.core.dependency_graph import DependencyGraph
 from cortex.core.file_system import FileSystemManager
-from cortex.core.file_watcher import FileWatcherManager
 from cortex.core.metadata_index import MetadataIndex
 from cortex.core.migration import MigrationManager
 from cortex.core.token_counter import TokenCounter
@@ -36,7 +35,6 @@ FoundationManagers = tuple[
     DependencyGraph,
     VersionManager,
     MigrationManager,
-    FileWatcherManager,
 ]
 LinkingManagers = tuple[LinkParser, TransclusionEngine, LinkValidator]
 OptimizationManagers = tuple[

@@ -58,9 +58,13 @@ def test_check_drift_blocked() -> None:
 
 
 def test_extract_file_patterns_from_plan() -> None:
-    text = "See `src/cortex/tools/session.py` and tests/test_x.py."
+    text = (
+        "See `src/cortex/tools/session.py` and tests/test_x.py, "
+        "then `src/cortex/tools/session.py` again."
+    )
     got = extract_file_patterns_from_plan(text)
     assert "src/cortex/tools/session.py" in got
+    assert got.count("src/cortex/tools/session.py") == 1
 
 
 def test_resolve_plan_file(tmp_path: Path) -> None:
@@ -443,6 +447,41 @@ async def test_build_session_drift_summary_with_in_scope_files(
     assert result["in_scope"] == 1
     assert result["out_of_scope"] == 0
     assert result["high_drift_warning"] is False
+
+
+@pytest.mark.asyncio
+async def test_build_session_drift_summary_deduplicates_overlapping_paths(
+    tmp_path: Path,
+) -> None:
+    """A path reported by both `git diff` and `git ls-files -o` counts once."""
+    from cortex.tools.session.session_drift_report import build_session_drift_summary
+
+    sg = SessionGoal(
+        goal="test", plan_slug=None, allowed_files=["src/cortex/core/*.py"]
+    )
+    write_session_goal(tmp_path, sg)
+
+    tracked = MagicMock()
+    tracked.success = True
+    tracked.stdout = "src/cortex/core/foo.py\n"
+    untracked = MagicMock()
+    untracked.success = True
+    untracked.stdout = "src/cortex/core/foo.py\n"
+
+    with (
+        patch(
+            "cortex.tools.session.session_drift_report.run_git_command",
+            new=AsyncMock(side_effect=[tracked, untracked]),
+        ),
+        patch(
+            "cortex.tools.session.session_drift_report.acquire_git_operation_slot",
+            new=AsyncMock(),
+        ),
+    ):
+        result = await build_session_drift_summary(tmp_path)
+
+    assert result is not None
+    assert result["files_touched"] == 1
 
 
 def _high_drift_git_results() -> tuple[MagicMock, MagicMock]:

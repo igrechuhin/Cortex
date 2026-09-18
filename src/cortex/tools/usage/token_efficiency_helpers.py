@@ -23,7 +23,7 @@ _TOOL_OPTIMIZATION_HINTS: dict[str, str] = {
     "query_usage": "Use response_format=concise; add limit for search/report; days=7 for recent-only.",
     "rules": "Use task_description to narrow rules; avoid loading all rules when few are needed.",
     "get_synapse_rules": "Use task_description for relevance filtering.",
-    "execute_pre_commit_checks": 'Run focused checks (e.g. checks=["format"]) instead of full pipeline.',
+    "run_quality_gate": "Use autofix() for fixes instead of re-running the full gate.",
     "run_tool_evaluation": "Use mode=fast for quicker runs; category to limit scope.",
 }
 

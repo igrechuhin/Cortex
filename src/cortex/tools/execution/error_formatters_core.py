@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import json
-from difflib import SequenceMatcher
+from difflib import get_close_matches
 
 from pydantic import BaseModel, Field
 
@@ -63,14 +63,11 @@ def fuzzy_match(
     Returns:
         List of candidate strings sorted by similarity (best first)
     """
-    matches: list[tuple[float, str]] = []
-    for candidate in candidates:
-        ratio = SequenceMatcher(None, value.lower(), candidate.lower()).ratio()
-        if ratio >= threshold:
-            matches.append((ratio, candidate))
-
-    matches.sort(reverse=True, key=lambda x: x[0])
-    return [candidate for _, candidate in matches[:max_results]]
+    by_lower = {candidate.lower(): candidate for candidate in candidates}
+    matches = get_close_matches(
+        value.lower(), by_lower.keys(), n=max_results, cutoff=threshold
+    )
+    return [by_lower[match] for match in matches]
 
 
 def _suggestion_for_mcp_connection_errors(error_lower: str) -> str | None:

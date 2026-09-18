@@ -276,24 +276,6 @@ class ValidationConfig:
         enabled = self.config.enabled
         return enabled if isinstance(enabled, bool) else True
 
-    def is_auto_validate_enabled(self) -> bool:
-        """
-        Check if auto-validation on write is enabled.
-
-        Returns:
-            True if auto-validation is enabled
-        """
-        return self.config.auto_validate_on_write
-
-    def is_strict_mode(self) -> bool:
-        """
-        Check if strict mode is enabled.
-
-        Returns:
-            True if strict mode is enabled
-        """
-        return self.config.strict_mode
-
     def get_token_budget_max(self) -> int:
         """
         Get maximum total tokens allowed.
@@ -320,12 +302,3 @@ class ValidationConfig:
             Similarity threshold (0.0-1.0)
         """
         return self.config.duplication.threshold
-
-    def get_quality_minimum_score(self) -> float:
-        """
-        Get minimum acceptable quality score.
-
-        Returns:
-            Minimum score (0-100)
-        """
-        return self.config.quality.minimum_score

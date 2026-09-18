@@ -17,14 +17,6 @@ host's job. What Cortex fully controls is the *content* it contributes: the tool
 names, descriptions, and JSON Schemas it registers, and the text served for each
 `cortex://` resource. Those bytes are the scope of this contract.
 
-## Not `core/cache_warming.py`
-
-`src/cortex/core/cache_warming.py` refers to Cortex's own internal
-`AdvancedCacheManager` file cache. It is an unrelated subsystem, is out of scope
-for this contract, and must not be modified in the name of prompt-prefix
-stability. The phrase "cache warming" is deliberately avoided everywhere in this
-document to keep the two apart.
-
 ## Contractually byte-stable surfaces
 
 Each of these must produce identical bytes for two reads with no intervening

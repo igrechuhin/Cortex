@@ -16,7 +16,7 @@ from cortex.core.context_logging import MCPContext
 def _append_entry_error_invalid_operation(operation: str) -> str:
     from cortex.core.constants import MemoryBankFile
     from cortex.core.models import OperationStatus
-    from cortex.tools.models import AppendProgressEntryResult
+    from cortex.tools.plans.roadmap_operations_models import AppendProgressEntryResult
 
     return AppendProgressEntryResult(
         status=OperationStatus.ERROR,
@@ -30,7 +30,7 @@ def _append_entry_error_invalid_operation(operation: str) -> str:
 def _append_entry_error_progress_missing() -> str:
     from cortex.core.constants import MemoryBankFile
     from cortex.core.models import OperationStatus
-    from cortex.tools.models import AppendProgressEntryResult
+    from cortex.tools.plans.roadmap_operations_models import AppendProgressEntryResult
 
     return AppendProgressEntryResult(
         status=OperationStatus.ERROR,
@@ -44,7 +44,9 @@ def _append_entry_error_progress_missing() -> str:
 def _append_entry_error_active_context_missing() -> str:
     from cortex.core.constants import MemoryBankFile
     from cortex.core.models import OperationStatus
-    from cortex.tools.models import AppendActiveContextEntryResult
+    from cortex.tools.plans.roadmap_operations_models import (
+        AppendActiveContextEntryResult,
+    )
 
     return AppendActiveContextEntryResult(
         status=OperationStatus.ERROR,
@@ -61,8 +63,8 @@ async def _append_entry_handle_progress(
     from cortex.core.constants import MemoryBankFile
     from cortex.core.context_logging import log_client
     from cortex.core.models import OperationStatus
-    from cortex.tools.models import AppendProgressEntryResult
     from cortex.tools.plans.completion import append_progress_entry_impl
+    from cortex.tools.plans.roadmap_operations_models import AppendProgressEntryResult
 
     try:
         return await append_progress_entry_impl(
@@ -87,8 +89,10 @@ async def _append_entry_handle_active_context(
     from cortex.core.constants import MemoryBankFile
     from cortex.core.context_logging import log_client
     from cortex.core.models import OperationStatus
-    from cortex.tools.models import AppendActiveContextEntryResult
     from cortex.tools.plans.completion import append_active_context_entry_impl
+    from cortex.tools.plans.roadmap_operations_models import (
+        AppendActiveContextEntryResult,
+    )
 
     try:
         return await _append_active_context_classified(

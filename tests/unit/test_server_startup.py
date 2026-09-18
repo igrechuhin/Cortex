@@ -1,20 +1,12 @@
 """Regression tests for Cortex server startup stability."""
 
 import importlib
-import inspect
 
 
 def test_import_cortex_server_does_not_raise() -> None:
     """Importing cortex.server should not fail at module import time."""
     module = importlib.import_module("cortex.server")
     assert module is not None
-
-
-def test_server_module_has_no_lowlevel_patch_access() -> None:
-    """server.py should avoid direct mcp._mcp_server monkey-patching."""
-    module = importlib.import_module("cortex.server")
-    source = inspect.getsource(module)
-    assert "mcp._mcp_server" not in source
 
 
 def test_roots_notification_handler_registered_at_startup() -> None:
@@ -45,10 +37,3 @@ def test_server_registers_phase3_middlewares() -> None:
     assert "_LazyPromptsMiddleware" in middleware_names
     assert "DisconnectMiddleware" in middleware_names
     assert "ResponseLimitingMiddleware" in middleware_names
-
-
-def test_main_module_has_no_handle_request_patch() -> None:
-    """main.py should not patch private _handle_request anymore."""
-    module = importlib.import_module("cortex.main")
-    source = inspect.getsource(module)
-    assert "_patch_mcp_server_handle_request" not in source

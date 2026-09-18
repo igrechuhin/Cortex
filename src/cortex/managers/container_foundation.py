@@ -4,7 +4,6 @@ from pathlib import Path
 
 from cortex.core.dependency_graph import DependencyGraph
 from cortex.core.file_system import FileSystemManager
-from cortex.core.file_watcher import FileWatcherManager
 from cortex.core.metadata_index import MetadataIndex
 from cortex.core.migration import MigrationManager
 from cortex.core.token_counter import TokenCounter
@@ -20,7 +19,6 @@ def create_foundation_managers(
     DependencyGraph,
     VersionManager,
     MigrationManager,
-    FileWatcherManager,
 ]:
     """Create Phase 1 foundation managers."""
     file_system = FileSystemManager(project_root)
@@ -29,7 +27,6 @@ def create_foundation_managers(
     dependency_graph = DependencyGraph()
     version_manager = VersionManager(project_root)
     migration_manager = MigrationManager(project_root)
-    file_watcher = FileWatcherManager()
 
     return (
         file_system,
@@ -38,5 +35,4 @@ def create_foundation_managers(
         dependency_graph,
         version_manager,
         migration_manager,
-        file_watcher,
     )

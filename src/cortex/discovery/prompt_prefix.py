@@ -10,10 +10,6 @@ the host's job. What it *does* control is the content it contributes: the tool
 names, descriptions, and JSON Schemas it registers. This module renders those
 into a single canonical string so a regression test can assert byte equality
 across processes with differing ``PYTHONHASHSEED`` values.
-
-Not to be confused with :mod:`cortex.core.cache_warming`, which concerns
-Cortex's own internal ``AdvancedCacheManager`` file cache and has nothing to do
-with the host's prompt cache.
 """
 
 from __future__ import annotations

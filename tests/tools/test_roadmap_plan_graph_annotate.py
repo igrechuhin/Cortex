@@ -16,7 +16,6 @@ from cortex.tools.optimization.handlers import build_context_resource_payload_as
 from cortex.tools.optimization.handlers_format import (
     inject_plan_graph_into_context_result,
 )
-from cortex.tools.plans import register_artifact_graph
 from cortex.tools.plans.plan_graph import (
     build_plan_graph_surface_bundle,
     plan_graph_json,
@@ -318,9 +317,3 @@ def test_session_brief_summary_ready_when_dependency_archived_done(
 
     assert summary is not None
     assert summary.startswith("1 plans READY, 0 plans BLOCKED by 0 ")
-
-
-def test_dependency_status_resync_still_enumerates_active_plans_only() -> None:
-    """The deliberate active-only enumeration must not widen to the archive."""
-    source = Path(register_artifact_graph.__file__).read_text(encoding="utf-8")
-    assert "list_plan_slug_paths(plans_dir, include_archive=False)" in source

@@ -1,15 +1,57 @@
 """Tests for cortex.services.framework_adapters.base."""
 
 import tempfile
+from collections.abc import Sequence
 from pathlib import Path
 
 from cortex.services.framework_adapters.base import (
     COVERAGE_ACCEPT_MIN,
     CheckResult,
     FrameworkAdapter,
+    ProgressCallback,
     TestResult,
 )
-from cortex.services.framework_adapters.stub_adapter import StubAdapter
+
+
+class _MinimalAdapter(FrameworkAdapter):
+    """Concrete adapter implementing only the base-class contract, for testing
+    ``FrameworkAdapter`` itself rather than any language-specific behavior."""
+
+    def run_tests(
+        self,
+        timeout: int | None = None,
+        coverage_threshold: float = 0.90,
+        max_failures: int | None = None,
+        progress_callback: ProgressCallback | None = None,
+        include_slow_tests: bool = False,
+    ) -> TestResult:
+        return TestResult(
+            success=True,
+            tests_run=0,
+            tests_passed=0,
+            tests_failed=0,
+            pass_rate=1.0,
+            coverage=None,
+            output="",
+            errors=[],
+        )
+
+    def fix_errors(
+        self,
+        error_types: Sequence[str] | None = None,
+        auto_fix: bool = True,
+        strict_mode: bool = False,
+    ) -> CheckResult:
+        return CheckResult(check_type="fix_errors", success=True, output="")
+
+    def format_code(self) -> CheckResult:
+        return CheckResult(check_type="format", success=True, output="")
+
+    def type_check(self) -> CheckResult:
+        return CheckResult(check_type="type_check", success=True, output="")
+
+    def lint_code(self) -> CheckResult:
+        return CheckResult(check_type="lint", success=True, output="")
 
 
 class TestCheckResult:
@@ -84,22 +126,22 @@ class TestCOVERAGE_ACCEPT_MIN:
 
 
 class TestFrameworkAdapter:
-    """Test FrameworkAdapter base behavior via StubAdapter."""
+    """Test FrameworkAdapter base behavior via a minimal concrete adapter."""
 
     def test_init_with_project_root(self) -> None:
         """Adapter converts project_root to Path."""
         with tempfile.TemporaryDirectory() as tmpdir:
-            adapter: FrameworkAdapter = StubAdapter(tmpdir, "other")
+            adapter: FrameworkAdapter = _MinimalAdapter(tmpdir)
             assert adapter.project_root == Path(tmpdir)
 
     def test_init_without_project_root_uses_cwd(self) -> None:
         """Adapter uses cwd when project_root is None."""
-        adapter = StubAdapter(None, "other")
+        adapter = _MinimalAdapter(None)
         assert adapter.project_root == Path.cwd()
 
     def test_detect_default_returns_none(self) -> None:
         """FrameworkAdapter.detect() default returns None."""
         with tempfile.TemporaryDirectory() as tmpdir:
             path = Path(tmpdir)
-            result = StubAdapter.detect(path)
+            result = _MinimalAdapter.detect(path)
             assert result is None

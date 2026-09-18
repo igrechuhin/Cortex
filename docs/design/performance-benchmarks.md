@@ -13,29 +13,7 @@ Phase 9.3 performance targets, benchmark coverage, and optimization notes.
 
 ## Benchmark Suites
 
-### Analysis Operations
-
-Located in `src/cortex/benchmarks/analysis_benchmarks.py`.
-
-#### Pattern Analysis
-
-- Pattern analysis with 10, 20, 50 files
-- Co-access pattern calculation with 20, 50, 100 files
-
-#### Structure Analysis (Phase 9.3 Hot Paths)
-
-- **Structure Analysis**: `analyze_file_organization` with 10, 20, 30, 50 files
-- **Anti-Pattern Detection**: `detect_anti_patterns` with 20 files
-- **Complexity Metrics**: `measure_complexity_metrics` with 20 files
-- **Dependency Chains**: `find_dependency_chains` with 20 files
-
-### Core Operations
-
-Located in `src/cortex/benchmarks/core_benchmarks.py`:
-
-- Token counting
-- File I/O
-- Dependency graph operations
+Located in `src/cortex/benchmarks/lightweight_benchmarks.py` and `src/cortex/benchmarks/memory_benchmarks.py`; see `framework.py` for the shared `Benchmark`/`BenchmarkSuite`/`BenchmarkRunner` base classes.
 
 ## Running Benchmarks
 
@@ -44,24 +22,6 @@ Located in `src/cortex/benchmarks/core_benchmarks.py`:
 ```bash
 uv run .cortex/synapse/scripts/python/run_benchmarks.py
 ```
-
-**Analysis suite** (includes Phase 9.3 hot paths; may load tiktoken):
-
-```python
-from pathlib import Path
-from cortex.benchmarks.analysis_benchmarks import create_analysis_benchmark_suite
-from cortex.benchmarks.framework import BenchmarkRunner
-import asyncio
-
-async def run():
-    runner = BenchmarkRunner(output_dir=Path(".cortex/benchmark_results"))
-    runner.add_suite(create_analysis_benchmark_suite())
-    return await runner.run_all()
-
-asyncio.run(run())
-```
-
-Or run via `pytest tests/unit/test_benchmarks.py::TestCreateAnalysisBenchmarkSuite`.
 
 Results are saved to `.cortex/benchmark_results/` (or temp dir in tests) with JSON and Markdown report.
 
@@ -89,16 +49,12 @@ Results are saved to `.cortex/benchmark_results/` (or temp dir in tests) with JS
 |-----------|----------|----------|-------|
 | TTLCache | `core/cache.py` | Time-based (default 5 min) | `cleanup_expired()` for proactive eviction |
 | LRUCache | `core/cache.py` | Size-based (default 100) | Least recently used evicted when full |
-| AdvancedCacheManager | `core/advanced_cache.py` | Both TTL + LRU | Two-layer: TTL for recency, LRU for frequency |
-| CacheWarmer | `core/cache_warming.py` | N/A | Pre-populates on startup (mandatory, hot path, dependency, recent) |
 
 **Eviction policy:**
 
 - TTL entries removed on get (lazy) or via `cleanup_expired()` (proactive)
 - LRU evicts least recently used when at `max_size`
 - `clear()` counts evictions before clearing both layers
-
-**Prefetching:** `_record_access` infers `co_accessed_files` from keys accessed within 60s; `prefetch_related` loads those when the primary key is accessed.
 
 ### Async Optimization (Phase 9.3 Task 3)
 

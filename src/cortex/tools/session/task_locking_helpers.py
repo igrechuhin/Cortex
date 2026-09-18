@@ -17,7 +17,7 @@ from cortex.core.cache_json_access import (
     write_cache_json,
 )
 from cortex.optimization.agent_roles import AgentRole
-from cortex.tools.models import TaskLock
+from cortex.tools.session.models import TaskLock
 
 logger = logging.getLogger(__name__)
 

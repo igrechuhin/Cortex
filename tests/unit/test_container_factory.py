@@ -19,7 +19,6 @@ from cortex.analysis.pattern_analyzer import PatternAnalyzer
 from cortex.analysis.structure_analyzer import StructureAnalyzer
 from cortex.core.dependency_graph import DependencyGraph
 from cortex.core.file_system import FileSystemManager
-from cortex.core.file_watcher import FileWatcherManager
 from cortex.core.metadata_index import MetadataIndex
 from cortex.core.migration import MigrationManager
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
@@ -66,7 +65,7 @@ class TestCreateFoundationManagers:
         managers = create_foundation_managers(project_root)
 
         # Assert
-        assert len(managers) == 7
+        assert len(managers) == 6
         # Check each manager type
         assert isinstance(managers[0], FileSystemManager)
         assert isinstance(managers[1], MetadataIndex)
@@ -74,7 +73,6 @@ class TestCreateFoundationManagers:
         assert isinstance(managers[3], DependencyGraph)
         assert isinstance(managers[4], VersionManager)
         assert isinstance(managers[5], MigrationManager)
-        assert isinstance(managers[6], FileWatcherManager)
 
     def test_create_foundation_managers_invalid_root(self, tmp_path: Path):
         """Test creating foundation managers with non-existent root."""
@@ -86,7 +84,7 @@ class TestCreateFoundationManagers:
 
         # Assert
         # Should still create managers even if path doesn't exist
-        assert len(managers) == 7
+        assert len(managers) == 6
         assert managers[0].project_root == project_root
 
 
@@ -272,7 +270,7 @@ class TestCreateAllManagers:
         )
 
         # Verify foundation managers
-        assert len(foundation) == 7
+        assert len(foundation) == 6
 
         # Verify linking managers
         assert len(linking) == 3

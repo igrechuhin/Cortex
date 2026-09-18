@@ -8,7 +8,7 @@ from typing import Protocol
 
 from cortex.core.models import JsonValue, ModelDict, OperationStatus
 from cortex.refactoring.learning_engine import LearningEngine
-from cortex.tools.models import LearnedPatternsResult
+from cortex.tools.context.effectiveness_models import LearnedPatternsResult
 
 
 class ConfigProtocol(Protocol):

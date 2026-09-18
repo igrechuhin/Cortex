@@ -12,8 +12,11 @@ from cortex.core.token_counter import TokenCounter
 from cortex.core.version_manager import VersionManager
 from cortex.managers.types import ManagersDict
 from cortex.tools.memory.compaction_operations import compact_session
-from cortex.tools.models import SessionStartErrorResult, SessionStartResult
-from cortex.tools.session.models import SESSION_SCOPE_PROMPT
+from cortex.tools.session.models import (
+    SESSION_SCOPE_PROMPT,
+    SessionStartErrorResult,
+    SessionStartResult,
+)
 from cortex.tools.session.start_tools import session_start_impl
 from tests.helpers.managers import make_test_managers
 from tests.helpers.path_helpers import ensure_test_cortex_structure

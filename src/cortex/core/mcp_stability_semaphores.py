@@ -20,19 +20,19 @@ _logger = logging.getLogger(__name__)
 
 # Max seconds a second long-running tool call will wait for the first to finish
 # before failing with RuntimeError (reduces commit-blocking when calls are sequential).
-# Must be >= default test_timeout for execute_pre_commit_checks (300s) so sequential
+# Must be >= default test_timeout for run_quality_gate (300s) so sequential
 # commit-pipeline calls succeed when the first run includes tests. 600s allows Phase A
 # (tests up to 300s + format/quality overhead) to complete before a waiting second call times out.
 LONG_RUNNING_SEMAPHORE_WAIT_SECONDS = 600.0
 # Max seconds a long-running tool may hold the semaphore before auto-release. Must allow
-# one full execute_pre_commit_checks (including tests, test_timeout up to 300s default);
+# one full run_quality_gate (including tests, test_timeout up to 300s default);
 # use >= LONG_RUNNING_SEMAPHORE_WAIT_SECONDS so a single Step 12 run is not cut off mid-run.
 LONG_RUNNING_SEMAPHORE_MAX_HOLD_SECONDS = 600.0
 # After the main wait times out, retry once for this many seconds to absorb the race when
 # the first call or auto-release releases at the same moment (reduces commit-blocking).
 LONG_RUNNING_SEMAPHORE_RETRY_AFTER_TIMEOUT_SECONDS = 5.0
 _LONG_RUNNING_BUSY_MSG = (
-    "Another long-running tool is in progress (e.g. execute_pre_commit_checks or "
+    "Another long-running tool is in progress (e.g. run_quality_gate or "
     "fix_markdown_lint). Please wait for it to finish (up to 10 minutes) and retry. "
     "If running the commit pipeline, ensure Phase A has completed before Step 12; "
     "close other tabs or agents that may be running long-running Cortex tools."

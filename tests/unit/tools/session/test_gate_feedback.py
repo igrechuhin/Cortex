@@ -75,6 +75,32 @@ def test_check_to_error_uses_name_when_message_empty() -> None:
     assert feedback.errors[0].message == "lint"
 
 
+def test_top_files_deduplicates_and_caps_at_five() -> None:
+    """A repeated check name counts once; only the first 5 distinct files survive."""
+    checks = [
+        {"name": name, "status": "failed", "message": "e"}
+        for name in [
+            "lint",
+            "lint",  # duplicate -> same "<lint>" file, must not double-count
+            "type_check",
+            "format",
+            "test",
+            "docs",
+            "security",  # 6th distinct file -> capped out
+        ]
+    ]
+    result: dict[str, object] = {"preflight_passed": False, "checks": checks}
+    feedback = feedback_from_quality_result(result)
+    assert feedback is not None
+    assert feedback.top_files == [
+        "<lint>",
+        "<type_check>",
+        "<format>",
+        "<test>",
+        "<docs>",
+    ]
+
+
 @pytest.mark.asyncio
 async def test_persist_gate_feedback_clears_on_none() -> None:
     with patch(

@@ -11,7 +11,7 @@ class TestSearchToolsAndScripts:
     @pytest.fixture
     def tool_names(self) -> list[str]:
         """Sample tool names for tests."""
-        return ["manage_file", "load_context", "execute_pre_commit_checks", "rules"]
+        return ["manage_file", "load_context", "run_quality_gate", "rules"]
 
     @pytest.fixture
     def script_names(self) -> list[str]:

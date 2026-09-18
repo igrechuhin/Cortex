@@ -998,3 +998,21 @@ class TestDependencyChains:
 
         # Assert
         assert len(result) <= 20
+
+    def test_deduplicate_and_sort_chains_drops_duplicates_and_sorts(self) -> None:
+        """Identical chains collapse to one; results sort longest first; an
+        empty chain (no key) is always dropped, matching the pre-refactor
+        contract."""
+        from cortex.analysis.models import DependencyChainResult
+        from cortex.analysis.structure_metrics import deduplicate_and_sort_chains
+
+        chains = [
+            DependencyChainResult(chain=["a", "b"], length=2, is_linear=True),
+            DependencyChainResult(chain=["a", "b", "c"], length=3, is_linear=True),
+            DependencyChainResult(chain=["a", "b"], length=2, is_linear=True),
+            DependencyChainResult(chain=[], length=0, is_linear=True),
+        ]
+
+        result = deduplicate_and_sort_chains(chains)
+
+        assert [c.chain for c in result] == [["a", "b", "c"], ["a", "b"]]

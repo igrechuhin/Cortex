@@ -20,12 +20,15 @@ from cortex.experience.models import (
 )
 from cortex.experience.recorder import experience_db_path
 from cortex.experience.store_core import ExperienceStoreCore
-from cortex.tools.models import SessionHealthSummary
 from cortex.tools.session.experience_recall_brief import (
     load_experience_recall_summary_safe,
     merge_experience_recall_into_brief,
 )
-from cortex.tools.session.models import SessionBrief, TokenBudgetStatus
+from cortex.tools.session.models import (
+    SessionBrief,
+    SessionHealthSummary,
+    TokenBudgetStatus,
+)
 
 _GOAL = "fix pyright type errors in the retrieval module"
 

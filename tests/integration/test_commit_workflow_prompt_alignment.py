@@ -14,11 +14,6 @@ from pathlib import Path
 
 import pytest
 
-from cortex.validation.commit_workflow_model import (
-    get_commit_steps_metadata,
-    get_parallel_block_step_ids,
-    get_sequential_step_ranges,
-)
 from tests.integration.conftest import synapse_path
 
 
@@ -53,28 +48,6 @@ def _read_implement_pipeline_content() -> str:
     if code_agent.exists():
         parts.append(code_agent.read_text())
     return "\n".join(parts)
-
-
-class TestCommitWorkflowModelInvariants:
-    """Assert commit workflow model invariants."""
-
-    def test_parallel_block_is_nine_ten_eleven(self) -> None:
-        """Parallel block step ids are exactly 9, 10, 11."""
-        assert get_parallel_block_step_ids() == (9, 10, 11)
-
-    def test_sequential_ranges_are_zero_eight_and_twelve_fourteen(
-        self,
-    ) -> None:
-        """Sequential ranges are (0, 8) and (12, 14)."""
-        assert get_sequential_step_ranges() == [(0, 8), (12, 14)]
-
-    def test_steps_9_10_11_have_parallel_metadata(self) -> None:
-        """Steps 9-11 have can_run_in_parallel=True and same group_id."""
-        steps = get_commit_steps_metadata()
-        for step_id in (9, 10, 11):
-            meta = next(s for s in steps if s.step_id == step_id)
-            assert meta.can_run_in_parallel is True
-            assert meta.group_id == "validation_parallel_block_9_11"
 
 
 class TestCommitPipelineAlignment:

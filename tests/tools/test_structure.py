@@ -17,7 +17,6 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from cortex.core.models import JsonDict, ModelDict
-from cortex.tools.models import CleanupReport
 from cortex.tools.structure import (
     build_health_result,
     check_structure_health,
@@ -35,6 +34,7 @@ from cortex.tools.structure import (
     record_archive_action,
 )
 from cortex.tools.structure.main import get_structure_info_impl
+from cortex.tools.structure.structure_models import CleanupReport
 
 # ============================================================================
 # Fixtures

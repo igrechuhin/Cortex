@@ -13,10 +13,6 @@ from unittest.mock import AsyncMock, patch
 import pytest
 
 from cortex.core.constants import MemoryBankFile
-from cortex.core.parallel_worktree_merge import (
-    clarification_markers_for_shared_paths,
-    merge_order_for_parallel_batch,
-)
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.core.plan_change_history import (
     CHANGE_HISTORY_HEADING,
@@ -27,14 +23,11 @@ from cortex.core.plan_utils import (
     parse_task_graph,
 )
 from cortex.tools.plans.completion import complete_plan
+from cortex.tools.plans.crud import CreatePlanResult, create_plan
 from cortex.tools.plans.enrich import enrich_plan
 from cortex.tools.plans.enrich_models import EnrichPlanResult
-from cortex.tools.plans.operations import (
-    CreatePlanResult,
-    RegisterPlanResult,
-    create_plan,
-    register_plan_in_roadmap,
-)
+from cortex.tools.plans.register import register_plan_in_roadmap
+from cortex.tools.plans.register_models import RegisterPlanResult
 
 
 def _minimal_roadmap_content() -> str:
@@ -689,37 +682,6 @@ class TestParallelPlanFrontierAndMergeIntegration:
         frontier = next_execution_frontier(nodes, completed={1, 2, 3}, max_parallel=3)
         assert len(frontier) == 1
         assert frontier[0].step_id == 4
-
-    def test_merge_order_for_independent_parallel_batch(self) -> None:
-        """Independent parallel steps merge in ascending step_id order."""
-        nodes = parse_task_graph(self._PLAN_WITH_PARALLEL_STEPS)
-        batch = [n for n in nodes if n.step_id in {2, 3}]
-        order = merge_order_for_parallel_batch(batch)
-        assert order == [2, 3]
-
-    def test_no_conflict_markers_for_disjoint_paths(self) -> None:
-        """Steps touching different files produce no clarification markers."""
-        nodes = parse_task_graph(self._PLAN_WITH_PARALLEL_STEPS)
-        batch = [n for n in nodes if n.step_id in {2, 3}]
-        changed: dict[int, set[str]] = {
-            2: {"src/a/alpha.py"},
-            3: {"src/b/beta.py"},
-        }
-        markers = clarification_markers_for_shared_paths(batch, changed)
-        assert markers == []
-
-    def test_conflict_markers_for_shared_path(self) -> None:
-        """Steps that both touch the same file produce one blocking marker."""
-        nodes = parse_task_graph(self._PLAN_WITH_PARALLEL_STEPS)
-        batch = [n for n in nodes if n.step_id in {2, 3}]
-        changed: dict[int, set[str]] = {
-            2: {"src/shared/utils.py"},
-            3: {"src/shared/utils.py"},
-        }
-        markers = clarification_markers_for_shared_paths(batch, changed)
-        assert len(markers) == 1
-        assert markers[0].blocking is True
-        assert "src/shared/utils.py" in markers[0].reason
 
 
 class TestPlanDependsOnRegisterThenCompleteIntegration:

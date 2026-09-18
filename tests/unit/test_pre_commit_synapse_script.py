@@ -1,4 +1,4 @@
-"""Tests for run_synapse_script helper extracted from pre_commit_tools suite."""
+"""Tests for the run_synapse_script helper."""
 
 from __future__ import annotations
 

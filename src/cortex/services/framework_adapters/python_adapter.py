@@ -66,8 +66,7 @@ class PythonAdapter(FrameworkAdapter):
             return str(cwd_venv)
         msg = (
             f"{tool} not found at {venv_tool} or at {cwd_venv}. "
-            + "Ensure .venv is set up (e.g. uv sync) and run from project root or "
-            + "pass project_root to execute_pre_commit_checks."
+            + "Ensure .venv is set up (e.g. uv sync) and run from project root."
         )
         raise FileNotFoundError(msg)
 

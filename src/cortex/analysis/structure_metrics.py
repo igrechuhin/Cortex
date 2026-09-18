@@ -324,19 +324,13 @@ def deduplicate_and_sort_chains(
     Returns:
         Deduplicated and sorted chains
     """
-    seen: set[tuple[str, ...]] = set()
+    unique: dict[tuple[str, ...], DependencyChainResult] = {}
+    for chain in chains:
+        key = tuple(chain.chain)
+        if key:
+            _ = unique.setdefault(key, chain)
 
-    def _is_unique_chain(chain: DependencyChainResult) -> bool:
-        """Check if chain is unique and add to seen set."""
-        chain_key = tuple(chain.chain)
-        if chain_key and chain_key not in seen:
-            seen.add(chain_key)
-            return True
-        return False
-
-    unique_chains: list[DependencyChainResult] = [
-        chain for chain in chains if _is_unique_chain(chain)
-    ]
+    unique_chains = list(unique.values())
 
     unique_chains.sort(key=lambda c: c.length, reverse=True)
     return unique_chains

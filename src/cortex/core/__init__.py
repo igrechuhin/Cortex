@@ -1,16 +1,6 @@
 """Core module exports."""
 
-from cortex.core.advanced_cache import (
-    AdvancedCacheManager,
-    CacheStats,
-    create_cache_for_manager,
-)
 from cortex.core.cache import LRUCache, TTLCache
-from cortex.core.cache_warming import (
-    CacheWarmer,
-    CacheWarmingResult,
-    warm_cache_on_startup,
-)
 from cortex.core.execution_env import (
     ExecutionEnvironment,
     ExecutionResult,
@@ -29,13 +19,8 @@ from cortex.core.progress_types import (
 )
 
 __all__ = [
-    "AdvancedCacheManager",
     "AnyProgress",
     "BaseProgress",
-    "CacheStats",
-    "create_cache_for_manager",
-    "CacheWarmer",
-    "CacheWarmingResult",
     "CommitProgress",
     "DocsGateProgress",
     "ExecutionEnvironment",
@@ -48,5 +33,4 @@ __all__ = [
     "TTLCache",
     "WorktreeExecutionEnvironment",
     "report_structured_progress",
-    "warm_cache_on_startup",
 ]

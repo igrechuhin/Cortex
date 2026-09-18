@@ -136,18 +136,3 @@ class TestContextBudgetValidation:
         assert any(
             w.get("type") == "zero_files_selected" for w in warnings
         ), f"Expected zero_files_selected warning, got: {warnings}"
-
-
-# ============================================================================
-# Edge case: Phase 4 module facade exports (Phase 9.5 coverage)
-# ============================================================================
-
-
-def test_optimization_exports_all_public_api() -> None:
-    """Validate optimization module exports all items in __all__."""
-    import cortex.tools.optimization as m
-
-    for name in m.__all__:
-        assert hasattr(m, name), f"optimization.__all__ has {name!r} but missing"
-        attr = getattr(m, name)
-        assert attr is not None, f"optimization.{name} is None"

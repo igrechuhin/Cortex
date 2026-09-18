@@ -6,8 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from cortex.tools.models import SessionStartResult
-from cortex.tools.session.models import WikiStatusSummary
+from cortex.tools.session.models import SessionStartResult, WikiStatusSummary
 from cortex.tools.session.wiki_status import (
     append_session_wiki_init_hint,
     compute_wiki_status,

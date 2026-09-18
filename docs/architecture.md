@@ -93,23 +93,7 @@ Cortex supports multiple MCP transports for different deployment scenarios.
 
 **Files**: `tools/` (many modules; see [API tools](api/tools.md))
 
-**Published MCP surface**: clients see **12 tools** and **6 static resources** — [Current published MCP surface](api/tools.md#current-published-mcp-surface-canonical). Inventory parity is enforced in CI (`docs/_generated/tool-inventory.json`, `cortex.discovery.published_inventory`).
-
-Implementation code remains grouped by historical phase and domain for maintainability (not a 1:1 map to MCP tool names):
-
-- **Phase 1** – Foundation: file operations, version, rollback, dependency, stats (split across `phase1_foundation_*`, `file_operations`, etc.)
-- **Phase 2** – Linking and transclusion
-- **Phase 3** – Validation and quality checks
-- **Phase 4** – Context optimization and rules
-- **Phase 5** – Analysis, refactoring, execution, evaluation (including evaluation dashboard helpers)
-- **Phase 8** – Structure management, validation, operations, docs
-- **Session and health** – `session_start_tools`, `connection_health`, `health_check_operations`, `compaction_operations`
-- **Pre-commit and quality** – `pre_commit_tools`, `markdown_operations`
-- **Plans and roadmap** – `plan_operations`, `plan_completion`, `roadmap_operations`
-- **Synapse** – `synapse_tools`, Synapse prompts registration
-- **Other** – `query_memory_bank_operations`, `query_usage_operations`, `cache_json_tools`, `script_capture_tools`, `sequential_thinking`, `task_locking`, and others
-
-Setup prompts and parameters are documented in `docs/api/tools.md` and `README.md` (see `<!-- cortex-published-inventory -->` marker). Naming rules: [naming conventions](architecture/naming-conventions.md).
+See [API Tools Reference](api/tools.md) for the current published MCP surface and [Module Documentation](api/modules.md) for the module catalog. Naming rules: [naming conventions](architecture/naming-conventions.md).
 
 ### Layer 3: Manager Initialization
 
@@ -142,86 +126,9 @@ Tool accesses managers["fs"] or managers["context_optimizer"]
   LazyManager: on first access → build real instance, replace in dict
 ```
 
-### Layer 4: Business Logic (20+ Modules)
+### Layer 4: Business Logic
 
-Each manager/service module has a single responsibility:
-
-#### Phase 1: Foundation (9 modules)
-
-- `file_system.py` - File I/O, locking, hashing
-- `metadata_index.py` - JSON index, corruption recovery
-- `token_counter.py` - tiktoken integration
-- `dependency_graph.py` - Dependency tracking
-- `graph_algorithms.py` - Graph algorithms (BFS, DFS, cycles)
-- `version_manager.py` - Snapshots, rollback
-- `migration.py` - Auto-migration
-- `file_watcher.py` - External change detection
-- `exceptions.py` - Custom exception hierarchy
-
-#### Phase 2: DRY Linking (3 modules)
-
-- `link_parser.py` - Parse links & transclusions
-- `transclusion_engine.py` - Resolve `{{include:}}`
-- `link_validator.py` - Validate link integrity
-
-#### Phase 3: Validation (4 modules)
-
-- `schema_validator.py` - File schema validation
-- `duplication_detector.py` - Find duplicate content
-- `quality_metrics.py` - Calculate quality scores
-- `validation_config.py` - User configuration
-
-#### Phase 4: Optimization (6 modules)
-
-- `relevance_scorer.py` - Score files by relevance
-- `context_optimizer.py` - Optimize context within budget
-- `optimization_strategies.py` - Strategy implementations
-- `progressive_loader.py` - Load context incrementally
-- `summarization_engine.py` - Summarize content
-- `optimization/config.py` - Configuration management
-
-#### Phase 4 Enhancement (2 modules)
-
-- `rules_manager.py` - Manage custom rules
-- `rules_indexer.py` - File scanning and indexing
-
-#### Phase 5: Self-Evolution (10 modules)
-
-- `pattern_analyzer.py` - Track usage patterns
-- `structure_analyzer.py` - Analyze organization
-- `insight_engine.py` - Generate AI insights
-- `refactoring_engine.py` - Generate suggestions
-- `consolidation_detector.py` - Detect duplicates
-- `split_recommender.py` - Recommend splits
-- `split_analyzer.py` - File structure analysis
-- `reorganization_planner.py` - Plan reorganization
-- `refactoring_executor.py` - Execute refactorings
-- `execution_validator.py` - Validate operations
-
-#### Phase 5 Execution & Learning (5 modules)
-
-- `approval_manager.py` - Manage user approvals
-- `rollback_manager.py` - Handle rollbacks
-- `learning_engine.py` - Learn from feedback
-- `learning_data_manager.py` - Data persistence
-- `adaptation_config.py` - Configuration
-
-#### Phase 6: Shared Rules (2 modules)
-
-- `shared_rules_manager.py` - Git submodule integration
-- `context_detector.py` - Intelligent context detection
-
-#### Phase 8: Project Structure (2 modules)
-
-- `structure_manager.py` - Structure lifecycle, migration, health
-- `template_manager.py` - Plan & rule templates, interactive setup
-
-#### Supporting Modules (4 modules)
-
-- `protocols.py` - Protocol definitions (PEP 544)
-- `logging_config.py` - Structured logging
-- `responses.py` - Standardized responses
-- `resources.py` - Template and guide exports
+Each manager/service module has a single responsibility, organized by historical phase. See [Module Documentation](api/modules.md) for the full module catalog.
 
 ### Layer 5: Storage
 
@@ -289,7 +196,7 @@ class FileSystemManager:
         self.project_root = project_root
 ```
 
-Managers are initialized in `managers/initialization.py` and stored in `ManagerContainer`.
+Managers are initialized in `managers/initialization.py` and stored in a `ManagersDict` (see `managers/types.py`); `get_managers()` caches it per project root via `core/manager_registry.py`.
 
 ### Protocol-Based Abstractions
 
@@ -320,20 +227,9 @@ async with aiofiles.open(file_path, "r") as f:
 Managers are only initialized when first requested:
 
 ```python
-async def get_managers(project_root: Path) -> ManagerContainer:
-    if project_root not in _managers:
-        _managers[project_root] = await _initialize_all_managers(project_root)
-    return _managers[project_root]
-```
-
-### Event-Driven File Watching
-
-Watchdog library monitors file changes:
-
-```python
-class FileWatcher:
-    def __init__(self, callback: Callable[[str, str], Awaitable[None]]):
-        self.callback = callback  # Called on file change
+async def get_managers(project_root: Path) -> ManagersDict:
+    registry = get_process_registry()
+    return ManagersDict.model_validate(await registry.get_managers(project_root))
 ```
 
 ### Caching
@@ -483,7 +379,6 @@ All tools return consistent JSON:
 
 - Atomic writes via temp files
 - File locking to prevent conflicts
-- Debounced file watching (300ms)
 
 ### Memory Management
 
@@ -495,7 +390,6 @@ All tools return consistent JSON:
 
 - Async I/O throughout
 - File locks for safe concurrent access
-- Event loop integration for watcher
 
 ## Security
 
@@ -525,55 +419,9 @@ async with self._acquire_lock(file_path):
     await self._write_file(file_path, content)
 ```
 
-## Testing Strategy
+## Testing, Deployment, and Roadmap
 
-### Unit Tests (1,554 tests)
-
-- One test file per module
-- AAA pattern (Arrange-Act-Assert)
-- Mock external dependencies
-- ~88% overall coverage
-
-### Integration Tests
-
-- Test cross-module workflows
-- Real file system operations
-- Async test support with pytest-asyncio
-
-### Fixtures
-
-- Shared fixtures in `conftest.py`
-- Sample Memory Bank files
-- Temporary directories
-
-## Deployment
-
-### Standalone Server
-
-```bash
-uv run cortex
-```
-
-### Integrated with MCP Client
-
-```json
-{
-  "mcpServers": {
-    "memory-bank": {
-      "command": "uvx",
-      "args": ["--from", "git+https://github.com/igrechuhin/cortex.git", "cortex"]
-    }
-  }
-}
-```
-
-## Future Architecture Improvements
-
-1. **SQLite Backend** - Replace JSON index with SQLite for better performance
-2. **Incremental Diffs** - Store diffs instead of full snapshots for version history
-3. **Distributed Caching** - Redis for multi-user scenarios
-4. **Background Workers** - Queue expensive operations (pattern analysis, refactoring)
-5. **Plugin System** - Support third-party extensions
+See the [README](../README.md) for testing commands and server deployment instructions, and [progress.md](../.cortex/memory-bank/progress.md) for planned architecture improvements.
 
 ## References
 

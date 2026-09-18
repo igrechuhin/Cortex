@@ -10,7 +10,6 @@ from unittest.mock import MagicMock
 
 from cortex.core.dependency_graph import DependencyGraph
 from cortex.core.file_system import FileSystemManager
-from cortex.core.file_watcher import FileWatcherManager
 from cortex.core.metadata_index import MetadataIndex
 from cortex.core.migration import MigrationManager
 from cortex.core.token_counter import TokenCounter
@@ -26,7 +25,6 @@ def make_test_managers(
     graph: DependencyGraph | MagicMock | None = None,
     versions: VersionManager | MagicMock | None = None,
     migration: MigrationManager | MagicMock | None = None,
-    watcher: FileWatcherManager | MagicMock | None = None,
     **kwargs: MagicMock | None,
 ) -> ManagersDict:
     """Create a valid `ManagersDict` with MagicMock defaults.
@@ -43,6 +41,5 @@ def make_test_managers(
         graph=graph or MagicMock(name="graph"),
         versions=versions or MagicMock(name="versions"),
         migration=migration or MagicMock(name="migration"),
-        watcher=watcher or MagicMock(name="watcher"),
         **kwargs,
     )

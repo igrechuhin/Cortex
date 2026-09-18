@@ -25,10 +25,4 @@ def extract_file_patterns_from_plan(text: str) -> list[str]:
 
 
 def _dedupe_preserve_order(items: Iterable[str]) -> list[str]:
-    seen: set[str] = set()
-    out: list[str] = []
-    for item in items:
-        if item not in seen:
-            seen.add(item)
-            out.append(item)
-    return out
+    return list(dict.fromkeys(items))

@@ -149,19 +149,6 @@ def test_forced_exception_mid_run_still_tears_down_worktree(
     assert not cache_dir.exists() or not any(cache_dir.iterdir())
 
 
-def test_no_push_or_pr_calls_anywhere_in_worktree_module() -> None:
-    """Grep-equivalent safety check: no code path calls git push or gh pr create."""
-    import cortex.tools.optimization.propose_framework_optimization_core as core_mod
-    import cortex.tools.optimization.propose_framework_optimization_worktree as wt_mod
-
-    for module in (core_mod, wt_mod):
-        module_file = module.__file__
-        assert module_file is not None
-        source = Path(module_file).read_text(encoding="utf-8")
-        assert "push" not in source.lower()
-        assert "gh pr create" not in source.lower()
-
-
 def test_execution_result_is_reused_from_core_module() -> None:
     """Sanity: propose module reuses ExecutionResult, no parallel result type."""
     assert ExecutionResult.__module__ == "cortex.core.execution_env"

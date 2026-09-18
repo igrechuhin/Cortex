@@ -12,77 +12,7 @@ Welcome to the comprehensive documentation for Cortex - an MCP (Model Context Pr
 
 ## Overview
 
-Cortex provides a powerful set of tools for managing structured documentation (Memory Bank files) with features like:
-
-- **Memory Bank Management**: Create, validate, and maintain structured memory bank files
-- **DRY Linking**: Transclusion engine for including content across files without duplication
-- **Validation & Quality**: Schema validation, duplication detection, and quality metrics
-- **Token Optimization**: Context optimization within token budgets, progressive loading, and summarization
-- **Refactoring Support**: Pattern analysis, refactoring suggestions, safe execution, and rollback capabilities
-- **Shared Rules**: Git submodule integration for cross-project rule sharing
-- **Project Structure**: Standardized project structure management with templates
-
-## Key Features
-
-Capabilities below follow the same historical phase labels used in the codebase and deep-dive docs. The **live MCP surface** is **12 tools**, **6 static resources**, and **up to 4 setup prompts** — see [MCP Tools Reference](./api/tools.md#current-published-mcp-surface-canonical).
-
-### Phase 1: Foundation
-
-- Hybrid storage architecture (files + metadata index)
-- Token counting with tiktoken
-- File I/O with locking and conflict detection
-- Version history with snapshots
-- Dependency graph management
-- File watching for external changes
-- Automatic migration system
-
-### Phase 2: DRY Linking
-
-- Link parser for markdown links: `[text](file.md#section)`
-- Transclusion syntax: `{{include: file.md#section|options}}`
-- Dynamic dependency graph from actual links
-- Circular dependency detection
-- Link validation with broken link detection
-
-### Phase 3: Validation
-
-- Schema validation with required sections enforcement
-- Duplication detection with similarity scoring
-- Quality metrics and health scoring (0-100)
-- Token budget management with usage tracking
-- Configurable validation rules
-
-### Phase 4: Token Optimization
-
-- Relevance scorer with TF-IDF and dependency-based scoring
-- Context optimizer with multiple strategies
-- Progressive loading (by priority, dependencies, relevance)
-- Content summarization with multiple strategies
-- Custom rules integration
-
-### Phase 5: Workflows, quality, and discovery
-
-- Consolidated published MCP tools for session, Memory Bank, plans, pipeline handoff, quality gates, and reasoning (`think`)
-- Zero-arg quality pipeline tools (`run_quality_gate`, `run_docs_gate`, `autofix`) aligned with CI
-- Plan and roadmap lifecycle via `plan()`; compound-engineering handoff via `pipeline_handoff`
-- Usage and discovery helpers (`query_usage`, resource URIs such as `cortex://context`) for telemetry and orientation
-- Deeper analysis and refactoring capabilities remain in the codebase; phase-grouped sections in [api/tools.md](./api/tools.md) are a historical catalog, not the current `tools/list` surface
-
-### Phase 6: Shared Rules
-
-- Git submodule integration for shared rules
-- Context detection (languages, frameworks, task types)
-- Intelligent category selection and rule loading
-- Rule merging strategies
-- Automatic synchronization
-
-### Phase 8: Project Structure
-
-- Standardized `.cortex/` directory structure
-- Automated migration from legacy structures
-- Interactive project setup with guided configuration
-- Structure health monitoring with scoring
-- Automated housekeeping
+Cortex provides tools for managing structured documentation (Memory Bank files): creation and validation, DRY linking via transclusion, token-budgeted context optimization, refactoring support, shared-rules synchronization, and project structure management. See [README](../README.md#features) for the current feature list and [MCP Tools Reference](./api/tools.md#current-published-mcp-surface-canonical) for the live MCP surface.
 
 ## Getting Started
 
@@ -90,11 +20,9 @@ To get started with Cortex, see the [Getting Started Guide](./getting-started.md
 
 ## API Documentation
 
-<!-- cortex-published-inventory: tools=10 resources=6 prompts-max=4 -->
-
 For detailed API documentation, see:
 
-- [MCP Tools Reference](./api/tools.md) - 11 MCP tools, 6 static resources
+- [MCP Tools Reference](./api/tools.md) - MCP tools and static resources
 - [Module Documentation](./api/modules.md) - All modules
 - [Exception Reference](./api/exceptions.md) - Exception hierarchy
 

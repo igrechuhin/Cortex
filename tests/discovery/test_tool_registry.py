@@ -19,7 +19,7 @@ class TestGetKnownToolNames:
         names = get_known_tool_names()
         assert "manage_file" in names
         assert "load_context" in names
-        assert "execute_pre_commit_checks" in names
+        assert "run_quality_gate" in names
 
     def test_no_duplicates(self) -> None:
         """No duplicate tool names."""

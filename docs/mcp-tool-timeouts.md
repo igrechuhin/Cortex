@@ -267,51 +267,9 @@ Timeout errors follow this format:
 MCP tool <tool_name> exceeded timeout of <timeout>s
 ```
 
-## Commit pipeline: long-running tools and client timeout
+## Commit pipeline, long-running tools, and resource read timeouts
 
-The commit pipeline (e.g. `/cortex/commit`) uses these MCP tools that can run for a long time:
-
-| Tool | Typical duration | Server behavior | Client timeout recommendation |
-|------|------------------|-----------------|-------------------------------|
-| `run_quality_gate` (Step 12.7: tests inside Phase A) | Worker may take 300–600 s; each call waits at most 20 s for checks | Returns `status: "running"` with actual `job_id` / `result_file`; same-configuration calls resume the worker. Lock contention without an existing result file returns a retryable error, not failed checks | A 30 s client deadline accommodates the bounded wait; repeat pending calls with unchanged configuration, without mutating files, launching another worker, or treating them as passed gates. |
-| `fix_markdown_lint` (Step 12.5) | 30–120 s (depends on repo size; scoped to git-modified when possible) | Batched runs, 5 s heartbeat, progress after each file | Allow 30–120 s according to repository size; use local rumdl for faster runs (see [troubleshooting](guides/troubleshooting.md#issue-mcp-error-32000-connection-closed)). |
-| `autofix` (pre-flight / Step 12.1) | Worker may take 30–120 s; each call waits at most 20 s for the root lock and worker | Returns `status: "running"` with `job_id` / `result_file`; retries resume the same worker, including final formatting and housekeeping | Keep a 30 s client deadline; repeat the call to retrieve the terminal result. Do not launch fallback mutations while its worker is alive. |
-
-- **Keepalive / progress**: The server sends progress or heartbeat for all of these (see "Tools that need more frequent progress" in `mcp_stability_config` and "Client connection closed during long tools" below). This reduces the chance of client idle timeout (-32000).
-- **Client deadlines**: Progress reduces idle disconnects but does not extend a hard request deadline. `run_quality_gate` and `autofix` therefore return pending job handles after their bounded waits. Other long-running tools may still need a client timeout covering their expected duration; see [MCP disconnect runbook (commit pipeline)](guides/troubleshooting.md#mcp-disconnect-runbook-commit).
-- **Infrastructure states**: `running` and `timeout` responses are not completed checks or fixes. A busy root lock without an existing job returns a retryable error. Retry the same call without changing configuration or mutating the workspace while work may remain active. Autofix and quality checks report an existing live worker rather than launching conflicting work. Preserve worker errors as errors; only terminal results determine the outcome.
-- **Autofix outcome retention**: A completed or failed worker result remains on disk and is delivered on the next autofix call, including after server restart. Delivery marks it consumed without deleting its evidence; the next independent call starts fresh work. Legacy completed fix envelopes are recovered without rerunning mutations. Suggestions, remaining issues, and raw worker failure evidence are retained.
-
-## Client connection closed during long tools
-
-Long-running MCP tools may complete on the server after the client has already closed the connection. In that case the transport can raise an error (e.g. `anyio.ClosedResourceError`) and the client may see a message like `{"error":"MCP error -32000: Connection closed"}`. Note: `fix_markdown_lint` now always scopes to git-modified + untracked files (not full-repo), which greatly reduces runtime and the chance of hitting this issue.
-
-- **Meaning**: "Connection closed" in this context usually indicates the client disconnected or timed out, not that the tool failed. The tool may have completed successfully on the server.
-- **Server-side mitigations**: To reduce the chance of client idle timeout, the server (1) sends progress more frequently (every 5s instead of 10s) for tools with timeout ≥ 300s, and (2) for `fix_markdown_lint`, reports progress after every file (and after every batch), runs a 5s heartbeat, and processes files in batches of 25 to reduce total duration.
-- **Recommendation**: For `run_quality_gate()` and `autofix()`, reconnect and repeat the same zero-argument call with unchanged configuration to resume the job; preserve its handle and do not mutate files while pending. If MCP remains unavailable, block commit—Step 12.7 has no fallback. For other tools, retry once, then use only the step's documented fallback and record "MCP connection closed; fallback used".
-- **Tool unavailability after disconnect**: After a connection closed error, a retry may fail with "tool not found" or similar (e.g. client/MCP reconnection or tool registration). Use a documented fallback only for steps that allow one (e.g. markdown lint via shell). An unavailable final quality gate blocks commit.
-- **Source changes require reload**: A mounted Python MCP server keeps its imported code until restarted. Inspect existing job evidence before restarting; reconnect to a fresh server to load the bounded implementation, then resume the recorded job instead of launching replacement mutations.
-
-## Resource read timeouts and "unknown message ID"
-
-When the client fetches many MCP **resources** in parallel (e.g. when opening the MCP resources panel or loading instructions), you may see:
-
-- **`MCP error -32001: Request timed out`** on resource reads (`cortex://structure/health`, `cortex://memory-bank/stats`, `cortex://usage/stats`, etc.)
-- **`Request X cancelled - duplicate response suppressed`** in server logs
-- **`Received a response for an unknown message ID: Request cancelled`** on the client
-
-**Cause**: The MCP server handles one request at a time over stdio. If a long-running **tool** is executing (e.g. `rules`, `manage_file`, `autofix`), all **ReadResource** requests are queued. The client applies its own timeout (often ~5–10 seconds) per request. Queued resource reads exceed that timeout, so the client cancels them. When the server later sends the response, the client has already discarded that request ID → "unknown message ID" and "duplicate response suppressed".
-
-**Recommendations**:
-
-1. **Prefer tools over resources during commit or long workflows**: Use MCP tools (e.g. `get_structure_info()`, `manage_file()`, `query_memory_bank(query_type="stats")`) instead of reading `cortex://...` resources when running the commit flow or other long operations. Tools are invoked explicitly and are not affected by the client’s parallel resource prefetch.
-2. **Avoid resource-heavy UI during long tools**: If the commit prompt or a long tool is running, avoid opening views that trigger many parallel resource reads (e.g. MCP resources panel) until the run completes.
-3. **Ignore transient resource errors in logs**: Timeout and "unknown message ID" for resources during or right after a long tool run are expected; they do not indicate a server bug and do not require action.
-
-**Server-side mitigations (Cortex)**:
-
-- **Short-TTL cache for expensive resources**: Cortex caches responses for `cortex://structure/info` and `cortex://structure/health` with a 30-second TTL (`MCP_RESOURCE_CACHE_TTL_SECONDS`). When many ReadResource requests are queued behind a long tool, the first read after the tool completes populates the cache; subsequent reads for the same resource return immediately. This speeds up queue draining and makes later resource panel loads fast. Other heavy resources may get the same treatment in future updates.
-- **Stdio is sequential**: The MCP Python SDK over stdio processes one request at a time. The server cannot process ReadResource requests while a tool is running. Concurrency would require a different transport (e.g. HTTP/SSE); for stdio, caching and the recommendations above are the available mitigations. **Optional HTTP/SSE and Streamable HTTP** are supported (see [HTTP/SSE and Streamable HTTP transport](#http-sse-and-streamable-http-transport) and [Deployment and configuration](#deployment-and-configuration)).
+See [MCP disconnect runbook (commit pipeline)](guides/troubleshooting.md#mcp-disconnect-runbook-commit) for client timeout recommendations per tool, "Connection closed" recovery, and resource-read queueing behavior during long tool calls.
 
 ## HTTP-SSE and Streamable HTTP transport
 
@@ -346,24 +304,7 @@ To get **concurrent MCP request handling** (e.g. ReadResource while a long tool 
 
 ### Resource read timeouts (-32001)
 
-Error code **-32001** is the standard MCP "Request timed out" response. For **resource** reads it usually means the client gave up before the server responded.
-
-**Root causes**:
-
-1. **Client timeout shorter than server duration**: The client (e.g. IDE) applies a per-request timeout (often 5–30 seconds). If the server handler or queueing delay exceeds that, the client cancels the request and reports -32001.
-2. **Queueing behind tools**: Resource reads and tool calls share the same request stream. If five long tools are running (server limit `MCP_MAX_CONCURRENT_TOOLS`), additional resource reads wait in line. By the time the server serves them, the client may have already timed them out.
-3. **Slow or heavy handler**: A resource handler that does a lot of work (e.g. scanning many files) can exceed the client timeout even without queueing.
-
-**Server timeout strategy (Phase 69)**:
-
-- **Separate concurrency for resources**: Resource reads use a dedicated semaphore (`MCP_MAX_CONCURRENT_RESOURCES`, default 10) so they do **not** consume tool slots and do **not** queue behind long-running tools. Up to 10 resource reads can run concurrently. This reduces -32001 when the client opens many resources at once (e.g. memory-bank/stats, links/graph, usage/*, scripts/*, synapse/prompts).
-- **Per-handler timeouts**: Every resource handler is wrapped with `@mcp_resource_wrapper(timeout=...)` using the same constants as tools (`MCP_TOOL_TIMEOUT_FAST`, `MCP_TOOL_TIMEOUT_MEDIUM`, `MCP_TOOL_TIMEOUT_COMPLEX`). Handlers should complete within that timeout; if a handler routinely exceeds it, optimize the handler or use a higher category.
-- **Client timeout unknown**: If the client timeout cannot be determined, the server uses timeouts (60–300s depending on handler) and relies on the separate resource semaphore so resource reads are not delayed by tool execution.
-
-**Guidance**:
-
-- Prefer **tools** over **resources** when you need bulk or structured data during commit or long operations (e.g. `query_memory_bank(query_type="stats")`, `get_structure_info()` instead of reading `cortex://memory-bank/stats`, `cortex://structure/info`).
-- Avoid opening many resource-backed views in parallel while a long tool is running; or use the corresponding tools instead.
+See [Troubleshooting](guides/troubleshooting.md) for causes and mitigations for `-32001` resource-read timeouts.
 
 ## Troubleshooting
 

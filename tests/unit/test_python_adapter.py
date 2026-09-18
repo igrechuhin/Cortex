@@ -151,7 +151,7 @@ class TestPythonAdapter:
                 with pytest.raises(FileNotFoundError) as exc_info:
                     adapter._get_command("ruff")  # type: ignore[attr-defined]
                 assert "ruff not found" in str(exc_info.value)
-                assert "execute_pre_commit_checks" in str(exc_info.value)
+                assert "run from project root" in str(exc_info.value)
 
     def test_get_command_uses_cwd_venv_when_project_venv_missing(self) -> None:
         """_get_command uses cwd/.venv/bin when project_root has no .venv (MCP fallback)."""

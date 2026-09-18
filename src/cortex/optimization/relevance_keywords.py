@@ -78,13 +78,7 @@ def _filter_stop_words_and_short(words: list[str]) -> list[str]:
 
 def _deduplicate_keywords(keywords: list[str]) -> list[str]:
     """Deduplicate keywords while maintaining order."""
-    seen: set[str] = set()
-    unique_keywords: list[str] = []
-    for kw in keywords:
-        if kw not in seen:
-            seen.add(kw)
-            unique_keywords.append(kw)
-    return unique_keywords
+    return list(dict.fromkeys(keywords))
 
 
 def extract_keywords(text: str) -> list[str]:

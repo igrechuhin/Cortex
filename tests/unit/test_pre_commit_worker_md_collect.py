@@ -1,6 +1,6 @@
 """Tests for markdown path collection in the detached pre-commit worker.
 
-See also phase A pre-commit tests in ``test_pre_commit_phase_tools_phase_a_integration``.
+See also the Phase A markdown-lint coverage in ``test_pre_commit_detached``.
 """
 
 from __future__ import annotations

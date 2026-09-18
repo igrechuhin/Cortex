@@ -9,12 +9,10 @@ Phase A and Step 12.
 from __future__ import annotations
 
 from pathlib import Path
-from typing import cast
 from unittest.mock import patch
 
 import pytest
 
-from cortex.core.models import ModelDict
 from cortex.tools.execution.pre_commit_dirty_state import (
     CheckCleanResult,
     PipelineDirtyTracker,
@@ -25,9 +23,6 @@ from cortex.tools.execution.pre_commit_dirty_state import (
 
 _HASH_TARGET = "cortex.tools.execution.pre_commit_dirty_state.compute_git_file_hash"
 _SUBPROC = "cortex.tools.execution.pre_commit_dirty_state.subprocess.run"
-_LOAD_FP_TARGET = (
-    "cortex.tools.execution.pre_commit_dirty_state.load_phase_a_fingerprint"
-)
 
 _FP_BASE = PipelineFingerprint("abc123", "def456", 5, 10)
 _FP_SRC_CHANGED = PipelineFingerprint("xyz789", "changed", 6, 12)
@@ -183,89 +178,6 @@ class TestSkipDecisions:
 
     def test_no_skip_when_inactive(self) -> None:
         assert not PipelineDirtyTracker.get_instance().can_skip_check("tests").can_skip
-
-
-# --- try_skip_clean_checks ------------------------------------------------
-
-
-class TestTrySkipCleanChecks:
-    @pytest.mark.asyncio()
-    async def test_skip_result(self, tmp_path: Path) -> None:
-        from cortex.tools.execution.pre_commit_helpers_models import PreCommitCheck
-        from cortex.tools.execution.pre_commit_tools_execute_checks import (
-            try_skip_clean_checks,
-        )
-
-        _ = _make_tracker(tmp_path)
-        with patch(_HASH_TARGET, return_value=_FP_DOCS_ONLY):
-            result = await try_skip_clean_checks(
-                [PreCommitCheck.TYPE_CHECK, PreCommitCheck.QUALITY],
-                None,
-            )
-        assert result is not None and result["skipped"] is True
-
-    @pytest.mark.asyncio()
-    async def test_no_skip_source_changed(self, tmp_path: Path) -> None:
-        from cortex.tools.execution.pre_commit_helpers_models import PreCommitCheck
-        from cortex.tools.execution.pre_commit_tools_execute_checks import (
-            try_skip_clean_checks,
-        )
-
-        _ = _make_tracker(tmp_path)
-        with patch(_HASH_TARGET, return_value=_FP_SRC_CHANGED):
-            assert await try_skip_clean_checks([PreCommitCheck.TESTS], None) is None
-
-    @pytest.mark.asyncio()
-    async def test_no_skip_inactive(self) -> None:
-        from cortex.tools.execution.pre_commit_helpers_models import PreCommitCheck
-        from cortex.tools.execution.pre_commit_tools_execute_checks import (
-            try_skip_clean_checks,
-        )
-
-        # try_skip_clean_checks rehydrates from the real project root, so the
-        # developer's own persisted Phase A fingerprint would make the tracker
-        # active and break isolation. Force "no persisted state".
-        with patch(_LOAD_FP_TARGET, return_value=None):
-            assert await try_skip_clean_checks([PreCommitCheck.FORMAT], None) is None
-
-    @pytest.mark.asyncio()
-    async def test_no_skip_mixed_checks(self, tmp_path: Path) -> None:
-        from cortex.tools.execution.pre_commit_helpers_models import PreCommitCheck
-        from cortex.tools.execution.pre_commit_tools_execute_checks import (
-            try_skip_clean_checks,
-        )
-
-        _ = _make_tracker(tmp_path)
-        with patch(_HASH_TARGET, return_value=_FP_BASE):
-            result = await try_skip_clean_checks(
-                [PreCommitCheck.TYPE_CHECK, PreCommitCheck.TEST_NAMING],
-                None,
-            )
-        assert result is None
-
-
-# --- record_phase_a_fingerprint --------------------------------------------
-
-
-class TestRecordPhaseAFingerprint:
-    def test_records_on_pass(self, tmp_path: Path) -> None:
-        from cortex.tools.execution.pre_commit_phase_dispatch import (
-            record_phase_a_fingerprint,
-        )
-
-        result = cast(ModelDict, {"preflight_passed": True, "status": "success"})
-        with patch(_HASH_TARGET, return_value=_FP_BASE):
-            record_phase_a_fingerprint(result, tmp_path)
-        assert PipelineDirtyTracker.get_instance().is_active
-
-    def test_inactive_on_fail(self, tmp_path: Path) -> None:
-        from cortex.tools.execution.pre_commit_phase_dispatch import (
-            record_phase_a_fingerprint,
-        )
-
-        result = cast(ModelDict, {"preflight_passed": False, "status": "error"})
-        record_phase_a_fingerprint(result, tmp_path)
-        assert not PipelineDirtyTracker.get_instance().is_active
 
 
 # --- SkipDecision ----------------------------------------------------------

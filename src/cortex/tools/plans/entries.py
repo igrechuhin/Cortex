@@ -103,7 +103,7 @@ async def add_roadmap_entry(
             f"add_roadmap_entry: {e}",
             logger_name=__name__,
         )
-        from cortex.tools.models import AddRoadmapEntryResult
+        from cortex.tools.plans.roadmap_operations_models import AddRoadmapEntryResult
 
         error_result = AddRoadmapEntryResult(
             status=OperationStatus.ERROR,
@@ -160,7 +160,9 @@ async def remove_roadmap_entry(
             f"remove_roadmap_entry: {e}",
             logger_name=__name__,
         )
-        from cortex.tools.models import RemoveRoadmapEntryResult
+        from cortex.tools.plans.roadmap_operations_models import (
+            RemoveRoadmapEntryResult,
+        )
 
         error_result = RemoveRoadmapEntryResult(
             status=OperationStatus.ERROR,
@@ -221,7 +223,9 @@ async def remove_roadmap_section(
             f"remove_roadmap_section: {e}",
             logger_name=__name__,
         )
-        from cortex.tools.models import RemoveRoadmapSectionResult
+        from cortex.tools.plans.roadmap_operations_models import (
+            RemoveRoadmapSectionResult,
+        )
 
         error_result = RemoveRoadmapSectionResult(
             status=OperationStatus.ERROR,

@@ -19,7 +19,7 @@ from cortex.core.mcp_stability import ensure_usage_context, mcp_tool_wrapper
 from cortex.core.models import OperationStatus
 from cortex.core.session_logger import get_session_id
 from cortex.optimization.agent_roles import AgentRole
-from cortex.tools.models import (
+from cortex.tools.session.models import (
     CheckTaskAvailableResult,
     ClaimTaskErrorResult,
     ListActiveTasksResult,

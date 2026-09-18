@@ -43,7 +43,7 @@ class UpdateRequest(NamedTuple):
 def _error_invalid_operation(operation: str) -> str:
     from cortex.core.constants import MemoryBankFile
     from cortex.core.models import OperationStatus
-    from cortex.tools.models import AddRoadmapEntryResult
+    from cortex.tools.plans.roadmap_operations_models import AddRoadmapEntryResult
 
     return AddRoadmapEntryResult(
         status=OperationStatus.ERROR,
@@ -166,7 +166,7 @@ async def _handle_append_op(
 def _progress_append_validation_error() -> str:
     from cortex.core.constants import MemoryBankFile
     from cortex.core.models import OperationStatus
-    from cortex.tools.models import AppendProgressEntryResult
+    from cortex.tools.plans.roadmap_operations_models import AppendProgressEntryResult
 
     return AppendProgressEntryResult(
         status=OperationStatus.ERROR,
@@ -184,7 +184,9 @@ def _progress_append_validation_error() -> str:
 def _active_context_append_validation_error() -> str:
     from cortex.core.constants import MemoryBankFile
     from cortex.core.models import OperationStatus
-    from cortex.tools.models import AppendActiveContextEntryResult
+    from cortex.tools.plans.roadmap_operations_models import (
+        AppendActiveContextEntryResult,
+    )
 
     return AppendActiveContextEntryResult(
         status=OperationStatus.ERROR,

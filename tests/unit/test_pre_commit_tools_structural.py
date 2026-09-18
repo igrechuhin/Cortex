@@ -1,4 +1,4 @@
-"""Structural and size tests extracted from test_pre_commit_tools."""
+"""Structural and size tests: file/function line-count limits, docstring ranges."""
 
 from __future__ import annotations
 
@@ -21,12 +21,6 @@ from cortex.tools.execution.pre_commit_pipeline_quality import (
     read_head_source,
     run_git_diff_output,
 )
-
-_EXECUTE_REQUIRED = {
-    "test_timeout": 300,
-    "coverage_threshold": 0.9,
-    "strict_mode": False,
-}
 
 
 class TestCountFileLines:

@@ -319,12 +319,11 @@ async def run_composite_workflow(
     operation="fix_all": Full fix sequence (quality→tests→docs) with zero args. USE THIS when
         the MCP bridge cannot pass arguments to individual tools (e.g. some tool bridges send
         empty {} — causes "Missing required parameters" errors on rules, load_context,
-        execute_pre_commit_checks). fix_all runs fix_quality, type_check/quality/format/markdown
+        run_quality_gate). fix_all runs fix_quality, type_check/quality/format/markdown
         verification, tests (600s, 90% coverage), phase B docs validation, and
         timestamps+roadmap_sync validation — all with sensible hardcoded defaults.
     operation="fix_docs": Run Phase B docs/memory-bank sync validation (timestamps +
-        roadmap_sync). Zero args. Use this instead of execute_pre_commit_checks(phase="B")
-        when the bridge cannot pass arguments — that call zero-args to Phase A (runs tests).
+        roadmap_sync). Zero args; equivalent to calling run_docs_gate() directly.
     operation="safe_manage_file": validate + manage_file + validate. Params: file_name,
         file_operation, content, sections, change_description, check_type.
     operation="suggest_workflow": recommend templates. Params: task_description, limit.

@@ -111,7 +111,7 @@ class TestImplementPromptQualityGates:
         """Executor includes mandatory formatting step before type checking."""
         assert "MANDATORY: Format code" in executor_content
         assert (
-            "execute_pre_commit_checks" in executor_content
+            "run_quality_gate" in executor_content
             or "formatter" in executor_content.lower()
         )
 
@@ -133,7 +133,7 @@ class TestImplementPromptQualityGates:
         assert (
             "ReadLints" in executor_content
             or "fix_quality" in executor_content
-            or "execute_pre_commit_checks" in executor_content
+            or "run_quality_gate" in executor_content
         )
 
     def test_step_46_includes_implicit_concatenation_check(

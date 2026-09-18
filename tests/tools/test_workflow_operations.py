@@ -6,7 +6,7 @@ import json
 
 import pytest
 
-from cortex.tools.composite_tools import run_composite_workflow
+from cortex.tools.execution.composite_tools import run_composite_workflow
 from cortex.tools.structure.categories import get_tool_category
 
 

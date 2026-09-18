@@ -335,7 +335,7 @@ class InsightsResult(AnalysisBaseModel):
 
 
 # ============================================================================
-# Protocol Return Type Models (for PatternAnalyzerProtocol)
+# Access Pattern Analysis Return Type Models
 # ============================================================================
 
 
@@ -426,7 +426,7 @@ class UnusedFileInfo(AnalysisBaseModel):
 
 
 # ============================================================================
-# Protocol Return Type Models (for StructureAnalyzerProtocol)
+# Structure Analysis Return Type Models
 # ============================================================================
 
 

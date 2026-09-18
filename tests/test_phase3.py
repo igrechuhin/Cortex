@@ -5,14 +5,11 @@ This test suite covers:
 - SchemaValidator: File validation against schemas
 - DuplicationDetector: Finding duplicate content
 - QualityMetrics: Calculating quality scores
-- ValidationConfig: Configuration management
 """
 
-from pathlib import Path
 from typing import cast
 
 import pytest
-from pydantic import ValidationError
 
 from cortex.core.models import DetailedFileMetadata, ModelDict
 from cortex.validation.duplication_detector import DuplicationDetector
@@ -20,7 +17,6 @@ from cortex.validation.models import FileMetadataForQuality
 from cortex.validation.quality_metrics import QualityMetrics
 from cortex.validation.quality_models import QualityScoreResult, ValidationResult
 from cortex.validation.schema_validator import SchemaValidator
-from cortex.validation.validation_config import ValidationConfig
 
 # ============================================================================
 # Schema Validator Tests
@@ -374,109 +370,6 @@ Criteria here.
         assert result.score >= 70
         assert result.grade in ["A", "B", "C", "D", "F"]
         assert result.validation is not None
-
-
-# ============================================================================
-# Validation Config Tests
-# ============================================================================
-
-
-class TestValidationConfig:
-    """Tests for ValidationConfig."""
-
-    def test_load_default_config(self):
-        """Test loading default configuration."""
-        import tempfile
-
-        with tempfile.TemporaryDirectory() as tmpdir:
-            config = ValidationConfig(Path(tmpdir))
-
-            assert config.is_validation_enabled() is True
-            assert config.get_token_budget_max() == 100000
-            assert config.get_duplication_threshold() == 0.85
-
-    def test_get_with_dot_notation(self):
-        """Test getting config values with dot notation."""
-        import tempfile
-
-        with tempfile.TemporaryDirectory() as tmpdir:
-            config = ValidationConfig(Path(tmpdir))
-
-            value = config.get("token_budget.max_total_tokens")
-            assert value == 100000
-
-            value = config.get("duplication.threshold")
-            assert value == 0.85
-
-    def test_set_with_dot_notation(self):
-        """Test setting config values with dot notation."""
-        import tempfile
-
-        with tempfile.TemporaryDirectory() as tmpdir:
-            config = ValidationConfig(Path(tmpdir))
-
-            config.set("token_budget.max_total_tokens", 150000)
-            assert config.get("token_budget.max_total_tokens") == 150000
-
-            config.set("duplication.threshold", 0.90)
-            assert config.get("duplication.threshold") == 0.90
-
-    @pytest.mark.asyncio
-    async def test_save_and_load_config(self):
-        """Test saving and loading configuration."""
-        import tempfile
-
-        with tempfile.TemporaryDirectory() as tmpdir:
-            tmpdir_path = Path(tmpdir)
-            # Create .cortex directory
-            (tmpdir_path / ".cortex").mkdir(parents=True, exist_ok=True)
-
-            # Create and modify config
-            config1 = ValidationConfig(tmpdir_path)
-            config1.set("token_budget.max_total_tokens", 200000)
-            await config1.save()
-
-            # Load config in new instance
-            config2 = ValidationConfig(tmpdir_path)
-            assert config2.get("token_budget.max_total_tokens") == 200000
-
-    def test_validate_config_valid(self):
-        """Test config validation with valid config."""
-        import tempfile
-
-        with tempfile.TemporaryDirectory() as tmpdir:
-            config = ValidationConfig(Path(tmpdir))
-
-            errors = config.validate_config()
-            assert len(errors) == 0
-
-    def test_validate_config_invalid(self):
-        """Test config validation with invalid values."""
-        import tempfile
-
-        with tempfile.TemporaryDirectory() as tmpdir:
-            config = ValidationConfig(Path(tmpdir))
-
-            # Set invalid values
-            with pytest.raises(ValidationError):
-                config.set("duplication.threshold", 1.5)  # Should be 0-1
-            with pytest.raises(ValidationError):
-                config.set("token_budget.max_total_tokens", -100)  # Should be positive
-
-    def test_reset_to_defaults(self):
-        """Test resetting config to defaults."""
-        import tempfile
-
-        with tempfile.TemporaryDirectory() as tmpdir:
-            config = ValidationConfig(Path(tmpdir))
-
-            # Modify config
-            config.set("token_budget.max_total_tokens", 200000)
-            assert config.get("token_budget.max_total_tokens") == 200000
-
-            # Reset
-            config.reset_to_defaults()
-            assert config.get("token_budget.max_total_tokens") == 100000
 
 
 # ============================================================================

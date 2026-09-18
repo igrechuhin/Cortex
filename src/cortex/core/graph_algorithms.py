@@ -5,6 +5,7 @@ This module provides algorithmic operations for analyzing dependency graphs,
 including cycle detection, topological sorting, and path finding.
 """
 
+import graphlib
 from collections import deque
 from collections.abc import Callable
 
@@ -104,41 +105,33 @@ class GraphAlgorithms:
         files: list[str], get_dependencies_fn: Callable[[str], list[str]]
     ) -> list[str]:
         """
-        Perform topological sort using Kahn's algorithm.
+        Perform topological sort using graphlib.TopologicalSorter (Kahn's algorithm).
 
         Args:
             files: List of file names to sort
             get_dependencies_fn: Function that returns dependencies for a file
 
         Returns:
-            Sorted list where dependencies come before dependents
+            Sorted list where dependencies come before dependents. If a cycle
+            exists, returns a partial order covering only the acyclic portion.
         """
-        # Build in-degree map and adjacency list
-        in_degree: dict[str, int] = {f: 0 for f in files}
-        adj_list: dict[str, list[str]] = {f: [] for f in files}
+        file_set = set(files)
+        graph = {
+            f: [dep for dep in get_dependencies_fn(f) if dep in file_set] for f in files
+        }
+        sorter: graphlib.TopologicalSorter[str] = graphlib.TopologicalSorter(graph)
+        try:
+            sorter.prepare()
+        except graphlib.CycleError:
+            pass
 
-        for file in files:
-            for dep in get_dependencies_fn(file):
-                if dep in files:
-                    adj_list[dep].append(file)
-                    in_degree[file] += 1
-
-        # Kahn's algorithm (use deque for O(1) queue operations)
-        queue = deque(f for f in files if in_degree[f] == 0)
         result: list[str] = []
-
-        while queue:
-            current = queue.popleft()
-            result.append(current)
-
-            neighbors = adj_list[current]
-            for neighbor in neighbors:
-                in_degree[neighbor] -= 1
-                if in_degree[neighbor] == 0:
-                    queue.append(neighbor)
-
-        # If not all files processed, there's a cycle
-        # Return partial order
+        while sorter.is_active():
+            ready = sorter.get_ready()
+            if not ready:
+                break
+            result.extend(ready)
+            sorter.done(*ready)
         return result
 
     @staticmethod

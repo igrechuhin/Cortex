@@ -96,13 +96,13 @@ async def test_skill_pack_load_core_returns_manifest() -> None:
 @pytest.mark.asyncio
 @pytest.mark.timeout(15)
 async def test_skill_pack_load_quality_returns_manifest() -> None:
-    """skill_pack(operation=load, pack_name=quality) returns manifest with execute_pre_commit_checks."""
+    """skill_pack(operation=load, pack_name=quality) returns manifest with run_quality_gate."""
     result = await skill_pack(operation="load", pack_name="quality")
     data = json.loads(result)
     assert data["status"] == "success"
     pack = data["pack"]
     assert pack["name"] == "quality"
-    assert "execute_pre_commit_checks" in pack["tools"]
+    assert "run_quality_gate" in pack["tools"]
 
 
 @pytest.mark.asyncio

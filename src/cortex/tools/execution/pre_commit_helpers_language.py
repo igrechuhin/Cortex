@@ -99,7 +99,7 @@ def _resolve_language_at_root(root_path: Path) -> tuple[LanguageInfo, str] | str
         return (info, str(path))
     msg = (
         "Could not detect project language. Pass language (e.g. 'python') "
-        + "to execute_pre_commit_checks when invoking the tool."
+        + "when invoking the tool."
     )
     return _create_error_result(msg)
 

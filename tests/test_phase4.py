@@ -6,7 +6,6 @@ Tests all Phase 4 modules:
 - ContextOptimizer
 - ProgressiveLoader
 - SummarizationEngine
-- OptimizationConfig
 """
 
 import tempfile
@@ -22,7 +21,6 @@ from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 
 # Import dependencies
 from cortex.core.token_counter import TokenCounter
-from cortex.optimization.config import OptimizationConfig
 from cortex.optimization.context_optimizer import ContextOptimizer
 from cortex.optimization.models import FileMetadataForScoring
 from cortex.optimization.progressive_loader import ProgressiveLoader
@@ -367,71 +365,3 @@ Content 2
         assert 0.0 <= score1 <= 1.0
         assert 0.0 <= score2 <= 1.0
         assert score1 > score2  # Goals should score higher than examples
-
-
-class TestOptimizationConfig:
-    """Test optimization configuration."""
-
-    @pytest.fixture
-    def config(self) -> Generator[OptimizationConfig]:
-        """Create optimization config."""
-        with tempfile.TemporaryDirectory() as tmpdir:
-            config = OptimizationConfig(Path(tmpdir))
-            yield config
-
-    def test_default_config(self, config: OptimizationConfig) -> None:
-        """Test default configuration values."""
-        assert config.get_token_budget() == 25000
-        assert config.get_loading_strategy() == "dependency_aware"
-        assert config.is_summarization_enabled() is True
-
-    def test_get_set_config(self, config: OptimizationConfig) -> None:
-        """Test getting and setting configuration."""
-        # Set a value
-        success = config.set("token_budget.default_budget", 50000)
-        assert success is True
-
-        # Get the value
-        value = config.get("token_budget.default_budget")
-        assert value == 50000
-
-    def test_get_relevance_weights(self, config: OptimizationConfig) -> None:
-        """Test getting relevance weights."""
-        weights = config.get_relevance_weights()
-
-        assert "keyword_weight" in weights
-        assert "dependency_weight" in weights
-        assert "recency_weight" in weights
-        assert "quality_weight" in weights
-
-        # Weights should sum to approximately 1.0
-        total = sum(weights.values())
-        assert 0.9 <= total <= 1.1
-
-    def test_validate_config(self, config: OptimizationConfig) -> None:
-        """Test configuration validation."""
-        is_valid, error = config.validate()
-        assert is_valid is True
-        assert error is None
-
-    def test_validate_invalid_config(self, config: OptimizationConfig) -> None:
-        """Test validation with invalid config."""
-        # Set invalid budget
-        _ = config.set("token_budget.default_budget", -100)
-
-        is_valid, error = config.validate()
-        assert is_valid is False
-        assert error is not None
-        _ = error  # error assigned but not used after assertion
-
-    @pytest.mark.asyncio
-    async def test_reset_config(self, config: OptimizationConfig) -> None:
-        """Test resetting configuration."""
-        # Modify config
-        _ = config.set("token_budget.default_budget", 50000)
-
-        # Reset
-        await config.reset()
-
-        # Should be back to default
-        assert config.get_token_budget() == 25000

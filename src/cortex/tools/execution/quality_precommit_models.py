@@ -1,6 +1,6 @@
 """
-Models for execute_pre_commit_checks, autofix, run_preflight_checks,
-run_docs_and_memory_bank_sync, cleanup_metadata_index, and pre-commit result types.
+Models for autofix, run_docs_and_memory_bank_sync, and pre-commit check
+result types.
 """
 
 from __future__ import annotations
@@ -57,26 +57,6 @@ class CheckStats(StrictBaseModel):
     checks_performed: list[str] = Field(default_factory=list)
 
 
-class ExecutePreCommitChecksResult(ToolResultBase):
-    """Result of execute_pre_commit_checks operation (success)."""
-
-    status: ToolResultStatus = Field(default=ToolResultStatus.SUCCESS)
-    language: str
-    checks: dict[str, CheckResult] = Field(default_factory=dict)
-    stats: CheckStats
-
-
-class ExecutePreCommitChecksErrorResult(ErrorResultBase):
-    """Error result for execute_pre_commit_checks operations."""
-
-    language: str | None = None
-
-
-ExecutePreCommitChecksResultUnion = (
-    ExecutePreCommitChecksResult | ExecutePreCommitChecksErrorResult
-)
-
-
 class FixQualityIssuesResult(ToolResultBase):
     """Result of autofix operation (success)."""
 
@@ -124,61 +104,6 @@ class PreflightCheckSummary(StrictBaseModel):
         default=None,
         description="Optional human-readable message or first-line summary for the check",
     )
-
-
-class RunPreflightChecksResult(ToolResultBase):
-    """Result of run_preflight_checks operation (success)."""
-
-    status: ToolResultStatus = Field(default=ToolResultStatus.SUCCESS)
-    preflight_passed: bool = Field(
-        ...,
-        description=(
-            "True when all required preflight checks passed with zero errors, "
-            "False when any check reports errors but the tool completed successfully"
-        ),
-    )
-    language: str | None = Field(
-        default=None,
-        description="Detected project language used for pre-commit checks, if any",
-    )
-    checks: list[PreflightCheckSummary] = Field(
-        default_factory=lambda: list[PreflightCheckSummary](),
-        description="Per-check summaries for preflight run (including markdown lint)",
-    )
-    execute_result: JsonDict | None = Field(
-        default=None,
-        description=(
-            "Raw execute_pre_commit_checks result for detailed inspection. "
-            "Shape matches ExecutePreCommitChecksResultUnion."
-        ),
-    )
-    markdown_result: JsonDict | None = Field(
-        default=None,
-        description=(
-            "Raw fix_markdown_lint result for detailed inspection. "
-            "Shape matches FixMarkdownLintResultUnion."
-        ),
-    )
-
-
-class RunPreflightChecksErrorResult(ErrorResultBase):
-    """Error result for run_preflight_checks operations."""
-
-    language: str | None = Field(
-        default=None,
-        description="Detected project language if available when the error occurred",
-    )
-    execute_result: JsonDict | None = Field(
-        default=None,
-        description="Partial execute_pre_commit_checks result, when available",
-    )
-    markdown_result: JsonDict | None = Field(
-        default=None,
-        description="Partial fix_markdown_lint result, when available",
-    )
-
-
-RunPreflightChecksResultUnion = RunPreflightChecksResult | RunPreflightChecksErrorResult
 
 
 class DocsAndMemoryBankSyncResult(ToolResultBase):
@@ -234,32 +159,6 @@ DocsAndMemoryBankSyncResultUnion = (
 )
 
 
-class CleanupMetadataIndexResult(ToolResultBase):
-    """Result of cleanup_metadata_index operation (success)."""
-
-    status: ToolResultStatus = Field(default=ToolResultStatus.SUCCESS)
-    dry_run: bool
-    stale_files_found: int
-    stale_files: list[str] = Field(default_factory=list)
-    entries_cleaned: int
-    message: str
-
-
-class CleanupMetadataIndexErrorResult(ErrorResultBase):
-    """Error result for cleanup_metadata_index operations."""
-
-    dry_run: bool | None = None
-    stale_files_found: int | None = None
-    stale_files: list[str] = Field(default_factory=list)
-    entries_cleaned: int | None = None
-    message: str | None = None
-
-
-CleanupMetadataIndexResultUnion = (
-    CleanupMetadataIndexResult | CleanupMetadataIndexErrorResult
-)
-
-
 class ProjectConfigStatusModel(DictLikeModel):
     """Project configuration status flags."""
 
@@ -281,41 +180,3 @@ class ProjectConfigStatusModel(DictLikeModel):
     tiktoken_cache_available: bool = Field(
         ..., description="Whether tiktoken cache is available"
     )
-
-
-class PreCommitCheckResult(StrictBaseModel):
-    """Result of a single pre-commit check."""
-
-    passed: bool = Field(..., description="Whether check passed")
-    errors: int = Field(default=0, ge=0, description="Number of errors")
-    warnings: int = Field(default=0, ge=0, description="Number of warnings")
-    files_modified: list[str] = Field(
-        default_factory=list, description="Files modified by this check"
-    )
-    output: str | None = Field(default=None, description="Check output")
-
-
-class PreCommitResultModel(StrictBaseModel):
-    """Result of pre-commit checks execution."""
-
-    model_config = ConfigDict(
-        extra=EXTRA_FORBID,
-        validate_assignment=True,
-    )
-
-    status: OperationStatus = Field(..., description="Operation status")
-    language: str | None = Field(None, description="Detected language")
-    checks_performed: list[str] = Field(
-        default_factory=list, description="Checks performed"
-    )
-    results: dict[str, PreCommitCheckResult] = Field(
-        default_factory=dict, description="Results by check type"
-    )
-    total_errors: int = Field(default=0, ge=0, description="Total errors")
-    total_warnings: int = Field(default=0, ge=0, description="Total warnings")
-    files_modified: list[str] = Field(
-        default_factory=list, description="Files modified"
-    )
-    success: bool = Field(default=True, description="Whether checks succeeded")
-    error: str | None = Field(None, description="Error message if status is error")
-    error_type: str | None = Field(None, description="Error type if status is error")

@@ -10,6 +10,10 @@ from pathlib import Path
 
 from cortex.core.async_file_utils import open_async_text_file
 from cortex.core.constants import CONSOLIDATION_MIN_SIMILARITY
+from cortex.refactoring.consolidation_detector_cache import (
+    cached_content_hash,
+    cached_similarity,
+)
 from cortex.refactoring.consolidation_detector_models import ConsolidationOpportunity
 from cortex.refactoring.consolidation_detector_opportunities import (
     build_duplicate_opportunity,
@@ -19,9 +23,6 @@ from cortex.refactoring.consolidation_detector_opportunities import (
 )
 from cortex.refactoring.consolidation_detector_similarity import (
     calculate_similarity as _calculate_similarity,
-)
-from cortex.refactoring.consolidation_detector_similarity import (
-    compute_content_hash as _compute_content_hash_raw,
 )
 from cortex.refactoring.consolidation_detector_similarity import (
     extract_common_content as _extract_common_content,
@@ -76,16 +77,10 @@ class ConsolidationDetector:
         self.target_reduction: float = target_reduction
 
         self.opportunity_counter: int = 0
-        self._content_hash_cache: dict[str, str] = {}
-        self._similarity_cache: dict[tuple[str, str], float] = {}
 
     def _compute_content_hash(self, content: str) -> str:
         """Compute fast hash of content with caching."""
-        if content in self._content_hash_cache:
-            return self._content_hash_cache[content]
-        content_hash = _compute_content_hash_raw(content)
-        self._content_hash_cache[content] = content_hash
-        return content_hash
+        return cached_content_hash(content)
 
     def generate_opportunity_id(self) -> str:
         """Generate unique opportunity ID"""
@@ -187,14 +182,7 @@ class ConsolidationDetector:
     def _calculate_similarity_with_cache(
         self, content1: str, content2: str, hash1: str, hash2: str
     ) -> float:
-        if hash1 == hash2:
-            return 1.0
-        cache_key = (hash1, hash2)
-        if cache_key in self._similarity_cache:
-            return self._similarity_cache[cache_key]
-        similarity = self.calculate_similarity(content1, content2)
-        self._similarity_cache[cache_key] = similarity
-        return similarity
+        return cached_similarity(content1, content2, hash1, hash2)
 
     def _compare_sections_for_similarity(
         self,

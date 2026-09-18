@@ -8,7 +8,8 @@ import pytest
 from cortex.core.constants import MemoryBankFile
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.tools.models_base import ToolResultStatus
-from cortex.tools.plans.operations import RegisterPlanResult, register_plan_in_roadmap
+from cortex.tools.plans.register import register_plan_in_roadmap
+from cortex.tools.plans.register_models import RegisterPlanResult
 
 
 class TestRegisterPlanTaskGraphValidation:

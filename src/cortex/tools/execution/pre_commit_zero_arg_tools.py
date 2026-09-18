@@ -434,8 +434,8 @@ async def run_docs_gate(
 
     USE WHEN: Validating that timestamps, roadmap_sync, and memory-bank files
     are consistent after documentation updates. Called by the commit-docs
-    subagent as a zero-arg alternative to execute_pre_commit_checks(phase="B")
-    (which some MCP client bridges zero-arg to Phase A, running tests instead).
+    subagent as a zero-arg, phase-B-only alternative to run_quality_gate()
+    (which runs Phase A: quality, type_check, and tests).
 
     RETURNS: JSON with docs_phase_passed (bool), timestamps_result, and
     roadmap_sync_result. Does NOT run tests or code quality checks.

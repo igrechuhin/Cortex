@@ -12,6 +12,10 @@ from cortex.core.context_logging import MCPContext, log_client
 from cortex.core.mcp_stability import execute_tool_with_stability
 from cortex.core.project_root_resolver import resolve_project_root_async
 from cortex.managers import initialization
+from cortex.tools.files.operations_models import (
+    RollbackFileVersionErrorResult,
+    RollbackFileVersionResult,
+)
 from cortex.tools.memory.foundation_rollback_helpers import (
     build_rollback_error_response,
     build_rollback_success_response,
@@ -19,10 +23,6 @@ from cortex.tools.memory.foundation_rollback_helpers import (
     validate_and_get_snapshot,
 )
 from cortex.tools.memory.foundation_rollback_models import RollbackManagers
-from cortex.tools.models import (
-    RollbackFileVersionErrorResult,
-    RollbackFileVersionResult,
-)
 
 __all__ = [
     "rollback_file_version",

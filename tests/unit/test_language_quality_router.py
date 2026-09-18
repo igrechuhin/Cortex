@@ -29,6 +29,11 @@ def test_get_adapter_returns_expected_adapter_for_python() -> None:
     assert isinstance(adapter, PythonAdapter)
 
 
+def test_get_adapter_returns_none_for_unsupported_language() -> None:
+    adapter = LanguageQualityRouter.get_adapter("haskell", project_root="/some/root")
+    assert adapter is None
+
+
 @pytest.mark.parametrize(
     ("language", "expected"),
     [

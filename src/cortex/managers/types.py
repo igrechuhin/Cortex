@@ -19,7 +19,6 @@ from cortex.analysis.structure_analyzer import StructureAnalyzer
 # Import concrete classes for managers without protocols
 from cortex.core.dependency_graph import DependencyGraph
 from cortex.core.file_system import FileSystemManager
-from cortex.core.file_watcher import FileWatcherManager
 from cortex.core.metadata_index import MetadataIndex
 from cortex.core.migration import MigrationManager
 from cortex.core.pydantic_extra import EXTRA_FORBID
@@ -85,7 +84,6 @@ class CoreManagersDict(BaseModel):
     graph: DependencyGraph = Field(description="Dependency graph")
     versions: VersionManager = Field(description="Version manager")
     migration: MigrationManager = Field(description="Migration manager")
-    watcher: FileWatcherManager = Field(description="File watcher manager")
 
 
 class ManagersDict(BaseModel):
@@ -123,7 +121,6 @@ class ManagersDict(BaseModel):
     graph: DependencyGraph = Field(description="Dependency graph")
     versions: VersionManager = Field(description="Version manager")
     migration: MigrationManager = Field(description="Migration manager")
-    watcher: FileWatcherManager = Field(description="File watcher manager")
 
     # Phase 2: DRY Linking managers (lazy)
     link_parser: LazyManager[LinkParser] | LinkParser | None = Field(

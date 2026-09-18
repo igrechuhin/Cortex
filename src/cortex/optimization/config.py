@@ -25,7 +25,6 @@ from cortex.optimization.config_loading import (
     merge_configs as merge_configs_impl,
 )
 from cortex.optimization.config_validation import validate_optimization_config
-from cortex.optimization.models import OptimizationConfigModel
 
 __all__ = ["DEFAULT_OPTIMIZATION_CONFIG", "OptimizationConfig"]
 
@@ -105,10 +104,6 @@ class OptimizationConfig:
         value = self.get("max_response_tokens", 50000)
         return int(value) if isinstance(value, int) and value > 0 else 50000
 
-    def get_loading_strategy(self) -> str:
-        value = self.get("loading_strategy.default", "dependency_aware")
-        return str(value) if isinstance(value, str) else "dependency_aware"
-
     def get_mandatory_files(self) -> list[str]:
         value = self.get("loading_strategy.mandatory_files", [])
         if not isinstance(value, list):
@@ -156,18 +151,6 @@ class OptimizationConfig:
         value = self.get("summarization.target_reduction", 0.5)
         return float(value) if isinstance(value, (int, float)) else 0.5
 
-    def is_summarization_cache_enabled(self) -> bool:
-        value = self.get("summarization.cache_summaries", True)
-        return bool(value) if isinstance(value, bool) else True
-
-    def get_summarization_age_threshold_days(self) -> int:
-        value = self.get("summarization.age_threshold_days", 90)
-        return int(value) if isinstance(value, int) else 90
-
-    def is_summarization_auto_summarize_old_files(self) -> bool:
-        value = self.get("summarization.auto_summarize_old_files", False)
-        return bool(value) if isinstance(value, bool) else False
-
     def get_relevance_weights(self) -> dict[str, float]:
         keyword = self.get("relevance.keyword_weight", 0.4)
         dep = self.get("relevance.dependency_weight", 0.3)
@@ -186,14 +169,6 @@ class OptimizationConfig:
         value = self.get("performance.cache_enabled", True)
         return bool(value) if isinstance(value, bool) else True
 
-    def get_cache_ttl(self) -> int:
-        value = self.get("performance.cache_ttl_seconds", 3600)
-        return int(value) if isinstance(value, int) else 3600
-
-    def get_max_cache_size_mb(self) -> int:
-        value = self.get("performance.max_cache_size_mb", 50)
-        return int(value) if isinstance(value, int) else 50
-
     def is_rules_enabled(self) -> bool:
         value = self.get("rules.enabled", False)
         return bool(value) if isinstance(value, bool) else False
@@ -205,10 +180,6 @@ class OptimizationConfig:
     def get_rules_reindex_interval(self) -> int:
         value = self.get("rules.reindex_interval_minutes", 30)
         return int(value) if isinstance(value, int) else 30
-
-    def is_rules_auto_include(self) -> bool:
-        value = self.get("rules.auto_include_in_context", True)
-        return bool(value) if isinstance(value, bool) else True
 
     def get_rules_max_tokens(self) -> int:
         value = self.get("rules.max_rules_tokens", 5000)
@@ -224,10 +195,6 @@ class OptimizationConfig:
 
     def is_context_aware_loading(self) -> bool:
         value = self.get("rules.context_aware_loading", True)
-        return bool(value) if isinstance(value, bool) else True
-
-    def is_always_include_generic(self) -> bool:
-        value = self.get("rules.always_include_generic", True)
         return bool(value) if isinstance(value, bool) else True
 
     def get_language_keywords(self) -> dict[str, list[str]]:
@@ -309,12 +276,6 @@ class OptimizationConfig:
     def to_dict(self) -> ModelDict:
         """Return a defensive copy of current config."""
         return copy.deepcopy(self.config)
-
-    def to_model(self) -> OptimizationConfigModel:
-        """Return validated config model (strict, raises on invalid config)."""
-        default = get_default_config_with_tool_search()
-        merged = self.merge_configs(default, self.config)
-        return OptimizationConfigModel.model_validate(merged)
 
     def __repr__(self) -> str:
         return f"OptimizationConfig(project_root={self.project_root!r})"

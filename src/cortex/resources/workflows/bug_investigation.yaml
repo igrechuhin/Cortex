@@ -6,7 +6,7 @@ steps:
   - search_tools / read code as needed
   - think
   - "[implement fix]"
-  - execute_pre_commit_checks(checks=["tests"])
+  - run_quality_gate()
 keywords:
   - bug
   - fix

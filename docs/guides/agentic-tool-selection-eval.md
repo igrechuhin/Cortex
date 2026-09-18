@@ -14,7 +14,7 @@ run_tool_evaluation(mode="agentic")
 Requirements:
 
 - The optional `anthropic` extra: `pip install -e '.[agentic-evals]'`.
-  The base `requirements.txt` install is unchanged and never imports `anthropic`.
+  The default install never imports `anthropic`.
 - An `ANTHROPIC_API_KEY` in the environment.
 
 If either is missing the mode does not fail. It returns an `agentic_summary`

@@ -83,14 +83,7 @@ def _errors_from_checks(result: Mapping[str, object]) -> list[GateError]:
 
 
 def _top_files(errors: list[GateError]) -> list[str]:
-    ordered: list[str] = []
-    seen: set[str] = set()
-    for err in errors:
-        if err.file in seen:
-            continue
-        seen.add(err.file)
-        ordered.append(err.file)
-    return ordered[:5]
+    return list(dict.fromkeys(err.file for err in errors))[:5]
 
 
 def feedback_from_quality_result(result: Mapping[str, object]) -> GateFeedback | None:

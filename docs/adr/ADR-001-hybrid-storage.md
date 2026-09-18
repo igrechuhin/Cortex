@@ -8,7 +8,7 @@ Accepted
 
 Cortex needs to manage potentially hundreds of memory bank files efficiently while providing fast metadata lookups, dependency tracking, and validation capabilities. The system must handle:
 
-1. **File Operations**: Reading, writing, and watching memory bank files stored on disk
+1. **File Operations**: Reading and writing memory bank files stored on disk
 2. **Metadata Management**: Tracking file metadata (size, hash, timestamps, dependencies)
 3. **Performance**: Fast lookups for file metadata without repeatedly reading from disk
 4. **Reliability**: Detecting file corruption, conflicts, and external modifications
@@ -109,13 +109,6 @@ We will implement a **hybrid storage architecture** combining:
 - Corruption detection and auto-recovery
 - Incremental updates on file changes
 
-**FileWatcher** (`src/cortex/managers/file_watcher.py`):
-
-- Detects external file modifications
-- Triggers metadata index updates
-- Uses file system events where available
-- Fallback to polling for unsupported platforms
-
 ### Data Flow
 
 **Write Path**:
@@ -128,7 +121,6 @@ FileSystemManager.write_file()
 1. Write content to disk (atomic)
 2. Calculate file hash
 3. Update metadata index
-4. Notify FileWatcher
     ↓
 Success Response
 ```
@@ -147,20 +139,6 @@ Content Query (if needed)
 FileSystemManager.read_file()
     ↓
 Read from disk + validate hash
-```
-
-**External Change Detection**:
-
-```text
-File Modified Externally
-    ↓
-FileWatcher detects change
-    ↓
-FileSystemManager.refresh_metadata()
-    ↓
-Re-read file, update hash/metadata
-    ↓
-MetadataIndex updated
 ```
 
 ### Storage Format
@@ -287,8 +265,6 @@ Dependencies:
 **5. External Tool Integration**:
 
 - External tools can create inconsistency
-- FileWatcher has some latency in detecting changes
-- Polling fallback is resource-intensive
 
 ### Neutral
 
@@ -298,19 +274,13 @@ Dependencies:
 - Trade-off: duplicated data for performance gain
 - Acceptable overhead (metadata is small)
 
-**2. Platform Dependencies**:
-
-- File watching uses platform-specific APIs where available
-- Fallback to polling on unsupported platforms
-- Performance varies by platform
-
-**3. Concurrency Model**:
+**2. Concurrency Model**:
 
 - Single-writer-multiple-readers pattern
 - More restrictive than multi-writer databases
 - Acceptable for typical memory bank usage patterns
 
-**4. Index Format**:
+**3. Index Format**:
 
 - JSON is human-readable but not optimized for large datasets
 - Could migrate to binary format (SQLite) in future

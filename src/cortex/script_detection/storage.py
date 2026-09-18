@@ -64,27 +64,3 @@ async def get_capture_by_id(
 def generate_script_id() -> str:
     """Generate a unique script capture ID."""
     return str(uuid.uuid4())
-
-
-class ScriptCaptureStore:
-    """Synchronous-style facade for script capture storage.
-
-    All methods are async; project_root is provided at call site.
-    """
-
-    @staticmethod
-    async def save(project_root: Path, record: ScriptCaptureRecord) -> None:
-        """Persist a capture record."""
-        await save_capture(project_root, record)
-
-    @staticmethod
-    async def list_all(project_root: Path) -> list[ScriptCaptureRecord]:
-        """List all capture records."""
-        return await list_captures(project_root)
-
-    @staticmethod
-    async def get_by_id(
-        project_root: Path, script_id: str
-    ) -> ScriptCaptureRecord | None:
-        """Get one record by id."""
-        return await get_capture_by_id(project_root, script_id)

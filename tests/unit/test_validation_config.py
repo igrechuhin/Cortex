@@ -18,6 +18,7 @@ from unittest.mock import patch
 import pytest
 
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
+from cortex.optimization.config import OptimizationConfig
 from cortex.validation.models import ValidationConfigModel
 from cortex.validation.validation_config import ValidationConfig
 
@@ -48,7 +49,7 @@ class TestValidationConfigInitialization:
             get_cortex_path(tmp_path, CortexResourceType.CONFIG) / "validation.json"
         )
         config_path.parent.mkdir(parents=True, exist_ok=True)
-        custom_config = {"enabled": False, "strict_mode": True}
+        custom_config = {"enabled": False, "duplication": {"threshold": 0.95}}
         with open(config_path, "w") as f:
             json.dump(custom_config, f)
 
@@ -56,7 +57,7 @@ class TestValidationConfigInitialization:
 
         # Custom values override defaults
         assert config.config.enabled is False
-        assert config.config.strict_mode is True
+        assert config.config.duplication.threshold == 0.95
         # Default values are preserved
         assert config.config.token_budget is not None
 
@@ -436,26 +437,6 @@ class TestHelperMethods:
         config.set("enabled", False)
         assert config.is_validation_enabled() is False
 
-    def test_is_auto_validate_enabled(self, tmp_path: Path) -> None:
-        """Test is_auto_validate_enabled returns correct value."""
-        config = ValidationConfig(project_root=tmp_path)
-        defaults = ValidationConfigModel()
-
-        assert config.is_auto_validate_enabled() == defaults.auto_validate_on_write
-
-        config.set("auto_validate_on_write", False)
-        assert config.is_auto_validate_enabled() is False
-
-    def test_is_strict_mode(self, tmp_path: Path) -> None:
-        """Test is_strict_mode returns correct value."""
-        config = ValidationConfig(project_root=tmp_path)
-        defaults = ValidationConfigModel()
-
-        assert config.is_strict_mode() == defaults.strict_mode
-
-        config.set("strict_mode", True)
-        assert config.is_strict_mode() is True
-
     def test_get_token_budget_max(self, tmp_path: Path) -> None:
         """Test get_token_budget_max returns correct value."""
         config = ValidationConfig(project_root=tmp_path)
@@ -483,15 +464,6 @@ class TestHelperMethods:
         config.set("duplication.threshold", 0.9)
         assert config.get_duplication_threshold() == 0.9
 
-    def test_get_quality_minimum_score(self, tmp_path: Path) -> None:
-        """Test get_quality_minimum_score returns correct value."""
-        config = ValidationConfig(project_root=tmp_path)
-        expected = ValidationConfigModel().quality.minimum_score
-        assert config.get_quality_minimum_score() == expected
-
-        config.set("quality.minimum_score", 80)
-        assert config.get_quality_minimum_score() == 80
-
 
 class TestModelDump:
     """Tests for configuration serialization."""
@@ -514,3 +486,40 @@ class TestModelDump:
         assert "duplication" in dumped
         assert "quality" in dumped
         assert "schemas" in dumped
+
+
+@pytest.mark.unit
+class TestRealCheckedInConfigFiles:
+    """Regression guard: checked-in .cortex/config/*.json must validate.
+
+    Nested EXTRA_FORBID models (token_budget, duplication, schemas, quality)
+    silently fall back to defaults on a validation error inside
+    ValidationConfig, which would hide a field rename/removal that leaves a
+    stale key in the committed JSON. Validate directly against the model so
+    a mismatch raises instead of being swallowed.
+    """
+
+    def test_validation_json_has_no_extra_fields(self) -> None:
+        """The real validation.json validates with no extra-field error."""
+        project_root = Path(__file__).resolve().parents[2]
+        config_path = project_root / ".cortex" / "config" / "validation.json"
+
+        raw = json.loads(config_path.read_text(encoding="utf-8"))
+        model = ValidationConfigModel.model_validate(raw)
+
+        assert (
+            model.token_budget.max_total_tokens
+            == raw["token_budget"]["max_total_tokens"]
+        )
+
+    def test_optimization_json_validates(self) -> None:
+        """The real optimization.json passes OptimizationConfig.validate()."""
+        project_root = Path(__file__).resolve().parents[2]
+        config_path = project_root / ".cortex" / "config" / "optimization.json"
+        assert config_path.is_file()
+
+        config = OptimizationConfig(project_root)
+        is_valid, error = config.validate()
+
+        assert is_valid is True
+        assert error is None

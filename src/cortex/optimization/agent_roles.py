@@ -88,7 +88,7 @@ ROLE_PROFILES: dict[AgentRole, AgentRoleProfile] = {
             "manage_file",
             "load_context",
             "get_relevance_scores",
-            "execute_pre_commit_checks",
+            "run_quality_gate",
         ],
         deprioritized_tools=[
             "fix_markdown_lint",
@@ -105,7 +105,7 @@ ROLE_PROFILES: dict[AgentRole, AgentRoleProfile] = {
     ),
     AgentRole.QUALITY: _make_profile(
         priority_tools=[
-            "execute_pre_commit_checks",
+            "run_quality_gate",
             "fix_markdown_lint",
         ],
         deprioritized_tools=[
@@ -121,7 +121,7 @@ ROLE_PROFILES: dict[AgentRole, AgentRoleProfile] = {
     ),
     AgentRole.TESTING: _make_profile(
         priority_tools=[
-            "execute_pre_commit_checks",
+            "run_quality_gate",
         ],
         deprioritized_tools=[
             "fix_markdown_lint",
@@ -139,7 +139,7 @@ ROLE_PROFILES: dict[AgentRole, AgentRoleProfile] = {
             "fix_markdown_lint",
         ],
         deprioritized_tools=[
-            "execute_pre_commit_checks",
+            "run_quality_gate",
         ],
         context_focus=[
             MemoryBankFile.PROJECT_BRIEF,
@@ -155,7 +155,7 @@ ROLE_PROFILES: dict[AgentRole, AgentRoleProfile] = {
             "manage_file",
         ],
         deprioritized_tools=[
-            "execute_pre_commit_checks",
+            "run_quality_gate",
         ],
         context_focus=[
             MemoryBankFile.ROADMAP,
@@ -167,7 +167,7 @@ ROLE_PROFILES: dict[AgentRole, AgentRoleProfile] = {
     AgentRole.DEBUGGING: _make_profile(
         priority_tools=[
             "load_context",
-            "execute_pre_commit_checks",
+            "run_quality_gate",
         ],
         deprioritized_tools=[
             "plan",

@@ -7,7 +7,7 @@ from unittest.mock import AsyncMock, patch
 import pytest
 
 from cortex.tools.context.effectiveness_operations import analyze_current_session
-from cortex.tools.models import SessionStartResult
+from cortex.tools.session.models import SessionStartResult
 from cortex.tools.session.start_tools import session_start_impl
 from tests.tools.session_start_fixtures import (
     assert_phase54_success_brief,

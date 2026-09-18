@@ -37,14 +37,10 @@ class SearchResult(BaseModel):
 
 def deduplicate(results: list[SearchResult]) -> list[SearchResult]:
     """Remove duplicate results by (source, start_line). Preserves order."""
-    seen: set[tuple[str, int]] = set()
-    unique: list[SearchResult] = []
+    unique: dict[tuple[str, int], SearchResult] = {}
     for result in results:
-        key = (result.source, result.start_line)
-        if key not in seen:
-            seen.add(key)
-            unique.append(result)
-    return unique
+        _ = unique.setdefault((result.source, result.start_line), result)
+    return list(unique.values())
 
 
 class MemoryBankSearcher:

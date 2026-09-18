@@ -24,7 +24,7 @@ from cortex.core.models import (
 )
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.core.project_root_resolver import resolve_project_root_async
-from cortex.tools.models import (
+from cortex.tools.execution.quality_precommit_models import (
     DocsAndMemoryBankSyncErrorResult,
     DocsAndMemoryBankSyncResult,
     PreflightCheckSummary,

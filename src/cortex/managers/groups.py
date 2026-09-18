@@ -25,7 +25,6 @@ MANAGER_GROUPS = [
             "metadata_index",
             "token_counter",
             "version_manager",
-            "file_watcher",
         ],
         priority=1,
     ),

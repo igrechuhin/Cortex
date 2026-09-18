@@ -10,7 +10,7 @@ class TestRecommendToolsAndScripts:
         """Returns list of (name, type, score) for task description."""
         result = recommend_tools_and_scripts(
             task_description="Format Python files with Black",
-            tool_names=["manage_file", "fix_formatting", "execute_pre_commit_checks"],
+            tool_names=["manage_file", "fix_formatting", "run_quality_gate"],
             script_names=["check_format", "fix_formatting"],
             min_score=0.2,
             max_results=10,

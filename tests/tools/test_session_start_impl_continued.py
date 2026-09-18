@@ -9,7 +9,7 @@ import pytest
 from cortex.core.file_system import FileSystemManager
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.tools.memory.compaction_operations import write_handoff
-from cortex.tools.models import (
+from cortex.tools.session.models import (
     SessionHandoff,
     SessionStartErrorResult,
     SessionStartResult,

@@ -20,7 +20,7 @@ from cortex.tools.memory.compaction_operations import (
     read_handoff,
     write_handoff,
 )
-from cortex.tools.models import InProgressTask, SessionHandoff
+from cortex.tools.session.models import InProgressTask, SessionHandoff
 from tests.helpers.managers import make_test_managers
 from tests.helpers.path_helpers import ensure_test_cortex_structure
 from tests.helpers.tool_call_helpers import get_tool_fn, to_dict

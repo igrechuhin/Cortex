@@ -208,19 +208,15 @@ def _synonym_findings(text: str, index: _GlossaryIndex) -> list[TerminologyFindi
 
 def _deduplicate(findings: list[TerminologyFinding]) -> list[TerminologyFinding]:
     """Drop repeated (case, term, canonical) triples and cap the report size."""
-    seen: set[tuple[str, str, str]] = set()
-    unique: list[TerminologyFinding] = []
+    unique: dict[tuple[str, str, str], TerminologyFinding] = {}
     for finding in findings:
         key = (
             finding.case.value,
             finding.term.casefold(),
             finding.canonical_term.casefold(),
         )
-        if key in seen:
-            continue
-        seen.add(key)
-        unique.append(finding)
-    return unique[:MAX_FINDINGS]
+        _ = unique.setdefault(key, finding)
+    return list(unique.values())[:MAX_FINDINGS]
 
 
 def detect_terminology_collisions(
