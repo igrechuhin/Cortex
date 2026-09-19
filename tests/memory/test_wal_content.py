@@ -163,8 +163,13 @@ def test_legacy_entries_without_step_number_are_skipped() -> None:
 def test_compaction_is_a_no_op_under_budget() -> None:
     # Arrange
     raw = (_entry(True, "v1", "v2", 1).model_dump_json() + "\n").encode("utf-8")
-    # Act / Assert
-    assert wal_compact_log_bytes(raw) == raw
+    # Act
+    result = wal_compact_log_bytes(raw)
+    # Assert
+    assert result.content == raw
+    assert result.stage == "none"
+    assert result.pruned_count == 0
+    assert result.dropped_count == 0
 
 
 def test_compaction_prunes_then_drops_oldest(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -176,11 +181,34 @@ def test_compaction_prunes_then_drops_oldest(monkeypatch: pytest.MonkeyPatch) ->
     raw = "".join(lines).encode("utf-8")
     monkeypatch.setattr("cortex.memory.wal_content._MAX_LOG_BYTES", 12_000)
     # Act
-    compacted = wal_compact_log_bytes(raw)
-    # Assert
-    assert len(compacted) <= 12_000
-    assert compacted.endswith(lines[-1].encode("utf-8"))
-    assert CODEC_ZLIB_B64.encode("utf-8") not in compacted.split(b"\n")[0]
+    result = wal_compact_log_bytes(raw)
+    # Assert - pruning alone was enough to fit; no whole line needed dropping
+    assert len(result.content) <= 12_000
+    assert result.stage == "deltas_pruned"
+    assert result.pruned_count > 0
+    assert result.dropped_count == 0
+    assert result.content.endswith(lines[-1].encode("utf-8"))
+    assert CODEC_ZLIB_B64.encode("utf-8") not in result.content.split(b"\n")[0]
+
+
+def test_compaction_reaches_lines_dropped_when_pruning_is_not_enough(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # Arrange - same corpus as the pruning-only case, but a budget so tight
+    # that pruning every delta still leaves the log over budget.
+    lines = [
+        (_entry(True, _noise(4_000), "after", index + 1).model_dump_json() + "\n")
+        for index in range(20)
+    ]
+    raw = "".join(lines).encode("utf-8")
+    monkeypatch.setattr("cortex.memory.wal_content._MAX_LOG_BYTES", 2_000)
+    # Act
+    result = wal_compact_log_bytes(raw)
+    # Assert - the ladder reached its second, lossier rung
+    assert len(result.content) <= 2_000
+    assert result.stage == "lines_dropped"
+    assert result.pruned_count > 0
+    assert result.dropped_count > 0
 
 
 def test_compaction_then_reconstruction_still_works(
@@ -195,17 +223,18 @@ def test_compaction_then_reconstruction_still_works(
     ).encode("utf-8")
     monkeypatch.setattr("cortex.memory.wal_content._MAX_LOG_BYTES", 4_000)
     # Act
-    compacted = wal_compact_log_bytes(raw)
+    result = wal_compact_log_bytes(raw)
     entries = [
         WALEntry.model_validate_json(line)
-        for line in compacted.decode("utf-8").splitlines()
+        for line in result.content.decode("utf-8").splitlines()
     ]
     # Assert - oldest delta is gone, the recent one still reconstructs
+    assert result.stage == "deltas_pruned"
     assert entries[0].delta_codec == CODEC_PRUNED
-    result = wal_as_of_from_entries(
+    reconstructed = wal_as_of_from_entries(
         file=FILE, step_number=1, entries=entries, current_text="new"
     )
-    assert result.content == "mid"
+    assert reconstructed.content == "mid"
 
 
 def test_content_fields_skip_content_outside_memory_bank(tmp_path: Path) -> None:

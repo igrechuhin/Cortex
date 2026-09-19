@@ -342,6 +342,10 @@ class TestPlanToolAcceptsBuiltPayloads:
                 "cortex.tools.plans.completion.resolve_project_root_async",
                 "cortex.tools.plans.entries.resolve_project_root_async",
                 "cortex.tools.plans.corruption.resolve_project_root_async",
+                # AI: the operations-log hook resolves the root on its own. Omit
+                # it and the plan lands in tmp while the log entry is appended
+                # to the real .cortex memory bank, dirtying a tracked file.
+                "cortex.tools.plans.operations_log_hooks.resolve_project_root_async",
             ]
             patches = [patch(t, mock_root) for t in targets]
             for p in patches:

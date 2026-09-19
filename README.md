@@ -213,6 +213,14 @@ The Memory Bank lives under `.cortex/` and works with any editor, LLM, or agent.
 
 Legacy layouts are migrated by the `migrate` prompt; see [Getting started](docs/getting-started.md).
 
+## Limitations
+
+- Token counts are tiktoken-based; when tiktoken is unavailable offline, a character-count heuristic (~1 token per 4 characters) is used. It tracks English prose closely but **under-counts** source code (~0.6x), Cyrillic (~0.7x), CJK (~0.3x) and emoji (~0.1x), so budgets enforced on such content while offline can overflow.
+- Memory-bank summarization never rewrites what it keeps: under the default `extract_key_sections` strategy kept sections are replayed verbatim and dropped sections are disclosed by name or count. It is not lossless — whole sections are removed to meet the budget — and it may miss its target reduction rather than rewrite content. The `compress_verbose` and `headers_only` strategies additionally rewrite lines, elide code blocks and keep partial bodies, so a path, error string or constraint can disappear mid-section. Prefer the default when content must survive intact.
+- AS-OF reconstruction is unavailable for WAL entries whose reverse delta was pruned or dropped by compaction; those historical versions cannot be recovered.
+- BM25 relevance (`retrieval/bm25.py`) computes IDF over the per-call candidate corpus only — there is no global index, so scores are not comparable across calls.
+- The Memory Bank format is deliberately editor/LLM/agent-agnostic; Cortex does not attempt semantic understanding beyond retrieval and summarization heuristics.
+
 ## Documentation
 
 - [Getting started](docs/getting-started.md)

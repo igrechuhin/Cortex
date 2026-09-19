@@ -8,12 +8,30 @@ import json
 
 from cortex.core.file_system import FileSystemManager
 from cortex.core.metadata_index import MetadataIndex
-from cortex.core.models import OperationStatus
+from cortex.core.models import ModelDict, OperationStatus
 from cortex.managers.types import ManagersDict
 from cortex.managers.utils import get_manager
 from cortex.optimization.config import OptimizationConfig
 from cortex.optimization.models import SummarizationResultModel
 from cortex.optimization.summarization_engine import SummarizationEngine
+
+# AI: a summary within 5 percentage points of target_reduction is treated as
+# meeting it — token counts are estimates, so a hair-thin miss reflects
+# counting noise rather than a genuinely ineffective summarization strategy.
+_TARGET_TOLERANCE: float = 0.05
+
+# AI: a supermajority of attempted files must clear the target, so a batch
+# tolerates a few stubborn files without letting a mostly-failed run report
+# success. A single-file call gates hard as a consequence: 0/1 = 0.0 fails,
+# 1/1 = 1.0 passes.
+#
+# Deliberately NOT tools/compress/batch.py's policy. That verifier caps its
+# thresholds absolutely (_verify_with_effective_thresholds: sample =
+# min(5, successful), hits = min(3, sample)), because it samples a one-time
+# repo-wide sweep to decide whether an approach works at all. Applied here it
+# would pass a 50-file request on 3 good summaries. A per-request tool gate
+# has to scale with the request, hence a ratio rather than a capped count.
+_MIN_TARGET_HIT_RATIO: float = 0.6
 
 
 async def _check_summarization_enabled(
@@ -173,51 +191,146 @@ async def _summarize_files(
     target_reduction: float,
     strategy: str,
 ) -> list[SummarizationResultModel]:
-    """Summarize all files and return results."""
+    """Summarize all files, recording a skip reason instead of dropping any."""
     results: list[SummarizationResultModel] = []
 
     for fname in files_to_summarize:
         try:
             file_path = metadata_index.memory_bank_dir / fname
             content, _ = await fs_manager.read_file(file_path)
-
-            summary_result = await summarization_engine.summarize_file(
-                file_name=fname,
-                content=content,
-                target_reduction=target_reduction,
-                strategy=strategy,
-            )
-
-            results.append(SummarizationResultModel.model_validate(summary_result))
-
         except FileNotFoundError:
+            results.append(_build_skip_result(strategy, fname))
             continue
 
+        summary_result = await summarization_engine.summarize_file(
+            file_name=fname,
+            content=content,
+            target_reduction=target_reduction,
+            strategy=strategy,
+        )
+        results.append(
+            _finalize_summary_result(summary_result, fname, target_reduction)
+        )
+
     return results
+
+
+def _build_skip_result(strategy: str, fname: str) -> SummarizationResultModel:
+    """Record a file that could not be read instead of silently dropping it."""
+    return SummarizationResultModel(
+        original_tokens=0,
+        summary_tokens=0,
+        reduction=0.0,
+        summary="",
+        strategy=strategy,
+        file_name=fname,
+        skipped_reason="file not found",
+    )
+
+
+def _finalize_summary_result(
+    summary_result: ModelDict, fname: str, target_reduction: float
+) -> SummarizationResultModel:
+    """Attach file identity/verdict, and reject the artifact if it missed target.
+
+    The engine returns a legacy dict shape (with extra keys such as
+    ``summarized_tokens``/``cached`` kept for direct callers); only fields
+    known to `SummarizationResultModel` are kept before validating it here.
+    A below-target summary is not just flagged, it is withheld: a caller
+    that ignores `status` must not be able to consume rejected text.
+    """
+    known_fields = set(SummarizationResultModel.model_fields)
+    filtered = {
+        key: value for key, value in summary_result.items() if key in known_fields
+    }
+    result = SummarizationResultModel.model_validate(filtered)
+    result.file_name = fname
+    result.met_target = result.reduction >= target_reduction - _TARGET_TOLERANCE
+    if not result.met_target:
+        result.rejected_reason = (
+            f"reduction {result.reduction:.0%} missed the "
+            f"{target_reduction:.0%} target; summary withheld"
+        )
+        result.summary = ""
+    return result
 
 
 def _build_summarize_response(
     results: list[SummarizationResultModel], strategy: str, target_reduction: float
 ) -> str:
-    """Build final JSON response with totals."""
-    total_original = sum(r.original_tokens for r in results)
-    total_summarized = sum(r.summary_tokens for r in results)
-    total_reduction = (
-        (total_original - total_summarized) / total_original
-        if total_original > 0
-        else 0.0
+    """Build final JSON response with totals and a target-compliance gate."""
+    attempted = [r for r in results if r.skipped_reason is None]
+    skipped = [r for r in results if r.skipped_reason is not None]
+    total_original = sum(r.original_tokens for r in attempted)
+    total_summarized = sum(r.summary_tokens for r in attempted)
+    files_meeting_target = sum(1 for r in attempted if r.met_target)
+    status, error = _resolve_summarize_status(
+        attempted, skipped, files_meeting_target, target_reduction
     )
 
-    return json.dumps(
-        {
-            "status": OperationStatus.SUCCESS.value,
-            "strategy": strategy,
-            "target_reduction": target_reduction,
-            "files_summarized": len(results),
-            "total_original_tokens": total_original,
-            "total_summarized_tokens": total_summarized,
-            "total_reduction": round(total_reduction, 2),
-            "results": [r.model_dump() for r in results],
-        },
-        indent=2,
+    payload: ModelDict = {
+        "status": status.value,
+        "strategy": strategy,
+        "target_reduction": target_reduction,
+        "files_summarized": len(attempted),
+        "files_meeting_target": files_meeting_target,
+        "files_below_target": [
+            r.file_name or "" for r in attempted if not r.met_target
+        ],
+        "files_skipped": [r.file_name or "" for r in skipped],
+        "total_original_tokens": total_original,
+        "total_summarized_tokens": total_summarized,
+        "total_reduction": _ratio(total_original, total_summarized),
+        "results": [r.model_dump() for r in results],
+    }
+    if error is not None:
+        payload["error"] = error
+    return json.dumps(payload, indent=2)
+
+
+def _ratio(total_original: int, total_summarized: int) -> float:
+    """Aggregate reduction across a batch, unfloored like the per-file value.
+
+    # AI: `calculate_reduction` deliberately reports genuine growth as a
+    # negative ratio rather than zero. Clamping the batch total to zero here
+    # hid exactly that, and reported a batch that grew as one that merely
+    # achieved nothing -- while the per-file rows alongside it said otherwise.
+    """
+    if total_original <= 0:
+        return 0.0
+    return round((total_original - total_summarized) / total_original, 2)
+
+
+def _meets_target_hit_ratio(files_meeting_target: int, attempted: int) -> bool:
+    """Whether enough of an attempted batch cleared the reduction target."""
+    if attempted <= 0:
+        return False
+    return files_meeting_target / attempted >= _MIN_TARGET_HIT_RATIO
+
+
+def _resolve_summarize_status(
+    attempted: list[SummarizationResultModel],
+    skipped: list[SummarizationResultModel],
+    files_meeting_target: int,
+    target_reduction: float,
+) -> tuple[OperationStatus, str | None]:
+    """Gate the call on target compliance: ERROR when the hit ratio is low."""
+    if not attempted:
+        # AI: nothing was summarized. Reporting success here would reproduce the
+        # silent-skip defect one level up: a caller naming a missing file, or a
+        # memory bank whose every file was unreadable, would read `success` with
+        # an empty result set and never learn why.
+        if skipped:
+            names = ", ".join(r.file_name or "?" for r in skipped)
+            return OperationStatus.ERROR, f"No files could be summarized: {names}."
+        return OperationStatus.ERROR, "No files matched the request."
+    if _meets_target_hit_ratio(files_meeting_target, len(attempted)):
+        return OperationStatus.SUCCESS, None
+    best_reduction = max(r.reduction for r in attempted)
+    error = (
+        f"Only {files_meeting_target}/{len(attempted)} summarized files reached "
+        f"the {target_reduction:.0%} reduction target (need "
+        f"{_MIN_TARGET_HIT_RATIO:.0%} of attempts); best achieved reduction "
+        f"was {best_reduction:.0%}."
     )
+    return OperationStatus.ERROR, error

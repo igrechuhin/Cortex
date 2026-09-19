@@ -17,6 +17,7 @@ import base64
 import logging
 import zlib
 from pathlib import Path
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
@@ -49,6 +50,26 @@ _MAX_DELTA_BYTES = 64 * 1024
 _MAX_LOG_BYTES = 2 * 1024 * 1024
 
 _ABSENT_HASH = "none"
+
+# AI: which rung of `wal_compact_log_bytes`'s two-stage degradation ladder a
+# write actually reached. Lives here, with its only user.
+CompactionStage = Literal["none", "deltas_pruned", "lines_dropped"]
+
+
+class WalCompactionResult(BaseModel):
+    """Outcome of enforcing the WAL size budget on one write.
+
+    ``stage`` names which rung of the two-stage degradation ladder was
+    actually reached, so a caller can observe budget pressure directly
+    instead of only reading the accompanying debug/info log line.
+    """
+
+    model_config = ConfigDict(extra=EXTRA_FORBID, frozen=True)
+
+    content: bytes
+    stage: CompactionStage
+    pruned_count: int = Field(ge=0)
+    dropped_count: int = Field(ge=0)
 
 
 class WalAsOfResult(BaseModel):
@@ -158,21 +179,88 @@ def _prune_line(line: bytes) -> bytes:
     return pruned.model_dump_json().encode("utf-8")
 
 
-def wal_compact_log_bytes(raw: bytes) -> bytes:
-    """Enforce the WAL size budget: prune oldest deltas, then drop oldest lines."""
-    if len(raw) <= _MAX_LOG_BYTES:
-        return raw
-    lines = [line for line in raw.splitlines() if line.strip()]
+def _prune_oldest_deltas(lines: list[bytes], budget: int) -> tuple[int, int]:
+    """Prune reverse deltas from the oldest entries (in place) until under budget.
+
+    Returns ``(total_bytes_remaining, pruned_count)``.
+    """
     total = sum(len(line) + 1 for line in lines)
+    pruned_count = 0
     for index, line in enumerate(lines):
-        if total <= _MAX_LOG_BYTES:
+        if total <= budget:
             break
         pruned = _prune_line(line)
+        if pruned is not line:
+            pruned_count += 1
         total -= len(line) - len(pruned)
         lines[index] = pruned
-    while lines and total > _MAX_LOG_BYTES:
+    return total, pruned_count
+
+
+def _drop_oldest_lines(lines: list[bytes], total: int, budget: int) -> int:
+    """Drop whole oldest lines (in place) until under budget; return count dropped."""
+    dropped_count = 0
+    while lines and total > budget:
         total -= len(lines.pop(0)) + 1
-    return b"".join(line + b"\n" for line in lines)
+        dropped_count += 1
+    return dropped_count
+
+
+def wal_compact_log_bytes(raw: bytes) -> WalCompactionResult:
+    """Enforce the WAL size budget: prune oldest deltas, then drop oldest lines.
+
+    Returns the compacted content plus which stage of the two-stage
+    degradation ladder was actually reached: ``none`` (under budget
+    already), ``deltas_pruned`` (reverse deltas dropped, all lines kept), or
+    ``lines_dropped`` (whole lines removed after every prunable delta was
+    exhausted). Also reports the same stage via ``logging``.
+    """
+    before = len(raw)
+    if before <= _MAX_LOG_BYTES:
+        return WalCompactionResult(
+            content=raw, stage="none", pruned_count=0, dropped_count=0
+        )
+    lines = [line for line in raw.splitlines() if line.strip()]
+    total, pruned_count = _prune_oldest_deltas(lines, _MAX_LOG_BYTES)
+    dropped_count = _drop_oldest_lines(lines, total, _MAX_LOG_BYTES)
+    content = b"".join(line + b"\n" for line in lines)
+    stage: CompactionStage = (
+        "lines_dropped"
+        if dropped_count
+        else "deltas_pruned"
+        if pruned_count
+        else "none"
+    )
+    _log_compaction_stage(before, len(content), pruned_count, dropped_count)
+    return WalCompactionResult(
+        content=content,
+        stage=stage,
+        pruned_count=pruned_count,
+        dropped_count=dropped_count,
+    )
+
+
+def _log_compaction_stage(
+    before: int, after: int, pruned_count: int, dropped_count: int
+) -> None:
+    """Report which rung of the degradation ladder compaction actually reached."""
+    if dropped_count:
+        logger.info(
+            "WAL compaction reached lines_dropped: %d bytes -> %d bytes, "
+            + "%d deltas pruned, %d lines dropped",
+            before,
+            after,
+            pruned_count,
+            dropped_count,
+        )
+    elif pruned_count:
+        logger.debug(
+            "WAL compaction reached deltas_pruned: %d bytes -> %d bytes, "
+            + "%d deltas pruned",
+            before,
+            after,
+            pruned_count,
+        )
 
 
 def _reconstruct_before(entry: WALEntry, step_number: int) -> WalAsOfResult:

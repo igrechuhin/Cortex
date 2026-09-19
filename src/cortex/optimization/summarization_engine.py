@@ -8,16 +8,25 @@ to reduce token usage while preserving key information.
 
 from pathlib import Path
 
+from pydantic import ConfigDict
+
 from cortex.core.cache_utils import CacheType
 from cortex.core.metadata_index import MetadataIndex
 from cortex.core.models import ModelDict
 from cortex.core.path_resolver import get_cache_path
 from cortex.core.token_counter import TokenCounter
-from cortex.optimization.models import SummarizationResultModel
+from cortex.optimization.models import (
+    DroppedSection,
+    DropReason,
+    OptimizationBaseModel,
+    ParsedSectionModel,
+    SummarizationResultModel,
+)
 from cortex.optimization.summarization_engine_cache import (
-    cache_summary_async,
+    cache_result_async,
     compute_content_hash,
-    get_cached_summary as _get_cached_summary,
+    compute_variant_hash,
+    get_cached_result,
 )
 from cortex.optimization.summarization_engine_compress import (
     compress_verbose_content as _compress_verbose_content,
@@ -28,14 +37,35 @@ from cortex.optimization.summarization_engine_result import (
     build_summary_result,
     result_to_legacy_dict,
 )
+from cortex.optimization.section_scorer import HeuristicSectionScorer, SectionScorer
 from cortex.optimization.summarization_engine_sections import (
-    handle_no_sections,
     parse_sections,
+    passthrough_unsectioned,
     reconstruct_content,
     score_all_sections,
-    score_section_importance,
     select_sections_by_budget,
 )
+
+
+class _SummaryRequest(OptimizationBaseModel):
+    """Inputs and cache identity for one generated summary.
+
+    # AI: bundled rather than passed as eight positional parameters so the
+    # cache-identity fields (content_hash + variant_hash) travel together and
+    # cannot be silently reordered at a call site.
+    """
+
+    model_config = ConfigDict(frozen=True)
+
+    file_name: str
+    content: str
+    target_reduction: float
+    strategy: str
+    strategy_effective: str
+    content_hash: str
+    variant_hash: str
+    original_tokens: int
+    target_tokens: int
 
 
 class SummarizationEngine:
@@ -46,6 +76,7 @@ class SummarizationEngine:
         token_counter: TokenCounter,
         metadata_index: MetadataIndex,
         cache_dir: Path | None = None,
+        section_scorer: SectionScorer | None = None,
     ):
         """
         Initialize summarization engine.
@@ -54,6 +85,8 @@ class SummarizationEngine:
             token_counter: Token counter for tracking
             metadata_index: Metadata index for file information
             cache_dir: Optional directory for summary cache
+            section_scorer: Section relevance scorer; defaults to the
+                built-in keyword/length heuristic
         """
         self.token_counter: TokenCounter = token_counter
         self.metadata_index: MetadataIndex = metadata_index
@@ -61,6 +94,7 @@ class SummarizationEngine:
             Path(metadata_index.project_root), CacheType.SUMMARIES.value
         )
         self.cache_dir.mkdir(parents=True, exist_ok=True)
+        self.section_scorer: SectionScorer = section_scorer or HeuristicSectionScorer()
 
     async def summarize_file(
         self,
@@ -95,7 +129,38 @@ class SummarizationEngine:
                 strategy_used=strategy,
             )
         return await self._summarize_with_cache(
-            file_name, content, target_reduction, strategy, strategy_effective
+            self._build_request(
+                file_name, content, target_reduction, strategy, strategy_effective
+            )
+        )
+
+    def _build_request(
+        self,
+        file_name: str,
+        content: str,
+        target_reduction: float,
+        strategy: str,
+        strategy_effective: str,
+    ) -> _SummaryRequest:
+        """Resolve the content hash, variant hash and token budget once."""
+        original_tokens = self.token_counter.count_tokens(content)
+        target_tokens = int(original_tokens * (1 - target_reduction))
+        return _SummaryRequest(
+            file_name=file_name,
+            content=content,
+            target_reduction=target_reduction,
+            strategy=strategy,
+            strategy_effective=strategy_effective,
+            content_hash=compute_content_hash(content),
+            # AI: target_tokens (not the raw target_reduction ratio) is what
+            # actually drives section selection -- two ratios that are equal
+            # up to rounding can still floor to different integer budgets on
+            # large content, so the cache key uses the budget itself.
+            variant_hash=compute_variant_hash(
+                strategy_effective, target_tokens, self.section_scorer.identity
+            ),
+            original_tokens=original_tokens,
+            target_tokens=target_tokens,
         )
 
     def _normalize_strategy(self, strategy: str) -> str:
@@ -107,57 +172,53 @@ class SummarizationEngine:
         }
         return strategy if strategy in valid_strategies else "extract_key_sections"
 
-    async def _summarize_with_cache(
-        self,
-        file_name: str,
-        content: str,
-        target_reduction: float,
-        strategy: str,
-        strategy_effective: str,
-    ) -> ModelDict:
-        """Summarize file with cache checking."""
-        original_tokens = self.token_counter.count_tokens(content)
-        content_hash = compute_content_hash(content)
+    async def _summarize_with_cache(self, request: _SummaryRequest) -> ModelDict:
+        """Serve a matching cache entry, else generate and store a new one."""
         cached_result = self._check_cache_and_return(
-            file_name, content_hash, strategy_effective, original_tokens
+            request.file_name,
+            request.content_hash,
+            request.strategy_effective,
+            request.variant_hash,
+            request.original_tokens,
         )
         if cached_result:
             return result_to_legacy_dict(
-                cached_result, cached=True, strategy_used=strategy
+                cached_result, cached=True, strategy_used=request.strategy
             )
-        return await self._generate_and_cache_summary(
-            file_name,
-            content,
-            target_reduction,
-            strategy,
-            strategy_effective,
-            content_hash,
-            original_tokens,
-        )
+        return await self._generate_and_cache_summary(request)
 
-    async def _generate_and_cache_summary(
-        self,
-        file_name: str,
-        content: str,
-        target_reduction: float,
-        strategy: str,
-        strategy_effective: str,
-        content_hash: str,
-        original_tokens: int,
-    ) -> ModelDict:
+    async def _generate_and_cache_summary(self, request: _SummaryRequest) -> ModelDict:
         """Generate summary and cache it."""
-        target_tokens = int(original_tokens * (1 - target_reduction))
-        summary = await self._generate_summary_by_strategy(
-            content, target_tokens, target_reduction, strategy_effective
+        target_tokens = request.target_tokens
+        summary, kept, removed, dropped = await self._generate_summary_by_strategy(
+            request.content,
+            target_tokens,
+            request.target_reduction,
+            request.strategy_effective,
         )
-        summarized_tokens = self.token_counter.count_tokens(summary)
-        await cache_summary_async(
-            self.cache_dir, file_name, content_hash, strategy_effective, summary
+        await cache_result_async(
+            self.cache_dir,
+            request.file_name,
+            request.content_hash,
+            request.strategy_effective,
+            request.variant_hash,
+            summary,
+            sections_kept=kept,
+            sections_removed=removed,
+            dropped_sections=dropped,
         )
         result = build_summary_result(
-            original_tokens, summarized_tokens, summary, strategy_effective
+            request.original_tokens,
+            self.token_counter.count_tokens(summary),
+            summary,
+            request.strategy_effective,
+            sections_kept=kept,
+            sections_removed=removed,
+            dropped_sections=dropped,
         )
-        return result_to_legacy_dict(result, cached=False, strategy_used=strategy)
+        return result_to_legacy_dict(
+            result, cached=False, strategy_used=request.strategy
+        )
 
     async def extract_key_sections(self, content: str, target_tokens: int) -> str:
         """
@@ -170,16 +231,54 @@ class SummarizationEngine:
         Returns:
             Summarized content with key sections
         """
-        sections = parse_sections(content)
+        summary, _, _, _ = await self._extract_key_sections_detailed(
+            content, target_tokens
+        )
+        return summary
 
-        if not sections:
-            return handle_no_sections(content)
+    async def _extract_key_sections_detailed(
+        self, content: str, target_tokens: int
+    ) -> tuple[str, int, int, list[DroppedSection]]:
+        """Extract key sections, also reporting which sections were dropped."""
+        sections, has_heading = parse_sections(content)
 
-        section_scores = score_all_sections(sections, self.token_counter)
-        section_scores.sort(key=lambda x: float(x.score), reverse=True)
+        # AI: headerless content still yields one synthetic "preamble" section,
+        # so `not sections` alone never fires for plain prose. Reconstructing it
+        # would re-emit the body verbatim with nothing else to select between,
+        # so it takes the same pass-through path as no sections at all.
+        # `has_heading` (not the section's name) decides this -- a real
+        # document whose sole heading is literally "# preamble" still has one
+        # countable section and must not be treated as headerless.
+        if not sections or not has_heading:
+            return passthrough_unsectioned(content), 0, 0, []
 
-        selected_sections = select_sections_by_budget(section_scores, target_tokens)
-        return reconstruct_content(selected_sections, len(section_scores))
+        section_scores = score_all_sections(
+            sections, self.token_counter, self.section_scorer
+        )
+        section_scores.sort(key=lambda section: section.score, reverse=True)
+
+        selected, dropped = select_sections_by_budget(section_scores, target_tokens)
+        # AI: selection ranks by score, but the document's own order carries
+        # meaning -- restore source order before replaying kept sections and
+        # naming drops, so the summary reads like the original narrative
+        # instead of a ranked digest.
+        selected_in_order = sorted(selected, key=lambda section: section.index)
+        dropped_in_order = sorted(dropped, key=lambda section: section.index)
+        dropped_sections = [
+            DroppedSection(
+                name=s.name,
+                score=s.score,
+                tokens=s.tokens,
+                reason=DropReason.BUDGET_EXCEEDED,
+            )
+            for s in dropped_in_order
+        ]
+        return (
+            reconstruct_content(selected_in_order, dropped_in_order),
+            len(selected),
+            len(dropped),
+            dropped_sections,
+        )
 
     async def compress_verbose_content(
         self,
@@ -210,7 +309,7 @@ class SummarizationEngine:
         """
         return _extract_headers_only(content)
 
-    def parse_sections(self, content: str) -> dict[str, str]:
+    def parse_sections(self, content: str) -> list[ParsedSectionModel]:
         """
         Parse markdown sections from content.
 
@@ -218,9 +317,11 @@ class SummarizationEngine:
             content: Markdown content
 
         Returns:
-            Dict mapping section names to content
+            Ordered list of verbatim section slices (position-identified,
+            not name-identified -- see the module-level `parse_sections`).
         """
-        return parse_sections(content)
+        sections, _ = parse_sections(content)
+        return sections
 
     def score_section_importance(self, section_name: str, content: str) -> float:
         """
@@ -233,61 +334,36 @@ class SummarizationEngine:
         Returns:
             Importance score (0.0 - 1.0)
         """
-        return score_section_importance(section_name, content)
+        return self.section_scorer.score(section_name, content)
 
     def compute_hash(self, content: str) -> str:
         """Compute hash of content."""
         return compute_content_hash(content)
-
-    def get_cached_summary(
-        self, file_name: str, content_hash: str, strategy: str
-    ) -> str | None:
-        """
-        Get cached summary if available.
-
-        Args:
-            file_name: File name
-            content_hash: Content hash
-            strategy: Strategy used
-
-        Returns:
-            Cached summary or None
-        """
-        return _get_cached_summary(self.cache_dir, file_name, content_hash, strategy)
-
-    async def cache_summary(
-        self, file_name: str, content_hash: str, strategy: str, summary: str
-    ) -> None:
-        """
-        Cache generated summary.
-
-        Args:
-            file_name: File name
-            content_hash: Content hash
-            strategy: Strategy used
-            summary: Generated summary
-        """
-        await cache_summary_async(
-            self.cache_dir, file_name, content_hash, strategy, summary
-        )
 
     def _check_cache_and_return(
         self,
         file_name: str,
         content_hash: str,
         strategy: str,
+        variant_hash: str,
         original_tokens: int,
     ) -> SummarizationResultModel | None:
-        """Check cache and return cached result if available."""
-        cached_summary = _get_cached_summary(
-            self.cache_dir, file_name, content_hash, strategy
+        """Check cache and return cached result (with full provenance) if hit."""
+        cached = get_cached_result(
+            self.cache_dir, file_name, content_hash, strategy, variant_hash
         )
-        if not cached_summary:
+        if cached is None:
             return None
 
-        summarized_tokens = self.token_counter.count_tokens(cached_summary)
+        summarized_tokens = self.token_counter.count_tokens(cached.summary)
         return build_summary_result(
-            original_tokens, summarized_tokens, cached_summary, strategy
+            original_tokens,
+            summarized_tokens,
+            cached.summary,
+            strategy,
+            sections_kept=cached.sections_kept,
+            sections_removed=cached.sections_removed,
+            dropped_sections=cached.dropped_sections,
         )
 
     async def _generate_summary_by_strategy(
@@ -296,13 +372,15 @@ class SummarizationEngine:
         target_tokens: int,
         target_reduction: float,
         strategy: str,
-    ) -> str:
-        """Generate summary based on strategy."""
+    ) -> tuple[str, int, int, list[DroppedSection]]:
+        """Generate summary based on strategy, with section provenance if any."""
         if strategy == "extract_key_sections":
-            return await self.extract_key_sections(content, target_tokens)
+            return await self._extract_key_sections_detailed(content, target_tokens)
         if strategy == "compress_verbose":
-            return await self.compress_verbose_content(content, target_reduction)
+            summary = await self.compress_verbose_content(content, target_reduction)
+            return summary, 0, 0, []
         if strategy == "headers_only":
-            return await self.extract_headers_only(content)
+            summary = await self.extract_headers_only(content)
+            return summary, 0, 0, []
         # Default to key sections
-        return await self.extract_key_sections(content, target_tokens)
+        return await self._extract_key_sections_detailed(content, target_tokens)

@@ -1381,13 +1381,23 @@ Summarize Memory Bank content to reduce token usage.
 
 - `file_name` (str | None) - File to summarize (None for all files)
 - `target_reduction` (float) - Target token reduction (0.5 = reduce by 50%, default: 0.5)
-- `strategy` (str) - Strategy (default: "extract_key_sections")
-  - `"extract_key_sections"` - Keep most important sections
-  - `"compress_verbose"` - Remove examples, compress code
-  - `"headers_only"` - Outline view with headers
+- `strategy` (str) - Strategy (default: `"extract_key_sections"`)
+  - `"extract_key_sections"` - **Non-rewriting** (but not lossless): drops whole sections and discloses them; every kept section stays byte-identical, in source order
+  - `"compress_verbose"` - **Lossy**: rewrites lines and elides code blocks
+  - `"headers_only"` - **Lossy**: outline view, keeps partial bodies
+
 **Description:**
 
-Generates summaries of files to fit within token budgets while preserving key information.
+Reduces Memory Bank files to fit a token budget. Under the default
+`extract_key_sections` strategy nothing is paraphrased: whole sections are
+dropped and every kept section is reproduced exactly as authored, including
+its original heading level and its position in the document.
+
+The call is **gated on the target**. A summary that misses `target_reduction`
+(beyond a 5-point tolerance) is rejected: its `summary` is blanked and
+`rejected_reason` explains why, so an inadequate summary cannot be consumed by
+accident. `status` is `"error"` when fewer than 60% of attempted files met the
+target, or when nothing could be summarized at all.
 
 **Returns:**
 
@@ -1396,21 +1406,46 @@ Generates summaries of files to fit within token budgets while preserving key in
   "status": "success",
   "strategy": "extract_key_sections",
   "target_reduction": 0.5,
-  "files_summarized": 7,
-  "total_original_tokens": 8500,
-  "total_summarized_tokens": 4100,
-  "total_reduction": 0.52,
+  "files_summarized": 1,
+  "files_meeting_target": 1,
+  "files_below_target": [],
+  "files_skipped": [],
+  "total_original_tokens": 813,
+  "total_summarized_tokens": 216,
+  "total_reduction": 0.73,
   "results": [
     {
-      "file": "projectBrief.md",
-      "original_tokens": 1234,
-      "summarized_tokens": 600,
-      "reduction": 0.51,
-      "summary": "# Project Brief\n## Goals\n..."
+      "file_name": "projectBrief.md",
+      "original_tokens": 813,
+      "summary_tokens": 216,
+      "reduction": 0.7343173431734318,
+      "summary": "# Project Brief\nGoal: ship the gate. ...",
+      "strategy": "extract_key_sections",
+      "sections_kept": 2,
+      "sections_removed": 1,
+      "met_target": true,
+      "skipped_reason": null,
+      "rejected_reason": null,
+      "dropped_sections": [
+        {
+          "name": "Examples",
+          "score": 0.2,
+          "tokens": 604,
+          "reason": "budget_exceeded"
+        }
+      ]
     }
   ]
 }
 ```
+
+**Response fields:**
+
+- `files_meeting_target` / `files_below_target` - target-compliance counts and the names that missed
+- `files_skipped` - files that could not be read; each also appears in `results` with a `skipped_reason`
+- `error` - present only when `status` is `"error"`, naming the shortfall
+- `results[].reduction` - floored at 0.0; a strategy that grows content reports 0, with the true token counts alongside
+- `results[].dropped_sections` - per-drop provenance: section name, its relevance score, its token cost, and the reason
 
 ---
 

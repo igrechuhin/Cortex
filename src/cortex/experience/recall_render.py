@@ -17,11 +17,24 @@ def _match_line(match: TaskRecallMatch) -> str:
     return "; ".join(parts)
 
 
-def render_recall_summary(result: RecallResult, budget_chars: int) -> str | None:
-    """Return a compact multi-line summary truncated to ``budget_chars``.
+def _marker(dropped: int) -> str:
+    return f"\n… {dropped} matches omitted (budget)"
 
-    Returns None when there is nothing to show (no matches or a zero budget)
-    so callers can skip attaching an empty block.
+
+# AI: derived from `_marker` itself, so the two can never drift; lets the fit
+# loop size the marker without building a string per candidate line.
+_MARKER_OVERHEAD = len(_marker(0)) - 1
+
+
+def _marker_len(dropped: int) -> int:
+    return _MARKER_OVERHEAD + len(str(dropped))
+
+
+def render_recall_summary(result: RecallResult, budget_chars: int) -> str | None:
+    """Return a compact multi-line summary that never exceeds ``budget_chars``.
+
+    Returns None when there is nothing to show (no matches, a zero budget,
+    or not even the pinned header plus an omission note fits).
     """
     if not result.matches or budget_chars <= 0:
         return None
@@ -29,16 +42,28 @@ def render_recall_summary(result: RecallResult, budget_chars: int) -> str | None
     text = "\n".join(lines)
     if len(text) <= budget_chars:
         return text
-    # AI: truncate whole lines rather than mid-line so the block never ends
-    # on a cut-off sentence fragment inside a session() JSON payload.
-    truncated: list[str] = []
-    used = 0
-    for line in lines:
-        addition = len(line) + (1 if truncated else 0)
-        if used + addition > budget_chars:
+    return _fit_with_marker(lines, len(result.matches), budget_chars)
+
+
+def _fit_with_marker(
+    lines: list[str], total_matches: int, budget_chars: int
+) -> str | None:
+    """Keep whole match lines, always reserving room for the omission marker.
+
+    # AI: the marker is part of the budget, not appended after it. Sizing it
+    # during allocation is what keeps the contract `len(output) <= budget`;
+    # appending afterwards silently overran the caller's cap. The header is
+    # pinned whole-or-nothing, and a match line is never cut mid-line -- this
+    # data is re-derivable, a corrupted half-line is not.
+    """
+    kept = [lines[0]]
+    used = len(lines[0])
+    for line in lines[1:]:
+        candidate = used + 1 + len(line)
+        remaining = total_matches - len(kept)
+        if candidate + _marker_len(remaining) > budget_chars:
             break
-        truncated.append(line)
-        used += addition
-    if len(truncated) <= 1:
-        return text[: max(budget_chars - 1, 0)] + "…"
-    return "\n".join(truncated) + "…"
+        kept.append(line)
+        used = candidate
+    output = "\n".join(kept) + _marker(total_matches - (len(kept) - 1))
+    return output if len(output) <= budget_chars else None

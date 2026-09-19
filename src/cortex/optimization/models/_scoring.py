@@ -152,11 +152,25 @@ class SectionScoreModel(OptimizationBaseModel):
         return self
 
 
+class ParsedSectionModel(OptimizationBaseModel):
+    """One markdown section as parsed from source, before scoring.
+
+    ``source`` is the section's heading line exactly as written (any level)
+    plus its body, byte for byte. Identity is list position, not ``name`` --
+    two identically named headings become two distinct entries.
+    """
+
+    index: int = Field(..., ge=0, description="0-based position in the source document")
+    name: str = Field(..., description="Display/scoring label, not an identity")
+    source: str = Field(..., description="Verbatim heading-plus-body slice")
+
+
 class ScoredSectionModel(OptimizationBaseModel):
     """Section with relevance scoring for summarization."""
 
+    index: int = Field(..., ge=0, description="0-based position in the source document")
     name: str = Field(..., description="Section name/heading")
-    content: str = Field(..., description="Section content")
+    source: str = Field(..., description="Verbatim heading-plus-body slice")
     score: float = Field(..., ge=0.0, le=1.0, description="Importance score")
     tokens: int = Field(..., ge=0, description="Token count")
 

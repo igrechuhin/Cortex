@@ -14,6 +14,7 @@ from typing import Annotated
 
 from pydantic import BeforeValidator, Field
 
+from cortex.optimization.models import DropReason
 from cortex.tools.models_base import (
     ErrorResultBase,
     StrictBaseModel,
@@ -214,28 +215,61 @@ GetRelevanceScoresResultUnion = GetRelevanceScoresResult | GetRelevanceScoresErr
 # ============================================================================
 
 
+# AI: the drop taxonomy is owned by the engine that produces it (imported at
+# module top). A parallel copy here would compare equal only by string value,
+# so the first reason added upstream would be rejected at this boundary --
+# failing on exactly the new disclosure it exists to carry.
+
+
+class DroppedSectionResult(StrictBaseModel):
+    """A section excluded from a summary, with its scoring provenance."""
+
+    name: str
+    score: float
+    tokens: int
+    reason: DropReason
+
+
 class SummarizationResult(StrictBaseModel):
     """Result of summarizing a single file."""
 
-    file_name: str
+    file_name: str | None = None
     original_tokens: int
-    summarized_tokens: int
+    summary_tokens: int
     reduction: float
-    cached: bool = False
     summary: str
+    strategy: str
+    sections_kept: int = 0
+    sections_removed: int = 0
+    met_target: bool = False
+    skipped_reason: str | None = None
+    rejected_reason: str | None = None
+    dropped_sections: list[DroppedSectionResult] = Field(
+        default_factory=list[DroppedSectionResult]
+    )
 
 
 class SummarizeContentResult(ToolResultBase):
-    """Result of summarize_content operation (success)."""
+    """Result of summarize_content operation.
+
+    `status` is ERROR (with `error` populated) when no attempted file could
+    be summarized at all (nothing was readable), or when fewer than 60% of
+    the attempted files reached `target_reduction`; the full per-file
+    breakdown is still reported so the caller can see why.
+    """
 
     status: _StatusField = Field(default=ToolResultStatus.SUCCESS)
     strategy: str
     target_reduction: float
     files_summarized: int
+    files_meeting_target: int
+    files_below_target: list[str]
+    files_skipped: list[str]
     total_original_tokens: int
     total_summarized_tokens: int
     total_reduction: float
     results: list[SummarizationResult]
+    error: str | None = None
 
 
 class SummarizeContentErrorResult(ErrorResultBase):

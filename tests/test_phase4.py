@@ -351,9 +351,10 @@ Content 2
 """
 
         sections = engine.parse_sections(content)
+        names = [section.name for section in sections]
 
-        assert "Section 1" in sections
-        assert "Section 2" in sections
+        assert "Section 1" in names
+        assert "Section 2" in names
 
     def test_score_section_importance(self, engine: SummarizationEngine) -> None:
         """Test section importance scoring."""

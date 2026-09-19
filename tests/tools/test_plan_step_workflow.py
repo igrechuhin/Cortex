@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import json
-from contextlib import contextmanager
+from contextlib import ExitStack, contextmanager
 from pathlib import Path
 from typing import cast
 from unittest.mock import AsyncMock, patch
@@ -16,23 +16,20 @@ from cortex.tools.plans.plan import plan
 _RESOLVE_PATCHES = (
     "cortex.tools.plans.step_plan_workflow.resolve_project_root_async",
     "cortex.tools.plans.step_plan_internal.resolve_project_root_async",
+    # AI: the operations-log hook resolves the root on its own. Omit it and
+    # the plan lands in tmp while the log entry is appended to the real
+    # .cortex memory bank, dirtying a tracked file on every suite run.
+    "cortex.tools.plans.operations_log_hooks.resolve_project_root_async",
 )
 
 
 @contextmanager
 def patch_step_roots(tmp_path: Path):
-    with (
-        patch(
-            _RESOLVE_PATCHES[0],
-            new_callable=AsyncMock,
-            return_value=tmp_path,
-        ),
-        patch(
-            _RESOLVE_PATCHES[1],
-            new_callable=AsyncMock,
-            return_value=tmp_path,
-        ),
-    ):
+    with ExitStack() as stack:
+        for target in _RESOLVE_PATCHES:
+            _ = stack.enter_context(
+                patch(target, new_callable=AsyncMock, return_value=tmp_path)
+            )
         yield
 
 

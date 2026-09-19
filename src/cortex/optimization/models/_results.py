@@ -3,6 +3,8 @@
 Phase 9.1.5: Split from optimization/models.py for file size compliance.
 """
 
+from enum import Enum
+
 from pydantic import Field
 
 from ._base import OptimizationBaseModel
@@ -27,19 +29,69 @@ class ProgressiveLoadResult(OptimizationBaseModel):
     )
 
 
+class DropReason(str, Enum):
+    """Why a section was excluded from a summary.
+
+    # AI: one real value, not a speculative taxonomy -- BUDGET_EXCEEDED is
+    # the only reason `select_sections_by_budget` can currently produce.
+    # A future scorer-driven or validation-driven reason adds a member here
+    # without needing a schema migration (the field type stays DropReason).
+    """
+
+    BUDGET_EXCEEDED = "budget_exceeded"
+
+
+class DroppedSection(OptimizationBaseModel):
+    """A section excluded from a summary, with its scoring provenance."""
+
+    name: str = Field(..., description="Section name/heading")
+    score: float = Field(..., ge=0.0, le=1.0, description="Importance score")
+    tokens: int = Field(..., ge=0, description="Token count of the dropped section")
+    reason: DropReason = Field(..., description="Why this section was excluded")
+
+
 class SummarizationResultModel(OptimizationBaseModel):
     """Result of summarizing file content."""
 
     original_tokens: int = Field(..., ge=0, description="Original token count")
     summary_tokens: int = Field(..., ge=0, description="Summary token count")
     reduction: float = Field(
-        ..., ge=0.0, le=1.0, description="Reduction percentage achieved"
+        ...,
+        le=1.0,
+        description="Reduction ratio achieved; negative means content grew",
     )
     summary: str = Field(..., description="Summarized content")
     strategy: str = Field(..., description="Strategy used for summarization")
     sections_kept: int = Field(default=0, ge=0, description="Number of sections kept")
     sections_removed: int = Field(
         default=0, ge=0, description="Number of sections removed"
+    )
+    file_name: str | None = Field(
+        default=None, description="Name of the summarized file, if known"
+    )
+    met_target: bool = Field(
+        default=False,
+        description=(
+            "Whether the achieved reduction met target_reduction (minus "
+            "tolerance); not meaningful when skipped_reason is set. Defaults "
+            "to False: the engine does not know the target, only the gating "
+            "tool layer sets this, and an ungated result must never claim to "
+            "have passed a check that never ran"
+        ),
+    )
+    skipped_reason: str | None = Field(
+        default=None, description="Why this file could not be summarized, if skipped"
+    )
+    rejected_reason: str | None = Field(
+        default=None,
+        description=(
+            "Why `summary` was blanked; set whenever met_target is False so "
+            "a caller ignoring `status` cannot consume a rejected summary"
+        ),
+    )
+    dropped_sections: list[DroppedSection] = Field(
+        default_factory=list[DroppedSection],
+        description="Sections excluded from the summary, with score and size",
     )
 
 

@@ -27,11 +27,34 @@ class _TiktokenModule(Protocol):
     def get_encoding(self, name: str) -> _Encoding: ...
 
 
+def estimate_tokens(text: str) -> int:
+    """
+    Estimate token count from raw text using a character-based heuristic.
+
+    Approximation: ~1 token per 4 characters. Deliberately rounds UP
+    (ceiling division) rather than floor division, so this heuristic never
+    under-counts relative to its own floor-division baseline. It is still
+    only an approximation, not a tokenizer: punctuation-dense text, emoji,
+    and code routinely tokenize above one token per four characters, so this
+    is not a hard guarantee against under-counting in general and must not
+    be treated as exact.
+
+    Args:
+        text: Text to estimate tokens for.
+
+    Returns:
+        Estimated number of tokens (0 for empty text).
+    """
+    if not text:
+        return 0
+    return (len(text) + 3) // 4
+
+
 class TokenCounter:
     """
     Accurate token counting using tiktoken library with graceful degradation.
     Matches OpenAI's token counting for better context management.
-    Falls back to word-based estimation if tiktoken is unavailable.
+    Falls back to character-based estimation if tiktoken is unavailable.
     """
 
     model: str
@@ -170,7 +193,7 @@ class TokenCounter:
         logger.warning(
             f"Tiktoken encoding '{self.model}' load timed out after "
             + f"{max_retries + 1} attempts (final timeout: {load_time:.2f}s). "
-            + "Network may be unavailable. Falling back to word-based estimation."
+            + "Network may be unavailable. Falling back to character-based estimation."
         )
         self._tiktoken_available = False
         return False, 0.0
@@ -205,7 +228,7 @@ class TokenCounter:
             f"Tiktoken encoding '{self.model}' network unavailable after "
             + f"{max_retries + 1} attempts (final error after "
             + f"{load_time:.2f}s): {e}. Cache may be used if available. "
-            + "Falling back to word-based estimation."
+            + "Falling back to character-based estimation."
         )
         logger.warning(msg)
         self._tiktoken_available = False
@@ -235,7 +258,7 @@ class TokenCounter:
         """
         logger.warning(
             f"Failed to load tiktoken encoding '{self.model}' after "
-            + f"{load_time:.2f}s: {e}. Falling back to word-based estimation."
+            + f"{load_time:.2f}s: {e}. Falling back to character-based estimation."
         )
         self._tiktoken_available = False
 
@@ -294,7 +317,7 @@ class TokenCounter:
         This method handles network unavailability gracefully:
         - Uses cache if available (tiktoken does this automatically)
         - Retries network requests with exponential backoff
-        - Falls back to word-based estimation if network unavailable and no cache
+        - Falls back to character-based estimation if network unavailable and no cache
 
         Args:
             timeout_seconds: Maximum time to wait per attempt (default: 30s)
@@ -307,7 +330,7 @@ class TokenCounter:
             import tiktoken
         except ImportError:
             logger.warning(
-                "Tiktoken library not available. Falling back to word-based estimation."
+                "Tiktoken library not available. Falling back to character-based estimation."
             )
             self._tiktoken_available = False
             return None
@@ -333,12 +356,14 @@ class TokenCounter:
             timeout_seconds=timeout_seconds, max_retries=max_retries
         )
 
-    def _estimate_tokens_by_words(self, text: str) -> int:
+    def _estimate_tokens_by_char_heuristic(self, text: str) -> int:
         """
-        Estimate token count using word-based heuristic.
+        Estimate token count using the shared character-based heuristic.
 
-        Uses approximation: ~1 token per 4 characters (0.75 tokens per word on average).
-        This is less accurate than tiktoken but provides a reasonable fallback.
+        Internal fallback entry point used when tiktoken is unavailable.
+        Delegates to the module-level `estimate_tokens` for the actual
+        computation. Note: this now rounds UP (ceiling) instead of the
+        previous floor division, so it can no longer under-count tokens.
 
         Args:
             text: Text to estimate tokens for
@@ -346,10 +371,7 @@ class TokenCounter:
         Returns:
             Estimated number of tokens
         """
-        if not text:
-            return 0
-        # Rough approximation: 1 token ≈ 4 characters
-        return len(text) // 4
+        return estimate_tokens(text)
 
     def count_tokens(self, text: str | None) -> int:
         """
@@ -377,13 +399,13 @@ class TokenCounter:
             except Exception as e:
                 msg = (
                     f"tiktoken encoding failed: {e}. Falling back to "
-                    + "word-based estimation."
+                    + "character-based estimation."
                 )
                 logger.warning(msg)
                 self._tiktoken_available = False
 
-        # Fallback to word-based estimation
-        return self._estimate_tokens_by_words(text)
+        # Fallback to character-based estimation
+        return self._estimate_tokens_by_char_heuristic(text)
 
     def count_tokens_with_cache(self, text: str, content_hash: str) -> int:
         """

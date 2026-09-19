@@ -252,14 +252,21 @@ class MemoryWAL:
         return self._wal_dir.parent / CortexResourceType.MEMORY_BANK.value
 
     def log(self, entry: WALEntry) -> None:
-        """Atomically append one JSON line (read-merge-write + replace)."""
+        """Atomically append one JSON line (read-merge-write + replace).
+
+        Which rung of the compaction ladder the write reached is reported on
+        `WalCompactionResult.stage` and via `logging`; it is deliberately not
+        returned here, because no caller acts on it.
+        """
         line = entry.model_dump_json() + "\n"
         new_bytes = self._existing_log_bytes() + line.encode("utf-8")
         # AI: deferred import breaks the wal <-> wal_content cycle (wal_content
         # needs WALEntry); compaction only runs on the rare over-budget write.
         from cortex.memory.wal_content import wal_compact_log_bytes
 
-        self._atomic_write_bytes(self._log_path, wal_compact_log_bytes(new_bytes))
+        self._atomic_write_bytes(
+            self._log_path, wal_compact_log_bytes(new_bytes).content
+        )
 
     def _existing_log_bytes(self) -> bytes:
         if not self._log_path.is_file():

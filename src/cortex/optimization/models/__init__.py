@@ -11,6 +11,8 @@ from ._base import (
     OptimizationResultModel,
 )
 from ._results import (
+    DroppedSection,
+    DropReason,
     IndexingBatchResultModel,
     IndexingResultModel,
     IndexingSkipResultModel,
@@ -36,6 +38,7 @@ from ._scoring import (
     FileRelevanceScoreModel,
     LoadedContentModel,
     LoadedFileContentModel,
+    ParsedSectionModel,
     ScoredSectionModel,
     SectionScoreModel,
     SummarizationState,
@@ -43,6 +46,8 @@ from ._scoring import (
 
 __all__ = [
     "DetectedContextModel",
+    "DroppedSection",
+    "DropReason",
     "FileContentMetadata",
     "FileMetadataForScoring",
     "FileRelevanceScoreModel",
@@ -56,6 +61,7 @@ __all__ = [
     "OptimizationRuleCategory",
     "OptimizationMetadata",
     "OptimizationResultModel",
+    "ParsedSectionModel",
     "ProgressiveLoadResult",
     "RelevantRuleModel",
     "RelevantRulesResultModel",

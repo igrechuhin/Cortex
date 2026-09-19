@@ -105,21 +105,41 @@ class TestPlanToolSmoke:
         assert result.get("content") or result.get("title"), "expect content or title"
 
     @pytest.mark.asyncio
-    async def test_plan_operation_create_with_full_payload_creates_file(self) -> None:
-        """plan(operation='create', title=..., content=..., slug=...) creates plan file."""
-        result_str = await plan(
-            operation="create",
-            title="Smoke Test Plan",
-            content="# Smoke Test\nBody for argument-bridging smoke test.",
-            slug=self.SMOKE_CREATE_SLUG,
-        )
+    async def test_plan_operation_create_with_full_payload_creates_file(
+        self, tmp_path: Path
+    ) -> None:
+        """plan(operation='create', title=..., content=..., slug=...) creates plan file.
+
+        # AI: both the plan writer and the operations-log hook resolve the
+        # project root independently, so both are pinned to tmp_path. Pinning
+        # only the writer still appended to the real .cortex memory-bank log,
+        # dirtying a tracked file on every suite run.
+        """
+        with (
+            patch(
+                "cortex.tools.plans.crud.resolve_project_root_async",
+                new_callable=AsyncMock,
+                return_value=tmp_path,
+            ),
+            patch(
+                "cortex.tools.plans.operations_log_hooks.resolve_project_root_async",
+                new_callable=AsyncMock,
+                return_value=tmp_path,
+            ),
+        ):
+            result_str = await plan(
+                operation="create",
+                title="Smoke Test Plan",
+                content="# Smoke Test\nBody for argument-bridging smoke test.",
+                slug=self.SMOKE_CREATE_SLUG,
+            )
         result = json.loads(result_str)
         assert result.get("status") == "success", result.get("message")
         file_path = result.get("file_path")
         assert file_path, "create success should return file_path"
         path = Path(file_path)
         assert path.is_file(), f"created plan file should exist: {file_path}"
-        path.unlink(missing_ok=True)
+        assert tmp_path in path.parents, f"plan escaped tmp_path: {file_path}"
 
     @pytest.mark.asyncio
     async def test_plan_operation_enrich_resolves_markers(self, tmp_path: Path) -> None:

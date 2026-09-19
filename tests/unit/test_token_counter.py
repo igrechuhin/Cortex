@@ -11,7 +11,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from cortex.core.models import ModelDict, SectionMetadata
-from cortex.core.token_counter import TokenCounter
+from cortex.core.token_counter import TokenCounter, estimate_tokens
 
 
 class TestTokenCounterInitialization:
@@ -1082,3 +1082,42 @@ class TestTiktokenTimeoutAndRetry:
                 sys.modules["tiktoken"] = original_tiktoken
             elif "tiktoken" in sys.modules:
                 del sys.modules["tiktoken"]
+
+
+class TestEstimateTokensCeilingBias:
+    """The shared fallback estimator rounds up, never below floor division."""
+
+    @pytest.mark.parametrize(
+        ("text", "expected"),
+        [
+            ("", 0),
+            ("a", 1),
+            ("abc", 1),
+            ("abcd", 1),
+            ("abcde", 2),
+            ("abcdefgh", 2),
+            ("abcdefghi", 3),
+        ],
+    )
+    def test_rounds_up_relative_to_floor_division(
+        self, text: str, expected: int
+    ) -> None:
+        # Arrange/Act/Assert: floor division (the previous behaviour) returns 0
+        # for "abc" and 1 for "abcde", letting a budget check believe content
+        # is free. The bias direction is the contract, not the constant. This
+        # is only a guarantee against undercounting relative to floor
+        # division of this same char/4 heuristic -- not a guarantee against a
+        # real tokenizer producing more tokens than the heuristic estimates.
+        assert estimate_tokens(text) == expected
+
+    def test_public_fallback_path_uses_the_shared_estimator(self) -> None:
+        # Arrange: with tiktoken disabled, count_tokens must produce exactly
+        # the shared estimate -- the instance fallback and the module function
+        # must not drift apart again, which is the divergence this removed.
+        counter = TokenCounter()
+        counter.tiktoken_available = False
+        counter.encoding_impl = None
+        text = "budget guard content that is not a multiple of four"
+
+        # Act / Assert
+        assert counter.count_tokens(text) == estimate_tokens(text)

@@ -78,8 +78,8 @@ def test_render_recall_summary_zero_budget_returns_none() -> None:
     assert text is None
 
 
-def test_render_recall_summary_truncates_to_whole_lines_within_budget() -> None:
-    # Arrange
+def test_render_recall_summary_falls_back_to_header_and_omission_note() -> None:
+    # Arrange: header fits but the first (long) match line does not.
     matches = [
         _match(task_id=f"t{i}", spec=f"task number {i} with a fairly long description")
         for i in range(10)
@@ -90,9 +90,9 @@ def test_render_recall_summary_truncates_to_whole_lines_within_budget() -> None:
     text = render_recall_summary(result, budget_chars=120)
 
     # Assert
-    assert text is not None
-    assert len(text) <= 121  # allows the trailing ellipsis char
-    assert text.endswith("…")
+    assert (
+        text == "Prior experience (goal-similar tasks):\n… 10 matches omitted (budget)"
+    )
 
 
 def test_render_recall_summary_truncates_to_multiple_whole_lines() -> None:
@@ -105,25 +105,67 @@ def test_render_recall_summary_truncates_to_multiple_whole_lines() -> None:
     full = render_recall_summary(result, budget_chars=100_000)
     assert full is not None
     header, line, *_ = full.split("\n")
-    # Budget exactly fits header + two match lines (matches the truncation
-    # loop's running-length accounting), leaving no room for a third line.
-    budget = len(header) + (len(line) + 1) * 2
+    marker = "\n… 3 matches omitted (budget)"
+    # The omission marker is part of the budget, not appended after it, so the
+    # budget must cover header + two match lines + the marker. This previously
+    # reserved nothing for the marker and overran the caller's cap.
+    budget = len(header) + (len(line) + 1) * 2 + len(marker)
 
     # Act
     text = render_recall_summary(result, budget_chars=budget)
 
     # Assert
-    assert text == "\n".join([header, line, line]) + "…"
+    assert text is not None
+    assert text == "\n".join([header, line, line]) + marker
+    assert len(text) <= budget
 
 
-def test_render_recall_summary_budget_too_small_for_one_line_hard_truncates() -> None:
-    # Arrange
+def test_render_recall_summary_budget_too_small_for_header_returns_none() -> None:
+    # Arrange: budget is smaller than the pinned header itself, so there is
+    # nothing useful to emit — never a raw char slice of the header.
     result = RecallResult(goal="fix types", matches=[_match()])
 
     # Act
     text = render_recall_summary(result, budget_chars=10)
 
     # Assert
+    assert text is None
+
+
+def test_render_recall_summary_never_exceeds_budget_at_any_size() -> None:
+    # Arrange: the omission marker is part of the budget, not appended after
+    # it. Sweeping every budget around the boundaries catches the off-by-one
+    # where the marker pushed the block past the caller's cap.
+    result = RecallResult(
+        goal="fix types",
+        matches=[
+            _match(task_id=f"t{index}", spec=f"task {'x' * index} number {index}")
+            for index in range(6)
+        ],
+    )
+
+    # Act / Assert
+    for budget in range(0, 400):
+        text = render_recall_summary(result, budget_chars=budget)
+        if text is None:
+            continue
+        assert len(text) <= budget, f"overran budget {budget}: {len(text)} chars"
+        assert text.startswith("Prior experience (goal-similar tasks):")
+
+
+def test_render_recall_summary_marker_is_on_its_own_line() -> None:
+    # Arrange: a budget that fits the header plus some matches but not all.
+    result = RecallResult(
+        goal="fix types",
+        matches=[_match(task_id=f"t{index}") for index in range(6)],
+    )
+
+    # Act
+    text = render_recall_summary(result, budget_chars=260)
+
+    # Assert: the marker must not be glued onto the last match line.
     assert text is not None
-    assert len(text) == 10
-    assert text.endswith("…")
+    lines = text.split("\n")
+    assert lines[-1].startswith("… ")
+    assert "matches omitted (budget)" in lines[-1]
+    assert all(line.startswith("- ") for line in lines[1:-1])

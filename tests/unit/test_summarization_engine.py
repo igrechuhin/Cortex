@@ -8,7 +8,7 @@ This module tests content summarization functionality including:
 - Summary caching
 """
 
-import json
+import re
 from pathlib import Path
 from unittest.mock import Mock
 
@@ -22,6 +22,12 @@ from cortex.core.path_resolver import (
     get_cortex_path,
 )
 from cortex.optimization.summarization_engine import SummarizationEngine
+from cortex.optimization.summarization_engine_cache import (
+    cache_result_async,
+    compute_content_hash,
+    compute_variant_hash,
+    get_cached_result,
+)
 
 
 class TestSummarizationEngineInitialization:
@@ -98,6 +104,35 @@ class TestSummarizeFile:
         assert result["reduction"] == 0.0
         assert result["summary"] == ""
         assert result["strategy_used"] == "extract_key_sections"
+
+    @pytest.mark.asyncio
+    async def test_summarize_file_distinguishes_preamble_heading_from_headerless(
+        self,
+        mock_token_counter: Mock,
+        mock_metadata_index: MetadataIndex,
+        tmp_path: Path,
+    ) -> None:
+        """A document whose only heading is literally named "preamble" is
+        a real, countable section -- not the synthetic no-heading marker
+        that plain prose parses to. Only the name coincides; `has_heading`
+        (not the section's name) is what tells the two apart.
+        """
+        engine = SummarizationEngine(
+            mock_token_counter, mock_metadata_index, cache_dir=tmp_path
+        )
+        headerless = "Plain prose with no markdown heading at all.\n"
+        with_heading = "# preamble\nPlain prose under a literal heading.\n"
+
+        headerless_result = await engine.summarize_file(
+            "headerless.md", headerless, strategy="extract_key_sections"
+        )
+        headed_result = await engine.summarize_file(
+            "headed.md", with_heading, strategy="extract_key_sections"
+        )
+
+        assert headerless_result["sections_kept"] == 0
+        assert headed_result["sections_kept"] == 1
+        assert headed_result["summary"] == with_heading
 
     @pytest.mark.asyncio
     async def test_summarize_with_extract_key_sections_strategy(
@@ -280,7 +315,7 @@ class TestExtractKeySections:
         mock_metadata_index: MetadataIndex,
         tmp_path: Path,
     ) -> None:
-        """Test extract_key_sections with content that has no sections."""
+        """Unsectioned content is returned verbatim, never rewritten."""
         # Arrange
         engine = SummarizationEngine(
             mock_token_counter, mock_metadata_index, cache_dir=tmp_path
@@ -291,9 +326,14 @@ class TestExtractKeySections:
         result = await engine.extract_key_sections(content, target_tokens=50)
 
         # Assert
-        # When no sections are found, _parse_sections returns {"preamble": content}
-        # So we actually get a preamble section, not truncated content
-        assert "## preamble" in result or "[Content truncated...]" in result
+        # This previously asserted the output contained either an invented
+        # "## preamble" heading or a "[Content truncated...]" marker -- i.e. it
+        # pinned the two defects: parse_sections' synthetic preamble section
+        # being reconstructed under a fake heading (which grew the content and
+        # drove `reduction` negative), and the 50%-of-words truncation that
+        # silently destroyed paths and error strings. There is nothing to select
+        # between in unsectioned content, so the only safe answer is the input.
+        assert result == content
 
     @pytest.mark.asyncio
     async def test_extract_key_sections_selects_highest_scoring_sections(
@@ -321,13 +361,99 @@ Detailed information.
         result = await engine.extract_key_sections(content, target_tokens=100)
 
         # Assert
-        assert "## Overview" in result
+        assert "# Overview" in result
+        # Overview keeps its original level -- never rewritten to "## Overview".
+        assert "## Overview" not in result
         # Example should have lower score and might be omitted
         assert (
             "sections omitted" in result
-            or "## Example" not in result
-            or "## Example" in result
+            or "# Example" not in result
+            or "# Example" in result
         )
+
+    @pytest.mark.asyncio
+    async def test_omission_note_never_costs_more_than_it_discloses(
+        self,
+        mock_token_counter: Mock,
+        mock_metadata_index: MetadataIndex,
+        tmp_path: Path,
+    ) -> None:
+        """A run of tiny sections with long headings must not produce a note
+        as large as the text it replaces: naming them would buy a reduction of
+        roughly zero while still losing the content, so the note degrades to
+        the count alone."""
+        # Arrange
+        engine = SummarizationEngine(
+            mock_token_counter, mock_metadata_index, cache_dir=tmp_path
+        )
+        keep = "# Overview\n" + "essential content. " * 60 + "\n"
+        tiny = "".join(
+            f"# Appendix Subsection Number {i} Of The Reference Material\nx\n"
+            for i in range(8)
+        )
+
+        # Act
+        result = await engine.extract_key_sections(keep + tiny, target_tokens=180)
+
+        # Assert
+        assert re.search(r"\[\d+ sections omitted\]", result)
+        assert "Appendix Subsection Number 1" not in result
+        # The whole point: the drop actually bought space.
+        assert len(result) < len(keep + tiny) * 0.9
+
+    @pytest.mark.asyncio
+    async def test_a_drop_the_note_cannot_pay_for_is_refused(
+        self,
+        mock_token_counter: Mock,
+        mock_metadata_index: MetadataIndex,
+        tmp_path: Path,
+    ) -> None:
+        """Degrading to the bare count is not enough on its own: one tiny
+        section costs less to keep than `[1 section omitted]` costs to say.
+        Dropping it grew the summary past its own input, so the drop must be
+        refused and the section kept verbatim rather than disclosed away."""
+        # Arrange
+        engine = SummarizationEngine(
+            mock_token_counter, mock_metadata_index, cache_dir=tmp_path
+        )
+        keep = "# Overview\n" + "essential content. " * 60 + "\n"
+        tiny = "# a\nb\n"
+
+        # Act: a budget that fits Overview exactly, so the tiny section is
+        # the only thing over the line and would otherwise be dropped.
+        result = await engine.extract_key_sections(keep + tiny, target_tokens=158)
+
+        # Assert
+        assert len(result) <= len(keep + tiny)
+        assert "omitted" not in result
+        assert "b" in result
+
+    @pytest.mark.asyncio
+    async def test_omission_note_names_sections_when_it_is_worth_it(
+        self,
+        mock_token_counter: Mock,
+        mock_metadata_index: MetadataIndex,
+        tmp_path: Path,
+    ) -> None:
+        """The named form stays the default: dropping a large section is worth
+        the handful of bytes naming it costs."""
+        # Arrange
+        engine = SummarizationEngine(
+            mock_token_counter, mock_metadata_index, cache_dir=tmp_path
+        )
+        content = (
+            "# Overview\n"
+            + "essential content. " * 40
+            + "\n# Appendix\n"
+            + "disposable filler. " * 200
+            + "\n"
+        )
+
+        # Act
+        result = await engine.extract_key_sections(content, target_tokens=150)
+
+        # Assert
+        assert "sections omitted: Appendix" in result
 
     @pytest.mark.asyncio
     async def test_extract_key_sections_includes_at_least_one_section(
@@ -349,8 +475,63 @@ This section is very large and exceeds the target token count.
         result = await engine.extract_key_sections(content, target_tokens=5)
 
         # Assert
-        assert "## Important Section" in result
+        assert "# Important Section" in result
         # Should still include the section even though it exceeds target
+
+    @pytest.mark.asyncio
+    async def test_extract_key_sections_preserves_source_order_over_score_order(
+        self,
+        mock_token_counter: Mock,
+        mock_metadata_index: MetadataIndex,
+        tmp_path: Path,
+    ) -> None:
+        """Kept sections replay in source order, not the ranked score order.
+
+        The heuristic scores "Overview" (keyword-boosted) higher than
+        "Notes" (keyword-penalized via "note"), even though "Overview" is
+        physically last. A budget wide enough to keep both must still emit
+        "Notes" before "Overview" -- reconstructing in score order would put
+        "Overview" first and fail this assertion.
+        """
+        # Arrange
+        engine = SummarizationEngine(
+            mock_token_counter, mock_metadata_index, cache_dir=tmp_path
+        )
+        content = (
+            "# Notes\n"
+            "First section body text that appears first in the document.\n\n"
+            "# Overview\n"
+            "Second section text; this one scores highest thanks to the keyword.\n"
+        )
+
+        # Act
+        result = await engine.extract_key_sections(content, target_tokens=100)
+
+        # Assert
+        assert result.index("# Notes") < result.index("# Overview")
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize("blank_lines", [0, 1, 3])
+    async def test_extract_key_sections_round_trips_byte_identical_when_nothing_dropped(
+        self,
+        mock_token_counter: Mock,
+        mock_metadata_index: MetadataIndex,
+        tmp_path: Path,
+        blank_lines: int,
+    ) -> None:
+        """When the budget keeps every section, reconstruction must
+        reproduce the original bytes exactly -- including the number of
+        blank lines between sections -- not a re-joined approximation.
+        """
+        engine = SummarizationEngine(
+            mock_token_counter, mock_metadata_index, cache_dir=tmp_path
+        )
+        separator = "\n" * (blank_lines + 1)
+        content = f"# First\nline one{separator}# Second\nline two"
+
+        result = await engine.extract_key_sections(content, target_tokens=10_000)
+
+        assert result == content
 
 
 class TestCompressVerboseContent:
@@ -577,12 +758,13 @@ Content for section two.
 
         # Act
         sections = engine.parse_sections(content)
+        by_name = {section.name: section.source for section in sections}
 
         # Assert
-        assert "Section One" in sections
-        assert "Section Two" in sections
-        assert "Content for section one" in sections["Section One"]
-        assert "Content for section two" in sections["Section Two"]
+        assert "Section One" in by_name
+        assert "Section Two" in by_name
+        assert "Content for section one" in by_name["Section One"]
+        assert "Content for section two" in by_name["Section Two"]
 
     def test_parse_sections_with_preamble(
         self,
@@ -603,11 +785,12 @@ Section content.
 
         # Act
         sections = engine.parse_sections(content)
+        by_name = {section.name: section.source for section in sections}
 
         # Assert
-        assert "preamble" in sections
-        assert "This is preamble" in sections["preamble"]
-        assert "First Section" in sections
+        assert "preamble" in by_name
+        assert "This is preamble" in by_name["preamble"]
+        assert "First Section" in by_name
 
     def test_parse_sections_with_no_headings(
         self,
@@ -624,10 +807,94 @@ Section content.
 
         # Act
         sections = engine.parse_sections(content)
+        by_name = {section.name: section.source for section in sections}
 
         # Assert
-        assert "preamble" in sections
-        assert "plain text content" in sections["preamble"]
+        assert "preamble" in by_name
+        assert "plain text content" in by_name["preamble"]
+
+    def test_parse_sections_preserves_heading_levels_and_is_fence_aware(
+        self,
+        mock_token_counter: Mock,
+        mock_metadata_index: MetadataIndex,
+        tmp_path: Path,
+    ) -> None:
+        """Heading level is never rewritten, and a "#" inside a fence is not
+        a heading -- it must not split the fenced block into a new section.
+        """
+        # Arrange
+        engine = SummarizationEngine(
+            mock_token_counter, mock_metadata_index, cache_dir=tmp_path
+        )
+        content = (
+            "# Overview\nTop level overview.\n\n"
+            "### API Reference\n```python\n"
+            "# AI: inline comment inside fence, not a heading\ndef foo():\n    pass\n"
+            "```\n\n"
+            "#### Detail\nDetail body.\n"
+        )
+
+        # Act
+        sections = engine.parse_sections(content)
+        by_name = {section.name: section.source for section in sections}
+
+        # Assert -- exactly three sections; the fenced "#" line never became
+        # a section of its own, and each heading kept its original level.
+        assert len(sections) == 3
+        assert by_name["Overview"] == "# Overview\nTop level overview.\n"
+        assert by_name["API Reference"] == (
+            "### API Reference\n"
+            "```python\n"
+            "# AI: inline comment inside fence, not a heading\n"
+            "def foo():\n"
+            "    pass\n"
+            "```\n"
+        )
+        assert by_name["Detail"] == "#### Detail\nDetail body.\n"
+
+    def test_parse_sections_keeps_duplicate_headings_distinct(
+        self,
+        mock_token_counter: Mock,
+        mock_metadata_index: MetadataIndex,
+        tmp_path: Path,
+    ) -> None:
+        """Two identically named headings must not overwrite one another."""
+        # Arrange
+        engine = SummarizationEngine(
+            mock_token_counter, mock_metadata_index, cache_dir=tmp_path
+        )
+        content = "## Notes\nFirst note.\n\n## Notes\nSecond note.\n"
+
+        # Act
+        sections = engine.parse_sections(content)
+
+        # Assert
+        assert [section.name for section in sections] == ["Notes", "Notes"]
+        assert sections[0].source == "## Notes\nFirst note.\n"
+        assert sections[1].source == "## Notes\nSecond note.\n"
+        assert "Second note" not in sections[0].source
+        assert "First note" not in sections[1].source
+
+    def test_parse_sections_treats_unspaced_and_bare_hash_as_body_text(
+        self,
+        mock_token_counter: Mock,
+        mock_metadata_index: MetadataIndex,
+        tmp_path: Path,
+    ) -> None:
+        """A "#foo" with no space and a bare "#" are body text, not headings."""
+        # Arrange
+        engine = SummarizationEngine(
+            mock_token_counter, mock_metadata_index, cache_dir=tmp_path
+        )
+        content = "# Real Heading\nSome text.\n#foo not a heading\n#\nMore text.\n"
+
+        # Act
+        sections = engine.parse_sections(content)
+
+        # Assert -- both literal lines survive verbatim in the one real section.
+        assert len(sections) == 1
+        assert sections[0].name == "Real Heading"
+        assert sections[0].source == content
 
 
 class TestScoreSectionImportance:
@@ -754,116 +1021,86 @@ class TestCaching:
         # Assert
         assert hash1 != hash2
 
-    @pytest.mark.asyncio
-    async def test_cache_summary_creates_cache_file(
+    async def test_summarize_file_creates_variant_keyed_cache_file(
         self,
         mock_token_counter: Mock,
         mock_metadata_index: MetadataIndex,
         tmp_path: Path,
     ) -> None:
-        """Test that cache_summary creates a cache file."""
-        # Arrange
+        """summarize_file persists a cache entry under a name that encodes
+        the strategy and variant, not just the file name -- readable back
+        through the cache module's own get_cached_result with matching
+        hashes.
+        """
         engine = SummarizationEngine(
             mock_token_counter, mock_metadata_index, cache_dir=tmp_path
         )
+        content = "# Heading\nBody text that becomes the cached summary.\n"
 
-        # Act
-        await engine.cache_summary(
-            "test.md", "hash123", "extract_key_sections", "Summary content"
+        result = await engine.summarize_file(
+            "test.md", content, strategy="extract_key_sections"
         )
 
-        # Assert
-        cache_file = tmp_path / "test.md.extract_key_sections.hash123.json"
-        assert cache_file.exists()
+        cache_files = list(tmp_path.glob("test.md.extract_key_sections.*.json"))
+        assert len(cache_files) == 1
+        content_hash = compute_content_hash(content)
+        target_tokens = int(mock_token_counter.count_tokens(content) * 0.5)
+        variant_hash = compute_variant_hash(
+            "extract_key_sections", target_tokens, engine.section_scorer.identity
+        )
+        cached = get_cached_result(
+            tmp_path, "test.md", content_hash, "extract_key_sections", variant_hash
+        )
+        assert cached is not None
+        assert cached.summary == result["summary"]
 
-        with open(cache_file) as f:
-            data = json.load(f)
-            assert data["file_name"] == "test.md"
-            assert data["summary"] == "Summary content"
-
-    @pytest.mark.asyncio
-    async def test_get_cached_summary_returns_cached_content(
-        self,
-        mock_token_counter: Mock,
-        mock_metadata_index: MetadataIndex,
-        tmp_path: Path,
+    async def test_get_cached_result_treats_corrupted_entry_as_miss(
+        self, tmp_path: Path
     ) -> None:
-        """Test that get_cached_summary retrieves cached summaries."""
-        # Arrange
-        engine = SummarizationEngine(
-            mock_token_counter, mock_metadata_index, cache_dir=tmp_path
+        """A cache entry that fails to parse is a miss, not a crash --
+        the exact path a real request would look up, corrupted after the
+        fact, not an ad hoc name.
+        """
+        content_hash = compute_content_hash("Some content")
+        variant_hash = compute_variant_hash("extract_key_sections", 50, "heuristic-v1")
+        await cache_result_async(
+            tmp_path,
+            "test.md",
+            content_hash,
+            "extract_key_sections",
+            variant_hash,
+            "Summary content",
         )
-        await engine.cache_summary(
-            "test.md", "hash123", "extract_key_sections", "Cached summary"
-        )
+        cache_files = list(tmp_path.glob("test.md.extract_key_sections.*.json"))
+        assert len(cache_files) == 1
+        _ = cache_files[0].write_text("invalid json{")
 
-        # Act
-        result = engine.get_cached_summary("test.md", "hash123", "extract_key_sections")
-
-        # Assert
-        assert result == "Cached summary"
-
-    def test_get_cached_summary_returns_none_when_not_cached(
-        self,
-        mock_token_counter: Mock,
-        mock_metadata_index: MetadataIndex,
-        tmp_path: Path,
-    ) -> None:
-        """Test that get_cached_summary returns None when cache doesn't exist."""
-        # Arrange
-        engine = SummarizationEngine(
-            mock_token_counter, mock_metadata_index, cache_dir=tmp_path
+        result = get_cached_result(
+            tmp_path, "test.md", content_hash, "extract_key_sections", variant_hash
         )
 
-        # Act
-        result = engine.get_cached_summary(
-            "test.md", "nonexistent", "extract_key_sections"
-        )
-
-        # Assert
         assert result is None
 
-    def test_get_cached_summary_handles_corrupted_cache(
+    async def test_summarize_file_handles_readonly_cache_dir_silently(
         self,
         mock_token_counter: Mock,
         mock_metadata_index: MetadataIndex,
         tmp_path: Path,
     ) -> None:
-        """Test that corrupted cache files are handled gracefully."""
-        # Arrange
+        """A read-only cache directory must not raise -- caching is a
+        best-effort side effect of summarize_file, not part of its
+        contract with the caller.
+        """
         engine = SummarizationEngine(
             mock_token_counter, mock_metadata_index, cache_dir=tmp_path
         )
-        cache_file = tmp_path / "test.md.extract_key_sections.hash123.json"
-        _ = cache_file.write_text("invalid json{")
-
-        # Act
-        result = engine.get_cached_summary("test.md", "hash123", "extract_key_sections")
-
-        # Assert
-        assert result is None
-
-    @pytest.mark.asyncio
-    async def test_cache_summary_handles_write_errors_silently(
-        self,
-        mock_token_counter: Mock,
-        mock_metadata_index: MetadataIndex,
-        tmp_path: Path,
-    ) -> None:
-        """Test that cache write errors are handled silently."""
-        # Arrange
-        engine = SummarizationEngine(
-            mock_token_counter, mock_metadata_index, cache_dir=tmp_path
-        )
-
-        # Make cache directory read-only
         engine.cache_dir.chmod(0o444)
 
-        # Act & Assert - Should not raise exception
         try:
-            await engine.cache_summary(
-                "test.md", "hash123", "extract_key_sections", "Summary"
+            result = await engine.summarize_file(
+                "test.md", "# Heading\nBody text.\n", strategy="extract_key_sections"
             )
         finally:
-            # Restore permissions
             engine.cache_dir.chmod(0o755)
+
+        assert result["summary"]

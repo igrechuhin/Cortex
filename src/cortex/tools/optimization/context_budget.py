@@ -21,7 +21,20 @@ _OPTIONAL_GROUPS = (
     ("recent_ingested_sources",),
     ("recent_operations",),
 )
-_ACCOUNTING_KEYS = {"total_tokens", "token_budget", "token_accounting", "utilization"}
+# AI: envelope and enforcer-written metadata -- not context content. Excluded
+# from the per-component breakdown so `token_accounting` and the
+# `required_components` error list describe actual context, instead of naming
+# the enforcer's own bookkeeping as something the operator must shrink. Their
+# tokens still land in `serialization_and_metadata`, so the total stays exact.
+_ACCOUNTING_KEYS = {
+    "total_tokens",
+    "token_budget",
+    "token_accounting",
+    "utilization",
+    "budget_stage",
+    "omitted_components",
+    "status",
+}
 
 
 @lru_cache(maxsize=1)
@@ -116,6 +129,7 @@ def _insufficient_budget(required: dict[str, object], budget: int) -> str:
             "required_components": sorted(
                 key for key in required if key not in _ACCOUNTING_KEYS
             ),
+            "budget_stage": "insufficient",
         }
     )
 
@@ -128,12 +142,18 @@ def _allocate_optional(
 ) -> str:
     omitted = [name for group in optional for name in _omission_names(group)]
     required["omitted_components"] = omitted
+    required["budget_stage"] = "full" if not omitted else "optional_omitted"
     result = _account(required, budget, counter)
     if cast(int, required["total_tokens"]) > budget:
         return _insufficient_budget(required, budget)
     for group in optional:
         remaining = [key for key in omitted if key not in _omission_names(group)]
-        candidate = {**required, **group, "omitted_components": remaining}
+        candidate = {
+            **required,
+            **group,
+            "omitted_components": remaining,
+            "budget_stage": "full" if not remaining else "optional_omitted",
+        }
         serialized = _account(candidate, budget, counter)
         if cast(int, candidate["total_tokens"]) <= budget:
             required, omitted, result = candidate, remaining, serialized
@@ -162,6 +182,14 @@ def enforce_context_budget(
     try:
         return _allocate_optional(required, optional, budget, counter)
     except ValueError as exc:
+        # AI: an accounting failure is still a ladder outcome. Reporting no
+        # stage here would leave the caller unable to tell a convergence
+        # failure apart from a rung that was never attempted.
         return _serialize(
-            {"status": "error", "error": "token_accounting_failed", "message": str(exc)}
+            {
+                "status": "error",
+                "error": "token_accounting_failed",
+                "message": str(exc),
+                "budget_stage": "accounting_failed",
+            }
         )

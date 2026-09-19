@@ -52,6 +52,30 @@ def _assert_accounted(serialized: str, budget: int, counter: TokenCounter) -> No
     assert data["utilization"] == round(data["total_tokens"] / budget, 4)
 
 
+def test_budget_stage_names_which_rung_the_ladder_reached(
+    counter: TokenCounter,
+) -> None:
+    # Arrange: the same payload under three budgets exercises all three rungs.
+    # Reporting only `utilization` left a caller unable to tell "everything
+    # fit" from "optional content was silently dropped to make it fit".
+    payload = _payload()
+    payload["recent_operations"] = "Large history entry. " * 3000
+
+    # Act
+    roomy = _budget(payload, 20000, counter)
+    squeezed = _budget(payload, 700, counter)
+    starved = _budget(payload, 1, counter)
+
+    # Assert
+    assert json.loads(roomy)["budget_stage"] == "full"
+    assert json.loads(squeezed)["budget_stage"] == "optional_omitted"
+    assert json.loads(starved)["budget_stage"] == "insufficient"
+    # The stage field is ordinary content, so it must stay inside the
+    # converged accounting rather than riding along untracked.
+    _assert_accounted(roomy, 20000, counter)
+    _assert_accounted(squeezed, 700, counter)
+
+
 def test_optional_history_does_not_displace_mandatory_content(
     counter: TokenCounter,
 ) -> None:

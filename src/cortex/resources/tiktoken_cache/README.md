@@ -51,5 +51,5 @@ The cache files are automatically included in the package distribution, allowing
 If bundled cache is not available or empty:
 
 - Tiktoken will attempt to download encoding files from network
-- If network is unavailable, falls back to word-based token estimation
+- If network is unavailable, falls back to character-based token estimation
 - System continues to function with reduced accuracy
