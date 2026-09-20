@@ -136,8 +136,14 @@ def _try_workflow_redirect(
     superseded_by = prompt_info.get("superseded_by")
     if not (isinstance(superseded_by, str) and superseded_by.endswith(".wf.js")):
         return None
-    script_path = prompts_path / superseded_by
-    if not script_path.exists():
+    raw_script_path = Path(superseded_by).expanduser()
+    candidates = (
+        (raw_script_path,)
+        if raw_script_path.is_absolute()
+        else (prompts_path / raw_script_path, prompts_path.parent / raw_script_path)
+    )
+    script_path = next((path.resolve() for path in candidates if path.is_file()), None)
+    if script_path is None:
         return None
     content = workflow_redirect_content(
         script_path,
