@@ -178,11 +178,8 @@ def process_prompt_info(
         return 0
     description, icon_emoji = _description_and_icon(prompt_info)
 
-    redirected = _try_workflow_redirect(
-        facade, prompt_info, prompts_path, prompt_name, description, icon_emoji
-    )
-    if redirected is not None:
-        return redirected
+    # MCP cannot inspect the host client's tool inventory. Register the markdown prompt
+    # by default so commit/fix work without client-specific environment flags.
 
     content = load_prompt_content(prompts_path, category_name, filename)
     if not content:
