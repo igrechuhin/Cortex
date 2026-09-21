@@ -24,7 +24,14 @@ from cortex.tools.execution.session_paths import session_dir
 AUTOFIX_WAIT_SECONDS = 20.0
 
 
-def _pending_result(root: Path, result_path: Path) -> ModelDict:
+async def _pending_result(root: Path, result_path: Path) -> ModelDict:
+    envelope, status = await read_result_file(result_path)
+    if (
+        envelope is not None
+        and status in {"completed", "error"}
+        and envelope.get("autofix_pending") is not False
+    ):
+        return _deliver_result(result_path, envelope)
     active = find_running_job(root)
     if active is not None:
         return cast(ModelDict, active)
@@ -69,13 +76,23 @@ async def _run_locked_job(
         ):
             _ = clear_all_cached_results(root)
             job = start_fix_job_impl(root, include_markdown, env)
-            if job.get("status") in {"error", "running"}:
+            job_status = job.get("status")
+            if job_status == "error":
+                return cast(ModelDict, job)
+            job_id = job.get("job_id")
+            expected_job_id = result_path.stem.removeprefix("pre_commit_fix_result_")
+            if not isinstance(job_id, str) or job_id != expected_job_id:
+                return {
+                    "status": "error",
+                    "error": "Autofix worker did not return a valid job handle.",
+                }
+            if job_status == "running":
                 return cast(ModelDict, job)
             envelope, status = None, None
         if envelope is None or status not in {"completed", "error"}:
             envelope = await poll_for_result(result_path, ctx, timeout=960.0)
         if envelope.get("status") == "timeout":
-            return _pending_result(root, result_path)
+            return await _pending_result(root, result_path)
         return _deliver_result(result_path, envelope)
 
 
@@ -95,4 +112,4 @@ async def run_bounded_autofix(
                 root, include_untracked_markdown, ctx, env, result_path
             )
     except TimeoutError:
-        return _pending_result(root, result_path)
+        return await _pending_result(root, result_path)

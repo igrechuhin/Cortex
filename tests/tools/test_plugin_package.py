@@ -73,6 +73,34 @@ def test_packages_retain_canonical_procedure_and_referenced_assets(
         ).read_bytes()
 
 
+
+def test_generated_do_skill_fails_closed_on_opaque_agent_handles(tmp_path: Path) -> None:
+    synapse, wheel, docs = _sources(tmp_path)
+    canonical = (
+        Path(__file__).parents[2]
+        / ".cortex"
+        / "synapse"
+        / "prompts"
+        / WORKFLOWS["do"]
+    ).read_text(encoding="utf-8")
+    _ = (synapse / "prompts" / WORKFLOWS["do"]).write_text(
+        canonical, encoding="utf-8"
+    )
+    output = tmp_path / "packages"
+
+    assemble(synapse, wheel, output, docs)
+
+    for host in ("claude", "codex"):
+        skill = (
+            output / host / "plugins/cortex/skills/do/SKILL.md"
+        ).read_text(encoding="utf-8")
+        assert "const result = await agent(instruction, options)" in skill
+        assert "await handle.wait(600)" in skill
+        assert "opaque handles can serialize as\n`{}`" in skill
+        assert "SUBAGENT_HANDLE_INVALID" in skill
+        assert "SUBAGENT_HANDLE_UNRECOVERABLE" in skill
+        assert "wait([" not in skill
+
 @pytest.mark.parametrize("missing", ["wheel_metadata", "prompt", "report_template"])
 def test_incomplete_inputs_leave_no_partial_package(
     tmp_path: Path, missing: str

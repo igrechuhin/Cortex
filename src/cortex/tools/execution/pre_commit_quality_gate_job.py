@@ -83,6 +83,13 @@ async def _run_locked_job(
             )
             if job.get("status") == "error":
                 return job
+            job_id = job.get("job_id")
+            expected_job_id = result_path.stem.removeprefix("pre_commit_result_")
+            if not isinstance(job_id, str) or job_id != expected_job_id:
+                return {
+                    "status": "error",
+                    "error": "Phase A worker did not return a valid job handle.",
+                }
         return await _poll_and_deliver(root, result_path, timeout, ctx)
 
 
@@ -115,10 +122,22 @@ async def run_bounded_phase_a(
                 root, timeout, coverage_threshold, force_fresh, ctx, env, result_path
             )
     except TimeoutError:
-        return _pending_result(root, result_path)
+        return await _pending_result(root, result_path, timeout, ctx)
 
 
-def _pending_result(root: Path, result_path: Path) -> ModelDict:
+async def _pending_result(
+    root: Path,
+    result_path: Path,
+    timeout: int,
+    ctx: MCPContext | None,
+) -> ModelDict:
+    envelope, status = await read_result_file(result_path)
+    if (
+        envelope is not None
+        and status in {"completed", "error"}
+        and envelope.get("quality_gate_pending") is not False
+    ):
+        return await _poll_and_deliver(root, result_path, timeout, ctx)
     active = find_running_job(root)
     if active is not None:
         return cast(ModelDict, active)

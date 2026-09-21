@@ -252,16 +252,51 @@ async def test_poll_timeout_preserves_live_work_and_later_outcome(
 
 
 @pytest.mark.asyncio
-async def test_completed_outcome_waits_for_busy_lock_without_being_consumed(
+@pytest.mark.parametrize("job_id", [None, "", 123, "wrong-job"])
+async def test_autofix_rejects_invalid_worker_handle(
+    bounded_autofix: MagicMock, job_id: object
+) -> None:
+    job = {"status": "started", "job_id": job_id}
+    with (
+        patch.object(coordinator, "start_fix_job_impl", return_value=job),
+        patch.object(coordinator, "poll_for_result", new_callable=AsyncMock) as poll,
+    ):
+        result = await gate.autofix()
+
+    assert result["status"] == "error"
+    assert result["error"] == "Autofix worker did not return a valid job handle."
+    poll.assert_not_awaited()
+    bounded_autofix.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_poll_timeout_recovers_outcome_completed_at_deadline(
+    tmp_path: Path, bounded_autofix: MagicMock
+) -> None:
+    async def complete_then_timeout(
+        *args: object, **kwargs: object
+    ) -> dict[str, object]:
+        _write_envelope(_result_path(tmp_path), _terminal_envelope("success"))
+        return {"status": "timeout"}
+
+    with patch.object(
+        coordinator, "poll_for_result", side_effect=complete_then_timeout
+    ):
+        recovered = await gate.autofix()
+
+    assert recovered["remaining_issues"] == ["manual repair"]
+    assert json.loads(_result_path(tmp_path).read_text())["autofix_pending"] is False
+    bounded_autofix.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_completed_outcome_is_recovered_while_lock_is_busy(
     tmp_path: Path, bounded_autofix: MagicMock
 ) -> None:
     _write_envelope(_result_path(tmp_path), _terminal_envelope("success"))
     async with gate.get_phase_a_lock(str(tmp_path.resolve())):
-        pending = await asyncio.wait_for(gate.autofix(), timeout=0.5)
-        assert pending["status"] == "running"
-        assert pending["result_file"] == str(_result_path(tmp_path))
-        assert json.loads(_result_path(tmp_path).read_text())["autofix_pending"] is True
+        recovered = await asyncio.wait_for(gate.autofix(), timeout=0.5)
 
-    recovered = await gate.autofix()
     assert recovered["remaining_issues"] == ["manual repair"]
+    assert json.loads(_result_path(tmp_path).read_text())["autofix_pending"] is False
     bounded_autofix.assert_not_called()

@@ -203,7 +203,7 @@ async def test_public_budget_includes_contended_root_lock(
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("completed_result_exists", [False, True])
-async def test_contended_lock_never_invents_a_worker_handle(
+async def test_contended_lock_recovers_completion_or_reports_missing_job(
     tmp_path: Path,
     bounded_gate: tuple[MagicMock, AsyncMock, MagicMock],
     completed_result_exists: bool,
@@ -217,18 +217,22 @@ async def test_contended_lock_never_invents_a_worker_handle(
         async with gate.get_phase_a_lock(str(tmp_path.resolve())):
             result = await asyncio.wait_for(gate.run_quality_gate(), timeout=0.5)
 
-    assert result.get("preflight_passed") is not True
     if completed_result_exists:
-        assert result["status"] == "running"
-        assert Path(str(result["result_file"])) == result_file
+        assert result["status"] == "success"
+        assert result["preflight_passed"] is True
+        assert json.loads(result_file.read_text())["quality_gate_pending"] is False
+        feedback.assert_awaited_once()
+        fitness.assert_awaited_once()
+        tracker.record_phase_a.assert_called_once()
     else:
         assert result["status"] == "error"
+        assert result.get("preflight_passed") is not True
         assert "job_id" not in result
         assert "result_file" not in result
+        feedback.assert_not_awaited()
+        fitness.assert_not_awaited()
+        tracker.record_phase_a.assert_not_called()
     spawn.assert_not_called()
-    feedback.assert_not_awaited()
-    fitness.assert_not_awaited()
-    tracker.record_phase_a.assert_not_called()
 
 
 @pytest.mark.asyncio
@@ -286,6 +290,55 @@ async def test_worker_launch_error_does_not_record_failed_checks(
     feedback.assert_not_awaited()
     fitness.assert_not_awaited()
     tracker.record_phase_a.assert_not_called()
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("job_id", [None, "", 123, "wrong-job"])
+async def test_public_gate_rejects_invalid_worker_handle(
+    bounded_gate: tuple[MagicMock, AsyncMock, MagicMock], job_id: object
+) -> None:
+    _, feedback, tracker = bounded_gate
+    job = {"status": "started", "job_id": job_id}
+    with (
+        patch.object(gate, "start_phase_a_job", return_value=job),
+        patch.object(gate, "poll_phase_a_result", new_callable=AsyncMock) as poll,
+    ):
+        result = await asyncio.wait_for(gate.run_quality_gate(), timeout=0.5)
+
+    assert result == {
+        "status": "error",
+        "error": "Phase A worker did not return a valid job handle.",
+    }
+    poll.assert_not_awaited()
+    feedback.assert_not_awaited()
+    tracker.record_phase_a.assert_not_called()
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("job_id", [None, "", 123])
+async def test_shared_preflight_does_not_serialize_missing_worker_handle(
+    tmp_path: Path, job_id: object
+) -> None:
+    job = {"status": "started", "job_id": job_id}
+    with (
+        patch.object(gate, "start_phase_a_job", return_value=job),
+        patch.object(gate, "poll_phase_a_result", new_callable=AsyncMock) as poll,
+    ):
+        result = await gate.run_detached_phase_a_checks(
+            tmp_path,
+            test_timeout=600,
+            coverage_threshold=0.9,
+            strict_mode=False,
+            force_fresh=True,
+            ctx=None,
+            env=LocalExecutionEnvironment(),
+        )
+
+    assert result == {
+        "status": "error",
+        "error": "Phase A worker did not return a valid job handle.",
+    }
+    poll.assert_not_awaited()
 
 
 @pytest.mark.asyncio

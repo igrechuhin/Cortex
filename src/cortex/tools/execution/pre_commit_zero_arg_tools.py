@@ -233,10 +233,15 @@ async def run_detached_phase_a_checks(
             strict_mode=strict_mode,
             env=env,
         )
-        job_id = str(job.get("job_id", ""))
-        status = str(job.get("status", ""))
+        status = job.get("status")
         if status == "error":
             return job
+        job_id = job.get("job_id")
+        if not isinstance(job_id, str) or not job_id:
+            return {
+                "status": "error",
+                "error": "Phase A worker did not return a valid job handle.",
+            }
         return await poll_phase_a_result(root, job_id, timeout=test_timeout, ctx=ctx)
 
 
