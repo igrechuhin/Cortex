@@ -59,7 +59,6 @@ async def test_resource_preserves_real_nonempty_patterns(tmp_path: Path) -> None
             "files": files,
             "file_1": "a.md",
             "file_2": "b.md",
-            "correlation": 0.0,
             "correlation_strength": "medium",
             "occurrences": 5,
             "co_access_count": 5,

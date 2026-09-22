@@ -210,8 +210,8 @@ def test_compute_validate_counts_infrastructure_uses_issues_found() -> None:
 
 
 def test_compute_validate_counts_timestamps_sums_invalid_counters() -> None:
-    """Timestamps error_count sums invalid-format and invalid-with-time counters."""
-    data: dict[str, object] = {"invalid_format_count": 2, "invalid_with_time_count": 1}
+    """Timestamps error_count sums invalid-format and invalid-year counters."""
+    data: dict[str, object] = {"invalid_format_count": 2, "invalid_year_count": 1}
 
     error_count, warning_count = compute_validate_counts(
         data, ValidationCheckType.TIMESTAMPS
@@ -223,13 +223,13 @@ def test_compute_validate_counts_timestamps_sums_invalid_counters() -> None:
 
 def test_compute_validate_counts_timestamps_all_files_variant() -> None:
     """All-files timestamps responses use total_invalid_* counters instead."""
-    data: dict[str, object] = {"total_invalid_format": 4, "total_invalid_with_time": 0}
+    data: dict[str, object] = {"total_invalid_format": 4, "total_invalid_year": 3}
 
     error_count, warning_count = compute_validate_counts(
         data, ValidationCheckType.TIMESTAMPS
     )
 
-    assert error_count == 4
+    assert error_count == 7
     assert warning_count == 0
 
 

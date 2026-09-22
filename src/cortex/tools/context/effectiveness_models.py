@@ -130,8 +130,11 @@ class TaskTypeInsight(StrictBaseModel):
     avg_utilization: float = Field(
         ..., ge=0.0, le=1.0, description="Average utilization"
     )
-    avg_relevance: float = Field(
-        ..., ge=0.0, le=1.0, description="Average relevance score"
+    avg_relevance: float | None = Field(
+        None,
+        ge=0.0,
+        le=1.0,
+        description="Average relevance score; None when no relevance telemetry exists",
     )
     notes: str = Field(..., description="Notes and recommendations")
 
@@ -142,8 +145,11 @@ class FileEffectiveness(StrictBaseModel):
     times_selected: int = Field(
         ..., ge=0, description="Number of times file was selected"
     )
-    avg_relevance: float = Field(
-        ..., ge=0.0, le=1.0, description="Average relevance score"
+    avg_relevance: float | None = Field(
+        None,
+        ge=0.0,
+        le=1.0,
+        description="Average relevance score; None when no relevance telemetry exists",
     )
     task_types_used: list[str] = Field(
         default_factory=list, description="Task types that used this file"

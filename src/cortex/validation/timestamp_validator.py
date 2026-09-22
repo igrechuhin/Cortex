@@ -29,6 +29,33 @@ VALID_DATETIME_PATTERN = r"\b(\d{4}-\d{2}-\d{2}T\d{2}:\d{2})\b"
 # Also valid: YYYY-MM-DD (date-only for historical entries)
 VALID_DATE_PATTERN = r"\b(\d{4}-\d{2}-\d{2})\b"
 
+# A work timestamp either opens its entry (markdown/emoji decoration may
+# precede it, e.g. "## 2026-09-22", "- ✅ **2026-09-22 — ...**") or sits in a
+# parenthetical on a line that opens an entry (e.g. "## Completed Work
+# (2026-09-22)", "- ✅ **Plan** - COMPLETE (2026-09-22) - notes"). Dates
+# anywhere else are prose citations of historical events ("rows ending
+# 2019-09-05", "the window (2018-03-21) was sampled") and are NOT typo
+# candidates.
+_ENTRY_PREFIX_PATTERN = re.compile(r"[^0-9A-Za-z]*")
+
+
+def _entry_prefix_end(line: str) -> int:
+    """Offset at which the line's entry content starts, past leading markers."""
+    match = _ENTRY_PREFIX_PATTERN.match(line)
+    return match.end() if match is not None else 0
+
+
+def _is_work_timestamp(line: str, start: int, end: int) -> bool:
+    """True when the date at [start, end) is a work timestamp, not a citation."""
+    prefix_end = _entry_prefix_end(line)
+    if start == prefix_end:
+        return True
+    # The parenthetical form is an entry annotation, so it only counts on a
+    # line that opens an entry. A line starting with prose is a citation.
+    if prefix_end == 0:
+        return False
+    return line[start - 1] == "(" and line[end : end + 1] == ")"
+
 
 def _check_valid_datetime_patterns(
     line: str, line_num: int
@@ -239,6 +266,8 @@ def _check_line_datetime_years(
     count = 0
     out: list[TimestampViolationModel] = []
     for match in re.finditer(VALID_DATETIME_PATTERN, line):
+        if not _is_work_timestamp(line, match.start(1), match.end(1)):
+            continue
         ts = match.group(1)
         try:
             parsed = datetime.strptime(ts, "%Y-%m-%dT%H:%M")
@@ -259,6 +288,8 @@ def _check_line_date_only_years(
     count = 0
     out: list[TimestampViolationModel] = []
     for match in re.finditer(VALID_DATE_PATTERN, line):
+        if not _is_work_timestamp(line, match.start(1), match.end(1)):
+            continue
         date_str = match.group(1)
         if re.search(rf"{re.escape(date_str)}T\d", line):
             continue
@@ -328,7 +359,6 @@ def scan_timestamps(content: str) -> TimestampScanResult:
     return TimestampScanResult(
         valid_count=valid_count,
         invalid_format_count=invalid_format_count,
-        invalid_with_time_count=0,  # Deprecated: time component is now valid
         invalid_year_count=invalid_year_count,
         violations=violations[:20],
     )
@@ -388,7 +418,7 @@ async def validate_timestamps_single_file(
         file_name=file_name,
         valid_count=scan_result.valid_count,
         invalid_format_count=scan_result.invalid_format_count,
-        invalid_with_time_count=0,  # Deprecated
+        invalid_year_count=scan_result.invalid_year_count,
         violations=scan_result.violations,
         valid=not has_blocking_violations,
     )
@@ -403,25 +433,24 @@ def process_file_timestamps(
 
     Returns:
         Tuple of (file_result, valid_count, invalid_format_count,
-        invalid_with_time_count)
+        invalid_year_count)
     """
     scan_result = scan_timestamps(content)
     valid_count = scan_result.valid_count
     invalid_format_count = scan_result.invalid_format_count
+    invalid_year_count = scan_result.invalid_year_count
 
-    has_blocking_violations = (
-        invalid_format_count > 0 or scan_result.invalid_year_count > 0
-    )
+    has_blocking_violations = invalid_format_count > 0 or invalid_year_count > 0
 
     file_result = FileTimestampResultModel(
         valid_count=scan_result.valid_count,
         invalid_format_count=scan_result.invalid_format_count,
-        invalid_with_time_count=0,  # Deprecated
+        invalid_year_count=invalid_year_count,
         violations=scan_result.violations,
         valid=not has_blocking_violations,
     )
 
-    return file_result, valid_count, invalid_format_count, 0
+    return file_result, valid_count, invalid_format_count, invalid_year_count
 
 
 async def validate_timestamps_all_files(
@@ -452,18 +481,22 @@ def _process_all_files_timestamps(
     """Process timestamps for all files and populate results.
 
     Returns:
-        Tuple of (total_valid, total_invalid_format, total_invalid_with_time)
+        Tuple of (total_valid, total_invalid_format, total_invalid_year)
     """
     total_valid = 0
     total_invalid_format = 0
+    total_invalid_year = 0
 
     for file_name, content in files_content.items():
-        file_result, v_count, inv_fmt, _ = process_file_timestamps(file_name, content)
+        file_result, v_count, inv_fmt, inv_year = process_file_timestamps(
+            file_name, content
+        )
         results[file_name] = file_result
         total_valid += v_count
         total_invalid_format += inv_fmt
+        total_invalid_year += inv_year
 
-    return total_valid, total_invalid_format, 0
+    return total_valid, total_invalid_format, total_invalid_year
 
 
 def _build_timestamps_result(
@@ -472,13 +505,13 @@ def _build_timestamps_result(
     """Build timestamp validation result model.
 
     Args:
-        totals: Tuple of (total_valid, total_invalid_format, total_invalid_with_time)
+        totals: Tuple of (total_valid, total_invalid_format, total_invalid_year)
         results: Dictionary of file results
 
     Returns:
         Result model
     """
-    total_valid, total_invalid_format, total_invalid_with_time = totals
+    total_valid, total_invalid_format, total_invalid_year = totals
     has_any_blocking_violations = not all(r.valid for r in results.values())
 
     return AllFilesTimestampResult(
@@ -486,7 +519,7 @@ def _build_timestamps_result(
         check_type=CheckTypeTimestamps.TIMESTAMPS,
         total_valid=total_valid,
         total_invalid_format=total_invalid_format,
-        total_invalid_with_time=total_invalid_with_time,
+        total_invalid_year=total_invalid_year,
         files_valid=all(r.valid for r in results.values()),
         results=results,
         valid=not has_any_blocking_violations,

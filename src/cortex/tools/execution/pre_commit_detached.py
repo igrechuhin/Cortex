@@ -12,6 +12,7 @@ import json
 import logging
 import os
 import time
+from collections.abc import Mapping
 from enum import Enum
 from pathlib import Path
 
@@ -472,6 +473,23 @@ def start_fix_job_impl(
     return DetachedJobInfo(job_id=args_hash, status=DetachedJobStatus.STARTED).to_dict()
 
 
+def invalid_job_handle(
+    job: Mapping[str, object], result_path: Path, prefix: str, worker: str
+) -> dict[str, object] | None:
+    """Error result when the worker's job_id does not name `result_path`.
+
+    Returns None when the handle is valid. A mismatch means the worker would
+    deliver a different job's envelope, so it must not be polled.
+    """
+    job_id = job.get("job_id")
+    if isinstance(job_id, str) and job_id == result_path.stem.removeprefix(prefix):
+        return None
+    return {
+        "status": "error",
+        "error": f"{worker} worker did not return a valid job handle.",
+    }
+
+
 __all__ = [
     "DETACHED_ENABLED",
     "clear_all_cached_results",
@@ -483,6 +501,7 @@ __all__ = [
     "fix_result_path",
     "spawn_detached_fix_worker",
     "spawn_detached_worker",
+    "invalid_job_handle",
     "start_fix_job_impl",
     "start_pre_commit_job_impl",
 ]

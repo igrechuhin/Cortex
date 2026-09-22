@@ -12,6 +12,7 @@ from cortex.core.models import ModelDict
 from cortex.tools.execution.pre_commit_detached import (
     compute_args_hash,
     find_running_job,
+    invalid_job_handle,
 )
 from cortex.tools.execution.pre_commit_phase_dispatch import (
     PreCommitPhase,
@@ -52,6 +53,38 @@ async def _mark_delivered(result_path: Path) -> None:
         atomic_write(result_path, envelope)
 
 
+def _start_and_validate(
+    root: Path,
+    timeout: int,
+    coverage_threshold: float,
+    force_fresh: bool,
+    env: ExecutionEnvironment,
+    result_path: Path,
+) -> ModelDict | None:
+    """Start a Phase A worker; return a short-circuit result, or None to poll."""
+    from cortex.tools.execution import pre_commit_zero_arg_tools as tools
+    from cortex.tools.execution.pre_commit_fingerprint_store import (
+        clear_phase_a_fingerprint,
+    )
+
+    if force_fresh:
+        clear_phase_a_fingerprint(root)
+    job = tools.start_phase_a_job(
+        root,
+        timeout,
+        coverage_threshold,
+        force_fresh,
+        env=env,
+        quality_gate=True,
+    )
+    if job.get("status") == "error":
+        return job
+    return cast(
+        "ModelDict | None",
+        invalid_job_handle(job, result_path, "pre_commit_result_", "Phase A"),
+    )
+
+
 async def _run_locked_job(
     root: Path,
     timeout: int,
@@ -62,34 +95,17 @@ async def _run_locked_job(
     result_path: Path,
 ) -> ModelDict:
     from cortex.tools.execution import pre_commit_zero_arg_tools as tools
-    from cortex.tools.execution.pre_commit_fingerprint_store import (
-        clear_phase_a_fingerprint,
-    )
 
     async with tools.get_phase_a_lock(str(root.resolve())):
         active = find_running_job(root)
         if active is not None and active.get("result_file") != str(result_path):
             return cast(ModelDict, active)
         if active is None and await _needs_new_job(result_path, force_fresh):
-            if force_fresh:
-                clear_phase_a_fingerprint(root)
-            job = tools.start_phase_a_job(
-                root,
-                timeout,
-                coverage_threshold,
-                force_fresh,
-                env=env,
-                quality_gate=True,
+            short_circuit = _start_and_validate(
+                root, timeout, coverage_threshold, force_fresh, env, result_path
             )
-            if job.get("status") == "error":
-                return job
-            job_id = job.get("job_id")
-            expected_job_id = result_path.stem.removeprefix("pre_commit_result_")
-            if not isinstance(job_id, str) or job_id != expected_job_id:
-                return {
-                    "status": "error",
-                    "error": "Phase A worker did not return a valid job handle.",
-                }
+            if short_circuit is not None:
+                return short_circuit
         return await _poll_and_deliver(root, result_path, timeout, ctx)
 
 

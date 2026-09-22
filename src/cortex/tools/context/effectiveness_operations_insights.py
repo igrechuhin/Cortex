@@ -91,30 +91,33 @@ def _compute_recommended_budget(avg_tokens: float) -> int:
 
 
 def _find_essential_files(entries: list[ContextUsageEntry]) -> list[str]:
-    """Find files that appear in >50% of entries with high relevance."""
+    """Find files that appear in >50% of entries with measured high relevance.
+
+    Only measured scores count: a frequently-loaded file with no relevance
+    telemetry is not certified essential, and is not penalised by a fabricated
+    default either.
+    """
     file_counts: dict[str, int] = {}
     file_relevances: dict[str, list[float]] = {}
     for entry in entries:
-        selected_files = entry.selected_file_names or []
         relevance_by_file = entry.relevance_by_file or {}
-        for fname in selected_files:
+        for fname in entry.selected_file_names or []:
             file_counts[fname] = file_counts.get(fname, 0) + 1
-            if fname not in file_relevances:
-                file_relevances[fname] = []
-            rel = relevance_by_file.get(fname, 0.5)
-            file_relevances[fname].append(rel)
+            rel = relevance_by_file.get(fname)
+            if rel is not None:
+                file_relevances.setdefault(fname, []).append(rel)
 
     essential: list[str] = []
     threshold = len(entries) * 0.5
     for fname, count in file_counts.items():
-        if count >= threshold:
-            avg_file_rel = sum(file_relevances[fname]) / len(file_relevances[fname])
-            if avg_file_rel > 0.5:
+        measured = file_relevances.get(fname)
+        if count >= threshold and measured:
+            if sum(measured) / len(measured) > 0.5:
                 essential.append(fname)
     return essential
 
 
-def _generate_task_notes(avg_util: float, avg_rel: float, count: int) -> str:
+def _generate_task_notes(avg_util: float, avg_rel: float | None, count: int) -> str:
     """Generate human-readable notes for a task type."""
     notes: list[str] = []
     if avg_util < 0.3:
@@ -123,7 +126,9 @@ def _generate_task_notes(avg_util: float, avg_rel: float, count: int) -> str:
         notes.append("Moderate utilization - some budget optimization possible")
     elif avg_util > 0.8:
         notes.append("High utilization - budget well-matched to needs")
-    if avg_rel > 0.7:
+    if avg_rel is None:
+        notes.append("No relevance telemetry - file selection not assessed")
+    elif avg_rel > 0.7:
         notes.append("High relevance - file selection is effective")
     elif avg_rel < 0.5:
         notes.append("Low relevance - consider refining file selection")
@@ -137,7 +142,10 @@ def _compute_task_insight(
 ) -> TaskTypeInsight:
     """Compute insight for a specific task type."""
     avg_util = sum(e.utilization for e in entries) / len(entries)
-    avg_rel = sum(e.avg_relevance_score for e in entries) / len(entries)
+    scored = [e for e in entries if e.relevance_by_file]
+    avg_rel = (
+        sum(e.avg_relevance_score for e in scored) / len(scored) if scored else None
+    )
     avg_tokens = sum(e.total_tokens for e in entries) / len(entries)
     recommended = _compute_recommended_budget(avg_tokens)
     essential = _find_essential_files(entries)
@@ -147,7 +155,7 @@ def _compute_task_insight(
         recommended_budget=recommended,
         essential_files=essential[:5],
         avg_utilization=round(avg_util, 3),
-        avg_relevance=round(avg_rel, 3),
+        avg_relevance=None if avg_rel is None else round(avg_rel, 3),
         notes=notes,
     )
 
@@ -185,10 +193,23 @@ def generate_role_insights(
 
 
 def _compute_file_effectiveness(
-    fname: str, relevances: list[float], task_types: list[str]
+    fname: str, times_selected: int, relevances: list[float], task_types: list[str]
 ) -> FileEffectiveness:
-    """Compute effectiveness for a single file."""
-    avg_rel = sum(relevances) / len(relevances) if relevances else 0
+    """Compute effectiveness for a single file.
+
+    `relevances` holds only *measured* scores. When it is empty the file was
+    selected but never scored, so no relevance verdict is emitted: reporting a
+    default score here previously recommended excluding every file in a project
+    whose telemetry does not populate relevance.
+    """
+    if not relevances:
+        return FileEffectiveness(
+            times_selected=times_selected,
+            avg_relevance=None,
+            task_types_used=task_types,
+            recommendation="No relevance telemetry - effectiveness not assessed",
+        )
+    avg_rel = sum(relevances) / len(relevances)
     if avg_rel > 0.7:
         rec = "High value - prioritize for loading"
     elif avg_rel > 0.5:
@@ -196,7 +217,7 @@ def _compute_file_effectiveness(
     else:
         rec = "Lower relevance - consider excluding for most tasks"
     return FileEffectiveness(
-        times_selected=len(relevances),
+        times_selected=times_selected,
         avg_relevance=round(avg_rel, 3),
         task_types_used=task_types,
         recommendation=rec,
@@ -207,31 +228,25 @@ def generate_file_effectiveness(
     entries: list[ContextUsageEntry],
 ) -> dict[str, FileEffectiveness]:
     """Generate effectiveness tracking for each file."""
-    file_data: dict[str, dict[str, list[float] | set[str]]] = {}
+    selections: dict[str, int] = {}
+    measured: dict[str, list[float]] = {}
+    task_types: dict[str, set[str]] = {}
     for entry in entries:
         task_type = extract_task_pattern(entry.task_description)
-        selected_files = entry.selected_file_names or []
         relevance_by_file = entry.relevance_by_file or {}
-        for fname in selected_files:
-            if fname not in file_data:
-                file_data[fname] = {"relevances": [], "task_types": set()}
-            rel = relevance_by_file.get(fname, 0.5)
-            relevances = file_data[fname]["relevances"]
-            if isinstance(relevances, list):
-                relevances.append(rel)
-            task_types = file_data[fname]["task_types"]
-            if isinstance(task_types, set):
-                task_types.add(task_type)
+        for fname in entry.selected_file_names or []:
+            selections[fname] = selections.get(fname, 0) + 1
+            task_types.setdefault(fname, set()).add(task_type)
+            rel = relevance_by_file.get(fname)
+            if rel is not None:
+                measured.setdefault(fname, []).append(rel)
 
-    effectiveness: dict[str, FileEffectiveness] = {}
-    for fname, data in file_data.items():
-        relevances = data["relevances"]
-        task_types = data["task_types"]
-        if isinstance(relevances, list) and isinstance(task_types, set):
-            effectiveness[fname] = _compute_file_effectiveness(
-                fname, relevances, list(task_types)
-            )
-    return effectiveness
+    return {
+        fname: _compute_file_effectiveness(
+            fname, count, measured.get(fname, []), sorted(task_types[fname])
+        )
+        for fname, count in selections.items()
+    }
 
 
 def _get_budget_efficiency_pattern(

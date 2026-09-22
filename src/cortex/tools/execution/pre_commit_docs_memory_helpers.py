@@ -159,13 +159,20 @@ def build_timestamps_summary(
         return None
     valid_flag = bool(timestamps_result.get("valid", False))
     status = OperationStatus.SUCCESS if valid_flag else OperationStatus.ERROR
-    invalid_format = timestamps_result.get("total_invalid_format")
-    invalid_with_time = timestamps_result.get("total_invalid_with_time")
-    errors_count = 0
-    if isinstance(invalid_format, int):
-        errors_count += invalid_format
-    if isinstance(invalid_with_time, int):
-        errors_count += invalid_with_time
+    # `run_single_validation` requests CONCISE, and `format_validate_response`
+    # reduces the payload to {status, check_type, valid, error_count,
+    # warning_count} -- the per-counter totals survive only on the raw shape.
+    error_count = timestamps_result.get("error_count")
+    if isinstance(error_count, int):
+        errors_count = error_count
+    else:
+        invalid_format = timestamps_result.get("total_invalid_format")
+        invalid_year = timestamps_result.get("total_invalid_year")
+        errors_count = 0
+        if isinstance(invalid_format, int):
+            errors_count += invalid_format
+        if isinstance(invalid_year, int):
+            errors_count += invalid_year
     message_obj = timestamps_result.get("message")
     message = str(message_obj) if message_obj else None
     return PreflightCheckSummary(

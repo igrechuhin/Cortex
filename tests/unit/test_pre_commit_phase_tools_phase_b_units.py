@@ -2,9 +2,13 @@
 
 from __future__ import annotations
 
+import json
+
 from typing import cast
 
-from cortex.core.models import JsonDict
+from cortex.core.models import JsonDict, ResponseFormat
+from cortex.tools.validation.helpers import ValidationCheckType
+from cortex.tools.validation.response_formatters import format_validate_response
 from cortex.tools.execution.pre_commit_docs_memory_helpers import (
     build_docs_memory_bank_model as _build_docs_memory_bank_model,
 )
@@ -54,7 +58,7 @@ class TestDocsMemoryHelperFunctions:
             {
                 "valid": True,
                 "total_invalid_format": 0,
-                "total_invalid_with_time": 0,
+                "total_invalid_year": 0,
             },
         )
         summary = _build_timestamps_summary(ts)
@@ -69,13 +73,39 @@ class TestDocsMemoryHelperFunctions:
             {
                 "valid": False,
                 "total_invalid_format": 3,
-                "total_invalid_with_time": 2,
+                "total_invalid_year": 2,
             },
         )
         summary = _build_timestamps_summary(ts)
         assert summary is not None
         assert summary.status == "error"
         assert summary.errors == 5
+
+    def test_build_timestamps_summary_reads_concise_payload(self) -> None:
+        """The gate consumes the CONCISE payload, not the raw counters.
+
+        Regression: `run_single_validation` requests CONCISE, and
+        `format_validate_response` reduces the response to {status,
+        check_type, valid, error_count, warning_count}. Reading only
+        `total_invalid_*` here reported `valid=false` with `errors=None`
+        -- the silent-zero trap this counter exists to close. Built through
+        the real formatter so the two layers cannot drift apart.
+        """
+        raw = json.dumps(
+            {
+                "status": "success",
+                "valid": False,
+                "total_invalid_format": 0,
+                "total_invalid_year": 3,
+            }
+        )
+        concise = format_validate_response(
+            raw, ValidationCheckType.TIMESTAMPS, ResponseFormat.CONCISE
+        )
+        summary = _build_timestamps_summary(cast(JsonDict, json.loads(concise)))
+        assert summary is not None
+        assert summary.status == "error"
+        assert summary.errors == 3
 
     def test_build_roadmap_sync_summary_none(self) -> None:
         """Returns None when roadmap_result is None."""
@@ -194,7 +224,7 @@ class TestDocsMemoryHelperFunctions:
                 "status": "success",
                 "valid": True,
                 "total_invalid_format": 0,
-                "total_invalid_with_time": 0,
+                "total_invalid_year": 0,
             },
         )
         rm = cast(

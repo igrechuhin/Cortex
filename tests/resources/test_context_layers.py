@@ -48,6 +48,66 @@ async def test_build_l0_with_budget_and_identity(
 
 
 @pytest.mark.asyncio
+async def test_build_l0_identifies_swift_package_not_python(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A SwiftPM project must not be announced to agents as python.
+
+    Regression: identity read only pyproject.toml, so every non-Python repo
+    reported `unknown-project` / `python` and pointed agents at the wrong
+    toolchain.
+    """
+    _ = (tmp_path / "Package.swift").write_text(
+        '// swift-tools-version: 6.2\n\nlet package = Package(\n    name: "TradeWing",\n',
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(
+        "cortex.tools.context.l0_identity._read_last_commit_summary", lambda _: "c0ffee"
+    )
+
+    result = await build_l0(tmp_path, ContextConfig(max_l0_tokens=150))
+
+    assert "TradeWing" in result.content
+    assert "Stack: swift 6.2" in result.content
+    assert "python" not in result.content
+
+
+@pytest.mark.asyncio
+async def test_build_l0_unrecognised_project_does_not_claim_a_stack(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """With no build manifest the stack is unknown, never a guessed default."""
+    monkeypatch.setattr(
+        "cortex.tools.context.l0_identity._read_last_commit_summary", lambda _: "c0ffee"
+    )
+
+    result = await build_l0(tmp_path, ContextConfig(max_l0_tokens=150))
+
+    assert "Stack: unknown" in result.content
+
+
+@pytest.mark.asyncio
+async def test_build_l0_renders_json_session_goal_as_text(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """session-goal.md holds JSON; L0 must show the goal, not a JSON fragment."""
+    session_dir = tmp_path / ".cortex" / ".session"
+    _ = session_dir.mkdir(parents=True)
+    _ = (session_dir / "session-goal.md").write_text(
+        '{\n  "goal": "Ship the economic gate",\n  "plan_slug": null\n}',
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(
+        "cortex.tools.context.l0_identity._read_last_commit_summary", lambda _: "c0ffee"
+    )
+
+    result = await build_l0(tmp_path, ContextConfig(max_l0_tokens=150))
+
+    assert "Primary goal: Ship the economic gate" in result.content
+    assert '"goal"' not in result.content
+
+
+@pytest.mark.asyncio
 async def test_build_l1_prefers_blocker_paragraphs(tmp_path: Path) -> None:
     memory_bank = tmp_path / ".cortex" / "memory-bank"
     _ = memory_bank.mkdir(parents=True)

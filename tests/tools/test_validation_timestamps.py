@@ -213,7 +213,7 @@ class TestValidateTimestamps:
         assert result_data["files_valid"] is True
         assert result_data["total_valid"] >= 2
         assert result_data["total_invalid_format"] == 0
-        assert result_data["total_invalid_with_time"] == 0
+        assert result_data["total_invalid_year"] == 0
 
     @pytest.mark.asyncio
     async def test_validate_timestamps_all_files_with_violations(

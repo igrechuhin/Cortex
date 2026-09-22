@@ -14,6 +14,7 @@ from unittest.mock import AsyncMock, patch
 import pytest
 
 from cortex.core.models import ModelDict
+from cortex.tools.execution.pre_commit_quality_gate_job import quality_gate_job_path
 from cortex.tools.execution.pre_commit_zero_arg_tools import (
     markdown_result_has_errors,
     poll_phase_a_result,
@@ -248,6 +249,11 @@ async def _run_quality_gate_with_envelope(
     """Exercise detached path with a fake worker envelope (keeps tests under length limits)."""
     session_dir = tmp_path / ".cortex" / ".session"
     session_dir.mkdir(parents=True)
+    # The gate rejects a handle whose job_id does not match the result file it
+    # will poll, so the stub must mint the same identity the worker would.
+    expected_job_id = quality_gate_job_path(tmp_path, 300, 0.90).stem.removeprefix(
+        "pre_commit_result_"
+    )
     z = "cortex.tools.execution.pre_commit_zero_arg_tools"
     with (
         patch(f"{z}.get_current_project_root", return_value=tmp_path),
@@ -261,7 +267,7 @@ async def _run_quality_gate_with_envelope(
         ),
         patch(
             f"{z}.start_phase_a_job",
-            return_value={"job_id": "test-job", "status": "started"},
+            return_value={"job_id": expected_job_id, "status": "started"},
         ),
         patch(f"{z}.get_cortex_path", return_value=session_dir),
         patch(

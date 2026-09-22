@@ -40,11 +40,6 @@ class TimestampScanResult(BaseModel):
         ge=0,
         description="Number of invalid format timestamps",
     )
-    invalid_with_time_count: int = Field(
-        ...,
-        ge=0,
-        description="Number of timestamps with time components",
-    )
     invalid_year_count: int = Field(
         default=0,
         ge=0,
@@ -69,10 +64,10 @@ class FileTimestampResultModel(BaseModel):
         ge=0,
         description="Number of invalid format timestamps",
     )
-    invalid_with_time_count: int = Field(
+    invalid_year_count: int = Field(
         ...,
         ge=0,
-        description="Number of timestamps with time components",
+        description="Number of timestamps with year outside the allowed range",
     )
     violations: list[TimestampViolationModel] = Field(
         default_factory=lambda: list[TimestampViolationModel](),
@@ -105,10 +100,10 @@ class SingleFileTimestampResult(BaseModel):
         ge=0,
         description="Number of invalid format timestamps",
     )
-    invalid_with_time_count: int = Field(
+    invalid_year_count: int = Field(
         default=0,
         ge=0,
-        description="Number of timestamps with time components",
+        description="Number of timestamps with year outside the allowed range",
     )
     violations: list[TimestampViolationModel] = Field(
         default_factory=lambda: list[TimestampViolationModel](),
@@ -143,10 +138,10 @@ class AllFilesTimestampResult(BaseModel):
         ge=0,
         description="Total invalid format timestamps",
     )
-    total_invalid_with_time: int = Field(
+    total_invalid_year: int = Field(
         ...,
         ge=0,
-        description="Total timestamps with time components",
+        description="Total timestamps with year outside the allowed range",
     )
     files_valid: bool = Field(
         ...,

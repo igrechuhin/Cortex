@@ -110,7 +110,9 @@ def format_co_access_results(
         correlation_strength = (
             SeverityLevel.HIGH
             if count >= 10
-            else SeverityLevel.MEDIUM if count >= 5 else SeverityLevel.LOW
+            else SeverityLevel.MEDIUM
+            if count >= 5
+            else SeverityLevel.LOW
         )
         result.append(
             CoAccessPattern(
@@ -119,7 +121,6 @@ def format_co_access_results(
                 file_2=file_2,
                 co_access_count=count,
                 occurrences=count,
-                correlation=0.0,
                 correlation_strength=correlation_strength,
             )
         )

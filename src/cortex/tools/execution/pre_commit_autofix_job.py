@@ -15,6 +15,7 @@ from cortex.tools.execution.pre_commit_detached import (
     find_running_job,
     fix_args_hash,
     fix_result_path,
+    invalid_job_handle,
     start_fix_job_impl,
 )
 from cortex.tools.execution.pre_commit_process import poll_for_result, read_result_file
@@ -57,6 +58,28 @@ def _deliver_result(result_path: Path, envelope: dict[str, object]) -> ModelDict
     return cast(ModelDict, result)
 
 
+def _start_and_validate(
+    root: Path,
+    include_markdown: bool,
+    env: ExecutionEnvironment,
+    result_path: Path,
+) -> ModelDict | None:
+    """Start a fix worker; return a short-circuit result, or None to keep polling."""
+    _ = clear_all_cached_results(root)
+    job = start_fix_job_impl(root, include_markdown, env)
+    job_status = job.get("status")
+    if job_status == "error":
+        return cast(ModelDict, job)
+    bad_handle = invalid_job_handle(
+        job, result_path, "pre_commit_fix_result_", "Autofix"
+    )
+    if bad_handle is not None:
+        return cast(ModelDict, bad_handle)
+    if job_status == "running":
+        return cast(ModelDict, job)
+    return None
+
+
 async def _run_locked_job(
     root: Path,
     include_markdown: bool,
@@ -74,20 +97,11 @@ async def _run_locked_job(
         if active is None and (
             envelope is None or envelope.get("autofix_pending") is False
         ):
-            _ = clear_all_cached_results(root)
-            job = start_fix_job_impl(root, include_markdown, env)
-            job_status = job.get("status")
-            if job_status == "error":
-                return cast(ModelDict, job)
-            job_id = job.get("job_id")
-            expected_job_id = result_path.stem.removeprefix("pre_commit_fix_result_")
-            if not isinstance(job_id, str) or job_id != expected_job_id:
-                return {
-                    "status": "error",
-                    "error": "Autofix worker did not return a valid job handle.",
-                }
-            if job_status == "running":
-                return cast(ModelDict, job)
+            short_circuit = _start_and_validate(
+                root, include_markdown, env, result_path
+            )
+            if short_circuit is not None:
+                return short_circuit
             envelope, status = None, None
         if envelope is None or status not in {"completed", "error"}:
             envelope = await poll_for_result(result_path, ctx, timeout=960.0)

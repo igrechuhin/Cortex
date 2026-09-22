@@ -290,7 +290,7 @@ class FileTimestampResult(StrictBaseModel):
 
     valid_count: int
     invalid_format_count: int
-    invalid_with_time_count: int
+    invalid_year_count: int
     violations: list[TimestampViolation] = Field(
         default_factory=lambda: list[TimestampViolation]()
     )
@@ -304,7 +304,7 @@ class ValidateTimestampsResult(ToolResultBase):
     check_type: _CheckTypeField = Field(default=ValidateCheckType.TIMESTAMPS)
     total_valid: int
     total_invalid_format: int
-    total_invalid_with_time: int
+    total_invalid_year: int
     files_valid: bool
     results: dict[str, FileTimestampResult] = Field(default_factory=dict)
     valid: bool

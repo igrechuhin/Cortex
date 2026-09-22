@@ -81,12 +81,10 @@ def _int_or_zero(value: object) -> int:
 
 
 def _counts_from_timestamps(data: dict[str, object]) -> tuple[int, int]:
-    """Error count from invalid-format/invalid-with-time counters (single or all-files)."""
+    """Error count from invalid-format/invalid-year counters (single or all-files)."""
     invalid_format = data.get("invalid_format_count", data.get("total_invalid_format"))
-    invalid_with_time = data.get(
-        "invalid_with_time_count", data.get("total_invalid_with_time")
-    )
-    return _int_or_zero(invalid_format) + _int_or_zero(invalid_with_time), 0
+    invalid_year = data.get("invalid_year_count", data.get("total_invalid_year"))
+    return _int_or_zero(invalid_format) + _int_or_zero(invalid_year), 0
 
 
 def _counts_from_roadmap_sync(data: dict[str, object]) -> tuple[int, int]:

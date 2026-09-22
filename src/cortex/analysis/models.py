@@ -375,8 +375,8 @@ class AccessFrequencyEntry(AnalysisBaseModel):
 class CoAccessPattern(AnalysisBaseModel):
     """Co-access pattern between files.
 
-    Note: Supports both structural (files, correlation, occurrences) and
-    legacy (file_1, file_2, co_access_count, correlation_strength) field names.
+    Note: Supports both structural (files, occurrences) and legacy
+    (file_1, file_2, co_access_count, correlation_strength) field names.
     """
 
     # File references - support both list and individual fields
@@ -386,10 +386,7 @@ class CoAccessPattern(AnalysisBaseModel):
     file_1: str | None = Field(default=None, description="First file in the pair")
     file_2: str | None = Field(default=None, description="Second file in the pair")
 
-    # Correlation/co-access count - support both names
-    correlation: float = Field(
-        default=0.0, ge=0.0, le=1.0, description="Correlation strength (0-1)"
-    )
+    # Co-access strength, bucketed from the occurrence count
     correlation_strength: SeverityLevel | None = Field(
         default=None, description="Correlation strength label (high/medium/low)"
     )

@@ -2,9 +2,12 @@
 
 from __future__ import annotations
 
+import json
+import re
 import subprocess
 from functools import lru_cache
 from pathlib import Path
+from typing import cast
 
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.tools.context.layers import ContextConfig, ContextLayer, LayerResult
@@ -28,21 +31,50 @@ def _truncate_to_budget(text: str, budget: int, query: str | None = None) -> str
     return " ".join(words)
 
 
-@lru_cache(maxsize=1)
-def _load_project_identity(pyproject_path: Path) -> tuple[str, str]:
-    project_name = "unknown-project"
-    stack = "python"
-    try:
-        content = pyproject_path.read_text(encoding="utf-8")
-    except OSError:
-        return project_name, stack
-    for line in content.splitlines():
-        stripped = line.strip()
-        if stripped.startswith("name = ") and project_name == "unknown-project":
-            project_name = stripped.split("=", 1)[1].strip().strip('"')
-        if stripped.startswith("requires-python"):
-            stack = f"python {stripped.split('=', 1)[1].strip().strip('\"')}"
-    return project_name, stack
+# Build manifests in precedence order: (filename, project-name pattern, stack).
+_MANIFESTS: tuple[tuple[str, str, str], ...] = (
+    ("pyproject.toml", r'^\s*name\s*=\s*"([^"]+)"', "python"),
+    ("Package.swift", r'^\s*name:\s*"([^"]+)"', "swift"),
+    ("package.json", r'"name"\s*:\s*"([^"]+)"', "node"),
+    ("Cargo.toml", r'^\s*name\s*=\s*"([^"]+)"', "rust"),
+    ("go.mod", r"^module\s+(\S+)", "go"),
+)
+
+# Optional version refinement per stack, read from the same manifest.
+_STACK_VERSION_PATTERNS: dict[str, str] = {
+    "python": r'^\s*requires-python\s*=\s*"([^"]+)"',
+    "swift": r"^//\s*swift-tools-version:\s*([\d.]+)",
+}
+
+
+def _refine_stack(stack: str, content: str) -> str:
+    """Append the manifest's declared toolchain version when it states one."""
+    pattern = _STACK_VERSION_PATTERNS.get(stack)
+    if pattern is None:
+        return stack
+    match = re.search(pattern, content, re.MULTILINE)
+    return f"{stack} {match.group(1)}" if match else stack
+
+
+@lru_cache(maxsize=8)
+def _load_project_identity(project_root: Path) -> tuple[str, str]:
+    """Identify the project from its build manifest.
+
+    Only pyproject.toml was consulted before, so every non-Python project was
+    reported as `unknown-project` / `python` — pointing agents in a Swift repo
+    at the wrong toolchain. An unrecognised project now says so.
+    """
+    for filename, name_pattern, stack in _MANIFESTS:
+        try:
+            content = (project_root / filename).read_text(encoding="utf-8")
+        except OSError:
+            continue
+        match = re.search(name_pattern, content, re.MULTILINE)
+        return (
+            match.group(1) if match else project_root.name,
+            _refine_stack(stack, content),
+        )
+    return project_root.name or "unknown-project", "unknown"
 
 
 def _read_last_commit_summary(project_root: Path) -> str:
@@ -61,18 +93,30 @@ def _read_last_commit_summary(project_root: Path) -> str:
 
 
 def _read_primary_goal(project_root: Path) -> str:
+    """Read the session goal text.
+
+    The file is JSON despite the .md suffix; joining its first two lines
+    emitted a truncated `{ "goal": "...` fragment into every L0 layer.
+    """
     goal_path = (
         get_cortex_path(project_root, CortexResourceType.SESSION) / "session-goal.md"
     )
     try:
-        lines = goal_path.read_text(encoding="utf-8").splitlines()
+        raw = goal_path.read_text(encoding="utf-8")
     except OSError:
         return ""
-    return " ".join(lines[:2]).strip()
+    try:
+        parsed: object = json.loads(raw)
+    except json.JSONDecodeError:
+        return " ".join(raw.splitlines()[:2]).strip()
+    if not isinstance(parsed, dict):
+        return ""
+    goal: object = cast("dict[str, object]", parsed).get("goal")
+    return str(goal).strip() if isinstance(goal, str) else ""
 
 
 def _build_identity_lines(project_root: Path, primary_goal: str) -> list[str]:
-    project_name, stack = _load_project_identity(project_root / "pyproject.toml")
+    project_name, stack = _load_project_identity(project_root)
     commit = _read_last_commit_summary(project_root)
     return [
         "Project identity",

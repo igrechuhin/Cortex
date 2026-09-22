@@ -24,12 +24,12 @@ class TestScanTimestamps:
     def test_invalid_datetime_with_seconds_adds_violation(self) -> None:
         """A line with YYYY-MM-DDTHH:MM:SS is invalid (seconds not allowed)."""
         result = scan_timestamps("Done 2026-01-15T10:00:00")
-        assert result.invalid_with_time_count >= 1 or len(result.violations) >= 1
+        assert len(result.violations) >= 1
 
     def test_invalid_datetime_with_timezone_adds_violation(self) -> None:
         """A line with timezone (Z or +00:00) is invalid."""
         result = scan_timestamps("Done 2026-01-15T10:00Z")
-        assert result.invalid_with_time_count >= 1 or len(result.violations) >= 1
+        assert len(result.violations) >= 1
 
     def test_non_standard_date_format_adds_violation(self) -> None:
         """A line with non-YYYY-MM-DD date format (e.g. DD/MM/YYYY) is invalid."""
@@ -52,11 +52,56 @@ class TestScanTimestamps:
             assert result.violations == [], line
 
     def test_year_outside_current_plus_minus_one_adds_violation(self) -> None:
-        """A date with year outside current year ± 1 is invalid (catches typos)."""
+        """An entry-opening date with year outside current ± 1 is a likely typo."""
         from datetime import date as date_type
 
         with patch("cortex.validation.timestamp_validator.date") as mock_date:
             mock_date.today.return_value = date_type(2026, 3, 4)
-            result = scan_timestamps("Completed 2024-01-15")
+            result = scan_timestamps("2024-01-15 Completed")
         assert result.invalid_year_count >= 1
         assert any("outside allowed range" in v.issue for v in result.violations)
+
+    def test_real_memory_bank_timestamp_forms_are_checked(self) -> None:
+        """Every work-timestamp convention the memory bank actually uses.
+
+        Measured over TradeWing + Cortex memory banks: date-opened headings,
+        emoji-decorated list entries, and the trailing "(date)" parenthetical
+        used by "## Completed Work (...)" and "- ✅ **Plan** - COMPLETE (...)".
+        A scope rule that misses these stops catching typos where work
+        timestamps actually live.
+        """
+        from datetime import date as date_type
+
+        for line in (
+            "## 2024-01-15",
+            "- **2024-01-15 — Sprint closed**",
+            "- ✅ **2024-01-15 — Sprint closed**",
+            "## Completed Work (2024-01-15)",
+            "- ✅ **Replay Trades** - COMPLETE (2024-01-15) - closed gaps",
+        ):
+            with patch("cortex.validation.timestamp_validator.date") as mock_date:
+                mock_date.today.return_value = date_type(2026, 3, 4)
+                result = scan_timestamps(line)
+            assert result.invalid_year_count >= 1, line
+
+    def test_historical_date_cited_in_prose_is_not_a_violation(self) -> None:
+        """Prose citing a past event is not a mistyped work timestamp.
+
+        Regression: the year check scanned every date on every line, so real
+        memory-bank sentences about 2018-2021 market data produced 12 phantom
+        violations and held the docs gate permanently red.
+        """
+        from datetime import date as date_type
+
+        with patch("cortex.validation.timestamp_validator.date") as mock_date:
+            mock_date.today.return_value = date_type(2026, 3, 4)
+            for line in (
+                "**Dead Candle Series: Pairs Stopped 2018-03-21 / 2019-09-05**",
+                "Baseline run started 2020-08-19 on the M1.",
+                "Fifteen FIGIs trail from 2018-03-21 to 2019-09-05.",
+                "The data window (2018-03-21) was sampled hourly.",
+                "Backtest covered (2019-01-01) through (2020-12-31).",
+            ):
+                result = scan_timestamps(line)
+                assert result.invalid_year_count == 0, line
+                assert result.violations == [], line

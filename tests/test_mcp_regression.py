@@ -14,6 +14,7 @@ from cortex.core.usage_context import (
     set_current_managers,
     set_current_project_root,
 )
+from cortex.tools.execution.pre_commit_quality_gate_job import quality_gate_job_path
 from cortex.tools.execution.pre_commit_zero_arg_tools import run_quality_gate
 from cortex.tools.session.pipeline_handoff import pipeline_handoff
 
@@ -39,9 +40,9 @@ class _ListRootsConcurrencyTracker:
     async def list_roots(self) -> _RootsResult:
         self.call_count += 1
         self.in_progress += 1
-        assert (
-            self.in_progress == 1
-        ), "list_roots() overlapped; per-process cache/lock regression detected"
+        assert self.in_progress == 1, (
+            "list_roots() overlapped; per-process cache/lock regression detected"
+        )
         try:
             await asyncio.sleep(0)
             uri = f"file://{self._temp_project_root}"
@@ -270,6 +271,11 @@ async def test_phase_a_prompt_execution_is_serialized_by_lock(tmp_path: Path) ->
     poll_started, allow_first, poll_second, poll_calls, fake_poll = (
         _phase_a_double_poll_side_effect()
     )
+    # The gate rejects a handle whose job_id does not name the result file it
+    # polls, so the stub must mint the identity the real worker would.
+    job_id = quality_gate_job_path(tmp_path, 1, 0.90).stem.removeprefix(
+        "pre_commit_result_"
+    )
     with (
         patch(
             "cortex.tools.execution.pre_commit_zero_arg_tools.read_pipeline_phase_config",
@@ -277,7 +283,7 @@ async def test_phase_a_prompt_execution_is_serialized_by_lock(tmp_path: Path) ->
         ),
         patch(
             "cortex.tools.execution.pre_commit_zero_arg_tools.start_phase_a_job",
-            return_value={"job_id": "job-1", "status": "ok"},
+            return_value={"job_id": job_id, "status": "ok"},
         ),
         patch(
             "cortex.tools.execution.pre_commit_zero_arg_tools.poll_phase_a_result",
