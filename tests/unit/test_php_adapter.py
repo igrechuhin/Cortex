@@ -2,6 +2,7 @@
 
 import tempfile
 from pathlib import Path
+from unittest.mock import patch
 
 from cortex.services.framework_adapters.detection import detect_language_at_path
 from cortex.services.framework_adapters.php_adapter import (
@@ -137,7 +138,11 @@ class TestPhpAdapterWithoutToolchain:
             root = Path(tmpdir)
             _ = (root / "composer.json").write_text("{}")
 
-            result = PhpAdapter(str(root)).run_tests()
+            with patch(
+                "cortex.services.framework_adapters.php_adapter.shutil.which",
+                return_value=None,
+            ):
+                result = PhpAdapter(str(root)).run_tests()
 
             assert result.success is False
             assert result.tests_run == 0
@@ -149,7 +154,11 @@ class TestPhpAdapterWithoutToolchain:
             root = Path(tmpdir)
             _ = (root / "composer.json").write_text("{}")
 
-            result = PhpAdapter(str(root)).type_check()
+            with patch(
+                "cortex.services.framework_adapters.php_adapter.shutil.which",
+                return_value=None,
+            ):
+                result = PhpAdapter(str(root)).type_check()
 
             assert result.success is True
             assert result.errors == []

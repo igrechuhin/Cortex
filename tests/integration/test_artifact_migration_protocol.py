@@ -236,7 +236,6 @@ def _server_parameters(root: Path, launch_mode: str) -> StdioServerParameters:
         return StdioServerParameters(
             command="uvx",
             args=[
-                "--offline",
                 "--refresh-package",
                 "cortex",
                 "--from",

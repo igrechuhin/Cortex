@@ -60,6 +60,16 @@ uv run --native-tls python -m pytest tests/test_minimal.py -v
 uv run --native-tls python -m pytest tests/ --cov=src/cortex --cov-report=html
 ```
 
+## Toolchain Isolation
+
+Missing-toolchain tests isolate PATH discovery during adapter construction and
+execution so globally installed tools cannot change the scenario. Production
+adapters retain their PATH fallback.
+
+The packaged artifact-migration protocol test refreshes Cortex from the current
+checkout. Keep refresh enabled and do not combine it with offline mode: uv rejects
+that combination before MCP startup.
+
 ## Test Requirements
 
 Tests require the following packages:
