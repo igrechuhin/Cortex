@@ -133,11 +133,15 @@ Configure your IDE to use the correct Python interpreter:
   uv run pyright src/ tests/
   ```
 
-- **Mypy**: Not configured or run; Pyright is the sole type checker for the quality gate and contributor expectations.
+- **Mypy**: A strict mypy configuration remains in `pyproject.toml` for optional local cross-checking, but Pyright is the **source of truth** for the quality gate and contributor expectations.
 
 ### Runtime dependency declarations
 
-Runtime dependencies are declared once, in `pyproject.toml` (`[project.dependencies]`). Install them with `uv sync --extra dev` or `pip install .`.
+Runtime dependencies are listed in both `pyproject.toml` (`[project.dependencies]`) and the repo-root `requirements.txt` (for environments that install from that file). The **Code Quality** workflow runs `scripts/check_dep_parity.py` so these two sources cannot drift. Before pushing, you can run the same check locally:
+
+```bash
+make check-dep-parity
+```
 
 ## Project Structure
 
@@ -212,14 +216,6 @@ Use the path that matches your role. **Agents** (IDE automation, Claude Code sub
 **Humans**: Black (88-char line) and Ruff (including import sorting) are enforced in CI; use `make fix` at the repo root for the same auto-fixes the project expects.
 
 **Agents**: Do not substitute the Human column for MCP tools unless the environment documents an explicit read-only fallback.
-
-Commit-time wiki ingest reports every generated path needed for publication:
-the current raw source, its summary, any archived prior snapshot, and the catalog
-when a new row is written. Stage the complete `wiki_files_written` result.
-An identical source produces no writes. Versioned snapshots preserve historical
-source bytes, including legitimate legacy migration paths; do not rewrite them
-to satisfy documentation wording assertions. Test retrieval and publication
-behavior instead of pinning source text.
 
 ### Python 3.13+ Features (Mandatory)
 
@@ -329,7 +325,7 @@ from pathlib import Path
 
 # Third-party imports
 import aiofiles
-import yaml
+from watchdog import Observer
 
 # Local imports
 from .file_system import FileSystemManager

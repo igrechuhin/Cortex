@@ -15,6 +15,7 @@ from cortex.wiki.ingest_wiki import (
     resolve_ingest_summary_category,
     upsert_wiki_ingest_summary_for_stable_source,
 )
+from cortex.wiki.wiki_root_files import WikiRootDocument
 
 
 def _atomic_write(path: Path, content: str) -> None:
@@ -121,6 +122,8 @@ def _attach_wiki_to_stable_success_base(
     archived_name: str | None,
 ) -> str:
     note = _revision_note_for_archive(archived_name) if archived_name else None
+    index_path = wiki_root / WikiRootDocument.INDEX.value
+    prior_index = index_path.read_bytes() if index_path.is_file() else None
     wiki_part = _wiki_upsert_or_error_json(
         project_root,
         wiki_root,
@@ -132,6 +135,12 @@ def _attach_wiki_to_stable_success_base(
         return wiki_part
     base["wiki_summary_path"] = wiki_part.summary_project_posix
     base["wiki_category"] = wiki_part.summary_category
+    if archived_name is not None:
+        base["archived_source_path"] = (
+            Path(wiki_part.source_project_posix).with_name(archived_name).as_posix()
+        )
+    if index_path.is_file() and index_path.read_bytes() != prior_index:
+        base["wiki_index_path"] = index_path.relative_to(project_root).as_posix()
     return json.dumps(base, indent=2)
 
 

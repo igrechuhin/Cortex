@@ -2,7 +2,7 @@
 title: "Contributing Guide"
 category: concepts
 source_count: 1
-last_updated: "2026-07-24"
+last_updated: "2026-10-06"
 ---
 
 ## Contributing Guide
@@ -16,3 +16,4 @@ Welcome to the Cortex project! This guide will help you get started with contrib
 ## Revision
 
 - 2026-07-24: Source content changed (prior snapshot archived as sources/docs-development-contributing-md-v2.md).
+- 2026-10-06: Source content changed (prior snapshot archived as sources/docs-development-contributing-md-v3.md).

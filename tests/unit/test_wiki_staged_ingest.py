@@ -36,6 +36,7 @@ def test_wiki_ingest_staged_doc_writes_wiki_paths(tmp_path: Path) -> None:
         assert p.startswith(".cortex/wiki/")
     raw = tmp_path / ".cortex" / "wiki" / "sources"
     assert any(raw.glob("*.md"))
+    assert ".cortex/wiki/index.md" in result.wiki_files_written
 
 
 def test_wiki_ingest_unchanged_on_second_identical_run(tmp_path: Path) -> None:
@@ -78,7 +79,35 @@ def test_wiki_ingest_updates_in_place_on_content_change(tmp_path: Path) -> None:
     assert len(summary) == 1
     text = summary[0].read_text(encoding="utf-8")
     assert "v2" in text
-    assert "## Revision" in text
+
+
+def test_wiki_revision_reports_all_writes_and_preserves_prior_source(
+    tmp_path: Path,
+) -> None:
+    (tmp_path / ".cortex").mkdir()
+    _ = ensure_default_wiki_layout(tmp_path)
+    doc = tmp_path / "docs" / "migration.md"
+    doc.parent.mkdir()
+    prior = b"# Migration\n\nLegacy `.cursor/memory-bank` rescue.\n"
+    _ = doc.write_bytes(prior)
+    _ = wiki_ingest_staged_docs(["docs/migration.md"], tmp_path)
+    wiki = tmp_path / ".cortex" / "wiki"
+    before = {
+        p.relative_to(tmp_path).as_posix(): p.read_bytes() for p in wiki.rglob("*.md")
+    }
+    _ = doc.write_bytes(prior + b"\nSupported report relocation.\n")
+
+    result = wiki_ingest_staged_docs(["docs/migration.md"], tmp_path)
+
+    assert result.errors == []
+    written = {
+        p.relative_to(tmp_path).as_posix()
+        for p in wiki.rglob("*.md")
+        if before.get(p.relative_to(tmp_path).as_posix()) != p.read_bytes()
+    }
+    assert set(result.wiki_files_written) == written
+    archives = list((wiki / "sources").glob("*-v*.md"))
+    assert len(archives) == 1 and archives[0].read_bytes() == prior
 
 
 def test_wiki_ingest_skips_dot_cortex_wiki_paths(tmp_path: Path) -> None:
