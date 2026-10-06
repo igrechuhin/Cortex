@@ -227,9 +227,7 @@ def wal_compact_log_bytes(raw: bytes) -> WalCompactionResult:
     stage: CompactionStage = (
         "lines_dropped"
         if dropped_count
-        else "deltas_pruned"
-        if pruned_count
-        else "none"
+        else "deltas_pruned" if pruned_count else "none"
     )
     _log_compaction_stage(before, len(content), pruned_count, dropped_count)
     return WalCompactionResult(

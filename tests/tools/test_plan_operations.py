@@ -31,7 +31,6 @@ from cortex.tools.plans.crud_helpers import (
 )
 from cortex.tools.plans.plan import plan
 from cortex.tools.plans.register import register_plan_in_roadmap
-from cortex.tools.plans.register_models import RegisterPlanResult
 from cortex.tools.plans.register_helpers import (
     find_insertion_line_for_section as find_insertion_line,
 )
@@ -40,6 +39,7 @@ from cortex.tools.plans.register_helpers import (
     parse_roadmap_sections,
     register_plan_entry,
 )
+from cortex.tools.plans.register_models import RegisterPlanResult
 
 
 class TestIsCompletedStatus:

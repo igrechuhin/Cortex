@@ -40,9 +40,9 @@ class _ListRootsConcurrencyTracker:
     async def list_roots(self) -> _RootsResult:
         self.call_count += 1
         self.in_progress += 1
-        assert self.in_progress == 1, (
-            "list_roots() overlapped; per-process cache/lock regression detected"
-        )
+        assert (
+            self.in_progress == 1
+        ), "list_roots() overlapped; per-process cache/lock regression detected"
         try:
             await asyncio.sleep(0)
             uri = f"file://{self._temp_project_root}"

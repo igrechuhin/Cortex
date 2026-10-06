@@ -7,8 +7,8 @@ import pytest
 
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.tools.plans.register import register_plan_in_roadmap
-from cortex.tools.plans.register_models import RegisterPlanResult
 from cortex.tools.plans.register_helpers import register_plan_entry
+from cortex.tools.plans.register_models import RegisterPlanResult
 
 
 @pytest.fixture

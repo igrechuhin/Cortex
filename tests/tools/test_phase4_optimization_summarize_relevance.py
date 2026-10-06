@@ -1,8 +1,6 @@
 # ruff: noqa: F403,F405
 """Split tests from Phase 4 optimization suite."""
 
-from tests.tools.phase4_optimization_common import *  # noqa: F401,F403,F405
-
 from cortex.core.file_system import FileSystemManager
 from cortex.core.metadata_index import MetadataIndex
 from cortex.core.token_counter import TokenCounter
@@ -10,6 +8,7 @@ from cortex.optimization.config import OptimizationConfig
 from cortex.optimization.models import SummarizationResultModel
 from cortex.optimization.summarization_engine import SummarizationEngine
 from cortex.tools.optimization.summarization_operations import summarize_content_impl
+from tests.tools.phase4_optimization_common import *  # noqa: F401,F403,F405
 
 
 class _InvertingScorer:

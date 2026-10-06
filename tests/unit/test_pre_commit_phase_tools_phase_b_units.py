@@ -3,12 +3,9 @@
 from __future__ import annotations
 
 import json
-
 from typing import cast
 
 from cortex.core.models import JsonDict, ResponseFormat
-from cortex.tools.validation.helpers import ValidationCheckType
-from cortex.tools.validation.response_formatters import format_validate_response
 from cortex.tools.execution.pre_commit_docs_memory_helpers import (
     build_docs_memory_bank_model as _build_docs_memory_bank_model,
 )
@@ -24,6 +21,8 @@ from cortex.tools.execution.pre_commit_docs_memory_helpers import (
 from cortex.tools.execution.pre_commit_docs_memory_helpers import (
     compute_docs_memory_bank_passed as _compute_docs_memory_bank_passed,
 )
+from cortex.tools.validation.helpers import ValidationCheckType
+from cortex.tools.validation.response_formatters import format_validate_response
 
 
 class TestDocsMemoryHelperFunctions:

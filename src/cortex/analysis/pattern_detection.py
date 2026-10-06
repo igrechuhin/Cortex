@@ -110,9 +110,7 @@ def format_co_access_results(
         correlation_strength = (
             SeverityLevel.HIGH
             if count >= 10
-            else SeverityLevel.MEDIUM
-            if count >= 5
-            else SeverityLevel.LOW
+            else SeverityLevel.MEDIUM if count >= 5 else SeverityLevel.LOW
         )
         result.append(
             CoAccessPattern(
