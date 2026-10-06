@@ -18,3 +18,4 @@ Reference for Cortex MCP tools, resources, and related APIs.
 - 2026-04-12: Source content changed (prior snapshot archived as sources/docs-api-tools-md-v2.md).
 - 2026-07-24: Source content changed (prior snapshot archived as sources/docs-api-tools-md-v3.md).
 - 2026-10-06: Source content changed (prior snapshot archived as sources/docs-api-tools-md-v4.md).
+- 2026-10-06: Source content changed (prior snapshot archived as sources/docs-api-tools-md-v5.md).

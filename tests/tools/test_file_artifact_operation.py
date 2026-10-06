@@ -132,7 +132,7 @@ def _wiki_project_with_memory_bank(tmp_path: Path) -> tuple[Path, Path]:
     return wiki_root, memory_bank_dir
 
 
-async def test_file_artifact_mirrors_review_report_to_wiki(tmp_path: Path) -> None:
+async def test_file_artifact_references_review_report_from_wiki(tmp_path: Path) -> None:
     wiki_root, _memory_bank_dir = _wiki_project_with_memory_bank(tmp_path)
     review = _read_json(
         await file_artifact(
@@ -152,12 +152,16 @@ async def test_file_artifact_mirrors_review_report_to_wiki(tmp_path: Path) -> No
     assert wiki_text.startswith("---\n")
     cat = WikiCategoryDir.ANALYSES.value
     assert f'category: "{cat}"' in wiki_text or f"category: {cat}" in wiki_text
-    assert "Token refresh is missing" in wiki_text
+    assert "Token refresh is missing" not in wiki_text
+    canonical = Path(str(review["path"]))
+    assert f"](../../reviews/{canonical.name})" in wiki_text
     index = (wiki_root / WikiRootDocument.INDEX.value).read_text(encoding="utf-8")
     assert f"{WikiCategoryDir.ANALYSES.value}/" in index and "Auth Review" in index
 
 
-async def test_file_artifact_mirrors_session_analysis_to_wiki(tmp_path: Path) -> None:
+async def test_file_artifact_references_session_analysis_from_wiki(
+    tmp_path: Path,
+) -> None:
     wiki_root, _memory_bank_dir = _wiki_project_with_memory_bank(tmp_path)
     analysis = _read_json(
         await file_artifact(
@@ -173,6 +177,10 @@ async def test_file_artifact_mirrors_session_analysis_to_wiki(tmp_path: Path) ->
         (wiki_root / WikiCategoryDir.ANALYSES.value).glob("analysis-session-wrap-*.md")
     )
     assert len(wiki_analysis) == 1
+    canonical = Path(str(analysis["path"]))
+    wiki_text = wiki_analysis[0].read_text(encoding="utf-8")
+    assert "We fixed ingest routing" not in wiki_text
+    assert f"](../../analyses/{canonical.name})" in wiki_text
 
 
 def test_validate_manage_file_operation_file_artifact_no_filename() -> None:

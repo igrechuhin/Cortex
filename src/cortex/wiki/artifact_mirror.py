@@ -1,10 +1,11 @@
-"""Mirror selected memory-bank artifacts into ``.cortex/wiki/analyses/``."""
+"""Reference canonical reports from ``.cortex/wiki/analyses/``."""
 
 from __future__ import annotations
 
 import json
 import re
 from datetime import UTC, datetime
+from os.path import relpath
 from pathlib import Path
 
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
@@ -77,15 +78,20 @@ def _allocate_wiki_mirror_path(wiki_root: Path, params: FileArtifactParams) -> P
     return _dedupe_path(analyses_dir / file_name)
 
 
-def _write_wiki_mirror_page(target: Path, params: FileArtifactParams, iso: str) -> None:
-    # AI: Body is the agent-authored report; frontmatter satisfies wiki schema for tooling.
+def _write_wiki_mirror_page(
+    target: Path, params: FileArtifactParams, iso: str, canonical_path: Path
+) -> None:
     fm = _artifact_frontmatter(
         title=params.title,
         category=WikiCategoryDir.ANALYSES.value,
         iso=iso,
         tags=params.tags,
     )
-    _write_markdown_atomic(target, f"{fm}\n\n{params.content}")
+    canonical_link = Path(relpath(canonical_path, target.parent)).as_posix()
+    _write_markdown_atomic(
+        target,
+        f"{fm}\n\nCanonical report: [{canonical_path.name}]({canonical_link})\n",
+    )
 
 
 def _register_wiki_mirror_index(
@@ -99,14 +105,14 @@ def _register_wiki_mirror_index(
         title=params.title,
         category=WikiCategoryDir.ANALYSES.value,
         summary=one_line,
-        sources_cell="memory-bank artifact mirror",
+        sources_cell="canonical artifact reference",
     )
 
 
 def mirror_file_artifact_to_wiki_if_enabled(
-    project_root: Path, params: FileArtifactParams
+    project_root: Path, params: FileArtifactParams, canonical_path: Path
 ) -> Path | None:
-    """When wiki is present, copy review / session-analysis artifacts into wiki analyses.
+    """When wiki is present, link review / session-analysis canonical artifacts.
 
     Returns the wiki path written, or None when mirroring is skipped.
     """
@@ -117,7 +123,7 @@ def mirror_file_artifact_to_wiki_if_enabled(
         return None
     target = _allocate_wiki_mirror_path(wiki_root, params)
     iso = datetime.now(tz=UTC).date().isoformat()
-    _write_wiki_mirror_page(target, params, iso)
+    _write_wiki_mirror_page(target, params, iso, canonical_path)
     _register_wiki_mirror_index(wiki_root, target, params)
     return target
 

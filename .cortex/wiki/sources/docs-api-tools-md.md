@@ -135,8 +135,11 @@ uses the same canonical destinations as search and Recent Artifacts context:
 
 Names and collision suffixes remain unchanged. Active-context links to reports
 use `../reviews/`, `../analyses/`, and `../queries/`. When wiki mirroring is
-already enabled, reviews and session analyses still create independently named
-copies in `.cortex/wiki/analyses/`; queries and findings do not gain mirrors.
+already enabled, reviews and session analyses create independently named
+reference pages in `.cortex/wiki/analyses/` with frontmatter and a page-relative
+link to the actual canonical report, not a second report body. Catalog summaries
+remain bounded; query results and findings do not gain wiki pages. Existing wiki
+pages are not backfilled.
 
 `manage_file(operation="migrate_artifacts")` previews misplaced reports without
 moving files. The response includes `project_root`, `preview_digest`,

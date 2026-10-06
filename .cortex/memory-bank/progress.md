@@ -5,6 +5,10 @@
 
 - <!-- memory_type: status -->
 - <!-- memory_type: milestone -->
+- <!-- memory_type: status -->
+- <!-- memory_type: preference -->
+Verified report-reference cleanup for commit: fresh full quality gate passed 7,842 tests with 91.72% coverage and zero errors; applicable CI structural subprocesses passed. Staged wiki ingest updated two public guides and reported all six current/archived outputs, while skipping the canonical analysis and reference page to avoid recreating report-body copies.
+Removed full-body wiki duplication for review/session-analysis filing: navigation pages link to exact canonical outputs, including independently colliding names. The specified post-prompt report remains byte-identical; its wiki page is a reference only. Public filing/search and Recent Artifacts/L3 smoke passed, with 72 focused tests and structural/lint/type checks green. No historical backfill, commit, or push.
 Fixed staged wiki publication output completeness after the final gate exposed a stale source-text assertion against immutable migration-guide history. Stable-path ingest reports newly archived source snapshots and changed catalog paths. Removed three obsolete wording tests and added actual write-set/preserved-history regression proof. Sixty-three focused consumer tests passed; isolated actual-doc smoke verified 108 resolving catalog pages, replay nonmutation, and historical-byte preservation.
 Implemented canonical report storage and guarded legacy artifact relocation across filing, metadata, search/context, snapshots, and lint. Verified preview nonmutation, 18-report apply, link rebasing, byte preservation, empty-root removal, and receipt replay in an isolated temporary workspace. Full suite: 7,842 passed, four skipped; 91.71% coverage. Resolved pre-existing Synapse formatting, unused prompt helper, and timeout-guide anchors; public gate success/failure smoke passed. Swift-only DocC gate explicitly exempted by operator for this Python project; all applicable structural subprocesses passed. Five staged source documents ingested into ten wiki pages without errors.
 

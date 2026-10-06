@@ -232,7 +232,7 @@ async def _file_artifact_with_cross_reference(
     memory_bank_dir = get_cortex_path(project_root, CortexResourceType.MEMORY_BANK)
     from cortex.wiki.artifact_mirror import mirror_file_artifact_to_wiki_if_enabled
 
-    _ = mirror_file_artifact_to_wiki_if_enabled(project_root, params)
+    _ = mirror_file_artifact_to_wiki_if_enabled(project_root, params, final_path)
     cross_ref_err = await execute_append_artifact_cross_reference(
         memory_bank_dir=memory_bank_dir,
         artifact_type=params.artifact_type,

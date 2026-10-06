@@ -159,6 +159,9 @@ async def manage_file(
     Routine file operations target the Memory Bank. ``file_artifact`` files reviews,
     analyses and queries in their canonical directories under ``.cortex/``;
     architectural findings remain in ``memory-bank/findings``.
+    When wiki is enabled, reviews and session analyses also get independently
+    named reference pages linking to the canonical report; bodies are not copied.
+    Existing wiki pages are not backfilled.
 
     Supported operations include:
     - read: Retrieve file content with optional metadata (size, tokens, hash, sections)

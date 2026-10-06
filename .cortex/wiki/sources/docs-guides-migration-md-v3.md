@@ -26,9 +26,6 @@ findings retain their existing `.cortex/memory-bank/findings` destination.
 5. Use standard `manage_file(operation="search", content='{"query":"report topic"}')`
    and `cortex://context` to retrieve canonical reports. New filings must not
    recreate the old report directories beneath the memory bank.
-   With wiki enabled, new reviews and session analyses have small reference
-   pages in `.cortex/wiki/analyses/`, linked to their actual canonical reports.
-   Bodies remain canonical-only; existing wiki copies are not backfilled.
 
 The allowlist is exactly `memory-bank/reviews`, `memory-bank/analyses`, and
 `memory-bank/queries`. No paths can be supplied to widen migration. Preview
