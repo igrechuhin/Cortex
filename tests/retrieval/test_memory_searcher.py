@@ -151,3 +151,61 @@ class TestMemoryBankSearcher:
         results = searcher.search("hybrid BM25 retrieval engine")
         assert len(results) >= 1
         assert any("plans" in r.source for r in results)
+
+    def test_search_retrieves_all_canonical_artifacts_without_bank_dirs(
+        self, tmp_path: Path
+    ) -> None:
+        for folder in ("reviews", "analyses", "queries"):
+            directory = tmp_path / ".cortex" / folder
+            directory.mkdir(parents=True)
+            _ = (directory / f"{folder}.md").write_text(
+                f"# {folder}\n\nCanonical artifact needle.\n", encoding="utf-8"
+            )
+        searcher = MemoryBankSearcher(tmp_path)
+        results = searcher.search("canonical artifact needle")
+        assert {result.source for result in results} == {
+            f".cortex/{folder}/{folder}.md"
+            for folder in ("reviews", "analyses", "queries")
+        }
+        filtered = searcher.search(
+            "canonical artifact needle", file_filter=["queries.md"]
+        )
+        assert {result.source for result in filtered} == {".cortex/queries/queries.md"}
+        assert not (tmp_path / ".cortex" / "memory-bank").exists()
+
+    def test_search_keeps_architectural_findings_in_memory_bank(
+        self, tmp_path: Path
+    ) -> None:
+        findings = tmp_path / ".cortex" / "memory-bank" / "findings"
+        findings.mkdir(parents=True)
+        _ = (findings / "finding.md").write_text(
+            "# Architectural finding\n\nArchitectural finding needle stays in the memory bank.\n",
+            encoding="utf-8",
+        )
+        for filename in ("projectBrief.md", "techContext.md"):
+            _ = (findings.parent / filename).write_text(
+                "Unrelated project setup and runtime documentation.\n", encoding="utf-8"
+            )
+        results = MemoryBankSearcher(tmp_path).search("finding needle")
+        assert {result.source for result in results} == {
+            ".cortex/memory-bank/findings/finding.md"
+        }
+        assert not (tmp_path / ".cortex" / "reviews").exists()
+
+    def test_overlapping_search_roots_preserve_result_limit(
+        self, tmp_path: Path
+    ) -> None:
+        findings = tmp_path / ".cortex" / "memory-bank" / "findings"
+        findings.mkdir(parents=True)
+        _ = (findings / "finding.md").write_text(
+            "# Finding\n\nFinding needle in architecture.\n", encoding="utf-8"
+        )
+        _ = (findings.parent / "projectBrief.md").write_text(
+            "# Project\n\nFinding needle in longer product requirements documentation.\n",
+            encoding="utf-8",
+        )
+        results = MemoryBankSearcher(tmp_path).search("finding needle", top_k=2)
+        assert {result.source for result in results} == {
+            ".cortex/memory-bank/findings/finding.md",
+            ".cortex/memory-bank/projectBrief.md",
+        }

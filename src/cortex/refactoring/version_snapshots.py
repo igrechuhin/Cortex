@@ -10,7 +10,7 @@ from typing import cast
 from pydantic import BaseModel
 
 from cortex.core.metadata_index import MetadataIndex
-from cortex.core.models import JsonValue, VersionMetadata
+from cortex.core.models import DetailedFileMetadata, JsonValue, VersionMetadata
 
 
 def find_snapshot_for_execution_sync(execution_id: str) -> str | None:
@@ -89,11 +89,7 @@ async def file_has_snapshot(
     file_meta = await metadata_index.get_file_metadata(rel_path)
     if file_meta is None:
         return False
-    version_history = (
-        _extract_version_history(cast(JsonValue, file_meta))
-        if isinstance(file_meta, dict)
-        else file_meta.version_history
-    )
+    version_history = _extract_version_history(file_meta)
     if version_history is None:
         return False
     for version_entry in version_history:
@@ -119,9 +115,7 @@ async def get_version_history(
     file_meta = await metadata_index.get_file_metadata(file_path)
     if file_meta is None:
         return None
-    if isinstance(file_meta, dict):
-        return _extract_version_history(cast(JsonValue, file_meta))
-    return file_meta.version_history
+    return _extract_version_history(file_meta)
 
 
 def find_snapshot_version(
@@ -149,7 +143,9 @@ def find_snapshot_version(
     return None
 
 
-def _extract_version_history(file_meta: JsonValue) -> list[VersionMetadata] | None:
+def _extract_version_history(
+    file_meta: JsonValue | DetailedFileMetadata,
+) -> list[VersionMetadata] | None:
     """Extract version_history from either a dict or a metadata model."""
     if file_meta is None:
         return None

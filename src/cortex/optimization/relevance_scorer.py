@@ -51,6 +51,10 @@ class RelevanceScorer:
         self.quality_weight: float = quality_weight
         self._dependency_score_cache: dict[str, dict[str, float]] = {}
 
+    def clear_cache(self) -> None:
+        """Discard dependency scores after the underlying reference graph changes."""
+        self._dependency_score_cache.clear()
+
     async def score_files(
         self,
         task_description: str,

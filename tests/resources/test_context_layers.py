@@ -18,6 +18,10 @@ def count_tokens(text: str) -> int:
     return int(len(text.split()) * 1.3)
 
 
+def _fake_last_commit_summary(_: Path) -> str:
+    return "c0ffee"
+
+
 @pytest.mark.asyncio
 async def test_build_l0_with_budget_and_identity(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
@@ -62,7 +66,8 @@ async def test_build_l0_identifies_swift_package_not_python(
         encoding="utf-8",
     )
     monkeypatch.setattr(
-        "cortex.tools.context.l0_identity._read_last_commit_summary", lambda _: "c0ffee"
+        "cortex.tools.context.l0_identity._read_last_commit_summary",
+        _fake_last_commit_summary,
     )
 
     result = await build_l0(tmp_path, ContextConfig(max_l0_tokens=150))
@@ -78,7 +83,8 @@ async def test_build_l0_unrecognised_project_does_not_claim_a_stack(
 ) -> None:
     """With no build manifest the stack is unknown, never a guessed default."""
     monkeypatch.setattr(
-        "cortex.tools.context.l0_identity._read_last_commit_summary", lambda _: "c0ffee"
+        "cortex.tools.context.l0_identity._read_last_commit_summary",
+        _fake_last_commit_summary,
     )
 
     result = await build_l0(tmp_path, ContextConfig(max_l0_tokens=150))
@@ -98,7 +104,8 @@ async def test_build_l0_renders_json_session_goal_as_text(
         encoding="utf-8",
     )
     monkeypatch.setattr(
-        "cortex.tools.context.l0_identity._read_last_commit_summary", lambda _: "c0ffee"
+        "cortex.tools.context.l0_identity._read_last_commit_summary",
+        _fake_last_commit_summary,
     )
 
     result = await build_l0(tmp_path, ContextConfig(max_l0_tokens=150))
@@ -176,6 +183,23 @@ async def test_build_l3_returns_ranked_results(tmp_path: Path) -> None:
     assert result.layer == ContextLayer.DEEP_SEARCH
     assert "roadmap.md" in "\n".join(result.sources)
     assert "activeContext.md" in "\n".join(result.sources)
+
+
+@pytest.mark.asyncio
+async def test_build_l3_retrieves_all_canonical_artifact_types(tmp_path: Path) -> None:
+    for folder in ("reviews", "analyses", "queries"):
+        directory = tmp_path / ".cortex" / folder
+        directory.mkdir(parents=True)
+        _ = (directory / "artifact.md").write_text(
+            "Canonical report needle.\n", encoding="utf-8"
+        )
+    result = await build_l3(tmp_path, "canonical report needle")
+    assert result.layer == ContextLayer.DEEP_SEARCH
+    assert set(result.sources) == {
+        f".cortex/{folder}/artifact.md" for folder in ("reviews", "analyses", "queries")
+    }
+    assert "Canonical report needle." in result.content
+    assert not (tmp_path / ".cortex" / "memory-bank").exists()
 
 
 def _write_l0_fixture(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:

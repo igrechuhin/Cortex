@@ -157,6 +157,8 @@ def _validate_manage_file_input_limits(
 
 
 def _resolve_manage_file_name(parsed_op: FileOperation, file_name: str | None) -> str:
+    if parsed_op == FileOperation.MIGRATE_ARTIFACTS:
+        return "_artifact_migration"
     if parsed_op in GOAL_FILE_OPERATIONS:
         return file_name or "_session_goal"
     if parsed_op in SCHEMA_FILE_OPERATIONS:
@@ -339,16 +341,34 @@ def _validate_and_get_path(
     return _validate_file_path_impl(fs_manager, memory_bank_dir, file_name)
 
 
+async def _execute_schema_file_operation(
+    root: Path, operation: FileOperation, content: str | None
+) -> str:
+    from cortex.tools.files.workflow_schema_file_ops import (
+        execute_workflow_schema_operation,
+    )
+
+    return await execute_workflow_schema_operation(root, operation, content)
+
+
+async def _execute_artifact_migration(root: Path, content: str | None) -> str:
+    from cortex.tools.files.artifact_migration_operations import (
+        handle_artifact_migration,
+    )
+
+    managers, _ = await get_managers_for_root(root)
+    return await handle_artifact_migration(root, managers, content)
+
+
 # fmt: off
 async def execute_file_operation(root: Path, file_name: str, operation: FileOperation, content: str | None, include_metadata: bool, change_description: str | None, sections: list[str] | None, version: int | None = None, skip_classification: bool = False) -> str:
 # fmt: on
     if operation in SCHEMA_FILE_OPERATIONS:
-        from cortex.tools.files.workflow_schema_file_ops import (
-            execute_workflow_schema_operation,
-        )
-        return await execute_workflow_schema_operation(root, operation, content)
+        return await _execute_schema_file_operation(root, operation, content)
     if _is_plan_draft_file_operation(operation):
         return execute_plan_draft_operation(root, operation, content)
+    if operation == FileOperation.MIGRATE_ARTIFACTS:
+        return await _execute_artifact_migration(root, content)
     managers, fs_manager = await get_managers_for_root(root)
     if operation in GOAL_FILE_OPERATIONS:
         return await execute_session_goal_operation(root, operation, content, managers)
@@ -570,7 +590,7 @@ async def _dispatch_secondary_operation(
         )
     if operation == FileOperation.FILE_ARTIFACT:
         return await file_artifact_from_payload(
-            memory_bank_dir=get_cortex_path(root, CortexResourceType.MEMORY_BANK),
+            project_root=root,
             payload=content,
         )
     pre_plan_result = _dispatch_pre_plan_log_operation(operation, root)

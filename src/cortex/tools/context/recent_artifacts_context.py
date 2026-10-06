@@ -1,16 +1,12 @@
-"""Build the ## Recent Artifacts section for cortex://context (filed review/analysis pages)."""
+"""Build the Recent Artifacts section from canonical review, analysis, and query pages."""
 
 from __future__ import annotations
 
 from pathlib import Path
 
-from cortex.tools.artifacts.artifact_types import MemoryBankArtifactStorageSubdir
+from cortex.core.path_resolver import CortexResourceType, get_cortex_path
+from cortex.tools.artifacts.artifact_types import get_artifact_directories
 
-# AI: Only reviews/ and analyses/ (per file-review-reports plan); findings/queries stay out of scope here.
-_ARTIFACT_SUBDIRS: tuple[MemoryBankArtifactStorageSubdir, ...] = (
-    MemoryBankArtifactStorageSubdir.REVIEWS,
-    MemoryBankArtifactStorageSubdir.ANALYSES,
-)
 _RECENT_ARTIFACT_LIMIT = 5
 _MAX_SUMMARY_LEN = 200
 
@@ -59,11 +55,11 @@ def _iter_markdown_files(subdir: Path) -> list[tuple[Path, float]]:
     return out
 
 
-def build_recent_artifacts_markdown(memory_bank_dir: Path) -> str | None:
+def build_recent_artifacts_markdown(project_root: Path) -> str | None:
     """Return markdown for ## Recent Artifacts, or None if there is nothing to show."""
     pairs: list[tuple[Path, float]] = []
-    for subdir in _ARTIFACT_SUBDIRS:
-        pairs.extend(_iter_markdown_files(memory_bank_dir / subdir.value))
+    for directory in get_artifact_directories(project_root):
+        pairs.extend(_iter_markdown_files(directory))
     if not pairs:
         return None
     # AI: Secondary sort key (path name) breaks ties deterministically when
@@ -73,12 +69,10 @@ def build_recent_artifacts_markdown(memory_bank_dir: Path) -> str | None:
     # exact-prefix matching.
     pairs.sort(key=lambda t: (-t[1], t[0].name))
     top = pairs[:_RECENT_ARTIFACT_LIMIT]
+    memory_bank_dir = get_cortex_path(project_root, CortexResourceType.MEMORY_BANK)
     lines: list[str] = ["## Recent Artifacts", ""]
     for path, _mtime in top:
-        try:
-            rel = path.relative_to(memory_bank_dir)
-        except ValueError:
-            rel = path
+        rel = Path("..") / path.relative_to(memory_bank_dir.parent)
         summary = _one_line_summary_from_markdown(path)
         lines.append(f"- [{rel.as_posix()}]({rel.as_posix()}) — {summary}")
     return "\n".join(lines)

@@ -177,11 +177,17 @@ def finalize_file_metadata_update_impl(
     """Write file_meta into files_dict and data; update totals. Caller must save."""
     if change_source == "internal":
         file_meta.last_read = now
-    files_dict[file_name] = file_meta.model_dump(
+    previous = files_dict.get(file_name)
+    updated = file_meta.model_dump(
         mode="json",
         by_alias=True,
         exclude={"version_history"},
     )
+    if isinstance(previous, dict) and "version_history" in previous:
+        updated["version_history"] = cast(dict[str, object], previous)[
+            "version_history"
+        ]
+    files_dict[file_name] = updated
     if data is not None:
         data["files"] = files_dict
     recalculate_totals_impl(data)
@@ -192,7 +198,7 @@ def add_version_to_history_impl(
     file_name: str,
     version_meta_dict: dict[str, object],
 ) -> None:
-    """Update file's current_version without persisting version_history. Caller must save."""
+    """Update current_version without rewriting stored historical provenance."""
     if data is None:
         return
     files = data.get("files", {})
@@ -204,10 +210,6 @@ def add_version_to_history_impl(
         return
     file_meta = cast(dict[str, object], file_meta_raw)
     file_meta["current_version"] = version_meta_dict.get("version", 0)
-    # Strip any legacy version_history data to keep index.json small and
-    # avoid storing pointers into local .cortex/history snapshots.
-    if "version_history" in file_meta:
-        del file_meta["version_history"]
 
 
 def increment_read_count_impl(data: dict[str, object] | None, file_name: str) -> bool:

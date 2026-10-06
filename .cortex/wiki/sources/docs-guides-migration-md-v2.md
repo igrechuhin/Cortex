@@ -3,58 +3,11 @@
 This guide helps you migrate from old Memory Bank formats to the standardized
 `.cortex/` structure.
 
-> **Canonical reference for legacy workspace migration**: The authoritative flow
-> is [docs/prompts/migrate.md](../prompts/migrate.md), which
+> **Canonical reference**: The authoritative, up-to-date description of the
+> migration flow is [docs/prompts/migrate.md](../prompts/migrate.md), which
 > mirrors the `migrate` MCP prompt (`MIGRATE_PROMPT` in
 > `src/cortex/setup/prompts.py`). This page gives a task-oriented walkthrough;
 > if anything here disagrees with `docs/prompts/migrate.md`, that page wins.
-
-## Relocating misplaced reports
-
-This supported `manage_file` operation is separate from the legacy workspace
-migration prompt below. New reviews, analyses, and queries are filed at
-`.cortex/reviews`, `.cortex/analyses`, and `.cortex/queries`; architectural
-findings retain their existing `.cortex/memory-bank/findings` destination.
-
-1. Start the updated local package with the client's actual MCP workspace roots.
-2. Call `manage_file(operation="migrate_artifacts")` to obtain a read-only preview.
-3. Confirm `project_root` is the intended workspace. Inspect `migration_count`,
-   each relocation's source/destination and before/after hashes, and
-   `reference_updates`. A digest is bound to that exact resolved workspace.
-4. Apply using the returned digest:
-   `manage_file(operation="migrate_artifacts", content='{"apply": true, "expected_preview_digest": "<preview_digest>"}')`
-5. Use standard `manage_file(operation="search", content='{"query":"report topic"}')`
-   and `cortex://context` to retrieve canonical reports. New filings must not
-   recreate the old report directories beneath the memory bank.
-
-The allowlist is exactly `memory-bank/reviews`, `memory-bank/analyses`, and
-`memory-bank/queries`. No paths can be supplied to widen migration. Preview
-fingerprints cover report variants, current index/provenance state, authored
-incoming references, and destination contents. Stale approvals, symlinks, and
-collisions are rejected before report writes. Shared rules, Synapse, installed
-skills, generated dependencies, and immutable historical stores are outside the
-authored-reference inventory; their symlink trees are not followed or modified.
-Report roots, metadata, and every actual edit still reject symlinks and escapes.
-Git workspaces inventory tracked/untracked authored Markdown using native ignore
-rules instead of traversing the whole workspace. Cortex authored references remain
-eligible even when gitignored. Non-Git workspaces use a non-following walk that
-prunes standard build/cache/package and code trees before inspecting candidates.
-Containment checks apply to eligible reference files, not unrelated directory
-pointers; migration-owned payload and metadata discovery remains strict.
-
-Filenames and report bytes are retained except necessary parsed local-link
-rewrites. Wiki mirrors remain in place without new copies or catalog allocations;
-only necessary incoming-link destinations change. Index identity and version
-history are preserved, with current paths/hashes updated consistently. Existing
-history, immutable wiki sources, WAL events, and temporal facts are not rewritten;
-append-only relocation facts record the change.
-
-Durable receipts under `.cortex/.session/artifact-migrations/` retain byte
-preimages. Failed owned writes roll back, and an interrupted request can be retried
-with its approved digest. Conflicting external edits are not overwritten: recovery
-stops and retains the preimages. Successful-digest replay makes no duplicate files
-or provenance rows. Cleanup removes only empty legacy report roots, never findings
-or unrelated directories. Do not re-file reports as a migration workaround.
 
 ## Overview
 

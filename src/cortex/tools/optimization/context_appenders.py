@@ -87,9 +87,8 @@ def _append_recent_operations_to_context_payload(
 
 
 def _read_recent_artifacts_markdown(project_root: Path) -> str | None:
-    """Build Recent Artifacts markdown from filed pages under memory-bank/reviews|analyses."""
-    memory_bank = get_cortex_path(project_root, CortexResourceType.MEMORY_BANK)
-    return build_recent_artifacts_markdown(memory_bank)
+    """Build Recent Artifacts markdown from canonical review, analysis, and query pages."""
+    return build_recent_artifacts_markdown(project_root)
 
 
 def _append_recent_artifacts_to_context_payload(

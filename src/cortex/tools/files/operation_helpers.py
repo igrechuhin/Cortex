@@ -50,6 +50,7 @@ class FileOperation(str, Enum):
     ROLLBACK = "rollback"
     INIT_CONSTITUTION = "init_constitution"
     FILE_ARTIFACT = "file_artifact"
+    MIGRATE_ARTIFACTS = "migrate_artifacts"
     LIST_EXPLORE_LOGS = "list_explore_logs"
     CLEAR_EXPLORE_LOGS = "clear_explore_logs"
     LIST_SHAPE_LOGS = "list_shape_logs"
@@ -227,7 +228,10 @@ def validate_manage_file_operation(
         | SEARCH_FILE_OPERATIONS
     ):
         return (parsed_op, None)
-    if parsed_op != FileOperation.FILE_ARTIFACT and not file_name:
+    if (
+        parsed_op not in {FileOperation.FILE_ARTIFACT, FileOperation.MIGRATE_ARTIFACTS}
+        and not file_name
+    ):
         return (None, build_missing_parameters_error(["file_name"]))
     if parsed_op == FileOperation.ROLLBACK and version is None:
         return (None, _rollback_version_required_error_json())

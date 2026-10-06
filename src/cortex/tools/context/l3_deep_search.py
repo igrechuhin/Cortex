@@ -7,6 +7,7 @@ from pathlib import Path
 
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.retrieval.bm25 import rank
+from cortex.tools.artifacts.artifact_types import get_artifact_directories
 from cortex.tools.context.layers import ContextLayer, LayerResult
 
 
@@ -21,12 +22,15 @@ class _ParagraphMatch:
 
 def _iter_markdown_files(project_root: Path) -> list[Path]:
     files: list[Path] = []
-    for resource in (
-        CortexResourceType.MEMORY_BANK,
-        CortexResourceType.PLANS,
-        CortexResourceType.WIKI,
-    ):
-        base = get_cortex_path(project_root, resource)
+    directories = tuple(
+        get_cortex_path(project_root, resource)
+        for resource in (
+            CortexResourceType.MEMORY_BANK,
+            CortexResourceType.PLANS,
+            CortexResourceType.WIKI,
+        )
+    ) + get_artifact_directories(project_root)
+    for base in directories:
         if base.is_dir():
             files.extend(sorted(base.glob("*.md")))
     return files

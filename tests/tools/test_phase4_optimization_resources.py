@@ -105,7 +105,7 @@ class TestPhase4OptimizationResources:
     async def test_load_context_includes_recent_artifacts_when_present(
         self, mock_project_root: Path, mock_managers: dict[str, Any]
     ) -> None:
-        """load_context includes recent_artifacts when reviews/ or analyses/ have .md files."""
+        """load_context includes canonical review artifacts."""
         invalidate_context_resource_cache()
         write_test_artifact_pages(mock_project_root)
         with (
@@ -132,7 +132,7 @@ class TestPhase4OptimizationResources:
         assert result["status"] == "success"
         assert "recent_artifacts" in result
         assert "## Recent Artifacts" in result["recent_artifacts"]
-        assert "reviews/review-auth-2026-04-07.md" in result["recent_artifacts"]
+        assert "../reviews/review-auth-2026-04-07.md" in result["recent_artifacts"]
         assert "Auth Review" in result["recent_artifacts"]
 
     async def test_load_context_omits_recent_artifacts_when_none(

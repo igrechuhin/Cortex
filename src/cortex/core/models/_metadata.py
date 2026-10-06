@@ -4,7 +4,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from cortex.core.pydantic_extra import EXTRA_FORBID
 
-from ._base import DictLikeModel
+from ._base import DictLikeModel, ModelDict
 from ._version import VersionMetadata
 
 
@@ -69,9 +69,9 @@ class DetailedFileMetadata(BaseModel):
         default=None, description="ISO format timestamp of last read"
     )
     current_version: int = Field(ge=0, default=0, description="Current version number")
-    version_history: list[VersionMetadata] = Field(
-        default_factory=lambda: list[VersionMetadata](),
-        description="Version history (in-memory only; excluded from index.json)",
+    version_history: list[VersionMetadata | ModelDict] = Field(
+        default_factory=lambda: list[VersionMetadata | ModelDict](),
+        description="Typed snapshots or lossless historical provenance records",
         exclude=True,
     )
 

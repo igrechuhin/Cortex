@@ -1,6 +1,13 @@
 <!-- memory_type: milestone -->
 # Progress Log
 
+## 2026-10-06
+
+- <!-- memory_type: status -->
+- <!-- memory_type: milestone -->
+Fixed staged wiki publication output completeness after the final gate exposed a stale source-text assertion against immutable migration-guide history. Stable-path ingest reports newly archived source snapshots and changed catalog paths. Removed three obsolete wording tests and added actual write-set/preserved-history regression proof. Sixty-three focused consumer tests passed; isolated actual-doc smoke verified 108 resolving catalog pages, replay nonmutation, and historical-byte preservation.
+Implemented canonical report storage and guarded legacy artifact relocation across filing, metadata, search/context, snapshots, and lint. Verified preview nonmutation, 18-report apply, link rebasing, byte preservation, empty-root removal, and receipt replay in an isolated temporary workspace. Full suite: 7,842 passed, four skipped; 91.71% coverage. Resolved pre-existing Synapse formatting, unused prompt helper, and timeout-guide anchors; public gate success/failure smoke passed. Swift-only DocC gate explicitly exempted by operator for this Python project; all applicable structural subprocesses passed. Five staged source documents ingested into ten wiki pages without errors.
+
 ## 2026-09-17
 
 - Completed analysis serialization investigation: real nested models serialize through cortex://analysis, rule inventory counts actual rules, isolated workspaces remain separate, quality/docs gates passed, and original routing was preserved.

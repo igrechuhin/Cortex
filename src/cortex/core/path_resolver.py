@@ -24,6 +24,8 @@ class CortexResourceType(Enum):
     SYNAPSE = "synapse"
     ARCHIVED = "archived"
     REVIEWS = "reviews"
+    ANALYSES = "analyses"
+    QUERIES = "queries"
     SCHEMAS = "schemas"
     WIKI = "wiki"
     SESSION = ".session"

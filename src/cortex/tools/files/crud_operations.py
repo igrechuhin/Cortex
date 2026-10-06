@@ -156,16 +156,21 @@ async def manage_file(
     RETURNS: JSON with file content (read), success status (write), or metadata
     object (metadata operation).
 
-    This unified tool handles all file operations within the Memory Bank system,
-    providing version control, conflict detection, and metadata tracking. All files
-    are stored in the memory-bank/ directory relative to the project root.
+    Routine file operations target the Memory Bank. ``file_artifact`` files reviews,
+    analyses and queries in their canonical directories under ``.cortex/``;
+    architectural findings remain in ``memory-bank/findings``.
 
-    The tool consolidates four distinct operations:
+    Supported operations include:
     - read: Retrieve file content with optional metadata (size, tokens, hash, sections)
     - write: Write file content with automatic versioning, conflict
       detection, and metadata updates
     - metadata: Query file metadata without reading full content
     - rollback: Restore file from a version snapshot (requires version parameter)
+    - file_artifact: File a report and append its relative activeContext reference
+    - migrate_artifacts: Preview legacy report relocation by default. To apply,
+      pass content JSON with {"apply": true, "expected_preview_digest": "<digest>"}.
+      Only memory-bank/reviews, analyses and queries are eligible; arbitrary paths
+      are not accepted. Stale previews, symlinks and collisions fail without mutation.
 
     Args:
         file_name: Name of the file within memory-bank/ directory.

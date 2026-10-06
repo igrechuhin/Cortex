@@ -10,17 +10,45 @@ from cortex.core.models import DetailedFileMetadata
 
 from .async_file_utils import open_async_text_file
 from .exceptions import IndexCorruptedError
+from .input_validation import InputValidator
 from .retry import retry_async
 
 
+def _metadata_file_exists(
+    name: str,
+    metadata: object,
+    memory_bank_dir: Path,
+    project_root: Path,
+) -> bool:
+    raw = (
+        cast(dict[str, object], metadata).get("path")
+        if isinstance(metadata, dict)
+        else None
+    )
+    if not isinstance(raw, str) or not raw:
+        return (memory_bank_dir / name).exists()
+    stored = Path(raw)
+    if ".." in stored.parts:
+        return False
+    path = stored if stored.is_absolute() else project_root / stored
+    try:
+        _ = InputValidator.validate_path(path, project_root)
+    except ValueError:
+        return False
+    return path.is_file()
+
+
 def validate_index_consistency_from_data(
-    data: dict[str, object] | None, memory_bank_dir: Path
+    data: dict[str, object] | None,
+    memory_bank_dir: Path,
+    project_root: Path,
 ) -> list[str]:
     """List stale file names (in index but not on disk).
 
     Args:
         data: Index data dict
         memory_bank_dir: Path to memory bank directory
+        project_root: Current project root for stored artifact paths
 
     Returns:
         List of stale file names
@@ -33,8 +61,8 @@ def validate_index_consistency_from_data(
     files_dict = cast(dict[str, object], files_raw)
     return [
         file_name
-        for file_name in files_dict
-        if not (memory_bank_dir / file_name).exists()
+        for file_name, metadata in files_dict.items()
+        if not _metadata_file_exists(file_name, metadata, memory_bank_dir, project_root)
     ]
 
 

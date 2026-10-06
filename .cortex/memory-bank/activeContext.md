@@ -3,6 +3,14 @@
 
 **This file records completed work only.** For current status and upcoming work see [roadmap.md](roadmap.md).
 
+## Completed Work (2026-10-06)
+
+- ✅ **Canonical report storage and guarded artifact migration** - COMPLETE (2026-10-06) - <!-- memory_type: status -->
+
+- ✅ **Complete staged wiki publication paths** - COMPLETE (2026-10-06) - <!-- memory_type: status -->
+Final-gate investigation found an obsolete wording assertion against immutable wiki history and a real publication defect: stable-path ingest omitted newly archived source snapshots and changed catalog paths from its reported writes. Removed the three source-text assertions; ingest now reports every generated path so the bridge can stage it. Consumer tests: 48 plus 15 passed. Isolated real-doc/wiki smoke proved complete write reporting, all 108 catalog pages resolving, no-write replay, and byte-preserved historical snapshots. Existing migration and historical payloads were not rewritten.
+Reports file into .cortex/reviews, .cortex/analyses, and .cortex/queries; indexing, search, Recent Artifacts, snapshots, and lint share canonical artifact paths. Legacy report migration is preview-first, digest-approved, recoverable, and idempotent, preserving historical provenance and wiki mirrors. Temporary-workspace smoke migrated 18 reports, rewrote an incoming link, preserved payload bytes, and replayed without mutation. Quality gate passed; measured full run: 7,842 tests, 91.71% coverage. Python structural parity passed; operator explicitly exempted inapplicable Swift DocC check. Gate repairs remain a separate commit scope.
+
 ## Completed Work (2026-09-17)
 
 - ✅ **Investigate usage-pattern analysis JSON serialization failure** - COMPLETE (2026-09-17) - Fixed the public usage-pattern response boundary with Pydantic JSON-mode dumps for co-access, task, and unused-file models; corrected rule totals to count rules rather than categories. Real FastMCP nonempty resource smoke and workspace-isolation regressions passed. Historical zero inventory totals were not attributed to an unproven routing defect. Eight quality checks passed: 8,082 tests, four skips, 91.61% coverage; docs gate passed. Original 398-byte routing configuration remained unchanged.

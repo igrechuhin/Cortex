@@ -7,6 +7,7 @@ from pydantic import BaseModel, ConfigDict
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.retrieval.bm25 import rank
 from cortex.retrieval.chunker import TextChunk, chunk_markdown
+from cortex.tools.artifacts.artifact_types import get_artifact_directories
 
 _SEARCH_DIRS = (
     CortexResourceType.MEMORY_BANK,
@@ -44,15 +45,17 @@ def deduplicate(results: list[SearchResult]) -> list[SearchResult]:
 
 
 class MemoryBankSearcher:
-    """BM25 ranked search over memory bank, plans, and wiki markdown files."""
+    """BM25 ranked search over memory bank, plans, wiki, and canonical artifacts."""
 
     def __init__(self, project_root: Path) -> None:
         self._root = project_root
 
     def _collect_files(self, file_filter: list[str] | None) -> list[Path]:
         files: list[Path] = []
-        for resource_type in _SEARCH_DIRS:
-            directory = get_cortex_path(self._root, resource_type)
+        directories = tuple(
+            get_cortex_path(self._root, resource_type) for resource_type in _SEARCH_DIRS
+        ) + get_artifact_directories(self._root)
+        for directory in directories:
             if not directory.exists():
                 continue
             for path in directory.rglob("*.md"):
@@ -60,7 +63,7 @@ class MemoryBankSearcher:
                     continue
                 if file_filter is None or path.name in file_filter:
                     files.append(path)
-        return files
+        return list(dict.fromkeys(files))
 
     def search(
         self,

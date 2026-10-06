@@ -318,11 +318,7 @@ def test_orphaned_wiki_pages_check_reports_source_without_summary_reference(
         tmp_path / ".cortex" / "memory-bank" / "sources" / "rfc-update.md", "# source\n"
     )
     _write(
-        tmp_path
-        / ".cortex"
-        / "memory-bank"
-        / "queries"
-        / "query-not-related-2026-04-08.md",
+        tmp_path / ".cortex" / "queries" / "query-not-related-2026-04-08.md",
         "# unrelated query artifact\n",
     )
 
@@ -341,11 +337,7 @@ def test_orphaned_wiki_pages_check_reports_summary_referencing_missing_source(
     tmp_path: Path,
 ) -> None:
     _write(
-        tmp_path
-        / ".cortex"
-        / "memory-bank"
-        / "queries"
-        / "query-rfc-update-2026-04-08.md",
+        tmp_path / ".cortex" / "queries" / "query-rfc-update-2026-04-08.md",
         "- Source: [.cortex/memory-bank/sources/missing-source.md](.cortex/memory-bank/sources/missing-source.md)\n",
     )
 
@@ -356,7 +348,7 @@ def test_orphaned_wiki_pages_check_reports_summary_referencing_missing_source(
     finding = findings[0]
     assert finding.check == "orphaned_wiki_pages"
     assert finding.severity == "warning"
-    assert finding.file == ".cortex/memory-bank/queries/query-rfc-update-2026-04-08.md"
+    assert finding.file == ".cortex/queries/query-rfc-update-2026-04-08.md"
     assert "references missing ingest source" in finding.message
     assert "sources/missing-source.md" in finding.message
 
@@ -498,3 +490,29 @@ def test_stale_numeric_claim_check_noops_without_what_works_section(
     findings = check.run(tmp_path)
 
     assert findings == []
+
+
+def test_orphaned_wiki_pages_check_reads_canonical_query_source_reference(
+    tmp_path: Path,
+) -> None:
+    _write(tmp_path / ".cortex" / "memory-bank" / "sources" / "source.md", "# Source\n")
+    _write(
+        tmp_path / ".cortex" / "queries" / "query.md",
+        "Source: [.cortex/memory-bank/sources/source.md]"
+        + "(.cortex/memory-bank/sources/source.md)\n",
+    )
+    assert OrphanedWikiPagesCheck().run(tmp_path) == []
+    assert not (tmp_path / ".cortex" / "memory-bank" / "queries").exists()
+
+
+def test_orphaned_wiki_pages_check_reads_all_canonical_inbound_links(
+    tmp_path: Path,
+) -> None:
+    for folder in ("reviews", "analyses", "queries"):
+        _write(tmp_path / ".cortex" / "wiki" / f"{folder}.md", "# Wiki page\n")
+        _write(
+            tmp_path / ".cortex" / folder / "artifact.md",
+            f"[Wiki page]({folder}.md)\n",
+        )
+    assert OrphanedWikiPagesCheck().run(tmp_path) == []
+    assert not (tmp_path / ".cortex" / "memory-bank").exists()

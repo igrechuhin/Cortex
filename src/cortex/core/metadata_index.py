@@ -107,27 +107,9 @@ class MetadataIndex:
         )
         self._data: dict[str, object] | None = None
 
-    def _strip_version_history_from_index(self) -> bool:
-        """
-        Strip legacy version_history arrays from index data.
-
-        Returns True if any entries were modified.
-        """
-        if self._data is None:
-            return False
-        files = self._data.get("files", {})
-        if not isinstance(files, dict):
-            return False
-        files_typed = cast(dict[str, object], files)
-        changed = False
-        for meta in files_typed.values():
-            if not isinstance(meta, dict):
-                continue
-            meta_typed = cast(dict[str, object], meta)
-            if "version_history" in meta_typed:
-                del meta_typed["version_history"]
-                changed = True
-        return changed
+    def invalidate_cache(self) -> None:
+        """Discard cached current metadata after an external transactional update."""
+        self._data = None
 
     def _make_path_relative(self, path: Path) -> str:
         """
@@ -228,8 +210,6 @@ class MetadataIndex:
                 self.SCHEMA_VERSION,
             )
         changed = False
-        if self._strip_version_history_from_index():
-            changed = True
         if self._normalize_paths_in_index():
             changed = True
         if self._normalize_top_level_paths():
@@ -464,7 +444,9 @@ class MetadataIndex:
         """
         if self._data is None:
             _ = await self.load()
-        return validate_index_consistency_from_data(self._data, self.memory_bank_dir)
+        return validate_index_consistency_from_data(
+            self._data, self.memory_bank_dir, self.project_root
+        )
 
     async def cleanup_stale_entries(self, dry_run: bool = False) -> int:
         """Remove stale entries from index.

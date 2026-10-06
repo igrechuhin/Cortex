@@ -6,6 +6,11 @@ import re
 from pathlib import Path
 
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
+from cortex.tools.artifacts.artifact_types import (
+    ArtifactType,
+    get_artifact_directories,
+    get_artifact_directory,
+)
 from cortex.tools.lint.memory_bank_lint_checks import LintFinding
 from cortex.wiki.wiki_root_files import WikiRootDocument
 
@@ -46,11 +51,17 @@ class OrphanedWikiPagesCheck:
                     targets.append(normalized)
         return targets
 
-    def _memory_bank_sources(self, project_root: Path) -> list[Path]:
-        memory_bank_root = get_cortex_path(project_root, CortexResourceType.MEMORY_BANK)
-        if not memory_bank_root.exists():
-            return []
-        return sorted(memory_bank_root.rglob("*.md"))
+    def _context_sources(self, project_root: Path) -> list[Path]:
+        directories = (
+            get_cortex_path(project_root, CortexResourceType.MEMORY_BANK),
+            *get_artifact_directories(project_root),
+        )
+        return sorted(
+            path
+            for directory in directories
+            if directory.is_dir()
+            for path in directory.rglob("*.md")
+        )
 
     def _collect_inbound_links(
         self, project_root: Path, wiki_root: Path, wiki_pages: list[Path]
@@ -64,8 +75,8 @@ class OrphanedWikiPagesCheck:
                 if target in existing_pages:
                     wiki_pages_with_outbound_links.add(relative_source)
                     inbound_links.add(target)
-        for memory_bank_file in self._memory_bank_sources(project_root):
-            for target in self._iter_targets(_read_text(memory_bank_file)):
+        for context_file in self._context_sources(project_root):
+            for target in self._iter_targets(_read_text(context_file)):
                 if target in existing_pages:
                     inbound_links.add(target)
         return inbound_links, wiki_pages_with_outbound_links
@@ -113,14 +124,14 @@ class OrphanedWikiPagesCheck:
         summary_path: Path,
         summary_slugs: set[str],
         sources_dir: Path,
-        memory_bank_root: Path,
+        project_root: Path,
     ) -> list[LintFinding]:
         findings: list[LintFinding] = []
         for source_slug in summary_slugs:
             source_path = sources_dir / f"{source_slug}.md"
             if source_path.exists():
                 continue
-            summary_rel = summary_path.relative_to(memory_bank_root).as_posix()
+            summary_rel = summary_path.relative_to(project_root).as_posix()
             findings.append(
                 LintFinding(
                     severity="warning",
@@ -129,7 +140,7 @@ class OrphanedWikiPagesCheck:
                         "Summary page references missing ingest source: "
                         f"sources/{source_slug}.md"
                     ),
-                    file=f".cortex/memory-bank/{summary_rel}",
+                    file=summary_rel,
                     line=None,
                 )
             )
@@ -157,7 +168,7 @@ class OrphanedWikiPagesCheck:
     def _source_summary_findings(self, project_root: Path) -> list[LintFinding]:
         memory_bank_root = get_cortex_path(project_root, CortexResourceType.MEMORY_BANK)
         sources_dir = memory_bank_root / "sources"
-        queries_dir = memory_bank_root / "queries"
+        queries_dir = get_artifact_directory(project_root, ArtifactType.QUERY_RESULT)
         source_slugs = (
             {source_path.stem for source_path in sources_dir.glob("*.md")}
             if sources_dir.exists()
@@ -173,7 +184,7 @@ class OrphanedWikiPagesCheck:
                     summary_path=summary_path,
                     summary_slugs=summary_slugs,
                     sources_dir=sources_dir,
-                    memory_bank_root=memory_bank_root,
+                    project_root=project_root,
                 )
             )
         findings.extend(

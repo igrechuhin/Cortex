@@ -74,9 +74,8 @@ def write_test_operations_log(mock_project_root: Path) -> None:
 
 
 def write_test_artifact_pages(mock_project_root: Path) -> None:
-    """Create sample filed artifact pages under memory-bank/reviews."""
-    memory_bank_dir = mock_project_root / ".cortex" / "memory-bank"
-    reviews = memory_bank_dir / "reviews"
+    """Create sample filed artifact pages under canonical .cortex/reviews."""
+    reviews = mock_project_root / ".cortex" / "reviews"
     reviews.mkdir(parents=True)
     _ = (reviews / "review-auth-2026-04-07.md").write_text(
         "# Auth Review\n\nFirst finding text.", encoding="utf-8"
