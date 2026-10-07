@@ -1,5 +1,6 @@
 """Exercise artifact relocation and retrieval through a real stdio MCP server."""
 
+import hashlib
 import json
 import os
 import subprocess
@@ -204,6 +205,7 @@ async def _exercise_protocol(
     inventory = await session.list_tools()
     manage = next(tool for tool in inventory.tools if tool.name == "manage_file")
     assert "migrate_artifacts" in json.dumps(manage.inputSchema)
+    assert "patch_document" in json.dumps(manage.inputSchema)
     await _reject_unsafe_requests(session)
     digest = await _migrate_protocol(session, root, reports)
     await _retrieve_protocol(session)
@@ -217,6 +219,7 @@ async def _exercise_protocol(
     assert (root / ".cortex/rules").is_symlink()
     assert (root / ".cortex/rules/rule.md").read_bytes() == _EXTERNAL_RULE_CONTENT
     _assert_generated_trees(root)
+    await _patch_document_protocol(session, root)
     return {
         "protocol": initialized.protocolVersion,
         "tools": len(inventory.tools),
@@ -283,3 +286,50 @@ async def test_artifact_migration_stdio_protocol(
         ) as session:
             evidence = await _exercise_protocol(session, tmp_path, reports)
             print(json.dumps({"launch_mode": launch_mode, **evidence}))
+
+
+def _patch_protocol_fixture(root: Path) -> tuple[Path, bytes, dict[str, object]]:
+    target = root / ".cortex/plans/archive/canceled-protocol.md"
+    target.parent.mkdir(parents=True, exist_ok=True)
+    before = b"---\r\nstatus: DONE\r\n---\r\n# Canceled (DONE)\r\n- [ ] old step\r\n"
+    _ = target.write_bytes(before)
+    target.chmod(0o640)
+    payload: dict[str, object] = {
+        "expected_sha256": hashlib.sha256(before).hexdigest(),
+        "replacements": [
+            {"old": "- [ ] old step", "new": "- [x] old step", "count": 1}
+        ],
+    }
+    return target, before, payload
+
+
+async def _patch_document_protocol(session: ClientSession, root: Path) -> None:
+    target, before, payload = _patch_protocol_fixture(root)
+    arguments = {
+        "operation": "patch_document",
+        "file_name": target.relative_to(root).as_posix(),
+    }
+    context = root / ".cortex/memory-bank/activeContext.md"
+    unchanged_context = context.read_bytes()
+    preview = await _manage(
+        session, **arguments, content=json.dumps({**payload, "dry_run": True})
+    )
+    assert preview["project_root"] == str(root.resolve())
+    assert preview["mutation_performed"] is False
+    assert target.read_bytes() == before
+    applied = await _manage(session, **arguments, content=json.dumps(payload))
+    after = before.replace(b"- [ ] old step", b"- [x] old step")
+    assert applied["mutation_performed"] is True
+    assert applied["before_sha256"] == hashlib.sha256(before).hexdigest()
+    assert applied["after_sha256"] == hashlib.sha256(after).hexdigest()
+    assert target.read_bytes() == after
+    assert target.stat().st_mode & 0o777 == 0o640
+    stale = await session.call_tool(
+        "manage_file", {**arguments, "content": json.dumps(payload)}
+    )
+    text = "\n".join(
+        item.text for item in stale.content if isinstance(item, TextContent)
+    )
+    assert json.loads(text)["status"] == "error"
+    assert target.read_bytes() == after
+    assert context.read_bytes() == unchanged_context

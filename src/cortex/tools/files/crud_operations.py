@@ -143,9 +143,8 @@ async def manage_file(
     files under .cortex/memory-bank/.
 
     DO NOT:
-    - Use this tool for generic project files outside the Memory Bank (code,
-      tests, plans, or other workspace files).
-    - Pass absolute paths or directory components; file_name must be a Memory
+    - Use this tool for generic project files (code, tests or workspace files).
+    - Pass absolute paths. Except for patch_document, file_name must be a Memory
       Bank filename only (for example, "projectBrief.md", not a path).
     - Perform full-file writes to roadmap.md, progress.md, or activeContext.md
       when a targeted mutation via update_memory_bank would suffice.
@@ -174,9 +173,21 @@ async def manage_file(
       pass content JSON with {"apply": true, "expected_preview_digest": "<digest>"}.
       Only memory-bank/reviews, analyses and queries are eligible; arbitrary paths
       are not accepted. Stale previews, symlinks and collisions fail without mutation.
+    - patch_document: Hash-guarded literal repair of an EXISTING workspace-relative
+      Markdown target under .cortex/plans/, .cortex/analyses/, .cortex/reviews/, or
+      exact .cortex/memory-bank/roadmap.md. Pass content JSON with expected_sha256
+      (64 lowercase hex characters), replacements [{old, new, count: 1}], and
+      optional dry_run (default false). Each old literal must be unique/nonempty;
+      overlaps, no-ops, stale bytes, unsafe paths and symlinks are rejected.
+      Frontmatter and title stay unchanged, including archived DONE state. This
+      operation never creates documents, normalizes plans or adds wiki/context
+      artifacts. Returns project_root, target, before_sha256, after_sha256,
+      replacement_counts, dry_run and mutation_performed.
 
     Args:
         file_name: Name of the file within memory-bank/ directory.
+            For patch_document only, an existing workspace-relative .cortex path
+            in the closed roots documented above.
             Examples: "projectBrief.md", "activeContext.md", "systemPatterns.md"
             Must be a valid filename without path traversal characters.
 

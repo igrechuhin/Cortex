@@ -51,6 +51,7 @@ class FileOperation(str, Enum):
     INIT_CONSTITUTION = "init_constitution"
     FILE_ARTIFACT = "file_artifact"
     MIGRATE_ARTIFACTS = "migrate_artifacts"
+    PATCH_DOCUMENT = "patch_document"
     LIST_EXPLORE_LOGS = "list_explore_logs"
     CLEAR_EXPLORE_LOGS = "clear_explore_logs"
     LIST_SHAPE_LOGS = "list_shape_logs"

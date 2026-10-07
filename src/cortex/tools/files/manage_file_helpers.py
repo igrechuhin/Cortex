@@ -369,6 +369,10 @@ async def execute_file_operation(root: Path, file_name: str, operation: FileOper
         return execute_plan_draft_operation(root, operation, content)
     if operation == FileOperation.MIGRATE_ARTIFACTS:
         return await _execute_artifact_migration(root, content)
+    if operation == FileOperation.PATCH_DOCUMENT:
+        from cortex.tools.files.document_patch_operations import handle_document_patch
+
+        return await handle_document_patch(root, file_name, content)
     managers, fs_manager = await get_managers_for_root(root)
     if operation in GOAL_FILE_OPERATIONS:
         return await execute_session_goal_operation(root, operation, content, managers)
