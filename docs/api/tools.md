@@ -875,6 +875,51 @@ also includes `plan_graph_ambiguous`.
 
 ---
 
+### plan(operation="set_execution")
+
+Correct the execution owner of one existing active plan using an exact root-level
+`slug` (without `.md`) and `content` containing JSON:
+
+```json
+{"expected_sha256":"<64 lowercase hex SHA-256 of raw file bytes>","execution":"agent","reason":"Explicitly authorized owner correction","dry_run":true}
+```
+
+All four fields are required; `execution` is `agent` or `operator`, `reason` must
+be nonempty, and `dry_run` must be a real boolean. A preview returns the proposed
+hash without changing bytes; apply uses the same expected preimage with
+`dry_run:false`. Both paths recheck identity and bytes under the per-document
+lock. Stale hashes, missing or duplicate/conflicting owners, terminal statuses or
+titles, archives, ambiguous identities, drafts, README/TEMPLATE scaffolding,
+traversal, and symlinks are rejected. Only the unique scalar owner token changes;
+quoting, comments, status, identity, body, mode, and all unrelated bytes survive.
+
+The response includes `project_root`, project-relative `target`, `before_sha256`,
+`after_sha256`, `previous_execution`, `new_execution`, `reason`, `dry_run`, and
+`mutation_performed`. An already-matching owner is a successful no-op. This is an
+explicitly authorized metadata correction, not completion or implicit authority
+to perform plan actions. It does not register a plan, modify the roadmap, or
+broaden `manage_file(operation="patch_document")` frontmatter permissions.
+
+Use the checkout-only SDK bridge without installing or reloading a server:
+
+```bash
+/Users/igrechuhin/Repo/Cortex/.venv/bin/python \
+  /Users/igrechuhin/Repo/Cortex/scripts/set_plan_execution.py \
+  --root /Users/igrechuhin/Repo/TradeWing \
+  --slug "$SLUG" --expected-sha256 "$RAW_SHA256" \
+  --execution agent --reason "$AUTHORIZED_REASON"
+```
+
+This starts a fresh stdio process from the updated local source, identifies the
+SDK client as `cortex-local-execution-correction`, and advertises only the
+specified project root. The default is dry-run; add `--apply` for the explicitly
+authorized correction using the same raw-byte preimage. The local checkout
+`.venv` must already contain Cortex and the MCP SDK dependencies. No production
+package, client configuration, or running server is modified. Normal backend
+initialization still applies; this bridge is not a read-only server sandbox.
+
+---
+
 ### plan(operation="repair_status")
 
 Repair one archived legacy plan status after the caller has established exact

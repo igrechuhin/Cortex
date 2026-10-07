@@ -64,7 +64,7 @@ def _document_target(root: Path, file_name: str) -> Path:
     return target
 
 
-def _immutable_metadata(content: bytes) -> tuple[bytes | None, bytes | None]:
+def document_metadata_bytes(content: bytes) -> tuple[bytes | None, bytes | None]:
     """Keep raw frontmatter and the first document title, including DONE markers."""
     frontmatter = re.match(
         rb"\A(?:\xef\xbb\xbf)?---[ \t]*\r?\n.*?^---[ \t]*(?:\r?\n|\Z)",
@@ -114,12 +114,12 @@ def _patched_bytes(before: bytes, request: DocumentPatchRequest) -> bytes:
     after = b"".join(chunks)
     if after == before:
         raise ValueError("Document patch must change bytes")
-    if _immutable_metadata(before) != _immutable_metadata(after):
+    if document_metadata_bytes(before) != document_metadata_bytes(after):
         raise ValueError("Document frontmatter and title must remain unchanged")
     return after
 
 
-def _write_existing_document(
+def write_existing_document(
     root: Path, file_name: str, target: Path, before: bytes, after: bytes
 ) -> None:
     """Reuse byte-atomic WAL staging and the roadmap mode-preservation pattern."""
@@ -169,7 +169,7 @@ async def _patch_locked(
         if not allowed:
             raise ValueError(f"Lock verification failed: {error}")
     if not request.dry_run:
-        _write_existing_document(root, file_name, target, before, after)
+        write_existing_document(root, file_name, target, before, after)
     return _patch_response(root, file_name, before, after, request)
 
 

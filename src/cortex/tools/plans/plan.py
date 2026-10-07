@@ -82,7 +82,7 @@ def _plan_error_invalid_operation(operation: str) -> str:
             "Invalid operation "
             f"'{operation}'. Use create, list, get, complete, register, enrich, "
             "graph, archive_completed, repair_status, continue_step, approve_step, "
-            "or finalize_step."
+            "finalize_step, or set_execution."
         ),
         error="Invalid operation",
     ).model_dump_json()
@@ -467,6 +467,10 @@ async def _handle_special_plan_operations(
         # dependencies are not misreported as unsatisfied/BLOCKED. The
         # `include_archive` wire field still governs `operation="list"`.
         return await plan_graph_json(ctx, include_archive=True)
+    if op == PlanToolOperation.SET_EXECUTION:
+        from cortex.tools.plans.execution import set_plan_execution
+
+        return await set_plan_execution(request.slug, request.content, ctx)
     if op == PlanToolOperation.ARCHIVE_COMPLETED:
         return await _plan_handle_archive_completed(ctx)
     if op == PlanToolOperation.REPAIR_STATUS:
@@ -598,6 +602,11 @@ async def plan(
     ``include_archive=true``, and ``status=\"DONE\"``.
     EXAMPLES: plan(operation=\"graph\"); plan(operation=\"repair_status\",
     slug=\"legacy\", include_archive=True, status=\"DONE\").
+    ``set_execution`` requires an exact root active slug and content JSON with
+    expected_sha256 (raw-byte digest), execution (agent/operator), nonempty reason,
+    and dry_run (boolean). It changes only a unique scalar frontmatter owner;
+    status, identity and body remain unchanged. This explicit metadata correction
+    is neither completion nor implicit authority to perform plan actions.
     """
     wire_payload = {name: locals()[name] for name in _PLAN_WIRE_KEYS}
     return await _plan_dispatch(

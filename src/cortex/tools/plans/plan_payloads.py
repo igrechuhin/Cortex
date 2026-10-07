@@ -23,6 +23,7 @@ class PlanOperation(str, Enum):
     GET = "get"
     COMPLETE = "complete"
     REGISTER = "register"
+    SET_EXECUTION = "set_execution"
 
 
 class PlanCreatePayload(StrictBaseModel):
