@@ -174,6 +174,12 @@ For local development, use these Make targets (after running `bash scripts/boots
 - **`make test-full`**: Run the full test suite (including slower tests) with a longer timeout.
 - **`make commit-check`**: Run the same checks as `make check` before using `/cortex/commit` for the full commit pipeline. With Cortex MCP connected, Phase A / Step 12 use the zero-arg tools documented in [docs/api/tools.md](docs/api/tools.md#commit-and-quality-pipeline-zero-arg-mcp-tools).
 
+For Swift Package Manager projects, the native quality gate runs the complete
+suite with `swift test --enable-code-coverage --no-parallel`. Test cases are
+scheduled serially; concurrent tasks and task groups inside each test remain
+concurrent. This native adapter invokes Swift directly, not the Synapse test
+script, and records the same arguments in its test transcript.
+
 ## Key Tools
 
 <!-- cortex-published-inventory: tools=14 resources=6 prompts-max=4 -->

@@ -202,11 +202,13 @@ class SwiftAdapter(SwiftXcodebuildMixin, FrameworkAdapter):
     ) -> TestResult:
         """Execute ``swift test`` and classify its outcome from the output."""
         extra_env = self._swift_test_env()
-        argv = ["swift", "test", "--enable-code-coverage"]
+        # Serialize test cases, not the concurrent tasks created within each test.
+        args = ["test", "--enable-code-coverage", "--no-parallel"]
+        argv = ["swift", *args]
         start = time.monotonic()
         try:
             result = self._run_swift(
-                ["test", "--enable-code-coverage"],
+                args,
                 timeout=timeout,
                 extra_env=extra_env,
             )
