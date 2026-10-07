@@ -70,20 +70,7 @@ def _execution_target(root: Path, slug: str | None) -> Path:
     return target
 
 
-def _execution_bytes(before: bytes, request: PlanExecutionRequest) -> tuple[bytes, str]:
-    if hashlib.sha256(before).hexdigest() != request.expected_sha256:
-        raise ValueError("Stale expected_sha256: plan bytes changed; read again")
-    text = before.decode("utf-8-sig")
-    metadata = read_plan_status_metadata(text)
-    if not metadata.recognized or metadata.status == PlanStatus.DONE:
-        raise ValueError(
-            "Plan must have a recognized nonterminal, nonconflicting status"
-        )
-    frontmatter, title = document_metadata_bytes(before)
-    if frontmatter is None:
-        raise ValueError("Plan must have frontmatter with one scalar execution owner")
-    if title and re.search(rb"\((?:DONE|COMPLETE|COMPLETED)\)", title, re.I):
-        raise ValueError("Terminal plan title cannot receive an execution correction")
+def _execution_owners(frontmatter: bytes, status: PlanStatus) -> list[ScalarNode]:
     block = frontmatter.decode("utf-8-sig").splitlines()[1:-1]
     loader = yaml.SafeLoader("\n".join(block))
     try:
@@ -100,7 +87,7 @@ def _execution_bytes(before: bytes, request: PlanExecutionRequest) -> tuple[byte
             raise ValueError("Merged execution metadata is not supported")
         if key.value.casefold() == "status" and (
             not isinstance(value, ScalarNode)
-            or resolve_plan_status_token(value.value) != metadata.status
+            or resolve_plan_status_token(value.value) != status
         ):
             raise ValueError("Plan status metadata is conflicting or noncanonical")
         if key.value.casefold() == "execution":
@@ -110,6 +97,24 @@ def _execution_bytes(before: bytes, request: PlanExecutionRequest) -> tuple[byte
             ):
                 raise ValueError("Execution owner must be a scalar agent or operator")
             owners.append(value)
+    return owners
+
+
+def _execution_bytes(before: bytes, request: PlanExecutionRequest) -> tuple[bytes, str]:
+    if hashlib.sha256(before).hexdigest() != request.expected_sha256:
+        raise ValueError("Stale expected_sha256: plan bytes changed; read again")
+    text = before.decode("utf-8-sig")
+    metadata = read_plan_status_metadata(text)
+    if not metadata.recognized or metadata.status == PlanStatus.DONE:
+        raise ValueError(
+            "Plan must have a recognized nonterminal, nonconflicting status"
+        )
+    frontmatter, title = document_metadata_bytes(before)
+    if frontmatter is None:
+        raise ValueError("Plan must have frontmatter with one scalar execution owner")
+    if title and re.search(rb"\((?:DONE|COMPLETE|COMPLETED)\)", title, re.I):
+        raise ValueError("Terminal plan title cannot receive an execution correction")
+    owners = _execution_owners(frontmatter, metadata.status)
     matches = list(_OWNER.finditer(frontmatter))
     if len(owners) != 1 or len(matches) != 1:
         raise ValueError("Execution owner must be unique, explicit, and nonconflicting")
@@ -121,6 +126,39 @@ def _execution_bytes(before: bytes, request: PlanExecutionRequest) -> tuple[byte
         raise ValueError("Execution owner must use one canonical scalar declaration")
     start, end = match.span("owner")
     return before[:start] + request.execution.value.encode() + before[end:], previous
+
+
+async def _apply_execution(
+    root: Path,
+    slug: str | None,
+    target: Path,
+    relative: str,
+    request: PlanExecutionRequest,
+    result: dict[str, object],
+) -> None:
+    lock = target.with_suffix(".md.lock")
+    validate_contained_path(lock, root)
+    manager = FileSystemManager(root)
+    await manager.acquire_lock(lock)
+    try:
+        target = _execution_target(root, slug)
+        before = target.read_bytes()
+        after, previous = _execution_bytes(before, request)
+        changed = before != after
+        if changed and not request.dry_run:
+            write_existing_document(root, relative, target, before, after)
+        result.update(
+            status="success",
+            before_sha256=hashlib.sha256(before).hexdigest(),
+            after_sha256=hashlib.sha256(after).hexdigest(),
+            previous_execution=previous,
+            new_execution=request.execution.value,
+            reason=request.reason,
+            dry_run=request.dry_run,
+            mutation_performed=changed and not request.dry_run,
+        )
+    finally:
+        await manager.release_lock(lock)
 
 
 async def set_plan_execution(
@@ -146,29 +184,7 @@ async def set_plan_execution(
         relative = target.relative_to(root).as_posix()
         result["target"] = relative
         _ = _execution_bytes(target.read_bytes(), request)
-        lock = target.with_suffix(".md.lock")
-        validate_contained_path(lock, root)
-        manager = FileSystemManager(root)
-        await manager.acquire_lock(lock)
-        try:
-            target = _execution_target(root, slug)
-            before = target.read_bytes()
-            after, previous = _execution_bytes(before, request)
-            changed = before != after
-            if changed and not request.dry_run:
-                write_existing_document(root, relative, target, before, after)
-            result.update(
-                status="success",
-                before_sha256=hashlib.sha256(before).hexdigest(),
-                after_sha256=hashlib.sha256(after).hexdigest(),
-                previous_execution=previous,
-                new_execution=request.execution.value,
-                reason=request.reason,
-                dry_run=request.dry_run,
-                mutation_performed=changed and not request.dry_run,
-            )
-        finally:
-            await manager.release_lock(lock)
+        await _apply_execution(root, slug, target, relative, request, result)
     except (OSError, ValueError, FileLockTimeoutError, yaml.YAMLError) as exc:
         result.update(error=str(exc), error_type=type(exc).__name__)
     return json.dumps(result, indent=2)

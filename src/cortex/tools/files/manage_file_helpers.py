@@ -37,6 +37,7 @@ from cortex.tools.files.crud_flow import (
 from cortex.tools.files.crud_flow import (
     validate_file_path as _validate_file_path_impl,
 )
+from cortex.tools.files.document_patch_operations import handle_document_patch
 from cortex.tools.files.metadata_operations import handle_metadata_operation
 from cortex.tools.files.operation_helpers import (
     GOAL_FILE_OPERATIONS,
@@ -370,8 +371,6 @@ async def execute_file_operation(root: Path, file_name: str, operation: FileOper
     if operation == FileOperation.MIGRATE_ARTIFACTS:
         return await _execute_artifact_migration(root, content)
     if operation == FileOperation.PATCH_DOCUMENT:
-        from cortex.tools.files.document_patch_operations import handle_document_patch
-
         return await handle_document_patch(root, file_name, content)
     managers, fs_manager = await get_managers_for_root(root)
     if operation in GOAL_FILE_OPERATIONS:

@@ -70,6 +70,17 @@ The packaged artifact-migration protocol test refreshes Cortex from the current
 checkout. Keep refresh enabled and do not combine it with offline mode: uv rejects
 that combination before MCP startup.
 
+Document-patch test helpers keep typed fixture inputs positional-only so
+`**overrides: object` supplies request fields without binding fixture parameters.
+This preserves malformed-request coverage while satisfying Pyright.
+
+## CI Structural Checks
+
+CI checks logical file and function lengths across all owned Python files,
+including scripts. Run the structural checks in
+[the quality workflow](../.github/workflows/quality.yml) in addition to the
+source-only structural regression tests.
+
 ## Test Requirements
 
 Tests require the following packages:

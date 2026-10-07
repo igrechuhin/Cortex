@@ -29,7 +29,7 @@ def _write(root: Path, relative: str, body: bytes = _BODY) -> Path:
     return path
 
 
-def _payload(body: bytes = _BODY, **overrides: object) -> str:
+def _payload(body: bytes = _BODY, /, **overrides: object) -> str:
     return json.dumps(
         {
             "expected_sha256": hashlib.sha256(body).hexdigest(),
@@ -42,7 +42,7 @@ def _payload(body: bytes = _BODY, **overrides: object) -> str:
 
 
 async def _patch(
-    root: Path, relative: str = _TARGET, **overrides: object
+    root: Path, relative: str = _TARGET, /, **overrides: object
 ) -> dict[str, object]:
     return cast(
         dict[str, object],

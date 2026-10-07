@@ -1,6 +1,13 @@
 <!-- memory_type: milestone -->
 # Progress Log
 
+## 2026-10-07
+
+- <!-- memory_type: problem -->
+- <!-- memory_type: status -->
+26-10-07-19-58 Commit verification: fresh native quality gate passed 7,940 tests with 91.75% coverage and zero reported errors/warnings. Changed-file structural/build subprocesses and full-repository size scans passed for applicable languages. The operator explicitly exempted the inapplicable Swift-only DocC subprocess after its missing Sources failure; no Swift sources or dummy gate were added. Staged wiki ingest skipped tests/README.md as unmapped and returned no errors or generated files. Active context now records the CI repair, preserved guards and real MCP behavior proof. Roadmap intentionally unchanged: this scoped repair has no pending plan.
+CI repair 26-10-07-19-40: Actions run 37651579407 failed Pyright because document-patch fixture **overrides could bind typed context parameters. Made fixture inputs positional-only, preserved malformed-request coverage. Repaired downstream logical-function limits by extracting plan execution validation/locked apply and CLI parameter/payload/response handling; relocated document-patch dispatch import. Existing guards, APIs and fail-closed workflow unchanged. Exact CI suite: 7,940 passed, four skipped, 91.75% coverage. Public smoke: four passed with JUnit acceptance; real patch/dispatch and fresh stdio CLI preview/apply/stale refusal smokes passed. Black, Ruff, complete type checks, file/function limits, spelling, Markdown lint/links and full eval (10/10) passed locally; baseline comparison unavailable. Updated tests README with fixture boundary and complete structural gate scope. No commit, push or remote workflow rerun.
+
 ## 2026-10-06
 
 - <!-- memory_type: status -->

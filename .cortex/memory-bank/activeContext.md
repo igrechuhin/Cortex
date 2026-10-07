@@ -3,6 +3,11 @@
 
 **This file records completed work only.** For current status and upcoming work see [roadmap.md](roadmap.md).
 
+## Completed Work (2026-10-07)
+
+- ✅ **Restore Code Quality CI type and structural gates** - COMPLETE (2026-10-07) - <!-- memory_type: milestone -->
+Fixed Actions run 37651579407: positional-only document-patch fixture inputs prevent object-valued request overrides from binding typed context arguments. Extracted plan execution validation/locked mutation and real MCP CLI preparation/response checks; relocated the patch dispatcher import. Guards, raw-byte preservation, public APIs and fail-closed CI remain unchanged. Verified real temporary-workspace patch/dispatch and fresh stdio CLI preview/apply/stale refusal, four public workflow smoke tests with JUnit acceptance, and 7,940 full-suite tests with four skips and 91.75% coverage. Native quality gate and applicable CI structural subprocesses passed. Operator explicitly exempted only the Swift DocC check because this Python repository has no Sources directory or DocC workflow step.
+
 ## Completed Work (2026-10-06)
 
 - ✅ **Canonical report storage and guarded artifact migration** - COMPLETE (2026-10-06) - <!-- memory_type: status -->
