@@ -1,6 +1,11 @@
 <!-- memory_type: milestone -->
 # Progress Log
 
+## 2026-10-08
+
+- <!-- memory_type: milestone -->
+Fixed sibling-session registry invisibility: split agent identity (CORTEX_SESSION_ID, per-process) from pipeline identity (CORTEX_PIPELINE_SESSION_ID + .active-session.json marker, restart-durable). Previously the pipeline resolver latched the project-global marker id into CORTEX_SESSION_ID, so every concurrent MCP server process in a project converged on one agent id: siblings overwrote each other's sessions/active.json entry, list_concurrent_sessions(exclude_current=True) hid it from everyone, and any sibling's deregister wiped the shared slot. session start now auto-registers (heartbeat upsert that preserves an explicit register's task/role) and listings hide entries stale >24h. pipeline_state and pre_commit_config resolve the pipeline id via the resolver with mint=False.
+
 ## 2026-10-07
 
 - <!-- memory_type: problem -->

@@ -529,7 +529,21 @@ async def session_start_impl(
     ):
         _seed_session_start_context_telemetry(project_root, result.token_count)
         _record_session_start_spend(project_root, result.token_count)
+        await _ensure_session_registered(project_root, goal, task_description)
     return result
+
+
+async def _ensure_session_registered(
+    project_root: Path, goal: str | None, task_description: str | None
+) -> None:
+    """Make this session visible to sibling sessions; never fail the brief."""
+    from cortex.tools.session.registry import ensure_registered
+
+    title = (goal or task_description or "Session orientation").strip()
+    try:
+        await ensure_registered(project_root, title)
+    except Exception:
+        logger.debug("Session registry upsert failed", exc_info=True)
 
 
 # Internal; use session(operation="start") as MCP tool.

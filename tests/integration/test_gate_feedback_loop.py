@@ -39,7 +39,7 @@ def _sample_quality_feedback() -> GateFeedback:
 def isolated_project_root(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> Path:
     """Use a temp tree as project root; fix session id for stable paths."""
     _ = (tmp_path / ".cortex").mkdir()
-    monkeypatch.setenv("CORTEX_SESSION_ID", "gatefbinteg01")
+    monkeypatch.setenv("CORTEX_PIPELINE_SESSION_ID", "gatefbinteg01")
 
     async def _root(_ctx: object | None) -> Path:
         return tmp_path

@@ -9,10 +9,14 @@ active sessions with their role, task, and start time.
 """
 
 import logging
+from collections.abc import Callable
 from datetime import UTC, datetime
 from pathlib import Path
 
-from cortex.core.cache_json_access import read_cache_json, write_cache_json
+from cortex.core.cache_json_access import (
+    read_cache_json,
+    read_modify_write_cache_json,
+)
 from cortex.core.constants import MCP_TOOL_TIMEOUT_MEDIUM
 from cortex.core.context_logging import MCPContext, log_client
 from cortex.core.mcp_stability import ensure_usage_context, mcp_tool_wrapper
@@ -21,11 +25,16 @@ from cortex.core.project_root_resolver import resolve_project_root_async
 from cortex.core.session_logger import get_session_id
 from cortex.optimization.agent_roles import AgentRole, normalize_role_name
 from cortex.tools.session.models import ConcurrentSession, SessionRegistryResult
+from cortex.tools.session.pipeline_handoff_clock import age_seconds
 
 logger = logging.getLogger(__name__)
 
 # Cache key for sessions registry
 _SESSIONS_REGISTRY_KEY = "sessions/active.json"
+
+# Sessions whose last heartbeat (registration or session-start refresh) is
+# older than this are treated as crashed and hidden from listings.
+_STALE_SESSION_SECONDS = 24 * 3600
 
 
 async def _load_sessions_registry(
@@ -58,15 +67,48 @@ async def _load_sessions_registry(
     return sessions
 
 
-async def _save_sessions_registry(
-    project_root: Path, sessions: dict[str, ConcurrentSession]
+def _entry_from_raw(raw: object) -> ConcurrentSession | None:
+    """Parse one registry value; None when malformed (entry is skipped)."""
+    if not isinstance(raw, dict):
+        return None
+    try:
+        return ConcurrentSession.model_validate(raw)
+    except Exception as e:
+        logger.warning("Failed to parse session data: %s, skipping", e)
+        return None
+
+
+async def _mutate_sessions_registry(
+    project_root: Path,
+    mutate: Callable[[dict[str, ConcurrentSession]], bool],
 ) -> None:
-    """Save sessions registry to cache."""
-    # Serialize ConcurrentSession models to dict for JSON storage
-    sessions_dict: dict[str, object] = {
-        session_id: session.model_dump() for session_id, session in sessions.items()
-    }
-    await write_cache_json(project_root, _SESSIONS_REGISTRY_KEY, sessions_dict)
+    """Read-modify-write the registry under a single lock.
+
+    Sibling MCP server processes mutate ``sessions/active.json`` concurrently;
+    a load followed by a separate save loses whichever entry the other process
+    wrote between the two calls. The updater runs while the cache lock is held
+    so every mutation is atomic across processes. A ``mutate`` returning False
+    leaves the on-disk payload (including unparsable entries) untouched.
+    """
+
+    def updater(
+        current: dict[str, object] | list[object],
+    ) -> dict[str, object] | list[object]:
+        sessions: dict[str, ConcurrentSession] = {}
+        if isinstance(current, dict):
+            for session_id_str, session_raw in current.items():
+                entry = _entry_from_raw(session_raw)
+                if entry is not None:
+                    sessions[str(session_id_str)] = entry
+        if not mutate(sessions):
+            return current
+        return {
+            session_id: session.model_dump() for session_id, session in sessions.items()
+        }
+
+    await read_modify_write_cache_json(
+        project_root, _SESSIONS_REGISTRY_KEY, updater, {}
+    )
 
 
 async def register_session(
@@ -85,20 +127,18 @@ async def register_session(
         ConcurrentSession model for the registered session
     """
     session_id = get_session_id()
-    now = datetime.now(UTC)
-
-    sessions = await _load_sessions_registry(project_root)
-
     session = ConcurrentSession(
         agent_role=agent_role.value if agent_role else None,
         task=task_title,
-        started=now.isoformat(),
+        started=datetime.now(UTC).isoformat(),
         session_id=session_id,
     )
 
-    sessions[session_id] = session
-    await _save_sessions_registry(project_root, sessions)
+    def upsert(sessions: dict[str, ConcurrentSession]) -> bool:
+        sessions[session_id] = session
+        return True
 
+    await _mutate_sessions_registry(project_root, upsert)
     logger.info(
         "Session registered: session_id=%s, task=%s, role=%s",
         session_id,
@@ -106,6 +146,34 @@ async def register_session(
         agent_role.value if agent_role else None,
     )
     return session
+
+
+async def ensure_registered(project_root: Path, task_title: str) -> None:
+    """Upsert the current session: insert if absent, refresh heartbeat if present.
+
+    Called from session start so sibling sessions see each other without an
+    explicit register. An existing entry keeps its task and role (an explicit
+    ``session(operation="register")`` owns those); only ``started`` is
+    refreshed as a liveness heartbeat.
+    """
+    session_id = get_session_id()
+
+    def upsert(sessions: dict[str, ConcurrentSession]) -> bool:
+        existing = sessions.get(session_id)
+        if existing is not None:
+            sessions[session_id] = existing.model_copy(
+                update={"started": datetime.now(UTC).isoformat()}
+            )
+        else:
+            sessions[session_id] = ConcurrentSession(
+                agent_role=None,
+                task=task_title,
+                started=datetime.now(UTC).isoformat(),
+                session_id=session_id,
+            )
+        return True
+
+    await _mutate_sessions_registry(project_root, upsert)
 
 
 async def deregister_session(project_root: Path) -> bool:
@@ -118,23 +186,39 @@ async def deregister_session(project_root: Path) -> bool:
         True if session was deregistered, False if not found
     """
     session_id = get_session_id()
-    sessions = await _load_sessions_registry(project_root)
+    found = False
 
-    if session_id not in sessions:
+    def remove(sessions: dict[str, ConcurrentSession]) -> bool:
+        nonlocal found
+        if session_id not in sessions:
+            return False
+        found = True
+        del sessions[session_id]
+        return True
+
+    await _mutate_sessions_registry(project_root, remove)
+    if not found:
         logger.debug("Session %s not found in registry", session_id)
         return False
-
-    del sessions[session_id]
-    await _save_sessions_registry(project_root, sessions)
 
     logger.info("Session deregistered: session_id=%s", session_id)
     return True
 
 
+def _is_stale(session: ConcurrentSession) -> bool:
+    """True when a registry entry's last heartbeat is older than the cutoff."""
+    try:
+        return age_seconds(session.started) > _STALE_SESSION_SECONDS
+    except ValueError:
+        return False  # Unparseable timestamp: keep the entry (conservative).
+
+
 async def list_concurrent_sessions(
     project_root: Path, exclude_current: bool = True
 ) -> list[ConcurrentSession]:
-    """List all concurrent sessions (excluding current session by default).
+    """List live concurrent sessions (excluding current session by default).
+
+    Stale entries (crashed sessions that never deregistered) are hidden.
 
     Args:
         project_root: Project root directory
@@ -146,7 +230,7 @@ async def list_concurrent_sessions(
     sessions = await _load_sessions_registry(project_root)
     session_id = get_session_id()
 
-    result = list(sessions.values())
+    result = [s for s in sessions.values() if not _is_stale(s)]
     if exclude_current:
         result = [s for s in result if s.session_id != session_id]
 
@@ -185,9 +269,7 @@ async def _register_session_impl(
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_MEDIUM)
 async def session_register(
-    task_title: str,
-    role: str | None = None,
-    ctx: MCPContext | None = None,
+    task_title: str, role: str | None = None, ctx: MCPContext | None = None
 ) -> str:
     """Register the current session in the session registry.
 
@@ -224,10 +306,12 @@ async def _deregister_session_impl(ctx: MCPContext | None) -> str:
     """Implementation of deregister_session MCP tool."""
     from cortex.setup.claude_settings import remove_once_hooks
     from cortex.tools.session.pipeline_handoff_io import get_file_state_cache
+    from cortex.tools.session.pipeline_handoff_session import (
+        get_session_id as pipeline_session_id,
+    )
 
     await log_client(ctx, "info", "deregister_session: starting", logger_name=__name__)
     root = await resolve_project_root_async(None, ctx)
-    session_id = get_session_id()
     settings_path = root / ".claude" / "settings.json"
     removed_once_count = remove_once_hooks(settings_path)
     logger.debug(
@@ -235,7 +319,9 @@ async def _deregister_session_impl(ctx: MCPContext | None) -> str:
         removed_once_count,
         settings_path,
     )
-    get_file_state_cache(session_id, root).drop_all()
+    # File-state snapshots are stored under the pipeline session id (see
+    # pipeline_handoff_io.get_session_dir); the agent id is a different domain.
+    get_file_state_cache(pipeline_session_id(root), root).drop_all()
 
     deregistered = await deregister_session(root)
     result = _deregister_result(deregistered)

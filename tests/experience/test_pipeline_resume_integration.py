@@ -29,7 +29,7 @@ _PHASES = ["select", "code", "review", "finalize"]
 
 @pytest.fixture
 def session_env(monkeypatch: pytest.MonkeyPatch) -> str:
-    monkeypatch.setenv("CORTEX_SESSION_ID", "resumesess")
+    monkeypatch.setenv("CORTEX_PIPELINE_SESSION_ID", "resumesess")
     monkeypatch.delenv("CORTEX_EXPERIENCE_RECORDING", raising=False)
     return "resumesess"
 

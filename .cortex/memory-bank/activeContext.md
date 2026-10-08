@@ -3,6 +3,11 @@
 
 **This file records completed work only.** For current status and upcoming work see [roadmap.md](roadmap.md).
 
+## Completed Work (2026-10-08)
+
+- ✅ **Sibling session registry visibility fixed** - COMPLETE (2026-10-08) - <!-- memory_type: status -->
+Agent identity (CORTEX_SESSION_ID, per-process) and pipeline identity (CORTEX_PIPELINE_SESSION_ID + marker, restart-durable) are now separate domains; registry mutations are atomic via read_modify_write_cache_json; session start auto-registers with heartbeat and stale entries (>24h) are hidden; deregister cleans file-state snapshots under the pipeline id. Two-process and 3-process barrier regressions cover visibility and lost updates.
+
 ## Completed Work (2026-10-07)
 
 - ✅ **Restore Code Quality CI type and structural gates** - COMPLETE (2026-10-07) - <!-- memory_type: milestone -->

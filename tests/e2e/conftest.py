@@ -26,6 +26,7 @@ def _isolate_public_context(
 ) -> None:
     """Patch only request context boundaries, never tool behavior or managers."""
     monkeypatch.setenv("CORTEX_SESSION_ID", "publicsmoke01")
+    monkeypatch.setenv("CORTEX_PIPELINE_SESSION_ID", "publicsmoke01")
     monkeypatch.setenv("CORTEX_PYTEST_PARALLEL", "0")
     monkeypatch.setattr(
         "cortex.core.usage_context._current_managers",

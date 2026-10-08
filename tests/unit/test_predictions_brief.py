@@ -36,7 +36,7 @@ def _brief() -> SessionBrief:
 def _session(  # pyright: ignore[reportUnusedFunction]
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    monkeypatch.setenv("CORTEX_SESSION_ID", "briefsess")
+    monkeypatch.setenv("CORTEX_PIPELINE_SESSION_ID", "briefsess")
 
 
 def test_brief_is_unchanged_without_predictions(tmp_path: Path) -> None:

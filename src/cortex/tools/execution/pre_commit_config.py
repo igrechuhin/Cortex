@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-import os
 from pathlib import Path
 from typing import cast
 
@@ -30,7 +29,9 @@ def read_pipeline_phase_config(
     defaults: dict[str, object],
 ) -> dict[str, object]:
     """Read config for a pipeline phase from its task file. Falls back to defaults."""
-    session_id = os.environ.get("CORTEX_SESSION_ID", "")
+    from cortex.tools.session.pipeline_handoff_session import get_session_id
+
+    session_id = get_session_id(root, mint=False)
     if not session_id:
         return defaults
     session_root = get_cortex_path(root, CortexResourceType.SESSION)

@@ -18,7 +18,7 @@ from cortex.tools.session.pipeline_handoff_io import (
 
 @pytest.fixture
 def session_env(monkeypatch: pytest.MonkeyPatch) -> str:
-    monkeypatch.setenv("CORTEX_SESSION_ID", "handoffsess")
+    monkeypatch.setenv("CORTEX_PIPELINE_SESSION_ID", "handoffsess")
     monkeypatch.delenv("CORTEX_EXPERIENCE_RECORDING", raising=False)
     return "handoffsess"
 
@@ -82,7 +82,7 @@ def test_write_result_respects_disabled_flag(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     # Arrange
-    monkeypatch.setenv("CORTEX_SESSION_ID", "handoffsess")
+    monkeypatch.setenv("CORTEX_PIPELINE_SESSION_ID", "handoffsess")
     monkeypatch.setenv("CORTEX_EXPERIENCE_RECORDING", "off")
 
     # Act

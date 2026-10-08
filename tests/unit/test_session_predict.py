@@ -17,7 +17,7 @@ from tests.helpers.tool_call_helpers import get_tool_fn
 def _isolated_project(  # pyright: ignore[reportUnusedFunction]
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    monkeypatch.setenv("CORTEX_SESSION_ID", "predictunit")
+    monkeypatch.setenv("CORTEX_PIPELINE_SESSION_ID", "predictunit")
 
     def _root() -> Path:
         return tmp_path

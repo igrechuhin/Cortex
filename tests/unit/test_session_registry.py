@@ -1,7 +1,12 @@
 """Tests for session registry functionality (Phase 58 Step 4)."""
 
+import asyncio
 import json
 import os
+import subprocess
+import sys
+import time
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from unittest.mock import AsyncMock, patch
 
@@ -9,13 +14,76 @@ import pytest
 
 from cortex.core.cache_json_access import read_cache_json, write_cache_json
 from cortex.optimization.agent_roles import AgentRole
+from cortex.tools.session.pipeline_handoff_session import (
+    get_session_id as pipeline_session_id,
+)
 from cortex.tools.session.registry import (
     deregister_session,
+    ensure_registered,
     list_concurrent_sessions,
     register_session,
     session_deregister,
     session_register,
 )
+
+_SESSION_ENV_KEYS = ("CORTEX_SESSION_ID", "CORTEX_PIPELINE_SESSION_ID")
+
+
+def _snapshot_session_env() -> dict[str, str | None]:
+    """Capture both identity env vars for restoration in a finally block."""
+    return {key: os.environ.get(key) for key in _SESSION_ENV_KEYS}
+
+
+def _restore_session_env(saved: dict[str, str | None]) -> None:
+    """Restore identity env vars captured by _snapshot_session_env."""
+    for key, value in saved.items():
+        if value is None:
+            _ = os.environ.pop(key, None)
+        else:
+            os.environ[key] = value
+
+
+def _clear_session_env() -> None:
+    """Simulate a fresh process: drop both cached identity env vars."""
+    for key in _SESSION_ENV_KEYS:
+        _ = os.environ.pop(key, None)
+
+
+def _registry_entry(task: str, started: str, session_id: str) -> dict[str, object]:
+    """One registry payload entry."""
+    return {
+        "agent_role": None,
+        "task": task,
+        "started": started,
+        "session_id": session_id,
+    }
+
+
+_CHILD_REGISTER_SCRIPT = (
+    "import asyncio, os, sys, time\n"
+    "from pathlib import Path\n"
+    "from cortex.tools.session.registry import register_session\n"
+    "root, ready_path, go_path = (Path(a) for a in sys.argv[1:4])\n"
+    "ready_path.write_text('ok')\n"
+    "deadline = time.monotonic() + 30\n"
+    "while not go_path.exists() and time.monotonic() < deadline:\n"
+    "    time.sleep(0.01)\n"
+    "asyncio.run(register_session(root, os.environ['CORTEX_SESSION_ID']))\n"
+)
+
+
+def _spawn_sibling(
+    root: Path, ready: Path, go: Path, name: str
+) -> subprocess.Popen[bytes]:
+    """Start one child process that registers at the shared barrier."""
+    env = {**os.environ, "CORTEX_SESSION_ID": name}
+    _ = env.pop("CORTEX_PIPELINE_SESSION_ID", None)
+    return subprocess.Popen(
+        [sys.executable, "-c", _CHILD_REGISTER_SCRIPT, str(root), str(ready), str(go)],
+        env=env,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    )
 
 
 def _write_once_cleanup_settings(settings_path: Path) -> None:
@@ -439,18 +507,21 @@ class TestSessionRegistryMCPExceptionPaths:
     async def test_session_deregister_cleans_file_state_snapshots(
         self, tmp_path: Path
     ) -> None:
-        """session_deregister removes snapshot cache for current session."""
+        """session_deregister drops snapshots stored under the pipeline session id."""
         from cortex.tools.session.pipeline_handoff_io import get_file_state_cache
 
-        env_key = "CORTEX_SESSION_ID"
-        original = os.environ.get(env_key)
-        os.environ[env_key] = "cleanup_snapshots_session"
+        agent_env = "CORTEX_SESSION_ID"
+        pipeline_env = "CORTEX_PIPELINE_SESSION_ID"
+        saved = {k: os.environ.get(k) for k in (agent_env, pipeline_env)}
+        os.environ[agent_env] = "cleanup_agent_session"
+        os.environ[pipeline_env] = "cleanup_pipeline_session"
         tracked = tmp_path / "tracked.txt"
         _ = tracked.write_text("before", encoding="utf-8")
 
         try:
             _ = await register_session(tmp_path, "cleanup snapshots")
-            cache = get_file_state_cache("cleanup_snapshots_session", tmp_path)
+            # Snapshots live under the pipeline id (pipeline_handoff_io domain).
+            cache = get_file_state_cache("cleanup_pipeline_session", tmp_path)
             _ = cache.snapshot([tracked])
             assert cache.list_snapshots()
 
@@ -465,7 +536,138 @@ class TestSessionRegistryMCPExceptionPaths:
             assert result.get("status") == "success"
             assert cache.list_snapshots() == []
         finally:
+            for key, value in saved.items():
+                if value is None:
+                    _ = os.environ.pop(key, None)
+                else:
+                    os.environ[key] = value
+
+
+class TestSiblingSessionVisibility:
+    """Regression: concurrent MCP server processes must keep distinct identities."""
+
+    @pytest.mark.asyncio
+    async def test_siblings_see_each_other_despite_shared_pipeline_marker(
+        self, tmp_path: Path
+    ) -> None:
+        """Two simulated processes share the pipeline marker but not agent ids."""
+        saved = _snapshot_session_env()
+        _clear_session_env()
+        try:
+            # Process A: pipeline activity first, then registry registration.
+            pipeline_a = pipeline_session_id(tmp_path)
+            _ = await register_session(tmp_path, "Task A")
+            agent_a = os.environ["CORTEX_SESSION_ID"]
+
+            # Process B: fresh process — no cached env, marker still on disk.
+            _clear_session_env()
+            pipeline_b = pipeline_session_id(tmp_path)
+            _ = await register_session(tmp_path, "Task B")
+            agent_b = os.environ["CORTEX_SESSION_ID"]
+
+            # Pipeline identity stays shared; agent identity stays per-process.
+            assert pipeline_a == pipeline_b
+            assert agent_a != agent_b
+
+            visible = await list_concurrent_sessions(tmp_path)
+            assert [s.task for s in visible if s.session_id == agent_a] == ["Task A"]
+
+            data = await read_cache_json(tmp_path, "sessions/active.json")
+            assert isinstance(data, dict) and set(data) == {agent_a, agent_b}
+        finally:
+            _restore_session_env(saved)
+
+    @pytest.mark.asyncio
+    async def test_ensure_registered_preserves_explicit_registration(
+        self, tmp_path: Path
+    ) -> None:
+        """Heartbeat upsert keeps task/role set by an explicit register."""
+        env_key = "CORTEX_SESSION_ID"
+        original = os.environ.get(env_key)
+        os.environ[env_key] = "heartbeat_session"
+        try:
+            _ = await register_session(
+                tmp_path, "Explicit task", agent_role=AgentRole.QUALITY
+            )
+            await ensure_registered(tmp_path, "Orientation title")
+
+            sessions = await list_concurrent_sessions(tmp_path, exclude_current=False)
+            assert len(sessions) == 1
+            assert sessions[0].task == "Explicit task"
+            assert sessions[0].agent_role == "quality"
+        finally:
             if original is None:
                 _ = os.environ.pop(env_key, None)
             else:
                 os.environ[env_key] = original
+
+    @pytest.mark.asyncio
+    async def test_ensure_registered_inserts_when_absent(self, tmp_path: Path) -> None:
+        """First orientation inserts a registry entry visible to siblings."""
+        env_key = "CORTEX_SESSION_ID"
+        original = os.environ.get(env_key)
+        os.environ[env_key] = "fresh_session"
+        try:
+            await ensure_registered(tmp_path, "New session goal")
+
+            data = await read_cache_json(tmp_path, "sessions/active.json")
+            assert isinstance(data, dict)
+            entry = data.get("fresh_session")
+            assert isinstance(entry, dict)
+            assert entry["task"] == "New session goal"
+            assert entry["agent_role"] is None
+        finally:
+            if original is None:
+                _ = os.environ.pop(env_key, None)
+            else:
+                os.environ[env_key] = original
+
+    @pytest.mark.asyncio
+    async def test_list_hides_stale_entries(self, tmp_path: Path) -> None:
+        """Crashed sessions older than the cutoff disappear from listings."""
+        saved = _snapshot_session_env()
+        os.environ["CORTEX_SESSION_ID"] = "live_session"
+        stale = (datetime.now(UTC) - timedelta(hours=25)).isoformat()
+        fresh = (datetime.now(UTC) - timedelta(hours=1)).isoformat()
+        payload: dict[str, object] = {
+            "stale_ghost": _registry_entry("Crashed yesterday", stale, "stale_ghost"),
+            "live_session": _registry_entry("Still working", fresh, "live_session"),
+        }
+        try:
+            await write_cache_json(tmp_path, "sessions/active.json", payload)
+            sessions = await list_concurrent_sessions(tmp_path, exclude_current=False)
+            assert [s.session_id for s in sessions] == ["live_session"]
+        finally:
+            _restore_session_env(saved)
+
+
+class TestConcurrentSiblingRegistrations:
+    """Cross-process lost-update guard for sessions/active.json mutations."""
+
+    @pytest.mark.asyncio
+    async def test_three_processes_registering_at_barrier_all_survive(
+        self, tmp_path: Path
+    ) -> None:
+        """Real sibling processes mutating concurrently must not lose entries."""
+        go_marker = tmp_path / "go"
+        processes = [
+            _spawn_sibling(tmp_path, tmp_path / f"ready_{i}", go_marker, f"sibling_{i}")
+            for i in range(3)
+        ]
+        try:
+            deadline = time.monotonic() + 30
+            while (
+                len(list(tmp_path.glob("ready_*"))) < 3 and time.monotonic() < deadline
+            ):
+                await asyncio.sleep(0.01)
+            _ = go_marker.write_text("go")
+            for process in processes:
+                assert process.wait(timeout=60) == 0
+        finally:
+            for process in processes:
+                if process.poll() is None:  # pragma: no cover - cleanup path
+                    process.kill()
+
+        data = await read_cache_json(tmp_path, "sessions/active.json")
+        assert isinstance(data, dict)
+        assert set(data) == {"sibling_0", "sibling_1", "sibling_2"}

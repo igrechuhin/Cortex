@@ -22,7 +22,7 @@ from cortex.experience.recorder import recording_enabled
 def _session(  # pyright: ignore[reportUnusedFunction]
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    monkeypatch.setenv("CORTEX_SESSION_ID", "predictsess")
+    monkeypatch.setenv("CORTEX_PIPELINE_SESSION_ID", "predictsess")
 
 
 @pytest.fixture(autouse=True)

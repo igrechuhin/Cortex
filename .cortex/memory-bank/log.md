@@ -1,9 +1,5 @@
 # Cortex Operations Log
 
-## [2026-08-31T09:36] plan | Created plan: Demo Plan ·2
-
-## [2026-08-31T09:36] plan | Created plan: Demo Plan ·3
-
 ## [2026-08-31T09:36] plan | Created plan: Demo Plan ·4
 
 ## [2026-08-31T09:36] plan | Created plan: Demo Plan ·5
@@ -2083,3 +2079,9 @@ status=success; changed_files=None
 status=success; changed_files=None
 
 ## [2026-10-07T20:02] lint | Quality gate passed
+
+## [2026-10-08T13:23] fix | Sibling sessions invisible in session registry
+
+Root cause: pipeline_handoff_session.get_session_id latched the shared .active-session.json marker id into CORTEX_SESSION_ID — the same env var session_logger treats as per-process agent identity. All sibling MCP processes in a project fused into one registry key. Fix: dedicated CORTEX_PIPELINE_SESSION_ID env key; mint=False mode for passive checks (pipeline_state, pre_commit_config); session-start heartbeat upsert plus 24h stale filter in list_concurrent_sessions. Verified: two-process smoke sees sibling task; full suite 7963 passed.
+
+## [2026-10-08T13:33] lint | Quality gate failed

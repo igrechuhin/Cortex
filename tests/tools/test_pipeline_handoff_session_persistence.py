@@ -27,7 +27,8 @@ from tests.tools.pipeline_handoff_test_support import (
     patch_pipeline_handoff_project_root,
 )
 
-_ENV_KEY = "CORTEX_SESSION_ID"
+_ENV_KEY = "CORTEX_PIPELINE_SESSION_ID"
+_AGENT_ENV_KEY = "CORTEX_SESSION_ID"
 
 
 def _reset_session_env() -> None:
@@ -120,7 +121,7 @@ async def test_session_id_recovered_after_env_loss(
 async def test_explicit_env_var_still_takes_precedence(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """An explicit CORTEX_SESSION_ID (e.g. test isolation) wins over the marker."""
+    """An explicit CORTEX_PIPELINE_SESSION_ID (e.g. test isolation) wins over the marker."""
     _reset_session_env()
     patch_pipeline_handoff_project_root(monkeypatch, tmp_path)
     monkeypatch.setenv(_ENV_KEY, "explicit-override")
@@ -131,3 +132,31 @@ async def test_explicit_env_var_still_takes_precedence(
         assert init_r["session_id"] == "explicit-override"
     finally:
         _reset_session_env()
+
+
+@pytest.mark.asyncio
+async def test_pipeline_identity_does_not_latch_agent_env(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Resolving pipeline identity must never touch CORTEX_SESSION_ID.
+
+    Regression: the resolver used to latch the project-global marker id into
+    CORTEX_SESSION_ID, fusing every concurrent MCP server process into one
+    agent identity — sibling sessions then overwrote each other's registry
+    entry and list_concurrent_sessions() excluded it for everyone.
+    """
+    _reset_session_env()
+    _ = os.environ.pop(_AGENT_ENV_KEY, None)
+    patch_pipeline_handoff_project_root(monkeypatch, tmp_path)
+    try:
+        init_r = json.loads(
+            await pipeline_handoff(operation="init", pipeline="implement")
+        )
+        assert init_r["session_id"]
+        assert os.environ.get(_ENV_KEY) == init_r["session_id"]
+        # Agent identity (if anything minted one this process) must never be
+        # the pipeline id — that fusion was the sibling-invisibility bug.
+        assert os.environ.get(_AGENT_ENV_KEY) != init_r["session_id"]
+    finally:
+        _reset_session_env()
+        _ = os.environ.pop(_AGENT_ENV_KEY, None)

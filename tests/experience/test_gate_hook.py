@@ -38,7 +38,7 @@ async def test_record_gate_result_attaches_fitness_node(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     # Arrange
-    monkeypatch.setenv("CORTEX_SESSION_ID", "gatesess")
+    monkeypatch.setenv("CORTEX_PIPELINE_SESSION_ID", "gatesess")
 
     # Act
     node_id = await record_gate_result(
@@ -59,7 +59,7 @@ async def test_record_gate_result_disabled_via_env(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     # Arrange
-    monkeypatch.setenv("CORTEX_SESSION_ID", "gatesess")
+    monkeypatch.setenv("CORTEX_PIPELINE_SESSION_ID", "gatesess")
     monkeypatch.setenv("CORTEX_EXPERIENCE_RECORDING", "0")
 
     # Act
