@@ -3,24 +3,30 @@
 
 **This file records completed work only.** For current status and upcoming work see [roadmap.md](roadmap.md).
 
+## Completed Work (2026-10-08)
+
+- ✅ **Sibling session registry visibility fixed** - COMPLETE (2026-10-08) - <!-- memory_type: status -->
+Agent identity (CORTEX_SESSION_ID, per-process) and pipeline identity (CORTEX_PIPELINE_SESSION_ID + marker, restart-durable) are now separate domains; registry mutations are atomic via read_modify_write_cache_json; session start auto-registers with heartbeat and stale entries (>24h) are hidden; deregister cleans file-state snapshots under the pipeline id. Two-process and 3-process barrier regressions cover visibility and lost updates.
+
+## Completed Work (2026-10-07)
+
+- **Summary (2026-10-07)** - 1 entries archived.
+
+## Completed Work (2026-10-06)
+
+- **Summary (2026-10-06)** - 4 entries archived.
+
+## Completed Work (2026-09-17)
+
+- **Summary (2026-09-17)** - 5 entries archived.
+
+## Completed Work (2026-09-16)
+
+- **Summary (2026-09-16)** - 2 entries archived.
+
 ## Completed Work (2026-09-08)
 
-- ✅ **Cortex Project Review and Improvement Recommendations 2026-09-08 [reviews/review-cortex-project-review-and-improvement-recommendations-2026-09-08-2026-09-08.md]** - COMPLETE (2026-09-08) - [Cortex Project Review and Improvement Recommendations 2026-09-08](reviews/review-cortex-project-review-and-improvement-recommendations-2026-09-08-2026-09-08.md) — Review report for Cortex Project Review and Improvement Recommendations 2026-09-08 (2026-09-08); key findings summarized.
-
-- ✅ **Project Review Remediation: Owned-File Quality Scope (PARTIAL)** - COMPLETE (2026-09-08) - <!-- memory_type: preference -->
-
-- ✅ **Owned-File Quality Scope Session Analysis 2026-09-08 [analyses/analysis-owned-file-quality-scope-session-analysis-2026-09-08-2026-09-08.md]** - COMPLETE (2026-09-08) - [Owned-File Quality Scope Session Analysis 2026-09-08](analyses/analysis-owned-file-quality-scope-session-analysis-2026-09-08-2026-09-08.md) — Session analysis for Owned-File Quality Scope Session Analysis 2026-09-08 (2026-09-08); decisions and follow-ups recorded.
-
-- ✅ **Project review remediation Step 2 — snapshot safety** - COMPLETE (2026-09-08) - Snapshot/restore path containment and recovery now have 84 synthetic regression cases; reflection handler matching has eight added cases. Fresh full quality/reflection gates passed with 7,863 tests, four skipped, and 91.48% coverage. Next: Step 3 historical-read containment; plan remains PARTIAL.
-
-- ✅ **Project review remediation Step 3 — historical-read scope** - COMPLETE (2026-09-08) - Canonical memory-bank Markdown paths and fixed WAL log paths are validated before reads, with late content-path revalidation. Missing-file and reverse-delta semantics remain intact. Fresh quality/reflection gates passed with 7,909 tests, four skipped, and 91.49% coverage. Next: Step 4 shared-rule delivery; plan remains PARTIAL.
-
-- ✅ **Project review remediation Step 4 complete; Step 5 next** - COMPLETE (2026-09-08) - PARTIAL plan: Steps 1–4 complete and Steps 5–9 PENDING. Shared generic/general rules now survive exclusive categorization and serialization; merge identity preserves local override precedence and distinct relative paths. Public counts and tokens match delivered rules, with separate governance accounting. Twenty-one integration cases exercise real loading, budgets, overrides, all category/source combinations, and actual resource text. Fresh gate: 7,930 passed, four skipped, 91.49% coverage; reflection approved with reviewed advisories. Live rules proof: one shared rule, 702 delivered tokens, byte-identical consecutive responses. All 49 fingerprinted vendor/lock files unchanged. Next work is Step 5 recoverable/idempotent multi-file plan completion. No commit or push.
-
-- ✅ **Project review remediation Step 5 complete** - COMPLETE (2026-09-08) - Completion is now consistent, idempotent, and recoverable through prevalidation, a bounded typed operation record, one cross-process lock, expected-hash atomic writes, WAL preservation, canonical DONE metadata, exact retry semantics, and conflict-aware rollback/recovery. The fresh Cortex gate passed all checks; 38 focused cases cover success and failure boundaries. The plan remains PARTIAL with Steps 6–9 pending. Next: Step 6, correct actionable plan graphs and repair historical metadata.
-
-- ✅ **Project review remediation Step 6 complete** - COMPLETE (2026-09-08) - Actionable graphs now share archive-aware unique discovery and preserve manual/custom metadata intent. Thirteen backed-up historical status repairs were evidence-based, status-only, and idempotent. Fresh quality gate passed with zero errors/warnings; graph/context/session agree on one READY plan. Steps 7–9 remain PENDING; next is Step 7. Repair evidence and snapshot reference are retained in the remediation plan.
-Step 1 is complete: structural and Markdown checks share a narrow validated installed-skill boundary, preserve source ownership through symlinks, and check all owned Markdown files in full gates. CI/local parity and link validation follow the same policy. Added 34 regression cases; a newly started Cortex MCP server passed the forced-fresh full quality gate. All 49 fingerprinted package/lock files remained unchanged. Plan project-review-remediation-2026-09-08 remains PENDING for Steps 2–9.
+- **Summary (2026-09-08)** - 8 entries archived.
 
 ## Completed Work (2026-09-05)
 

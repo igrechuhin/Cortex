@@ -86,15 +86,22 @@ def _find_run(
     pipeline: str,
     ttl: float,
     now: datetime | None,
+    excluded_owners: frozenset[str],
 ) -> IncompleteRun | None:
-    """Prefer the current session's run; fall back to the freshest match."""
+    """Prefer the current session's run; fall back to the freshest match.
+
+    # AI: the fallback skips runs owned by an excluded owner (a live
+    # sibling connection, per the run-ownership registry). Falling back to
+    *any* matching run previously let ``resume`` attach a live sibling's
+    window and interleave two pipelines into one run.
+    """
     runs = core.incomplete_runs(ttl, now)
     own_id = experience_session_id(session_id, pipeline)
     for run in runs:
         if run.session_id == own_id:
             return run
     for run in runs:
-        if run.pipeline == pipeline:
+        if run.pipeline == pipeline and run.owner not in excluded_owners:
             return run
     return None
 
@@ -123,7 +130,8 @@ def _handoff_completed_phases(handoff_dir: Path) -> list[str]:
     return sorted(completed)
 
 
-def _not_resumable(pipeline: str, reason: str) -> ResumePlan:
+def not_resumable(pipeline: str, reason: str) -> ResumePlan:
+    """A non-resumable plan carrying the explanatory reason."""
     return ResumePlan(resumable=False, reason=reason, pipeline=pipeline)
 
 
@@ -142,7 +150,7 @@ def _plan_from_run(
 ) -> ResumePlan:
     view = core.frontier(run.session_id)
     if view is None:
-        return _not_resumable(pipeline, "run window is empty; start fresh")
+        return not_resumable(pipeline, "run window is empty; start fresh")
     owner = run.owner or ""
     session_root = get_cortex_path(project_root, CortexResourceType.SESSION)
     handoff_dir = session_root / owner / pipeline
@@ -169,25 +177,29 @@ def build_resume_plan(
     pipeline: str,
     ttl_seconds: float | None = None,
     now: datetime | None = None,
+    excluded_owners: frozenset[str] | None = None,
 ) -> ResumePlan:
     """Resume plan for a pipeline: completed phases to skip and the frontier.
 
     Stale runs are closed as abandoned before matching, so expired runs are
     never offered. Phases listed in ``completed_phases`` must not run again;
-    execution resumes at the next phase after them.
+    execution resumes at the next phase after them. ``excluded_owners``
+    lists pipeline run ids whose owner processes are still alive (live
+    sibling connections); such runs are never attached as a fallback match.
     """
     if not experience_db_path(project_root).exists():
-        return _not_resumable(pipeline, "no experience store; start fresh")
+        return not_resumable(pipeline, "no experience store; start fresh")
     ttl = ttl_seconds if ttl_seconds is not None else resume_ttl_seconds()
+    excluded = excluded_owners if excluded_owners is not None else frozenset[str]()
     try:
         core = ExperienceStoreCore(experience_db_path(project_root))
         _ = core.mark_abandoned_runs(ttl, now)
-        run = _find_run(core, session_id, pipeline, ttl, now)
+        run = _find_run(core, session_id, pipeline, ttl, now, excluded)
     except Exception as exc:  # noqa: BLE001
         logger.warning("resume plan failed (best-effort): %s", exc)
-        return _not_resumable(pipeline, f"experience store unreadable: {exc}")
+        return not_resumable(pipeline, f"experience store unreadable: {exc}")
     if run is None:
-        return _not_resumable(
+        return not_resumable(
             pipeline, f"no incomplete run recorded for pipeline '{pipeline}'"
         )
     return _plan_from_run(core, project_root, run, pipeline)

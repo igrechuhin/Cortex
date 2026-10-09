@@ -15,6 +15,7 @@ from typing import cast
 import pytest
 
 from cortex.experience.recorder import record_phase_event
+from cortex.experience.resume import build_resume_plan
 from cortex.tools.session.pipeline_handoff_io import (
     op_clear,
     op_init,
@@ -174,3 +175,32 @@ def test_session_scan_survives_broken_store(tmp_path: Path, session_env: str) ->
 
     # Act / Assert: orientation never fails on a broken store.
     assert scan_incomplete_pipeline_entries(tmp_path) == []
+
+
+def test_resume_plan_skips_live_sibling_owned_runs(
+    tmp_path: Path, session_env: str
+) -> None:
+    # Arrange: another connection's incomplete run is the only fallback
+    # candidate; this session has no run of its own.
+    _ = record_phase_event(
+        tmp_path, "sibling-run", "implement", "code", "running", enabled=True
+    )
+
+    # Act: the sibling's owner is live, so it must be excluded.
+    excluded = build_resume_plan(
+        tmp_path,
+        session_env,
+        "implement",
+        excluded_owners=frozenset({"sibling-run"}),
+    )
+
+    # Assert: a live sibling's run is never attached as a fallback.
+    assert excluded.resumable is False
+    assert "no incomplete run" in excluded.reason
+
+    # Act (control): a dead-owned run remains a valid fallback.
+    fallback = build_resume_plan(tmp_path, session_env, "implement")
+
+    # Assert
+    assert fallback.resumable is True
+    assert fallback.session_id == "sibling-run"

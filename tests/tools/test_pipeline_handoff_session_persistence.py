@@ -9,10 +9,13 @@ call ran in a fresh process with no ``CORTEX_SESSION_ID``, minted a
 brand-new random id, and silently resolved to an empty pipeline directory —
 orphaning every phase already written under the old session id.
 
-The fix persists the session id to an on-disk marker
-(``.cortex/.session/.active-session.json``) so a fresh process recovers the
-same identity instead of diverging. See
-``cortex.tools.session.pipeline_handoff_session``.
+The fix records run ids in the on-disk ownership registry
+(``.cortex/.session/.pipeline-runs.json``): a process that lost its env id
+re-adopts its own run, and a restarted process adopts a dead-owned
+incomplete run instead of diverging. See
+``cortex.tools.session.pipeline_handoff_session`` and
+``tests/tools/test_pipeline_handoff_concurrent_runs.py`` for the
+concurrent-sibling cases.
 """
 
 import json

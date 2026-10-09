@@ -346,14 +346,22 @@ def scan_incomplete_pipeline_entries(project_root: Path) -> list[str]:
     """Merge handoff-file detection with experience-store frontier data.
 
     Entries are "{session}/{pipeline}" with ":{frontier_phase}" appended when
-    the experience store knows where the interrupted run stopped.
+    the experience store knows where the interrupted run stopped. Runs still
+    owned by a live sibling connection are omitted: the brief must not
+    invite this session to resume a run another process is driving.
     """
     from cortex.experience.resume import scan_incomplete_runs
+    from cortex.tools.session.pipeline_handoff_session import live_sibling_owner_ids
 
-    pipeline_ids = _scan_handoff_incomplete_ids(project_root)
+    live_owners = live_sibling_owner_ids(project_root)
+    pipeline_ids = {
+        entry
+        for entry in _scan_handoff_incomplete_ids(project_root)
+        if entry.split("/", 1)[0] not in live_owners
+    }
     frontier_phases: dict[str, str] = {}
     for run in scan_incomplete_runs(project_root):
-        if not run.owner:
+        if not run.owner or run.owner in live_owners:
             continue
         run_id = f"{run.owner}/{run.pipeline}"
         pipeline_ids.add(run_id)

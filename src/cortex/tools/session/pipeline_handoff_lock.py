@@ -23,6 +23,7 @@ from pathlib import Path
 
 _LOCK_TIMEOUT_SECONDS = 5.0
 _LOCK_POLL_INTERVAL_SECONDS = 0.05
+_CLAIM_LOCK_TIMEOUT_SECONDS = 5.0
 _STALE_LOCK_SECONDS = 180.0
 
 
@@ -85,3 +86,38 @@ def pipeline_state_lock(
                 lock_path.unlink()
             except OSError:
                 pass
+
+
+class PipelineClaimLockTimeout(Exception):
+    """Raised when a pipeline ownership claim could not acquire its lock."""
+
+
+@contextmanager
+def pipeline_claim_lock(
+    target_file: Path, timeout_seconds: float | None = None
+) -> Iterator[None]:
+    """Serialize ownership CLAIMS across threads/processes; fail closed.
+
+    # AI: unlike pipeline_state_lock (best-effort, which yields UNLOCKED on
+    # timeout because a stalled state write must never crash the
+    # orchestrator), an ownership claim that proceeds without the lock lets
+    # two timed-out claimants adopt the same dead-owned run — the exact
+    # shared-run-window bug per-connection run ids exist to prevent. A
+    # claim timeout therefore raises, and callers mint a fresh id instead.
+    Stale locks (abandoned >180s) are cleared by the same poll loop used by
+    pipeline_state_lock.
+    """
+    timeout = (
+        _CLAIM_LOCK_TIMEOUT_SECONDS if timeout_seconds is None else timeout_seconds
+    )
+    lock_path = _lock_path_for(target_file)
+    lock_path.parent.mkdir(parents=True, exist_ok=True)
+    if not _acquire_blocking(lock_path, timeout):
+        raise PipelineClaimLockTimeout(str(lock_path))
+    try:
+        yield
+    finally:
+        try:
+            lock_path.unlink()
+        except OSError:
+            pass

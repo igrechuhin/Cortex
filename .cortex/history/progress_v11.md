@@ -1,6 +1,44 @@
 <!-- memory_type: milestone -->
 # Progress Log
 
+## 2026-10-08
+
+- <!-- memory_type: milestone -->
+Fixed sibling-session registry invisibility: split agent identity (CORTEX_SESSION_ID, per-process) from pipeline identity (CORTEX_PIPELINE_SESSION_ID + .active-session.json marker, restart-durable). Previously the pipeline resolver latched the project-global marker id into CORTEX_SESSION_ID, so every concurrent MCP server process in a project converged on one agent id: siblings overwrote each other's sessions/active.json entry, list_concurrent_sessions(exclude_current=True) hid it from everyone, and any sibling's deregister wiped the shared slot. session start now auto-registers (heartbeat upsert that preserves an explicit register's task/role) and listings hide entries stale >24h. pipeline_state and pre_commit_config resolve the pipeline id via the resolver with mint=False.
+
+## 2026-10-07
+
+- <!-- memory_type: problem -->
+- <!-- memory_type: status -->
+26-10-07-19-58 Commit verification: fresh native quality gate passed 7,940 tests with 91.75% coverage and zero reported errors/warnings. Changed-file structural/build subprocesses and full-repository size scans passed for applicable languages. The operator explicitly exempted the inapplicable Swift-only DocC subprocess after its missing Sources failure; no Swift sources or dummy gate were added. Staged wiki ingest skipped tests/README.md as unmapped and returned no errors or generated files. Active context now records the CI repair, preserved guards and real MCP behavior proof. Roadmap intentionally unchanged: this scoped repair has no pending plan.
+CI repair 26-10-07-19-40: Actions run 37651579407 failed Pyright because document-patch fixture **overrides could bind typed context parameters. Made fixture inputs positional-only, preserved malformed-request coverage. Repaired downstream logical-function limits by extracting plan execution validation/locked apply and CLI parameter/payload/response handling; relocated document-patch dispatch import. Existing guards, APIs and fail-closed workflow unchanged. Exact CI suite: 7,940 passed, four skipped, 91.75% coverage. Public smoke: four passed with JUnit acceptance; real patch/dispatch and fresh stdio CLI preview/apply/stale refusal smokes passed. Black, Ruff, complete type checks, file/function limits, spelling, Markdown lint/links and full eval (10/10) passed locally; baseline comparison unavailable. Updated tests README with fixture boundary and complete structural gate scope. No commit, push or remote workflow rerun.
+
+## 2026-10-06
+
+- <!-- memory_type: status -->
+- <!-- memory_type: milestone -->
+- <!-- memory_type: status -->
+- <!-- memory_type: preference -->
+- <!-- memory_type: status -->
+26-10-06-09-30 [MEASURED] Repaired GitHub Actions run #803 test setup: removed offline mode from the packaged artifact-migration launcher while retaining current-checkout package refresh; isolated PATH lookup in both PHP missing-toolchain tests. Production adapter fallback unchanged. CI-parity command with uv 0.12.23 passed 7,842 tests, 4 existing skips, coverage 91.72% (artifact://160). Focused PHP tests passed with discoverable ambient tools, and production PATH fallback was exercised separately. Black, Ruff, and Pyright passed for the two edited test files. No commit, push, or workflow rerun.
+Verified report-reference cleanup for commit: fresh full quality gate passed 7,842 tests with 91.72% coverage and zero errors; applicable CI structural subprocesses passed. Staged wiki ingest updated two public guides and reported all six current/archived outputs, while skipping the canonical analysis and reference page to avoid recreating report-body copies.
+Removed full-body wiki duplication for review/session-analysis filing: navigation pages link to exact canonical outputs, including independently colliding names. The specified post-prompt report remains byte-identical; its wiki page is a reference only. Public filing/search and Recent Artifacts/L3 smoke passed, with 72 focused tests and structural/lint/type checks green. No historical backfill, commit, or push.
+Fixed staged wiki publication output completeness after the final gate exposed a stale source-text assertion against immutable migration-guide history. Stable-path ingest reports newly archived source snapshots and changed catalog paths. Removed three obsolete wording tests and added actual write-set/preserved-history regression proof. Sixty-three focused consumer tests passed; isolated actual-doc smoke verified 108 resolving catalog pages, replay nonmutation, and historical-byte preservation.
+Implemented canonical report storage and guarded legacy artifact relocation across filing, metadata, search/context, snapshots, and lint. Verified preview nonmutation, 18-report apply, link rebasing, byte preservation, empty-root removal, and receipt replay in an isolated temporary workspace. Full suite: 7,842 passed, four skipped; 91.71% coverage. Resolved pre-existing Synapse formatting, unused prompt helper, and timeout-guide anchors; public gate success/failure smoke passed. Swift-only DocC gate explicitly exempted by operator for this Python project; all applicable structural subprocesses passed. Five staged source documents ingested into ten wiki pages without errors.
+
+## 2026-09-17
+
+- Completed analysis serialization investigation: real nested models serialize through cortex://analysis, rule inventory counts actual rules, isolated workspaces remain separate, quality/docs gates passed, and original routing was preserved.
+- **Resolve quality-gate MCP transport timeout** - COMPLETE. Public gate returns resumable handles after 20 seconds; same-worker resumption, stale-cache rejection, terminal failure preservation and auto-fix exclusion verified through focused tests and real MCP calls. 8,089 tests passed; 91.60% overall coverage.
+- Completed Cortex Claude/Codex plugin packaging and lifecycle hooks with user-approved best-effort deduplication; 48 focused regressions passed, actual-host evidence retained, no runtime changes for acceptance relaxation.
+- Completed existing plan registration updates: in-place changes, idempotent replay, atomic failed-write preservation; 123 focused and 8,104 full-suite tests passed.
+- Completed investigate-autofix-mcp-transport-timeout: bounded resumable autofix, durable finalization and error recovery, fix/quality mutual exclusion; 42 focused tests and real delayed MCP smoke passed. Evidence: .cortex/.session/autofix-transport-evidence.json.
+
+## 2026-09-16
+
+- **Investigate Cortex quality gate MCP transport timeout** - COMPLETE. Recovered detached outcome and verified a 900-second client timeout returns an authoritative gate result beyond 30 seconds. No transport code change or duplicate worker; remediation gate failures remain explicit.
+- **Remediate Project Review Findings: Safety, Rules, Planning, Context, and Verification** - COMPLETE. All seven findings have regression evidence. Complete context accounting and bounded graph previews preserve required content; real public MCP workflows and CI smoke/slow gates verify outcomes. Fresh quality gate: 8,042 passed, four skipped, 91.56% coverage; nine public workflows and 21 slow tests passed; docs gate and inline no-gaps review passed. No commit or push.
+
 ## 2026-09-08
 
 - <!-- memory_type: milestone -->

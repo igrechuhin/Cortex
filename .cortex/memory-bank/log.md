@@ -1,29 +1,5 @@
 # Cortex Operations Log
 
-## [2026-08-31T09:36] plan | Created plan: Demo Plan ·4
-
-## [2026-08-31T09:36] plan | Created plan: Demo Plan ·5
-
-## [2026-08-31T09:36] plan | Created plan: Mini ·3
-
-## [2026-08-31T09:36] plan | Created plan: Mini ·4
-
-## [2026-08-31T09:36] plan | Created plan: Demo Plan ·6
-
-## [2026-08-31T09:36] plan | Created plan: Smoke Test Plan
-
-## [2026-08-31T09:37] lint | Quality gate failed
-
-## [2026-08-31T09:38] fix | Autofix completed
-
-status=success; changed_files=None
-
-## [2026-08-31T09:39] plan | Created plan: Test Plan
-
-## [2026-08-31T09:39] plan | Created plan: Smoke Test Plan
-
-## [2026-08-31T09:39] plan | Created plan: Demo Plan
-
 ## [2026-08-31T09:39] plan | Created plan: Demo Plan ·2
 
 ## [2026-08-31T09:39] plan | Created plan: Mini
@@ -2085,3 +2061,29 @@ status=success; changed_files=None
 Root cause: pipeline_handoff_session.get_session_id latched the shared .active-session.json marker id into CORTEX_SESSION_ID — the same env var session_logger treats as per-process agent identity. All sibling MCP processes in a project fused into one registry key. Fix: dedicated CORTEX_PIPELINE_SESSION_ID env key; mint=False mode for passive checks (pipeline_state, pre_commit_config); session-start heartbeat upsert plus 24h stale filter in list_concurrent_sessions. Verified: two-process smoke sees sibling task; full suite 7963 passed.
 
 ## [2026-10-08T13:33] lint | Quality gate failed
+
+## [2026-10-08T13:49] plan | Created plan: Per-connection pipeline run ids for concurrent cortex pipelines
+
+## [2026-10-09T09:26] plan | Completed plan: Per-connection pipeline run ids for concurrent cortex pipelines
+
+Pipeline run ids are now per-connection: an ownership registry (.cortex/.session/.pipeline-runs.json mapping run_id to owners[{pid,host}]) gates guarded adoption of dead-owned incomplete runs (TTL-fresh, no live foreign owner, experience-store incomplete, pipeline-scoped); ownership claims use a fail-closed lock (pipeline_claim_lock + PipelineClaimLockTimeout) and the full identity-resolution transaction is serialized by a process-local threading lock; unregistrable inherited ids switch to a fresh mint before any write; op_resume binds identity to the reported owner and never reports a run the process is not latched to (including legacy no-registry runs); the session brief hides live-sibling runs; init accepts an explicit resume_run_id under the same adoption guards. 22 regression tests (21 in tests/tools/test_pipeline_handoff_concurrent_runs.py, including real-subprocess concurrent init, 4-way contended adoption with a single winner, two-dead-run disambiguation, whole-op lock-refusal one-identity, and an 8-thread barrier race); focused suites 100 passed / 0 failed, pyright clean.
+
+## [2026-10-09T09:26] fix | Autofix completed
+
+status=success; changed_files=None
+
+## [2026-10-09T09:27] lint | Quality gate passed
+
+## [2026-10-09T09:52] lint | Quality gate failed
+
+## [2026-10-09T10:01] lint | Quality gate passed
+
+## [2026-10-09T10:09] lint | Quality gate failed
+
+## [2026-10-09T10:14] lint | Quality gate failed
+
+## [2026-10-09T10:18] lint | Quality gate failed
+
+## [2026-10-09T10:22] lint | Quality gate passed
+
+## [2026-10-09T10:39] lint | Quality gate passed

@@ -3,6 +3,10 @@
 
 **This file records completed work only.** For current status and upcoming work see [roadmap.md](roadmap.md).
 
+## Completed Work (2026-10-09)
+
+- ✅ **Per-connection pipeline run ids for concurrent cortex pipelines** - COMPLETE (2026-10-09) - Pipeline run ids are now per-connection: an ownership registry (.cortex/.session/.pipeline-runs.json mapping run_id to owners[{pid,host}]) gates guarded adoption of dead-owned incomplete runs (TTL-fresh, no live foreign owner, experience-store incomplete, pipeline-scoped); ownership claims use a fail-closed lock (pipeline_claim_lock + PipelineClaimLockTimeout) and the full identity-resolution transaction is serialized by a process-local threading lock; unregistrable inherited ids switch to a fresh mint before any write; op_resume binds identity to the reported owner and never reports a run the process is not latched to (including legacy no-registry runs); the session brief hides live-sibling runs; init accepts an explicit resume_run_id under the same adoption guards. 22 regression tests (21 in tests/tools/test_pipeline_handoff_concurrent_runs.py, including real-subprocess concurrent init, 4-way contended adoption with a single winner, two-dead-run disambiguation, whole-op lock-refusal one-identity, and an 8-thread barrier race); focused suites 100 passed / 0 failed, pyright clean.
+
 ## Completed Work (2026-10-08)
 
 - ✅ **Sibling session registry visibility fixed** - COMPLETE (2026-10-08) - <!-- memory_type: status -->
@@ -10,58 +14,23 @@ Agent identity (CORTEX_SESSION_ID, per-process) and pipeline identity (CORTEX_PI
 
 ## Completed Work (2026-10-07)
 
-- ✅ **Restore Code Quality CI type and structural gates** - COMPLETE (2026-10-07) - <!-- memory_type: milestone -->
-Fixed Actions run 37651579407: positional-only document-patch fixture inputs prevent object-valued request overrides from binding typed context arguments. Extracted plan execution validation/locked mutation and real MCP CLI preparation/response checks; relocated the patch dispatcher import. Guards, raw-byte preservation, public APIs and fail-closed CI remain unchanged. Verified real temporary-workspace patch/dispatch and fresh stdio CLI preview/apply/stale refusal, four public workflow smoke tests with JUnit acceptance, and 7,940 full-suite tests with four skips and 91.75% coverage. Native quality gate and applicable CI structural subprocesses passed. Operator explicitly exempted only the Swift DocC check because this Python repository has no Sources directory or DocC workflow step.
+- **Summary (2026-10-07)** - 1 entries archived.
 
 ## Completed Work (2026-10-06)
 
-- ✅ **Canonical report storage and guarded artifact migration** - COMPLETE (2026-10-06) - <!-- memory_type: status -->
-
-- ✅ **Complete staged wiki publication paths** - COMPLETE (2026-10-06) - <!-- memory_type: status -->
-
-- ✅ **Commit Pipeline Post-Prompt Analysis 2026-10-06T08-32 [../analyses/analysis-commit-pipeline-post-prompt-analysis-2026-10-06t08-32-2026-10-06.md]** - COMPLETE (2026-10-06) - [Commit Pipeline Post-Prompt Analysis 2026-10-06T08-32](../analyses/analysis-commit-pipeline-post-prompt-analysis-2026-10-06t08-32-2026-10-06.md) — Session analysis for Commit Pipeline Post-Prompt Analysis 2026-10-06T08-32 (2026-10-06); decisions and follow-ups recorded.
-
-- ✅ **Canonical report references instead of wiki body copies** - COMPLETE (2026-10-06) - <!-- memory_type: status -->
-Review and session-analysis filing now keeps full bodies only in canonical report roots and generates metadata/link-only wiki navigation pages. Links use the actual deduplicated canonical path, so independently allocated wiki filenames cannot redirect to the wrong report. Converted only the named post-prompt wiki page; its canonical report SHA-256 remained unchanged. Verified 72 focused tests, actual public filing/search collision smoke, canonical-only detail retrieval, Recent Artifacts/L3 links, and main-process analysis/review filing smoke. Source structural limits and changed-file lint/type checks passed. Existing unrelated historical mirrors remain untouched; no commit or push.
-Final-gate investigation found an obsolete wording assertion against immutable wiki history and a real publication defect: stable-path ingest omitted newly archived source snapshots and changed catalog paths from its reported writes. Removed the three source-text assertions; ingest now reports every generated path so the bridge can stage it. Consumer tests: 48 plus 15 passed. Isolated real-doc/wiki smoke proved complete write reporting, all 108 catalog pages resolving, no-write replay, and byte-preserved historical snapshots. Existing migration and historical payloads were not rewritten.
-Reports file into .cortex/reviews, .cortex/analyses, and .cortex/queries; indexing, search, Recent Artifacts, snapshots, and lint share canonical artifact paths. Legacy report migration is preview-first, digest-approved, recoverable, and idempotent, preserving historical provenance and wiki mirrors. Temporary-workspace smoke migrated 18 reports, rewrote an incoming link, preserved payload bytes, and replayed without mutation. Quality gate passed; measured full run: 7,842 tests, 91.71% coverage. Python structural parity passed; operator explicitly exempted inapplicable Swift DocC check. Gate repairs remain a separate commit scope.
+- **Summary (2026-10-06)** - 4 entries archived.
 
 ## Completed Work (2026-09-17)
 
-- ✅ **Investigate usage-pattern analysis JSON serialization failure** - COMPLETE (2026-09-17) - Fixed the public usage-pattern response boundary with Pydantic JSON-mode dumps for co-access, task, and unused-file models; corrected rule totals to count rules rather than categories. Real FastMCP nonempty resource smoke and workspace-isolation regressions passed. Historical zero inventory totals were not attributed to an unproven routing defect. Eight quality checks passed: 8,082 tests, four skips, 91.61% coverage; docs gate passed. Original 398-byte routing configuration remained unchanged.
-
-- ✅ **Resolve quality-gate MCP transport timeout** - COMPLETE (2026-09-17) - Bounded public Phase A waits to 20 seconds with resumable existing job handles, worker-owned pending metadata, preserved terminal failures, and live-worker mutation guards. Fresh MCP requests met the 30-second deadline; 66 focused tests and 8,089 full-suite tests passed, with 91.60% overall coverage. Synchronous preflight semantics preserved; consumer guidance updated.
-
-- ✅ **Package Cortex commands and thin lifecycle hooks as a plugin** - COMPLETE (2026-09-17) - Completed Claude/Codex plugin packaging after explicit user approval of cheap best-effort deduplication instead of strict exactly-once semantics. Existing handoff receipts and fingerprints retained: same-turn Codex compactions may collapse, changed Claude transcript metadata may repeat writes, and startup suppression is process-local. No product code or state store added for this acceptance change. Native workflows, startup, pre-compaction persistence, fresh-process resume, visible nonblocking failure, coexistence, update and uninstall passed in actual hosts. Focused verification rerun: 48 passed; prior unchanged-code quality proof: 8,100 passed, four skipped, 91.71% coverage. Guide: docs/guides/plugins.md; native evidence: .cortex/.session/claude-plugin-native-evidence.json. Codex local distribution must remain at its generated path.
-
-- ✅ **Repair existing plan registration updates** - COMPLETE (2026-09-17) - Existing canonical plan registrations update in place and unchanged replay succeeds instead of returning a false missing-section error. Pathless replay preserves section headers. Atomic same-directory roadmap replacement preserves original registration on partial-write or replacement failure and retains permissions. Unfinished-plan removal guards remain unchanged. Added six behavior regressions; removed two obsolete expectations. 123 focused tests and 8,104 full-suite tests passed, four skips; all eight quality checks passed, 91.73% overall and 100% changed-statement coverage. Autofix/quality transport deadlines required detached-result recovery; separate ASAP autofix timeout investigation registered. Evidence: .cortex/.session/plan-registration-repair-evidence.json.
-
-- ✅ **Investigate autofix MCP transport timeout** - COMPLETE (2026-09-17) - Autofix now returns within a 20-second bounded wait, resumes durable jobs and delivers retained terminal outcomes. All final mutations run in the detached worker; live fix and quality jobs prevent conflicting launches. Recovered original timeout evidence and documented MCP reload requirements. Verification: 42 focused tests; real stdio MCP smoke with a 30-second deadline, 64.871-second worker, same PID across server reconnect and quality-gate contention.
+- **Summary (2026-09-17)** - 5 entries archived.
 
 ## Completed Work (2026-09-16)
 
-- ✅ **Investigate Cortex quality gate MCP transport timeout** - COMPLETE (2026-09-16) - Recovered the original detached worker: it completed in 109.14 seconds after the client timed out at 30 seconds. A fresh FastMCP client with a 900-second request timeout and unchanged 600-second worker timeout returned the full quality failure and successful docs result in 95.10 seconds, with no duplicate worker. The request deadline is independent of worker timeout; no server heartbeat change was needed. Remediation continues against actual gate diagnostics.
-
-- ✅ **Remediate Project Review Findings: Safety, Rules, Planning, Context, and Verification** - COMPLETE (2026-09-16) - Completed Steps 7–9 after the existing safety/rules/lifecycle remediation: complete serialized context budgets with mandatory-content preservation and bounded graph previews; real public MCP lifecycle, identity, and gate pass/failure tests; explicit PR smoke and scheduled/manual slow CI with fail-closed JUnit checks. Fixed negotiated client identity extraction and forced-run fingerprint invalidation. Inline review: no_gaps. Fresh quality gate: 8,042 passed, four skipped, 91.56% coverage, zero reported errors/warnings. Nine public workflows and all 21 slow tests passed; docs gate passed. Remote CI not run; no commit or push.
+- **Summary (2026-09-16)** - 2 entries archived.
 
 ## Completed Work (2026-09-08)
 
-- ✅ **Cortex Project Review and Improvement Recommendations 2026-09-08 [reviews/review-cortex-project-review-and-improvement-recommendations-2026-09-08-2026-09-08.md]** - COMPLETE (2026-09-08) - [Cortex Project Review and Improvement Recommendations 2026-09-08](reviews/review-cortex-project-review-and-improvement-recommendations-2026-09-08-2026-09-08.md) — Review report for Cortex Project Review and Improvement Recommendations 2026-09-08 (2026-09-08); key findings summarized.
-
-- ✅ **Project Review Remediation: Owned-File Quality Scope (PARTIAL)** - COMPLETE (2026-09-08) - <!-- memory_type: preference -->
-
-- ✅ **Owned-File Quality Scope Session Analysis 2026-09-08 [analyses/analysis-owned-file-quality-scope-session-analysis-2026-09-08-2026-09-08.md]** - COMPLETE (2026-09-08) - [Owned-File Quality Scope Session Analysis 2026-09-08](analyses/analysis-owned-file-quality-scope-session-analysis-2026-09-08-2026-09-08.md) — Session analysis for Owned-File Quality Scope Session Analysis 2026-09-08 (2026-09-08); decisions and follow-ups recorded.
-
-- ✅ **Project review remediation Step 2 — snapshot safety** - COMPLETE (2026-09-08) - Snapshot/restore path containment and recovery now have 84 synthetic regression cases; reflection handler matching has eight added cases. Fresh full quality/reflection gates passed with 7,863 tests, four skipped, and 91.48% coverage. Next: Step 3 historical-read containment; plan remains PARTIAL.
-
-- ✅ **Project review remediation Step 3 — historical-read scope** - COMPLETE (2026-09-08) - Canonical memory-bank Markdown paths and fixed WAL log paths are validated before reads, with late content-path revalidation. Missing-file and reverse-delta semantics remain intact. Fresh quality/reflection gates passed with 7,909 tests, four skipped, and 91.49% coverage. Next: Step 4 shared-rule delivery; plan remains PARTIAL.
-
-- ✅ **Project review remediation Step 4 complete; Step 5 next** - COMPLETE (2026-09-08) - PARTIAL plan: Steps 1–4 complete and Steps 5–9 PENDING. Shared generic/general rules now survive exclusive categorization and serialization; merge identity preserves local override precedence and distinct relative paths. Public counts and tokens match delivered rules, with separate governance accounting. Twenty-one integration cases exercise real loading, budgets, overrides, all category/source combinations, and actual resource text. Fresh gate: 7,930 passed, four skipped, 91.49% coverage; reflection approved with reviewed advisories. Live rules proof: one shared rule, 702 delivered tokens, byte-identical consecutive responses. All 49 fingerprinted vendor/lock files unchanged. Next work is Step 5 recoverable/idempotent multi-file plan completion. No commit or push.
-
-- ✅ **Project review remediation Step 5 complete** - COMPLETE (2026-09-08) - Completion is now consistent, idempotent, and recoverable through prevalidation, a bounded typed operation record, one cross-process lock, expected-hash atomic writes, WAL preservation, canonical DONE metadata, exact retry semantics, and conflict-aware rollback/recovery. The fresh Cortex gate passed all checks; 38 focused cases cover success and failure boundaries. The plan remains PARTIAL with Steps 6–9 pending. Next: Step 6, correct actionable plan graphs and repair historical metadata.
-
-- ✅ **Project review remediation Step 6 complete** - COMPLETE (2026-09-08) - Actionable graphs now share archive-aware unique discovery and preserve manual/custom metadata intent. Thirteen backed-up historical status repairs were evidence-based, status-only, and idempotent. Fresh quality gate passed with zero errors/warnings; graph/context/session agree on one READY plan. Steps 7–9 remain PENDING; next is Step 7. Repair evidence and snapshot reference are retained in the remediation plan.
-Step 1 is complete: structural and Markdown checks share a narrow validated installed-skill boundary, preserve source ownership through symlinks, and check all owned Markdown files in full gates. CI/local parity and link validation follow the same policy. Added 34 regression cases; a newly started Cortex MCP server passed the forced-fresh full quality gate. All 49 fingerprinted package/lock files remained unchanged. Plan project-review-remediation-2026-09-08 remains PENDING for Steps 2–9.
+- **Summary (2026-09-08)** - 8 entries archived.
 
 ## Completed Work (2026-09-05)
 

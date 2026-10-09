@@ -1,6 +1,10 @@
 <!-- memory_type: milestone -->
 # Progress Log
 
+## 2026-10-09
+
+- **Per-connection pipeline run ids for concurrent cortex pipelines** - COMPLETE. Concurrent /cortex pipelines no longer share one durable run id: each connection owns its run via the ownership registry (.cortex/.session/.pipeline-runs.json), adoption of dead-owned incomplete runs is guarded (TTL, live-owner cross-check, store incompleteness, pipeline scoping) and fail-closed under lock contention, resume never attaches or reports a live sibling's or unlatched run, and init supports explicit resume_run_id. 22 regression tests; focused suites 100 passed / 0 failed.
+
 ## 2026-10-08
 
 - <!-- memory_type: milestone -->

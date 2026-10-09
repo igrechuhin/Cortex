@@ -36,9 +36,19 @@ class PhaseStatus(StrEnum):
 # ---------------------------------------------------------------------------
 
 
-def pipeline_dir(project_root: Path, pipeline: str) -> Path:
-    """Return .cortex/.session/{session_id}/{pipeline}/."""
-    session_id = get_session_id(project_root)
+def pipeline_dir(
+    project_root: Path, pipeline: str, *, prefer_run_id: str | None = None
+) -> Path:
+    """Return .cortex/.session/{session_id}/{pipeline}/.
+
+    # AI: resolution is pipeline-scoped so adoption can never latch a run
+    # of another pipeline (e.g. resume(implement) grabbing a fresher dead
+    # quality run); prefer_run_id threads init's explicit resume override
+    # through the same guarded resolution.
+    """
+    session_id = get_session_id(
+        project_root, pipeline=pipeline, prefer_run_id=prefer_run_id
+    )
     base = get_cortex_path(project_root, CortexResourceType.SESSION)
     return base / session_id / pipeline
 
@@ -120,7 +130,13 @@ def op_init(project_root: Path, pipeline: str, data: str | None) -> str:
     # pipeline.json gets a fresh phases={} state; an existing, non-stale
     # manifest is loaded and preserved, with any init `data` merged on top.
     """
-    pdir = pipeline_dir(project_root, pipeline)
+    extra = _parse_init_data(data) if data else {}
+    # AI: resume_run_id is an explicit resume override for identity
+    # resolution, not pipeline state — extract it before the manifest
+    # merge so it never pollutes pipeline.json.
+    resume_run_id = extra.pop("resume_run_id", None)
+    prefer = resume_run_id if isinstance(resume_run_id, str) and resume_run_id else None
+    pdir = pipeline_dir(project_root, pipeline, prefer_run_id=prefer)
     state_file = state_path(pdir)
     if state_file.exists() and _is_pipeline_stale(state_file):
         ttl_hours = PIPELINE_TTL_SECONDS // 3600
@@ -134,7 +150,6 @@ def op_init(project_root: Path, pipeline: str, data: str | None) -> str:
         _record_run_end_best_effort(project_root, pipeline, "abandoned")
         shutil.rmtree(pdir, ignore_errors=True)
     pdir.mkdir(parents=True, exist_ok=True)
-    extra = _parse_init_data(data) if data else {}
     # AI: lock + atomic replace close the same race this whole fix targets:
     # a concurrent _update_pipeline_state_file read-modify-write on this
     # same file must never interleave with this one (lock), and no reader
@@ -147,7 +162,7 @@ def op_init(project_root: Path, pipeline: str, data: str | None) -> str:
         {
             "status": "ok",
             "pipeline_dir": str(pdir),
-            "session_id": get_session_id(project_root),
+            "session_id": get_session_id(project_root, pipeline=pipeline),
         },
         indent=2,
     )
@@ -234,7 +249,7 @@ def load_or_create_state(
         except (OSError, json.JSONDecodeError):
             pass
     return {
-        "session_id": get_session_id(project_root),
+        "session_id": get_session_id(project_root, pipeline=pipeline),
         "pipeline": pipeline,
         "started_at": now_iso(),
         "phases": {},
