@@ -61,6 +61,23 @@ def _terminal_envelope(outcome: str) -> dict[str, object]:
     }
 
 
+def _delivered_envelope() -> dict[str, object]:
+    """A completed envelope that was already delivered to a prior caller."""
+    return {
+        "status": "completed",
+        "started_at": time.time() - 300.0,
+        "completed_at": time.time() - 240.0,
+        "pid": None,
+        "quality_gate_pending": False,
+        "result": {
+            "status": "error",
+            "checks": [{"name": "tests", "output": "pre-fix violation list"}],
+            "results": {"tests": {"success": False}},
+        },
+        "markdown_result": {"status": "success", "files_with_errors": 0},
+    }
+
+
 def _patch_finalization(stack: ExitStack) -> tuple[AsyncMock, MagicMock]:
     module = "cortex.tools.execution.pre_commit_zero_arg_tools"
     feedback = stack.enter_context(
@@ -386,6 +403,96 @@ async def test_force_fresh_does_not_reuse_unmarked_completed_result(
 
     assert result["status"] == "running"
     assert result.get("preflight_passed") is not True
+    spawn.assert_called_once()
+    feedback.assert_not_awaited()
+    tracker.record_phase_a.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_plain_retry_serves_delivered_envelope_as_cached(
+    tmp_path: Path, bounded_gate: tuple[MagicMock, AsyncMock, MagicMock]
+) -> None:
+    """REV-2026-10-02-33: a plain retry must not re-serve a delivered completed
+    envelope as a fresh verdict.
+
+    Pre-fix failure mode: with force_fresh unset the old job's full completed
+    envelope (status error + violation list) was returned synchronously with
+    no new run and no provenance markers, indistinguishable from a fresh
+    verdict. The retry must either run fresh or label the cached copy with
+    the original job identity and timestamps.
+    """
+    spawn, _, _ = bounded_gate
+    envelope = _delivered_envelope()
+    result_file = _result_path(tmp_path)
+    _write_envelope(result_file, envelope)
+
+    with patch.object(
+        gate,
+        "_read_quality_gate_config",
+        return_value=(600, 0.9, False, {"force_fresh": False}),
+    ):
+        result = await asyncio.wait_for(gate.run_quality_gate(), timeout=0.5)
+
+    assert result["status"] == "error"
+    assert result["cached_result"] is True
+    assert result["cached_job_id"] == result_file.stem.removeprefix(
+        "pre_commit_result_"
+    )
+    assert result["cached_started_at"] == envelope["started_at"]
+    assert result["cached_completed_at"] == envelope["completed_at"]
+    expected_checks: list[object] = [
+        {"name": "tests", "output": "pre-fix violation list"}
+    ]
+    assert result["checks"] == expected_checks
+    spawn.assert_not_called()
+    assert json.loads(result_file.read_text()) == envelope
+
+
+@pytest.mark.asyncio
+async def test_delivered_worker_error_envelope_is_labeled_cached(
+    tmp_path: Path, bounded_gate: tuple[MagicMock, AsyncMock, MagicMock]
+) -> None:
+    """Delivered error envelopes are cache-labeled too, not re-served bare."""
+    spawn, feedback, _ = bounded_gate
+    result_file = _result_path(tmp_path)
+    envelope: dict[str, object] = {
+        "status": "error",
+        "error": "worker could not execute checks",
+        "started_at": time.time() - 60.0,
+        "completed_at": time.time() - 30.0,
+        "quality_gate_pending": False,
+    }
+    _write_envelope(result_file, envelope)
+
+    with patch.object(
+        gate,
+        "_read_quality_gate_config",
+        return_value=(600, 0.9, False, {"force_fresh": False}),
+    ):
+        result = await asyncio.wait_for(gate.run_quality_gate(), timeout=0.5)
+
+    assert result["status"] == "error"
+    assert result["error"] == "worker could not execute checks"
+    assert result["cached_result"] is True
+    assert result["cached_job_id"] == result_file.stem.removeprefix(
+        "pre_commit_result_"
+    )
+    spawn.assert_not_called()
+    feedback.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_force_fresh_after_delivery_starts_new_run(
+    tmp_path: Path, bounded_gate: tuple[MagicMock, AsyncMock, MagicMock]
+) -> None:
+    """force_fresh still bypasses the cache: a delivered envelope spawns fresh work."""
+    spawn, feedback, tracker = bounded_gate
+    _write_envelope(_result_path(tmp_path), _delivered_envelope())
+
+    result = await asyncio.wait_for(gate.run_quality_gate(), timeout=0.5)
+
+    assert result["status"] == "running"
+    assert "cached_result" not in result
     spawn.assert_called_once()
     feedback.assert_not_awaited()
     tracker.record_phase_a.assert_not_called()

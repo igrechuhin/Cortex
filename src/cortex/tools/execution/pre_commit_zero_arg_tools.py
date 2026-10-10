@@ -396,7 +396,10 @@ async def run_quality_gate(
     Waits up to 20 seconds for the root lock and detached checks. Pending work
     returns status="running", job_id, result_file, and preflight_passed=false;
     call this tool again to resume the same job, including with force_fresh=true.
-    Only terminal results publish gate feedback. Lock contention without an
+    Only terminal results publish gate feedback. A plain retry after a
+    delivered terminal result re-serves it labeled with cached_result=true,
+    cached_job_id, cached_started_at, and cached_completed_at — write
+    force_fresh=true for a fresh verdict. Lock contention without an
     existing job returns an error; retry rather than assuming the gate passed.
 
     Config is read from the pipeline session file written by

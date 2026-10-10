@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 from pathlib import Path
 from typing import cast
 
@@ -23,6 +24,8 @@ from cortex.tools.execution.pre_commit_process import (
     read_result_file,
 )
 from cortex.tools.execution.session_paths import session_dir
+
+logger = logging.getLogger(__name__)
 
 
 def quality_gate_job_path(root: Path, timeout: int, coverage_threshold: float) -> Path:
@@ -100,13 +103,56 @@ async def _run_locked_job(
         active = find_running_job(root)
         if active is not None and active.get("result_file") != str(result_path):
             return cast(ModelDict, active)
+        spawned = False
         if active is None and await _needs_new_job(result_path, force_fresh):
             short_circuit = _start_and_validate(
                 root, timeout, coverage_threshold, force_fresh, env, result_path
             )
             if short_circuit is not None:
                 return short_circuit
+            spawned = True
+        if not spawned:
+            cached = await _cached_delivered_result(root, result_path, timeout, ctx)
+            if cached is not None:
+                return cached
         return await _poll_and_deliver(root, result_path, timeout, ctx)
+
+
+async def _cached_delivered_result(
+    root: Path,
+    result_path: Path,
+    timeout: int,
+    ctx: MCPContext | None,
+) -> ModelDict | None:
+    """Return a cache-labeled copy of a terminal envelope already delivered.
+
+    A plain retry (``force_fresh`` unset) reuses the completed job by design,
+    but must not present the previously delivered envelope as a fresh
+    verdict: the copy carries the original job identity and started/completed
+    timestamps under ``cached_*`` keys. Undelivered envelopes return ``None``
+    so the normal first-delivery path stays intact.
+    """
+    envelope, status = await read_result_file(result_path)
+    if envelope is None or status not in {"completed", "error"}:
+        return None
+    if envelope.get("quality_gate_pending") is not False:
+        return None
+    from cortex.tools.execution.pre_commit_zero_arg_tools import poll_phase_a_result
+
+    job_id = result_path.stem.removeprefix("pre_commit_result_")
+    result = await poll_phase_a_result(root, job_id, timeout, ctx)
+    result["cached_result"] = True
+    result["cached_job_id"] = job_id
+    started_at = envelope.get("started_at")
+    completed_at = envelope.get("completed_at")
+    result["cached_started_at"] = (
+        started_at if isinstance(started_at, (int, float)) else None
+    )
+    result["cached_completed_at"] = (
+        completed_at if isinstance(completed_at, (int, float)) else None
+    )
+    logger.info("run_quality_gate: serving cached delivered envelope job_id=%s", job_id)
+    return result
 
 
 async def _poll_and_deliver(

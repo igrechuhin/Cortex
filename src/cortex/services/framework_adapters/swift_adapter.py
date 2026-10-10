@@ -578,7 +578,8 @@ class SwiftAdapter(SwiftXcodebuildMixin, FrameworkAdapter):
         When ``swift test`` exits non-zero AND :func:`interpret_swift_test_output`
         classifies the run as anything other than PASSED, surface the
         classified diagnostic (linker failure, compile error, post-run signal,
-        unknown harness failure) so fix-path subagents can route accurately.
+        unknown harness failure) so fix-path subagents can route accurately;
+        compile failures attach the captured ``error:`` lines as context.
         When outcome is PASSED, the gate should consider the tests green —
         any non-zero returncode is a post-run harness quirk, not a test
         failure.
@@ -587,11 +588,11 @@ class SwiftAdapter(SwiftXcodebuildMixin, FrameworkAdapter):
         if tests_ok:
             return errors
         if outcome is not None:
-            tail = stderr_tail_text.splitlines()[-5:] if stderr_tail_text else []
-            tail_text = " | ".join(line.strip() for line in tail if line.strip())
+            tail = [s.strip() for s in stderr_tail_text.splitlines()[-5:] if s.strip()]
             message = outcome.diagnostic
-            if tail_text:
-                message = f"{message} — {tail_text}"
+            details = list(outcome.compiler_errors) or tail
+            if details:
+                message = f"{message} — {' | '.join(details)}"
             return [message]
         if failed == 0:
             return build_swift_test_harness_errors(output, returncode, stderr_tail_text)
@@ -637,6 +638,10 @@ class SwiftAdapter(SwiftXcodebuildMixin, FrameworkAdapter):
         line is the grand-total aggregate.  When the run crashes before the
         aggregate line is written we fall back to the last seen per-bundle
         total, which is the best available partial count.
+
+        When no summary line was parsed the counts are honestly zero — no
+        rollup proves any test executed (REV-2026-10-02-33 removed the
+        keyword heuristic that fabricated a one-run pseudo-test).
         """
         # Prefer Swift Testing grand total when present (mixed suites).
         swift_testing_match = _SWIFT_TESTING_SUMMARY_RE.search(output)
@@ -661,12 +666,7 @@ class SwiftAdapter(SwiftXcodebuildMixin, FrameworkAdapter):
             passed = last_total - last_failed
             return max(passed, 0), last_failed
 
-        # Fallback: output was truncated or format is unexpected.
-        if "test" in output.lower():
-            if "passed" in output.lower():
-                return 1, 0
-            if "failed" in output.lower() or "error:" in output:
-                return 0, 1
+        # Fallback: no rollup was parsed — zero tests provably ran.
         return 0, 0
 
     def _timeout_test_result(self) -> TestResult:

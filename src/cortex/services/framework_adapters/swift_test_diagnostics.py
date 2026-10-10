@@ -9,8 +9,8 @@ stderr after the test summary line.
 This module is the single authoritative interpreter of ``swift test`` output:
 
 1. :func:`interpret_swift_test_output` — returns a :class:`SwiftTestOutcome`
-   classifying the run as ``passed`` / ``failed`` / ``harness_failure`` /
-   ``unknown`` based on the **output**, not just the exit code.
+   classifying the run as ``passed`` / ``failed`` / ``compile_failure`` /
+   ``harness_failure`` based on the **output**, not just the exit code.
 2. :func:`build_swift_test_harness_errors` — decorates the gate-level error
    list when the harness crashed but tests themselves all passed.
 
@@ -67,6 +67,7 @@ class SwiftTestStatus(StrEnum):
     PASSED = "passed"
     FAILED = "failed"
     HARNESS_FAILURE = "harness_failure"
+    COMPILE_FAILURE = "compile_failure"
 
 
 @dataclass(frozen=True)
@@ -82,12 +83,16 @@ class SwiftTestOutcome:
             number SwiftPM reported (``10`` = SIGBUS, ``11`` = SIGSEGV, ...).
             ``None`` when no such marker was found.
         tests_reported: Total tests parsed from the summary line, if present.
+        compiler_errors: Distinct ``error:`` diagnostic lines captured from the
+            output when the run died on build/compile errors before any test
+            executed. Empty for every other classification.
     """
 
     status: SwiftTestStatus
     diagnostic: str
     teardown_signal: int | None = None
     tests_reported: int | None = None
+    compiler_errors: tuple[str, ...] = ()
 
 
 def interpret_swift_test_output(
@@ -106,8 +111,10 @@ def interpret_swift_test_output(
     1. Explicit ``Test run ... failed`` / XCTest failure marker → ``FAILED``.
     2. Explicit ``Test run ... passed`` / XCTest all-tests-passed → ``PASSED``
        (regardless of returncode; teardown signal noted in ``diagnostic``).
-    3. Non-zero returncode with no success marker → ``HARNESS_FAILURE``.
-    4. Zero returncode with no markers → ``PASSED`` (short/filtered runs,
+    3. Non-zero returncode with no success marker and ``error:`` diagnostic
+       lines in the output → ``COMPILE_FAILURE`` (zero tests ran).
+    4. Non-zero returncode with no success marker → ``HARNESS_FAILURE``.
+    5. Zero returncode with no markers → ``PASSED`` (short/filtered runs,
        e.g. ``swift test --list-tests`` or empty ``--filter`` matches, emit
        no summary line but the zero exit is trustworthy).
     """
@@ -118,17 +125,32 @@ def interpret_swift_test_output(
     passed = _passed_outcome_if_any(combined, stderr, returncode)
     if passed is not None:
         return passed
-    if returncode != 0:
+    return _no_marker_outcome(returncode, combined)
+
+
+def _no_marker_outcome(returncode: int, combined: str) -> SwiftTestOutcome:
+    """Classify a run whose output contained no success/failure summary marker."""
+    if returncode == 0:
         return SwiftTestOutcome(
-            status=SwiftTestStatus.HARNESS_FAILURE,
+            status=SwiftTestStatus.PASSED,
+            diagnostic="swift test exited 0 (no summary line parsed)",
+        )
+    compiler_errors = extract_compiler_error_lines(combined)
+    if compiler_errors:
+        return SwiftTestOutcome(
+            status=SwiftTestStatus.COMPILE_FAILURE,
             diagnostic=(
-                f"swift test exited {returncode} with no success marker in "
-                "output — likely a build/link failure or mid-run crash"
+                f"swift test exited {returncode} on build/compile errors "
+                "— zero tests ran"
             ),
+            compiler_errors=compiler_errors,
         )
     return SwiftTestOutcome(
-        status=SwiftTestStatus.PASSED,
-        diagnostic="swift test exited 0 (no summary line parsed)",
+        status=SwiftTestStatus.HARNESS_FAILURE,
+        diagnostic=(
+            f"swift test exited {returncode} with no success marker in "
+            "output — likely a build/link failure or mid-run crash"
+        ),
     )
 
 
@@ -173,6 +195,27 @@ def _passed_outcome_if_any(
     )
 
 
+def extract_compiler_error_lines(output: str, max_lines: int = 5) -> tuple[str, ...]:
+    """Return up to ``max_lines`` distinct compiler/SPM ``error:`` diagnostic lines.
+
+    Lines are stripped and de-duplicated in first-seen order. The SwiftPM
+    post-run signal marker (``error: Exited with unexpected signal code N``)
+    is excluded — it classifies a teardown crash, not a compile diagnostic.
+    """
+    seen: list[str] = []
+    for raw_line in output.splitlines():
+        line = raw_line.strip()
+        if not line or "error:" not in line.lower():
+            continue
+        if _SPM_UNEXPECTED_SIGNAL_RE.search(line):
+            continue
+        if line not in seen:
+            seen.append(line)
+        if len(seen) >= max_lines:
+            break
+    return tuple(seen)
+
+
 # ---------------------------------------------------------------------------
 # Stderr tail + harness-error formatting (existing API, kept stable)
 # ---------------------------------------------------------------------------
@@ -201,6 +244,8 @@ def build_swift_test_harness_errors(
     """
     outcome = interpret_swift_test_output(output, stderr_tail_text, returncode)
     prefix = outcome.diagnostic
+    if outcome.compiler_errors:
+        return [prefix + " — " + " | ".join(outcome.compiler_errors)]
     if stderr_tail_text:
         lines = [line.strip() for line in stderr_tail_text.splitlines() if line.strip()]
         tail_lines = lines[-5:]

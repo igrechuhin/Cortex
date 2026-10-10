@@ -1,6 +1,11 @@
 <!-- memory_type: milestone -->
 # Progress Log
 
+## 2026-10-10
+
+- <!-- memory_type: problem -->
+**Truthful quality-gate reporting (Swift compile failures and cached gate retries)** - COMPLETE. SwiftTestStatus.COMPILE_FAILURE captures distinct compiler error lines; the Swift adapter reports zero executed/failed tests without a parsed summary and surfaces compile errors; delivered gate retries label cached_result/cached_job_id/cached_started_at/cached_completed_at while force_fresh stays unchanged. Regression tests cover compiler vs success/teardown precedence, cache provenance and fresh bypass. Real SwiftPM compile-failure temporary-package smoke (missingSmokeSymbol): zero tests, compile_failure, diagnostic preserved. Actual delivered-envelope file smoke: cached markers/times correct, original bytes unchanged. Tests split into test_swift_adapter_diagnostics.py to meet 400 logical-line parity, reusing an existing helper and explicit bytes concat. Phase A fresh gate: 8001 passed, four existing skips, 91.81% coverage after three scoped test-quality repairs; applicable file-size/function/build CI subprocesses passed; DocC inapplicable per Python quality.yml.
+
 ## 2026-10-09
 
 - **Per-connection pipeline run ids for concurrent cortex pipelines** - COMPLETE. Concurrent /cortex pipelines no longer share one durable run id: each connection owns its run via the ownership registry (.cortex/.session/.pipeline-runs.json), adoption of dead-owned incomplete runs is guarded (TTL, live-owner cross-check, store incompleteness, pipeline scoping) and fail-closed under lock contention, resume never attaches or reports a live sibling's or unlatched run, and init supports explicit resume_run_id. 22 regression tests; focused suites 100 passed / 0 failed.

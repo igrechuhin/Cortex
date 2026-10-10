@@ -13,6 +13,7 @@ from __future__ import annotations
 from cortex.services.framework_adapters.swift_test_diagnostics import (
     SwiftTestStatus,
     build_swift_test_harness_errors,
+    extract_compiler_error_lines,
     interpret_swift_test_output,
     stderr_tail,
 )
@@ -108,6 +109,65 @@ class TestInterpretSwiftTestOutputBareZeroExit:
         assert "no summary line parsed" in outcome.diagnostic
 
 
+class TestInterpretSwiftTestOutputCompileFailure:
+    def test_compile_errors_without_rollup_classified_as_compile_failure(self) -> None:
+        """REV-2026-10-02-33 shape: rc=1, ``error:`` lines, no test-run rollup.
+
+        Pre-fix failure mode: classified only as HARNESS_FAILURE with no
+        captured compiler diagnostics, which let the adapter fabricate a
+        1-run/0-passed pseudo-test downstream.
+        """
+        stdout = "Building for testing...\n"
+        stderr = (
+            "/Sources/App/Main.swift:12:5: error: cannot find 'foo' in scope\n"
+            "error: fatalError\n"
+        )
+        outcome = interpret_swift_test_output(stdout, stderr, returncode=1)
+        assert outcome.status is SwiftTestStatus.COMPILE_FAILURE
+        assert "zero tests ran" in outcome.diagnostic
+        assert outcome.compiler_errors == (
+            "/Sources/App/Main.swift:12:5: error: cannot find 'foo' in scope",
+            "error: fatalError",
+        )
+
+    def test_linker_failure_without_error_lines_stays_harness_failure(self) -> None:
+        stderr = "ld: symbol(s) not found\nlinker command failed"
+        outcome = interpret_swift_test_output("", stderr, returncode=1)
+        assert outcome.status is SwiftTestStatus.HARNESS_FAILURE
+        assert outcome.compiler_errors == ()
+
+    def test_post_run_signal_line_is_not_a_compiler_error(self) -> None:
+        """``error: Exited with unexpected signal code`` classifies as teardown,
+        not compile failure, even without a summary line."""
+        stderr = "error: Exited with unexpected signal code 10\n"
+        outcome = interpret_swift_test_output("", stderr, returncode=1)
+        assert outcome.status is SwiftTestStatus.HARNESS_FAILURE
+        assert outcome.compiler_errors == ()
+
+
+class TestExtractCompilerErrorLines:
+    def test_collects_strips_and_dedupes_error_lines(self) -> None:
+        output = (
+            "noise\n"
+            "  /A.swift:1:1: error: first  \n"
+            "/A.swift:1:1: error: first\n"
+            "error: second\n"
+        )
+        assert extract_compiler_error_lines(output) == (
+            "/A.swift:1:1: error: first",
+            "error: second",
+        )
+
+    def test_caps_at_max_lines_and_ignores_clean_output(self) -> None:
+        output = "\n".join(f"error: e{i}" for i in range(8))
+        assert extract_compiler_error_lines(output, max_lines=3) == (
+            "error: e0",
+            "error: e1",
+            "error: e2",
+        )
+        assert extract_compiler_error_lines("clean build output") == ()
+
+
 class TestStderrTail:
     def test_short_stderr_returned_verbatim(self) -> None:
         assert stderr_tail("hello") == "hello"
@@ -140,3 +200,15 @@ class TestBuildSwiftTestHarnessErrors:
         assert len(errors) == 1
         assert "swift test exited 1" in errors[0]
         assert "symbol(s) not found" in errors[0]
+
+    def test_compile_failure_surfaces_compiler_error_lines(self) -> None:
+        """Compile failure: the ``error:`` diagnostics replace the stderr tail."""
+        errors = build_swift_test_harness_errors(
+            "/Sources/App/Main.swift:12:5: error: cannot find 'foo' in scope\n",
+            1,
+            "unrelated trailing noise",
+        )
+        assert len(errors) == 1
+        assert "build/compile errors" in errors[0]
+        assert "cannot find 'foo' in scope" in errors[0]
+        assert "unrelated trailing noise" not in errors[0]
