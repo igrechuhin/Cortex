@@ -10,7 +10,10 @@ from enum import Enum
 
 from pydantic import Field
 
-from cortex.core.constants import DEFAULT_SESSION_SPEND_BUDGET
+from cortex.core.constants import (
+    DEFAULT_CONTEXT_WINDOW_TOKENS,
+    DEFAULT_SESSION_SPEND_BUDGET,
+)
 from cortex.core.models import OperationStatus
 from cortex.tools.models_base import (
     ErrorResultBase,
@@ -64,6 +67,53 @@ def _default_session_spend_summary() -> SessionSpendSummary:
     )
 
 
+class ContextOccupancyStatus(str, Enum):
+    """Live harness context-window occupancy status for the current session.
+
+    Distinct from ``TokenBudgetStatus`` (static memory-bank file size) and
+    ``SessionSpendStatus`` (Cortex-recorded tool-output tokens): this reports
+    how full the live harness context window is, per the statusline-produced
+    snapshot (see ``tools/session/context_usage_store.py``). A missing or
+    stale snapshot means UNAVAILABLE — never an estimate.
+    """
+
+    HEALTHY = "healthy"
+    WARNING = "warning"
+    CRITICAL = "critical"
+    UNAVAILABLE = "unavailable"
+
+
+class ContextOccupancySummary(StrictBaseModel):
+    """Live harness context-window occupancy summary for the current session."""
+
+    used_tokens: int = Field(
+        ge=0,
+        description="Tokens currently in the harness context window",
+    )
+    limit_tokens: int = Field(ge=0, description="Context-window token limit")
+    as_of: float = Field(
+        ge=0,
+        description="Epoch seconds of the backing snapshot; 0.0 when UNAVAILABLE",
+    )
+    host_session_id: str | None = Field(
+        default=None,
+        description="Harness session_id the snapshot is attributed to; None when UNAVAILABLE",
+    )
+    occupancy_status: ContextOccupancyStatus = Field(
+        description="Occupancy status vs the context-window limit"
+    )
+
+
+def _default_context_occupancy_summary() -> ContextOccupancySummary:
+    """UNAVAILABLE-default occupancy summary for callers that pre-date this field."""
+    return ContextOccupancySummary(
+        used_tokens=0,
+        limit_tokens=DEFAULT_CONTEXT_WINDOW_TOKENS,
+        as_of=0.0,
+        occupancy_status=ContextOccupancyStatus.UNAVAILABLE,
+    )
+
+
 class SessionHealthSummary(StrictBaseModel):
     """Quick health check results for session start."""
 
@@ -85,6 +135,15 @@ class SessionHealthSummary(StrictBaseModel):
     spend: SessionSpendSummary = Field(
         default_factory=_default_session_spend_summary,
         description="Runtime tool-output token spend for the current session",
+    )
+    # AI: Distinct from spend (Cortex-recorded tool-output tokens) and
+    # token_budget_status (static file size): harness-reported live context
+    # occupancy. UNAVAILABLE by default so an absent statusline snapshot
+    # never fabricates a number; nested here for the same plumbing reason
+    # as `spend` above.
+    context_occupancy: ContextOccupancySummary = Field(
+        default_factory=_default_context_occupancy_summary,
+        description="Live harness context-window occupancy for the current session",
     )
 
 

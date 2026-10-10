@@ -1,15 +1,5 @@
 # Cortex Operations Log
 
-## [2026-08-31T09:39] plan | Created plan: Demo Plan ·6
-
-## [2026-08-31T09:39] plan | Created plan: Mini ·4
-
-## [2026-08-31T09:40] lint | Quality gate passed
-
-## [2026-08-31T09:43] plan | Created plan: Smoke Test Plan
-
-## [2026-08-31T09:43] plan | Created plan: Demo Plan
-
 ## [2026-08-31T09:43] plan | Created plan: Demo Plan ·2
 
 ## [2026-08-31T09:43] plan | Created plan: Demo Plan ·3
@@ -2091,3 +2081,17 @@ status=success; changed_files=None
 status=success; changed_files=None
 
 ## [2026-10-10T17:28] lint | Quality gate passed
+
+## [2026-10-10T22:22] plan | Created plan: Live Context Occupancy Telemetry
+
+## [2026-10-10T23:19] plan | Completed plan: Live Context Occupancy Telemetry
+
+Live harness context-window occupancy telemetry shipped: scripts/cortex-context-usage-statusline.sh tees statusline context_window usage (used = total_input+total_output, payload limit wins) into a project-scoped cache store (.cortex/.cache/session/context-usage.json) via atomic writes; session() health exposes ContextOccupancySummary as context_occupancy, distinct from spend/token_budget_status — UNAVAILABLE without a fresh harness snapshot (never an estimate), TTL-stale after 900s renders UNAVAILABLE; WARNING at 80% / CRITICAL at 95% suggestions name actual used/limit tokens with compress_memory_bank / session(operation='compact') hints. Host-captured Claude Code v2.1.274 statusline payload committed verbatim as fixture (schema pinned incl. null used_percentage/current_usage at session start). 27 new tests; focused suites 57 passed; review gate no_gaps.
+
+## [2026-10-10T23:20] lint | Quality gate failed
+
+## [2026-10-10T23:37] lint | Quality gate passed
+
+## [2026-10-10T23:40] fix | Autofix completed
+
+status=success; changed_files=None

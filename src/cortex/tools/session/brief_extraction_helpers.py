@@ -11,6 +11,7 @@ from pathlib import Path
 from cortex.tools.files.plan_draft_file_ops import count_stale_plan_drafts
 from cortex.tools.session.models import (
     ConcurrentSession,
+    ContextOccupancyStatus,
     GitStatusSummary,
     SessionHealthSummary,
     SessionSpendStatus,
@@ -146,6 +147,30 @@ def add_spend_suggestions(suggestions: list[str], health: SessionHealthSummary) 
         )
 
 
+def add_occupancy_suggestions(
+    suggestions: list[str], health: SessionHealthSummary
+) -> None:
+    """Append a warning when live context occupancy crosses thresholds.
+
+    Mirrors add_spend_suggestions() but for harness-reported context-window
+    occupancy (health.context_occupancy) instead of Cortex-recorded
+    tool-output spend. Never appends for HEALTHY or UNAVAILABLE.
+    """
+    occupancy = health.context_occupancy
+    if occupancy.occupancy_status == ContextOccupancyStatus.CRITICAL:
+        suggestions.append(
+            f"Context window at critical occupancy ({occupancy.used_tokens}/"
+            + f"{occupancy.limit_tokens} tokens) — run `compress_memory_bank` "
+            + "or `session(operation='compact')` now"
+        )
+    elif occupancy.occupancy_status == ContextOccupancyStatus.WARNING:
+        suggestions.append(
+            f"Context window at {occupancy.used_tokens}/{occupancy.limit_tokens} "
+            + "tokens — consider `compress_memory_bank` or "
+            + "`session(operation='compact')`"
+        )
+
+
 def add_stale_plan_draft_suggestions(
     suggestions: list[str], project_root: Path | None
 ) -> None:
@@ -190,6 +215,7 @@ def generate_session_suggestions(
     add_mcp_and_git_suggestions(suggestions, mcp_healthy, git_status)
     add_budget_and_missing_suggestions(suggestions, health)
     add_spend_suggestions(suggestions, health)
+    add_occupancy_suggestions(suggestions, health)
     add_concurrency_suggestions(suggestions, locked_tasks, concurrent_sessions)
     add_memory_bank_sync_suggestions(suggestions, progress_content, roadmap_content)
     append_session_wiki_init_hint(suggestions, wiki_status, project_root)

@@ -7,18 +7,26 @@ from pathlib import Path
 
 import pytest
 
+from cortex.core.constants import CONTEXT_USAGE_STALE_AFTER_SECONDS
 from cortex.core.file_system import FileSystemManager
 from cortex.core.metadata_index import MetadataIndex
 from cortex.core.path_resolver import CortexResourceType
 from cortex.core.session_logger import record_spend_tokens
 from cortex.tools.session.brief_extraction_helpers import generate_session_suggestions
+from cortex.tools.session.context_usage_store import (
+    parse_statusline_payload,
+    record_context_usage,
+)
 from cortex.tools.session.health import (
     calculate_health_summary,
+    determine_occupancy_status,
     determine_spend_status,
     determine_token_budget_status,
     parse_mcp_health,
 )
 from cortex.tools.session.models import (
+    ContextOccupancyStatus,
+    ContextOccupancySummary,
     GitStatusSummary,
     SessionHealthSummary,
     SessionSpendStatus,
@@ -145,6 +153,112 @@ class TestCalculateHealthSummary:
                 os.environ[env_key] = original
             else:
                 _ = os.environ.pop(env_key, None)
+
+    @pytest.mark.asyncio
+    async def test_calculate_health_summary_occupancy_unavailable_without_snapshot(
+        self, tmp_path: Path
+    ) -> None:
+        """context_occupancy is UNAVAILABLE when no statusline snapshot exists."""
+        managers = await managers_with_every_memory_bank_file(tmp_path)
+
+        health = await calculate_health_summary(
+            managers,
+            tmp_path,  # type: ignore[arg-type]
+        )
+        assert (
+            health.context_occupancy.occupancy_status
+            == ContextOccupancyStatus.UNAVAILABLE
+        )
+        assert health.context_occupancy.used_tokens == 0
+
+    @pytest.mark.asyncio
+    async def test_calculate_health_summary_occupancy_from_recorded_snapshot(
+        self, tmp_path: Path
+    ) -> None:
+        """A recorded statusline snapshot surfaces used/limit and status."""
+        snapshot = parse_statusline_payload(
+            {
+                "session_id": "integration-test",
+                "context_window": {
+                    "total_input_tokens": 165_000,
+                    "total_output_tokens": 5_000,
+                    "context_window_size": 200_000,
+                },
+            }
+        )
+        assert snapshot is not None
+        await record_context_usage(tmp_path, snapshot)
+        managers = await managers_with_every_memory_bank_file(tmp_path)
+
+        health = await calculate_health_summary(
+            managers,
+            tmp_path,  # type: ignore[arg-type]
+        )
+        assert (
+            health.context_occupancy.occupancy_status == ContextOccupancyStatus.WARNING
+        )
+        assert health.context_occupancy.used_tokens == 170_000
+        assert health.context_occupancy.limit_tokens == 200_000
+        assert health.context_occupancy.host_session_id == "integration-test"
+
+    @pytest.mark.asyncio
+    async def test_calculate_health_summary_stale_snapshot_unavailable(
+        self, tmp_path: Path
+    ) -> None:
+        """A TTL-stale snapshot renders UNAVAILABLE, not as live data."""
+        stale = parse_statusline_payload(
+            {
+                "session_id": "stale-test",
+                "context_window": {
+                    "total_input_tokens": 190_000,
+                    "total_output_tokens": 9_999,
+                    "context_window_size": 200_000,
+                },
+            },
+            as_of=time.time() - (CONTEXT_USAGE_STALE_AFTER_SECONDS + 1),
+        )
+        assert stale is not None
+        await record_context_usage(tmp_path, stale)
+        managers = await managers_with_every_memory_bank_file(tmp_path)
+
+        health = await calculate_health_summary(
+            managers,
+            tmp_path,  # type: ignore[arg-type]
+        )
+        assert (
+            health.context_occupancy.occupancy_status
+            == ContextOccupancyStatus.UNAVAILABLE
+        )
+
+    @pytest.mark.asyncio
+    async def test_calculate_health_summary_two_sessions_unavailable(
+        self, tmp_path: Path
+    ) -> None:
+        """Two concurrent host sessions make attribution unknown → UNAVAILABLE."""
+        for sid, used in (("s-one", 100_000), ("s-two", 190_000)):
+            snapshot = parse_statusline_payload(
+                {
+                    "session_id": sid,
+                    "context_window": {
+                        "total_input_tokens": used,
+                        "total_output_tokens": 1_000,
+                        "context_window_size": 200_000,
+                    },
+                }
+            )
+            assert snapshot is not None
+            await record_context_usage(tmp_path, snapshot)
+        managers = await managers_with_every_memory_bank_file(tmp_path)
+
+        health = await calculate_health_summary(
+            managers,
+            tmp_path,  # type: ignore[arg-type]
+        )
+        assert (
+            health.context_occupancy.occupancy_status
+            == ContextOccupancyStatus.UNAVAILABLE
+        )
+        assert health.context_occupancy.host_session_id is None
 
 
 class TestGenerateSessionSuggestions:
@@ -333,6 +447,67 @@ class TestGenerateSessionSuggestions:
         suggestions = generate_session_suggestions(health, None, None)
         assert not any("runtime spend" in s.lower() for s in suggestions)
 
+    def test_generate_suggestions_occupancy_warning(self) -> None:
+        """Occupancy warning suggestion names actual used/limit numbers."""
+        health = SessionHealthSummary(
+            file_count=7,
+            total_tokens=10000,
+            token_budget_status=TokenBudgetStatus.HEALTHY,
+            missing_files=[],
+            has_errors=False,
+            context_occupancy=ContextOccupancySummary(
+                used_tokens=160_000,
+                limit_tokens=200_000,
+                as_of=1.0,
+                occupancy_status=ContextOccupancyStatus.WARNING,
+            ),
+        )
+        suggestions = generate_session_suggestions(health, None, None)
+        assert any("Context window at 160000/200000 tokens" in s for s in suggestions)
+
+    def test_generate_suggestions_occupancy_critical(self) -> None:
+        """Occupancy critical suggestion names numbers and an immediate action."""
+        health = SessionHealthSummary(
+            file_count=7,
+            total_tokens=10000,
+            token_budget_status=TokenBudgetStatus.HEALTHY,
+            missing_files=[],
+            has_errors=False,
+            context_occupancy=ContextOccupancySummary(
+                used_tokens=195_000,
+                limit_tokens=200_000,
+                as_of=1.0,
+                occupancy_status=ContextOccupancyStatus.CRITICAL,
+            ),
+        )
+        suggestions = generate_session_suggestions(health, None, None)
+        assert any("critical occupancy (195000/200000" in s for s in suggestions)
+        assert any("compress_memory_bank" in s for s in suggestions)
+
+    def test_generate_suggestions_occupancy_silent_when_not_actionable(
+        self,
+    ) -> None:
+        """No occupancy suggestion for HEALTHY or UNAVAILABLE occupancy."""
+        for status in (
+            ContextOccupancyStatus.HEALTHY,
+            ContextOccupancyStatus.UNAVAILABLE,
+        ):
+            health = SessionHealthSummary(
+                file_count=7,
+                total_tokens=10000,
+                token_budget_status=TokenBudgetStatus.HEALTHY,
+                missing_files=[],
+                has_errors=False,
+                context_occupancy=ContextOccupancySummary(
+                    used_tokens=1_000,
+                    limit_tokens=200_000,
+                    as_of=1.0,
+                    occupancy_status=status,
+                ),
+            )
+            suggestions = generate_session_suggestions(health, None, None)
+            assert not any("Context window" in s for s in suggestions)
+
     def test_generate_suggestions_stale_plan_drafts(self, tmp_path: Path) -> None:
         """Stale draft-*.md files yield a session suggestion."""
         _ = ensure_test_cortex_structure(tmp_path)
@@ -447,3 +622,53 @@ class TestDetermineSpendStatus:
     def test_uses_default_budget_when_not_specified(self) -> None:
         """Uses DEFAULT_SESSION_SPEND_BUDGET when budget arg omitted."""
         assert determine_spend_status(0) == SessionSpendStatus.HEALTHY
+
+
+class TestDetermineOccupancyStatus:
+    """Tests for determine_occupancy_status boundary values."""
+
+    def test_healthy_when_under_80_percent(self) -> None:
+        """Returns HEALTHY when occupancy is below 80% of the limit."""
+        assert determine_occupancy_status(0, 200_000) == ContextOccupancyStatus.HEALTHY
+        assert (
+            determine_occupancy_status(159_800, 200_000)
+            == ContextOccupancyStatus.HEALTHY  # 79.9%
+        )
+
+    def test_warning_at_lower_boundary(self) -> None:
+        """Returns WARNING exactly at the 80% boundary."""
+        assert (
+            determine_occupancy_status(160_000, 200_000)
+            == ContextOccupancyStatus.WARNING
+        )
+
+    def test_warning_just_under_95_percent(self) -> None:
+        """Returns WARNING just under the 95% boundary."""
+        assert (
+            determine_occupancy_status(189_800, 200_000)
+            == ContextOccupancyStatus.WARNING  # 94.9%
+        )
+
+    def test_critical_at_exact_boundary(self) -> None:
+        """Returns CRITICAL exactly at 95% of the limit."""
+        assert (
+            determine_occupancy_status(190_000, 200_000)
+            == ContextOccupancyStatus.CRITICAL
+        )
+
+    def test_critical_at_and_above_full_window(self) -> None:
+        """Returns CRITICAL at 100% and beyond."""
+        assert (
+            determine_occupancy_status(200_000, 200_000)
+            == ContextOccupancyStatus.CRITICAL
+        )
+        assert (
+            determine_occupancy_status(250_000, 200_000)
+            == ContextOccupancyStatus.CRITICAL
+        )
+
+    def test_zero_limit_guard_returns_unavailable(self) -> None:
+        """A non-positive limit is schema drift, rendered UNAVAILABLE."""
+        assert (
+            determine_occupancy_status(5_000, 0) == ContextOccupancyStatus.UNAVAILABLE
+        )

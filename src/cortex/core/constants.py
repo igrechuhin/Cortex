@@ -101,6 +101,13 @@ TOKENS_PER_SECTION_ESTIMATE = 500  # Estimated tokens per markdown section
 # a suggestion line (see plan Risks: "Threshold too aggressive").
 DEFAULT_SESSION_SPEND_BUDGET = 200_000  # Default runtime tool-output spend budget
 MAX_SESSION_SPEND_BUDGET = 400_000  # Maximum allowed session spend budget
+# AI: DEFAULT_CONTEXT_WINDOW_TOKENS is only a fallback for statusline
+# payloads that omit context_window_size; the payload value always wins.
+DEFAULT_CONTEXT_WINDOW_TOKENS = 200_000  # Fallback context-window token limit
+CONTEXT_OCCUPANCY_WARN_PERCENT = 80  # Occupancy percent at which to warn
+CONTEXT_OCCUPANCY_CRITICAL_PERCENT = 95  # Occupancy percent at which to alert
+# Snapshots older than this render UNAVAILABLE instead of stale-but-live.
+CONTEXT_USAGE_STALE_AFTER_SECONDS = 900  # TTL for context-usage snapshots
 
 # =============================================================================
 # Similarity Thresholds

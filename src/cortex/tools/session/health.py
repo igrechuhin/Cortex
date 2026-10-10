@@ -8,13 +8,22 @@ from __future__ import annotations
 import logging
 from pathlib import Path
 
-from cortex.core.constants import DEFAULT_SESSION_SPEND_BUDGET, MemoryBankFile
+from cortex.core.constants import (
+    CONTEXT_OCCUPANCY_CRITICAL_PERCENT,
+    CONTEXT_OCCUPANCY_WARN_PERCENT,
+    DEFAULT_CONTEXT_WINDOW_TOKENS,
+    DEFAULT_SESSION_SPEND_BUDGET,
+    MemoryBankFile,
+)
 from cortex.core.metadata_index import MetadataIndex
 from cortex.managers.types import ManagersDict
 from cortex.managers.utils import get_manager
 from cortex.tools.session.connection_health import health_check
 from cortex.tools.session.connection_models import MCPHealthCheckResponse
+from cortex.tools.session.context_usage_store import read_context_usage
 from cortex.tools.session.models import (
+    ContextOccupancyStatus,
+    ContextOccupancySummary,
     SessionHealthSummary,
     SessionSpendStatus,
     SessionSpendSummary,
@@ -63,6 +72,58 @@ def determine_spend_status(
     if spend_percent >= 85:
         return SessionSpendStatus.WARNING
     return SessionSpendStatus.HEALTHY
+
+
+def determine_occupancy_status(
+    used_tokens: int, limit_tokens: int
+) -> ContextOccupancyStatus:
+    """Determine live context-window occupancy from a harness snapshot.
+
+    Mirrors `determine_spend_status()` but for harness-reported context
+    occupancy (`tools/session.context_usage_store`) instead of
+    Cortex-recorded tool-output tokens. A non-positive limit is schema
+    drift, not an occupancy reading, so it renders UNAVAILABLE.
+    """
+    if limit_tokens <= 0:
+        return ContextOccupancyStatus.UNAVAILABLE
+    occupancy_percent = used_tokens / limit_tokens * 100
+    if occupancy_percent >= CONTEXT_OCCUPANCY_CRITICAL_PERCENT:
+        return ContextOccupancyStatus.CRITICAL
+    if occupancy_percent >= CONTEXT_OCCUPANCY_WARN_PERCENT:
+        return ContextOccupancyStatus.WARNING
+    return ContextOccupancyStatus.HEALTHY
+
+
+def _unavailable_occupancy_summary() -> ContextOccupancySummary:
+    """UNAVAILABLE summary for a missing or stale snapshot (never an estimate)."""
+    return ContextOccupancySummary(
+        used_tokens=0,
+        limit_tokens=DEFAULT_CONTEXT_WINDOW_TOKENS,
+        as_of=0.0,
+        occupancy_status=ContextOccupancyStatus.UNAVAILABLE,
+    )
+
+
+async def _calculate_occupancy_summary(
+    project_root: Path,
+) -> ContextOccupancySummary:
+    """Build the occupancy summary from the attributed statusline snapshot."""
+    result = await read_context_usage(project_root)
+    snapshot = result.snapshot
+    if snapshot is None:
+        # AI: None covers missing/stale AND ambiguous attribution — with two
+        # concurrent host sessions "whose context is this" is unknowable, so
+        # occupancy fails closed to UNAVAILABLE instead of guessing a writer.
+        return _unavailable_occupancy_summary()
+    return ContextOccupancySummary(
+        used_tokens=snapshot.used_tokens,
+        limit_tokens=snapshot.limit_tokens,
+        as_of=snapshot.as_of,
+        host_session_id=snapshot.session_id,
+        occupancy_status=determine_occupancy_status(
+            snapshot.used_tokens, snapshot.limit_tokens
+        ),
+    )
 
 
 def _calculate_spend_summary(project_root: Path) -> SessionSpendSummary:
@@ -129,6 +190,7 @@ async def calculate_health_summary(
         missing_files=missing_files,
         has_errors=len(missing_files) > 0,
         spend=_calculate_spend_summary(project_root),
+        context_occupancy=await _calculate_occupancy_summary(project_root),
     )
 
 
