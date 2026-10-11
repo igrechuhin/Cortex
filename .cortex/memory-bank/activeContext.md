@@ -3,6 +3,11 @@
 
 **This file records completed work only.** For current status and upcoming work see [roadmap.md](roadmap.md).
 
+## Completed Work (2026-10-11)
+
+- ✅ **Context occupancy exact-match session binding** - COMPLETE (2026-10-11) - <!-- memory_type: preference -->
+Occupancy reads require the caller's harness session_id captured from the SessionStart hook (session log host_session_id); exact-match only, TTL-stale or foreign snapshots render UNAVAILABLE, and unbound callers never see any snapshot. Sole-fresh-snapshot heuristic removed; 87 focused tests pass.
+
 ## Completed Work (2026-10-10)
 
 - ✅ **Truthful quality-gate reporting for Swift compile failures and cached gate retries** - COMPLETE (2026-10-10) - <!-- memory_type: problem -->

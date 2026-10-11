@@ -1,6 +1,11 @@
 <!-- memory_type: milestone -->
 # Progress Log
 
+## 2026-10-11
+
+- <!-- memory_type: preference -->
+**Context occupancy exact-match session binding** - Context-usage reads now require the caller's trusted harness session_id, captured from the SessionStart hook event into the session log (set_host_session_id); read_context_usage(project_root, expected_session_id) returns data only on an exact match with a TTL-fresh snapshot, so a session that opens within a closed one's TTL never inherits its occupancy, and unbound callers always render UNAVAILABLE. The previous sole-fresh-snapshot heuristic was removed. Regression tests at store and health level; focused suites 87 passed, pyright clean.
+
 ## 2026-10-10
 
 - <!-- memory_type: problem -->
