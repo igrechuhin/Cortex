@@ -325,9 +325,7 @@ class TestProducerScript:
         assert session_files(tmp_path) == []
 
     @REQUIRES_JQ
-    def test_payload_without_session_id_writes_nothing(
-        self, tmp_path: Path
-    ) -> None:
+    def test_payload_without_session_id_writes_nothing(self, tmp_path: Path) -> None:
         """Unattributable payloads never land on disk (fail closed)."""
         payload = json.dumps(
             {
