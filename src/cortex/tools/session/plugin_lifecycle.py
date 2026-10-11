@@ -13,6 +13,7 @@ from fastmcp.exceptions import ToolError
 from cortex.core.context_logging import MCPContext
 from cortex.core.file_system import FileSystemManager
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
+from cortex.core.session_logger import set_host_session_id
 from cortex.core.usage_context import get_current_managers, get_or_resolve_project_root
 from cortex.managers.types import ManagersDict
 from cortex.managers.utils import get_manager
@@ -130,6 +131,11 @@ async def _start(root: Path, event: PluginHookEvent, ctx: MCPContext | None) -> 
     if len(_started) >= 128:
         _started.clear()
     _started.add(identity)
+    if event.session_id:
+        # AI: capture the trusted harness binding while the hook call is on
+        # THIS connection — occupancy reads require it and never guess the
+        # caller from on-disk snapshots alone.
+        set_host_session_id(root, event.session_id)
     try:
         return _output(event.event, _orientation(await session_start(ctx=ctx)))
     except BaseException:

@@ -107,13 +107,17 @@ def _unavailable_occupancy_summary() -> ContextOccupancySummary:
 async def _calculate_occupancy_summary(
     project_root: Path,
 ) -> ContextOccupancySummary:
-    """Build the occupancy summary from the attributed statusline snapshot."""
-    result = await read_context_usage(project_root)
-    snapshot = result.snapshot
+    """Build the occupancy summary from this session's bound snapshot."""
+    from cortex.core.session_logger import get_session_log_path, read_session_log
+
+    session_log = read_session_log(get_session_log_path(project_root))
+    # AI: the SessionStart hook capture is the only trusted binding between
+    # this MCP session and a harness window. Without it — or when the bound
+    # window has no fresh snapshot — occupancy is UNAVAILABLE rather than
+    # attributed to whichever session wrote to disk last.
+    expected = session_log.host_session_id if session_log else None
+    snapshot = await read_context_usage(project_root, expected)
     if snapshot is None:
-        # AI: None covers missing/stale AND ambiguous attribution — with two
-        # concurrent host sessions "whose context is this" is unknowable, so
-        # occupancy fails closed to UNAVAILABLE instead of guessing a writer.
         return _unavailable_occupancy_summary()
     return ContextOccupancySummary(
         used_tokens=snapshot.used_tokens,

@@ -16,6 +16,7 @@ from cortex.core.usage_context import (
     set_current_managers,
     set_current_project_root,
 )
+from cortex.core.session_logger import get_session_log_path, read_session_log
 from cortex.tools.memory.compaction_handoff import read_handoff, write_handoff
 from cortex.tools.session import plugin_lifecycle as hooks
 from cortex.tools.session.models import InProgressTask, SessionHandoff
@@ -62,6 +63,32 @@ def _startup_event(root: Path) -> PluginHookEvent:
         session_id="startup",
         source="startup",
     )
+
+
+@pytest.mark.asyncio
+async def test_session_start_binds_host_session_id(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """SessionStart captures the harness session id for occupancy binding."""
+    fs = _workspace(tmp_path)
+    monkeypatch.setattr(
+        hooks, "get_or_resolve_project_root", AsyncMock(return_value=tmp_path)
+    )
+    monkeypatch.setattr(hooks, "get_current_managers", lambda: {"fs": fs})
+    monkeypatch.setattr(
+        "cortex.tools.session.start_tools.session_start",
+        AsyncMock(
+            return_value=json.dumps(
+                {"status": "success", "brief": {"current_focus": "focus"}}
+            )
+        ),
+    )
+
+    _ = await hooks.run_plugin_hook(_startup_event(tmp_path).model_dump(), None)
+
+    session_log = read_session_log(get_session_log_path(tmp_path))
+    assert session_log is not None
+    assert session_log.host_session_id == "startup"
 
 
 @pytest.mark.asyncio

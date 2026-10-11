@@ -11,7 +11,7 @@ from cortex.core.constants import CONTEXT_USAGE_STALE_AFTER_SECONDS
 from cortex.core.file_system import FileSystemManager
 from cortex.core.metadata_index import MetadataIndex
 from cortex.core.path_resolver import CortexResourceType
-from cortex.core.session_logger import record_spend_tokens
+from cortex.core.session_logger import record_spend_tokens, set_host_session_id
 from cortex.tools.session.brief_extraction_helpers import generate_session_suggestions
 from cortex.tools.session.context_usage_store import (
     parse_statusline_payload,
@@ -188,6 +188,7 @@ class TestCalculateHealthSummary:
         )
         assert snapshot is not None
         await record_context_usage(tmp_path, snapshot)
+        set_host_session_id(tmp_path, "integration-test")
         managers = await managers_with_every_memory_bank_file(tmp_path)
 
         health = await calculate_health_summary(
@@ -219,6 +220,7 @@ class TestCalculateHealthSummary:
         )
         assert stale is not None
         await record_context_usage(tmp_path, stale)
+        set_host_session_id(tmp_path, "stale-test")
         managers = await managers_with_every_memory_bank_file(tmp_path)
 
         health = await calculate_health_summary(
@@ -231,23 +233,23 @@ class TestCalculateHealthSummary:
         )
 
     @pytest.mark.asyncio
-    async def test_calculate_health_summary_two_sessions_unavailable(
+    async def test_calculate_health_summary_never_inherits_foreign_snapshot(
         self, tmp_path: Path
     ) -> None:
-        """Two concurrent host sessions make attribution unknown → UNAVAILABLE."""
-        for sid, used in (("s-one", 100_000), ("s-two", 190_000)):
-            snapshot = parse_statusline_payload(
-                {
-                    "session_id": sid,
-                    "context_window": {
-                        "total_input_tokens": used,
-                        "total_output_tokens": 1_000,
-                        "context_window_size": 200_000,
-                    },
-                }
-            )
-            assert snapshot is not None
-            await record_context_usage(tmp_path, snapshot)
+        """Session B reads UNAVAILABLE from A's sole fresh snapshot (bound B)."""
+        snapshot = parse_statusline_payload(
+            {
+                "session_id": "session-a",
+                "context_window": {
+                    "total_input_tokens": 190_000,
+                    "total_output_tokens": 5_000,
+                    "context_window_size": 200_000,
+                },
+            }
+        )
+        assert snapshot is not None
+        await record_context_usage(tmp_path, snapshot)
+        set_host_session_id(tmp_path, "session-b")
         managers = await managers_with_every_memory_bank_file(tmp_path)
 
         health = await calculate_health_summary(
@@ -259,6 +261,34 @@ class TestCalculateHealthSummary:
             == ContextOccupancyStatus.UNAVAILABLE
         )
         assert health.context_occupancy.host_session_id is None
+
+    @pytest.mark.asyncio
+    async def test_calculate_health_summary_unbound_caller_unavailable(
+        self, tmp_path: Path
+    ) -> None:
+        """No host-session binding means UNAVAILABLE even with a fresh snapshot."""
+        snapshot = parse_statusline_payload(
+            {
+                "session_id": "someone-else",
+                "context_window": {
+                    "total_input_tokens": 90_000,
+                    "total_output_tokens": 5_000,
+                    "context_window_size": 200_000,
+                },
+            }
+        )
+        assert snapshot is not None
+        await record_context_usage(tmp_path, snapshot)
+        managers = await managers_with_every_memory_bank_file(tmp_path)
+
+        health = await calculate_health_summary(
+            managers,
+            tmp_path,  # type: ignore[arg-type]
+        )
+        assert (
+            health.context_occupancy.occupancy_status
+            == ContextOccupancyStatus.UNAVAILABLE
+        )
 
 
 class TestGenerateSessionSuggestions:

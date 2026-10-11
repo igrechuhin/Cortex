@@ -1,10 +1,10 @@
 """Tests for the context-usage store, statusline parsing, and producer script.
 
-Session-attribution contract: snapshots are per-host-session files; the read
-attributes occupancy only while exactly one session_id has TTL-fresh
-snapshots, and reports ambiguity (rendered UNAVAILABLE upstream) when two or
-more concurrent sessions have fresh data — the reader never guesses which
-window is the caller's own.
+Session-binding contract: snapshots are per-host-session files; a read
+requires the caller's trusted harness session_id (SessionStart hook
+capture) and returns data only on an exact match. A bound session never
+receives another session's occupancy — not even when the other session's
+snapshot is the sole fresh one on disk.
 """
 
 from __future__ import annotations
@@ -21,7 +21,6 @@ from typing import cast
 import pytest
 
 from cortex.tools.session.context_usage_store import (
-    ContextUsageRead,
     ContextUsageSnapshot,
     parse_statusline_payload,
     read_context_usage,
@@ -178,17 +177,48 @@ class TestParseStatuslinePayload:
         assert snapshot.used_percentage == pytest.approx(96.0)  # type: ignore[arg-type]
 
 
-class TestContextUsageStore:
-    """Tests for per-session record/read round-trips and attribution."""
+class TestSessionCacheKey:
+    """Tests for the per-session cache key sanitizer."""
 
-    async def test_record_then_read_roundtrip(self, tmp_path: Path) -> None:
-        """A recorded snapshot reads back attributed to its session."""
+    def test_plain_uuid_keyed_verbatim(self) -> None:
+        """A UUID session id maps to its own snapshot filename."""
+        assert session_cache_key(HOST_SESSION_ID) == (
+            f"session/context-usage-{HOST_SESSION_ID}.json"
+        )
+
+    def test_hostile_id_never_becomes_a_path(self) -> None:
+        """Traversal-bearing ids flatten to one filename under session/."""
+        key = session_cache_key("../../etc/passwd")
+        assert Path(key).parts == ("session", Path(key).name)
+        assert "/" not in key.removeprefix("session/")
+        assert key.startswith("session/context-usage-")
+
+
+class TestContextUsageStore:
+    """Tests for exact-match bound record/read round-trips."""
+
+    async def test_bound_read_roundtrip(self, tmp_path: Path) -> None:
+        """A bound session reads back its own recorded snapshot."""
         snapshot = make_snapshot(session_id="s1")
         await record_context_usage(tmp_path, snapshot)
         assert store_path(tmp_path, "s1").exists()
-        result = await read_context_usage(tmp_path)
-        assert result == ContextUsageRead(snapshot=snapshot)
-        assert not result.ambiguous
+        assert await read_context_usage(tmp_path, "s1") == snapshot
+
+    async def test_unbound_caller_gets_nothing(self, tmp_path: Path) -> None:
+        """No trusted binding (None) always yields None, never a guess."""
+        await record_context_usage(tmp_path, make_snapshot(session_id="s1"))
+        assert await read_context_usage(tmp_path, None) is None
+
+    async def test_bound_session_never_inherits_foreign_sole_snapshot(
+        self, tmp_path: Path
+    ) -> None:
+        """Session B must not read session A's snapshot, even if it is the
+        sole fresh one on disk (B opened within A's TTL / B has no producer)."""
+        await record_context_usage(
+            tmp_path, make_snapshot(used_tokens=199_000, session_id="session-a")
+        )
+        assert session_files(tmp_path) == [store_path(tmp_path, "session-a")]
+        assert await read_context_usage(tmp_path, "session-b") is None
 
     async def test_latest_wins_within_one_session(self, tmp_path: Path) -> None:
         """A second record for the SAME session replaces the first."""
@@ -198,18 +228,16 @@ class TestContextUsageStore:
         await record_context_usage(
             tmp_path, make_snapshot(used_tokens=2_000, session_id="s1")
         )
-        result = await read_context_usage(tmp_path)
-        assert result.snapshot is not None
-        assert result.snapshot.used_tokens == 2_000
+        snapshot = await read_context_usage(tmp_path, "s1")
+        assert snapshot is not None
+        assert snapshot.used_tokens == 2_000
 
     async def test_missing_store_returns_none(self, tmp_path: Path) -> None:
-        """No store files means an empty read, never a fabricated snapshot."""
-        result = await read_context_usage(tmp_path)
-        assert result.snapshot is None
-        assert not result.ambiguous
+        """No store file for the bound session means None, never fabricated."""
+        assert await read_context_usage(tmp_path, "s1") is None
 
-    async def test_corrupted_store_is_skipped(self, tmp_path: Path) -> None:
-        """Garbage, wrong-shape, and wrong-type files read as no snapshot."""
+    async def test_corrupted_store_returns_none(self, tmp_path: Path) -> None:
+        """Garbage, wrong-shape, and wrong-type stores all read as None."""
         path = store_path(tmp_path, "bad")
         path.parent.mkdir(parents=True, exist_ok=True)
         for raw in (
@@ -218,43 +246,25 @@ class TestContextUsageStore:
             json.dumps({"session_id": 1, "used_tokens": "many"}),
         ):
             _ = path.write_text(raw, encoding="utf-8")
-            result = await read_context_usage(tmp_path)
-            assert result.snapshot is None
-            assert not result.ambiguous
+            assert await read_context_usage(tmp_path, "bad") is None
 
-    async def test_two_sessions_isolated_and_ambiguous(self, tmp_path: Path) -> None:
-        """Concurrent sessions keep distinct files; attribution fails closed."""
-        await record_context_usage(
-            tmp_path, make_snapshot(used_tokens=1_000, session_id="s1")
-        )
-        await record_context_usage(
-            tmp_path, make_snapshot(used_tokens=2_000, session_id="s2")
-        )
-        assert len(session_files(tmp_path)) == 2
-        result = await read_context_usage(tmp_path)
-        assert result.snapshot is None
-        assert result.ambiguous
-
-    async def test_stale_snapshots_not_attributed(self, tmp_path: Path) -> None:
-        """TTL-stale snapshots never count as live data."""
+    async def test_stale_snapshot_returns_none(self, tmp_path: Path) -> None:
+        """A TTL-stale snapshot for the bound session reads as None."""
         stale = make_snapshot(as_of=time.time() - 10_000, session_id="s1")
         await record_context_usage(tmp_path, stale)
-        result = await read_context_usage(tmp_path)
-        assert result.snapshot is None
-        assert not result.ambiguous
+        assert await read_context_usage(tmp_path, "s1") is None
 
-    async def test_stale_sibling_does_not_block_fresh_session(
+    async def test_foreign_stale_file_does_not_block_bound_session(
         self, tmp_path: Path
     ) -> None:
-        """A stale session's file does not shadow a fresh session's snapshot."""
+        """A stale other-session file is irrelevant to the bound session."""
         await record_context_usage(
             tmp_path,
             make_snapshot(as_of=time.time() - 10_000, session_id="old"),
         )
         fresh = make_snapshot(used_tokens=3_000, session_id="new")
         await record_context_usage(tmp_path, fresh)
-        result = await read_context_usage(tmp_path)
-        assert result.snapshot == fresh
+        assert await read_context_usage(tmp_path, "new") == fresh
 
 
 class TestProducerScript:
@@ -315,7 +325,9 @@ class TestProducerScript:
         assert session_files(tmp_path) == []
 
     @REQUIRES_JQ
-    def test_payload_without_session_id_writes_nothing(self, tmp_path: Path) -> None:
+    def test_payload_without_session_id_writes_nothing(
+        self, tmp_path: Path
+    ) -> None:
         """Unattributable payloads never land on disk (fail closed)."""
         payload = json.dumps(
             {
@@ -350,5 +362,9 @@ class TestProducerScript:
             f"context-usage-{HOST_SESSION_ID}.json",
             "context-usage-s2.json",
         }
-        result = asyncio.run(read_context_usage(tmp_path))
-        assert result.ambiguous
+        mine = asyncio.run(read_context_usage(tmp_path, "s2"))
+        assert mine is not None
+        assert mine.session_id == "s2"
+        assert mine.used_tokens == 195_000
+        # The other window's data stays invisible to a session bound to s2's id.
+        assert asyncio.run(read_context_usage(tmp_path, HOST_SESSION_ID)) is not None

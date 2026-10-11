@@ -3,20 +3,19 @@
 The MCP server cannot observe the harness context window on its own; the
 only verified source is the harness statusline payload, which the producer
 script ``scripts/cortex-context-usage-statusline.sh`` tees into this store
-on every statusline tick. ``calculate_health_summary()`` reads the
-attributed snapshot back to surface occupancy in ``session()`` health
-output.
+on every statusline tick — one file per host session, named by the payload
+``session_id``.
 
-Snapshots are keyed by the harness ``session_id`` (one file per host
-session) because the producer process cannot reach the MCP server's
-``CORTEX_SESSION_ID``. Attribution is structural, not guessed: when
-TTL-fresh snapshots from MORE THAN ONE host session exist, the read
-reports ``ambiguous`` and callers must render UNAVAILABLE — two concurrent
-windows make "whose context is this" unknowable, and warn-only telemetry
-fails closed instead of reporting the latest writer as the local session.
-All Python access goes through ``core.cache_json_access`` per that
-module's mandate, whose locked writes satisfy the atomic-write
-requirement; the bash producer writes the same files via temp+rename.
+Reads are exact-match bound: the caller must supply its trusted harness
+``session_id`` (captured from the SessionStart hook event into the session
+log). Without that binding — or when the bound session's snapshot is
+missing, TTL-stale, or corrupted — the read returns None and occupancy
+renders UNAVAILABLE. The reader never guesses the caller from on-disk
+snapshots: a session that opens within the TTL of a closed one, or one
+whose producer has not ticked yet, must not inherit another window's
+occupancy. All Python access goes through ``core.cache_json_access`` per
+that module's mandate; the bash producer writes the same files via
+temp+rename.
 """
 
 from __future__ import annotations
@@ -33,7 +32,6 @@ from cortex.core.constants import (
     CONTEXT_USAGE_STALE_AFTER_SECONDS,
     DEFAULT_CONTEXT_WINDOW_TOKENS,
 )
-from cortex.core.path_resolver import get_cache_path
 from cortex.tools.models_base import StrictBaseModel
 
 # Directory (cache key prefix) holding per-session snapshot files.
@@ -65,7 +63,7 @@ class ContextUsageSnapshot(StrictBaseModel):
         description="Context-window size; DEFAULT_CONTEXT_WINDOW_TOKENS fallback",
     )
     used_percentage: float | None = Field(
-        None,
+        default=None,
         description="Computed used/limit percentage; None when limit is unknown",
     )
     as_of: float = Field(
@@ -75,18 +73,6 @@ class ContextUsageSnapshot(StrictBaseModel):
     source: str = Field(
         description="Producer that wrote the snapshot, e.g. 'statusline'"
     )
-
-
-class ContextUsageRead(StrictBaseModel):
-    """Attributed read result: the snapshot, or why there is none.
-
-    ``ambiguous=True`` means TTL-fresh snapshots from two or more distinct
-    host sessions exist; attribution is unknown and callers must fail
-    closed (UNAVAILABLE) instead of guessing the latest writer.
-    """
-
-    snapshot: ContextUsageSnapshot | None = None
-    ambiguous: bool = False
 
 
 def session_cache_key(session_id: str) -> str:
@@ -168,42 +154,26 @@ async def record_context_usage(
     )
 
 
-def _valid_snapshots(data: object) -> list[ContextUsageSnapshot]:
-    """Validate one decoded cache object into zero or one snapshots."""
+async def read_context_usage(
+    project_root: Path, expected_session_id: str | None
+) -> ContextUsageSnapshot | None:
+    """Read THIS session's snapshot; never another session's data.
+
+    Exact-match binding: ``expected_session_id`` is the caller's trusted
+    harness session id (SessionStart hook capture). ``None`` (binding
+    unknown) always yields None — a sole fresh snapshot on disk is NOT
+    evidence it belongs to the caller. TTL-stale and corrupted snapshots
+    also yield None.
+    """
+    if not expected_session_id:
+        return None
+    data = await read_cache_json(project_root, session_cache_key(expected_session_id))
     if not isinstance(data, dict):
-        return []
+        return None
     try:
-        return [ContextUsageSnapshot.model_validate(data)]
+        snapshot = ContextUsageSnapshot.model_validate(data)
     except ValidationError:
-        return []
-
-
-def _iter_snapshot_files(project_root: Path) -> list[Path]:
-    """List per-session snapshot files (enumeration only; reads use the cache module)."""
-    directory = get_cache_path(project_root, None) / CONTEXT_USAGE_DIR_KEY
-    return sorted(directory.glob(f"{SNAPSHOT_FILENAME_PREFIX}*.json"))
-
-
-def _select_attributed(
-    snapshots: list[ContextUsageSnapshot], now: float
-) -> ContextUsageRead:
-    """Pick the attributed snapshot or report ambiguity; stale never counts."""
-    fresh = [s for s in snapshots if now - s.as_of <= CONTEXT_USAGE_STALE_AFTER_SECONDS]
-    session_ids = {s.session_id for s in fresh}
-    if len(session_ids) > 1:
-        return ContextUsageRead(snapshot=None, ambiguous=True)
-    if not fresh:
-        return ContextUsageRead()
-    return ContextUsageRead(snapshot=max(fresh, key=lambda s: s.as_of))
-
-
-async def read_context_usage(project_root: Path) -> ContextUsageRead:
-    """Read snapshots and attribute them; corrupted files are skipped."""
-    now = time.time()
-    snapshots: list[ContextUsageSnapshot] = []
-    for path in _iter_snapshot_files(project_root):
-        data = await read_cache_json(
-            project_root, f"{CONTEXT_USAGE_DIR_KEY}/{path.name}"
-        )
-        snapshots.extend(_valid_snapshots(data))
-    return _select_attributed(snapshots, now)
+        return None
+    if time.time() - snapshot.as_of > CONTEXT_USAGE_STALE_AFTER_SECONDS:
+        return None
+    return snapshot

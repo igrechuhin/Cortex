@@ -70,6 +70,14 @@ class SessionLog(DictLikeModel):
             "predate this field (backward compatible)."
         ),
     )
+    host_session_id: str | None = Field(
+        default=None,
+        description=(
+            "Harness session_id captured from the SessionStart hook event; "
+            "the trusted binding used for context-usage attribution. None "
+            "when no hook has been observed (occupancy stays UNAVAILABLE)."
+        ),
+    )
 
 
 def _get_session_id() -> str:
@@ -236,6 +244,21 @@ def record_spend_tokens(project_root: Path, tokens: int) -> int:
     )
     _save_session_log(log_path, session_log)
     return session_log.cumulative_spend_tokens
+
+
+def set_host_session_id(project_root: Path, host_session_id: str) -> None:
+    """Bind this session log to a harness session_id from a hook payload.
+
+    Loads the session log (tolerating a missing or corrupted file), sets
+    host_session_id, and persists it. The SessionStart hook event is the
+    only trusted source of the caller's harness session id; occupancy
+    reads require this binding and never guess from on-disk snapshots.
+    """
+    _ = _ensure_session_dir(project_root)
+    log_path = _get_session_log_path(project_root)
+    session_log = _load_session_log(log_path)
+    session_log.host_session_id = host_session_id
+    _save_session_log(log_path, session_log)
 
 
 def get_session_id() -> str:
