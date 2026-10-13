@@ -496,12 +496,14 @@ Unified Memory Bank file management tool for read/write/metadata operations.
 
 - `file_name` (str) - Name of the file within the Memory Bank directory.
   - Examples: `"projectBrief.md"`, `"activeContext.md"`, `"systemPatterns.md"`.
-  - Must be a safe filename (no `..`, `/`, `\` or path traversal).
+  - Must be a safe filename (no `..`, `/`, `\` or path traversal), except for
+    the closed workspace-relative targets of `patch_document` below.
 - `operation` (str enum) - Operation to perform:
   - `"read"` - Read file content (optionally with metadata).
   - `"write"` - Write content with versioning and metadata updates.
   - `"metadata"` - Return metadata only (no file content).
   - `"rollback"` - Restore file from version snapshot (requires `version`).
+  - `"patch_document"` - Hash-guarded repair of an existing authored document.
 
 **Optional Parameters:**
 
@@ -509,6 +511,51 @@ Unified Memory Bank file management tool for read/write/metadata operations.
 - `version` (int | None) - Version number to restore from (required when `operation="rollback"`).
 - `include_metadata` (bool) - When `operation="read"`, include metadata block.
 - `change_description` (str | None) - Human-friendly description stored in version history.
+
+**Guarded existing-document repair:**
+
+Use `operation="patch_document"` only for an operator-approved literal repair.
+Unlike the filename-only operations above, `file_name` must be an existing,
+workspace-relative Markdown path under `.cortex/plans/`, `.cortex/analyses/`,
+`.cortex/reviews/`, or one of these exact Memory Bank paths:
+
+- `.cortex/memory-bank/roadmap.md`
+- `.cortex/memory-bank/activeContext.md`
+- `.cortex/memory-bank/progress.md`
+
+Pass `content` as a JSON string:
+
+```json
+{
+  "expected_sha256": "<64 lowercase hex characters from the actual raw file bytes>",
+  "replacements": [
+    {"old": "measured 2026-10-02 14:27Z", "new": "measured 2026-10-02T14:27Z", "count": 1}
+  ],
+  "dry_run": true
+}
+```
+
+Preview first, inspect the returned `project_root`, `target`, `before_sha256`,
+`after_sha256` and `replacement_counts`, then apply the identical payload with
+`dry_run: false`. A stale hash requires reading the bytes and previewing again;
+do not infer a hash from normalized tool output. Extra fields are rejected.
+
+For `activeContext.md` and `progress.md`, replacements repair only nonempty
+single-line prose in existing entries (including factual/timestamp citations).
+All line positions and separators, headings, first bold entry labels, list and
+check-box prefixes, comments, and status/lifecycle markers stay unchanged.
+Entry creation, removal, reordering, duplicate lines, heading/block edits and
+whole-file replacement are not supported by this repair operation. Use the
+existing targeted lifecycle/append operations for their supported changes.
+
+All targets retain the existing unique-literal, disjoint-span, no-op, raw-hash,
+frontmatter, first-H1, root-confinement, traversal and symlink guards. Application
+locks and rechecks the preimage under the lock; roadmap task locks remain
+enforced. File mode and unrelated bytes are preserved. This operation never
+registers/reactivates a plan or writes extra context/wiki artifacts. The JSON
+response reports `dry_run` and `mutation_performed`; previews do not write.
+Operator approval is a caller prerequisite, not a payload flag or a new
+authentication mechanism; the existing tool visibility boundary is unchanged.
 
 **Description:**
 
@@ -872,6 +919,51 @@ Duplicate slugs are not selected by traversal order. They appear in the
 dependencies until the identity conflict is resolved. The session brief and
 `cortex://context` graph summary report the same ambiguity count; detailed context
 also includes `plan_graph_ambiguous`.
+
+---
+
+### plan(operation="set_execution")
+
+Correct the execution owner of one existing active plan using an exact root-level
+`slug` (without `.md`) and `content` containing JSON:
+
+```json
+{"expected_sha256":"<64 lowercase hex SHA-256 of raw file bytes>","execution":"agent","reason":"Explicitly authorized owner correction","dry_run":true}
+```
+
+All four fields are required; `execution` is `agent` or `operator`, `reason` must
+be nonempty, and `dry_run` must be a real boolean. A preview returns the proposed
+hash without changing bytes; apply uses the same expected preimage with
+`dry_run:false`. Both paths recheck identity and bytes under the per-document
+lock. Stale hashes, missing or duplicate/conflicting owners, terminal statuses or
+titles, archives, ambiguous identities, drafts, README/TEMPLATE scaffolding,
+traversal, and symlinks are rejected. Only the unique scalar owner token changes;
+quoting, comments, status, identity, body, mode, and all unrelated bytes survive.
+
+The response includes `project_root`, project-relative `target`, `before_sha256`,
+`after_sha256`, `previous_execution`, `new_execution`, `reason`, `dry_run`, and
+`mutation_performed`. An already-matching owner is a successful no-op. This is an
+explicitly authorized metadata correction, not completion or implicit authority
+to perform plan actions. It does not register a plan, modify the roadmap, or
+broaden `manage_file(operation="patch_document")` frontmatter permissions.
+
+Use the checkout-only SDK bridge without installing or reloading a server:
+
+```bash
+/Users/igrechuhin/Repo/Cortex/.venv/bin/python \
+  /Users/igrechuhin/Repo/Cortex/scripts/set_plan_execution.py \
+  --root /Users/igrechuhin/Repo/TradeWing \
+  --slug "$SLUG" --expected-sha256 "$RAW_SHA256" \
+  --execution agent --reason "$AUTHORIZED_REASON"
+```
+
+This starts a fresh stdio process from the updated local source, identifies the
+SDK client as `cortex-local-execution-correction`, and advertises only the
+specified project root. The default is dry-run; add `--apply` for the explicitly
+authorized correction using the same raw-byte preimage. The local checkout
+`.venv` must already contain Cortex and the MCP SDK dependencies. No production
+package, client configuration, or running server is modified. Normal backend
+initialization still applies; this bridge is not a read-only server sandbox.
 
 ---
 

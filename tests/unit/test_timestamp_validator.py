@@ -2,11 +2,43 @@
 
 from unittest.mock import patch
 
+import pytest
+
 from cortex.validation.timestamp_validator import scan_timestamps
 
 
 class TestScanTimestamps:
     """Tests for scan_timestamps()."""
+
+    @pytest.mark.parametrize("counts", ("21/34/43", "22/33/41", "40-50-60"))
+    def test_inventory_counts_are_not_dates(self, counts: str) -> None:
+        """Numeric triplets without calendar components are not date citations."""
+        result = scan_timestamps(f"Graph inventory ({counts}) confirms selection.")
+        assert result.valid_count == 0
+        assert result.invalid_format_count == 0
+        assert result.violations == []
+
+    @pytest.mark.parametrize(
+        "timestamp",
+        (
+            "31/12/2024",
+            "12/31/24",
+            "31-12-24",
+            "99/99/2026",
+            "31/13/26",
+            "32/12/26",
+            "00/00/26",
+            "30/02/2026",
+            "123-12-31",
+        ),
+    )
+    def test_non_standard_date_citations_remain_violations(
+        self, timestamp: str
+    ) -> None:
+        """Date recognition retains unsupported and malformed calendar dates."""
+        result = scan_timestamps(f"Evidence cites ({timestamp}).")
+        assert result.invalid_format_count == 1
+        assert [v.timestamp for v in result.violations] == [timestamp]
 
     def test_accepts_date_only_line(self) -> None:
         """A line with only YYYY-MM-DD is valid and counted."""
@@ -46,6 +78,7 @@ class TestScanTimestamps:
             "Run pointer `26-07-09-17-42-55-sprint2`, running on M1 Max",
             "See .cortex/.session/logs/swift-test-2026-07-25-16-17-51.log:19623",
             "Committed over 2026-07-13/14",
+            "Run pointer `run-31/12/24`; log `31-12-24-result`",
         ):
             result = scan_timestamps(line)
             assert result.invalid_format_count == 0, line

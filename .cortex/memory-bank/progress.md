@@ -1,6 +1,11 @@
 <!-- memory_type: milestone -->
 # Progress Log
 
+## 2026-10-13
+
+- <!-- memory_type: status -->
+**Guarded Memory Bank entry repairs and date-signal timestamp semantics** - manage_file patch_document accepts .cortex/memory-bank/activeContext.md and progress.md for operator-approved single-line entry-prose repairs (labels, list syntax, comments, status/lifecycle markers, headings and blocks frozen; insertion/deletion/reordering and duplicate lines rejected; hash-guarded preview/apply/stale flow unchanged), with closed-target, entry-boundary and sole-root SDK protocol tests. Timestamp validator now treats slash/hyphen triplets as dates only with a calendar signal, so inventory counts (21/34/43) are not violations; docs updated (tools API, commit-pipeline phases design). Commit prompt DocC Pass 3 gained an applicability gate (runs exactly when quality.yml defines the DocC step; missing Sources with the step defined stays blocking) replacing per-commit operator waivers.
+
 ## 2026-10-11
 
 - <!-- memory_type: preference -->

@@ -18,6 +18,18 @@ from cortex.memory.wal import wal_atomic_write_bytes
 from cortex.tools.files.lock_guard import verify_lock_for_file_operation
 from cortex.tools.plans.completion_transaction_io import validate_contained_path
 
+_ENTRY_TARGETS = frozenset(
+    {".cortex/memory-bank/activeContext.md", ".cortex/memory-bank/progress.md"}
+)
+_MEMORY_BANK_TARGETS = _ENTRY_TARGETS | {".cortex/memory-bank/roadmap.md"}
+_ENTRY_PREFIX = re.compile(r"^[ \t]*(?:(?:[-+*]|\d+[.)])[ \t]+(?:\[[ xX]\][ \t]+)?)*")
+_LIFECYCLE_MARKERS = re.compile(
+    r"\b(?:PENDING|IN_PROGRESS|BLOCKED|DONE|READY|COMPLETE(?:D)?|PARTIAL|"
+    + r"CANCEL(?:L)?ED|ARCHIVED|REJECTED|HELD|RESOLVED|WONTFIX|NOT_JUSTIFIED|"
+    + r"ACTIVE|operator|agent)\b",
+    re.I,
+)
+
 
 class DocumentReplacement(BaseModel):
     """One unique literal replacement, never an inferred global substitution."""
@@ -54,7 +66,7 @@ def _document_target(root: Path, file_name: str) -> Path:
             and parts[0] == ".cortex"
             and parts[1] in {"plans", "analyses", "reviews"}
         )
-        and file_name != ".cortex/memory-bank/roadmap.md"
+        and file_name not in _MEMORY_BANK_TARGETS
     ):
         raise ValueError("Document target is outside the closed patch roots")
     target = root / file_name
@@ -101,7 +113,9 @@ def _replacement_spans(
     return spans
 
 
-def _patched_bytes(before: bytes, request: DocumentPatchRequest) -> bytes:
+def _patched_bytes(
+    before: bytes, request: DocumentPatchRequest, file_name: str
+) -> bytes:
     _ = before.decode("utf-8")
     if hashlib.sha256(before).hexdigest() != request.expected_sha256:
         raise ValueError("Stale expected_sha256: document bytes changed; read again")
@@ -116,7 +130,94 @@ def _patched_bytes(before: bytes, request: DocumentPatchRequest) -> bytes:
         raise ValueError("Document patch must change bytes")
     if document_metadata_bytes(before) != document_metadata_bytes(after):
         raise ValueError("Document frontmatter and title must remain unchanged")
+    if file_name in _ENTRY_TARGETS:
+        _validate_entry_patch(before, after, request)
     return after
+
+
+def _entry_markers(line: str) -> tuple[str, ...]:
+    """Freeze entry identity, list/check-box syntax, comments and lifecycle words."""
+    prefix = _ENTRY_PREFIX.match(line)
+    label = re.search(r"\*\*.+?\*\*", line)
+    return (
+        prefix.group() if prefix is not None else "",
+        label.group() if label is not None else "",
+        *(match.group() for match in re.finditer(r"<!--.*?-->", line)),
+        *(match.group() for match in _LIFECYCLE_MARKERS.finditer(line)),
+        *(
+            match.group()
+            for match in re.finditer(
+                r"\b(?:status|execution|lifecycle)\s*[:=]\s*\S+", line, re.I
+            )
+        ),
+    )
+
+
+def _entry_structure(line: str) -> bool:
+    """Only ordinary entry prose is repairable, not Markdown outline/blocks."""
+    return (
+        not line.strip()
+        or line.startswith(("    ", "\t"))
+        or re.fullmatch(r"\s*(?:[-*_]\s*){3,}", line) is not None
+        or re.match(
+            r"^(?: {4}|\t)|^\s*(?:#{1,6}(?:\s|$)|[=-]+\s*$|(?:[-*_]\s*){3,}$|"
+            + r"\x60{3,}|~{3,}|>|<|\||\[.*?\]:)",
+            _ENTRY_PREFIX.sub("", line),
+        )
+        is not None
+    )
+
+
+def _entry_fence(line: str, fence: str | None) -> str | None:
+    marker = re.match(r"^(\x60{3,}|~{3,})(.*)$", _ENTRY_PREFIX.sub("", line))
+    if marker is None:
+        return fence
+    delimiter, suffix = marker.groups()
+    if fence is None:
+        return delimiter
+    if delimiter[0] == fence[0] and len(delimiter) >= len(fence) and not suffix.strip():
+        return None
+    return fence
+
+
+def _validate_entry_literals(request: DocumentPatchRequest) -> None:
+    for replacement in request.replacements:
+        if not replacement.new.strip() or any(
+            char in "\r\n\v\f\x85\u2028\u2029" or ord(char) < 32
+            for char in replacement.old + replacement.new
+        ):
+            raise ValueError("Entry repairs require nonempty single-line literals")
+
+
+def _validate_entry_patch(
+    before: bytes, after: bytes, request: DocumentPatchRequest
+) -> None:
+    _validate_entry_literals(request)
+    old_lines, new_lines = (
+        before.decode("utf-8").splitlines(),
+        after.decode("utf-8").splitlines(),
+    )
+    fence: str | None = None
+    for index, (old, new) in enumerate(zip(old_lines, new_lines, strict=True)):
+        fence = _entry_fence(old, fence)
+        if old == new:
+            continue
+        setext = index + 1 < len(old_lines) and re.fullmatch(
+            r"\s*[=-]+\s*", old_lines[index + 1]
+        )
+        if (
+            fence is not None
+            or setext
+            or _entry_structure(old)
+            or _entry_structure(new)
+        ):
+            raise ValueError("Entry repairs cannot change headings or Markdown blocks")
+        if _entry_markers(old) != _entry_markers(new):
+            raise ValueError(
+                "Entry labels, list syntax and status/lifecycle markers must remain unchanged"
+            )
+        if new in old_lines or new_lines.count(new) > 1:
+            raise ValueError("Entry repairs cannot duplicate or reorder existing lines")
 
 
 def write_existing_document(
@@ -161,7 +262,7 @@ async def _patch_locked(
 ) -> str:
     target = _document_target(root, file_name)
     before = target.read_bytes()
-    after = _patched_bytes(before, request)
+    after = _patched_bytes(before, request, file_name)
     if file_name == ".cortex/memory-bank/roadmap.md" and not request.dry_run:
         allowed, error = await verify_lock_for_file_operation(
             root, "roadmap.md", after.decode("utf-8"), None
@@ -181,7 +282,7 @@ async def handle_document_patch(root: Path, file_name: str, content: str | None)
         root = root.absolute()
         request = DocumentPatchRequest.model_validate_json(content or "{}")
         target = _document_target(root, file_name)
-        _ = _patched_bytes(target.read_bytes(), request)
+        _ = _patched_bytes(target.read_bytes(), request, file_name)
         if request.dry_run:
             return await _patch_locked(root, file_name, request)
         lock = target.with_suffix(target.suffix + ".lock")

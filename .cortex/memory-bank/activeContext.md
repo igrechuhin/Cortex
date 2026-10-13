@@ -3,6 +3,11 @@
 
 **This file records completed work only.** For current status and upcoming work see [roadmap.md](roadmap.md).
 
+## Completed Work (2026-10-13)
+
+- ✅ **Guarded Memory Bank entry repairs and date-signal timestamp semantics** - COMPLETE (2026-10-13) - <!-- memory_type: status -->
+manage_file patch_document now repairs .cortex/memory-bank/activeContext.md and progress.md: operator-approved single-line entry-prose repairs only, with entry labels (first bold span), list/check-box syntax, comments, status/lifecycle markers, headings and Markdown blocks frozen; entry insertion, deletion, reordering and duplicate lines rejected; sole-root SDK integration test covers preview/apply/stale evidence. Timestamp validation treats slash/hyphen numeric triplets as date citations only with a calendar signal (3+ digit year field, month-sized leading field, or two day-sized leading fields), so inventory counts like 21/34/43 no longer surface as invalid dates; current-year typo check applies to work-entry timestamps only. Commit-prompt DocC Pass 3 gained an applicability gate (runs exactly when the repo's quality.yml defines the DocC step; CI without the step records skip-with-evidence, while missing Sources with the step defined stays blocking), replacing per-commit operator waivers.
+
 ## Completed Work (2026-10-11)
 
 - ✅ **Context occupancy exact-match session binding** - COMPLETE (2026-10-11) - <!-- memory_type: preference -->

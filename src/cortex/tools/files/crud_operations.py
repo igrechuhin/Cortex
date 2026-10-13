@@ -175,7 +175,12 @@ async def manage_file(
       are not accepted. Stale previews, symlinks and collisions fail without mutation.
     - patch_document: Hash-guarded literal repair of an EXISTING workspace-relative
       Markdown target under .cortex/plans/, .cortex/analyses/, .cortex/reviews/, or
-      exact .cortex/memory-bank/roadmap.md. Pass content JSON with expected_sha256
+      exact .cortex/memory-bank/{roadmap,activeContext,progress}.md. For the last
+      two, repair only existing single-line entry prose; headings, entry labels
+      (first bold span), list/check-box syntax, comments and status/lifecycle
+      markers remain unchanged. No entry insertion, deletion, reordering or
+      block edits. Obtain operator approval for the specific repair first.
+      Pass content JSON with expected_sha256
       (64 lowercase hex characters), replacements [{old, new, count: 1}], and
       optional dry_run (default false). Each old literal must be unique/nonempty;
       overlaps, no-ops, stale bytes, unsafe paths and symlinks are rejected.

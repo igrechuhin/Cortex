@@ -1,7 +1,5 @@
 # Cortex Operations Log
 
-## [2026-08-31T09:43] plan | Created plan: Demo Plan ·3
-
 ## [2026-08-31T09:43] plan | Created plan: Mini
 
 ## [2026-08-31T09:43] plan | Created plan: Test Plan
@@ -2095,3 +2093,5 @@ Live harness context-window occupancy telemetry shipped: scripts/cortex-context-
 status=success; changed_files=None
 
 ## [2026-10-11T12:01] lint | Quality gate passed
+
+## [2026-10-13T09:57] lint | Quality gate passed

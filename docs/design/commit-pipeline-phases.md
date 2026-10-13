@@ -98,6 +98,14 @@ are up-to-date and internally consistent before committing.
 | 9 | Timestamp Validation | timestamp-validator | Verify YYYY-MM-DD timestamp format |
 | 10 | State Verification | (orchestration) | Verify roadmap = future work, activeContext = completed work |
 
+Timestamp validation accepts `YYYY-MM-DD` and `YYYY-MM-DDTHH:MM`; seconds,
+timezones, space-separated times, and non-standard date citations remain errors.
+Slash/hyphen numeric triplets need a calendar signal: a three/four-digit year,
+a month-sized leading field, or two day-sized leading fields (including malformed
+dates). Inventory counts such as `21/34/43` lack that signal and are not dates.
+Identifier/path boundaries are preserved. The current-year ±1 typo check applies
+to work-entry timestamps, not historical dates cited in prose.
+
 ### Phase B — Inputs
 
 - Clean codebase from Phase A (all checks passing).

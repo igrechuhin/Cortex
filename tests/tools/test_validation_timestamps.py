@@ -37,6 +37,8 @@ class TestValidateTimestamps:
             "# Active Context\n\n"
             "## Current Focus (2026-01-14)\n\n"
             "Some content here with timestamp 2026-01-15.\n"
+            "Graph inventory (21/34/43) and (22/33/41).\n"
+            "Run pointer `run-31/12/24`; log `31-12-24-result`.\n"
         )
         _ = test_file.write_text(content)
 
@@ -69,6 +71,7 @@ class TestValidateTimestamps:
             "# Progress\n\n"
             "- ✅ Feature X - COMPLETE (2026-01-13 12:00)\n"
             "- ✅ Feature Y - COMPLETE (2026-01-13T12:00:00)\n"
+            "Graph inventory 21/34/43, not a date.\n"
         )
         _ = test_file.write_text(content)
 
@@ -87,6 +90,10 @@ class TestValidateTimestamps:
         assert result_data["invalid_format_count"] > 0
         assert result_data["valid"] is False
         assert len(result_data["violations"]) > 0
+        assert {v["timestamp"] for v in result_data["violations"]} == {
+            "2026-01-13 12:00",
+            "2026-01-13T12:00:00",
+        }
 
     @pytest.mark.asyncio
     async def test_validate_timestamps_single_file_invalid_datetime_and_non_standard_date(

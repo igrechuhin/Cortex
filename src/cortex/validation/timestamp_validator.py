@@ -174,6 +174,17 @@ def _check_invalid_datetime_formats(
     return invalid_format_count, violations
 
 
+def _looks_like_date(date_str: str) -> bool:
+    """Recognize date components without requiring a valid calendar date."""
+    first, second, year = re.split(r"[/-]", date_str)
+    if len(first) >= 3 or len(year) >= 3:
+        return True
+    left, right = int(first), int(second)
+    # Keep malformed dates with a month-sized field or two day-sized fields.
+    # Larger count triplets with a two-digit final field lack a calendar signal.
+    return 1 <= left <= 12 or 1 <= right <= 12 or (left <= 31 and right <= 31)
+
+
 def _check_other_date_formats(
     line: str, line_num: int
 ) -> tuple[int, list[TimestampViolationModel]]:
@@ -193,8 +204,7 @@ def _check_other_date_formats(
     other_matches = re.finditer(other_pattern, line)
     for match in other_matches:
         date_str = match.group(1)
-        # Skip if it matches valid YYYY-MM-DD format
-        if re.match(r"\d{4}-\d{2}-\d{2}$", date_str):
+        if not _looks_like_date(date_str):
             continue
         invalid_format_count += 1
         violations.append(
