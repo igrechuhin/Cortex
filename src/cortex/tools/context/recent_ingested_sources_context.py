@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from pathlib import Path
 
 _RECENT_SOURCE_LIMIT = 5
@@ -15,10 +16,12 @@ def _normalize_title(value: str) -> str:
     return collapsed
 
 
-def _extract_title_from_markdown(path: Path) -> str | None:
+def _extract_title_from_markdown(
+    path: Path, reader: Callable[[Path], str] | None = None
+) -> str | None:
     try:
-        text = path.read_text(encoding="utf-8")
-    except OSError:
+        text = reader(path) if reader is not None else path.read_text(encoding="utf-8")
+    except (OSError, UnicodeError):
         return None
     for line in text.splitlines():
         stripped = line.strip()
@@ -37,7 +40,9 @@ def _title_from_slug(path: Path) -> str:
     return " ".join(word.capitalize() for word in words)
 
 
-def build_recent_ingested_sources_markdown(memory_bank_dir: Path) -> str | None:
+def build_recent_ingested_sources_markdown(
+    memory_bank_dir: Path, reader: Callable[[Path], str] | None = None
+) -> str | None:
     """Return markdown for ## Recently Ingested Sources, or None if no sources exist.
 
     ``memory_bank_dir`` is any project root-relative tree that contains a ``sources/``
@@ -63,7 +68,7 @@ def build_recent_ingested_sources_markdown(memory_bank_dir: Path) -> str | None:
     top = pairs[:_RECENT_SOURCE_LIMIT]
     lines: list[str] = ["## Recently Ingested Sources", ""]
     for path, _mtime in top:
-        title = _extract_title_from_markdown(path) or _title_from_slug(path)
+        title = _extract_title_from_markdown(path, reader) or _title_from_slug(path)
         rel = path.relative_to(memory_bank_dir).as_posix()
         lines.append(f"- [{title}]({rel})")
     return "\n".join(lines)

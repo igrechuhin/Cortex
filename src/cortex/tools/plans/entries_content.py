@@ -31,9 +31,9 @@ def _extract_plan_path_from_bullet(line: str) -> str | None:
     Supports both canonical ``Plan: ...`` bullets and checklist-style bullets
     that only include a backticked ``plans/...`` path.
     """
-    plan_label_match = re.search(r"Plan:\s*([^\s]+)", line)
-    if plan_label_match:
-        return _normalize_plan_path(plan_label_match.group(1))
+    plan_labels = re.findall(r"Plan:\s*([^\s]+)", line, flags=re.IGNORECASE)
+    if plan_labels:
+        return _normalize_plan_path(plan_labels[-1])
 
     plan_path_match = re.search(r"`?((?:\.cortex/)?plans/[^\s`]+?\.md)`?", line)
     if plan_path_match:

@@ -512,6 +512,11 @@ Every `pipeline_handoff` phase transition is recorded as a node in the
 experience store (`.cortex/experience/experience.db`), so recovery is a
 query, not a checkpoint: a crashed run loses at most one phase.
 
+Experience-store operations use short-lived SQLite connections. Each transaction
+commits on success or rolls back on an exception, then closes its connection
+deterministically, including when connection configuration or schema
+initialization fails. Repeated recovery scans do not retain database handles.
+
 ### How Resume Works
 
 1. **Detection:** `session()` lists interrupted runs in

@@ -30,19 +30,41 @@ from cortex.tools.context.l1_essential import build_l1
 from cortex.tools.context.l2_on_demand import build_l2
 from cortex.tools.context.l3_deep_search import build_l3
 from cortex.tools.context.layers import ContextConfig, ContextLayer, LayerResult
+from cortex.tools.context.scoped_snapshot import ScopedSnapshot
 from cortex.tools.optimization.context_appenders import (
-    append_context_scoped_payload,
-    append_explore_summary_to_context_payload,
-    append_recent_artifacts_to_context_payload,
-    append_recent_ingested_sources_to_context_payload,
-    append_recent_operations_to_context_payload,
+    append_context_scoped_payload as _append_scoped_context_to_payload,
+)
+from cortex.tools.optimization.context_appenders import (
+    append_explore_summary_to_context_payload as _append_explore_summary_to_context_payload,
+)
+from cortex.tools.optimization.context_appenders import (
+    append_recent_artifacts_to_context_payload as _append_recent_artifacts_to_context_payload,
+)
+from cortex.tools.optimization.context_appenders import (
+    append_recent_ingested_sources_to_context_payload as _append_recent_ingested_sources_to_context_payload,
+)
+from cortex.tools.optimization.context_appenders import (
+    append_recent_operations_to_context_payload as _append_recent_operations_to_context_payload,
+)
+from cortex.tools.optimization.context_appenders import (
     append_session_goal_to_context_payload,
-    append_session_scope_to_context_payload,
-    read_explore_summary_markdown,
-    read_recent_artifacts_markdown,
     read_recent_ingested_sources_markdown,
-    read_recent_operations_lines,
-    resolve_context_cache_scope,
+    session_config_mapping,
+)
+from cortex.tools.optimization.context_appenders import (
+    append_session_scope_to_context_payload as _append_session_scope_to_context_payload,
+)
+from cortex.tools.optimization.context_appenders import (
+    read_explore_summary_markdown as _read_explore_summary_markdown,
+)
+from cortex.tools.optimization.context_appenders import (
+    read_recent_artifacts_markdown as _read_recent_artifacts_markdown,
+)
+from cortex.tools.optimization.context_appenders import (
+    read_recent_operations_lines as _read_recent_operations_lines,
+)
+from cortex.tools.optimization.context_appenders import (
+    resolve_context_cache_scope as _resolve_context_cache_scope,
 )
 from cortex.tools.optimization.context_budget import (
     context_token_counter,
@@ -50,6 +72,11 @@ from cortex.tools.optimization.context_budget import (
     invalid_context_budget,
 )
 from cortex.tools.optimization.relevance_operations import get_relevance_scores_impl
+from cortex.tools.optimization.scoped_resource import (
+    load_revision_bound_context,
+    parse_context_layers,
+    render_context_layer,
+)
 from cortex.tools.optimization.summarization_operations import summarize_content_impl
 from cortex.tools.synapse.rules_operations import get_relevant_rules
 
@@ -79,23 +106,10 @@ __all__ = [
     "summarize_content_resource",
 ]
 
-_context_resource_cache: TTLCache[str] = TTLCache(MCP_STATIC_RESOURCE_CACHE_TTL_SECONDS)
+_context_resource_cache: TTLCache[tuple[str, str]] = TTLCache(
+    MCP_STATIC_RESOURCE_CACHE_TTL_SECONDS
+)
 _LOAD_CONTEXT_DEFAULT_BUDGET = 10000
-
-_append_session_scope_to_context_payload = append_session_scope_to_context_payload
-_resolve_context_cache_scope = resolve_context_cache_scope
-_append_recent_operations_to_context_payload = (
-    append_recent_operations_to_context_payload
-)
-_append_recent_artifacts_to_context_payload = append_recent_artifacts_to_context_payload
-_append_recent_ingested_sources_to_context_payload = (
-    append_recent_ingested_sources_to_context_payload
-)
-_append_explore_summary_to_context_payload = append_explore_summary_to_context_payload
-_read_recent_operations_lines = read_recent_operations_lines
-_read_recent_artifacts_markdown = read_recent_artifacts_markdown
-_read_explore_summary_markdown = read_explore_summary_markdown
-_append_scoped_context_to_payload = append_context_scoped_payload
 
 
 def invalidate_context_resource_cache(key: str | None = None) -> None:
@@ -103,40 +117,6 @@ def invalidate_context_resource_cache(key: str | None = None) -> None:
         _context_resource_cache.clear()
     else:
         _context_resource_cache.invalidate(key)
-
-
-def _parse_context_layers(raw_layers: object) -> list[ContextLayer]:
-    if isinstance(raw_layers, list) and raw_layers:
-        values = [
-            str(value).strip().lower() for value in cast(list[object], raw_layers)
-        ]
-    elif isinstance(raw_layers, str) and raw_layers.strip():
-        values = [value.strip().lower() for value in raw_layers.split(",")]
-    else:
-        values = ["l0", "l1"]
-    resolved: list[ContextLayer] = []
-    for value in values:
-        for layer in ContextLayer:
-            if value == layer.value:
-                resolved.append(layer)
-                break
-    if ContextLayer.IDENTITY not in resolved:
-        resolved.insert(0, ContextLayer.IDENTITY)
-    if ContextLayer.ESSENTIAL not in resolved:
-        resolved.insert(1 if resolved else 0, ContextLayer.ESSENTIAL)
-    return list(dict.fromkeys(resolved))
-
-
-def _render_layer(layer: LayerResult) -> str:
-    if not layer.content.strip():
-        return ""
-    title_map = {
-        ContextLayer.IDENTITY: "### L0 Identity",
-        ContextLayer.ESSENTIAL: "### L1 Essential Story",
-        ContextLayer.ON_DEMAND: "### L2 On-Demand",
-        ContextLayer.DEEP_SEARCH: "### L3 Deep Search",
-    }
-    return f"{title_map[layer.layer]}\n{layer.content}".strip()
 
 
 async def _build_layered_context_payload(
@@ -160,7 +140,7 @@ def _render_layers(results: list[LayerResult]) -> tuple[str, list[str]]:
     loaded_layers = [
         result.layer.value.upper() for result in results if result.content.strip()
     ]
-    body_blocks = [_render_layer(result) for result in results]
+    body_blocks = [render_context_layer(result) for result in results]
     body = "\n\n".join([block for block in body_blocks if block]).strip()
     loaded_names = ", ".join(loaded_layers)
     header = f"## Context layers loaded: [{loaded_names}]"
@@ -338,26 +318,31 @@ async def get_relevance_scores(
 
 
 async def build_context_resource_payload_async(
-    base_payload: str, project_root: Path
+    base_payload: str, project_root: Path, snapshot: ScopedSnapshot | None = None
 ) -> str:
-    recent_ops = _read_recent_operations_lines(project_root)
-    recent_artifacts = _read_recent_artifacts_markdown(project_root)
-    recent_ingested_sources = read_recent_ingested_sources_markdown(project_root)
-    explore_summary = _read_explore_summary_markdown(project_root)
-    with_goal = append_session_goal_to_context_payload(base_payload, project_root)
+    summaries = _context_resource_summaries(project_root, snapshot)
+    with_goal = (
+        append_session_goal_to_context_payload(base_payload, project_root, snapshot)
+        if snapshot
+        else append_session_goal_to_context_payload(base_payload, project_root)
+    )
     scoped = _append_session_scope_to_context_payload(with_goal)
-    scoped = await _append_scoped_context_to_payload(scoped, project_root)
+    scoped = (
+        await _append_scoped_context_to_payload(scoped, project_root, snapshot)
+        if snapshot
+        else await _append_scoped_context_to_payload(scoped, project_root)
+    )
     payload = _append_recent_artifacts_to_context_payload(
         _append_recent_operations_to_context_payload(
             _append_explore_summary_to_context_payload(
                 _append_recent_ingested_sources_to_context_payload(
-                    scoped, recent_ingested_sources
+                    scoped, summaries.get("recent_ingested_sources")
                 ),
-                explore_summary,
+                summaries.get("explore_summary"),
             ),
-            recent_ops,
+            summaries.get("recent_operations"),
         ),
-        recent_artifacts,
+        summaries.get("recent_artifacts"),
     )
     return inject_plan_graph_into_context_result(payload, project_root)
 
@@ -368,10 +353,15 @@ async def _assemble_budgeted_context(
     layers: list[ContextLayer],
     topic: str | None,
     query: str | None,
+    root: Path,
+    snapshot: ScopedSnapshot | None,
 ) -> str:
     result = await load_context_impl(task_description=task, token_budget=budget)
-    root = await resolve_project_root_async(None, None)
-    base_payload = await build_context_resource_payload_async(result, root)
+    base_payload = (
+        await build_context_resource_payload_async(result, root, snapshot)
+        if snapshot
+        else await build_context_resource_payload_async(result, root)
+    )
     layered, loaded, essential, essential_names = await _build_layered_context_payload(
         root, layers, topic, query
     )
@@ -392,7 +382,7 @@ async def load_context() -> str:
 
     cfg = read_session_config()
     task = str(cfg.get("task_description", "general session context"))
-    selected_layers = _parse_context_layers(cfg.get("context_layers"))
+    selected_layers = parse_context_layers(cfg.get("context_layers"))
     selected_topic = str(cfg.get("context_topic", "")).strip() or None
     selected_query = str(cfg.get("context_query", "")).strip() or None
     raw_budget = cfg.get("token_budget", _LOAD_CONTEXT_DEFAULT_BUDGET)
@@ -400,19 +390,25 @@ async def load_context() -> str:
     if budget_error is not None:
         return budget_error
     budget = cast(int, raw_budget)
-    scope_key = _resolve_context_cache_scope()
-    cache_key = (
-        f"context:{task}:{budget}:{scope_key}:"
-        f"{','.join(layer.value for layer in selected_layers)}:{selected_topic}:{selected_query}"
-    )
-    cached = _context_resource_cache.get(cache_key)
-    if cached is not None:
-        return cached
-    out = await _assemble_budgeted_context(
+    cache_key = _resource_cache_key(
         task, budget, selected_layers, selected_topic, selected_query
     )
-    _context_resource_cache.set(cache_key, out)
-    return out
+    root = await resolve_project_root_async(None, None)
+    return await load_revision_bound_context(
+        root,
+        session_config_mapping(cfg),
+        cache_key,
+        _context_resource_cache,
+        lambda snapshot: _assemble_budgeted_context(
+            task,
+            budget,
+            selected_layers,
+            selected_topic,
+            selected_query,
+            root,
+            snapshot,
+        ),
+    )
 
 
 @ensure_usage_context
@@ -431,4 +427,31 @@ async def summarize_content_resource(file_name: str) -> str:
         file_name=name_arg,
         target_reduction=None,
         strategy=None,
+    )
+
+
+def _context_resource_summaries(
+    project_root: Path, snapshot: ScopedSnapshot | None
+) -> dict[str, str | None]:
+    if snapshot is not None:
+        return snapshot.summaries
+    return {
+        "recent_operations": _read_recent_operations_lines(project_root),
+        "recent_artifacts": _read_recent_artifacts_markdown(project_root),
+        "recent_ingested_sources": read_recent_ingested_sources_markdown(project_root),
+        "explore_summary": _read_explore_summary_markdown(project_root),
+    }
+
+
+def _resource_cache_key(
+    task: str,
+    budget: int,
+    layers: list[ContextLayer],
+    topic: str | None,
+    query: str | None,
+) -> str:
+    scope_key = _resolve_context_cache_scope()
+    return (
+        f"context:{task}:{budget}:{scope_key}:"
+        f"{','.join(layer.value for layer in layers)}:{topic}:{query}"
     )

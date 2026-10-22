@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from hashlib import sha256
 from pathlib import Path
 
 from cortex.core.plan_path_extract import extract_file_patterns_from_plan
@@ -39,11 +40,14 @@ def build_session_goal(
 ) -> SessionGoal:
     """Create a SessionGoal with allowed_files from plan content when available."""
     allowed: list[str] = []
+    revision: str | None = None
     resolved = resolve_plan_file(project_root, plan_slug)
     if resolved is not None and resolved.is_file():
         try:
-            text = resolved.read_text(encoding="utf-8")
-        except OSError:
+            raw = resolved.read_bytes()
+            text = raw.decode("utf-8")
+            revision = sha256(raw).hexdigest()
+        except (OSError, UnicodeError):
             text = ""
         allowed = extract_file_patterns_from_plan(text)
     return SessionGoal(
@@ -51,4 +55,8 @@ def build_session_goal(
         plan_slug=plan_slug.strip() if plan_slug else None,
         allowed_files=allowed,
         blocked_files=list(blocked_files or []),
+        source_plan_path=(
+            resolved.resolve().as_posix() if revision and resolved else None
+        ),
+        source_plan_revision=revision,
     )

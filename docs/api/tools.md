@@ -46,6 +46,62 @@ fresh run. The client request deadline is separate from `test_timeout`; clients
 must allow the worker timeout plus polling overhead. If a client request expires,
 inspect the existing detached result before starting another worker.
 
+### Exact phase-result publication
+
+`pipeline_handoff(operation="write", pipeline="implement", phase="code", data=payload)`
+retains normal last-write-wins behavior and returns a typed `receipt`. The receipt
+binds the current connection's run, pipeline, phase, canonical caller JSON digest,
+and persisted result digest. It is copied into the existing result/manifest phase
+record as reserved `_publication` metadata and into the existing append-only
+history; no additional journal or database is created.
+
+After an interruption or lost reply, keep the original payload and use
+`operation="verify_result"` with the same pipeline, phase and `data`. Verification
+never claims another run. A phase-scoped `operation="read"` reads a **task** (or
+task fallback), not the phase result; whole-pipeline `read` includes phase results.
+
+| Verification status | Meaning and allowed action |
+| --- | --- |
+| `exact` | Result bytes' canonical content, manifest, latest phase history and separated config agree with the request receipt. Publication is persisted. |
+| `missing` | No result, manifest phase or phase history exists in the current run, and any existing manifest binding/config is compatible. Explicit publication replay is allowed. |
+| `uncertain` | Partial, legacy, unreadable or inconsistent evidence, or unavailable identity/lock. Do not repeat the write. |
+| `conflicting` | Another request/result, run binding or config differs. Do not overwrite it. |
+
+`operation="replay_result"` accepts the same original payload. Under fail-closed
+publication locking, `exact` is a no-op preserving file bytes, completion times,
+history cardinality and experience records; `missing` publishes the supplied
+result once. Partial/conflicting evidence is refused unchanged, including newer
+results and retained history after a phase-scoped clear. An unbound connection
+must establish its run through normal ownership/resume APIs first.
+An explicit `verify_result` / `replay_result` remains authoritative even if `data`
+retains the original write envelope's `operation`. A conflicting embedded
+`pipeline` or `phase` is refused rather than redirecting the explicit target.
+Passive publication access also refuses an inherited run owned only by a live
+foreign process. Normal ownership registration/binding must establish participation
+first; already registered multiowner participants remain supported.
+
+Even when the target phase is missing, an existing manifest must identify the
+current run and pipeline. Overlapping `force_fresh` / `test_timeout` values must
+match canonically, including JSON value types; conflicts are refused without
+changing persisted evidence. An absent or initialized manifest remains usable,
+and a missing-phase publication may add previously unset config keys. Malformed
+separated config is `uncertain`, not permission to publish.
+
+Canonicalization sorts object keys, preserves JSON value types and array order,
+and ignores JSON whitespace. It uses the parsed caller payload **before** adding
+server defaults or separating `force_fresh` / `test_timeout`; those config fields
+participate in request identity and must also match the manifest's current config.
+Absent data and an empty object have the same effective payload. Non-object JSON
+and non-JSON text retain normal write coercion. Nonfinite numbers and caller
+`_publication` metadata are refused. Legacy records remain readable but cannot
+prove exact publication.
+
+These operations verify or replay **result publication only**. They never run a
+phase, retry underlying work, recover external side effects, guarantee exactly-once
+execution, change completed-phase skipping, permit sibling takeover, or bypass a
+failed execution frontier's required fix path. Experience recording remains
+best-effort and is not payload-identity evidence.
+
 ### CI parity guarantee (`run_quality_gate` vs `quality.yml`)
 
 **Goal:** If the GitHub Actions **Code Quality** workflow would fail on a change, `run_quality_gate()` should fail locally first for the same categories of issues, so dirty commits are less likely to reach the remote.
@@ -244,6 +300,52 @@ Graph previews contain at most ten READY, BLOCKED, and ambiguous identities, wit
 at most ten dependencies or paths per identity. Summary counts describe the full
 graph. `plan_graph_details` reports omitted counts and points to
 `plan(operation="graph", include_archive=true)` for full details.
+
+### Revision-bound plan-scoped context
+
+Session `scope: "plan:<slug>"` (or a Markdown `plan_file` fallback) adds the
+existing `scoped_context` packet, without changing L0–L3 selection or adding a
+memory store. Its `revision_manifest` records stable input `identity`, `kind`,
+detail-on-demand `reference`, selection `provenance`, SHA-256 `revision`, and
+`state` (`present`, `missing`, `unreadable`, `invalid`, or `ambiguous`). File
+revisions hash the exact bytes used, including original newline encoding;
+rendered rules, selected membership, and compact context summaries have explicitly
+labeled UTF-8 revisions. Original goal, selected rule, decision, artifact, and
+ingestion file references remain available alongside derived summaries.
+
+`task_state` includes evidenced session and plan goals, declared status, declared
+dependency satisfaction and readiness, allowed paths, blocked-path prohibitions,
+explicit plan prohibitions, and decision evidence. Dependencies are inspected even
+when incomplete or missing; a completed upstream ancestor does not satisfy an
+incomplete declared dependency. Missing or contradictory metadata yields issues,
+not assumed readiness. `open_decisions` is populated only from an explicit
+`## Open Decisions` section of the configured exploration log; a recommendation
+is not operator approval or proof that decisions are closed.
+
+`freshness` is `fresh`, `warnings`, or `incoherent`. Issues preserve conflicting
+goal/plan identities, changed goal-derivation revisions, stale delivered rule
+content, missing provenance, ambiguous plans, and invalid metadata without
+choosing an authority. Legacy goal anchors still load; absent derivation
+provenance is reported rather than invented.
+
+Rule freshness compares complete delivered text against the complete selected
+source using the canonical loaders' universal-newline normalization. Appending a
+new prohibition is a disagreement even when the old delivered text remains a
+prefix of the source.
+
+The existing TTL cache is project-root isolated and revalidates selected
+membership and byte revisions before scoped reuse. Relevant creation, deletion,
+content, status, prohibition, or rule changes refresh the same request key;
+unselected source-code paths mentioned in a plan are not hashed. Unrelated plan
+or source edits do not force a scoped cache miss. Mutation during assembly
+returns `incoherent_scoped_snapshot` and does not cache a mixed response.
+This is selected scoped-input freshness, not a repository-wide freshness claim.
+Graph previews and other existing resource components retain their own ownership.
+
+The manifest and task evidence are required scoped governance: they survive
+optional summary omission and count against the complete serialized budget.
+If they cannot fit, `insufficient_token_budget` is returned without truncating
+instructions. Full source text and decisions remain in their canonical stores.
 
 ### Prompts
 
@@ -550,12 +652,32 @@ existing targeted lifecycle/append operations for their supported changes.
 
 All targets retain the existing unique-literal, disjoint-span, no-op, raw-hash,
 frontmatter, first-H1, root-confinement, traversal and symlink guards. Application
-locks and rechecks the preimage under the lock; roadmap task locks remain
-enforced. File mode and unrelated bytes are preserved. This operation never
-registers/reactivates a plan or writes extra context/wiki artifacts. The JSON
+locks and rechecks the preimage under the lock; roadmap task-lock verification
+is enforced for both preview and apply. File mode and unrelated bytes are
+preserved. This operation never registers/reactivates a plan or writes extra
+context/wiki artifacts. The JSON
 response reports `dry_run` and `mutation_performed`; previews do not write.
 Operator approval is a caller prerequisite, not a payload flag or a new
 authentication mechanism; the existing tool visibility boundary is unchanged.
+
+Guard refusals retain `error` and `error_type` and add the finite `code`:
+`STALE_BASE` for an observed stale preimage, or `POLICY_BLOCKED` for an existing
+path, literal, metadata, entry, or task-lock policy refusal. Malformed payloads,
+decoding errors, I/O failures, and lock timeouts remain unclassified (no `code`);
+diagnostics are not parsed to assign a domain outcome. `target` is null until a
+validated file has actually been read; `before_sha256` is included only for
+those observed raw bytes. A refusal never claims a revision from an unsafe or
+unreadable target. A final preimage race reports the newly observed revision,
+while target revalidation failures retain their policy classification.
+
+Domain refusals report `mutation_performed:false`. A cleanup or lock-release
+failure after atomic replacement instead reports an error with
+`mutation_performed:true` and the replaced `after_sha256`; it must not be treated
+as an untouched target. An absent/unknown code, missing response, or uncertain
+mutation evidence requires explicit raw-byte read-back before any retry.
+Neither code grants retry or mutation authority. `DECISION_REQUIRED` is
+intentionally excluded: neither existing guarded operation contains a backend
+decision/approval boundary; caller approval remains a prerequisite.
 
 **Description:**
 
@@ -855,17 +977,21 @@ await create_plan(operation="get", slug="phase-60-feature", response_format="met
 
 Register a plan entry in the roadmap. Use **`plan(operation="register", plan_title=..., description=..., plan_relative_path=..., section=...)`** (consolidated from `register_plan_in_roadmap`).
 
-**USE WHEN:** Registering a newly created plan or updating an existing registration in roadmap.md. Re-registering the same canonical plan path in the selected section updates its title, status, and description in place; an unchanged registration succeeds without duplicating the entry. Prefer this over remove/re-add or rewriting the full roadmap. Roadmap writes use atomic replacement, so a failed write preserves the previous registration.
+**USE WHEN:** Registering a newly created plan or updating an existing registration in roadmap.md. Registration identity is the canonical plan path on a registration-shaped row, not an incidental narrative reference. Matching spans live sections, including custom headings; an existing row stays at its original location. The requested section places a row only when no registration exists. Fenced examples and established archive/reference sections are not live registrations. ASCII, en-dash, and em-dash status separators are recognized; multiple live registrations for one path fail without mutation.
 
-**RETURNS:** JSON with `status`, `file_name`, `message`, `line_inserted` (the inserted or updated entry's one-based line), `section`, and `error` (if any).
+Missing rows derive section bounds and first/last insertion targets from live, unfenced lines. Neither headings nor bullets in fenced examples beneath the selected heading can redirect placement; example bytes remain unchanged.
+
+An identical retry succeeds without rewriting either artifact. Roadmap merges compare their original byte preimage under the shared filesystem lock; stale merges fail rather than replacing competing content. Status writes are staged atomically. A status-write failure returns an error and attempts a guarded rollback of the owned roadmap change; rollback conflicts are reported, never overwritten. This is bounded error recovery, not a crash-atomic multi-file transaction. The unfinished-plan removal guard remains in force.
+
+**RETURNS:** JSON with `status`, `file_name`, `message`, `line_inserted` (the inserted or updated entry's one-based line), `section` (the requested insertion destination, not necessarily the existing row's section), and `error` (if any).
 
 **Parameters:**
 
 - `plan_title` (str) - **Required.** Title of the plan (used in roadmap entry).
 - `description` (str) - **Required.** One-line or short description for the roadmap entry.
-- `plan_relative_path` (str | None) - Optional canonical path to the plan file (recommended): `.cortex/plans/<file>.md`. When provided, roadmap entry rendering appends `Plan: .cortex/plans/<file>.md` in parser-friendly form.
-- `status` (str) - Plan status: use `PENDING` or `IN PROGRESS` only (default: `PENDING`). Completed work belongs in activeContext.md; COMPLETED/COMPLETE/DONE are rejected.
-- `section` (str) - Roadmap section: `blockers`, `active_work`, `future`, or `pending` (default: `pending`).
+- `plan_relative_path` (str | None) - Optional canonical path to the plan file (recommended): `.cortex/plans/<file>.md`. An explicit path takes precedence over incidental description references. The final explicit `Plan:` label identifies the registration consistently for registration, removal, archive cleanup, and session discovery.
+- `status` (str) - Requested status (default: `PENDING`). Default retries preserve established lifecycle/custom status; established `IN_PROGRESS` and `READY` retain their previous precedence even with unmet dependencies. Dependency/clarification blocking prevents an otherwise pending plan from being rendered as pending. Supported explicit transitions from pending update row and frontmatter coherently. Completed plans and canonical completion aliases, including dated aliases, are rejected; completed work belongs in activeContext.md.
+- `section` (str) - Insertion destination: `blockers`, `active_work`, `future`, or `pending` (default: `pending`). It does not move an existing canonical registration from another live section.
 
 **Example:**
 
@@ -947,6 +1073,11 @@ explicitly authorized metadata correction, not completion or implicit authority
 to perform plan actions. It does not register a plan, modify the roadmap, or
 broaden `manage_file(operation="patch_document")` frontmatter permissions.
 
+The same finite refusal/evidence contract as `patch_document` applies:
+`STALE_BASE` identifies the observed stale preimage and `POLICY_BLOCKED` an
+existing identity, path, status, title, owner, or correction-intent guard.
+Success/no-op responses retain their existing fields and have no refusal code.
+
 Use the checkout-only SDK bridge without installing or reloading a server:
 
 ```bash
@@ -964,6 +1095,14 @@ authorized correction using the same raw-byte preimage. The local checkout
 `.venv` must already contain Cortex and the MCP SDK dependencies. No production
 package, client configuration, or running server is modified. Normal backend
 initialization still applies; this bridge is not a read-only server sandbox.
+
+The bridge validates the advertised root even for typed refusals, prints the
+backend diagnostics, and reports the exact domain code without automatic retry.
+Malformed, unknown-code, contradictory, transport-error, or otherwise uncertain
+results fail closed and require explicit read-back before any retry, including
+errors after a successful replacement. Exercise source-only preview/apply/stale
+smoke checks against a disposable root containing an isolated active plan, never
+against a live project.
 
 ---
 

@@ -109,6 +109,22 @@ Loaded by `OptimizationConfig`; merged with `DEFAULT_OPTIMIZATION_CONFIG`; valid
 | `max_budget` | int | `100000` | ≥ 1 | Maximum token budget |
 | `reserve_for_response` | int | `10000` | ≥ 0 | Tokens reserved for response |
 
+The zero-argument `cortex://context` resource uses the session configuration's
+positive integer `token_budget` (default 10,000) for its **complete serialized
+response**, rather than the optimizer's default selection budget above. Required
+content that exceeds this limit produces an explicit insufficient-budget error;
+optional content is omitted with accounting. See
+[complete context response budget](tools.md#complete-context-response-budget).
+
+For plan-targeted sessions, `scope: "plan:<slug>"` selects the existing scoped
+packet; absent explicit scope, a Markdown `plan_file` selects its filename stem.
+`explore_log_path` selects the existing decision-summary source. No additional
+cache setting is required: selected revisions and membership are revalidated
+within the existing root-isolated TTL cache. Required revision and task evidence
+consume the same complete-response budget; optional history can still be omitted.
+See [revision-bound plan-scoped context](tools.md#revision-bound-plan-scoped-context)
+for provenance, missingness, conflict, and incoherent-snapshot fields.
+
 ### Optimization: loading_strategy
 
 | Name | Type | Default | Valid values | Description |

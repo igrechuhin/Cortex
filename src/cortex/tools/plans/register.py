@@ -12,6 +12,7 @@ from cortex.core.constants import (
     MemoryBankFile,
 )
 from cortex.core.context_logging import MCPContext, log_client
+from cortex.core.file_system import FileSystemManager
 from cortex.core.mcp_stability import ensure_usage_context, mcp_tool_wrapper
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.core.plan_utils import (
@@ -22,8 +23,12 @@ from cortex.core.plan_utils import (
 from cortex.core.project_root_resolver import resolve_project_root_async
 from cortex.memory.wal import WalOperation
 from cortex.tools.models_base import ToolResultStatus
-from cortex.tools.plans.entries_io import read_roadmap_file, write_roadmap_file
+from cortex.tools.plans.entries_io import (
+    read_roadmap_file,
+    write_roadmap_file_locked,
+)
 from cortex.tools.plans.register_artifact_graph import (
+    resolve_registration_status,
     sync_plan_frontmatter_status_after_register,
     validate_register_artifact_graph_for_plan,
 )
@@ -68,7 +73,15 @@ class _RegisterPlanExecParams:
     parallel_steps_count: int | None
     sequential_steps_count: int | None
     resolved_plan_path: Path | None = None
-    clarification_blocked: bool = False
+
+
+@dataclass(frozen=True, slots=True)
+class _RegisterMerge:
+    before: str
+    updated: str
+    line: int
+    status: str
+    plan_before: str | None
 
 
 def _resolve_plan_path_for_marker_scan(
@@ -157,36 +170,21 @@ def _gate_registration_on_clarifications(
     )
 
 
-async def _handle_roadmap_read(
-    roadmap_path: Path,
-    ctx: MCPContext | None,
-) -> str | None:
-    """Read roadmap or return error JSON. Returns error JSON or None."""
-    _, read_error = read_roadmap_file(roadmap_path)
-    if read_error:
-        await log_client(
-            ctx,
-            "warning",
-            f"register_plan_in_roadmap: {read_error}",
-            logger_name=__name__,
-        )
-        return create_register_error_result(read_error).model_dump_json()
-    return None
-
-
 async def _handle_roadmap_write(
     roadmap_path: Path,
     updated_content: str,
-    section_id: str,
     ctx: MCPContext | None,
-    project_root: Path | None = None,
+    project_root: Path,
+    expected_content: str,
 ) -> str | None:
     """Write roadmap or return error JSON. Returns error JSON or None."""
-    write_error = await write_roadmap_file(
+    write_error = await write_roadmap_file_locked(
         roadmap_path,
         updated_content,
         project_root,
         wal_operation=WalOperation.ROADMAP_ADD,
+        expected_content=expected_content,
+        repair_content=False,
     )
     if write_error:
         await log_client(
@@ -197,28 +195,6 @@ async def _handle_roadmap_write(
         )
         return create_register_error_result(write_error).model_dump_json()
     return None
-
-
-def _do_register_plan_entry(
-    current_content: str,
-    plan_title: str,
-    description: str,
-    status: str,
-    section_id: str,
-    plan_file_name: str | None,
-    plan_relative_path: str | None,
-) -> tuple[str, int | None]:
-    """Register plan entry and return (content, line_inserted)."""
-    return register_plan_entry(
-        current_content,
-        plan_title,
-        description,
-        status,
-        section_id,
-        "last",
-        plan_file_name=plan_file_name,
-        plan_relative_path=plan_relative_path,
-    )
 
 
 async def _handle_entry_not_found(
@@ -260,30 +236,28 @@ async def _handle_entry_success(
 
 
 async def _read_and_register_entry(
-    roadmap_path: Path,
-    plan_title: str,
-    description: str,
-    status: str,
-    section_id: str,
-    plan_file_name: str | None,
-    plan_relative_path: str | None,
-    ctx: MCPContext | None,
-) -> tuple[str, int | None] | str:
-    """Read roadmap and register entry. Returns (updated_content, line) or error JSON."""
-    read_result = await _handle_roadmap_read(roadmap_path, ctx)
-    if read_result:
-        return read_result
-    current_content, _ = read_roadmap_file(roadmap_path)
-    assert current_content is not None
-    return _do_register_plan_entry(
-        current_content,
-        plan_title,
-        description,
-        status,
-        section_id,
-        plan_file_name,
-        plan_relative_path,
+    roadmap_path: Path, params: _RegisterPlanExecParams
+) -> _RegisterMerge | str:
+    """Read each merge preimage once and resolve one status for both artifacts."""
+    current, error = read_roadmap_file(roadmap_path)
+    if error:
+        return create_register_error_result(error).model_dump_json()
+    assert current is not None
+    status, plan_before = resolve_registration_status(
+        params.root, params.resolved_plan_path, params.status
     )
+    updated, line = register_plan_entry(
+        current,
+        params.plan_title,
+        params.description,
+        status,
+        params.section_id,
+        plan_file_name=params.plan_file_name,
+        plan_relative_path=params.plan_relative_path,
+    )
+    if line is None:
+        return await _handle_entry_not_found(params.ctx, params.section_id)
+    return _RegisterMerge(current, updated, line, status, plan_before)
 
 
 def _roadmap_path(root: Path) -> Path:
@@ -292,75 +266,63 @@ def _roadmap_path(root: Path) -> Path:
     )
 
 
-async def _finish_register_from_read_result(
-    rp: Path,
-    params: _RegisterPlanExecParams,
-    read_result: str | tuple[str, int | None],
-) -> str:
-    """Branch on read/merge outcome and persist when possible."""
-    if isinstance(read_result, str):
-        return read_result
-    updated_content, line_inserted = read_result
-    if line_inserted is None:
-        return await _handle_entry_not_found(params.ctx, params.section_id)
-    return await _persist_register_merge(
-        rp,
-        params.root,
-        params.section_id,
-        params.ctx,
-        updated_content,
-        line_inserted,
-        params.parallel_steps_count,
-        params.sequential_steps_count,
-        params.resolved_plan_path,
-        params.clarification_blocked,
-    )
-
-
 async def _persist_register_merge(
-    rp: Path,
-    root: Path,
-    section_id: str,
-    ctx: MCPContext | None,
-    updated_content: str,
-    line_inserted: int,
-    parallel_steps_count: int | None,
-    sequential_steps_count: int | None,
-    resolved_plan_path: Path | None,
-    clarification_blocked: bool,
+    rp: Path, params: _RegisterPlanExecParams, merge: _RegisterMerge
 ) -> str:
-    """Write roadmap after merge and emit success JSON."""
+    """Persist the merge, rolling back only owned roadmap bytes on status failure."""
     write_result = await _handle_roadmap_write(
-        rp, updated_content, section_id, ctx, root
+        rp, merge.updated, params.ctx, params.root, merge.before
     )
     if write_result:
         return write_result
-    await sync_plan_frontmatter_status_after_register(
-        root, resolved_plan_path, clarification_blocked, ctx
+    status_error = await sync_plan_frontmatter_status_after_register(
+        params.root,
+        params.resolved_plan_path,
+        merge.status,
+        merge.plan_before,
+        params.ctx,
     )
+    if status_error:
+        return await _rollback_register_merge(rp, params, merge, status_error)
     return await _handle_entry_success(
-        ctx,
-        section_id,
-        line_inserted,
-        parallel_steps_count=parallel_steps_count,
-        sequential_steps_count=sequential_steps_count,
+        params.ctx,
+        params.section_id,
+        merge.line,
+        parallel_steps_count=params.parallel_steps_count,
+        sequential_steps_count=params.sequential_steps_count,
     )
+
+
+async def _rollback_register_merge(
+    rp: Path, params: _RegisterPlanExecParams, merge: _RegisterMerge, error: str
+) -> str:
+    if merge.updated != merge.before:
+        rollback_error = await write_roadmap_file_locked(
+            rp,
+            merge.before,
+            params.root,
+            wal_operation=WalOperation.ROADMAP_ADD,
+            expected_content=merge.updated,
+            repair_content=False,
+        )
+        if rollback_error:
+            error += f"; roadmap rollback failed: {rollback_error}"
+    return create_register_error_result(error).model_dump_json()
 
 
 async def _execute_register_plan(params: _RegisterPlanExecParams) -> str:
-    """Execute plan registration. Returns JSON result."""
+    """Serialize merge, status persistence, and rollback under the shared lock."""
     rp = _roadmap_path(params.root)
-    read_result = await _read_and_register_entry(
-        rp,
-        params.plan_title,
-        params.description,
-        params.status,
-        params.section_id,
-        params.plan_file_name,
-        params.plan_relative_path,
-        params.ctx,
-    )
-    return await _finish_register_from_read_result(rp, params, read_result)
+    manager = FileSystemManager(params.root)
+    lock = rp.with_suffix(rp.suffix + ".lock")
+    await manager.acquire_lock(lock)
+    try:
+        read_result = await _read_and_register_entry(rp, params)
+        if isinstance(read_result, str):
+            return read_result
+        return await _persist_register_merge(rp, params, read_result)
+    finally:
+        await manager.release_lock(lock)
 
 
 async def _check_status_and_section(
@@ -445,7 +407,6 @@ async def _register_after_section_ok(
             parallel_steps_count=pc,
             sequential_steps_count=sc,
             resolved_plan_path=plan_path,
-            clarification_blocked=status.strip().casefold() == "blocked",
         )
     )
 

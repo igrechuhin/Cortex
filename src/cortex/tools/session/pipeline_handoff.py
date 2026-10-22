@@ -60,6 +60,7 @@ from .pipeline_handoff_io import (
     op_write_result,
     op_write_task,
 )
+from .pipeline_handoff_publication import op_verify_result
 from .pipeline_handoff_resume import op_resume
 from .pipeline_handoff_rule_provenance import (
     dispatch as dispatch_rule_provenance,
@@ -78,6 +79,8 @@ class PipelineHandoffOperation(StrEnum):
     INIT = "init"
     WRITE = "write"
     READ = "read"
+    VERIFY_RESULT = "verify_result"
+    REPLAY_RESULT = "replay_result"
     READ_LOG = "read_log"
     STATUS = "status"
     MARK_RUNNING = "mark_running"
@@ -106,6 +109,15 @@ _OPS_NEED_PHASE = frozenset(
         PipelineHandoffOperation.WRITE_RESULT.value,
         PipelineHandoffOperation.WRITE.value,
         PipelineHandoffOperation.MARK_RUNNING.value,
+        PipelineHandoffOperation.VERIFY_RESULT.value,
+        PipelineHandoffOperation.REPLAY_RESULT.value,
+    }
+)
+
+_PUBLICATION_OPERATIONS = frozenset(
+    {
+        PipelineHandoffOperation.VERIFY_RESULT.value,
+        PipelineHandoffOperation.REPLAY_RESULT.value,
     }
 )
 
@@ -161,7 +173,8 @@ def _unknown_op_error(operation: str) -> str:
             "status": OperationStatus.ERROR.value,
             "error": (
                 f"Unknown operation '{operation}'. "
-                "Use: init, write, read, read_log, status, mark_running, clear, "
+                "Use: init, write, read, verify_result, replay_result, read_log, "
+                "status, mark_running, clear, "
                 "snapshot, rollback, resume, preference_pairs, repeated_failures, "
                 "fitness_by_task_type, write_failure_evals, record_rule_provenance, "
                 "refresh_rule_matches, rule_evidence, pruning_candidates "
@@ -338,6 +351,10 @@ def _dispatch_phase_bound_operation(
         PipelineHandoffOperation.WRITE.value,
     ):
         return op_write_result(project_root, pipeline, phase, data_str)
+    if operation == PipelineHandoffOperation.VERIFY_RESULT.value:
+        return op_verify_result(project_root, pipeline, phase, data_str)
+    if operation == PipelineHandoffOperation.REPLAY_RESULT.value:
+        return op_write_result(project_root, pipeline, phase, data_str, replay=True)
     if operation == PipelineHandoffOperation.READ_TASK.value:
         return op_read_task(project_root, pipeline, phase)
     if operation == PipelineHandoffOperation.MARK_RUNNING.value:
@@ -402,6 +419,33 @@ def _dispatch_sync(
     return _unknown_op_error(operation)
 
 
+def _resolve_dispatch_routing(
+    operation: str,
+    pipeline: str,
+    phase: str | None,
+    data_str: str | None,
+) -> tuple[str, str, str | None, str | None] | str:
+    routing, data_str = extract_routing_keys(data_str)
+    if operation in _PUBLICATION_OPERATIONS:
+        # AI: an original write envelope is evidence, not permission to write.
+        if (
+            routing.get("pipeline", pipeline) != pipeline
+            or routing.get("phase", phase) != phase
+        ):
+            return json.dumps(
+                {
+                    "status": "conflicting",
+                    "reason": "Publication routing differs from explicit target",
+                }
+            )
+    elif routing.get("op"):
+        operation = routing["op"]
+    pipeline = routing.get("pipeline", pipeline)
+    phase = routing.get("phase", phase)
+    operation, pipeline, phase = _resolve_zero_arg_defaults(operation, pipeline, phase)
+    return operation, pipeline, phase, data_str
+
+
 async def _dispatch(
     operation: str,
     pipeline: str,
@@ -409,22 +453,10 @@ async def _dispatch(
     data: object,
     ctx: MCPContext | None,
 ) -> str:
-    data_str = _coerce_data(data)
-
-    # Extract routing overrides embedded in the data payload.
-    # Agents write {"operation":"write","phase":"select","pipeline":"implement",...payload...}
-    # to current-task.json so routing + payload travel in one write instead of two.
-    routing, data_str = extract_routing_keys(data_str)
-    if routing.get("op"):
-        operation = routing["op"]
-    if routing.get("phase"):
-        phase = routing["phase"]
-    if routing.get("pipeline"):
-        pipeline = routing["pipeline"]
-
-    # When an MCP client strips all args and no routing keys were in data, recover
-    # operation/pipeline/phase from the session config file.
-    operation, pipeline, phase = _resolve_zero_arg_defaults(operation, pipeline, phase)
+    resolved = _resolve_dispatch_routing(operation, pipeline, phase, _coerce_data(data))
+    if isinstance(resolved, str):
+        return resolved
+    operation, pipeline, phase, data_str = resolved
 
     # Validate tokens before any filesystem path construction.
     pipeline_error = validate_pipeline(pipeline)
@@ -475,8 +507,9 @@ async def pipeline_handoff(
     1. pipeline_handoff(operation="init", pipeline="commit")
     2. pipeline_handoff(operation="write", pipeline="commit", phase="preflight",
          data='{"status":"complete","snapshot_ref":"abc123"}')
-    3. pipeline_handoff(operation="read", pipeline="commit", phase="preflight")
-         → reads phase data
+    3. pipeline_handoff(operation="verify_result", pipeline="commit", phase="preflight",
+         data='{"status":"complete","snapshot_ref":"abc123"}')
+         → verifies exact result publication, never underlying work
     4. pipeline_handoff(operation="read", pipeline="commit")
          → reads full pipeline state (all phases)
     5. pipeline_handoff(operation="clear", pipeline="commit")
@@ -494,7 +527,8 @@ async def pipeline_handoff(
     RETURNS: JSON with {status, ...} for write ops; JSON file content for reads.
 
     Args:
-        operation: init | write | read | read_log | status | mark_running
+        operation: init | write | read | verify_result | replay_result
+            | read_log | status | mark_running
             | clear | snapshot | rollback | resume | preference_pairs
             | repeated_failures | fitness_by_task_type | write_failure_evals
             | record_rule_provenance | refresh_rule_matches | rule_evidence
@@ -504,6 +538,12 @@ async def pipeline_handoff(
             resume: returns a ResumePlan for an interrupted run of the
             pipeline — completed phases to skip, frontier phase, and
             whether continuation is allowed (failed frontier => fix path).
+            verify_result: read-only exact/missing/uncertain/conflicting publication
+            evidence for the original caller payload in data. A phase-scoped read
+            instead reads a TASK, not a result.
+            replay_result: exact is a no-op; missing publishes data once under
+            the current run. Partial/conflicting evidence is refused unchanged.
+            Neither operation reruns work or changes execution/resume rules.
             preference_pairs / repeated_failures: coverage-checked graph
             queries for the analyze-session step — pass
             data={"session_id": "..."} (falls back to the active pipeline
@@ -523,9 +563,11 @@ async def pipeline_handoff(
             {"rule_id"} to read evidence, {"window_days"} (default 90) to
             list pruning candidates.
         pipeline: Pipeline name (e.g. "commit", "implement"). Default: "default".
-        phase: Phase name (e.g. "preflight", "checks"). Required for write.
-            For read: if given, reads that phase; if omitted, reads full state.
-        data: Payload for write and init. Accepts JSON string or native object.
+        phase: Phase name (e.g. "preflight", "checks"). Required for write,
+            verify_result and replay_result. For read: if given, reads that phase's
+            TASK; if omitted, reads full state.
+        data: Payload for write, verify_result, replay_result and init.
+            Accepts JSON string or native object.
             When the JSON includes free-text fields such as `context` or
             `summary`, write compact technical prose (see cortex://rules,
             Agent-Internal Communication): no filler or hedging; keep file

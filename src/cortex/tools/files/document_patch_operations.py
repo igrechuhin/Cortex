@@ -15,8 +15,13 @@ from cortex.core.file_system import FileSystemManager
 from cortex.core.pydantic_extra import EXTRA_FORBID
 from cortex.core.security import InputValidator
 from cortex.memory.wal import wal_atomic_write_bytes
+from cortex.tools.files.guarded_mutation_evidence import GuardedMutationEvidence
+from cortex.tools.files.guarded_operation_outcome import GuardedOperationOutcome
+from cortex.tools.files.guarded_operation_refusal import (
+    GuardedOperationRefusal,
+    validate_guarded_path,
+)
 from cortex.tools.files.lock_guard import verify_lock_for_file_operation
-from cortex.tools.plans.completion_transaction_io import validate_contained_path
 
 _ENTRY_TARGETS = frozenset(
     {".cortex/memory-bank/activeContext.md", ".cortex/memory-bank/progress.md"}
@@ -51,15 +56,26 @@ class DocumentPatchRequest(BaseModel):
     dry_run: StrictBool = False
 
 
-def _document_target(root: Path, file_name: str) -> Path:
+def _document_path_parts(file_name: str) -> list[str]:
     parts = file_name.split("/")
     if any(part in {"", ".", ".."} for part in parts) or any(
         char == "\\" or ord(char) < 32 or ord(char) == 127 for char in file_name
     ):
-        raise ValueError("Document path contains unsafe components")
+        raise GuardedOperationRefusal("Document path contains unsafe components")
     for part in parts:
-        if InputValidator.validate_file_name(part) != part:
-            raise ValueError("Document path must use exact, safe components")
+        try:
+            canonical = InputValidator.validate_file_name(part)
+        except ValueError as exc:
+            raise GuardedOperationRefusal(str(exc)) from exc
+        if canonical != part:
+            raise GuardedOperationRefusal(
+                "Document path must use exact, safe components"
+            )
+    return parts
+
+
+def _document_target(root: Path, file_name: str) -> Path:
+    parts = _document_path_parts(file_name)
     if (
         not (
             len(parts) >= 3
@@ -68,11 +84,15 @@ def _document_target(root: Path, file_name: str) -> Path:
         )
         and file_name not in _MEMORY_BANK_TARGETS
     ):
-        raise ValueError("Document target is outside the closed patch roots")
+        raise GuardedOperationRefusal(
+            "Document target is outside the closed patch roots"
+        )
     target = root / file_name
-    validate_contained_path(target, root)
+    validate_guarded_path(target, root)
     if target.suffix.lower() != ".md" or not stat.S_ISREG(target.stat().st_mode):
-        raise ValueError("Document target must be an existing regular Markdown file")
+        raise GuardedOperationRefusal(
+            "Document target must be an existing regular Markdown file"
+        )
     return target
 
 
@@ -101,15 +121,19 @@ def _replacement_spans(
     spans: list[tuple[int, int, bytes]] = []
     for replacement in replacements:
         if replacement.old == replacement.new:
-            raise ValueError("Replacement old and new must differ")
+            raise GuardedOperationRefusal("Replacement old and new must differ")
         old = replacement.old.encode("utf-8")
         start = before.find(old)
         if start < 0 or before.find(old, start + 1) >= 0:
-            raise ValueError("Each replacement old literal must occur exactly once")
+            raise GuardedOperationRefusal(
+                "Each replacement old literal must occur exactly once"
+            )
         spans.append((start, start + len(old), replacement.new.encode("utf-8")))
     spans.sort()
     if any(left[1] > right[0] for left, right in zip(spans, spans[1:])):
-        raise ValueError("Duplicate or overlapping replacements are forbidden")
+        raise GuardedOperationRefusal(
+            "Duplicate or overlapping replacements are forbidden"
+        )
     return spans
 
 
@@ -118,7 +142,10 @@ def _patched_bytes(
 ) -> bytes:
     _ = before.decode("utf-8")
     if hashlib.sha256(before).hexdigest() != request.expected_sha256:
-        raise ValueError("Stale expected_sha256: document bytes changed; read again")
+        raise GuardedOperationRefusal(
+            "Stale expected_sha256: document bytes changed; read again",
+            GuardedOperationOutcome.STALE_BASE,
+        )
     chunks: list[bytes] = []
     cursor = 0
     for start, end, replacement in _replacement_spans(before, request.replacements):
@@ -127,9 +154,11 @@ def _patched_bytes(
     chunks.append(before[cursor:])
     after = b"".join(chunks)
     if after == before:
-        raise ValueError("Document patch must change bytes")
+        raise GuardedOperationRefusal("Document patch must change bytes")
     if document_metadata_bytes(before) != document_metadata_bytes(after):
-        raise ValueError("Document frontmatter and title must remain unchanged")
+        raise GuardedOperationRefusal(
+            "Document frontmatter and title must remain unchanged"
+        )
     if file_name in _ENTRY_TARGETS:
         _validate_entry_patch(before, after, request)
     return after
@@ -186,7 +215,22 @@ def _validate_entry_literals(request: DocumentPatchRequest) -> None:
             char in "\r\n\v\f\x85\u2028\u2029" or ord(char) < 32
             for char in replacement.old + replacement.new
         ):
-            raise ValueError("Entry repairs require nonempty single-line literals")
+            raise GuardedOperationRefusal(
+                "Entry repairs require nonempty single-line literals"
+            )
+
+
+def _validate_entry_identity(
+    old: str, new: str, old_lines: list[str], new_lines: list[str]
+) -> None:
+    if _entry_markers(old) != _entry_markers(new):
+        raise GuardedOperationRefusal(
+            "Entry labels, list syntax and status/lifecycle markers must remain unchanged"
+        )
+    if new in old_lines or new_lines.count(new) > 1:
+        raise GuardedOperationRefusal(
+            "Entry repairs cannot duplicate or reorder existing lines"
+        )
 
 
 def _validate_entry_patch(
@@ -211,17 +255,19 @@ def _validate_entry_patch(
             or _entry_structure(old)
             or _entry_structure(new)
         ):
-            raise ValueError("Entry repairs cannot change headings or Markdown blocks")
-        if _entry_markers(old) != _entry_markers(new):
-            raise ValueError(
-                "Entry labels, list syntax and status/lifecycle markers must remain unchanged"
+            raise GuardedOperationRefusal(
+                "Entry repairs cannot change headings or Markdown blocks"
             )
-        if new in old_lines or new_lines.count(new) > 1:
-            raise ValueError("Entry repairs cannot duplicate or reorder existing lines")
+        _validate_entry_identity(old, new, old_lines, new_lines)
 
 
 def write_existing_document(
-    root: Path, file_name: str, target: Path, before: bytes, after: bytes
+    root: Path,
+    file_name: str,
+    target: Path,
+    before: bytes,
+    after: bytes,
+    evidence: GuardedMutationEvidence,
 ) -> None:
     """Reuse byte-atomic WAL staging and the roadmap mode-preservation pattern."""
     mode = stat.S_IMODE(target.stat().st_mode)
@@ -229,9 +275,15 @@ def write_existing_document(
         staged = Path(staging) / target.name
         wal_atomic_write_bytes(Path(staging), staged, after)
         staged.chmod(mode)
-        if _document_target(root, file_name) != target or target.read_bytes() != before:
-            raise ValueError("Stale document bytes before atomic replacement")
+        revalidated = _document_target(root, file_name)
+        current = evidence.observe(root, revalidated)
+        if revalidated != target or current != before:
+            raise GuardedOperationRefusal(
+                "Stale document bytes before atomic replacement",
+                GuardedOperationOutcome.STALE_BASE,
+            )
         os.replace(staged, target)
+        evidence.replaced(after)
 
 
 def _patch_response(
@@ -258,55 +310,57 @@ def _patch_response(
 
 
 async def _patch_locked(
-    root: Path, file_name: str, request: DocumentPatchRequest
+    root: Path,
+    file_name: str,
+    request: DocumentPatchRequest,
+    evidence: GuardedMutationEvidence,
 ) -> str:
     target = _document_target(root, file_name)
-    before = target.read_bytes()
+    before = evidence.observe(root, target)
     after = _patched_bytes(before, request, file_name)
-    if file_name == ".cortex/memory-bank/roadmap.md" and not request.dry_run:
+    if file_name == ".cortex/memory-bank/roadmap.md":
         allowed, error = await verify_lock_for_file_operation(
             root, "roadmap.md", after.decode("utf-8"), None
         )
         if not allowed:
-            raise ValueError(f"Lock verification failed: {error}")
+            raise GuardedOperationRefusal(f"Lock verification failed: {error}")
     if not request.dry_run:
-        write_existing_document(root, file_name, target, before, after)
+        write_existing_document(root, file_name, target, before, after, evidence)
     return _patch_response(root, file_name, before, after, request)
 
 
 async def handle_document_patch(root: Path, file_name: str, content: str | None) -> str:
     """Patch only one existing document; never normalize, register or mirror it."""
+    evidence = GuardedMutationEvidence()
     try:
         if ".." in root.parts or root.absolute() != root.resolve():
-            raise ValueError("Document project root cannot traverse symlinks")
+            raise GuardedOperationRefusal(
+                "Document project root cannot traverse symlinks"
+            )
         root = root.absolute()
         request = DocumentPatchRequest.model_validate_json(content or "{}")
         target = _document_target(root, file_name)
-        _ = _patched_bytes(target.read_bytes(), request, file_name)
-        if request.dry_run:
-            return await _patch_locked(root, file_name, request)
+        _ = _patched_bytes(evidence.observe(root, target), request, file_name)
         lock = target.with_suffix(target.suffix + ".lock")
-        validate_contained_path(lock, root)
+        validate_guarded_path(lock, root)
+        if request.dry_run:
+            return await _patch_locked(root, file_name, request, evidence)
         manager = FileSystemManager(root)
         await manager.acquire_lock(lock)
         try:
-            return await _patch_locked(root, file_name, request)
+            return await _patch_locked(root, file_name, request, evidence)
         finally:
             await manager.release_lock(lock)
     except (OSError, ValueError, FileLockTimeoutError) as exc:
-        return _patch_error(root, file_name, exc)
+        return _patch_error(root, evidence, exc)
 
 
-def _patch_error(root: Path, file_name: str, exc: Exception) -> str:
+def _patch_error(root: Path, evidence: GuardedMutationEvidence, exc: Exception) -> str:
     return json.dumps(
         {
-            "status": "error",
+            **evidence.error_fields(exc),
             "operation": "patch_document",
             "project_root": str(root.absolute()),
-            "target": file_name,
-            "mutation_performed": False,
-            "error": str(exc),
-            "error_type": type(exc).__name__,
         },
         indent=2,
     )

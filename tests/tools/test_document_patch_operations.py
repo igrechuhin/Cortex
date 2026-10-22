@@ -128,6 +128,7 @@ async def test_unsafe_and_noncanonical_targets_refused(
 ) -> None:
     result = await _patch(tmp_path, relative)
     assert result["status"] == "error", result
+    assert result["code"] == "POLICY_BLOCKED"
     assert result["mutation_performed"] is False
     assert list(tmp_path.iterdir()) == []
 
@@ -174,6 +175,7 @@ async def test_symlink_ancestry_and_lock_refused(tmp_path: Path, kind: str) -> N
         target.with_suffix(".md.lock").symlink_to(external)
     result = json.loads(await handle_document_patch(workspace, _TARGET, _payload()))
     assert result["status"] == "error", result
+    assert result["code"] == "POLICY_BLOCKED"
     assert external.read_bytes() == _BODY
     assert not list(tmp_path.rglob(".wal_*"))
 
@@ -229,6 +231,7 @@ async def test_overlap_duplicate_and_lifecycle_changes_refused(
     target = _write(tmp_path, _TARGET)
     result = await _patch(tmp_path, replacements=replacements)
     assert result["status"] == "error", result
+    assert result["code"] == "POLICY_BLOCKED"
     assert target.read_bytes() == _BODY
 
 
@@ -259,6 +262,7 @@ async def test_invalid_utf8_is_refused(tmp_path: Path) -> None:
         await handle_document_patch(tmp_path.resolve(), _TARGET, _payload(body))
     )
     assert result["status"] == "error", result
+    assert result.get("code") is None
     assert target.read_bytes() == body
 
 
@@ -277,6 +281,8 @@ async def test_waiting_writer_rechecks_hash_under_existing_lock(tmp_path: Path) 
     result = json.loads(await pending)
     assert result["status"] == "error", result
     assert "Stale" in result["error"]
+    assert result["code"] == "STALE_BASE"
+    assert result["before_sha256"] == hashlib.sha256(changed).hexdigest()
     assert target.read_bytes() == changed
     assert not lock.exists()
 

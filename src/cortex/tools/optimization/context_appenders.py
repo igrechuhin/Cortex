@@ -3,11 +3,13 @@
 from __future__ import annotations
 
 import json
+from collections.abc import Callable
 from pathlib import Path
 from typing import cast
 
 from cortex.core.models import ModelDict
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
+from cortex.core.plan_change_history import extract_markdown_section
 from cortex.tools.context.recent_artifacts_context import (
     build_recent_artifacts_markdown,
 )
@@ -15,10 +17,13 @@ from cortex.tools.context.recent_ingested_sources_context import (
     build_recent_ingested_sources_markdown,
 )
 from cortex.tools.context.scoped_context import append_scoped_context_payload
+from cortex.tools.context.scoped_snapshot import ScopedSnapshot
 from cortex.tools.session.models import SESSION_SCOPE_PROMPT
 
 
-def append_session_goal_to_context_payload(payload: str, project_root: Path) -> str:
+def append_session_goal_to_context_payload(
+    payload: str, project_root: Path, snapshot: ScopedSnapshot | None = None
+) -> str:
     """Prepend session_goal to successful context payloads when anchor file exists."""
     try:
         parsed = json.loads(payload)
@@ -31,11 +36,21 @@ def append_session_goal_to_context_payload(payload: str, project_root: Path) -> 
         return payload
     from cortex.core.session_goal_store import read_session_goal
 
-    sg = read_session_goal(project_root)
+    sg = snapshot.goal if snapshot is not None else read_session_goal(project_root)
     if sg is None:
         return payload
     merged: dict[str, object] = {"session_goal": json.loads(sg.model_dump_json())}
     merged.update(data)
+    if (
+        snapshot is not None
+        and "session_goal" in data
+        and data["session_goal"] != json.loads(sg.model_dump_json())
+    ):
+        snapshot.issue(
+            "context_goal_conflict",
+            ["session-goal"],
+            "Base context carries different goal data; both representations remain visible without resolving authority.",
+        )
     return json.dumps(merged, indent=2, sort_keys=True)
 
 
@@ -54,12 +69,16 @@ def append_session_scope_to_context_payload(payload: str) -> str:
     return json.dumps(payload_data, indent=2, sort_keys=True)
 
 
-def _read_recent_operations_lines(project_root: Path) -> str | None:
+def _read_recent_operations_lines(
+    project_root: Path, reader: Callable[[Path], str] | None = None
+) -> str | None:
     """Read up to the last 10 non-empty lines from memory-bank log.md."""
     log_path = get_cortex_path(project_root, CortexResourceType.MEMORY_BANK) / "log.md"
-    if not log_path.exists():
+    try:
+        text = reader(log_path) if reader else log_path.read_text(encoding="utf-8")
+    except (OSError, UnicodeError):
         return None
-    lines = [line for line in log_path.read_text(encoding="utf-8").splitlines() if line]
+    lines = [line for line in text.splitlines() if line]
     if not lines:
         return None
     return "\n".join(lines[-10:])
@@ -110,7 +129,9 @@ def _append_recent_artifacts_to_context_payload(
     return json.dumps(payload_data, indent=2, sort_keys=True)
 
 
-def read_recent_ingested_sources_markdown(project_root: Path) -> str | None:
+def read_recent_ingested_sources_markdown(
+    project_root: Path, reader: Callable[[Path], str] | None = None
+) -> str | None:
     """Build Recently Ingested Sources markdown from wiki or memory-bank ``sources/``."""
     from cortex.wiki.ingest_wiki import wiki_ingest_enabled
 
@@ -119,10 +140,10 @@ def read_recent_ingested_sources_markdown(project_root: Path) -> str | None:
     if wiki_ingest_enabled(wiki_root):
         wiki_sources = wiki_root / "sources"
         if wiki_sources.is_dir() and any(wiki_sources.glob("*.md")):
-            wiki_md = build_recent_ingested_sources_markdown(wiki_root)
+            wiki_md = build_recent_ingested_sources_markdown(wiki_root, reader)
             if wiki_md is not None:
                 return wiki_md
-    return build_recent_ingested_sources_markdown(memory_bank)
+    return build_recent_ingested_sources_markdown(memory_bank, reader)
 
 
 def _append_recent_ingested_sources_to_context_payload(
@@ -144,22 +165,26 @@ def _append_recent_ingested_sources_to_context_payload(
     return json.dumps(payload_data, indent=2, sort_keys=True)
 
 
-def _read_explore_summary_markdown(project_root: Path) -> str | None:
+def _read_explore_summary_markdown(
+    project_root: Path,
+    reader: Callable[[Path], str] | None = None,
+    session_config: dict[str, object] | None = None,
+) -> str | None:
     from cortex.core.session_config import read_session_config
 
-    cfg = read_session_config()
+    cfg = session_config if session_config is not None else read_session_config()
     log_path_raw = cfg.get("explore_log_path")
     if not isinstance(log_path_raw, str) or not log_path_raw.strip():
         return None
     explore_path = (project_root / log_path_raw).resolve()
-    if not explore_path.is_file():
-        return None
     try:
-        log_text = explore_path.read_text(encoding="utf-8")
-    except OSError:
+        log_text = (
+            reader(explore_path) if reader else explore_path.read_text(encoding="utf-8")
+        )
+    except (OSError, UnicodeError):
         return None
-    selected = _extract_markdown_section(log_text, "## Selected Option")
-    recommendation = _extract_markdown_section(log_text, "## Recommendation")
+    selected = extract_markdown_section(log_text, "## Selected Option")
+    recommendation = extract_markdown_section(log_text, "## Recommendation")
     if not selected and not recommendation:
         return None
     lines = ["## Explore Summary", f"- Source: `{log_path_raw}`"]
@@ -168,23 +193,6 @@ def _read_explore_summary_markdown(project_root: Path) -> str | None:
     if recommendation:
         lines.append(f"- Recommendation: {recommendation.splitlines()[0].strip()}")
     return "\n".join(lines)
-
-
-def _extract_markdown_section(markdown: str, heading: str) -> str | None:
-    lines = markdown.splitlines()
-    in_section = False
-    section_lines: list[str] = []
-    for line in lines:
-        stripped = line.strip()
-        if stripped == heading:
-            in_section = True
-            continue
-        if in_section and stripped.startswith("## "):
-            break
-        if in_section:
-            section_lines.append(line)
-    content = "\n".join(section_lines).strip()
-    return content or None
 
 
 def _append_explore_summary_to_context_payload(
@@ -229,7 +237,7 @@ def _extract_rules_markdown(rules_payload: str) -> str:
     return "\n\n".join(chunks)
 
 
-def _session_config_mapping(session_cfg: object) -> dict[str, object]:
+def session_config_mapping(session_cfg: object) -> dict[str, object]:
     """Convert SessionConfig-like objects or dicts to plain mappings."""
     if isinstance(session_cfg, dict):
         return cast(dict[str, object], session_cfg)
@@ -254,7 +262,9 @@ def resolve_context_cache_scope() -> str:
     return ""
 
 
-async def append_context_scoped_payload(payload: str, project_root: Path) -> str:
+async def append_context_scoped_payload(
+    payload: str, project_root: Path, snapshot: ScopedSnapshot | None = None
+) -> str:
     """Attach scoped context packet to successful context payloads."""
     try:
         payload_data = json.loads(payload)
@@ -272,13 +282,16 @@ async def append_context_scoped_payload(payload: str, project_root: Path) -> str
     session_cfg = read_session_config()
     from cortex.tools.optimization import handlers as handlers_module
 
-    rules_payload = await handlers_module.get_relevant_rules()
+    rules_payload = (
+        snapshot.rules if snapshot else await handlers_module.get_relevant_rules()
+    )
     rules_markdown = _extract_rules_markdown(rules_payload)
     merged = append_scoped_context_payload(
         cast(ModelDict, payload_dict),
         project_root=project_root,
-        session_config=_session_config_mapping(session_cfg),
+        session_config=session_config_mapping(session_cfg),
         rules_payload=rules_markdown,
+        snapshot=snapshot,
     )
     return json.dumps(merged, indent=2, sort_keys=True)
 
@@ -313,13 +326,19 @@ def append_explore_summary_to_context_payload(
     return _append_explore_summary_to_context_payload(payload, explore_summary_markdown)
 
 
-def read_recent_operations_lines(project_root: Path) -> str | None:
-    return _read_recent_operations_lines(project_root)
+def read_recent_operations_lines(
+    project_root: Path, reader: Callable[[Path], str] | None = None
+) -> str | None:
+    return _read_recent_operations_lines(project_root, reader)
 
 
 def read_recent_artifacts_markdown(project_root: Path) -> str | None:
     return _read_recent_artifacts_markdown(project_root)
 
 
-def read_explore_summary_markdown(project_root: Path) -> str | None:
-    return _read_explore_summary_markdown(project_root)
+def read_explore_summary_markdown(
+    project_root: Path,
+    reader: Callable[[Path], str] | None = None,
+    session_config: dict[str, object] | None = None,
+) -> str | None:
+    return _read_explore_summary_markdown(project_root, reader, session_config)

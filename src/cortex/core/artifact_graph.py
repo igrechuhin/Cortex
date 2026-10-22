@@ -144,6 +144,11 @@ def read_plan_status_from_content(plan_content: str) -> PlanStatus:
     return _parse_plan_status(plan_content)
 
 
+def read_plan_dependencies_from_content(plan_content: str) -> list[str]:
+    """Return normalized declared dependencies using the graph's existing parser."""
+    return _parse_depends_on(plan_content)
+
+
 def _is_done_plan(plan_content: str) -> bool:
     metadata = read_plan_status_metadata(plan_content)
     return metadata.recognized and metadata.status == PlanStatus.DONE

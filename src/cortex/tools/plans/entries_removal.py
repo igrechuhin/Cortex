@@ -147,7 +147,11 @@ async def _perform_roadmap_removal(
     """Perform the actual roadmap removal and write."""
     updated = remove_line_at(current_content, line_num)
     write_error = await write_roadmap_file(
-        roadmap_path, updated, project_root, wal_operation=WalOperation.DELETE
+        roadmap_path,
+        updated,
+        project_root,
+        wal_operation=WalOperation.DELETE,
+        expected_content=current_content,
     )
     if write_error:
         return _removal_error("Failed to write roadmap", write_error)
@@ -203,11 +207,22 @@ async def execute_roadmap_section_removal(
     lines_removed = end_i - start_i + 1
     updated = remove_section_range(current_content, start_i, end_i)
     write_error = await write_roadmap_file(
-        roadmap_path, updated, root_path, wal_operation=WalOperation.DELETE
+        roadmap_path,
+        updated,
+        root_path,
+        wal_operation=WalOperation.DELETE,
+        expected_content=current_content,
     )
     if write_error:
         return _section_removal_error("Failed to write roadmap", write_error)
 
+    return _section_removal_success(heading, lines_removed)
+
+
+def _section_removal_success(
+    heading: str, lines_removed: int
+) -> RemoveRoadmapSectionResult:
+    """Build the successful section-removal result."""
     return RemoveRoadmapSectionResult(
         status=OperationStatus.SUCCESS,
         file_name=MemoryBankFile.ROADMAP,

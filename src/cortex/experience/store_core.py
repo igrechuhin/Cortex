@@ -10,6 +10,8 @@ core directly.
 from __future__ import annotations
 
 import sqlite3
+from collections.abc import Iterator
+from contextlib import contextmanager
 from datetime import datetime
 from pathlib import Path
 
@@ -79,10 +81,16 @@ class ExperienceStoreCore:
     def db_path(self) -> Path:
         return self._db_path
 
-    def _connect(self) -> sqlite3.Connection:
+    @contextmanager
+    def _connect(self) -> Iterator[sqlite3.Connection]:
         connection = sqlite3.connect(self._db_path, timeout=_BUSY_TIMEOUT_SECONDS)
-        connection.row_factory = sqlite3.Row
-        return connection
+        try:
+            connection.row_factory = sqlite3.Row
+            # AI: SQLite's transaction context commits/rolls back but does not close.
+            with connection:
+                yield connection
+        finally:
+            connection.close()
 
     # -- create -----------------------------------------------------------
 

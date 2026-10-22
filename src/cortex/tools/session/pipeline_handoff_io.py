@@ -15,8 +15,15 @@ from cortex.core.file_snapshot import FileStateCache
 from cortex.core.models import OperationStatus
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 
+from .phase_result_receipt import PhaseResultReceipt
+from .phase_result_status import PhaseResultStatus
+from .phase_result_verification import PhaseResultVerification
 from .pipeline_handoff_clock import PIPELINE_TTL_SECONDS, age_seconds, now_iso
-from .pipeline_handoff_lock import pipeline_state_lock
+from .pipeline_handoff_lock import (
+    PipelineClaimLockTimeout,
+    pipeline_claim_lock,
+    pipeline_state_lock,
+)
 from .pipeline_handoff_session import get_session_id
 
 logger = logging.getLogger(__name__)
@@ -83,6 +90,7 @@ class EventLogEntry(BaseModel):
     operation: str = Field(min_length=1)
     data_keys: list[str] = Field(default_factory=list)
     status: PhaseStatus | None = None
+    receipt: PhaseResultReceipt | None = None
 
 
 # ---------------------------------------------------------------------------
@@ -261,7 +269,7 @@ _ROUTING_KEYS: frozenset[str] = frozenset({"operation", "phase", "pipeline"})
 # Keys that carry pipeline config/hints rather than phase result data.
 # When present in a write_result payload these are lifted to a top-level
 # "config" block so they do not pollute the phase result record.
-_PHASE_CONFIG_KEYS: frozenset[str] = frozenset({"force_fresh", "test_timeout"})
+PHASE_CONFIG_KEYS: frozenset[str] = frozenset({"force_fresh", "test_timeout"})
 
 
 def extract_routing_keys(
@@ -339,6 +347,7 @@ def _append_event_log(
     operation: str,
     data_keys: list[str],
     status: PhaseStatus | None = None,
+    receipt: PhaseResultReceipt | None = None,
 ) -> None:
     entry = EventLogEntry(
         phase=phase,
@@ -346,6 +355,7 @@ def _append_event_log(
         operation=operation,
         data_keys=data_keys,
         status=status,
+        receipt=receipt,
     )
     elog = event_log_path(pipeline_dir)
     with elog.open("a", encoding="utf-8") as stream:
@@ -394,8 +404,8 @@ def _split_config_from_result(
     ``config`` block of pipeline state, not mixed into the phase result
     record.  Returns (result_fields, config_fields).
     """
-    result_fields = {k: v for k, v in incoming.items() if k not in _PHASE_CONFIG_KEYS}
-    config_fields = {k: v for k, v in incoming.items() if k in _PHASE_CONFIG_KEYS}
+    result_fields = {k: v for k, v in incoming.items() if k not in PHASE_CONFIG_KEYS}
+    config_fields = {k: v for k, v in incoming.items() if k in PHASE_CONFIG_KEYS}
     return result_fields, config_fields
 
 
@@ -421,15 +431,17 @@ def _update_pipeline_config(
     state["config"] = config
 
 
-def _write_result_payload_file(
-    pipeline_dir: Path,
-    phase: str,
-    result_fields: dict[str, object],
-) -> tuple[dict[str, object], Path]:
+def _result_payload(phase: str, result_fields: dict[str, object]) -> dict[str, object]:
     payload: dict[str, object] = {"phase": phase, "completed_at": now_iso()}
     payload.update(result_fields)
     _ = payload.setdefault("status", PhaseStatus.COMPLETED.value)
     payload["phase_status"] = _phase_status_from_payload(payload).value
+    return payload
+
+
+def _write_result_payload_file(
+    pipeline_dir: Path, phase: str, payload: dict[str, object]
+) -> tuple[dict[str, object], Path]:
     rfile = result_path(pipeline_dir, phase)
     _atomic_write_json(rfile, payload)
     return payload, rfile
@@ -497,7 +509,11 @@ def _record_run_end_best_effort(project_root: Path, pipeline: str, reason: str) 
 
 
 def _append_write_event(
-    pdir: Path, phase: str, incoming: dict[str, object], status: PhaseStatus
+    pdir: Path,
+    phase: str,
+    incoming: dict[str, object],
+    status: PhaseStatus,
+    receipt: PhaseResultReceipt | None = None,
 ) -> str | None:
     """Append the write event; return an error JSON string on failure."""
     try:
@@ -507,6 +523,7 @@ def _append_write_event(
             operation="write",
             data_keys=sorted(incoming.keys()),
             status=status,
+            receipt=receipt,
         )
     except OSError as exc:
         return json.dumps(
@@ -515,19 +532,24 @@ def _append_write_event(
     return None
 
 
-def op_write_result(
-    project_root: Path, pipeline: str, phase: str, data: str | None
+def _publish_result(
+    project_root: Path,
+    pdir: Path,
+    pipeline: str,
+    phase: str,
+    incoming: dict[str, object],
 ) -> str:
-    """Write phase result. Called by subagent when done. Also updates pipeline.json."""
-    pdir = pipeline_dir(project_root, pipeline)
-    pdir.mkdir(parents=True, exist_ok=True)
-    incoming = parse_result_data(data)
+    from .pipeline_handoff_publication import RECEIPT_KEY, publication_receipt
+
+    result_fields, config_fields = _split_config_from_result(incoming)
+    payload = _result_payload(phase, result_fields)
+    receipt = publication_receipt(pdir, pipeline, phase, incoming, payload)
+    payload[RECEIPT_KEY] = receipt.model_dump(mode="json")
     event_status = _phase_status_from_payload(incoming)
-    event_error = _append_write_event(pdir, phase, incoming, event_status)
+    event_error = _append_write_event(pdir, phase, incoming, event_status, receipt)
     if event_error is not None:
         return event_error
-    result_fields, config_fields = _split_config_from_result(incoming)
-    payload, rfile = _write_result_payload_file(pdir, phase, result_fields)
+    _, rfile = _write_result_payload_file(pdir, phase, payload)
     state = _update_pipeline_state_file(
         pdir, pipeline, phase, payload, config_fields, project_root
     )
@@ -538,9 +560,64 @@ def op_write_result(
             "result_file": str(rfile),
             "phase": phase,
             "pipeline_state": state,
+            "receipt": receipt.model_dump(mode="json"),
         },
         indent=2,
     )
+
+
+def op_write_result(
+    project_root: Path,
+    pipeline: str,
+    phase: str,
+    data: str | None,
+    *,
+    replay: bool = False,
+) -> str:
+    """Publish normally, or replay only a missing/exact publication."""
+    from .pipeline_handoff_publication import (
+        publication_directory,
+        validate_publication_request,
+    )
+
+    incoming = parse_result_data(data)
+    try:
+        validate_publication_request(incoming)
+        pdir = (
+            publication_directory(project_root, pipeline)
+            if replay
+            else pipeline_dir(project_root, pipeline)
+        )
+        if pdir is None:
+            return PhaseResultVerification(
+                status=PhaseResultStatus.UNCERTAIN, reason="No current run identity"
+            ).model_dump_json()
+        return _publish_locked(project_root, pdir, pipeline, phase, incoming, replay)
+    except (OSError, ValueError, PipelineClaimLockTimeout) as exc:
+        return PhaseResultVerification(
+            status=PhaseResultStatus.UNCERTAIN, reason=str(exc)
+        ).model_dump_json(indent=2)
+
+
+def _publish_locked(
+    project_root: Path,
+    pdir: Path,
+    pipeline: str,
+    phase: str,
+    incoming: dict[str, object],
+    replay: bool,
+) -> str:
+    from .pipeline_handoff_publication import verify_publication
+
+    # AI: the fail-closed publication lock serializes history/result/manifest
+    # with verification; the best-effort manifest lock cannot authorize replay.
+    pdir.mkdir(parents=True, exist_ok=True)
+    with pipeline_claim_lock(pdir.with_name(f".{pdir.name}-publication")):
+        if replay:
+            result = verify_publication(pdir, pipeline, phase, incoming)
+            if result.status is not PhaseResultStatus.MISSING:
+                return result.model_dump_json(indent=2)
+        return _publish_result(project_root, pdir, pipeline, phase, incoming)
 
 
 def _write_running_marker(
@@ -570,6 +647,16 @@ def op_mark_running(project_root: Path, pipeline: str, phase: str) -> str:
     """Mark phase as running and persist atomically for crash-safe resume."""
     pdir = pipeline_dir(project_root, pipeline)
     pdir.mkdir(parents=True, exist_ok=True)
+    try:
+        with pipeline_claim_lock(pdir.with_name(f".{pdir.name}-publication")):
+            return _mark_running(project_root, pdir, pipeline, phase)
+    except (OSError, PipelineClaimLockTimeout) as exc:
+        return PhaseResultVerification(
+            status=PhaseResultStatus.UNCERTAIN, reason=str(exc)
+        ).model_dump_json()
+
+
+def _mark_running(project_root: Path, pdir: Path, pipeline: str, phase: str) -> str:
     payload = _running_payload(phase)
     rfile = result_path(pdir, phase)
     write_error = _write_running_marker(pdir, rfile, payload, phase)
@@ -754,19 +841,23 @@ def op_clear(project_root: Path, pipeline: str, phase: str | None = None) -> str
             indent=2,
         )
     try:
-        if phase:
-            return _clear_single_phase(project_root, pdir, pipeline, phase)
-        # AI: run-end marker keeps the store's frontier consistent with the
-        # cleared handoff files (a cleared run is complete, not resumable).
-        _record_run_end_best_effort(project_root, pipeline, "cleared")
-        shutil.rmtree(pdir)
-        return json.dumps(
-            {"status": "ok", "cleared": str(pdir), "pipeline": pipeline}, indent=2
-        )
-    except OSError as e:
-        return json.dumps(
-            {"status": OperationStatus.ERROR.value, "error": str(e)}, indent=2
-        )
+        with pipeline_claim_lock(pdir.with_name(f".{pdir.name}-publication")):
+            return _clear_existing_pipeline(project_root, pdir, pipeline, phase)
+    except (OSError, PipelineClaimLockTimeout) as exc:
+        return json.dumps({"status": OperationStatus.ERROR.value, "error": str(exc)})
+
+
+def _clear_existing_pipeline(
+    project_root: Path, pdir: Path, pipeline: str, phase: str | None
+) -> str:
+    if phase:
+        return _clear_single_phase(project_root, pdir, pipeline, phase)
+    # AI: run-end recording and file removal share the publication exclusion.
+    _record_run_end_best_effort(project_root, pipeline, "cleared")
+    shutil.rmtree(pdir)
+    return json.dumps(
+        {"status": "ok", "cleared": str(pdir), "pipeline": pipeline}, indent=2
+    )
 
 
 def op_snapshot(project_root: Path, paths: list[str]) -> str:

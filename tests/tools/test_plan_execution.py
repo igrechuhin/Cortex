@@ -148,6 +148,7 @@ async def test_unsafe_scaffold_and_archive_paths_rejected(
     _ = _write(tmp_path, "TEMPLATE")
     result = await _call(tmp_path, slug)
     assert result["status"] == "error", result
+    assert result["code"] == "POLICY_BLOCKED"
     assert target.read_bytes() == _BODY
 
 
@@ -215,6 +216,9 @@ async def test_missing_duplicate_conflicting_nonscalar_owner_rejected(
     target = _write(tmp_path, body=body)
     result = await _call(tmp_path, "owner", body)
     assert result["status"] == "error", result
+    assert result["code"] == "POLICY_BLOCKED"
+    assert result["target"] == ".cortex/plans/owner.md"
+    assert result["before_sha256"] == hashlib.sha256(body).hexdigest()
     assert target.read_bytes() == body
 
 
@@ -237,6 +241,7 @@ async def test_terminal_or_unrecognized_status_rejected(
     target = _write(tmp_path, body=body)
     result = await _call(tmp_path, "owner", body)
     assert result["status"] == "error", result
+    assert result["code"] == "POLICY_BLOCKED"
     assert target.read_bytes() == body
 
 
@@ -255,6 +260,7 @@ async def test_ambiguous_and_terminal_identity_rejected(
     target = _write(tmp_path, body=body)
     result = await _call(tmp_path, "owner", body)
     assert result["status"] == "error", result
+    assert result["code"] == "POLICY_BLOCKED"
     assert target.read_bytes() == body
 
 
@@ -273,6 +279,8 @@ async def test_stale_under_lock_recheck(tmp_path: Path, dry_run: bool) -> None:
         result = await _call(tmp_path, dry_run=dry_run)
     assert result["status"] == "error", result
     assert "Stale expected_sha256" in str(result["error"])
+    assert result["code"] == "STALE_BASE"
+    assert result["before_sha256"] == hashlib.sha256(changed).hexdigest()
     assert target.read_bytes() == changed
     assert not target.with_suffix(".md.lock").exists()
 
@@ -299,4 +307,5 @@ async def test_quoted_conflicting_terminal_status_rejected(tmp_path: Path) -> No
     target = _write(tmp_path, body=body)
     result = await _call(tmp_path, "owner", body)
     assert result["status"] == "error", result
+    assert result["code"] == "POLICY_BLOCKED"
     assert target.read_bytes() == body

@@ -131,6 +131,7 @@ async def _roadmap_insert_after_validation(
         updated_content,
         root_path,
         wal_operation=WalOperation.ROADMAP_ADD,
+        expected_content=current_content,
     )
     if write_error:
         return _handle_write_error(section_id, write_error)

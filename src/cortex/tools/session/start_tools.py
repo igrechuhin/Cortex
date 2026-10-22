@@ -40,6 +40,7 @@ from cortex.core.usage_context import (
 from cortex.managers.types import ManagersDict
 from cortex.managers.utils import get_manager
 from cortex.tools.models_base import ToolResultStatus
+from cortex.tools.plans.entries_content import extract_plan_path_from_bullet
 from cortex.tools.session.brief import (
     build_session_brief,
     cap_session_brief_payload,
@@ -216,7 +217,7 @@ async def _process_pending_line(
     if match:
         title = match.group(1).strip()
         description = match.group(2).strip()
-        plan_path = match.group(3).strip() if match.group(3) else None
+        plan_path = extract_plan_path_from_bullet(line)
         work_item = f"{title} - {description}"
         if await _check_task_available_safe(project_root, title):
             return (work_item, plan_path)

@@ -398,3 +398,21 @@ def _resolve_session_id(
     session_id = _mint_run_id(project_root)
     os.environ[_PIPELINE_SESSION_ENV_KEY] = session_id
     return session_id
+
+
+def passive_session_id(project_root: Path) -> str:
+    """Read the latched run without attaching a live foreign-only owner."""
+    with _RESOLUTION_LOCK:
+        session_id = os.environ.get(_PIPELINE_SESSION_ENV_KEY, "")
+        if not session_id:
+            return ""
+        entry = _load_run_registry(project_root).get(session_id)
+        # AI: inherited environment alone cannot join a live sibling's run;
+        # normal registration/binding must establish this process as an owner.
+        if (
+            entry is not None
+            and _has_live_foreign_owner(entry)
+            and _current_owner() not in entry.owners
+        ):
+            return ""
+        return session_id

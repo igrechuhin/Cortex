@@ -194,6 +194,23 @@ class TestExtractNextWorkItem:
         assert plan_path == ".cortex/plans/phase-54.md"
 
     @pytest.mark.asyncio
+    async def test_extract_next_work_uses_explicit_canonical_identity(self) -> None:
+        """Earlier narrative plan labels must not hijack a generated row's path."""
+        # Arrange
+        reference = "Related work. Plan: .cortex/plans/repair.md"
+        row = (
+            f"- **Diagnostic** - PENDING - {reference}. "
+            "Plan: .cortex/plans/diagnostic.md"
+        )
+        content = f"## Pending plans (from .cortex/plans)\n\n{row}\n"
+        # Act
+        work_item, plan_path = await extract_next_work_item(content, project_root=None)
+        # Assert
+        assert work_item is not None and "Diagnostic" in work_item
+        assert plan_path == ".cortex/plans/diagnostic.md"
+        assert reference in content
+
+    @pytest.mark.asyncio
     async def test_extract_next_work_item_not_found(self) -> None:
         """Test extracting next work item when none exists."""
         content = """# Roadmap

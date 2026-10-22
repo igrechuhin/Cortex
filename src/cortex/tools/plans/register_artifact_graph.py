@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import re
 from pathlib import Path
+from tempfile import TemporaryDirectory
 
 from cortex.core.artifact_graph import (
     ArtifactGraph,
@@ -13,9 +14,14 @@ from cortex.core.artifact_graph import (
     register_plan_file_status_from_graph,
 )
 from cortex.core.context_logging import MCPContext, log_client
+from cortex.core.file_system import FileSystemManager
 from cortex.core.models import PlanStatus
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
-from cortex.core.plan_metadata import read_plan_status_metadata
+from cortex.core.plan_metadata import (
+    read_plan_status_metadata,
+    resolve_plan_status_token,
+)
+from cortex.tools.plans.completion_transaction_io import hash_text
 from cortex.tools.plans.register_helpers import create_register_error_result
 
 _FM_STATUS_RE = re.compile(r"^status\s*:\s*.*$", re.MULTILINE | re.IGNORECASE)
@@ -212,55 +218,92 @@ async def sync_plan_dependency_statuses_after_completion(
     return unblocked
 
 
-async def sync_plan_frontmatter_status_after_register(
-    root: Path,
-    plan_path: Path | None,
-    clarification_blocked: bool,
-    ctx: MCPContext | None,
-) -> None:
-    """Persist dependency/clarification-driven ``status`` into the plan file."""
-    if plan_path is None or not plan_path.is_file():
-        return
+def _dependency_registration_status(root: Path, plan_path: Path, requested: str) -> str:
     resolved = _graph_and_slug_for_plan_file(root, plan_path)
     if resolved is None:
-        return
+        return requested
     graph, slug = resolved
-    new_status = register_plan_file_status_from_graph(
-        clarification_blocked=clarification_blocked,
+    proposed = register_plan_file_status_from_graph(
+        clarification_blocked=requested.strip().upper() == "BLOCKED",
         graph=graph,
         slug=slug,
     )
-    await _persist_registered_status(plan_path, new_status, ctx)
+    return proposed.value if proposed == PlanStatus.BLOCKED else requested
 
 
-async def _persist_registered_status(
-    plan_path: Path, proposed: PlanStatus, ctx: MCPContext | None
-) -> None:
-    try:
-        raw = plan_path.read_text(encoding="utf-8")
-        if _preserve_registered_status(raw, proposed):
-            return
-        updated = replace_plan_frontmatter_status(raw, proposed)
-        if updated != raw:
-            _ = plan_path.write_text(updated, encoding="utf-8")
-    except OSError as exc:
-        await log_client(
-            ctx,
-            "error",
-            f"register_plan_in_roadmap: could not update plan status in {plan_path}: {exc}",
-            logger_name="cortex.tools.plans.register",
-        )
-
-
-def _preserve_registered_status(raw: str, proposed: PlanStatus) -> bool:
-    """Keep established lifecycle and author-defined status intent."""
+def resolve_registration_status(
+    root: Path, plan_path: Path | None, requested: str
+) -> tuple[str, str | None]:
+    """Resolve one effective row/frontmatter status from the original plan read."""
+    if plan_path is None or not plan_path.is_file():
+        return requested, None
+    raw = plan_path.read_bytes().decode("utf-8")
     metadata = read_plan_status_metadata(raw)
-    if not metadata.recognized:
-        return True
+    if metadata.conflicting:
+        raise ValueError(
+            "Conflicting plan statuses; resolve metadata before registration"
+        )
+    if metadata.recognized and metadata.status == PlanStatus.DONE:
+        raise ValueError(
+            "Completed plans cannot be registered in roadmap; use activeContext.md"
+        )
+    if not metadata.recognized and metadata.raw_token is not None:
+        return metadata.raw_token, raw
     if metadata.status in {
-        PlanStatus.DONE,
         PlanStatus.IN_PROGRESS,
         PlanStatus.READY,
+        PlanStatus.BLOCKED,
     }:
-        return True
-    return metadata.status == PlanStatus.BLOCKED and proposed == PlanStatus.PENDING
+        if resolve_plan_status_token(requested) == metadata.status:
+            return requested, raw
+        return metadata.status.value.replace("_", " "), raw
+    return _dependency_registration_status(root, plan_path, requested), raw
+
+
+async def sync_plan_frontmatter_status_after_register(
+    root: Path,
+    plan_path: Path | None,
+    status: str,
+    expected_content: str | None,
+    ctx: MCPContext | None,
+) -> str | None:
+    """Persist the already-resolved status atomically, rejecting a stale plan read."""
+    if plan_path is None or expected_content is None:
+        return None
+    metadata = read_plan_status_metadata(expected_content)
+    target = resolve_plan_status_token(status)
+    if target is None or (not metadata.recognized and metadata.raw_token is not None):
+        updated = expected_content
+    elif metadata.recognized and metadata.status == target:
+        updated = expected_content
+    else:
+        updated = replace_plan_frontmatter_status(expected_content, target)
+    try:
+        await persist_registered_status(root, plan_path, expected_content, updated)
+        return None
+    except Exception as exc:
+        message = f"Could not update plan status in {plan_path}: {exc}"
+        await log_client(ctx, "error", message, logger_name=__name__)
+        return message
+
+
+async def persist_registered_status(
+    root: Path, plan_path: Path, before: str, updated: str
+) -> None:
+    manager = FileSystemManager(root)
+    lock = plan_path.with_suffix(plan_path.suffix + ".lock")
+    await manager.acquire_lock(lock)
+    try:
+        if not plan_path.is_file() or hash_text(
+            plan_path.read_bytes().decode("utf-8")
+        ) != hash_text(before):
+            raise ValueError("Plan content changed since registration preparation")
+        if updated == before:
+            return
+        with TemporaryDirectory(dir=plan_path.parent) as staging:
+            staged = Path(staging) / plan_path.name
+            _ = staged.write_text(updated, encoding="utf-8")
+            staged.chmod(plan_path.stat().st_mode)
+            _ = staged.replace(plan_path)
+    finally:
+        await manager.release_lock(lock)

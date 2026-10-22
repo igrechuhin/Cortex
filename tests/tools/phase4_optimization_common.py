@@ -10,6 +10,8 @@ This test suite provides comprehensive coverage for:
 """
 
 import json
+from collections.abc import Iterator
+from contextlib import contextmanager
 from pathlib import Path
 from typing import Any, cast
 from unittest.mock import AsyncMock, MagicMock, patch
@@ -207,21 +209,17 @@ async def load_context_scope_cache_results(
 ) -> tuple[dict[str, Any], dict[str, Any], int]:
     resolve_scope, read_cfg = _build_scope_switchers()
     with (
-        patch("cortex.core.session_config.read_session_config", side_effect=read_cfg),
-        patch(
-            "cortex.tools.optimization.handlers._resolve_context_cache_scope",
-            side_effect=resolve_scope,
-        ),
-        patch(
-            "cortex.tools.optimization.handlers.resolve_project_root_async",
-            new_callable=AsyncMock,
-            return_value=mock_project_root,
-        ),
+        _scope_cache_runtime(mock_project_root, resolve_scope, read_cfg),
         patch(
             "cortex.tools.optimization.handlers.load_context_impl",
             new_callable=AsyncMock,
             side_effect=[payload_one, payload_two],
         ) as mock_load_context_impl,
+        patch(
+            "cortex.tools.optimization.handlers.get_relevant_rules",
+            new_callable=AsyncMock,
+            return_value=_build_scoped_rules_payload(),
+        ),
         patch(
             "cortex.tools.optimization.handlers.build_context_resource_payload_async",
             new_callable=AsyncMock,
@@ -231,6 +229,25 @@ async def load_context_scope_cache_results(
         first_result = cast(dict[str, Any], json.loads(await load_context()))
         second_result = cast(dict[str, Any], json.loads(await load_context()))
     return first_result, second_result, mock_load_context_impl.await_count
+
+
+@contextmanager
+def _scope_cache_runtime(
+    project_root: Path, resolve_scope: object, read_cfg: object
+) -> Iterator[None]:
+    with (
+        patch("cortex.core.session_config.read_session_config", side_effect=read_cfg),
+        patch(
+            "cortex.tools.optimization.handlers._resolve_context_cache_scope",
+            side_effect=resolve_scope,
+        ),
+        patch(
+            "cortex.tools.optimization.handlers.resolve_project_root_async",
+            new_callable=AsyncMock,
+            return_value=project_root,
+        ),
+    ):
+        yield
 
 
 # ============================================================================

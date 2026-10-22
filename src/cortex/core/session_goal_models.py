@@ -42,6 +42,13 @@ class SessionGoal(_SessionGoalBase):
         default_factory=list,
         description="Glob patterns explicitly out of scope.",
     )
+    source_plan_path: str | None = Field(
+        default=None, description="Resolved plan path used to derive allowed_files."
+    )
+    source_plan_revision: str | None = Field(
+        default=None,
+        description="SHA-256 of exact plan bytes used to derive allowed_files.",
+    )
     created_at: datetime = Field(
         default_factory=lambda: datetime.now(UTC),
         description="When this anchor was written.",

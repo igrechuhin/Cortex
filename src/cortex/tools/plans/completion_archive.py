@@ -9,6 +9,7 @@ import shutil
 from pathlib import Path
 
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
+from cortex.tools.plans.entries_content import extract_plan_path_from_bullet
 
 
 def archive_subdir_for_plan(filename: str) -> str | None:
@@ -31,17 +32,17 @@ def archive_subdir_for_plan(filename: str) -> str | None:
 
 
 def remove_roadmap_entry_for_plan(content: str, plan_file_name: str) -> str:
-    """Remove the roadmap bullet that references plans/<plan_file_name>.
-
-    Archiving a plan means the task is complete or declined — the entire
-    roadmap entry is removed, not just the plan-file fragment.
-    """
-    escaped = re.escape(plan_file_name)
-    pattern = re.compile(
-        r"^- .*Plan:\s*`plans/" + escaped + r"`.*\n?",
-        re.IGNORECASE | re.MULTILINE,
+    """Remove only bullets whose canonical plan identity is the archived plan."""
+    target = f".cortex/plans/{plan_file_name}"
+    eligible = re.compile(
+        r"^- .*Plan:\s*`plans/" + re.escape(plan_file_name) + r"`",
+        flags=re.IGNORECASE,
     )
-    return pattern.sub("", content)
+    return "".join(
+        line
+        for line in content.splitlines(keepends=True)
+        if not (eligible.match(line) and extract_plan_path_from_bullet(line) == target)
+    )
 
 
 def _remove_roadmap_entry(root: Path, plan_file_name: str) -> None:

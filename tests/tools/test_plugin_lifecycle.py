@@ -10,13 +10,13 @@ from fastmcp import Client, FastMCP
 from fastmcp.exceptions import ToolError
 
 from cortex.core.file_system import FileSystemManager
+from cortex.core.session_logger import get_session_log_path, read_session_log
 from cortex.core.usage_context import (
     get_current_managers,
     get_current_project_root,
     set_current_managers,
     set_current_project_root,
 )
-from cortex.core.session_logger import get_session_log_path, read_session_log
 from cortex.tools.memory.compaction_handoff import read_handoff, write_handoff
 from cortex.tools.session import plugin_lifecycle as hooks
 from cortex.tools.session.models import InProgressTask, SessionHandoff

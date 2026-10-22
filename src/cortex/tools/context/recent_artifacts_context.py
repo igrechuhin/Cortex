@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from pathlib import Path
 
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
@@ -23,10 +24,12 @@ def _strip_yaml_frontmatter(text: str) -> str:
     return after.lstrip("\n")
 
 
-def _one_line_summary_from_markdown(path: Path) -> str:
+def _one_line_summary_from_markdown(
+    path: Path, reader: Callable[[Path], str] | None = None
+) -> str:
     try:
-        raw = path.read_text(encoding="utf-8")
-    except OSError:
+        raw = reader(path) if reader is not None else path.read_text(encoding="utf-8")
+    except (OSError, UnicodeError):
         return "(unreadable)"
     body = _strip_yaml_frontmatter(raw)
     for line in body.splitlines():
@@ -55,7 +58,9 @@ def _iter_markdown_files(subdir: Path) -> list[tuple[Path, float]]:
     return out
 
 
-def build_recent_artifacts_markdown(project_root: Path) -> str | None:
+def build_recent_artifacts_markdown(
+    project_root: Path, reader: Callable[[Path], str] | None = None
+) -> str | None:
     """Return markdown for ## Recent Artifacts, or None if there is nothing to show."""
     pairs: list[tuple[Path, float]] = []
     for directory in get_artifact_directories(project_root):
@@ -73,6 +78,6 @@ def build_recent_artifacts_markdown(project_root: Path) -> str | None:
     lines: list[str] = ["## Recent Artifacts", ""]
     for path, _mtime in top:
         rel = Path("..") / path.relative_to(memory_bank_dir.parent)
-        summary = _one_line_summary_from_markdown(path)
+        summary = _one_line_summary_from_markdown(path, reader)
         lines.append(f"- [{rel.as_posix()}]({rel.as_posix()}) — {summary}")
     return "\n".join(lines)

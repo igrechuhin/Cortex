@@ -6,11 +6,31 @@ import json
 import os
 from datetime import timedelta
 from pathlib import Path
+from typing import Literal
 
 from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
 from mcp.types import CallToolResult, Implementation, ListRootsResult, Root, TextContent
-from pydantic import FileUrl
+from pydantic import BaseModel, ConfigDict, Field, FileUrl, ValidationError
+
+
+class ExecutionResponse(BaseModel):
+    """Validate the narrow wire contract without deriving authority from prose."""
+
+    model_config = ConfigDict(strict=True)
+
+    status: Literal["success", "error"]
+    operation: Literal["set_execution"]
+    project_root: str
+    target: str | None = Field(
+        pattern=r"^\.cortex/plans/[A-Za-z0-9][A-Za-z0-9._-]*\.md$"
+    )
+    mutation_performed: bool
+    code: Literal["STALE_BASE", "POLICY_BLOCKED"] | None = None
+    error: str | None = None
+    before_sha256: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
+    after_sha256: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
+    dry_run: bool | None = None
 
 
 def _server_parameters(checkout: Path, root: Path) -> StdioServerParameters:
@@ -43,13 +63,47 @@ def _validate_response(response: CallToolResult, root: Path) -> None:
         item.text for item in response.content if isinstance(item, TextContent)
     )
     print(text)
-    result = json.loads(text)
-    if response.isError or result.get("status") != "success":
-        raise RuntimeError("Guarded execution correction rejected")
-    if result["project_root"] != str(root):
+    try:
+        result = ExecutionResponse.model_validate_json(text)
+    except ValidationError as exc:
         raise RuntimeError(
-            "Backend resolved a root other than the sole advertised root"
+            "Uncertain backend response; read back before any retry"
+        ) from exc
+    if result.project_root != str(root):
+        raise RuntimeError(
+            "Backend resolved a root other than the sole advertised root; "
+            + "read back before any retry"
         )
+    if result.status == "error":
+        if (
+            result.code is not None
+            and result.mutation_performed is False
+            and not response.isError
+            and result.error
+            and result.after_sha256 is None
+            and (result.target is None) == (result.before_sha256 is None)
+            and (result.code != "STALE_BASE" or result.target is not None)
+        ):
+            raise RuntimeError(f"{result.code}: {result.error}; no automatic retry")
+        raise RuntimeError(
+            f"Uncertain correction: {result.error}; read back before any retry"
+        )
+    _validate_success(result, response.isError)
+
+
+def _validate_success(result: ExecutionResponse, is_error: bool | None) -> None:
+    if (
+        is_error
+        or result.code is not None
+        or result.error is not None
+        or result.target is None
+        or result.before_sha256 is None
+        or result.after_sha256 is None
+        or result.dry_run is None
+        or result.mutation_performed
+        != (not result.dry_run and result.before_sha256 != result.after_sha256)
+    ):
+        raise RuntimeError("Uncertain success response; read back before any retry")
 
 
 async def call(args: argparse.Namespace) -> None:
