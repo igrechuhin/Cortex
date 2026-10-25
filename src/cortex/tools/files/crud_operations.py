@@ -92,6 +92,7 @@ async def _run_manage_file_operation(
     sections: list[str] | None,
     version: int | None,
     skip_classification: bool,
+    source: str = "local",
 ) -> str:
     await log_client(
         ctx,
@@ -109,6 +110,7 @@ async def _run_manage_file_operation(
         sections,
         version,
         skip_classification,
+        source,
     )
 
 
@@ -134,6 +136,7 @@ async def manage_file(
     tags: list[str] | None = None,
     version: int | None = None,
     skip_classification: bool = False,
+    source: str = "local",
     ctx: MCPContext | None = None,
 ) -> str:
     """Manage Memory Bank file operations: read, write, or get metadata.
@@ -349,6 +352,7 @@ async def manage_file(
         sections,
         version,
         skip_classification,
+        source,
     )
 
 

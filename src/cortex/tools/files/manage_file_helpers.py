@@ -10,13 +10,14 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import cast
 
+from cortex.core.canonical_project import parse_read_source
 from cortex.core.constants import (
     MAX_MANAGE_FILE_CONTENT_BYTES,
     MAX_SECTIONS_LIST_SIZE,
 )
 from cortex.core.context_logging import MCPContext, log_client
 from cortex.core.file_system import FileSystemManager
-from cortex.core.models import OperationStatus
+from cortex.core.models import OperationStatus, PlanReadSource
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.core.usage_context import (
     get_current_managers,
@@ -28,6 +29,7 @@ from cortex.managers.types import ManagersDict
 from cortex.managers.utils import get_manager
 from cortex.memory.timeline import MemoryTimelineInput, memory_timeline_handle
 from cortex.tools.files.artifact_operations import file_artifact_from_payload
+from cortex.tools.files.canonical_read import canonical_read_branch
 from cortex.tools.files.constitution_init_flow import handle_init_constitution_operation
 from cortex.tools.files.crud_flow import (
     handle_read_operation,
@@ -78,12 +80,12 @@ def _parse_json_content(content: str | None) -> dict[str, str] | None:
     return typed_dict
 
 
-async def _manage_file_get_root(ctx: MCPContext | None) -> Path:
+async def manage_file_get_root(ctx: MCPContext | None) -> Path:
     """Return current project root or resolve via ctx."""
     return await get_or_resolve_project_root(ctx)
 
 
-async def _log_validation_failure(
+async def log_validation_failure(
     ctx: MCPContext | None, file_name: str | None, operation: str | None
 ) -> None:
     """Log validation failure for manage_file."""
@@ -171,18 +173,25 @@ def _resolve_manage_file_name(parsed_op: FileOperation, file_name: str | None) -
 
 
 # fmt: off
-async def manage_file_validate_and_run(ctx: MCPContext | None, file_name: str | None, operation: str | None, content: str | None, include_metadata: bool, change_description: str | None, sections: list[str] | None, version: int | None = None, skip_classification: bool = False) -> str:
+async def manage_file_validate_and_run(ctx: MCPContext | None, file_name: str | None, operation: str | None, content: str | None, include_metadata: bool, change_description: str | None, sections: list[str] | None, version: int | None = None, skip_classification: bool = False, source: str = "local") -> str:
 # fmt: on
+    parsed_source = parse_read_source(source)
+    if parsed_source is None:
+        return _invalid_manage_file_source_error(source)
     parsed_op, err = validate_manage_file_operation(operation, file_name, version)
     if err is not None:
-        await _log_validation_failure(ctx, file_name, operation)
+        await log_validation_failure(ctx, file_name, operation)
         return err
     assert parsed_op is not None
     resolved_name = _resolve_manage_file_name(parsed_op, file_name)
     limits_err = _validate_manage_file_input_limits(content, sections, parsed_op)
     if limits_err is not None:
-        await _log_validation_failure(ctx, resolved_name, operation)
+        await log_validation_failure(ctx, resolved_name, operation)
         return limits_err
+    if parsed_source is PlanReadSource.CANONICAL:
+        return await canonical_read_branch(
+            ctx, resolved_name, operation, parsed_op, include_metadata, sections
+        )
     return await _run_validated_manage_file(
         ctx,
         resolved_name,
@@ -193,6 +202,19 @@ async def manage_file_validate_and_run(ctx: MCPContext | None, file_name: str | 
         sections,
         version,
         skip_classification,
+    )
+
+
+def _invalid_manage_file_source_error(source: str) -> str:
+    return json.dumps(
+        error_response(
+            error=(
+                f"Invalid source '{source}'. "
+                "Use 'local' (default) or 'canonical'."
+            ),
+            error_type="ValueError",
+        ),
+        indent=2,
     )
 
 
@@ -207,7 +229,7 @@ async def _run_validated_manage_file(
     version: int | None,
     skip_classification: bool,
 ) -> str:
-    root = await _manage_file_get_root(ctx)
+    root = await manage_file_get_root(ctx)
     return await _manage_file_run_or_error(
         ctx,
         file_name,

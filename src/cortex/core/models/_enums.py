@@ -105,6 +105,13 @@ class PlanExecutionMode(str, Enum):
     OPERATOR = "operator"
 
 
+class PlanReadSource(str, Enum):
+    """Which project root a read operation resolves content from."""
+
+    LOCAL = "local"
+    CANONICAL = "canonical"
+
+
 class PlanningMode(str, Enum):
     """How `/cortex/plan` materializes sections (fast-forward vs human-in-the-loop)."""
 

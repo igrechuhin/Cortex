@@ -7,10 +7,11 @@ Implementation module for plan file creation, listing, and reading.
 from pathlib import Path
 from typing import Literal
 
+from cortex.core.canonical_project import parse_read_source
 from cortex.core.constants import MCP_TOOL_TIMEOUT_MEDIUM
 from cortex.core.context_logging import MCPContext, log_client
 from cortex.core.mcp_stability import ensure_usage_context, mcp_tool_wrapper
-from cortex.core.models import PlanningMode
+from cortex.core.models import PlanningMode, PlanReadSource
 from cortex.core.plan_change_history import ensure_change_history_section
 from cortex.core.plan_utils import (
     apply_clarifications_summary_to_plan,
@@ -18,6 +19,10 @@ from cortex.core.plan_utils import (
 )
 from cortex.core.project_root_resolver import resolve_project_root_async
 from cortex.tools.models_base import StrictBaseModel
+from cortex.tools.plans.canonical_reads import (
+    canonical_get_plan,
+    canonical_list_plans,
+)
 from cortex.tools.plans.constitutional_scan import apply_constitutional_compliance
 from cortex.tools.plans.crud_helpers import (
     create_error_result,
@@ -239,6 +244,7 @@ async def create_plan(
     include_archive: bool = False,
     response_format: str = "content",
     planning_mode: str | None = None,
+    source: str = "local",
     ctx: MCPContext | None = None,
 ) -> str:
     """Create, list, or get plan files (single tool for plan CRUD).
@@ -250,6 +256,7 @@ async def create_plan(
     - create_plan(operation="create", title="Phase 60", content="# Plan...")
     - create_plan(operation="list") or create_plan(operation="list", include_archive=True)
     - create_plan(operation="get", slug="phase-58-multi-agent")
+    - create_plan(operation="get", slug="phase-58", source="canonical")
 
     RETURNS: JSON (CreatePlanResult, ListPlansResult, or GetPlanResult per operation).
 
@@ -262,7 +269,16 @@ async def create_plan(
     - shape_log_path: Project-relative shaping record (adds `## Shaping Constraints`)
     - include_archive: Include archive plans when operation=list (default False)
     - response_format: 'content' or 'metadata' when operation=get (default 'content')
+    - source: 'local' (default) or 'canonical' for list/get — reads the
+      git-verified canonical main worktree with a provenance block
     """
+    parsed_source = parse_read_source(source)
+    if parsed_source is None:
+        return _invalid_source_result(source)
+    if parsed_source is PlanReadSource.CANONICAL:
+        return await _canonical_plan_read(
+            operation, slug, response_format, include_archive, ctx
+        )
     if operation == "list":
         return await _list_plans_tool_impl(include_archive, ctx)
     if operation == "get":
@@ -270,6 +286,54 @@ async def create_plan(
     return await _handle_create_plan(
         title, content, slug, explore_log_path, shape_log_path, planning_mode, ctx
     )
+
+
+def _invalid_source_result(source: str) -> str:
+    return CreatePlanResult(
+        status="error",
+        file_path=None,
+        message=f"Invalid source '{source}'. Use 'local' (default) or 'canonical'.",
+        error="Invalid source",
+    ).model_dump_json()
+
+
+async def _canonical_plan_read(
+    operation: str,
+    slug: str | None,
+    response_format: str,
+    include_archive: bool,
+    ctx: MCPContext | None,
+) -> str:
+    """Dispatch canonical list/get reads; every other operation fails closed."""
+    if operation not in ("list", "get"):
+        return CreatePlanResult(
+            status="error",
+            file_path=None,
+            message=(
+                "source='canonical' only supports read operations 'list' "
+                "and 'get'; create reads and writes the local root."
+            ),
+            error="Canonical source is read-only",
+        ).model_dump_json()
+    root = await resolve_project_root_async(None, ctx)
+    if operation == "list":
+        return canonical_list_plans(root, include_archive)
+    return await _canonical_get(slug, response_format, root)
+
+
+async def _canonical_get(slug: str | None, response_format: str, root: Path) -> str:
+    if not slug:
+        return GetPlanResult(
+            status="error",
+            slug=None,
+            content=None,
+            title=None,
+            plan_status=None,
+            relative_path=None,
+            message="slug is required when operation is 'get'",
+            error="Missing slug",
+        ).model_dump_json()
+    return canonical_get_plan(root, slug, response_format)
 
 
 async def _handle_create_plan(

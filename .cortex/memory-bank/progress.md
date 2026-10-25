@@ -1,6 +1,10 @@
 <!-- memory_type: milestone -->
 # Progress Log
 
+## 2026-10-24
+
+- **Canonical read access to approved plans across worktrees** - COMPLETE. plan()/manage_file() source=canonical reads verified canonical main plans, memory-bank conclusions and closed artifact reports with exact-byte provenance and local freshness; all writes stay local; fail-closed guards cover invalid/duplicate/bare/cross-repo mappings, symlink indirection, traversal and mid-read mutation. 41 focused regressions; quality gate 8/8, 8577/8577 tests, 92.03% coverage; docs gate green.
+
 ## 2026-10-21
 
 - <!-- memory_type: problem -->

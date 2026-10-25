@@ -274,14 +274,17 @@ def get_plan_result_success(
     )
 
 
-def get_plan_impl(root: Path, slug: str, response_format: str) -> GetPlanResult:
-    """Read plan by slug. Returns GetPlanResult."""
+def build_plan_result_from_text(
+    slug: str, raw: str, relative_path: str, response_format: str
+) -> GetPlanResult:
+    """Assemble a GetPlanResult from already-captured plan text.
+
+    Sharing this layer between local and canonical reads keeps parsing
+    semantics identical while letting canonical callers capture exact bytes
+    once for both parsing and provenance.
+    """
     from cortex.core.plan_change_history import change_history_stats
 
-    loaded = _load_plan_raw_or_error(root, slug)
-    if isinstance(loaded, GetPlanResult):
-        return loaded
-    path, raw = loaded
     chg_count, latest_d = change_history_stats(raw)
     parsed = _plan_task_graph_or_parse_error(slug, raw)
     if isinstance(parsed, GetPlanResult):
@@ -298,9 +301,20 @@ def get_plan_impl(root: Path, slug: str, response_format: str) -> GetPlanResult:
             if want_content
             else f"Plan '{slug}' metadata"
         ),
-        relative_path=path.relative_to(root).as_posix(),
+        relative_path=relative_path,
         change_count=chg_count,
         latest_delta=latest_d,
         task_graph=task_graph,
         can_parallelize=can_parallelize,
+    )
+
+
+def get_plan_impl(root: Path, slug: str, response_format: str) -> GetPlanResult:
+    """Read plan by slug. Returns GetPlanResult."""
+    loaded = _load_plan_raw_or_error(root, slug)
+    if isinstance(loaded, GetPlanResult):
+        return loaded
+    path, raw = loaded
+    return build_plan_result_from_text(
+        slug, raw, path.relative_to(root).as_posix(), response_format
     )

@@ -4,6 +4,7 @@ Pydantic models for plan CRUD tool (create_plan, list_plans, get_plan).
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from cortex.core.canonical_project import CanonicalReadProvenance
 from cortex.core.pydantic_extra import EXTRA_FORBID
 from cortex.wiki.glossary_models import TerminologyFinding
 
@@ -64,6 +65,10 @@ class ListPlansResult(BaseModel):
         default_factory=lambda: [],
         description="List of plan entries (slug, optional title)",
     )
+    provenance: CanonicalReadProvenance | None = Field(
+        default=None,
+        description="Present only for source='canonical' reads",
+    )
     message: str = Field(description="Success or error message")
     error: str | None = Field(None, description="Error message if status is error")
 
@@ -104,4 +109,8 @@ class GetPlanResult(BaseModel):
     can_parallelize: bool = Field(
         default=False,
         description="True when any step uses a [P] parallel marker",
+    )
+    provenance: CanonicalReadProvenance | None = Field(
+        default=None,
+        description="Present only for source='canonical' reads",
     )

@@ -245,6 +245,10 @@ async def _get_structure_info_inner(ctx: MCPContext | None) -> str:
         root = await resolve_project_root_async(None, ctx)
         structure_mgr = StructureManager(root)
         info_payload: ModelDict = structure_mgr.get_structure_info()
+        # AI: Canonical identity rides the existing structure resource so a
+        # legitimate worktree can discover its canonical main mapping without
+        # a separate resource; failures render as unavailable, never error.
+        info_payload["canonical"] = canonical_identity_block(root)
         out = json.dumps(
             {
                 "success": True,
@@ -265,6 +269,40 @@ async def _get_structure_info_inner(ctx: MCPContext | None) -> str:
             {"success": False, "error": str(e), "error_type": type(e).__name__},
             indent=2,
         )
+
+
+def canonical_identity_block(root: Path) -> ModelDict:
+    """Canonical main-worktree identity for the structure resource payload."""
+
+    from cortex.core.canonical_project import (
+        CanonicalProjectError,
+        resolve_canonical_identity,
+    )
+
+    try:
+        identity = resolve_canonical_identity(root)
+    except (CanonicalProjectError, OSError) as exc:
+        failure = (
+            exc.failure.value
+            if isinstance(exc, CanonicalProjectError)
+            else "git_failure"
+        )
+        detail = exc.detail if isinstance(exc, CanonicalProjectError) else str(exc)
+        return {
+            "available": False,
+            "local_root": str(root.resolve()),
+            "failure": failure,
+            "detail": detail,
+        }
+    payload: ModelDict = {
+        "available": True,
+        "local_root": str(identity.local_root),
+        "canonical_root": str(identity.canonical_root),
+        "relation": identity.relation.value,
+        "common_git_dir": str(identity.common_git_dir),
+        "git_revision": identity.git_revision,
+    }
+    return payload
 
 
 @ensure_usage_context

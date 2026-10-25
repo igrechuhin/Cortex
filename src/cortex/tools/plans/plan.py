@@ -7,11 +7,12 @@ operation-based dispatcher following the Phase 50 pattern (query_memory_bank, qu
 
 from __future__ import annotations
 
+from cortex.core.canonical_project import parse_read_source
 from cortex.core.constants import MCP_TOOL_TIMEOUT_MEDIUM
 from cortex.core.context_logging import MCPContext, log_client
 from cortex.core.mcp_annotations import destructive_annotations
 from cortex.core.mcp_stability import ensure_usage_context, mcp_tool_wrapper
-from cortex.core.models import PlanToolOperation
+from cortex.core.models import PlanReadSource, PlanToolOperation
 from cortex.server import mcp
 from cortex.tools.models_base import StrictBaseModel
 
@@ -40,6 +41,7 @@ class _PlanDispatchWire(StrictBaseModel):
     planning_mode: str | None = None
     step_section: str | None = None
     step_skip: bool = False
+    source: str = "local"
     section_corrections: str | None = None
 
 
@@ -69,6 +71,7 @@ class _PlanDispatchRequest(StrictBaseModel):
     planning_mode: str | None = None
     step_section: str | None = None
     step_skip: bool = False
+    source: PlanReadSource
     section_corrections: str | None = None
 
 
@@ -85,6 +88,31 @@ def _plan_error_invalid_operation(operation: str) -> str:
             "finalize_step, or set_execution."
         ),
         error="Invalid operation",
+    ).model_dump_json()
+
+
+def _plan_error_invalid_source(source: str) -> str:
+    from cortex.tools.plans.crud import CreatePlanResult
+
+    return CreatePlanResult(
+        status="error",
+        file_path=None,
+        message=(f"Invalid source '{source}'. Use 'local' (default) or 'canonical'."),
+        error="Invalid source",
+    ).model_dump_json()
+
+
+def _plan_error_canonical_read_only(operation: str) -> str:
+    from cortex.tools.plans.crud import CreatePlanResult
+
+    return CreatePlanResult(
+        status="error",
+        file_path=None,
+        message=(
+            f"source='canonical' only supports read operations 'list' and 'get'; "
+            f"operation '{operation}' reads and writes the local root."
+        ),
+        error="Canonical source is read-only",
     ).model_dump_json()
 
 
@@ -134,6 +162,7 @@ async def _plan_handle_crud(
     include_archive: bool,
     response_format: str,
     planning_mode: str | None,
+    source: PlanReadSource,
     ctx: MCPContext | None,
 ) -> str:
     from cortex.tools.plans.crud import create_plan as _create_plan
@@ -148,6 +177,7 @@ async def _plan_handle_crud(
         include_archive=include_archive,
         response_format=response_format,
         planning_mode=planning_mode,
+        source=source.value,
         ctx=ctx,
     )
 
@@ -366,7 +396,15 @@ async def _plan_dispatch(
     resolved_op = _coerce_plan_tool_operation(inputs.operation)
     if resolved_op is None:
         return _plan_error_invalid_operation(inputs.operation or "")
-    request = _request_from_plan_wire(inputs, resolved_op)
+    resolved_source = parse_read_source(inputs.source)
+    if resolved_source is None:
+        return _plan_error_invalid_source(inputs.source)
+    if resolved_source is PlanReadSource.CANONICAL and resolved_op not in (
+        PlanToolOperation.LIST,
+        PlanToolOperation.GET,
+    ):
+        return _plan_error_canonical_read_only(resolved_op.value)
+    request = _request_from_plan_wire(inputs, resolved_op, resolved_source)
     has_required = _plan_request_has_required_args(request)
     await _log_plan_operation(ctx, resolved_op.value, has_required)
     return await _plan_dispatch_valid_operation(request, ctx)
@@ -393,8 +431,13 @@ def _build_plan_dispatch_request(
 def _request_from_plan_wire(
     inputs: _PlanDispatchWire,
     resolved_op: PlanToolOperation,
+    resolved_source: PlanReadSource,
 ) -> _PlanDispatchRequest:
-    data: dict[str, object] = {**inputs.model_dump(), "operation": resolved_op}
+    data: dict[str, object] = {
+        **inputs.model_dump(),
+        "operation": resolved_op,
+        "source": resolved_source,
+    }
     return _build_plan_dispatch_request(data)
 
 
@@ -554,6 +597,7 @@ async def _plan_dispatch_valid_operation(
         request.include_archive,
         request.response_format,
         request.planning_mode,
+        request.source,
         ctx,
     )
     if request.operation == PlanToolOperation.CREATE:
@@ -590,6 +634,7 @@ async def plan(
     planning_mode: str | None = None,
     step_section: str | None = None,
     step_skip: bool = False,
+    source: str = "local",
     section_corrections: str | None = None,
     ctx: MCPContext | None = None,
 ) -> str:
@@ -607,6 +652,11 @@ async def plan(
     and dry_run (boolean). It changes only a unique scalar frontmatter owner;
     status, identity and body remain unchanged. This explicit metadata correction
     is neither completion nor implicit authority to perform plan actions.
+    ``source='canonical'`` (read-only) resolves list/get content from the
+    git-verified canonical main worktree when this root is a linked worktree;
+    every other operation and all writes stay bound to the local root and
+    reject it. Results carry a provenance block (root, relation, git revision,
+    exact-byte digest, local missing/stale freshness). Default ``local``.
     """
     wire_payload = {name: locals()[name] for name in _PLAN_WIRE_KEYS}
     return await _plan_dispatch(

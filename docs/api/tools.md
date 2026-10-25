@@ -255,7 +255,7 @@ remain explicit errors instead of being presented as verified history.
 | URI | Role |
 |-----|------|
 | `cortex://health/connection` | Connection health |
-| `cortex://structure` | Path / structure discovery |
+| `cortex://structure` | Path / structure discovery incl. `canonical` identity block |
 | `cortex://context` | Context loading (task from session config) |
 | `cortex://rules` | Coding standards (task from session config) |
 | `cortex://validation` | Timestamps / roadmap sync |
@@ -613,7 +613,23 @@ Unified Memory Bank file management tool for read/write/metadata operations.
 - `version` (int | None) - Version number to restore from (required when `operation="rollback"`).
 - `include_metadata` (bool) - When `operation="read"`, include metadata block.
 - `change_description` (str | None) - Human-friendly description stored in version history.
-
+- `source` (str) - `"local"` (default) or `"canonical"` for `operation="read"` only.
+  `source="canonical"` reads the git-verified canonical main worktree when
+  this root is a linked git worktree, so approved conclusions
+  (`activeContext.md`, `progress.md`) and closed artifact reports
+  (`.cortex/reviews/<name>.md`, `.cortex/analyses/<name>.md`,
+  `.cortex/queries/<name>.md`) referenced by canonical summaries stay
+  readable even when the local tree is missing or stale. Every other
+  operation rejects `source="canonical"`; nothing is ever written to the
+  canonical root. The result carries a `provenance` block (canonical root,
+  relation, git HEAD revision, exact-byte sha256 of the captured content,
+  and local freshness: `missing`/`identical`/`diverged`/`ambiguous`/
+  `unsafe`/`unreadable`). `content_sha256` identifies exact working-tree
+  bytes; `git_revision` is repository context, not a claim the bytes are
+  committed at that revision. Failures (non-git root, ambiguous mapping,
+  symlink indirection, traversal, mutation during read) fail closed with a
+  typed `error` code and return no content. See
+  [Canonical cross-worktree reads](#canonical-cross-worktree-reads).
 **Guarded existing-document repair:**
 
 Use `operation="patch_document"` only for an operator-approved literal repair.
@@ -921,6 +937,10 @@ Create, list, or get plan files (single tool for plan CRUD).
 - `slug` (str | None) - Filename without `.md` (optional for create; required when `operation="get"`).
 - `include_archive` (bool) - Include archive plans when `operation="list"` (default: false).
 - `response_format` (str) - `content` or `metadata` when `operation="get"` (default: `content`).
+- `source` (str) - `"local"` (default) or `"canonical"` for `list`/`get` only:
+  reads the git-verified canonical main worktree from a linked worktree and
+  attaches a `provenance` block. See
+  [Canonical cross-worktree reads](#canonical-cross-worktree-reads).
 
 **Description:**
 
@@ -967,7 +987,60 @@ await create_plan(operation="list", include_archive=False)
 # Get plan content or metadata
 await create_plan(operation="get", slug="phase-60-feature", response_format="content")
 await create_plan(operation="get", slug="phase-60-feature", response_format="metadata")
+# Read current approved plans/results from canonical main in a worktree
+await create_plan(operation="list", source="canonical", include_archive=True)
+await create_plan(operation="get", slug="approved-result", source="canonical")
 ```
+
+### Canonical cross-worktree reads
+
+A legitimate linked git worktree resolves its own project root, so
+`plan()` list/get and `manage_file()` read see only the worktree's
+`.cortex/` tree — which can be missing or stale while canonical main holds
+the current approved plans and validated conclusions. Passing
+`source="canonical"` to these **read operations only** reads the
+git-verified canonical main worktree instead:
+
+```python
+plan(operation="list", source="canonical", include_archive=True)
+plan(operation="get", slug="approved-result", source="canonical")
+manage_file(operation="read", file_name="activeContext.md", source="canonical")
+manage_file(operation="read", file_name=".cortex/reviews/report.md", source="canonical")
+```
+
+Rules and semantics:
+
+- **Provenance**: every canonical result carries a `provenance` block.
+  For single-file reads (`get`, `manage_file` read) `content_sha256` is
+  the sha256 of the exact working-tree bytes captured once for both
+  parsing and provenance (these may include uncommitted approved
+  content); `plan(operation="list")` provides source and freshness
+  metadata without per-file digests. `git_revision` is canonical-root
+  HEAD repository context, not a claim the bytes are committed at that
+  revision. Local freshness is reported as `local_state` (`missing`,
+  `identical`, `diverged`, `ambiguous`, `unsafe`, `unreadable`) for
+  single reads, and as `local_missing`/`local_stale`/`local_ambiguous`/
+  `local_unreadable`/`local_unsafe` slug lists for list. An unsafe or
+  unreadable **local** counterpart still returns the canonical content
+  successfully — only the local freshness is marked; no content is
+  returned only when the canonical mapping/path is invalid or the read
+  itself mutated.
+- **Isolation**: defaults remain local; every write/lifecycle operation
+  rejects `source="canonical"` before any handler runs; canonical reads
+  never write to or initialize the canonical root (no managers, no wiki
+  bootstrap there) and never rebind the local project root.
+- **Fail-closed**: non-git roots, unlisted or duplicate local worktrees,
+  bare/absent main worktrees, cross-repository mappings, non-Cortex
+  canonical roots, symlink indirection on `.cortex`/allowed directories
+  (canonical side blocks the read; local side marks freshness `unsafe`),
+  traversal-style names, and any mutation of the selected bytes or
+  canonical HEAD during a read return a typed error and no content
+  (`revision_changed_during_read` requires a re-read).
+- **Artifact scope**: `manage_file(operation="read", source="canonical")`
+  accepts memory-bank filenames plus the closed artifact paths
+  `.cortex/reviews/<name>.md`, `.cortex/analyses/<name>.md`, and
+  `.cortex/queries/<name>.md`, so result references inside approved
+  summaries are readable — never arbitrary paths.
 
 **See also:** `plan(operation="register", ...)`, `update_memory_bank`, `get_structure_info`.
 
