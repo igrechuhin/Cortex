@@ -115,6 +115,14 @@ separate adjudication backlog; this repair does not allowlist them. The
 unchanged public smoke success assertion also exposes findings in copied
 Synapse scripts rather than silently passing them.
 
+**2026-10-28 dictionary maintenance:** The backlog above is resolved through
+per-token adjudication in root `.cspell.json`, shared by repository checks and
+copied-script smoke projects. Keep `words` sorted case-insensitively and deduped;
+add genuine vocabulary there, reserve `ignoreWords` for inert samples, and fix
+prose typos. Negative spelling fixtures use line-scoped cspell directives in
+their repository source, never dictionary entries or directives in generated
+misspelled source, so the real installed checker must still reject them.
+
 ### FastMCP hot-reload dev mode
 
 Use the FastMCP inspector dev workflow when iterating on MCP behavior:
