@@ -12,6 +12,11 @@ from tiktoken.registry import get_encoding
 
 from cortex.server import mcp
 from tests.e2e.public_workflow_helpers import call_public_tool
+from tests.helpers.spelling_fixtures import (
+    SPELLING_CASES,
+    cleanup_checker,
+    configure_checker,
+)
 from tests.integration.resource_test_helpers import read_resource_text
 from tests.integration.test_hybrid_rules_delivery import DeliveredRulesPayload
 
@@ -114,6 +119,7 @@ async def test_quality_gate_reports_real_success_and_failure(
     passed = await _quality_gate_outcome()
     assert passed["preflight_passed"] is True, passed
     assert "tests" in cast(list[str], passed["checks_performed"]), passed
+    assert "spelling" in cast(list[str], passed["checks_performed"]), passed
 
     # Deliberately break behavior, not the tool response or adapter.
     source = quality_project / "src/cortex/smoke_subject.py"
@@ -124,6 +130,67 @@ async def test_quality_gate_reports_real_success_and_failure(
     assert failed["preflight_passed"] is False, failed
     assert "test_answer" in json.dumps(failed), failed
     assert "failed" in json.dumps(failed).lower(), failed
+
+
+@pytest.mark.parametrize(("mode", "success", "diagnostic"), SPELLING_CASES)
+async def test_quality_gate_preserves_real_spelling_subprocess_verdicts(
+    quality_project: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    mode: str,
+    success: bool,
+    diagnostic: str,
+) -> None:
+    # Arrange: replace only the installed checker boundary, not the detached worker.
+    configure_checker(quality_project, mode, monkeypatch)
+    monkeypatch.setattr(
+        "cortex.tools.execution.pre_commit_zero_arg_tools.QUALITY_GATE_WAIT_SECONDS",
+        2.0,
+    )
+    try:
+        # Act: invoke the registered MCP tool through the real job/result path.
+        result = await _quality_gate_outcome()
+        # Assert: the aggregate public verdict includes the actual spelling result.
+        assert result["preflight_passed"] is success, result
+        assert "spelling" in cast(list[str], result["checks_performed"]), result
+        if not success:
+            assert diagnostic in json.dumps(result), result
+        if mode in {"timeout", "preflight-timeout"}:
+            assert (quality_project / "child-reaped").exists()
+    finally:
+        cleanup_checker(quality_project)
+
+
+async def test_quality_gate_fails_when_required_spelling_script_is_missing(
+    quality_project: Path,
+) -> None:
+    # Arrange: remove only the required script from this test-owned project copy.
+    script = quality_project / ".cortex/synapse/scripts/python/check_spelling.py"
+    script.unlink()
+    # Act: keep the registered tool, detached worker, and all other checks real.
+    result = await _quality_gate_outcome()
+    # Assert: absence must not be reported as a successful skip.
+    assert result["preflight_passed"] is False, result
+    assert "spelling" in cast(list[str], result["checks_performed"]), result
+    assert "Required spelling script not found" in json.dumps(result), result
+
+
+async def test_quality_gate_reports_real_installed_checker_findings(
+    quality_project: Path,
+) -> None:
+    # Arrange: use the installed checker and unchanged project dictionary.
+    source = quality_project / "src/cortex/smoke_subject.py"
+    _ = source.write_text(
+        # cspell:disable-next-line
+        "def answer() -> int:\n    # mispellledwordzz\n    return 42\n",
+        encoding="utf-8",
+    )
+    # Act: the real checker runs inside the real detached public worker.
+    result = await _quality_gate_outcome()
+    # Assert: source findings reach the public verdict, without breaking behavior.
+    assert result["preflight_passed"] is False, result
+    assert "spelling" in cast(list[str], result["checks_performed"]), result
+    # cspell:disable-next-line
+    assert "mispellledwordzz" in json.dumps(result), result
 
 
 async def test_file_tool_visibility_preserves_client_boundary(

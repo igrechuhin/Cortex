@@ -1,181 +1,5 @@
 # Cortex Operations Log
 
-## [2026-08-31T09:43] plan | Created plan: Mini
-
-## [2026-08-31T09:43] plan | Created plan: Test Plan
-
-## [2026-08-31T09:43] plan | Created plan: Mini ·2
-
-## [2026-08-31T09:43] plan | Created plan: Demo Plan ·4
-
-## [2026-08-31T09:43] plan | Created plan: Demo Plan ·5
-
-## [2026-08-31T09:43] plan | Created plan: Demo Plan ·6
-
-## [2026-08-31T09:43] plan | Created plan: Mini ·3
-
-## [2026-08-31T09:43] plan | Created plan: Mini ·4
-
-## [2026-08-31T09:44] lint | Quality gate passed
-
-## [2026-08-31T09:44] plan | Completed plan: Falsifiable Prediction Gate and Graded Miss Ledger
-
-Agents can now record falsifiable claims before editing, and every quality gate grades them. New `cortex.experience.claims` parses a seven-form vocabulary (gate clean, gate fails, error gone, test passes/fails, coverage >=, touches/noop path, change/noop) with free text falling through to an implied `change` and an empty prediction rejected outright. `claim_grading` builds a GradingFrame from the gate result plus the git diff and grades each claim to HIT, MISS, or UNGRADED — never a silent pass. `predictions` persists claims and verdicts as ordinary experience nodes in their own lineage, reusing the never-raises recorder contract. Grading fires inside the existing `record_gate_result` hook with no new call site, and a nudge names `session(operation="predict", ...)` when a gate graded nothing. `session()` gained a `predict` operation and surfaces open claims, free-text count, and recent misses in the brief through the existing cap. Doctrine shipped as the `predict-before-you-edit` Synapse rule (registered in rules-manifest.json) plus an implement-code agent instruction and a documented Refuted section convention.
-
-## [2026-08-31T09:45] fix | Autofix completed
-
-status=success; changed_files=None
-
-## [2026-08-31T09:45] lint | Quality gate passed
-
-## [2026-08-31T09:53] lint | Quality gate passed
-
-## [2026-08-31T09:54] fix | Autofix completed
-
-status=success; changed_files=None
-
-## [2026-08-31T09:56] lint | Quality gate passed
-
-## [2026-09-05T13:00] plan | Created plan: Wire Usage-Pattern Analytics to Session Logs and Package-Relative Tool Analysis
-
-## [2026-09-05T13:28] fix | Autofix completed
-
-status=success; changed_files=None
-
-## [2026-09-05T13:30] plan | Created plan: Demo Plan
-
-## [2026-09-05T13:30] plan | Created plan: Mini
-
-## [2026-09-05T13:30] plan | Created plan: Mini ·2
-
-## [2026-09-05T13:30] plan | Created plan: Mini ·3
-
-## [2026-09-05T13:30] plan | Created plan: Demo Plan ·2
-
-## [2026-09-05T13:30] plan | Created plan: Mini ·4
-
-## [2026-09-05T13:30] plan | Created plan: Demo Plan ·3
-
-## [2026-09-05T13:30] plan | Created plan: Smoke Test Plan
-
-## [2026-09-05T13:30] plan | Created plan: Demo Plan ·4
-
-## [2026-09-05T13:30] plan | Created plan: Demo Plan ·5
-
-## [2026-09-05T13:30] plan | Created plan: Demo Plan ·6
-
-## [2026-09-05T13:30] plan | Created plan: Test Plan
-
-## [2026-09-05T13:31] lint | Quality gate failed
-
-## [2026-09-05T13:33] plan | Created plan: Test Plan
-
-## [2026-09-05T13:33] plan | Created plan: Smoke Test Plan
-
-## [2026-09-05T13:34] plan | Created plan: Demo Plan
-
-## [2026-09-05T13:34] plan | Created plan: Demo Plan ·2
-
-## [2026-09-05T13:34] plan | Created plan: Mini
-
-## [2026-09-05T13:34] plan | Created plan: Mini ·2
-
-## [2026-09-05T13:34] plan | Created plan: Mini ·3
-
-## [2026-09-05T13:34] plan | Created plan: Demo Plan ·3
-
-## [2026-09-05T13:34] plan | Created plan: Demo Plan ·4
-
-## [2026-09-05T13:34] plan | Created plan: Demo Plan ·5
-
-## [2026-09-05T13:34] plan | Created plan: Demo Plan ·6
-
-## [2026-09-05T13:34] plan | Created plan: Mini ·4
-
-## [2026-09-05T13:34] lint | Quality gate passed
-
-## [2026-09-05T13:37] plan | Created plan: Smoke Test Plan
-
-## [2026-09-05T13:37] plan | Created plan: Demo Plan
-
-## [2026-09-05T13:37] plan | Created plan: Demo Plan ·2
-
-## [2026-09-05T13:37] plan | Created plan: Demo Plan ·3
-
-## [2026-09-05T13:37] plan | Created plan: Demo Plan ·4
-
-## [2026-09-05T13:37] plan | Created plan: Demo Plan ·5
-
-## [2026-09-05T13:37] plan | Created plan: Mini
-
-## [2026-09-05T13:37] plan | Created plan: Mini ·2
-
-## [2026-09-05T13:37] plan | Created plan: Mini ·3
-
-## [2026-09-05T13:37] plan | Created plan: Demo Plan ·6
-
-## [2026-09-05T13:37] plan | Created plan: Mini ·4
-
-## [2026-09-05T13:37] plan | Created plan: Test Plan
-
-## [2026-09-05T13:38] lint | Quality gate passed
-
-## [2026-09-05T13:39] plan | Completed plan: Wire Usage-Pattern Analytics to Session Logs and Package-Relative Tool Analysis
-
-Replaced the never-written .cortex/access-log.json write path with a projection over the load_context session logs Cortex already writes. New src/cortex/analysis/session_access_source.py builds AccessRecords from .cortex/.session/context-session-*.json (one record per selected file, siblings as context_files, synthesised session_id:index task ids), bounded by pattern_window_days with an mtime pre-filter and tolerant of corrupt or schema-invalid logs. PatternAnalyzer now replays those records through its existing _update_* helpers at construction and honours the previously dead track_usage_patterns flag. Removed record_access, _save_access_log, _load_access_log, access_log_path, cleanup_old_data, and the whole 170-line pattern_normalization module (create_default_access_log moved to pattern_types). Health-check tool analysis resolves its directory from the imported cortex.tools package via the new get_tools_dir() instead of a hardcoded src/cortex/tools repo path, so consuming projects no longer report zero tools. Benchmarks and tests seed session logs instead of calling the deleted writer. Verified end to end in this repo: 7 access_frequency entries, 21 co-access patterns, 3604 task patterns, 14 tools; track_usage_patterns=false yields an empty payload. Note for out-of-tree consumers: PatternAnalyzer.record_access and cleanup_old_data are gone.
-
-## [2026-09-05T13:44] lint | Quality gate failed
-
-## [2026-09-05T13:44] lint | Quality gate passed
-
-## [2026-09-05T13:46] fix | Autofix completed
-
-status=success; changed_files=None
-
-## [2026-09-05T13:46] lint | Quality gate passed
-
-## [2026-09-08T14:34] plan | Created plan: Test Plan
-
-## [2026-09-08T14:35] plan | Created plan: Smoke Test Plan
-
-## [2026-09-08T14:35] plan | Created plan: Mini
-
-## [2026-09-08T14:35] plan | Created plan: Mini ·2
-
-## [2026-09-08T14:35] plan | Created plan: Demo Plan
-
-## [2026-09-08T14:35] plan | Created plan: Mini ·3
-
-## [2026-09-08T14:35] plan | Created plan: Demo Plan ·2
-
-## [2026-09-08T14:35] plan | Created plan: Demo Plan ·3
-
-## [2026-09-08T14:35] plan | Created plan: Demo Plan ·4
-
-## [2026-09-08T14:35] plan | Created plan: Demo Plan ·5
-
-## [2026-09-08T14:35] plan | Created plan: Demo Plan ·6
-
-## [2026-09-08T14:35] plan | Created plan: Mini ·4
-
-## [2026-09-08T14:35] lint | Quality gate failed
-
-## [2026-09-08T14:41] plan | Created plan: Test Plan
-
-## [2026-09-08T14:42] plan | Created plan: Smoke Test Plan
-
-## [2026-09-08T14:42] plan | Created plan: Demo Plan
-
-## [2026-09-08T14:42] plan | Created plan: Mini
-
-## [2026-09-08T14:42] plan | Created plan: Mini ·2
-
-## [2026-09-08T14:42] plan | Created plan: Demo Plan ·2
-
-## [2026-09-08T14:42] plan | Created plan: Demo Plan ·3
-
-## [2026-09-08T14:42] plan | Created plan: Demo Plan ·4
-
 ## [2026-09-08T14:42] plan | Created plan: Mini ·3
 
 ## [2026-09-08T14:42] plan | Created plan: Mini ·4
@@ -2095,3 +1919,225 @@ status=success; changed_files=None
 ## [2026-10-11T12:01] lint | Quality gate passed
 
 ## [2026-10-13T09:57] lint | Quality gate passed
+
+## [2026-10-21T12:12] lint | Quality gate passed
+
+## [2026-10-21T12:13] lint | Quality gate failed
+
+## [2026-10-21T13:06] plan | Created plan: Repair canonical plan registration identity and consistency
+
+## [2026-10-21T13:07] plan | Created plan: Verify uncertain pipeline phase-result writes before retry
+
+## [2026-10-21T13:07] plan | Created plan: Revision-bound plan-scoped context packets
+
+## [2026-10-21T13:07] plan | Created plan: Typed refusal outcomes for existing guarded operations
+
+## [2026-10-21T13:37] plan | Created plan: Revision-bound plan-scoped context packets
+
+## [2026-10-21T13:37] plan | Created plan: Typed refusal outcomes for existing guarded operations
+
+## [2026-10-21T13:37] plan | Created plan: Verify uncertain pipeline phase-result writes before retry
+
+## [2026-10-21T13:44] plan | Created plan: Repair canonical plan registration identity and consistency
+
+## [2026-10-21T13:51] lint | Quality gate failed
+
+## [2026-10-21T14:04] fix | Autofix completed
+
+status=success; changed_files=None
+
+## [2026-10-21T14:35] plan | Created plan: Repair canonical plan registration identity and consistency
+
+## [2026-10-21T15:03] plan | Created plan: Close ExperienceStoreCore SQLite connections deterministically
+
+## [2026-10-21T15:18] lint | Quality gate failed
+
+## [2026-10-21T15:18] fix | Autofix completed
+
+status=success; changed_files=None
+
+## [2026-10-21T15:21] lint | Quality gate passed
+
+## [2026-10-21T15:22] plan | Completed plan: Close ExperienceStoreCore SQLite connections deterministically
+
+ExperienceStoreCore now closes every acquired SQLite connection after the existing transaction context exits, including configuration and initialization failures. Five real SQLite regressions prove commit, rollback, original exception propagation and retained-handle closure. Synthetic 20-session recovery scans repeated five times held descriptors at 6 without GC. Fresh governed full gate passed 8282 tests with 4 skipped, 91.9% global coverage and 100% store_core line coverage; static checks, Markdown and Docs Phase B passed. Inline review found no gaps. Source-only; no commit, deployment, restart, live database cleanup or unrelated plan completion.
+
+## [2026-10-21T15:23] fix | Autofix completed
+
+status=success; changed_files=None
+
+## [2026-10-21T15:25] lint | Quality gate passed
+
+## [2026-10-21T15:43] lint | Quality gate passed
+
+## [2026-10-21T15:52] plan | Completed plan: Repair canonical plan registration identity and consistency
+
+Canonical live-row identity and fence-aware section/insertion boundaries preserve narrative, custom sections, history and typographic separators; lifecycle precedence, noncomplete guard, original-preimage locking and guarded rollback retained. Sixteen fence cases plus policy-refusal preservation passed. Fresh full governed gate8283passed0failed4skipped,91.9%global and95.45%changed-registration executable coverage; Docs gate passed; inline review no_gaps. Approved SQLite lifetime correction removed the prior verification blocker. Source-only, not committed or deployed; shared MCP not restarted.
+
+## [2026-10-21T16:16] lint | Quality gate failed
+
+## [2026-10-21T16:21] lint | Quality gate passed
+
+## [2026-10-21T16:32] lint | Quality gate passed
+
+## [2026-10-21T16:35] plan | Completed plan: Verify uncertain pipeline phase-result writes before retry
+
+Existing phase-result publication now returns typed run/request/result receipts and supports read-only exact/missing/uncertain/conflicting verification plus fail-closed replay. Exact replay preserves bytes, timestamps, history and experience; separated config participates in identity. Original-envelope routing and inherited live foreign-only ownership refuse unsafe access. Added88 deterministic cases; fresh governed source gate8371passed0failed4skipped,91.94%global,100%changed(206/206); isolated real API smoke and inline no_gaps review passed. Source-only, uncommitted and undeployed; accepted registration/SQLite and foreign work preserved.
+
+## [2026-10-21T16:37] fix | Autofix completed
+
+status=success; changed_files=None
+
+## [2026-10-21T16:39] lint | Quality gate passed
+
+## [2026-10-21T17:21] fix | Autofix completed
+
+status=success; changed_files=None
+
+## [2026-10-21T17:26] fix | Autofix completed
+
+status=success; changed_files=None
+
+## [2026-10-21T17:30] lint | Quality gate passed
+
+## [2026-10-21T17:32] plan | Completed plan: Revision-bound plan-scoped context packets
+
+Existing scoped context now carries typed exact-byte revision/provenance manifests, compact goal/status/declared dependency readiness/prohibitions/open-decision evidence and explicit missing/conflicting/stale inputs. Existing root-isolated TTL cache revalidates only selected source revisions/membership, preserves unrelated cache hits and refuses incoherent assembly; no new store or authority resolution. Added58 deterministic cases; fresh governed source gate8429passed0failed4skipped,92.03%global,98.73%changed(544/551); disposable real-file source API smoke and inline no_gaps review passed. Docs updated; accepted registration/SQLite/phase-result and foreign work preserved. Source-only, uncommitted and undeployed; shared MCP not restarted.
+
+## [2026-10-21T17:34] fix | Autofix completed
+
+status=success; changed_files=None
+
+## [2026-10-21T17:37] lint | Quality gate passed
+
+## [2026-10-21T17:50] plan | Created plan: Guard missing phase-result replay preconditions
+
+## [2026-10-21T18:14] lint | Quality gate failed
+
+## [2026-10-21T18:17] lint | Quality gate passed
+
+## [2026-10-21T18:19] plan | Completed plan: Guard missing phase-result replay preconditions
+
+Missing phase-result verification/replay now validates existing manifest run/pipeline and conflicting overlapping canonical typed separated configuration before allowing MISSING. Legitimate absent/initialized/compatible/new-key publication and exact byte-idempotent replay remain valid; complete/partial evidence and ownership/locking unchanged. Eight failing-before public API regressions retained with unchanged production SHA;34 new cases,323 focused assertions pass. Fresh governed full gate PID62902 passed8463tests0failures4skips,92.03%global,9/9(100%)corrective executable coverage; all format/lint/structural/type/Markdown, smoke, compile/import, LSP, Docs Phase B and inline no_gaps review pass. Preserved original archived phase-result identity/completion/history with appended actual corrective source reacceptance; all51 nonowned baseline artifacts and prior shared docs preserved. Source-only, uncommitted/undeployed; shared MCP not restarted; typed refusal untouched and remains parent-held.
+
+## [2026-10-21T18:22] fix | Autofix completed
+
+status=success; changed_files=None
+
+## [2026-10-21T18:24] lint | Quality gate passed
+
+## [2026-10-21T19:04] lint | Quality gate failed
+
+## [2026-10-21T19:07] fix | Autofix completed
+
+status=success; changed_files=None
+
+## [2026-10-21T19:12] lint | Quality gate passed
+
+## [2026-10-21T19:16] plan | Completed plan: Typed refusal outcomes for existing guarded operations
+
+Implemented finite STALE_BASE and POLICY_BLOCKED outcomes at existing guarded Markdown and execution-owner refusal branches, with observed raw revision/target and accurate post-replacement mutation evidence; DECISION_REQUIRED excluded because no existing decision boundary exists. Narrow CLI consumes exact codes and fails closed on uncertain responses without retry. All original guards preserved; roadmap task-lock refusal now matches preview/apply. Added73 isolated cases;327 focused assertions pass, real disposable CLI preview/apply/stale/readback-noop/policy and source API smoke pass. Accepted full gate PID57031:8536passed0failed4skipped,92.05%global; changed backend129/135(95.56%), CLI27/27(100%), combined156/162(96.30%). Inline no_gaps, compile/import and final LSP pass. Preserved prior accepted/foreign work. Source-only, uncommitted/undeployed; shared MCP not restarted.
+
+## [2026-10-21T19:17] fix | Autofix completed
+
+status=success; changed_files=None
+
+## [2026-10-21T19:19] lint | Quality gate passed
+
+## [2026-10-21T20:41] lint | Quality gate passed
+
+## [2026-10-21T20:48] lint | Quality gate passed
+
+## [2026-10-21T21:00] fix | Autofix completed
+
+status=success; changed_files=None
+
+## [2026-10-22T13:03] lint | Quality gate passed
+
+## [2026-10-24T22:34] plan | Created plan: Canonical read access to approved plans across worktrees
+
+## [2026-10-24T22:38] plan | Created plan: Canonical read access to approved plans across worktrees
+
+## [2026-10-24T23:31] fix | Autofix completed
+
+status=success; changed_files=None
+
+## [2026-10-24T23:38] plan | Created plan: Canonical read access to approved plans across worktrees
+
+## [2026-10-25T00:02] lint | Quality gate failed
+
+## [2026-10-25T00:03] plan | Completed plan: Phase: Investigate manage_file MCP Tool Failure
+
+Root cause identified and fixed: the AttributeError came from a transient mid-refactor state of the in-progress canonical-reads work where the isinstance(candidate, CanonicalLocalState) narrowing line was accidentally dropped from _local_freshness, letting an enum value reach .exists(). The narrowing was restored (patch applied and verified), manage_file read/write paths re-verified through 11 focused canonical-read regression tests plus live MCP reads; no product defect remains outside that transient state.
+
+## [2026-10-25T00:07] fix | Autofix completed
+
+status=success; changed_files=None
+
+## [2026-10-25T00:11] lint | Quality gate failed
+
+## [2026-10-25T00:14] plan | Completed plan: Canonical read access to approved plans across worktrees
+
+Legitimate linked worktrees can now explicitly read current approved plans and validated conclusions from canonical main: plan() list/get and manage_file() read accept source=canonical backed by git-verified main-worktree identity (exact-one listed local worktree, shared common dir, real-path symlink containment), with single exact-byte captures feeding parsing and provenance, final coherence gates (bytes, list membership, canonical HEAD), local freshness incl. ambiguous/unsafe/unreadable reporting, closed artifact-report reads for result references, and canonical identity exposed via the existing cortex://structure resource. Defaults remain local; every write/lifecycle operation rejects canonical source; canonical reads never write to or initialize the canonical root and never rebind the local root. Verified by 41 focused deterministic regressions across real linked git worktrees plus Cortex gates: run_quality_gate 8/8 checks, 8577/8577 tests passed, coverage 92.03%; run_docs_gate all green; docs/api/tools.md documents the public workflow.
+
+## [2026-10-25T00:14] lint | Quality gate passed
+
+## [2026-10-25T11:57] lint | Quality gate failed
+
+## [2026-10-25T11:59] fix | Autofix completed
+
+status=success; changed_files=None
+
+## [2026-10-25T12:02] lint | Quality gate passed
+
+## [2026-10-25T12:04] fix | Autofix completed
+
+status=success; changed_files=None
+
+## [2026-10-25T12:05] fix | Autofix completed
+
+status=success; changed_files=None
+
+## [2026-10-25T12:07] lint | Quality gate passed
+
+## [2026-10-25T12:19] lint | Quality gate failed
+
+## [2026-10-25T12:25] lint | Quality gate passed
+
+## [2026-10-25T12:30] plan | Created plan: Repair false-green spelling subprocess verdicts
+
+## [2026-10-25T13:29] plan | Completed plan: Repair false-green spelling subprocess verdicts
+
+Completed narrow fail-closed spelling maintenance: deterministic installed cspell 8.6.1 preflight, supported lint CLI, original verdict/diagnostic preservation, bounded owned-group timeout cleanup, required-script failure, consumer/public regressions, and synchronized docs. Inline review no_gaps; 68 focused cases pass; changed CLI coverage97.18%, backend100%. Real installed-tool clean/finding verdicts0/1 and public fault/success paths verified. Existing spelling backlog and original public smoke success failure remain unsuppressed; no dictionary waiver or commit.
+
+## [2026-10-25T13:30] fix | Autofix completed
+
+status=success; changed_files=None
+
+## [2026-10-25T13:35] lint | Quality gate failed
+
+## [2026-10-25T13:36] fix | Autofix completed
+
+status=success; changed_files=None
+
+## [2026-10-25T13:41] lint | Quality gate failed
+
+## [2026-10-25T21:25] lint | Quality gate failed
+
+## [2026-10-25T21:30] lint | Quality gate failed
+
+## [2026-10-25T21:43] lint | Quality gate failed
+
+## [2026-10-28T17:39] lint | Quality gate failed
+
+## [2026-10-28T17:57] lint | Quality gate passed
+
+## [2026-10-28T18:02] fix | Autofix completed
+
+status=success; changed_files=None
+
+## [2026-10-28T18:08] fix | Autofix completed
+
+status=success; changed_files=None
+
+## [2026-10-28T18:25] lint | Quality gate failed

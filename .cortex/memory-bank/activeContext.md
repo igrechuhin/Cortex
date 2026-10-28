@@ -3,6 +3,24 @@
 
 **This file records completed work only.** For current status and upcoming work see [roadmap.md](roadmap.md).
 
+## Completed Work (2026-10-28)
+
+- ✅ **Spelling backlog lexical adjudication and scoped verdict-maintenance commits** - COMPLETE (2026-10-28) - <!-- memory_type: status -->
+Fix-quality delegation adjudicated all 333 distinct honest-gate spelling tokens (2061 findings): 275 dictionary words, 19 inert ignoreWords, 2 line-scoped fixture directives, one source wording fix; mispellled/mispellledwordzz stay flaggable and real-checker e2e assertions pass. Root check_spelling.py exits 0 over 1526 files. Commit pipeline Phase A green with parity Pass1/Pass2 zero failures and Pass3 skipped (no DocC step); work split into scoped commits for spelling-verdict maintenance, canonical-read test typing, and readiness-publication isolation. pipeline_handoff empty-request publication defect worked around with explicit data argument; result files verified on disk.
+
+## Completed Work (2026-10-25)
+
+- ✅ **Canonical-read follow-up commit blocked by false-green spelling gate** - COMPLETE (2026-10-25) - <!-- memory_type: problem -->
+
+- ✅ **Repair false-green spelling subprocess verdicts** - COMPLETE (2026-10-25) - Completed narrow fail-closed spelling maintenance: deterministic installed cspell 8.6.1 preflight, supported lint CLI, original verdict/diagnostic preservation, bounded owned-group timeout cleanup, required-script failure, consumer/public regressions, and synchronized docs. Inline review no_gaps; 68 focused cases pass; changed CLI coverage97.18%, backend100%. Real installed-tool clean/finding verdicts0/1 and public fault/success paths verified. Existing spelling backlog and original public smoke success failure remain unsuppressed; no dictionary waiver or commit.
+
+- ✅ **Spelling verdict maintenance pipeline 2026-10-25 [../analyses/analysis-spelling-verdict-maintenance-pipeline-2026-10-25-2026-10-25.md]** - COMPLETE (2026-10-25) - [Spelling verdict maintenance pipeline 2026-10-25](../analyses/analysis-spelling-verdict-maintenance-pipeline-2026-10-25-2026-10-25.md) — Session analysis for Spelling verdict maintenance pipeline 2026-10-25 (2026-10-25); decisions and follow-ups recorded.
+
+- ✅ **Do Loop Post-Prompt Analysis 2026-10-25T13-49 [../analyses/analysis-do-loop-post-prompt-analysis-2026-10-25t13-49-2026-10-25.md]** - COMPLETE (2026-10-25) - [Do Loop Post-Prompt Analysis 2026-10-25T13-49](../analyses/analysis-do-loop-post-prompt-analysis-2026-10-25t13-49-2026-10-25.md) — Session analysis for Do Loop Post-Prompt Analysis 2026-10-25T13-49 (2026-10-25); decisions and follow-ups recorded.
+
+- ✅ **Blocked Spelling Verdict Commit Pipeline 2026-10-25T21-44 [../analyses/analysis-blocked-spelling-verdict-commit-pipeline-2026-10-25t21-44-2026-10-25.md]** - COMPLETE (2026-10-25) - [Blocked Spelling Verdict Commit Pipeline 2026-10-25T21-44](../analyses/analysis-blocked-spelling-verdict-commit-pipeline-2026-10-25t21-44-2026-10-25.md) — Session analysis for Blocked Spelling Verdict Commit Pipeline 2026-10-25T21-44 (2026-10-25); decisions and follow-ups recorded.
+Original feature commit 813d42eb is pushed. Two test-helper type-ignore suppressions were replaced with TypedDict/Unpack in the working tree; Pyright is clean, 41 focused canonical regressions and direct real-worktree helper smoke pass. No follow-up commit was created: the shared spelling wrapper masks operational exit codes, --files-only is unsupported, and a compatible direct scan reports 1773 issues in 444 files. See .cortex/plans/repair-false-green-spelling-subprocess-verdicts.md, registered as an ASAP blocker. Retain failed commit pipeline 208485110956 and snapshot 915540b114d62ecf724378c9eb64cae3455b47d5 for recovery; do not resume commit from a false green or expand into bulk spelling fixes without a separate authorized pass.
+
 ## Completed Work (2026-10-24)
 
 - ✅ **Phase: Investigate manage_file MCP Tool Failure** - COMPLETE (2026-10-24) - Root cause identified and fixed: the AttributeError came from a transient mid-refactor state of the in-progress canonical-reads work where the isinstance(candidate, CanonicalLocalState) narrowing line was accidentally dropped from _local_freshness, letting an enum value reach .exists(). The narrowing was restored (patch applied and verified), manage_file read/write paths re-verified through 11 focused canonical-read regression tests plus live MCP reads; no product defect remains outside that transient state.

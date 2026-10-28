@@ -1,6 +1,19 @@
 <!-- memory_type: milestone -->
 # Progress Log
 
+## 2026-10-28
+
+- <!-- memory_type: status -->
+- <!-- memory_type: status -->
+- **Canonical-read test-helper typing correction** - COMPLETE. Suppression-free TypedDict/Unpack helper edits ship through the 2026-10-28 commit pipeline as a separate scoped commit; original feature commit 813d42eb is already pushed. Focused Pyright clean, 41 canonical regressions and direct helper smoke were verified earlier; the blocking false-green spelling gate was resolved by the wrapper repair plus full lexical adjudication.
+- **Spelling verdict maintenance ship** - COMPLETE. Delegated fix-quality pass adjudicated the full honest-gate spelling backlog (2061 findings, 333 distinct tokens): 275 root-dictionary words added, 19 inert ignoreWords, 2 line-scoped fixture directives, 1 source wording fix (lossier -> more lossy); mispellled/mispellledwordzz remain flaggable and the e2e real-checker finding assertions pass twice. Root check_spelling.py exits 0 across 1526 files. Confirmation quality gate green (coverage 92.03% measured on the pre-fix full run; passing gate trims the field), CI parity Pass1/Pass2 zero failures, Pass3 skipped (no DocC step in CI). Scoped commits ship spelling-verdict maintenance, canonical-read test-helper typing, and readiness-publication isolation separately. pipeline_handoff phase-result files initially persisted empty-request defaults; explicit data-argument republication verified field-complete on disk.
+
+## 2026-10-25
+
+- <!-- memory_type: problem -->
+- **Canonical-read test-helper typing correction** - PARTIAL. Original feature commit 813d42eb is pushed. Replaced two prohibited type-ignore helpers with TypedDict/Unpack in the working tree; focused Pyright reports zero errors/warnings, 41 canonical regressions and a real-worktree helper smoke pass. Follow-up commit is blocked: the spelling wrapper masks operational errors, its --files-only flag is unsupported, and a compatible direct scan found 1773 issues across 444 files. Registered repair-false-green-spelling-subprocess-verdicts as an ASAP blocker; no Synapse/source fix, job interruption, broad dictionary change, or follow-up commit was performed.
+- **Repair false-green spelling subprocess verdicts** - COMPLETE. Shared spelling gate now preserves real checker failures, uses deterministic installed cspell 8.6.1 and supported lint invocation, and bounds checker-owned subprocess groups. Added80 cases; focused68 pass; changed CLI97.18% and backend100% coverage; real installed-tool and public consumer fault/success smoke exercised. Existing dictionary backlog and unchanged public success assertion remain honestly failing, outside bulk-cleanup scope. Review no_gaps; Finalize complete before final Fix gates. No commit or push.
+
 ## 2026-10-24
 
 - **Canonical read access to approved plans across worktrees** - COMPLETE. plan()/manage_file() source=canonical reads verified canonical main plans, memory-bank conclusions and closed artifact reports with exact-byte provenance and local freshness; all writes stay local; fail-closed guards cover invalid/duplicate/bare/cross-repo mappings, symlink indirection, traversal and mid-read mutation. 41 focused regressions; quality gate 8/8, 8577/8577 tests, 92.03% coverage; docs gate green.

@@ -204,7 +204,7 @@ def test_compaction_reaches_lines_dropped_when_pruning_is_not_enough(
     monkeypatch.setattr("cortex.memory.wal_content._MAX_LOG_BYTES", 2_000)
     # Act
     result = wal_compact_log_bytes(raw)
-    # Assert - the ladder reached its second, lossier rung
+    # Assert - the ladder reached its second, more lossy rung
     assert len(result.content) <= 2_000
     assert result.stage == "lines_dropped"
     assert result.pruned_count > 0

@@ -80,6 +80,11 @@ def run_synapse_script(
     synapse_root = get_cortex_path(project_root, CortexResourceType.SYNAPSE)
     script_path = synapse_root / "scripts" / language / script_name
     if not script_path.exists():
+        if check_type == "spelling":
+            return _synapse_script_exception_result(
+                check_type,
+                FileNotFoundError(f"Required spelling script not found: {script_path}"),
+            )
         return _synapse_script_skipped_result(check_type, language)
     python_bin = _resolve_synapse_python_bin(project_root)
     try:

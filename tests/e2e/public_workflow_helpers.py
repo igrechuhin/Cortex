@@ -44,6 +44,9 @@ async def call_public_tool(name: str, **arguments: object) -> dict[str, object]:
 
 def _prepare_quality_environment(root: Path, environment: Path) -> None:
     (root / ".venv").symlink_to(environment, target_is_directory=True)
+    local_tools = Path(__file__).resolve().parents[2] / "node_modules"
+    if (local_tools / ".bin" / "cspell").exists():
+        (root / "node_modules").symlink_to(local_tools, target_is_directory=True)
     for rule in (root / ".cortex").rglob("*.mdc"):
         content = textwrap.fill(rule.read_text(encoding="utf-8").strip(), width=72)
         _ = rule.write_text("# Rules\n\n" + content + "\n", encoding="utf-8")
@@ -51,6 +54,9 @@ def _prepare_quality_environment(root: Path, environment: Path) -> None:
         Path(__file__).resolve().parents[2] / ".cortex" / "synapse" / "scripts",
         root / ".cortex" / "synapse" / "scripts",
         ignore=shutil.ignore_patterns("__pycache__", "*.pyc"),
+    )
+    _ = shutil.copyfile(
+        Path(__file__).resolve().parents[2] / ".cspell.json", root / ".cspell.json"
     )
 
 

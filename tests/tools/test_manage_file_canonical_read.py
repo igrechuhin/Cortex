@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import ContextManager, cast
+from typing import ContextManager, Literal, TypedDict, Unpack, cast
 from unittest.mock import AsyncMock, patch
 
 import pytest
@@ -24,8 +24,17 @@ from tests.tools.canonical_read_test_support import (
 JsonDict = dict[str, object]
 
 
-async def _manage_json(**kwargs: object) -> JsonDict:
-    result = await manage_file(**kwargs)  # type: ignore[arg-type]
+class _ManageArgs(TypedDict, total=False):
+    operation: Literal["read", "write", "metadata", "rollback"]
+    file_name: str
+    content: str
+    include_metadata: bool
+    version: int
+    source: str
+
+
+async def _manage_json(**kwargs: Unpack[_ManageArgs]) -> JsonDict:
+    result = await manage_file(**kwargs)
     return cast(JsonDict, json.loads(result))
 
 

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import ContextManager, cast
+from typing import ContextManager, TypedDict, Unpack, cast
 from unittest.mock import AsyncMock, patch
 
 import pytest
@@ -24,8 +24,19 @@ from tests.tools.canonical_read_test_support import (
 JsonDict = dict[str, object]
 
 
-async def _plan_json(**kwargs: object) -> JsonDict:
-    result = await plan(**kwargs)  # type: ignore[arg-type]
+class _PlanArgs(TypedDict, total=False):
+    operation: str
+    title: str
+    content: str
+    slug: str
+    include_archive: bool
+    plan_title: str
+    summary: str
+    source: str
+
+
+async def _plan_json(**kwargs: Unpack[_PlanArgs]) -> JsonDict:
+    result = await plan(**kwargs)
     return cast(JsonDict, json.loads(result))
 
 

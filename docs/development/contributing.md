@@ -89,8 +89,31 @@ source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 
 Bootstrap installs Python dependencies via `uv`. Run **`make preflight`** before bootstrap when you are unsure about network policy. **Exit code 2** means the registry is unreachable. Exit **0** means the index probe succeeded.
 
-> **Node.js**: The only Node.js dependency is `cspell` for spelling checks, which CI installs
-> on-demand via `npm install -g cspell@8.6.1`. No `npm install` step is required locally.
+Spelling checks require **cspell 8.6.1**, including local public-workflow tests.
+CI installs that version globally. For a project-local installation:
+
+```bash
+npm install --no-save --package-lock=false --ignore-scripts cspell@8.6.1
+```
+
+The shared checker resolves an explicit `SPELL_CHECKER_CMD`, project-local
+`node_modules/.bin/cspell`, then `cspell` on `PATH`; it never downloads a checker
+while running a gate. A local installation is visible to an already-running MCP
+server without changing its environment or restarting it. An explicit command
+must already be present in that server's environment.
+
+The supported CLI is `cspell lint --no-progress <files>`. Version preflight is
+bounded to 10 seconds, lint to 120 seconds, with finite positive overrides via
+`SPELL_CHECKER_PREFLIGHT_TIMEOUT` and `SPELL_CHECKER_TIMEOUT`. Timeouts terminate
+the checker-owned POSIX process group and return 124. See the shared
+[spelling checker contract](../../.cortex/synapse/README.md#spelling-checker-contract).
+
+**2026-10-25 correction:** operational checker errors and spelling findings now
+fail the spelling stage instead of being rewritten into a potentially zero
+file count. The previously observed 1,773 findings in 444 files remain a
+separate adjudication backlog; this repair does not allowlist them. The
+unchanged public smoke success assertion also exposes findings in copied
+Synapse scripts rather than silently passing them.
 
 ### FastMCP hot-reload dev mode
 
@@ -696,6 +719,10 @@ tests/
 └── fixtures/                       # Test data files
     └── sample_memory_bank.json
 ```
+
+Subprocess test fixtures must publish readiness files atomically: write their
+payload to a sibling temporary file, then replace the readiness path. File
+existence must never expose an empty, partially written run identifier.
 
 ### AAA Pattern (Mandatory)
 
