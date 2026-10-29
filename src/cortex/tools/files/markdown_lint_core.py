@@ -55,6 +55,9 @@ _ALL_MARKDOWN_EXCLUDE_PREFIXES = (
     ".cortex/.cache/",
     # Wiki ingest copies; relative links are valid only in original doc trees.
     WIKI_SOURCES_DIR_PROJECT_RELATIVE_PREFIX,
+    # Owner-only gitignored preservation archives are frozen evidence, not
+    # authored docs; they also bypass ARG_MAX when relocated inside a repo.
+    ".preservation/",
 )
 _CI_PARITY_MAX_MARKDOWN_FILES = 500
 
