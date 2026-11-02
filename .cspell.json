@@ -91,7 +91,7 @@
     "mlcu", "mockmanagersdict",
     "modeldict", "modifyitems",
     "monkeypatch", "monkeypatching",
-    "mtimes", "multilang",
+    "mtimes", "multibyte", "multilang",
     "multiset", "mvnw",
     "nbrs", "ndicator",
     "newdir", "newfile",
