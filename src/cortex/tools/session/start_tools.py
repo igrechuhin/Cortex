@@ -163,20 +163,32 @@ def _create_error_result(msg: str) -> GitCommandResult:
     )
 
 
+async def _spawn_git_process(
+    cmd: list[str], cwd: Path | None, env: dict[str, str] | None
+) -> asyncio.subprocess.Process:
+    """Start a Git subprocess with captured output and caller configuration."""
+    return await asyncio.create_subprocess_exec(
+        *cmd,
+        cwd=str(cwd) if cwd else None,
+        env=env,
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.PIPE,
+    )
+
+
 async def run_git_command(
-    cmd: list[str], cwd: Path | None = None, timeout: float = 5.0
+    cmd: list[str],
+    cwd: Path | None = None,
+    timeout: float = 5.0,
+    *,
+    env: dict[str, str] | None = None,
 ) -> GitCommandResult:
     """Run a git command asynchronously with timeout."""
     await acquire_git_operation_slot()
     process: asyncio.subprocess.Process | None = None
     try:
         async with asyncio.timeout(timeout):
-            process = await asyncio.create_subprocess_exec(
-                *cmd,
-                cwd=str(cwd) if cwd else None,
-                stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE,
-            )
+            process = await _spawn_git_process(cmd, cwd, env)
             stdout, stderr = await process.communicate()
     except TimeoutError:
         await reap_orphaned_subprocess(process)

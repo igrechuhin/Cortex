@@ -46,6 +46,48 @@ fresh run. The client request deadline is separate from `test_timeout`; clients
 must allow the worker timeout plus polling overhead. If a client request expires,
 inspect the existing detached result before starting another worker.
 
+### Commit-preflight Git checkpoint
+
+Call `session(operation="checkpoint")` explicitly before any staging, submodule
+commit, or quality-gate mutation. This is separate from `session()` orientation,
+the HEAD-only tag from `compact(create_checkpoint=True)`, and pipeline file
+snapshots. If a client strips the operation argument, the default orientation
+response is not a checkpoint: stop rather than falling back to shell commands.
+
+The operation resolves the active MCP project root, requires that exact Git
+worktree root and an existing HEAD, and invokes Git without a shell with a
+five-second timeout per command. It copies the current index to a temporary
+private index, creates a stash-shaped commit preserving staged and unstaged
+tracked content independently, then anchors it at a unique
+`refs/cortex/checkpoints/<id>` ref. It does not change HEAD, the original index,
+worktree files, or `refs/stash`, and never applies, drops, or rolls back changes.
+
+This is an explicit **shared Git ref/object mutation**, not a read-only status
+query: linked worktrees see the same checkpoint refs. Repeated calls create
+separate retained refs. There is no automatic cleanup or restore; either needs
+a separate user decision. Do not publish these private refs. Other writers to
+the same worktree must be quiescent while the checkpoint is captured.
+
+| `state` | Meaning |
+| --- | --- |
+| `created` | `status: "success"`, `worktree_clean: false`; `snapshot_ref` names the durable ref and `snapshot_commit` its commit. `head` records the original HEAD. |
+| `clean` | `status: "success"`, `worktree_clean: true`; Git status was empty. No snapshot is created; `snapshot_ref` and `snapshot_commit` are null. `head` is the observed commit, not a substitute snapshot. |
+| `error` | `status: "error"` with the failed step in `error`; never a silent HEAD fallback, including symlink, timeout, conflict, or ref-write errors. `worktree_clean` is null until status is observed. |
+
+`tracked_only: true` is deliberate: untracked/ignored files and nested submodule
+worktree contents are not captured. Untracked-only dirtiness is an error, never
+`clean`. A successful tracked checkpoint can coexist with untracked files, which
+remain untouched but are not protected by this ref. Preserve any excluded work
+separately before mutating it. If ref creation fails, `snapshot_ref` stays null;
+`attempted_ref` and `snapshot_commit`, when present, identify the attempted write,
+not proof it completed. A timeout can leave that candidate ref behind.
+
+Commit Preflight proceeds only after observing `created` and recording its exact
+`snapshot_ref` in the preflight result. On `clean`, stop with nothing to commit;
+on `error`, record the failure and stop without discarding changes. Capture before
+Synapse pre-stage and Phase A; checkpoint any submodule's own work separately
+before changing it. Pipeline failure never authorizes automatic restoration.
+
 ### Exact phase-result publication
 
 `pipeline_handoff(operation="write", pipeline="implement", phase="code", data=payload)`

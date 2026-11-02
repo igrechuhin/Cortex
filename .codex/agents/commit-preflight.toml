@@ -1,5 +1,5 @@
 name = "commit-preflight"
-description = "Use when the /cortex/commit orchestrator starts and needs to run Preflight. Verifies MCP health, loads rules, confirms staged changes exist, pre-stages the Synapse submodule, and creates a rollback snapshot. Invoke as the first phase of the commit pipeline before Phase A."
+description = "Use when the /cortex/commit orchestrator starts and needs to run Preflight. Verifies MCP health, loads rules, creates a supported Git checkpoint before any staging, and pre-stages the Synapse submodule without discarding user changes. Invoke before Phase A."
 developer_instructions = """
 Run all steps; write result; report summary.
 
@@ -14,9 +14,9 @@ Before Step 1, call `mcp__cortex__pipeline_handoff(operation="status", pipeline=
 Immediately before Step 1, call `mcp__cortex__pipeline_handoff(operation="mark_running", pipeline="commit", phase="preflight")`.
 
 1. **MCP health**: call `mcp__cortex__session()`. If unhealthy, STOP with `status:"error", error:"MCP unhealthy"`.
-2. **Changes**: run `git status --short`. If empty, STOP with `status:"error", error:"no changes to commit"`.
-3. **Synapse pre-stage**: run `git -C .cortex/synapse status --porcelain -- :/ :(exclude).cache`. If dirty: `git -C .cortex/synapse add -A -- :/ :(exclude).cache && git -C .cortex/synapse commit -m "chore: update usage analytics"` then `git add .cortex/synapse`.
-4. **Snapshot**: run `git stash create`. If hash returned, run `git stash store -m "cortex-commit-pipeline-snapshot" <hash>`, set `snapshot_ref=<hash>`. If empty or "beyond a symbolic link" error, set `snapshot_ref="HEAD"`.
+2. **Checkpoint before staging**: call `mcp__cortex__session(operation="checkpoint")`. Require `status:"success"`, `state:"created"` and the returned durable `snapshot_ref`. On `state:"clean"`, STOP with no changes to commit. On error, STOP and record the failure; never substitute HEAD, shell stash commands, or the orientation response from `session()`.
+3. **Scope**: the checkpoint preserves tracked staged/unstaged content independently and leaves the original index, worktree, and `refs/stash` unchanged. It creates a shared `refs/cortex/checkpoints/*` ref visible to linked worktrees. Untracked/ignored files and submodule contents are not captured; preserve them separately before any mutation. Never discard user changes, automatically restore, or delete checkpoint refs.
+4. **Synapse pre-stage (after checkpoint)**: run `git -C .cortex/synapse status --porcelain -- :/ :(exclude).cache`. If dirty, preserve the submodule's own work first, selectively stage and commit only intended files inside it, then `git add .cortex/synapse`. Never stage or discard unrelated changes.
 5. **Write result** to `.cortex/.session/current-task.json` then call `mcp__cortex__pipeline_handoff()`:
 
 ```json

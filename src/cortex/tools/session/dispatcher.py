@@ -1,7 +1,7 @@
 """Session dispatcher: unified session(operation=...) MCP tool.
 
-Consolidates session_start, session_register, session_deregister, and compact_session
-into a single operation-based dispatcher (tool consolidation).
+Consolidates session lifecycle operations and an explicit commit-preflight Git
+checkpoint into a single operation-based dispatcher (tool consolidation).
 """
 
 from __future__ import annotations
@@ -42,7 +42,7 @@ def _session_error_invalid_operation(operation: str) -> str:
             "status": OperationStatus.ERROR.value,
             "error": (
                 f"Invalid operation '{operation}'. "
-                "Use start, register, deregister, compact, or predict."
+                "Use start, register, deregister, compact, predict, or checkpoint."
             ),
         },
         indent=2,
@@ -158,7 +158,14 @@ async def _session_handle_compact(
 def _session_validate(operation: str, task_title: str | None) -> tuple[str | None, str]:
     """Return (error_json or None, op) after validating operation."""
     op = (operation or "start").strip().lower()
-    if op not in ("start", "register", "deregister", "compact", "predict"):
+    if op not in (
+        "start",
+        "register",
+        "deregister",
+        "compact",
+        "predict",
+        "checkpoint",
+    ):
         return _session_error_invalid_operation(operation or ""), op
     if op == "register" and (not task_title or not str(task_title).strip()):
         return _session_error_register_missing_title(), op
@@ -232,6 +239,11 @@ async def _session_dispatch_impl(
         return await _session_dispatch_register(args.task_title, args.role, ctx)
     if op == "deregister":
         return await _session_handle_deregister(ctx)
+    if op == "checkpoint":
+        from cortex.tools.session.git_checkpoint import checkpoint_session
+
+        await _emit_session_dispatch_progress(ctx, op, "Creating Git checkpoint")
+        return await checkpoint_session(ctx)
     if op == "predict":
         return await _session_handle_predict(
             args.prediction, args.task_description, ctx
@@ -300,7 +312,7 @@ def _session_build_dispatch_args(values: dict[str, object]) -> _SessionDispatchA
 
 @mcp.tool(
     annotations=destructive_annotations(
-        "Session (Start/Register/Deregister/Compact/Predict)",
+        "Session (Start/Register/Deregister/Compact/Predict/Checkpoint)",
     ),
     output_schema=None,
 )
@@ -319,10 +331,16 @@ async def session(
     hook_event: dict[str, object] | None = None,
 ) -> str:
     # fmt: on
-    """USE WHEN: Session lifecycle (orientation, registry, compaction).
+    """USE WHEN: Session lifecycle or an explicit commit-preflight Git checkpoint.
+
+    session(operation="checkpoint") preserves tracked staged/unstaged content in
+    a new shared refs/cortex/checkpoints/* ref, including in linked worktrees.
+    It leaves worktree, index and refs/stash unchanged; no automatic rollback.
+    Untracked/ignored files and submodule worktree contents are not captured.
+    Stop on error; start is orientation and compact's tag is HEAD-only.
 
     EXAMPLES: session(operation="start", goal="Fix auth bug");
-    session(operation="compact", summary="Session handoff");
+    session(operation="checkpoint"); session(operation="compact", summary="Handoff");
     session(operation="predict", prediction="gate clean; touches src/x.py",
     task_description="why").
     """
