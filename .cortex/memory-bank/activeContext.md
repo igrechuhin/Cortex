@@ -3,6 +3,11 @@
 
 **This file records completed work only.** For current status and upcoming work see [roadmap.md](roadmap.md).
 
+## Completed Work (2026-11-02)
+
+- ✅ **Session checkpoint feature and gate remediation shipped** - COMPLETE (2026-11-02) - <!-- memory_type: status -->
+Added session(operation="checkpoint") commit-preflight checkpoints (durable refs/cortex/checkpoints ref, no stash/HEAD fallback) with dispatcher wiring, env-scoped git runner, tests, and API docs; commit-preflight prompts moved to the checkpoint contract. Cleared the gate-blocking Swift spelling-checker defects (42 pyright errors, 11 cspell hits) in the Synapse submodule and added the multibyte dictionary word. Full quality gate green twice (preflight_passed, 0 errors, predictions 6 HIT/0 MISS), slow suite 18/18, docs gate green; CI run #824 failures attributed to the pre-fix committed state.
+
 ## Completed Work (2026-10-28)
 
 - ✅ **Spelling backlog lexical adjudication and scoped verdict-maintenance commits** - COMPLETE (2026-10-28) - <!-- memory_type: status -->

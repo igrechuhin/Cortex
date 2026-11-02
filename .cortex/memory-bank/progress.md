@@ -1,6 +1,11 @@
 <!-- memory_type: milestone -->
 # Progress Log
 
+## 2026-11-02
+
+- <!-- memory_type: milestone -->
+- **Session checkpoint operation and CI-blocking gate remediation** - COMPLETE. session(operation="checkpoint") implemented and wired into commit preflight (dispatcher, start_tools env kwarg, git_checkpoint module, 273-line test suite, API docs, submodule prompts); Swift spelling-checker pyright/spelling defects fixed in Synapse; full gate green (0 errors, coverage 92.05% >= 90%), slow suite 18/18, CI run #824 root-caused to the pre-fix commit; changes published through the commit pipeline.
+
 ## 2026-10-28
 
 - <!-- memory_type: status -->
