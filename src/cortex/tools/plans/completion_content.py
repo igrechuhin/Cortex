@@ -87,6 +87,19 @@ def has_completed_entry_for_date_and_title(
     return False
 
 
+def record_body_end(lines: list[str], bullet_0: int, end_0: int) -> int:
+    """Return the exclusive end of the record starting at bullet_0, including
+    continuation body lines until a blank line, a new bullet, a heading, or
+    the section end."""
+    i = bullet_0 + 1
+    while i < min(end_0, len(lines)):
+        stripped = lines[i].strip()
+        if not stripped or stripped.startswith(("- ", "#")):
+            break
+        i += 1
+    return i
+
+
 def append_completed_entry(
     content: str, date_str: str, title: str, summary: str
 ) -> tuple[str, int | None]:
@@ -98,7 +111,13 @@ def append_completed_entry(
     start_1, end_1 = section
     start_0, end_0 = start_1 - 1, end_1
     last_bullet = last_bullet_line_in_range(lines, start_0, end_0)
-    insert_at = (last_bullet + 1) if last_bullet is not None else start_0 + 1
+    # AI: A completed record spans its bullet plus continuation body lines;
+    # inserting right after the bullet splits the previous record in two.
+    insert_at = (
+        record_body_end(lines, last_bullet, end_0)
+        if last_bullet is not None
+        else start_0 + 1
+    )
     entry = f"- ✅ **{title}** - COMPLETE ({date_str}) - {summary}"
     new_lines = lines[:insert_at] + [""] + [entry] + lines[insert_at:]
     new_content = "\n".join(new_lines)

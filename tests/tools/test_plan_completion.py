@@ -18,6 +18,7 @@ import pytest
 from cortex.core.models import OperationStatus
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.tools.plans.completion import CompletePlanResult, complete_plan
+from cortex.tools.plans.completion_content import append_completed_entry
 from cortex.tools.plans.update_memory_bank import update_memory_bank
 
 
@@ -167,6 +168,46 @@ class TestCompletePlanCompletedWorkSection:
         assert result["status"] == "success"
         assert "**New plan**" in active.read_text()
         assert "Summary" in active.read_text()
+
+    def test_appends_after_multiline_record_body(self) -> None:
+        """A multiline record keeps its body adjacent to its bullet."""
+        content = (
+            "# Active\n\n## Completed Work (2026-02-05)\n\n"
+            + "- ✅ **Old** - COMPLETE (2026-02-05) - marker\n"
+            + "Body continuing the Old record.\n"
+        )
+        new_content, line_inserted = append_completed_entry(
+            content, "2026-02-05", "New", "<!-- memory_type: status -->\nSummary."
+        )
+        assert line_inserted is not None
+        old_bullet = new_content.index("**Old**")
+        old_body = new_content.index("Body continuing the Old record.")
+        new_bullet = new_content.index("**New**")
+        assert old_bullet < old_body < new_bullet
+
+    @pytest.mark.asyncio
+    async def test_public_append_keeps_multiline_record_intact(
+        self, tmp_path: Path
+    ) -> None:
+        mem = get_cortex_path(tmp_path, CortexResourceType.MEMORY_BANK)
+        mem.mkdir(parents=True)
+        active = mem / "activeContext.md"
+        _ = active.write_text(
+            "# Active\n\n## Completed Work (2026-02-05)\n\n"
+            + "- ✅ **Old** - COMPLETE (2026-02-05) - x\n"
+            + "Old record body.\n"
+        )
+        with _patch_root(tmp_path):
+            result_str = await _append_active_context(
+                "2026-02-05", "New", "New summary."
+            )
+        result = json.loads(result_str)
+        assert result["status"] == "success"
+        text = active.read_text()
+        old_bullet = text.index("**Old**")
+        old_body = text.index("Old record body.")
+        new_bullet = text.index("**New**")
+        assert old_bullet < old_body < new_bullet
 
     @pytest.mark.asyncio
     async def test_creates_section_when_missing(self, tmp_path: Path) -> None:

@@ -6,10 +6,10 @@
 ## Completed Work (2026-11-09)
 
 - ✅ **FPF practices in implementation review, scoped context, and shaping** - COMPLETE (2026-11-09) - <!-- memory_type: status -->
+Implementation review verifies the initiating request and plan against observed evidence. Scoped context distinguishes current project rules, the selected plan, history, and evidence. Shaping records preserve observable triggers for revisiting dependent decisions. Fresh Cortex quality gate and scoped MCP smoke passed.
 
 - ✅ **Quality-gate project budget and selected-test checks** - COMPLETE (2026-11-09) - <!-- memory_type: preference -->
-Uncommitted changeset adds .cortex/config/quality-gate.json project test budget (default 900s, configure_quality_gate handoff op), explicit selected-test gate runs (pytest -k / swift --filter with test_filter task key, selected-source non-mutating checks, scoped receipts that never certify full-suite coverage), and /cortex/fix structural remediation (function-length and 400-line caps satisfied via helper extraction, spec-tuple DRY, extract_swift_test_counts relocation to swift_test_diagnostics). Full quality gate green (0 errors), docs gate green, CI parity passes green; shipping through the commit pipeline.
-Implementation review verifies the initiating request and plan against observed evidence. Scoped context distinguishes current project rules, the selected plan, history, and evidence. Shaping records preserve observable triggers for revisiting dependent decisions. Fresh Cortex quality gate and scoped MCP smoke passed.
+Shipped in commit b50d211c: .cortex/config/quality-gate.json project test budget (default 900s, configure_quality_gate handoff operation), explicit selected-test gate runs (pytest -k / swift --filter with test_filter task key, selected-source non-mutating checks, scoped receipts that never certify full-suite coverage), and /cortex/fix structural remediation (function-length and 400-line caps satisfied via helper extraction, spec-tuple DRY, extract_swift_test_counts relocation to swift_test_diagnostics). Full quality gate green (0 errors), docs gate green, CI parity passes green.
 
 ## Completed Work (2026-11-02)
 
